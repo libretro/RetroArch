@@ -58,6 +58,7 @@ HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
 void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
 {
    bool is_render_target = texture->desc.BindFlags & D3D11_BIND_RENDER_TARGET;
+   UINT format_support   = D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE;
 
    d3d11_release_texture(texture);
 
@@ -65,7 +66,7 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    texture->desc.ArraySize          = 1;
    texture->desc.SampleDesc.Count   = 1;
    texture->desc.SampleDesc.Quality = 0;
-   texture->desc.BindFlags         |= D3D11_BIND_SHADER_RESOURCE;
+   texture->desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
    texture->desc.CPUAccessFlags =
          texture->desc.Usage == D3D11_USAGE_DYNAMIC ? D3D11_CPU_ACCESS_WRITE : 0;
 
@@ -81,6 +82,11 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
          texture->desc.MipLevels++;
       }
    }
+
+   if (texture->desc.BindFlags & D3D11_BIND_RENDER_TARGET)
+      format_support |= D3D11_FORMAT_SUPPORT_RENDER_TARGET;
+
+   texture->desc.Format = d3d11_get_closest_match(device, texture->desc.Format, format_support);
 
    D3D11CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
 
@@ -197,9 +203,12 @@ bool d3d11_init_shader(
    {
       D3D11CreateVertexShader(
             device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code), NULL, &out->vs);
-      D3D11CreateInputLayout(
-            device, input_element_descs, num_elements, D3DGetBufferPointer(vs_code),
-            D3DGetBufferSize(vs_code), &out->layout);
+
+      if (input_element_descs)
+         D3D11CreateInputLayout(
+               device, input_element_descs, num_elements, D3DGetBufferPointer(vs_code),
+               D3DGetBufferSize(vs_code), &out->layout);
+
       Release(vs_code);
    }
 
@@ -207,6 +216,7 @@ bool d3d11_init_shader(
    {
       D3D11CreatePixelShader(
             device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code), NULL, &out->ps);
+
       Release(ps_code);
    }
 
@@ -214,6 +224,7 @@ bool d3d11_init_shader(
    {
       D3D11CreateGeometryShader(
             device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code), NULL, &out->gs);
+
       Release(gs_code);
    }
 

@@ -2587,14 +2587,6 @@ void d3d11_update_texture(
 DXGI_FORMAT d3d11_get_closest_match(
       D3D11Device device, DXGI_FORMAT desired_format, UINT desired_format_support);
 
-static INLINE DXGI_FORMAT
-d3d11_get_closest_match_texture2D(D3D11Device device, DXGI_FORMAT desired_format)
-{
-   return d3d11_get_closest_match(
-         device, desired_format,
-         D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE);
-}
-
 bool d3d11_init_shader(
       D3D11Device                     device,
       const char*                     src,

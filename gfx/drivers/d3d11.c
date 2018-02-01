@@ -280,16 +280,16 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    for (int i = 0; i < d3d11->shader_preset->luts; i++)
    {
       struct texture_image image = { 0 };
+      image.supports_rgba        = true;
 
       if (!image_texture_load(&image, d3d11->shader_preset->lut[i].path))
          goto error;
       d3d11->luts[i].desc.Width  = image.width;
       d3d11->luts[i].desc.Height = image.height;
-      d3d11->luts[i].desc.Format =
-            d3d11_get_closest_match_texture2D(d3d11->device, DXGI_FORMAT_B8G8R8A8_UNORM);
+      d3d11->luts[i].desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
       d3d11_init_texture(d3d11->device, &d3d11->luts[i]);
       d3d11_update_texture(
-            d3d11->ctx, image.width, image.height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, image.pixels,
+            d3d11->ctx, image.width, image.height, 0, DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
             &d3d11->luts[i]);
       image_texture_free(&image);
 
@@ -446,9 +446,8 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d11->vsync           = video->vsync;
    d3d11->format          = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
 
-   d3d11->frame.texture.desc.Format =
-         d3d11_get_closest_match_texture2D(d3d11->device, d3d11->format);
-   d3d11->frame.texture.desc.Usage = D3D11_USAGE_DEFAULT;
+   d3d11->frame.texture.desc.Format = d3d11->format;
+   d3d11->frame.texture.desc.Usage  = D3D11_USAGE_DEFAULT;
 
    d3d11->menu.texture.desc.Usage = D3D11_USAGE_DEFAULT;
 
@@ -751,13 +750,10 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
          d3d11->pass[i].rt.desc.Width     = width;
          d3d11->pass[i].rt.desc.Height    = height;
          d3d11->pass[i].rt.desc.BindFlags = D3D11_BIND_RENDER_TARGET;
-         d3d11->pass[i].rt.desc.Format    = d3d11_get_closest_match(
-               d3d11->device,
-               pass->fbo.fp_fbo ? DXGI_FORMAT_R32G32B32A32_FLOAT
-                                : pass->fbo.srgb_fbo ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
-                                                     : DXGI_FORMAT_R8G8B8A8_UNORM,
-               D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE |
-                     D3D11_FORMAT_SUPPORT_RENDER_TARGET);
+         d3d11->pass[i].rt.desc.Format    = pass->fbo.fp_fbo ? DXGI_FORMAT_R32G32B32A32_FLOAT
+                                                          : pass->fbo.srgb_fbo
+                                                                  ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
+                                                                  : DXGI_FORMAT_R8G8B8A8_UNORM;
 
          if ((i != (d3d11->shader_preset->passes - 1)) || (width != d3d11->vp.width) ||
              (height != d3d11->vp.height))
@@ -1045,7 +1041,7 @@ static void d3d11_set_menu_texture_frame(
 
    if (d3d11->menu.texture.desc.Width != width || d3d11->menu.texture.desc.Height != height)
    {
-      d3d11->menu.texture.desc.Format = d3d11_get_closest_match_texture2D(d3d11->device, format);
+      d3d11->menu.texture.desc.Format = format;
       d3d11->menu.texture.desc.Width  = width;
       d3d11->menu.texture.desc.Height = height;
       d3d11_init_texture(d3d11->device, &d3d11->menu.texture);
@@ -1129,8 +1125,7 @@ static uintptr_t d3d11_gfx_load_texture(
 
    texture->desc.Width  = image->width;
    texture->desc.Height = image->height;
-   texture->desc.Format =
-         d3d11_get_closest_match_texture2D(d3d11->device, DXGI_FORMAT_B8G8R8A8_UNORM);
+   texture->desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
 
    d3d11_init_texture(d3d11->device, texture);
 
