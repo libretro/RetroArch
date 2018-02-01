@@ -185,6 +185,7 @@ static void core_info_list_free(core_info_list_t *core_info_list)
 
 static bool core_info_list_iterate(
       char *s, size_t len,
+      const char *path_basedir,
       struct string_list *contents, size_t i)
 {
    size_t info_path_base_size = PATH_MAX_LENGTH * sizeof(char);
@@ -192,15 +193,15 @@ static bool core_info_list_iterate(
 #if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA))
    char             *substr   = NULL;
 #endif
-   settings_t       *settings = config_get_ptr();
+   const char *current_path   = contents->elems[i].data;
 
-   if (!contents || !contents->elems[i].data)
+   if (!contents || !current_path)
       goto error;
 
    info_path_base[0] = '\0';
 
    fill_pathname_base_noext(info_path_base,
-         contents->elems[i].data,
+         current_path,
          info_path_base_size);
 
 #if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA) && !defined(HW_WUP))
@@ -214,9 +215,7 @@ static bool core_info_list_iterate(
          info_path_base_size);
 
    fill_pathname_join(s,
-         (!string_is_empty(settings->paths.path_libretro_info)) ?
-         settings->paths.path_libretro_info :
-         settings->paths.directory_libretro,
+         path_basedir,
          info_path_base, len);
 
    free(info_path_base);
@@ -234,9 +233,13 @@ static core_info_list_t *core_info_list_new(const char *path)
    core_info_list_t *core_info_list = NULL;
    struct string_list *contents     = dir_list_new_special(
                                       path, DIR_LIST_CORES, NULL);
+   settings_t             *settings = config_get_ptr();
+   const char       *path_basedir   = !string_is_empty(settings->paths.path_libretro_info) ?
+      settings->paths.path_libretro_info : settings->paths.directory_libretro;
 
    if (!contents)
       return NULL;
+
 
    core_info_list = (core_info_list_t*)calloc(1, sizeof(*core_info_list));
    if (!core_info_list)
@@ -258,7 +261,7 @@ static core_info_list_t *core_info_list_new(const char *path)
 
       if (
             core_info_list_iterate(info_path, info_path_size,
-            contents, i)
+               path_basedir, contents, i)
             && path_is_valid(info_path))
       {
          char *tmp           = NULL;
@@ -759,6 +762,8 @@ void core_info_get_name(const char *path, char *s, size_t len)
    struct string_list *contents     = dir_list_new_special(
          settings->paths.directory_libretro,
          DIR_LIST_CORES, NULL);
+   const char       *path_basedir   = !string_is_empty(settings->paths.path_libretro_info) ?
+      settings->paths.path_libretro_info : settings->paths.directory_libretro;
 
    if (!contents)
       return;
@@ -766,20 +771,19 @@ void core_info_get_name(const char *path, char *s, size_t len)
    for (i = 0; i < contents->size; i++)
    {
       size_t path_size                = PATH_MAX_LENGTH * sizeof(char);
-      char *info_path                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char *info_path                 = NULL;
       config_file_t *conf             = NULL;
       char *new_core_name             = NULL;
+      const char *current_path        = contents->elems[i].data;
 
+      if (!string_is_equal(current_path, path))
+         continue;
+
+      info_path                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       info_path[0]                    = '\0';
 
-      if (!string_is_equal(contents->elems[i].data, path))
-      {
-         free(info_path);
-         continue;
-      }
-
       if (!core_info_list_iterate(info_path,
-               path_size, contents, i)
+               path_size, path_basedir, contents, i)
             && path_is_valid(info_path))
       {
          free(info_path);
