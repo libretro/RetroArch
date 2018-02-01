@@ -17,13 +17,14 @@
 #define GLSLANG_UTIL_HPP
 
 #include <stdint.h>
-#include <vector>
-#include <string>
+#include <retro_common_api.h>
 
-enum glslang_format
+typedef enum glslang_format
 {
+   SLANG_FORMAT_UNKNOWN = 0,
+
    // 8-bit
-   SLANG_FORMAT_R8_UNORM = 0,
+   SLANG_FORMAT_R8_UNORM,
    SLANG_FORMAT_R8_UINT,
    SLANG_FORMAT_R8_SINT,
    SLANG_FORMAT_R8G8_UNORM,
@@ -60,8 +61,18 @@ enum glslang_format
    SLANG_FORMAT_R32G32B32A32_SINT,
    SLANG_FORMAT_R32G32B32A32_SFLOAT,
 
-   SLANG_FORMAT_UNKNOWN
-};
+   SLANG_FORMAT_MAX
+}glslang_format;
+
+RETRO_BEGIN_DECLS
+
+const char *glslang_format_to_string(glslang_format fmt);
+
+RETRO_END_DECLS
+
+#ifdef __cplusplus
+#include <vector>
+#include <string>
 
 struct glslang_parameter
 {
@@ -88,11 +99,11 @@ struct glslang_output
 };
 
 bool glslang_compile_shader(const char *shader_path, glslang_output *output);
-const char *glslang_format_to_string(enum glslang_format fmt);
 
 // Helpers for internal use.
 bool glslang_read_shader_file(const char *path, std::vector<std::string> *output, bool root_file);
 bool glslang_parse_meta(const std::vector<std::string> &lines, glslang_meta *meta);
+#endif
 
 #endif
 

@@ -2266,6 +2266,7 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
    settings_t *settings = config_get_ptr();
 
    if (string_is_equal(settings->arrays.video_driver, "vulkan") ||
+       string_is_equal(settings->arrays.video_driver, "d3d11") ||
        string_is_equal(settings->arrays.video_driver, "gx2"))
    {
       if (enum_idx != FILE_PATH_SLANGP_EXTENSION)

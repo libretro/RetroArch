@@ -435,10 +435,10 @@ bool d3d12_init_pipeline(d3d12_video_t* d3d12)
             },
    };
 
-   if (!d3d_compile(stock, sizeof(stock), "VSMain", "vs_5_0", &vs_code))
+   if (!d3d_compile(stock, sizeof(stock), NULL, "VSMain", "vs_5_0", &vs_code))
       return false;
 
-   if (!d3d_compile(stock, sizeof(stock), "PSMain", "ps_5_0", &ps_code))
+   if (!d3d_compile(stock, sizeof(stock), NULL, "PSMain", "ps_5_0", &ps_code))
       return false;
 
    {
@@ -631,7 +631,11 @@ void d3d12_create_fullscreen_quad_vbo(
 DXGI_FORMAT d3d12_get_closest_match(
       D3D12Device device, DXGI_FORMAT desired_format, D3D12_FORMAT_SUPPORT1 desired_format_support)
 {
+   DXGI_FORMAT default_list[] = {desired_format, DXGI_FORMAT_UNKNOWN};
    DXGI_FORMAT* format = dxgi_get_format_fallback_list(desired_format);
+
+   if(!format)
+      format = default_list;
 
    while (*format != DXGI_FORMAT_UNKNOWN)
    {

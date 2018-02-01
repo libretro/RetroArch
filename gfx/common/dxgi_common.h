@@ -770,6 +770,7 @@ static INLINE HRESULT DXGICreateFactory(DXGIFactory* factory)
 /* internal */
 
 #include "../video_driver.h"
+#include "../drivers_shader/glslang_util.h"
 
 #define DXGI_COLOR_RGBA(r, g, b, a) (((UINT32)(a) << 24) | ((UINT32)(b) << 16) | ((UINT32)(g) << 8) | ((UINT32)(r) << 0))
 
@@ -793,6 +794,8 @@ void dxgi_copy(
 
 void dxgi_update_title(video_frame_info_t* video_info);
 void dxgi_input_driver(const char* name, const input_driver_t** input, void** input_data);
+
+DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt);
 
 RETRO_END_DECLS
 

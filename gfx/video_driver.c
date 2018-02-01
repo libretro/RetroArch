@@ -591,6 +591,17 @@ static void video_context_driver_reset(void)
 
    if (current_video_context.has_focus)
       video_driver_cb_has_focus                 = video_context_has_focus;
+
+
+   if(current_video_context_api == GFX_CTX_NONE)
+   {
+      const char *video_driver = video_driver_get_ident();
+
+      if(string_is_equal(video_driver, "d3d11"))
+         current_video_context_api = GFX_CTX_DIRECT3D11_API;
+      else if(string_is_equal(video_driver, "gx2"))
+         current_video_context_api = GFX_CTX_GX2_API;
+   }
 }
 
 bool video_context_driver_set(const gfx_ctx_driver_t *data)
@@ -632,6 +643,8 @@ void video_context_driver_destroy(void)
    current_video_context.bind_hw_render             = NULL;
    current_video_context.get_context_data           = NULL;
    current_video_context.make_current               = NULL;
+
+   current_video_context_api = GFX_CTX_NONE;
 }
 
 /**

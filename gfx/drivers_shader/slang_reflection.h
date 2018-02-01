@@ -13,12 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SLANG_REFLECTION_HPP
-#define SLANG_REFLECTION_HPP
-
-#include <string>
-#include <unordered_map>
-#include <stdint.h>
+#ifndef SLANG_REFLECTION_H_
+#define SLANG_REFLECTION_H_
 
 // Textures with built-in meaning.
 enum slang_texture_semantic
@@ -80,8 +76,22 @@ enum slang_stage
    SLANG_STAGE_FRAGMENT_MASK = 1 << 1
 };
 
+enum slang_constant_buffer
+{
+   SLANG_CBUFFER_UBO = 0,
+   SLANG_CBUFFER_PC,
+   SLANG_CBUFFER_MAX,
+};
+
 /* Vulkan minimum limit. */
 #define SLANG_NUM_BINDINGS 16
+
+#ifdef __cplusplus
+
+#include <string>
+#include <unordered_map>
+#include <stdint.h>
+#include "spirv_cross.hpp"
 
 struct slang_texture_semantic_meta
 {
@@ -141,5 +151,10 @@ bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,
       const std::vector<uint32_t> &fragment,
       slang_reflection *reflection);
 
+bool slang_reflect(const spirv_cross::Compiler &vertex_compiler, const spirv_cross::Compiler &fragment_compiler,
+      const spirv_cross::ShaderResources &vertex, const spirv_cross::ShaderResources &fragment,
+      slang_reflection *reflection);
+
+#endif
 #endif
 

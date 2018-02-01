@@ -54,8 +54,7 @@ d3d11_font_init_font(void* data, const char* font_path, float font_size, bool is
    font->texture.sampler     = d3d11->sampler_linear;
    font->texture.desc.Width  = font->atlas->width;
    font->texture.desc.Height = font->atlas->height;
-   font->texture.desc.Format =
-         d3d11_get_closest_match_texture2D(d3d11->device, DXGI_FORMAT_A8_UNORM);
+   font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
    d3d11_init_texture(d3d11->device, &font->texture);
    d3d11_update_texture(
          d3d11->ctx, font->atlas->width, font->atlas->height, font->atlas->width,

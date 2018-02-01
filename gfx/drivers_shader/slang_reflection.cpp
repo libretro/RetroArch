@@ -14,7 +14,7 @@
  */
 
 #include "spirv_cross.hpp"
-#include "slang_reflection.hpp"
+#include "slang_reflection.h"
 #include <vector>
 #include <algorithm>
 #include <stdio.h>
@@ -335,7 +335,7 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
                break;
 
             default:
-               if (!set_ubo_offset(reflection, sem, range.offset, type.vecsize, push_constant))
+               if (!set_ubo_offset(reflection, sem, range.offset, type.vecsize * type.columns, push_constant))
                   return false;
                break;
          }
@@ -360,7 +360,7 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
    return true;
 }
 
-static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragment_compiler,
+bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragment_compiler,
       const ShaderResources &vertex, const ShaderResources &fragment,
       slang_reflection *reflection)
 {
@@ -673,7 +673,7 @@ bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,
    }
    catch (const std::exception &e)
    {
-      RARCH_ERR("[slang]: spir2cross threw exception: %s.\n", e.what());
+      RARCH_ERR("[slang]: SPIRV-Cross threw exception: %s.\n", e.what());
       return false;
    }
 }
