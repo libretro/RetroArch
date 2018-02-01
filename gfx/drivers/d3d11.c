@@ -76,6 +76,10 @@ static void d3d11_update_viewport(void* data, bool force_full)
    d3d11->frame.viewport.Height   = d3d11->vp.height;
    d3d11->frame.viewport.MaxDepth = 0.0f;
    d3d11->frame.viewport.MaxDepth = 1.0f;
+   if(d3d11->frame.output_size.x != d3d11->vp.width ||
+      d3d11->frame.output_size.y != d3d11->vp.height)
+      d3d11->resize_fbos = true;
+
    d3d11->frame.output_size.x     = d3d11->vp.width;
    d3d11->frame.output_size.y     = d3d11->vp.height;
    d3d11->frame.output_size.z     = 1.0f / d3d11->vp.width;
@@ -783,6 +787,7 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
       }
    }
 
+   d3d11->resize_fbos = false;
    return true;
 #if 0
 error:
@@ -825,7 +830,7 @@ static bool d3d11_gfx_frame(
 
       d3d11->resize_chain    = false;
       d3d11->resize_viewport = true;
-      video_driver_set_size(&video_info->width, &video_info->height);
+      video_driver_set_size(&video_info->width, &video_info->height);      
    }
 
    PERF_START();
@@ -850,7 +855,7 @@ static bool d3d11_gfx_frame(
    D3D11SetBlendState(d3d11->ctx, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
    /* todo: single pass shaders can also have an empty rt texture */
-   if (d3d11->shader_preset && !d3d11->pass[0].rt.handle)
+   if (d3d11->shader_preset && (d3d11->resize_fbos || !d3d11->pass[0].rt.handle))
       d3d11_init_frame_textures(d3d11, width, height);
 
    d3d11_texture_t* texture = &d3d11->frame.texture;

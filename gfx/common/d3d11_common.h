@@ -2519,6 +2519,7 @@ typedef struct
    bool                  resize_chain;
    bool                  keep_aspect;
    bool                  resize_viewport;
+   bool                  resize_fbos;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
 
    struct
