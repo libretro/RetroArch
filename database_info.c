@@ -61,36 +61,6 @@
 #define DB_CURSOR_SIZE                          0x7c9dede0U
 #define DB_CURSOR_SERIAL                        0x1b843ec5U
 
-static void database_info_build_query_add_quote(char *s, size_t len)
-{
-   strlcat(s, "\"", len);
-}
-
-static void database_info_build_query_add_bracket_open(char *s, size_t len)
-{
-   strlcat(s, "{'", len);
-}
-
-static void database_info_build_query_add_bracket_close(char *s, size_t len)
-{
-   strlcat(s, "}", len);
-}
-
-static void database_info_build_query_add_colon(char *s, size_t len)
-{
-   strlcat(s, "':", len);
-}
-
-static void database_info_build_query_add_glob_open(char *s, size_t len)
-{
-   strlcat(s, "glob('*", len);
-}
-
-static void database_info_build_query_add_glob_close(char *s, size_t len)
-{
-   strlcat(s, "*')", len);
-}
-
 int database_info_build_query_enum(char *s, size_t len,
       enum database_query_type type,
       const char *path)
@@ -98,7 +68,8 @@ int database_info_build_query_enum(char *s, size_t len,
    bool add_quotes = true;
    bool add_glob   = false;
 
-   database_info_build_query_add_bracket_open(s, len);
+   string_add_bracket_open(s, len);
+   string_add_single_quote(s, len);
 
    switch (type)
    {
@@ -169,17 +140,19 @@ int database_info_build_query_enum(char *s, size_t len,
          break;
    }
 
-   database_info_build_query_add_colon(s, len);
+   string_add_single_quote(s, len);
+   string_add_colon(s, len);
    if (add_glob)
-      database_info_build_query_add_glob_open(s, len);
+      string_add_glob_open(s, len);
    if (add_quotes)
-      database_info_build_query_add_quote(s, len);
+      string_add_quote(s, len);
    strlcat(s, path, len);
    if (add_glob)
-      database_info_build_query_add_glob_close(s, len);
+      string_add_glob_close(s, len);
    if (add_quotes)
-      database_info_build_query_add_quote(s, len);
-   database_info_build_query_add_bracket_close(s, len);
+      string_add_quote(s, len);
+
+   string_add_bracket_close(s, len);
 
 #if 0
    RARCH_LOG("query: %s\n", s);

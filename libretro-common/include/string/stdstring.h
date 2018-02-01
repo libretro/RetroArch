@@ -31,6 +31,7 @@
 
 #include <retro_common_api.h>
 #include <retro_inline.h>
+#include <compat/strl.h>
 
 RETRO_BEGIN_DECLS
 
@@ -51,6 +52,24 @@ static INLINE bool string_is_equal(const char *a, const char *b)
 static INLINE bool string_is_not_equal(const char *a, const char *b)
 {
    return !string_is_equal(a, b);
+}
+
+#define string_add_pair_open(s, size)    strlcat((s), " (", (size))
+#define string_add_pair_close(s, size)   strlcat((s), ")",  (size))
+#define string_add_bracket_open(s, size) strlcat((s), "{",  (size))
+#define string_add_bracket_close(s, size) strlcat((s), "}",  (size))
+#define string_add_single_quote(s, size) strlcat((s), "'",  (size))
+#define string_add_quote(s, size) strlcat((s), "\"",  (size))
+#define string_add_colon(s, size) strlcat((s), ":",  (size))
+#define string_add_glob_open(s, size) strlcat((s), "glob('*",  (size))
+#define string_add_glob_close(s, size) strlcat((s), "*')",  (size))
+
+static INLINE void string_add_between_pairs(char *s, const char *str,
+      size_t size)
+{
+   string_add_pair_open(s, size);
+   strlcat(s, str,  size);
+   string_add_pair_close(s, size);
 }
 
 #define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
