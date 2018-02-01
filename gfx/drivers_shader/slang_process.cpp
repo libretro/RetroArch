@@ -164,45 +164,53 @@ static bool slang_process_reflection(
    uniform_map_t* uniform_map = semantics_map->uniform_map;
    while (uniform_map->data)
    {
-      slang_semantic_meta& src     = sl_reflection.semantics[uniform_map->semantic];
-      uniform_sem_t        uniform = { uniform_map->data, uniform_map->id,
-                                src.num_components * (unsigned)sizeof(float) };
+      slang_semantic_meta& src = sl_reflection.semantics[uniform_map->semantic];
 
-      string uniform_id = get_semantic_name(sl_reflection, uniform_map->semantic, 0);
-      strncpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+      if (src.push_constant || src.uniform)
+      {
+         uniform_sem_t uniform = { uniform_map->data, uniform_map->id,
+                                   src.num_components * (unsigned)sizeof(float) };
 
-      if (src.push_constant)
-      {
-         uniform.offset = src.push_constant_offset;
-         uniforms[SLANG_CBUFFER_PC].push_back(uniform);
+         string uniform_id = get_semantic_name(sl_reflection, uniform_map->semantic, 0);
+         strncpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+
+         if (src.push_constant)
+         {
+            uniform.offset = src.push_constant_offset;
+            uniforms[SLANG_CBUFFER_PC].push_back(uniform);
+         }
+         else
+         {
+            uniform.offset = src.ubo_offset;
+            uniforms[SLANG_CBUFFER_UBO].push_back(uniform);
+         }
       }
-      else if (src.uniform)
-      {
-         uniform.offset = src.ubo_offset;
-         uniforms[SLANG_CBUFFER_UBO].push_back(uniform);
-      }
+
       uniform_map++;
    }
 
-   /* TODO: this is emitting more uniforms than actally needed for this pass */
    for (int i = 0; i < sl_reflection.semantic_float_parameters.size(); i++)
    {
-      slang_semantic_meta& src     = sl_reflection.semantic_float_parameters[i];
-      uniform_sem_t        uniform = { &shader_info->parameters[i].current,
-                                "shader_info->parameter[i].current", sizeof(float) };
+      slang_semantic_meta& src = sl_reflection.semantic_float_parameters[i];
 
-      string uniform_id = get_semantic_name(sl_reflection, SLANG_SEMANTIC_FLOAT_PARAMETER, i);
-      strncpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+      if (src.push_constant || src.uniform)
+      {
+         uniform_sem_t uniform = { &shader_info->parameters[i].current,
+                                   "shader_info->parameter[i].current", sizeof(float) };
 
-      if (src.push_constant)
-      {
-         uniform.offset = src.push_constant_offset;
-         uniforms[SLANG_CBUFFER_PC].push_back(uniform);
-      }
-      else if (src.uniform)
-      {
-         uniform.offset = src.ubo_offset;
-         uniforms[SLANG_CBUFFER_UBO].push_back(uniform);
+         string uniform_id = get_semantic_name(sl_reflection, SLANG_SEMANTIC_FLOAT_PARAMETER, i);
+         strncpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+
+         if (src.push_constant)
+         {
+            uniform.offset = src.push_constant_offset;
+            uniforms[SLANG_CBUFFER_PC].push_back(uniform);
+         }
+         else
+         {
+            uniform.offset = src.ubo_offset;
+            uniforms[SLANG_CBUFFER_UBO].push_back(uniform);
+         }
       }
    }
 
@@ -226,7 +234,10 @@ static bool slang_process_reflection(
             strncpy(texture.id, id.c_str(), sizeof(texture.id));
 
             textures.push_back(texture);
+         }
 
+         if (src.push_constant || src.uniform)
+         {
             uniform_sem_t uniform = { texture_map->size_data, texture_map->size_id,
                                       4 * sizeof(float) };
 
@@ -240,13 +251,14 @@ static bool slang_process_reflection(
                uniform.offset = src.push_constant_offset;
                uniforms[SLANG_CBUFFER_PC].push_back(uniform);
             }
-            else if (src.uniform)
+            else
             {
                uniform.offset = src.ubo_offset;
                uniforms[SLANG_CBUFFER_UBO].push_back(uniform);
             }
          }
       }
+
       texture_map++;
    }
 
