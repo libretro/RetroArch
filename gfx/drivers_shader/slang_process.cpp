@@ -351,6 +351,16 @@ bool slang_process(
       vs_resources = vs_compiler->get_shader_resources();
       ps_resources = ps_compiler->get_shader_resources();
 
+      if(!vs_resources.uniform_buffers.empty())
+         vs_compiler->set_decoration(vs_resources.uniform_buffers[0].id, spv::DecorationBinding, 0);
+      if(!ps_resources.uniform_buffers.empty())
+         ps_compiler->set_decoration(ps_resources.uniform_buffers[0].id, spv::DecorationBinding, 0);
+
+      if(!vs_resources.push_constant_buffers.empty())
+         vs_compiler->set_decoration(vs_resources.push_constant_buffers[0].id, spv::DecorationBinding, 1);
+      if(!ps_resources.push_constant_buffers.empty())
+         ps_compiler->set_decoration(ps_resources.push_constant_buffers[0].id, spv::DecorationBinding, 1);
+
       if (dst_type == RARCH_SHADER_HLSL || dst_type == RARCH_SHADER_CG)
       {
          CompilerHLSL::Options options;
