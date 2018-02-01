@@ -94,27 +94,33 @@ static bool slang_process_reflection(
    unordered_map<string, slang_texture_semantic_map> texture_semantic_map;
    unordered_map<string, slang_texture_semantic_map> texture_semantic_uniform_map;
 
-   string name = shader_info->pass[pass_number].alias;
+   for (unsigned i = 0; i <= pass_number; i++)
+   {
+      if(!*shader_info->pass[i].alias)
+         continue;
 
-   if (!set_unique_map(
-             texture_semantic_map, name,
-             slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, pass_number }))
-      return false;
+      string name = shader_info->pass[i].alias;
 
-   if (!set_unique_map(
-             texture_semantic_uniform_map, name + "Size",
-             slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, pass_number }))
-      return false;
+      if (!set_unique_map(
+                texture_semantic_map, name,
+                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+         return false;
 
-   if (!set_unique_map(
-             texture_semantic_map, name + "Feedback",
-             slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, pass_number }))
-      return false;
+      if (!set_unique_map(
+                texture_semantic_uniform_map, name + "Size",
+                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+         return false;
 
-   if (!set_unique_map(
-             texture_semantic_uniform_map, name + "FeedbackSize",
-             slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, pass_number }))
-      return false;
+      if (!set_unique_map(
+                texture_semantic_map, name + "Feedback",
+                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+         return false;
+
+      if (!set_unique_map(
+                texture_semantic_uniform_map, name + "FeedbackSize",
+                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+         return false;
+   }
 
    for (unsigned i = 0; i < shader_info->luts; i++)
    {
@@ -130,6 +136,7 @@ static bool slang_process_reflection(
    }
 
    unordered_map<string, slang_semantic_map> uniform_semantic_map;
+
    for (unsigned i = 0; i < shader_info->num_parameters; i++)
    {
       if (!set_unique_map(
@@ -305,6 +312,9 @@ bool slang_process(
    if (!slang_preprocess_parse_parameters(output.meta, shader_info))
       return false;
 
+   if (!output.meta.name.empty())
+      strncpy(pass.alias, output.meta.name.c_str(), sizeof(pass.alias) - 1);
+
    out->format = output.meta.rt_format;
 
    if (out->format == SLANG_FORMAT_UNKNOWN)
@@ -363,6 +373,31 @@ bool slang_process(
                ps_attrib_remap.push_back({ location, "SV_Position" });
             }
          }
+
+         /* "line"  is a reserved keyword in hlsl
+          * maybe there is an easier way to rename a variable ? */
+
+         int id = 0;
+         while(true)
+         {
+            try
+            {
+               string name = ps->get_name(id);
+
+               if(name == "line")
+               {
+                  ps->set_name(id, "var_line");
+                  break;
+               }
+
+               id++;
+            }
+            catch (const std::exception& e)
+            {
+               break;
+            }
+         }
+
          VariableTypeRemapCallback ps_var_remap_cb =
                [](const SPIRType& type, const std::string& var_name, std::string& name_of_type) {
                   if (var_name == "FragCoord")
