@@ -1,0 +1,33 @@
+language: cpp
+os:
+  - linux
+  - osx
+osx_image: xcode8.2
+
+# Use Ubuntu 14.04 LTS (Trusty) as the Linux testing environment.
+sudo: required
+dist: trusty
+
+# We check out glslang and SPIRV-Tools at specific revisions to avoid test output mismatches
+env:
+  - GLSLANG_REV=9c6f8cc29ba303b43ccf36deea6bb38a304f9b92 SPIRV_TOOLS_REV=e28edd458b729da7bbfd51e375feb33103709e6f
+
+before_script:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install python3; fi
+  - git clone https://github.com/KhronosGroup/glslang.git glslang
+  - git clone https://github.com/KhronosGroup/SPIRV-Tools SPIRV-Tools
+  - git clone https://github.com/KhronosGroup/SPIRV-Headers.git SPIRV-Tools/external/spirv-headers
+
+script:
+  - git -C glslang checkout $GLSLANG_REV
+  - git -C SPIRV-Tools checkout $SPIRV_TOOLS_REV
+  - cd glslang && cmake . && make -j2 && cd ..
+  - cd SPIRV-Tools && cmake . && make -j2 && cd ..
+  - make -j2
+  - PATH=./glslang/StandAlone:./SPIRV-Tools/tools:$PATH
+  - ./test_shaders.py shaders
+  - ./test_shaders.py --msl shaders-msl
+  - ./test_shaders.py --hlsl shaders-hlsl
+  - ./test_shaders.py shaders --opt
+  - ./test_shaders.py --msl shaders-msl --opt
+  - ./test_shaders.py --hlsl shaders-hlsl --opt
