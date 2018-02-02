@@ -39,10 +39,13 @@ static void d3d11_set_filtering(void* data, unsigned index, bool smooth)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
-   if (smooth)
-      d3d11->frame.texture.sampler = d3d11->sampler_linear;
-   else
-      d3d11->frame.texture.sampler = d3d11->sampler_nearest;
+   for (int i = 0; i < RARCH_WRAP_MAX; i++)
+   {
+      if (smooth)
+         d3d11->samplers[RARCH_FILTER_UNSPEC][i] = d3d11->samplers[RARCH_FILTER_LINEAR][i];
+      else
+         d3d11->samplers[RARCH_FILTER_UNSPEC][i] = d3d11->samplers[RARCH_FILTER_NEAREST][i];
+   }
 }
 
 static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
@@ -218,42 +221,43 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 #else
          bool save_hlsl = false;
 #endif
-         const char* vs_src = d3d11->shader_preset->pass[i].source.string.vertex;
-         const char* ps_src = d3d11->shader_preset->pass[i].source.string.fragment;
-         const char* vs_ext = ".vs.hlsl";
-         const char* ps_ext = ".ps.hlsl";
-         int   base_len     = strlen(d3d11->shader_preset->pass[i].source.path) - strlen(".slang");
-         char* vs_filename  = (char*)malloc(base_len + strlen(vs_ext) + 1);
-         char* ps_filename  = (char*)malloc(base_len + strlen(ps_ext) + 1);
+         static const char vs_ext[] = ".vs.hlsl";
+         static const char ps_ext[] = ".ps.hlsl";
+         char              vs_path[PATH_MAX_LENGTH];
+         char              ps_path[PATH_MAX_LENGTH];
+         const char*       slang_path = d3d11->shader_preset->pass[i].source.path;
+         const char*       vs_src     = d3d11->shader_preset->pass[i].source.string.vertex;
+         const char*       ps_src     = d3d11->shader_preset->pass[i].source.string.fragment;
+         int               base_len   = strlen(slang_path) - strlen(".slang");
 
-         strncpy(vs_filename, d3d11->shader_preset->pass[i].source.path, base_len);
-         strncpy(ps_filename, d3d11->shader_preset->pass[i].source.path, base_len);
-         strncpy(vs_filename + base_len, vs_ext, strlen(vs_ext) + 1);
-         strncpy(ps_filename + base_len, ps_ext, strlen(ps_ext) + 1);
+         if(base_len <= 0)
+            base_len = strlen(slang_path);
+
+         strncpy(vs_path, slang_path, base_len);
+         strncpy(ps_path, slang_path, base_len);
+         strncpy(vs_path + base_len, vs_ext, sizeof(vs_ext));
+         strncpy(ps_path + base_len, ps_ext, sizeof(ps_ext));
 
          if (!d3d11_init_shader(
-                   d3d11->device, vs_src, 0, vs_filename, "main", NULL, NULL, desc, countof(desc),
+                   d3d11->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
                    &d3d11->pass[i].shader))
             save_hlsl = true;
 
          if (!d3d11_init_shader(
-                   d3d11->device, ps_src, 0, ps_filename, NULL, "main", NULL, NULL, 0,
+                   d3d11->device, ps_src, 0, ps_path, NULL, "main", NULL, NULL, 0,
                    &d3d11->pass[i].shader))
             save_hlsl = true;
 
          if (save_hlsl)
          {
-            FILE* fp = fopen(vs_filename, "w");
+            FILE* fp = fopen(vs_path, "w");
             fwrite(vs_src, 1, strlen(vs_src), fp);
             fclose(fp);
 
-            fp = fopen(ps_filename, "w");
+            fp = fopen(ps_path, "w");
             fwrite(ps_src, 1, strlen(ps_src), fp);
             fclose(fp);
          }
-
-         free(vs_filename);
-         free(ps_filename);
 
          free(d3d11->shader_preset->pass[i].source.string.vertex);
          free(d3d11->shader_preset->pass[i].source.string.fragment);
@@ -293,15 +297,20 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       d3d11->luts[i].desc.Width  = image.width;
       d3d11->luts[i].desc.Height = image.height;
       d3d11->luts[i].desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+      if(d3d11->shader_preset->lut[i].mipmap)
+         d3d11->luts[i].desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+
       d3d11_init_texture(d3d11->device, &d3d11->luts[i]);
+
       d3d11_update_texture(
             d3d11->ctx, image.width, image.height, 0, DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
             &d3d11->luts[i]);
+
       image_texture_free(&image);
 
-      d3d11->luts[i].sampler = d3d11->shader_preset->lut[i].filter == RARCH_FILTER_NEAREST
-                                     ? d3d11->sampler_nearest
-                                     : d3d11->sampler_linear;
+      d3d11->luts[i].sampler =
+            d3d11->samplers[d3d11->shader_preset->lut[i].filter][d3d11->shader_preset->lut[i].wrap];
    }
 
    video_shader_resolve_current_parameters(conf, d3d11->shader_preset);
@@ -350,8 +359,11 @@ static void d3d11_gfx_free(void* data)
    Release(d3d11->blend_enable);
    Release(d3d11->blend_disable);
 
-   Release(d3d11->sampler_nearest);
-   Release(d3d11->sampler_linear);
+   for (int i = 0; i < RARCH_WRAP_MAX; i++)
+   {
+      Release(d3d11->samplers[RARCH_FILTER_LINEAR][i]);
+      Release(d3d11->samplers[RARCH_FILTER_NEAREST][i]);
+   }
 
    Release(d3d11->state);
    Release(d3d11->renderTargetView);
@@ -478,19 +490,41 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    {
       D3D11_SAMPLER_DESC desc = {
-         .Filter         = D3D11_FILTER_MIN_MAG_MIP_POINT,
-         .AddressU       = D3D11_TEXTURE_ADDRESS_CLAMP,
-         .AddressV       = D3D11_TEXTURE_ADDRESS_CLAMP,
-         .AddressW       = D3D11_TEXTURE_ADDRESS_CLAMP,
          .MaxAnisotropy  = 1,
          .ComparisonFunc = D3D11_COMPARISON_NEVER,
          .MinLOD         = -D3D11_FLOAT32_MAX,
          .MaxLOD         = D3D11_FLOAT32_MAX,
       };
-      D3D11CreateSamplerState(d3d11->device, &desc, &d3d11->sampler_nearest);
+      /* Initialize samplers */
+      for (int i = 0; i < RARCH_WRAP_MAX; i++)
+      {
+         switch (i)
+         {
+            case RARCH_WRAP_BORDER:
+               desc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+               break;
 
-      desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-      D3D11CreateSamplerState(d3d11->device, &desc, &d3d11->sampler_linear);
+            case RARCH_WRAP_EDGE:
+               desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+               break;
+
+            case RARCH_WRAP_REPEAT:
+               desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+               break;
+
+            case RARCH_WRAP_MIRRORED_REPEAT:
+               desc.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
+               break;
+         }
+         desc.AddressV = desc.AddressU;
+         desc.AddressW = desc.AddressU;
+
+         desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+         D3D11CreateSamplerState(d3d11->device, &desc, &d3d11->samplers[RARCH_FILTER_LINEAR][i]);
+
+         desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+         D3D11CreateSamplerState(d3d11->device, &desc, &d3d11->samplers[RARCH_FILTER_NEAREST][i]);
+      }
    }
 
    d3d11_set_filtering(d3d11, 0, video->smooth);
@@ -708,7 +742,7 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
       {
          struct video_shader_pass* pass = &d3d11->shader_preset->pass[i];
 
-         if(pass->fbo.valid)
+         if (pass->fbo.valid)
          {
 
             switch (pass->fbo.type_x)
@@ -755,10 +789,9 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
          }
          else if (i == (d3d11->shader_preset->passes - 1))
          {
-            width = d3d11->vp.width;
+            width  = d3d11->vp.width;
             height = d3d11->vp.height;
          }
-
 
          RARCH_LOG("[D3D11]: Updating framebuffer size %u x %u.\n", width, height);
 
@@ -782,8 +815,7 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
             d3d11->pass[i].rt.size_data.w = 1.0f / height;
          }
 
-         d3d11->pass[i].sampler = pass->filter == RARCH_FILTER_NEAREST ? d3d11->sampler_nearest
-                                                                       : d3d11->sampler_linear;
+         d3d11->pass[i].sampler = d3d11->samplers[pass->filter][pass->wrap];
 
          for (int j = 0; j < d3d11->pass[i].semantics.texture_count; j++)
          {
@@ -936,7 +968,8 @@ static bool d3d11_gfx_frame(
    {
       d3d11_set_shader(d3d11->ctx, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
       D3D11SetPShaderResources(d3d11->ctx, 0, 1, &texture->view);
-      D3D11SetPShaderSamplers(d3d11->ctx, 0, 1, &d3d11->frame.texture.sampler);
+      D3D11SetPShaderSamplers(
+            d3d11->ctx, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
       D3D11SetVShaderConstantBuffers(d3d11->ctx, 0, 1, &d3d11->frame.ubo);
    }
 
@@ -1063,9 +1096,10 @@ static void d3d11_set_menu_texture_frame(
    }
 
    d3d11_update_texture(d3d11->ctx, width, height, 0, format, frame, &d3d11->menu.texture);
-   d3d11->menu.texture.sampler = config_get_ptr()->bools.menu_linear_filter
-                                       ? d3d11->sampler_linear
-                                       : d3d11->sampler_nearest;
+   d3d11->menu.texture.sampler = d3d11->samplers
+                                       [config_get_ptr()->bools.menu_linear_filter
+                                              ? RARCH_FILTER_LINEAR
+                                              : RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
 }
 
 static void d3d11_set_menu_texture_enable(void* data, bool state, bool full_screen)
@@ -1129,13 +1163,13 @@ static uintptr_t d3d11_gfx_load_texture(
          texture->desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
          /* fallthrough */
       case TEXTURE_FILTER_LINEAR:
-         texture->sampler = d3d11->sampler_linear;
+         texture->sampler = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_DEFAULT];
          break;
       case TEXTURE_FILTER_MIPMAP_NEAREST:
          texture->desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
          /* fallthrough */
       case TEXTURE_FILTER_NEAREST:
-         texture->sampler = d3d11->sampler_nearest;
+         texture->sampler = d3d11->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
          break;
    }
 

@@ -2504,8 +2504,7 @@ typedef struct
    D3D11RenderTargetView renderTargetView;
    D3D11Buffer           ubo;
    d3d11_uniform_t       ubo_values;
-   D3D11SamplerState     sampler_nearest;
-   D3D11SamplerState     sampler_linear;
+   D3D11SamplerState     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
    D3D11BlendState       blend_enable;
    D3D11BlendState       blend_disable;
    D3D11BlendState       blend_pipeline;

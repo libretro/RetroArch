@@ -51,7 +51,7 @@ d3d11_font_init_font(void* data, const char* font_path, float font_size, bool is
    }
 
    font->atlas               = font->font_driver->get_atlas(font->font_data);
-   font->texture.sampler     = d3d11->sampler_linear;
+   font->texture.sampler     = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
    font->texture.desc.Width  = font->atlas->width;
    font->texture.desc.Height = font->atlas->height;
    font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
