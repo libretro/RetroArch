@@ -138,7 +138,7 @@ struct RDIR *retro_opendir(const char *name)
 #elif defined(VITA) || defined(PSP)
    rdir->directory = sceIoDopen(name);
 #elif defined(_3DS)
-   rdir->directory = (name && *name)? opendir(name) : NULL;
+   rdir->directory = !string_is_empty(name) ? opendir(name) : NULL;
    rdir->entry     = NULL;
 #elif defined(__CELLOS_LV2__)
    rdir->error = cellFsOpendir(name, &rdir->directory);
@@ -147,7 +147,13 @@ struct RDIR *retro_opendir(const char *name)
    rdir->entry     = NULL;
 #endif
 
-   return rdir;
+   if (rdir->directory)
+      return rdir;
+   else
+   {
+      free(rdir);
+      return NULL;
+   }
 }
 
 bool retro_dirent_error(struct RDIR *rdir)
@@ -208,6 +214,7 @@ const char *retro_dirent_get_name(struct RDIR *rdir)
 #elif defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
    return rdir->entry.d_name;
 #else
+
    return rdir->entry->d_name;
 #endif
 }
