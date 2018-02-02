@@ -1,0 +1,68 @@
+#version 310 es
+precision mediump float;
+precision highp int;
+
+layout(constant_id = 1) const float a = 1.0;
+layout(constant_id = 2) const float b = 2.0;
+layout(constant_id = 3) const int c = 3;
+layout(constant_id = 4) const int d = 4;
+layout(constant_id = 5) const uint e = 5u;
+layout(constant_id = 6) const uint f = 6u;
+layout(constant_id = 7) const bool g = false;
+layout(constant_id = 8) const bool h = true;
+
+struct Foo
+{
+    float elems[(d + 2)];
+};
+
+layout(location = 0) out vec4 FragColor;
+
+void main()
+{
+    float t0 = a;
+    float t1 = b;
+    mediump uint c0 = (uint(c) + 0u);
+    mediump int c1 = (-c);
+    mediump int c2 = (~c);
+    mediump int c3 = (c + d);
+    mediump int c4 = (c - d);
+    mediump int c5 = (c * d);
+    mediump int c6 = (c / d);
+    mediump uint c7 = (e / f);
+    mediump int c8 = (c % d);
+    mediump uint c9 = (e % f);
+    mediump int c10 = (c >> d);
+    mediump uint c11 = (e >> f);
+    mediump int c12 = (c << d);
+    mediump int c13 = (c | d);
+    mediump int c14 = (c ^ d);
+    mediump int c15 = (c & d);
+    bool c16 = (g || h);
+    bool c17 = (g && h);
+    bool c18 = (!g);
+    bool c19 = (g == h);
+    bool c20 = (g != h);
+    bool c21 = (c == d);
+    bool c22 = (c != d);
+    bool c23 = (c < d);
+    bool c24 = (e < f);
+    bool c25 = (c > d);
+    bool c26 = (e > f);
+    bool c27 = (c <= d);
+    bool c28 = (e <= f);
+    bool c29 = (c >= d);
+    bool c30 = (e >= f);
+    mediump int c31 = c8 + c3;
+    mediump int c32 = int(e + 0u);
+    bool c33 = (c != int(0u));
+    bool c34 = (e != 0u);
+    mediump int c35 = int(g);
+    mediump uint c36 = uint(g);
+    float c37 = float(g);
+    float vec0[(c + 3)][8];
+    float vec1[(c + 2)];
+    Foo foo;
+    FragColor = ((vec4(t0 + t1) + vec4(vec0[0][0])) + vec4(vec1[0])) + vec4(foo.elems[c]);
+}
+
