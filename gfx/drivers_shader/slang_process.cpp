@@ -420,18 +420,19 @@ bool slang_process(
                                                          std::string&       name_of_type) {
             if (var_name == "FragCoord")
             {
-               for (Resource& resource : ps_resources.stage_inputs)
-               {
-                  if (ps->get_name(resource.id) == "FragCoord")
-                  {
-                     uint32_t location = ps->get_decoration(resource.id, spv::DecorationLocation);
-                     ps_attrib_remap.push_back({ location, "SV_Position" });
-                     name_of_type = "float4";
-                  }
-               }
+               name_of_type = "float4";
             }
          };
-         ps->set_variable_type_remap_callback(ps_var_remap_cb);
+         for (Resource& resource : ps_resources.stage_inputs)
+         {
+            if (ps->get_name(resource.id) == "FragCoord")
+            {
+               uint32_t location = ps->get_decoration(resource.id, spv::DecorationLocation);
+               ps_attrib_remap.push_back({ location, "SV_Position" });
+               ps->set_variable_type_remap_callback(ps_var_remap_cb);
+            }
+         }
+
 
          vs_code = vs->compile(vs_attrib_remap);
          ps_code = ps->compile(ps_attrib_remap);
