@@ -30,6 +30,7 @@
 #include <retro_dirent.h>
 #include <encodings/utf.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #if defined(_WIN32)
 #  ifdef _MSC_VER
