@@ -708,47 +708,57 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
       {
          struct video_shader_pass* pass = &d3d11->shader_preset->pass[i];
 
-         switch (pass->fbo.type_x)
+         if(pass->fbo.valid)
          {
-            case RARCH_SCALE_INPUT:
-               width *= pass->fbo.scale_x;
-               break;
 
-            case RARCH_SCALE_VIEWPORT:
-               width = d3d11->vp.width * pass->fbo.scale_x;
-               break;
+            switch (pass->fbo.type_x)
+            {
+               case RARCH_SCALE_INPUT:
+                  width *= pass->fbo.scale_x;
+                  break;
 
-            case RARCH_SCALE_ABSOLUTE:
-               width = pass->fbo.abs_x;
-               break;
+               case RARCH_SCALE_VIEWPORT:
+                  width = d3d11->vp.width * pass->fbo.scale_x;
+                  break;
 
-            default:
-               break;
+               case RARCH_SCALE_ABSOLUTE:
+                  width = pass->fbo.abs_x;
+                  break;
+
+               default:
+                  break;
+            }
+
+            if (!width)
+               width = d3d11->vp.width;
+
+            switch (pass->fbo.type_y)
+            {
+               case RARCH_SCALE_INPUT:
+                  height *= pass->fbo.scale_y;
+                  break;
+
+               case RARCH_SCALE_VIEWPORT:
+                  height = d3d11->vp.height * pass->fbo.scale_y;
+                  break;
+
+               case RARCH_SCALE_ABSOLUTE:
+                  height = pass->fbo.abs_y;
+                  break;
+
+               default:
+                  break;
+            }
+
+            if (!height)
+               height = d3d11->vp.height;
          }
-
-         switch (pass->fbo.type_y)
+         else if (i == (d3d11->shader_preset->passes - 1))
          {
-            case RARCH_SCALE_INPUT:
-               height *= pass->fbo.scale_y;
-               break;
-
-            case RARCH_SCALE_VIEWPORT:
-               height = d3d11->vp.height * pass->fbo.scale_y;
-               break;
-
-            case RARCH_SCALE_ABSOLUTE:
-               height = pass->fbo.abs_y;
-               break;
-
-            default:
-               break;
-         }
-
-         if (!width)
             width = d3d11->vp.width;
-
-         if (!height)
             height = d3d11->vp.height;
+         }
+
 
          RARCH_LOG("[D3D11]: Updating framebuffer size %u x %u.\n", width, height);
 
