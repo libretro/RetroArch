@@ -2555,6 +2555,7 @@ typedef struct
       D3D11SamplerStateRef       sampler;
       D3D11Buffer                buffers[SLANG_CBUFFER_MAX];
       d3d11_texture_t            rt;
+      d3d11_texture_t            feedback;
       D3D11_VIEWPORT             viewport;
       pass_semantics_t           semantics;
       D3D11ShaderResourceViewRef textures[SLANG_NUM_BINDINGS];
