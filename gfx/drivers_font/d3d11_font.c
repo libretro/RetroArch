@@ -244,7 +244,7 @@ static void d3d11_font_render_message(
       return;
    }
 
-   line_height = scale / font->font_driver->get_line_height(font->font_data);
+   line_height = font->font_driver->get_line_height(font->font_data) * scale / video_info->height;
 
    for (;;)
    {
