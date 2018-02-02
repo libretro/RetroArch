@@ -1,9 +1,0 @@
-void comp_main()
-{
-}
-
-[numthreads(8, 4, 2)]
-void main()
-{
-    comp_main();
-}
