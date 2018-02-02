@@ -241,6 +241,9 @@ static bool slang_process_reflection(
             strncpy(texture.id, id.c_str(), sizeof(texture.id));
 
             textures.push_back(texture);
+
+            if(texture_map->semantic == SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK)
+               shader_info->pass[texture_map->index].feedback = true;
          }
 
          if (src.push_constant || src.uniform)

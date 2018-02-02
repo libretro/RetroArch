@@ -119,6 +119,7 @@ struct video_shader_pass
    bool mipmap;
    unsigned filter;
    unsigned frame_count_mod;
+   bool feedback;
 };
 
 struct video_shader_lut
