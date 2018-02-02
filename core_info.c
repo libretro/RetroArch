@@ -189,14 +189,16 @@ static bool core_info_list_iterate(
       struct string_list *contents, size_t i)
 {
    size_t info_path_base_size = PATH_MAX_LENGTH * sizeof(char);
-   char *info_path_base       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA))
+   char *info_path_base       = NULL;
    char             *substr   = NULL;
-#endif
-   const char *current_path   = contents->elems[i].data;
+   const char *current_path   = contents ? contents->elems[i].data : NULL;
 
-   if (!contents || !current_path)
-      goto error;
+   (void)substr;
+
+   if (!current_path)
+      return false;
+
+   info_path_base             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
    info_path_base[0] = '\0';
 
@@ -220,10 +222,6 @@ static bool core_info_list_iterate(
 
    free(info_path_base);
    return true;
-
-error:
-   free(info_path_base);
-   return false;
 }
 
 static core_info_list_t *core_info_list_new(const char *path)
