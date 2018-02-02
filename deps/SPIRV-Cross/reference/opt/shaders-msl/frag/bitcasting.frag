@@ -14,7 +14,7 @@ struct main0_out
     float4 FragColor1 [[color(1)]];
 };
 
-fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> TextureBase [[texture(0)]], sampler TextureBaseSmplr [[sampler(0)]], texture2d<float> TextureDetail [[texture(1)]], sampler TextureDetailSmplr [[sampler(1)]])
+fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> TextureBase [[texture(0)]], texture2d<float> TextureDetail [[texture(1)]], sampler TextureBaseSmplr [[sampler(0)]], sampler TextureDetailSmplr [[sampler(1)]])
 {
     main0_out out = {};
     float4 _20 = TextureBase.sample(TextureBaseSmplr, in.VertGeom.xy);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 ARM Limited
+ * Copyright 2015-2018 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -323,6 +323,7 @@ protected:
 		bool use_initializer_list = false;
 		bool use_typed_initializer_list = false;
 		bool can_declare_struct_inline = true;
+		bool can_declare_arrays_inline = true;
 		bool native_row_major_matrix = true;
 		bool use_constructor_splatting = true;
 		bool boolean_mix_support = true;

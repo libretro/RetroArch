@@ -20,9 +20,9 @@ void main()
     int _94;
     _93 = _24.in_data[gl_GlobalInvocationID.x];
     _94 = 0;
-    int _48;
     int _40;
     vec4 _46;
+    int _48;
     for (;;)
     {
         _40 = _94 + 1;

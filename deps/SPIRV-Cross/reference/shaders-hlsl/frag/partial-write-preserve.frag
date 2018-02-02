@@ -4,6 +4,8 @@ struct B
     float b;
 };
 
+static const B _80 = { 10.0f, 20.0f };
+
 cbuffer _42 : register(b0)
 {
     int _42_some_value : packoffset(c0);
@@ -61,7 +63,7 @@ void frag_main()
     float4 param_3;
     branchy_inout_2(param_3);
     a = param_3;
-    B b = { 10.0f, 20.0f };
+    B b = _80;
     B param_4 = b;
     partial_inout(param_4);
     b = param_4;

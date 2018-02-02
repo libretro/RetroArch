@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 The Brenwill Workshop Ltd.
+ * Copyright 2016-2018 The Brenwill Workshop Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2692,7 +2692,19 @@ string CompilerMSL::entry_point_args(bool append_comma)
 		           convert_to_string(nsi_var.first) + ")]]";
 	}
 
-	// Uniforms
+	// Output resources, sorted by resource index & type
+	// We need to sort to work around a bug on macOS 10.13 with NVidia drivers where switching between shaders
+	// with different order of buffers can result in issues with buffer assignments inside the driver.
+	struct Resource
+	{
+		Variant *id;
+		string name;
+		SPIRType::BaseType basetype;
+		uint32_t index;
+	};
+
+	vector<Resource> resources;
+
 	for (auto &id : ids)
 	{
 		if (id.get_type() == TypeVariable)
@@ -2706,48 +2718,75 @@ string CompilerMSL::entry_point_args(bool append_comma)
 			     var.storage == StorageClassPushConstant || var.storage == StorageClassStorageBuffer) &&
 			    !is_hidden_variable(var))
 			{
-				switch (type.basetype)
+				if (type.basetype == SPIRType::SampledImage)
 				{
-				case SPIRType::Struct:
-				{
-					auto &m = meta.at(type.self);
-					if (m.members.size() == 0)
-						break;
-					if (!ep_args.empty())
-						ep_args += ", ";
-					ep_args += get_argument_address_space(var) + " " + type_to_glsl(type) + "& " + to_name(var_id);
-					ep_args += " [[buffer(" + convert_to_string(get_metal_resource_index(var, type.basetype)) + ")]]";
-					break;
-				}
-				case SPIRType::Sampler:
-					if (!ep_args.empty())
-						ep_args += ", ";
-					ep_args += type_to_glsl(type) + " " + to_name(var_id);
-					ep_args += " [[sampler(" + convert_to_string(get_metal_resource_index(var, type.basetype)) + ")]]";
-					break;
-				case SPIRType::Image:
-					if (!ep_args.empty())
-						ep_args += ", ";
-					ep_args += type_to_glsl(type, var_id) + " " + to_name(var_id);
-					ep_args += " [[texture(" + convert_to_string(get_metal_resource_index(var, type.basetype)) + ")]]";
-					break;
-				case SPIRType::SampledImage:
-					if (!ep_args.empty())
-						ep_args += ", ";
-					ep_args += type_to_glsl(type, var_id) + " " + to_name(var_id);
-					ep_args +=
-					    " [[texture(" + convert_to_string(get_metal_resource_index(var, SPIRType::Image)) + ")]]";
+					resources.push_back(
+					    { &id, to_name(var_id), SPIRType::Image, get_metal_resource_index(var, SPIRType::Image) });
+
 					if (type.image.dim != DimBuffer)
-					{
-						ep_args += ", sampler " + to_sampler_expression(var_id);
-						ep_args +=
-						    " [[sampler(" + convert_to_string(get_metal_resource_index(var, SPIRType::Sampler)) + ")]]";
-					}
-					break;
-				default:
-					break;
+						resources.push_back({ &id, to_sampler_expression(var_id), SPIRType::Sampler,
+						                      get_metal_resource_index(var, SPIRType::Sampler) });
+				}
+				else
+				{
+					resources.push_back(
+					    { &id, to_name(var_id), type.basetype, get_metal_resource_index(var, type.basetype) });
 				}
 			}
+		}
+	}
+
+	std::sort(resources.begin(), resources.end(), [](const Resource &lhs, const Resource &rhs) {
+		return tie(lhs.basetype, lhs.index) < tie(rhs.basetype, rhs.index);
+	});
+
+	for (auto &r : resources)
+	{
+		auto &var = r.id->get<SPIRVariable>();
+		auto &type = get<SPIRType>(var.basetype);
+
+		uint32_t var_id = var.self;
+
+		switch (r.basetype)
+		{
+		case SPIRType::Struct:
+		{
+			auto &m = meta.at(type.self);
+			if (m.members.size() == 0)
+				break;
+			if (!ep_args.empty())
+				ep_args += ", ";
+			ep_args += get_argument_address_space(var) + " " + type_to_glsl(type) + "& " + r.name;
+			ep_args += " [[buffer(" + convert_to_string(r.index) + ")]]";
+			break;
+		}
+		case SPIRType::Sampler:
+			if (!ep_args.empty())
+				ep_args += ", ";
+			ep_args += "sampler " + r.name;
+			ep_args += " [[sampler(" + convert_to_string(r.index) + ")]]";
+			break;
+		case SPIRType::Image:
+			if (!ep_args.empty())
+				ep_args += ", ";
+			ep_args += type_to_glsl(type, var_id) + " " + r.name;
+			ep_args += " [[texture(" + convert_to_string(r.index) + ")]]";
+			break;
+		default:
+			SPIRV_CROSS_THROW("Unexpected resource type");
+			break;
+		}
+	}
+
+	// Builtin variables
+	for (auto &id : ids)
+	{
+		if (id.get_type() == TypeVariable)
+		{
+			auto &var = id.get<SPIRVariable>();
+
+			uint32_t var_id = var.self;
+
 			if (var.storage == StorageClassInput && is_builtin_variable(var))
 			{
 				if (!ep_args.empty())
@@ -2837,17 +2876,28 @@ string CompilerMSL::argument_decl(const SPIRFunction::Parameter &arg)
 		decl += "const ";
 
 	if (is_builtin_variable(var))
-		decl += builtin_type_decl((BuiltIn)get_decoration(arg.id, DecorationBuiltIn));
+		decl += builtin_type_decl(static_cast<BuiltIn>(get_decoration(arg.id, DecorationBuiltIn)));
 	else
 		decl += type_to_glsl(type, arg.id);
 
 	if (is_array(type))
-		decl += "*";
+	{
+		decl += " (&";
+		decl += to_name(var.self);
+		decl += ")";
+		decl += type_to_array_glsl(type);
+	}
 	else if (!pointer)
+	{
 		decl += "&";
-
-	decl += " ";
-	decl += to_name(var.self);
+		decl += " ";
+		decl += to_name(var.self);
+	}
+	else
+	{
+		decl += " ";
+		decl += to_name(var.self);
+	}
 
 	return decl;
 }
