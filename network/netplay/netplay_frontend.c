@@ -778,10 +778,11 @@ static void netplay_announce(void)
    buf[0] = '\0';
 
    snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
-      "game_name=%s&game_crc=%08X&port=%d"
+      "game_name=%s&game_crc=%08X&port=%d&mitm_server=%s"
       "&has_password=%d&has_spectate_password=%d&force_mitm=%d&retroarch_version=%s&frontend=%s",
       username, corename, coreversion, gamename, content_crc,
       settings->uints.netplay_port,
+      settings->arrays.netplay_mitm_server,
       *settings->paths.netplay_password ? 1 : 0,
       *settings->paths.netplay_spectate_password ? 1 : 0,
       settings->bools.netplay_use_mitm_server,
