@@ -1303,26 +1303,31 @@ bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points)
 {
    unsigned i;
-   retro_time_t accum   = 0, avg, accum_var = 0;
-   unsigned samples      = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
-         (unsigned)video_driver_frame_time_count);
+   retro_time_t accum     = 0;
+   retro_time_t avg       = 0;
+   retro_time_t accum_var = 0;
+   unsigned samples       = 0;
+
 #ifdef HAVE_THREADS
    if (video_driver_is_threaded())
       return false;
 #endif
+
+   samples = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
+         (unsigned)video_driver_frame_time_count);
 
    if (samples < 2)
       return false;
 
    /* Measure statistics on frame time (microsecs), *not* FPS. */
    for (i = 0; i < samples; i++)
+   {
       accum += video_driver_frame_time_samples[i];
-
 #if 0
-   for (i = 0; i < samples; i++)
       RARCH_LOG("[Video]: Interval #%u: %d usec / frame.\n",
             i, (int)frame_time_samples[i]);
 #endif
+   }
 
    avg = accum / samples;
 
@@ -1330,7 +1335,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    for (i = 0; i < samples; i++)
    {
       retro_time_t diff = video_driver_frame_time_samples[i] - avg;
-      accum_var += diff * diff;
+      accum_var         += diff * diff;
    }
 
    *deviation     = sqrt((double)accum_var / (samples - 1)) / avg;

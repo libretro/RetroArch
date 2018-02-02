@@ -1465,7 +1465,8 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
    if (!setting)
       return;
 
-   if (video_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
+   if (video_monitor_fps_statistics(&video_refresh_rate,
+            &deviation, &sample_points))
    {
       snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
