@@ -372,48 +372,9 @@ bool slang_process(
          vs->set_options(options);
          ps->set_options(options);
 
-         std::vector<HLSLVertexAttributeRemap> vs_attrib_remap;
-
          /* not exactly a vertex attribute but this remaps
           * float2 FragCoord :TEXCOORD# to float4 FragCoord : SV_POSITION */
          std::vector<HLSLVertexAttributeRemap> ps_attrib_remap;
-
-         /* "line"  is a reserved keyword in hlsl
-          * maybe there is an easier way to rename a variable ? */
-
-         int id = 0;
-         while (true)
-         {
-            try
-            {
-               string name = vs->get_name(id);
-
-               if (name == "line" || name == "point" || name == "linear")
-                  vs->set_name(id, string("var_") + name);
-
-               id++;
-            } catch (const std::exception& e)
-            {
-               break;
-            }
-         }
-
-         id = 0;
-         while (true)
-         {
-            try
-            {
-               string name = ps->get_name(id);
-
-               if (name == "line" || name == "point" || name == "linear")
-                  ps->set_name(id, string("var_") + name);
-
-               id++;
-            } catch (const std::exception& e)
-            {
-               break;
-            }
-         }
 
          VariableTypeRemapCallback ps_var_remap_cb = [&](const SPIRType&    type,
                                                          const std::string& var_name,
@@ -433,8 +394,7 @@ bool slang_process(
             }
          }
 
-
-         vs_code = vs->compile(vs_attrib_remap);
+         vs_code = vs->compile();
          ps_code = ps->compile(ps_attrib_remap);
       }
       else if (shader_info->type == RARCH_SHADER_GLSL)
