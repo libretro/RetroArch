@@ -575,6 +575,12 @@ static void setting_get_string_representation_uint_autosave_interval(void *data,
 }
 #endif
 
+static void setting_get_string_representation_netplay_mitm_server(void *data,
+      char *s, size_t len)
+{
+
+}
+
 #ifdef HAVE_LANGEXTRA
 static void setting_get_string_representation_uint_user_language(void *data,
       char *s, size_t len)
@@ -6717,6 +6723,21 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+
+            CONFIG_STRING(
+                  list, list_info,
+                  settings->arrays.netplay_mitm_server,
+                  sizeof(settings->arrays.netplay_mitm_server),
+                  MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
+                  netplay_mitm_server,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_netplay_mitm_server;
 
             CONFIG_STRING(
                   list, list_info,

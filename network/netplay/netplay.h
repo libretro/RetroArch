@@ -29,6 +29,16 @@
 
 typedef struct netplay netplay_t;
 
+typedef struct mitm_server {
+   const char *name;
+   const char *description;
+} mitm_server_t;
+
+static const mitm_server_t netplay_mitm_server_list[] = {
+   { "nyc", "New York City, USA" },
+   { "madrid", "Madrid, Spain" },
+};
+
 enum rarch_netplay_ctl_state
 {
    RARCH_NETPLAY_CTL_NONE = 0,

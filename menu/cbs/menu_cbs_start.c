@@ -168,6 +168,13 @@ static int action_start_shader_filter_pass(unsigned type, const char *label)
    return menu_shader_manager_clear_pass_filter(pass);
 }
 
+static int action_start_netplay_mitm_server(unsigned type, const char *label)
+{
+   settings_t *settings = config_get_ptr();
+   strlcpy(settings->arrays.netplay_mitm_server, netplay_mitm_server, sizeof(settings->arrays.netplay_mitm_server));
+   return 0;
+}
+
 static int action_start_shader_watch_for_changes(unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
@@ -299,6 +306,10 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_START(cbs, action_start_video_resolution);
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
+            BIND_ACTION_START(cbs, action_start_netplay_mitm_server);
+            break;
          default:
             return -1;
       }
