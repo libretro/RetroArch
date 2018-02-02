@@ -122,6 +122,7 @@ struct RDIR *retro_opendir(const char *name)
       snprintf(path_buf, sizeof(path_buf), "%s*", name);
    else
       snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
+
 #if defined(LEGACY_WIN32)
    path_local      = utf8_to_local_string_alloc(path_buf);
    rdir->directory = FindFirstFile(path_local, &rdir->entry);
@@ -135,13 +136,14 @@ struct RDIR *retro_opendir(const char *name)
    if (path_wide)
       free(path_wide);
 #endif
+
 #elif defined(VITA) || defined(PSP)
    rdir->directory = sceIoDopen(name);
 #elif defined(_3DS)
    rdir->directory = !string_is_empty(name) ? opendir(name) : NULL;
    rdir->entry     = NULL;
 #elif defined(__CELLOS_LV2__)
-   rdir->error = cellFsOpendir(name, &rdir->directory);
+   rdir->error     = cellFsOpendir(name, &rdir->directory);
 #else
    rdir->directory = opendir(name);
    rdir->entry     = NULL;
@@ -149,11 +151,9 @@ struct RDIR *retro_opendir(const char *name)
 
    if (rdir->directory)
       return rdir;
-   else
-   {
-      free(rdir);
-      return NULL;
-   }
+
+   free(rdir);
+   return NULL;
 }
 
 bool retro_dirent_error(struct RDIR *rdir)
