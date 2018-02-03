@@ -62,7 +62,9 @@ enum slang_semantic
    // vec4, viewport size of final pass
    SLANG_SEMANTIC_FINAL_VIEWPORT = 2,
    // uint, frame count with modulo
-   SLANG_SEMANTIC_FRAME_COUNT = 3,
+   SLANG_SEMANTIC_FRAME_COUNT = 3,   
+   SLANG_NUM_BASE_SEMANTICS,
+
    // float, user defined parameter, arrayed
    SLANG_SEMANTIC_FLOAT_PARAMETER = 4,
 
