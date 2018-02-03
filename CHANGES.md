@@ -48,6 +48,7 @@
 - WIIU: Increased stability during core switching.
 - WIIU: Shader support.
 - WIIU: Menu shader effects added (shaders).
+- WIIU: Add missing time/clock support. (also fixes RTC [Real Time Clock] in Gambatte)
 - XBOX OG: Restored port.
 
 # 1.7.0
