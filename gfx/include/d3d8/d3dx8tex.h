@@ -1,11 +1,10 @@
-//////////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (C) Microsoft Corporation.  All Rights Reserved.
-//
-//  File:       d3dx8tex.h
-//  Content:    D3DX texturing APIs
-//
-//////////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
+ *
+ *  File:       d3dx8tex.h
+ *  Content:    D3DX texturing APIs
+ */
 
 #include "d3dx8.h"
 
@@ -224,10 +223,10 @@ extern "C" {
 
 
 
-//////////////////////////////////////////////////////////////////////////////
-// Image File APIs ///////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-;
+/*
+ * Image File APIs
+ */
+
 //----------------------------------------------------------------------------
 // GetImageInfoFromFile/Resource:
 // ------------------------------
@@ -1587,6 +1586,6 @@ HRESULT WINAPI
 
 #ifdef __cplusplus
 }
-#endif //__cplusplus
+#endif /* __cplusplus */
 
-#endif //__D3DX8TEX_H__
+#endif /* __D3DX8TEX_H__ */

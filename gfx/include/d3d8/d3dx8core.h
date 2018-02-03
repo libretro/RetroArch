@@ -555,6 +555,6 @@ HRESULT WINAPI
 
 #ifdef __cplusplus
 }
-#endif //__cplusplus
+#endif /* __cplusplus */
 
-#endif //__D3DX8CORE_H__
+#endif /* __D3DX8CORE_H__ */
