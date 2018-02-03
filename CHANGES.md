@@ -41,7 +41,7 @@
 - PSP: Enable threading support through pthreads.
 - SHADERS: SPIRV-Cross/slang shader support for D3D11.
 - SHIELD ATV: Allow the remote / gamepad takeover hack to work with the 2017 gamepad
-- VULKAN: Fix swapchain recreation bug on Nvidia GPUs with Windows 10 through workaround (will be properly resolved in a future driver version).
+- VULKAN: Fix swapchain recreation bug on Nvidia GPUs with Windows 10 (resolved in Windows Nvidia driver version 390.77).
 - WINDOWS: Improved Unicode support (for cores/directory creation and 7zip archives).
 - WINDOWS: Show progress meter on taskbar for downloads (Windows 7 and up).
 - WINDOWS: WS_EX_LAYERED drastically decreases performance, so only set it when needed (transparency in windowed mode).
