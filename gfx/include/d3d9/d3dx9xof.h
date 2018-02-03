@@ -34,59 +34,59 @@ typedef DWORD D3DXF_FILELOADOPTIONS;
 #define D3DXF_FILELOAD_FROMRESOURCE 0x02L
 #define D3DXF_FILELOAD_FROMMEMORY   0x03L
 
-/*
- * D3DXF_FILELOADRESOURCE:
-*/
+//----------------------------------------------------------------------------
+// D3DXF_FILELOADRESOURCE:
+//----------------------------------------------------------------------------
 
 typedef struct _D3DXF_FILELOADRESOURCE
 {
-    HMODULE hModule; /* Desc */
-    LPCSTR lpName;   /* Desc */
-    LPCSTR lpType;   /* Desc */
+    HMODULE hModule; // Desc
+    LPCSTR lpName;  // Desc
+    LPCSTR lpType;  // Desc
 } D3DXF_FILELOADRESOURCE;
 
-/*
- * D3DXF_FILELOADMEMORY:
- */
+//----------------------------------------------------------------------------
+// D3DXF_FILELOADMEMORY:
+//----------------------------------------------------------------------------
 
 typedef struct _D3DXF_FILELOADMEMORY
 {
-    LPCVOID lpMemory;  /* Desc */
-    SIZE_T  dSize;     /* Desc */
+    LPCVOID lpMemory; // Desc
+    SIZE_T  dSize;     // Desc
 } D3DXF_FILELOADMEMORY;
 
 #if defined( _WIN32 ) && !defined( _NO_COM )
 
-/* {cef08cf9-7b4f-4429-9624-2a690a933201} */
+// {cef08cf9-7b4f-4429-9624-2a690a933201}
 DEFINE_GUID( IID_ID3DXFile,
 0xcef08cf9, 0x7b4f, 0x4429, 0x96, 0x24, 0x2a, 0x69, 0x0a, 0x93, 0x32, 0x01 );
 
-/* {cef08cfa-7b4f-4429-9624-2a690a933201} */
+// {cef08cfa-7b4f-4429-9624-2a690a933201}
 DEFINE_GUID( IID_ID3DXFileSaveObject,
 0xcef08cfa, 0x7b4f, 0x4429, 0x96, 0x24, 0x2a, 0x69, 0x0a, 0x93, 0x32, 0x01 );
 
-/* {cef08cfb-7b4f-4429-9624-2a690a933201} */
+// {cef08cfb-7b4f-4429-9624-2a690a933201}
 DEFINE_GUID( IID_ID3DXFileSaveData,
 0xcef08cfb, 0x7b4f, 0x4429, 0x96, 0x24, 0x2a, 0x69, 0x0a, 0x93, 0x32, 0x01 );
 
-/* {cef08cfc-7b4f-4429-9624-2a690a933201} */
+// {cef08cfc-7b4f-4429-9624-2a690a933201}
 DEFINE_GUID( IID_ID3DXFileEnumObject,
 0xcef08cfc, 0x7b4f, 0x4429, 0x96, 0x24, 0x2a, 0x69, 0x0a, 0x93, 0x32, 0x01 );
 
-/* {cef08cfd-7b4f-4429-9624-2a690a933201} */
+// {cef08cfd-7b4f-4429-9624-2a690a933201}
 DEFINE_GUID( IID_ID3DXFileData,
 0xcef08cfd, 0x7b4f, 0x4429, 0x96, 0x24, 0x2a, 0x69, 0x0a, 0x93, 0x32, 0x01 );
 
-#endif /* defined( _WIN32 ) && !defined( _NO_COM ) */
+#endif // defined( _WIN32 ) && !defined( _NO_COM )
 
 #if defined( __cplusplus )
 #if !defined( DECLSPEC_UUID )
 #if _MSC_VER >= 1100
 #define DECLSPEC_UUID( x ) __declspec( uuid( x ) )
-#else /* !( _MSC_VER >= 1100 ) */
+#else // !( _MSC_VER >= 1100 )
 #define DECLSPEC_UUID( x )
-#endif /* !( _MSC_VER >= 1100 ) */
-#endif /* !defined( DECLSPEC_UUID ) */
+#endif // !( _MSC_VER >= 1100 )
+#endif // !defined( DECLSPEC_UUID )
 
 interface DECLSPEC_UUID( "cef08cf9-7b4f-4429-9624-2a690a933201" )
     ID3DXFile;
@@ -110,8 +110,8 @@ _COM_SMARTPTR_TYPEDEF( ID3DXFileEnumObject,
     __uuidof( ID3DXFileEnumObject ) );
 _COM_SMARTPTR_TYPEDEF( ID3DXFileData,
     __uuidof( ID3DXFileData ) );
-#endif /* defined( _COM_SMARTPTR_TYPEDEF ) */
-#endif /* defined( __cplusplus ) */
+#endif // defined( _COM_SMARTPTR_TYPEDEF )
+#endif // defined( __cplusplus )
 
 typedef interface ID3DXFile ID3DXFile;
 typedef interface ID3DXFileSaveObject ID3DXFileSaveObject;
@@ -119,9 +119,9 @@ typedef interface ID3DXFileSaveData ID3DXFileSaveData;
 typedef interface ID3DXFileEnumObject ID3DXFileEnumObject;
 typedef interface ID3DXFileData ID3DXFileData;
 
-/*
- * ID3DXFile
- */
+//////////////////////////////////////////////////////////////////////////////
+// ID3DXFile /////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 #undef INTERFACE
 #define INTERFACE ID3DXFile
@@ -140,9 +140,9 @@ DECLARE_INTERFACE_( ID3DXFile, IUnknown )
     STDMETHOD( RegisterEnumTemplates )( THIS_ ID3DXFileEnumObject* ) PURE;
 };
 
-/*
- * ID3DXFileSaveObject
- */
+//////////////////////////////////////////////////////////////////////////////
+// ID3DXFileSaveObject ///////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 #undef INTERFACE
 #define INTERFACE ID3DXFileSaveObject
@@ -159,9 +159,9 @@ DECLARE_INTERFACE_( ID3DXFileSaveObject, IUnknown )
     STDMETHOD( Save )( THIS ) PURE;
 };
 
-/*
- * ID3DXFileSaveData
- */
+//////////////////////////////////////////////////////////////////////////////
+// ID3DXFileSaveData /////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 #undef INTERFACE
 #define INTERFACE ID3DXFileSaveData
@@ -181,9 +181,9 @@ DECLARE_INTERFACE_( ID3DXFileSaveData, IUnknown )
     STDMETHOD( AddDataReference )( THIS_ LPCSTR, CONST GUID* ) PURE;
 };
 
-/*
- * ID3DXFileEnumObject
- */
+//////////////////////////////////////////////////////////////////////////////
+// ID3DXFileEnumObject ///////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 #undef INTERFACE
 #define INTERFACE ID3DXFileEnumObject
@@ -201,9 +201,9 @@ DECLARE_INTERFACE_( ID3DXFileEnumObject, IUnknown )
     STDMETHOD( GetDataObjectByName )( THIS_ LPCSTR, ID3DXFileData** ) PURE;
 };
 
-/*
- * ID3DXFileData
- */
+//////////////////////////////////////////////////////////////////////////////
+// ID3DXFileData /////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 #undef INTERFACE
 #define INTERFACE ID3DXFileData
