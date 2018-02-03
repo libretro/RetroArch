@@ -71,7 +71,7 @@ DEFINES += -DRARCH_MOBILE -DHAVE_GRIFFIN -DHAVE_STB_VORBIS -DHAVE_LANGEXTRA -DAN
 DEFINES += -DWANT_IFADDRS
 
 ifeq ($(HAVE_VULKAN),1)
-DEFINES += -DHAVE_VULKAN
+DEFINES += -DHAVE_VULKAN -DHAVE_SLANG -DHAVE_SPIRV_CROSS
 endif
 DEFINES += -DHAVE_7ZIP
 DEFINES += -DHAVE_CHEEVOS
@@ -108,7 +108,6 @@ LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang \
 						  -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/glslang/Public \
 						  -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent \
 						  -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/SPIRV \
-						  -I$(LOCAL_PATH)/$(DEPS_DIR)/spir2cross \
 						  -I$(LOCAL_PATH)/$(DEPS_DIR)/SPIRV-Cross
 
 LOCAL_CFLAGS    += -Wno-sign-compare -Wno-unused-variable -Wno-parentheses
