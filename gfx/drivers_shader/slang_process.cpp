@@ -142,10 +142,10 @@ static bool slang_process_reflection(
 
    for (unsigned i = 0; i < shader_info->num_parameters; i++)
    {
-      if (!set_unique_map(
-                uniform_semantic_map, shader_info->parameters[i].id,
-                { SLANG_SEMANTIC_FLOAT_PARAMETER, i }))
-         return false;
+	   if (!set_unique_map(
+		   uniform_semantic_map, shader_info->parameters[i].id,
+		   slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, i }))
+		   return false;
    }
 
    slang_reflection sl_reflection;

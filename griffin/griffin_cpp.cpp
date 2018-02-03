@@ -27,7 +27,6 @@
 #endif
 
 #ifdef WANT_GLSLANG
-#ifdef HAVE_VULKAN
 #include "../deps/glslang/glslang.cpp"
 #if 0
 #include "../deps/glslang/glslang_tab.cpp"
@@ -90,7 +89,6 @@
 #include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp"
 #endif
 #endif
-#endif
 
 /*============================================================
 MENU
@@ -120,13 +118,13 @@ VIDEO DRIVER
 ============================================================ */
 #ifdef HAVE_VULKAN
 #include "../gfx/drivers_shader/shader_vulkan.cpp"
-#include "../gfx/drivers_shader/glslang_util.cpp"
 #endif
 
 #ifdef HAVE_SPIRV_CROSS
 #include "../deps/SPIRV-Cross/spirv_cross.cpp"
 #include "../deps/SPIRV-Cross/spirv_cfg.cpp"
 #ifdef HAVE_SLANG
+#include "../gfx/drivers_shader/glslang_util.cpp"
 #include "../gfx/drivers_shader/slang_preprocess.cpp"
 #include "../gfx/drivers_shader/slang_process.cpp"
 #include "../gfx/drivers_shader/slang_reflection.cpp"
