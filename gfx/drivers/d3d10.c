@@ -510,8 +510,10 @@ static void d3d10_gfx_apply_state_changes(void* data)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
-   //   if (d3d10)
-   //      d3d10->resize_viewport = true;
+#if 0
+   if (d3d10)
+      d3d10->resize_viewport = true;
+#endif
 }
 
 static const video_poke_interface_t d3d10_poke_interface = {
