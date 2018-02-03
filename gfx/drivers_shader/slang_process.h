@@ -26,45 +26,29 @@
 
 typedef struct
 {
-   enum slang_semantic semantic;
-   void*               data;
-   const char*         id;
-} uniform_map_t;
+   void*  ptr;
+   size_t stride;
+} data_map_t;
 
 typedef struct
 {
-   enum slang_texture_semantic semantic;
-   int                         index;
-   void*                       texture_data;
-   const char*                 texture_id;
-   void*                       sampler_data;
-   const char*                 sampler_id;
-   void*                       size_data;
-   const char*                 size_id;
+   void*  image;
+   size_t image_stride;
+   void*  size;
+   size_t size_stride;
+   void*  sampler;
+   size_t sampler_stride;
 } texture_map_t;
 
-#define SL_UNIFORM_MAP(sem, data) \
-   { \
-      sem, &data, #data \
-   }
-
-#define SL_TEXTURE_MAP_ARRAY(sem, index, tex, sampl, size) \
-   { \
-      sem, index, &tex, #tex, &sampl, #sampl, &size, #size \
-   }
-
-#define SL_TEXTURE_MAP(sem, tex, sampl, size) SL_TEXTURE_MAP_ARRAY(sem, 0, tex, sampl, size)
-
 typedef struct
 {
-   texture_map_t* texture_map;
-   uniform_map_t* uniform_map;
+   texture_map_t textures[SLANG_NUM_TEXTURE_SEMANTICS];
+   void*         uniforms[SLANG_NUM_BASE_SEMANTICS];
 } semantics_map_t;
 
 typedef struct
 {
    void*       data;
-   const char* data_id;
    unsigned    size;
    unsigned    offset;
    char        id[64];
@@ -73,9 +57,7 @@ typedef struct
 typedef struct
 {
    void*       texture_data;
-   const char* texture_id;
    void*       sampler_data;
-   const char* sampler_id;
    unsigned    stage_mask;
    unsigned    binding;
    char        id[64];
