@@ -878,7 +878,7 @@ static void xmb_render_messagebox_internal(
    struct string_list *list = !string_is_empty(message) 
       ? string_split(message, "\n") : NULL;
 
-   if (!list || !xmb)
+   if (!list || !xmb || !xmb->font)
    {
       if (list)
          string_list_free(list);
