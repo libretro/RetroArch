@@ -15,6 +15,7 @@
 - D3D9: Add menu support for MaterialUI/XMB.
 - D3D10: Initial video driver implementation.
 - D3D11: Initial video driver implementation.
+- D3D11: SPIRV-Cross/slang shader support for D3D11.
 - D3D12: Initial video driver implementation.
 - DINPUT: don't reinitialize input driver on network events / media insertion / network drive connection
 - INPUT: show friendly names when available under input binds and system information
@@ -29,12 +30,14 @@
 - IOS10/11: Handle hardware keyboards and iCade controllers
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
+- LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Spanish translation.
 - OSX: Modify HID buttons detection algorithm. 
 - SOLARIS: Initial port.
 - SWITCH: Initial Nintendo Switch port, based on libtransistor SDK.
 - PS3: Enable Cheevos.
 - PSP: Enable threading support through pthreads.
+- SHADERS: SPIRV-Cross/slang shader support for D3D11.
 - SHIELD ATV: Allow the remote / gamepad takeover hack to work with the 2017 gamepad
 - VULKAN: Fix swapchain recreation bug on Nvidia GPUs with Windows 10 through workaround (will be properly resolved in a future driver version).
 - WINDOWS: Improved Unicode support (for cores/directory creation and 7zip archives).
