@@ -37,9 +37,10 @@
 
 static void d3d11_set_filtering(void* data, unsigned index, bool smooth)
 {
+   unsigned i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
-   for (int i = 0; i < RARCH_WRAP_MAX; i++)
+   for (i = 0; i < RARCH_WRAP_MAX; i++)
    {
       if (smooth)
          d3d11->samplers[RARCH_FILTER_UNSPEC][i] = d3d11->samplers[RARCH_FILTER_LINEAR][i];
@@ -92,11 +93,14 @@ static void d3d11_update_viewport(void* data, bool force_full)
 
 static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
 {
+   unsigned i;
    if (!d3d11->shader_preset)
       return;
 
-   for (int i = 0; i < d3d11->shader_preset->passes; i++)
+   for (i = 0; i < d3d11->shader_preset->passes; i++)
    {
+      unsigned j;
+
       free(d3d11->shader_preset->pass[i].source.string.vertex);
       free(d3d11->shader_preset->pass[i].source.string.fragment);
       free(d3d11->pass[i].semantics.textures);
@@ -104,7 +108,7 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
       d3d11_release_texture(&d3d11->pass[i].rt);
       d3d11_release_texture(&d3d11->pass[i].feedback);
 
-      for (int j = 0; j < SLANG_CBUFFER_MAX; j++)
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          free(d3d11->pass[i].semantics.cbuffers[j].uniforms);
          Release(d3d11->pass[i].buffers[j]);
@@ -114,14 +118,14 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
    memset(d3d11->pass, 0, sizeof(d3d11->pass));
 
    /* only free the history textures here */
-   for (int i = 1; i <= d3d11->shader_preset->history_size; i++)
+   for (i = 1; i <= d3d11->shader_preset->history_size; i++)
       d3d11_release_texture(&d3d11->frame.texture[i]);
 
    memset(
          &d3d11->frame.texture[1], 0,
          sizeof(d3d11->frame.texture[1]) * d3d11->shader_preset->history_size);
 
-   for (int i = 0; i < d3d11->shader_preset->luts; i++)
+   for (i = 0; i < d3d11->shader_preset->luts; i++)
       d3d11_release_texture(&d3d11->luts[i]);
 
    memset(d3d11->luts, 0, sizeof(d3d11->luts));
@@ -134,6 +138,7 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
 
 static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
+   unsigned i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
    if (!d3d11)
@@ -165,79 +170,76 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
    d3d11_texture_t* source = &d3d11->frame.texture[0];
 
-   for (int i = 0; i < d3d11->shader_preset->passes; source = &d3d11->pass[i++].rt)
+   for (i = 0; i < d3d11->shader_preset->passes; source = &d3d11->pass[i++].rt)
    {
-      {
-         texture_map_t texture_map
-               [3 + GFX_MAX_FRAME_HISTORY + 1 + GFX_MAX_SHADERS * 2 + GFX_MAX_TEXTURES + 1] = {
-                  SL_TEXTURE_MAP(
-                        SLANG_TEXTURE_SEMANTIC_ORIGINAL, d3d11->frame.texture[0].view,
-                        d3d11->pass[i].sampler, d3d11->frame.texture[0].size_data),
-                  SL_TEXTURE_MAP(
-                        SLANG_TEXTURE_SEMANTIC_SOURCE, source->view, d3d11->pass[i].sampler,
-                        source->size_data),
-               };
-
-         {
-            texture_map_t* ptr = texture_map;
-            while (ptr->texture_data)
-               ptr++;
-
-            for (int j = 0; j < GFX_MAX_FRAME_HISTORY + 1; j++)
-            {
-               *ptr = (texture_map_t)SL_TEXTURE_MAP_ARRAY(
-                     SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, j, d3d11->frame.texture[j].view,
-                     d3d11->pass[i].sampler, d3d11->frame.texture[j].size_data);
-               ptr++;
-            }
-
-            for (int j = 0; j < i; j++)
-            {
-               *ptr = (texture_map_t)SL_TEXTURE_MAP_ARRAY(
-                     SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j, d3d11->pass[j].rt.view,
-                     d3d11->pass[i].sampler, d3d11->pass[j].rt.size_data);
-               ptr++;
-            }
-
-            for (int j = 0; j < GFX_MAX_SHADERS; j++)
-            {
-               *ptr = (texture_map_t)SL_TEXTURE_MAP_ARRAY(
-                     SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j, d3d11->pass[j].feedback.view,
-                     d3d11->pass[i].sampler, d3d11->pass[j].rt.size_data);
-               ptr++;
-            }
-
-            for (int j = 0; j < d3d11->shader_preset->luts; j++)
-            {
-               *ptr = (texture_map_t)SL_TEXTURE_MAP_ARRAY(
-                     SLANG_TEXTURE_SEMANTIC_USER, j, d3d11->luts[j].view, d3d11->luts[j].sampler,
-                     d3d11->luts[j].size_data);
-               ptr++;
-            }
-         }
-
-         uniform_map_t uniform_map[] = {
-            SL_UNIFORM_MAP(SLANG_SEMANTIC_MVP, d3d11->mvp),
-            SL_UNIFORM_MAP(SLANG_SEMANTIC_OUTPUT, d3d11->pass[i].rt.size_data),
-            SL_UNIFORM_MAP(SLANG_SEMANTIC_FRAME_COUNT, d3d11->pass[i].frame_count),
-            SL_UNIFORM_MAP(SLANG_SEMANTIC_FINAL_VIEWPORT, d3d11->frame.output_size),
-            { 0 }
+      unsigned j;
+      texture_map_t texture_map
+         [3 + GFX_MAX_FRAME_HISTORY + 1 + GFX_MAX_SHADERS * 2 + GFX_MAX_TEXTURES + 1] = {
+            SL_TEXTURE_MAP(
+                  SLANG_TEXTURE_SEMANTIC_ORIGINAL, d3d11->frame.texture[0].view,
+                  d3d11->pass[i].sampler, d3d11->frame.texture[0].size_data),
+            SL_TEXTURE_MAP(
+                  SLANG_TEXTURE_SEMANTIC_SOURCE, source->view, d3d11->pass[i].sampler,
+                  source->size_data),
          };
+      texture_map_t* ptr = texture_map;
 
-         semantics_map_t semantics_map = { texture_map, uniform_map };
+      while (ptr->texture_data)
+         ptr++;
 
-         if (!slang_process(
-                   d3d11->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
-                   &d3d11->pass[i].semantics))
-            goto error;
+      for (j = 0; j < GFX_MAX_FRAME_HISTORY + 1; j++)
+      {
+         *ptr = (texture_map_t)SL_TEXTURE_MAP_ARRAY(
+               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, j, d3d11->frame.texture[j].view,
+               d3d11->pass[i].sampler, d3d11->frame.texture[j].size_data);
+         ptr++;
       }
+
+      for (j = 0; j < i; j++)
+      {
+         *ptr = (texture_map_t)SL_TEXTURE_MAP_ARRAY(
+               SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j, d3d11->pass[j].rt.view,
+               d3d11->pass[i].sampler, d3d11->pass[j].rt.size_data);
+         ptr++;
+      }
+
+      for (j = 0; j < GFX_MAX_SHADERS; j++)
+      {
+         *ptr = (texture_map_t)SL_TEXTURE_MAP_ARRAY(
+               SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j, d3d11->pass[j].feedback.view,
+               d3d11->pass[i].sampler, d3d11->pass[j].rt.size_data);
+         ptr++;
+      }
+
+      for (j = 0; j < d3d11->shader_preset->luts; j++)
+      {
+         *ptr = (texture_map_t)SL_TEXTURE_MAP_ARRAY(
+               SLANG_TEXTURE_SEMANTIC_USER, j, d3d11->luts[j].view, d3d11->luts[j].sampler,
+               d3d11->luts[j].size_data);
+         ptr++;
+      }
+
+      uniform_map_t uniform_map[] = {
+         SL_UNIFORM_MAP(SLANG_SEMANTIC_MVP, d3d11->mvp),
+         SL_UNIFORM_MAP(SLANG_SEMANTIC_OUTPUT, d3d11->pass[i].rt.size_data),
+         SL_UNIFORM_MAP(SLANG_SEMANTIC_FRAME_COUNT, d3d11->pass[i].frame_count),
+         SL_UNIFORM_MAP(SLANG_SEMANTIC_FINAL_VIEWPORT, d3d11->frame.output_size),
+         { 0 }
+      };
+
+      semantics_map_t semantics_map = { texture_map, uniform_map };
+
+      if (!slang_process(
+               d3d11->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
+               &d3d11->pass[i].semantics))
+         goto error;
 
       {
          static const D3D11_INPUT_ELEMENT_DESC desc[] = {
             { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
-              D3D11_INPUT_PER_VERTEX_DATA, 0 },
+               D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
-              D3D11_INPUT_PER_VERTEX_DATA, 0 },
+               D3D11_INPUT_PER_VERTEX_DATA, 0 },
          };
 #ifdef DEBUG
          bool save_hlsl = true;
@@ -262,13 +264,13 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          strncpy(ps_path + base_len, ps_ext, sizeof(ps_ext));
 
          if (!d3d11_init_shader(
-                   d3d11->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
-                   &d3d11->pass[i].shader))
+                  d3d11->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
+                  &d3d11->pass[i].shader))
             save_hlsl = true;
 
          if (!d3d11_init_shader(
-                   d3d11->device, ps_src, 0, ps_path, NULL, "main", NULL, NULL, 0,
-                   &d3d11->pass[i].shader))
+                  d3d11->device, ps_src, 0, ps_path, NULL, "main", NULL, NULL, 0,
+                  &d3d11->pass[i].shader))
             save_hlsl = true;
 
          if (save_hlsl)
@@ -292,7 +294,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             goto error;
       }
 
-      for (int j = 0; j < SLANG_CBUFFER_MAX; j++)
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          D3D11_BUFFER_DESC desc = {
             .ByteWidth      = d3d11->pass[i].semantics.cbuffers[j].size,
@@ -308,7 +310,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       }
    }
 
-   for (int i = 0; i < d3d11->shader_preset->luts; i++)
+   for (i = 0; i < d3d11->shader_preset->luts; i++)
    {
       struct texture_image image = { 0 };
       image.supports_rgba        = true;
@@ -350,6 +352,7 @@ error:
 
 static void d3d11_gfx_free(void* data)
 {
+   unsigned i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
    if (!d3d11)
@@ -384,7 +387,7 @@ static void d3d11_gfx_free(void* data)
    Release(d3d11->blend_enable);
    Release(d3d11->blend_disable);
 
-   for (int i = 0; i < RARCH_WRAP_MAX; i++)
+   for (i = 0; i < RARCH_WRAP_MAX; i++)
    {
       Release(d3d11->samplers[RARCH_FILTER_LINEAR][i]);
       Release(d3d11->samplers[RARCH_FILTER_NEAREST][i]);
@@ -407,6 +410,7 @@ static void d3d11_gfx_free(void* data)
 static void*
 d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
+   unsigned i;
    WNDCLASSEX     wndclass = { 0 };
    MONITORINFOEX  current_mon;
    HMONITOR       hm_to_use;
@@ -521,7 +525,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          .MaxLOD         = D3D11_FLOAT32_MAX,
       };
       /* Initialize samplers */
-      for (int i = 0; i < RARCH_WRAP_MAX; i++)
+      for (i = 0; i < RARCH_WRAP_MAX; i++)
       {
          switch (i)
          {
@@ -749,12 +753,14 @@ error:
 
 static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned height)
 {
+   unsigned i;
+
    /* todo: should we init history to max_width/max_height instead ?
     * to prevent out of memory errors happening several frames later
     * and to reduce memory fragmentation */
 
    assert(d3d11->shader_preset);
-   for (int i = 0; i < d3d11->shader_preset->history_size + 1; i++)
+   for (i = 0; i < d3d11->shader_preset->history_size + 1; i++)
    {
       d3d11->frame.texture[i].desc.Width  = width;
       d3d11->frame.texture[i].desc.Height = height;
@@ -767,9 +773,11 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
 }
 static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsigned height)
 {
+   unsigned i;
+
    assert(d3d11->shader_preset);
 
-   for (int i = 0; i < d3d11->shader_preset->passes; i++)
+   for (i = 0; i < d3d11->shader_preset->passes; i++)
    {
       struct video_shader_pass* pass = &d3d11->shader_preset->pass[i];
 
@@ -875,6 +883,8 @@ static bool d3d11_gfx_frame(
       const char*         msg,
       video_frame_info_t* video_info)
 {
+   unsigned i;
+   d3d11_texture_t* texture   = NULL;
    d3d11_video_t*     d3d11   = (d3d11_video_t*)data;
    D3D11DeviceContext context = d3d11->context;
 
@@ -923,7 +933,7 @@ static bool d3d11_gfx_frame(
          if (d3d11->resize_render_targets)
          {
             /* release all render targets first to avoid memory fragmentation */
-            for (int i = 0; i < d3d11->shader_preset->passes; i++)
+            for (i = 0; i < d3d11->shader_preset->passes; i++)
                d3d11_release_texture(&d3d11->pass[i].rt);
          }
 
@@ -933,11 +943,12 @@ static bool d3d11_gfx_frame(
                d3d11_init_history(d3d11, width, height);
             else
             {
+               int k;
                /* todo: what about frame-duping ?
                 * maybe clone d3d11_texture_t with AddRef */
                d3d11_texture_t tmp = d3d11->frame.texture[d3d11->shader_preset->history_size];
-               for (int i = d3d11->shader_preset->history_size; i > 0; i--)
-                  d3d11->frame.texture[i] = d3d11->frame.texture[i - 1];
+               for (k = d3d11->shader_preset->history_size; k > 0; k--)
+                  d3d11->frame.texture[k] = d3d11->frame.texture[k - 1];
                d3d11->frame.texture[0] = tmp;
             }
          }
@@ -962,11 +973,11 @@ static bool d3d11_gfx_frame(
    D3D11SetVertexBuffer(context, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
    D3D11SetBlendState(context, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
-   d3d11_texture_t* texture = d3d11->frame.texture;
+   texture = d3d11->frame.texture;
 
    if (d3d11->shader_preset)
    {
-      for (int i = 0; i < d3d11->shader_preset->passes; i++)
+      for (i = 0; i < d3d11->shader_preset->passes; i++)
       {
          if (d3d11->shader_preset->pass[i].feedback)
          {
@@ -976,8 +987,10 @@ static bool d3d11_gfx_frame(
          }
       }
 
-      for (int i = 0; i < d3d11->shader_preset->passes; i++)
+      for (i = 0; i < d3d11->shader_preset->passes; i++)
       {
+         unsigned j;
+
          d3d11_set_shader(context, &d3d11->pass[i].shader);
 
          if (d3d11->shader_preset->pass[i].frame_count_mod)
@@ -986,7 +999,7 @@ static bool d3d11_gfx_frame(
          else
             d3d11->pass[i].frame_count = frame_count;
 
-         for (int j = 0; j < SLANG_CBUFFER_MAX; j++)
+         for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {
             D3D11Buffer    buffer     = d3d11->pass[i].buffers[j];
             cbuffer_sem_t* buffer_sem = &d3d11->pass[i].semantics.cbuffers[j];
@@ -1244,7 +1257,10 @@ static uintptr_t d3d11_gfx_load_texture(
    if (!d3d11)
       return 0;
 
-   texture = (d3d11_texture_t*)calloc(1, sizeof(*texture));
+   texture                       = (d3d11_texture_t*)calloc(1, sizeof(*texture));
+
+   if (!texture)
+      return 0;
 
    switch (filter_type)
    {

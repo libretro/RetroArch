@@ -80,9 +80,12 @@ static void menu_display_d3d11_draw(void* data)
 
    {
       D3D11_MAPPED_SUBRESOURCE mapped_vbo;
+      d3d11_sprite_t                   *v = NULL;
+
       D3D11MapBuffer(
             d3d11->context, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
-      d3d11_sprite_t* v = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
+
+      v        = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
       v->pos.x = draw->x / (float)d3d11->viewport.Width;
       v->pos.y = (d3d11->viewport.Height - draw->y - draw->height) / (float)d3d11->viewport.Height;
@@ -128,8 +131,6 @@ static void menu_display_d3d11_draw_pipeline(void* data)
    menu_display_ctx_draw_t* draw  = (menu_display_ctx_draw_t*)data;
    d3d11_video_t*           d3d11 = (d3d11_video_t*)video_driver_get_ptr(false);
 
-   video_coord_array_t* ca = NULL;
-
    if (!d3d11 || !draw)
       return;
 
@@ -138,7 +139,7 @@ static void menu_display_d3d11_draw_pipeline(void* data)
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       {
-         ca = menu_display_get_coords_array();
+         video_coord_array_t *ca = menu_display_get_coords_array();
 
          if (!d3d11->menu_pipeline_vbo)
          {
@@ -170,6 +171,7 @@ static void menu_display_d3d11_draw_pipeline(void* data)
    D3D11SetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
    d3d11->ubo_values.time += 0.01f;
+
    {
       D3D11_MAPPED_SUBRESOURCE mapped_ubo;
       D3D11MapBuffer(d3d11->context, d3d11->ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
