@@ -26,11 +26,20 @@
 #include "../../gfx/video_driver.h"
 #include "../../gfx/common/d3d11_common.h"
 
-static const float* menu_display_d3d11_get_default_vertices(void) { return NULL; }
+static const float* menu_display_d3d11_get_default_vertices(void)
+{
+   return NULL;
+}
 
-static const float* menu_display_d3d11_get_default_tex_coords(void) { return NULL; }
+static const float* menu_display_d3d11_get_default_tex_coords(void)
+{
+   return NULL;
+}
 
-static void* menu_display_d3d11_get_default_mvp(void) { return NULL; }
+static void* menu_display_d3d11_get_default_mvp(void)
+{
+   return NULL;
+}
 
 static void menu_display_d3d11_blend_begin(void)
 {
@@ -44,7 +53,9 @@ static void menu_display_d3d11_blend_end(void)
    D3D11SetBlendState(d3d11->ctx, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
-static void menu_display_d3d11_viewport(void* data) {}
+static void menu_display_d3d11_viewport(void* data)
+{
+}
 
 static void menu_display_d3d11_draw(void* data)
 {
@@ -80,14 +91,17 @@ static void menu_display_d3d11_draw(void* data)
 
    {
       D3D11_MAPPED_SUBRESOURCE mapped_vbo;
+      d3d11_sprite_t                   *v = NULL;
+
       D3D11MapBuffer(
             d3d11->ctx, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
-      d3d11_sprite_t* v = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
-      v->pos.x = draw->x / (float)d3d11->viewport.Width;
-      v->pos.y = (d3d11->viewport.Height - draw->y - draw->height) / (float)d3d11->viewport.Height;
-      v->pos.w = draw->width / (float)d3d11->viewport.Width;
-      v->pos.h = draw->height / (float)d3d11->viewport.Height;
+      v           = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
+
+      v->pos.x    = draw->x / (float)d3d11->viewport.Width;
+      v->pos.y    = (d3d11->viewport.Height - draw->y - draw->height) / (float)d3d11->viewport.Height;
+      v->pos.w    = draw->width / (float)d3d11->viewport.Width;
+      v->pos.h    = draw->height / (float)d3d11->viewport.Height;
 
       v->coords.u = 0.0f;
       v->coords.v = 0.0f;
@@ -117,18 +131,17 @@ static void menu_display_d3d11_draw(void* data)
       D3D11UnmapBuffer(d3d11->ctx, d3d11->sprites.vbo, 0);
    }
 
-   d3d11_set_texture_and_sampler(d3d11->ctx, 0, (d3d11_texture_t*)draw->texture);
+   d3d11_set_texture_and_sampler(d3d11->ctx, 0,
+         (d3d11_texture_t*)draw->texture);
    D3D11Draw(d3d11->ctx, 1, d3d11->sprites.offset);
    d3d11->sprites.offset++;
-   return;
 }
 
 static void menu_display_d3d11_draw_pipeline(void* data)
 {
+   video_coord_array_t      *ca   = NULL;
    menu_display_ctx_draw_t* draw  = (menu_display_ctx_draw_t*)data;
    d3d11_video_t*           d3d11 = (d3d11_video_t*)video_driver_get_ptr(false);
-
-   video_coord_array_t* ca = NULL;
 
    if (!d3d11 || !draw)
       return;
@@ -137,7 +150,6 @@ static void menu_display_d3d11_draw_pipeline(void* data)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-      {
          ca = menu_display_get_coords_array();
 
          if (!d3d11->menu_pipeline_vbo)
@@ -154,7 +166,6 @@ static void menu_display_d3d11_draw_pipeline(void* data)
          draw->coords->vertices = ca->coords.vertices;
          D3D11SetBlendState(d3d11->ctx, d3d11->blend_pipeline, NULL, D3D11_DEFAULT_SAMPLE_MASK);
          break;
-      }
 
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
@@ -178,7 +189,9 @@ static void menu_display_d3d11_draw_pipeline(void* data)
    }
 }
 
-static void menu_display_d3d11_restore_clear_color(void) {}
+static void menu_display_d3d11_restore_clear_color(void)
+{
+}
 
 static void menu_display_d3d11_clear_color(menu_display_ctx_clearcolor_t* clearcolor)
 {

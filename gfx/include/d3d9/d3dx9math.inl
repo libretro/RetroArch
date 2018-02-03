@@ -1,26 +1,24 @@
-//////////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (C) Microsoft Corporation.  All Rights Reserved.
-//
-//  File:       d3dx9math.inl
-//  Content:    D3DX math inline functions
-//
-//////////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
+ *
+ *  File:       d3dx9math.inl
+ *  Content:    D3DX math inline functions
+ */
 
 #ifndef __D3DX9MATH_INL__
 #define __D3DX9MATH_INL__
 
-//===========================================================================
-//
-// Inline Class Methods
-//
-//===========================================================================
+/*
+ *
+ * Inline Class Methods
+ */
 
 #ifdef __cplusplus
 
-//--------------------------
-// Float16
-//--------------------------
+/*
+ * Float16
+ */
 
 D3DXINLINE
 D3DXFLOAT16::D3DXFLOAT16( FLOAT f )
@@ -34,7 +32,7 @@ D3DXFLOAT16::D3DXFLOAT16( CONST D3DXFLOAT16& f )
     value = f.value;
 }
 
-// casting
+/* casting */
 D3DXINLINE
 D3DXFLOAT16::operator FLOAT ()
 {
@@ -43,7 +41,7 @@ D3DXFLOAT16::operator FLOAT ()
     return f;
 }
 
-// binary operators
+/* binary operators */
 D3DXINLINE BOOL
 D3DXFLOAT16::operator == ( CONST D3DXFLOAT16& f ) const
 {
@@ -57,9 +55,9 @@ D3DXFLOAT16::operator != ( CONST D3DXFLOAT16& f ) const
 }
 
 
-//--------------------------
-// 2D Vector
-//--------------------------
+/*
+ * 2D Vector
+ */
 
 D3DXINLINE
 D3DXVECTOR2::D3DXVECTOR2( CONST FLOAT *pf )
@@ -81,8 +79,7 @@ D3DXVECTOR2::D3DXVECTOR2( FLOAT fx, FLOAT fy )
     y = fy;
 }
 
-
-// casting
+/* casting */
 D3DXINLINE
 D3DXVECTOR2::operator FLOAT* ()
 {
@@ -95,8 +92,7 @@ D3DXVECTOR2::operator CONST FLOAT* () const
     return (CONST FLOAT *) &x;
 }
 
-
-// assignment operators
+/* assignment operators */
 D3DXINLINE D3DXVECTOR2&
 D3DXVECTOR2::operator += ( CONST D3DXVECTOR2& v )
 {
@@ -130,8 +126,7 @@ D3DXVECTOR2::operator /= ( FLOAT f )
     return *this;
 }
 
-
-// unary operators
+/* unary operators */
 D3DXINLINE D3DXVECTOR2
 D3DXVECTOR2::operator + () const
 {
@@ -144,8 +139,7 @@ D3DXVECTOR2::operator - () const
     return D3DXVECTOR2(-x, -y);
 }
 
-
-// binary operators
+/* binary operators */
 D3DXINLINE D3DXVECTOR2
 D3DXVECTOR2::operator + ( CONST D3DXVECTOR2& v ) const
 {
@@ -189,11 +183,9 @@ D3DXVECTOR2::operator != ( CONST D3DXVECTOR2& v ) const
     return x != v.x || y != v.y;
 }
 
-
-
-//--------------------------
-// 2D Vector (16 bit)
-//--------------------------
+/*
+ * 2D Vector (16 bit)
+ */
 
 D3DXINLINE
 D3DXVECTOR2_16F::D3DXVECTOR2_16F( CONST FLOAT *pf )
@@ -214,8 +206,7 @@ D3DXVECTOR2_16F::D3DXVECTOR2_16F( CONST D3DXFLOAT16 &fx, CONST D3DXFLOAT16 &fy )
     y = fy;
 }
 
-
-// casting
+/* casting */
 D3DXINLINE
 D3DXVECTOR2_16F::operator D3DXFLOAT16* ()
 {
@@ -228,8 +219,7 @@ D3DXVECTOR2_16F::operator CONST D3DXFLOAT16* () const
     return (CONST D3DXFLOAT16*) &x;
 }
 
-
-// binary operators
+/* binary operators */
 D3DXINLINE BOOL 
 D3DXVECTOR2_16F::operator == ( CONST D3DXVECTOR2_16F &v ) const
 {
@@ -243,9 +233,9 @@ D3DXVECTOR2_16F::operator != ( CONST D3DXVECTOR2_16F &v ) const
 }
 
 
-//--------------------------
-// 3D Vector
-//--------------------------
+/*
+ * 3D Vector
+ */
 D3DXINLINE
 D3DXVECTOR3::D3DXVECTOR3( CONST FLOAT *pf )
 {
@@ -276,8 +266,7 @@ D3DXVECTOR3::D3DXVECTOR3( FLOAT fx, FLOAT fy, FLOAT fz )
     z = fz;
 }
 
-
-// casting
+/* casting */
 D3DXINLINE
 D3DXVECTOR3::operator FLOAT* ()
 {
@@ -290,8 +279,7 @@ D3DXVECTOR3::operator CONST FLOAT* () const
     return (CONST FLOAT *) &x;
 }
 
-
-// assignment operators
+/* assignment operators */
 D3DXINLINE D3DXVECTOR3&
 D3DXVECTOR3::operator += ( CONST D3DXVECTOR3& v )
 {
@@ -329,8 +317,7 @@ D3DXVECTOR3::operator /= ( FLOAT f )
     return *this;
 }
 
-
-// unary operators
+/* unary operators */
 D3DXINLINE D3DXVECTOR3
 D3DXVECTOR3::operator + () const
 {
@@ -343,8 +330,7 @@ D3DXVECTOR3::operator - () const
     return D3DXVECTOR3(-x, -y, -z);
 }
 
-
-// binary operators
+/* binary operators */
 D3DXINLINE D3DXVECTOR3
 D3DXVECTOR3::operator + ( CONST D3DXVECTOR3& v ) const
 {
@@ -390,11 +376,9 @@ D3DXVECTOR3::operator != ( CONST D3DXVECTOR3& v ) const
     return x != v.x || y != v.y || z != v.z;
 }
 
-
-
-//--------------------------
-// 3D Vector (16 bit)
-//--------------------------
+/*
+ * 3D Vector (16 bit)
+ */
 
 D3DXINLINE
 D3DXVECTOR3_16F::D3DXVECTOR3_16F( CONST FLOAT *pf )
@@ -425,8 +409,7 @@ D3DXVECTOR3_16F::D3DXVECTOR3_16F( CONST D3DXFLOAT16 &fx, CONST D3DXFLOAT16 &fy, 
     z = fz;
 }
 
-
-// casting
+/* casting */
 D3DXINLINE
 D3DXVECTOR3_16F::operator D3DXFLOAT16* ()
 {
@@ -439,8 +422,7 @@ D3DXVECTOR3_16F::operator CONST D3DXFLOAT16* () const
     return (CONST D3DXFLOAT16*) &x;
 }
 
-
-// binary operators
+/* binary operators */
 D3DXINLINE BOOL 
 D3DXVECTOR3_16F::operator == ( CONST D3DXVECTOR3_16F &v ) const
 {
@@ -456,9 +438,9 @@ D3DXVECTOR3_16F::operator != ( CONST D3DXVECTOR3_16F &v ) const
 }
 
 
-//--------------------------
-// 4D Vector
-//--------------------------
+/*
+ * 4D Vector
+ */
 D3DXINLINE
 D3DXVECTOR4::D3DXVECTOR4( CONST FLOAT *pf )
 {
@@ -492,8 +474,7 @@ D3DXVECTOR4::D3DXVECTOR4( FLOAT fx, FLOAT fy, FLOAT fz, FLOAT fw )
     w = fw;
 }
 
-
-// casting
+/* casting */
 D3DXINLINE
 D3DXVECTOR4::operator FLOAT* ()
 {
@@ -506,8 +487,7 @@ D3DXVECTOR4::operator CONST FLOAT* () const
     return (CONST FLOAT *) &x;
 }
 
-
-// assignment operators
+/* assignment operators */
 D3DXINLINE D3DXVECTOR4&
 D3DXVECTOR4::operator += ( CONST D3DXVECTOR4& v )
 {
@@ -549,8 +529,7 @@ D3DXVECTOR4::operator /= ( FLOAT f )
     return *this;
 }
 
-
-// unary operators
+/* unary operators */
 D3DXINLINE D3DXVECTOR4
 D3DXVECTOR4::operator + () const
 {
@@ -563,8 +542,7 @@ D3DXVECTOR4::operator - () const
     return D3DXVECTOR4(-x, -y, -z, -w);
 }
 
-
-// binary operators
+/* binary operators */
 D3DXINLINE D3DXVECTOR4
 D3DXVECTOR4::operator + ( CONST D3DXVECTOR4& v ) const
 {
@@ -609,11 +587,9 @@ D3DXVECTOR4::operator != ( CONST D3DXVECTOR4& v ) const
     return x != v.x || y != v.y || z != v.z || w != v.w;
 }
 
-
-
-//--------------------------
-// 4D Vector (16 bit)
-//--------------------------
+/*
+ * 4D Vector (16 bit)
+ */
 
 D3DXINLINE
 D3DXVECTOR4_16F::D3DXVECTOR4_16F( CONST FLOAT *pf )
@@ -646,8 +622,7 @@ D3DXVECTOR4_16F::D3DXVECTOR4_16F( CONST D3DXFLOAT16 &fx, CONST D3DXFLOAT16 &fy, 
     w = fw;
 }
 
-
-// casting
+/* casting */
 D3DXINLINE
 D3DXVECTOR4_16F::operator D3DXFLOAT16* ()
 {
@@ -660,8 +635,7 @@ D3DXVECTOR4_16F::operator CONST D3DXFLOAT16* () const
     return (CONST D3DXFLOAT16*) &x;
 }
 
-
-// binary operators
+/* binary operators */
 D3DXINLINE BOOL 
 D3DXVECTOR4_16F::operator == ( CONST D3DXVECTOR4_16F &v ) const
 {
@@ -677,9 +651,9 @@ D3DXVECTOR4_16F::operator != ( CONST D3DXVECTOR4_16F &v ) const
 }
 
 
-//--------------------------
-// Matrix
-//--------------------------
+/*
+ * Matrix
+ */
 D3DXINLINE
 D3DXMATRIX::D3DXMATRIX( CONST FLOAT* pf )
 {
@@ -710,9 +684,7 @@ D3DXMATRIX::D3DXMATRIX( FLOAT f11, FLOAT f12, FLOAT f13, FLOAT f14,
     _41 = f41; _42 = f42; _43 = f43; _44 = f44;
 }
 
-
-
-// access grants
+/* access grants */
 D3DXINLINE FLOAT&
 D3DXMATRIX::operator () ( UINT iRow, UINT iCol )
 {
@@ -725,8 +697,7 @@ D3DXMATRIX::operator () ( UINT iRow, UINT iCol ) const
     return m[iRow][iCol];
 }
 
-
-// casting operators
+/* casting operators */
 D3DXINLINE
 D3DXMATRIX::operator FLOAT* ()
 {
@@ -739,8 +710,7 @@ D3DXMATRIX::operator CONST FLOAT* () const
     return (CONST FLOAT *) &_11;
 }
 
-
-// assignment operators
+/* assignment operators */
 D3DXINLINE D3DXMATRIX&
 D3DXMATRIX::operator *= ( CONST D3DXMATRIX& mat )
 {
@@ -789,8 +759,7 @@ D3DXMATRIX::operator /= ( FLOAT f )
     return *this;
 }
 
-
-// unary operators
+/* unary operators */
 D3DXINLINE D3DXMATRIX
 D3DXMATRIX::operator + () const
 {
@@ -806,8 +775,7 @@ D3DXMATRIX::operator - () const
                       -_41, -_42, -_43, -_44);
 }
 
-
-// binary operators
+/* binary operators */
 D3DXINLINE D3DXMATRIX
 D3DXMATRIX::operator * ( CONST D3DXMATRIX& mat ) const
 {
@@ -876,11 +844,9 @@ D3DXMATRIX::operator != ( CONST D3DXMATRIX& mat ) const
     return 0 != memcmp(this, &mat, sizeof(D3DXMATRIX));
 }
 
-
-
-//--------------------------
-// Aligned Matrices
-//--------------------------
+/*
+ * Aligned Matrices
+ */
 
 D3DXINLINE
 _D3DXMATRIXA16::_D3DXMATRIXA16( CONST FLOAT* f ) : 
@@ -975,10 +941,9 @@ _D3DXMATRIXA16::operator=(CONST D3DXMATRIX& rhs)
     return *this;
 }
 
-
-//--------------------------
-// Quaternion
-//--------------------------
+/*
+ * Quaternion
+ */
 
 D3DXINLINE
 D3DXQUATERNION::D3DXQUATERNION( CONST FLOAT* pf )
@@ -1004,8 +969,7 @@ D3DXQUATERNION::D3DXQUATERNION( FLOAT fx, FLOAT fy, FLOAT fz, FLOAT fw )
     w = fw;
 }
 
-
-// casting
+/* casting */
 D3DXINLINE
 D3DXQUATERNION::operator FLOAT* ()
 {
@@ -1018,8 +982,7 @@ D3DXQUATERNION::operator CONST FLOAT* () const
     return (CONST FLOAT *) &x;
 }
 
-
-// assignment operators
+/* assignment operators */
 D3DXINLINE D3DXQUATERNION&
 D3DXQUATERNION::operator += ( CONST D3DXQUATERNION& q )
 {
@@ -1068,8 +1031,7 @@ D3DXQUATERNION::operator /= ( FLOAT f )
     return *this;
 }
 
-
-// unary operators
+/* unary operators */
 D3DXINLINE D3DXQUATERNION
 D3DXQUATERNION::operator + () const
 {
@@ -1082,8 +1044,7 @@ D3DXQUATERNION::operator - () const
     return D3DXQUATERNION(-x, -y, -z, -w);
 }
 
-
-// binary operators
+/* binary operators */
 D3DXINLINE D3DXQUATERNION
 D3DXQUATERNION::operator + ( CONST D3DXQUATERNION& q ) const
 {
@@ -1137,11 +1098,9 @@ D3DXQUATERNION::operator != ( CONST D3DXQUATERNION& q ) const
     return x != q.x || y != q.y || z != q.z || w != q.w;
 }
 
-
-
-//--------------------------
-// Plane
-//--------------------------
+/*
+ * Plane
+ */
 
 D3DXINLINE
 D3DXPLANE::D3DXPLANE( CONST FLOAT* pf )
@@ -1167,8 +1126,7 @@ D3DXPLANE::D3DXPLANE( FLOAT fa, FLOAT fb, FLOAT fc, FLOAT fd )
     d = fd;
 }
 
-
-// casting
+/* casting */
 D3DXINLINE
 D3DXPLANE::operator FLOAT* ()
 {
@@ -1181,8 +1139,7 @@ D3DXPLANE::operator CONST FLOAT* () const
     return (CONST FLOAT *) &a;
 }
 
-
-// assignment operators
+/* assignment operators */
 D3DXINLINE D3DXPLANE&
 D3DXPLANE::operator *= ( FLOAT f )
 {
@@ -1204,8 +1161,7 @@ D3DXPLANE::operator /= ( FLOAT f )
     return *this;
 }
 
-
-// unary operators
+/* unary operators */
 D3DXINLINE D3DXPLANE
 D3DXPLANE::operator + () const
 {
@@ -1218,8 +1174,7 @@ D3DXPLANE::operator - () const
     return D3DXPLANE(-a, -b, -c, -d);
 }
 
-
-// binary operators
+/* binary operators */
 D3DXINLINE D3DXPLANE
 D3DXPLANE::operator * ( FLOAT f ) const
 {
@@ -1251,12 +1206,9 @@ D3DXPLANE::operator != ( CONST D3DXPLANE& p ) const
     return a != p.a || b != p.b || c != p.c || d != p.d;
 }
 
-
-
-
-//--------------------------
-// Color
-//--------------------------
+/*
+ * Color
+ */
 
 D3DXINLINE
 D3DXCOLOR::D3DXCOLOR( DWORD dw )
@@ -1301,8 +1253,7 @@ D3DXCOLOR::D3DXCOLOR( FLOAT fr, FLOAT fg, FLOAT fb, FLOAT fa )
     a = fa;
 }
 
-
-// casting
+/* casting */
 D3DXINLINE
 D3DXCOLOR::operator DWORD () const
 {
@@ -1353,8 +1304,7 @@ D3DXCOLOR::operator CONST D3DCOLORVALUE& () const
     return *((CONST D3DCOLORVALUE *) &r);
 }
 
-
-// assignment operators
+/* assignment operators */
 D3DXINLINE D3DXCOLOR&
 D3DXCOLOR::operator += ( CONST D3DXCOLOR& c )
 {
@@ -1396,8 +1346,7 @@ D3DXCOLOR::operator /= ( FLOAT f )
     return *this;
 }
 
-
-// unary operators
+/* unary operators */
 D3DXINLINE D3DXCOLOR
 D3DXCOLOR::operator + () const
 {
@@ -1410,8 +1359,7 @@ D3DXCOLOR::operator - () const
     return D3DXCOLOR(-r, -g, -b, -a);
 }
 
-
-// binary operators
+/* binary operators */
 D3DXINLINE D3DXCOLOR
 D3DXCOLOR::operator + ( CONST D3DXCOLOR& c ) const
 {
@@ -1458,20 +1406,17 @@ D3DXCOLOR::operator != ( CONST D3DXCOLOR& c ) const
 }
 
 
-#endif //__cplusplus
+#endif /*__cplusplus */
+
+/*
+ *
+ * Inline functions
+ */
 
 
-
-//===========================================================================
-//
-// Inline functions
-//
-//===========================================================================
-
-
-//--------------------------
-// 2D Vector
-//--------------------------
+/*
+ * 2D Vector
+ */
 
 D3DXINLINE FLOAT D3DXVec2Length
     ( CONST D3DXVECTOR2 *pV )
@@ -1550,10 +1495,9 @@ D3DXINLINE D3DXVECTOR2* D3DXVec2Lerp
     return pOut;
 }
 
-
-//--------------------------
-// 3D Vector
-//--------------------------
+/*
+ * 3D Vector
+ */
 
 D3DXINLINE FLOAT D3DXVec3Length
     ( CONST D3DXVECTOR3 *pV )
@@ -1646,9 +1590,9 @@ D3DXINLINE D3DXVECTOR3* D3DXVec3Lerp
 }
 
 
-//--------------------------
-// 4D Vector
-//--------------------------
+/*
+ * 4D Vector
+ */
 
 D3DXINLINE FLOAT D3DXVec4Length
     ( CONST D3DXVECTOR4 *pV )
@@ -1734,9 +1678,9 @@ D3DXINLINE D3DXVECTOR4* D3DXVec4Lerp
 }
 
 
-//--------------------------
-// 4D Matrix
-//--------------------------
+/*
+ * 4D Matrix
+ */
 
 D3DXINLINE D3DXMATRIX* D3DXMatrixIdentity
     ( D3DXMATRIX *pOut )
@@ -1761,9 +1705,9 @@ D3DXINLINE BOOL D3DXMatrixIsIdentity
 }
 
 
-//--------------------------
-// Quaternion
-//--------------------------
+/*
+ * Quaternion
+ */
 
 D3DXINLINE FLOAT D3DXQuaternionLength
     ( CONST D3DXQUATERNION *pQ )
@@ -1813,10 +1757,9 @@ D3DXINLINE D3DXQUATERNION* D3DXQuaternionConjugate
     return pOut;
 }
 
-
-//--------------------------
-// Plane
-//--------------------------
+/*
+ * Plane
+ */
 
 D3DXINLINE FLOAT D3DXPlaneDot
     ( CONST D3DXPLANE *pP, CONST D3DXVECTOR4 *pV)
@@ -1847,9 +1790,9 @@ D3DXINLINE D3DXPLANE* D3DXPlaneScale
 }
 
 
-//--------------------------
-// Color
-//--------------------------
+/*
+ * Color
+ */
 
 D3DXINLINE D3DXCOLOR* D3DXColorNegative
     (D3DXCOLOR *pOut, CONST D3DXCOLOR *pC)
@@ -1912,4 +1855,4 @@ D3DXINLINE D3DXCOLOR* D3DXColorLerp
 }
 
 
-#endif // __D3DX9MATH_INL__
+#endif /* __D3DX9MATH_INL__ */
