@@ -59,7 +59,11 @@
 #include "cg.h"
 
 #include <d3d9.h>
+#if 0
+#ifdef HAVE_D3DX
 #include "../d3d9/d3dx9.h"
+#endif
+#endif
 #include <windows.h>
 
 /* Set up for either Win32 import/export/lib. */

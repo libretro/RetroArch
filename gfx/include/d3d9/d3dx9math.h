@@ -1,11 +1,10 @@
-//////////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (C) Microsoft Corporation.  All Rights Reserved.
-//
-//  File:       d3dx9math.h
-//  Content:    D3DX math types and functions
-//
-//////////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
+ *
+ *  File:       d3dx9math.h
+ *  Content:    D3DX math types and functions
+ */
 
 #include "d3dx9.h"
 
@@ -17,36 +16,33 @@
 #pragma warning(push)
 #endif
 
-//===========================================================================
-//
-// General purpose utilities
-//
-//===========================================================================
+/*
+ *
+ * General purpose utilities
+ *
+ */
 #define D3DX_PI    ((FLOAT)  3.141592654f)
 #define D3DX_1BYPI ((FLOAT)  0.318309886f)
 
 #define D3DXToRadian( degree ) ((degree) * (D3DX_PI / 180.0f))
 #define D3DXToDegree( radian ) ((radian) * (180.0f / D3DX_PI))
 
+/*
+ *
+ * 16 bit floating point numbers
+ */
 
-
-//===========================================================================
-//
-// 16 bit floating point numbers
-//
-//===========================================================================
-
-#define D3DX_16F_DIG          3                // # of decimal digits of precision
-#define D3DX_16F_EPSILON      4.8875809e-4f    // smallest such that 1.0 + epsilon != 1.0
-#define D3DX_16F_MANT_DIG     11               // # of bits in mantissa
-#define D3DX_16F_MAX          6.550400e+004    // max value
-#define D3DX_16F_MAX_10_EXP   4                // max decimal exponent
-#define D3DX_16F_MAX_EXP      15               // max binary exponent
-#define D3DX_16F_MIN          6.1035156e-5f    // min positive value
-#define D3DX_16F_MIN_10_EXP   (-4)             // min decimal exponent
-#define D3DX_16F_MIN_EXP      (-14)            // min binary exponent
-#define D3DX_16F_RADIX        2                // exponent radix
-#define D3DX_16F_ROUNDS       1                // addition rounding: near
+#define D3DX_16F_DIG          3                /* # of decimal digits of precision */
+#define D3DX_16F_EPSILON      4.8875809e-4f    /* smallest such that 1.0 + epsilon != 1.0 */
+#define D3DX_16F_MANT_DIG     11               /* # of bits in mantissa */
+#define D3DX_16F_MAX          6.550400e+004    /* max value */
+#define D3DX_16F_MAX_10_EXP   4                /* max decimal exponent */
+#define D3DX_16F_MAX_EXP      15               /* max binary exponent */
+#define D3DX_16F_MIN          6.1035156e-5f    /* min positive value */
+#define D3DX_16F_MIN_10_EXP   (-4)             /* min decimal exponent */
+#define D3DX_16F_MIN_EXP      (-14)            /* min binary exponent */
+#define D3DX_16F_RADIX        2                /* exponent radix */
+#define D3DX_16F_ROUNDS       1                /* addition rounding: near */
 
 
 typedef struct D3DXFLOAT16
@@ -79,9 +75,9 @@ protected:
  */
 
 
-//--------------------------
-// 2D Vector
-//--------------------------
+/*
+ * 2D Vector
+ */
 typedef struct D3DXVECTOR2
 {
 #ifdef __cplusplus
@@ -122,11 +118,9 @@ public:
     FLOAT x, y;
 } D3DXVECTOR2, *LPD3DXVECTOR2;
 
-
-
-//--------------------------
-// 2D Vector (16 bit)
-//--------------------------
+/*
+ * 2D Vector (16 bit)
+ */
 
 typedef struct D3DXVECTOR2_16F
 {
@@ -410,11 +404,11 @@ typedef D3DXMATRIX  _D3DXMATRIXA16;
 
 typedef D3DX_ALIGN16 _D3DXMATRIXA16 D3DXMATRIXA16, *LPD3DXMATRIXA16;
 
-//===========================================================================
-//
-//    Quaternions
-//
-//===========================================================================
+/*
+ *
+ *    Quaternions
+ */
+
 typedef struct D3DXQUATERNION
 {
 #ifdef __cplusplus
@@ -424,22 +418,22 @@ public:
     D3DXQUATERNION( CONST D3DXFLOAT16 * );
     D3DXQUATERNION( FLOAT x, FLOAT y, FLOAT z, FLOAT w );
 
-    // casting
+    /* casting */
     operator FLOAT* ();
     operator CONST FLOAT* () const;
 
-    // assignment operators
+    /* assignment operators */
     D3DXQUATERNION& operator += ( CONST D3DXQUATERNION& );
     D3DXQUATERNION& operator -= ( CONST D3DXQUATERNION& );
     D3DXQUATERNION& operator *= ( CONST D3DXQUATERNION& );
     D3DXQUATERNION& operator *= ( FLOAT );
     D3DXQUATERNION& operator /= ( FLOAT );
 
-    // unary operators
+    /* unary operators */
     D3DXQUATERNION  operator + () const;
     D3DXQUATERNION  operator - () const;
 
-    // binary operators
+    /* binary operators */
     D3DXQUATERNION operator + ( CONST D3DXQUATERNION& ) const;
     D3DXQUATERNION operator - ( CONST D3DXQUATERNION& ) const;
     D3DXQUATERNION operator * ( CONST D3DXQUATERNION& ) const;
@@ -451,16 +445,14 @@ public:
     BOOL operator == ( CONST D3DXQUATERNION& ) const;
     BOOL operator != ( CONST D3DXQUATERNION& ) const;
 
-#endif //__cplusplus
+#endif /* __cplusplus */
     FLOAT x, y, z, w;
 } D3DXQUATERNION, *LPD3DXQUATERNION;
 
-
-//===========================================================================
-//
-// Planes
-//
-//===========================================================================
+/*
+ *
+ * Planes
+ */
 typedef struct D3DXPLANE
 {
 #ifdef __cplusplus

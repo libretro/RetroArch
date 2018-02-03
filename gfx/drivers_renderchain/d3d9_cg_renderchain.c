@@ -284,8 +284,6 @@ static void d3d9_cg_renderchain_set_shader_params(
    set_cg_param(pass->vPrg, "IN.frame_count", frame_cnt);
 }
 
-
-
 #define DECL_FVF_TEXCOORD(stream, offset, index) \
    { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, \
       D3DDECLUSAGE_TEXCOORD, (BYTE)(index) }
@@ -1147,7 +1145,7 @@ static bool d3d9_cg_renderchain_add_lut(void *data,
          D3D_DEFAULT_NONPOW2,
          0,
          0,
-         D3DFMT_FROM_FILE,
+         ((D3DFORMAT)-3), /* D3DFMT_FROM_FILE */
          D3DPOOL_MANAGED,
          smooth ? D3D_FILTER_LINEAR : D3D_FILTER_POINT,
          0,

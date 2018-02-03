@@ -16,36 +16,37 @@
 DEFINE_GUID(IID_ID3DXBaseMesh,
 0x7ed943dd, 0x52e8, 0x40b5, 0xa8, 0xd8, 0x76, 0x68, 0x5c, 0x40, 0x63, 0x30);
 
-// {4020E5C2-1403-4929-883F-E2E849FAC195}
+/* {4020E5C2-1403-4929-883F-E2E849FAC195} */
 DEFINE_GUID(IID_ID3DXMesh,
 0x4020e5c2, 0x1403, 0x4929, 0x88, 0x3f, 0xe2, 0xe8, 0x49, 0xfa, 0xc1, 0x95);
 
-// {8875769A-D579-4088-AAEB-534D1AD84E96}
+/* {8875769A-D579-4088-AAEB-534D1AD84E96} */
 DEFINE_GUID(IID_ID3DXPMesh,
 0x8875769a, 0xd579, 0x4088, 0xaa, 0xeb, 0x53, 0x4d, 0x1a, 0xd8, 0x4e, 0x96);
 
-// {667EA4C7-F1CD-4386-B523-7C0290B83CC5}
+/* {667EA4C7-F1CD-4386-B523-7C0290B83CC5} */
 DEFINE_GUID(IID_ID3DXSPMesh,
 0x667ea4c7, 0xf1cd, 0x4386, 0xb5, 0x23, 0x7c, 0x2, 0x90, 0xb8, 0x3c, 0xc5);
 
-// {11EAA540-F9A6-4d49-AE6A-E19221F70CC4}
+/* {11EAA540-F9A6-4d49-AE6A-E19221F70CC4} */
 DEFINE_GUID(IID_ID3DXSkinInfo,
 0x11eaa540, 0xf9a6, 0x4d49, 0xae, 0x6a, 0xe1, 0x92, 0x21, 0xf7, 0xc, 0xc4);
 
-// {3CE6CC22-DBF2-44f4-894D-F9C34A337139}
+/* {3CE6CC22-DBF2-44f4-894D-F9C34A337139} */
 DEFINE_GUID(IID_ID3DXPatchMesh,
 0x3ce6cc22, 0xdbf2, 0x44f4, 0x89, 0x4d, 0xf9, 0xc3, 0x4a, 0x33, 0x71, 0x39);
 
-//patch mesh can be quads or tris
-typedef enum _D3DXPATCHMESHTYPE {
+/* patch mesh can be quads or tris */
+typedef enum _D3DXPATCHMESHTYPE
+{
     D3DXPATCHMESH_RECT   = 0x001,
     D3DXPATCHMESH_TRI    = 0x002,
     D3DXPATCHMESH_NPATCH = 0x003,
 
-    D3DXPATCHMESH_FORCE_DWORD    = 0x7fffffff, /* force 32-bit size enum */
+    D3DXPATCHMESH_FORCE_DWORD    = 0x7fffffff /* force 32-bit size enum */
 } D3DXPATCHMESHTYPE;
 
-// Mesh options - lower 3 bytes only, upper byte used by _D3DXMESHOPT option flags
+/* Mesh options - lower 3 bytes only, upper byte used by _D3DXMESHOPT option flags */
 enum _D3DXMESH {
     D3DXMESH_32BIT                  = 0x001, // If set, then use 32 bit indices, if not set use 16 bit indices.
     D3DXMESH_DONOTCLIP              = 0x002, // Use D3DUSAGE_DONOTCLIP for VB & IB.
@@ -73,14 +74,14 @@ enum _D3DXMESH {
     D3DXMESH_WRITEONLY              = 0x440, // D3DXMESH_VB_WRITEONLY | D3DXMESH_IB_WRITEONLY
     D3DXMESH_DYNAMIC                = 0x880, // D3DXMESH_VB_DYNAMIC | D3DXMESH_IB_DYNAMIC
     D3DXMESH_SOFTWAREPROCESSING   = 0x18000  // D3DXMESH_VB_SOFTWAREPROCESSING | D3DXMESH_IB_SOFTWAREPROCESSING
-
 };
 
-//patch mesh options
+/* patch mesh options */
 enum _D3DXPATCHMESH {
-    D3DXPATCHMESH_DEFAULT = 000,
+    D3DXPATCHMESH_DEFAULT = 000
 };
-// option field values for specifying min value in D3DXGeneratePMesh and D3DXSimplifyMesh
+
+/* option field values for specifying min value in D3DXGeneratePMesh and D3DXSimplifyMesh */
 enum _D3DXMESHSIMP
 {
     D3DXMESHSIMP_VERTEX   = 0x1,
@@ -91,15 +92,15 @@ typedef enum _D3DXCLEANTYPE {
 	D3DXCLEAN_BACKFACING	= 0x00000001,
 	D3DXCLEAN_BOWTIES		= 0x00000002,
 
-	// Helper options
-	D3DXCLEAN_SKINNING		= D3DXCLEAN_BACKFACING,	// Bowtie cleaning modifies geometry and breaks skinning
+	/* Helper options */
+	D3DXCLEAN_SKINNING		= D3DXCLEAN_BACKFACING,	/* Bowtie cleaning modifies geometry and breaks skinning */
 	D3DXCLEAN_OPTIMIZATION	= D3DXCLEAN_BACKFACING,
 	D3DXCLEAN_SIMPLIFICATION= D3DXCLEAN_BACKFACING | D3DXCLEAN_BOWTIES
 } D3DXCLEANTYPE;
 
 enum _MAX_FVF_DECL_SIZE
 {
-    MAX_FVF_DECL_SIZE = MAXD3DDECLLENGTH + 1 // +1 for END
+    MAX_FVF_DECL_SIZE = MAXD3DDECLLENGTH + 1 /* +1 for END */
 };
 
 typedef enum _D3DXTANGENT
@@ -118,9 +119,10 @@ typedef enum _D3DXTANGENT
     D3DXTANGENT_GENERATE_IN_PLACE =         0x0400
 } D3DXTANGENT;
 
-// D3DXIMT_WRAP_U means the texture wraps in the U direction
-// D3DXIMT_WRAP_V means the texture wraps in the V direction
-// D3DXIMT_WRAP_UV means the texture wraps in both directions
+/* D3DXIMT_WRAP_U means the texture wraps in the U direction
+ * D3DXIMT_WRAP_V means the texture wraps in the V direction
+ * D3DXIMT_WRAP_UV means the texture wraps in both directions
+ */
 typedef enum _D3DXIMT
 {
     D3DXIMT_WRAP_U =                    0x01,
@@ -128,10 +130,11 @@ typedef enum _D3DXIMT
     D3DXIMT_WRAP_UV =                   0x03
 } D3DXIMT;
 
-// These options are only valid for UVAtlasCreate and UVAtlasPartition, we may add more for UVAtlasPack if necessary
-// D3DXUVATLAS_DEFAULT - Meshes with more than 25k faces go through fast, meshes with fewer than 25k faces go through quality
-// D3DXUVATLAS_GEODESIC_FAST - Uses approximations to improve charting speed at the cost of added stretch or more charts.
-// D3DXUVATLAS_GEODESIC_QUALITY - Provides better quality charts, but requires more time and memory than fast.
+/* These options are only valid for UVAtlasCreate and UVAtlasPartition, we may add more for UVAtlasPack if necessary
+ * D3DXUVATLAS_DEFAULT - Meshes with more than 25k faces go through fast, meshes with fewer than 25k faces go through quality
+ * D3DXUVATLAS_GEODESIC_FAST - Uses approximations to improve charting speed at the cost of added stretch or more charts.
+ * D3DXUVATLAS_GEODESIC_QUALITY - Provides better quality charts, but requires more time and memory than fast.
+ */
 typedef enum _D3DXUVATLAS
 {
     D3DXUVATLAS_DEFAULT               = 0x00,
@@ -169,9 +172,9 @@ typedef D3DXMATERIAL *LPD3DXMATERIAL;
 
 typedef enum _D3DXEFFECTDEFAULTTYPE
 {
-    D3DXEDT_STRING = 0x1,       // pValue points to a null terminated ASCII string
-    D3DXEDT_FLOATS = 0x2,       // pValue points to an array of floats - number of floats is NumBytes / sizeof(float)
-    D3DXEDT_DWORD  = 0x3,       // pValue points to a DWORD
+    D3DXEDT_STRING = 0x1,       /* pValue points to a null terminated ASCII string */
+    D3DXEDT_FLOATS = 0x2,       /* pValue points to an array of floats - number of floats is NumBytes / sizeof(float) */
+    D3DXEDT_DWORD  = 0x3,       /* pValue points to a DWORD */
 
     D3DXEDT_FORCEDWORD = 0x7fffffff
 } D3DXEFFECTDEFAULTTYPE;
@@ -179,9 +182,9 @@ typedef enum _D3DXEFFECTDEFAULTTYPE
 typedef struct _D3DXEFFECTDEFAULT
 {
     LPSTR                 pParamName;
-    D3DXEFFECTDEFAULTTYPE Type;           // type of the data pointed to by pValue
-    DWORD                 NumBytes;       // size in bytes of the data pointed to by pValue
-    LPVOID                pValue;         // data for the default of the effect
+    D3DXEFFECTDEFAULTTYPE Type;           /* type of the data pointed to by pValue */
+    DWORD                 NumBytes;       /* size in bytes of the data pointed to by pValue */
+    LPVOID                pValue;         /* data for the default of the effect */
 } D3DXEFFECTDEFAULT, *LPD3DXEFFECTDEFAULT;
 
 typedef struct _D3DXEFFECTINSTANCE
@@ -205,25 +208,29 @@ typedef struct _D3DXATTRIBUTEWEIGHTS
 
 enum _D3DXWELDEPSILONSFLAGS
 {
-    D3DXWELDEPSILONS_WELDALL             = 0x1,  // weld all vertices marked by adjacency as being overlapping
+    D3DXWELDEPSILONS_WELDALL             = 0x1,  /* weld all vertices marked by adjacency as being overlapping */
 
-    D3DXWELDEPSILONS_WELDPARTIALMATCHES  = 0x2,  // if a given vertex component is within epsilon, modify partial matched
-                                                    // vertices so that both components identical AND if all components "equal"
-                                                    // remove one of the vertices
-    D3DXWELDEPSILONS_DONOTREMOVEVERTICES = 0x4,  // instructs weld to only allow modifications to vertices and not removal
-                                                    // ONLY valid if D3DXWELDEPSILONS_WELDPARTIALMATCHES is set
-                                                    // useful to modify vertices to be equal, but not allow vertices to be removed
+    D3DXWELDEPSILONS_WELDPARTIALMATCHES  = 0x2,  /* if a given vertex component is within epsilon, modify partial matched
+                                                  * vertices so that both components identical AND if all components "equal"
+                                                  * remove one of the vertices
+                                                  */
+    D3DXWELDEPSILONS_DONOTREMOVEVERTICES = 0x4,  /* instructs weld to only allow modifications to vertices and not removal
+                                                  * ONLY valid if D3DXWELDEPSILONS_WELDPARTIALMATCHES is set
+                                                  * useful to modify vertices to be equal, but not allow vertices to be removed
+                                                  */
 
-    D3DXWELDEPSILONS_DONOTSPLIT          = 0x8      // instructs weld to specify the D3DXMESHOPT_DONOTSPLIT flag when doing an Optimize(ATTR_SORT)
-                                                    // if this flag is not set, all vertices that are in separate attribute groups
-                                                    // will remain split and not welded.  Setting this flag can slow down software vertex processing
+    D3DXWELDEPSILONS_DONOTSPLIT          = 0x8      /* instructs weld to specify the D3DXMESHOPT_DONOTSPLIT flag when doing an Optimize(ATTR_SORT)
+                                                     * if this flag is not set, all vertices that are in separate attribute groups
+                                                     * will remain split and not welded.  Setting this flag can slow down software vertex processing
+                                                     */
 
 };
 
 typedef struct _D3DXWELDEPSILONS
 {
-    FLOAT Position;                 // NOTE: This does NOT replace the epsilon in GenerateAdjacency
-                                            // in general, it should be the same value or greater than the one passed to GeneratedAdjacency
+    FLOAT Position;                 /* NOTE: This does NOT replace the epsilon in GenerateAdjacency
+                                     * in general, it should be the same value or greater than the one passed to GeneratedAdjacency
+                                     */
     FLOAT BlendWeights;
     FLOAT Normal;
     FLOAT PSize;
@@ -243,12 +250,12 @@ typedef D3DXWELDEPSILONS* LPD3DXWELDEPSILONS;
 
 DECLARE_INTERFACE_(ID3DXBaseMesh, IUnknown)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // ID3DXBaseMesh
+    /* ID3DXBaseMesh */
     STDMETHOD(DrawSubset)(THIS_ DWORD AttribId) PURE;
     STDMETHOD_(DWORD, GetNumFaces)(THIS) PURE;
     STDMETHOD_(DWORD, GetNumVertices)(THIS) PURE;
@@ -283,12 +290,12 @@ DECLARE_INTERFACE_(ID3DXBaseMesh, IUnknown)
 
 DECLARE_INTERFACE_(ID3DXMesh, ID3DXBaseMesh)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // ID3DXBaseMesh
+    /* ID3DXBaseMesh */
     STDMETHOD(DrawSubset)(THIS_ DWORD AttribId) PURE;
     STDMETHOD_(DWORD, GetNumFaces)(THIS) PURE;
     STDMETHOD_(DWORD, GetNumVertices)(THIS) PURE;
@@ -316,7 +323,7 @@ DECLARE_INTERFACE_(ID3DXMesh, ID3DXBaseMesh)
 
     STDMETHOD(UpdateSemantics)(THIS_ D3DVERTEXELEMENT9 Declaration[MAX_FVF_DECL_SIZE]) PURE;
 
-    // ID3DXMesh
+    /* ID3DXMesh */
     STDMETHOD(LockAttributeBuffer)(THIS_ DWORD Flags, DWORD** ppData) PURE;
     STDMETHOD(UnlockAttributeBuffer)(THIS) PURE;
     STDMETHOD(Optimize)(THIS_ DWORD Flags, CONST DWORD* pAdjacencyIn, DWORD* pAdjacencyOut,
@@ -333,12 +340,12 @@ DECLARE_INTERFACE_(ID3DXMesh, ID3DXBaseMesh)
 
 DECLARE_INTERFACE_(ID3DXPMesh, ID3DXBaseMesh)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // ID3DXBaseMesh
+    /* ID3DXBaseMesh */
     STDMETHOD(DrawSubset)(THIS_ DWORD AttribId) PURE;
     STDMETHOD_(DWORD, GetNumFaces)(THIS) PURE;
     STDMETHOD_(DWORD, GetNumVertices)(THIS) PURE;
@@ -366,7 +373,7 @@ DECLARE_INTERFACE_(ID3DXPMesh, ID3DXBaseMesh)
 
     STDMETHOD(UpdateSemantics)(THIS_ D3DVERTEXELEMENT9 Declaration[MAX_FVF_DECL_SIZE]) PURE;
 
-    // ID3DXPMesh
+    /* ID3DXPMesh */
     STDMETHOD(ClonePMeshFVF)(THIS_ DWORD Options,
                 DWORD FVF, LPDIRECT3DDEVICE9 pD3DDevice, LPD3DXPMESH* ppCloneMesh) PURE;
     STDMETHOD(ClonePMesh)(THIS_ DWORD Options,
@@ -389,8 +396,8 @@ DECLARE_INTERFACE_(ID3DXPMesh, ID3DXBaseMesh)
 
     STDMETHOD(GetAdjacency)(THIS_ DWORD* pAdjacency) PURE;
 
-    //  Used to generate the immediate "ancestor" for each vertex when it is removed by a vsplit.  Allows generation of geomorphs
-    //     Vertex buffer must be equal to or greater than the maximum number of vertices in the pmesh
+    /*  Used to generate the immediate "ancestor" for each vertex when it is removed by a vsplit.  Allows generation of geomorphs
+     *     Vertex buffer must be equal to or greater than the maximum number of vertices in the pmesh */
     STDMETHOD(GenerateVertexHistory)(THIS_ DWORD* pVertexHistory) PURE;
 };
 
@@ -400,12 +407,12 @@ DECLARE_INTERFACE_(ID3DXPMesh, ID3DXBaseMesh)
 
 DECLARE_INTERFACE_(ID3DXSPMesh, IUnknown)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // ID3DXSPMesh
+    /* ID3DXSPMesh */
     STDMETHOD_(DWORD, GetNumFaces)(THIS) PURE;
     STDMETHOD_(DWORD, GetNumVertices)(THIS) PURE;
     STDMETHOD_(DWORD, GetFVF)(THIS) PURE;
@@ -431,22 +438,23 @@ DECLARE_INTERFACE_(ID3DXSPMesh, IUnknown)
 #define UNUSED16 (0xffff)
 #define UNUSED32 (0xffffffff)
 
-// ID3DXMesh::Optimize options - upper byte only, lower 3 bytes used from _D3DXMESH option flags
-enum _D3DXMESHOPT {
-    D3DXMESHOPT_COMPACT       = 0x01000000,
-    D3DXMESHOPT_ATTRSORT      = 0x02000000,
-    D3DXMESHOPT_VERTEXCACHE   = 0x04000000,
-    D3DXMESHOPT_STRIPREORDER  = 0x08000000,
-    D3DXMESHOPT_IGNOREVERTS   = 0x10000000,  // optimize faces only, don't touch vertices
-    D3DXMESHOPT_DONOTSPLIT    = 0x20000000,  // do not split vertices shared between attribute groups when attribute sorting
-    D3DXMESHOPT_DEVICEINDEPENDENT = 0x00400000  // Only affects VCache.  uses a static known good cache size for all cards
+/* ID3DXMesh::Optimize options - upper byte only, lower 3 bytes used from _D3DXMESH option flags */
+enum _D3DXMESHOPT
+{
+   D3DXMESHOPT_COMPACT       = 0x01000000,
+   D3DXMESHOPT_ATTRSORT      = 0x02000000,
+   D3DXMESHOPT_VERTEXCACHE   = 0x04000000,
+   D3DXMESHOPT_STRIPREORDER  = 0x08000000,
+   D3DXMESHOPT_IGNOREVERTS   = 0x10000000,  /* optimize faces only, don't touch vertices */
+   D3DXMESHOPT_DONOTSPLIT    = 0x20000000,  /* do not split vertices shared between attribute groups when attribute sorting */
+   D3DXMESHOPT_DEVICEINDEPENDENT = 0x00400000  /* Only affects VCache.  uses a static known good cache size for all cards */
 
-    // D3DXMESHOPT_SHAREVB has been removed, please use D3DXMESH_VB_SHARE instead
+      /* D3DXMESHOPT_SHAREVB has been removed, please use D3DXMESH_VB_SHARE instead */
 
 };
 
-// Subset of the mesh that has the same attribute and bone combination.
-// This subset can be rendered in a single draw call
+/* Subset of the mesh that has the same attribute and bone combination.
+ * This subset can be rendered in a single draw call */
 typedef struct _D3DXBONECOMBINATION
 {
     DWORD AttribId;
@@ -457,13 +465,14 @@ typedef struct _D3DXBONECOMBINATION
     DWORD* BoneId;
 } D3DXBONECOMBINATION, *LPD3DXBONECOMBINATION;
 
-// The following types of patch combinations are supported:
-// Patch type   Basis       Degree
-// Rect         Bezier      2,3,5
-// Rect         B-Spline    2,3,5
-// Rect         Catmull-Rom 3
-// Tri          Bezier      2,3,5
-// N-Patch      N/A         3
+/* The following types of patch combinations are supported:
+ * Patch type   Basis       Degree
+ * Rect         Bezier      2,3,5
+ * Rect         B-Spline    2,3,5
+ * Rect         Catmull-Rom 3
+ * Tri          Bezier      2,3,5
+ * N-Patch      N/A         3
+ */
 
 typedef struct _D3DXPATCHINFO
 {
@@ -477,14 +486,14 @@ typedef struct _D3DXPATCHINFO
 
 DECLARE_INTERFACE_(ID3DXPatchMesh, IUnknown)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // ID3DXPatchMesh
+    /* ID3DXPatchMesh */
 
-    // Return creation parameters
+    /* Return creation parameters */
     STDMETHOD_(DWORD, GetNumPatches)(THIS) PURE;
     STDMETHOD_(DWORD, GetNumVertices)(THIS) PURE;
     STDMETHOD(GetDeclaration)(THIS_ D3DVERTEXELEMENT9 Declaration[MAX_FVF_DECL_SIZE]) PURE;
@@ -493,7 +502,7 @@ DECLARE_INTERFACE_(ID3DXPatchMesh, IUnknown)
     STDMETHOD(GetDevice)(THIS_ LPDIRECT3DDEVICE9 *ppDevice) PURE;
     STDMETHOD(GetPatchInfo)(THIS_ LPD3DXPATCHINFO PatchInfo) PURE;
 
-    // Control mesh access
+    /* Control mesh access */
     STDMETHOD(GetVertexBuffer)(THIS_ LPDIRECT3DVERTEXBUFFER9* ppVB) PURE;
     STDMETHOD(GetIndexBuffer)(THIS_ LPDIRECT3DINDEXBUFFER9* ppIB) PURE;
     STDMETHOD(LockVertexBuffer)(THIS_ DWORD flags, LPVOID *ppData) PURE;
@@ -2724,20 +2733,19 @@ HRESULT WINAPI
 
 #ifdef __cplusplus
 }
-#endif //__cplusplus
+#endif /* __cplusplus */
 
-//////////////////////////////////////////////////////////////////////////////
-//
-//  Definitions of .X file templates used by mesh load/save functions
-//    that are not RM standard
-//
-//////////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Definitions of .X file templates used by mesh load/save functions
+ *    that are not RM standard
+ */
 
-// {3CF169CE-FF7C-44ab-93C0-F78F62D172E2}
+/* {3CF169CE-FF7C-44ab-93C0-F78F62D172E2} */
 DEFINE_GUID(DXFILEOBJ_XSkinMeshHeader,
 0x3cf169ce, 0xff7c, 0x44ab, 0x93, 0xc0, 0xf7, 0x8f, 0x62, 0xd1, 0x72, 0xe2);
 
-// {B8D65549-D7C9-4995-89CF-53A9A8B031E3}
+/* {B8D65549-D7C9-4995-89CF-53A9A8B031E3} */
 DEFINE_GUID(DXFILEOBJ_VertexDuplicationIndices,
 0xb8d65549, 0xd7c9, 0x4995, 0x89, 0xcf, 0x53, 0xa9, 0xa8, 0xb0, 0x31, 0xe3);
 
@@ -2801,23 +2809,23 @@ DEFINE_GUID(DXFILEOBJ_EffectDWord,
 DEFINE_GUID(DXFILEOBJ_EffectParamFloats,
 0x3014b9a0, 0x62f5, 0x478c, 0x9b, 0x86, 0xe4, 0xac, 0x9f, 0x4e, 0x41, 0x8b);
 
-// {1DBC4C88-94C1-46ee-9076-2C28818C9481}
+/* {1DBC4C88-94C1-46ee-9076-2C28818C9481} */
 DEFINE_GUID(DXFILEOBJ_EffectParamString,
 0x1dbc4c88, 0x94c1, 0x46ee, 0x90, 0x76, 0x2c, 0x28, 0x81, 0x8c, 0x94, 0x81);
 
-// {E13963BC-AE51-4c5d-B00F-CFA3A9D97CE5}
+/* {E13963BC-AE51-4c5d-B00F-CFA3A9D97CE5} */
 DEFINE_GUID(DXFILEOBJ_EffectParamDWord,
 0xe13963bc, 0xae51, 0x4c5d, 0xb0, 0xf, 0xcf, 0xa3, 0xa9, 0xd9, 0x7c, 0xe5);
 
-// {E331F7E4-0559-4cc2-8E99-1CEC1657928F}
+/* {E331F7E4-0559-4cc2-8E99-1CEC1657928F} */
 DEFINE_GUID(DXFILEOBJ_EffectInstance,
 0xe331f7e4, 0x559, 0x4cc2, 0x8e, 0x99, 0x1c, 0xec, 0x16, 0x57, 0x92, 0x8f);
 
-// {9E415A43-7BA6-4a73-8743-B73D47E88476}
+/* {9E415A43-7BA6-4a73-8743-B73D47E88476} */
 DEFINE_GUID(DXFILEOBJ_AnimTicksPerSecond,
 0x9e415a43, 0x7ba6, 0x4a73, 0x87, 0x43, 0xb7, 0x3d, 0x47, 0xe8, 0x84, 0x76);
 
-// {7F9B00B3-F125-4890-876E-1CFFBF697C4D}
+/* {7F9B00B3-F125-4890-876E-1CFFBF697C4D} */
 DEFINE_GUID(DXFILEOBJ_CompressedAnimationSet,
 0x7f9b00b3, 0xf125, 0x4890, 0x87, 0x6e, 0x1c, 0x42, 0xbf, 0x69, 0x7c, 0x4d);
 
