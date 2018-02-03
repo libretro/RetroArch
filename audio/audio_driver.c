@@ -636,7 +636,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
       audio_source_ratio_current   =
          audio_source_ratio_original * adjust;
 
-#ifdef DEBUG
+#if 0
       if (verbosity_is_enabled())
       {
          RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
