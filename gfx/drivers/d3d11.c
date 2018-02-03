@@ -140,7 +140,7 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
 
 static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    unsigned i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 

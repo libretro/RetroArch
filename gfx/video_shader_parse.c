@@ -35,7 +35,7 @@
 #include "../frontend/frontend_driver.h"
 #include "video_shader_parse.h"
 
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
 #include "drivers_shader/slang_preprocess.h"
 #endif
 
@@ -538,7 +538,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 		  continue;
 	  }
 
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
       /* First try to use the more robust slang implementation to support #includes. */
       /* FIXME: The check for slang can be removed if it's sufficiently tested for
        * GLSL/Cg as well, it should be the same implementation. */

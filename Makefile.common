@@ -1355,6 +1355,7 @@ ifeq ($(HAVE_GLSLANG), 1)
 endif
 
 ifeq ($(HAVE_SPIRV_CROSS), 1)
+	DEFINES += -DHAVE_SPIRV_CROSS
    INCLUDE_DIRS += -I$(DEPS_DIR)/SPIRV-Cross
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.o
