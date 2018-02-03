@@ -4,13 +4,16 @@
 #include <spirv_hlsl.hpp>
 #include <stdint.h>
 
-#include "verbosity.h"
 #include "glslang_util.h"
 #include "slang_preprocess.h"
 #include "slang_reflection.h"
 #include "slang_process.h"
 
+#include "../../verbosity.h"
+
+#ifdef HAVE_SPIRV_CROSS
 using namespace spirv_cross;
+#endif
 using namespace std;
 
 template <typename P>

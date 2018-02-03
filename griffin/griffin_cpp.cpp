@@ -121,10 +121,16 @@ VIDEO DRIVER
 #ifdef HAVE_VULKAN
 #include "../gfx/drivers_shader/shader_vulkan.cpp"
 #include "../gfx/drivers_shader/glslang_util.cpp"
-#include "../gfx/drivers_shader/slang_reflection.cpp"
-#include "../gfx/drivers_shader/slang_preprocess.cpp"
+#endif
+
+#ifdef HAVE_SPIRV_CROSS
 #include "../deps/SPIRV-Cross/spirv_cross.cpp"
 #include "../deps/SPIRV-Cross/spirv_cfg.cpp"
+#ifdef HAVE_SLANG
+#include "../gfx/drivers_shader/slang_preprocess.cpp"
+#include "../gfx/drivers_shader/slang_process.cpp"
+#include "../gfx/drivers_shader/slang_reflection.cpp"
+#endif
 #endif
 
 /*============================================================

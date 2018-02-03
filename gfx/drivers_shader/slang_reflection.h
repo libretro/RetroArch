@@ -91,7 +91,7 @@ enum slang_constant_buffer
 #include <string>
 #include <unordered_map>
 #include <stdint.h>
-#include "spirv_cross.hpp"
+#include <spirv_cross.hpp>
 
 struct slang_texture_semantic_meta
 {
