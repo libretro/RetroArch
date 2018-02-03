@@ -57,7 +57,7 @@ d3d11_font_init_font(void* data, const char* font_path, float font_size, bool is
    font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
    d3d11_init_texture(d3d11->device, &font->texture);
    d3d11_update_texture(
-         d3d11->ctx, font->atlas->width, font->atlas->height, font->atlas->width,
+         d3d11->context, font->atlas->width, font->atlas->height, font->atlas->width,
          DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
    font->atlas->dirty = false;
 
@@ -151,7 +151,7 @@ static void d3d11_font_render_line(
          break;
    }
 
-   D3D11MapBuffer(d3d11->ctx, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+   D3D11MapBuffer(d3d11->context, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
    v = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
    for (i = 0; i < msg_len; i++)
@@ -197,7 +197,7 @@ static void d3d11_font_render_line(
    }
 
    count = v - ((d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset);
-   D3D11UnmapBuffer(d3d11->ctx, d3d11->sprites.vbo, 0);
+   D3D11UnmapBuffer(d3d11->context, d3d11->sprites.vbo, 0);
 
    if (!count)
       return;
@@ -205,17 +205,17 @@ static void d3d11_font_render_line(
    if (font->atlas->dirty)
    {
       d3d11_update_texture(
-            d3d11->ctx, font->atlas->width, font->atlas->height, font->atlas->width,
+            d3d11->context, font->atlas->width, font->atlas->height, font->atlas->width,
             DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
       font->atlas->dirty = false;
    }
 
-   d3d11_set_texture_and_sampler(d3d11->ctx, 0, &font->texture);
-   D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   d3d11_set_texture_and_sampler(d3d11->context, 0, &font->texture);
+   D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
-   D3D11SetPShader(d3d11->ctx, d3d11->sprites.shader_font.ps, NULL, 0);
-   D3D11Draw(d3d11->ctx, count, d3d11->sprites.offset);
-   D3D11SetPShader(d3d11->ctx, d3d11->sprites.shader.ps, NULL, 0);
+   D3D11SetPShader(d3d11->context, d3d11->sprites.shader_font.ps, NULL, 0);
+   D3D11Draw(d3d11->context, count, d3d11->sprites.offset);
+   D3D11SetPShader(d3d11->context, d3d11->sprites.shader.ps, NULL, 0);
 
    d3d11->sprites.offset += count;
 }

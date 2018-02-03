@@ -213,7 +213,8 @@ static INLINE void D3D11SetPShaderResources(
       ID3D11ShaderResourceView* const* shader_resource_views)
 {
    device_context->lpVtbl->PSSetShaderResources(
-         device_context, start_slot, num_views, shader_resource_views);
+         device_context, start_slot, num_views,
+         shader_resource_views);
 }
 static INLINE void D3D11SetPShader(
       D3D11DeviceContext        device_context,
@@ -225,13 +226,13 @@ static INLINE void D3D11SetPShader(
          device_context, pixel_shader, class_instances, num_class_instances);
 }
 static INLINE void D3D11SetPShaderSamplers(
-      D3D11DeviceContext    device_context,
-      UINT                  start_slot,
-      UINT                  num_samplers,
-      D3D11SamplerStateRef* samplers)
+      D3D11DeviceContext          device_context,
+      UINT                        start_slot,
+      UINT                        num_samplers,
+      ID3D11SamplerState* const*  samplers)
 {
    device_context->lpVtbl->PSSetSamplers(
-         device_context, start_slot, num_samplers, (D3D11SamplerState* const)samplers);
+         device_context, start_slot, num_samplers, samplers);
 }
 static INLINE void D3D11SetVShader(
       D3D11DeviceContext        device_context,
@@ -2499,7 +2500,7 @@ typedef struct
    DXGISwapChain         swapChain;
    D3D11Device           device;
    D3D_FEATURE_LEVEL     supportedFeatureLevel;
-   D3D11DeviceContext    ctx;
+   D3D11DeviceContext    context;
    D3D11RasterizerState  state;
    D3D11RenderTargetView renderTargetView;
    D3D11Buffer           ubo;
@@ -2518,7 +2519,8 @@ typedef struct
    bool                  resize_chain;
    bool                  keep_aspect;
    bool                  resize_viewport;
-   bool                  resize_fbos;
+   bool                  resize_render_targets;
+   bool                  init_history;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
 
    struct
@@ -2541,7 +2543,7 @@ typedef struct
 
    struct
    {
-      d3d11_texture_t texture;
+      d3d11_texture_t texture[GFX_MAX_FRAME_HISTORY + 1];
       D3D11Buffer     vbo;
       D3D11Buffer     ubo;
       D3D11_VIEWPORT  viewport;
@@ -2558,8 +2560,6 @@ typedef struct
       d3d11_texture_t            feedback;
       D3D11_VIEWPORT             viewport;
       pass_semantics_t           semantics;
-      D3D11ShaderResourceViewRef textures[SLANG_NUM_BINDINGS];
-      D3D11SamplerStateRef       samplers[SLANG_NUM_BINDINGS];
       uint32_t                   frame_count;
    } pass[GFX_MAX_SHADERS];
 
@@ -2612,7 +2612,7 @@ static INLINE void
 d3d11_set_texture_and_sampler(D3D11DeviceContext ctx, UINT slot, d3d11_texture_t* texture)
 {
    D3D11SetPShaderResources(ctx, slot, 1, &texture->view);
-   D3D11SetPShaderSamplers(ctx, slot, 1, &texture->sampler);
+   D3D11SetPShaderSamplers(ctx, slot, 1, (D3D11SamplerState*)&texture->sampler);
 }
 
 static INLINE void d3d11_set_shader(D3D11DeviceContext ctx, d3d11_shader_t* shader)
