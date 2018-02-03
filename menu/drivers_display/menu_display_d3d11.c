@@ -35,13 +35,13 @@ static void* menu_display_d3d11_get_default_mvp(void) { return NULL; }
 static void menu_display_d3d11_blend_begin(void)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)video_driver_get_ptr(false);
-   D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
 static void menu_display_d3d11_blend_end(void)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)video_driver_get_ptr(false);
-   D3D11SetBlendState(d3d11->ctx, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   D3D11SetBlendState(d3d11->context, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
 static void menu_display_d3d11_viewport(void* data) {}
@@ -62,13 +62,13 @@ static void menu_display_d3d11_draw(void* data)
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         d3d11_set_shader(d3d11->ctx, &d3d11->shaders[draw->pipeline.id]);
-         D3D11Draw(d3d11->ctx, draw->coords->vertices, 0);
+         d3d11_set_shader(d3d11->context, &d3d11->shaders[draw->pipeline.id]);
+         D3D11Draw(d3d11->context, draw->coords->vertices, 0);
 
-         D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
-         d3d11_set_shader(d3d11->ctx, &d3d11->sprites.shader);
-         D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
-         D3D11SetPrimitiveTopology(d3d11->ctx, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+         D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+         d3d11_set_shader(d3d11->context, &d3d11->sprites.shader);
+         D3D11SetVertexBuffer(d3d11->context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
+         D3D11SetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
          return;
    }
 
@@ -81,7 +81,7 @@ static void menu_display_d3d11_draw(void* data)
    {
       D3D11_MAPPED_SUBRESOURCE mapped_vbo;
       D3D11MapBuffer(
-            d3d11->ctx, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+            d3d11->context, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
       d3d11_sprite_t* v = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
       v->pos.x = draw->x / (float)d3d11->viewport.Width;
@@ -114,11 +114,11 @@ static void menu_display_d3d11_draw(void* data)
             0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
             0xFF * draw->coords->color[14], 0xFF * draw->coords->color[15]);
 
-      D3D11UnmapBuffer(d3d11->ctx, d3d11->sprites.vbo, 0);
+      D3D11UnmapBuffer(d3d11->context, d3d11->sprites.vbo, 0);
    }
 
-   d3d11_set_texture_and_sampler(d3d11->ctx, 0, (d3d11_texture_t*)draw->texture);
-   D3D11Draw(d3d11->ctx, 1, d3d11->sprites.offset);
+   d3d11_set_texture_and_sampler(d3d11->context, 0, (d3d11_texture_t*)draw->texture);
+   D3D11Draw(d3d11->context, 1, d3d11->sprites.offset);
    d3d11->sprites.offset++;
    return;
 }
@@ -150,9 +150,9 @@ static void menu_display_d3d11_draw_pipeline(void* data)
             D3D11_SUBRESOURCE_DATA vertexData = { ca->coords.vertex };
             D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu_pipeline_vbo);
          }
-         D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->menu_pipeline_vbo, 2 * sizeof(float), 0);
+         D3D11SetVertexBuffer(d3d11->context, 0, d3d11->menu_pipeline_vbo, 2 * sizeof(float), 0);
          draw->coords->vertices = ca->coords.vertices;
-         D3D11SetBlendState(d3d11->ctx, d3d11->blend_pipeline, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+         D3D11SetBlendState(d3d11->context, d3d11->blend_pipeline, NULL, D3D11_DEFAULT_SAMPLE_MASK);
          break;
       }
 
@@ -160,21 +160,21 @@ static void menu_display_d3d11_draw_pipeline(void* data)
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
+         D3D11SetVertexBuffer(d3d11->context, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
          draw->coords->vertices = 4;
          break;
       default:
          return;
    }
 
-   D3D11SetPrimitiveTopology(d3d11->ctx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+   D3D11SetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
    d3d11->ubo_values.time += 0.01f;
    {
       D3D11_MAPPED_SUBRESOURCE mapped_ubo;
-      D3D11MapBuffer(d3d11->ctx, d3d11->ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+      D3D11MapBuffer(d3d11->context, d3d11->ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
       *(d3d11_uniform_t*)mapped_ubo.pData = d3d11->ubo_values;
-      D3D11UnmapBuffer(d3d11->ctx, d3d11->ubo, 0);
+      D3D11UnmapBuffer(d3d11->context, d3d11->ubo, 0);
    }
 }
 
@@ -187,7 +187,7 @@ static void menu_display_d3d11_clear_color(menu_display_ctx_clearcolor_t* clearc
    if (!d3d11 || !clearcolor)
       return;
 
-   D3D11ClearRenderTargetView(d3d11->ctx, d3d11->renderTargetView, (float*)clearcolor);
+   D3D11ClearRenderTargetView(d3d11->context, d3d11->renderTargetView, (float*)clearcolor);
 }
 
 static bool menu_display_d3d11_font_init_first(

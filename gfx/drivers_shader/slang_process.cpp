@@ -242,8 +242,12 @@ static bool slang_process_reflection(
 
             textures.push_back(texture);
 
-            if(texture_map->semantic == SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK)
+            if (texture_map->semantic == SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK)
                shader_info->pass[texture_map->index].feedback = true;
+
+            if (texture_map->semantic == SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY &&
+                shader_info->history_size < texture_map->index)
+               shader_info->history_size = texture_map->index;
          }
 
          if (src.push_constant || src.uniform)
@@ -379,14 +383,13 @@ bool slang_process(
           * float2 FragCoord :TEXCOORD# to float4 FragCoord : SV_POSITION */
          std::vector<HLSLVertexAttributeRemap> ps_attrib_remap;
 
-         VariableTypeRemapCallback ps_var_remap_cb = [&](const SPIRType&    type,
-                                                         const std::string& var_name,
-                                                         std::string&       name_of_type) {
-            if (var_name == "FragCoord")
-            {
-               name_of_type = "float4";
-            }
-         };
+         VariableTypeRemapCallback ps_var_remap_cb =
+               [&](const SPIRType& type, const std::string& var_name, std::string& name_of_type) {
+                  if (var_name == "FragCoord")
+                  {
+                     name_of_type = "float4";
+                  }
+               };
          for (Resource& resource : ps_resources.stage_inputs)
          {
             if (ps->get_name(resource.id) == "FragCoord")
