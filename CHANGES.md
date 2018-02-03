@@ -22,8 +22,10 @@
 - INPUT: show the config name when available under system information
 - GUI: Allow changing menu font color.
 - GUI: Menu visibility options for RGUI and MaterialUI.
+- GUI/MaterialUI: Works now with D3D8, D3D9 Cg and D3D11 drivers.
 - GUI/XMB: Add Monochrome Inverted icon theme.
 - GUI/XMB: Allow changing menu scale to 200%.
+- GUI/XMB: Works now with D3D8, D3D9 Cg and D3D11 drivers. Menu shader effects currently don't work on D3D8/D3D9 Cg.
 - HAIKU: Restored port.
 - KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
 - GL: ignore hard gpu sync when fast-forwarding
