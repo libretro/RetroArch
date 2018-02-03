@@ -313,7 +313,7 @@ bool slang_process(
    if (!slang_preprocess_parse_parameters(output.meta, shader_info))
       return false;
 
-   if (!output.meta.name.empty())
+   if (!*pass.alias && !output.meta.name.empty())
       strncpy(pass.alias, output.meta.name.c_str(), sizeof(pass.alias) - 1);
 
    out->format = output.meta.rt_format;
