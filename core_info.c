@@ -522,19 +522,21 @@ static bool core_info_list_update_missing_firmware_internal(
 {
    size_t i;
    core_info_t      *info = NULL;
+   char             *path = NULL;
    size_t       path_size = PATH_MAX_LENGTH * sizeof(char);
-   char             *path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
    if (!core_info_list || !core)
-      goto error;
+      return false;
 
-   path[0] = '\0';
-   info    = core_info_find_internal(core_info_list, core);
+   info                   = core_info_find_internal(core_info_list, core);
 
    if (!info)
-      goto error;
+      return false;
 
+   path                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   path[0]                = '\0';
    rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+
    for (i = 0; i < info->firmware_count; i++)
    {
       if (string_is_empty(info->firmware[i].path))
@@ -552,10 +554,6 @@ static bool core_info_list_update_missing_firmware_internal(
 
    free(path);
    return true;
-
-error:
-   free(path);
-   return false;
 }
 
 #if 0
