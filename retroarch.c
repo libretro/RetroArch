@@ -1114,15 +1114,17 @@ static bool retroarch_init_state(void)
 
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 {
-   char *core_path                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *config_directory                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *core_path                        = NULL;
+   char *config_directory                 = NULL;
    size_t str_size                        = PATH_MAX_LENGTH * sizeof(char);
    const char *core_name                  = runloop_system.info.library_name;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
-      goto error;
+      return false;
 
+   core_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   config_directory                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    config_directory[0] = core_path[0]     = '\0';
 
    fill_pathname_application_special(config_directory,
@@ -1143,11 +1145,6 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    free(core_path);
    free(config_directory);
    return true;
-
-error:
-   free(core_path);
-   free(config_directory);
-   return false;
 }
 
 /* Validates CPU features for given processor architecture.

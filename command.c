@@ -1418,16 +1418,15 @@ static bool command_event_save_core_config(void)
    bool found_path                 = false;
    bool overrides_active           = false;
    const char *core_path           = NULL;
+   char *config_name               = NULL;
+   char *config_path               = NULL;
    char *config_dir                = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *config_name               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *config_path               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    size_t config_size              = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings            = config_get_ptr();
 
-   config_dir[0]  = config_name[0] =
-   config_path[0] = msg[0]         = '\0';
+   config_dir[0]  = msg[0]         = '\0';
 
-   if (!string_is_empty(settings->paths.directory_menu_config))
+   if (settings && !string_is_empty(settings->paths.directory_menu_config))
       strlcpy(config_dir, settings->paths.directory_menu_config,
             config_size);
    else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
@@ -1437,10 +1436,15 @@ static bool command_event_save_core_config(void)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true);
       RARCH_ERR("[Config]: %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
-      goto error;
+      free(config_dir);
+      return false;
    }
 
-   core_path = path_get(RARCH_PATH_CORE);
+   core_path                       = path_get(RARCH_PATH_CORE);
+   config_name                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   config_path                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   config_name[0]                  = '\0';
+   config_path[0]                  = '\0';
 
    /* Infer file name based on libretro core. */
    if (!string_is_empty(core_path) && filestream_exists(core_path))
@@ -1514,12 +1518,6 @@ static bool command_event_save_core_config(void)
    free(config_name);
    free(config_path);
    return ret;
-
-error:
-   free(config_dir);
-   free(config_name);
-   free(config_path);
-   return false;
 }
 
 /**
