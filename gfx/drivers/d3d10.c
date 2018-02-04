@@ -301,7 +301,7 @@ static bool d3d10_gfx_frame(
       D3D10Texture2D backBuffer;
 
       Release(d3d10->renderTargetView);
-      DXGIResizeBuffers(d3d10->swapChain, 0, 0, 0, 0, 0);
+      DXGIResizeBuffers(d3d10->swapChain, 0, 0, 0, (DXGI_FORMAT)0, 0);
 
       DXGIGetSwapChainBufferD3D10(d3d10->swapChain, 0, &backBuffer);
       D3D10CreateTexture2DRenderTargetView(

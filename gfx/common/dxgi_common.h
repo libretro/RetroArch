@@ -253,7 +253,7 @@
 static INLINE ULONG Release(void* object)
 {
    if (object)
-      return ((IUnknown*)object)->lpVtbl->Release(object);
+      return ((IUnknown*)object)->lpVtbl->Release((IUnknown*)object);
 
    return 0;
 }
@@ -285,19 +285,19 @@ static INLINE ULONG DXGIReleaseDeviceSubObject(DXGIDeviceSubObject device_sub_ob
 }
 static INLINE HRESULT DXGIGetSharedHandle(void* resource, HANDLE* shared_handle)
 {
-   return ((IDXGIResource*)resource)->lpVtbl->GetSharedHandle(resource, shared_handle);
+   return ((IDXGIResource*)resource)->lpVtbl->GetSharedHandle((IDXGIResource*)resource, shared_handle);
 }
 static INLINE HRESULT DXGIGetUsage(void* resource, DXGI_USAGE* usage)
 {
-   return ((IDXGIResource*)resource)->lpVtbl->GetUsage(resource, usage);
+   return ((IDXGIResource*)resource)->lpVtbl->GetUsage((IDXGIResource*)resource, usage);
 }
 static INLINE HRESULT DXGISetEvictionPriority(void* resource, UINT eviction_priority)
 {
-   return ((IDXGIResource*)resource)->lpVtbl->SetEvictionPriority(resource, eviction_priority);
+   return ((IDXGIResource*)resource)->lpVtbl->SetEvictionPriority((IDXGIResource*)resource, eviction_priority);
 }
 static INLINE HRESULT DXGIGetEvictionPriority(void* resource, UINT* eviction_priority)
 {
-   return ((IDXGIResource*)resource)->lpVtbl->GetEvictionPriority(resource, eviction_priority);
+   return ((IDXGIResource*)resource)->lpVtbl->GetEvictionPriority((IDXGIResource*)resource, eviction_priority);
 }
 static INLINE ULONG DXGIReleaseKeyedMutex(DXGIKeyedMutex keyed_mutex)
 {

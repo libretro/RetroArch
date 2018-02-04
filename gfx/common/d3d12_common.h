@@ -49,7 +49,7 @@ typedef ID3D12InfoQueue*                          D3D12InfoQueue;
 
 static INLINE ULONG D3D12Release(void* object)
 {
-   return ((ID3D12Object*)object)->lpVtbl->Release(object);
+   return ((ID3D12Object*)object)->lpVtbl->Release((ID3D12Object*)object);
 }
 static INLINE ULONG D3D12ReleaseDeviceChild(D3D12DeviceChild device_child)
 {
@@ -96,20 +96,20 @@ static INLINE ULONG D3D12ReleasePageable(D3D12Pageable pageable)
 static INLINE ULONG D3D12ReleaseHeap(D3D12Heap heap) { return heap->lpVtbl->Release(heap); }
 static INLINE ULONG D3D12ReleaseResource(void* resource)
 {
-   return ((ID3D12Resource*)resource)->lpVtbl->Release(resource);
+   return ((ID3D12Resource*)resource)->lpVtbl->Release((ID3D12Resource*)resource);
 }
 static INLINE HRESULT
 D3D12Map(void* resource, UINT subresource, D3D12_RANGE* read_range, void** data)
 {
-   return ((ID3D12Resource*)resource)->lpVtbl->Map(resource, subresource, read_range, data);
+   return ((ID3D12Resource*)resource)->lpVtbl->Map((ID3D12Resource*)resource, subresource, read_range, data);
 }
 static INLINE void D3D12Unmap(void* resource, UINT subresource, D3D12_RANGE* written_range)
 {
-   ((ID3D12Resource*)resource)->lpVtbl->Unmap(resource, subresource, written_range);
+   ((ID3D12Resource*)resource)->lpVtbl->Unmap((ID3D12Resource*)resource, subresource, written_range);
 }
 static INLINE D3D12_GPU_VIRTUAL_ADDRESS D3D12GetGPUVirtualAddress(void* resource)
 {
-   return ((ID3D12Resource*)resource)->lpVtbl->GetGPUVirtualAddress(resource);
+   return ((ID3D12Resource*)resource)->lpVtbl->GetGPUVirtualAddress((ID3D12Resource*)resource);
 }
 static INLINE HRESULT D3D12WriteToSubresource(
       void*      resource,
@@ -121,7 +121,7 @@ static INLINE HRESULT D3D12WriteToSubresource(
 {
    return ((ID3D12Resource*)resource)
          ->lpVtbl->WriteToSubresource(
-               resource, dst_subresource, dst_box, src_data, src_row_pitch, src_depth_pitch);
+               (ID3D12Resource*)resource, dst_subresource, dst_box, src_data, src_row_pitch, src_depth_pitch);
 }
 static INLINE HRESULT D3D12ReadFromSubresource(
       void*      resource,
@@ -133,13 +133,13 @@ static INLINE HRESULT D3D12ReadFromSubresource(
 {
    return ((ID3D12Resource*)resource)
          ->lpVtbl->ReadFromSubresource(
-               resource, dst_data, dst_row_pitch, dst_depth_pitch, src_subresource, src_box);
+               (ID3D12Resource*)resource, dst_data, dst_row_pitch, dst_depth_pitch, src_subresource, src_box);
 }
 static INLINE HRESULT D3D12GetHeapProperties(
       void* resource, D3D12_HEAP_PROPERTIES* heap_properties, D3D12_HEAP_FLAGS* heap_flags)
 {
    return ((ID3D12Resource*)resource)
-         ->lpVtbl->GetHeapProperties(resource, heap_properties, heap_flags);
+         ->lpVtbl->GetHeapProperties((ID3D12Resource*)resource, heap_properties, heap_flags);
 }
 static INLINE ULONG D3D12ReleaseCommandAllocator(D3D12CommandAllocator command_allocator)
 {
@@ -1408,7 +1408,7 @@ static INLINE void d3d12_resource_transition(
       D3D12_RESOURCE_STATES    state_before,
       D3D12_RESOURCE_STATES    state_after)
 {
-   D3D12_RESOURCE_BARRIER barrier = { 0 };
+   D3D12_RESOURCE_BARRIER barrier = {};
    barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
    barrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
    barrier.Transition.pResource   = resource;

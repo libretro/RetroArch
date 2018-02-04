@@ -167,7 +167,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    if (!conf)
       return false;
 
-   d3d11->shader_preset = calloc(1, sizeof(*d3d11->shader_preset));
+   d3d11->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d11->shader_preset));
 
    if (!video_shader_read_conf_cgp(conf, d3d11->shader_preset))
       goto error;
@@ -715,7 +715,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       D3D11CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_disable);
    }
    {
-      D3D11_RASTERIZER_DESC desc = { 0 };
+      D3D11_RASTERIZER_DESC desc = {};
 
       desc.FillMode = D3D11_FILL_SOLID;
       desc.CullMode = D3D11_CULL_NONE;

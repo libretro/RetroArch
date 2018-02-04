@@ -84,7 +84,7 @@ void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
    D3D10CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
 
    {
-      D3D10_SHADER_RESOURCE_VIEW_DESC view_desc = { 0 };
+      D3D10_SHADER_RESOURCE_VIEW_DESC view_desc = {};
       view_desc.Format                    = texture->desc.Format;
       view_desc.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
       view_desc.Texture2D.MostDetailedMip = 0;

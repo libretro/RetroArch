@@ -95,7 +95,7 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    D3D11CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
 
    {
-      D3D11_SHADER_RESOURCE_VIEW_DESC view_desc = { 0 };
+      D3D11_SHADER_RESOURCE_VIEW_DESC view_desc = {};
       view_desc.Format                          = texture->desc.Format;
       view_desc.ViewDimension                   = D3D_SRV_DIMENSION_TEXTURE2D;
       view_desc.Texture2D.MostDetailedMip       = 0;
@@ -190,11 +190,11 @@ bool d3d11_init_shader(
 
    if (!src) /* LPCWSTR filename */
    {
-      if (vs_entry && !d3d_compile_from_file(src_name, vs_entry, "vs_5_0", &vs_code))
+      if (vs_entry && !d3d_compile_from_file((LPCWSTR)src_name, vs_entry, "vs_5_0", &vs_code))
          success = false;
-      if (ps_entry && !d3d_compile_from_file(src_name, ps_entry, "ps_5_0", &ps_code))
+      if (ps_entry && !d3d_compile_from_file((LPCWSTR)src_name, ps_entry, "ps_5_0", &ps_code))
          success = false;
-      if (gs_entry && !d3d_compile_from_file(src_name, gs_entry, "gs_5_0", &gs_code))
+      if (gs_entry && !d3d_compile_from_file((LPCWSTR)src_name, gs_entry, "gs_5_0", &gs_code))
          success = false;
    }
    else /* char array */
@@ -202,11 +202,11 @@ bool d3d11_init_shader(
       if (!size)
          size = strlen(src);
 
-      if (vs_entry && !d3d_compile(src, size, src_name, vs_entry, "vs_5_0", &vs_code))
+      if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, "vs_5_0", &vs_code))
          success = false;
-      if (ps_entry && !d3d_compile(src, size, src_name, ps_entry, "ps_5_0", &ps_code))
+      if (ps_entry && !d3d_compile(src, size, (LPCSTR)src_name, ps_entry, "ps_5_0", &ps_code))
          success = false;
-      if (gs_entry && !d3d_compile(src, size, src_name, gs_entry, "gs_5_0", &gs_code))
+      if (gs_entry && !d3d_compile(src, size, (LPCSTR)src_name, gs_entry, "gs_5_0", &gs_code))
          success = false;
    }
 
