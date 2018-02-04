@@ -810,7 +810,7 @@ bool win32_window_create(void *data, unsigned style,
    notification_handler                = RegisterDeviceNotification(
 	   main_window.hwnd, &notification_filter, DEVICE_NOTIFY_WINDOW_HANDLE);
 
-   if (notification_handler)
+   if (!notification_handler)
       RARCH_ERR("Error registering for notifications\n");
 #endif
 
