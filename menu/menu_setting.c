@@ -575,11 +575,13 @@ static void setting_get_string_representation_uint_autosave_interval(void *data,
 }
 #endif
 
+#if defined(HAVE_NETWORKING)
 static void setting_get_string_representation_netplay_mitm_server(void *data,
       char *s, size_t len)
 {
 
 }
+#endif
 
 #ifdef HAVE_LANGEXTRA
 static void setting_get_string_representation_uint_user_language(void *data,

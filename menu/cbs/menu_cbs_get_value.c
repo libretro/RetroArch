@@ -309,6 +309,7 @@ static void menu_action_setting_disp_set_label_pipeline(
 
 }
 
+#ifdef HAVE_NETWORKING
 static void menu_action_setting_disp_set_label_netplay_mitm_server(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -318,6 +319,7 @@ static void menu_action_setting_disp_set_label_netplay_mitm_server(
       const char *path,
       char *s2, size_t len2)
 {
+   unsigned i;
    settings_t *settings = config_get_ptr();
 
    *s = '\0';
@@ -327,17 +329,17 @@ static void menu_action_setting_disp_set_label_netplay_mitm_server(
    if (!settings)
       return;
 
-   if (!string_is_empty(settings->arrays.netplay_mitm_server))
-   {
-      unsigned i;
+   if (string_is_empty(settings->arrays.netplay_mitm_server))
+      return;
 
-      for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
-      {
-         if (string_is_equal(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[i].name))
-            strlcpy(s, netplay_mitm_server_list[i].description, len);
-      }
+   for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
+   {
+      if (string_is_equal(settings->arrays.netplay_mitm_server,
+               netplay_mitm_server_list[i].name))
+         strlcpy(s, netplay_mitm_server_list[i].description, len);
    }
 }
+#endif
 
 static void menu_action_setting_disp_set_label_shader_watch_for_changes(
       file_list_t* list,
@@ -2230,8 +2232,10 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
                   menu_action_setting_disp_set_label_achievement_information);
             return 0;
          case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
+#ifdef HAVE_NETWORKING
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_netplay_mitm_server);
+#endif
             return 0;
          default:
             break;
