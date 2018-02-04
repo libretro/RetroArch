@@ -194,7 +194,7 @@ DECLARE_INTERFACE_(ID3DXFont, IUnknown)
     STDMETHOD(OnLostDevice)(THIS) PURE;
     STDMETHOD(OnResetDevice)(THIS) PURE;
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CINTERFACE)
 #ifdef UNICODE
     HRESULT GetDesc(D3DXFONT_DESCW *pDesc) { return GetDescW(pDesc); }
     HRESULT PreloadText(LPCWSTR pString, INT Count) { return PreloadTextW(pString, Count); }

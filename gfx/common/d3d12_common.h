@@ -1363,7 +1363,7 @@ typedef struct
 #endif
 } d3d12_video_t;
 
-enum
+typedef enum
 {
    ROOT_ID_TEXTURE_T = 0,
    ROOT_ID_SAMPLER_T,
