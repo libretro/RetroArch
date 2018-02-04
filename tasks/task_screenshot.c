@@ -19,11 +19,6 @@
 #include "../config.h"
 #endif
 
-#ifdef _XBOX1
-#include <xtl.h>
-#include <xgraphics.h>
-#endif
-
 #include <stdio.h>
 #include <stddef.h>
 #include <time.h>
@@ -76,9 +71,6 @@ struct screenshot_task_state
    const void *frame;
    char filename[PATH_MAX_LENGTH];
    char shotname[256];
-#ifdef _XBOX1
-   D3DSurface *surf;
-#endif
    void *userbuf;
    struct scaler_ctx scaler;
 };
@@ -113,11 +105,7 @@ static void task_screenshot_handler(retro_task_t *task)
     (void)bmp_type;
 #endif
 
-#if defined(_XBOX1)
-   if (XGWriteSurfaceToFile(state->surf, state->filename) == S_OK)
-      ret = true;
-   d3d_surface_free(state->surf);
-#elif defined(HAVE_RPNG)
+#if defined(HAVE_RPNG)
    if (state->bgr24)
       scaler->in_fmt   = SCALER_FMT_BGR24;
    else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
@@ -194,9 +182,6 @@ static bool screenshot_dump(
 {
    char screenshot_path[PATH_MAX_LENGTH];
    uint8_t *buf                   = NULL;
-#ifdef _XBOX1
-   d3d_video_t *d3d               = (d3d_video_t*)video_driver_get_ptr(true);
-#endif
    settings_t *settings           = config_get_ptr();
    retro_task_t *task             = (retro_task_t*)calloc(1, sizeof(*task));
    screenshot_task_state_t *state = (screenshot_task_state_t*)
@@ -240,10 +225,7 @@ static bool screenshot_dump(
             state->shotname, sizeof(state->filename));
    }
 
-#ifdef _XBOX1
-   d3d_device_get_backbuffer(d3d->dev, -1, 0, D3DBACKBUFFER_TYPE_MONO,
-      &state->surf);
-#elif defined(HAVE_RPNG)
+#if defined(HAVE_RPNG)
    buf = (uint8_t*)malloc(width * height * 3);
    if (!buf)
    {
