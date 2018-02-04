@@ -88,7 +88,12 @@ struct glslang_meta
 {
    std::vector<glslang_parameter> parameters;
    std::string name;
-   glslang_format rt_format = SLANG_FORMAT_UNKNOWN;
+   glslang_format rt_format;
+
+   glslang_meta()
+   {
+	   rt_format = SLANG_FORMAT_UNKNOWN;
+   }
 };
 
 struct glslang_output

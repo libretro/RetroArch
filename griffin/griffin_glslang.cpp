@@ -2,6 +2,9 @@
 #ifdef WANT_GLSLANG
 #ifdef _MSC_VER
 #include <compat/msvc.h>
+#ifdef strtoull
+#undef strtoull
+#endif
 #endif
 
 #include "../deps/glslang/glslang.cpp"

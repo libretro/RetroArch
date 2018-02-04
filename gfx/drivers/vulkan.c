@@ -1290,8 +1290,9 @@ static bool vulkan_alive(void *data)
 
 static bool vulkan_suppress_screensaver(void *data, bool enable)
 {
-   (void)data;
    bool enabled = enable;
+   (void)data;
+
    return video_context_driver_suppress_screensaver(&enabled);
 }
 
