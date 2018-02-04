@@ -1453,20 +1453,17 @@ static int create_string_list_rdb_entry_string(
       file_list_t *list)
 {
    union string_list_elem_attr attr;
-   size_t path_size                 = PATH_MAX_LENGTH * sizeof(char);
-   char *tmp                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *tmp                        = NULL;
    char *output_label               = NULL;
    int str_len                      = 0;
    struct string_list *str_list     = string_list_new();
 
    if (!str_list)
-   {
-      free(tmp);
       return -1;
-   }
 
-   attr.i = 0;
-   tmp[0] = '\0';
+   attr.i                           = 0;
+   tmp                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   tmp[0]                           = '\0';
 
    str_len += strlen(label) + 1;
    string_list_append(str_list, label, attr);
@@ -1490,7 +1487,7 @@ static int create_string_list_rdb_entry_string(
 
    fill_pathname_join_concat_noext(tmp, desc, ": ",
          actual_string,
-         path_size);
+         PATH_MAX_LENGTH * sizeof(char));
    menu_entries_append_enum(list, tmp, output_label,
          enum_idx,
          0, 0, 0);
@@ -1511,8 +1508,8 @@ static int create_string_list_rdb_entry_int(
 {
    union string_list_elem_attr attr;
    size_t path_size                 = PATH_MAX_LENGTH * sizeof(char);
-   char *tmp                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *str                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *tmp                        = NULL;
+   char *str                        = NULL;
    char *output_label               = NULL;
    int str_len                      = 0;
    struct string_list *str_list     = string_list_new();
@@ -1520,7 +1517,9 @@ static int create_string_list_rdb_entry_int(
    if (!str_list)
       goto error;
 
-   attr.i = 0;
+   attr.i                           = 0;
+   tmp                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   str                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    tmp[0] = str[0] = '\0';
 
    str_len += strlen(label) + 1;

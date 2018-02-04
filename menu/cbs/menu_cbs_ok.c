@@ -3461,17 +3461,10 @@ static int action_ok_load_archive_detect_core(const char *path,
    menu_handle_t *menu                 = NULL;
    const char *menu_path               = NULL;
    const char *content_path            = NULL;
-   size_t path_size                    = PATH_MAX_LENGTH * sizeof(char);
-   char *new_core_path                 = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-
-   new_core_path[0]                    = '\0';
+   char *new_core_path                 = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-   {
-      free(new_core_path);
       return menu_cbs_exit();
-   }
 
    menu_path           = menu->scratch2_buf;
    content_path        = menu->scratch_buf;
@@ -3485,8 +3478,12 @@ static int action_ok_load_archive_detect_core(const char *path,
    def_info.s          = menu->deferred_path;
    def_info.len        = sizeof(menu->deferred_path);
 
+   new_core_path       = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
+   new_core_path[0]    = '\0';
+
    if (menu_content_find_first_core(&def_info, false,
-            new_core_path, path_size))
+            new_core_path, PATH_MAX_LENGTH * sizeof(char)))
       ret = -1;
 
    fill_pathname_join(detect_content_path, menu_path, content_path,
@@ -3503,17 +3500,15 @@ static int action_ok_load_archive_detect_core(const char *path,
             content_info.args                   = NULL;
             content_info.environ_get            = NULL;
 
+            ret                                 = 0;
+
             if (!task_push_load_content_with_new_core_from_menu(
                      new_core_path, def_info.s,
                      &content_info,
                      CORE_TYPE_PLAIN,
                      NULL, NULL))
-            {
-               free(new_core_path);
-               return -1;
-            }
+               ret = -1;
          }
-         ret = 0;
          break;
       case 0:
          idx = menu_navigation_get_selection();
@@ -3577,9 +3572,8 @@ static int action_ok_netplay_enable_host(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   bool contentless = false;
-   bool is_inited   = false;
-
+   bool contentless  = false;
+   bool is_inited    = false;
    file_list_t *list = menu_entries_get_selection_buf_ptr(0);
 
    content_get_status(&contentless, &is_inited);
