@@ -18,6 +18,7 @@
 #define SPIRV_CROSS_MSL_HPP
 
 #include "spirv_glsl.hpp"
+#include <stdint.h>
 #include <limits>
 #include <map>
 #include <set>
