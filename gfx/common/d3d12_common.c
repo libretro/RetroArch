@@ -268,19 +268,12 @@ static void d3d12_init_sampler(
       D3D12_TEXTURE_ADDRESS_MODE   address_mode,
       D3D12_GPU_DESCRIPTOR_HANDLE* dst)
 {
-   D3D12_SAMPLER_DESC sampler_desc = {
-      .Filter         = filter,
-      .AddressU       = address_mode,
-      .AddressV       = address_mode,
-      .AddressW       = address_mode,
-      .MipLODBias     = 0,
-      .MaxAnisotropy  = 0,
-      .ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER,
-      .BorderColor    = { 0.0f },
-      .MinLOD         = 0.0f,
-      .MaxLOD         = D3D12_FLOAT32_MAX,
-   };
-   D3D12_CPU_DESCRIPTOR_HANDLE handle = { heap->cpu.ptr + heap_index * heap->stride };
+   D3D12_SAMPLER_DESC          sampler_desc = { filter, address_mode, address_mode, address_mode };
+   D3D12_CPU_DESCRIPTOR_HANDLE handle       = { heap->cpu.ptr + heap_index * heap->stride };
+
+   sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+   sampler_desc.MaxLOD         = D3D12_FLOAT32_MAX;
+
    D3D12CreateSampler(device, &sampler_desc, handle);
    dst->ptr = heap->gpu.ptr + heap_index * heap->stride;
 }
@@ -290,23 +283,20 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
    D3D12_ROOT_SIGNATURE_DESC           desc;
    static const D3D12_DESCRIPTOR_RANGE srv_table[] = {
       {
-            .RangeType          = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-            .NumDescriptors     = 1,
-            .BaseShaderRegister = 0,
-            .RegisterSpace      = 0,
-#if 0
-            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC, /* version 1_1 only */
-#endif
-            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
+            D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+            1,
+            0,
+            0,
+            D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
       },
    };
    static const D3D12_DESCRIPTOR_RANGE sampler_table[] = {
       {
-            .RangeType                         = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
-            .NumDescriptors                    = 1,
-            .BaseShaderRegister                = 0,
-            .RegisterSpace                     = 0,
-            .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
+            D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
+            1,
+            0,
+            0,
+            D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
       },
    };
 
@@ -395,20 +385,6 @@ bool d3d12_init_pipeline(d3d12_video_t* d3d12)
         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
       { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d12_vertex_t, color),
         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-   };
-
-   static const D3D12_RASTERIZER_DESC rasterizerDesc = {
-      .FillMode              = D3D12_FILL_MODE_SOLID,
-      .CullMode              = D3D12_CULL_MODE_BACK,
-      .FrontCounterClockwise = FALSE,
-      .DepthBias             = D3D12_DEFAULT_DEPTH_BIAS,
-      .DepthBiasClamp        = D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
-      .SlopeScaledDepthBias  = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
-      .DepthClipEnable       = TRUE,
-      .MultisampleEnable     = FALSE,
-      .AntialiasedLineEnable = FALSE,
-      .ForcedSampleCount     = 0,
-      .ConservativeRaster    = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
    };
 
    if (!d3d_compile(stock, sizeof(stock), NULL, "VSMain", "vs_5_0", &vs_code))

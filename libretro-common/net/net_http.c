@@ -398,9 +398,9 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
       post_len = strlen(conn->postdatacopy);
 #ifdef _WIN32
-      len = snprintf(NULL, 0, "%"PRIuPTR, post_len);
+      len = snprintf(NULL, 0, "%" PRIuPTR, post_len);
       len_str = (char*)malloc(len + 1);
-      snprintf(len_str, len + 1, "%"PRIuPTR, post_len);
+      snprintf(len_str, len + 1, "%" PRIuPTR, post_len);
 #else
       len = snprintf(NULL, 0, "%llu", (long long unsigned)post_len);
       len_str = (char*)malloc(len + 1);

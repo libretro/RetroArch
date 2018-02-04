@@ -14,6 +14,7 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define CINTERFACE
 #define HAVE_IBXM 1
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)

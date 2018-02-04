@@ -2872,7 +2872,7 @@ void d3dxbuffer_release(void *data)
             if (!p)
                return;
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CINTERFACE)
             p->Release();
 #else
             p->lpVtbl->Release(p);
@@ -3053,7 +3053,7 @@ const void *d3dx_get_buffer_ptr(void *data)
    ID3DXBuffer *listing = (ID3DXBuffer*)data;
    if (!listing)
       return NULL;
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CINTERFACE)
    return listing->GetBufferPointer();
 #else
    return listing->lpVtbl->GetBufferPointer(listing);
@@ -3073,7 +3073,7 @@ const bool d3dx_constant_table_set_float(void *p,
    LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
    if (!consttbl || !dev || !handle)
       return false;
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CINTERFACE)
    if (consttbl->SetFloat(dev, handle, val) == D3D_OK)
       return true;
 #else

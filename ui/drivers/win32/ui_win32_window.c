@@ -75,11 +75,6 @@ static void ui_window_win32_set_title(void *data, char *buf)
    SetWindowText(window->hwnd, buf);
 }
 
-#ifdef __cplusplus
-extern "C"
-#endif
-   VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
-
 void ui_window_win32_set_droppable(void *data, bool droppable)
 {
    /* Minimum supported client: Windows XP, minimum supported server: Windows 2000 Server */
