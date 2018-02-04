@@ -310,7 +310,7 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
       },
    };
 
-   D3D12_ROOT_PARAMETER rootParameters[ROOT_ID_MAX] = {};
+   D3D12_ROOT_PARAMETER rootParameters[ROOT_ID_MAX];
 
    rootParameters[ROOT_ID_TEXTURE_T].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
    rootParameters[ROOT_ID_TEXTURE_T].DescriptorTable.NumDescriptorRanges = countof(srv_table);

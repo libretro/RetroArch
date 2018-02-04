@@ -1408,7 +1408,7 @@ static INLINE void d3d12_resource_transition(
       D3D12_RESOURCE_STATES    state_before,
       D3D12_RESOURCE_STATES    state_after)
 {
-   D3D12_RESOURCE_BARRIER barrier = {};
+   D3D12_RESOURCE_BARRIER barrier;
    barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
    barrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
    barrier.Transition.pResource   = resource;
