@@ -319,7 +319,7 @@ static void menu_action_setting_disp_set_label_netplay_mitm_server(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned i;
+   unsigned j;
    settings_t *settings = config_get_ptr();
 
    *s = '\0';
@@ -332,11 +332,11 @@ static void menu_action_setting_disp_set_label_netplay_mitm_server(
    if (string_is_empty(settings->arrays.netplay_mitm_server))
       return;
 
-   for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
+   for (j = 0; j < ARRAY_SIZE(netplay_mitm_server_list); j++)
    {
       if (string_is_equal(settings->arrays.netplay_mitm_server,
-               netplay_mitm_server_list[i].name))
-         strlcpy(s, netplay_mitm_server_list[i].description, len);
+               netplay_mitm_server_list[j].name))
+         strlcpy(s, netplay_mitm_server_list[j].description, len);
    }
 }
 #endif
