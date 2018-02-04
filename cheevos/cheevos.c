@@ -1028,11 +1028,11 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
    cheevos_term_t *terms  = NULL;
    char       *end        = NULL;
 
-   if (expr)
-   {
-      expr->count         = 1;
-      expr->compare_count = 1;
-   }
+   if (!expr)
+      return -1;
+
+   expr->count            = 1;
+   expr->compare_count    = 1;
 
    for (aux = mem;; aux++)
    {

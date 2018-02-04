@@ -251,12 +251,9 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
-      if (!mode_str)
-         goto error;
+      FILE   *fp = fopen_utf8(path, mode_str);
 
-      stream->fp = fopen_utf8(path, mode_str);
-
-      if (!stream->fp)
+      if (!fp)
          goto error;
 
       /* Regarding setvbuf:
@@ -269,6 +266,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
        * Since C89 does not support specifying a null buffer with a non-zero size, we create and track our own buffer for it.
        */
       /* TODO: this is only useful for a few platforms, find which and add ifdef */
+      stream->fp  = fp;
       stream->buf = (char*)calloc(1, 0x4000);
       setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
    }

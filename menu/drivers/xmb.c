@@ -1065,7 +1065,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
             sizeof(new_path));
 
 end:
-   if (!string_is_empty(new_path))
+   if (xmb && !string_is_empty(new_path))
       xmb->thumbnail_file_path = strdup(new_path);
    menu_entry_free(&entry);
 }
