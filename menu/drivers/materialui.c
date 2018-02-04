@@ -585,12 +585,15 @@ static void mui_render_messagebox(mui_handle_t *mui,
    int x, y, line_height, longest = 0, longest_width = 0;
    unsigned width           = video_info->width;
    unsigned height          = video_info->height;
-   struct string_list *list = (struct string_list*)
+   struct string_list *list = NULL;
+
+   if (!mui || !mui->font)
+      goto end;
+
+   list                     = (struct string_list*)
       string_split(message, "\n");
 
-   if (!list)
-      return;
-   if (list->elems == 0)
+   if (!list || list->elems == 0)
       goto end;
 
    line_height = mui->font->size * 1.2;
@@ -610,16 +613,18 @@ static void mui_render_messagebox(mui_handle_t *mui,
       if (len > longest)
       {
          longest = len;
-         longest_width = font_driver_get_message_width(mui->font, msg, strlen(msg), 1);
+         longest_width = font_driver_get_message_width(
+               mui->font, msg, strlen(msg), 1);
       }
    }
 
    menu_display_set_alpha(body_bg_color, 1.0);
 
-   menu_display_draw_quad(         x - longest_width/2.0 - mui->margin*2.0,
-         y - line_height/2.0 - mui->margin*2.0,
-         longest_width + mui->margin*4.0,
-         line_height * list->size + mui->margin*4.0,
+   menu_display_draw_quad(
+         x - longest_width / 2.0 -  mui->margin * 2.0,
+         y - line_height   / 2.0 -  mui->margin * 2.0,
+         longest_width +            mui->margin * 4.0,
+         line_height * list->size + mui->margin * 4.0,
          width,
          height,
          &body_bg_color[0]);
@@ -629,7 +634,8 @@ static void mui_render_messagebox(mui_handle_t *mui,
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         menu_display_draw_text(mui->font, msg,
+         menu_display_draw_text(
+               mui->font, msg,
                x - longest_width/2.0,
                y + i * line_height + mui->font->size / 3,
                width, height, font_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
@@ -642,7 +648,8 @@ static void mui_render_messagebox(mui_handle_t *mui,
             menu_event_get_osk_grid(), menu_event_get_osk_ptr());
 
 end:
-   string_list_free(list);
+   if (list)
+      string_list_free(list);
 }
 
 /* Used for the sublabels */
