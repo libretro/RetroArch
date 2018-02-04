@@ -85,7 +85,7 @@ static void* win32_display_server_init(void)
 
    if (!SUCCEEDED(hr))
    {
-      g_taskbarList = false;
+      g_taskbarList = NULL;
       RARCH_ERR("[dispserv]: CoCreateInstance of ITaskbarList3 failed.\n");
    }
 #endif

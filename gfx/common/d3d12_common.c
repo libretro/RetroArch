@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include "d3d12_common.h"
 #include "dxgi_common.h"
 #include "d3dcompiler_common.h"
@@ -25,7 +27,11 @@
 
 #ifdef __MINGW32__
 /* clang-format off */
+#ifdef __cplusplus
+#define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) EXTERN_C const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
+#else
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
+#endif
 
 DEFINE_GUIDW(IID_ID3D12PipelineState, 0x765a30f3, 0xf624, 0x4c6f, 0xa8, 0x28, 0xac, 0xe9, 0x48, 0x62, 0x24, 0x45);
 DEFINE_GUIDW(IID_ID3D12RootSignature, 0xc54a6b66, 0x72df, 0x4ee8, 0x8b, 0xe5, 0xa9, 0x46, 0xa1, 0x42, 0x92, 0x14);
@@ -64,7 +70,7 @@ static const char* d3d12_dll_name = "d3d12.dll";
 HRESULT WINAPI D3D12CreateDevice(
       IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 {
-	static PFN_D3D12_CREATE_DEVICE fp;
+   static PFN_D3D12_CREATE_DEVICE fp;
    if (!d3d12_dll)
       d3d12_dll = dylib_load(d3d12_dll_name);
 
@@ -75,7 +81,7 @@ HRESULT WINAPI D3D12CreateDevice(
       fp = (PFN_D3D12_CREATE_DEVICE)dylib_proc(d3d12_dll, "D3D12CreateDevice");
 
    if (fp)
-	   return fp(pAdapter, MinimumFeatureLevel, riid, ppDevice);
+      return fp(pAdapter, MinimumFeatureLevel, riid, ppDevice);
 
 error:
    return TYPE_E_CANTLOADLIBRARY;
@@ -88,13 +94,13 @@ HRESULT WINAPI D3D12GetDebugInterface(REFIID riid, void** ppvDebug)
       d3d12_dll = dylib_load(d3d12_dll_name);
 
    if (!d3d12_dll)
-	   goto error;
+      goto error;
 
    if (!fp)
       fp = (PFN_D3D12_GET_DEBUG_INTERFACE)dylib_proc(d3d12_dll, "D3D12GetDebugInterface");
 
-	if (fp)
-		return fp(riid, ppvDebug);
+   if (fp)
+      return fp(riid, ppvDebug);
 
 error:
    return TYPE_E_CANTLOADLIBRARY;
@@ -114,8 +120,7 @@ HRESULT WINAPI D3D12SerializeRootSignature(
       goto error;
 
    if (!fp)
-      fp = (PFN_D3D12_SERIALIZE_ROOT_SIGNATURE)dylib_proc(
-               d3d12_dll, "D3D12SerializeRootSignature");
+      fp = (PFN_D3D12_SERIALIZE_ROOT_SIGNATURE)dylib_proc(d3d12_dll, "D3D12SerializeRootSignature");
 
    if (fp)
       return fp(pRootSignature, Version, ppBlob, ppErrorBlob);
@@ -138,10 +143,10 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
 
    if (!fp)
       fp = (PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE)dylib_proc(
-               d3d12_dll, "D3D12SerializeRootSignature");
+            d3d12_dll, "D3D12SerializeRootSignature");
 
    if (fp)
-	   return fp(pRootSignature, ppBlob, ppErrorBlob);
+      return fp(pRootSignature, ppBlob, ppErrorBlob);
 
 error:
    return TYPE_E_CANTLOADLIBRARY;
@@ -179,10 +184,8 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
 bool d3d12_init_queue(d3d12_video_t* d3d12)
 {
    {
-      static const D3D12_COMMAND_QUEUE_DESC desc = {
-         .Type  = D3D12_COMMAND_LIST_TYPE_DIRECT,
-         .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
-      };
+      static const D3D12_COMMAND_QUEUE_DESC desc = { D3D12_COMMAND_LIST_TYPE_DIRECT, 0,
+                                                     D3D12_COMMAND_QUEUE_FLAG_NONE, 0 };
       D3D12CreateCommandQueue(
             d3d12->device, (D3D12_COMMAND_QUEUE_DESC*)&desc, &d3d12->queue.handle);
    }
@@ -206,26 +209,25 @@ bool d3d12_init_queue(d3d12_video_t* d3d12)
 bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, HWND hwnd)
 {
    {
-      DXGI_SWAP_CHAIN_DESC desc = {
-         .BufferCount       = countof(d3d12->chain.renderTargets),
-         .BufferDesc.Width  = width,
-         .BufferDesc.Height = height,
-         .BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
-         .SampleDesc.Count  = 1,
+      DXGI_SWAP_CHAIN_DESC desc = { 0 };
+      desc.BufferCount          = countof(d3d12->chain.renderTargets);
+      desc.BufferDesc.Width     = width;
+      desc.BufferDesc.Height    = height;
+      desc.BufferDesc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+      desc.SampleDesc.Count     = 1;
 #if 0
-         .BufferDesc.RefreshRate.Numerator = 60,
-         .BufferDesc.RefreshRate.Denominator = 1,
-         .SampleDesc.Quality = 0,
+      desc.BufferDesc.RefreshRate.Numerator   = 60;
+      desc.BufferDesc.RefreshRate.Denominator = 1;
+      desc.SampleDesc.Quality                 = 0;
 #endif
-         .BufferUsage  = DXGI_USAGE_RENDER_TARGET_OUTPUT,
-         .OutputWindow = hwnd,
-         .Windowed     = TRUE,
+      desc.BufferUsage  = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+      desc.OutputWindow = hwnd;
+      desc.Windowed     = TRUE;
 #if 0
-         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
+      desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 #else
-         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+      desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
-      };
       DXGICreateSwapChain(d3d12->factory, d3d12->queue.handle, &desc, &d3d12->chain.handle);
    }
 
@@ -285,7 +287,7 @@ static void d3d12_init_sampler(
 
 bool d3d12_init_descriptors(d3d12_video_t* d3d12)
 {
-   D3D12_ROOT_SIGNATURE_DESC desc;
+   D3D12_ROOT_SIGNATURE_DESC           desc;
    static const D3D12_DESCRIPTOR_RANGE srv_table[] = {
       {
             .RangeType          = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
@@ -308,30 +310,22 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
       },
    };
 
-   D3D12_ROOT_PARAMETER rootParameters[ROOT_INDEX_MAX] = {
-            {
-                  D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-                  {{0}},
-                  D3D12_SHADER_VISIBILITY_PIXEL,
-            },
-            {
-                  D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-                  {{0}},
-                  D3D12_SHADER_VISIBILITY_PIXEL,
-            },
-            {
-                  D3D12_ROOT_PARAMETER_TYPE_CBV,
-                  {{0}},
-                  D3D12_SHADER_VISIBILITY_VERTEX,
-            }
-   };
+   D3D12_ROOT_PARAMETER rootParameters[ROOT_ID_MAX] = {};
 
-   rootParameters[0].DescriptorTable.NumDescriptorRanges = countof(srv_table);
-   rootParameters[0].DescriptorTable.pDescriptorRanges   = srv_table;
-   rootParameters[1].DescriptorTable.NumDescriptorRanges = countof(sampler_table);
-   rootParameters[1].DescriptorTable.pDescriptorRanges   = sampler_table;
-   rootParameters[2].Descriptor.RegisterSpace            = 0;
-   rootParameters[2].Descriptor.ShaderRegister           = 0;
+   rootParameters[ROOT_ID_TEXTURE_T].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+   rootParameters[ROOT_ID_TEXTURE_T].DescriptorTable.NumDescriptorRanges = countof(srv_table);
+   rootParameters[ROOT_ID_TEXTURE_T].DescriptorTable.pDescriptorRanges   = srv_table;
+   rootParameters[ROOT_ID_TEXTURE_T].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+   rootParameters[ROOT_ID_SAMPLER_T].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+   rootParameters[ROOT_ID_SAMPLER_T].DescriptorTable.NumDescriptorRanges = countof(sampler_table);
+   rootParameters[ROOT_ID_SAMPLER_T].DescriptorTable.pDescriptorRanges   = sampler_table;
+   rootParameters[ROOT_ID_SAMPLER_T].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+   rootParameters[ROOT_ID_UBO].ParameterType             = D3D12_ROOT_PARAMETER_TYPE_CBV;
+   rootParameters[ROOT_ID_UBO].Descriptor.RegisterSpace  = 0;
+   rootParameters[ROOT_ID_UBO].Descriptor.ShaderRegister = 0;
+   rootParameters[ROOT_ID_UBO].ShaderVisibility          = D3D12_SHADER_VISIBILITY_VERTEX;
 
    desc.NumParameters     = countof(rootParameters);
    desc.pParameters       = rootParameters;
@@ -417,24 +411,6 @@ bool d3d12_init_pipeline(d3d12_video_t* d3d12)
       .ConservativeRaster    = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
    };
 
-   static const D3D12_BLEND_DESC blendDesc = {
-      .AlphaToCoverageEnable  = FALSE,
-      .IndependentBlendEnable = FALSE,
-      .RenderTarget[0] =
-            {
-                  .BlendEnable   = TRUE,
-                  .LogicOpEnable = FALSE,
-                  D3D12_BLEND_SRC_ALPHA,
-                  D3D12_BLEND_INV_SRC_ALPHA,
-                  D3D12_BLEND_OP_ADD,
-                  D3D12_BLEND_SRC_ALPHA,
-                  D3D12_BLEND_INV_SRC_ALPHA,
-                  D3D12_BLEND_OP_ADD,
-                  D3D12_LOGIC_OP_NOOP,
-                  D3D12_COLOR_WRITE_ENABLE_ALL,
-            },
-   };
-
    if (!d3d_compile(stock, sizeof(stock), NULL, "VSMain", "vs_5_0", &vs_code))
       return false;
 
@@ -442,48 +418,44 @@ bool d3d12_init_pipeline(d3d12_video_t* d3d12)
       return false;
 
    {
-	   D3D12_GRAPHICS_PIPELINE_STATE_DESC psodesc = {
-		   .pRootSignature = d3d12->pipe.rootSignature,
-		   .VS.pShaderBytecode = D3DGetBufferPointer(vs_code),
-		   .VS.BytecodeLength = D3DGetBufferSize(vs_code),
-		   .PS.pShaderBytecode = D3DGetBufferPointer(ps_code),
-		   .PS.BytecodeLength = D3DGetBufferSize(ps_code),
-		   .BlendState.AlphaToCoverageEnable = FALSE,
-		   .BlendState.IndependentBlendEnable = FALSE,
-		   .BlendState.RenderTarget[0] =
-		   {
-			   .BlendEnable = TRUE,
-			   .LogicOpEnable = FALSE,
-			   D3D12_BLEND_SRC_ALPHA,
-			   D3D12_BLEND_INV_SRC_ALPHA,
-			   D3D12_BLEND_OP_ADD,
-			   D3D12_BLEND_SRC_ALPHA,
-			   D3D12_BLEND_INV_SRC_ALPHA,
-			   D3D12_BLEND_OP_ADD,
-			   D3D12_LOGIC_OP_NOOP,
-			   D3D12_COLOR_WRITE_ENABLE_ALL,
-		   },
-		   .SampleMask = UINT_MAX,
-		   .RasterizerState.FillMode = D3D12_FILL_MODE_SOLID,
-		   .RasterizerState.CullMode = D3D12_CULL_MODE_BACK,
-		   .RasterizerState.FrontCounterClockwise = FALSE,
-		   .RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS,
-		   .RasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
-		   .RasterizerState.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
-		   .RasterizerState.DepthClipEnable = TRUE,
-		   .RasterizerState.MultisampleEnable = FALSE,
-		   .RasterizerState.AntialiasedLineEnable = FALSE,
-		   .RasterizerState.ForcedSampleCount = 0,
-		   .RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
-		   .DepthStencilState.DepthEnable = FALSE,
-		   .DepthStencilState.StencilEnable = FALSE,
-		   .InputLayout.pInputElementDescs = inputElementDesc,
-		   .InputLayout.NumElements = countof(inputElementDesc),
-		   .PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-		   .NumRenderTargets = 1,
-		   .RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM,
-		   .SampleDesc.Count = 1,
-	   };
+      D3D12_GRAPHICS_PIPELINE_STATE_DESC psodesc               = { 0 };
+      psodesc.pRootSignature                                   = d3d12->pipe.rootSignature;
+      psodesc.VS.pShaderBytecode                               = D3DGetBufferPointer(vs_code);
+      psodesc.VS.BytecodeLength                                = D3DGetBufferSize(vs_code);
+      psodesc.PS.pShaderBytecode                               = D3DGetBufferPointer(ps_code);
+      psodesc.PS.BytecodeLength                                = D3DGetBufferSize(ps_code);
+      psodesc.BlendState.AlphaToCoverageEnable                 = FALSE;
+      psodesc.BlendState.IndependentBlendEnable                = FALSE;
+      psodesc.BlendState.RenderTarget[0].BlendEnable           = TRUE;
+      psodesc.BlendState.RenderTarget[0].LogicOpEnable         = FALSE;
+      psodesc.BlendState.RenderTarget[0].SrcBlend              = D3D12_BLEND_SRC_ALPHA;
+      psodesc.BlendState.RenderTarget[0].DestBlend             = D3D12_BLEND_INV_SRC_ALPHA;
+      psodesc.BlendState.RenderTarget[0].BlendOp               = D3D12_BLEND_OP_ADD;
+      psodesc.BlendState.RenderTarget[0].SrcBlendAlpha         = D3D12_BLEND_SRC_ALPHA;
+      psodesc.BlendState.RenderTarget[0].DestBlendAlpha        = D3D12_BLEND_INV_SRC_ALPHA;
+      psodesc.BlendState.RenderTarget[0].BlendOpAlpha          = D3D12_BLEND_OP_ADD;
+      psodesc.BlendState.RenderTarget[0].LogicOp               = D3D12_LOGIC_OP_NOOP;
+      psodesc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+      psodesc.SampleMask                                       = UINT_MAX;
+      psodesc.RasterizerState.FillMode                         = D3D12_FILL_MODE_SOLID;
+      psodesc.RasterizerState.CullMode                         = D3D12_CULL_MODE_BACK;
+      psodesc.RasterizerState.FrontCounterClockwise            = FALSE;
+      psodesc.RasterizerState.DepthBias                        = D3D12_DEFAULT_DEPTH_BIAS;
+      psodesc.RasterizerState.DepthBiasClamp                   = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+      psodesc.RasterizerState.SlopeScaledDepthBias  = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+      psodesc.RasterizerState.DepthClipEnable       = TRUE;
+      psodesc.RasterizerState.MultisampleEnable     = FALSE;
+      psodesc.RasterizerState.AntialiasedLineEnable = FALSE;
+      psodesc.RasterizerState.ForcedSampleCount     = 0;
+      psodesc.RasterizerState.ConservativeRaster    = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+      psodesc.DepthStencilState.DepthEnable         = FALSE;
+      psodesc.DepthStencilState.StencilEnable       = FALSE;
+      psodesc.InputLayout.pInputElementDescs        = inputElementDesc;
+      psodesc.InputLayout.NumElements               = countof(inputElementDesc);
+      psodesc.PrimitiveTopologyType                 = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+      psodesc.NumRenderTargets                      = 1;
+      psodesc.RTVFormats[0]                         = DXGI_FORMAT_R8G8B8A8_UNORM;
+      psodesc.SampleDesc.Count                      = 1;
 
       D3D12CreateGraphicsPipelineState(d3d12->device, &psodesc, &d3d12->pipe.handle);
    }
@@ -497,21 +469,16 @@ bool d3d12_init_pipeline(d3d12_video_t* d3d12)
 D3D12_GPU_VIRTUAL_ADDRESS
 d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer)
 {
-   static const D3D12_HEAP_PROPERTIES heap_props = {
-      .Type             = D3D12_HEAP_TYPE_UPLOAD,
-      .CreationNodeMask = 1,
-      .VisibleNodeMask  = 1,
-   };
+   D3D12_HEAP_PROPERTIES heap_props    = { D3D12_HEAP_TYPE_UPLOAD, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+                                        D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
+   D3D12_RESOURCE_DESC   resource_desc = { D3D12_RESOURCE_DIMENSION_BUFFER };
 
-   D3D12_RESOURCE_DESC resource_desc = {
-      .Dimension        = D3D12_RESOURCE_DIMENSION_BUFFER,
-      .Width            = size_in_bytes,
-      .Height           = 1,
-      .DepthOrArraySize = 1,
-      .MipLevels        = 1,
-      .SampleDesc.Count = 1,
-      .Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-   };
+   resource_desc.Width            = size_in_bytes;
+   resource_desc.Height           = 1;
+   resource_desc.DepthOrArraySize = 1;
+   resource_desc.MipLevels        = 1;
+   resource_desc.SampleDesc.Count = 1;
+   resource_desc.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
    D3D12CreateCommittedResource(
          device, (D3D12_HEAP_PROPERTIES*)&heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc,
@@ -530,12 +497,14 @@ void d3d12_init_texture(
    Release(texture->upload_buffer);
 
    {
+      D3D12_HEAP_PROPERTIES heap_props = { D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+                                           D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
+
       texture->desc.Dimension        = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
       texture->desc.DepthOrArraySize = 1;
       texture->desc.MipLevels        = 1;
       texture->desc.SampleDesc.Count = 1;
 
-      D3D12_HEAP_PROPERTIES heap_props = { D3D12_HEAP_TYPE_DEFAULT, 0, 0, 1, 1 };
       D3D12CreateCommittedResource(
             device, &heap_props, D3D12_HEAP_FLAG_NONE, &texture->desc,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, NULL, &texture->handle);
@@ -546,16 +515,16 @@ void d3d12_init_texture(
          &texture->row_size_in_bytes, &texture->total_bytes);
 
    {
-      D3D12_RESOURCE_DESC buffer_desc = {
-         .Dimension        = D3D12_RESOURCE_DIMENSION_BUFFER,
-         .Width            = texture->total_bytes,
-         .Height           = 1,
-         .DepthOrArraySize = 1,
-         .MipLevels        = 1,
-         .SampleDesc.Count = 1,
-         .Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-      };
-      D3D12_HEAP_PROPERTIES heap_props = { D3D12_HEAP_TYPE_UPLOAD, 0, 0, 1, 1 };
+      D3D12_HEAP_PROPERTIES heap_props  = { D3D12_HEAP_TYPE_UPLOAD, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+                                           D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
+      D3D12_RESOURCE_DESC   buffer_desc = { D3D12_RESOURCE_DIMENSION_BUFFER };
+
+      buffer_desc.Width            = texture->total_bytes;
+      buffer_desc.Height           = 1;
+      buffer_desc.DepthOrArraySize = 1;
+      buffer_desc.MipLevels        = 1;
+      buffer_desc.SampleDesc.Count = 1;
+      buffer_desc.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
       D3D12CreateCommittedResource(
             device, &heap_props, D3D12_HEAP_FLAG_NONE, &buffer_desc,
@@ -563,15 +532,15 @@ void d3d12_init_texture(
    }
 
    {
-	  D3D12_CPU_DESCRIPTOR_HANDLE handle;
-	  D3D12_SHADER_RESOURCE_VIEW_DESC view_desc = { 0 };
+      D3D12_CPU_DESCRIPTOR_HANDLE     handle;
+      D3D12_SHADER_RESOURCE_VIEW_DESC view_desc = { DXGI_FORMAT_UNKNOWN };
 
-	  view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	  view_desc.Format                  = texture->desc.Format;
-	  view_desc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
-	  view_desc.Texture2D.MipLevels     = texture->desc.MipLevels;
+      view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+      view_desc.Format                  = texture->desc.Format;
+      view_desc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
+      view_desc.Texture2D.MipLevels     = texture->desc.MipLevels;
 
-      handle.ptr                        = heap->cpu.ptr + heap_index * heap->stride;
+      handle.ptr = heap->cpu.ptr + heap_index * heap->stride;
 
       D3D12CreateShaderResourceView(device, texture->handle, &view_desc, handle);
       texture->gpu_descriptor.ptr = heap->gpu.ptr + heap_index * heap->stride;
@@ -583,9 +552,9 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t* texture
    D3D12_TEXTURE_COPY_LOCATION src = { 0 };
    D3D12_TEXTURE_COPY_LOCATION dst = { 0 };
 
-   src.pResource        = texture->upload_buffer;
-   src.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-   src.PlacedFootprint  = texture->layout;
+   src.pResource       = texture->upload_buffer;
+   src.Type            = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+   src.PlacedFootprint = texture->layout;
 
    dst.pResource        = texture->handle;
    dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
@@ -631,10 +600,10 @@ void d3d12_create_fullscreen_quad_vbo(
 DXGI_FORMAT d3d12_get_closest_match(
       D3D12Device device, DXGI_FORMAT desired_format, D3D12_FORMAT_SUPPORT1 desired_format_support)
 {
-   DXGI_FORMAT default_list[] = {desired_format, DXGI_FORMAT_UNKNOWN};
-   DXGI_FORMAT* format = dxgi_get_format_fallback_list(desired_format);
+   DXGI_FORMAT  default_list[] = { desired_format, DXGI_FORMAT_UNKNOWN };
+   DXGI_FORMAT* format         = dxgi_get_format_fallback_list(desired_format);
 
-   if(!format)
+   if (!format)
       format = default_list;
 
    while (*format != DXGI_FORMAT_UNKNOWN)

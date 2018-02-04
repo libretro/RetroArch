@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <stdio.h>
 
 #ifdef HAVE_CONFIG_H

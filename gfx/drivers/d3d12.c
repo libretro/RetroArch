@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <assert.h>
 #include <string/stdstring.h>
 
@@ -236,7 +238,7 @@ static bool d3d12_gfx_frame(
    D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->frame.scissorRect);
 
    D3D12SetGraphicsRootConstantBufferView(
-         d3d12->queue.cmd, ROOT_INDEX_UBO, d3d12->frame.ubo_view.BufferLocation);
+         d3d12->queue.cmd, ROOT_ID_UBO, d3d12->frame.ubo_view.BufferLocation);
    d3d12_set_texture(d3d12->queue.cmd, &d3d12->frame.texture);
    d3d12_set_sampler(d3d12->queue.cmd, d3d12->frame.sampler);
    D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
@@ -248,7 +250,7 @@ static bool d3d12_gfx_frame(
          d3d12_upload_texture(d3d12->queue.cmd, &d3d12->menu.texture);
 
       D3D12SetGraphicsRootConstantBufferView(
-            d3d12->queue.cmd, ROOT_INDEX_UBO, d3d12->ubo_view.BufferLocation);
+            d3d12->queue.cmd, ROOT_ID_UBO, d3d12->ubo_view.BufferLocation);
 
       if (d3d12->menu.fullscreen)
       {

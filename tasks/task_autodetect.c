@@ -50,8 +50,11 @@
 #include <setupapi.h>
 #include <hidsdi.h>
 
-#ifndef __cplusplus
 /* Why doesn't including cguid.h work to get a GUID_NULL instead? */
+#ifdef __cplusplus
+EXTERN_C __attribute__((weak))
+const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
+#else
 __attribute__((weak))
 const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 #endif

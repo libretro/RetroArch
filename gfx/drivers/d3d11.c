@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <assert.h>
 
 #include <string/stdstring.h>
@@ -39,7 +41,7 @@
 
 static void d3d11_set_filtering(void* data, unsigned index, bool smooth)
 {
-   unsigned i;
+   unsigned       i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
    for (i = 0; i < RARCH_WRAP_MAX; i++)
@@ -141,8 +143,9 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
 static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-   unsigned i;
-   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+   unsigned         i;
+   d3d11_texture_t* source;
+   d3d11_video_t*   d3d11 = (d3d11_video_t*)data;
 
    if (!d3d11)
       return false;
@@ -171,8 +174,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
    video_shader_resolve_relative(d3d11->shader_preset, path);
 
-   d3d11_texture_t* source = &d3d11->frame.texture[0];
-
+   source = &d3d11->frame.texture[0];
    for (i = 0; i < d3d11->shader_preset->passes; source = &d3d11->pass[i++].rt)
    {
       unsigned j;
@@ -219,16 +221,16 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       /* clang-format on */
 
       if (!slang_process(
-               d3d11->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
-               &d3d11->pass[i].semantics))
+                d3d11->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
+                &d3d11->pass[i].semantics))
          goto error;
 
       {
          static const D3D11_INPUT_ELEMENT_DESC desc[] = {
             { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
-               D3D11_INPUT_PER_VERTEX_DATA, 0 },
+              D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
-               D3D11_INPUT_PER_VERTEX_DATA, 0 },
+              D3D11_INPUT_PER_VERTEX_DATA, 0 },
          };
 #ifdef DEBUG
          bool save_hlsl = true;
@@ -253,13 +255,13 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          strncpy(ps_path + base_len, ps_ext, sizeof(ps_ext));
 
          if (!d3d11_init_shader(
-                  d3d11->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
-                  &d3d11->pass[i].shader))
+                   d3d11->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
+                   &d3d11->pass[i].shader))
             save_hlsl = true;
 
          if (!d3d11_init_shader(
-                  d3d11->device, ps_src, 0, ps_path, NULL, "main", NULL, NULL, 0,
-                  &d3d11->pass[i].shader))
+                   d3d11->device, ps_src, 0, ps_path, NULL, "main", NULL, NULL, 0,
+                   &d3d11->pass[i].shader))
             save_hlsl = true;
 
          if (save_hlsl)
@@ -342,7 +344,7 @@ error:
 
 static void d3d11_gfx_free(void* data)
 {
-   unsigned i;
+   unsigned       i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
    if (!d3d11)
@@ -400,7 +402,7 @@ static void d3d11_gfx_free(void* data)
 static void*
 d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
-   unsigned i;
+   unsigned       i;
    WNDCLASSEX     wndclass = { 0 };
    MONITORINFOEX  current_mon;
    HMONITOR       hm_to_use;
@@ -436,25 +438,25 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    {
       UINT                 flags                   = 0;
       D3D_FEATURE_LEVEL    requested_feature_level = D3D_FEATURE_LEVEL_11_0;
-      DXGI_SWAP_CHAIN_DESC desc                    = {
-         .BufferCount                        = 1,
-         .BufferDesc.Width                   = d3d11->vp.full_width,
-         .BufferDesc.Height                  = d3d11->vp.full_height,
-         .BufferDesc.Format                  = DXGI_FORMAT_R8G8B8A8_UNORM,
-         .BufferDesc.RefreshRate.Numerator   = 60,
-         .BufferDesc.RefreshRate.Denominator = 1,
-         .BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT,
-         .OutputWindow                       = main_window.hwnd,
-         .SampleDesc.Count                   = 1,
-         .SampleDesc.Quality                 = 0,
-         .Windowed                           = TRUE,
-         .SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL,
+      DXGI_SWAP_CHAIN_DESC desc                    = { 0 };
+
+      desc.BufferCount                        = 1;
+      desc.BufferDesc.Width                   = d3d11->vp.full_width;
+      desc.BufferDesc.Height                  = d3d11->vp.full_height;
+      desc.BufferDesc.Format                  = DXGI_FORMAT_R8G8B8A8_UNORM;
+      desc.BufferDesc.RefreshRate.Numerator   = 60;
+      desc.BufferDesc.RefreshRate.Denominator = 1;
+      desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+      desc.OutputWindow                       = main_window.hwnd;
+      desc.SampleDesc.Count                   = 1;
+      desc.SampleDesc.Quality                 = 0;
+      desc.Windowed                           = TRUE;
+      desc.SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL;
 #if 0
-         .SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD,
-         .SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
-         .SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+      desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
+      desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+      desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
-      };
 
 #ifdef DEBUG
       flags |= D3D11_CREATE_DEVICE_DEBUG;
@@ -508,12 +510,12 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d11_gfx_set_rotation(d3d11, 0);
 
    {
-      D3D11_SAMPLER_DESC desc = {
-         .MaxAnisotropy  = 1,
-         .ComparisonFunc = D3D11_COMPARISON_NEVER,
-         .MinLOD         = -D3D11_FLOAT32_MAX,
-         .MaxLOD         = D3D11_FLOAT32_MAX,
-      };
+      D3D11_SAMPLER_DESC desc = { D3D11_FILTER_MIN_MAG_MIP_POINT };
+      desc.MaxAnisotropy      = 1;
+      desc.ComparisonFunc     = D3D11_COMPARISON_NEVER;
+      desc.MinLOD             = -D3D11_FLOAT32_MAX;
+      desc.MaxLOD             = D3D11_FLOAT32_MAX;
+
       /* Initialize samplers */
       for (i = 0; i < RARCH_WRAP_MAX; i++)
       {
@@ -557,11 +559,11 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       };
 
       {
-         D3D11_BUFFER_DESC desc = {
-            .Usage     = D3D11_USAGE_IMMUTABLE,
-            .ByteWidth = sizeof(vertices),
-            .BindFlags = D3D11_BIND_VERTEX_BUFFER,
-         };
+         D3D11_BUFFER_DESC desc = { 0 };
+         desc.Usage             = D3D11_USAGE_IMMUTABLE;
+         desc.ByteWidth         = sizeof(vertices);
+         desc.BindFlags         = D3D11_BIND_VERTEX_BUFFER;
+
          D3D11_SUBRESOURCE_DATA vertexData = { vertices };
          D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->frame.vbo);
          desc.Usage          = D3D11_USAGE_DYNAMIC;
@@ -691,21 +693,18 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    }
 
    {
-      D3D11_BLEND_DESC blend_desc = {
-         .AlphaToCoverageEnable  = FALSE,
-         .IndependentBlendEnable = FALSE,
-         .RenderTarget[0] =
-               {
-                     .BlendEnable = TRUE,
-                     D3D11_BLEND_SRC_ALPHA,
-                     D3D11_BLEND_INV_SRC_ALPHA,
-                     D3D11_BLEND_OP_ADD,
-                     D3D11_BLEND_SRC_ALPHA,
-                     D3D11_BLEND_INV_SRC_ALPHA,
-                     D3D11_BLEND_OP_ADD,
-                     D3D11_COLOR_WRITE_ENABLE_ALL,
-               },
-      };
+      D3D11_BLEND_DESC blend_desc = { 0 };
+
+      blend_desc.AlphaToCoverageEnable                 = FALSE;
+      blend_desc.IndependentBlendEnable                = FALSE;
+      blend_desc.RenderTarget[0].BlendEnable           = TRUE;
+      blend_desc.RenderTarget[0].SrcBlend              = D3D11_BLEND_SRC_ALPHA;
+      blend_desc.RenderTarget[0].DestBlend             = D3D11_BLEND_INV_SRC_ALPHA;
+      blend_desc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
+      blend_desc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_SRC_ALPHA;
+      blend_desc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_INV_SRC_ALPHA;
+      blend_desc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
+      blend_desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
       D3D11CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_enable);
 
       blend_desc.RenderTarget[0].SrcBlend  = D3D11_BLEND_ONE;
@@ -716,10 +715,11 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       D3D11CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_disable);
    }
    {
-      D3D11_RASTERIZER_DESC desc = {
-         .FillMode = D3D11_FILL_SOLID,
-         .CullMode = D3D11_CULL_NONE,
-      };
+      D3D11_RASTERIZER_DESC desc = { 0 };
+
+      desc.FillMode = D3D11_FILL_SOLID;
+      desc.CullMode = D3D11_CULL_NONE;
+
       D3D11CreateRasterizerState(d3d11->device, &desc, &d3d11->state);
    }
    D3D11SetState(d3d11->context, d3d11->state);
@@ -873,8 +873,8 @@ static bool d3d11_gfx_frame(
       const char*         msg,
       video_frame_info_t* video_info)
 {
-   unsigned i;
-   d3d11_texture_t* texture   = NULL;
+   unsigned           i;
+   d3d11_texture_t*   texture = NULL;
    d3d11_video_t*     d3d11   = (d3d11_video_t*)data;
    D3D11DeviceContext context = d3d11->context;
 
@@ -883,7 +883,7 @@ static bool d3d11_gfx_frame(
       D3D11Texture2D backBuffer;
 
       Release(d3d11->renderTargetView);
-      DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0, 0, 0);
+      DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
 
       DXGIGetSwapChainBufferD3D11(d3d11->swapChain, 0, &backBuffer);
       D3D11CreateTexture2DRenderTargetView(
@@ -1176,8 +1176,9 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 static void d3d11_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32, unsigned width, unsigned height, float alpha)
 {
-   d3d11_video_t* d3d11  = (d3d11_video_t*)data;
-   DXGI_FORMAT    format = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : DXGI_FORMAT_EX_A4R4G4B4_UNORM;
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+   DXGI_FORMAT    format =
+         rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
    if (d3d11->menu.texture.desc.Width != width || d3d11->menu.texture.desc.Height != height)
    {
@@ -1247,7 +1248,7 @@ static uintptr_t d3d11_gfx_load_texture(
    if (!d3d11)
       return 0;
 
-   texture                       = (d3d11_texture_t*)calloc(1, sizeof(*texture));
+   texture = (d3d11_texture_t*)calloc(1, sizeof(*texture));
 
    if (!texture)
       return 0;
