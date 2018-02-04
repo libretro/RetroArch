@@ -84,7 +84,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WANT_GLSLANG;HAVE_DYNAMIC;HAVE_SPIRV_CROSS;HAVE_DYLIB;HAVE_DYNAMIC;HAVE_UPDATE_ASSETS;HAVE_MENU;HAVE_SLANG;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_RGUI;HAVE_MATERIALUI;_DEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_D3D11;HAVE_OPENGL;HAVE_GLSL;HAVE_THREADS;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_GRIFFIN;HAVE_RJPEG;HAVE_RPNG;HAVE_ZLIB;WANT_ZLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_OVERLAY;HAVE_7ZIP;HAVE_LIBRETRODB;HAVE_STB_FONT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WANT_GLSLANG;HAVE_DYNAMIC;HAVE_DYLIB;HAVE_SPIRV_CROSS;HAVE_UPDATE_ASSETS;HAVE_MENU;HAVE_SLANG;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_RGUI;HAVE_MATERIALUI;_DEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_OPENGL;HAVE_VULKAN;HAVE_GLSL;HAVE_THREADS;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_GRIFFIN;HAVE_RJPEG;HAVE_RPNG;HAVE_ZLIB;WANT_ZLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_OVERLAY;HAVE_7ZIP;HAVE_LIBRETRODB;HAVE_STB_FONT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\gfx\include\dxsdk;$(SolutionDir)\..\..\gfx\include;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\deps;$(SolutionDir)\..\..\deps\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -99,12 +99,13 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WANT_GLSLANG;HAVE_DYNAMIC;HAVE_SPIRV_CROSS;HAVE_MENU;HAVE_SLANG;HAVE_UPDATE_ASSETS;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_RGUI;HAVE_MATERIALUI;_DEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_OPENGL;HAVE_GLSL;HAVE_THREADS;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_GRIFFIN;HAVE_RJPEG;HAVE_RPNG;HAVE_ZLIB;WANT_ZLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_OVERLAY;HAVE_7ZIP;HAVE_LIBRETRODB;HAVE_STB_FONT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WANT_GLSLANG;HAVE_DYNAMIC;HAVE_DYLIB;HAVE_SPIRV_CROSS;HAVE_MENU;HAVE_SLANG;HAVE_UPDATE_ASSETS;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_RGUI;HAVE_MATERIALUI;_DEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_OPENGL;HAVE_VULKAN;HAVE_GLSL;HAVE_THREADS;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_GRIFFIN;HAVE_RJPEG;HAVE_RPNG;HAVE_ZLIB;WANT_ZLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_OVERLAY;HAVE_7ZIP;HAVE_LIBRETRODB;HAVE_STB_FONT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\gfx\include\dxsdk;$(SolutionDir)\..\..\gfx\include;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\deps;$(SolutionDir)\..\..\deps\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -115,7 +116,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;WANT_GLSLANG;HAVE_DYNAMIC;HAVE_SPIRV_CROSS;HAVE_DYLIB;HAVE_DYNAMIC;HAVE_UPDATE_ASSETS;HAVE_SLANG;HAVE_MENU;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_RGUI;HAVE_MATERIALUI;NDEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D10;HAVE_D3D9;HAVE_D3D11;HAVE_OPENGL;HAVE_GLSL;HAVE_THREADS;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_GRIFFIN;HAVE_RJPEG;HAVE_RPNG;HAVE_ZLIB;WANT_ZLIB;HAVE_NETWORKING;HAVE_COMMAND;HAVE_NETWORK_CMD;HAVE_STDIN_CMD;HAVE_OVERLAY;HAVE_7ZIP;HAVE_LIBRETRODB;HAVE_STB_FONT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WANT_GLSLANG;HAVE_DYNAMIC;HAVE_DYLIB;HAVE_SPIRV_CROSS;HAVE_UPDATE_ASSETS;HAVE_SLANG;HAVE_MENU;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_RGUI;HAVE_MATERIALUI;NDEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_OPENGL;HAVE_VULKAN;HAVE_GLSL;HAVE_THREADS;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_GRIFFIN;HAVE_RJPEG;HAVE_RPNG;HAVE_ZLIB;WANT_ZLIB;HAVE_NETWORKING;HAVE_COMMAND;HAVE_NETWORK_CMD;HAVE_STDIN_CMD;HAVE_OVERLAY;HAVE_7ZIP;HAVE_LIBRETRODB;HAVE_STB_FONT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\gfx\include\dxsdk;$(SolutionDir)\..\..\gfx\include;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\deps;$(SolutionDir)\..\..\deps\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -134,14 +135,15 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;WANT_GLSLANG;HAVE_DYNAMIC;HAVE_SPIRV_CROSS;HAVE_MENU;HAVE_SLANG;HAVE_UPDATE_ASSETS;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_RGUI;HAVE_MATERIALUI;NDEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_OPENGL;HAVE_GLSL;HAVE_THREADS;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_GRIFFIN;HAVE_RJPEG;HAVE_RPNG;HAVE_ZLIB;WANT_ZLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_OVERLAY;HAVE_7ZIP;HAVE_LIBRETRODB;HAVE_STB_FONT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WANT_GLSLANG;HAVE_DYNAMIC;HAVE_DYLIB;HAVE_SPIRV_CROSS;HAVE_MENU;HAVE_SLANG;HAVE_UPDATE_ASSETS;HAVE_XMB;HAVE_SHADERPIPELINE;HAVE_RGUI;HAVE_MATERIALUI;NDEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_OPENGL;HAVE_VULKAN;HAVE_GLSL;HAVE_THREADS;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_GRIFFIN;HAVE_RJPEG;HAVE_RPNG;HAVE_ZLIB;WANT_ZLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_OVERLAY;HAVE_7ZIP;HAVE_LIBRETRODB;HAVE_STB_FONT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\gfx\include\dxsdk;$(SolutionDir)\..\..\gfx\include;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\deps;$(SolutionDir)\..\..\deps\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
