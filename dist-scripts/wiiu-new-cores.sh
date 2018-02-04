@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ../version.all
+. ../version.all
 platform=wiiu
 EXT=a
 scriptDir=
