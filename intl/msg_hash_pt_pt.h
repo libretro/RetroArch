@@ -368,7 +368,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
-      "Permitir câmara"
+      "Permitir câmera"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
