@@ -1361,7 +1361,7 @@ ifeq ($(HAVE_SPIRV_CROSS), 1)
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_glsl.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_hlsl.o
-   #OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_msl.o
+   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_msl.o
 endif
 
 ifeq ($(WANT_WGL), 1)
