@@ -287,12 +287,13 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
-         D3D11_BUFFER_DESC desc = {
-            .ByteWidth      = d3d11->pass[i].semantics.cbuffers[j].size,
-            .Usage          = D3D11_USAGE_DYNAMIC,
-            .BindFlags      = D3D11_BIND_CONSTANT_BUFFER,
-            .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-         };
+		  D3D11_BUFFER_DESC desc;
+		  desc.ByteWidth           = d3d11->pass[i].semantics.cbuffers[j].size;
+		  desc.Usage               = D3D11_USAGE_DYNAMIC;
+		  desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+	      desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+		  desc.MiscFlags           = 0;
+		  desc.StructureByteStride = 0;
 
          if (!desc.ByteWidth)
             continue;
@@ -496,13 +497,19 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d11->ubo_values.OutputSize.height = d3d11->viewport.Height;
 
    {
-      D3D11_BUFFER_DESC desc = {
-         .ByteWidth      = sizeof(d3d11->ubo_values),
-         .Usage          = D3D11_USAGE_DYNAMIC,
-         .BindFlags      = D3D11_BIND_CONSTANT_BUFFER,
-         .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-      };
-      D3D11_SUBRESOURCE_DATA ubo_data = { &d3d11->ubo_values.mvp };
+      D3D11_SUBRESOURCE_DATA ubo_data;
+      D3D11_BUFFER_DESC desc;
+	  desc.ByteWidth            = sizeof(d3d11->ubo_values);
+	  desc.Usage                = D3D11_USAGE_DYNAMIC;
+	  desc.BindFlags            = D3D11_BIND_CONSTANT_BUFFER;
+	  desc.CPUAccessFlags       = D3D11_CPU_ACCESS_WRITE;
+	  desc.MiscFlags            = 0;
+	  desc.StructureByteStride  = 0;
+
+	  ubo_data.pSysMem          = &d3d11->ubo_values.mvp;
+	  ubo_data.SysMemPitch      = 0;
+	  ubo_data.SysMemSlicePitch = 0;
+
       D3D11CreateBuffer(d3d11->device, &desc, &ubo_data, &d3d11->ubo);
       D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->frame.ubo);
    }

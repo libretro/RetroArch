@@ -42,7 +42,7 @@ static ITaskbarList3 *g_taskbarList = NULL;
 
 /* MSVC really doesn't want CINTERFACE to be used with shobjidl for some reason, but since we use C++ mode,
  * we need a workaround... so use the names of the COBJMACROS functions instead. */
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CINTERFACE)
 #define ITaskbarList3_Release(x) g_taskbarList->Release()
 #define ITaskbarList3_SetProgressState(a, b, c) g_taskbarList->SetProgressState(b, c)
 #define ITaskbarList3_SetProgressValue(a, b, c, d) g_taskbarList->SetProgressValue(b, c, d)
