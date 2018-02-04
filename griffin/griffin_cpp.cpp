@@ -14,21 +14,23 @@
 */
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#define HAVE_SHADERS
+#define HAVE_SHADERS 1
 #endif
 
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
-#define HAVE_COMPRESSION
+#define HAVE_COMPRESSION 1
 #endif
 
 #if defined(_MSC_VER)
+#include <string.h>
 #include <compat/posix_string.h>
 #endif
 
 #ifdef WANT_GLSLANG
-#ifdef HAVE_VULKAN
 #include "../deps/glslang/glslang.cpp"
+#if 0
 #include "../deps/glslang/glslang_tab.cpp"
+#endif
 #include "../deps/glslang/glslang/SPIRV/disassemble.cpp"
 #include "../deps/glslang/glslang/SPIRV/doc.cpp"
 #include "../deps/glslang/glslang/SPIRV/GlslangToSpv.cpp"
@@ -79,7 +81,6 @@
 #include "../deps/glslang/glslang/hlsl/hlslParseHelper.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslScanContext.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslTokenStream.cpp"
-
 #ifdef _WIN32
 #include "../deps/glslang/glslang/glslang/OSDependent/Windows/ossource.cpp"
 #endif
@@ -88,45 +89,6 @@
 #include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp"
 #endif
 #endif
-#endif
-
-/*============================================================
-AUDIO
-============================================================ */
-#ifdef HAVE_XAUDIO
-#include "../audio/drivers/xaudio.cpp"
-#endif
-
-
-/*============================================================
- KEYBOARD EVENT
- ============================================================ */
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../input/drivers_keyboard/keyboard_event_win32.cpp"
-#endif
-
-/*============================================================
-UI COMMON CONTEXT
-============================================================ */
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../gfx/common/win32_common.cpp"
-
-#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
-#include "../gfx/drivers_context/wgl_ctx.cpp"
-#endif
-
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../gfx/drivers_context/gdi_ctx.cpp"
-#endif
-
-#if defined(HAVE_FFMPEG)
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
-#include "../cores/libretro-ffmpeg/fft/fft.cpp"
-#endif
-#endif
-
-#endif
-
 
 /*============================================================
 MENU
@@ -135,26 +97,9 @@ MENU
 #include "../menu/drivers/xui.cpp"
 #endif
 
-#if defined(HAVE_D3D)
-#include "../menu/drivers_display/menu_display_d3d.cpp"
-#endif
-
-/*============================================================
-VIDEO CONTEXT
-============================================================ */
-
-#if defined(HAVE_D3D)
-#include "../gfx/drivers_context/d3d_ctx.cpp"
-#endif
-
 /*============================================================
 UI
 ============================================================ */
-
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../ui/drivers/win32/ui_win32_window.cpp"
-#endif
-
 #if defined(HAVE_QT)
 #include "../ui/drivers/ui_qt.cpp"
 
@@ -171,37 +116,24 @@ UI
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
-#ifdef _XBOX
-#include "../frontend/drivers/platform_xdk.cpp"
-#endif
-
-#if defined(HAVE_D3D)
-#include "../gfx/common/d3d_common.cpp"
-#include "../gfx/drivers/d3d.cpp"
-#ifdef _XBOX
-#include "../gfx/drivers/d3d_renderchains/render_chain_xdk.cpp"
-#endif
-#ifdef HAVE_CG
-#include "../gfx/drivers/d3d_renderchains/render_chain_cg.cpp"
-#endif
-#endif
-
 #ifdef HAVE_VULKAN
 #include "../gfx/drivers_shader/shader_vulkan.cpp"
-#include "../gfx/drivers_shader/glslang_util.cpp"
-#include "../gfx/drivers_shader/slang_reflection.cpp"
+#endif
+
+#ifdef HAVE_SPIRV_CROSS
 #include "../deps/SPIRV-Cross/spirv_cross.cpp"
 #include "../deps/SPIRV-Cross/spirv_cfg.cpp"
+#ifdef HAVE_SLANG
+#include "../gfx/drivers_shader/glslang_util.cpp"
+#include "../gfx/drivers_shader/slang_preprocess.cpp"
+#include "../gfx/drivers_shader/slang_process.cpp"
+#include "../gfx/drivers_shader/slang_reflection.cpp"
+#endif
 #endif
 
 /*============================================================
 FONTS
 ============================================================ */
-
-#if defined(HAVE_D3D9) && !defined(_XBOX)
-#include "../gfx/drivers_font/d3d_w32_font.cpp"
-#endif
-
 #if defined(_XBOX360)
 #include "../gfx/drivers_font/xdk360_fonts.cpp"
 #endif

@@ -41,20 +41,20 @@ extern "C" {
 #define SOFTFILTER_SIMD_PS       (1 << 14)
 
 /* A bit-mask of all supported SIMD instruction sets.
- * Allows an implementation to pick different 
+ * Allows an implementation to pick different
  * softfilter_implementation structs. */
 typedef unsigned softfilter_simd_mask_t;
 
-/* Returns true if config key was found. Otherwise, returns false, 
+/* Returns true if config key was found. Otherwise, returns false,
  * and sets value to default value. */
-typedef int (*softfilter_config_get_float_t)(void *userdata, 
+typedef int (*softfilter_config_get_float_t)(void *userdata,
       const char *key, float *value, float default_value);
 
 typedef int (*softfilter_config_get_int_t)(void *userdata,
       const char *key, int *value, int default_value);
 
 /* Allocates an array with values. free() with softfilter_config_free_t. */
-typedef int (*softfilter_config_get_float_array_t)(void *userdata, 
+typedef int (*softfilter_config_get_float_array_t)(void *userdata,
       const char *key,
       float **values, unsigned *out_num_values,
       const float *default_values, unsigned num_default_values);
@@ -79,16 +79,16 @@ struct softfilter_config
    softfilter_config_get_int_array_t get_int_array;
 
    softfilter_config_get_string_t get_string;
-   /* Avoid problems where softfilter plug and 
+   /* Avoid problems where softfilter plug and
     * host are linked against different C runtimes. */
    softfilter_config_free_t free;
 };
 
 /* Dynamic library entrypoint. */
-typedef const struct softfilter_implementation 
+typedef const struct softfilter_implementation
 *(*softfilter_get_implementation_t)(softfilter_simd_mask_t);
 
-/* The same SIMD mask argument is forwarded to create() callback 
+/* The same SIMD mask argument is forwarded to create() callback
  * as well to avoid having to keep lots of state around. */
 const struct softfilter_implementation *softfilter_get_implementation(
       softfilter_simd_mask_t simd);
@@ -111,11 +111,11 @@ const struct softfilter_implementation *softfilter_get_implementation(
  * Returns a bitmask of supported input formats. */
 typedef unsigned (*softfilter_query_input_formats_t)(void);
 
-/* Returns a bitmask of supported output formats 
+/* Returns a bitmask of supported output formats
  * for a given input format. */
 typedef unsigned (*softfilter_query_output_formats_t)(unsigned input_format);
 
-/* In softfilter_process_t, the softfilter implementation 
+/* In softfilter_process_t, the softfilter implementation
  * submits work units to a worker thread pool. */
 typedef void (*softfilter_work_t)(void *data, void *thread_data);
 struct softfilter_work_packet
@@ -124,10 +124,10 @@ struct softfilter_work_packet
    void *thread_data;
 };
 
-/* Create a filter with given input and output formats as well as 
+/* Create a filter with given input and output formats as well as
  * maximum possible input size.
  *
- * Input sizes can very per call to softfilter_process_t, but they 
+ * Input sizes can very per call to softfilter_process_t, but they
  * will never be larger than the maximum. */
 typedef void *(*softfilter_create_t)(const struct softfilter_config *config,
       unsigned in_fmt, unsigned out_fmt,
@@ -137,13 +137,13 @@ typedef void *(*softfilter_create_t)(const struct softfilter_config *config,
 typedef void (*softfilter_destroy_t)(void *data);
 
 /* Given an input size, query the output size of the filter.
- * If width and height == max_width/max_height, no other combination 
+ * If width and height == max_width/max_height, no other combination
  * of width/height must return a larger size in any dimension. */
 typedef void (*softfilter_query_output_size_t)(void *data,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height);
 
-/* First step of processing a frame. The filter submits work by 
+/* First step of processing a frame. The filter submits work by
  * filling in the packets array.
  *
  * The number of elements in the array is as returned by query_num_threads.
@@ -155,8 +155,8 @@ typedef void (*softfilter_get_work_packets_t)(void *data,
       const void *input, unsigned width, unsigned height, size_t input_stride);
 
 /* Returns the number of worker threads the filter will use.
- * This can differ from the value passed to create() instead the filter 
- * cannot be parallelized, etc. The number of threads must be less-or-equal 
+ * This can differ from the value passed to create() instead the filter
+ * cannot be parallelized, etc. The number of threads must be less-or-equal
  * compared to the value passed to create(). */
 typedef unsigned (*softfilter_query_num_threads_t)(void *data);
 

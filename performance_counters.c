@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -27,7 +27,7 @@
 
 #include "performance_counters.h"
 
-#include "runloop.h"
+#include "retroarch.h"
 #include "verbosity.h"
 
 #ifdef _WIN32
@@ -64,7 +64,7 @@ unsigned retro_get_perf_count_libretro(void)
 void rarch_perf_register(struct retro_perf_counter *perf)
 {
    if (
-            !runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL)
+            !rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL)
          || perf->registered
          || perf_ptr_rarch >= MAX_COUNTERS
       )
@@ -98,16 +98,16 @@ static void log_counters(struct retro_perf_counter **counters, unsigned num)
       {
          RARCH_LOG(PERF_LOG_FMT,
                counters[i]->ident,
-               (unsigned long long)counters[i]->total /
-               (unsigned long long)counters[i]->call_cnt,
-               (unsigned long long)counters[i]->call_cnt);
+               (uint64_t)counters[i]->total /
+               (uint64_t)counters[i]->call_cnt,
+               (uint64_t)counters[i]->call_cnt);
       }
    }
 }
 
 void rarch_perf_log(void)
 {
-   if (!runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (!rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
       return;
 
    RARCH_LOG("[PERF]: Performance counters (RetroArch):\n");

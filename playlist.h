@@ -1,8 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2013-2014 - Jason Fetters
- * 
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -26,25 +25,6 @@
 RETRO_BEGIN_DECLS
 
 typedef struct content_playlist       playlist_t;
-
-struct playlist_entry
-{
-   char *path;
-   char *label;
-   char *core_path;
-   char *core_name;
-   char *db_name;
-   char *crc32;
-};
-
-struct content_playlist
-{
-   struct playlist_entry *entries;
-   size_t size;
-   size_t cap;
-
-   char *conf_path;
-};
 
 /**
  * playlist_init:
@@ -89,8 +69,8 @@ size_t playlist_size(playlist_t *playlist);
  * @path                : Path of playlist entry.
  * @core_path           : Core path of playlist entry.
  * @core_name           : Core name of playlist entry.
- * 
- * Gets values of playlist index: 
+ *
+ * Gets values of playlist index:
  **/
 void playlist_get_index(playlist_t *playlist,
       size_t idx,
@@ -103,8 +83,8 @@ void playlist_get_index(playlist_t *playlist,
  * playlist_delete_index:
  * @playlist               : Playlist handle.
  * @idx                 : Index of playlist entry.
- * 
- * Deletes the entry at index: 
+ *
+ * Deletes the entry at index:
  **/
 void playlist_delete_index(playlist_t *playlist,
       size_t idx);
@@ -140,6 +120,10 @@ void playlist_get_index_by_path(playlist_t *playlist,
 bool playlist_entry_exists(playlist_t *playlist,
       const char *path,
       const char *crc32);
+
+char *playlist_get_conf_path(playlist_t *playlist);
+
+uint32_t playlist_get_size(playlist_t *playlist);
 
 void playlist_write_file(playlist_t *playlist);
 

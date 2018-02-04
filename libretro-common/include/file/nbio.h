@@ -26,6 +26,10 @@
 #include <stddef.h>
 #include <boolean.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 #ifndef NBIO_READ
 #define NBIO_READ   0
 #endif
@@ -38,6 +42,7 @@
 #define NBIO_UPDATE 2
 #endif
 
+/* these two are blocking; nbio_iterate always returns true, but that operation (or something earlier) may take arbitrarily long */
 #ifndef BIO_READ
 #define BIO_READ    3
 #endif
@@ -46,51 +51,74 @@
 #define BIO_WRITE   4
 #endif
 
-struct nbio_t;
+typedef struct nbio_intf
+{
+   void *(*open)(const char * filename, unsigned mode);
+
+   void (*begin_read)(void *data);
+
+   void (*begin_write)(void *data);
+
+   bool (*iterate)(void *data);
+
+   void (*resize)(void *data, size_t len);
+
+   void *(*get_ptr)(void *data, size_t* len);
+
+   void (*cancel)(void *data);
+
+   void (*free)(void *data);
+
+   /* Human readable string. */
+   const char *ident;
+} nbio_intf_t;
 
 /*
- * Creates an nbio structure for performing the given operation on the given file.
+ * Creates an nbio structure for performing the
+ * given operation on the given file.
  */
-struct nbio_t* nbio_open(const char * filename, unsigned mode);
+void *nbio_open(const char * filename, unsigned mode);
 
 /*
  * Starts reading the given file. When done, it will be available in nbio_get_ptr.
- * Can not be done if the structure was created with nbio_write.
+ * Can not be done if the structure was created with {N,}BIO_WRITE.
  */
-void nbio_begin_read(struct nbio_t* handle);
+void nbio_begin_read(void *data);
 
 /*
  * Starts writing to the given file. Before this, you should've copied the data to nbio_get_ptr.
- * Can not be done if the structure was created with nbio_read.
+ * Can not be done if the structure was created with {N,}BIO_READ.
  */
-void nbio_begin_write(struct nbio_t* handle);
+void nbio_begin_write(void *data);
 
 /*
  * Performs part of the requested operation, or checks how it's going.
  * When it returns true, it's done.
  */
-bool nbio_iterate(struct nbio_t* handle);
+bool nbio_iterate(void *data);
 
 /*
  * Resizes the file up to the given size; cannot shrink.
- * Can not be done if the structure was created with nbio_read.
+ * Can not be done if the structure was created with {N,}BIO_READ.
  */
-void nbio_resize(struct nbio_t* handle, size_t len);
+void nbio_resize(void *data, size_t len);
 
 /*
- * Returns a pointer to the file data. Writable only if structure was not created with nbio_read.
+ * Returns a pointer to the file data. Writable only if structure was not created with {N,}BIO_READ.
  * If any operation is in progress, the pointer will be NULL, but len will still be correct.
  */
-void* nbio_get_ptr(struct nbio_t* handle, size_t* len);
+void* nbio_get_ptr(void *data, size_t* len);
 
 /*
  * Stops any pending operation, allowing the object to be freed.
  */
-void nbio_cancel(struct nbio_t* handle);
+void nbio_cancel(void *data);
 
 /*
  * Deletes the nbio structure and its associated pointer.
  */
-void nbio_free(struct nbio_t* handle);
+void nbio_free(void *data);
+
+RETRO_END_DECLS
 
 #endif

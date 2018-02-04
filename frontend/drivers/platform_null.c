@@ -41,5 +41,10 @@ frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* destroy_sighandler_state */
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
+#ifdef HAVE_LAKKA
+   NULL,                         /* get_lakka_version */
+#endif
+   NULL,                         /* watch_path_for_changes */
+   NULL,                         /* check_for_path_changes */
    "null",
 };

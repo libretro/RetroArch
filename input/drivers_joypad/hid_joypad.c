@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -15,7 +15,6 @@
  */
 
 #include "../../tasks/tasks_internal.h"
-#include "../input_hid_driver.h"
 #include "../input_driver.h"
 
 static const hid_driver_t *generic_hid = NULL;
@@ -45,7 +44,7 @@ static void hid_joypad_free(void)
 
    if (generic_hid->free)
       generic_hid->free((void*)hid_driver_get_data());
-    
+
    generic_hid = NULL;
 }
 
@@ -56,11 +55,12 @@ static bool hid_joypad_button(unsigned port, uint16_t joykey)
    return false;
 }
 
-static uint64_t hid_joypad_get_buttons(unsigned port)
+static void hid_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
    if (generic_hid && generic_hid->get_buttons)
-      return generic_hid->get_buttons((void*)hid_driver_get_data(), port);
-   return 0;
+      generic_hid->get_buttons((void*)hid_driver_get_data(), port, state);
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hid_joypad_axis(unsigned port, uint32_t joyaxis)

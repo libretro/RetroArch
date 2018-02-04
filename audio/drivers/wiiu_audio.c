@@ -25,7 +25,6 @@
 #include "wiiu/system/memory.h"
 
 #include "audio/audio_driver.h"
-#include "performance_counters.h"
 
 typedef struct
 {
@@ -192,22 +191,16 @@ static bool ax_audio_start(void* data, bool is_shutdown)
    return true;
 }
 
-static ssize_t ax_audio_write(void* data, const void* buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
 {
-   int i;
-   static struct retro_perf_counter ax_audio_write_perf = {0};
+   uint32_t i;
    size_t countAvail   = 0;
    ax_audio_t* ax      = (ax_audio_t*)data;
    const uint16_t* src = buf;
-   int count           = size >> 2;
+   size_t count        = size >> 2;
 
    if(!size || (size & 0x3))
       return 0;
-
-   /* Measure copy performance from here */
-   performance_counter_init(ax_audio_write_perf, "ax_audio_write");
-   performance_counter_start_plus(is_perfcnt_enable, ax_audio_write_perf);
 
    if(count > AX_AUDIO_MAX_FREE)
       count = AX_AUDIO_MAX_FREE;
@@ -286,9 +279,6 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size,
    if(!AXIsMultiVoiceRunning(ax->mvoice))
       ax_audio_start(ax, false);
 
-   /* Done copying new data */
-   performance_counter_stop_plus(is_perfcnt_enable, ax_audio_write_perf);
-
    /* return what was actually copied */
    return (count << 2);
 }
@@ -340,8 +330,8 @@ audio_driver_t audio_ax =
    ax_audio_free,
    ax_audio_use_float,
    "AX",
-   NULL,
-   NULL,
-/*   ax_audio_write_avail, */
-/*   ax_audio_buffer_size */
+   NULL, /* device_list_new */
+   NULL, /* device_list_free */
+   NULL, /* write_avail */
+   NULL, /* buffer_size */
 };

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -51,7 +51,7 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency,
    int frags, frag, channels, format, new_rate;
    int              *fd   = (int*)calloc(1, sizeof(int));
    const char *oss_device = device ? device : DEFAULT_OSS_DEV;
-   
+
    if (!fd)
       return NULL;
 
@@ -97,8 +97,7 @@ error:
    return NULL;
 }
 
-static ssize_t oss_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t oss_write(void *data, const void *buf, size_t size)
 {
    ssize_t ret;
    int *fd = (int*)data;
@@ -121,7 +120,9 @@ static bool oss_stop(void *data)
 {
    int *fd = (int*)data;
 
-   ioctl(*fd, SNDCTL_DSP_RESET, 0);
+   if (ioctl(*fd, SNDCTL_DSP_RESET, 0) < 0)
+      return false;
+
    oss_is_paused = true;
    return true;
 }
@@ -156,7 +157,9 @@ static void oss_free(void *data)
 {
    int *fd = (int*)data;
 
-   ioctl(*fd, SNDCTL_DSP_RESET, 0);
+   if (ioctl(*fd, SNDCTL_DSP_RESET, 0) < 0)
+      return;
+
    close(*fd);
    free(fd);
 }
@@ -168,7 +171,7 @@ static size_t oss_write_avail(void *data)
 
    if (ioctl(*fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
    {
-      RARCH_ERR("SNDCTL_DSP_GETOSPACE failed ...\n");
+      RARCH_ERR("[OSS]: SNDCTL_DSP_GETOSPACE failed ...\n");
       return 0;
    }
 
@@ -182,7 +185,7 @@ static size_t oss_buffer_size(void *data)
 
    if (ioctl(*fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
    {
-      RARCH_ERR("SNDCTL_DSP_GETOSPACE failed ...\n");
+      RARCH_ERR("[OSS]: SNDCTL_DSP_GETOSPACE failed ...\n");
       return 1; /* Return something non-zero to avoid SIGFPE. */
    }
 

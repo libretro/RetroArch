@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -22,29 +22,35 @@
 #ifndef _XBOX
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#if _WIN32_WINNT <= 0x0400
+/* Windows versions below 98 do not support multiple monitors, so fake it */
+#define COMPILE_MULTIMON_STUBS
+#include <multimon.h>
+#endif
+
 #endif
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_environment.h>
 #include "../../driver.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 
 #ifdef _XBOX
 #include "../../defines/xdk_defines.h"
-#endif
-
-#ifndef _XBOX
+#else
 #include "../../ui/drivers/ui_win32_resource.h"
 #include "../../ui/drivers/ui_win32.h"
+#endif
 
+RETRO_BEGIN_DECLS
+
+#ifndef _XBOX
 extern unsigned g_resize_width;
 extern unsigned g_resize_height;
 extern bool g_inited;
 extern bool g_restore_desktop;
 extern ui_window_win32_t main_window;
-
-LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
 
 void win32_monitor_get_info(void);
 
@@ -54,13 +60,7 @@ void create_graphics_context(HWND hwnd, bool *quit);
 
 void create_gdi_context(HWND hwnd, bool *quit);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 bool gdi_has_menu_frame(void);
-#ifdef __cplusplus
-}
-#endif
 
 bool win32_shader_dlg_init(void);
 void shader_dlg_show(HWND parent_hwnd);
@@ -94,13 +94,7 @@ bool win32_get_metrics(void *data,
 
 void win32_show_cursor(bool state);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 HWND win32_get_window(void);
-#ifdef __cplusplus
-}
-#endif
 
 bool win32_has_focus(void);
 
@@ -116,11 +110,24 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 	RECT *rect, RECT *mon_rect, DWORD *style);
 #endif
 
+void win32_get_video_output_size(
+      unsigned *width, unsigned *height);
+
+void win32_get_video_output_prev(
+      unsigned *width, unsigned *height);
+
+void win32_get_video_output_next(
+      unsigned *width, unsigned *height);
+
 void win32_window_reset(void);
 
 void win32_destroy_window(void);
 
-#ifdef HAVE_D3D9
+bool win32_taskbar_is_created(void);
+
+void win32_set_taskbar_created(bool created);
+
+#if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif
@@ -136,5 +143,9 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 #ifdef _XBOX
 BOOL IsIconic(HWND hwnd);
 #endif
+
+LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
+
+RETRO_END_DECLS
 
 #endif

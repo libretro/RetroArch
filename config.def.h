@@ -19,166 +19,17 @@
 #define __CONFIG_DEF_H
 
 #include <boolean.h>
+#include <audio/audio_resampler.h>
 #include "gfx/video_defines.h"
+#include "input/input_driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "input/input_driver.h"
-
-#include "config.def.keybinds.h"
-
-enum video_driver_enum
-{
-   VIDEO_GL                 = 0,
-   VIDEO_VULKAN,
-   VIDEO_DRM,
-   VIDEO_XVIDEO,
-   VIDEO_SDL,
-   VIDEO_SDL2,
-   VIDEO_EXT,
-   VIDEO_WII,
-   VIDEO_WIIU,
-   VIDEO_XENON360,
-   VIDEO_XDK_D3D,
-   VIDEO_PSP1,
-   VIDEO_VITA2D,
-   VIDEO_CTR,
-   VIDEO_D3D9,
-   VIDEO_VG,
-   VIDEO_OMAP,
-   VIDEO_EXYNOS,
-   VIDEO_SUNXI,
-   VIDEO_DISPMANX,
-   VIDEO_CACA,
-   VIDEO_GDI,
-   VIDEO_VGA,
-   VIDEO_NULL
-};
-
-enum audio_driver_enum
-{
-   AUDIO_RSOUND             = VIDEO_NULL + 1,
-   AUDIO_OSS,
-   AUDIO_ALSA,
-   AUDIO_ALSATHREAD,
-   AUDIO_ROAR,
-   AUDIO_AL,
-   AUDIO_SL,
-   AUDIO_JACK,
-   AUDIO_SDL,
-   AUDIO_SDL2,
-   AUDIO_XAUDIO,
-   AUDIO_PULSE,
-   AUDIO_EXT,
-   AUDIO_DSOUND,
-   AUDIO_COREAUDIO,
-   AUDIO_PS3,
-   AUDIO_XENON360,
-   AUDIO_WII,
-   AUDIO_WIIU,
-   AUDIO_RWEBAUDIO,
-   AUDIO_PSP,
-   AUDIO_CTR,
-   AUDIO_NULL
-};
-
-enum audio_resampler_driver_enum
-{
-   AUDIO_RESAMPLER_CC       = AUDIO_NULL + 1,
-   AUDIO_RESAMPLER_SINC,
-   AUDIO_RESAMPLER_NEAREST,
-   AUDIO_RESAMPLER_NULL
-};
-
-enum input_driver_enum
-{
-   INPUT_ANDROID            = AUDIO_RESAMPLER_NULL + 1,
-   INPUT_SDL,
-   INPUT_SDL2,
-   INPUT_X,
-   INPUT_WAYLAND,
-   INPUT_DINPUT,
-   INPUT_PS3,
-   INPUT_PSP,
-   INPUT_CTR,
-   INPUT_XENON360,
-   INPUT_WII,
-   INPUT_WIIU,
-   INPUT_XINPUT,
-   INPUT_UDEV,
-   INPUT_LINUXRAW,
-   INPUT_COCOA,
-   INPUT_QNX,
-   INPUT_RWEBINPUT,
-   INPUT_DOS,
-   INPUT_NULL
-};
-
-enum joypad_driver_enum
-{
-   JOYPAD_PS3               = INPUT_NULL + 1,
-   JOYPAD_XINPUT,
-   JOYPAD_GX,
-   JOYPAD_WIIU,
-   JOYPAD_XDK,
-   JOYPAD_PSP,
-   JOYPAD_CTR,
-   JOYPAD_DINPUT,
-   JOYPAD_UDEV,
-   JOYPAD_LINUXRAW,
-   JOYPAD_ANDROID,
-   JOYPAD_SDL,
-   JOYPAD_DOS,
-   JOYPAD_HID,
-   JOYPAD_QNX,
-   JOYPAD_NULL
-};
-
-enum camera_driver_enum
-{
-   CAMERA_V4L2              = JOYPAD_NULL + 1,
-   CAMERA_RWEBCAM,
-   CAMERA_ANDROID,
-   CAMERA_AVFOUNDATION,
-   CAMERA_NULL
-};
-
-enum wifi_driver_enum
-{
-   WIFI_CONNMANCTL          = CAMERA_NULL + 1,
-   WIFI_NULL
-};
-
-enum location_driver_enum
-{
-   LOCATION_ANDROID         = WIFI_NULL + 1,
-   LOCATION_CORELOCATION,
-   LOCATION_NULL
-};
-
-enum osk_driver_enum
-{
-   OSK_PS3                  = LOCATION_NULL + 1,
-   OSK_NULL
-};
-
-enum menu_driver_enum
-{
-   MENU_RGUI                = OSK_NULL + 1,
-   MENU_XUI,
-   MENU_MATERIALUI,
-   MENU_XMB,
-   MENU_NUKLEAR,
-   MENU_NULL
-};
-
-enum record_driver_enum
-{
-   RECORD_FFMPEG            = MENU_NULL + 1,
-   RECORD_NULL
-};
+#ifdef HAVE_NETWORKING
+#include "network/netplay/netplay.h"
+#endif
 
 #if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
@@ -186,224 +37,6 @@ enum record_driver_enum
 #define MAX_GAMMA_SETTING 2
 #else
 #define MAX_GAMMA_SETTING 1
-#endif
-
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
-#define VIDEO_DEFAULT_DRIVER VIDEO_GL
-#elif defined(GEKKO)
-#define VIDEO_DEFAULT_DRIVER VIDEO_WII
-#elif defined(WIIU)
-#define VIDEO_DEFAULT_DRIVER VIDEO_WIIU
-#elif defined(XENON)
-#define VIDEO_DEFAULT_DRIVER VIDEO_XENON360
-#elif (defined(_XBOX1) || defined(_XBOX360)) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
-#define VIDEO_DEFAULT_DRIVER VIDEO_XDK_D3D
-#elif defined(HAVE_D3D9)
-#define VIDEO_DEFAULT_DRIVER VIDEO_D3D9
-#elif defined(HAVE_VG)
-#define VIDEO_DEFAULT_DRIVER VIDEO_VG
-#elif defined(HAVE_VITA2D)
-#define VIDEO_DEFAULT_DRIVER VIDEO_VITA2D
-#elif defined(PSP)
-#define VIDEO_DEFAULT_DRIVER VIDEO_PSP1
-#elif defined(_3DS)
-#define VIDEO_DEFAULT_DRIVER VIDEO_CTR
-#elif defined(HAVE_XVIDEO)
-#define VIDEO_DEFAULT_DRIVER VIDEO_XVIDEO
-#elif defined(HAVE_SDL)
-#define VIDEO_DEFAULT_DRIVER VIDEO_SDL
-#elif defined(HAVE_SDL2)
-#define VIDEO_DEFAULT_DRIVER VIDEO_SDL2
-#elif defined(_WIN32) && !defined(_XBOX)
-#define VIDEO_DEFAULT_DRIVER VIDEO_GDI
-#elif defined(DJGPP)
-#define VIDEO_DEFAULT_DRIVER VIDEO_VGA
-#elif defined(HAVE_DYLIB) && !defined(ANDROID)
-#define VIDEO_DEFAULT_DRIVER VIDEO_EXT
-#else
-#define VIDEO_DEFAULT_DRIVER VIDEO_NULL
-#endif
-
-#if defined(__CELLOS_LV2__)
-#define AUDIO_DEFAULT_DRIVER AUDIO_PS3
-#elif defined(XENON)
-#define AUDIO_DEFAULT_DRIVER AUDIO_XENON360
-#elif defined(GEKKO)
-#define AUDIO_DEFAULT_DRIVER AUDIO_WII
-#elif defined(WIIU)
-#define AUDIO_DEFAULT_DRIVER AUDIO_WIIU
-#elif defined(PSP) || defined(VITA)
-#define AUDIO_DEFAULT_DRIVER AUDIO_PSP
-#elif defined(_3DS)
-#define AUDIO_DEFAULT_DRIVER AUDIO_CTR
-#elif defined(HAVE_PULSE)
-#define AUDIO_DEFAULT_DRIVER AUDIO_PULSE
-#elif defined(HAVE_ALSA) && defined(HAVE_VIDEOCORE)
-#define AUDIO_DEFAULT_DRIVER AUDIO_ALSATHREAD
-#elif defined(HAVE_ALSA)
-#define AUDIO_DEFAULT_DRIVER AUDIO_ALSA
-#elif defined(HAVE_OSS)
-#define AUDIO_DEFAULT_DRIVER AUDIO_OSS
-#elif defined(HAVE_JACK)
-#define AUDIO_DEFAULT_DRIVER AUDIO_JACK
-#elif defined(HAVE_COREAUDIO)
-#define AUDIO_DEFAULT_DRIVER AUDIO_COREAUDIO
-#elif defined(HAVE_XAUDIO)
-#define AUDIO_DEFAULT_DRIVER AUDIO_XAUDIO
-#elif defined(HAVE_DSOUND)
-#define AUDIO_DEFAULT_DRIVER AUDIO_DSOUND
-#elif defined(HAVE_AL)
-#define AUDIO_DEFAULT_DRIVER AUDIO_AL
-#elif defined(HAVE_SL)
-#define AUDIO_DEFAULT_DRIVER AUDIO_SL
-#elif defined(EMSCRIPTEN)
-#define AUDIO_DEFAULT_DRIVER AUDIO_RWEBAUDIO
-#elif defined(HAVE_SDL)
-#define AUDIO_DEFAULT_DRIVER AUDIO_SDL
-#elif defined(HAVE_SDL2)
-#define AUDIO_DEFAULT_DRIVER AUDIO_SDL2
-#elif defined(HAVE_RSOUND)
-#define AUDIO_DEFAULT_DRIVER AUDIO_RSOUND
-#elif defined(HAVE_ROAR)
-#define AUDIO_DEFAULT_DRIVER AUDIO_ROAR
-#elif defined(HAVE_DYLIB) && !defined(ANDROID)
-#define AUDIO_DEFAULT_DRIVER AUDIO_EXT
-#else
-#define AUDIO_DEFAULT_DRIVER AUDIO_NULL
-#endif
-
-#if defined(PSP) || defined(EMSCRIPTEN)
-#define AUDIO_DEFAULT_RESAMPLER_DRIVER  AUDIO_RESAMPLER_CC
-#else
-#define AUDIO_DEFAULT_RESAMPLER_DRIVER  AUDIO_RESAMPLER_SINC
-#endif
-
-#if defined(HAVE_FFMPEG)
-#define RECORD_DEFAULT_DRIVER RECORD_FFMPEG
-#else
-#define RECORD_DEFAULT_DRIVER RECORD_NULL
-#endif
-
-#if defined(XENON)
-#define INPUT_DEFAULT_DRIVER INPUT_XENON360
-#elif defined(_XBOX360) || defined(_XBOX) || defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1)
-#define INPUT_DEFAULT_DRIVER INPUT_XINPUT
-#elif defined(ANDROID)
-#define INPUT_DEFAULT_DRIVER INPUT_ANDROID
-#elif defined(EMSCRIPTEN) && defined(HAVE_SDL2)
-#define INPUT_DEFAULT_DRIVER INPUT_SDL2
-#elif defined(EMSCRIPTEN)
-#define INPUT_DEFAULT_DRIVER INPUT_RWEBINPUT
-#elif defined(_WIN32)
-#define INPUT_DEFAULT_DRIVER INPUT_DINPUT
-#elif defined(__CELLOS_LV2__)
-#define INPUT_DEFAULT_DRIVER INPUT_PS3
-#elif defined(PSP) || defined(VITA)
-#define INPUT_DEFAULT_DRIVER INPUT_PSP
-#elif defined(_3DS)
-#define INPUT_DEFAULT_DRIVER INPUT_CTR
-#elif defined(GEKKO)
-#define INPUT_DEFAULT_DRIVER INPUT_WII
-#elif defined(WIIU)
-#define INPUT_DEFAULT_DRIVER INPUT_WIIU
-#elif defined(HAVE_UDEV)
-#define INPUT_DEFAULT_DRIVER INPUT_UDEV
-#elif defined(__linux__) && !defined(ANDROID)
-#define INPUT_DEFAULT_DRIVER INPUT_LINUXRAW
-#elif defined(HAVE_X11)
-#define INPUT_DEFAULT_DRIVER INPUT_X
-#elif defined(HAVE_WAYLAND)
-#define INPUT_DEFAULT_DRIVER INPUT_WAYLAND
-#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
-#define INPUT_DEFAULT_DRIVER INPUT_COCOA
-#elif defined(__QNX__)
-#define INPUT_DEFAULT_DRIVER INPUT_QNX
-#elif defined(HAVE_SDL)
-#define INPUT_DEFAULT_DRIVER INPUT_SDL
-#elif defined(HAVE_SDL2)
-#define INPUT_DEFAULT_DRIVER INPUT_SDL2
-#elif defined(DJGPP)
-#define INPUT_DEFAULT_DRIVER INPUT_DOS
-#else
-#define INPUT_DEFAULT_DRIVER INPUT_NULL
-#endif
-
-#if defined(__CELLOS_LV2__)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_PS3
-#elif defined(HAVE_XINPUT)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_XINPUT
-#elif defined(GEKKO)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_GX
-#elif defined(WIIU)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_WIIU
-#elif defined(_XBOX)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_XDK
-#elif defined(PSP) || defined(VITA)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_PSP
-#elif defined(_3DS)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_CTR
-#elif defined(HAVE_DINPUT)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_DINPUT
-#elif defined(HAVE_UDEV)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_UDEV
-#elif defined(__linux) && !defined(ANDROID)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_LINUXRAW
-#elif defined(ANDROID)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_ANDROID
-#elif defined(HAVE_SDL) || defined(HAVE_SDL2)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_SDL
-#elif defined(DJGPP)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_DOS
-#elif defined(HAVE_HID)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_HID
-#elif defined(__QNX__)
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_QNX
-#else
-#define JOYPAD_DEFAULT_DRIVER JOYPAD_NULL
-#endif
-
-#if defined(HAVE_V4L2)
-#define CAMERA_DEFAULT_DRIVER CAMERA_V4L2
-#elif defined(EMSCRIPTEN)
-#define CAMERA_DEFAULT_DRIVER CAMERA_RWEBCAM
-#elif defined(ANDROID)
-#define CAMERA_DEFAULT_DRIVER CAMERA_ANDROID
-#elif defined(HAVE_AVFOUNDATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH))
-#define CAMERA_DEFAULT_DRIVER CAMERA_AVFOUNDATION
-#else
-#define CAMERA_DEFAULT_DRIVER CAMERA_NULL
-#endif
-
-#if defined(HAVE_LAKKA)
-#define WIFI_DEFAULT_DRIVER WIFI_CONNMANCTL
-#else
-#define WIFI_DEFAULT_DRIVER WIFI_NULL
-#endif
-
-#if defined(ANDROID)
-#define LOCATION_DEFAULT_DRIVER LOCATION_ANDROID
-#elif defined(HAVE_CORELOCATION) && (defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH))
-#define LOCATION_DEFAULT_DRIVER LOCATION_CORELOCATION
-#else
-#define LOCATION_DEFAULT_DRIVER LOCATION_NULL
-#endif
-
-#if defined(__CELLOS_LV2__)
-#define OSK_DEFAULT_DRIVER OSK_PS3
-#else
-#define OSK_DEFAULT_DRIVER OSK_NULL
-#endif
-
-#if defined(HAVE_XUI)
-#define MENU_DEFAULT_DRIVER MENU_XUI
-#elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
-#define MENU_DEFAULT_DRIVER MENU_MATERIALUI
-#elif defined(HAVE_XMB)
-#define MENU_DEFAULT_DRIVER MENU_XMB
-#elif defined(HAVE_RGUI)
-#define MENU_DEFAULT_DRIVER MENU_RGUI
-#else
-#define MENU_DEFAULT_DRIVER MENU_NULL
 #endif
 
 #if defined(XENON) || defined(_XBOX360) || defined(__CELLOS_LV2__)
@@ -420,8 +53,6 @@ static const bool pointer_enable = true;
 static const bool pointer_enable = false;
 #endif
 
-
-
 /* Certain platforms might have assets stored in the bundle that
  * we need to extract to a user-writable directory on first boot.
  *
@@ -432,12 +63,17 @@ static bool bundle_assets_extract_enable = true;
 static bool bundle_assets_extract_enable = false;
 #endif
 
+#ifdef HAVE_MATERIALUI
+static bool materialui_icons_enable      = true;
+#endif
+
 static const bool def_history_list_enable = true;
 static const bool def_playlist_entry_remove = true;
+static const bool def_playlist_entry_rename = true;
 
 static const unsigned int def_user_language = 0;
 
-#if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS))
+#if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
 static const bool def_mouse_enable = true;
 #else
 static const bool def_mouse_enable = false;
@@ -483,6 +119,11 @@ static const unsigned window_y = 0;
  * resolution. */
 static const unsigned fullscreen_x = 0;
 static const unsigned fullscreen_y = 0;
+
+/* Amount of transparency to use for the main window.
+ * 1 is the most transparent while 100 is opaque.
+ */
+static const unsigned window_opacity = 100;
 
 #if defined(RARCH_CONSOLE) || defined(__APPLE__)
 static const bool load_dummy_on_core_shutdown = false;
@@ -533,7 +174,7 @@ static unsigned swap_interval = 1;
 static const bool video_threaded = false;
 
 #if defined(HAVE_THREADS)
-#if defined(GEKKO) || defined(PSP) || defined(_3DS) || defined(_XBOX1)
+#if defined(GEKKO) || defined(PSP) || defined(_3DS)
 /* For single-core consoles right now it's better to have this be disabled. */
 static const bool threaded_data_runloop_enable = false;
 #else
@@ -594,20 +235,68 @@ static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
 /* Save configuration file on exit. */
 static bool config_save_on_exit = true;
 
-static bool show_hidden_files = true;
+static bool show_hidden_files = false;
 
 static const bool overlay_hide_in_menu = true;
 
 static const bool display_keyboard_overlay = false;
 
 #ifdef HAVE_MENU
-#include "menu/menu_display.h"
+#include "menu/menu_driver.h"
 
-static bool default_block_config_read = true;
+static bool default_block_config_read    = true;
+
+static bool quick_menu_show_take_screenshot      = true;
+static bool quick_menu_show_save_load_state      = true;
+static bool quick_menu_show_undo_save_load_state = true;
+static bool quick_menu_show_add_to_favorites     = true;
+static bool quick_menu_show_options              = true;
+static bool quick_menu_show_controls             = true;
+static bool quick_menu_show_cheats               = true;
+static bool quick_menu_show_shaders              = true;
+static bool quick_menu_show_save_core_overrides  = true;
+static bool quick_menu_show_save_game_overrides  = true;
+static bool quick_menu_show_information          = true;
+
+static bool kiosk_mode_enable            = false;
+
+static bool menu_show_online_updater     = true;
+static bool menu_show_load_core          = true;
+static bool menu_show_load_content       = true;
+static bool menu_show_information        = true;
+static bool menu_show_configurations     = true;
+static bool menu_show_help               = true;
+static bool menu_show_quit_retroarch     = true;
+static bool menu_show_reboot             = true;
+#if defined(HAVE_LAKKA) || defined(VITA) || defined(_3DS)
+static bool menu_show_core_updater       = false;
+#else
+static bool menu_show_core_updater       = true;
+#endif
+
+static bool content_show_settings    = true;
+static bool content_show_favorites   = true;
+#ifdef HAVE_IMAGEVIEWER
+static bool content_show_images      = true;
+#endif
+static bool content_show_music       = true;
+#ifdef HAVE_FFMPEG
+static bool content_show_video       = true;
+#endif
+#ifdef HAVE_NETWORKING
+static bool content_show_netplay     = true;
+#endif
+static bool content_show_history     = true;
+#ifdef HAVE_LIBRETRODB
+static bool content_show_add     	 = true;
+#endif
 
 #ifdef HAVE_XMB
 static unsigned xmb_scale_factor = 100;
 static unsigned xmb_alpha_factor = 75;
+static unsigned menu_font_color_red = 255;
+static unsigned menu_font_color_green = 255;
+static unsigned menu_font_color_blue = 255;
 static unsigned xmb_icon_theme   = XMB_ICON_THEME_MONOCHROME;
 static unsigned xmb_theme        = XMB_THEME_ELECTRIC_BLUE;
 #ifdef HAVE_LAKKA
@@ -615,22 +304,11 @@ static bool xmb_shadows_enable   = false;
 #else
 static bool xmb_shadows_enable   = true;
 #endif
-static bool xmb_show_settings    = true;
-#ifdef HAVE_IMAGEVIEWER
-static bool xmb_show_images      = true;
 #endif
-#ifdef HAVE_FFMPEG
-static bool xmb_show_music       = true;
-static bool xmb_show_video       = true;
-#endif
-#ifdef HAVE_NETWORKING
-static bool xmb_show_netplay     = true;
-#endif
-static bool xmb_show_history     = true;
-#ifdef HAVE_LIBRETRODB
-static bool xmb_show_add     	 = true;
-#endif
-#endif
+
+static bool automatically_add_content_to_playlist = false;
+
+static float menu_framebuffer_opacity = 0.900;
 
 static float menu_wallpaper_opacity = 0.300;
 
@@ -638,12 +316,10 @@ static float menu_footer_opacity = 1.000;
 
 static float menu_header_opacity = 1.000;
 
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
 #if defined(HAVE_OPENGLES2) || (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
 static unsigned menu_shader_pipeline = 1;
 #else
 static unsigned menu_shader_pipeline = 2;
-#endif
 #endif
 
 static bool show_advanced_settings            = false;
@@ -653,6 +329,7 @@ static const uint32_t menu_title_color        = 0xff64ff64;
 
 #else
 static bool default_block_config_read = false;
+static bool automatically_add_content_to_playlist = false;
 #endif
 
 static bool default_game_specific_options = true;
@@ -662,6 +339,11 @@ static bool default_auto_shaders_enable = true;
 
 static bool default_sort_savefiles_enable = false;
 static bool default_sort_savestates_enable = false;
+
+static bool default_savestates_in_content_dir = false;
+static bool default_savefiles_in_content_dir = false;
+static bool default_systemfiles_in_content_dir = false;
+static bool default_screenshots_in_content_dir = false;
 
 #if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
@@ -675,6 +357,8 @@ static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;
 static unsigned input_backtouch_enable       = false;
 static unsigned input_backtouch_toggle       = false;
 #endif
+
+static bool show_physical_inputs             = true;
 
 static bool all_users_control_menu = false;
 
@@ -707,12 +391,21 @@ static const float message_pos_offset_y = 0.05;
  * RGB hex value. */
 static const uint32_t message_color = 0xffff00;
 
+static const bool message_bgcolor_enable = false;
+static const uint32_t message_bgcolor_red = 0;
+static const uint32_t message_bgcolor_green = 0;
+static const uint32_t message_bgcolor_blue = 0;
+static const float message_bgcolor_opacity = 1.0f;
+
 /* Record post-filtered (CPU filter) video,
  * rather than raw game output. */
 static const bool post_filter_record = false;
 
 /* Screenshots post-shaded GPU output if available. */
 static const bool gpu_screenshot = true;
+
+/* Watch shader files for changes and auto-apply as necessary. */
+static const bool video_shader_watch_files = false;
 
 /* Screenshots named automatically. */
 static const bool auto_screenshot_filename = true;
@@ -791,10 +484,23 @@ static const float max_timing_skew = 0.05;
 /* Default audio volume in dB. (0.0 dB == unity gain). */
 static const float audio_volume = 0.0;
 
+/* Default audio volume of the audio mixer in dB. (0.0 dB == unity gain). */
+static const float audio_mixer_volume = 0.0;
+
+#ifdef HAVE_WASAPI
+/* WASAPI defaults */
+static const bool wasapi_exclusive_mode  = true;
+static const bool wasapi_float_format    = false;
+static const int wasapi_sh_buffer_length = -16; /* auto */
+#endif
+
 /* MISC */
 
 /* Enables displaying the current frames per second. */
 static const bool fps_show = false;
+
+/* Show frame count on FPS display */
+static const bool framecount_show = true;
 
 /* Enables use of rewind. This will incur some memory footprint
  * depending on the save state buffer. */
@@ -841,7 +547,15 @@ static const bool netplay_nat_traversal = false;
 
 static const unsigned netplay_delay_frames = 16;
 
-static const int netplay_check_frames = 30;
+static const int netplay_check_frames = 600;
+
+static const bool netplay_use_mitm_server = false;
+
+#ifdef HAVE_NETWORKING
+static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
+
+static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
+#endif
 
 /* On save state load, block SRAM from being overwritten.
  * This could potentially lead to buggy games. */
@@ -895,7 +609,7 @@ static const unsigned menu_dpi_override_value = 200;
 #endif
 
 /* Log level for libretro cores (GET_LOG_INTERFACE). */
-static const unsigned libretro_log_level = 0;
+static const unsigned libretro_log_level = 1;
 
 #ifndef RARCH_DEFAULT_PORT
 #define RARCH_DEFAULT_PORT 55435
@@ -937,9 +651,19 @@ static const bool ui_companion_start_on_boot = true;
 
 static const bool ui_companion_enable = false;
 
+#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
+static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;
+#elif defined(PSP) || defined(_3DS) || defined(VITA)
+static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWEST;
+#else
+static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_NORMAL;
+#endif
+
 #if defined(ANDROID)
 #if defined(ANDROID_ARM)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/";
+#elif defined(ANDROID_AARCH64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/arm64-v8a/";
 #elif defined(ANDROID_X86)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86/";
 #else
@@ -958,19 +682,41 @@ static char buildbot_server_url[] = "http://bot.libretro.com/nightly/apple/osx/x
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/ppc/latest/";
 #endif
 #elif defined(_WIN32) && !defined(_XBOX)
-#if defined(__x86_64__)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x86_64/latest/";
+#if _MSC_VER == 1600
+#if defined(__x86_64__) || defined(_M_X64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x86/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86/latest/";
+#endif
+#elif _MSC_VER == 1400
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2005/x86/latest/";
+#elif _MSC_VER == 1310
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2003/x86/latest/";
+#else
+#if defined(__x86_64__) || defined(_M_X64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows/x86_64/latest/";
+#elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows/x86/latest/";
+#endif
 #endif
 #elif defined(__linux__)
 #if defined(__x86_64__)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86/latest/";
+#elif defined(__arm__) && __ARM_ARCH == 7 && defined(__ARM_PCS_VFP)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/armhf/latest/";
 #else
 static char buildbot_server_url[] = "";
 #endif
+#elif defined(WIIU)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/";
+#elif defined(__CELLOS_LV2__) && defined(DEX_BUILD)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/playstation/ps3/latest/dex-ps3/";
+#elif defined(__CELLOS_LV2__) && defined(CEX_BUILD)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/playstation/ps3/latest/cex-ps3/";
+#elif defined(__CELLOS_LV2__) && defined(ODE_BUILD)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/playstation/ps3/latest/ode-ps3/";
 #else
 static char buildbot_server_url[] = "";
 #endif

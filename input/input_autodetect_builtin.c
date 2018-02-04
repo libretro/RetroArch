@@ -19,11 +19,17 @@
 #include "../config.h"
 #endif
 
+#include <retro_environment.h>
+
 #include "../tasks/tasks_internal.h"
-#include "input_config.h"
+#include "input_driver.h"
 
 #ifdef __QNX__
 #include <screen/screen.h>
+#endif
+
+#ifdef WIIU
+#include <wiiu/pad_driver.h>
 #endif
 
 #define DECL_BTN(btn, bind) "input_" #btn "_btn = " #bind "\n"
@@ -31,7 +37,8 @@
 #define DECL_AXIS(axis, bind) "input_" #axis "_axis = " #bind "\n"
 #define DECL_AXIS_EX(axis, bind, name) "input_" #axis "_axis = " #bind "\ninput_" #axis "_axis_label = \"" name "\"\n"
 #define DECL_MENU(btn) "input_menu_toggle_btn = " #btn "\n"
-#define DECL_AUTOCONF_DEVICE(device, driver, binds) "input_device = \"" #device "\" \ninput_driver = \"" #driver "\"                    \n" binds
+#define DECL_AUTOCONF_DEVICE(device, driver, binds) "input_device = \"" device "\"\ninput_driver = \"" driver "\"\n" binds
+#define DECL_AUTOCONF_PID(pid, vid, driver, binds) "input_product_id = " #pid "\ninput_vendor_id = " #vid "\ninput_driver = \"" driver "\"\n" binds
 
 /* TODO/FIXME - Missing L2/R2 */
 
@@ -359,58 +366,61 @@ DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3)
 
 #define GXINPUT_WIIMOTE_DEFAULT_BINDS \
-DECL_BTN(a, 31) \
-DECL_BTN(b, 30) \
-DECL_BTN(x, 29) \
-DECL_BTN(y, 28) \
-DECL_BTN(start, 32) \
-DECL_BTN(select, 33) \
-DECL_BTN(up, 35) \
-DECL_BTN(down, 36) \
-DECL_BTN(left, 37) \
-DECL_BTN(right, 38)
+DECL_BTN_EX(a, 31, "2") \
+DECL_BTN_EX(b, 30, "1") \
+DECL_BTN_EX(x, 29, "B") \
+DECL_BTN_EX(y, 28, "A") \
+DECL_BTN_EX(start, 32, "+") \
+DECL_BTN_EX(select, 33, "-") \
+DECL_BTN_EX(menu_toggle, 34, "Home") \
+DECL_BTN_EX(up, 35, "D-Pad Up") \
+DECL_BTN_EX(down, 36, "D-Pad Down") \
+DECL_BTN_EX(left, 37, "D-Pad Left") \
+DECL_BTN_EX(right, 38, "D-Pad right")
 
 #define GXINPUT_NUNCHUK_DEFAULT_BINDS \
-DECL_BTN(a, 28) \
-DECL_BTN(b, 29) \
-DECL_BTN(x, 30) \
-DECL_BTN(y, 31) \
-DECL_BTN(start, 32) \
-DECL_BTN(select, 33) \
-DECL_BTN(up, 35) \
-DECL_BTN(down, 36) \
-DECL_BTN(left, 37) \
-DECL_BTN(right, 38) \
-DECL_BTN(l, 39) \
-DECL_BTN(r, 40) \
-DECL_AXIS(l_x_plus,  +0) \
-DECL_AXIS(l_x_minus, -0) \
-DECL_AXIS(l_y_plus,  +1) \
-DECL_AXIS(l_y_minus, -1)
+DECL_BTN_EX(a, 28, "A") \
+DECL_BTN_EX(b, 29, "B") \
+DECL_BTN_EX(x, 30, "1") \
+DECL_BTN_EX(y, 31, "2") \
+DECL_BTN_EX(start, 32, "+") \
+DECL_BTN_EX(select, 33, "-") \
+DECL_BTN_EX(menu_toggle, 34, "Home") \
+DECL_BTN_EX(up, 35, "D-Pad Up" ) \
+DECL_BTN_EX(down, 36, "D-Pad Down") \
+DECL_BTN_EX(left, 37, "D-Pad Left") \
+DECL_BTN_EX(right, 38, "D-Pad right") \
+DECL_BTN_EX(l, 39, "Z") \
+DECL_BTN_EX(r, 40, "C") \
+DECL_AXIS_EX(l_x_plus,  +0, "Stick Right") \
+DECL_AXIS_EX(l_x_minus, -0, "Stick Left") \
+DECL_AXIS_EX(l_y_plus,  +1, "Stick Down") \
+DECL_AXIS_EX(l_y_minus, -1, "Stick Up")
 
 #define GXINPUT_CLASSIC_DEFAULT_BINDS \
-DECL_BTN(a, 13) \
-DECL_BTN(b, 14) \
-DECL_BTN(x, 15) \
-DECL_BTN(y, 16) \
-DECL_BTN(start, 17) \
-DECL_BTN(select, 18) \
-DECL_BTN(up, 24) \
-DECL_BTN(down, 25) \
-DECL_BTN(left, 26) \
-DECL_BTN(right, 27) \
-DECL_BTN(l, 20) \
-DECL_BTN(r, 21) \
-DECL_BTN(l2, 22) \
-DECL_BTN(r2, 23) \
-DECL_AXIS(l_x_plus,  +0) \
-DECL_AXIS(l_x_minus, -0) \
-DECL_AXIS(l_y_plus,  +1) \
-DECL_AXIS(l_y_minus, -1) \
-DECL_AXIS(r_x_plus,  +2) \
-DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
+DECL_BTN_EX(a, 13, "A") \
+DECL_BTN_EX(b, 14, "B") \
+DECL_BTN_EX(x, 15, "X") \
+DECL_BTN_EX(y, 16, "Y") \
+DECL_BTN_EX(start, 17, "+") \
+DECL_BTN_EX(select, 18, "-") \
+DECL_BTN_EX(menu_toggle, 19, "Home") \
+DECL_BTN_EX(up, 24, "D-Pad Up") \
+DECL_BTN_EX(down, 25, "D-Pad Down") \
+DECL_BTN_EX(left, 26, "D-Pad left") \
+DECL_BTN_EX(right, 27, "D-Pad right") \
+DECL_BTN_EX(l, 20, "L") \
+DECL_BTN_EX(r, 21, "R") \
+DECL_BTN_EX(l2, 22, "ZL") \
+DECL_BTN_EX(r2, 23, "ZR") \
+DECL_AXIS_EX(l_x_plus,   +0, "L-Stick Right") \
+DECL_AXIS_EX(l_x_minus,  -0, "L-Stick Left") \
+DECL_AXIS_EX(l_y_plus,  +1, "L-Stick Down") \
+DECL_AXIS_EX(l_y_minus,   -1, "L-Stick Up") \
+DECL_AXIS_EX(r_x_plus,   +2, "R-Stick Right") \
+DECL_AXIS_EX(r_x_minus,  -2, "R-Stick Left") \
+DECL_AXIS_EX(r_y_plus,  +3, "R-Stick Down") \
+DECL_AXIS_EX(r_y_minus,   -3, "R-Stick Up")
 
 #define PS3INPUT_DEFAULT_BINDS \
 DECL_BTN(a, 8) \
@@ -473,10 +483,10 @@ DECL_BTN(x, 9) \
 DECL_BTN(y, 1) \
 DECL_BTN(start, 3) \
 DECL_BTN(select, 2) \
-DECL_BTN(up, 4) \
-DECL_BTN(down, 5) \
-DECL_BTN(left, 6) \
-DECL_BTN(right, 7) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
 DECL_BTN(l, 10) \
 DECL_BTN(r, 11) \
 DECL_BTN(l3, 14) \
@@ -493,11 +503,67 @@ DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3)
 #endif
 
+#define SWITCH_DEFAULT_BINDS \
+DECL_BTN(a, 0) \
+DECL_BTN(b, 1) \
+DECL_BTN(x, 2) \
+DECL_BTN(y, 3) \
+DECL_BTN(start, 10) \
+DECL_BTN(select, 11) \
+DECL_BTN(up, 13) \
+DECL_BTN(down, 15) \
+DECL_BTN(left, 12) \
+DECL_BTN(right, 14) \
+DECL_BTN(l, 6) \
+DECL_BTN(r, 7) \
+DECL_BTN(l2, 8) \
+DECL_BTN(r2, 9) \
+DECL_BTN(l3, 4) \
+DECL_BTN(r3, 5) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
+
+#define EMSCRIPTEN_DEFAULT_BINDS \
+DECL_BTN(a, 1) \
+DECL_BTN(b, 0) \
+DECL_BTN(x, 3) \
+DECL_BTN(y, 2) \
+DECL_BTN(start, 9) \
+DECL_BTN(select, 8) \
+DECL_BTN(up, 12) \
+DECL_BTN(down, 13) \
+DECL_BTN(left, 14) \
+DECL_BTN(right, 15) \
+DECL_BTN(l, 4) \
+DECL_BTN(r, 5) \
+DECL_BTN(l2, 6) \
+DECL_BTN(r2, 7) \
+DECL_BTN(l3, 10) \
+DECL_BTN(r3, 11) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
+
 const char* const input_builtin_autoconfs[] =
 {
 #if defined(_WIN32) && defined(_XBOX)
-   DECL_AUTOCONF_DEVICE("XInput Controller", "xdk", XINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XInput Controller (User 1)", "xdk", XINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XInput Controller (User 2)", "xdk", XINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XInput Controller (User 3)", "xdk", XINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XInput Controller (User 4)", "xdk", XINPUT_DEFAULT_BINDS),
 #elif defined(_WIN32)
+#if !defined(__STDC_C89__) && !defined(__STDC_C89_AMENDMENT_1__)
    DECL_AUTOCONF_DEVICE("XInput Controller (User 1)", "xinput", XINPUT_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("XInput Controller (User 2)", "xinput", XINPUT_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("XInput Controller (User 3)", "xinput", XINPUT_DEFAULT_BINDS),
@@ -506,6 +572,7 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("XBOX One Controller (User 2)", "xinput", XINPUT_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("XBOX One Controller (User 3)", "xinput", XINPUT_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("XBOX One Controller (User 4)", "xinput", XINPUT_DEFAULT_BINDS),
+#endif
 #endif
 #ifdef HAVE_SDL2
    DECL_AUTOCONF_DEVICE("Standard Gamepad", "sdl2", SDL2_DEFAULT_BINDS),
@@ -539,16 +606,21 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #endif
 #ifdef WIIU
-   DECL_AUTOCONF_DEVICE("WIIU Gamepad", "wiiu", WIIUINPUT_GAMEPAD_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("WIIU Pro Controller", "wiiu", WIIUINPUT_PRO_CONTROLLER_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("Wiimote Controller", "wiiu", WIIUINPUT_WIIMOTE_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("Nunchuk Controller", "wiiu", WIIUINPUT_NUNCHUK_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("Classic Controller", "wiiu", WIIUINPUT_CLASSIC_CONTROLLER_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE(PAD_NAME_WIIU_GAMEPAD, "wiiu", WIIUINPUT_GAMEPAD_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE(PAD_NAME_WIIU_PRO, "wiiu", WIIUINPUT_PRO_CONTROLLER_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE(PAD_NAME_WIIMOTE, "wiiu", WIIUINPUT_WIIMOTE_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE(PAD_NAME_NUNCHUK, "wiiu", WIIUINPUT_NUNCHUK_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE(PAD_NAME_CLASSIC, "wiiu", WIIUINPUT_CLASSIC_CONTROLLER_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE(PAD_NAME_HID, "wiiu", WIIUINPUT_GAMEPAD_DEFAULT_BINDS),
 #endif
 #ifdef __CELLOS_LV2__
    DECL_AUTOCONF_DEVICE("SixAxis Controller", "ps3", PS3INPUT_DEFAULT_BINDS),
 #endif
+#ifdef __SWITCH__
+   DECL_AUTOCONF_DEVICE("Switch Controller", "switch", SWITCH_DEFAULT_BINDS),
+#endif
+#ifdef EMSCRIPTEN
+   DECL_AUTOCONF_PID(1, 1, "rwebpad", EMSCRIPTEN_DEFAULT_BINDS),
+#endif
    NULL
 };
-
-

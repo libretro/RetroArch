@@ -377,7 +377,10 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
-                                        "$(SRCROOT)/../../deps",
+					"$(SRCROOT)/../../deps/libFLAC/include",
+					"$(SRCROOT)/../../deps/7zip",
+					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -407,7 +410,10 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
-                                        "$(SRCROOT)/../../deps",
+					"$(SRCROOT)/../../deps/libFLAC/include",
+					"$(SRCROOT)/../../deps/7zip",
+					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -439,7 +445,10 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
-                                        "$(SRCROOT)/../../deps",
+					"$(SRCROOT)/../../deps/libFLAC/include",
+					"$(SRCROOT)/../../deps/7zip",
+					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -465,7 +474,10 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
-                                        "$(SRCROOT)/../../deps",
+					"$(SRCROOT)/../../deps/libFLAC/include",
+					"$(SRCROOT)/../../deps/7zip",
+					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -486,6 +498,11 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_FLAC",
+					"-DHAVE_LROUND",
+					"-DFLAC__HAS_OGG=0",
+					"-DHAVE_CHD",
+                                        "-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -498,7 +515,6 @@
 					"-DHAVE_MENU",
 					"-DOSX",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
@@ -513,7 +529,6 @@
 					"-DHAVE_RTGA",
 					"-DHAVE_COCOA",
 					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_NETWORKING",
 					"-DRARCH_INTERNAL",
@@ -543,6 +558,11 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_FLAC",
+					"-DHAVE_LROUND",
+					"-DFLAC__HAS_OGG=0",
+					"-DHAVE_CHD",
+                                        "-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -555,7 +575,6 @@
 					"-DHAVE_MENU",
 					"-DOSX",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
@@ -570,7 +589,6 @@
 					"-DHAVE_RTGA",
 					"-DHAVE_COCOA",
 					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_NETWORKING",
 					"-DRARCH_INTERNAL",

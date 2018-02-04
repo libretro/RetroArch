@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Brad Parker
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -44,8 +44,6 @@ static void *caca_init_font(void *data,
       return NULL;
 
    font->caca = (caca_t*)data;
-
-   font_size = 1;
 
    if (!font_renderer_create_default((const void**)&font->caca_font_driver,
             &font->caca_font_data, font_path, font_size))
@@ -131,12 +129,6 @@ static void caca_render_msg(video_frame_info_t *video_info,
    caca_refresh_display(*font->caca->caca_display);
 }
 
-static void caca_font_flush_block(unsigned width, unsigned height,
-      void* data)
-{
-   (void)data;
-}
-
 static void caca_font_bind_block(void* data, void* userdata)
 {
    (void)data;
@@ -149,6 +141,6 @@ font_renderer_t caca_font = {
    "caca font",
    caca_font_get_glyph,       /* get_glyph */
    caca_font_bind_block,      /* bind_block */
-   caca_font_flush_block,     /* flush */
+   NULL,                      /* flush */
    caca_get_message_width     /* get_message_width */
 };

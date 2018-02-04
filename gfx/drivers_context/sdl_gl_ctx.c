@@ -14,8 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "SDL.h"
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -26,6 +24,8 @@
 
 #include "../../configuration.h"
 #include "../common/gl_common.h"
+
+#include "SDL.h"
 
 static enum gfx_ctx_api sdl_api = GFX_CTX_OPENGL_API;
 static unsigned       g_major = 2;
@@ -114,7 +114,7 @@ static void sdl_ctx_destroy(void *data)
 
    if (!sdl)
       return;
-   
+
    sdl_ctx_destroy_resources(sdl);
    free(sdl);
 }
@@ -245,7 +245,7 @@ static void sdl_ctx_get_video_size(void *data,
    {
 #ifdef HAVE_SDL2
       SDL_DisplayMode mode = {0};
-      int i = settings->video.monitor_index;
+      int i = settings->uints.video_monitor_index;
 
       if (SDL_GetCurrentDisplayMode(i, &mode) < 0)
          RARCH_WARN("[SDL_GL]: Failed to get display #%i mode: %s\n", i,
@@ -266,7 +266,7 @@ static void sdl_ctx_get_video_size(void *data,
    }
 }
 
-static void sdl_ctx_update_title(void *data, video_frame_info_t *video_info)
+static void sdl_ctx_update_title(void *data, void *data2)
 {
    char title[128];
 
@@ -365,7 +365,7 @@ static bool sdl_ctx_has_windowed(void *data)
    return true;
 }
 
-static void sdl_ctx_swap_buffers(void *data, video_frame_info_t *video_info)
+static void sdl_ctx_swap_buffers(void *data, void *data2)
 {
 #ifdef HAVE_SDL2
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;

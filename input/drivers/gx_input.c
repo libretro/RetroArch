@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -26,13 +26,10 @@
 #include <libretro.h>
 
 #include "../input_driver.h"
-#include "../input_joypad_driver.h"
 
 #ifndef MAX_PADS
 #define MAX_PADS 4
 #endif
-
-uint64_t lifecycle_state;
 
 typedef struct gx_input
 {
@@ -54,10 +51,12 @@ static int16_t gx_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(gx->joypad, joypad_info, port, binds[port], id);
+         return input_joypad_pressed(gx->joypad,
+               joypad_info, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return input_joypad_analog(gx->joypad, joypad_info, port, idx, id, binds[port]);
+            return input_joypad_analog(gx->joypad,
+                  joypad_info, port, idx, id, binds[port]);
          break;
    }
 
@@ -94,14 +93,6 @@ static void gx_input_poll(void *data)
 
    if (gx && gx->joypad)
       gx->joypad->poll();
-}
-
-static bool gx_input_meta_key_pressed(void *data, int key)
-{
-   if (BIT64_GET(lifecycle_state, key))
-      return true;
-
-   return false;
 }
 
 static uint64_t gx_input_get_capabilities(void *data)
@@ -156,7 +147,6 @@ input_driver_t input_gx = {
    gx_input_init,
    gx_input_poll,
    gx_input_state,
-   gx_input_meta_key_pressed,
    gx_input_free_input,
    NULL,
    NULL,

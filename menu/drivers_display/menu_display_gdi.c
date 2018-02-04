@@ -21,9 +21,9 @@
 
 #include "../../config.def.h"
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_context_driver.h"
+#include "../../gfx/video_driver.h"
 
-#include "../menu_display.h"
+#include "../menu_driver.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../../gfx/common/win32_common.h"
@@ -82,12 +82,16 @@ static void menu_display_gdi_clear_color(menu_display_ctx_clearcolor_t *clearcol
 
 static bool menu_display_gdi_font_init_first(
       void **font_handle, void *video_data,
-      const char *font_path, float font_size)
+      const char *font_path, float font_size,
+      bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
-   *handle = font_driver_init_first(video_data,
-         font_path, font_size, true, FONT_DRIVER_RENDER_GDI);
-   return *handle;
+   if (!(*handle = font_driver_init_first(video_data,
+         font_path, font_size, true,
+         is_threaded,
+         FONT_DRIVER_RENDER_GDI)))
+		 return false;
+   return true;
 }
 
 static const float *menu_display_gdi_get_default_vertices(void)

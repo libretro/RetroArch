@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -44,24 +44,22 @@ enum state_ram_type
 
 struct state_tracker_uniform_info
 {
-   char id[64];
-   uint32_t addr;
    enum state_tracker_type type;
    enum state_ram_type ram_type;
+   char id[64];
    uint16_t mask;
    uint16_t equal;
+   uint32_t addr;
 };
 
 struct state_tracker_info
 {
-   const uint8_t *wram;
-
-   const struct state_tracker_uniform_info *info;
-   unsigned info_elem;
-
    const char *script;
    const char *script_class;
    bool script_is_file;
+   const uint8_t *wram;
+   unsigned info_elem;
+   const struct state_tracker_uniform_info *info;
 };
 
 struct state_tracker_uniform
@@ -106,6 +104,8 @@ void state_tracker_free(state_tracker_t *tracker);
 unsigned state_tracker_get_uniform(state_tracker_t *tracker,
       struct state_tracker_uniform *uniforms,
       unsigned elem, unsigned frame_count);
+
+void state_tracker_update_input(uint16_t *input1, uint16_t *input2);
 
 RETRO_END_DECLS
 

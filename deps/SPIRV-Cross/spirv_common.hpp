@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 ARM Limited
+ * Copyright 2015-2018 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,21 @@
 #ifndef SPIRV_CROSS_COMMON_HPP
 #define SPIRV_CROSS_COMMON_HPP
 
+#include "spirv.hpp"
+
 #include <cstdio>
 #include <cstring>
 #include <functional>
+#include <locale>
+#include <memory>
 #include <sstream>
+#include <stack>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace spirv_cross
 {
@@ -37,6 +48,7 @@ namespace spirv_cross
 #else
 	fprintf(stderr, "There was a compiler error: %s\n", msg.c_str());
 #endif
+	fflush(stderr);
 	abort();
 }
 
@@ -52,6 +64,16 @@ public:
 };
 
 #define SPIRV_CROSS_THROW(x) throw CompilerError(x)
+#endif
+
+#if __cplusplus >= 201402l
+#define SPIRV_CROSS_DEPRECATED(reason) [[deprecated(reason)]]
+#elif defined(__GNUC__)
+#define SPIRV_CROSS_DEPRECATED(reason) __attribute__((deprecated))
+#elif defined(_MSC_VER)
+#define SPIRV_CROSS_DEPRECATED(reason) __declspec(deprecated(reason))
+#else
+#define SPIRV_CROSS_DEPRECATED(reason)
 #endif
 
 namespace inner
@@ -102,6 +124,11 @@ inline std::string convert_to_string(T &&t)
 #define SPIRV_CROSS_FLT_FMT "%.32g"
 #endif
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
+
 inline std::string convert_to_string(float t)
 {
 	// std::to_string for floating point values is broken.
@@ -125,6 +152,10 @@ inline std::string convert_to_string(double t)
 		strcat(buf, ".0");
 	return buf;
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 struct Instruction
 {
@@ -156,6 +187,8 @@ enum Types
 	TypeExtension,
 	TypeExpression,
 	TypeConstantOp,
+	TypeCombinedImageSampler,
+	TypeAccessChain,
 	TypeUndef
 };
 
@@ -170,6 +203,25 @@ struct SPIRUndef : IVariant
 	{
 	}
 	uint32_t basetype;
+};
+
+// This type is only used by backends which need to access the combined image and sampler IDs separately after
+// the OpSampledImage opcode.
+struct SPIRCombinedImageSampler : IVariant
+{
+	enum
+	{
+		type = TypeCombinedImageSampler
+	};
+	SPIRCombinedImageSampler(uint32_t type_, uint32_t image_, uint32_t sampler_)
+	    : combined_type(type_)
+	    , image(image_)
+	    , sampler(sampler_)
+	{
+	}
+	uint32_t combined_type;
+	uint32_t image;
+	uint32_t sampler;
 };
 
 struct SPIRConstantOp : IVariant
@@ -239,7 +291,7 @@ struct SPIRType : IVariant
 
 	std::vector<uint32_t> member_types;
 
-	struct Image
+	struct ImageType
 	{
 		uint32_t type;
 		spv::Dim dim;
@@ -248,12 +300,17 @@ struct SPIRType : IVariant
 		bool ms;
 		uint32_t sampled;
 		spv::ImageFormat format;
+		spv::AccessQualifier access;
 	} image;
 
 	// Structs can be declared multiple times if they are used as part of interface blocks.
 	// We want to detect this so that we only emit the struct definition once.
 	// Since we cannot rely on OpName to be equal, we need to figure out aliases.
 	uint32_t type_alias = 0;
+
+	// Denotes the type which this type is based on.
+	// Allows the backend to traverse how a complex type is built up during access chains.
+	uint32_t parent_type = 0;
 
 	// Used in backends to avoid emitting members with conflicting names.
 	std::unordered_set<std::string> member_name_cache;
@@ -268,7 +325,12 @@ struct SPIRExtension : IVariant
 
 	enum Extension
 	{
-		GLSL
+		Unsupported,
+		GLSL,
+		SPV_AMD_shader_ballot,
+		SPV_AMD_shader_explicit_vertex_parameter,
+		SPV_AMD_shader_trinary_minmax,
+		SPV_AMD_gcn_shader
 	};
 
 	SPIRExtension(Extension ext_)
@@ -283,9 +345,10 @@ struct SPIRExtension : IVariant
 // so in order to avoid conflicts, we can't stick them in the ids array.
 struct SPIREntryPoint
 {
-	SPIREntryPoint(uint32_t self_, spv::ExecutionModel execution_model, std::string entry_name)
+	SPIREntryPoint(uint32_t self_, spv::ExecutionModel execution_model, const std::string &entry_name)
 	    : self(self_)
-	    , name(std::move(entry_name))
+	    , name(entry_name)
+	    , orig_name(entry_name)
 	    , model(execution_model)
 	{
 	}
@@ -293,12 +356,14 @@ struct SPIREntryPoint
 
 	uint32_t self = 0;
 	std::string name;
+	std::string orig_name;
 	std::vector<uint32_t> interface_variables;
 
 	uint64_t flags = 0;
 	struct
 	{
 		uint32_t x = 0, y = 0, z = 0;
+		uint32_t constant = 0; // Workgroup size can be expressed as a constant/spec-constant instead.
 	} workgroup_size;
 	uint32_t invocations = 0;
 	uint32_t output_vertices = 0;
@@ -338,8 +403,9 @@ struct SPIRExpression : IVariant
 	// it is assumed that this is true almost always.
 	bool immutable = false;
 
-	// If this expression has been used while invalidated.
-	bool used_while_invalidated = false;
+	// Before use, this expression must be transposed.
+	// This is needed for targets which don't support row_major layouts.
+	bool need_transpose = false;
 
 	// A list of expressions which this expression depends on.
 	std::vector<uint32_t> expression_dependencies;
@@ -492,6 +558,14 @@ struct SPIRFunction : IVariant
 		uint32_t id;
 		uint32_t read_count;
 		uint32_t write_count;
+
+		// Set to true if this parameter aliases a global variable,
+		// used mostly in Metal where global variables
+		// have to be passed down to functions as regular arguments.
+		// However, for this kind of variable, we should not care about
+		// read and write counts as access to the function arguments
+		// is not local to the function in question.
+		bool alias_global_variable;
 	};
 
 	// When calling a function, and we're remapping separate image samplers,
@@ -508,6 +582,7 @@ struct SPIRFunction : IVariant
 		uint32_t sampler_id;
 		bool global_image;
 		bool global_sampler;
+		bool depth;
 	};
 
 	uint32_t return_type;
@@ -528,16 +603,50 @@ struct SPIRFunction : IVariant
 		local_variables.push_back(id);
 	}
 
-	void add_parameter(uint32_t parameter_type, uint32_t id)
+	void add_parameter(uint32_t parameter_type, uint32_t id, bool alias_global_variable = false)
 	{
 		// Arguments are read-only until proven otherwise.
-		arguments.push_back({ parameter_type, id, 0u, 0u });
+		arguments.push_back({ parameter_type, id, 0u, 0u, alias_global_variable });
 	}
 
 	bool active = false;
 	bool flush_undeclared = true;
 	bool do_combined_parameters = true;
 	bool analyzed_variable_scope = false;
+};
+
+struct SPIRAccessChain : IVariant
+{
+	enum
+	{
+		type = TypeAccessChain
+	};
+
+	SPIRAccessChain(uint32_t basetype_, spv::StorageClass storage_, std::string base_, std::string dynamic_index_,
+	                int32_t static_index_)
+	    : basetype(basetype_)
+	    , storage(storage_)
+	    , base(base_)
+	    , dynamic_index(std::move(dynamic_index_))
+	    , static_index(static_index_)
+	{
+	}
+
+	// The access chain represents an offset into a buffer.
+	// Some backends need more complicated handling of access chains to be able to use buffers, like HLSL
+	// which has no usable buffer type ala GLSL SSBOs.
+	// StructuredBuffer is too limited, so our only option is to deal with ByteAddressBuffer which works with raw addresses.
+
+	uint32_t basetype;
+	spv::StorageClass storage;
+	std::string base;
+	std::string dynamic_index;
+	int32_t static_index;
+
+	uint32_t loaded_from = 0;
+	uint32_t matrix_stride = 0;
+	bool row_major_matrix = false;
+	bool immutable = false;
 };
 
 struct SPIRVariable : IVariant
@@ -548,10 +657,11 @@ struct SPIRVariable : IVariant
 	};
 
 	SPIRVariable() = default;
-	SPIRVariable(uint32_t basetype_, spv::StorageClass storage_, uint32_t initializer_ = 0)
+	SPIRVariable(uint32_t basetype_, spv::StorageClass storage_, uint32_t initializer_ = 0, uint32_t basevariable_ = 0)
 	    : basetype(basetype_)
 	    , storage(storage_)
 	    , initializer(initializer_)
+	    , basevariable(basevariable_)
 	{
 	}
 
@@ -559,6 +669,7 @@ struct SPIRVariable : IVariant
 	spv::StorageClass storage = spv::StorageClassGeneric;
 	uint32_t decoration = 0;
 	uint32_t initializer = 0;
+	uint32_t basevariable = 0;
 
 	std::vector<uint32_t> dereference_chain;
 	bool compat_builtin = false;
@@ -611,14 +722,28 @@ struct SPIRConstant : IVariant
 	struct ConstantVector
 	{
 		Constant r[4];
-		uint32_t vecsize;
+		// If != 0, this element is a specialization constant, and we should keep track of it as such.
+		uint32_t id[4] = {};
+		uint32_t vecsize = 1;
 	};
 
 	struct ConstantMatrix
 	{
 		ConstantVector c[4];
-		uint32_t columns;
+		// If != 0, this column is a specialization constant, and we should keep track of it as such.
+		uint32_t id[4] = {};
+		uint32_t columns = 1;
 	};
+
+	inline uint32_t specialization_constant_id(uint32_t col, uint32_t row) const
+	{
+		return m.c[col].id[row];
+	}
+
+	inline uint32_t specialization_constant_id(uint32_t col) const
+	{
+		return m.id[col];
+	}
 
 	inline uint32_t scalar(uint32_t col = 0, uint32_t row = 0) const
 	{
@@ -654,136 +779,96 @@ struct SPIRConstant : IVariant
 	{
 		return m.c[0];
 	}
+
 	inline uint32_t vector_size() const
 	{
 		return m.c[0].vecsize;
 	}
+
 	inline uint32_t columns() const
 	{
 		return m.columns;
 	}
 
-	SPIRConstant(uint32_t constant_type_, const uint32_t *elements, uint32_t num_elements)
+	inline void make_null(const SPIRType &constant_type_)
+	{
+		std::memset(&m, 0, sizeof(m));
+		m.columns = constant_type_.columns;
+		for (auto &c : m.c)
+			c.vecsize = constant_type_.vecsize;
+	}
+
+	explicit SPIRConstant(uint32_t constant_type_)
 	    : constant_type(constant_type_)
+	{
+	}
+
+	SPIRConstant(uint32_t constant_type_, const uint32_t *elements, uint32_t num_elements, bool specialized)
+	    : constant_type(constant_type_)
+	    , specialization(specialized)
 	{
 		subconstants.insert(end(subconstants), elements, elements + num_elements);
+		specialization = specialized;
 	}
 
-	SPIRConstant(uint32_t constant_type_, uint32_t v0)
+	// Construct scalar (32-bit).
+	SPIRConstant(uint32_t constant_type_, uint32_t v0, bool specialized)
 	    : constant_type(constant_type_)
+	    , specialization(specialized)
 	{
 		m.c[0].r[0].u32 = v0;
 		m.c[0].vecsize = 1;
 		m.columns = 1;
 	}
 
-	SPIRConstant(uint32_t constant_type_, uint32_t v0, uint32_t v1)
+	// Construct scalar (64-bit).
+	SPIRConstant(uint32_t constant_type_, uint64_t v0, bool specialized)
 	    : constant_type(constant_type_)
-	{
-		m.c[0].r[0].u32 = v0;
-		m.c[0].r[1].u32 = v1;
-		m.c[0].vecsize = 2;
-		m.columns = 1;
-	}
-
-	SPIRConstant(uint32_t constant_type_, uint32_t v0, uint32_t v1, uint32_t v2)
-	    : constant_type(constant_type_)
-	{
-		m.c[0].r[0].u32 = v0;
-		m.c[0].r[1].u32 = v1;
-		m.c[0].r[2].u32 = v2;
-		m.c[0].vecsize = 3;
-		m.columns = 1;
-	}
-
-	SPIRConstant(uint32_t constant_type_, uint32_t v0, uint32_t v1, uint32_t v2, uint32_t v3)
-	    : constant_type(constant_type_)
-	{
-		m.c[0].r[0].u32 = v0;
-		m.c[0].r[1].u32 = v1;
-		m.c[0].r[2].u32 = v2;
-		m.c[0].r[3].u32 = v3;
-		m.c[0].vecsize = 4;
-		m.columns = 1;
-	}
-
-	SPIRConstant(uint32_t constant_type_, uint64_t v0)
-	    : constant_type(constant_type_)
+	    , specialization(specialized)
 	{
 		m.c[0].r[0].u64 = v0;
 		m.c[0].vecsize = 1;
 		m.columns = 1;
 	}
 
-	SPIRConstant(uint32_t constant_type_, uint64_t v0, uint64_t v1)
+	// Construct vectors and matrices.
+	SPIRConstant(uint32_t constant_type_, const SPIRConstant *const *vector_elements, uint32_t num_elements,
+	             bool specialized)
 	    : constant_type(constant_type_)
+	    , specialization(specialized)
 	{
-		m.c[0].r[0].u64 = v0;
-		m.c[0].r[1].u64 = v1;
-		m.c[0].vecsize = 2;
-		m.columns = 1;
-	}
+		bool matrix = vector_elements[0]->m.c[0].vecsize > 1;
 
-	SPIRConstant(uint32_t constant_type_, uint64_t v0, uint64_t v1, uint64_t v2)
-	    : constant_type(constant_type_)
-	{
-		m.c[0].r[0].u64 = v0;
-		m.c[0].r[1].u64 = v1;
-		m.c[0].r[2].u64 = v2;
-		m.c[0].vecsize = 3;
-		m.columns = 1;
-	}
+		if (matrix)
+		{
+			m.columns = num_elements;
 
-	SPIRConstant(uint32_t constant_type_, uint64_t v0, uint64_t v1, uint64_t v2, uint64_t v3)
-	    : constant_type(constant_type_)
-	{
-		m.c[0].r[0].u64 = v0;
-		m.c[0].r[1].u64 = v1;
-		m.c[0].r[2].u64 = v2;
-		m.c[0].r[3].u64 = v3;
-		m.c[0].vecsize = 4;
-		m.columns = 1;
-	}
+			for (uint32_t i = 0; i < num_elements; i++)
+			{
+				m.c[i] = vector_elements[i]->m.c[0];
+				if (vector_elements[i]->specialization)
+					m.id[i] = vector_elements[i]->self;
+			}
+		}
+		else
+		{
+			m.c[0].vecsize = num_elements;
+			m.columns = 1;
 
-	SPIRConstant(uint32_t constant_type_, const ConstantVector &vec0)
-	    : constant_type(constant_type_)
-	{
-		m.columns = 1;
-		m.c[0] = vec0;
-	}
-
-	SPIRConstant(uint32_t constant_type_, const ConstantVector &vec0, const ConstantVector &vec1)
-	    : constant_type(constant_type_)
-	{
-		m.columns = 2;
-		m.c[0] = vec0;
-		m.c[1] = vec1;
-	}
-
-	SPIRConstant(uint32_t constant_type_, const ConstantVector &vec0, const ConstantVector &vec1,
-	             const ConstantVector &vec2)
-	    : constant_type(constant_type_)
-	{
-		m.columns = 3;
-		m.c[0] = vec0;
-		m.c[1] = vec1;
-		m.c[2] = vec2;
-	}
-
-	SPIRConstant(uint32_t constant_type_, const ConstantVector &vec0, const ConstantVector &vec1,
-	             const ConstantVector &vec2, const ConstantVector &vec3)
-	    : constant_type(constant_type_)
-	{
-		m.columns = 4;
-		m.c[0] = vec0;
-		m.c[1] = vec1;
-		m.c[2] = vec2;
-		m.c[3] = vec3;
+			for (uint32_t i = 0; i < num_elements; i++)
+			{
+				m.c[0].r[i] = vector_elements[i]->m.c[0].r[0];
+				if (vector_elements[i]->specialization)
+					m.c[0].id[i] = vector_elements[i]->self;
+			}
+		}
 	}
 
 	uint32_t constant_type;
 	ConstantMatrix m;
-	bool specialization = false; // If the constant is a specialization constant.
+	bool specialization = false; // If this constant is a specialization constant (i.e. created with OpSpecConstant*).
+	bool is_used_as_array_length =
+	    false; // If this constant is used as an array length which creates specialization restrictions on some backends.
 
 	// For composites which are constant arrays, etc.
 	std::vector<uint32_t> subconstants;
@@ -841,6 +926,10 @@ public:
 	{
 		return type;
 	}
+	uint32_t get_id() const
+	{
+		return holder ? holder->self : 0;
+	}
 	bool empty() const
 	{
 		return !holder;
@@ -890,15 +979,25 @@ struct Meta
 		uint32_t binding = 0;
 		uint32_t offset = 0;
 		uint32_t array_stride = 0;
+		uint32_t matrix_stride = 0;
 		uint32_t input_attachment = 0;
 		uint32_t spec_id = 0;
 		bool builtin = false;
-		bool per_instance = false;
 	};
 
 	Decoration decoration;
 	std::vector<Decoration> members;
 	uint32_t sampler = 0;
+
+	std::unordered_map<uint32_t, uint32_t> decoration_word_offset;
+
+	// Used when the parser has detected a candidate identifier which matches
+	// known "magic" counter buffers as emitted by HLSL frontends.
+	// We will need to match the identifiers by name later when reflecting resources.
+	// We could use the regular alias later, but the alias will be mangled when parsing SPIR-V because the identifier
+	// is not a valid identifier in any high-level language.
+	std::string hlsl_magic_counter_buffer_name;
+	bool hlsl_magic_counter_buffer_candidate = false;
 };
 
 // A user callback that remaps the type of any variable.
@@ -906,6 +1005,22 @@ struct Meta
 // name_of_type is the textual name of the type which will be used in the code unless written to by the callback.
 using VariableTypeRemapCallback =
     std::function<void(const SPIRType &type, const std::string &var_name, std::string &name_of_type)>;
+
+class ClassicLocale
+{
+public:
+	ClassicLocale()
+	{
+		old = std::locale::global(std::locale::classic());
+	}
+	~ClassicLocale()
+	{
+		std::locale::global(old);
+	}
+
+private:
+	std::locale old;
+};
 }
 
 #endif

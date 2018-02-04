@@ -1,0 +1,79 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct SSBO
+{
+    float4x4 mvp;
+    float4 in_data[1];
+};
+
+struct SSBO2
+{
+    float4 out_data[1];
+};
+
+constant uint _98 = {};
+
+kernel void main0(device SSBO& _24 [[buffer(0)]], device SSBO2& _89 [[buffer(1)]], uint3 gl_GlobalInvocationID [[thread_position_in_grid]])
+{
+    float4 _93;
+    int _94;
+    _93 = _24.in_data[gl_GlobalInvocationID.x];
+    _94 = 0;
+    int _40;
+    float4 _46;
+    int _48;
+    for (;;)
+    {
+        _40 = _94 + 1;
+        if (_40 < 10)
+        {
+            _46 = _93 * 2.0;
+            _48 = _40 + 1;
+            _93 = _46;
+            _94 = _48;
+            continue;
+        }
+        else
+        {
+            break;
+        }
+    }
+    float4 _95;
+    int _96;
+    _95 = _93;
+    _96 = _40;
+    float4 _100;
+    uint _101;
+    uint _99;
+    for (uint _97 = 0u; _97 < 16u; _95 = _100, _96++, _97++, _99 = _101)
+    {
+        _100 = _95;
+        _101 = 0u;
+        float4 _71;
+        for (; _101 < 30u; _100 = _71, _101++)
+        {
+            _71 = _24.mvp * _100;
+        }
+    }
+    int _102;
+    _102 = _96;
+    int _83;
+    for (;;)
+    {
+        _83 = _102 + 1;
+        if (_83 > 10)
+        {
+            _102 = _83;
+            continue;
+        }
+        else
+        {
+            break;
+        }
+    }
+    _89.out_data[gl_GlobalInvocationID.x] = _95;
+}
+

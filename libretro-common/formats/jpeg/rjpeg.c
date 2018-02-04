@@ -51,21 +51,14 @@ enum
    RJPEG_SCAN_HEADER
 };
 
-
-typedef struct
-{
-   int      (*read)  (void *user,char *data,int size);
-   void     (*skip)  (void *user,int n);
-   int      (*eof)   (void *user);
-} rjpeg_io_callbacks;
-
 typedef uint8_t *(*rjpeg_resample_row_func)(uint8_t *out, uint8_t *in0, uint8_t *in1,
                                     int w, int hs);
 
 typedef struct
 {
    rjpeg_resample_row_func resample;
-   uint8_t *line0,*line1;
+   uint8_t *line0;
+   uint8_t *line1;
    int hs,vs;   /* expansion factor in each axis */
    int w_lores; /* horizontal pixels pre-expansion */
    int ystep;   /* how far through vertical expansion we are */
@@ -75,7 +68,6 @@ typedef struct
 struct rjpeg
 {
    uint8_t *buff_data;
-   void *empty;
 };
 
 #ifdef _MSC_VER
@@ -258,11 +250,15 @@ typedef struct
  */
 #define RJPEG__RESTART(x)     ((x) >= 0xd0 && (x) <= 0xd7)
 
+#define JPEG_MARKER           0xFF
+#define JPEG_MARKER_SOI       0xD8
+#define JPEG_MARKER_SOS       0xDA
+#define JPEG_MARKER_EOI       0xD9
+#define JPEG_MARKER_APP1      0xE1
+#define JPEG_MARKER_APP2      0xE2
+
 /* use comparisons since in some cases we handle more than one case (e.g. SOF) */
-#define rjpeg__SOI(x)         ((x) == 0xd8)
-#define rjpeg__EOI(x)         ((x) == 0xd9)
 #define rjpeg__SOF(x)         ((x) == 0xc0 || (x) == 0xc1 || (x) == 0xc2)
-#define rjpeg__SOS(x)         ((x) == 0xda)
 
 #define rjpeg__SOF_progressive(x)   ((x) == 0xc2)
 #define rjpeg__div4(x)              ((uint8_t) ((x) >> 2))
@@ -1339,6 +1335,7 @@ static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
             for (i=0; i < w; ++i)
             {
                short *data = z->img_comp[n].coeff + 64 * (i + j * z->img_comp[n].coeff_w);
+
                if (z->spec_start == 0)
                {
                   if (!rjpeg__jpeg_decode_block_prog_dc(z, data, &z->huff_dc[z->img_comp[n].hd], n))
@@ -1386,7 +1383,7 @@ static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
                   if (z->code_bits < 24)
                      rjpeg__grow_buffer_unsafe(z);
 
-                  /* if it's NOT a restart, then just bail, 
+                  /* if it's NOT a restart, then just bail,
                    * so we get corrupt data rather than no data */
                   if (!RJPEG__RESTART(z->marker))
                      return 1;
@@ -1669,10 +1666,10 @@ static int rjpeg__process_scan_header(rjpeg__jpeg *z)
    if (z->progressive)
    {
       /* Bad SOS. Corrupt JPEG? */
-      if (  z->spec_start > 63 || 
-            z->spec_end > 63   || 
-            z->spec_start > z->spec_end || 
-            z->succ_high > 13           || 
+      if (  z->spec_start > 63 ||
+            z->spec_end > 63   ||
+            z->spec_start > z->spec_end ||
+            z->succ_high > 13           ||
             z->succ_low > 13)
          return 0;
    }
@@ -1695,7 +1692,7 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
    rjpeg__context *s = z->s;
    int Lf,p,i,q, h_max=1,v_max=1,c;
    Lf = RJPEG__GET16BE(s);
-   
+
    /* JPEG */
 
    /* Bad SOF len. Corrupt JPEG? */
@@ -1719,7 +1716,7 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
       return 0;
 
    s->img_x = RJPEG__GET16BE(s);
-  
+
    /* No header width. Corrupt JPEG? */
    if (s->img_x == 0)
       return 0;
@@ -1827,7 +1824,7 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
          z->img_comp[i].linebuf   = NULL;
          z->img_comp[i].coeff_w   = (z->img_comp[i].w2 + 7) >> 3;
          z->img_comp[i].coeff_h   = (z->img_comp[i].h2 + 7) >> 3;
-         z->img_comp[i].raw_coeff = malloc(z->img_comp[i].coeff_w * 
+         z->img_comp[i].raw_coeff = malloc(z->img_comp[i].coeff_w *
                                     z->img_comp[i].coeff_h * 64 * sizeof(short) + 15);
          z->img_comp[i].coeff     = (short*) (((size_t) z->img_comp[i].raw_coeff + 15) & ~15);
       }
@@ -1877,7 +1874,7 @@ static int rjpeg__decode_jpeg_header(rjpeg__jpeg *z, int scan)
    m = rjpeg__get_marker(z);
 
    /* No SOI. Corrupt JPEG? */
-   if (!rjpeg__SOI(m))
+   if (m != JPEG_MARKER_SOI)
       return 0;
 
    if (scan == RJPEG_SCAN_TYPE)
@@ -1920,9 +1917,9 @@ static int rjpeg__decode_jpeg_image(rjpeg__jpeg *j)
       return 0;
    m = rjpeg__get_marker(j);
 
-   while (!rjpeg__EOI(m))
+   while (m != JPEG_MARKER_EOI)
    {
-      if (rjpeg__SOS(m))
+      if (m == JPEG_MARKER_SOS)
       {
          if (!rjpeg__process_scan_header(j))
             return 0;
@@ -1945,7 +1942,7 @@ static int rjpeg__decode_jpeg_image(rjpeg__jpeg *j)
                   return 0;
             }
 
-            /* if we reach eof without hitting a marker, 
+            /* if we reach eof without hitting a marker,
              * rjpeg__get_marker() below will fail and we'll eventually return 0 */
          }
       }

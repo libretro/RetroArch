@@ -10,9 +10,9 @@ extern "C" {
 #define OSMicroseconds(val) ((((uint64_t)(val)) * (uint64_t)(OSOneSecond)) / 1000000ull)
 #define OSNanoseconds(val) ((((uint64_t)(val)) * (uint64_t)(OSOneSecond)) / 1000000000ull)
 
-#define wiiu_bus_clock             (17 * 13 * 5*5*5 * 5*5*5     * 3*3 * 2*2*2) //   248.625000 Mhz
-#define wiiu_cpu_clock             (17 * 13 * 5*5*5 * 5*5*5 * 5 * 3*3 * 2*2*2) //  1243.125000 Mhz
-#define wiiu_timer_clock           (17 * 13 * 5*5*5 * 5*5*5     * 3*3 * 2)     //    62.156250 Mhz
+#define wiiu_bus_clock             (17 * 13 * 5*5*5 * 5*5*5     * 3*3 * 2*2*2) /*   248.625000 Mhz */
+#define wiiu_cpu_clock             (17 * 13 * 5*5*5 * 5*5*5 * 5 * 3*3 * 2*2*2) /*  1243.125000 Mhz */
+#define wiiu_timer_clock           (17 * 13 * 5*5*5 * 5*5*5     * 3*3 * 2)     /*    62.156250 Mhz */
 
 #define sec_to_ticks(s)          (((17 * 13 * 5*5*5 * 5*5*5 * 3*3 * 2) * (uint64_t)(s)))
 #define ms_to_ticks(ms)          (((17 * 13 * 5*5*5 * 3*3) * (uint64_t)(ms)) / (2*2))

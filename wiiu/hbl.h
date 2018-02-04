@@ -22,4 +22,4 @@ void* getApplicationEndAddr(void);
 }
 #endif
 
-#endif // __WIIU_HBL_LOADER_H__
+#endif /* __WIIU_HBL_LOADER_H__ */

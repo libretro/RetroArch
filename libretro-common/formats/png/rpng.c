@@ -33,6 +33,7 @@
 #include <formats/image.h>
 #include <formats/rpng.h>
 #include <streams/trans_stream.h>
+#include <string/stdstring.h>
 
 #include "rpng_internal.h"
 
@@ -91,28 +92,27 @@ struct rpng_process
    bool inflate_initialized;
    bool adam7_pass_initialized;
    bool pass_initialized;
-   uint32_t *data;
-   uint32_t *palette;
-   struct png_ihdr ihdr;
    uint8_t *prev_scanline;
    uint8_t *decoded_scanline;
    uint8_t *inflate_buf;
+   struct png_ihdr ihdr;
    size_t restore_buf_size;
    size_t adam7_restore_buf_size;
    size_t data_restore_buf_size;
    size_t inflate_buf_size;
+   size_t avail_in;
+   size_t avail_out;
+   size_t total_out;
+   size_t pass_size;
    unsigned bpp;
    unsigned pitch;
    unsigned h;
-   struct
-   {
-      unsigned width;
-      unsigned height;
-      size_t   size;
-      unsigned pos;
-   } pass;
+   unsigned pass_width;
+   unsigned pass_height;
+   unsigned pass_pos;
+   uint32_t *data;
+   uint32_t *palette;
    void *stream;
-   size_t avail_in, avail_out, total_out;
    const struct trans_stream_backend *stream_backend;
 };
 
@@ -152,7 +152,7 @@ static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 
    for (i = 0; i < ARRAY_SIZE(chunk_map); i++)
    {
-      if (memcmp(chunk->type, chunk_map[i].id, 4) == 0)
+      if (string_is_equal(chunk->type, chunk_map[i].id))
          return chunk_map[i].type;
    }
 
@@ -277,7 +277,7 @@ static void png_reverse_filter_copy_line_bw(uint32_t *data,
    unsigned i, bit;
    static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
    unsigned mul, mask;
-   
+
    if (depth == 16)
    {
       for (i = 0; i < width; i++)
@@ -334,7 +334,7 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
          {
             unsigned w = width / 8;
             unsigned i;
-            
+
             for (i = 0; i < w; i++, decoded++)
             {
                *data++ = palette[(*decoded >> 7) & 1];
@@ -346,7 +346,7 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
                *data++ = palette[(*decoded >> 1) & 1];
                *data++ = palette[*decoded & 1];
             }
-            
+
             switch (width & 7)
             {
                case 7:
@@ -359,7 +359,7 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
                   data[3] = palette[(*decoded >> 4) & 1];
                case 3:
                   data[2] = palette[(*decoded >> 5) & 1];
-               case 2: 
+               case 2:
                   data[1] = palette[(*decoded >> 6) & 1];
                case 1:
                   data[0] = palette[(*decoded >> 7) & 1];
@@ -367,12 +367,12 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
             }
          }
          break;
-      
+
       case 2:
          {
             unsigned w = width / 4;
             unsigned i;
-            
+
             for (i = 0; i < w; i++, decoded++)
             {
                *data++ = palette[(*decoded >> 6) & 3];
@@ -380,12 +380,12 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
                *data++ = palette[(*decoded >> 2) & 3];
                *data++ = palette[*decoded & 3];
             }
-            
+
             switch (width & 3)
             {
                case 3:
                   data[2] = palette[(*decoded >> 2) & 3];
-               case 2: 
+               case 2:
                   data[1] = palette[(*decoded >> 4) & 3];
                case 1:
                   data[0] = palette[(*decoded >> 6) & 3];
@@ -393,29 +393,29 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
             }
          }
          break;
-      
+
       case 4:
          {
             unsigned w = width / 2;
             unsigned i;
-            
+
             for (i = 0; i < w; i++, decoded++)
             {
                *data++ = palette[*decoded >> 4];
                *data++ = palette[*decoded & 0x0f];
             }
-            
+
             if (width & 1)
             {
                *data = palette[*decoded >> 4];
             }
          }
          break;
-      
+
       case 8:
          {
             unsigned i;
-            
+
             for (i = 0; i < width; i++, decoded++, data++)
             {
                *data = palette[*decoded];
@@ -481,7 +481,7 @@ static void png_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
          y++, data += ihdr->width * pass->stride_y, input += pass_width)
    {
       uint32_t *out = data;
-     
+
       for (x = 0; x < pass_width; x++, out += pass->stride_x)
          *out = input[x];
    }
@@ -489,6 +489,8 @@ static void png_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
 
 static void png_reverse_filter_deinit(struct rpng_process *pngp)
 {
+   if (!pngp)
+      return;
    if (pngp->decoded_scanline)
       free(pngp->decoded_scanline);
    pngp->decoded_scanline = NULL;
@@ -517,29 +519,29 @@ static int png_reverse_filter_init(const struct png_ihdr *ihdr,
 
    if (!pngp->adam7_pass_initialized && ihdr->interlace)
    {
-      if (ihdr->width <= passes[pngp->pass.pos].x ||
-            ihdr->height <= passes[pngp->pass.pos].y) /* Empty pass */
+      if (ihdr->width <= passes[pngp->pass_pos].x ||
+            ihdr->height <= passes[pngp->pass_pos].y) /* Empty pass */
          return 1;
 
-      pngp->pass.width  = (ihdr->width - 
-            passes[pngp->pass.pos].x + passes[pngp->pass.pos].stride_x - 1) / passes[pngp->pass.pos].stride_x;
-      pngp->pass.height = (ihdr->height - passes[pngp->pass.pos].y + 
-            passes[pngp->pass.pos].stride_y - 1) / passes[pngp->pass.pos].stride_y;
+      pngp->pass_width  = (ihdr->width -
+            passes[pngp->pass_pos].x + passes[pngp->pass_pos].stride_x - 1) / passes[pngp->pass_pos].stride_x;
+      pngp->pass_height = (ihdr->height - passes[pngp->pass_pos].y +
+            passes[pngp->pass_pos].stride_y - 1) / passes[pngp->pass_pos].stride_y;
 
       pngp->data = (uint32_t*)malloc(
-            pngp->pass.width * pngp->pass.height * sizeof(uint32_t));
+            pngp->pass_width * pngp->pass_height * sizeof(uint32_t));
 
       if (!pngp->data)
          return -1;
 
       pngp->ihdr        = *ihdr;
-      pngp->ihdr.width  = pngp->pass.width;
-      pngp->ihdr.height = pngp->pass.height;
+      pngp->ihdr.width  = pngp->pass_width;
+      pngp->ihdr.height = pngp->pass_height;
 
-      png_pass_geom(&pngp->ihdr, pngp->pass.width,
-            pngp->pass.height, NULL, NULL, &pngp->pass.size);
+      png_pass_geom(&pngp->ihdr, pngp->pass_width,
+            pngp->pass_height, NULL, NULL, &pngp->pass_size);
 
-      if (pngp->pass.size > pngp->total_out)
+      if (pngp->pass_size > pngp->total_out)
       {
          free(pngp->data);
          return -1;
@@ -560,8 +562,8 @@ static int png_reverse_filter_init(const struct png_ihdr *ihdr,
 
    pngp->restore_buf_size      = 0;
    pngp->data_restore_buf_size = 0;
-   pngp->prev_scanline    = (uint8_t*)calloc(1, pngp->pitch);
-   pngp->decoded_scanline = (uint8_t*)calloc(1, pngp->pitch);
+   pngp->prev_scanline         = (uint8_t*)calloc(1, pngp->pitch);
+   pngp->decoded_scanline      = (uint8_t*)calloc(1, pngp->pitch);
 
    if (!pngp->prev_scanline || !pngp->decoded_scanline)
       goto error;
@@ -684,8 +686,8 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
       const struct png_ihdr *ihdr,
       struct rpng_process *pngp)
 {
-   int ret = 0;
-   bool to_next = pngp->pass.pos < ARRAY_SIZE(passes);
+   int        ret = 0;
+   bool   to_next = pngp->pass_pos < ARRAY_SIZE(passes);
    uint32_t *data = *data_;
 
    if (!to_next)
@@ -709,19 +711,19 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
    if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
       return IMAGE_PROCESS_ERROR;
 
-   pngp->inflate_buf            += pngp->pass.size;
-   pngp->adam7_restore_buf_size += pngp->pass.size;
+   pngp->inflate_buf            += pngp->pass_size;
+   pngp->adam7_restore_buf_size += pngp->pass_size;
 
-   pngp->total_out -= pngp->pass.size;
+   pngp->total_out              -= pngp->pass_size;
 
    png_reverse_filter_adam7_deinterlace_pass(data,
-         ihdr, pngp->data, pngp->pass.width, pngp->pass.height, &passes[pngp->pass.pos]);
+         ihdr, pngp->data, pngp->pass_width, pngp->pass_height, &passes[pngp->pass_pos]);
 
    free(pngp->data);
 
-   pngp->pass.width  = 0;
-   pngp->pass.height = 0;
-   pngp->pass.size   = 0;
+   pngp->pass_width  = 0;
+   pngp->pass_height = 0;
+   pngp->pass_size   = 0;
    pngp->adam7_pass_initialized = false;
 
    return IMAGE_PROCESS_NEXT;
@@ -740,7 +742,7 @@ static int png_reverse_filter_adam7(uint32_t **data_,
       case IMAGE_PROCESS_END:
          break;
       case IMAGE_PROCESS_NEXT:
-         pngp->pass.pos++;
+         pngp->pass_pos++;
          return 0;
       case IMAGE_PROCESS_ERROR:
          if (pngp->data)
@@ -750,8 +752,8 @@ static int png_reverse_filter_adam7(uint32_t **data_,
          return -1;
    }
 
-   pngp->inflate_buf -= pngp->adam7_restore_buf_size;
-   pngp->adam7_restore_buf_size = 0;
+   pngp->inflate_buf            -= pngp->adam7_restore_buf_size;
+   pngp->adam7_restore_buf_size  = 0;
    return ret;
 }
 
@@ -760,7 +762,7 @@ static int png_reverse_filter_iterate(rpng_t *rpng, uint32_t **data)
    if (!rpng)
       return false;
 
-   if (rpng->ihdr.interlace)
+   if (rpng->ihdr.interlace && rpng->process)
       return png_reverse_filter_adam7(data, &rpng->ihdr, rpng->process);
 
    return png_reverse_filter_regular_iterate(data, &rpng->ihdr, rpng->process);
@@ -799,10 +801,10 @@ end:
    *height = rpng->ihdr.height;
 #ifdef GEKKO
    /* we often use these in textures, make sure they're 32-byte aligned */
-   *data = (uint32_t*)memalign(32, rpng->ihdr.width * 
+   *data = (uint32_t*)memalign(32, rpng->ihdr.width *
          rpng->ihdr.height * sizeof(uint32_t));
 #else
-   *data = (uint32_t*)malloc(rpng->ihdr.width * 
+   *data = (uint32_t*)malloc(rpng->ihdr.width *
          rpng->ihdr.height * sizeof(uint32_t));
 #endif
    if (!*data)
@@ -825,7 +827,7 @@ false_end:
    return -1;
 }
 
-static bool png_read_plte(uint8_t *buf, 
+static bool png_read_plte(uint8_t *buf,
       uint32_t *buffer, unsigned entries)
 {
    unsigned i;
@@ -966,8 +968,6 @@ bool rpng_iterate_image(rpng_t *rpng)
    if (!read_chunk_header(buf, &chunk))
       return false;
 
-   *buf += 8;
-
 #if 0
    for (i = 0; i < 4; i++)
    {
@@ -1067,7 +1067,7 @@ bool rpng_iterate_image(rpng_t *rpng)
          goto error;
    }
 
-   rpng->buff_data += chunk.size + 12; 
+   rpng->buff_data += chunk.size + 12;
 
    return true;
 
@@ -1129,7 +1129,7 @@ void rpng_free(rpng_t *rpng)
          free(rpng->process->inflate_buf);
       if (rpng->process->stream)
       {
-         if (rpng->process->stream_backend)
+         if (rpng->process->stream_backend && rpng->process->stream_backend->stream_free)
             rpng->process->stream_backend->stream_free(rpng->process->stream);
          else
             free(rpng->process->stream);
@@ -1149,11 +1149,11 @@ bool rpng_start(rpng_t *rpng)
       return false;
 
    header[0] = '\0';
-   
+
    for (i = 0; i < 8; i++)
       header[i] = rpng->buff_data[i];
 
-   if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
+   if (string_is_not_equal_fast(header, png_magic, sizeof(png_magic)))
       return false;
 
    rpng->buff_data += 8;
@@ -1187,7 +1187,7 @@ bool rpng_set_buf_ptr(rpng_t *rpng, void *data)
 
 rpng_t *rpng_alloc(void)
 {
-   rpng_t *rpng = (rpng_t*)calloc(1, sizeof(rpng_t));
+   rpng_t *rpng = (rpng_t*)calloc(1, sizeof(*rpng));
    if (!rpng)
       return NULL;
    return rpng;

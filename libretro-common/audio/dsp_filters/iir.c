@@ -26,6 +26,7 @@
 
 #include <retro_miscellaneous.h>
 #include <libretro_dspfilter.h>
+#include <string/stdstring.h>
 
 #define sqr(a) ((a) * (a))
 
@@ -123,7 +124,7 @@ static void iir_process(void *data, struct dspfilter_output *output,
    iir->r.yn2 = yn2_r;
 }
 
-#define CHECK(x) if (!strcmp(str, #x)) return x
+#define CHECK(x) if (string_is_equal(str, #x)) return x
 static enum IIRFilter str_to_type(const char *str)
 {
    CHECK(LPF);
@@ -211,7 +212,7 @@ static void iir_filter_init(struct iir_data *iir,
          a1 = -2.0 * cs;
          a2 =  1.0 - a1pha;
          break;
-      case NOTCH: 
+      case NOTCH:
          b0 =  1.0;
          b1 = -2.0 * cs;
          b2 =  1.0;
@@ -252,7 +253,7 @@ static void iir_filter_init(struct iir_data *iir,
             make_poly_from_roots(zeros, 2, b);
             make_poly_from_roots(poles, 2, a);
          }
-         
+
          b0    = b[0];
          b1    = b[1];
          b2    = b[2];
@@ -271,15 +272,15 @@ static void iir_filter_init(struct iir_data *iir,
          b0   *= g; b1 *= g; b2 *= g;
          break;
       }
-      case PEQ: 
+      case PEQ:
          b0 =  1.0 + a1pha * A;
          b1 = -2.0 * cs;
          b2 =  1.0 - a1pha * A;
          a0 =  1.0 + a1pha / A;
          a1 = -2.0 * cs;
          a2 =  1.0 - a1pha / A;
-         break; 
-      case BBOOST:       
+         break;
+      case BBOOST:
          beta = sqrt((A * A + 1) / 1.0 - (pow((A - 1), 2)));
          b0 = A * ((A + 1) - (A - 1) * cs + beta * sn);
          b1 = 2 * A * ((A - 1) - (A + 1) * cs);

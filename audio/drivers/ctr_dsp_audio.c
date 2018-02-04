@@ -18,7 +18,6 @@
 #include <malloc.h>
 
 #include "../audio_driver.h"
-#include "../../performance_counters.h"
 #include "../../ctr/ctr_debug.h"
 
 typedef struct
@@ -93,11 +92,9 @@ static void ctr_dsp_audio_free(void *data)
    ndspExit();
 }
 
-static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size)
 {
    u32 pos;
-   static struct retro_perf_counter ctraudio_dsp_f = {0};
    ctr_dsp_audio_t                           * ctr = (ctr_dsp_audio_t*)data;
    uint32_t sample_pos                             = ndspChnGetSamplePos(ctr->channel);
 
@@ -116,9 +113,6 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size,
                  || (((ctr->pos - (CTR_DSP_AUDIO_COUNT >> 4) - sample_pos) & CTR_DSP_AUDIO_COUNT_MASK) > (CTR_DSP_AUDIO_COUNT >> 1)));
       }
    }
-
-   performance_counter_init(ctraudio_dsp_f, "ctraudio_dsp_f");
-   performance_counter_start_plus(is_perfcnt_enable, ctraudio_dsp_f);
 
    pos = ctr->pos << 2;
 
@@ -140,8 +134,6 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size,
 
    ctr->pos += size >> 2;
    ctr->pos &= CTR_DSP_AUDIO_COUNT_MASK;
-
-   performance_counter_stop_plus(is_perfcnt_enable, ctraudio_dsp_f);
 
    return size;
 }

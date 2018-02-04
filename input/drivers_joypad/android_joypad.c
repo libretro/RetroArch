@@ -15,13 +15,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../configuration.h"
+#include "../input_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 
 static const char *android_joypad_name(unsigned pad)
 {
-   settings_t *settings = config_get_ptr();
-   return settings ? settings->input.device_names[pad] : NULL;
+   return input_config_get_device_name(pad);
 }
 
 static bool android_joypad_init(void *data)
@@ -31,14 +30,12 @@ static bool android_joypad_init(void *data)
 
 static bool android_joypad_button(unsigned port, uint16_t joykey)
 {
-   unsigned hat_dir                = 0;
    uint8_t *buf                    = android_keyboard_state_get(port);
    struct android_app *android_app = (struct android_app*)g_android;
+   unsigned hat_dir                = GET_HAT_DIR(joykey);
 
    if (port >= MAX_PADS)
       return false;
-
-   hat_dir = GET_HAT_DIR(joykey);
 
    if (hat_dir)
    {

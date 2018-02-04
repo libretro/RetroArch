@@ -10,6 +10,8 @@
 #include <compat/strl.h>
 #include <retro_environment.h>
 
+#include <streams/file_stream.h>
+
 #if defined(HAVE_RPNG) || defined(HAVE_RJPEG) || defined(HAVE_RTGA) || defined(HAVE_RBMP)
 #define PREFER_NON_STB_IMAGE
 #endif
@@ -157,10 +159,19 @@ void IMAGE_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
    static const struct retro_variable vars[] = {
       { NULL, NULL },
    };
+#ifndef RARCH_INTERNAL
+   struct retro_vfs_interface_info vfs_iface_info = { 1, NULL };
+#endif
 
    IMAGE_CORE_PREFIX(environ_cb) = cb;
 
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+   
+#ifndef RARCH_INTERNAL
+   /* I don't trust filestream_vfs_init to work inside rarch */
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
+      filestream_vfs_init(&vfs_iface_info);
+#endif
 }
 
 void IMAGE_CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
@@ -227,6 +238,9 @@ static bool imageviewer_load(const char *path, int image_index)
 {
 #ifdef STB_IMAGE_IMPLEMENTATION
    int comp;
+   RFILE* f;
+   size_t len;
+   void* buf;
 #endif
 #ifdef RARCH_INTERNAL
    extern bool video_driver_supports_rgba(void);
@@ -235,12 +249,17 @@ static bool imageviewer_load(const char *path, int image_index)
    imageviewer_free_image();
 
 #ifdef STB_IMAGE_IMPLEMENTATION
-   image_buffer           = (uint32_t*)stbi_load(
-         path,
-         &image_width,
-         &image_height,
-         &comp,
-         4);
+   f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   len = filestream_get_size(f);
+   buf = malloc(len);
+   filestream_read(f, buf, len);
+   filestream_close(f);
+   
+   image_buffer           = (uint32_t*)stbi_load_from_memory(
+         buf, len,
+         &image_width, &image_height,
+         &comp, 4);
+   free(buf);
 #else
 #ifdef RARCH_INTERNAL
    image_texture.supports_rgba = video_driver_supports_rgba();
@@ -274,7 +293,7 @@ bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    dir_list_sort(file_list, false);
    free(dir);
 
-  
+
    if (!IMAGE_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
       if (IMAGE_CORE_PREFIX(log_cb))
@@ -437,7 +456,7 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
          {
             uint32_t pixel = *buf;
             uint32_t a = pixel >> 24;
-            
+
             if (a == 255)
                *buf = (pixel & 0x0000ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0x000000ff);
             else
@@ -446,11 +465,11 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
                uint32_t g = (pixel & 0x00ff00) >> 8;
                uint32_t b = (pixel & 0xff0000) >> 16;
                uint32_t bg = ((x & 8) ^ (y & 8)) ? 0x66 : 0x99;
-               
+
                r = a * r / 255 + (255 - a) * bg / 255;
                g = a * g / 255 + (255 - a) * bg / 255;
                b = a * b / 255 + (255 - a) * bg / 255;
-               
+
                *buf = r << 16 | g << 8 | b;
             }
          }

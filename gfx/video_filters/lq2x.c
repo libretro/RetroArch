@@ -66,11 +66,10 @@ static void *lq2x_generic_create(const struct softfilter_config *config,
       unsigned max_width, unsigned max_height,
       unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
+   struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    (void)simd;
    (void)config;
    (void)userdata;
-
-   struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
    filt->workers = (struct softfilter_thread_data*)
@@ -105,7 +104,7 @@ static void lq2x_generic_destroy(void *data)
 }
 
 static void lq2x_generic_rgb565(unsigned width, unsigned height,
-      int first, int last, uint16_t *src, 
+      int first, int last, uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
    unsigned x, y;
@@ -150,7 +149,7 @@ static void lq2x_generic_rgb565(unsigned width, unsigned height,
 }
 
 static void lq2x_generic_xrgb8888(unsigned width, unsigned height,
-      int first, int last, uint32_t *src, 
+      int first, int last, uint32_t *src,
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
    unsigned x, y;
@@ -195,7 +194,7 @@ static void lq2x_generic_xrgb8888(unsigned width, unsigned height,
 
 static void lq2x_work_cb_rgb565(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = 
+   struct softfilter_thread_data *thr =
       (struct softfilter_thread_data*)thread_data;
    uint16_t *input = (uint16_t*)thr->in_data;
    uint16_t *output = (uint16_t*)thr->out_data;
@@ -211,7 +210,7 @@ static void lq2x_work_cb_rgb565(void *data, void *thread_data)
 
 static void lq2x_work_cb_xrgb8888(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = 
+   struct softfilter_thread_data *thr =
       (struct softfilter_thread_data*)thread_data;
    uint32_t *input = (uint32_t*)thr->in_data;
    uint32_t *output = (uint32_t*)thr->out_data;
@@ -237,7 +236,7 @@ static void lq2x_generic_packets(void *data,
    unsigned i;
    for (i = 0; i < filt->threads; i++)
    {
-      struct softfilter_thread_data *thr = 
+      struct softfilter_thread_data *thr =
          (struct softfilter_thread_data*)&filt->workers[i];
 
       unsigned y_start = (height * i) / filt->threads;
@@ -249,7 +248,7 @@ static void lq2x_generic_packets(void *data,
       thr->width = width;
       thr->height = y_end - y_start;
 
-      /* Workers need to know if they can access pixels 
+      /* Workers need to know if they can access pixels
        * outside their given buffer. */
       thr->first = y_start;
       thr->last = y_end == height;

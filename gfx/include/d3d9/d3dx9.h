@@ -1,11 +1,11 @@
-//////////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (C) Microsoft Corporation.  All Rights Reserved.
-//
-//  File:       d3dx9.h
-//  Content:    D3DX utility library
-//
-//////////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
+ *
+ *  File:       d3dx9.h
+ *  Content:    D3DX utility library
+ *
+ */
 
 #ifdef  __D3DX_INTERNAL__
 #error Incorrect D3DX header used
@@ -14,8 +14,7 @@
 #ifndef __D3DX9_H__
 #define __D3DX9_H__
 
-
-// Defines
+/* Defines */
 #include <limits.h>
 
 #define D3DX_DEFAULT            ((UINT) -1)
@@ -40,9 +39,7 @@
 #endif
 #endif
 
-
-
-// Includes
+/* Includes */
 #include "d3d9.h"
 #include "d3dx9math.h"
 #include "d3dx9core.h"
@@ -55,9 +52,7 @@
 #include "d3dx9shape.h"
 #include "d3dx9anim.h"
 
-
-
-// Errors
+/* Errors */
 #define _FACDD  0x876
 #define MAKE_DDHRESULT( code )  MAKE_HRESULT( 1, _FACDD, code )
 
@@ -70,8 +65,8 @@ enum _D3DXERR {
     D3DXERR_INVALIDDATA                 = MAKE_DDHRESULT(2905),
     D3DXERR_LOADEDMESHASNODATA          = MAKE_DDHRESULT(2906),
     D3DXERR_DUPLICATENAMEDFRAGMENT      = MAKE_DDHRESULT(2907),
-	D3DXERR_CANNOTREMOVELASTITEM		= MAKE_DDHRESULT(2908),
+    D3DXERR_CANNOTREMOVELASTITEM		    = MAKE_DDHRESULT(2908)
 };
 
 
-#endif //__D3DX9_H__
+#endif /*__D3DX9_H__ */

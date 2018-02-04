@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Brad Parker
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -36,9 +36,16 @@
 
 #endif
 
+#include <string/stdstring.h>
+
+#include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
+
+#ifdef HAVE_XINERAMA
+#include "../common/xinerama_common.h"
+#endif
 
 #ifdef HAVE_VULKAN
 #include "../common/vulkan_common.h"
@@ -93,7 +100,6 @@ typedef struct gfx_ctx_x_data
 #endif
 
    unsigned g_interval;
-   XF86VidModeModeInfo g_desktop_mode;
 
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;
@@ -107,6 +113,53 @@ static enum gfx_ctx_api x_api                 = GFX_CTX_NONE;
 
 static gfx_ctx_x_data_t *current_context_data = NULL;
 
+const unsigned long retroarch_icon_data[] = {
+   16, 16,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0xffffffff, 0xffffffff,
+   0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0xffffffff, 0xffffffff,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xffffffff,
+   0xffffffff, 0xffffffff, 0x000000ff, 0xffffffff, 0xffffffff, 0x00000000,
+   0xffffffff, 0xffffffff, 0x000000ff, 0xffffffff, 0xffffffff, 0xffffffff,
+   0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0x000000ff, 0xffffffff,
+   0xffffffff, 0x000000ff, 0xffffffff, 0xffffffff, 0xffffffff, 0x000000ff,
+   0xffffffff, 0xffffffff, 0x000000ff, 0xffffffff, 0x00000000, 0x00000000,
+   0x00000000, 0xffffffff, 0x000000ff, 0xffffffff, 0x000000ff, 0x000000ff,
+   0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff, 0xffffffff,
+   0x000000ff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0xffffffff,
+   0x000000ff, 0x000000ff, 0x000000ff, 0xffffffff, 0x000000ff, 0x000000ff,
+   0x000000ff, 0xffffffff, 0x000000ff, 0x000000ff, 0x000000ff, 0xffffffff,
+   0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0x000000ff, 0x000000ff,
+   0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff,
+   0x000000ff, 0x000000ff, 0x000000ff, 0xffffffff, 0x00000000, 0x00000000,
+   0x00000000, 0xffffffff, 0xffffffff, 0x000000ff, 0x000000ff, 0x000000ff,
+   0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff,
+   0xffffffff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0xffffffff, 0xffffffff, 0x000000ff, 0xffffffff, 0xffffffff, 0xffffffff,
+   0xffffffff, 0xffffffff, 0x000000ff, 0xffffffff, 0xffffffff, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0x000000ff,
+   0xffffffff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0xffffffff,
+   0xffffffff, 0x000000ff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0xffffffff,
+   0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000
+};
+
 #ifdef HAVE_OPENGL
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 
@@ -116,7 +169,7 @@ static int GLXExtensionSupported(Display *dpy, const char *extension)
    const char *client_extensions = glXGetClientString(dpy, GLX_EXTENSIONS);
    const char *pos               = strstr(extensionsString, extension);
 
-   if (  (pos != NULL) && 
+   if (  (pos != NULL) &&
          (pos == extensionsString || pos[-1] == ' ') &&
          (pos[strlen(extension)] == ' ' || pos[strlen(extension)] == '\0')
       )
@@ -125,7 +178,7 @@ static int GLXExtensionSupported(Display *dpy, const char *extension)
    pos = strstr(client_extensions, extension);
 
    if (
-         (pos != NULL) && 
+         (pos != NULL) &&
          (pos == extensionsString || pos[-1] == ' ') &&
          (pos[strlen(extension)] == ' ' || pos[strlen(extension)] == '\0')
       )
@@ -174,7 +227,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
                   x->g_hw_ctx = NULL;
                }
             }
-            
+
             if (g_x11_win)
             {
                if (x->g_glx_win)
@@ -198,8 +251,10 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 
    if (g_x11_win && g_x11_dpy)
    {
+#ifdef HAVE_XINERAMA
       /* Save last used monitor for later. */
-      x11_save_last_used_monitor(DefaultRootWindow(g_x11_dpy));
+      xinerama_save_last_used_monitor(DefaultRootWindow(g_x11_dpy));
+#endif
       x11_window_destroy(false);
    }
 
@@ -209,7 +264,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
    {
       if (x->g_should_reset_mode)
       {
-         x11_exit_fullscreen(g_x11_dpy, &x->g_desktop_mode);
+         x11_exit_fullscreen(g_x11_dpy);
          x->g_should_reset_mode = false;
       }
 
@@ -235,7 +290,7 @@ static void gfx_ctx_x_destroy(void *data)
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
    if (!x)
       return;
-   
+
    gfx_ctx_x_destroy_resources(x);
 
    switch (x_api)
@@ -302,7 +357,7 @@ static void gfx_ctx_x_swap_interval(void *data, unsigned interval)
    }
 }
 
-static void gfx_ctx_x_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_x_swap_buffers(void *data, void *data2)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
@@ -384,12 +439,16 @@ static bool gfx_ctx_x_set_resize(void *data,
 #ifdef HAVE_VULKAN
          {
             gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+
+            /* FIXME/TODO - threading error here */
+
             if (!vulkan_create_swapchain(&x->vk, width, height, x->g_interval))
             {
                RARCH_ERR("[X/Vulkan]: Failed to update swapchain.\n");
                return false;
             }
 
+            vulkan_acquire_next_image(&x->vk);
             x->vk.context.invalid_swapchain = true;
             x->vk.need_new_swapchain        = false;
          }
@@ -513,7 +572,7 @@ static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
              GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
             )
          {
-            RARCH_LOG("GLX_OML_sync_control and GLX_MESA_swap_control supported, using better swap control method...\n");
+            RARCH_LOG("[GLX]: GLX_OML_sync_control and GLX_MESA_swap_control supported, using better swap control method...\n");
 
             x->swap_mode         = 1;
 
@@ -525,7 +584,9 @@ static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
 
             glXGetSyncValuesOML(g_x11_dpy, g_x11_win, &x->ust, &x->msc, &x->sbc);
 
-            RARCH_LOG("UST: %d, MSC: %d, SBC: %d\n", x->ust, x->msc, x->sbc);
+#if 0
+            RARCH_LOG("[GLX]: UST: %d, MSC: %d, SBC: %d\n", x->ust, x->msc, x->sbc);
+#endif
          }
 #endif
          break;
@@ -561,6 +622,11 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    XSetWindowAttributes swa  = {0};
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
    gfx_ctx_x_data_t *x       = (gfx_ctx_x_data_t*)data;
+   Atom net_wm_icon = XInternAtom(g_x11_dpy, "_NET_WM_ICON", False);
+   Atom net_wm_opacity = XInternAtom(g_x11_dpy, "_NET_WM_WINDOW_OPACITY", False);
+   Atom cardinal = XInternAtom(g_x11_dpy, "CARDINAL", False);
+   settings_t *settings = config_get_ptr();
+   unsigned opacity = settings->uints.video_window_opacity * ((unsigned)-1 / 100.0);
 
    frontend_driver_install_signal_handler();
 
@@ -606,7 +672,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    if (fullscreen && !windowed_full)
    {
-      if (x11_enter_fullscreen(video_info, g_x11_dpy, width, height, &x->g_desktop_mode))
+      if (x11_enter_fullscreen(video_info, g_x11_dpy, width, height))
       {
          x->g_should_reset_mode = true;
          true_full = true;
@@ -624,7 +690,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       unsigned new_width  = width;
       unsigned new_height = height;
 
-      if (x11_get_xinerama_coord(g_x11_dpy, g_x11_screen,
+      if (xinerama_get_coord(g_x11_dpy, g_x11_screen,
                &x_off, &y_off, &new_width, &new_height))
          RARCH_LOG("[GLX]: Using Xinerama on screen #%u.\n", g_x11_screen);
       else
@@ -643,10 +709,15 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    g_x11_win = XCreateWindow(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
          x_off, y_off, width, height, 0,
-         vi->depth, InputOutput, vi->visual, 
-         CWBorderPixel | CWColormap | CWEventMask | 
+         vi->depth, InputOutput, vi->visual,
+         CWBorderPixel | CWColormap | CWEventMask |
          (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
+
+   XChangeProperty(g_x11_dpy, g_x11_win, net_wm_icon, cardinal, 32, PropModeReplace, (const unsigned char*)retroarch_icon_data, sizeof(retroarch_icon_data) / sizeof(*retroarch_icon_data));
+
+   if (opacity < (unsigned)-1)
+      XChangeProperty(g_x11_dpy, g_x11_win, net_wm_opacity, cardinal, 32, PropModeReplace, (const unsigned char*)&opacity, 1);
 
    switch (x_api)
    {
@@ -675,13 +746,13 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    }
    else if (fullscreen)
    {
-      /* We attempted true fullscreen, but failed. 
+      /* We attempted true fullscreen, but failed.
        * Attempt using windowed fullscreen. */
 
       XMapRaised(g_x11_dpy, g_x11_win);
       RARCH_LOG("[GLX]: Using windowed fullscreen.\n");
 
-      /* We have to move the window to the screen we want 
+      /* We have to move the window to the screen we want
        * to go fullscreen on first.
        * x_off and y_off usually get ignored in XCreateWindow().
        */
@@ -691,7 +762,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    else
    {
       XMapWindow(g_x11_dpy, g_x11_win);
-      /* If we want to map the window on a different screen, 
+      /* If we want to map the window on a different screen,
        * we'll have to do it by force.
        * Otherwise, we should try to let the window manager sort it out.
        * x_off and y_off usually get ignored in XCreateWindow(). */
@@ -723,7 +794,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                   if (x->g_core_es_core)
                   {
                      /* Technically, we don't have core/compat until 3.2.
-                      * Version 3.1 is either compat or not depending on 
+                      * Version 3.1 is either compat or not depending on
                       * GL_ARB_compatibility.
                       */
                      *aptr++ = GLX_CONTEXT_PROFILE_MASK_ARB;
@@ -794,10 +865,12 @@ static bool gfx_ctx_x_set_video_mode(void *data,
             x11_check_window(x, &quit, &resize, &width, &height,
                   shutdown);
 
+            /* FIXME/TODO - threading error here */
+
             /* Use XCB surface since it's the most supported WSI.
              * We can obtain the XCB connection directly from X11. */
             if (!vulkan_surface_create(&x->vk, VULKAN_WSI_XCB,
-                     g_x11_dpy, &g_x11_win, 
+                     g_x11_dpy, &g_x11_win,
                      width, height, x->g_interval))
                goto error;
          }
@@ -856,7 +929,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    gfx_ctx_x_swap_interval(data, x->g_interval);
 
-   /* This can blow up on some drivers. 
+   /* This can blow up on some drivers.
     * It's not fatal, so override errors for this call. */
    old_handler = XSetErrorHandler(x_nul_handler);
    XSetInputFocus(g_x11_dpy, g_x11_win, RevertToNone, CurrentTime);
@@ -888,10 +961,24 @@ static void gfx_ctx_x_input_driver(void *data,
       const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   void *xinput = input_x.init(joypad_name);
+   void *x_input         = NULL;
+#ifdef HAVE_UDEV
+   settings_t *settings = config_get_ptr();
 
-   *input       = xinput ? &input_x : NULL;
-   *input_data  = xinput;
+   if (string_is_equal(settings->arrays.input_driver, "udev"))
+   {
+      *input_data = input_udev.init(joypad_name);
+      if (*input_data)
+      {
+         *input = &input_udev;
+         return;
+      }
+   }
+#endif
+
+   x_input      = input_x.init(joypad_name);
+   *input       = x_input ? &input_x : NULL;
+   *input_data  = x_input;
 }
 
 static bool gfx_ctx_x_suppress_screensaver(void *data, bool enable)
@@ -1108,4 +1195,3 @@ const gfx_ctx_driver_t gfx_ctx_x = {
 #endif
    gfx_ctx_x_make_current
 };
-

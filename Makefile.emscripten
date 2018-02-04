@@ -1,14 +1,15 @@
 TARGET := retroarch.js
 
-EOPT = USE_ZLIB=1 USE_SDL=2 # Emscripten specific options
+EOPT = USE_ZLIB=1 # Emscripten specific options
 EOPTS = $(addprefix -s $(EMPTY), $(EOPT)) # Add '-s ' to each option
 
 PTHREAD = 0
 OS = Emscripten
 OBJ :=
-DEFINES := -DRARCH_INTERNAL -DHAVE_OVERLAY -DHAVE_MAIN -s USE_PTHREADS=$(PTHREAD)
-DEFINES += -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_EGL -DHAVE_OVERLAY -DHAVE_GLSL -DHAVE_FILTERS_BUILTIN
+DEFINES := -DRARCH_INTERNAL -DHAVE_MAIN -s USE_PTHREADS=$(PTHREAD)
+DEFINES += -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_GLSL -DHAVE_FILTERS_BUILTIN
 
+HAVE_OVERLAY = 1
 HAVE_CC_RESAMPLER = 1
 HAVE_EGL    = 1
 HAVE_OPENGLES = 1
@@ -17,30 +18,28 @@ HAVE_RPNG   = 1
 HAVE_EMSCRIPTEN = 1
 HAVE_RGUI = 1
 HAVE_SDL = 0
-HAVE_SDL2 = 1
+HAVE_SDL2 = 0
 HAVE_ZLIB = 1
-HAVE_FBO = 1
 WANT_ZLIB = 1
+HAVE_SHADERPIPELINE = 1
+HAVE_STATIC_VIDEO_FILTERS = 1
+HAVE_STATIC_AUDIO_FILTERS = 1
 MEMORY = 536870912
 
-# XXX: setting this to 1/2 currently crashes Firefox nightly
-PRECISE_F32 = 2
+PRECISE_F32 = 1
+
+OBJDIR := obj-emscripten
 
 ifneq ($(NATIVE_ZLIB),)
    WANT_ZLIB = 0
 endif
 
-ifeq ($(HAVE_SDL2), 1)
-DEFINES += -DHAVE_SDL2
-endif
-
 #if you compile with SDL2 flag add this Emscripten flag "-s USE_SDL=2" to LDFLAGS:
 
-LIBS    := -s USE_SDL=2 -s USE_ZLIB=1
-LDFLAGS := -L. --no-heap-copy -s USE_ZLIB=1 -s TOTAL_MEMORY=$(MEMORY) \
+LIBS    := -s USE_ZLIB=1
+LDFLAGS := -L. --no-heap-copy -s USE_ZLIB=1 -s TOTAL_MEMORY=$(MEMORY) -s NO_EXIT_RUNTIME=0 -s FULL_ES2=1 -s BINARYEN_TRAP_MODE=\"clamp\" \
            -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_load_state', '_cmd_take_screenshot']" \
            --js-library emscripten/library_rwebaudio.js \
-           --js-library emscripten/library_rwebinput.js \
            --js-library emscripten/library_rwebcam.js
 ifneq ($(PTHREAD), 0)
    LDFLAGS += -s USE_PTHREADS=$(PTHREAD) -s PTHREAD_POOL_SIZE=2
@@ -48,31 +47,16 @@ endif
 
 ifeq ($(ASYNC), 1)
    LDFLAGS += -s ASYNCIFY=$(ASYNC)
-endif  
+endif
+
+ifeq ($(HAVE_SDL2), 1)
+   LIBS += -s USE_SDL=2
+   DEFINES += -DHAVE_SDL2
+endif
 
 include Makefile.common
 
-OBJ += gfx/video_filters/2xsai.o
-OBJ += gfx/video_filters/super2xsai.o
-OBJ += gfx/video_filters/supereagle.o
-OBJ += gfx/video_filters/2xbr.o
-OBJ += gfx/video_filters/darken.o
-OBJ += gfx/video_filters/epx.o
-OBJ += gfx/video_filters/scale2x.o
-OBJ += gfx/video_filters/blargg_ntsc_snes.o
-OBJ += gfx/video_filters/lq2x.o
-OBJ += gfx/video_filters/phosphor2x.o
-
-OBJ += libretro-common/audio/dsp_filters/echo.o
-OBJ += libretro-common/audio/dsp_filters/eq.o
-OBJ += libretro-common/audio/dsp_filters/chorus.o
-OBJ += libretro-common/audio/dsp_filters/iir.o
-OBJ += libretro-common/audio/dsp_filters/panning.o
-OBJ += libretro-common/audio/dsp_filters/phaser.o
-OBJ += libretro-common/audio/dsp_filters/reverb.o
-OBJ += libretro-common/audio/dsp_filters/wahwah.o
-
-CFLAGS += -Ideps/zlib/
+CFLAGS += -Ideps/libz -Ideps -Ideps/stb
 libretro = libretro_emscripten.bc
 
 ifneq ($(V), 1)
@@ -83,7 +67,7 @@ ifeq ($(DEBUG), 1)
    LDFLAGS += -O0 -g
    CFLAGS += -O0 -g
 else
-   LDFLAGS += -O2
+   LDFLAGS += -O2 -s WASM=1
    # WARNING: some optimizations can break some cores (ex: LTO breaks tyrquake)
    LDFLAGS += -s PRECISE_F32=$(PRECISE_F32)
    ifeq ($(LTO), 1)
@@ -92,48 +76,29 @@ else
    CFLAGS += -O2
 endif
 
-CFLAGS += -DHAVE_RPNG -Wall -Wno-unused-result -Wno-unused-variable -I. -Ilibretro-common/include -std=gnu99 -s USE_ZLIB=1 \
+CFLAGS += -DHAVE_RPNG -Wall -I. -Ilibretro-common/include -std=gnu99 -s USE_ZLIB=1 \
           -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
+
+RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
 all: $(TARGET)
 
-$(TARGET): $(OBJ)
+$(TARGET): $(RARCH_OBJ) $(libretro)
 	@$(if $(Q), $(shell echo echo LD $@),)
-	$(Q)$(LD) -o $@ $(OBJ) $(libretro) $(LIBS) $(LDFLAGS)
+	$(Q)$(LD) -o $@ $(RARCH_OBJ) $(libretro) $(LIBS) $(LDFLAGS)
 
-%.o: %.c
+$(OBJDIR)/%.o: %.c
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) $(EOPTS) -c -o $@ $<
 
-%.o: %.cpp
+$(OBJDIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CXX $<),)
 	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) $(EOPTS) -c -o $@ $<
 
 clean:
-	rm -f *.o
-	rm -f deps/zlib/*.o
-	rm -f frontend/*.o
-	rm -f menu/*.o
-	rm -f menu/disp/*.o
-	rm -f audio/*.o
-	rm -f compat/*.o
-	rm -f compat/rxml/*.o
-	rm -f conf/*.o
-	rm -f gfx/scaler/*.o
-	rm -f gfx/*.o
-	rm -f gfx/d3d/*.o
-	rm -f gfx/drivers_context/*.o
-	rm -f gfx/math/*.o
-	rm -f gfx/drivers_font/*.o
-	rm -f gfx/drivers_font_renderer/*.o
-	rm -f gfx/py_state/*.o
-	rm -f gfx/rpng/*.o
-	rm -f gfx/glsym/*.o
-	rm -f record/*.o
-	rm -f input/*.o
-	rm -f tools/*.o
-	rm -f libretro-common/*/*.o
+	rm -rf $(OBJDIR)
 	rm -f $(TARGET)
-	rm -f *.d
 
 .PHONY: all clean

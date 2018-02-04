@@ -13,5 +13,7 @@
 *.opensdf
 *.shader
 *.a
+*.bc
+/external
 
 !CMakeLists.txt

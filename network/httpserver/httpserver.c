@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define __STDC_FORMAT_MACROS 
+#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <string.h>
 #include <stdarg.h>
@@ -25,7 +25,7 @@
 #include <compat/zlib.h>
 
 #include "../../core.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../core.h"
 #include "../../gfx/video_driver.h"
 #include "../../managers/core_option_manager.h"
@@ -171,7 +171,6 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
    retro_ctx_memory_info_t vram;
    char core_path[PATH_MAX_LENGTH]                 = {0};
    const char* pixel_format                        = NULL;
-   const rarch_system_info_t* system               = NULL;
    const struct retro_subsystem_info* subsys       = NULL;
    const struct retro_subsystem_rom_info* rom      = NULL;
    const struct retro_subsystem_memory_info* mem   = NULL;
@@ -182,9 +181,7 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
    const core_option_manager_t* core_opts          = NULL;
    const struct mg_request_info              * req = mg_get_request_info(conn);
    const settings_t                     * settings = config_get_ptr();
-
-   if (!runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system))
-      return httpserver_error(conn, 500, "Could not get system information in %s", __FUNCTION__);
+   rarch_system_info_t *system                     = runloop_get_system_info();
 
    if (string_is_empty(system->info.library_name))
       return httpserver_error(conn, 500, "Core not initialized in %s", __FUNCTION__);
@@ -250,10 +247,10 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
          "\"frontendSupportsAchievements\":false,"
          "\"coreSupportsAchievements\":null,"
 #endif
-         "\"saveRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
-         "\"rtcRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
-         "\"systemRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
-         "\"videoRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},",
+         "\"saveRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":%" PRIu64 "},"
+         "\"rtcRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":%" PRIu64 "},"
+         "\"systemRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":%" PRIu64 "},"
+         "\"videoRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":%" PRIu64 "},",
       core_path,
       api.version,
       system->info.library_name,
@@ -383,7 +380,7 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
    }
 
    mg_printf(conn, "],\"coreOptions\":[");
-   runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, (void*)&core_opts);
+   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, (void*)&core_opts);
    opts = core_opts->opts;
 
    for (p = 0; p < core_opts->size; p++, opts++)
@@ -413,15 +410,12 @@ static int httpserver_handle_get_mmaps(struct mg_connection* conn, void* cbdata)
    unsigned id;
    const struct          mg_request_info* req = mg_get_request_info(conn);
    const                          char* comma = "";
-   rarch_system_info_t               * system = NULL;
    const struct retro_memory_map* mmaps       = NULL;
    const struct retro_memory_descriptor* mmap = NULL;
+   rarch_system_info_t *system                = runloop_get_system_info();
 
    if (strcmp(req->request_method, "GET"))
       return httpserver_error(conn, 405, "Unimplemented method in %s: %s", __FUNCTION__, req->request_method);
-
-   if (!runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system))
-      return httpserver_error(conn, 500, "Could not get system information in %s", __FUNCTION__);
 
    mmaps = &system->mmaps;
    mmap  = mmaps->descriptors;
@@ -434,13 +428,13 @@ static int httpserver_handle_get_mmaps(struct mg_connection* conn, void* cbdata)
       mg_printf(conn,
             "%s{"
             "\"id\":%u,"
-            "\"flags\":" STRING_REP_UINT64 ","
+            "\"flags\":%" PRIu64 ","
             "\"ptr\":\"%" PRIXPTR "\","
-            "\"offset\":" STRING_REP_UINT64 ","
-            "\"start\":" STRING_REP_UINT64 ","
-            "\"select\":" STRING_REP_UINT64 ","
-            "\"disconnect\":" STRING_REP_UINT64 ","
-            "\"len\":" STRING_REP_UINT64 ","
+            "\"offset\":%" PRIu64 ","
+            "\"start\":%" PRIu64 ","
+            "\"select\":%" PRIu64 ","
+            "\"disconnect\":%" PRIu64 ","
+            "\"len\":%" PRIu64 ","
             "\"addrspace\":\"%s\""
             "}",
             comma,
@@ -469,20 +463,17 @@ static int httpserver_handle_get_mmap(struct mg_connection* conn, void* cbdata)
    uLong buflen;
    const struct mg_request_info         * req = mg_get_request_info(conn);
    const char                         * comma = "";
-   rarch_system_info_t* system                = NULL;
    const struct retro_memory_map* mmaps       = NULL;
    const struct retro_memory_descriptor* mmap = NULL;
    const char* param                          = NULL;
    Bytef* buffer                              = NULL;
+   rarch_system_info_t *system                = runloop_get_system_info();
 
    if (strcmp(req->request_method, "GET"))
       return httpserver_error(conn, 405, "Unimplemented method in %s: %s", __FUNCTION__, req->request_method);
 
    if (sscanf(req->request_uri, "/" MEMORY_MAP "/%u", &id) != 1)
       return httpserver_error(conn, 500, "Malformed request in %s: %s", __FUNCTION__, req->request_uri);
-
-   if (!runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system))
-      return httpserver_error(conn, 500, "Could not get system information in %s", __FUNCTION__);
 
    mmaps = &system->mmaps;
 
@@ -532,10 +523,10 @@ static int httpserver_handle_get_mmap(struct mg_connection* conn, void* cbdata)
    mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
    mg_printf(conn,
          "{"
-         "\"start\":" STRING_REP_ULONG ","
-         "\"length\":" STRING_REP_ULONG ","
+         "\"start\":" STRING_REP_USIZE ","
+         "\"length\":" STRING_REP_USIZE ","
          "\"compression\":\"deflate\","
-         "\"compressedLength\":" STRING_REP_ULONG ","
+         "\"compressedLength\":" STRING_REP_USIZE ","
          "\"encoding\":\"Z85\","
          "\"data\":\"%s\""
          "}",

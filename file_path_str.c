@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -21,130 +21,207 @@
 
 const char *file_path_str(enum file_path_enum enum_idx)
 {
+   const char *str = "null";
+
    switch (enum_idx)
    {
       case FILE_PATH_PROGRAM_NAME:
 #if defined(IS_SALAMANDER)
-         return "RetroArch Salamander";
+         str = "RetroArch Salamander";
 #else
-         return "RetroArch";
+         str = "RetroArch";
 #endif
+         break;
       case FILE_PATH_DETECT:
-         return "DETECT";
+         str = "DETECT";
+         break;
       case FILE_PATH_CONTENT_BASENAME:
-         return "content.png";
+         str = "content.png";
+         break;
       case FILE_PATH_LUTRO_PLAYLIST:
-         return "Lutro.lpl";
+         str = "Lutro.lpl";
+         break;
       case FILE_PATH_NUL:
-         return "nul";
+         str = "nul";
+         break;
       case FILE_PATH_LOG_WARN:
-         return "[WARN]";
+         str = "[WARN]";
+         break;
       case FILE_PATH_LOG_ERROR:
-         return "[ERROR]";
+         str = "[ERROR]";
+         break;
       case FILE_PATH_LOG_INFO:
-         return "[INFO]";
+         str = "[INFO]";
+         break;
       case FILE_PATH_CGP_EXTENSION:
-         return ".cgp";
+         str = ".cgp";
+         break;
       case FILE_PATH_GLSLP_EXTENSION:
-         return ".glslp";
+         str = ".glslp";
+         break;
       case FILE_PATH_SLANGP_EXTENSION:
-         return ".slangp";
+         str = ".slangp";
+         break;
       case FILE_PATH_AUTO_EXTENSION:
-         return ".auto";
+         str = ".auto";
+         break;
       case FILE_PATH_BSV_EXTENSION:
-         return ".bsv";
+         str = ".bsv";
+         break;
       case FILE_PATH_OPT_EXTENSION:
-         return ".opt";
+         str = ".opt";
+         break;
       case FILE_PATH_CORE_INFO_EXTENSION:
-         return ".info";
+         str = ".info";
+         break;
       case FILE_PATH_CONFIG_EXTENSION:
-         return ".cfg";
+         str = ".cfg";
+         break;
       case FILE_PATH_REMAP_EXTENSION:
-         return ".rmp";
+         str = ".rmp";
+         break;
       case FILE_PATH_RTC_EXTENSION:
-         return ".rtc";
+         str = ".rtc";
+         break;
       case FILE_PATH_CHT_EXTENSION:
-         return ".cht";
+         str = ".cht";
+         break;
       case FILE_PATH_SRM_EXTENSION:
-         return ".srm";
+         str = ".srm";
+         break;
       case FILE_PATH_STATE_EXTENSION:
-         return ".state";
+         str = ".state";
+         break;
       case FILE_PATH_LPL_EXTENSION:
-         return ".lpl";
+         str = ".lpl";
+         break;
       case FILE_PATH_LPL_EXTENSION_NO_DOT:
-         return "lpl";
+         str = "lpl";
+         break;
       case FILE_PATH_PNG_EXTENSION:
-         return ".png";
+         str = ".png";
+         break;
+      case FILE_PATH_OGG_EXTENSION:
+         str = ".ogg";
+         break;
+      case FILE_PATH_WAV_EXTENSION:
+         str = ".wav";
+         break;
+      case FILE_PATH_MOD_EXTENSION:
+         str = ".mod";
+         break;
+      case FILE_PATH_S3M_EXTENSION:
+         str = ".s3m";
+         break;
+      case FILE_PATH_XM_EXTENSION:
+         str = ".xm";
+         break;
       case FILE_PATH_JPEG_EXTENSION:
-         return ".jpeg";
+         str = ".jpeg";
+         break;
       case FILE_PATH_BMP_EXTENSION:
-         return ".bmp";
+         str = ".bmp";
+         break;
       case FILE_PATH_TGA_EXTENSION:
-         return ".tga";
+         str = ".tga";
+         break;
       case FILE_PATH_JPG_EXTENSION:
-         return ".jpg";
+         str = ".jpg";
+         break;
       case FILE_PATH_UPS_EXTENSION:
-         return ".ups";
+         str = ".ups";
+         break;
       case FILE_PATH_IPS_EXTENSION:
-         return ".ips";
+         str = ".ips";
+         break;
       case FILE_PATH_BPS_EXTENSION:
-         return ".bps";
+         str = ".bps";
+         break;
       case FILE_PATH_RDB_EXTENSION:
-         return ".rdb";
+         str = ".rdb";
+         break;
       case FILE_PATH_ZIP_EXTENSION:
-         return ".zip";
+         str = ".zip";
+         break;
       case FILE_PATH_7Z_EXTENSION:
-         return ".7z";
+         str = ".7z";
+         break;
       case FILE_PATH_INDEX_URL:
-         return ".index";
+         str = ".index";
+         break;
       case FILE_PATH_INDEX_DIRS_URL:
-         return ".index-dirs";
+         str = ".index-dirs";
+         break;
       case FILE_PATH_INDEX_EXTENDED_URL:
-         return ".index-extended";
+         str = ".index-extended";
+         break;
       case FILE_PATH_NETPLAY_ROOM_LIST_URL:
-         return "registry.lpl";
+         str = "registry.lpl";
+         break;
       case FILE_PATH_CORE_THUMBNAILS_URL:
-         return "http://thumbnailpacks.libretro.com";
+         str = "http://thumbnailpacks.libretro.com";
+         break;
       case FILE_PATH_LAKKA_URL:
-         return "http://mirror.lakka.tv/nightly";
+         str = "http://le.builds.lakka.tv";
+         break;
       case FILE_PATH_SHADERS_GLSL_ZIP:
-         return "shaders_glsl.zip";
+         str = "shaders_glsl.zip";
+         break;
       case FILE_PATH_SHADERS_SLANG_ZIP:
-         return "shaders_slang.zip";
+         str = "shaders_slang.zip";
+         break;
       case FILE_PATH_SHADERS_CG_ZIP:
-         return "shaders_cg.zip";
+         str = "shaders_cg.zip";
+         break;
       case FILE_PATH_DATABASE_RDB_ZIP:
-         return "database-rdb.zip";
+         str = "database-rdb.zip";
+         break;
       case FILE_PATH_OVERLAYS_ZIP:
-         return "overlays.zip";
+         str = "overlays.zip";
+         break;
       case FILE_PATH_CORE_INFO_ZIP:
-         return "info.zip";
+         str = "info.zip";
+         break;
       case FILE_PATH_CHEATS_ZIP:
-         return "cheats.zip";
+         str = "cheats.zip";
+         break;
       case FILE_PATH_ASSETS_ZIP:
-         return "assets.zip";
+         str = "assets.zip";
+         break;
       case FILE_PATH_AUTOCONFIG_ZIP:
-         return "autoconfig.zip";
+         str = "autoconfig.zip";
+         break;
       case FILE_PATH_CONTENT_HISTORY:
-         return "content_history.lpl";
+         str = "content_history.lpl";
+         break;
+      case FILE_PATH_CONTENT_FAVORITES:
+         str = "content_favorites.lpl";
+         break;
       case FILE_PATH_CONTENT_MUSIC_HISTORY:
-         return "content_music_history.lpl";
+         str = "content_music_history.lpl";
+         break;
       case FILE_PATH_CONTENT_VIDEO_HISTORY:
-         return "content_video_history.lpl";
+         str = "content_video_history.lpl";
+         break;
       case FILE_PATH_CONTENT_IMAGE_HISTORY:
-         return "content_image_history.lpl";
+         str = "content_image_history.lpl";
+         break;
       case FILE_PATH_CORE_OPTIONS_CONFIG:
-         return "retroarch-core-options.cfg";
+         str = "retroarch-core-options.cfg";
+         break;
       case FILE_PATH_MAIN_CONFIG:
-         return "retroarch.cfg";
+         str = "retroarch.cfg";
+         break;
       case FILE_PATH_BACKGROUND_IMAGE:
-         return "bg.png";
+         str = "bg.png";
+         break;
       case FILE_PATH_TTF_FONT:
-         return "font.ttf";
+         str = "font.ttf";
+         break;
       case FILE_PATH_UNKNOWN:
       default:
          break;
    }
 
-   return "null";
+   return str;
 }

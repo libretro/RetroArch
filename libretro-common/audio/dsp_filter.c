@@ -179,13 +179,14 @@ static bool append_plugs(retro_dsp_filter_t *dsp, struct string_list *list)
 {
    unsigned i;
    dspfilter_simd_mask_t mask = cpu_features_get();
+   unsigned list_size         = list ? list->size : 0;
 
-   for (i = 0; i < list->size; i++)
+   for (i = 0; i < list_size; i++)
    {
       dspfilter_get_implementation_t cb;
       const struct dspfilter_implementation *impl = NULL;
       struct retro_dsp_plug *new_plugs            = NULL;
-      dylib_t lib                                 = 
+      dylib_t lib                                 =
          dylib_load(list->elems[i].data);
 
       if (!lib)
@@ -220,7 +221,7 @@ static bool append_plugs(retro_dsp_filter_t *dsp, struct string_list *list)
       }
 
       /* Found plug. */
-      
+
       dsp->plugs = new_plugs;
       dsp->plugs[dsp->num_plugs].lib = lib;
       dsp->plugs[dsp->num_plugs].impl = impl;
@@ -232,7 +233,7 @@ static bool append_plugs(retro_dsp_filter_t *dsp, struct string_list *list)
 #endif
 
 retro_dsp_filter_t *retro_dsp_filter_new(
-      const char *filter_config, 
+      const char *filter_config,
       void *string_data,
       float sample_rate)
 {

@@ -14,12 +14,17 @@ cc_works=0
 if [ "$CC" ]; then
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && cc_works=1
 else
-	for CC in ${CC:=$(which ${CROSS_COMPILE}gcc ${CROSS_COMPILE}cc ${CROSS_COMPILE}clang 2>/dev/null)} ''; do
-		"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && cc_works=1 && break
+	for cc in gcc cc clang; do
+		CC="$(exists "${CROSS_COMPILE}${cc}")" || CC=""
+		if [ "$CC" ]; then
+			"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && {
+				cc_works=1; break
+			}
+		fi
 	done
 fi
 
-rm -f "$TEMP_C" "$TEMP_EXE"
+rm -f -- "$TEMP_C" "$TEMP_EXE"
 
 cc_status='does not work'
 if [ "$cc_works" = '1' ]; then
@@ -31,8 +36,7 @@ fi
 echo "Checking for suitable working C compiler ... $CC $cc_status"
 
 if [ "$cc_works" = '0' ] && [ "$USE_LANG_C" = 'yes' ]; then
-	echo "Error: Cannot proceed without a working C compiler."
-	exit 1
+	die 1 'Error: Cannot proceed without a working C compiler.'
 fi
 
 # Checking for working C++
@@ -45,12 +49,17 @@ cxx_works=0
 if [ "$CXX" ]; then
 	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && cxx_works=1
 else
-	for CXX in ${CXX:=$(which ${CROSS_COMPILE}g++ ${CROSS_COMPILE}c++ ${CROSS_COMPILE}clang++ 2>/dev/null)} ''; do
-		"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && cxx_works=1 && break
+	for cxx in g++ c++ clang++; do
+		CXX="$(exists "${CROSS_COMPILE}${cxx}")" || CXX=""
+		if [ "$CXX" ]; then
+			"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && {
+				cxx_works=1; break
+			}
+		fi
 	done
 fi
 
-rm -f "$TEMP_CXX" "$TEMP_EXE"
+rm -f -- "$TEMP_CXX" "$TEMP_EXE"
 
 cxx_status='does not work'
 if [ "$cxx_works" = '1' ]; then
@@ -62,33 +71,31 @@ fi
 echo "Checking for suitable working C++ compiler ... $CXX $cxx_status"
 
 if [ "$cxx_works" = '0' ] && [ "$USE_LANG_CXX" = 'yes' ]; then
-	echo "Error: Cannot proceed without a working C++ compiler."
-	exit 1
+	die 1 'Error: Cannot proceed without a working C++ compiler.'
 fi
 
 if [ "$OS" = "Win32" ]; then
 	echobuf="Checking for windres"
 	if [ -z "$WINDRES" ]; then
-		WINDRES=$(which ${CROSS_COMPILE}windres)
-		[ "$WINDRES" ] || { echo "$echobuf ... Not found. Exiting."; exit 1; }
+		WINDRES="$(exists "${CROSS_COMPILE}windres")" || WINDRES=""
+		[ -z "$WINDRES" ] && die 1 "$echobuf ... Not found. Exiting."
 	fi
 	echo "$echobuf ... $WINDRES"
 fi
 
-[ -n "$PKG_CONF_PATH" ] || {
+if [ -z "$PKG_CONF_PATH" ]; then
 	PKG_CONF_PATH="none"
-
-	for path in $(which "${CROSS_COMPILE}pkg-config" 2>/dev/null) ''; do
-		[ -n "$path" ] && {
-			PKG_CONF_PATH=$path;
-			break;
+	for pkgconf in pkgconf pkg-config; do
+		PKGCONF="$(exists "${CROSS_COMPILE}${pkgconf}")" || PKGCONF=""
+		[ "$PKGCONF" ] && {
+			PKG_CONF_PATH="$PKGCONF"
+			break
 		}
 	done
-
-}
+fi
 
 echo "Checking for pkg-config ... $PKG_CONF_PATH"
 
 if [ "$PKG_CONF_PATH" = "none" ]; then
-	echo "Warning: pkg-config not found, package checks will fail."
+	die : 'Warning: pkg-config not found, package checks will fail.'
 fi

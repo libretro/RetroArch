@@ -23,13 +23,14 @@ var LibraryRWebAudio = {
 
       getCurrentPerfTime: function() {
          if (RA.startTime) return (window['performance']['now']() - RA.startTime) / 1000;
-         else throw 'getCurrentPerfTime() called before start time set';
+         else return 0;
       },
 
       process: function(queueBuffers) {
          var currentTime = RA.getCurrentPerfTime();
          for (var i = 0; i < RA.bufIndex; i++) {
-            if (RA.buffers[i].endTime < currentTime) {
+            if (RA.buffers[i].endTime !== 0 && RA.buffers[i].endTime < currentTime) {
+               RA.buffers[i].endTime = 0;
                var buf = RA.buffers.splice(i, 1);
                RA.buffers[RA.numBuffers - 1] = buf[0];
                i--;
@@ -40,8 +41,8 @@ var LibraryRWebAudio = {
 
       fillBuffer: function(buf, samples) {
          var count = 0;
-         var leftBuffer = RA.buffers[RA.bufIndex].getChannelData(0);
-         var rightBuffer = RA.buffers[RA.bufIndex].getChannelData(1);
+         const leftBuffer = RA.buffers[RA.bufIndex].getChannelData(0);
+         const rightBuffer = RA.buffers[RA.bufIndex].getChannelData(1);
          while (samples && RA.bufOffset !== RA.BUFFER_SIZE) {
             leftBuffer[RA.bufOffset] = {{{ makeGetValue('buf', 'count * 8', 'float') }}};
             rightBuffer[RA.bufOffset] = {{{ makeGetValue('buf', 'count * 8 + 4', 'float') }}};
@@ -61,7 +62,7 @@ var LibraryRWebAudio = {
          else startTime = RA.context.currentTime;
          RA.buffers[index].endTime = startTime + RA.buffers[index].duration;
 
-         var bufferSource = RA.context.createBufferSource();
+         const bufferSource = RA.context.createBufferSource();
          bufferSource.buffer = RA.buffers[index];
          bufferSource.connect(RA.context.destination);
          bufferSource.start(startTime);
@@ -73,7 +74,7 @@ var LibraryRWebAudio = {
       block: function() {
          do {
             RA.process();
-         } while (RA.bufIndex === RA.numBuffers - 1);
+         } while (RA.bufIndex === RA.numBuffers);
       }
    },
 
@@ -87,7 +88,10 @@ var LibraryRWebAudio = {
       RA.numBuffers = ((latency * RA.context.sampleRate) / (1000 * RA.BUFFER_SIZE))|0;
       if (RA.numBuffers < 2) RA.numBuffers = 2;
 
-      for (var i = 0; i < RA.numBuffers; i++) RA.buffers[i] = RA.context.createBuffer(2, RA.BUFFER_SIZE, RA.context.sampleRate);
+      for (var i = 0; i < RA.numBuffers; i++) {
+         RA.buffers[i] = RA.context.createBuffer(2, RA.BUFFER_SIZE, RA.context.sampleRate);
+         RA.buffers[i].endTime = 0
+      }
 
       RA.nonblock = false;
       RA.startTime = 0;
@@ -97,7 +101,7 @@ var LibraryRWebAudio = {
       Module["pauseMainLoop"]();
       return 1;
    },
-   
+
    RWebAudioSampleRate: function() {
       return RA.context.sampleRate;
    },
@@ -108,16 +112,17 @@ var LibraryRWebAudio = {
       var count = 0;
 
       while (samples) {
+         if (RA.bufIndex === RA.numBuffers) {
+            if (RA.nonblock) break;
+            else RA.block();
+         }
+
          var fill = RA.fillBuffer(buf, samples);
          samples -= fill;
          count += fill;
          buf += fill * 8;
 
          if (RA.bufOffset === RA.BUFFER_SIZE) {
-            if (RA.bufIndex === RA.numBuffers - 1) {
-               if (RA.nonblock) break;
-               else RA.block();
-            }
             RA.queueAudio();
          }
       }
@@ -142,16 +147,21 @@ var LibraryRWebAudio = {
    RWebAudioFree: function() {
       RA.bufIndex = 0;
       RA.bufOffset = 0;
-      return;
    },
 
    RWebAudioBufferSize: function() {
-      return RA.numBuffers * RA.BUFFER_SIZE + RA.BUFFER_SIZE;
+      return RA.numBuffers * RA.BUFFER_SIZE * 8;
    },
 
    RWebAudioWriteAvail: function() {
       RA.process();
       return ((RA.numBuffers - RA.bufIndex) * RA.BUFFER_SIZE - RA.bufOffset) * 8;
+   },
+
+   RWebAudioRecalibrateTime: function() {
+      if (RA.startTime) {
+         RA.startTime = window['performance']['now']() - RA.context.currentTime * 1000;
+      }
    }
 };
 

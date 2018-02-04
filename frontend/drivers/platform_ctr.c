@@ -21,6 +21,11 @@
 #include <boolean.h>
 
 #include <3ds.h>
+#include <3ds/svc.h>
+#include <3ds/os.h>
+#include <3ds/services/cfgu.h>
+#include <3ds/services/ptmu.h>
+#include <3ds/services/mcuhwc.h>
 
 #include <file/file_path.h>
 
@@ -49,7 +54,7 @@
 #endif
 
 static enum frontend_fork ctr_fork_mode = FRONTEND_FORK_NONE;
-static const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
+static const char* elf_path_cst         = "sdmc:/retroarch/test.3dsx";
 
 static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
@@ -64,45 +69,49 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
 #endif
 #endif
 
-   fill_pathname_basedir(g_defaults.dir.port, elf_path_cst, sizeof(g_defaults.dir.port));
-   RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
+   fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], elf_path_cst, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+   RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
-   fill_pathname_join(g_defaults.dir.core_assets, g_defaults.dir.port,
-         "downloads", sizeof(g_defaults.dir.core_assets));
-   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
-         "media", sizeof(g_defaults.dir.assets));
-   fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
-         "cores", sizeof(g_defaults.dir.core));
-   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
-         "info", sizeof(g_defaults.dir.core_info));
-   fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
-         "savestates", sizeof(g_defaults.dir.savestate));
-   fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
-         "savefiles", sizeof(g_defaults.dir.sram));
-   fill_pathname_join(g_defaults.dir.system, g_defaults.dir.core,
-         "system", sizeof(g_defaults.dir.system));
-   fill_pathname_join(g_defaults.dir.playlist, g_defaults.dir.core,
-         "playlists", sizeof(g_defaults.dir.playlist));
-   fill_pathname_join(g_defaults.dir.menu_config, g_defaults.dir.port,
-         "config", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
-         "config/remaps", sizeof(g_defaults.dir.remap));
-   fill_pathname_join(g_defaults.dir.video_filter, g_defaults.dir.port,
-         "filters", sizeof(g_defaults.dir.remap));
-   fill_pathname_join(g_defaults.dir.database, g_defaults.dir.port,
-         "database/rdb", sizeof(g_defaults.dir.database));
-   fill_pathname_join(g_defaults.dir.cursor, g_defaults.dir.port,
-         "database/cursors", sizeof(g_defaults.dir.cursor));
-   fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "media", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "config/remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "filters", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+   fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 }
 
 static void frontend_ctr_deinit(void *data)
 {
-   extern PrintConsole* currentConsole;
    Handle lcd_handle;
+   u32 parallax_layer_reg_state;
    u8 not_2DS;
+
+   extern PrintConsole* currentConsole;
+
    (void)data;
+
 #ifndef IS_SALAMANDER
    verbosity_enable();
 
@@ -115,21 +124,24 @@ static void frontend_ctr_deinit(void *data)
       wait_for_input();
 
    CFGU_GetModelNintendo2DS(&not_2DS);
+
    if(not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
    {
       u32 *cmdbuf = getThreadCommandBuffer();
-      cmdbuf[0] = 0x00110040;
-      cmdbuf[1] = 2;
+      cmdbuf[0]   = 0x00110040;
+      cmdbuf[1]   = 2;
       svcSendSyncRequest(lcd_handle);
       svcCloseHandle(lcd_handle);
    }
 
-   u32 parallax_layer_reg_state = (*(float*)0x1FF81080 == 0.0)? 0x0 : 0x00010001;
+   parallax_layer_reg_state = (*(float*)0x1FF81080 == 0.0)? 0x0 : 0x00010001;
    GSPGPU_WriteHWRegs(0x202000, &parallax_layer_reg_state, 4);
 
+   mcuHwcExit();
+   ptmuExit();
    cfguExit();
    ndspExit();
-   csndExit();   
+   csndExit();
    gfxTopRightFramebuffers[0] = NULL;
    gfxTopRightFramebuffers[1] = NULL;
    gfxExit();
@@ -144,6 +156,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
       char args[0x300 - 0x4];
    }param;
    int len;
+   uint64_t app_ID;
    Result res;
    extern char __argv_hmac[0x20];
 
@@ -151,7 +164,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
    DEBUG_STR(path);
 
    strlcpy(param.args, elf_path_cst, sizeof(param.args));
-   len = strlen(param.args) + 1;
+   len        = strlen(param.args) + 1;
    param.argc = 1;
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
@@ -164,7 +177,6 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
       RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
    }
 #endif
-   uint64_t app_ID;
    if(!path || !*path)
    {
       APT_GetProgramID(&app_ID);
@@ -172,11 +184,13 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
    }
    else
    {
-      u32 app_ID_low;
       char app_ID_str[11];
-      FILE* fp = fopen(path, "rb");
+      u32 app_ID_low    = 0;
+      FILE* fp          = fopen(path, "rb");
       size_t bytes_read = fread(app_ID_str, 1, sizeof(app_ID_str), fp);
+
       fclose(fp);
+
       if(bytes_read <= 0)
       {
          RARCH_LOG("error reading APP_ID from: [%s].\n", path);
@@ -189,12 +203,13 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
       RARCH_LOG("APP_ID [%s] -- > 0x%016llX.\n", app_ID_str, app_ID);
    }
 
-   if(R_SUCCEEDED(res = APT_PrepareToDoApplicationJump(0, app_ID, 0x1)))
+   res = APT_PrepareToDoApplicationJump(0, app_ID, 0x1);
+   if(R_SUCCEEDED(res))
         res = APT_DoApplicationJump(&param, sizeof(param.argc) + len, __argv_hmac);
 
    if(res)
    {
-      RARCH_LOG("Failed to load core\n");
+      RARCH_ERR("Failed to load core\n");
       dump_result_value(res);
    }
 
@@ -322,28 +337,28 @@ static void frontend_ctr_init(void *data)
 
    verbosity_enable();
 
-   gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);   
+   gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
 
    u32 topSize = 400 * 240 * 3;
-	u32 bottomSize = 320 * 240 * 2;
+   u32 bottomSize = 320 * 240 * 2;
    linearFree(gfxTopLeftFramebuffers[0]);
-	linearFree(gfxTopLeftFramebuffers[1]);
-	linearFree(gfxBottomFramebuffers[0]);
-	linearFree(gfxBottomFramebuffers[1]);
-	linearFree(gfxTopRightFramebuffers[0]);
-	linearFree(gfxTopRightFramebuffers[1]);
+   linearFree(gfxTopLeftFramebuffers[1]);
+   linearFree(gfxBottomFramebuffers[0]);
+   linearFree(gfxBottomFramebuffers[1]);
+   linearFree(gfxTopRightFramebuffers[0]);
+   linearFree(gfxTopRightFramebuffers[1]);
 
-	gfxTopLeftFramebuffers[0]=linearAlloc(topSize * 2);
-	gfxTopRightFramebuffers[0] = gfxTopLeftFramebuffers[0] + topSize;
+   gfxTopLeftFramebuffers[0]=linearAlloc(topSize * 2);
+   gfxTopRightFramebuffers[0] = gfxTopLeftFramebuffers[0] + topSize;
 
    gfxTopLeftFramebuffers[1]=linearAlloc(topSize * 2);
    gfxTopRightFramebuffers[1] = gfxTopLeftFramebuffers[1] + topSize;
 
    gfxBottomFramebuffers[0]=linearAlloc(bottomSize);
-	gfxBottomFramebuffers[1]=linearAlloc(bottomSize);
+   gfxBottomFramebuffers[1]=linearAlloc(bottomSize);
 
    gfxSetFramebufferInfo(GFX_TOP, 0);
-	gfxSetFramebufferInfo(GFX_BOTTOM, 0);
+   gfxSetFramebufferInfo(GFX_BOTTOM, 0);
 
    gfxSet3D(true);
    consoleInit(GFX_BOTTOM, NULL);
@@ -356,24 +371,43 @@ static void frontend_ctr_init(void *data)
    }
    osSetSpeedupEnable(true);
 
-   audio_driver_t* dsp_audio_driver = &audio_ctr_dsp;
    if(csndInit() != 0)
-   {
-      dsp_audio_driver = &audio_ctr_csnd;
-      audio_ctr_csnd = audio_ctr_dsp;
-      audio_ctr_dsp  = audio_null;
-   }
+      audio_ctr_csnd = audio_null;
    ctr_check_dspfirm();
    if(ndspInit() != 0)
-      *dsp_audio_driver = audio_null;
+      audio_ctr_dsp = audio_null;
    cfguInit();
+   ptmuInit();
+   mcuHwcInit();
 #endif
 }
 
 
 static int frontend_ctr_get_rating(void)
 {
-   return 3;
+   u8 device_model = 0xFF;
+   CFGU_GetSystemModel(&device_model);/*(0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL)*/
+
+   switch (device_model)
+   {
+      case 0:
+      case 1:
+      case 3:
+         /*Old 3/2DS*/
+         return 3;
+
+      case 2:
+      case 4:
+      case 5:
+         /*New 3/2DS*/
+         return 6;
+
+      default:
+         /*Unknown Device Or Check Failed*/
+         break;
+   }
+
+   return -1;
 }
 
 enum frontend_architecture frontend_ctr_get_architecture(void)
@@ -381,10 +415,13 @@ enum frontend_architecture frontend_ctr_get_architecture(void)
    return FRONTEND_ARCH_ARM;
 }
 
-static int frontend_ctr_parse_drive_list(void *data)
+static int frontend_ctr_parse_drive_list(void *data, bool load_content)
 {
 #ifndef IS_SALAMANDER
    file_list_t *list = (file_list_t*)data;
+   enum msg_hash_enums enum_idx = load_content ?
+      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+      MSG_UNKNOWN;
 
    if (!list)
       return -1;
@@ -392,11 +429,105 @@ static int frontend_ctr_parse_drive_list(void *data)
    menu_entries_append_enum(list,
          "sdmc:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 
    return 0;
+}
+
+static uint64_t frontend_ctr_get_mem_total(void)
+{
+	return osGetMemRegionSize(MEMREGION_ALL);
+}
+
+static uint64_t frontend_ctr_get_mem_used(void)
+{
+	return osGetMemRegionUsed(MEMREGION_ALL);
+}
+
+static enum frontend_powerstate frontend_ctr_get_powerstate(int *seconds, int *percent)
+{
+	u8 battery_percent = 0;
+	u8 charging = 0;
+	enum frontend_powerstate pwr_state = FRONTEND_POWERSTATE_NONE;
+	
+	mcuHwcGetBatteryLevel(&battery_percent);
+	*percent = battery_percent;
+	
+	/* 3ds does not support seconds of charge remaining */
+	*seconds = -1;
+	
+	PTMU_GetBatteryChargeState(&charging);
+	if (charging)
+	{
+		if (battery_percent == 100)
+		{
+			pwr_state = FRONTEND_POWERSTATE_CHARGED;
+		}
+		else
+		{
+			pwr_state = FRONTEND_POWERSTATE_CHARGING;
+		}
+	}
+	else
+	{
+		pwr_state = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+	}
+	
+	return pwr_state;
+}
+
+static void frontend_ctr_get_os(char *s, size_t len, int *major, int *minor)
+{
+	OS_VersionBin cver;
+	OS_VersionBin nver;
+	
+	strlcpy(s, "3DS OS", len);
+	Result data_invalid = osGetSystemVersionData(&nver, &cver);
+	if (data_invalid == 0)
+	{
+		*major = cver.mainver;
+		*minor = cver.minor;
+	}
+	else 
+	{
+		*major = 0;
+		*minor = 0;
+	}
+
+}
+
+static void frontend_ctr_get_name(char *s, size_t len)
+{
+   u8 device_model = 0xFF;
+   CFGU_GetSystemModel(&device_model);/*(0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL)*/
+
+   switch (device_model)
+   {
+      case 0:
+		 strlcpy(s, "Old 3DS", len);
+		 break;
+      case 1:
+		 strlcpy(s, "Old 3DS XL", len);
+		 break;
+      case 2:
+		 strlcpy(s, "New 3DS", len);
+		 break;
+	  case 3:
+		 strlcpy(s, "Old 2DS", len);
+		 break;
+      case 4:
+		 strlcpy(s, "New 3DS XL", len);
+		 break;
+      case 5:
+		 strlcpy(s, "New 2DS XL", len);
+		 break;
+
+      default:
+         strlcpy(s, "Unknown Device", len);
+         break;
+   }
 }
 
 frontend_ctx_driver_t frontend_ctx_ctr = {
@@ -412,20 +543,22 @@ frontend_ctx_driver_t frontend_ctx_ctr = {
    frontend_ctr_set_fork,
 #endif
    frontend_ctr_shutdown,
-   NULL,                         /* get_name */
-   NULL,                         /* get_os */
+   frontend_ctr_get_name,
+   frontend_ctr_get_os,
    frontend_ctr_get_rating,
    NULL,                         /* load_content */
    frontend_ctr_get_architecture,
-   NULL,                         /* get_powerstate */
+   frontend_ctr_get_powerstate,
    frontend_ctr_parse_drive_list,
-   NULL,                         /* get_mem_total */
-   NULL,                         /* get_mem_free */
+   frontend_ctr_get_mem_total,
+   frontend_ctr_get_mem_used,
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_signal_handler_state */
    NULL,                         /* set_signal_handler_state */
    NULL,                         /* destroy_signal_handler_state */
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
+   NULL,                         /* watch_path_for_changes */
+   NULL,                         /* check_for_path_changes */
    "ctr",
 };

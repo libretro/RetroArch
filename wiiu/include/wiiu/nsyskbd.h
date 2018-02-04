@@ -14,7 +14,7 @@ typedef enum _KEYState
 } KEYState;
 
 typedef enum _KBDModifier
-{   
+{
     KBD_WIIU_CTRL                = 0x0001,
     KBD_WIIU_SHIFT               = 0x0002,
     KBD_WIIU_ALT                 = 0x0004,
@@ -24,12 +24,12 @@ typedef enum _KBDModifier
 } KBDModifier;
 
 typedef struct _KBDKeyEvent
-{			 
+{
     unsigned char  channel;
-    unsigned char  scancode;    // scancode
-    KEYState  state;            // when held, value is 0x03, which is KBD_DOWN & KBD_REPEAT
-    KBDModifier modifier;       // modifier state
-    unsigned short  UTF16;	    // unicode, if any
+    unsigned char  scancode;    /* scancode */
+    KEYState  state;            /* when held, value is 0x03, which is KBD_DOWN & KBD_REPEAT */
+    KBDModifier modifier;       /* modifier state */
+    unsigned short  UTF16;	    /* unicode, if any */
 } KBDKeyEvent;
 
 char KBDSetup(void *connection_callback, void *disconnection_callback, void *key_callback);

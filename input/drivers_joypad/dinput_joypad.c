@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -23,17 +23,18 @@
 
 #include <boolean.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
 #include "../../tasks/tasks_internal.h"
-#include "../input_config.h"
-#include "../input_joypad_driver.h"
+#include "../../gfx/video_driver.h"
+#include "../input_driver.h"
 #include "../input_keymaps.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
+#include "dinput_joypad.h"
 
 struct dinput_joypad
 {
@@ -63,10 +64,35 @@ extern bool g_xinput_block_pads;
 extern int g_xinput_pad_indexes[MAX_USERS];
 extern LPDIRECTINPUT8 g_dinput_ctx;
 
+bool dinput_joypad_get_vidpid_from_xinput_index(int32_t index, int32_t *vid, int32_t *pid, int32_t *dinput_index)
+{
+   int i;
+
+   for (i = 0; i < ARRAY_SIZE(g_xinput_pad_indexes); i++)
+   {
+      if (index == g_xinput_pad_indexes[i])
+      {
+         RARCH_LOG("[DINPUT]: Found XInput pad at index %d (DINPUT index %d)\n", index, i);
+
+         if (vid)
+            *vid = g_pads[i].vid;
+
+         if (pid)
+            *pid = g_pads[i].pid;
+
+         if (dinput_index)
+            *dinput_index = i;
+
+         return true;
+      }
+   }
+
+   return false;
+}
+
 static void dinput_joypad_destroy(void)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -75,12 +101,13 @@ static void dinput_joypad_destroy(void)
          IDirectInputDevice8_Unacquire(g_pads[i].joypad);
          IDirectInputDevice8_Release(g_pads[i].joypad);
       }
-      
+
       free(g_pads[i].joy_name);
       g_pads[i].joy_name = NULL;
       free(g_pads[i].joy_friendly_name);
       g_pads[i].joy_friendly_name = NULL;
-      *settings->input.device_names[i] = '\0';
+
+      input_config_clear_device_name(i);
    }
 
    g_joypad_cnt = 0;
@@ -114,16 +141,16 @@ static bool guid_is_xinput_device(const GUID* product_guid)
    unsigned i, num_raw_devs = 0;
    PRAWINPUTDEVICELIST raw_devs = NULL;
 
-   /* Check for well known XInput device GUIDs, 
+   /* Check for well known XInput device GUIDs,
     * thereby removing the need for the IG_ check.
-    * This lets us skip RAWINPUT for popular devices. 
+    * This lets us skip RAWINPUT for popular devices.
     *
-    * Also, we need to do this for the Valve Streaming Gamepad 
+    * Also, we need to do this for the Valve Streaming Gamepad
     * because it's virtualized and doesn't show up in the device list.  */
 
    for (i = 0; i < ARRAY_SIZE(common_xinput_guids); ++i)
    {
-      if (memcmp(product_guid, &common_xinput_guids[i], sizeof(GUID)) == 0)
+      if (string_is_equal_fast(product_guid, &common_xinput_guids[i], sizeof(GUID)))
          return true;
    }
 
@@ -224,8 +251,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
    return DIENUM_CONTINUE;
 
-   g_pads[g_joypad_cnt].joy_name = strdup(inst->tszProductName);
-   g_pads[g_joypad_cnt].joy_friendly_name = strdup(inst->tszInstanceName);
+   g_pads[g_joypad_cnt].joy_name          = strdup((const char*)inst->tszProductName);
+   g_pads[g_joypad_cnt].joy_friendly_name = strdup((const char*)inst->tszInstanceName);
 
    /* there may be more useful info in the GUID so leave this here for a while */
 #if 0
@@ -238,7 +265,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 % 0x10000;
    g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 / 0x10000;
 
-   RARCH_LOG("Device #%u PID: {%04lX} VID:{%04lX}\n", g_joypad_cnt, g_pads[g_joypad_cnt].pid, g_pads[g_joypad_cnt].vid);
+   RARCH_LOG("[DINPUT]: Device #%u PID: {%04lX} VID:{%04lX}\n", g_joypad_cnt, g_pads[g_joypad_cnt].pid, g_pads[g_joypad_cnt].vid);
 
 #ifdef HAVE_XINPUT
    is_xinput_pad = g_xinput_block_pads
@@ -293,15 +320,15 @@ static bool dinput_joypad_init(void *data)
 
    for (i = 0; i < MAX_USERS; ++i)
    {
-      g_xinput_pad_indexes[i] = -1;
-      g_pads[i].joy_name = NULL;
+      g_xinput_pad_indexes[i]     = -1;
+      g_pads[i].joy_name          = NULL;
       g_pads[i].joy_friendly_name = NULL;
    }
 
-   RARCH_LOG("Enumerating DInput joypads ...\n");
+   RARCH_LOG("[DINPUT]: Enumerating joypads ...\n");
    IDirectInput8_EnumDevices(g_dinput_ctx, DI8DEVCLASS_GAMECTRL,
          enum_joypad_cb, NULL, DIEDFL_ATTACHEDONLY);
-   RARCH_LOG("Done enumerating DInput joypads ...\n");
+   RARCH_LOG("[DINPUT]: Done enumerating joypads ...\n");
    return true;
 }
 

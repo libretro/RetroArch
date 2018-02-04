@@ -1,8 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2013-2015 - Jason Fetters
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -62,36 +61,6 @@
 #define DB_CURSOR_SIZE                          0x7c9dede0U
 #define DB_CURSOR_SERIAL                        0x1b843ec5U
 
-static void database_info_build_query_add_quote(char *s, size_t len)
-{
-   strlcat(s, "\"", len);
-}
-
-static void database_info_build_query_add_bracket_open(char *s, size_t len)
-{
-   strlcat(s, "{'", len);
-}
-
-static void database_info_build_query_add_bracket_close(char *s, size_t len)
-{
-   strlcat(s, "}", len);
-}
-
-static void database_info_build_query_add_colon(char *s, size_t len)
-{
-   strlcat(s, "':", len);
-}
-
-static void database_info_build_query_add_glob_open(char *s, size_t len)
-{
-   strlcat(s, "glob('*", len);
-}
-
-static void database_info_build_query_add_glob_close(char *s, size_t len)
-{
-   strlcat(s, "*')", len);
-}
-
 int database_info_build_query_enum(char *s, size_t len,
       enum database_query_type type,
       const char *path)
@@ -99,7 +68,8 @@ int database_info_build_query_enum(char *s, size_t len,
    bool add_quotes = true;
    bool add_glob   = false;
 
-   database_info_build_query_add_bracket_open(s, len);
+   string_add_bracket_open(s, len);
+   string_add_single_quote(s, len);
 
    switch (type)
    {
@@ -170,17 +140,19 @@ int database_info_build_query_enum(char *s, size_t len,
          break;
    }
 
-   database_info_build_query_add_colon(s, len);
+   string_add_single_quote(s, len);
+   string_add_colon(s, len);
    if (add_glob)
-      database_info_build_query_add_glob_open(s, len);
+      string_add_glob_open(s, len);
    if (add_quotes)
-      database_info_build_query_add_quote(s, len);
+      string_add_quote(s, len);
    strlcat(s, path, len);
    if (add_glob)
-      database_info_build_query_add_glob_close(s, len);
+      string_add_glob_close(s, len);
    if (add_quotes)
-      database_info_build_query_add_quote(s, len);
-   database_info_build_query_add_bracket_close(s, len);
+      string_add_quote(s, len);
+
+   string_add_bracket_close(s, len);
 
 #if 0
    RARCH_LOG("query: %s\n", s);
@@ -399,10 +371,34 @@ static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
    return 0;
 }
 
-database_info_handle_t *database_info_dir_init(const char *dir,
-      enum database_type type)
+static bool type_is_prioritized(enum msg_file_type type)
 {
-   unsigned i;
+   return (type == FILE_TYPE_CUE || type == FILE_TYPE_GDI);
+}
+
+static enum msg_file_type file_type(const char *path)
+{
+   return msg_hash_to_file_type(msg_hash_calculate(path_get_extension(path)));
+}
+
+static int dir_entry_compare(const void *left, const void *right)
+{
+   const struct string_list_elem *le = (const struct string_list_elem*)left;
+   const struct string_list_elem *re = (const struct string_list_elem*)right;
+   bool                            l = type_is_prioritized(file_type(le->data));
+   bool                            r = type_is_prioritized(file_type(re->data));
+
+   return (int) r - (int) l;
+}
+
+static void dir_list_prioritize(struct string_list *list)
+{
+   qsort(list->elems, list->size, sizeof(*list->elems), dir_entry_compare);
+}
+
+database_info_handle_t *database_info_dir_init(const char *dir,
+      enum database_type type, retro_task_t *task)
+{
    database_info_handle_t     *db  = (database_info_handle_t*)
       calloc(1, sizeof(*db));
 
@@ -414,52 +410,11 @@ database_info_handle_t *database_info_dir_init(const char *dir,
    if (!db->list)
       goto error;
 
+   dir_list_prioritize(db->list);
+
    db->list_ptr       = 0;
    db->status         = DATABASE_STATUS_ITERATE;
    db->type           = type;
-
-   if (db->list->size > 0)
-   {
-      for (i = 0; i < db->list->size; i++)
-      {
-         const char *path = db->list->elems[i].data;
-
-         if (path_is_compressed_file(path) && !path_contains_compressed_file(path))
-         {
-            struct string_list *archive_list = path_is_compressed_file(path) ?
-                  file_archive_get_file_list(path, NULL) : NULL;
-
-            if (archive_list && archive_list->size > 0)
-            {
-               unsigned i;
-
-               for (i = 0; i < archive_list->size; i++)
-               {
-                  char new_path[PATH_MAX_LENGTH];
-                  size_t path_len = strlen(path);
-
-                  new_path[0] = '\0';
-
-                  strlcpy(new_path, path, sizeof(new_path));
-
-                  if (path_len + strlen(archive_list->elems[i].data)
-                         + 1 < PATH_MAX_LENGTH)
-                  {
-                     new_path[path_len] = '#';
-                     strlcpy(new_path + path_len + 1,
-                                archive_list->elems[i].data,
-                                sizeof(new_path) - path_len);
-                  }
-
-                  string_list_append(db->list, new_path,
-                                        archive_list->elems[i].attr);
-               }
-
-               string_list_free(archive_list);
-            }
-         }
-      }
-   }
 
    return db;
 
@@ -470,14 +425,16 @@ error:
 }
 
 database_info_handle_t *database_info_file_init(const char *path,
-      enum database_type type)
+      enum database_type type, retro_task_t *task)
 {
-   union string_list_elem_attr attr = {0};
+   union string_list_elem_attr attr;
    database_info_handle_t      *db  = (database_info_handle_t*)
       calloc(1, sizeof(*db));
 
    if (!db)
       return NULL;
+
+   attr.i             = 0;
 
    db->list           = string_list_new();
 
@@ -485,41 +442,6 @@ database_info_handle_t *database_info_file_init(const char *path,
       goto error;
 
    string_list_append(db->list, path, attr);
-
-   if (path_is_compressed_file(path))
-   {
-      struct string_list *archive_list =path_is_compressed_file(path) ?
-            file_archive_get_file_list(path, NULL) : NULL;
-
-      if (archive_list && archive_list->size > 0)
-      {
-         unsigned i;
-
-         for (i = 0; i < archive_list->size; i++)
-         {
-            char new_path[PATH_MAX_LENGTH];
-            size_t path_len = strlen(path);
-
-            new_path[0] = '\0';
-
-            strlcpy(new_path, path, sizeof(new_path));
-
-            if (path_len + strlen(archive_list->elems[i].data)
-                   + 1 < PATH_MAX_LENGTH)
-            {
-               new_path[path_len] = '#';
-               strlcpy(new_path + path_len + 1,
-                          archive_list->elems[i].data,
-                          sizeof(new_path) - path_len);
-            }
-
-            string_list_append(db->list, new_path,
-                                  archive_list->elems[i].attr);
-         }
-
-         string_list_free(archive_list);
-      }
-   }
 
    db->list_ptr       = 0;
    db->status         = DATABASE_STATUS_ITERATE;
@@ -558,10 +480,13 @@ database_info_list_t *database_info_list_new(
       goto end;
 
    database_info_list = (database_info_list_t*)
-      calloc(1, sizeof(*database_info_list));
+      malloc(sizeof(*database_info_list));
 
    if (!database_info_list)
       goto end;
+
+   database_info_list->count  = 0;
+   database_info_list->list   = NULL;
 
    while (ret != -1)
    {

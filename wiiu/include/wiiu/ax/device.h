@@ -11,7 +11,7 @@ typedef void(*AXAuxCallback)(void*, void*);
 
 enum AX_DEVICE_MODE
 {
-   // Unknown
+   /* Unknown */
    AX_DEVICE_MODE_UNKNOWN
 };
 typedef uint32_t AXDeviceMode;

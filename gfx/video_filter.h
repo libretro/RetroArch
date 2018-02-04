@@ -20,12 +20,16 @@
 #include <stddef.h>
 
 #include <libretro.h>
+#include <retro_common_api.h>
 
 #define RARCH_SOFTFILTER_THREADS_AUTO 0
 
+RETRO_BEGIN_DECLS
+
 typedef struct rarch_softfilter rarch_softfilter_t;
 
-rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
+rarch_softfilter_t *rarch_softfilter_new(
+      const char *filter_path,
       unsigned threads,
       enum retro_pixel_format in_pixel_format,
       unsigned max_width, unsigned max_height);
@@ -48,5 +52,6 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
 
 const char *rarch_softfilter_get_name(void *data);
 
-#endif
+RETRO_END_DECLS
 
+#endif

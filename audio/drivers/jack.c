@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -13,18 +13,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <assert.h>
 
 #include <jack/jack.h>
 #include <jack/types.h>
 #include <jack/ringbuffer.h>
 
 #include <boolean.h>
-#include <retro_assert.h>
 #include <rthreads/rthreads.h>
 
 #include "../audio_driver.h"
@@ -75,7 +73,6 @@ static int process_cb(jack_nframes_t nframes, void *data)
       jack_nframes_t f;
       jack_default_audio_sample_t *out = (jack_default_audio_sample_t*)jack_port_get_buffer(jd->ports[i], nframes);
 
-      retro_assert(out);
       jack_ringbuffer_read(jd->buffer[i], (char*)out, min_avail * sizeof(jack_default_audio_sample_t));
 
       for (f = min_avail; f < nframes; f++)
@@ -106,7 +103,7 @@ static int parse_ports(char **dest_ports, const char **jports)
    char           *save   = NULL;
    int           parsed   = 0;
    settings_t *settings   = config_get_ptr();
-   char *audio_device_cpy = strdup(settings->audio.device);
+   char *audio_device_cpy = strdup(settings->arrays.audio_device);
    const char      *con   = strtok_r(audio_device_cpy, ",", &save);
 
    if (con)
@@ -136,12 +133,12 @@ static size_t find_buffersize(jack_t *jd, int latency, unsigned out_rate)
          jack_latency = range.max;
    }
 
-   RARCH_LOG("JACK: Jack latency is %d frames.\n", jack_latency);
+   RARCH_LOG("[JACK]: Jack latency is %d frames.\n", jack_latency);
 
-   buffer_frames = frames - jack_latency;
+   buffer_frames     = frames - jack_latency;
    min_buffer_frames = jack_get_buffer_size(jd->client) * 2;
 
-   RARCH_LOG("JACK: Minimum buffer size is %d frames.\n", min_buffer_frames);
+   RARCH_LOG("[JACK]: Minimum buffer size is %d frames.\n", min_buffer_frames);
 
    if (buffer_frames < min_buffer_frames)
       buffer_frames = min_buffer_frames;
@@ -181,27 +178,27 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency,
    jd->ports[1] = jack_port_register(jd->client, "right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
    if (jd->ports[0] == NULL || jd->ports[1] == NULL)
    {
-      RARCH_ERR("Failed to register ports.\n");
+      RARCH_ERR("[JACK]: Failed to register ports.\n");
       goto error;
    }
-   
+
    jports = jack_get_ports(jd->client, NULL, NULL, JackPortIsPhysical | JackPortIsInput);
    if (jports == NULL)
    {
-      RARCH_ERR("Failed to get ports.\n");
+      RARCH_ERR("[JACK]: Failed to get ports.\n");
       goto error;
    }
 
-   bufsize = find_buffersize(jd, latency, *new_rate);
+   bufsize         = find_buffersize(jd, latency, *new_rate);
    jd->buffer_size = bufsize;
 
-   RARCH_LOG("JACK: Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
+   RARCH_LOG("[JACK]: Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
    for (i = 0; i < 2; i++)
    {
       jd->buffer[i] = jack_ringbuffer_create(bufsize);
       if (jd->buffer[i] == NULL)
       {
-         RARCH_ERR("Failed to create buffers.\n");
+         RARCH_ERR("[JACK]: Failed to create buffers.\n");
          goto error;
       }
    }
@@ -210,7 +207,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency,
 
    if (jack_activate(jd->client) < 0)
    {
-      RARCH_ERR("Failed to activate Jack...\n");
+      RARCH_ERR("[JACK]: Failed to activate Jack...\n");
       goto error;
    }
 
@@ -218,14 +215,14 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency,
    {
       if (jack_connect(jd->client, jack_port_name(jd->ports[i]), dest_ports[i]))
       {
-         RARCH_ERR("Failed to connect to Jack port.\n");
+         RARCH_ERR("[JACK]: Failed to connect to Jack port.\n");
          goto error;
       }
    }
 
    for (i = 0; i < parsed; i++)
       free(dest_ports[i]);
-  
+
    jack_free(jports);
    return jd;
 
@@ -292,8 +289,7 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
    return written * sizeof(float) * 2;
 }
 
-static ssize_t ja_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t ja_write(void *data, const void *buf, size_t size)
 {
    jack_t *jd = (jack_t*)data;
 

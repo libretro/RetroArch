@@ -32,6 +32,7 @@
 
 #include <retro_assert.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 
 #include "libretrodb.h"
 
@@ -192,7 +193,7 @@ static dat_converter_bt_node_t* dat_converter_bt_node_insert(
       {
          int i;
 
-         retro_assert(list->values[(*node)->index].map.value.list->type 
+         retro_assert(list->values[(*node)->index].map.value.list->type
                == map->value.list->type);
 
          for (i = 0; i < map->value.list->count; i++)
@@ -241,7 +242,7 @@ static void dat_converter_list_append(dat_converter_list_t* dst, void* item)
       else
       {
          map->hash = djb2_calculate(map->key);
-         dat_converter_bt_node_t* new_node = 
+         dat_converter_bt_node_t* new_node =
             dat_converter_bt_node_insert(dst, &dst->bt_root, map);
 
          if (!new_node)
@@ -268,7 +269,7 @@ static void dat_converter_list_append(dat_converter_list_t* dst, void* item)
 static dat_converter_list_t* dat_converter_lexer(
       char* src, const char* dat_path)
 {
-   dat_converter_list_t* token_list = 
+   dat_converter_list_t* token_list =
       dat_converter_list_create(DAT_CONVERTER_TOKEN_LIST);
    dat_converter_token_t token      = {NULL, 1, 1, dat_path};
    bool quoted_token                = false;
@@ -332,7 +333,7 @@ static dat_converter_list_t* dat_converter_lexer(
 static dat_converter_list_t* dat_parser_table(
       dat_converter_list_item_t** start_token)
 {
-   dat_converter_list_t* parsed_table = 
+   dat_converter_list_t* parsed_table =
       dat_converter_list_create(DAT_CONVERTER_MAP_LIST);
    dat_converter_map_t map            = {0};
    dat_converter_list_item_t* current = *start_token;
@@ -527,23 +528,27 @@ static dat_converter_list_t* dat_converter_parser(
                if (match_key)
                {
                   map.key = dat_converter_get_match(map.value.list, match_key);
+                  // If the key is not found, report, and mark it to be skipped.
                   if (!map.key)
                   {
-                     printf("missing match key '");
+                     printf("Missing match key '");
                      while (match_key->next)
                      {
                         printf("%s.", match_key->value);
                         match_key = match_key->next;
                      }
-                     printf("%s' in one of the entries\n", match_key->value);
-                     dat_converter_exit(1);
+                     printf("%s' on line %d\n", match_key->value, current->token.line_no);
+                     skip = true;
                   }
                }
                else
                   map.key = NULL;
 
-               dat_converter_list_append(target, &map);
-               skip = true;
+               // If we are still not to skip the entry, append it to the list.
+               if (!skip) {
+                  dat_converter_list_append(target, &map);
+                  skip = true;
+               }
             }
             else
                dat_converter_list_free(map.value.list);
@@ -619,7 +624,7 @@ dat_converter_rdb_mappings_t rdb_mappings[] =
    {"rom.serial",     "serial",         DAT_CONVERTER_RDB_TYPE_BINARY}
 };
 
-dat_converter_match_key_t* rdb_mappings_mk[(sizeof(rdb_mappings) 
+dat_converter_match_key_t* rdb_mappings_mk[(sizeof(rdb_mappings)
       / sizeof(*rdb_mappings))] = {0};
 
 static void dat_converter_value_provider_init(void)
@@ -695,7 +700,7 @@ static int dat_converter_value_provider(
       case DAT_CONVERTER_RDB_TYPE_HEX:
          current->value.type = RDT_BINARY;
          current->value.val.binary.len  = strlen(value) / 2;
-         current->value.val.binary.buff = 
+         current->value.val.binary.buff =
             malloc(current->value.val.binary.len);
          {
             const char* hex_char = value;
@@ -800,7 +805,9 @@ int main(int argc, char** argv)
       dat_buffer++;
    }
 
-   rdb_file = filestream_open(rdb_path, RFILE_MODE_WRITE, -1);
+   rdb_file = filestream_open(rdb_path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!rdb_file)
    {
@@ -812,11 +819,11 @@ int main(int argc, char** argv)
       dat_converter_exit(1);
    }
 
-   dat_converter_list_item_t* current_item = 
+   dat_converter_list_item_t* current_item =
       &dat_parser_list->values[dat_parser_list->count];
 
    dat_converter_value_provider_init();
-   libretrodb_create(rdb_file, 
+   libretrodb_create(rdb_file,
          (libretrodb_value_provider)&dat_converter_value_provider,
          &current_item);
    dat_converter_value_provider_free();
@@ -833,4 +840,3 @@ int main(int argc, char** argv)
 
    return 0;
 }
-

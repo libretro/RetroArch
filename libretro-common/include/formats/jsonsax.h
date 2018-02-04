@@ -25,6 +25,11 @@
 
 #include <stddef.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
+
 enum
 {
   JSONSAX_OK = 0,
@@ -60,5 +65,7 @@ typedef struct
 jsonsax_handlers_t;
 
 int jsonsax_parse( const char* json, const jsonsax_handlers_t* handlers, void* userdata );
+
+RETRO_END_DECLS
 
 #endif /* __LIBRETRO_SDK_FORMAT_JSONSAX_H__ */

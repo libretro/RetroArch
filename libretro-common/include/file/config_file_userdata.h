@@ -27,6 +27,10 @@
 
 #include <file/config_file.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 struct config_file_userdata
 {
    config_file_t *conf;
@@ -51,5 +55,7 @@ int config_userdata_get_string(void *userdata, const char *key_str,
       char **output, const char *default_output);
 
 void config_userdata_free(void *ptr);
+
+RETRO_END_DECLS
 
 #endif

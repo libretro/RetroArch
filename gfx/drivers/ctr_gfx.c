@@ -20,6 +20,7 @@
 #include <3ds.h>
 
 #include <retro_inline.h>
+#include <retro_math.h>
 #include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H
@@ -40,7 +41,6 @@
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-#include "../../performance_counters.h"
 
 #include "../common/ctr_common.h"
 #ifndef HAVE_THREADS
@@ -101,9 +101,9 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
    }
    else if (ctr->rotation == 1) /* 90° */
    {
-      ctr->frame_coords->x1 = ctr->vp.x;
+      ctr->frame_coords->x0 = ctr->vp.x;
       ctr->frame_coords->y0 = ctr->vp.y;
-      ctr->frame_coords->x0 = ctr->vp.x + ctr->vp.width;
+      ctr->frame_coords->x1 = ctr->vp.x + ctr->vp.width;
       ctr->frame_coords->y1 = ctr->vp.y + ctr->vp.height;
    }
    else if (ctr->rotation == 2) /* 180° */
@@ -115,15 +115,15 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
    }
    else /* 270° */
    {
-      ctr->frame_coords->x0 = ctr->vp.x;
+      ctr->frame_coords->x1 = ctr->vp.x;
       ctr->frame_coords->y1 = ctr->vp.y;
-      ctr->frame_coords->x1 = ctr->vp.x + ctr->vp.width;
+      ctr->frame_coords->x0 = ctr->vp.x + ctr->vp.width;
       ctr->frame_coords->y0 = ctr->vp.y + ctr->vp.height;
    }
 }
 
 
-static void ctr_update_viewport(ctr_video_t* ctr)
+static void ctr_update_viewport(ctr_video_t* ctr, video_frame_info_t *video_info)
 {
    int x                = 0;
    int y                = 0;
@@ -135,7 +135,7 @@ static void ctr_update_viewport(ctr_video_t* ctr)
    if(ctr->rotation & 0x1)
       desired_aspect = 1.0 / desired_aspect;
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
    {
       video_viewport_get_scaled_integer(&ctr->vp, ctr->vp.full_width,
             ctr->vp.full_height, desired_aspect, ctr->keep_aspect);
@@ -143,17 +143,12 @@ static void ctr_update_viewport(ctr_video_t* ctr)
    else if (ctr->keep_aspect)
    {
 #if defined(HAVE_MENU)
-      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         struct video_viewport *custom = video_viewport_get_custom();
-
-         if (custom)
-         {
-            x      = custom->x;
-            y      = custom->y;
-            width  = custom->width;
-            height = custom->height;
-         }
+         x      = video_info->custom_vp_x;
+         y      = video_info->custom_vp_y;
+         width  = video_info->custom_vp_width;
+         height = video_info->custom_vp_height;
       }
       else
 #endif
@@ -243,7 +238,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
                                CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 0 |
                                CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 4,
                                sizeof(ctr_vertex_t));
-      GPUCMD_Finalize();
+      GPU_Finalize();
       ctrGuFlushAndRun(true);
       gspWaitForEvent(GSPGPU_EVENT_P3D, false);
       ctr->p3d_event_pending = false;
@@ -412,7 +407,7 @@ static void* ctr_init(const video_info_t* video,
                             CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 0 |
                             CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 4,
                             sizeof(ctr_vertex_t));
-   GPUCMD_Finalize();
+   GPU_Finalize();
    ctrGuFlushAndRun(true);
 
    ctr->p3d_event_pending = true;
@@ -421,7 +416,7 @@ static void* ctr_init(const video_info_t* video,
    if (input && input_data)
    {
       settings_t *settings = config_get_ptr();
-      ctrinput             = input_ctr.init(settings->input.joypad_driver);
+      ctrinput             = input_ctr.init(settings->arrays.input_joypad_driver);
       *input               = ctrinput ? &input_ctr : NULL;
       *input_data          = ctrinput;
    }
@@ -441,7 +436,9 @@ static void* ctr_init(const video_info_t* video,
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
    aptHook(&ctr->lcd_aptHook, ctr_lcd_aptHook, ctr);
 
-   font_driver_init_osd(ctr, false, FONT_DRIVER_RENDER_CTR);
+   font_driver_init_osd(ctr, false,
+         video->is_threaded,
+         FONT_DRIVER_RENDER_CTR);
 
    ctr->msg_rendering_enabled = false;
    ctr->menu_texture_frame_enable = false;
@@ -472,7 +469,6 @@ static bool ctr_frame(void* data, const void* frame,
    static float        fps = 0.0;
    static int total_frames = 0;
    static int       frames = 0;
-   static struct retro_perf_counter ctrframe_f = {0};
 
    extern bool select_pressed;
 
@@ -531,14 +527,14 @@ static bool ctr_frame(void* data, const void* frame,
    }
    frames++;
 #ifndef HAVE_THREADS
-   if(task_queue_ctl(TASK_QUEUE_CTL_FIND, &ctr_tasks_finder_data))
+   if(task_queue_find(&ctr_tasks_finder_data))
    {
 #if 0
       ctr->vsync_event_pending = true;
 #endif
       while(ctr->vsync_event_pending)
       {
-         task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+         task_queue_check();
          svcSleepThread(0);
 #if 0
          aptMainLoop();
@@ -612,11 +608,8 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
    fflush(stdout);
 
-   performance_counter_init(ctrframe_f, "ctrframe_f");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, ctrframe_f);
-
    if (ctr->should_resize)
-      ctr_update_viewport(ctr);
+      ctr_update_viewport(ctr, video_info);
 
    ctrGuSetMemoryFill(true, (u32*)ctr->drawbuffers.top.left, 0x00000000,
                     (u32*)ctr->drawbuffers.top.left + 2 * CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT,
@@ -786,7 +779,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
 
    GPU_FinishDrawing();
-   GPUCMD_Finalize();
+   GPU_Finalize();
    ctrGuFlushAndRun(true);
 
    ctrGuDisplayTransfer(true, ctr->drawbuffers.top.left,
@@ -833,7 +826,7 @@ static bool ctr_frame(void* data, const void* frame,
    topFramebufferInfo.unk       = 0x00000000;
 
    u8* framebufferInfoHeader    = gfxSharedMemory+0x200+gfxThreadID*0x80;
-	GSPGPU_FramebufferInfo* 
+	GSPGPU_FramebufferInfo*
       framebufferInfo           = (GSPGPU_FramebufferInfo*)&framebufferInfoHeader[0x4];
 	framebufferInfoHeader[0x0]  ^= 1;
 	framebufferInfo[framebufferInfoHeader[0x0]] = topFramebufferInfo;
@@ -842,7 +835,6 @@ static bool ctr_frame(void* data, const void* frame,
    ctr->current_buffer_top     ^= 1;
    ctr->p3d_event_pending       = true;
    ctr->ppf_event_pending       = true;
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, ctrframe_f);
 
    return true;
 }
@@ -871,12 +863,6 @@ static bool ctr_suppress_screensaver(void* data, bool enable)
 {
    (void)data;
    (void)enable;
-   return false;
-}
-
-static bool ctr_has_windowed(void* data)
-{
-   (void)data;
    return false;
 }
 
@@ -1122,38 +1108,39 @@ static void ctr_unload_texture(void *data, uintptr_t handle)
    free(texture);
 }
 
-static void ctr_set_osd_msg(void *data, const char *msg,
+static void ctr_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
-   video_frame_info_t video_info;
    ctr_video_t* ctr = (ctr_video_t*)data;
 
-   video_driver_build_info(&video_info);
-
    if (ctr && ctr->msg_rendering_enabled)
-      font_driver_render_msg(&video_info, font, msg, params);
+      font_driver_render_msg(video_info, font, msg, params);
 }
 
 static const video_poke_interface_t ctr_poke_interface = {
+   NULL,                                  /* set_coords */
+   NULL,                                  /* set_mvp    */
    ctr_load_texture,
    ctr_unload_texture,
    NULL,
    ctr_set_filtering,
-   NULL, /* get_video_output_size */
-   NULL, /* get_video_output_prev */
-   NULL, /* get_video_output_next */
-   NULL, /* get_current_framebuffer */
+   NULL,                                  /* get_video_output_size */
+   NULL,                                  /* get_video_output_prev */
+   NULL,                                  /* get_video_output_next */
+   NULL,                                  /* get_current_framebuffer */
    NULL,
    ctr_set_aspect_ratio,
    ctr_apply_state_changes,
-#ifdef HAVE_MENU
    ctr_set_texture_frame,
    ctr_set_texture_enable,
    ctr_set_osd_msg,
-#endif
-   NULL,
-   NULL,
-   NULL
+   NULL,                   /* show_mouse */
+   NULL,                   /* grab_mouse_toggle */
+   NULL,                   /* get_current_shader */
+   NULL,                   /* get_current_software_framebuffer */
+   NULL                    /* get_hw_render_interface */
 };
 
 static void ctr_get_poke_interface(void* data,
@@ -1188,7 +1175,7 @@ video_driver_t video_ctr =
    ctr_alive,
    ctr_focus,
    ctr_suppress_screensaver,
-   ctr_has_windowed,
+   NULL, /* has_windowed */
    ctr_set_shader,
    ctr_free,
    "ctr",

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -77,7 +77,7 @@ static void alsa_worker_thread(void *data)
 
       frames = snd_pcm_writei(alsa->pcm, buf, alsa->period_frames);
 
-      if (frames == -EPIPE || frames == -EINTR || 
+      if (frames == -EPIPE || frames == -EINTR ||
             frames == -ESTRPIPE)
       {
          if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
@@ -192,7 +192,7 @@ static void *alsa_thread_init(const char *device,
 
    TRY_ALSA(snd_pcm_hw_params(alsa->pcm, params));
 
-   /* Shouldn't have to bother with this, 
+   /* Shouldn't have to bother with this,
     * but some drivers are apparently broken. */
    if (snd_pcm_hw_params_get_period_size(params, &alsa->period_frames, NULL))
       snd_pcm_hw_params_get_period_size_min(
@@ -243,8 +243,7 @@ error:
    return NULL;
 }
 
-static ssize_t alsa_thread_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t alsa_thread_write(void *data, const void *buf, size_t size)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)data;
 

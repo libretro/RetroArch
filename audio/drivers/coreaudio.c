@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2014 - Chris Moeller
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -94,13 +94,11 @@ static OSStatus audio_write_cb(void *userdata,
    (void)bus_number;
    (void)number_frames;
 
-   if (!io_data)
-      return noErr;
-   if (io_data->mNumberBuffers != 1)
+   if (!io_data || io_data->mNumberBuffers != 1)
       return noErr;
 
    write_avail = io_data->mBuffers[0].mDataByteSize;
-   outbuf = io_data->mBuffers[0].mData;
+   outbuf      = io_data->mBuffers[0].mData;
 
    slock_lock(dev->lock);
 
@@ -114,7 +112,7 @@ static OSStatus audio_write_cb(void *userdata,
       slock_unlock(dev->lock);
 
       /* Technically possible to deadlock without. */
-      scond_signal(dev->cond); 
+      scond_signal(dev->cond);
       return noErr;
    }
 
@@ -171,10 +169,10 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
       size           = 1024;
 
       if (AudioObjectGetPropertyData(devices[i],
-               &propaddr, 0, 0, &size, device_name) == noErr 
+               &propaddr, 0, 0, &size, device_name) == noErr
             && string_is_equal(device_name, device))
       {
-         AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice, 
+         AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice,
                kAudioUnitScope_Global, 0, &devices[i], sizeof(AudioDeviceID));
          goto done;
       }
@@ -246,7 +244,7 @@ static void *coreaudio_init(const char *device,
 #endif
    if (comp == NULL)
       goto error;
-   
+
 #if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
    component_unavailable = (OpenAComponent(comp, &dev->dev) != noErr);
 #else
@@ -261,7 +259,7 @@ static void *coreaudio_init(const char *device,
       choose_output_device(dev, device);
 #endif
 
-   dev->dev_alive = true;
+   dev->dev_alive                = true;
 
    /* Set audio format */
    stream_desc.mSampleRate       = rate;
@@ -271,17 +269,17 @@ static void *coreaudio_init(const char *device,
    stream_desc.mBytesPerFrame    = 2 * sizeof(float);
    stream_desc.mFramesPerPacket  = 1;
    stream_desc.mFormatID         = kAudioFormatLinearPCM;
-   stream_desc.mFormatFlags      = kAudioFormatFlagIsFloat | 
-      kAudioFormatFlagIsPacked | (is_little_endian() ? 
+   stream_desc.mFormatFlags      = kAudioFormatFlagIsFloat |
+      kAudioFormatFlagIsPacked | (is_little_endian() ?
             0 : kAudioFormatFlagIsBigEndian);
-   
+
    if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
          kAudioUnitScope_Input, 0, &stream_desc, sizeof(stream_desc)) != noErr)
       goto error;
-   
+
    /* Check returned audio format. */
    i_size = sizeof(real_desc);
-   if (AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat, 
+   if (AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
             kAudioUnitScope_Input, 0, &real_desc, &i_size) != noErr)
       goto error;
 
@@ -317,11 +315,11 @@ static void *coreaudio_init(const char *device,
    if (AudioUnitInitialize(dev->dev) != noErr)
       goto error;
 
-   fifo_size = (latency * (*new_rate)) / 1000;
-   fifo_size *= 2 * sizeof(float);
-   dev->buffer_size = fifo_size;
+   fifo_size         = (latency * (*new_rate)) / 1000;
+   fifo_size        *= 2 * sizeof(float);
+   dev->buffer_size  = fifo_size;
 
-   dev->buffer = fifo_new(fifo_size);
+   dev->buffer       = fifo_new(fifo_size);
    if (!dev->buffer)
       goto error;
 
@@ -339,8 +337,7 @@ error:
    return NULL;
 }
 
-static ssize_t coreaudio_write(void *data, const void *buf_, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
 {
    coreaudio_t *dev   = (coreaudio_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -84,7 +84,7 @@ typedef struct record_driver
 {
    void *(*init)(const struct ffemu_params *params);
    void  (*free)(void *data);
-   bool  (*push_video)(void *data,const struct ffemu_video_data *video_data);
+   bool  (*push_video)(void *data, const struct ffemu_video_data *video_data);
    bool  (*push_audio)(void *data, const struct ffemu_audio_data *audio_data);
    bool  (*finalize)(void *data);
    const char *ident;

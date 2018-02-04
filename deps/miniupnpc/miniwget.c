@@ -37,7 +37,9 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <netdb.h>
+#ifndef closesocket
 #define closesocket close
+#endif
 #include <strings.h>
 #endif /* #else _WIN32 */
 #ifdef __GNU__

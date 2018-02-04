@@ -28,6 +28,11 @@
 
 #include <boolean.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
+
 struct net_ifinfo_entry
 {
    char *name;
@@ -38,12 +43,15 @@ struct net_ifinfo
 {
    struct net_ifinfo_entry *entries;
    size_t size;
-}; 
+};
 
 typedef struct net_ifinfo net_ifinfo_t;
 
 void net_ifinfo_free(net_ifinfo_t *list);
 
 bool net_ifinfo_new(net_ifinfo_t *list);
+
+RETRO_END_DECLS
+
 
 #endif

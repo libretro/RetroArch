@@ -25,9 +25,14 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
-#include "glslang_util.hpp"
-#include "glslang.hpp"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#include "glslang_util.h"
+#if defined(HAVE_GLSLANG) && !defined(HAVE_GRIFFIN)
+#include "glslang.hpp"
+#endif
 #include "../../verbosity.h"
 
 using namespace std;
@@ -363,6 +368,8 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
    return true;
 }
 
+
+#if defined(HAVE_GLSLANG) && !defined(HAVE_GRIFFIN)
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
    vector<string> lines;
@@ -391,4 +398,9 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 
    return true;
 }
-
+#else
+bool glslang_compile_shader(const char *shader_path, glslang_output *output)
+{
+   return false;
+}
+#endif

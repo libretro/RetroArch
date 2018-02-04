@@ -9,21 +9,21 @@ BUILD_3DS               = 1
 BUILD_CIA               = 1
 LIBCTRU_NO_DEPRECATION  = 1
 
-APP_TITLE            = Retroarch 3DS
-APP_DESCRIPTION      = Retroarch 3DS
+APP_TITLE            = RetroArch 3DS
+APP_DESCRIPTION      = RetroArch 3DS
 APP_AUTHOR           = Team Libretro
 APP_PRODUCT_CODE     = RETROARCH-3DS
 APP_UNIQUE_ID        = 0xBAC00
-APP_ICON             = ctr/assets/default.png
-APP_BANNER           = ctr/assets/libretro_banner.png
-APP_AUDIO            = ctr/assets/silent.wav
-APP_RSF              = ctr/tools/template.rsf
+APP_ICON             = pkg/ctr/assets/default.png
+APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+APP_AUDIO            = pkg/ctr/assets/silent.wav
+APP_RSF              = pkg/ctr/tools/template.rsf
 APP_SYSTEM_MODE      = 64MB
 APP_SYSTEM_MODE_EXT  = 124MB
 APP_BIG_TEXT_SECTION = 0
 APP_USE_SVCHAX       = 0
 
-include ctr/Makefile.cores
+include pkg/ctr/Makefile.cores
 
 OBJ :=
 OBJ += gfx/drivers/ctr_shaders/ctr_sprite.o
@@ -46,6 +46,9 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
 	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_XMB -DHAVE_MATERIALUI -DHAVE_LIBRETRODB -DHAVE_CC_RESAMPLER
 	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB
+	DEFINES += -DHAVE_NETWORKING -DHAVE_CHEEVOS -DHAVE_SOCKET_LEGACY -DHAVE_THREADS
+	#-DHAVE_SSL -DMBEDTLS_SSL_DEBUG_ALL
+	#ssl is currently incompatible with griffin due to use of the "static" flag on repeating functions that will conflict when included in one file
 else
 	HAVE_CC_RESAMPLER = 1
 	HAVE_MENU_COMMON = 1
@@ -61,44 +64,23 @@ else
 	HAVE_ZARCH = 0
 	HAVE_MATERIALUI = 1
 	HAVE_XMB = 1
+	HAVE_STATIC_VIDEO_FILTERS = 1
+	HAVE_STATIC_AUDIO_FILTERS = 1
+	HAVE_NETWORKING = 1
+	HAVE_CHEEVOS = 1
+	HAVE_SOCKET_LEGACY = 1
+	HAVE_THREADS = 1
+	HAVE_SSL = 1
 
 	include Makefile.common
 	BLACKLIST :=
 	BLACKLIST += input/input_overlay.o
 	BLACKLIST += tasks/task_overlay.o
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
-
-	OBJ += gfx/drivers/ctr_gfx.o
-	OBJ += gfx/drivers_font/ctr_font.o
-	OBJ += menu/drivers_display/menu_display_ctr.o
-	OBJ += input/drivers/ctr_input.o
-	OBJ += input/drivers_joypad/ctr_joypad.o
-	OBJ += audio/drivers/ctr_csnd_audio.o
-	OBJ += audio/drivers/ctr_dsp_audio.o
-	OBJ += frontend/drivers/platform_ctr.o
-	OBJ += gfx/video_filters/2xsai.o
-	OBJ += gfx/video_filters/super2xsai.o
-	OBJ += gfx/video_filters/supereagle.o
-	OBJ += gfx/video_filters/2xbr.o
-	OBJ += gfx/video_filters/darken.o
-	OBJ += gfx/video_filters/epx.o
-	OBJ += gfx/video_filters/scale2x.o
-	OBJ += gfx/video_filters/blargg_ntsc_snes.o
-	OBJ += gfx/video_filters/lq2x.o
-	OBJ += gfx/video_filters/phosphor2x.o
-	OBJ += libretro-common/audio/dsp_filters/echo.o
-	OBJ += libretro-common/audio/dsp_filters/eq.o
-	OBJ += libretro-common/audio/dsp_filters/chorus.o
-	OBJ += libretro-common/audio/dsp_filters/iir.o
-	OBJ += libretro-common/audio/dsp_filters/panning.o
-	OBJ += libretro-common/audio/dsp_filters/phaser.o
-	OBJ += libretro-common/audio/dsp_filters/reverb.o
-	OBJ += libretro-common/audio/dsp_filters/wahwah.o
 endif
 
-
 ifeq ($(strip $(DEVKITPRO)),)
-$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitpro")
+	$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitpro")
 endif
 
 ifeq ($(strip $(CTRULIB)),)
@@ -142,9 +124,9 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END := -Wl,--no-whole-archive
 endif
 
-CFLAGS += -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include
+CFLAGS += -I. -Ideps -Ideps/libz -Ideps/7zip -Ideps/stb -Ilibretro-common/include
 
-CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
+CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
@@ -155,19 +137,25 @@ LDFLAGS  +=	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 CFLAGS   += -std=gnu99 -ffast-math
 
 
-LIBS	:= $(WHOLE_START) -lretro_ctr $(WHOLE_END) -lctru -lm
+LIBS	:= $(WHOLE_START) -lretro_ctr $(WHOLE_END) -lm
+
+ifeq ($(DEBUG), 1)
+	LIBS	+= -lctrud
+else
+	LIBS	+= -lctru
+endif
 
 
 ifeq ($(BUILD_3DSX), 1)
-TARGET_3DSX := $(TARGET).3dsx $(TARGET).smdh
+	TARGET_3DSX := $(TARGET).3dsx $(TARGET).smdh
 endif
 
 ifeq ($(BUILD_3DS), 1)
-TARGET_3DS := $(TARGET).3ds
+	TARGET_3DS := $(TARGET).3ds
 endif
 
 ifeq ($(BUILD_CIA), 1)
-TARGET_CIA := $(TARGET).cia
+	TARGET_CIA := $(TARGET).cia
 endif
 
 .PHONY: $(BUILD) clean all
@@ -178,7 +166,7 @@ $(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA) $(TARGET).core
 $(TARGET).3dsx: $(TARGET).elf
 $(TARGET).elf: $(OBJ) libretro_ctr.a
 
-PREFIX		:=	$(DEVKITPRO)/devkitARM/bin/arm-none-eabi-
+PREFIX		:=	$(DEVKITARM)/bin/arm-none-eabi-
 
 CC      := $(PREFIX)gcc
 CXX     := $(PREFIX)g++
@@ -189,25 +177,38 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := $(CXX)
 
-ifneq ($(findstring Linux,$(shell uname -a)),)
-	MAKEROM    = ctr/tools/makerom-linux
-	BANNERTOOL = ctr/tools/bannertool-linux
-else ifneq ($(findstring Darwin,$(shell uname -a)),)
-	MAKEROM    = ctr/tools/makerom-mac
-	BANNERTOOL = ctr/tools/bannertool-mac
+ifeq ($(strip $(CTRBANNERTOOL)),)
+	ifneq ($(findstring Linux,$(shell uname)),)
+		BANNERTOOL = pkg/ctr/tools/bannertool-linux
+	else ifneq ($(findstring Darwin,$(shell uname)),)
+		BANNERTOOL = pkg/ctr/tools/bannertool-mac
+	else
+		BANNERTOOL = pkg/ctr/tools/bannertool.exe
+	endif
 else
-	MAKEROM    = ctr/tools/makerom.exe
-	BANNERTOOL = ctr/tools/bannertool.exe
+	BANNERTOOL = $(CTRBANNERTOOL)
+endif
+
+ifeq ($(strip $(CTRMAKEROM)),)
+	ifneq ($(findstring Linux,$(shell uname)),)
+		MAKEROM    = pkg/ctr/tools/makerom-linux
+	else ifneq ($(findstring Darwin,$(shell uname)),)
+		MAKEROM    = pkg/ctr/tools/makerom-mac
+	else
+		MAKEROM    = pkg/ctr/tools/makerom.exe
+	endif
+else
+	MAKEROM = $(CTRMAKEROM)
 endif
 
 %.o: %.vsh %.gsh
-	$(DEVKITPRO)/devkitARM/bin/picasso $^ -o $*.shbin
-	$(DEVKITPRO)/devkitARM/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
+	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
 	rm $*.shbin
 
 %.o: %.vsh
-	$(DEVKITPRO)/devkitARM/bin/picasso $^ -o $*.shbin
-	$(DEVKITPRO)/devkitARM/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
+	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
 	rm $*.shbin
 
 %.o: %.cpp
@@ -228,15 +229,15 @@ endif
 %.vsh:
 
 $(TARGET).smdh: $(APP_ICON)
-	smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
+	$(DEVKITARM)/bin/smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
 
 $(TARGET).3dsx: $(TARGET).elf
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
-	cp ctr/big_text_section.xml $(TARGET).xml
+	cp pkg/ctr/big_text_section.xml $(TARGET).xml
 else
 	rm -f $(TARGET).xml
 endif
-	-3dsxtool $< $@ $(_3DSXFLAGS)
+	$(DEVKITARM)/bin/3dsxtool $< $@ $(_3DSXFLAGS)
 
 $(TARGET).elf: ctr/3dsx_custom_crt0.o
 	$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@

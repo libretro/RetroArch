@@ -22,6 +22,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <lists/string_list.h>
 
 RETRO_BEGIN_DECLS
 
@@ -55,6 +56,20 @@ enum frontend_architecture
    FRONTEND_ARCH_TILE
 };
 
+/* different platforms may only support some of these types */
+enum path_change_type
+{
+   PATH_CHANGE_TYPE_MODIFIED = (1 << 0),
+   PATH_CHANGE_TYPE_WRITE_FILE_CLOSED = (1 << 1),
+   PATH_CHANGE_TYPE_FILE_MOVED = (1 << 2),
+   PATH_CHANGE_TYPE_FILE_DELETED = (1 << 3)
+};
+
+typedef struct path_change_data
+{
+   void *data;
+} path_change_data_t;
+
 typedef void (*environment_get_t)(int *argc, char *argv[], void *args,
    void *params_data);
 typedef void (*process_args_t)(int *argc, char *argv[]);
@@ -76,7 +91,7 @@ typedef struct frontend_ctx_driver
    void (*content_loaded)(void);
    enum frontend_architecture (*get_architecture)(void);
    enum frontend_powerstate (*get_powerstate)(int *seconds, int *percent);
-   int  (*parse_drive_list)(void*);
+   int  (*parse_drive_list)(void*, bool);
    uint64_t (*get_total_mem)(void);
    uint64_t (*get_used_mem)(void);
    void (*install_signal_handler)(void);
@@ -85,6 +100,11 @@ typedef struct frontend_ctx_driver
    void (*destroy_signal_handler_state)(void);
    void (*attach_console)(void);
    void (*detach_console)(void);
+#ifdef HAVE_LAKKA
+   void (*get_lakka_version)(char *, size_t);
+#endif
+   void (*watch_path_for_changes)(struct string_list *list, int flags, path_change_data_t **change_data);
+   bool (*check_for_path_changes)(path_change_data_t *change_data);
 
    const char *ident;
 
@@ -97,8 +117,7 @@ extern frontend_ctx_driver_t frontend_ctx_ps3;
 extern frontend_ctx_driver_t frontend_ctx_xdk;
 extern frontend_ctx_driver_t frontend_ctx_qnx;
 extern frontend_ctx_driver_t frontend_ctx_darwin;
-extern frontend_ctx_driver_t frontend_ctx_linux;
-extern frontend_ctx_driver_t frontend_ctx_bsd;
+extern frontend_ctx_driver_t frontend_ctx_unix;
 extern frontend_ctx_driver_t frontend_ctx_psp;
 extern frontend_ctx_driver_t frontend_ctx_ctr;
 extern frontend_ctx_driver_t frontend_ctx_win32;
@@ -128,7 +147,7 @@ frontend_ctx_driver_t *frontend_get_ptr(void);
  **/
 frontend_ctx_driver_t *frontend_ctx_init_first(void);
 
-int frontend_driver_parse_drive_list(void *data);
+int frontend_driver_parse_drive_list(void *data, bool load_content);
 
 void frontend_driver_content_loaded(void);
 
@@ -177,6 +196,12 @@ void frontend_driver_destroy_signal_handler_state(void);
 void frontend_driver_attach_console(void);
 
 void frontend_driver_detach_console(void);
+
+bool frontend_driver_can_watch_for_changes(void);
+
+void frontend_driver_watch_path_for_changes(struct string_list *list, int flags, path_change_data_t **change_data);
+
+bool frontend_driver_check_for_path_changes(path_change_data_t *change_data);
 
 RETRO_END_DECLS
 

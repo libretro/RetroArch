@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -103,6 +103,8 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
       return false;
    }
 
+   vulkan_acquire_next_image(&khr->vk);
+
    khr->vk.context.invalid_swapchain = true;
    khr->vk.need_new_swapchain = false;
    return false;
@@ -113,6 +115,7 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+   struct vulkan_display_surface_info info;
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
 
    if (!fullscreen)
@@ -121,7 +124,9 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
       height = 0;
    }
 
-   struct vulkan_display_surface_info info = { width, height };
+   info.width  = width;
+   info.height = height;
+
    if (!vulkan_surface_create(&khr->vk, VULKAN_WSI_DISPLAY, &info, NULL,
             0, 0, khr->swap_interval))
    {
@@ -180,7 +185,7 @@ static void gfx_ctx_khr_display_set_swap_interval(void *data, unsigned swap_inte
    }
 }
 
-static void gfx_ctx_khr_display_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_khr_display_swap_buffers(void *data, void *data2)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
    vulkan_present(&khr->vk, khr->vk.context.current_swapchain_index);
@@ -237,7 +242,7 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    "khr_display",
    gfx_ctx_khr_display_get_flags,
    gfx_ctx_khr_display_set_flags,
-   NULL, 
+   NULL,
    gfx_ctx_khr_display_get_context_data,
    NULL
 };

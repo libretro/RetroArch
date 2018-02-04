@@ -80,9 +80,9 @@ SRes Lzma2Dec_Allocate(CLzma2Dec *p, uint8_t prop, ISzAlloc *alloc)
 void Lzma2Dec_Init(CLzma2Dec *p)
 {
    p->state = LZMA2_STATE_CONTROL;
-   p->needInitDic = True;
-   p->needInitState = True;
-   p->needInitProp = True;
+   p->needInitDic = true;
+   p->needInitState = true;
+   p->needInitProp = true;
    LzmaDec_Init(&p->decoder);
 }
 
@@ -140,7 +140,7 @@ static ELzma2State Lzma2Dec_UpdateState(CLzma2Dec *p, uint8_t b)
                return LZMA2_STATE_ERROR;
             p->decoder.prop.lc = lc;
             p->decoder.prop.lp = lp;
-            p->needInitProp = False;
+            p->needInitProp = false;
             return LZMA2_STATE_DATA;
          }
    }
@@ -156,7 +156,7 @@ static void LzmaDec_UpdateWithUncompressed(CLzmaDec *p, const uint8_t *src, size
    p->processedPos += (uint32_t)size;
 }
 
-void LzmaDec_InitDicAndState(CLzmaDec *p, Bool initDic, Bool initState);
+void LzmaDec_InitDicAndState(CLzmaDec *p, bool initDic, bool initState);
 
 SRes Lzma2Dec_DecodeToDic(CLzma2Dec *p, size_t dicLimit,
       const uint8_t *src, size_t *srcLen, ELzmaFinishMode finishMode, ELzmaStatus *status)
@@ -207,13 +207,13 @@ SRes Lzma2Dec_DecodeToDic(CLzma2Dec *p, size_t dicLimit,
 
             if (p->state == LZMA2_STATE_DATA)
             {
-               Bool initDic = (p->control == LZMA2_CONTROL_COPY_RESET_DIC);
+               bool initDic = (p->control == LZMA2_CONTROL_COPY_RESET_DIC);
                if (initDic)
-                  p->needInitProp = p->needInitState = True;
+                  p->needInitProp = p->needInitState = true;
                else if (p->needInitDic)
                   return SZ_ERROR_DATA;
-               p->needInitDic = False;
-               LzmaDec_InitDicAndState(&p->decoder, initDic, False);
+               p->needInitDic = false;
+               LzmaDec_InitDicAndState(&p->decoder, initDic, false);
             }
 
             if (srcSizeCur > destSizeCur)
@@ -237,14 +237,14 @@ SRes Lzma2Dec_DecodeToDic(CLzma2Dec *p, size_t dicLimit,
             if (p->state == LZMA2_STATE_DATA)
             {
                int mode = LZMA2_GET_LZMA_MODE(p);
-               Bool initDic = (mode == 3);
-               Bool initState = (mode > 0);
+               bool initDic = (mode == 3);
+               bool initState = (mode > 0);
                if ((!initDic && p->needInitDic) || (!initState && p->needInitState))
                   return SZ_ERROR_DATA;
 
                LzmaDec_InitDicAndState(&p->decoder, initDic, initState);
-               p->needInitDic = False;
-               p->needInitState = False;
+               p->needInitDic = false;
+               p->needInitState = false;
                p->state = LZMA2_STATE_DATA_CONT;
             }
             if (srcSizeCur > p->packSize)

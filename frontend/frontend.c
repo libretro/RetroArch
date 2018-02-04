@@ -22,6 +22,8 @@
 #include "../config.h"
 #endif
 
+#include <retro_timers.h>
+
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #endif
@@ -36,7 +38,7 @@
 #include "../retroarch.h"
 
 #ifndef HAVE_MAIN
-#include "../runloop.h"
+#include "../retroarch.h"
 #endif
 
 /**
@@ -51,7 +53,7 @@ void main_exit(void *args)
 {
    settings_t *settings = config_get_ptr();
 
-   if (settings->config_save_on_exit)
+   if (settings->bools.config_save_on_exit)
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
 #ifdef HAVE_MENU
@@ -100,7 +102,7 @@ int rarch_main(int argc, char *argv[], void *data)
    rarch_ctl(RARCH_CTL_PREINIT, NULL);
    frontend_driver_init_first(args);
    rarch_ctl(RARCH_CTL_INIT, NULL);
-   
+
    if (frontend_driver_is_inited())
    {
       content_ctx_info_t info;
@@ -130,7 +132,9 @@ int rarch_main(int argc, char *argv[], void *data)
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
-      task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+
+      task_queue_check();
+
       if (ret == -1)
          break;
    }while(1);

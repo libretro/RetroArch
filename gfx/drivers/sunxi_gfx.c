@@ -36,6 +36,7 @@
 #include "../font_driver.h"
 
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 
 #define NUMPAGES 2
 
@@ -491,7 +492,7 @@ void pixman_composite_src_8888_8888_asm_neon(int width,
    uint16_t *src,
    int src_stride_pixels);
 
-/* Pointer to the blitting function. Will be asigned 
+/* Pointer to the blitting function. Will be asigned
  * when we find out what bpp the core uses. */
 void (*pixman_blit) (int width,
    int height,
@@ -502,7 +503,7 @@ void (*pixman_blit) (int width,
 
 struct sunxi_page
 {
-   uint32_t *address; 
+   uint32_t *address;
    unsigned int offset;
 };
 
@@ -522,13 +523,13 @@ struct sunxi_video
    unsigned int src_pitch;
    unsigned int src_bpp;
    unsigned int src_bytes_per_pixel;
-   unsigned int src_pixels_per_line;	
+   unsigned int src_pixels_per_line;
    unsigned int dst_pitch;
    unsigned int dst_pixels_per_line;
-   unsigned int bytes_per_pixel;	
+   unsigned int bytes_per_pixel;
 
-   struct sunxi_page *pages;	
-   struct sunxi_page *nextPage;	
+   struct sunxi_page *pages;
+   struct sunxi_page *nextPage;
    bool pageflip_pending;
 
    /* Keep the vsync while loop going. Set to false to exit. */
@@ -540,7 +541,7 @@ struct sunxi_video
 
    /* For threading */
    sthread_t *vsync_thread;
-   scond_t *vsync_condition;	
+   scond_t *vsync_condition;
    slock_t *pending_mutex;
 
    /* menu data */
@@ -610,7 +611,7 @@ static void sunxi_vsync_thread_func(void *data)
       _dispvars->pageflip_pending = false;
       scond_signal(_dispvars->vsync_condition);
       slock_unlock(_dispvars->pending_mutex);
-   }	
+   }
 }
 
 static void *sunxi_gfx_init(const video_info_t *video,
@@ -641,9 +642,9 @@ static void *sunxi_gfx_init(const video_info_t *video,
    _dispvars->keep_vsync          = true;
    _dispvars->menu_active         = false;
    _dispvars->bytes_per_pixel     = video->rgb32 ? 4 : 2;
-   /* It's very important that we set aspect here because the 
+   /* It's very important that we set aspect here because the
     * call seq when a core is loaded is gfx_init()->set_aspect()->gfx_frame()
-    * and we don't want the main surface to be setup in set_aspect() 
+    * and we don't want the main surface to be setup in set_aspect()
     * before we get to gfx_frame(). */
    _dispvars->aspect_ratio = video_driver_get_aspect_ratio();
 
@@ -687,15 +688,15 @@ static void sunxi_gfx_free(void *data)
       _dispvars->keep_vsync = false;
       sthread_join(_dispvars->vsync_thread);
    }
-   
-   slock_free(_dispvars->pending_mutex);		
+
+   slock_free(_dispvars->pending_mutex);
    scond_free(_dispvars->vsync_condition);
 
-   free(_dispvars->pages);	
+   free(_dispvars->pages);
 
    /* Restore text console contents and reactivate cursor blinking. */
    sunxi_restore_console(_dispvars);
-   
+
    sunxi_disp_close(_dispvars->sunxi_disp);
    free(_dispvars);
 }
@@ -713,14 +714,14 @@ static void sunxi_update_main(const void *frame, struct sunxi_video *_dispvars)
    pixman_blit(
       _dispvars->src_width,
       _dispvars->src_height,
-      _dispvars->nextPage->address, 
+      _dispvars->nextPage->address,
       _dispvars->dst_pixels_per_line,
       (uint16_t*)frame,
       _dispvars->src_pixels_per_line
       );
 
    /* Issue pageflip. Will flip on next vsync. */
-   sunxi_layer_set_rgb_input_buffer(_dispvars->sunxi_disp, _dispvars->sunxi_disp->bits_per_pixel, 
+   sunxi_layer_set_rgb_input_buffer(_dispvars->sunxi_disp, _dispvars->sunxi_disp->bits_per_pixel,
       _dispvars->nextPage->offset,
       _dispvars->src_width, _dispvars->src_height, _dispvars->sunxi_disp->xres);
 
@@ -739,16 +740,16 @@ static void sunxi_setup_scale (void *data,
    _dispvars->src_width  = width;
    _dispvars->src_height = height;
 
-   /* Total pitch, including things the 
+   /* Total pitch, including things the
     * cores render between "visible" scanlines. */
-   _dispvars->src_pitch = pitch;	
+   _dispvars->src_pitch = pitch;
 
    /* Pixels per line */
    _dispvars->src_pixels_per_line = _dispvars->src_pitch/_dispvars->bytes_per_pixel;
 
-   /* Incremental offset that sums up on 
+   /* Incremental offset that sums up on
     * each previous page offset.
-    * Total offset of each page has to 
+    * Total offset of each page has to
     * be adjusted when internal resolution changes. */
    for (i = 0; i < NUMPAGES; i++)
    {
@@ -757,7 +758,7 @@ static void sunxi_setup_scale (void *data,
    }
 
    visible_width = _dispvars->sunxi_disp->yres * _dispvars->aspect_ratio;
-   xpos = (_dispvars->sunxi_disp->xres - visible_width) / 2; 
+   xpos = (_dispvars->sunxi_disp->xres - visible_width) / 2;
 
    /* setup layer window */
    sunxi_layer_set_output_window(_dispvars->sunxi_disp, xpos, 0, visible_width, _dispvars->sunxi_disp->yres);
@@ -825,13 +826,6 @@ static void sunxi_gfx_set_rotation(void *data, unsigned rotation)
    (void)rotation;
 }
 
-static bool sunxi_gfx_has_windowed(void *data)
-{
-   (void)data;
-
-   return false;
-}
-
 static bool sunxi_gfx_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
@@ -860,7 +854,7 @@ static bool sunxi_gfx_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 static void sunxi_set_texture_enable(void *data, bool state, bool full_screen)
@@ -869,7 +863,7 @@ static void sunxi_set_texture_enable(void *data, bool state, bool full_screen)
 
    /* If it wasn't active and starts being active... */
    if (!_dispvars->menu_active && state)
-   { 
+   {
       /* Stop the vsync thread. */
       _dispvars->keep_vsync = false;
       sthread_join(_dispvars->vsync_thread);
@@ -895,10 +889,10 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
 
       /* We have to go on a pixel format conversion adventure for now, until we can
        * convince RGUI to output in an 8888 format. */
-      unsigned int src_pitch        = width * 2; 
+      unsigned int src_pitch        = width * 2;
       unsigned int dst_pitch        = _dispvars->sunxi_disp->xres * 4;
       unsigned int dst_width        = _dispvars->sunxi_disp->xres;
-      uint32_t line[dst_width]; 
+      uint32_t line[dst_width];
 
       /* Remember, memcpy() works with 8bits pointers for increments. */
       char *dst_base_addr           = (char*)(_dispvars->pages[0].address);
@@ -907,24 +901,24 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
       {
          for (j = 0; j < src_pitch / 2; j++)
          {
-            uint16_t src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j); 
+            uint16_t src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j);
             /* The hex AND is for keeping only the part we need for each component. */
             uint32_t R = (src_pix << 8) & 0x00FF0000;
             uint32_t G = (src_pix << 4) & 0x0000FF00;
             uint32_t B = (src_pix << 0) & 0x000000FF;
-            line[j] = (0 | R | G | B); 
+            line[j] = (0 | R | G | B);
          }
          memcpy(dst_base_addr + (dst_pitch * i), (char*)line, dst_pitch);
       }
 
       /* Issue pageflip. Will flip on next vsync. */
       sunxi_layer_set_rgb_input_buffer(_dispvars->sunxi_disp,
-            _dispvars->sunxi_disp->bits_per_pixel, 
+            _dispvars->sunxi_disp->bits_per_pixel,
             _dispvars->pages[0].offset, width, height, _dispvars->sunxi_disp->xres);
    }
 }
 
-static void sunxi_set_aspect_ratio (void *data, unsigned aspect_ratio_idx) 
+static void sunxi_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
    float              new_aspect = aspectratio_lut[aspect_ratio_idx].value;
@@ -938,6 +932,8 @@ static void sunxi_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 }
 
 static const video_poke_interface_t sunxi_poke_interface = {
+   NULL, /* set_coords */
+   NULL, /* set_mvp */
    NULL,
    NULL,
    NULL, /* set_video_mode */
@@ -949,12 +945,14 @@ static const video_poke_interface_t sunxi_poke_interface = {
    NULL, /* get_proc_address */
    sunxi_set_aspect_ratio,
    NULL, /* sunxi_apply_state_changes */
-#ifdef HAVE_MENU
    sunxi_set_texture_frame,
    sunxi_set_texture_enable,
-#endif
-   NULL, /* sunxi_set_osd_msg */
-   NULL  /* sunxi_show_mouse */
+   NULL,                         /* set_osd_msg */
+   NULL,                         /* show_mouse */
+   NULL,                         /* grab_mouse_toggle */
+   NULL,                         /* get_current_shader */
+   NULL,                         /* get_current_software_framebuffer */
+   NULL                          /* get_hw_render_interface */
 };
 
 static void sunxi_gfx_get_poke_interface(void *data,
@@ -971,7 +969,7 @@ video_driver_t video_sunxi = {
   sunxi_gfx_alive,
   sunxi_gfx_focus,
   sunxi_gfx_suppress_screensaver,
-  sunxi_gfx_has_windowed,
+  NULL, /* has_windowed */
   sunxi_gfx_set_shader,
   sunxi_gfx_free,
   "sunxi",

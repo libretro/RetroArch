@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2017 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -18,7 +18,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include "../video_shader_driver.h"
+#include "../video_driver.h"
 
 RETRO_BEGIN_DECLS
 
@@ -29,6 +29,14 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
       struct video_shader *shader);
 
 RETRO_END_DECLS
+
+#ifdef __cplusplus
+
+#include "glslang_util.h"
+
+bool slang_preprocess_parse_parameters(glslang_meta& meta,
+      struct video_shader *shader);
+#endif
 
 #endif
 

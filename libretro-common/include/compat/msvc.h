@@ -35,12 +35,12 @@ extern "C"  {
    #ifndef snprintf
       #define snprintf c99_snprintf_retro__
    #endif
-   
+
    int c99_snprintf_retro__(char *outBuf, size_t size, const char *format, ...);
 #endif
 
 /* Pre-MSVC 2010 compilers don't implement vsnprintf in a cross-platform manner? Not sure about this one. */
-#if _MSC_VER < 1600 
+#if _MSC_VER < 1600
    #include <stdarg.h>
    #include <stdlib.h>
    #ifndef vsnprintf
@@ -86,9 +86,33 @@ typedef int ssize_t;
 #pragma warning(disable : 4723)
 #pragma warning(disable : 4996)
 
-/* roundf is available since MSVC 2013 */
+/* roundf and va_copy is available since MSVC 2013 */
 #if _MSC_VER < 1800
 #define roundf(in) (in >= 0.0f ? floorf(in + 0.5f) : ceilf(in - 0.5f))
+#define va_copy(x, y) ((x) = (y))
+#endif
+
+#if _MSC_VER <= 1310
+   #ifndef __cplusplus
+      /* VC6 math.h doesn't define some functions when in C mode.
+       * Trying to define a prototype gives "undefined reference".
+       * But providing an implementation then gives "function already has body".
+       * So the equivalent of the implementations from math.h are used as
+       * defines here instead, and it seems to work.
+       */
+      #define cosf(x) ((float)cos((double)x))
+      #define powf(x, y) ((float)pow((double)x, (double)y))
+      #define sinf(x) ((float)sin((double)x))
+      #define ceilf(x) ((float)ceil((double)x))
+      #define floorf(x) ((float)floor((double)x))
+      #define sqrtf(x) ((float)sqrt((double)x))
+      #define fabsf(x)    ((float)fabs((double)(x)))
+   #endif
+
+   #ifndef _strtoui64
+      #define _strtoui64(x, y, z) (_atoi64(x))
+   #endif
+
 #endif
 
 #ifndef PATH_MAX

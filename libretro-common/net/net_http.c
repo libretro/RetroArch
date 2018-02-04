@@ -27,8 +27,12 @@
 #include <net/net_http.h>
 #include <net/net_compat.h>
 #include <net/net_socket.h>
+#ifdef HAVE_SSL
+#include <net/net_socket_ssl.h>
+#endif
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_common_api.h>
 
 enum
 {
@@ -47,19 +51,26 @@ enum
    T_CHUNK
 };
 
-struct http_t
+struct http_socket_state_t
 {
    int fd;
+   bool ssl;
+   void *ssl_ctx;
+};
+
+struct http_t
+{
    int status;
-   
+
    char part;
    char bodytype;
    bool error;
-   
+
    size_t pos;
    size_t len;
    size_t buflen;
-   char * data;
+   char *data;
+   struct http_socket_state_t sock_state;
 };
 
 struct http_connection_t
@@ -68,96 +79,161 @@ struct http_connection_t
    char *location;
    char *urlcopy;
    char *scan;
+   char *methodcopy;
+   char *contenttypecopy;
+   char *postdatacopy;
    int port;
+   struct http_socket_state_t sock_state;
 };
 
+static char urlencode_lut[256];
+static bool urlencode_lut_inited = false;
 
-static int net_http_new_socket(const char *domain, int port)
+void urlencode_lut_init()
 {
-   int ret;
-   struct addrinfo *addr = NULL;
-   int fd = socket_init((void**)&addr, port, domain, SOCKET_TYPE_STREAM);
-   if (fd < 0)
-      return -1;
+   unsigned i;
 
-   ret = socket_connect(fd, (void*)addr, true);
+   urlencode_lut_inited = true;
 
-   freeaddrinfo_retro(addr);
-
-   if (ret < 0)
-      goto error;
-
-   if (!socket_nonblock(fd))
-      goto error;
-
-   return fd;
-
-error:
-   socket_close(fd);
-   return -1;
+   for (i = 0; i < 256; i++)
+   {
+      urlencode_lut[i] = isalnum(i) || i == '*' || i == '-' || i == '.' || i == '_' ? i : (i == ' ') ? '+' : 0;
+   }
 }
 
-static void net_http_send_str(int fd, bool *error, const char *text)
+/* caller is responsible for deleting the destination buffer */
+void net_http_urlencode_full(char **dest, const char *source)
+{
+   char *enc  = NULL;
+   /* Assume every character will be encoded, so we need 3 times the space. */
+   size_t len = strlen(source) * 3 + 1;
+
+   if (!urlencode_lut_inited)
+      urlencode_lut_init();
+
+   enc = (char*)calloc(1, len);
+
+   *dest = enc;
+
+   for (; *source; source++)
+   {
+      /* any non-ascii character will just be encoded without question */
+      if ((unsigned)*source < sizeof(urlencode_lut) && urlencode_lut[(unsigned)*source])
+         snprintf(enc, len, "%c", urlencode_lut[(unsigned)*source]);
+      else
+         snprintf(enc, len, "%%%02X", *source & 0xFF);
+
+      while (*++enc);
+   }
+
+   (*dest)[len - 1] = '\0';
+}
+
+static int net_http_new_socket(struct http_connection_t *conn)
+{
+   int ret;
+   struct addrinfo *addr = NULL, *next_addr = NULL;
+   int fd                = socket_init(
+         (void**)&addr, conn->port, conn->domain, SOCKET_TYPE_STREAM);
+#ifdef HAVE_SSL
+   if (conn->sock_state.ssl)
+   {
+      if (!(conn->sock_state.ssl_ctx = ssl_socket_init(fd, conn->domain)))
+         return -1;
+   }
+#endif
+
+   next_addr = addr;
+   while(fd >= 0)
+   {
+#ifdef HAVE_SSL
+      if (conn->sock_state.ssl)
+      {
+         ret = ssl_socket_connect(conn->sock_state.ssl_ctx, (void*)next_addr, true, true);
+
+         if (ret >= 0)
+            break;
+
+         ssl_socket_close(conn->sock_state.ssl_ctx);
+      }
+      else
+#endif
+      {
+         ret = socket_connect(fd, (void*)next_addr, true);
+
+         if (ret >= 0 && socket_nonblock(fd))
+            break;
+
+         socket_close(fd);
+      }
+
+      fd = socket_next((void**)&next_addr);
+   }
+
+   if (addr)
+      freeaddrinfo_retro(addr);
+
+   conn->sock_state.fd = fd;
+
+   return fd;
+}
+
+static void net_http_send_str(struct http_socket_state_t *sock_state, bool *error, const char *text)
 {
    if (*error)
       return;
-
-   if (!socket_send_all_blocking(fd, text, strlen(text), true))
-      *error = true;
+#ifdef HAVE_SSL
+   if (sock_state->ssl)
+   {
+      if (!ssl_socket_send_all_blocking(sock_state->ssl_ctx, text, strlen(text), true))
+         *error = true;
+   }
+   else
+#endif
+   {
+      if (!socket_send_all_blocking(sock_state->fd, text, strlen(text), true))
+         *error = true;
+   }
 }
 
-static char* urlencode(const char* url)
-{
-   unsigned i;
-   unsigned outpos = 0;
-   unsigned outlen = 0;
-   char *ret       = NULL;
-
-   for (i = 0; url[i] != '\0'; i++)
-   {
-      outlen++;
-      if (url[i] == ' ')
-         outlen += 2;
-   }
-   
-   ret = (char*)malloc(outlen + 1);
-   if (!ret)
-      return NULL;
-   
-   for (i = 0; url[i]; i++)
-   {
-      if (url[i] == ' ')
-      {
-         ret[outpos++] = '%';
-         ret[outpos++] = '2';
-         ret[outpos++] = '0';
-      }
-      else
-         ret[outpos++] = url[i];
-   }
-   ret[outpos] = '\0';
-   
-   return ret;
-}
-
-struct http_connection_t *net_http_connection_new(const char *url)
+struct http_connection_t *net_http_connection_new(const char *url,
+      const char *method, const char *data)
 {
    char **domain = NULL;
-   struct http_connection_t *conn = (struct http_connection_t*)calloc(1, 
-         sizeof(struct http_connection_t));
+   struct http_connection_t *conn = (struct http_connection_t*)calloc(1,
+         sizeof(*conn));
+   bool error = false;
 
    if (!conn)
       return NULL;
 
-   conn->urlcopy = urlencode(url);
+   if (!url)
+      goto error;
+
+   conn->urlcopy         = strdup(url);
+
+   if (method)
+      conn->methodcopy   = strdup(method);
+
+   if (data)
+      conn->postdatacopy = strdup(data);
 
    if (!conn->urlcopy)
       goto error;
 
-   if (strncmp(url, "http://", strlen("http://")) != 0)
+   if (!strncmp(url, "http://", strlen("http://")))
+      conn->scan    = conn->urlcopy + strlen("http://");
+   else if (!strncmp(url, "https://", strlen("https://")))
+   {
+      conn->scan    = conn->urlcopy + strlen("https://");
+      conn->sock_state.ssl = true;
+   }
+   else
+      error = true;
+
+   if (error)
       goto error;
 
-   conn->scan    = conn->urlcopy + strlen("http://");
    domain        = &conn->domain;
    *domain       = conn->scan;
 
@@ -166,7 +242,13 @@ struct http_connection_t *net_http_connection_new(const char *url)
 error:
    if (conn->urlcopy)
       free(conn->urlcopy);
-   conn->urlcopy = NULL;
+   if (conn->methodcopy)
+      free(conn->methodcopy);
+   if (conn->postdatacopy)
+      free(conn->postdatacopy);
+   conn->urlcopy      = NULL;
+   conn->methodcopy   = NULL;
+   conn->postdatacopy = NULL;
    free(conn);
    return NULL;
 }
@@ -195,7 +277,11 @@ bool net_http_connection_done(struct http_connection_t *conn)
       return false;
 
    *conn->scan  = '\0';
-   conn->port   = 80;
+
+   if (conn->sock_state.ssl)
+      conn->port   = 443;
+   else
+      conn->port   = 80;
 
    if (*conn->scan == ':')
    {
@@ -221,6 +307,20 @@ void net_http_connection_free(struct http_connection_t *conn)
    if (conn->urlcopy)
       free(conn->urlcopy);
 
+   if (conn->methodcopy)
+      free(conn->methodcopy);
+
+   if (conn->contenttypecopy)
+      free(conn->contenttypecopy);
+
+   if (conn->postdatacopy)
+      free(conn->postdatacopy);
+
+   conn->urlcopy = NULL;
+   conn->methodcopy = NULL;
+   conn->contenttypecopy = NULL;
+   conn->postdatacopy = NULL;
+
    free(conn);
 }
 
@@ -238,39 +338,95 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    if (!conn)
       goto error;
 
-   fd = net_http_new_socket(conn->domain, conn->port);
+   fd = net_http_new_socket(conn);
+
    if (fd < 0)
       goto error;
 
    error = false;
 
    /* This is a bit lazy, but it works. */
-   net_http_send_str(fd, &error, "GET /");
-   net_http_send_str(fd, &error, conn->location);
-   net_http_send_str(fd, &error, " HTTP/1.1\r\n");
+   if (conn->methodcopy)
+   {
+      net_http_send_str(&conn->sock_state, &error, conn->methodcopy);
+      net_http_send_str(&conn->sock_state, &error, " /");
+   }
+   else
+   {
+      net_http_send_str(&conn->sock_state, &error, "GET /");
+   }
 
-   net_http_send_str(fd, &error, "Host: ");
-   net_http_send_str(fd, &error, conn->domain);
+   net_http_send_str(&conn->sock_state, &error, conn->location);
+   net_http_send_str(&conn->sock_state, &error, " HTTP/1.1\r\n");
 
-   if (conn->port != 80)
+   net_http_send_str(&conn->sock_state, &error, "Host: ");
+   net_http_send_str(&conn->sock_state, &error, conn->domain);
+
+   if (!conn->port)
    {
       char portstr[16];
 
       portstr[0] = '\0';
 
       snprintf(portstr, sizeof(portstr), ":%i", conn->port);
-      net_http_send_str(fd, &error, portstr);
+      net_http_send_str(&conn->sock_state, &error, portstr);
    }
 
-   net_http_send_str(fd, &error, "\r\n");
-   net_http_send_str(fd, &error, "Connection: close\r\n");
-   net_http_send_str(fd, &error, "\r\n");
+   net_http_send_str(&conn->sock_state, &error, "\r\n");
+
+   /* this is not being set anywhere yet */
+   if (conn->contenttypecopy)
+   {
+      net_http_send_str(&conn->sock_state, &error, "Content-Type: ");
+      net_http_send_str(&conn->sock_state, &error, conn->contenttypecopy);
+      net_http_send_str(&conn->sock_state, &error, "\r\n");
+   }
+
+   if (conn->methodcopy && (string_is_equal(conn->methodcopy, "POST")))
+   {
+      size_t post_len, len;
+      char *len_str        = NULL;
+
+      if (!conn->postdatacopy)
+         goto error;
+
+      if (!conn->contenttypecopy)
+         net_http_send_str(&conn->sock_state, &error,
+               "Content-Type: application/x-www-form-urlencoded\r\n");
+
+      net_http_send_str(&conn->sock_state, &error, "Content-Length: ");
+
+      post_len = strlen(conn->postdatacopy);
+#ifdef _WIN32
+      len = snprintf(NULL, 0, "%"PRIuPTR, post_len);
+      len_str = (char*)malloc(len + 1);
+      snprintf(len_str, len + 1, "%"PRIuPTR, post_len);
+#else
+      len = snprintf(NULL, 0, "%llu", (long long unsigned)post_len);
+      len_str = (char*)malloc(len + 1);
+      snprintf(len_str, len + 1, "%llu", (long long unsigned)post_len);
+#endif
+
+      len_str[len] = '\0';
+
+      net_http_send_str(&conn->sock_state, &error, len_str);
+      net_http_send_str(&conn->sock_state, &error, "\r\n");
+
+      free(len_str);
+   }
+
+   net_http_send_str(&conn->sock_state, &error, "User-Agent: libretro\r\n");
+   net_http_send_str(&conn->sock_state, &error, "Connection: close\r\n");
+   net_http_send_str(&conn->sock_state, &error, "\r\n");
+
+   if (conn->methodcopy && (string_is_equal(conn->methodcopy, "POST")))
+      net_http_send_str(&conn->sock_state, &error, conn->postdatacopy);
 
    if (error)
       goto error;
 
    state          = (struct http_t*)malloc(sizeof(struct http_t));
-   state->fd      = fd;
+   state->sock_state = conn->sock_state;
    state->status  = -1;
    state->data    = NULL;
    state->part    = P_HEADER_TOP;
@@ -287,8 +443,24 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    return state;
 
 error:
+   if (conn->methodcopy)
+      free(conn->methodcopy);
+   if (conn->contenttypecopy)
+      free(conn->contenttypecopy);
+   conn->methodcopy = NULL;
+   conn->contenttypecopy = NULL;
+   conn->postdatacopy = NULL;
+#ifdef HAVE_SSL
+   if (conn->sock_state.ssl && conn->sock_state.ssl_ctx && fd >= 0)
+   {
+      ssl_socket_close(conn->sock_state.ssl_ctx);
+      ssl_socket_free(conn->sock_state.ssl_ctx);
+      conn->sock_state.ssl_ctx = NULL;
+   }
+#else
    if (fd >= 0)
       socket_close(fd);
+#endif
    if (state)
       free(state);
    return NULL;
@@ -298,7 +470,7 @@ int net_http_fd(struct http_t *state)
 {
    if (!state)
       return -1;
-   return state->fd;
+   return state->sock_state.fd;
 }
 
 bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
@@ -313,8 +485,18 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       if (state->error)
          newlen = -1;
       else
-         newlen = socket_receive_all_nonblocking(state->fd, &state->error,
-               (uint8_t*)state->data + state->pos, state->buflen - state->pos);
+      {
+#ifdef HAVE_SSL
+         if (state->sock_state.ssl && state->sock_state.ssl_ctx)
+            newlen = ssl_socket_receive_all_nonblocking(state->sock_state.ssl_ctx, &state->error,
+               (uint8_t*)state->data + state->pos,
+               state->buflen - state->pos);
+         else
+#endif
+            newlen = socket_receive_all_nonblocking(state->sock_state.fd, &state->error,
+               (uint8_t*)state->data + state->pos,
+               state->buflen - state->pos);
+      }
 
       if (newlen < 0)
          goto fail;
@@ -322,7 +504,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       if (state->pos + newlen >= state->buflen - 64)
       {
          state->buflen *= 2;
-         state->data = (char*)realloc(state->data, state->buflen);
+         state->data    = (char*)realloc(state->data, state->buflen);
       }
       state->pos += newlen;
 
@@ -333,7 +515,9 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 
          if (!lineend)
             break;
+
          *lineend='\0';
+
          if (lineend != state->data && lineend[-1]=='\r')
             lineend[-1]='\0';
 
@@ -350,7 +534,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
                      strlen("Content-Length: ")))
             {
                state->bodytype = T_LEN;
-               state->len = strtol(state->data + 
+               state->len = strtol(state->data +
                      strlen("Content-Length: "), NULL, 10);
             }
             if (string_is_equal(state->data, "Transfer-Encoding: chunked"))
@@ -382,11 +566,22 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
          if (state->error)
             newlen = -1;
          else
-            newlen = socket_receive_all_nonblocking(
-                  state->fd,
+         {
+#ifdef HAVE_SSL
+            if (state->sock_state.ssl && state->sock_state.ssl_ctx)
+               newlen = ssl_socket_receive_all_nonblocking(
+                  state->sock_state.ssl_ctx,
                   &state->error,
                   (uint8_t*)state->data + state->pos,
                   state->buflen - state->pos);
+            else
+#endif
+               newlen = socket_receive_all_nonblocking(
+                  state->sock_state.fd,
+                  &state->error,
+                  (uint8_t*)state->data + state->pos,
+                  state->buflen - state->pos);
+         }
 
          if (newlen < 0)
          {
@@ -537,8 +732,17 @@ void net_http_delete(struct http_t *state)
    if (!state)
       return;
 
-   if (state->fd >= 0)
-      socket_close(state->fd);
+   if (state->sock_state.fd >= 0)
+   {
+      socket_close(state->sock_state.fd);
+#ifdef HAVE_SSL
+      if (state->sock_state.ssl && state->sock_state.ssl_ctx)
+      {
+         ssl_socket_free(state->sock_state.ssl_ctx);
+         state->sock_state.ssl_ctx = NULL;
+      }
+#endif
+   }
    free(state);
 }
 

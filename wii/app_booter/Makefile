@@ -14,6 +14,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
+EXTERNAL_LIBOGC = 0
 CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
 OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy$(EXE_EXT)
@@ -23,8 +24,16 @@ ELF_TARGET := app_booter.elf
 
 LIBRETRO_COMM_DIR := ../../libretro-common
 
-INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -I$(LIBRETRO_COMM_DIR)/crt/include
-LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii
+LIBDIRS :=
+INCLUDE := -I.  -I$(LIBRETRO_COMM_DIR)/crt/include
+
+ifeq ($(EXTERNAL_LIBOGC), 1)
+INCLUDE += -I$(DEVKITPRO)/libogc/include
+LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii
+else
+INCLUDE += -I../libogc/include
+LIBDIRS += -Lwii/libogc/libs/wii
+endif
 
 MACHDEP := -DHW_RVL -DGEKKO -mno-eabi -mno-sdata -mcpu=750
 # todo: find out why -Os spits out linker errors

@@ -36,17 +36,16 @@
 #include "../../config.h"
 #endif
 
+#include "../../frontend/frontend_driver.h"
+
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
-#include "../menu_display.h"
-#include "../menu_navigation.h"
 
 #include "../widgets/menu_input_dialog.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #define RGUI_TERM_START_X(width)        (width / 21)
@@ -57,12 +56,12 @@
 typedef struct
 {
    bool force_redraw;
-   char msgbox[4096];
+   bool mouse_show;
    unsigned last_width;
    unsigned last_height;
+   unsigned frame_count;
    float scroll_y;
-   bool mouse_show;
-   unsigned int frame_count;
+   char *msgbox;
 } rgui_t;
 
 static uint16_t *rgui_framebuf_data      = NULL;
@@ -72,20 +71,104 @@ static uint16_t *rgui_framebuf_data      = NULL;
 #define NORMAL_COLOR(settings)   0x7FFF
 #define TITLE_COLOR(settings)    HOVER_COLOR(settings)
 #else
-#define HOVER_COLOR(settings)    (argb32_to_rgba4444(settings->menu.entry_hover_color))
-#define NORMAL_COLOR(settings)   (argb32_to_rgba4444(settings->menu.entry_normal_color))
-#define TITLE_COLOR(settings)    (argb32_to_rgba4444(settings->menu.title_color))
+#define HOVER_COLOR(settings)    (argb32_to_rgba4444(settings->uints.menu_entry_hover_color))
+#define NORMAL_COLOR(settings)   (argb32_to_rgba4444(settings->uints.menu_entry_normal_color))
+#define TITLE_COLOR(settings)    (argb32_to_rgba4444(settings->uints.menu_title_color))
 
 static uint16_t argb32_to_rgba4444(uint32_t col)
 {
    unsigned a = ((col >> 24) & 0xff) >> 4;
    unsigned r = ((col >> 16) & 0xff) >> 4;
-   unsigned g = ((col >> 8) & 0xff)  >> 4;
-   unsigned b =  (col & 0xff)        >> 4;
+   unsigned g = ((col >> 8)  & 0xff) >> 4;
+   unsigned b = ((col & 0xff)      ) >> 4;
    return (r << 12) | (g << 8) | (b << 4) | a;
 }
 #endif
 
+
+static uint16_t rgui_gray_filler(unsigned x, unsigned y)
+{
+   unsigned col   = (((x >> 1) + (y >> 1)) & 1) + 1;
+
+#if defined(GEKKO) || defined(PSP)
+   return (6 << 12) | (col << 8) | (col << 4) | (col << 0);
+#else
+   return (col << 13) | (col << 9) | (col << 5) | (12 << 0);
+#endif
+}
+
+static uint16_t rgui_green_filler(unsigned x, unsigned y)
+{
+   unsigned col   = (((x >> 1) + (y >> 1)) & 1) + 1;
+#if defined(GEKKO) || defined(PSP)
+   return (6 << 12) | (col << 8) | (col << 5) | (col << 0);
+#else
+   return (col << 13) | (col << 10) | (col << 5) | (12 << 0);
+#endif
+}
+
+static void rgui_fill_rect(
+      uint16_t *data,
+      size_t pitch,
+      unsigned x, unsigned y,
+      unsigned width, unsigned height,
+      uint16_t (*col)(unsigned x, unsigned y))
+{
+   unsigned i, j;
+
+   for (j = y; j < y + height; j++)
+      for (i = x; i < x + width; i++)
+         data[j * (pitch >> 1) + i] = col(i, j);
+}
+
+static void rgui_color_rect(
+      uint16_t *data,
+      size_t pitch,
+      unsigned fb_width, unsigned fb_height,
+      unsigned x, unsigned y,
+      unsigned width, unsigned height,
+      uint16_t color)
+{
+   unsigned i, j;
+
+   for (j = y; j < y + height; j++)
+      for (i = x; i < x + width; i++)
+         if (i < fb_width && j < fb_height)
+            data[j * (pitch >> 1) + i] = color;
+}
+
+static void blit_line(int x, int y,
+      const char *message, uint16_t color)
+{
+   size_t pitch = menu_display_get_framebuffer_pitch();
+   const uint8_t *font_fb = menu_display_get_font_framebuffer();
+
+   if (font_fb)
+   {
+      while (!string_is_empty(message))
+      {
+         unsigned i, j;
+         char symbol = *message++;
+
+         for (j = 0; j < FONT_HEIGHT; j++)
+         {
+            for (i = 0; i < FONT_WIDTH; i++)
+            {
+               uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
+               int offset  = (i + j * FONT_WIDTH) >> 3;
+               bool col    = (font_fb[FONT_OFFSET(symbol) + offset] & rem);
+
+               if (col)
+                  rgui_framebuf_data[(y + j) * (pitch >> 1) + (x + i)] = color;
+            }
+         }
+
+         x += FONT_WIDTH_STRIDE;
+      }
+   }
+}
+
+#if 0
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
    int x, y;
@@ -97,7 +180,7 @@ static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
    {
       for (x = 0; x < FONT_WIDTH; x++)
       {
-         uint32_t col =
+         uint32_t col    =
             ((uint32_t)buf[3 * (-y * 256 + x) + 0] << 0) |
             ((uint32_t)buf[3 * (-y * 256 + x) + 1] << 8) |
             ((uint32_t)buf[3 * (-y * 256 + x) + 2] << 16);
@@ -108,103 +191,6 @@ static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
          if (col != 0xff)
             glyph[offset] |= rem;
       }
-   }
-}
-
-static uint16_t rgui_gray_filler(unsigned x, unsigned y)
-{
-   unsigned col;
-
-   x   >>= 1;
-   y   >>= 1;
-   col   = ((x + y) & 1) + 1;
-
-#if defined(GEKKO) || defined(PSP)
-   return (6 << 12) | (col << 8) | (col << 4) | (col << 0);
-#else
-   return (col << 13) | (col << 9) | (col << 5) | (12 << 0);
-#endif
-}
-
-static uint16_t rgui_green_filler(unsigned x, unsigned y)
-{
-   unsigned col;
-
-   x   >>= 1;
-   y   >>= 1;
-   col   = ((x + y) & 1) + 1;
-#if defined(GEKKO) || defined(PSP)
-   return (6 << 12) | (col << 8) | (col << 5) | (col << 0);
-#else
-   return (col << 13) | (col << 10) | (col << 5) | (12 << 0);
-#endif
-}
-
-static void rgui_fill_rect(size_t pitch,
-      unsigned x, unsigned y,
-      unsigned width, unsigned height,
-      uint16_t (*col)(unsigned x, unsigned y))
-{
-   unsigned i, j;
-   uint16_t *data = (uint16_t*)rgui_framebuf_data;
-
-   if (!data || !col)
-      return;
-
-   for (j = y; j < y + height; j++)
-      for (i = x; i < x + width; i++)
-         data[j * (pitch >> 1) + i] = col(i, j);
-}
-
-static void rgui_color_rect(
-      size_t pitch,
-      unsigned fb_width, unsigned fb_height,
-      unsigned x, unsigned y,
-      unsigned width, unsigned height,
-      uint16_t color)
-{
-   unsigned i, j;
-   uint16_t *data = (uint16_t*)rgui_framebuf_data;
-
-   if (!data)
-      return;
-
-   for (j = y; j < y + height; j++)
-      for (i = x; i < x + width; i++)
-         if (i < fb_width && j < fb_height)
-            data[j * (pitch >> 1) + i] = color;
-}
-
-static void blit_line(int x, int y,
-      const char *message, uint16_t color)
-{
-   unsigned i, j;
-   size_t pitch = menu_display_get_framebuffer_pitch();
-
-   if (!rgui_framebuf_data)
-      return;
-
-   while (!string_is_empty(message))
-   {
-      const uint8_t *font_fb = menu_display_get_font_framebuffer();
-      uint32_t symbol        = utf8_walk(&message);
-      
-      for (j = 0; j < FONT_HEIGHT; j++)
-      {
-         for (i = 0; i < FONT_WIDTH; i++)
-         {
-            uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
-            int offset  = (i + j * FONT_WIDTH) >> 3;
-            bool col    = (font_fb[FONT_OFFSET(symbol) + offset] & rem);
-
-            if (!col)
-               continue;
-
-            rgui_framebuf_data[(y + j) * (pitch >> 1) + (x + i)] = color;
-         }
-      }
-
-      x += FONT_WIDTH_STRIDE;
    }
 }
 
@@ -231,20 +217,22 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
 
    return true;
 }
+#endif
 
 static bool rguidisp_init_font(menu_handle_t *menu)
 {
+#if 0
    const uint8_t *font_bmp_buf = NULL;
+#endif
    const uint8_t *font_bin_buf = bitmap_bin;
 
    if (!menu)
       return false;
 
+#if 0
    if (font_bmp_buf)
       return init_font(menu, font_bmp_buf);
-
-   if (!font_bin_buf)
-      return false;
+#endif
 
    menu_display_set_font_framebuffer(font_bin_buf);
 
@@ -273,12 +261,15 @@ static void rgui_render_background(void)
       dst += pitch_in_pixels * 4;
    }
 
-   rgui_fill_rect(fb_pitch, 5, 5, fb_width - 10, 5, rgui_green_filler);
-   rgui_fill_rect(fb_pitch, 5, fb_height - 10, fb_width - 10, 5, rgui_green_filler);
+   if (rgui_framebuf_data)
+   {
+      rgui_fill_rect(rgui_framebuf_data, fb_pitch, 5, 5, fb_width - 10, 5, rgui_green_filler);
+      rgui_fill_rect(rgui_framebuf_data, fb_pitch, 5, fb_height - 10, fb_width - 10, 5, rgui_green_filler);
 
-   rgui_fill_rect(fb_pitch, 5, 5, 5, fb_height - 10, rgui_green_filler);
-   rgui_fill_rect(fb_pitch, fb_width - 10, 5, 5, fb_height - 10,
-         rgui_green_filler);
+      rgui_fill_rect(rgui_framebuf_data, fb_pitch, 5, 5, 5, fb_height - 10, rgui_green_filler);
+      rgui_fill_rect(rgui_framebuf_data, fb_pitch, fb_width - 10, 5, 5, fb_height - 10,
+            rgui_green_filler);
+   }
 }
 
 static void rgui_set_message(void *data, const char *message)
@@ -288,24 +279,26 @@ static void rgui_set_message(void *data, const char *message)
    if (!rgui || !message || !*message)
       return;
 
-   strlcpy(rgui->msgbox, message, sizeof(rgui->msgbox));
+   if (!string_is_empty(rgui->msgbox))
+      free(rgui->msgbox);
+   rgui->msgbox       = strdup(message);
    rgui->force_redraw = true;
 }
 
 static void rgui_render_messagebox(const char *message)
 {
-   size_t i, fb_pitch;
    int x, y;
+   uint16_t color;
+   size_t i, fb_pitch;
    unsigned fb_width, fb_height;
    unsigned width, glyphs_width, height;
-   uint16_t color;
    struct string_list *list   = NULL;
    settings_t *settings       = config_get_ptr();
 
+   (void)settings;
+
    if (!message || !*message)
       return;
-
-   (void)settings;
 
    list = string_split(message, "\n");
    if (!list)
@@ -343,15 +336,23 @@ static void rgui_render_messagebox(const char *message)
    x      = (fb_width  - width) / 2;
    y      = (fb_height - height) / 2;
 
-   rgui_fill_rect(fb_pitch, x + 5, y + 5, width - 10,
-         height - 10, rgui_gray_filler);
-   rgui_fill_rect(fb_pitch, x, y, width - 5, 5, rgui_green_filler);
-   rgui_fill_rect(fb_pitch, x + width - 5, y, 5,
-         height - 5, rgui_green_filler);
-   rgui_fill_rect(fb_pitch, x + 5, y + height - 5,
-         width - 5, 5, rgui_green_filler);
-   rgui_fill_rect(fb_pitch, x, y + 5, 5,
-         height - 5, rgui_green_filler);
+   if (rgui_framebuf_data)
+   {
+      rgui_fill_rect(rgui_framebuf_data,
+            fb_pitch, x + 5, y + 5, width - 10,
+            height - 10, rgui_gray_filler);
+      rgui_fill_rect(rgui_framebuf_data,
+            fb_pitch, x, y, width - 5, 5, rgui_green_filler);
+      rgui_fill_rect(rgui_framebuf_data,
+            fb_pitch, x + width - 5, y, 5,
+            height - 5, rgui_green_filler);
+      rgui_fill_rect(rgui_framebuf_data,
+            fb_pitch, x + 5, y + height - 5,
+            width - 5, 5, rgui_green_filler);
+      rgui_fill_rect(rgui_framebuf_data,
+            fb_pitch, x, y + 5, 5,
+            height - 5, rgui_green_filler);
+   }
 
    color = NORMAL_COLOR(settings);
 
@@ -361,7 +362,8 @@ static void rgui_render_messagebox(const char *message)
       int offset_x    = (int)(FONT_WIDTH_STRIDE * (glyphs_width - utf8len(msg)) / 2);
       int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
 
-      blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, color);
+      if (rgui_framebuf_data)
+         blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, color);
    }
 
 end:
@@ -378,17 +380,21 @@ static void rgui_blit_cursor(void)
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
-   rgui_color_rect(fb_pitch, fb_width, fb_height, x, y - 5, 1, 11, 0xFFFF);
-   rgui_color_rect(fb_pitch, fb_width, fb_height, x - 5, y, 11, 1, 0xFFFF);
+   if (rgui_framebuf_data)
+   {
+      rgui_color_rect(rgui_framebuf_data, fb_pitch, fb_width, fb_height, x, y - 5, 1, 11, 0xFFFF);
+      rgui_color_rect(rgui_framebuf_data, fb_pitch, fb_width, fb_height, x - 5, y, 11, 1, 0xFFFF);
+   }
 }
 
 static void rgui_frame(void *data, video_frame_info_t *video_info)
 {
    rgui_t *rgui                   = (rgui_t*)data;
-   rgui->frame_count              = (unsigned)video_info->frame_count;
+
+   rgui->frame_count++;
 }
 
-static void rgui_render(void *data)
+static void rgui_render(void *data, bool is_idle)
 {
    menu_animation_ctx_ticker_t ticker;
    unsigned x, y;
@@ -400,15 +406,13 @@ static void rgui_render(void *data)
    char title_buf[255];
    char title_msg[64];
    char msg[255];
+   size_t entries_end             = 0;
    bool msg_force                 = false;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
-   uint64_t frame_count           = rgui ? rgui->frame_count : 0;
+   uint64_t frame_count           = rgui->frame_count;
 
    msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
-
-   if (!rgui)
-      return;
 
    if (!rgui->force_redraw)
    {
@@ -418,10 +422,7 @@ static void rgui_render(void *data)
             && menu_driver_is_alive() && !msg_force)
          return;
 
-      if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
-         return;
-
-      if (!menu_display_get_update_pending())
+      if (is_idle || !menu_display_get_update_pending())
          return;
    }
 
@@ -431,7 +432,9 @@ static void rgui_render(void *data)
    /* if the framebuffer changed size, recache the background */
    if (rgui->last_width != fb_width || rgui->last_height != fb_height)
    {
-      rgui_fill_rect(fb_pitch, 0, fb_height, fb_width, 4, rgui_gray_filler);
+      if (rgui_framebuf_data)
+         rgui_fill_rect(rgui_framebuf_data,
+               fb_pitch, 0, fb_height, fb_width, 4, rgui_gray_filler);
       rgui->last_width  = fb_width;
       rgui->last_height = fb_height;
    }
@@ -441,12 +444,12 @@ static void rgui_render(void *data)
 
    rgui->force_redraw        = false;
 
-   if (settings->menu.pointer.enable)
+   if (settings->bools.menu_pointer_enable)
    {
       unsigned new_val;
 
       menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
-      
+
       new_val = (unsigned)(menu_input_pointer_state(MENU_POINTER_Y_AXIS)
          / (11 - 2 + old_start));
 
@@ -467,7 +470,7 @@ static void rgui_render(void *data)
       }
    }
 
-   if (settings->menu.mouse.enable)
+   if (settings->bools.menu_mouse_enable)
    {
       unsigned new_mouse_ptr;
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
@@ -480,13 +483,13 @@ static void rgui_render(void *data)
    }
 
    /* Do not scroll if all items are visible. */
-   if (menu_entries_get_end() <= RGUI_TERM_HEIGHT(fb_width, fb_height))
+   if (menu_entries_get_size() <= RGUI_TERM_HEIGHT(fb_width, fb_height))
    {
       size_t start = 0;
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
    }
 
-   bottom    = (int)(menu_entries_get_end() - RGUI_TERM_HEIGHT(fb_width, fb_height));
+   bottom    = (int)(menu_entries_get_size() - RGUI_TERM_HEIGHT(fb_width, fb_height));
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
    if (old_start > (unsigned)bottom)
@@ -494,14 +497,12 @@ static void rgui_render(void *data)
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
-   end = ((old_start + RGUI_TERM_HEIGHT(fb_width, fb_height)) <= (menu_entries_get_end())) ?
-      old_start + RGUI_TERM_HEIGHT(fb_width, fb_height) : menu_entries_get_end();
+   entries_end = menu_entries_get_size();
+
+   end         = ((old_start + RGUI_TERM_HEIGHT(fb_width, fb_height)) <= (entries_end)) ?
+      old_start + RGUI_TERM_HEIGHT(fb_width, fb_height) : entries_end;
 
    rgui_render_background();
-
-#if 0
-   RARCH_LOG("Dir is: %s\n", label);
-#endif
 
    menu_entries_get_title(title, sizeof(title));
 
@@ -524,34 +525,40 @@ static void rgui_render(void *data)
       back_buf[0] = back_msg[0] = '\0';
 
       strlcpy(back_buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK), sizeof(back_buf));
-      strlcpy(back_msg, string_to_upper(back_buf), sizeof(back_msg));
-      blit_line(
-            RGUI_TERM_START_X(fb_width),
-            RGUI_TERM_START_X(fb_width),
-            back_msg,
-            TITLE_COLOR(settings));
+      string_to_upper(back_buf);
+      if (rgui_framebuf_data)
+         blit_line(
+               RGUI_TERM_START_X(fb_width),
+               RGUI_TERM_START_X(fb_width),
+               back_msg,
+               TITLE_COLOR(settings));
    }
 
-   strlcpy(title_buf, string_to_upper(title_buf), sizeof(title_buf));
+   string_to_upper(title_buf);
 
-   blit_line(
-         (int)(RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
-            - utf8len(title_buf)) * FONT_WIDTH_STRIDE / 2),
-         RGUI_TERM_START_X(fb_width),
-         title_buf, TITLE_COLOR(settings));
-
-   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
+   if (rgui_framebuf_data)
       blit_line(
+            (int)(RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
+                  - utf8len(title_buf)) * FONT_WIDTH_STRIDE / 2),
             RGUI_TERM_START_X(fb_width),
-            (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
-            RGUI_TERM_START_Y(fb_height) + 2, title_msg, hover_color);
+            title_buf, TITLE_COLOR(settings));
 
-   if (settings->menu.timedate_enable)
+   if (settings->bools.menu_core_enable &&
+         menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
+   {
+      if (rgui_framebuf_data)
+         blit_line(
+               RGUI_TERM_START_X(fb_width),
+               (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
+               RGUI_TERM_START_Y(fb_height) + 2, title_msg, hover_color);
+   }
+
+   if (settings->bools.menu_timedate_enable)
    {
       menu_display_ctx_datetime_t datetime;
       char timedate[255];
 
-      timedate[0] = '\0';
+      timedate[0]        = '\0';
 
       datetime.s         = timedate;
       datetime.len       = sizeof(timedate);
@@ -559,10 +566,11 @@ static void rgui_render(void *data)
 
       menu_display_timedate(&datetime);
 
-      blit_line(
-            RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width),
-            (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
-            RGUI_TERM_START_Y(fb_height) + 2, timedate, hover_color);
+      if (rgui_framebuf_data)
+         blit_line(
+               RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width),
+               (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
+               RGUI_TERM_START_Y(fb_height) + 2, timedate, hover_color);
    }
 
    x = RGUI_TERM_START_X(fb_width);
@@ -572,30 +580,33 @@ static void rgui_render(void *data)
 
    for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
+      menu_entry_t entry;
       menu_animation_ctx_ticker_t ticker;
-      size_t selection;
-      char entry_path[255];
       char entry_value[255];
       char message[255];
       char entry_title_buf[255];
       char type_str_buf[255];
-      unsigned                entry_spacing = menu_entry_get_spacing((unsigned)i);
+      char *entry_path                      = NULL;
+      unsigned entry_spacing                = 0;
+      size_t entry_title_buf_utf8len        = 0;
+      size_t entry_title_buf_len            = 0;
       bool                entry_selected    = menu_entry_is_currently_selected((unsigned)i);
-      
-      if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-         continue;
+      size_t selection                      = menu_navigation_get_selection();
 
       if (i > (selection + 100))
          continue;
 
-      entry_path[0]      = '\0';
       entry_value[0]     = '\0';
       message[0]         = '\0';
       entry_title_buf[0] = '\0';
       type_str_buf[0]    = '\0';
 
-      menu_entry_get_value((unsigned)i, NULL, entry_value, sizeof(entry_value));
-      menu_entry_get_rich_label((unsigned)i, entry_path, sizeof(entry_path));
+      menu_entry_init(&entry);
+      menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
+
+      entry_spacing = menu_entry_get_spacing(&entry);
+      menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
+      entry_path      = menu_entry_get_rich_label(&entry);
 
       ticker.s        = entry_title_buf;
       ticker.len      = RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2);
@@ -611,16 +622,24 @@ static void rgui_render(void *data)
 
       menu_animation_ticker(&ticker);
 
+      entry_title_buf_utf8len = utf8len(entry_title_buf);
+      entry_title_buf_len     = strlen(entry_title_buf);
+
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             entry_selected ? '>' : ' ',
-            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - utf8len(entry_title_buf) + strlen(entry_title_buf)),
-            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - utf8len(entry_title_buf) + strlen(entry_title_buf)),
+            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - entry_title_buf_utf8len + entry_title_buf_len),
+            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - entry_title_buf_utf8len + entry_title_buf_len),
             entry_title_buf,
             entry_spacing,
             type_str_buf);
 
-      blit_line(x, y, message,
-            entry_selected ? hover_color : normal_color);
+      if (rgui_framebuf_data)
+         blit_line(x, y, message,
+               entry_selected ? hover_color : normal_color);
+
+      menu_entry_free(&entry);
+      if (!string_is_empty(entry_path))
+         free(entry_path);
    }
 
    if (menu_input_dialog_get_display_kb())
@@ -635,19 +654,21 @@ static void rgui_render(void *data)
    if (!string_is_empty(rgui->msgbox))
    {
       rgui_render_messagebox(rgui->msgbox);
-      rgui->msgbox[0] = '\0';
+      free(rgui->msgbox);
+      rgui->msgbox       = NULL;
       rgui->force_redraw = true;
    }
 
    if (rgui->mouse_show)
    {
       settings_t *settings = config_get_ptr();
-      bool cursor_visible  = settings->video.fullscreen ||
+      bool cursor_visible  = settings->bools.video_fullscreen ||
          !video_driver_has_windowed();
 
-      if (settings->menu.mouse.enable && cursor_visible)
+      if (settings->bools.menu_mouse_enable && cursor_visible)
          rgui_blit_cursor();
    }
+
 }
 
 static void rgui_framebuffer_free(void)
@@ -657,7 +678,7 @@ static void rgui_framebuffer_free(void)
    rgui_framebuf_data = NULL;
 }
 
-static void *rgui_init(void **userdata)
+static void *rgui_init(void **userdata, bool video_is_threaded)
 {
    size_t fb_pitch, start;
    unsigned fb_width, fb_height, new_font_height;
@@ -700,8 +721,10 @@ static void *rgui_init(void **userdata)
    if (!ret)
       goto error;
 
-   rgui_fill_rect(fb_pitch, 0, fb_height,
-         fb_width, 4, rgui_gray_filler);
+   if (rgui_framebuf_data)
+      rgui_fill_rect(rgui_framebuf_data,
+            fb_pitch, 0, fb_height,
+            fb_width, 4, rgui_gray_filler);
 
    rgui->last_width  = fb_width;
    rgui->last_height = fb_height;
@@ -762,12 +785,12 @@ static void rgui_navigation_clear(void *data, bool pending_push)
 
 static void rgui_navigation_set(void *data, bool scroll)
 {
-   size_t selection, start, fb_pitch;
+   size_t start, fb_pitch;
    unsigned fb_width, fb_height;
    bool do_set_start              = false;
-   size_t end                     = menu_entries_get_end();
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
+   size_t end                     = menu_entries_get_size();
+   size_t selection               = menu_navigation_get_selection();
+
    if (!scroll)
       return;
 
@@ -849,26 +872,22 @@ static int rgui_pointer_tap(void *data,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   size_t selection;
    unsigned header_height = menu_display_get_header_height();
 
    if (y < header_height)
    {
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      size_t selection = menu_navigation_get_selection();
       return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
    }
    else if (ptr <= (menu_entries_get_size() - 1))
    {
-      size_t idx;
-      bool scroll              = false;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      size_t selection         = menu_navigation_get_selection();
+
       if (ptr == selection && cbs && cbs->action_select)
          return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
-      idx  = ptr;
-
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+      menu_navigation_set_selection(ptr);
+      menu_driver_navigation_set(false);
    }
 
    return 0;
@@ -909,6 +928,11 @@ menu_ctx_driver_t menu_ctx_rgui = {
    "rgui",
    rgui_environ,
    rgui_pointer_tap,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
    NULL,
    NULL
 };

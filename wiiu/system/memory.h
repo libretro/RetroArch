@@ -39,4 +39,4 @@ void MEMBucket_free(void *ptr);
 }
 #endif
 
-#endif // __MEMORY_H_
+#endif /* __MEMORY_H_ */

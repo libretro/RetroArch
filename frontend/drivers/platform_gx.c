@@ -42,6 +42,7 @@
 #include <lists/file_list.h>
 #endif
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 
 #include "../frontend_driver.h"
 #include "../../defaults.h"
@@ -76,29 +77,29 @@ enum
 
 #if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
 static devoptab_t dotab_stdout = {
-   "stdout",   // device name
-   0,          // size of file structure
-   NULL,       // device open
-   NULL,       // device close
-   NULL,       // device write
-   NULL,       // device read
-   NULL,       // device seek
-   NULL,       // device fstat
-   NULL,       // device stat
-   NULL,       // device link
-   NULL,       // device unlink
-   NULL,       // device chdir
-   NULL,       // device rename
-   NULL,       // device mkdir
-   0,          // dirStateSize
-   NULL,       // device diropen_r
-   NULL,       // device dirreset_r
-   NULL,       // device dirnext_r
-   NULL,       // device dirclose_r
-   NULL,       // device statvfs_r
-   NULL,       // device ftrunctate_r
-   NULL,       // device fsync_r
-   NULL,       // deviceData;
+   "stdout",   /* device name */
+   0,          /* size of file structure */
+   NULL,       /* device open */
+   NULL,       /* device close */
+   NULL,       /* device write */
+   NULL,       /* device read */
+   NULL,       /* device seek */
+   NULL,       /* device fstat */
+   NULL,       /* device stat */
+   NULL,       /* device link */
+   NULL,       /* device unlink */
+   NULL,       /* device chdir */
+   NULL,       /* device rename */
+   NULL,       /* device mkdir */
+   0,          /* dirStateSize */
+   NULL,       /* device diropen_r */
+   NULL,       /* device dirreset_r */
+   NULL,       /* device dirnext_r */
+   NULL,       /* device dirclose_r */
+   NULL,       /* device statvfs_r */
+   NULL,       /* device ftrunctate_r */
+   NULL,       /* device fsync_r */
+   NULL,       /* deviceData; */
 };
 #endif
 
@@ -207,37 +208,37 @@ static void frontend_gx_get_environment_settings(
 #ifdef HW_DOL
    chdir("carda:/retroarch");
 #endif
-   getcwd(g_defaults.dir.core, PATH_MAX_LENGTH);
+   getcwd(g_defaults.dirs[DEFAULT_DIR_CORE], PATH_MAX_LENGTH);
 
-   last_slash = strrchr(g_defaults.dir.core, '/');
+   last_slash = strrchr(g_defaults.dirs[DEFAULT_DIR_CORE], '/');
    if (last_slash)
       *last_slash = 0;
-   device_end = strchr(g_defaults.dir.core, '/');
+   device_end = strchr(g_defaults.dirs[DEFAULT_DIR_CORE], '/');
    if (device_end)
-      snprintf(g_defaults.dir.port, sizeof(g_defaults.dir.port),
-            "%.*s/retroarch", device_end - g_defaults.dir.core,
-            g_defaults.dir.core);
+      snprintf(g_defaults.dirs[DEFAULT_DIR_PORT], sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]),
+            "%.*s/retroarch", device_end - g_defaults.dirs[DEFAULT_DIR_CORE],
+            g_defaults.dirs[DEFAULT_DIR_CORE]);
    else
-      fill_pathname_join(g_defaults.dir.port, g_defaults.dir.port,
-            "retroarch", sizeof(g_defaults.dir.port));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PORT], g_defaults.dirs[DEFAULT_DIR_PORT],
+            "retroarch", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 
-   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
-         "info", sizeof(g_defaults.dir.core_info));
-   fill_pathname_join(g_defaults.dir.autoconfig,
-         g_defaults.dir.core, "autoconfig",
-         sizeof(g_defaults.dir.autoconfig));
-   fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
-         "overlays", sizeof(g_defaults.dir.overlay));
-   fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+         g_defaults.dirs[DEFAULT_DIR_CORE], "autoconfig",
+         sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
          "retroarch.cfg", sizeof(g_defaults.path.config));
-   fill_pathname_join(g_defaults.dir.system, g_defaults.dir.port,
-         "system", sizeof(g_defaults.dir.system));
-   fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.port,
-         "savefiles", sizeof(g_defaults.dir.sram));
-   fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.port,
-         "savefiles", sizeof(g_defaults.dir.savestate));
-   fill_pathname_join(g_defaults.dir.playlist, g_defaults.dir.port,
-         "playlists", sizeof(g_defaults.dir.playlist));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
 
 #ifdef IS_SALAMANDER
    if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
@@ -309,7 +310,9 @@ static void frontend_gx_init(void *data)
    __exception_setreload(8);
 #endif
 
+#ifdef HW_RVL
    fatInitDefault();
+#endif
 
 #ifdef HAVE_LOGGER
    devoptab_list[STD_OUT] = &dotab_stdout;
@@ -387,7 +390,7 @@ static void frontend_gx_exitspawn(char *s, size_t len)
             if (frontend_driver_get_salamander_basename(salamander_name,
                      sizeof(salamander_name)))
             {
-               fill_pathname_join(new_path, g_defaults.dir.core,
+               fill_pathname_join(new_path, g_defaults.dirs[DEFAULT_DIR_CORE],
                      salamander_name, sizeof(new_path));
                path_set(RARCH_PATH_CONTENT, new_path);
             }
@@ -403,10 +406,10 @@ static void frontend_gx_exitspawn(char *s, size_t len)
          sizeof(salamander_basename));
 
    /* FIXME/TODO - hack
-    * direct loading failed (out of memory), 
+    * direct loading failed (out of memory),
     * try to jump to Salamander,
     * then load the correct core */
-   fill_pathname_join(s, g_defaults.dir.core,
+   fill_pathname_join(s, g_defaults.dirs[DEFAULT_DIR_CORE],
          salamander_basename, len);
 #endif
    frontend_gx_exec(s, should_load_game);
@@ -422,8 +425,8 @@ static void frontend_gx_process_args(int *argc, char *argv[])
    {
       char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
-      if (path_file_exists(path))
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, path);
+      if (filestream_exists(path))
+         rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, path);
    }
 #endif
 }
@@ -469,32 +472,35 @@ static enum frontend_architecture frontend_gx_get_architecture(void)
    return FRONTEND_ARCH_PPC;
 }
 
-static int frontend_gx_parse_drive_list(void *data)
+static int frontend_gx_parse_drive_list(void *data, bool load_content)
 {
 #ifndef IS_SALAMANDER
    file_list_t *list = (file_list_t*)data;
+   enum msg_hash_enums enum_idx = load_content ?
+      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+      MSG_UNKNOWN;
 #ifdef HW_RVL
    menu_entries_append_enum(list,
          "sd:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "usb:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
 #endif
    menu_entries_append_enum(list,
          "carda:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "cardb:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 
    return 0;
@@ -553,5 +559,7 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* destroy_signal_handler_state */
    NULL,                            /* attach_console */
    NULL,                            /* detach_console */
+   NULL,                            /* watch_path_for_changes */
+   NULL,                            /* check_for_path_changes */
    "gx",
 };

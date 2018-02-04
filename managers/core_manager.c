@@ -32,9 +32,8 @@ bool find_libretro_core(char *fullpath,
    size_t sizeof_fullpath, char *needle, const char * ext)
 {
    size_t i;
-   bool                 ret = false;
    settings_t *settings     = config_get_ptr();
-   const char          *dir = settings->directory.libretro;
+   const char          *dir = settings->paths.directory_libretro;
    struct string_list *list = dir_list_new(dir, ext, false, true, false, false);
 
    if (!list)
@@ -46,8 +45,8 @@ bool find_libretro_core(char *fullpath,
 
    RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n",
          dir);
-   
-   for (i = 0; i < list->size && !ret; i++)
+
+   for (i = 0; i < list->size; i++)
    {
       char fname[PATH_MAX_LENGTH]           = {0};
       const char *libretro_elem             = (const char*)list->elems[i].data;
@@ -63,7 +62,6 @@ bool find_libretro_core(char *fullpath,
          continue;
 
       strlcpy(fullpath, libretro_elem, sizeof_fullpath);
-      ret = true;
       break;
    }
 

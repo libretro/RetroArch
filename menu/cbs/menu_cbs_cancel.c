@@ -17,7 +17,6 @@
 #include <string/stdstring.h>
 
 #include "../menu_driver.h"
-#include "../menu_navigation.h"
 #include "../menu_cbs.h"
 #include "../../msg_hash.h"
 
@@ -38,10 +37,6 @@ static int action_cancel_pop_default(const char *path,
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 
-#if 0
-   RARCH_LOG("menu_label: %s\n", menu_label);
-#endif
-
    if (!string_is_empty(menu_label))
    {
       if (
@@ -55,9 +50,9 @@ static int action_cancel_pop_default(const char *path,
          filebrowser_clear_type();
    }
 
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
+   new_selection_ptr = menu_navigation_get_selection();
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
+   menu_navigation_set_selection(new_selection_ptr);
 
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
@@ -75,6 +70,10 @@ static int action_cancel_core_content(const char *path,
    if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)))
       menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
    else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST)))
+      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
+   else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS)))
+      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
+   else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST)))
       menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
    else
       menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST), 0);

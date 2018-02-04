@@ -31,7 +31,8 @@
 #include "netplay_discovery.h"
 
 #include "../../autosave.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
+#include "../../input/input_driver.h"
 
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
 #define HAVE_INET6 1
@@ -86,11 +87,11 @@ static int init_tcp_connection(const struct addrinfo *res,
       int on = 0;
       if (res->ai_family == AF_INET6)
       {
-         if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (void*)&on, sizeof(on)) < 0)
+         if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&on, sizeof(on)) < 0)
             RARCH_WARN("Failed to listen on both IPv6 and IPv4\n");
       }
 #endif
-      if (  !socket_bind(fd, (void*)res) || 
+      if (  !socket_bind(fd, (void*)res) ||
             listen(fd, 1024) < 0)
       {
          ret = false;
@@ -131,14 +132,14 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
          hints.ai_flags = AI_PASSIVE;
 
       snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-      if (getaddrinfo_retro(server, port_buf, &hints, &res) < 0)
+      if (getaddrinfo_retro(server, port_buf, &hints, &res) != 0)
       {
 #ifdef HAVE_INET6
          if (!server)
          {
             /* Didn't work with IPv6, try wildcard */
             hints.ai_family = 0;
-            if (getaddrinfo_retro(server, port_buf, &hints, &res) < 0)
+            if (getaddrinfo_retro(server, port_buf, &hints, &res) != 0)
                return false;
          }
          else
@@ -152,14 +153,14 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
    }
    else
    {
-      /* I'll build my own addrinfo! With blackjack and hookers! */
-      struct netplay_host *host = (struct netplay_host *) direct_host;
-      hints.ai_family = host->addr.sa_family;
-      hints.ai_socktype = SOCK_STREAM;
-      hints.ai_protocol = 0;
-      hints.ai_addrlen = host->addrlen;
-      hints.ai_addr = &host->addr;
-      res = &hints;
+      /* I'll build my own addrinfo! */
+      struct netplay_host *host = (struct netplay_host *)direct_host;
+      hints.ai_family           = host->addr.sa_family;
+      hints.ai_socktype         = SOCK_STREAM;
+      hints.ai_protocol         = 0;
+      hints.ai_addrlen          = host->addrlen;
+      hints.ai_addr             = &host->addr;
+      res                       = &hints;
 
    }
 
@@ -169,17 +170,21 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
    if (!direct_host && !server && res->ai_family == AF_INET6)
    {
       struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) res->ai_addr;
-      sin6->sin6_addr = in6addr_any;
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+	  IN6ADDR_SETANY(sin6);
+#else
+      sin6->sin6_addr           = in6addr_any;
+#endif
    }
 #endif
 
-   /* If "localhost" is used, it is important to check every possible 
+   /* If "localhost" is used, it is important to check every possible
     * address for IPv4/IPv6. */
    tmp_info = res;
 
    while (tmp_info)
    {
-      struct sockaddr_storage sad;
+      struct sockaddr_storage sad = {0};
       int fd = init_tcp_connection(
             tmp_info,
             direct_host || server,
@@ -192,8 +197,8 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
          if (direct_host || server)
          {
             netplay->connections[0].active = true;
-            netplay->connections[0].fd = fd;
-            netplay->connections[0].addr = sad;
+            netplay->connections[0].fd     = fd;
+            netplay->connections[0].addr   = sad;
          }
          else
          {
@@ -214,7 +219,8 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
    return ret;
 }
 
-static bool init_socket(netplay_t *netplay, void *direct_host, const char *server, uint16_t port)
+static bool init_socket(netplay_t *netplay, void *direct_host,
+      const char *server, uint16_t port)
 {
    if (!network_init())
       return false;
@@ -234,7 +240,7 @@ static bool netplay_init_socket_buffers(netplay_t *netplay)
     * frames of input data, plus the headers for each of them */
    size_t i;
    size_t packet_buffer_size = netplay->zbuffer_size +
-      NETPLAY_MAX_STALL_FRAMES * WORDS_PER_FRAME + (NETPLAY_MAX_STALL_FRAMES+1)*3;
+      NETPLAY_MAX_STALL_FRAMES * 16;
    netplay->packet_buffer_size = packet_buffer_size;
 
    for (i = 0; i < netplay->connections_size; i++)
@@ -321,8 +327,8 @@ bool netplay_try_init_serialization(netplay_t *netplay)
 
    /* Check if we can actually save */
    serial_info.data_const = NULL;
-   serial_info.data = netplay->buffer[netplay->run_ptr].state;
-   serial_info.size = netplay->state_size;
+   serial_info.data       = netplay->buffer[netplay->run_ptr].state;
+   serial_info.size       = netplay->state_size;
 
    if (!core_serialize(&serial_info))
       return false;
@@ -368,8 +374,7 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay)
 
 static bool netplay_init_buffers(netplay_t *netplay)
 {
-   if (!netplay)
-      return false;
+   struct delta_frame *delta_frames = NULL;
 
    /* Enough to get ahead or behind by MAX_STALL_FRAMES frames */
    netplay->buffer_size = NETPLAY_MAX_STALL_FRAMES + 1;
@@ -379,11 +384,13 @@ static bool netplay_init_buffers(netplay_t *netplay)
    if (netplay->is_server)
       netplay->buffer_size *= 2;
 
-   netplay->buffer = (struct delta_frame*)calloc(netplay->buffer_size,
-         sizeof(*netplay->buffer));
+   delta_frames = (struct delta_frame*)calloc(netplay->buffer_size,
+         sizeof(*delta_frames));
 
-   if (!netplay->buffer)
+   if (!delta_frames)
       return false;
+
+   netplay->buffer = delta_frames;
 
    if (!(netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_INITIALIZATION)))
       netplay_init_serialization(netplay);
@@ -403,7 +410,7 @@ static bool netplay_init_buffers(netplay_t *netplay)
  * @nick                 : Nickname of user.
  * @quirks               : Netplay quirks required for this session.
  *
- * Creates a new netplay handle. A NULL server means we're 
+ * Creates a new netplay handle. A NULL server means we're
  * hosting.
  *
  * Returns: new netplay data.
@@ -417,35 +424,36 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    if (!netplay)
       return NULL;
 
-   netplay->listen_fd         = -1;
-   netplay->tcp_port          = port;
-   netplay->cbs               = *cb;
-   netplay->connected_players = 0;
-   netplay->player_max        = 1;
-   netplay->is_server         = (direct_host == NULL && server == NULL);
-   netplay->nat_traversal     = netplay->is_server ? nat_traversal : false;
-   netplay->stateless_mode    = stateless_mode;
-   netplay->check_frames      = check_frames;
+   netplay->listen_fd            = -1;
+   netplay->tcp_port             = port;
+   netplay->cbs                  = *cb;
+   netplay->is_server            = (direct_host == NULL && server == NULL);
+   netplay->is_connected         = false;;
+   netplay->nat_traversal        = netplay->is_server ? nat_traversal : false;
+   netplay->stateless_mode       = stateless_mode;
+   netplay->check_frames         = check_frames;
    netplay->crc_validity_checked = false;
-   netplay->crcs_valid        = true;
-   netplay->quirks            = quirks;
-   netplay->self_mode         = netplay->is_server ?
+   netplay->crcs_valid           = true;
+   netplay->quirks               = quirks;
+   netplay->self_mode            = netplay->is_server ?
                                 NETPLAY_CONNECTION_SPECTATING :
                                 NETPLAY_CONNECTION_NONE;
 
    if (netplay->is_server)
    {
-      netplay->connections = NULL;
-      netplay->connections_size = 0;
+      netplay->connections       = NULL;
+      netplay->connections_size  = 0;
    }
    else
    {
-      netplay->connections = &netplay->one_connection;
-      netplay->connections_size = 1;
+      netplay->connections       = &netplay->one_connection;
+      netplay->connections_size  = 1;
       netplay->connections[0].fd = -1;
    }
 
-   strlcpy(netplay->nick, nick[0] ? nick : RARCH_DEFAULT_NICK, sizeof(netplay->nick));
+   strlcpy(netplay->nick, nick[0]
+         ? nick : RARCH_DEFAULT_NICK,
+         sizeof(netplay->nick));
 
    if (!init_socket(netplay, direct_host, server, port))
    {
@@ -459,14 +467,34 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
       return NULL;
    }
 
-   if (!netplay->is_server)
+   if (netplay->is_server)
    {
+      /* Clients get device info from the server */
+      unsigned i;
+      for (i = 0; i < MAX_INPUT_DEVICES; i++)
+      {
+         uint32_t dtype = input_config_get_device(i);
+         netplay->config_devices[i] = dtype;
+         if ((dtype&RETRO_DEVICE_MASK) == RETRO_DEVICE_KEYBOARD)
+         {
+            netplay->have_updown_device = true;
+            netplay_key_hton_init();
+         }
+         if (dtype != RETRO_DEVICE_NONE && !netplay_expected_input_size(netplay, 1<<i))
+            RARCH_WARN("Netplay does not support input device %u\n", i+1);
+      }
+   }
+   else
+   {
+      /* Start our handshake */
       netplay_handshake_init_send(netplay, &netplay->connections[0]);
-      netplay->connections[0].mode = netplay->self_mode = NETPLAY_CONNECTION_INIT;
+
+      netplay->connections[0].mode = NETPLAY_CONNECTION_INIT;
+      netplay->self_mode           = NETPLAY_CONNECTION_INIT;
    }
 
-   /* FIXME: Not really the right place to do this, socket initialization needs
-    * to be fixed in general */
+   /* FIXME: Not really the right place to do this,
+    * socket initialization needs to be fixed in general. */
    if (netplay->is_server)
    {
       if (!socket_nonblock(netplay->listen_fd))
@@ -524,8 +552,7 @@ void netplay_free(netplay_t *netplay)
    if (netplay->buffer)
    {
       for (i = 0; i < netplay->buffer_size; i++)
-         if (netplay->buffer[i].state)
-            free(netplay->buffer[i].state);
+         netplay_delta_frame_free(&netplay->buffer[i]);
 
       free(netplay->buffer);
    }

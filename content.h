@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -66,7 +66,7 @@ void content_set_does_not_need_content(void);
 
 void content_unset_does_not_need_content(void);
 
-bool content_get_crc(uint32_t **content_crc_ptr);
+uint32_t content_get_crc(void);
 
 void content_deinit(void);
 

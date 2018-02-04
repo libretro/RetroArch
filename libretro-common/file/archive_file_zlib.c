@@ -21,11 +21,12 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <file/archive_file.h>
 #include <streams/file_stream.h>
 #include <streams/trans_stream.h>
-#include <string.h>
+#include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <encodings/crc32.h>
 
@@ -39,6 +40,18 @@
 #ifndef END_OF_CENTRAL_DIR_SIGNATURE
 #define END_OF_CENTRAL_DIR_SIGNATURE 0x06054b50
 #endif
+
+static INLINE uint32_t read_le(const uint8_t *data, unsigned size)
+{
+   unsigned i;
+   uint32_t val = 0;
+
+   size *= 8;
+   for (i = 0; i < size; i += 8)
+      val |= (uint32_t)*data++ << i;
+
+   return val;
+}
 
 static void *zlib_stream_new(void)
 {
@@ -70,7 +83,7 @@ static bool zlib_stream_decompress_data_to_file_init(
    if (!handle->data)
       goto error;
 
-   zlib_inflate_backend.set_in(handle->stream, 
+   zlib_inflate_backend.set_in(handle->stream,
          (const uint8_t*)cdata, csize);
    zlib_inflate_backend.set_out(handle->stream,
          handle->data, size);
@@ -173,10 +186,6 @@ static int zip_file_decompressed(
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
       return 1;
 
-#if 0
-   RARCH_LOG("[deflate] Path: %s, CRC32: 0x%x\n", name, crc32);
-#endif
-
    if (strstr(name, userdata->decomp_state.needle))
    {
       bool goto_error = false;
@@ -194,9 +203,6 @@ static int zip_file_decompressed(
 
             if (buf)
             {
-               /*RARCH_LOG("%s: %s\n",
-                     msg_hash_to_str(MSG_EXTRACTING_FILE),
-                     userdata->decomp_state.opt_file);*/
                memcpy(buf, handle.data, size);
 
                if (!filestream_write_file(userdata->decomp_state.opt_file, buf, size))

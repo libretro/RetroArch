@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -90,10 +91,6 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          case RARCH_OSK:
             snprintf(s, len,
                   "显示/隐藏屏显键盘。");
-            break;
-         case RARCH_NETPLAY_FLIP:
-            snprintf(s, len,
-                  "Netplay flip users.");
             break;
          case RARCH_SLOWMOTION:
             snprintf(s, len,
@@ -277,6 +274,9 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "截图文件将会存放在 \n"
                "截图目录之中.");
+         break;
+      case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
+         snprintf(s, len, "添加到收藏夹.");
          break;
       case MENU_ENUM_LABEL_RUN:
          snprintf(s, len, "启动内容.");
@@ -674,7 +674,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_INPUT_DRIVER:
          if (settings)
-            driver_hash = msg_hash_calculate(settings->input.driver);
+            driver_hash = msg_hash_calculate(settings->arrays.input_driver);
 
          switch (driver_hash)
          {
@@ -753,7 +753,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "当前视频驱动.");
 
-         if (string_is_equal(settings->video.driver, "gl"))
+         if (string_is_equal(settings->arrays.video_driver, "gl"))
          {
             snprintf(s, len,
                   "OpenGL视频驱动. \n"
@@ -767,7 +767,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "dependent on your graphics card's \n"
                   "underlying GL driver).");
          }
-         else if (string_is_equal(settings->video.driver, "sdl2"))
+         else if (string_is_equal(settings->arrays.video_driver, "sdl2"))
          {
             snprintf(s, len,
                   "SDL 2 视频驱动.\n"
@@ -779,7 +779,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "core implementations is dependent \n"
                   "on your platform SDL implementation.");
          }
-         else if (string_is_equal(settings->video.driver, "sdl1"))
+         else if (string_is_equal(settings->arrays.video_driver, "sdl1"))
          {
             snprintf(s, len,
                   "SDL 视频驱动.\n"
@@ -790,7 +790,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Performance is considered to be suboptimal. \n"
                   "Consider using it only as a last resort.");
          }
-         else if (string_is_equal(settings->video.driver, "d3d"))
+         else if (string_is_equal(settings->arrays.video_driver, "d3d"))
          {
             snprintf(s, len,
                   "Direct3D 视频驱动. \n"
@@ -799,7 +799,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "is dependent on your graphic card's \n"
                   "underlying D3D driver).");
          }
-         else if (string_is_equal(settings->video.driver, "exynos"))
+         else if (string_is_equal(settings->arrays.video_driver, "exynos"))
          {
             snprintf(s, len,
                   "Exynos-G2D 视频驱动. \n"
@@ -811,7 +811,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Performance for software rendered cores \n"
                   "should be optimal.");
          }
-         else if (string_is_equal(settings->video.driver, "drm"))
+         else if (string_is_equal(settings->arrays.video_driver, "drm"))
          {
             snprintf(s, len,
                   "Plain DRM 视频驱动. \n"
@@ -820,7 +820,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "libdrm for hardware scaling using \n"
                   "GPU overlays.");
          }
-         else if (string_is_equal(settings->video.driver, "sunxi"))
+         else if (string_is_equal(settings->arrays.video_driver, "sunxi"))
          {
             snprintf(s, len,
                   "Sunxi-G2D 视频驱动. \n"
@@ -838,7 +838,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
          if (settings)
-            driver_hash = msg_hash_calculate(settings->audio.resampler);
+            driver_hash = msg_hash_calculate(settings->arrays.audio_resampler);
 
          switch (driver_hash)
          {
@@ -1637,11 +1637,6 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "The username of the person running RetroArch. \n"
                "This will be used for playing online games.");
          break;
-      case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
-         snprintf(s, len,
-               "When being client over netplay, use \n"
-               "keybinds for player 1.");
-         break;
       case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
          snprintf(s, len,
                "The port of the host IP address. \n"
@@ -1743,10 +1738,6 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_SAVE_STATE:
          snprintf(s, len,
                "Saves state.");
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_FLIP_PLAYERS:
-         snprintf(s, len,
-               "Netplay flip users.");
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,

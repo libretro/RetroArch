@@ -23,6 +23,12 @@
 #include "../widgets/menu_entry.h"
 #include "../menu_cbs.h"
 #include "../menu_setting.h"
+#include "../../tasks/tasks_internal.h"
+
+#ifdef HAVE_NETWORKING
+#include "../../network/netplay/netplay.h"
+#include "../../network/netplay/netplay_discovery.h"
+#endif
 
 #ifndef BIND_ACTION_SELECT
 #define BIND_ACTION_SELECT(cbs, name) \
@@ -39,24 +45,19 @@ static int action_select_default(const char *path, const char *label, unsigned t
    menu_file_list_cbs_t *cbs  = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, idx, NULL, false);
 
-   cbs = menu_entries_get_actiondata_at_offset(selection_buf, idx);
+   if (selection_buf)
+      cbs                     = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(selection_buf, idx);
 
    if (!cbs)
+   {
+      menu_entry_free(&entry);
       return -1;
-    
+   }
+
    if (cbs->setting)
    {
       switch (setting_get_type(cbs->setting))
@@ -79,11 +80,11 @@ static int action_select_default(const char *path, const char *label, unsigned t
             break;
       }
    }
-    
+
    if (action == MENU_ACTION_NOOP)
    {
        if (cbs->action_ok)
-           action = MENU_ACTION_OK;
+           action     = MENU_ACTION_OK;
        else
        {
            if (cbs->action_start)
@@ -92,12 +93,14 @@ static int action_select_default(const char *path, const char *label, unsigned t
                action = MENU_ACTION_RIGHT;
        }
    }
-    
+
    if (action != MENU_ACTION_NOOP)
        ret = menu_entry_action(&entry, (unsigned)idx, action);
 
-   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
-    
+   menu_entry_free(&entry);
+
+   task_queue_check();
+
    return ret;
 }
 
@@ -105,12 +108,6 @@ static int action_select_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    return action_ok_path_use_directory(path, label, type, idx, 0 /* unused */);
-}
-
-static int action_select_directory(const char *path, const char *label, unsigned type,
-      size_t idx)
-{
-   return action_ok_directory_push(path, label, type, idx, 0 /* ignored */);
 }
 
 static int action_select_driver_setting(const char *path, const char *label, unsigned type,
@@ -151,6 +148,60 @@ static int action_select_input_desc(const char *path, const char *label, unsigne
    return action_right_input_desc(type, label, true);
 }
 
+#ifdef HAVE_KEYMAPPER
+static int action_select_input_desc_kbd(const char *path,
+      const char *label, unsigned type,
+   size_t idx)
+{
+   return action_right_input_desc_kbd(type, label, true);
+}
+#endif
+
+#ifdef HAVE_NETWORKING
+static int action_select_netplay_connect_room(const char *path,
+      const char *label, unsigned type,
+      size_t idx)
+{
+   char tmp_hostname[4115];
+
+   tmp_hostname[0] = '\0';
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+   if (netplay_room_list[idx - 3].host_method == NETPLAY_HOST_METHOD_MITM)
+   {
+      snprintf(tmp_hostname,
+            sizeof(tmp_hostname),
+            "%s|%d",
+            netplay_room_list[idx - 3].mitm_address,
+            netplay_room_list[idx - 3].mitm_port);
+   }
+   else
+   {
+      snprintf(tmp_hostname,
+            sizeof(tmp_hostname),
+            "%s|%d",
+            netplay_room_list[idx - 3].address,
+            netplay_room_list[idx - 3].port);
+   }
+
+#if 0
+   RARCH_LOG("[lobby] connecting to: %s with game: %s/%08x\n",
+         tmp_hostname,
+         netplay_room_list[idx - 3].gamename,
+         netplay_room_list[idx - 3].gamecrc);
+#endif
+
+   task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
+         netplay_room_list[idx - 3].gamename,
+         tmp_hostname, netplay_room_list[idx - 3].corename);
+
+   return 0;
+}
+#endif
+
 static int menu_cbs_init_bind_select_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
@@ -176,13 +227,18 @@ static int menu_cbs_init_bind_select_compare_type(
    {
       BIND_ACTION_SELECT(cbs, action_select_input_desc);
    }
+#ifdef HAVE_KEYMAPPER
+   else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+         && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      BIND_ACTION_SELECT(cbs, action_select_input_desc_kbd);
+   }
+#endif
    else
    {
+
       switch (type)
       {
-         case FILE_TYPE_DIRECTORY:
-            BIND_ACTION_SELECT(cbs, action_select_directory);
-            break;
          case FILE_TYPE_USE_DIRECTORY:
             BIND_ACTION_SELECT(cbs, action_select_path_use_directory);
             break;
@@ -207,6 +263,14 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       return -1;
 
    BIND_ACTION_SELECT(cbs, action_select_default);
+
+#ifdef HAVE_NETWORKING
+   if (cbs->enum_idx == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
+   {
+      BIND_ACTION_SELECT(cbs, action_select_netplay_connect_room);
+      return 0;
+   }
+#endif
 
    if (cbs->setting)
    {

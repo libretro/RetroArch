@@ -8,31 +8,31 @@ extern "C" {
 
 typedef enum
 {
-   // Unknown
+   /* Unknown */
    AX_DRC_VS_MODE_UNKNOWN
 } AXDRCVSMode;
 
 typedef enum
 {
-   // Unknown
+   /* Unknown */
    AX_DRC_VS_OUTPUT_UNKNOWN
 } AXDRCVSOutput;
 
 typedef enum
 {
-   // Unknown
+   /* Unknown */
    AX_DRC_VS_LC_UNKNOWN
 } AXDRCVSLC;
 
 typedef enum
 {
-   // Unknown
+   /* Unknown */
    AX_DRC_VS_SPEAKER_POS_UNKNOWN
 } AXDRCVSSpeakerPosition;
 
 typedef enum AX_DRC_VS_SURROUND_GAIN
 {
-   // Unknown
+   /* Unknown */
    AX_DRC_VS_SURROUND_GAIN_UNKNOWN
 } AXDRCVSSurroundLevelGain;
 

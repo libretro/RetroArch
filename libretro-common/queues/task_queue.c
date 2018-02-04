@@ -47,7 +47,7 @@ struct retro_task_impl
    void (*push_running)(retro_task_t *);
    void (*cancel)(void *);
    void (*reset)(void);
-   void (*wait)(void);
+   void (*wait)(retro_task_condition_fn_t, void *);
    void (*gather)(void);
    bool (*find)(retro_task_finder_t, void*);
    void (*retrieve)(task_retriever_data_t *data);
@@ -99,6 +99,9 @@ static void task_queue_push_progress(retro_task_t *task)
          else
             task_queue_msg_push(task, 1, 60, false, "%s...", task->title);
       }
+
+      if (task->progress_cb)
+         task->progress_cb(task);
    }
 }
 
@@ -189,9 +192,9 @@ static void retro_task_regular_gather(void)
    retro_task_internal_gather();
 }
 
-static void retro_task_regular_wait(void)
+static void retro_task_regular_wait(retro_task_condition_fn_t cond, void* data)
 {
-   while (tasks_running.front)
+   while (tasks_running.front && (!cond || cond(data)))
       retro_task_regular_gather();
 }
 
@@ -306,13 +309,13 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
       queue->front = task->next;
       slock_unlock(queue_lock);
       task->next   = NULL;
-       
+
       return;
    }
 
    /* Parse queue */
    t = front;
-    
+
    while (t && t->next)
    {
       /* Remove task and update queue */
@@ -373,7 +376,7 @@ static void retro_task_threaded_gather(void)
    slock_unlock(property_lock);
 }
 
-static void retro_task_threaded_wait(void)
+static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
 {
    bool wait = false;
 
@@ -382,7 +385,8 @@ static void retro_task_threaded_wait(void)
       retro_task_threaded_gather();
 
       slock_lock(running_lock);
-      wait = (tasks_running.front != NULL);
+      wait = (tasks_running.front != NULL) &&
+             (!cond || cond(data));
       slock_unlock(running_lock);
    } while (wait);
 }
@@ -577,82 +581,74 @@ bool task_queue_is_threaded(void)
    return task_threaded_enable;
 }
 
-bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
+bool task_queue_find(task_finder_data_t *find_data)
 {
-   switch (state)
-   {
-      case TASK_QUEUE_CTL_FIND:
-         {
-            task_finder_data_t *find_data = (task_finder_data_t*)data;
-            if (!impl_current->find(find_data->func, find_data->userdata))
-               return false;
-         }
-         break;
-      case TASK_QUEUE_CTL_RETRIEVE:
-         impl_current->retrieve((task_retriever_data_t*)data);
-         break;
-      case TASK_QUEUE_CTL_CHECK:
-         {
+   if (!impl_current->find(find_data->func, find_data->userdata))
+      return false;
+   return true;
+}
+
+void task_queue_retrieve(task_retriever_data_t *data)
+{
+   impl_current->retrieve(data);
+}
+
+void task_queue_check(void)
+{
 #ifdef HAVE_THREADS
-            bool current_threaded = (impl_current == &impl_threaded);
-            bool want_threaded    = task_queue_is_threaded();
+   bool current_threaded = (impl_current == &impl_threaded);
+   bool want_threaded    = task_queue_is_threaded();
 
-            if (want_threaded != current_threaded)
-               task_queue_deinit();
+   if (want_threaded != current_threaded)
+      task_queue_deinit();
 
-            if (!impl_current)
-               task_queue_init(want_threaded, msg_push_bak);
+   if (!impl_current)
+      task_queue_init(want_threaded, msg_push_bak);
 #endif
 
-            impl_current->gather();
-         }
-         break;
-      case TASK_QUEUE_CTL_PUSH:
+   impl_current->gather();
+}
+
+void task_queue_push(retro_task_t *task)
+{
+   /* Ignore this task if a related one is already running */
+   if (task->type == TASK_TYPE_BLOCKING)
+   {
+      retro_task_t *running = NULL;
+      bool found = false;
+
+      SLOCK_LOCK(queue_lock);
+      running = tasks_running.front;
+
+      for (; running; running = running->next)
+      {
+         if (running->type == TASK_TYPE_BLOCKING)
          {
-            retro_task_t *task = (retro_task_t*)data;
-
-            /* Ignore this task if a related one is already running */
-            if (task->type == TASK_TYPE_BLOCKING)
-            {
-               retro_task_t *running = NULL;
-               bool found = false;
-
-               SLOCK_LOCK(queue_lock);
-               running = tasks_running.front;
-
-               for (; running; running = running->next)
-               {
-                  if (running->type == TASK_TYPE_BLOCKING)
-                  {
-                     found = true;
-                     break;
-                  }
-               }
-
-               SLOCK_UNLOCK(queue_lock);
-
-               /* skip this task, user must try again later */
-               if (found)
-                  break;
-            }
-
-            /* The lack of NULL checks in the following functions
-             * is proposital to ensure correct control flow by the users. */
-            impl_current->push_running(task);
+            found = true;
             break;
          }
-      case TASK_QUEUE_CTL_RESET:
-         impl_current->reset();
-         break;
-      case TASK_QUEUE_CTL_WAIT:
-         impl_current->wait();
-         break;
-      case TASK_QUEUE_CTL_NONE:
-      default:
-         break;
+      }
+
+      SLOCK_UNLOCK(queue_lock);
+
+      /* skip this task, user must try again later */
+      if (found)
+         return;
    }
 
-   return true;
+   /* The lack of NULL checks in the following functions
+    * is proposital to ensure correct control flow by the users. */
+   impl_current->push_running(task);
+}
+
+void task_queue_wait(retro_task_condition_fn_t cond, void* data)
+{
+   impl_current->wait(cond, data);
+}
+
+void task_queue_reset(void)
+{
+   impl_current->reset();
 }
 
 /**

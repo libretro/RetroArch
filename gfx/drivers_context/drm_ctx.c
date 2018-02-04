@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -28,14 +28,16 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/poll.h>
 
 #include <libdrm/drm.h>
 #include <gbm.h>
 
 #include <lists/dir_list.h>
-#include <streams/file_stream.h>
+#include <string/stdstring.h>
 
+#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/drm_common.h"
@@ -60,6 +62,10 @@
 
 #endif
 
+#ifndef EGL_PLATFORM_GBM_KHR
+#define EGL_PLATFORM_GBM_KHR 0x31D7
+#endif
+
 static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 
 static struct gbm_bo *g_bo                = NULL;
@@ -74,12 +80,12 @@ typedef struct gfx_ctx_drm_data
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
-   RFILE *drm;
+   int fd;
    unsigned interval;
    unsigned fb_width;
    unsigned fb_height;
 
-   bool core_hw_context_enable; 
+   bool core_hw_context_enable;
 } gfx_ctx_drm_data_t;
 
 struct drm_fb
@@ -155,7 +161,7 @@ static void drm_flip_handler(int fd, unsigned frame,
    (void)fd;
    (void)sec;
    (void)usec;
-  
+
 #if 0
    static unsigned first_page_flip;
    static unsigned last_page_flip;
@@ -183,7 +189,7 @@ static bool gfx_ctx_drm_wait_flip(bool block)
 
    if (!waiting_for_flip)
       return false;
-   
+
    if (block)
       timeout = -1;
 
@@ -201,7 +207,7 @@ static bool gfx_ctx_drm_wait_flip(bool block)
    /* This buffer is not on-screen anymore. Release it to GBM. */
    gbm_surface_release_buffer(g_gbm_surface, g_bo);
    /* This buffer is being shown now. */
-   g_bo = g_next_bo; 
+   g_bo = g_next_bo;
 
    return false;
 }
@@ -219,14 +225,15 @@ static bool gfx_ctx_drm_queue_flip(void)
    if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
          DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip) == 0)
       return true;
-   
+
    /* Failed to queue page flip. */
    return false;
 }
 
-static void gfx_ctx_drm_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_drm_swap_buffers(void *data, void *data2)
 {
-   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+   gfx_ctx_drm_data_t        *drm = (gfx_ctx_drm_data_t*)data;
+   video_frame_info_t *video_info = (video_frame_info_t*)data2;
 
    switch (drm_api)
    {
@@ -241,7 +248,7 @@ static void gfx_ctx_drm_swap_buffers(void *data, video_frame_info_t *video_info)
          break;
    }
 
-   /* I guess we have to wait for flip to have taken 
+   /* I guess we have to wait for flip to have taken
     * place before another flip can be queued up.
     *
     * If true, we are still waiting for a flip
@@ -256,7 +263,7 @@ static void gfx_ctx_drm_swap_buffers(void *data, video_frame_info_t *video_info)
          gbm_surface_has_free_buffers(g_gbm_surface))
       return;
 
-   gfx_ctx_drm_wait_flip(true);  
+   gfx_ctx_drm_wait_flip(true);
 }
 
 static void gfx_ctx_drm_get_video_size(void *data,
@@ -287,12 +294,14 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
 
    drm_free();
 
-   if (drm->drm)
+   if (drm->fd >= 0)
+   {
       if (g_drm_fd >= 0)
       {
          drmDropMaster(g_drm_fd);
-         filestream_close(drm->drm);
+         close(drm->fd);
       }
+   }
 
    g_gbm_surface      = NULL;
    g_gbm_dev          = NULL;
@@ -346,6 +355,7 @@ static void *gfx_ctx_drm_init(video_frame_info_t *video_info, void *video_driver
 
    if (!drm)
       return NULL;
+   drm->fd = -1;
 
    gpu_descriptors = dir_list_new("/dev/dri", NULL, false, true, false, false);
 
@@ -359,14 +369,14 @@ nextgpu:
    }
    gpu = gpu_descriptors->elems[gpu_index++].data;
 
-   drm->drm    = filestream_open(gpu, RFILE_MODE_READ_WRITE, -1);
-   if (!drm->drm)
+   drm->fd    = open(gpu, O_RDWR);
+   if (drm->fd < 0)
    {
       RARCH_WARN("[KMS]: Couldn't open DRM device.\n");
       goto nextgpu;
    }
 
-   fd = filestream_get_fd(drm->drm);
+   fd = drm->fd;
 
    if (!drm_get_resources(fd))
       goto nextgpu;
@@ -379,7 +389,7 @@ nextgpu:
 
    drm_setup(fd);
 
-   /* First mode is assumed to be the "optimal" 
+   /* First mode is assumed to be the "optimal"
     * one for get_video_size() purposes. */
    drm->fb_width    = g_drm_connector->modes[0].hdisplay;
    drm->fb_height   = g_drm_connector->modes[0].vdisplay;
@@ -444,7 +454,7 @@ static EGLint *gfx_ctx_drm_egl_fill_attribs(
             *attr++ = drm->egl.minor;
 
             /* Technically, we don't have core/compat until 3.2.
-             * Version 3.1 is either compat or not depending 
+             * Version 3.1 is either compat or not depending
              * on GL_ARB_compatibility. */
             if (version >= 3002)
             {
@@ -466,7 +476,7 @@ static EGLint *gfx_ctx_drm_egl_fill_attribs(
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_OPENGLES
          *attr++ = EGL_CONTEXT_CLIENT_VERSION;
-         *attr++ = drm->egl.major 
+         *attr++ = drm->egl.major
             ? (EGLint)drm->egl.major : 2;
 #ifdef EGL_KHR_create_context
          if (drm->egl.minor > 0)
@@ -563,14 +573,15 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         if (!egl_init_context(&drm->egl, (EGLNativeDisplayType)g_gbm_dev, &major,
+         if (!egl_init_context(&drm->egl, EGL_PLATFORM_GBM_KHR,
+                  (EGLNativeDisplayType)g_gbm_dev, &major,
                   &minor, &n, attrib_ptr))
             goto error;
 
          attr            = gfx_ctx_drm_egl_fill_attribs(drm, egl_attribs);
          egl_attribs_ptr = &egl_attribs[0];
 
-         if (!egl_create_context(&drm->egl, (attr != egl_attribs_ptr) 
+         if (!egl_create_context(&drm->egl, (attr != egl_attribs_ptr)
                   ? egl_attribs_ptr : NULL))
             goto error;
 
@@ -611,14 +622,14 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
    frontend_driver_install_signal_handler();
 
-   /* If we use black frame insertion, 
-    * we fake a 60 Hz monitor for 120 Hz one, 
+   /* If we use black frame insertion,
+    * we fake a 60 Hz monitor for 120 Hz one,
     * etc, so try to match that. */
-   refresh_mod = video_info->black_frame_insertion 
+   refresh_mod = video_info->black_frame_insertion
       ? 0.5f : 1.0f;
 
    /* Find desired video mode, and use that.
-    * If not fullscreen, we get desired windowed size, 
+    * If not fullscreen, we get desired windowed size,
     * which is not appropriate. */
    if ((width == 0 && height == 0) || !fullscreen)
       g_drm_mode = &g_drm_connector->modes[0];
@@ -626,7 +637,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    {
       /* Try to match refresh_rate as closely as possible.
        *
-       * Lower resolutions tend to have multiple supported 
+       * Lower resolutions tend to have multiple supported
        * refresh rates as well.
        */
       float minimum_fps_diff = 0.0f;
@@ -635,7 +646,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       for (i = 0; i < g_drm_connector->count_modes; i++)
       {
          float diff;
-         if (width != g_drm_connector->modes[i].hdisplay || 
+         if (width != g_drm_connector->modes[i].hdisplay ||
                height != g_drm_connector->modes[i].vdisplay)
             continue;
 
@@ -726,9 +737,42 @@ static void gfx_ctx_drm_destroy(void *data)
 }
 
 static void gfx_ctx_drm_input_driver(void *data,
-      const char *name,
+      const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
+#ifdef HAVE_X11
+   settings_t *settings = config_get_ptr();
+
+   /* We cannot use the X11 input driver for DRM/KMS */
+   if (string_is_equal(settings->arrays.input_driver, "x"))
+   {
+#ifdef HAVE_UDEV
+      {
+         /* Try to set it to udev instead */
+         void *udev = input_udev.init(joypad_name);
+         if (udev)
+         {
+            *input       = &input_udev;
+            *input_data  = udev;
+            return;
+         }
+      }
+#endif
+#if defined(__linux__) && !defined(ANDROID)
+      {
+         /* Try to set it to linuxraw instead */
+         void *linuxraw = input_linuxraw.init(joypad_name);
+         if (linuxraw)
+         {
+            *input       = &input_linuxraw;
+            *input_data  = linuxraw;
+            return;
+         }
+      }
+#endif
+   }
+#endif
+
    *input      = NULL;
    *input_data = NULL;
 }

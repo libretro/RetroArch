@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -16,7 +16,7 @@
 
 /* Null context. */
 
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 
 static void gfx_ctx_null_swap_interval(void *data, unsigned interval)
 {
@@ -34,7 +34,7 @@ static void gfx_ctx_null_check_window(void *data, bool *quit,
    (void)resize;
 }
 
-static void gfx_ctx_null_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_null_swap_buffers(void *data, void *data2)
 {
    (void)data;
 }
@@ -64,7 +64,7 @@ static void gfx_ctx_null_destroy(void *data)
    (void)data;
 }
 
-static void gfx_ctx_null_input_driver(void *data, 
+static void gfx_ctx_null_input_driver(void *data,
       const char *name,
       const input_driver_t **input, void **input_data)
 {

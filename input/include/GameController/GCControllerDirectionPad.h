@@ -16,7 +16,7 @@ GAMECONTROLLER_EXPORT
 
 /**
  Set this block if you want to be notified when the value on this axis changes.
- 
+
  @param dpad the direction pad collection whose axis have been modified.
  @param xValue the value the x axis was set to at the time the valueChangedHandler fired.
  @param yValue the value the y axis was set to at the time the valueChangedHandler fired.

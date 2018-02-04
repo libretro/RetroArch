@@ -35,10 +35,9 @@ typedef struct
 static INLINE fft_complex_t fft_complex_mul(fft_complex_t a,
       fft_complex_t b)
 {
-   fft_complex_t out = {
-      a.real * b.real - a.imag * b.imag,
-      a.imag * b.real + a.real * b.imag,
-   };
+   fft_complex_t out;
+   out.real = a.real * b.real - a.imag * b.imag;
+   out.imag = a.imag * b.real + a.real * b.imag;
 
    return out;
 
@@ -47,10 +46,9 @@ static INLINE fft_complex_t fft_complex_mul(fft_complex_t a,
 static INLINE fft_complex_t fft_complex_add(fft_complex_t a,
       fft_complex_t b)
 {
-   fft_complex_t out = {
-      a.real + b.real,
-      a.imag + b.imag,
-   };
+   fft_complex_t out;
+   out.real = a.real + b.real;
+   out.imag = a.imag + b.imag;
 
    return out;
 
@@ -59,10 +57,9 @@ static INLINE fft_complex_t fft_complex_add(fft_complex_t a,
 static INLINE fft_complex_t fft_complex_sub(fft_complex_t a,
       fft_complex_t b)
 {
-   fft_complex_t out = {
-      a.real - b.real,
-      a.imag - b.imag,
-   };
+   fft_complex_t out;
+   out.real = a.real - b.real;
+   out.imag = a.imag - b.imag;
 
    return out;
 
@@ -70,9 +67,9 @@ static INLINE fft_complex_t fft_complex_sub(fft_complex_t a,
 
 static INLINE fft_complex_t fft_complex_conj(fft_complex_t a)
 {
-   fft_complex_t out = {
-      a.real, -a.imag,
-   };
+   fft_complex_t out;
+   out.real = a.real;
+   out.imag = -a.imag;
 
    return out;
 }

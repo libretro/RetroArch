@@ -20,19 +20,24 @@
 
 #include <boolean.h>
 #include "joypad_connection.h"
+#include "../input_defines.h"
 
 struct hidpad_wiiugca_data
 {
    struct pad_connection* connection;
-   send_control_t send_control;
+   hid_driver_t *driver;
    uint8_t data[64];
    uint32_t slot;
-   uint64_t buttons;
+   uint32_t buttons;
 };
 
-static void* hidpad_wiiugca_init(void *data, uint32_t slot, send_control_t ptr)
+static void* hidpad_wiiugca_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
+#ifdef WIIU
+   static uint8_t magic_data[]         = {0x13}; /* Special command to enable reading */
+#else
    static uint8_t magic_data[]         = {0x01, 0x13}; /* Special command to enable reading */
+#endif
    struct pad_connection* connection   = (struct pad_connection*)data;
    struct hidpad_wiiugca_data* device  = (struct hidpad_wiiugca_data*)
       calloc(1, sizeof(struct hidpad_wiiugca_data));
@@ -46,10 +51,11 @@ static void* hidpad_wiiugca_init(void *data, uint32_t slot, send_control_t ptr)
       return NULL;
    }
 
-   device->connection   = connection;
-   device->slot         = slot;
-   device->send_control = ptr;
-   device->send_control(device->connection, magic_data, sizeof(magic_data));
+   device->connection = connection;
+   device->slot       = slot;
+   device->driver     = driver;
+
+   device->driver->send_control(device->connection, magic_data, sizeof(magic_data));
 
    return device;
 }
@@ -62,12 +68,15 @@ static void hidpad_wiiugca_deinit(void *data)
       free(device);
 }
 
-static uint64_t hidpad_wiiugca_get_buttons(void *data)
+static void hidpad_wiiugca_get_buttons(void *data, retro_bits_t *state)
 {
-   struct hidpad_wiiugca_data *device = (struct hidpad_wiiugca_data*)data;
-   if (!device)
-      return 0;
-   return device->buttons;
+  struct hidpad_wiiugca_data *device = (struct hidpad_wiiugca_data*)data;
+  if (device)
+  {
+    BITS_COPY16_PTR(state, device->buttons);
+  }
+  else
+    BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_wiiugca_get_axis(void *data, unsigned axis)
@@ -125,16 +134,16 @@ static void hidpad_wiiugca_packet_handler(void *data, uint8_t *packet, uint16_t 
 static void hidpad_wiiugca_set_rumble(void *data,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-	(void)data;
-	(void)effect;
-   (void)strength;
+  (void)data;
+  (void)effect;
+  (void)strength;
 }
 
-const char * hidpad_wiiugca_get_name(void *data)
+const char *hidpad_wiiugca_get_name(void *data)
 {
-	(void)data;
-	/* For now we return a single static name */
-	return "Wii U GC Controller Adapter";
+  (void)data;
+  /* For now we return a single static name */
+  return "Wii U GC Controller Adapter";
 }
 
 pad_connection_interface_t pad_connection_wiiugca = {

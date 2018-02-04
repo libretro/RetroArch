@@ -301,7 +301,7 @@ public:
     // Generally, the type of 'scalar' does not need to be the same type as the components in 'vector'.
     // The type of the created vector is a vector of components of the same type as the scalar.
     //
-    // Note: One of the arguments will change, with the result coming back that way rather than 
+    // Note: One of the arguments will change, with the result coming back that way rather than
     // through the return value.
     void promoteScalar(Decoration precision, Id& left, Id& right);
 

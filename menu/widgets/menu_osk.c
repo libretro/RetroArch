@@ -30,7 +30,7 @@
 
 #include "menu_osk.h"
 
-#include "../../input/input_keyboard.h"
+#include "../../input/input_driver.h"
 
 static const char *osk_grid[45]  = {NULL};
 
@@ -42,17 +42,23 @@ static enum osk_type osk_idx     = OSK_LOWERCASE_LATIN;
 #include "menu_osk_utf8_pages.h"
 #else
 /* Otherwise define some ascii-friendly pages. */
+static const char *symbols_page1_grid[] = {
+                          "1","2","3","4","5","6","7","8","9","0","Bksp",
+                          "!","\"","#","$","%","&","'","*","(",")","Enter",
+                          "+",",","-","~","/",":",";","=","<",">","Lower",
+                          "?","@","[","\\","]","^","_","|","{","}","Next"};
+
 static const char *uppercase_grid[] = {
-                          "!","@","#","$","%","^","&","*","(",")","Bksp",
+                          "1","2","3","4","5","6","7","8","9","0","Bksp",
                           "Q","W","E","R","T","Y","U","I","O","P","Enter",
-                          "A","S","D","F","G","H","J","K","L",":","Lower",
-                          "Z","X","C","V","B","N","M"," ","<",">","Next"};
+                          "A","S","D","F","G","H","J","K","L","+","Lower",
+                          "Z","X","C","V","B","N","M"," ","_","/","Next"};
 
 static const char *lowercase_grid[] = {
                           "1","2","3","4","5","6","7","8","9","0","Bksp",
                           "q","w","e","r","t","y","u","i","o","p","Enter",
-                          "a","s","d","f","g","h","j","k","l",";","Upper",
-                          "z","x","c","v","b","n","m"," ",",",".","Next"};
+                          "a","s","d","f","g","h","j","k","l","@","Upper",
+                          "z","x","c","v","b","n","m"," ","-",".","Next"};
 #endif
 
 void menu_event_set_osk_idx(enum osk_type idx)
@@ -92,16 +98,16 @@ void menu_event_osk_append(int ptr)
       menu_event_set_osk_idx(OSK_LOWERCASE_LATIN);
    else if (string_is_equal(osk_grid[ptr],"\xe2\x8a\x95")) /* plus sign (next button) */
 #else
-   if (string_is_equal(osk_grid[ptr],"Bksp"))
+   if (string_is_equal(osk_grid[ptr], "Bksp"))
       input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(osk_grid[ptr],"Enter"))
+   else if (string_is_equal(osk_grid[ptr], "Enter"))
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
    else
-   if (string_is_equal(osk_grid[ptr],"Upper"))
+   if (string_is_equal(osk_grid[ptr], "Upper"))
       menu_event_set_osk_idx(OSK_UPPERCASE_LATIN);
-   else if (string_is_equal(osk_grid[ptr],"Lower"))
+   else if (string_is_equal(osk_grid[ptr], "Lower"))
       menu_event_set_osk_idx(OSK_LOWERCASE_LATIN);
-   else if (string_is_equal(osk_grid[ptr],"Next"))
+   else if (string_is_equal(osk_grid[ptr], "Next"))
 #endif
       if (menu_event_get_osk_idx() < OSK_TYPE_LAST - 1)
          menu_event_set_osk_idx((enum osk_type)(menu_event_get_osk_idx() + 1));
@@ -129,6 +135,9 @@ void menu_event_osk_iterate(void)
          memcpy(osk_grid, katakana_page2_grid, sizeof(katakana_page2_grid));
          break;
 #endif
+      case OSK_SYMBOLS_PAGE1:
+         memcpy(osk_grid, symbols_page1_grid, sizeof(uppercase_grid));
+         break;
       case OSK_UPPERCASE_LATIN:
          memcpy(osk_grid, uppercase_grid, sizeof(uppercase_grid));
          break;

@@ -138,7 +138,7 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
        ? desired_index : 0;
     
     /* prevent same controller getting set twice */
-    if (mfi_controllers[desired_index] != controller.hash)
+    if (mfi_controllers[desired_index] != (uint32_t)controller.hash)
     {
         /* desired slot is unused, take it */
         if (!mfi_controllers[desired_index])
@@ -221,9 +221,9 @@ static bool apple_gamecontroller_joypad_button(unsigned port, uint16_t joykey)
    return false;
 }
 
-static uint64_t apple_gamecontroller_joypad_get_buttons(unsigned port)
+static void apple_gamecontroller_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
-   return mfi_buttons[port];
+	BITS_COPY16_PTR(state, mfi_buttons[port]);
 }
 
 static int16_t apple_gamecontroller_joypad_axis(unsigned port, uint32_t joyaxis)

@@ -17,10 +17,9 @@
 #include <string.h>
 #include <malloc.h>
 #include <retro_miscellaneous.h>
+#include <retro_timers.h>
 
 #include "../audio_driver.h"
-
-#include "../../performance_counters.h"
 
 typedef struct
 {
@@ -50,7 +49,7 @@ typedef struct
 static void ctr_csnd_audio_update_playpos(ctr_csnd_audio_t* ctr)
 {
    uint64_t current_tick   = svcGetSystemTick();
-   uint32_t samples_played = (current_tick - ctr->cpu_ticks_last) 
+   uint32_t samples_played = (current_tick - ctr->cpu_ticks_last)
       / CTR_CSND_CPU_TICKS_PER_SAMPLE;
 
    ctr->playpos   = (ctr->playpos + samples_played) & CTR_CSND_AUDIO_COUNT_MASK;
@@ -95,7 +94,7 @@ Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan,
 
 	if (loopMode == CSND_LOOPMODE_NORMAL && paddr1 > paddr0)
 	{
-		/* Now that the first block is playing, 
+		/* Now that the first block is playing,
        * configure the size of the subsequent blocks */
 		size -= paddr1 - paddr0;
 		CSND_SetBlock(chn, 1, paddr1, size);
@@ -163,13 +162,11 @@ static void ctr_csnd_audio_free(void *data)
    free(ctr);
 }
 
-static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
 {
    int i;
    uint32_t samples_played                     = 0;
    uint64_t current_tick                       = 0;
-   static struct retro_perf_counter ctraudio_f = {0};
    const uint16_t                         *src = buf;
    ctr_csnd_audio_t                       *ctr = (ctr_csnd_audio_t*)data;
 
@@ -177,9 +174,6 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size,
    (void)buf;
    (void)samples_played;
    (void)current_tick;
-
-   performance_counter_init(ctraudio_f, "ctraudio_f");
-   performance_counter_start_plus(is_perfcnt_enable, ctraudio_f);
 
    ctr_csnd_audio_update_playpos(ctr);
 
@@ -211,13 +205,11 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size,
    GSPGPU_FlushDataCache(ctr->l, CTR_CSND_AUDIO_SIZE);
    GSPGPU_FlushDataCache(ctr->r, CTR_CSND_AUDIO_SIZE);
 
-   performance_counter_stop_plus(is_perfcnt_enable, ctraudio_f);
-
    return size;
 }
 
 static bool ctr_csnd_audio_stop(void *data)
-{   
+{
    ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
 
    /* using SetPlayState would make tracking the playback

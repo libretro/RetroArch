@@ -21,9 +21,9 @@
 
 #include "../../config.def.h"
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_context_driver.h"
+#include "../../gfx/video_driver.h"
 
-#include "../menu_display.h"
+#include "../menu_driver.h"
 
 static void *menu_display_caca_get_default_mvp(void)
 {
@@ -64,11 +64,14 @@ static void menu_display_caca_clear_color(menu_display_ctx_clearcolor_t *clearco
 
 static bool menu_display_caca_font_init_first(
       void **font_handle, void *video_data,
-      const char *font_path, float font_size)
+      const char *font_path, float font_size,
+      bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
    *handle = font_driver_init_first(video_data,
-         font_path, font_size, true, FONT_DRIVER_RENDER_CACA);
+         font_path, font_size, true,
+         is_threaded,
+         FONT_DRIVER_RENDER_CACA);
    return *handle;
 }
 

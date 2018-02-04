@@ -12,9 +12,9 @@
 
 #ifndef DIRECT3D_VERSION
 #define DIRECT3D_VERSION         0x0900
-#endif  //DIRECT3D_VERSION
+#endif  /* DIRECT3D_VERSION */
 
-// include this file content only if compiling for DX9 interfaces
+/* include this file content only if compiling for DX9 interfaces */
 #if(DIRECT3D_VERSION >= 0x0900)
 
 
@@ -51,11 +51,11 @@
 DEFINE_GUID(IID_IDirect3D9, 0x81bdcbca, 0x64d4, 0x426d, 0xae, 0x8d, 0xad, 0x1, 0x47, 0xf4, 0x27, 0x5c);
 
 /* IID_IDirect3DDevice9 */
-// {D0223B96-BF7A-43fd-92BD-A43B0D82B9EB} */
+/* {D0223B96-BF7A-43fd-92BD-A43B0D82B9EB} */
 DEFINE_GUID(IID_IDirect3DDevice9, 0xd0223b96, 0xbf7a, 0x43fd, 0x92, 0xbd, 0xa4, 0x3b, 0xd, 0x82, 0xb9, 0xeb);
 
 /* IID_IDirect3DResource9 */
-// {05EEC05D-8F7D-4362-B999-D1BAF357C704}
+/* {05EEC05D-8F7D-4362-B999-D1BAF357C704} */
 DEFINE_GUID(IID_IDirect3DResource9, 0x5eec05d, 0x8f7d, 0x4362, 0xb9, 0x99, 0xd1, 0xba, 0xf3, 0x57, 0xc7, 0x4);
 
 /* IID_IDirect3DBaseTexture9 */
@@ -195,10 +195,8 @@ typedef interface IDirect3DVolume9              IDirect3DVolume9;
 typedef interface IDirect3DSwapChain9           IDirect3DSwapChain9;
 typedef interface IDirect3DQuery9               IDirect3DQuery9;
 
-
 #include "d3d9types.h"
 #include "d3d9caps.h"
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -1630,7 +1628,7 @@ typedef struct IDirect3DQuery9 *LPDIRECT3DQUERY9, *PDIRECT3DQUERY9;
 /*
  * Direct3D Errors
  */
-#define D3D_OK                              S_OK
+#define D3D_OK                                  S_OK
 
 #define D3DERR_WRONGTEXTUREFORMAT               MAKE_D3DHRESULT(2072)
 #define D3DERR_UNSUPPORTEDCOLOROPERATION        MAKE_D3DHRESULT(2073)
@@ -1664,5 +1662,3 @@ typedef struct IDirect3DQuery9 *LPDIRECT3DQUERY9, *PDIRECT3DQUERY9;
 
 #endif /* (DIRECT3D_VERSION >= 0x0900) */
 #endif /* _D3D_H_ */
-
-

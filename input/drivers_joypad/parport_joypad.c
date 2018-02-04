@@ -26,7 +26,6 @@
 
 #include <compat/strl.h>
 
-#include "../input_config.h"
 #include "../input_driver.h"
 
 #include "../../configuration.h"
@@ -41,7 +40,7 @@
 struct parport_joypad
 {
    int fd;
-   uint64_t buttons;
+   uint32_t buttons;
    bool button_enable[PARPORT_NUM_BUTTONS];
    char saved_data;
    char saved_control;
@@ -90,28 +89,30 @@ static void parport_poll_pad(struct parport_joypad *pad)
    char data;
    char status;
 
-   ioctl(pad->fd, PPRDATA, &data);
-   ioctl(pad->fd, PPRSTATUS, &status);
+   if (ioctl(pad->fd, PPRDATA, &data) < 0)
+      return;
+   if (ioctl(pad->fd, PPRSTATUS, &status) < 0)
+      return;
 
    for (i = 0; i < 8; i++)
    {
       if (!(data & UINT8_C(1 << i)) && pad->button_enable[i])
-         BIT64_SET(pad->buttons, i);
+         BIT32_SET(pad->buttons, i);
       else
-         BIT64_CLEAR(pad->buttons, i);
+         BIT32_CLEAR(pad->buttons, i);
    }
    for (i = 3; i < 8; i++)
    {
       if (!(status & UINT8_C(1 << i)) && pad->button_enable[i + 5])
-         BIT64_SET(pad->buttons, i + 5);
+         BIT32_SET(pad->buttons, i + 5);
       else
-         BIT64_CLEAR(pad->buttons, i + 5);
+         BIT32_CLEAR(pad->buttons, i + 5);
    }
 
-   if (BIT64_GET(pad->buttons, 12) && pad->button_enable[12])
-      BIT64_CLEAR(pad->buttons, 12);
+   if (BIT32_GET(pad->buttons, 12) && pad->button_enable[12])
+      BIT32_CLEAR(pad->buttons, 12);
    else
-      BIT64_SET(pad->buttons, 12);
+      BIT32_SET(pad->buttons, 12);
 }
 
 static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad)
@@ -134,8 +135,6 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
 
    if (pad->fd >= 0)
    {
-      settings_t *settings = config_get_ptr();
-
       RARCH_LOG("[Joypad]: Found parallel port: %s\n", path);
 
       /* Parport driver does not log failures with RARCH_ERR because they could be
@@ -188,7 +187,7 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
       if (!set_control)
          RARCH_WARN("[Joypad]: Failed to clear nStrobe and nIRQ bits on %s\n", path);
 
-      strlcpy(pad->ident, path, sizeof(settings->input.device_names[0]));
+      strlcpy(pad->ident, path, sizeof(input_device_names[0]));
 
       for (i = 0; i < PARPORT_NUM_BUTTONS; i++)
          pad->button_enable[i] = true;
@@ -240,7 +239,6 @@ static bool parport_joypad_init(void *data)
    bool found_disabled_button            = false;
    char buf[PARPORT_NUM_BUTTONS * 3 + 1] = {0};
    char pin[3 + 1]                       = {0};
-   settings_t *settings                  = config_get_ptr();
 
    (void)data;
 
@@ -252,7 +250,7 @@ static bool parport_joypad_init(void *data)
       struct parport_joypad *pad = &parport_pads[i];
 
       pad->fd    = -1;
-      pad->ident = settings->input.device_names[i];
+      pad->ident = input_device_names[i];
 
       snprintf(path, sizeof(path), "/dev/parport%u", i);
 
@@ -270,7 +268,7 @@ static bool parport_joypad_init(void *data)
 
          for (j = 0; j < PARPORT_NUM_BUTTONS; j++)
          {
-            if (!(BIT64_GET(pad->buttons, j)))
+            if (!(BIT32_GET(pad->buttons, j)))
             {
                pad->button_enable[j] = true;
                found_enabled_button = true;
@@ -339,13 +337,18 @@ static void parport_joypad_destroy(void)
 static bool parport_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct parport_joypad *pad = (const struct parport_joypad*)&parport_pads[port];
-   return joykey < PARPORT_NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
+   return joykey < PARPORT_NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
 }
 
-static uint64_t parport_joypad_get_buttons(unsigned port)
+static void parport_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
-   const struct parport_joypad *pad = (const struct parport_joypad*)&parport_pads[port];
-   return pad->buttons;
+	const struct parport_joypad *pad = (const struct parport_joypad*)&parport_pads[port];
+	if (pad)
+   {
+		BITS_COPY16_PTR(state, pad->buttons);
+	}
+   else
+		BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t parport_joypad_axis(unsigned port, uint32_t joyaxis)

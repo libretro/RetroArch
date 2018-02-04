@@ -45,7 +45,7 @@ enum menu_displaylist_parse_type
    PARSE_ONLY_STRING_OPTIONS = (1 << 11),
    PARSE_ONLY_HEX            = (1 << 12),
    PARSE_ONLY_DIR            = (1 << 13),
-   PARSE_SUB_GROUP           = (1 << 14) 
+   PARSE_SUB_GROUP           = (1 << 14)
 };
 
 enum menu_displaylist_ctl_state
@@ -61,9 +61,12 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_HORIZONTAL,
    DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS,
    DISPLAYLIST_HISTORY,
+   DISPLAYLIST_FAVORITES,
+   DISPLAYLIST_PLAYLIST,
    DISPLAYLIST_VIDEO_HISTORY,
    DISPLAYLIST_MUSIC_HISTORY,
    DISPLAYLIST_IMAGES_HISTORY,
+   DISPLAYLIST_MUSIC_LIST,
    DISPLAYLIST_PLAYLIST_COLLECTION,
    DISPLAYLIST_DEFAULT,
    DISPLAYLIST_FILE_BROWSER_SELECT_DIR,
@@ -105,8 +108,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_NETWORK_INFO,
    DISPLAYLIST_SYSTEM_INFO,
    DISPLAYLIST_ACHIEVEMENT_LIST,
-   DISPLAYLIST_ACHIEVEMENT_LIST_HARDCORE,
-   DISPLAYLIST_USER_BINDS_LIST,
+      DISPLAYLIST_USER_BINDS_LIST,
    DISPLAYLIST_ACCOUNTS_LIST,
    DISPLAYLIST_DRIVER_SETTINGS_LIST,
    DISPLAYLIST_VIDEO_SETTINGS_LIST,
@@ -123,6 +125,8 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST,
    DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST,
    DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST,
+   DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST,
+   DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST,
    DISPLAYLIST_MENU_SETTINGS_LIST,
    DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST,
    DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST,
@@ -140,6 +144,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_BROWSE_URL_LIST,
    DISPLAYLIST_BROWSE_URL_START,
    DISPLAYLIST_LOAD_CONTENT_LIST,
+   DISPLAYLIST_LOAD_CONTENT_SPECIAL,
    DISPLAYLIST_INFORMATION_LIST,
    DISPLAYLIST_CONTENT_SETTINGS,
    DISPLAYLIST_OPTIONS,
@@ -158,45 +163,52 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_CORE_CONTENT,
    DISPLAYLIST_CORE_CONTENT_DIRS,
    DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR,
-   DISPLAYLIST_PROCESS,
-   DISPLAYLIST_PUSH_ONTO_STACK,
    DISPLAYLIST_PENDING_CLEAR
 };
 
 typedef struct menu_displaylist_info
 {
+   enum msg_hash_enums enum_idx;
+   /* should the displaylist be sorted by alphabet? */
    bool need_sort;
    bool need_refresh;
    bool need_entries_refresh;
    bool need_push;
+   bool need_push_no_playlist_entries;
+   /* should we clear the displaylist before we push
+    * entries onto it? */
    bool need_clear;
    bool push_builtin_cores;
+   /* Should a 'download core' entry be pushed onto the list?
+    * This will be set to true in case there are no currently
+    * installed cores. */
    bool download_core;
+   /* does the navigation index need to be cleared to 0 (first entry) ? */
    bool need_navigation_clear;
-   file_list_t *list;
-   file_list_t *menu_list;
-   char path[PATH_MAX_LENGTH];
-   char path_b[PATH_MAX_LENGTH];
-   char path_c[PATH_MAX_LENGTH];
-   char label[255];
-   uint32_t label_hash;
-   char exts[PATH_MAX_LENGTH];
+
+   char *path;
+   char *path_b;
+   char *path_c;
+   char *exts;
+   char *label;
    unsigned type;
    unsigned type_default;
-   size_t directory_ptr;
    unsigned flags;
-   enum msg_hash_enums enum_idx;
+   uint32_t label_hash;
+   size_t directory_ptr;
+   file_list_t *list;
+   file_list_t *menu_list;
    rarch_setting_t *setting;
 } menu_displaylist_info_t;
 
 typedef struct menu_displaylist_ctx_parse_entry
 {
-   void *data;
-   menu_displaylist_info_t *info;
-   const char *info_label;
    enum msg_hash_enums enum_idx;
    enum menu_displaylist_parse_type parse_type;
    bool add_empty_entry;
+   const char *info_label;
+   void *data;
+   menu_displaylist_info_t *info;
 } menu_displaylist_ctx_parse_entry_t;
 
 typedef struct menu_displaylist_ctx_entry
@@ -205,8 +217,18 @@ typedef struct menu_displaylist_ctx_entry
    file_list_t *list;
 } menu_displaylist_ctx_entry_t;
 
-bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
+bool menu_displaylist_process(menu_displaylist_info_t *info);
 
+bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry);
+
+void menu_displaylist_info_free(menu_displaylist_info_t *info);
+
+void menu_displaylist_info_init(menu_displaylist_info_t *info);
+
+bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
+#ifdef HAVE_NETWORKING
+void netplay_refresh_rooms_menu(file_list_t *list);
+#endif
 RETRO_END_DECLS
 
 #endif

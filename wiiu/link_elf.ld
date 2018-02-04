@@ -73,6 +73,8 @@ SECTIONS
 	.rel.plt		: { *(.rel.plt) }
 	.rela.plt		: { *(.rela.plt) }
 
+	PROVIDE (__code_start = .);
+
 	.text      :
 	{
 		*(.text)
@@ -89,6 +91,7 @@ SECTIONS
 		. = ALIGN(32);   /* REQUIRED. LD is flaky without it. */
 	} = 0
 
+	PROVIDE (__code_end = .);
 	PROVIDE (__etext = .);
 	PROVIDE (_etext = .);
 	PROVIDE (etext = .);

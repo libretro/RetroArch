@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -17,7 +17,7 @@
 #include <stdlib.h>
 
 #include <retro_inline.h>
-#include <retro_miscellaneous.h>
+#include <retro_math.h>
 
 #include "video_coord_array.h"
 
@@ -75,7 +75,7 @@ bool video_coord_array_append(video_coord_array_t *ca,
    base_size = count * sizeof(float);
    offset    = ca->coords.vertices;
 
-   /* XXX: I wish we used interlaced arrays so 
+   /* XXX: I wish we used interlaced arrays so
     * we could call memcpy only once. */
    memcpy(ca->coords.vertex        + offset * 2,
          coords->vertex, base_size * 2);

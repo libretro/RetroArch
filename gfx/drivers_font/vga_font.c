@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2016 - Brad Parker
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -129,12 +129,6 @@ static void vga_render_msg(video_frame_info_t *video_info,
    }
 }
 
-static void vga_font_flush_block(unsigned width, unsigned height,
-      void* data)
-{
-   (void)data;
-}
-
 static void vga_font_bind_block(void* data, void* userdata)
 {
    (void)data;
@@ -147,6 +141,6 @@ font_renderer_t vga_font = {
    "vga font",
    vga_font_get_glyph,       /* get_glyph */
    vga_font_bind_block,      /* bind_block */
-   vga_font_flush_block,     /* flush */
+   NULL,                     /* flush */
    vga_get_message_width     /* get_message_width */
 };

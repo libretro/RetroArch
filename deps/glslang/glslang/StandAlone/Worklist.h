@@ -59,21 +59,21 @@ namespace glslang {
         void add(TWorkItem* item)
         {
             GetGlobalLock();
-            
+
             worklist.push_back(item);
-            
+
             ReleaseGlobalLock();
         }
-    
+
         bool remove(TWorkItem*& item)
         {
             GetGlobalLock();
-            
+
             if (worklist.empty())
                 return false;
             item = worklist.front();
             worklist.pop_front();
-            
+
             ReleaseGlobalLock();
 
             return true;

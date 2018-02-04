@@ -247,7 +247,7 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf,
 {
    bool error;
    ssize_t recvd;
-   
+
    /* Receive whatever we can into the buffer */
    if (sbuf->end >= sbuf->start)
    {

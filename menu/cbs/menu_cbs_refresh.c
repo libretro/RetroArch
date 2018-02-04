@@ -31,7 +31,7 @@ int action_refresh_default(file_list_t *list, file_list_t *menu_list)
    entry.list  = list;
    entry.stack = menu_list;
 
-   if (!menu_displaylist_ctl(DISPLAYLIST_PUSH_ONTO_STACK, &entry))
+   if (!menu_displaylist_push(&entry))
       return -1;
    return 0;
 }

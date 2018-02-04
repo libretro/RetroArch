@@ -4,8 +4,8 @@ precision highp int;
 
 layout(cw, quads, fractional_even_spacing) in;
 
-patch in vec2 vOutPatchPosBase;
-patch in vec4 vPatchLods;
+layout(location = 0) patch in vec2 vOutPatchPosBase;
+layout(location = 1) patch in vec4 vPatchLods;
 
 layout(binding = 1, std140) uniform UBO
 {
@@ -18,8 +18,8 @@ layout(binding = 1, std140) uniform UBO
 };
 layout(binding = 0) uniform mediump sampler2D uHeightmapDisplacement;
 
-highp out vec3 vWorld;
-highp out vec4 vGradNormalTex;
+layout(location = 0) highp out vec3 vWorld;
+layout(location = 1) highp out vec4 vGradNormalTex;
 
 vec2 lerp_vertex(vec2 tess_coord)
 {

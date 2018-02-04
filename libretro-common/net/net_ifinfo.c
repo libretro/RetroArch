@@ -44,6 +44,10 @@
 
 #include <net/net_ifinfo.h>
 
+#if defined(BSD)
+#include <netinet/in.h>
+#endif
+
 void net_ifinfo_free(net_ifinfo_t *list)
 {
    unsigned k;
@@ -53,7 +57,7 @@ void net_ifinfo_free(net_ifinfo_t *list)
 
    for (k = 0; k < list->size; k++)
    {
-      struct net_ifinfo_entry *ptr = 
+      struct net_ifinfo_entry *ptr =
          (struct net_ifinfo_entry*)&list->entries[k];
 
       if (*ptr->name)

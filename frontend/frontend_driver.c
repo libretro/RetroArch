@@ -46,11 +46,8 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(__APPLE__) && defined(__MACH__)
    &frontend_ctx_darwin,
 #endif
-#if defined(__linux__)
-   &frontend_ctx_linux,
-#endif
-#if defined(BSD) && !defined(__MACH__)
-   &frontend_ctx_bsd,
+#if defined(__linux__) || (defined(BSD) && !defined(__MACH__))
+   &frontend_ctx_unix,
 #endif
 #if defined(PSP) || defined(VITA)
    &frontend_ctx_psp,
@@ -105,16 +102,7 @@ frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
  **/
 frontend_ctx_driver_t *frontend_ctx_init_first(void)
 {
-   unsigned i;
-   frontend_ctx_driver_t *frontend = NULL;
-
-   for (i = 0; frontend_ctx_drivers[i]; i++)
-   {
-      frontend = frontend_ctx_drivers[i];
-      break;
-   }
-
-   return frontend;
+   return frontend_ctx_drivers[0];
 }
 
 bool frontend_driver_get_core_extension(char *s, size_t len)
@@ -211,13 +199,13 @@ frontend_ctx_driver_t *frontend_get_ptr(void)
    return current_frontend_ctx;
 }
 
-int frontend_driver_parse_drive_list(void *data)
+int frontend_driver_parse_drive_list(void *data, bool load_content)
 {
    frontend_ctx_driver_t *frontend = frontend_get_ptr();
 
    if (!frontend || !frontend->parse_drive_list)
       return -1;
-   return frontend->parse_drive_list(data);
+   return frontend->parse_drive_list(data, load_content);
 }
 
 void frontend_driver_content_loaded(void)
@@ -396,4 +384,29 @@ void frontend_driver_destroy_signal_handler_state(void)
       return;
    frontend->destroy_signal_handler_state();
 }
+
+bool frontend_driver_can_watch_for_changes(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->watch_path_for_changes)
+      return false;
+   return true;
+}
+
+void frontend_driver_watch_path_for_changes(struct string_list *list, int flags, path_change_data_t **change_data)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->watch_path_for_changes)
+      return;
+   frontend->watch_path_for_changes(list, flags, change_data);
+}
+
+bool frontend_driver_check_for_path_changes(path_change_data_t *change_data)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->check_for_path_changes)
+      return false;
+   return frontend->check_for_path_changes(change_data);
+}
+
 #endif

@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Brad Parker
  *
@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -23,6 +24,12 @@
 #include "../msg_hash.h"
 #include "../configuration.h"
 #include "../verbosity.h"
+
+#if defined(_MSC_VER) && !defined(_XBOX)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#pragma execution_character_set("utf-8")
+#pragma warning(disable: 4566)
+#endif
 
 int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
     uint32_t driver_hash = 0;
@@ -83,10 +90,6 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
             case RARCH_OSK:
                 snprintf(s, len,
                          "온스크린 키보드 전환.");
-                break;
-            case RARCH_NETPLAY_FLIP:
-                snprintf(s, len,
-                         "넷플레이 사용자 넘김.");
                 break;
             case RARCH_NETPLAY_GAME_WATCH:
                 snprintf(s, len,
@@ -692,7 +695,7 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
             break;
         case MENU_ENUM_LABEL_INPUT_DRIVER:
             if (settings)
-                driver_hash = msg_hash_calculate(settings->input.driver);
+                driver_hash = msg_hash_calculate(settings->arrays.input_driver);
 
             switch (driver_hash) {
                 case MENU_LABEL_INPUT_DRIVER_UDEV:
@@ -769,67 +772,79 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
             snprintf(s, len,
                      "Current Video driver.");
 
-            if (string_is_equal(settings->video.driver, "gl")) {
-                snprintf(s, len,
-                         "OpenGL Video driver. \n"
-                                 " \n"
-                                 "This driver allows libretro GL cores to  \n"
-                                 "be used in addition to software-rendered \n"
-                                 "core implementations.\n"
-                                 " \n"
-                                 "Performance for software-rendered and \n"
-                                 "libretro GL core implementations is \n"
-                                 "dependent on your graphics card's \n"
-                                 "underlying GL driver).");
-            } else if (string_is_equal(settings->video.driver, "sdl2")) {
-                snprintf(s, len,
-                         "SDL 2 Video driver.\n"
-                                 " \n"
-                                 "This is an SDL 2 software-rendered video \n"
-                                 "driver.\n"
-                                 " \n"
-                                 "Performance for software-rendered libretro \n"
-                                 "core implementations is dependent \n"
-                                 "on your platform SDL implementation.");
-            } else if (string_is_equal(settings->video.driver, "sdl1")) {
-                snprintf(s, len,
-                         "SDL Video driver.\n"
-                                 " \n"
-                                 "This is an SDL 1.2 software-rendered video \n"
-                                 "driver.\n"
-                                 " \n"
-                                 "Performance is considered to be suboptimal. \n"
-                                 "Consider using it only as a last resort.");
-            } else if (string_is_equal(settings->video.driver, "d3d")) {
-                snprintf(s, len,
-                         "Direct3D Video driver. \n"
-                                 " \n"
-                                 "Performance for software-rendered cores \n"
-                                 "is dependent on your graphic card's \n"
-                                 "underlying D3D driver).");
-            } else if (string_is_equal(settings->video.driver, "exynos")) {
-                snprintf(s, len,
-                         "Exynos-G2D Video Driver. \n"
-                                 " \n"
-                                 "This is a low-level Exynos video driver. \n"
-                                 "Uses the G2D block in Samsung Exynos SoC \n"
-                                 "for blit operations. \n"
-                                 " \n"
-                                 "Performance for software rendered cores \n"
-                                 "should be optimal.");
-            } else if (string_is_equal(settings->video.driver, "drm")) {
-                snprintf(s, len,
-                         "Plain DRM Video Driver. \n"
-                                 " \n"
-                                 "This is a low-level video driver using. \n"
-                                 "libdrm for hardware scaling using \n"
-                                 "GPU overlays.");
-            } else if (string_is_equal(settings->video.driver, "sunxi")) {
-                snprintf(s, len,
-                         "Sunxi-G2D Video Driver. \n"
-                                 " \n"
-                                 "This is a low-level Sunxi video driver. \n"
-                                 "Uses the G2D block in Allwinner SoCs.");
+            if (string_is_equal(settings->arrays.video_driver, "gl"))
+            {
+               snprintf(s, len,
+                     "OpenGL Video driver. \n"
+                     " \n"
+                     "This driver allows libretro GL cores to  \n"
+                     "be used in addition to software-rendered \n"
+                     "core implementations.\n"
+                     " \n"
+                     "Performance for software-rendered and \n"
+                     "libretro GL core implementations is \n"
+                     "dependent on your graphics card's \n"
+                     "underlying GL driver).");
+            }
+            else if (string_is_equal(settings->arrays.video_driver, "sdl2"))
+            {
+               snprintf(s, len,
+                     "SDL 2 Video driver.\n"
+                     " \n"
+                     "This is an SDL 2 software-rendered video \n"
+                     "driver.\n"
+                     " \n"
+                     "Performance for software-rendered libretro \n"
+                     "core implementations is dependent \n"
+                     "on your platform SDL implementation.");
+            }
+            else if (string_is_equal(settings->arrays.video_driver, "sdl1"))
+            {
+               snprintf(s, len,
+                     "SDL Video driver.\n"
+                     " \n"
+                     "This is an SDL 1.2 software-rendered video \n"
+                     "driver.\n"
+                     " \n"
+                     "Performance is considered to be suboptimal. \n"
+                     "Consider using it only as a last resort.");
+            }
+            else if (string_is_equal(settings->arrays.video_driver, "d3d"))
+            {
+               snprintf(s, len,
+                     "Direct3D Video driver. \n"
+                     " \n"
+                     "Performance for software-rendered cores \n"
+                     "is dependent on your graphic card's \n"
+                     "underlying D3D driver).");
+            }
+            else if (string_is_equal(settings->arrays.video_driver, "exynos"))
+            {
+               snprintf(s, len,
+                     "Exynos-G2D Video Driver. \n"
+                     " \n"
+                     "This is a low-level Exynos video driver. \n"
+                     "Uses the G2D block in Samsung Exynos SoC \n"
+                     "for blit operations. \n"
+                     " \n"
+                     "Performance for software rendered cores \n"
+                     "should be optimal.");
+            } else if (string_is_equal(settings->arrays.video_driver, "drm"))
+            {
+               snprintf(s, len,
+                     "Plain DRM Video Driver. \n"
+                     " \n"
+                     "This is a low-level video driver using. \n"
+                     "libdrm for hardware scaling using \n"
+                     "GPU overlays.");
+            }
+            else if (string_is_equal(settings->arrays.video_driver, "sunxi"))
+            {
+               snprintf(s, len,
+                     "Sunxi-G2D Video Driver. \n"
+                     " \n"
+                     "This is a low-level Sunxi video driver. \n"
+                     "Uses the G2D block in Allwinner SoCs.");
             }
             break;
         case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
@@ -841,7 +856,7 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
             break;
         case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
             if (settings)
-                driver_hash = msg_hash_calculate(settings->audio.resampler);
+                driver_hash = msg_hash_calculate(settings->arrays.audio_resampler);
 
             switch (driver_hash) {
                 case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC:
@@ -1710,11 +1725,6 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
                      "The username of the person running RetroArch. \n"
                              "This will be used for playing online games.");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
-            snprintf(s, len,
-                     "When being client over netplay, use \n"
-                             "keybinds for player 1.");
-            break;
         case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
             snprintf(s, len,
                      "The port of the host IP address. \n"
@@ -1829,10 +1839,6 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
         case MENU_ENUM_LABEL_SAVE_STATE:
             snprintf(s, len,
                      "Saves state.");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_FLIP_PLAYERS:
-            snprintf(s, len,
-                     "Netplay flip users.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_GAME_WATCH:
             snprintf(s, len,
@@ -1986,7 +1992,7 @@ const char *msg_hash_to_str_ko(enum msg_hash_enums msg) {
 #ifdef HAVE_MENU
     const char *ret = menu_hash_to_str_ko_label_enum(msg);
 
-    if (ret && !string_is_equal(ret, "null"))
+    if (ret && (string_is_not_equal(ret, "null")))
        return ret;
 #endif
 

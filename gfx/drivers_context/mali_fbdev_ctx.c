@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -17,12 +17,12 @@
 #include <unistd.h>
 
 #include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 /* Includes and defines for framebuffer size retrieval */
 #include <linux/fb.h>
 #include <linux/vt.h>
-
-#include <streams/file_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -44,7 +44,10 @@ typedef struct
    egl_ctx_data_t egl;
 #endif
 
-   struct mali_native_window native_window;
+   struct {
+      unsigned short width;
+      unsigned short height;
+   } native_window;
    bool resize;
    unsigned width, height;
 } mali_ctx_data_t;
@@ -53,8 +56,7 @@ static enum gfx_ctx_api mali_api           = GFX_CTX_NONE;
 
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
-   int fb;
-   RFILE             *fd = NULL;
+   int fd;
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
 
    if (mali)
@@ -68,12 +70,11 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
    }
 
    /* Clear framebuffer and set cursor on again */
-   fd = filestream_open("/dev/tty", RFILE_MODE_READ_WRITE, -1);
-   fb = filestream_get_fd(fd);
+   fd = open("/dev/tty", O_RDWR);
+   ioctl(fd, VT_ACTIVATE, 5);
+   ioctl(fd, VT_ACTIVATE, 1);
+   close(fd);
 
-   ioctl(fb, VT_ACTIVATE,5);
-   ioctl(fb, VT_ACTIVATE,1);
-   filestream_close(fd);
    system("setterm -cursor on");
 }
 
@@ -113,7 +114,7 @@ static void *gfx_ctx_mali_fbdev_init(video_frame_info_t *video_info, void *video
 #endif
 
 #ifdef HAVE_EGL
-   if (!egl_init_context(&mali->egl, EGL_DEFAULT_DISPLAY,
+   if (!egl_init_context(&mali->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
             &major, &minor, &n, attribs))
    {
       egl_report_error();
@@ -157,17 +158,17 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       EGL_NONE
    };
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
-   RFILE *fd             = filestream_open("/dev/fb0", RFILE_MODE_READ_WRITE, -1);
-   int fb                = filestream_get_fd(fd);
+   int fd                = open("/dev/fb0", O_RDWR);
 
-   if (ioctl(fb, FBIOGET_VSCREENINFO, &vinfo) < 0)
+   if (ioctl(fd, FBIOGET_VSCREENINFO, &vinfo) < 0)
    {
       RARCH_ERR("Error obtaining framebuffer info.\n");
       goto error;
    }
 
-   filestream_close(fd);
-   
+   close(fd);
+   fd = -1;
+
    width                      = vinfo.xres;
    height                     = vinfo.yres;
 
@@ -193,8 +194,8 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
    return true;
 
 error:
-   if (fd)
-      filestream_close(fd);
+   if (fd >= 0)
+      close(fd);
    RARCH_ERR("[Mali fbdev]: EGL error: %d.\n", eglGetError());
    gfx_ctx_mali_fbdev_destroy(data);
    return false;
@@ -238,7 +239,7 @@ static void gfx_ctx_mali_fbdev_set_swap_interval(void *data, unsigned swap_inter
 #endif
 }
 
-static void gfx_ctx_mali_fbdev_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_mali_fbdev_swap_buffers(void *data, void *data2)
 {
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
 

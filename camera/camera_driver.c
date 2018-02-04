@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -25,7 +25,6 @@
 #include "../configuration.h"
 #include "../driver.h"
 #include "../retroarch.h"
-#include "../runloop.h"
 #include "../list_special.h"
 #include "../verbosity.h"
 
@@ -47,6 +46,12 @@ static const camera_driver_t *camera_drivers[] = {
    &camera_null,
    NULL,
 };
+
+static struct retro_camera_callback camera_cb;
+static const camera_driver_t *camera_driver   = NULL;
+static void *camera_data                      = NULL;
+static bool camera_driver_active              = false;
+static bool camera_driver_data_own            = false;
 
 /**
  * camera_driver_find_handle:
@@ -102,14 +107,20 @@ bool driver_camera_start(void)
    return camera_driver_ctl(RARCH_CAMERA_CTL_START, NULL);
 }
 
+void camera_driver_poll(void)
+{
+   if (!camera_cb.caps)
+      return;
+   if (!camera_driver || !camera_driver->poll || !camera_data)
+      return;
+   camera_driver->poll(camera_data,
+         camera_cb.frame_raw_framebuffer,
+         camera_cb.frame_opengl_texture);
+}
+
 bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
 {
    settings_t        *settings = config_get_ptr();
-   static struct retro_camera_callback camera_cb;
-   static const camera_driver_t *camera_driver   = NULL;
-   static void *camera_data                      = NULL;
-   static bool camera_driver_active              = false;
-   static bool camera_driver_data_own            = false;
 
    switch (state)
    {
@@ -128,7 +139,7 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
       case RARCH_CAMERA_CTL_OWNS_DRIVER:
          return camera_driver_data_own;
       case RARCH_CAMERA_CTL_SET_ACTIVE:
-         camera_driver_active = true; 
+         camera_driver_active = true;
          break;
       case RARCH_CAMERA_CTL_FIND_DRIVER:
          {
@@ -136,7 +147,7 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
             driver_ctx_info_t drv;
 
             drv.label = "camera_driver";
-            drv.s     = settings->camera.driver;
+            drv.s     = settings->arrays.camera_driver;
 
             driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
@@ -146,14 +157,17 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
                camera_driver = (const camera_driver_t*)camera_driver_find_handle(i);
             else
             {
-               unsigned d;
-               RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
-                     settings->camera.driver);
-               RARCH_LOG_OUTPUT("Available camera drivers are:\n");
-               for (d = 0; camera_driver_find_handle(d); d++)
-                  RARCH_LOG_OUTPUT("\t%s\n", camera_driver_find_ident(d));
+               if (verbosity_is_enabled())
+               {
+                  unsigned d;
+                  RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
+                        settings->arrays.camera_driver);
+                  RARCH_LOG_OUTPUT("Available camera drivers are:\n");
+                  for (d = 0; camera_driver_find_handle(d); d++)
+                     RARCH_LOG_OUTPUT("\t%s\n", camera_driver_find_ident(d));
 
-               RARCH_WARN("Going to default to first camera driver...\n");
+                  RARCH_WARN("Going to default to first camera driver...\n");
+               }
 
                camera_driver = (const camera_driver_t*)camera_driver_find_handle(0);
 
@@ -163,10 +177,10 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
          }
          break;
       case RARCH_CAMERA_CTL_UNSET_ACTIVE:
-         camera_driver_active = false; 
+         camera_driver_active = false;
          break;
       case RARCH_CAMERA_CTL_IS_ACTIVE:
-        return camera_driver_active; 
+        return camera_driver_active;
       case RARCH_CAMERA_CTL_DEINIT:
         if (camera_data && camera_driver)
         {
@@ -180,29 +194,20 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
         camera_data = NULL;
         break;
       case RARCH_CAMERA_CTL_STOP:
-        if (     camera_driver 
-              && camera_driver->stop 
+        if (     camera_driver
+              && camera_driver->stop
               && camera_data)
            camera_driver->stop(camera_data);
         break;
       case RARCH_CAMERA_CTL_START:
         if (camera_driver && camera_data && camera_driver->start)
         {
-           if (settings->camera.allow)
+           if (settings->bools.camera_allow)
               return camera_driver->start(camera_data);
 
            runloop_msg_queue_push(
                  "Camera is explicitly disabled.\n", 1, 180, false);
         }
-        break;
-      case RARCH_CAMERA_CTL_POLL:
-        if (!camera_cb.caps)
-           return false;
-        if (!camera_driver || !camera_driver->poll || !camera_data)
-           return false;
-        camera_driver->poll(camera_data,
-              camera_cb.frame_raw_framebuffer,
-              camera_cb.frame_opengl_texture);
         break;
       case RARCH_CAMERA_CTL_SET_CB:
         {
@@ -222,12 +227,12 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
            return false;
 
         camera_data = camera_driver->init(
-              *settings->camera.device ? settings->camera.device : NULL,
+              *settings->arrays.camera_device ? settings->arrays.camera_device : NULL,
               camera_cb.caps,
-              settings->camera.width ?
-              settings->camera.width : camera_cb.width,
-              settings->camera.height ?
-              settings->camera.height : camera_cb.height);
+              settings->uints.camera_width ?
+              settings->uints.camera_width : camera_cb.width,
+              settings->uints.camera_height ?
+              settings->uints.camera_height : camera_cb.height);
 
         if (!camera_data)
         {
@@ -241,6 +246,6 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
       default:
          break;
    }
-   
+
    return true;
 }

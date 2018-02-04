@@ -52,7 +52,7 @@ public:
     void initialize(const TBuiltInResource& resources, int version, EProfile, const SpvVersion& spvVersion, EShLanguage);
 
     void identifyBuiltIns(int version, EProfile profile, const SpvVersion& spvVersion, EShLanguage language, TSymbolTable& symbolTable);
-    
+
     void identifyBuiltIns(int version, EProfile profile, const SpvVersion& spvVersion, EShLanguage language, TSymbolTable& symbolTable, const TBuiltInResource &resources);
 
 private:

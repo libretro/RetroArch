@@ -25,6 +25,11 @@
 
 #include <clamping.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
+
 void conv_0rgb1555_argb8888(void *output, const void *input,
       int width, int height,
       int out_stride, int in_stride);
@@ -88,6 +93,8 @@ void conv_yuyv_argb8888(void *output, const void *input,
 void conv_copy(void *output, const void *input,
       int width, int height,
       int out_stride, int in_stride);
+
+RETRO_END_DECLS
 
 #endif
 

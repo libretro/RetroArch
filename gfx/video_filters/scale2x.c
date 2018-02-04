@@ -129,11 +129,10 @@ static void *scale2x_generic_create(const struct softfilter_config *config,
       unsigned max_width, unsigned max_height,
       unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
+   struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    (void)simd;
    (void)config;
    (void)userdata;
-
-   struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
    filt->workers = (struct softfilter_thread_data*)
@@ -169,7 +168,7 @@ static void scale2x_generic_destroy(void *data)
 
 static void scale2x_work_cb_xrgb8888(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = 
+   struct softfilter_thread_data *thr =
       (struct softfilter_thread_data*)thread_data;
    const uint32_t *input = (const uint32_t*)thr->in_data;
    uint32_t *output = (uint32_t*)thr->out_data;
@@ -185,7 +184,7 @@ static void scale2x_work_cb_xrgb8888(void *data, void *thread_data)
 
 static void scale2x_work_cb_rgb565(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = 
+   struct softfilter_thread_data *thr =
       (struct softfilter_thread_data*)thread_data;
    const uint16_t *input = (const uint16_t*)thr->in_data;
    uint16_t *output = (uint16_t*)thr->out_data;
@@ -193,7 +192,7 @@ static void scale2x_work_cb_rgb565(void *data, void *thread_data)
    unsigned height = thr->height;
 
    scale2x_generic_rgb565(width, height,
-         thr->first, thr->last, input, 
+         thr->first, thr->last, input,
          (unsigned)(thr->in_pitch / SOFTFILTER_BPP_RGB565),
          output,
          (unsigned)(thr->out_pitch / SOFTFILTER_BPP_RGB565));
@@ -208,12 +207,12 @@ static void scale2x_generic_packets(void *data,
    unsigned i;
    for (i = 0; i < filt->threads; i++)
    {
-      struct softfilter_thread_data *thr = 
+      struct softfilter_thread_data *thr =
          (struct softfilter_thread_data*)&filt->workers[i];
 
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
-      thr->out_data = (uint8_t*)output + y_start * 
+      thr->out_data = (uint8_t*)output + y_start *
          SCALE2X_SCALE * output_stride;
       thr->in_data = (const uint8_t*)input + y_start * input_stride;
       thr->out_pitch = output_stride;
@@ -221,7 +220,7 @@ static void scale2x_generic_packets(void *data,
       thr->width = width;
       thr->height = y_end - y_start;
 
-      /* Workers need to know if they can access pixels 
+      /* Workers need to know if they can access pixels
        * outside their given buffer. */
       thr->first = y_start;
       thr->last = y_end == height;

@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Brad Parker
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -51,8 +51,6 @@ static void *gdi_init_font(void *data,
 
    font->gdi = (gdi_t*)data;
 
-   font_size = 1;
-
    if (!font_renderer_create_default((const void**)&font->gdi_font_driver,
             &font->gdi_font_data, font_path, font_size))
    {
@@ -86,15 +84,16 @@ static void gdi_render_msg(
       void *data, const char *msg,
       const void *userdata)
 {
-   HDC hdc;
    float x, y, scale;
    gdi_raster_t *font = (gdi_raster_t*)data;
    unsigned newX, newY, len;
    unsigned align;
    const struct font_params *params = (const struct font_params*)userdata;
-   HWND hwnd                        = win32_get_window();
    unsigned width                   = video_info->width;
    unsigned height                  = video_info->height;
+   unsigned red;
+   unsigned green;
+   unsigned blue;
 
    if (!font || string_is_empty(msg))
       return;
@@ -105,6 +104,9 @@ static void gdi_render_msg(
       y = params->y;
       scale = params->scale;
       align = params->text_align;
+      red = FONT_COLOR_GET_RED(params->color);
+      green = FONT_COLOR_GET_GREEN(params->color);
+      blue = FONT_COLOR_GET_BLUE(params->color);
    }
    else
    {
@@ -112,6 +114,9 @@ static void gdi_render_msg(
       y = video_info->font_msg_pos_y;
       scale = 1.0f;
       align = TEXT_ALIGN_LEFT;
+      red = video_info->font_msg_color_r * 255.0f;
+      green = video_info->font_msg_color_g * 255.0f;
+      blue = video_info->font_msg_color_b * 255.0f;
    }
 
    if (!font->gdi)
@@ -131,19 +136,21 @@ static void gdi_render_msg(
          newX = (x * width * scale) - (len / 2);
          break;
       default:
+         newX = 0;
          break;
    }
 
    newY = height - (y * height * scale);
-   hdc  = GetDC(hwnd);
 
-   SetBkMode(hdc, TRANSPARENT);
-   SetTextColor(hdc, RGB(255,255,255));
-   TextOut(hdc, newX, newY, msg, len);
-   ReleaseDC(hwnd, hdc);
+   font->gdi->bmp_old = (HBITMAP)SelectObject(font->gdi->memDC, font->gdi->bmp);
+   SetBkMode(font->gdi->memDC, TRANSPARENT);
+   SetTextColor(font->gdi->memDC, RGB(red, green, blue));
+   TextOut(font->gdi->memDC, newX, newY, msg, len);
+   SelectObject(font->gdi->memDC, font->gdi->bmp_old);
 }
 
-static void gdi_font_flush_block(unsigned width, unsigned height, void* data)
+static void gdi_font_flush_block(unsigned width, unsigned height, void* data,
+      video_frame_info_t *video_info)
 {
    (void)data;
 }

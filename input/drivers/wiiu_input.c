@@ -21,51 +21,59 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 
+#include <wiiu/nsyskbd.h>
+#include <wiiu/vpad.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include "../input_config.h"
 #include "../input_driver.h"
-#include "../input_joypad_driver.h"
-#include "../input_keyboard.h"
 #include "../input_keymaps.h"
-#include <wiiu/nsyskbd.h>
 
 #include "wiiu_dbg.h"
 
 #define MAX_PADS 5
 
 static unsigned char keyboardChannel = 0x00;
-static KBDModifier keyboardModifier = 0x00;
-static unsigned char keyboardCode = 0x00;
-static KEYState keyboardState[256] = { KBD_WIIU_NULL };
+static KBDModifier keyboardModifier  = 0x00;
+static unsigned char keyboardCode    = 0x00;
+static KEYState keyboardState[256]   = { KBD_WIIU_NULL };
 
-void kb_connection_callback(KBDKeyEvent *key) {
+typedef struct wiiu_input
+{
+   bool blocked;
+   const input_device_driver_t *joypad;
+} wiiu_input_t;
+
+void kb_connection_callback(KBDKeyEvent *key)
+{
 	keyboardChannel = keyboardChannel + (key->channel + 0x01);
 }
 
-void kb_disconnection_callback(KBDKeyEvent *key) {
+void kb_disconnection_callback(KBDKeyEvent *key)
+{
 	keyboardChannel = keyboardChannel - (key->channel + 0x01);
 }
 
-void kb_key_callback(KBDKeyEvent *key) {
-   keyboardModifier = key->modifier;
-   keyboardCode = key->scancode;
+void kb_key_callback(KBDKeyEvent *key)
+{
+   uint16_t mod        = 0;
+   unsigned code       = 0;
+   bool pressed        = false;
 
-   bool pressed = false;
-      
+   keyboardModifier    = key->modifier;
+   keyboardCode        = key->scancode;
+
    if (key->state > 0)
-   {
       pressed = true;
-   }
-   uint16_t mod = 0;
-   unsigned code = input_keymaps_translate_keysym_to_rk(key->scancode);
+
+   code                = input_keymaps_translate_keysym_to_rk(key->scancode);
    keyboardState[code] = key->state;
-   
+
    if (key->modifier & KBD_WIIU_SHIFT)
       mod |= RETROKMOD_SHIFT;
-      
+
    if (key->modifier & KBD_WIIU_CTRL)
       mod |= RETROKMOD_CTRL;
 
@@ -85,26 +93,44 @@ void kb_key_callback(KBDKeyEvent *key) {
          RETRO_DEVICE_KEYBOARD);
 }
 
-typedef struct wiiu_input
-{
-   bool blocked;
-   const input_device_driver_t *joypad;
-} wiiu_input_t;
+/* TODO: emulate a relative mouse. This is suprisingly
+   hard to get working nicely.
+*/
 
-uint64_t lifecycle_state;
+static int16_t wiiu_pointer_device_state(wiiu_input_t* wiiu, unsigned id)
+{
+	switch (id)
+	{
+		case RETRO_DEVICE_ID_POINTER_PRESSED:
+		{
+			retro_bits_t state;
+			wiiu->joypad->get_buttons(0, &state);
+			return BIT256_GET(state, VPAD_BUTTON_TOUCH_BIT) ? 1 : 0;
+		}
+		case RETRO_DEVICE_ID_POINTER_X:
+			return wiiu->joypad->axis(0, 0xFFFF0004UL);
+		case RETRO_DEVICE_ID_POINTER_Y:
+			return wiiu->joypad->axis(0, 0xFFFF0005UL);
+	}
+
+	return 0;
+}
 
 static void wiiu_input_poll(void *data)
 {
    wiiu_input_t *wiiu = (wiiu_input_t*)data;
 
-   if (wiiu->joypad)
-      wiiu->joypad->poll();      
+   if(!wiiu)
+     return;
+
+   if(wiiu->joypad)
+     wiiu->joypad->poll();
 }
 
 static bool wiiu_key_pressed(int key)
 {
    bool ret = false;
-   
+
    if (key >= RETROK_LAST)
       return false;
 
@@ -124,17 +150,22 @@ static int16_t wiiu_input_state(void *data,
 
    if(!wiiu || !(port < MAX_PADS) || !binds || !binds[port])
       return 0;
-   
+
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(wiiu->joypad, joypad_info, port, binds[port], id);
+         return input_joypad_pressed(wiiu->joypad,
+               joypad_info, port, binds[port], id);
       case RETRO_DEVICE_KEYBOARD:
          return wiiu_key_pressed(id);
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return input_joypad_analog(wiiu->joypad, joypad_info, port, idx, id, binds[port]);
+            return input_joypad_analog(wiiu->joypad,
+                  joypad_info, port, idx, id, binds[port]);
          break;
+      case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
+         return wiiu_pointer_device_state(wiiu, id);
    }
 
    return 0;
@@ -146,7 +177,7 @@ static void wiiu_input_free_input(void *data)
 
    if (wiiu && wiiu->joypad)
       wiiu->joypad->destroy();
-      
+
    KBDTeardown();
 
    free(data);
@@ -160,27 +191,23 @@ static void* wiiu_input_init(const char *joypad_driver)
 
    DEBUG_STR(joypad_driver);
    wiiu->joypad = input_joypad_init_driver(joypad_driver, wiiu);
-   
-   KBDSetup(&kb_connection_callback,&kb_disconnection_callback,&kb_key_callback);
-   
+
+   KBDSetup(&kb_connection_callback,
+         &kb_disconnection_callback,&kb_key_callback);
+
    input_keymaps_init_keyboard_lut(rarch_key_map_wiiu);
 
    return wiiu;
-}
-
-static bool wiiu_input_meta_key_pressed(void *data, int key)
-{
-   if (BIT64_GET(lifecycle_state, key))
-      return true;
-
-   return false;
 }
 
 static uint64_t wiiu_input_get_capabilities(void *data)
 {
    (void)data;
 
-   return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG) |  (1 << RETRO_DEVICE_KEYBOARD);
+   return (1 << RETRO_DEVICE_JOYPAD) |
+          (1 << RETRO_DEVICE_ANALOG) |
+          (1 << RETRO_DEVICE_KEYBOARD) |
+          (1 << RETRO_DEVICE_POINTER);
 }
 
 static const input_device_driver_t *wiiu_input_get_joypad_driver(void *data)
@@ -228,7 +255,6 @@ input_driver_t input_wiiu = {
    wiiu_input_init,
    wiiu_input_poll,
    wiiu_input_state,
-   wiiu_input_meta_key_pressed,
    wiiu_input_free_input,
    NULL,
    NULL,

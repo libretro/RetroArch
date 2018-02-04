@@ -21,11 +21,10 @@
 
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
-#include "../../gfx/video_context_driver.h"
-#include "../../gfx/video_shader_driver.h"
+#include "../../gfx/video_driver.h"
 #include "../../gfx/common/gl_common.h"
 
-#include "../menu_display.h"
+#include "../menu_driver.h"
 
 static const GLfloat gl_vertexes[] = {
    0, 0,
@@ -101,7 +100,7 @@ static void menu_display_gl_viewport(void *data)
 {
    gl_t             *gl          = (gl_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   
+
    if (!gl || !draw)
       return;
    glViewport(draw->x, draw->y, draw->width, draw->height);
@@ -110,7 +109,7 @@ static void menu_display_gl_viewport(void *data)
 static void menu_display_gl_bind_texture(void *data)
 {
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   
+
    if (!draw)
       return;
 
@@ -123,7 +122,7 @@ static void menu_display_gl_draw(void *data)
    video_shader_ctx_coords_t coords;
    gl_t             *gl          = (gl_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   
+
    if (!gl || !draw)
       return;
 
@@ -139,14 +138,14 @@ static void menu_display_gl_draw(void *data)
 
    coords.handle_data = gl;
    coords.data        = draw->coords;
-   
-   video_shader_driver_set_coords(coords);
+
+   video_driver_set_coords(&coords);
 
    mvp.data   = gl;
-   mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data 
+   mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
       : (math_matrix_4x4*)menu_display_gl_get_default_mvp();
 
-   video_shader_driver_set_mvp(mvp);
+   video_driver_set_mvp(&mvp);
 
    glDrawArrays(menu_display_prim_to_gl_enum(
             draw->prim_type), 0, draw->coords->vertices);
@@ -172,9 +171,21 @@ static void menu_display_gl_draw_pipeline(void *data)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
+         glBlendFunc(GL_ONE, GL_ONE);
+         break;
+      default:
+         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+         break;
+   }
+
+   switch (draw->pipeline.id)
+   {
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_2:
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
          shader_info.data       = NULL;
          shader_info.idx        = draw->pipeline.id;
          shader_info.set_active = true;
@@ -196,7 +207,7 @@ static void menu_display_gl_draw_pipeline(void *data)
 
          uniform_param.result.f.v0       = t;
 
-         video_shader_driver_set_parameter(uniform_param);            
+         video_shader_driver_set_parameter(uniform_param);
          break;
    }
 
@@ -205,6 +216,7 @@ static void menu_display_gl_draw_pipeline(void *data)
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
 #ifndef HAVE_PSGL
          uniform_param.type              = UNIFORM_2F;
          uniform_param.lookup.ident      = "OutputSize";
@@ -235,13 +247,16 @@ static void menu_display_gl_clear_color(menu_display_ctx_clearcolor_t *clearcolo
 
 static bool menu_display_gl_font_init_first(
       void **font_handle, void *video_data,
-      const char *font_path, float font_size)
+      const char *font_path, float font_size,
+      bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
-   *handle = font_driver_init_first(video_data,
-         font_path, font_size, true, FONT_DRIVER_RENDER_OPENGL_API);
-
-   return *handle;
+   if (!(*handle = font_driver_init_first(video_data,
+         font_path, font_size, true,
+         is_threaded,
+         FONT_DRIVER_RENDER_OPENGL_API)))
+		 return false;
+   return true;
 }
 
 menu_display_ctx_driver_t menu_display_ctx_gl = {

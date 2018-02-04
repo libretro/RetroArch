@@ -30,7 +30,6 @@
 #include "menu_driver.h"
 #include "menu_input.h"
 #include "menu_animation.h"
-#include "menu_navigation.h"
 #include "menu_event.h"
 
 #include "../configuration.h"
@@ -126,19 +125,19 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    static bool mouse_oldright = false;
 
    if (
-         !settings->menu.mouse.enable
+         !settings->bools.menu_mouse_enable
 #ifdef HAVE_OVERLAY
-         || (settings->input.overlay_enable && input_overlay_is_alive(overlay_ptr))
+         || (settings->bools.input_overlay_enable && input_overlay_is_alive(overlay_ptr))
 #endif
          )
    {
-      /* HACK: Need to lie to avoid false hits if mouse is held 
+      /* HACK: Need to lie to avoid false hits if mouse is held
        * when entering the RetroArch window. */
 
-      /* This happens if, for example, someone double clicks the 
+      /* This happens if, for example, someone double clicks the
        * window border to maximize it.
        *
-       * The proper fix is, of course, triggering on WM_LBUTTONDOWN 
+       * The proper fix is, of course, triggering on WM_LBUTTONDOWN
        * rather than this state change. */
       mouse_oldleft   = true;
       mouse_oldright  = true;
@@ -149,10 +148,8 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    {
       if (!mouse_oldleft)
       {
-         size_t selection;
          menu_input_t *menu_input = menu_input_get_ptr();
-
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+         size_t selection         = menu_navigation_get_selection();
 
          BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_L);
 
@@ -222,16 +219,24 @@ static int menu_input_mouse_frame(
    int ret                  = 0;
    settings_t *settings     = config_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
+   bool mouse_enable        = settings->bools.menu_mouse_enable;
 
-   if (settings->menu.mouse.enable)
+   if (mouse_enable)
       ret  = menu_input_mouse_post_iterate(&mouse_state, cbs, action, &mouse_activity);
 
-   if (settings->menu.pointer.enable || settings->menu.mouse.enable)
+   if ((settings->bools.menu_pointer_enable || mouse_enable))
    {
       menu_ctx_pointer_t point;
-      point.x      = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-      point.y      = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-      menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
+      point.x       = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+      point.y       = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+      point.ptr     = 0;
+      point.cbs     = NULL;
+      point.entry   = NULL;
+      point.action  = 0;
+      point.retcode = 0;
+
+      if (menu_input_dialog_get_display_kb())
+         menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
 
       if (rarch_timer_is_running(&mouse_activity_timer))
          rarch_timer_tick(&mouse_activity_timer);
@@ -273,6 +278,7 @@ static int menu_input_mouse_frame(
       }
       else
       {
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
          menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
          ret = point.retcode;
       }
@@ -280,21 +286,20 @@ static int menu_input_mouse_frame(
 
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_BUTTON_R))
    {
-      size_t selection;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      size_t selection = menu_navigation_get_selection();
       menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
    }
 
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_WHEEL_DOWN))
    {
       unsigned increment_by = 1;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, &increment_by);
+      menu_driver_ctl(MENU_NAVIGATION_CTL_INCREMENT, &increment_by);
    }
 
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_WHEEL_UP))
    {
       unsigned decrement_by = 1;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, &decrement_by);
+      menu_driver_ctl(MENU_NAVIGATION_CTL_DECREMENT, &decrement_by);
    }
 
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_HORIZ_WHEEL_UP))
@@ -360,12 +365,14 @@ int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
 int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
 {
    rarch_joypad_info_t joypad_info;
-   unsigned type              = 0;
-   unsigned device            = RETRO_DEVICE_MOUSE;
+   const input_driver_t *input_ptr = input_get_ptr();
+   void *input_data                = input_get_data();
+   unsigned type                   = 0;
+   unsigned device                 = RETRO_DEVICE_MOUSE;
 
-   joypad_info.joy_idx        = 0;
-   joypad_info.auto_binds     = NULL;
-   joypad_info.axis_threshold = 0.0f;
+   joypad_info.joy_idx             = 0;
+   joypad_info.auto_binds          = NULL;
+   joypad_info.axis_threshold      = 0.0f;
 
    switch (state)
    {
@@ -397,7 +404,7 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
          break;
    }
 
-   return current_input->input_state(current_input_data, joypad_info,
+   return input_ptr->input_state(input_data, joypad_info,
          NULL, 0, device, 0, type);
 }
 
@@ -414,12 +421,12 @@ static int menu_input_pointer_post_iterate(
    int ret                      = 0;
    menu_input_t *menu_input     = menu_input_get_ptr();
    settings_t *settings         = config_get_ptr();
-   
+
    if (!menu_input || !settings)
       return -1;
 
 #ifdef HAVE_OVERLAY
-   if ((       settings->input.overlay_enable 
+   if ((       settings->bools.input_overlay_enable
             && input_overlay_is_alive(overlay_ptr)))
       return 0;
 #endif
@@ -436,7 +443,22 @@ static int menu_input_pointer_post_iterate(
       metrics.type  = DISPLAY_METRIC_DPI;
       metrics.value = &dpi;
 
-      video_context_driver_get_metrics(&metrics);
+      menu_input->pointer.counter++;
+
+      if (menu_input->pointer.counter == 1 &&
+            !menu_input_ctl(MENU_INPUT_CTL_IS_POINTER_DRAGGED, NULL))
+      {
+         menu_ctx_pointer_t point;
+
+         point.x                           = pointer_x;
+         point.y                           = pointer_y;
+         point.ptr                         = menu_input->pointer.ptr;
+         point.cbs                         = cbs;
+         point.entry                       = entry;
+         point.action                      = action;
+
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_DOWN, &point);
+      }
 
       if (!pointer_oldpressed[0])
       {
@@ -449,24 +471,26 @@ static int menu_input_pointer_post_iterate(
          pointer_old_y                     = pointer_y;
          pointer_oldpressed[0]             = true;
       }
-      else if (abs(pointer_x - start_x) > (dpi / 10)
-            || abs(pointer_y - start_y) > (dpi / 10))
+      else if (video_context_driver_get_metrics(&metrics))
       {
-         float s, delta_time;
+         if (abs(pointer_x - start_x) > (dpi / 10)
+               || abs(pointer_y - start_y) > (dpi / 10))
+         {
+            float s, delta_time;
 
-         menu_input_ctl(MENU_INPUT_CTL_SET_POINTER_DRAGGED, NULL);
-         menu_input->pointer.dx            = pointer_x - pointer_old_x;
-         menu_input->pointer.dy            = pointer_y - pointer_old_y;
-         pointer_old_x                     = pointer_x;
-         pointer_old_y                     = pointer_y;
+            menu_input_ctl(MENU_INPUT_CTL_SET_POINTER_DRAGGED, NULL);
+            menu_input->pointer.dx            = pointer_x - pointer_old_x;
+            menu_input->pointer.dy            = pointer_y - pointer_old_y;
+            pointer_old_x                     = pointer_x;
+            pointer_old_y                     = pointer_y;
 
-         menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
+            menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
-         s                         =  (menu_input->pointer.dy * 550000000.0 ) /
-            ( dpi * delta_time );
-         menu_input->pointer.accel = (accel0 + accel1 + s) / 3;
-         accel0                    = accel1;
-         accel1                    = menu_input->pointer.accel;
+            s = menu_input->pointer.dy;
+            menu_input->pointer.accel = (accel0 + accel1 + s) / 3;
+            accel0                    = accel1;
+            accel1                    = menu_input->pointer.accel;
+         }
       }
    }
    else
@@ -495,8 +519,19 @@ static int menu_input_pointer_post_iterate(
             }
             else
             {
-               menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
-               ret = point.retcode;
+               if (menu_input->pointer.counter > 32)
+               {
+                  size_t selection = menu_navigation_get_selection();
+                  if (cbs && cbs->action_start)
+                     return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+
+               }
+               else
+               {
+                  menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
+                  menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
+                  ret = point.retcode;
+               }
             }
          }
 
@@ -507,6 +542,7 @@ static int menu_input_pointer_post_iterate(
          pointer_old_y                     = 0;
          menu_input->pointer.dx            = 0;
          menu_input->pointer.dy            = 0;
+         menu_input->pointer.counter       = 0;
 
          menu_input_ctl(MENU_INPUT_CTL_UNSET_POINTER_DRAGGED, NULL);
       }
@@ -516,10 +552,8 @@ static int menu_input_pointer_post_iterate(
    {
       if (!pointer_oldback)
       {
-         size_t selection;
          pointer_oldback = true;
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-         menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+         menu_entry_action(entry, (unsigned)menu_navigation_get_selection(), MENU_ACTION_CANCEL);
       }
    }
 
@@ -530,34 +564,21 @@ static int menu_input_pointer_post_iterate(
 
 void menu_input_post_iterate(int *ret, unsigned action)
 {
-   size_t selection;
    menu_entry_t entry;
-   menu_file_list_cbs_t *cbs  = NULL;
    settings_t *settings       = config_get_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   size_t selection           = menu_navigation_get_selection();
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
 
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
-
-   if (selection_buf)
-      cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
-
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    *ret = menu_input_mouse_frame(cbs, &entry, action);
 
-   if (settings->menu.pointer.enable)
+   if (settings->bools.menu_pointer_enable)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
+
+   menu_entry_free(&entry);
 }
 

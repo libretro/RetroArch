@@ -46,8 +46,7 @@ void conv_rgb565_0rgb1555(void *output_, const void *input_,
    uint16_t *output = (uint16_t*)output_;
 
 #if defined(__SSE2_)
-   int max_width = width - 7;
-
+   int max_width           = width - 7;
    const __m128i hi_mask   = _mm_set1_epi16(0x7fe0);
    const __m128i lo_mask   = _mm_set1_epi16(0x1f);
 #endif
@@ -115,7 +114,7 @@ void conv_0rgb1555_rgb565(void *output_, const void *input_,
          uint16_t rg   = (col << 1) & ((0x1f << 11) | (0x1f << 6));
          uint16_t b    = col & 0x1f;
          uint16_t glow = (col >> 4) & (1 << 5);
-         output[w] = rg | b | glow;
+         output[w]     = rg | b | glow;
       }
    }
 }
@@ -175,14 +174,14 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
       for (; w < width; w++)
       {
          uint32_t col = input[w];
-         uint32_t r = (col >> 10) & 0x1f;
-         uint32_t g = (col >>  5) & 0x1f;
-         uint32_t b = (col >>  0) & 0x1f;
-         r = (r << 3) | (r >> 2);
-         g = (g << 3) | (g >> 2);
-         b = (b << 3) | (b >> 2);
+         uint32_t r   = (col >> 10) & 0x1f;
+         uint32_t g   = (col >>  5) & 0x1f;
+         uint32_t b   = (col >>  0) & 0x1f;
+         r            = (r << 3) | (r >> 2);
+         g            = (g << 3) | (g >> 2);
+         b            = (b << 3) | (b >> 2);
 
-         output[w] = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
+         output[w]    = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
       }
    }
 }
@@ -217,22 +216,22 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
          __m128i res_lo, res_hi;
          __m128i res_lo_bg, res_hi_bg, res_lo_ra, res_hi_ra;
          const __m128i in = _mm_loadu_si128((const __m128i*)(input + w));
-         __m128i r = _mm_and_si128(_mm_srli_epi16(in, 1), pix_mask_r);
-         __m128i g = _mm_and_si128(in, pix_mask_g);
-         __m128i b = _mm_and_si128(_mm_slli_epi16(in, 5), pix_mask_b);
+         __m128i        r = _mm_and_si128(_mm_srli_epi16(in, 1), pix_mask_r);
+         __m128i        g = _mm_and_si128(in, pix_mask_g);
+         __m128i        b = _mm_and_si128(_mm_slli_epi16(in, 5), pix_mask_b);
 
-         r = _mm_mulhi_epi16(r, mul16_r);
-         g = _mm_mulhi_epi16(g, mul16_g);
-         b = _mm_mulhi_epi16(b, mul16_b);
+         r                = _mm_mulhi_epi16(r, mul16_r);
+         g                = _mm_mulhi_epi16(g, mul16_g);
+         b                = _mm_mulhi_epi16(b, mul16_b);
 
-         res_lo_bg = _mm_unpacklo_epi8(b, g);
-         res_hi_bg = _mm_unpackhi_epi8(b, g);
-         res_lo_ra = _mm_unpacklo_epi8(r, a);
-         res_hi_ra = _mm_unpackhi_epi8(r, a);
+         res_lo_bg        = _mm_unpacklo_epi8(b, g);
+         res_hi_bg        = _mm_unpackhi_epi8(b, g);
+         res_lo_ra        = _mm_unpacklo_epi8(r, a);
+         res_hi_ra        = _mm_unpackhi_epi8(r, a);
 
-         res_lo = _mm_or_si128(res_lo_bg,
+         res_lo           = _mm_or_si128(res_lo_bg,
                _mm_slli_si128(res_lo_ra, 2));
-         res_hi = _mm_or_si128(res_hi_bg,
+         res_hi           = _mm_or_si128(res_hi_bg,
                _mm_slli_si128(res_hi_ra, 2));
 
          _mm_storeu_si128((__m128i*)(output + w + 0), res_lo);
@@ -243,14 +242,14 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
       for (; w < width; w++)
       {
          uint32_t col = input[w];
-         uint32_t r = (col >> 11) & 0x1f;
-         uint32_t g = (col >>  5) & 0x3f;
-         uint32_t b = (col >>  0) & 0x1f;
-         r = (r << 3) | (r >> 2);
-         g = (g << 2) | (g >> 4);
-         b = (b << 3) | (b >> 2);
+         uint32_t r   = (col >> 11) & 0x1f;
+         uint32_t g   = (col >>  5) & 0x3f;
+         uint32_t b   = (col >>  0) & 0x1f;
+         r            = (r << 3) | (r >> 2);
+         g            = (g << 2) | (g >> 4);
+         b            = (b << 3) | (b >> 2);
 
-         output[w] = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
+         output[w]    = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
       }
    }
 }
@@ -269,16 +268,16 @@ void conv_argb8888_rgba4444(void *output_, const void *input_,
       for (w = 0; w < width; w++)
       {
          uint32_t col = input[w];
-         uint32_t r = (col >> 16) & 0xf;
-         uint32_t g = (col >>  8) & 0xf;
-         uint32_t b = (col) & 0xf;
-         uint32_t a = (col >>  24) & 0xf;
-         r = (r >> 4) | r;
-         g = (g >> 4) | g;
-         b = (b >> 4) | b;
-         a = (a >> 4) | a;
+         uint32_t r   = (col >> 16) & 0xf;
+         uint32_t g   = (col >>  8) & 0xf;
+         uint32_t b   = (col) & 0xf;
+         uint32_t a   = (col >>  24) & 0xf;
+         r            = (r >> 4) | r;
+         g            = (g >> 4) | g;
+         b            = (b >> 4) | b;
+         a            = (a >> 4) | a;
 
-         output[w] = (r << 12) | (g << 8) | (b << 4) | a;
+         output[w]    = (r << 12) | (g << 8) | (b << 4) | a;
       }
    }
 }
@@ -297,16 +296,16 @@ void conv_rgba4444_argb8888(void *output_, const void *input_,
       for (w = 0; w < width; w++)
       {
          uint32_t col = input[w];
-         uint32_t r = (col >> 12) & 0xf;
-         uint32_t g = (col >>  8) & 0xf;
-         uint32_t b = (col >>  4) & 0xf;
-         uint32_t a = (col >>  0) & 0xf;
-         r = (r << 4) | r;
-         g = (g << 4) | g;
-         b = (b << 4) | b;
-         a = (a << 4) | a;
+         uint32_t r   = (col >> 12) & 0xf;
+         uint32_t g   = (col >>  8) & 0xf;
+         uint32_t b   = (col >>  4) & 0xf;
+         uint32_t a   = (col >>  0) & 0xf;
+         r            = (r << 4) | r;
+         g            = (g << 4) | g;
+         b            = (b << 4) | b;
+         a            = (a << 4) | a;
 
-         output[w] = (a << 24) | (r << 16) | (g << 8) | (b << 0);
+         output[w]    = (a << 24) | (r << 16) | (g << 8) | (b << 0);
       }
    }
 }
@@ -329,7 +328,7 @@ void conv_rgba4444_rgb565(void *output_, const void *input_,
          uint32_t g   = (col >>  8) & 0xf;
          uint32_t b   = (col >>  4) & 0xf;
 
-         output[w] = (r << 12) | (g << 7) | (b << 1);
+         output[w]    = (r << 12) | (g << 7) | (b << 1);
       }
    }
 }
@@ -420,32 +419,32 @@ void conv_0rgb1555_bgr24(void *output_, const void *input_,
          __m128i b0        = _mm_and_si128(_mm_slli_epi16(in0, 5), pix_mask_gb);
          __m128i b1        = _mm_and_si128(_mm_slli_epi16(in1, 5), pix_mask_gb);
 
-         r0 = _mm_mulhi_epi16(r0, mul15_hi);
-         r1 = _mm_mulhi_epi16(r1, mul15_hi);
-         g0 = _mm_mulhi_epi16(g0, mul15_mid);
-         g1 = _mm_mulhi_epi16(g1, mul15_mid);
-         b0 = _mm_mulhi_epi16(b0, mul15_mid);
-         b1 = _mm_mulhi_epi16(b1, mul15_mid);
+         r0                = _mm_mulhi_epi16(r0, mul15_hi);
+         r1                = _mm_mulhi_epi16(r1, mul15_hi);
+         g0                = _mm_mulhi_epi16(g0, mul15_mid);
+         g1                = _mm_mulhi_epi16(g1, mul15_mid);
+         b0                = _mm_mulhi_epi16(b0, mul15_mid);
+         b1                = _mm_mulhi_epi16(b1, mul15_mid);
 
-         res_lo_bg0 = _mm_unpacklo_epi8(b0, g0);
-         res_lo_bg1 = _mm_unpacklo_epi8(b1, g1);
-         res_hi_bg0 = _mm_unpackhi_epi8(b0, g0);
-         res_hi_bg1 = _mm_unpackhi_epi8(b1, g1);
-         res_lo_ra0 = _mm_unpacklo_epi8(r0, a);
-         res_lo_ra1 = _mm_unpacklo_epi8(r1, a);
-         res_hi_ra0 = _mm_unpackhi_epi8(r0, a);
-         res_hi_ra1 = _mm_unpackhi_epi8(r1, a);
+         res_lo_bg0        = _mm_unpacklo_epi8(b0, g0);
+         res_lo_bg1        = _mm_unpacklo_epi8(b1, g1);
+         res_hi_bg0        = _mm_unpackhi_epi8(b0, g0);
+         res_hi_bg1        = _mm_unpackhi_epi8(b1, g1);
+         res_lo_ra0        = _mm_unpacklo_epi8(r0, a);
+         res_lo_ra1        = _mm_unpacklo_epi8(r1, a);
+         res_hi_ra0        = _mm_unpackhi_epi8(r0, a);
+         res_hi_ra1        = _mm_unpackhi_epi8(r1, a);
 
-         res_lo0 = _mm_or_si128(res_lo_bg0,
+         res_lo0           = _mm_or_si128(res_lo_bg0,
                _mm_slli_si128(res_lo_ra0, 2));
-         res_lo1 = _mm_or_si128(res_lo_bg1,
+         res_lo1           = _mm_or_si128(res_lo_bg1,
                _mm_slli_si128(res_lo_ra1, 2));
-         res_hi0 = _mm_or_si128(res_hi_bg0,
+         res_hi0           = _mm_or_si128(res_hi_bg0,
                _mm_slli_si128(res_hi_ra0, 2));
-         res_hi1 = _mm_or_si128(res_hi_bg1,
+         res_hi1           = _mm_or_si128(res_hi_bg1,
                _mm_slli_si128(res_hi_ra1, 2));
 
-         /* Non-POT pixel sizes ftl :( */
+         /* Non-POT pixel sizes for the loss */
          store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, res_hi1);
       }
 #endif
@@ -456,13 +455,13 @@ void conv_0rgb1555_bgr24(void *output_, const void *input_,
          uint32_t b   = (col >>  0) & 0x1f;
          uint32_t g   = (col >>  5) & 0x1f;
          uint32_t r   = (col >> 10) & 0x1f;
-         b = (b << 3) | (b >> 2);
-         g = (g << 3) | (g >> 2);
-         r = (r << 3) | (r >> 2);
+         b            = (b << 3) | (b >> 2);
+         g            = (g << 3) | (g >> 2);
+         r            = (r << 3) | (r >> 2);
 
-         *out++ = b;
-         *out++ = g;
-         *out++ = r;
+         *out++       = b;
+         *out++       = g;
+         *out++       = r;
       }
    }
 }
@@ -506,12 +505,12 @@ void conv_rgb565_bgr24(void *output_, const void *input_,
          __m128i g1 = _mm_and_si128(in1, pix_mask_g);
          __m128i b1 = _mm_and_si128(_mm_slli_epi16(in1, 5), pix_mask_b);
 
-         r0 = _mm_mulhi_epi16(r0, mul16_r);
-         g0 = _mm_mulhi_epi16(g0, mul16_g);
-         b0 = _mm_mulhi_epi16(b0, mul16_b);
-         r1 = _mm_mulhi_epi16(r1, mul16_r);
-         g1 = _mm_mulhi_epi16(g1, mul16_g);
-         b1 = _mm_mulhi_epi16(b1, mul16_b);
+         r0         = _mm_mulhi_epi16(r0, mul16_r);
+         g0         = _mm_mulhi_epi16(g0, mul16_g);
+         b0         = _mm_mulhi_epi16(b0, mul16_b);
+         r1         = _mm_mulhi_epi16(r1, mul16_r);
+         g1         = _mm_mulhi_epi16(g1, mul16_g);
+         b1         = _mm_mulhi_epi16(b1, mul16_b);
 
          res_lo_bg0 = _mm_unpacklo_epi8(b0, g0);
          res_hi_bg0 = _mm_unpackhi_epi8(b0, g0);
@@ -522,13 +521,13 @@ void conv_rgb565_bgr24(void *output_, const void *input_,
          res_lo_ra1 = _mm_unpacklo_epi8(r1, a);
          res_hi_ra1 = _mm_unpackhi_epi8(r1, a);
 
-         res_lo0 = _mm_or_si128(res_lo_bg0,
+         res_lo0    = _mm_or_si128(res_lo_bg0,
                _mm_slli_si128(res_lo_ra0, 2));
-         res_hi0 = _mm_or_si128(res_hi_bg0,
+         res_hi0    = _mm_or_si128(res_hi_bg0,
                _mm_slli_si128(res_hi_ra0, 2));
-         res_lo1 = _mm_or_si128(res_lo_bg1,
+         res_lo1    = _mm_or_si128(res_lo_bg1,
                _mm_slli_si128(res_lo_ra1, 2));
-         res_hi1 = _mm_or_si128(res_hi_bg1,
+         res_hi1    = _mm_or_si128(res_hi_bg1,
                _mm_slli_si128(res_hi_ra1, 2));
 
          store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, res_hi1);
@@ -569,7 +568,7 @@ void conv_bgr24_argb8888(void *output_, const void *input_,
          uint32_t b = *inp++;
          uint32_t g = *inp++;
          uint32_t r = *inp++;
-         output[w] = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
+         output[w]  = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
       }
    }
 }
@@ -588,10 +587,10 @@ void conv_argb8888_0rgb1555(void *output_, const void *input_,
       for (w = 0; w < width; w++)
       {
          uint32_t col = input[w];
-         uint16_t r = (col >> 19) & 0x1f;
-         uint16_t g = (col >> 11) & 0x1f;
-         uint16_t b = (col >>  3) & 0x1f;
-         output[w] = (r << 10) | (g << 5) | (b << 0);
+         uint16_t r   = (col >> 19) & 0x1f;
+         uint16_t g   = (col >> 11) & 0x1f;
+         uint16_t b   = (col >>  3) & 0x1f;
+         output[w]    = (r << 10) | (g << 5) | (b << 0);
       }
    }
 }
@@ -627,9 +626,9 @@ void conv_argb8888_bgr24(void *output_, const void *input_,
       for (; w < width; w++)
       {
          uint32_t col = input[w];
-         *out++ = (uint8_t)(col >>  0);
-         *out++ = (uint8_t)(col >>  8);
-         *out++ = (uint8_t)(col >> 16);
+         *out++       = (uint8_t)(col >>  0);
+         *out++       = (uint8_t)(col >>  8);
+         *out++       = (uint8_t)(col >> 16);
       }
    }
 }
@@ -648,7 +647,7 @@ void conv_argb8888_abgr8888(void *output_, const void *input_,
       for (w = 0; w < width; w++)
       {
          uint32_t col = input[w];
-         output[w] = ((col << 16) & 0xff0000) | 
+         output[w]    = ((col << 16) & 0xff0000) |
             ((col >> 16) & 0xff) | (col & 0xff00ff00);
       }
    }
@@ -793,8 +792,8 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
          uint8_t g1 = clamp_8bit((YUV_MAT_Y * _y1 + YUV_MAT_U_G * u + YUV_MAT_V_G * v + YUV_OFFSET) >> YUV_SHIFT);
          uint8_t b1 = clamp_8bit((YUV_MAT_Y * _y1 + YUV_MAT_U_B * u                   + YUV_OFFSET) >> YUV_SHIFT);
 
-         dst[0] = 0xff000000u | (r0 << 16) | (g0 << 8) | (b0 << 0);
-         dst[1] = 0xff000000u | (r1 << 16) | (g1 << 8) | (b1 << 0);
+         dst[0]     = 0xff000000u | (r0 << 16) | (g0 << 8) | (b0 << 0);
+         dst[1]     = 0xff000000u | (r1 << 16) | (g1 << 8) | (b1 << 0);
       }
    }
 }
@@ -809,7 +808,7 @@ void conv_copy(void *output_, const void *input_,
    uint8_t *output      = (uint8_t*)output_;
 
    if (abs(in_stride) < copy_len)
-      copy_len = abs(in_stride);
+      copy_len          = abs(in_stride);
 
    for (h = 0; h < height;
          h++, output += out_stride, input += in_stride)

@@ -38,14 +38,14 @@ static void *vita2d_font_init_font(void *data,
       bool is_threaded)
 {
    unsigned int stride, pitch, j, k;
-   const uint8_t         *frame32 = NULL;    
+   const uint8_t         *frame32 = NULL;
    uint8_t                 *tex32 = NULL;
    const struct font_atlas *atlas = NULL;
    vita_font_t              *font = (vita_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
       return NULL;
-      
+
    font->vita                     = (vita_video_t*)data;
 
    if (!font_renderer_create_default((const void**)&font->font_driver,
@@ -78,7 +78,7 @@ static void *vita2d_font_init_font(void *data,
    for (j = 0; j < atlas->height; j++)
       for (k = 0; k < atlas->width; k++)
          tex32[k + j*stride] = frame32[k + j*pitch];
-   
+
    font->atlas->dirty = false;
 
    return font;
@@ -169,7 +169,7 @@ static void vita2d_font_render_line(
       int off_x, off_y, tex_x, tex_y, width, height;
       unsigned int stride, pitch, j, k;
       const struct font_glyph *glyph = NULL;
-      const uint8_t         *frame32 = NULL;    
+      const uint8_t         *frame32 = NULL;
       uint8_t                 *tex32 = NULL;
       const char *msg_tmp            = &msg[i];
       unsigned code                  = utf8_walk(&msg_tmp);
@@ -192,7 +192,7 @@ static void vita2d_font_render_line(
       tex_y  = glyph->atlas_offset_y;
       width  = glyph->width;
       height = glyph->height;
-      
+
       if (font->atlas->dirty)
       {
         stride  = vita2d_texture_get_stride(font->texture);
@@ -203,7 +203,7 @@ static void vita2d_font_render_line(
         for (j = 0; j < font->atlas->height; j++)
            for (k = 0; k < font->atlas->width; k++)
               tex32[k + j*stride] = frame32[k + j*pitch];
-              
+
          font->atlas->dirty = false;
       }
 
@@ -293,7 +293,7 @@ static void vita2d_font_render_msg(
       g    				= FONT_COLOR_GET_GREEN(params->color);
       b    				= FONT_COLOR_GET_BLUE(params->color);
       alpha    		= FONT_COLOR_GET_ALPHA(params->color);
-      color    		= params->color;
+      color    		= RGBA8(r,g,b,alpha);
    }
    else
    {
@@ -346,12 +346,6 @@ static const struct font_glyph *vita2d_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
-static void vita2d_font_flush_block(unsigned width, unsigned height,
-      void *data)
-{
-   (void)data;
-}
-
 static void vita2d_font_bind_block(void *data, void *userdata)
 {
    (void)data;
@@ -364,6 +358,6 @@ font_renderer_t vita2d_vita_font = {
    "vita2dfont",
 	 vita2d_font_get_glyph,
    vita2d_font_bind_block,
-   vita2d_font_flush_block,
+   NULL,                      /* flush */
    vita2d_font_get_message_width,
 };

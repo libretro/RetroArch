@@ -5,7 +5,7 @@
 # and icons (https://github.com/libretro/retroarch-assets/tree/master/pkg/wiiu) to this directory then run
 # the script. the output will be in retroarch/pkg/wiiu
 
-RARCH_VERSION=1.3.6
+source ../version.all
 
 platform=wiiu
 EXT=a
@@ -15,8 +15,8 @@ cp *.info ../pkg/wiiu/retroarch/cores/info/
 mkdir -p ../pkg/wiiu/rpx/retroarch/cores/info
 cp *.info ../pkg/wiiu/rpx/retroarch/cores/info/
 
-make -C ../ -f Makefile.${platform}.salamander clean || exit 1
-make -C ../ -f Makefile.${platform}.salamander BUILD_HBL_ELF=1 BUILD_RPX=1 -j3 || exit 1
+make -C ../ -f Makefile.${platform} SALAMANDER_BUILD=1 clean || exit 1
+make -C ../ -f Makefile.${platform} SALAMANDER_BUILD=1 BUILD_HBL_ELF=1 BUILD_RPX=1 -j3 || exit 1
 
 mkdir -p ../pkg/wiiu/wiiu/apps/retroarch
 mv -f ../retroarch_wiiu_salamander.elf ../pkg/wiiu/wiiu/apps/retroarch/retroarch.elf
@@ -51,7 +51,7 @@ gen_meta_xml()
       echo '<app version="1">' >> "$1"_meta.xml
       echo '  <name>'$corename'</name>' >> "$1"_meta.xml
       echo '  <coder>'$authors'</coder>' >> "$1"_meta.xml
-      echo '  <version>'$RARCH_VERSION' r'$build_hash'</version>' >> "$1"_meta.xml
+      echo '  <version>'$PACKAGE_VERSION' r'$build_hash'</version>' >> "$1"_meta.xml
       echo '  <release_date>'$date'</release_date>' >> "$1"_meta.xml
       echo '  <short_description>RetroArch</short_description>' >> "$1"_meta.xml
       echo -e '  <long_description>'$display_name'\n\nSystem: '$systemname'\nLicense: '$license'</long_description>' >> "$1"_meta.xml

@@ -66,6 +66,16 @@ layout(binding = 0, std140) buffer SSBO0
     Content content;
     Content content1[2];
     Content content2;
+
+    layout(column_major) mat2 m0;
+    layout(column_major) mat2 m1;
+    layout(column_major) mat2x3 m2[4];
+    layout(column_major) mat3x2 m3;
+    layout(row_major) mat2 m4;
+    layout(row_major) mat2 m5[9];
+    layout(row_major) mat2x3 m6[4][2];
+    layout(row_major) mat3x2 m7;
+
     float array[];
 } ssbo_140;
 

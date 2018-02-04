@@ -2,9 +2,9 @@
    2009-09-20 : Igor Pavlov : Public domain */
 #include <stdint.h>
 #include <string.h>
+#include <boolean.h>
 
 #include "LzmaDec.h"
-
 
 #define kNumTopBits 24
 #define kTopValue ((uint32_t)1 << kNumTopBits)
@@ -162,7 +162,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
       ttt = *(prob);
       LZMADEC_NORMALIZE;
       bound = (range >> kNumBitModelTotalBits) * ttt;
-      
+
       if (codes < bound)
       {
          unsigned symbol;
@@ -291,7 +291,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
          {
             unsigned _limit, offset;
             uint16_t *probLen = prob + LenChoice;
-               
+
             ttt = *(probLen);
             LZMADEC_NORMALIZE;
             bound = (range >> kNumBitModelTotalBits) * ttt;
@@ -721,9 +721,9 @@ static void LzmaDec_InitRc(CLzmaDec *p, const uint8_t *data)
    p->needFlush = 0;
 }
 
-void LzmaDec_InitDicAndState(CLzmaDec *p, Bool initDic, Bool initState);
+void LzmaDec_InitDicAndState(CLzmaDec *p, bool initDic, bool initState);
 
-void LzmaDec_InitDicAndState(CLzmaDec *p, Bool initDic, Bool initState)
+void LzmaDec_InitDicAndState(CLzmaDec *p, bool initDic, bool initState)
 {
    p->needFlush = 1;
    p->remainLen = 0;
@@ -742,7 +742,7 @@ void LzmaDec_InitDicAndState(CLzmaDec *p, Bool initDic, Bool initState)
 void LzmaDec_Init(CLzmaDec *p)
 {
    p->dicPos = 0;
-   LzmaDec_InitDicAndState(p, True, True);
+   LzmaDec_InitDicAndState(p, true, true);
 }
 
 static void LzmaDec_InitStateReal(CLzmaDec *p)

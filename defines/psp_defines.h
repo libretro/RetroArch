@@ -106,7 +106,7 @@ int sceClibPrintf ( const char * format, ... );
 
 #if defined(VITA)
 #define CtrlSetSamplingMode(mode) sceCtrlSetSamplingModeExt(mode)
-#define CtrlPeekBufferPositive(port, pad_data, bufs) sceCtrlReadBufferPositiveExt2(port, pad_data, bufs)
+#define CtrlPeekBufferPositive(port, pad_data, bufs) sceCtrlPeekBufferPositiveExt2(port, pad_data, bufs)
 #else
 #define CtrlSetSamplingMode(mode) sceCtrlSetSamplingMode(mode)
 #define CtrlPeekBufferPositive(port, pad_data, bufs) sceCtrlPeekBufferPositive(port, pad_data, bufs)

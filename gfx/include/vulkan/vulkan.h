@@ -33,21 +33,23 @@ extern "C" {
 #define VK_MAKE_VERSION(major, minor, patch) \
     (((major) << 22) | ((minor) << 12) | (patch))
 
-// DEPRECATED: This define has been removed. Specific version defines (e.g. VK_API_VERSION_1_0), or the VK_MAKE_VERSION macro, should be used instead.
-//#define VK_API_VERSION VK_MAKE_VERSION(1, 0, 0)
+/* DEPRECATED: This define has been removed. Specific version defines (e.g. VK_API_VERSION_1_0), or the VK_MAKE_VERSION macro, should be used instead. */
+#if 0
+#define VK_API_VERSION VK_MAKE_VERSION(1, 0, 0)
+#endif
 
-// Vulkan 1.0 version number
+/* Vulkan 1.0 version number */
 #define VK_API_VERSION_1_0 VK_MAKE_VERSION(1, 0, 0)
 
 #define VK_VERSION_MAJOR(version) ((uint32_t)(version) >> 22)
 #define VK_VERSION_MINOR(version) (((uint32_t)(version) >> 12) & 0x3ff)
 #define VK_VERSION_PATCH(version) ((uint32_t)(version) & 0xfff)
-// Version of this file
+/* Version of this file */
 #define VK_HEADER_VERSION 17
 
 
 #define VK_NULL_HANDLE 0
-        
+
 
 
 #define VK_DEFINE_HANDLE(object) typedef struct object##_T* object;
@@ -58,7 +60,7 @@ extern "C" {
 #else
         #define VK_DEFINE_NON_DISPATCHABLE_HANDLE(object) typedef uint64_t object;
 #endif
-        
+
 
 
 typedef uint32_t VkFlags;

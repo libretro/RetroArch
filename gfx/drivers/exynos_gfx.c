@@ -181,7 +181,7 @@ static int exynos_get_device_index(void)
 
       ver = drmGetVersion(fd);
 
-      if (string_is_equal("exynos", ver->name))
+      if (string_is_equal(ver->name, "exynos"))
          found = true;
       else
          ++index;
@@ -195,10 +195,10 @@ static int exynos_get_device_index(void)
    return index;
 }
 
-/* The main pageflip handler, which the DRM executes 
+/* The main pageflip handler, which the DRM executes
  * when it flips to the page.
  *
- * Decreases the pending pageflip count and 
+ * Decreases the pending pageflip count and
  * updates the current page.
  */
 static void exynos_page_flip_handler(int fd, unsigned frame, unsigned sec,
@@ -222,7 +222,7 @@ static struct exynos_page *exynos_get_free_page(
 {
    unsigned i;
 
-   for (i = 0; i < cnt; ++i) 
+   for (i = 0; i < cnt; ++i)
    {
       if (!p[i].used)
          return &p[i];
@@ -597,13 +597,13 @@ static int exynos_init(struct exynos_data *pdata, unsigned bpp)
    unsigned i;
    settings_t *settings   = config_get_ptr();
 
-   if (settings->video.fullscreen_x != 0 &&
-         settings->video.fullscreen_y != 0)
+   if (settings->uints.video_fullscreen_x != 0 &&
+         settings->uints.video_fullscreen_y != 0)
    {
       for (i = 0; i < g_drm_connector->count_modes; i++)
       {
-         if (g_drm_connector->modes[i].hdisplay == settings->video.fullscreen_x &&
-               g_drm_connector->modes[i].vdisplay == settings->video.fullscreen_y)
+         if (g_drm_connector->modes[i].hdisplay == settings->uints.video_fullscreen_x &&
+               g_drm_connector->modes[i].vdisplay == settings->uints.video_fullscreen_y)
          {
             g_drm_mode = &g_drm_connector->modes[i];
             break;
@@ -613,7 +613,8 @@ static int exynos_init(struct exynos_data *pdata, unsigned bpp)
       if (!g_drm_mode)
       {
          RARCH_ERR("[video_exynos]: requested resolution (%ux%u) not available\n",
-               settings->video.fullscreen_x, settings->video.fullscreen_y);
+               settings->uints.video_fullscreen_x,
+               settings->uints.video_fullscreen_y);
          goto fail;
       }
 
@@ -1051,16 +1052,16 @@ static int exynos_init_font(struct exynos_video *vid)
    const unsigned buf_bpp    = defaults[EXYNOS_IMAGE_FONT].bpp;
    settings_t *settings      = config_get_ptr();
 
-   if (!settings->video.font_enable)
+   if (!settings->bools.video_font_enable)
       return 0;
 
    if (font_renderer_create_default(&vid->font_driver, &vid->font,
             *settings->video.font_path ? settings->video.font_path : NULL,
-            settings->video.font_size))
+            settings->floats.video_font_size))
    {
-      const int r = settings->video.msg_color_r * 15;
-      const int g = settings->video.msg_color_g * 15;
-      const int b = settings->video.msg_color_b * 15;
+      const int r = settings->floats.video_msg_color_r * 15;
+      const int g = settings->floats.video_msg_color_g * 15;
+      const int b = settings->floats.video_msg_color_b * 15;
 
       vid->font_color = ((b < 0 ? 0 : (b > 15 ? 15 : b)) << 0) |
          ((g < 0 ? 0 : (g > 15 ? 15 : g)) << 4) |
@@ -1099,8 +1100,8 @@ static int exynos_render_msg(struct exynos_video *vid,
    struct exynos_data *pdata = vid->data;
    struct g2d_image *dst     = pdata->src[EXYNOS_IMAGE_FONT];
    settings_t *settings      = config_get_ptr();
-   int msg_base_x            = settings->video.msg_pos_x * dst->width;
-   int msg_base_y            = (1.0f - settings->video.msg_pos_y) * dst->height;
+   int msg_base_x            = settings->floats.video_msg_pos_x * dst->width;
+   int msg_base_y            = (1.0f - settings->floats.video_msg_pos_y) * dst->height;
 
    if (!vid->font || !vid->font_driver)
       return -1;
@@ -1373,13 +1374,6 @@ static bool exynos_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool exynos_gfx_has_windowed(void *data)
-{
-   (void)data;
-
-   return false;
-}
-
 static void exynos_gfx_set_rotation(void *data, unsigned rotation)
 {
    struct exynos_video *vid = (struct exynos_video*)data;
@@ -1484,6 +1478,8 @@ static void exynos_show_mouse(void *data, bool state)
 }
 
 static const video_poke_interface_t exynos_poke_interface = {
+   NULL, /* set_coords */
+   NULL, /* set_mvp */
    NULL,
    NULL,
    NULL, /* set_video_mode */
@@ -1495,12 +1491,14 @@ static const video_poke_interface_t exynos_poke_interface = {
    NULL, /* get_proc_address */
    exynos_set_aspect_ratio,
    exynos_apply_state_changes,
-#ifdef HAVE_MENU
    exynos_set_texture_frame,
    exynos_set_texture_enable,
-#endif
    exynos_set_osd_msg,
-   exynos_show_mouse
+   exynos_show_mouse,
+   NULL,                         /* grab_mouse_toggle */
+   NULL,                         /* get_current_shader */
+   NULL,                         /* get_current_software_framebuffer */
+   NULL                          /* get_hw_render_interface */
 };
 
 static void exynos_gfx_get_poke_interface(void *data,
@@ -1517,7 +1515,7 @@ static bool exynos_gfx_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 static bool exynos_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
@@ -1535,7 +1533,7 @@ video_driver_t video_exynos = {
   exynos_gfx_alive,
   exynos_gfx_focus,
   exynos_gfx_suppress_screensaver,
-  exynos_gfx_has_windowed,
+  NULL, /* has_windowed */
   exynos_gfx_set_shader,
   exynos_gfx_free,
   "exynos",

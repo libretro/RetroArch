@@ -113,7 +113,7 @@
       <MinimalRebuild>true</MinimalRebuild>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>_DEBUG;_XBOX;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;_XBOX360;IS_SALAMANDER;HAVE_RARCH_EXEC</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_XBOX;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;_XBOX360;IS_SALAMANDER;HAVE_RARCH_EXEC;MSB_FIRST</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -137,7 +137,7 @@
       <PREfast>AnalyzeOnly</PREfast>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>_DEBUG;_XBOX;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;_XBOX360;IS_SALAMANDER;HAVE_RARCH_EXEC</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_XBOX;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;_XBOX360;IS_SALAMANDER;HAVE_RARCH_EXEC;MSB_FIRST</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -162,7 +162,7 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;_XBOX360;IS_SALAMANDER;HAVE_RARCH_EXEC</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;_XBOX360;IS_SALAMANDER;HAVE_RARCH_EXEC;MSB_FIRST</PreprocessorDefinitions>
       <CallAttributedProfiling>Callcap</CallAttributedProfiling>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -192,7 +192,7 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;FASTCAP;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;_XBOX360;IS_SALAMANDER;HAVE_RARCH_EXEC</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;PROFILE;FASTCAP;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;_XBOX360;IS_SALAMANDER;HAVE_RARCH_EXEC;MSB_FIRST</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -219,7 +219,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;_XBOX360;IS_SALAMANDER;HAVE_RARCH_EXEC</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;_XBOX360;IS_SALAMANDER;HAVE_RARCH_EXEC;MSB_FIRST</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -246,7 +246,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>NDEBUG;_XBOX;LTCG;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;_XBOX360;IS_SALAMANDER;HAVE_RARCH_EXEC</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_XBOX;LTCG;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;RARCH_CONSOLE=1;_XBOX360;IS_SALAMANDER;HAVE_RARCH_EXEC;MSB_FIRST</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -262,6 +262,30 @@
     </Deploy>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\file_path_str.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_posix_string.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_snprintf.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
+    </ClCompile>
     <ClCompile Include="..\..\..\libretro-common\compat\compat_strl.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
@@ -278,6 +302,22 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
     </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\compat\fopen_utf8.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\encodings\encoding_utf.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
+    </ClCompile>
     <ClCompile Include="..\..\..\libretro-common\file\config_file.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
@@ -286,7 +326,7 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\..\..\libretro-common\file\dir_list.c">
+    <ClCompile Include="..\..\..\libretro-common\lists\dir_list.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
@@ -310,10 +350,46 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\..\..\frontend\frontend_salamander.c" />
-    <ClCompile Include="..\..\..\frontend\frontend_driver.c" />
-    <ClCompile Include="..\..\..\frontend\drivers\platform_null.c" />
-    <ClCompile Include="..\..\..\frontend\drivers\platform_xdk.cpp" />
+    <ClCompile Include="..\..\..\frontend\frontend_salamander.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\frontend\frontend_driver.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\frontend\drivers\platform_null.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\frontend\drivers\platform_xdk.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\streams\file_stream.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
+    </ClCompile>
     <ClCompile Include="..\..\..\libretro-common\string\stdstring.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
@@ -322,7 +398,23 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\..\..\libretro-common\string\string_list.c">
+    <ClCompile Include="..\..\..\libretro-common\lists\string_list.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\vfs\vfs_implementation.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\verbosity.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='CodeAnalysis|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>

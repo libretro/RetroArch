@@ -49,8 +49,6 @@
 #include "../../driver.h"
 #include "../../retroarch.h"
 
-#include "../video_context_driver.h"
-
 typedef struct omapfb_page
 {
   unsigned yoffset;
@@ -97,7 +95,7 @@ static const char *omapfb_get_fb_device(void)
 {
    static char fbname[12] = {0};
    settings_t   *settings = config_get_ptr();
-   const int        fbidx = settings->video.monitor_index;
+   const int        fbidx = settings->uints.video_monitor_index;
 
    if (fbidx == 0)
       return "/dev/fb0";
@@ -189,7 +187,7 @@ static int omapfb_detect_screen(omapfb_data_t *pdata)
 
    buff[0] = manager_name[0] = display_name[0] = '\0';
 
-   /* Find out the native screen resolution, which is needed to 
+   /* Find out the native screen resolution, which is needed to
     * properly center the scaled image data. */
    ret = stat(pdata->fbname, &status);
 
@@ -606,7 +604,7 @@ static int omapfb_init(omapfb_data_t *pdata, unsigned bpp)
    /* always use triple buffering to reduce chance of tearing */
    pdata->bpp           = bpp;
    pdata->num_pages     = 3;
-   pdata->sync          = settings->video.vsync;
+   pdata->sync          = settings->bools.video_vsync;
 
    return 0;
 }
@@ -835,19 +833,19 @@ static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned fo
    int r, g, b;
    settings_t *settings = config_get_ptr();
 
-   if (!settings->video.font_enable)
+   if (!settings->bools.video_font_enable)
       return;
 
    if (!(font_renderer_create_default(&vid->font_driver, &vid->font,
-               *settings->path.font ? settings->path.font : NULL, settings->video.font_size)))
+               *settings->paths.path_font ? settings->paths.path_font : NULL, settings->video.font_size)))
    {
       RARCH_LOG("[video_omap]: font init failed\n");
       return;
    }
 
-   r = settings->video.msg_color_r * 255;
-   g = settings->video.msg_color_g * 255;
-   b = settings->video.msg_color_b * 255;
+   r = settings->floats.video_msg_color_r * 255;
+   g = settings->floats.video_msg_color_g * 255;
+   b = settings->floats.video_msg_color_b * 255;
 
    r = (r < 0) ? 0 : (r > 255 ? 255 : r);
    g = (g < 0) ? 0 : (g > 255 ? 255 : g);
@@ -862,8 +860,8 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
 {
    const struct font_atlas *atlas = NULL;
    settings_t *settings = config_get_ptr();
-   int msg_base_x = settings->video.msg_pos_x * vid->width;
-   int msg_base_y = (1.0 - settings->video.msg_pos_y) * vid->height;
+   int msg_base_x = settings->floats.video_msg_pos_x * vid->width;
+   int msg_base_y = (1.0 - settings->floats.video_msg_pos_y) * vid->height;
 
    if (!vid->font)
       return;
@@ -875,7 +873,7 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
       int base_x, base_y;
       int glyph_width, glyph_height;
       const uint8_t *src = NULL;
-      const struct font_glyph *glyph = 
+      const struct font_glyph *glyph =
          vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
 
       if (!glyph)
@@ -890,7 +888,7 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
       glyph_width          = glyph->width;
       glyph_height         = glyph->height;
 
-      src                  = atlas->buffer + glyph->atlas_offset_x + 
+      src                  = atlas->buffer + glyph->atlas_offset_x +
          glyph->atlas_offset_y * atlas->width;
 
       if (base_x < 0)
@@ -966,7 +964,7 @@ static void *omap_gfx_init(const video_info_t *video,
    if (input && input_data)
       *input = NULL;
 
-   omap_init_font(vid, settings->path.font, settings->video.font_size);
+   omap_init_font(vid, settings->paths.path_font, settings->video.font_size);
 
    vid->menu.frame = calloc(vid->width * vid->height, vid->bytes_per_pixel);
    if (!vid->menu.frame)
@@ -1087,7 +1085,7 @@ static bool omap_gfx_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 static void omap_gfx_set_rotation(void *data, unsigned rotation)
@@ -1132,6 +1130,8 @@ static void omap_gfx_set_texture_enable(void *data, bool state, bool full_screen
 }
 
 static const video_poke_interface_t omap_gfx_poke_interface = {
+   NULL, /* set_coords */
+   NULL, /* set_mvp */
    NULL,
    NULL,
    NULL,
@@ -1143,14 +1143,14 @@ static const video_poke_interface_t omap_gfx_poke_interface = {
    NULL, /* get_proc_address */
    NULL, /* set_aspect_ratio */
    NULL, /* apply_state_changes */
-#ifdef HAVE_MENU
    omap_gfx_set_texture_frame,
    omap_gfx_set_texture_enable,
-#endif
    NULL,
-   NULL, /* show_mouse */
-   NULL, /* grab_mouse_toggle */
-   NULL
+   NULL,                         /* show_mouse */
+   NULL,                         /* grab_mouse_toggle */
+   NULL,                         /* get_current_shader */
+   NULL,                         /* get_current_software_framebuffer */
+   NULL                          /* get_hw_render_interface */
 };
 
 static void omap_gfx_get_poke_interface(void *data,

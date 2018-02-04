@@ -24,16 +24,39 @@
 #define __LIBRETRO_SDK_GFX_MATH_VECTOR_4_H__
 
 #include <stdint.h>
+#include <math.h>
+
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 typedef float vec4_t[4];
 
-void vec4_add(float *dst, const float *src);
+#define vec4_add(dst, src) \
+   dst[0] += src[0]; \
+   dst[1] += src[1]; \
+   dst[2] += src[2]; \
+   dst[3] += src[3]
 
-void vec4_subtract(float *dst, const float *src);
+#define vec4_subtract(dst, src) \
+   dst[0] -= src[0]; \
+   dst[1] -= src[1]; \
+   dst[2] -= src[2]; \
+   dst[3] -= src[3]
 
-void vec4_scale(float *dst, const float scale);
+#define vec4_scale(dst, scale) \
+   dst[0] *= scale; \
+   dst[1] *= scale; \
+   dst[2] *= scale; \
+   dst[3] *= scale
 
-void vec4_copy(float *dst, const float *src);
+#define vec4_copy(dst, src) \
+   dst[0] = src[0]; \
+   dst[1] = src[1]; \
+   dst[2] = src[2]; \
+   dst[3] = src[3]
+
+RETRO_END_DECLS
 
 #endif
 

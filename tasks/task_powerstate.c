@@ -22,11 +22,13 @@
 static int              power_percent = 0;
 static enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
 
-typedef struct
+typedef struct powerstate powerstate_t;
+
+struct powerstate
 {
    int percent;
    enum frontend_powerstate state;
-} powerstate_t;
+};
 
 enum frontend_powerstate get_last_powerstate(int *percent)
 {
@@ -73,5 +75,5 @@ void task_push_get_powerstate(void)
    task->callback = task_powerstate_cb;
    task->mute     = true;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 }

@@ -35,7 +35,7 @@ extern "C" {
       0xe12fff1e,  /* bx lr                     */
    };
 
-   void co_init()
+   static void co_init(void)
    {
       int ret;
       void *base;

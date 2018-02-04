@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -26,7 +26,6 @@
 #include "../core.h"
 #include "../driver.h"
 #include "../retroarch.h"
-#include "../runloop.h"
 #include "../list_special.h"
 #include "../verbosity.h"
 
@@ -97,7 +96,7 @@ void find_location_driver(void)
    settings_t *settings = config_get_ptr();
 
    drv.label = "location_driver";
-   drv.s     = settings->location.driver;
+   drv.s     = settings->arrays.location_driver;
 
    driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
@@ -107,15 +106,19 @@ void find_location_driver(void)
       location_driver = (const location_driver_t*)location_driver_find_handle(i);
    else
    {
-      unsigned d;
-      RARCH_ERR("Couldn't find any location driver named \"%s\"\n",
-            settings->location.driver);
-      RARCH_LOG_OUTPUT("Available location drivers are:\n");
-      for (d = 0; location_driver_find_handle(d); d++)
-         RARCH_LOG_OUTPUT("\t%s\n", location_driver_find_ident(d));
-       
-      RARCH_WARN("Going to default to first location driver...\n");
-       
+
+      if (verbosity_is_enabled())
+      {
+         unsigned d;
+         RARCH_ERR("Couldn't find any location driver named \"%s\"\n",
+               settings->arrays.location_driver);
+         RARCH_LOG_OUTPUT("Available location drivers are:\n");
+         for (d = 0; location_driver_find_handle(d); d++)
+            RARCH_LOG_OUTPUT("\t%s\n", location_driver_find_ident(d));
+
+         RARCH_WARN("Going to default to first location driver...\n");
+      }
+
       location_driver = (const location_driver_t*)location_driver_find_handle(0);
 
       if (!location_driver)
@@ -137,7 +140,7 @@ bool driver_location_start(void)
 
    if (location_driver && location_data && location_driver->start)
    {
-      if (settings->location.allow)
+      if (settings->bools.location_allow)
          return location_driver->start(location_data);
 
       runloop_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true);
@@ -183,7 +186,7 @@ void driver_location_set_interval(unsigned interval_msecs,
  * @horiz_accuracy     : Horizontal accuracy.
  * @vert_accuracy      : Vertical accuracy.
  *
- * Gets current positioning information from 
+ * Gets current positioning information from
  * location driver interface.
  * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
  *
@@ -206,9 +209,7 @@ bool driver_location_get_position(double *lat, double *lon,
 
 void init_location(void)
 {
-   rarch_system_info_t *system = NULL;
-   
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   rarch_system_info_t *system = runloop_get_system_info();
 
    /* Resource leaks will follow if location interface is initialized twice. */
    if (location_data)
@@ -230,9 +231,7 @@ void init_location(void)
 
 static void uninit_location(void)
 {
-   rarch_system_info_t *system = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   rarch_system_info_t *system = runloop_get_system_info();
 
    if (location_data && location_driver)
    {
@@ -270,16 +269,16 @@ bool location_driver_ctl(enum rarch_location_ctl_state state, void *data)
       case RARCH_LOCATION_CTL_OWNS_DRIVER:
          return location_driver_data_own;
       case RARCH_LOCATION_CTL_SET_ACTIVE:
-         location_driver_active = true; 
+         location_driver_active = true;
          break;
       case RARCH_LOCATION_CTL_UNSET_ACTIVE:
-         location_driver_active = false; 
+         location_driver_active = false;
          break;
       case RARCH_LOCATION_CTL_IS_ACTIVE:
-        return location_driver_active; 
+        return location_driver_active;
       default:
          break;
    }
-   
+
    return true;
 }

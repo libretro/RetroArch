@@ -23,12 +23,12 @@
 #ifndef __LIBRETRO_SDK_SCALER_H__
 #define __LIBRETRO_SDK_SCALER_H__
 
-#include <retro_common_api.h>
-
 #include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
 #include <clamping.h>
+
+#include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
 
@@ -122,26 +122,6 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx);
  **/
 void scaler_ctx_scale(struct scaler_ctx *ctx,
       void *output, const void *input);
-
-/**
- * scaler_alloc:
- * @elem_size    : size of the elements to be used.
- * @siz          : size of the image that the scaler needs to handle.
- *
- * Allocate and returns a scaler object.
- *
- * Returns: pointer to a scaler object of type 'void *' on success,
- * NULL in case of error. Has to be freed manually.
- **/
-void *scaler_alloc(size_t elem_size, size_t size);
-
-/**
- * scaler_free:
- * @ptr          : pointer to scaler object.
- *
- * Frees a scaler object.
- **/
-void scaler_free(void *ptr);
 
 RETRO_END_DECLS
 

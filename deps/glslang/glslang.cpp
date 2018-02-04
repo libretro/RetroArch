@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -16,7 +16,7 @@
 #include "glslang.hpp"
 
 #include "glslang/glslang/Public/ShaderLang.h"
-#include "GlslangToSpv.h"
+#include "glslang/SPIRV/GlslangToSpv.h"
 #include <vector>
 #include <iostream>
 #include <cstring>

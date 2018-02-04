@@ -8,7 +8,6 @@ layout(binding = 0, std430) buffer SSBO
 
 void test()
 {
-    float m;
     if (_11.data != 0.0)
     {
         float tmp = 10.0;
@@ -68,6 +67,7 @@ void test()
     {
     }
     _11.data = h;
+    float m;
     do
     {
     } while (m != 20.0);

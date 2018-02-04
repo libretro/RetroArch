@@ -52,6 +52,17 @@ RETRO_BEGIN_DECLS
       base->var = tmp; \
 } while(0)
 
+struct config_file
+{
+   char *path;
+   struct config_entry_list *entries;
+   struct config_entry_list *tail;
+   unsigned include_depth;
+
+   struct config_include_list *includes;
+};
+
+
 typedef struct config_file config_file_t;
 
 /* Config file format
@@ -115,11 +126,11 @@ bool config_get_uint64(config_file_t *conf, const char *entry, uint64_t *in);
 /* Extracts an unsigned int from config file treating input as hex. */
 bool config_get_hex(config_file_t *conf, const char *entry, unsigned *in);
 
-/* Extracts a single char. If value consists of several chars, 
+/* Extracts a single char. If value consists of several chars,
  * this is an error. */
 bool config_get_char(config_file_t *conf, const char *entry, char *in);
 
-/* Extracts an allocated string in *in. This must be free()-d if 
+/* Extracts an allocated string in *in. This must be free()-d if
  * this function succeeds. */
 bool config_get_string(config_file_t *conf, const char *entry, char **in);
 
@@ -138,7 +149,7 @@ bool config_get_config_path(config_file_t *conf, char *s, size_t len);
  * Other values will be treated as an error. */
 bool config_get_bool(config_file_t *conf, const char *entry, bool *in);
 
-/* Setters. Similar to the getters. 
+/* Setters. Similar to the getters.
  * Will not write to entry if the entry was obtained from an #include. */
 void config_set_double(config_file_t *conf, const char *entry, double value);
 void config_set_float(config_file_t *conf, const char *entry, float value);

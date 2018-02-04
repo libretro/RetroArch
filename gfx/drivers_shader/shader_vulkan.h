@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2016 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -38,10 +38,10 @@ enum vulkan_filter_chain_filter
 
 enum vulkan_filter_chain_address
 {
-   VULKAN_FILTER_CHAIN_ADDRESS_REPEAT = 0,
-   VULKAN_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT = 1,
-   VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE = 2,
-   VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER = 3,
+   VULKAN_FILTER_CHAIN_ADDRESS_REPEAT               = 0,
+   VULKAN_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT      = 1,
+   VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE        = 2,
+   VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER      = 3,
    VULKAN_FILTER_CHAIN_ADDRESS_MIRROR_CLAMP_TO_EDGE = 4,
    VULKAN_FILTER_CHAIN_ADDRESS_COUNT
 };
@@ -65,7 +65,7 @@ enum vulkan_filter_chain_scale
 
 struct vulkan_filter_chain_pass_info
 {
-   /* For the last pass, make sure VIEWPORT scale 
+   /* For the last pass, make sure VIEWPORT scale
     * with scale factors of 1 are used. */
    enum vulkan_filter_chain_scale scale_type_x;
    enum vulkan_filter_chain_scale scale_type_y;

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,10 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <string.h>
 
 #include <rhash.h>
 #include <string/stdstring.h>
+#include <libretro.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -25,18 +27,14 @@
 
 #include "msg_hash.h"
 
-#include "configuration.h"
+static unsigned uint_user_language;
 
 int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
    int ret = -1;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings)
-      goto end;
 
 #ifdef HAVE_LANGEXTRA
-   switch (settings->user_language)
+   switch (uint_user_language)
    {
       case RETRO_LANGUAGE_FRENCH:
          ret = menu_hash_get_help_fr_enum(msg, s, len);
@@ -50,8 +48,11 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_ITALIAN:
          ret = menu_hash_get_help_it_enum(msg, s, len);
          break;
-      case RETRO_LANGUAGE_PORTUGUESE:
-         ret = menu_hash_get_help_pt_enum(msg, s, len);
+      case RETRO_LANGUAGE_PORTUGUESE_BRAZIL:
+         ret = menu_hash_get_help_pt_br_enum(msg, s, len);
+         break;
+      case RETRO_LANGUAGE_PORTUGUESE_PORTUGAL:
+         ret = menu_hash_get_help_pt_pt_enum(msg, s, len);
          break;
       case RETRO_LANGUAGE_DUTCH:
          ret = menu_hash_get_help_nl_enum(msg, s, len);
@@ -74,6 +75,9 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
          ret = menu_hash_get_help_chs_enum(msg, s, len);
          break;
+      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+         ret = menu_hash_get_help_cht_enum(msg, s, len);
+         break;
       default:
          break;
    }
@@ -82,20 +86,15 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
    if (ret == 0)
       return ret;
 
-end:
    return menu_hash_get_help_us_enum(msg, s, len);
 }
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)
 {
    const char *ret = NULL;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings)
-      goto end;
 
 #ifdef HAVE_LANGEXTRA
-   switch (settings->user_language)
+   switch (uint_user_language)
    {
       case RETRO_LANGUAGE_FRENCH:
          ret = msg_hash_to_str_fr(msg);
@@ -109,8 +108,11 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
       case RETRO_LANGUAGE_ITALIAN:
          ret = msg_hash_to_str_it(msg);
          break;
-      case RETRO_LANGUAGE_PORTUGUESE:
-         ret = msg_hash_to_str_pt(msg);
+      case RETRO_LANGUAGE_PORTUGUESE_BRAZIL:
+         ret = msg_hash_to_str_pt_br(msg);
+         break;
+      case RETRO_LANGUAGE_PORTUGUESE_PORTUGAL:
+         ret = msg_hash_to_str_pt_pt(msg);
          break;
       case RETRO_LANGUAGE_DUTCH:
          ret = msg_hash_to_str_nl(msg);
@@ -136,6 +138,9 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
          ret = msg_hash_to_str_chs(msg);
          break;
+      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+         ret = msg_hash_to_str_cht(msg);
+         break;
       default:
          break;
    }
@@ -144,7 +149,6 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
    if (ret && !string_is_equal(ret, "null"))
       return ret;
 
-end:
    return msg_hash_to_str_us(msg);
 }
 
@@ -165,6 +169,9 @@ uint32_t msg_hash_calculate(const char *s)
 #define MENU_VALUE_FILE_MP3                                                    0x0b889135U
 #define MENU_VALUE_FILE_FLAC                                                   0x7c96d67bU
 #define MENU_VALUE_FILE_OGG                                                    0x0b8898c2U
+#define MENU_VALUE_FILE_MOD                                                    0x0b889145U
+#define MENU_VALUE_FILE_S3M                                                    0x0b88a318U
+#define MENU_VALUE_FILE_XM                                                     0x00597a2aU
 #define MENU_VALUE_FILE_FLV                                                    0x0b88732dU
 #define MENU_VALUE_FILE_WAV                                                    0x0b88ba13U
 #define MENU_VALUE_FILE_MOV                                                    0x0b889157U
@@ -224,9 +231,12 @@ uint32_t msg_hash_calculate(const char *s)
 #define HASH_EXTENSION_ZIP_UPP                                                 0x0b883b78U
 #define HASH_EXTENSION_CUE                                                     0x0b886782U
 #define HASH_EXTENSION_CUE_UPPERCASE                                           0x0b87db22U
+#define HASH_EXTENSION_GDI                                                     0x00b887659
+#define HASH_EXTENSION_GDI_UPPERCASE                                           0x00b87e9f9
 #define HASH_EXTENSION_ISO                                                     0x0b8880d0U
 #define HASH_EXTENSION_ISO_UPPERCASE                                           0x0b87f470U
 #define HASH_EXTENSION_LUTRO                                                   0x0fe37b7bU
+#define HASH_EXTENSION_CHD                                                     0x0b8865d4U
 
 enum msg_file_type msg_hash_to_file_type(uint32_t hash)
 {
@@ -343,6 +353,14 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
       case MENU_VALUE_FILE_WMA:
          return FILE_TYPE_WMA;
 #endif
+#ifdef HAVE_IBXM
+       case MENU_VALUE_FILE_MOD:
+           return FILE_TYPE_MOD;
+       case MENU_VALUE_FILE_S3M:
+           return FILE_TYPE_S3M;
+       case MENU_VALUE_FILE_XM:
+           return FILE_TYPE_XM;
+#endif
 #ifdef HAVE_IMAGEVIEWER
       case MENU_VALUE_FILE_JPG:
       case MENU_VALUE_FILE_JPG_CAPS:
@@ -360,14 +378,44 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
       case HASH_EXTENSION_CUE:
       case HASH_EXTENSION_CUE_UPPERCASE:
          return FILE_TYPE_CUE;
+      case HASH_EXTENSION_GDI:
+      case HASH_EXTENSION_GDI_UPPERCASE:
+         return FILE_TYPE_GDI;
       case HASH_EXTENSION_ISO:
       case HASH_EXTENSION_ISO_UPPERCASE:
          return FILE_TYPE_ISO;
       case HASH_EXTENSION_LUTRO:
          return FILE_TYPE_LUTRO;
+      case HASH_EXTENSION_CHD:
+         return FILE_TYPE_CHD;
       default:
          break;
    }
 
    return FILE_TYPE_NONE;
+}
+
+unsigned *msg_hash_get_uint(enum msg_hash_action type)
+{
+   switch (type)
+   {
+      case MSG_HASH_USER_LANGUAGE:
+         return &uint_user_language;
+      case MSG_HASH_NONE:
+         break;
+   }
+
+   return NULL;
+}
+
+void msg_hash_set_uint(enum msg_hash_action type, unsigned val)
+{
+   switch (type)
+   {
+      case MSG_HASH_USER_LANGUAGE:
+         uint_user_language = val;
+         break;
+      case MSG_HASH_NONE:
+         break;
+   }
 }

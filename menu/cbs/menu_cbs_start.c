@@ -24,7 +24,6 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_input.h"
-#include "../menu_display.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 
@@ -34,12 +33,14 @@
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../performance_counters.h"
 
-#include "../../gfx/video_shader_driver.h"
+#include "../../gfx/video_driver.h"
 
+#include "../../input/input_driver.h"
 #include "../../input/input_remapping.h"
+
+#include "../../config.def.h"
 
 #ifndef BIND_ACTION_START
 #define BIND_ACTION_START(cbs, name) \
@@ -49,13 +50,7 @@
 
 static int action_start_remap_file_load(unsigned type, const char *label)
 {
-   global_t *global = global_get_ptr();
-
-   if (!global)
-      return -1;
-
-   global->name.remapfile[0] = '\0';
-   input_remapping_set_defaults();
+   input_remapping_set_defaults(true);
    return 0;
 }
 
@@ -66,7 +61,7 @@ static int action_start_video_filter_file_load(unsigned type, const char *label)
    if (!settings)
       return -1;
 
-   settings->path.softfilter_plugin[0] = '\0';
+   settings->paths.path_softfilter_plugin[0] = '\0';
    command_event(CMD_EVENT_REINIT, NULL);
    return 0;
 }
@@ -109,10 +104,13 @@ static int action_start_input_desc(unsigned type, const char *label)
    (void)label;
 
    if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
-      settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] =
-         settings->input.binds[inp_desc_user][inp_desc_button_index_offset].id;
+   {
+      const struct retro_keybind *keyptr = &input_config_binds[inp_desc_user]
+            [inp_desc_button_index_offset];
+      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] = keyptr->id;
+   }
    else
-      settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] =
+      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] =
          inp_desc_button_index_offset - RARCH_FIRST_CUSTOM_BIND;
 
    return 0;
@@ -170,6 +168,13 @@ static int action_start_shader_filter_pass(unsigned type, const char *label)
    return menu_shader_manager_clear_pass_filter(pass);
 }
 
+static int action_start_shader_watch_for_changes(unsigned type, const char *label)
+{
+   settings_t *settings = config_get_ptr();
+   settings->bools.video_shader_watch_files = video_shader_watch_files;
+   return 0;
+}
+
 static int action_start_shader_num_passes(unsigned type, const char *label)
 {
    return menu_shader_manager_clear_num_passes();
@@ -192,8 +197,8 @@ static int action_start_core_setting(unsigned type,
 {
    unsigned idx                = type - MENU_SETTINGS_CORE_OPTION_START;
    core_option_manager_t *coreopts = NULL;
-   
-   if (runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+
+   if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
       core_option_manager_set_default(coreopts, idx);
 
    return 0;
@@ -215,8 +220,8 @@ static int action_start_playlist_association(unsigned type, const char *label)
 
    new_playlist_cores[0] = '\0';
 
-   stnames = string_split(settings->playlist_names, ";");
-   stcores = string_split(settings->playlist_cores, ";");
+   stnames = string_split(settings->arrays.playlist_names, ";");
+   stcores = string_split(settings->arrays.playlist_cores, ";");
    found   = string_list_find_elem(stnames, path);
 
    if (found)
@@ -226,8 +231,8 @@ static int action_start_playlist_association(unsigned type, const char *label)
    string_list_join_concat(new_playlist_cores,
          sizeof(new_playlist_cores), stcores, ";");
 
-   strlcpy(settings->playlist_cores,
-         new_playlist_cores, sizeof(settings->playlist_cores));
+   strlcpy(settings->arrays.playlist_cores,
+         new_playlist_cores, sizeof(settings->arrays.playlist_cores));
 
    string_list_free(stcores);
    string_list_free(stnames);
@@ -282,6 +287,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
             BIND_ACTION_START(cbs, action_start_shader_filter_pass);
+            break;
+         case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+            BIND_ACTION_START(cbs, action_start_shader_watch_for_changes);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
             BIND_ACTION_START(cbs, action_start_shader_num_passes);
@@ -352,7 +360,7 @@ int menu_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       return -1;
 
    BIND_ACTION_START(cbs, action_start_lookup_setting);
-   
+
    if (menu_cbs_init_bind_start_compare_label(cbs) == 0)
       return 0;
 

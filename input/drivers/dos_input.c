@@ -19,7 +19,6 @@
 
 #include "../input_driver.h"
 #include "../input_keymaps.h"
-#include "../input_joypad_driver.h"
 #include "../drivers_keyboard/keyboard_event_dos.h"
 
 typedef struct dos_input
@@ -87,11 +86,6 @@ static void* dos_input_init(const char *joypad_driver)
    return dos;
 }
 
-static bool dos_input_meta_key_pressed(void *data, int key)
-{
-   return false;
-}
-
 static uint64_t dos_input_get_capabilities(void *data)
 {
    uint64_t caps = 0;
@@ -130,7 +124,6 @@ input_driver_t input_dos = {
    dos_input_init,
    dos_input_poll,
    dos_input_state,
-   dos_input_meta_key_pressed,
    dos_input_free_input,
    NULL,
    NULL,

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -19,10 +19,11 @@
 #include <lists/dir_list.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 #include <retro_assert.h>
-#include <retro_stat.h>
 
 #include "dirs.h"
+#include "command.h"
 #include "configuration.h"
 #include "command.h"
 #include "defaults.h"
@@ -31,7 +32,7 @@
 #include "msg_hash.h"
 #include "paths.h"
 #include "content.h"
-#include "runloop.h"
+#include "retroarch.h"
 #include "verbosity.h"
 
 struct rarch_dir_list
@@ -56,11 +57,11 @@ bool dir_init_shader(void)
    struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&dir_shader_list;
    settings_t           *settings  = config_get_ptr();
 
-   if (!*settings->directory.video_shader)
+   if (!settings || !*settings->paths.directory_video_shader)
       return false;
 
    dir_list->list = dir_list_new_special(
-         settings->directory.video_shader, DIR_LIST_SHADERS, NULL);
+         settings->paths.directory_video_shader, DIR_LIST_SHADERS, NULL);
 
    if (!dir_list->list || dir_list->list->size == 0)
    {
@@ -82,7 +83,7 @@ bool dir_init_shader(void)
 
 bool dir_free_shader(void)
 {
-   struct rarch_dir_list *dir_list = 
+   struct rarch_dir_list *dir_list =
       (struct rarch_dir_list*)&dir_shader_list;
 
    dir_list_free(dir_list->list);
@@ -107,9 +108,6 @@ bool dir_free_shader(void)
  **/
 void dir_check_shader(bool pressed_next, bool pressed_prev)
 {
-   char msg[128];
-   const char *shader              = NULL;
-   enum rarch_shader_type type     = RARCH_SHADER_NONE;
    struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&dir_shader_list;
 
    if (!dir_list || !dir_list->list)
@@ -130,40 +128,7 @@ void dir_check_shader(bool pressed_next, bool pressed_prev)
    else
       return;
 
-   shader   = dir_list->list->elems[dir_list->ptr].data;
-
-   switch (msg_hash_to_file_type(msg_hash_calculate(
-               path_get_extension(shader))))
-   {
-      case FILE_TYPE_SHADER_GLSL:
-      case FILE_TYPE_SHADER_PRESET_GLSLP:
-         type = RARCH_SHADER_GLSL;
-         break;
-      case FILE_TYPE_SHADER_SLANG:
-      case FILE_TYPE_SHADER_PRESET_SLANGP:
-         type = RARCH_SHADER_SLANG;
-         break;
-      case FILE_TYPE_SHADER_CG:
-      case FILE_TYPE_SHADER_PRESET_CGP:
-         type = RARCH_SHADER_CG;
-         break;
-      default:
-         return;
-   }
-
-   msg[0] = '\0';
-
-   snprintf(msg, sizeof(msg), "%s #%u: \"%s\".",
-         msg_hash_to_str(MSG_SHADER),
-         (unsigned)dir_list->ptr, shader);
-   runloop_msg_queue_push(msg, 2, 120, true);
-
-   RARCH_LOG("%s \"%s\".\n",
-         msg_hash_to_str(MSG_APPLYING_SHADER),
-         shader);
-
-   if (!video_driver_set_shader(type, shader))
-      RARCH_WARN("%s\n", msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER));
+   command_set_shader(dir_list->list->elems[dir_list->ptr].data);
 }
 
 /* empty functions */
@@ -320,72 +285,34 @@ void dir_set(enum rarch_dir_type type, const char *path)
 
 static void check_defaults_dir_create_dir(const char *path)
 {
-   char new_path[PATH_MAX_LENGTH];
+   char *new_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    new_path[0] = '\0';
    fill_pathname_expand_special(new_path,
-         path, sizeof(new_path));
+         path,
+         PATH_MAX_LENGTH * sizeof(char));
 
    if (path_is_directory(new_path))
+   {
+      free(new_path);
       return;
+   }
    path_mkdir(new_path);
+   free(new_path);
 }
 
 void dir_check_defaults(void)
 {
+   unsigned i;
    /* early return for people with a custom folder setup
       so it doesn't create unnecessary directories
     */
-   if (path_file_exists("custom.ini"))
+   if (filestream_exists("custom.ini"))
       return;
 
-   if (!string_is_empty(g_defaults.dir.core_assets))
-      check_defaults_dir_create_dir(g_defaults.dir.core_assets);
-   if (!string_is_empty(g_defaults.dir.remap))
-      check_defaults_dir_create_dir(g_defaults.dir.remap);
-   if (!string_is_empty(g_defaults.dir.screenshot))
-      check_defaults_dir_create_dir(g_defaults.dir.screenshot);
-   if (!string_is_empty(g_defaults.dir.core))
-      check_defaults_dir_create_dir(g_defaults.dir.core);
-   if (!string_is_empty(g_defaults.dir.autoconfig))
-      check_defaults_dir_create_dir(g_defaults.dir.autoconfig);
-   if (!string_is_empty(g_defaults.dir.audio_filter))
-      check_defaults_dir_create_dir(g_defaults.dir.audio_filter);
-   if (!string_is_empty(g_defaults.dir.video_filter))
-      check_defaults_dir_create_dir(g_defaults.dir.video_filter);
-   if (!string_is_empty(g_defaults.dir.assets))
-      check_defaults_dir_create_dir(g_defaults.dir.assets);
-   if (!string_is_empty(g_defaults.dir.playlist))
-      check_defaults_dir_create_dir(g_defaults.dir.playlist);
-   if (!string_is_empty(g_defaults.dir.core))
-      check_defaults_dir_create_dir(g_defaults.dir.core);
-   if (!string_is_empty(g_defaults.dir.core_info))
-      check_defaults_dir_create_dir(g_defaults.dir.core_info);
-   if (!string_is_empty(g_defaults.dir.overlay))
-      check_defaults_dir_create_dir(g_defaults.dir.overlay);
-   if (!string_is_empty(g_defaults.dir.port))
-      check_defaults_dir_create_dir(g_defaults.dir.port);
-   if (!string_is_empty(g_defaults.dir.shader))
-      check_defaults_dir_create_dir(g_defaults.dir.shader);
-   if (!string_is_empty(g_defaults.dir.savestate))
-      check_defaults_dir_create_dir(g_defaults.dir.savestate);
-   if (!string_is_empty(g_defaults.dir.sram))
-      check_defaults_dir_create_dir(g_defaults.dir.sram);
-   if (!string_is_empty(g_defaults.dir.system))
-      check_defaults_dir_create_dir(g_defaults.dir.system);
-   if (!string_is_empty(g_defaults.dir.resampler))
-      check_defaults_dir_create_dir(g_defaults.dir.resampler);
-   if (!string_is_empty(g_defaults.dir.menu_config))
-      check_defaults_dir_create_dir(g_defaults.dir.menu_config);
-   if (!string_is_empty(g_defaults.dir.content_history))
-      check_defaults_dir_create_dir(g_defaults.dir.content_history);
-   if (!string_is_empty(g_defaults.dir.cache))
-      check_defaults_dir_create_dir(g_defaults.dir.cache);
-   if (!string_is_empty(g_defaults.dir.database))
-      check_defaults_dir_create_dir(g_defaults.dir.database);
-   if (!string_is_empty(g_defaults.dir.cursor))
-      check_defaults_dir_create_dir(g_defaults.dir.cursor);
-   if (!string_is_empty(g_defaults.dir.cheats))
-      check_defaults_dir_create_dir(g_defaults.dir.cheats);
-   if (!string_is_empty(g_defaults.dir.thumbnails))
-      check_defaults_dir_create_dir(g_defaults.dir.thumbnails);
+   for (i = 0; i < DEFAULT_DIR_LAST; i++)
+   {
+      const char *dir_path = g_defaults.dirs[i];
+      if (!string_is_empty(dir_path))
+         check_defaults_dir_create_dir(dir_path);
+   }
 }

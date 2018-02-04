@@ -69,9 +69,9 @@ void main()
 	float c37 = float(g); // bool -> float
 
 	// Flexible sized arrays with spec constants and spec constant ops.
-	float vec0[d][c + 3];
-	float vec1[c + 2][d + 5];
+	float vec0[c + 3][8];
+	float vec1[c + 2];
 
 	Foo foo;
-	FragColor = vec4(t0 + t1) + vec0[0][0] + vec1[0][0] + foo.elems[c];
+	FragColor = vec4(t0 + t1) + vec0[0][0] + vec1[0] + foo.elems[c];
 }

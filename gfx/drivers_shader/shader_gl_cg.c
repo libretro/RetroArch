@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -46,7 +46,7 @@
 
 #include "../include/Cg/cg.h"
 
-#include "../video_shader_driver.h"
+#include "../video_driver.h"
 #include "../video_shader_parse.h"
 #include "../../core.h"
 #include "../../managers/state_manager.h"
@@ -110,12 +110,8 @@ typedef struct cg_shader_data
    struct video_shader *shader;
    char alias_define[GFX_MAX_SHADERS][128];
    unsigned active_idx;
-   struct
-   {
-      CGparameter elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
-      unsigned index;
-   } attribs;
-
+   unsigned attribs_index;
+   CGparameter attribs_elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    CGprofile cgVProf;
    CGprofile cgFProf;
    struct shader_program_cg prg[GFX_MAX_SHADERS];
@@ -133,7 +129,7 @@ struct uniform_cg
 { \
    cgGLSetParameterPointer(param, len, GL_FLOAT, 0, ptr); \
    cgGLEnableClientState(param); \
-   cg->attribs.elems[cg->attribs.index++] = param; \
+   cg->attribs_elems[cg->attribs_index++] = param; \
 }
 
 #define cg_gl_set_texture_parameter(param, texture) \
@@ -250,24 +246,24 @@ static void gl_cg_reset_attrib(void *data)
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
 
    /* Add sanity check that we did not overflow. */
-   retro_assert(cg->attribs.index <= ARRAY_SIZE(cg->attribs.elems));
+   retro_assert(cg->attribs_index <= ARRAY_SIZE(cg->attribs_elems));
 
-   for (i = 0; i < cg->attribs.index; i++)
-      cgGLDisableClientState(cg->attribs.elems[i]);
-   cg->attribs.index = 0;
+   for (i = 0; i < cg->attribs_index; i++)
+      cgGLDisableClientState(cg->attribs_elems[i]);
+   cg->attribs_index = 0;
 }
 
-static bool gl_cg_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *mat)
+static bool gl_cg_set_mvp(void *data, void *shader_data,
+      const void *mat_data)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)shader_data;
-   if (!cg || !cg->prg[cg->active_idx].mvp)
-      goto fallback;
+   if (cg && cg->prg[cg->active_idx].mvp)
+   {
+      const math_matrix_4x4 *mat = (const math_matrix_4x4*)mat_data;
+      cgGLSetMatrixParameterfc(cg->prg[cg->active_idx].mvp, mat->data);
+      return true;
+   }
 
-   cgGLSetMatrixParameterfc(cg->prg[cg->active_idx].mvp, mat->data);
-   return true;
-
-fallback:
-   gl_ff_matrix(mat);
    return false;
 }
 
@@ -276,7 +272,11 @@ static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct 
    cg_shader_data_t *cg = (cg_shader_data_t*)shader_data;
 
    if (!cg || !coords)
-      goto fallback;
+   {
+      if (coords)
+         return false;
+      return true;
+   }
 
    if (cg->prg[cg->active_idx].vertex)
       gl_cg_set_coord_array(cg->prg[cg->active_idx].vertex, cg, coords->vertex, 2);
@@ -291,14 +291,10 @@ static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct 
       gl_cg_set_coord_array(cg->prg[cg->active_idx].color, cg, coords->color, 4);
 
    return true;
-
-fallback:
-   gl_ff_vertex(coords);
-   return false;
 }
 
 static void gl_cg_set_texture_info(
-      cg_shader_data_t *cg, 
+      cg_shader_data_t *cg,
       const struct cg_fbo_params *params,
       const struct video_tex_info *info)
 {
@@ -320,7 +316,7 @@ static void gl_cg_set_texture_info(
 }
 
 static void gl_cg_set_params(void *data, void *shader_data,
-      unsigned width, unsigned height, 
+      unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
@@ -436,7 +432,7 @@ static void gl_cg_deinit_progs(void *data)
    if (!cg)
       return;
 
-   RARCH_LOG("CG: Destroying programs.\n");
+   RARCH_LOG("[CG]: Destroying programs.\n");
    cgGLUnbindProgram(cg->cgFProf);
    cgGLUnbindProgram(cg->cgVProf);
 
@@ -489,7 +485,7 @@ static void gl_cg_deinit_context_state(void *data)
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
    if (cg->cgCtx)
    {
-      RARCH_LOG("CG: Destroying context.\n");
+      RARCH_LOG("[CG]: Destroying context.\n");
       cgDestroyContext(cg->cgCtx);
    }
    cg->cgCtx = NULL;
@@ -603,7 +599,7 @@ static void gl_cg_set_program_base_attrib(void *data, unsigned i)
       if (!semantic)
          continue;
 
-      RARCH_LOG("CG: Found semantic \"%s\" in prog #%u.\n", semantic, i);
+      RARCH_LOG("[CG]: Found semantic \"%s\" in prog #%u.\n", semantic, i);
 
       semantic_hash = djb2_calculate(semantic);
 
@@ -672,7 +668,7 @@ static bool gl_cg_load_plain(void *data, const char *path)
 
    if (string_is_empty(path))
    {
-      RARCH_LOG("Loading stock Cg file.\n");
+      RARCH_LOG("[CG]: Loading stock Cg file.\n");
       cg->prg[1] = cg->prg[0];
    }
    else
@@ -682,7 +678,7 @@ static bool gl_cg_load_plain(void *data, const char *path)
       program_info.combined = path;
       program_info.is_file  = true;
 
-      RARCH_LOG("Loading Cg file: %s\n", path);
+      RARCH_LOG("[CG]: Loading Cg file: %s\n", path);
       strlcpy(cg->shader->pass[0].source.path, path,
             sizeof(cg->shader->pass[0].source.path));
       if (!gl_cg_compile_program(data, 1, &cg->prg[1], &program_info))
@@ -721,7 +717,7 @@ static bool gl_cg_load_imports(void *data)
 
       core_get_memory(&mem_info);
 
-      if ((memtype != -1u) && 
+      if ((memtype != -1u) &&
             (cg->shader->variable[i].addr >= mem_info.size))
       {
          RARCH_ERR("Address out of bounds.\n");
@@ -748,7 +744,7 @@ static bool gl_cg_load_imports(void *data)
       tracker_info.script_is_file = true;
    }
 
-   tracker_info.script_class = 
+   tracker_info.script_class =
       *cg->shader->script_class ? cg->shader->script_class : NULL;
 #endif
 
@@ -767,12 +763,78 @@ static bool gl_cg_load_shader(void *data, unsigned i)
    program_info.combined = cg->shader->pass[i].source.path;
    program_info.is_file  = true;
 
-   RARCH_LOG("Loading Cg shader: \"%s\".\n",
+   RARCH_LOG("[CG]: Loading Cg shader: \"%s\".\n",
          cg->shader->pass[i].source.path);
 
    if (!gl_cg_compile_program(data, i + 1, &cg->prg[i + 1],&program_info))
       return false;
 
+   return true;
+}
+
+static bool gl_cg_add_lut(
+      const struct video_shader *shader,
+      unsigned i, void *textures_data)
+{
+   struct texture_image img;
+   GLuint *textures_lut                 = (GLuint*)textures_data;
+   enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
+
+   img.width         = 0;
+   img.height        = 0;
+   img.pixels        = NULL;
+   img.supports_rgba = video_driver_supports_rgba();
+
+   if (!image_texture_load(&img, shader->lut[i].path))
+   {
+      RARCH_ERR("[GL]: Failed to load texture image from: \"%s\"\n",
+            shader->lut[i].path);
+      return false;
+   }
+
+   RARCH_LOG("[GL]: Loaded texture image from: \"%s\" ...\n",
+         shader->lut[i].path);
+
+   if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
+      filter_type = TEXTURE_FILTER_NEAREST;
+
+   if (shader->lut[i].mipmap)
+   {
+      if (filter_type == TEXTURE_FILTER_NEAREST)
+         filter_type = TEXTURE_FILTER_MIPMAP_NEAREST;
+      else
+         filter_type = TEXTURE_FILTER_MIPMAP_LINEAR;
+   }
+
+   gl_load_texture_data(textures_lut[i],
+         shader->lut[i].wrap,
+         filter_type, 4,
+         img.width, img.height,
+         img.pixels, sizeof(uint32_t));
+   image_texture_free(&img);
+
+   return true;
+}
+
+static bool gl_cg_load_luts(
+      const struct video_shader *shader,
+      GLuint *textures_lut)
+{
+   unsigned i;
+   unsigned num_luts = MIN(shader->luts, GFX_MAX_TEXTURES);
+
+   if (!shader->luts)
+      return true;
+
+   glGenTextures(num_luts, textures_lut);
+
+   for (i = 0; i < num_luts; i++)
+   {
+      if (!gl_cg_add_lut(shader, i, textures_lut))
+         return false;
+   }
+
+   glBindTexture(GL_TEXTURE_2D, 0);
    return true;
 }
 
@@ -785,7 +847,7 @@ static bool gl_cg_load_preset(void *data, const char *path)
    if (!gl_cg_load_stock(cg))
       return false;
 
-   RARCH_LOG("Loading Cg meta-shader: %s\n", path);
+   RARCH_LOG("[CG]: Loading Cg meta-shader: %s\n", path);
    conf = config_file_new(path);
    if (!conf)
    {
@@ -836,7 +898,7 @@ static bool gl_cg_load_preset(void *data, const char *path)
       }
    }
 
-   if (!gl_load_luts(cg->shader, cg->lut_textures))
+   if (!gl_cg_load_luts(cg->shader, cg->lut_textures))
    {
       RARCH_ERR("Failed to load lookup textures ...\n");
       return false;
@@ -957,7 +1019,7 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
       attr_buf_tex[0] = attr_buf_vid_size[0] = attr_buf_tex_size[0] =
          attr_buf_coord[0] = '\0';
 
-      snprintf(attr_buf_tex,      sizeof(attr_buf_tex),     
+      snprintf(attr_buf_tex,      sizeof(attr_buf_tex),
             "%s.texture", prev_names[j]);
       snprintf(attr_buf_vid_size, sizeof(attr_buf_vid_size),
             "%s.video_size", prev_names[j]);
@@ -969,14 +1031,14 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
       cg->prg[i].prev[j].tex = cgGetNamedParameter(cg->prg[i].fprg,
             attr_buf_tex);
 
-      cg->prg[i].prev[j].vid_size_v = 
+      cg->prg[i].prev[j].vid_size_v =
          cgGetNamedParameter(cg->prg[i].vprg, attr_buf_vid_size);
-      cg->prg[i].prev[j].vid_size_f = 
+      cg->prg[i].prev[j].vid_size_f =
          cgGetNamedParameter(cg->prg[i].fprg, attr_buf_vid_size);
 
-      cg->prg[i].prev[j].tex_size_v = 
+      cg->prg[i].prev[j].tex_size_v =
          cgGetNamedParameter(cg->prg[i].vprg, attr_buf_tex_size);
-      cg->prg[i].prev[j].tex_size_f = 
+      cg->prg[i].prev[j].tex_size_f =
          cgGetNamedParameter(cg->prg[i].fprg, attr_buf_tex_size);
 
       cg->prg[i].prev[j].coord = cgGetNamedParameter(cg->prg[i].vprg,
@@ -1038,8 +1100,8 @@ static void *gl_cg_init(void *data, const char *path)
       goto error;
    }
 
-   RARCH_LOG("[Cg]: Vertex profile: %s\n",   cgGetProfileString(cg->cgVProf));
-   RARCH_LOG("[Cg]: Fragment profile: %s\n", cgGetProfileString(cg->cgFProf));
+   RARCH_LOG("[CG]: Vertex profile: %s\n",   cgGetProfileString(cg->cgVProf));
+   RARCH_LOG("[CG]: Fragment profile: %s\n", cgGetProfileString(cg->cgFProf));
    cgGLSetOptimalOptions(cg->cgFProf);
    cgGLSetOptimalOptions(cg->cgVProf);
    cgGLEnableProfile(cg->cgFProf);
@@ -1047,7 +1109,7 @@ static void *gl_cg_init(void *data, const char *path)
 
    memset(cg->alias_define, 0, sizeof(cg->alias_define));
 
-   if (    !string_is_empty(path) 
+   if (    !string_is_empty(path)
          && string_is_equal(path_get_extension(path), "cgp"))
    {
       if (!gl_cg_load_preset(cg, path))
@@ -1064,12 +1126,12 @@ static void *gl_cg_init(void *data, const char *path)
    for (i = 1; i <= cg->shader->passes; i++)
       gl_cg_set_program_attributes(cg, i);
 
-   /* If we aren't using last pass non-FBO shader, 
+   /* If we aren't using last pass non-FBO shader,
     * this shader will be assumed to be "fixed-function".
     *
     * Just use prg[0] for that pass, which will be
     * pass-through. */
-   cg->prg[cg->shader->passes + 1] = cg->prg[0]; 
+   cg->prg[cg->shader->passes + 1] = cg->prg[0];
 
    /* No need to apply Android hack in Cg. */
    cg->prg[VIDEO_SHADER_STOCK_BLEND]    = cg->prg[0];

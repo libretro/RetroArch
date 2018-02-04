@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -271,12 +271,6 @@ static bool xenon360_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool xenon360_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void xenon360_gfx_set_rotation(void *data, unsigned rotation)
 {
    (void)data;
@@ -290,7 +284,7 @@ static bool xenon360_gfx_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 static void xenon360_gfx_viewport_info(void *data, struct video_viewport *vp)
@@ -321,7 +315,7 @@ video_driver_t video_xenon360 = {
    xenon360_gfx_alive,
    xenon360_gfx_focus,
    xenon360_gfx_suppress_screensaver,
-   xenon360_gfx_has_windowed,
+   NULL, /* has_windowed */
    xenon360_gfx_set_shader,
    xenon360_gfx_free,
    "xenon360",

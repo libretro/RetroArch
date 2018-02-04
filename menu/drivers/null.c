@@ -21,7 +21,6 @@
 #include <stdio.h>
 
 #include "../menu_driver.h"
-#include "../menu_display.h"
 
 menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* set_texture */
@@ -56,8 +55,13 @@ menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* bind_init */
   NULL,  /* load_image */
   "null",
-  NULL,
-  NULL,
-  NULL, /* update_thumbnail_path */
-  NULL, /* update_thumbnail_image */
+  NULL,  /* environ */
+  NULL,  /* pointer_tap */
+  NULL,  /* update_thumbnail_path */
+  NULL,  /* update_thumbnail_image */
+  NULL,  /* set_thumbnail_system */
+  NULL,  /* set_thumbnail_content */
+  NULL,  /* osk_ptr_at_pos */
+  NULL,  /* update_savestate_thumbnail_path */
+  NULL,  /* update_savestate_thumbnail_image */
 };

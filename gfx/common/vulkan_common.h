@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -22,7 +22,7 @@
 
 #define VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS    16
 #define VULKAN_MAX_DESCRIPTOR_POOL_SIZES        16
-#define VULKAN_BUFFER_BLOCK_SIZE                (4 * 1024)
+#define VULKAN_BUFFER_BLOCK_SIZE                (64 * 1024)
 
 #define VULKAN_MAX_SWAPCHAIN_IMAGES             8
 
@@ -46,7 +46,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../font_driver.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 #include "../drivers_shader/shader_vulkan.h"
 
 RETRO_BEGIN_DECLS
@@ -86,24 +86,31 @@ enum vulkan_wsi_type
 
 typedef struct vulkan_context
 {
+   bool invalid_swapchain;
+   /* Used by screenshot to get blits with correct colorspace. */
+   bool swapchain_is_srgb;
+   bool swap_interval_emulation_lock;
+
+   unsigned swapchain_width;
+   unsigned swapchain_height;
+   unsigned swap_interval;
+
+   uint32_t graphics_queue_index;
+   uint32_t num_swapchain_images;
+   uint32_t current_swapchain_index;
+
    VkInstance instance;
    VkPhysicalDevice gpu;
    VkDevice device;
    VkQueue queue;
-   uint32_t graphics_queue_index;
 
    VkPhysicalDeviceProperties gpu_properties;
    VkPhysicalDeviceMemoryProperties memory_properties;
 
-   bool invalid_swapchain;
    VkImage swapchain_images[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFence swapchain_fences[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   bool swapchain_fences_signalled[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkSemaphore swapchain_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
-   uint32_t num_swapchain_images;
-   uint32_t current_swapchain_index;
-   unsigned swapchain_width;
-   unsigned swapchain_height;
-   unsigned swap_interval;
    VkFormat swapchain_format;
 
    slock_t *queue_lock;
@@ -112,18 +119,14 @@ typedef struct vulkan_context
 #ifdef VULKAN_DEBUG
    VkDebugReportCallbackEXT debug_callback;
 #endif
-
-   /* Used by screenshot to get blits with correct colorspace. */
-   bool swapchain_is_srgb;
-   bool swap_interval_emulation_lock;
 } vulkan_context_t;
 
 typedef struct gfx_ctx_vulkan_data
 {
+   bool need_new_swapchain;
    vulkan_context_t context;
    VkSurfaceKHR vk_surface;
    VkSwapchainKHR swapchain;
-   bool need_new_swapchain;
 } gfx_ctx_vulkan_data_t;
 
 struct vulkan_display_surface_info
@@ -153,25 +156,27 @@ struct vk_image
 
 struct vk_texture
 {
-   VkImage image;
-   VkImageView view;
-   VkDeviceMemory memory;
-
-   unsigned width, height;
-   VkFormat format;
-
-   void *mapped;
-   size_t offset;
-   size_t stride;
-   size_t size;
-   VkDeviceSize memory_size;
-   uint32_t memory_type;
-
-   VkImageLayout layout;
    enum vk_texture_type type;
    bool default_smooth;
    bool need_manual_cache_management;
    bool mipmap;
+   uint32_t memory_type;
+   unsigned width, height;
+   size_t offset;
+   size_t stride;
+   size_t size;
+
+   void *mapped;
+
+   VkImage image;
+   VkImageView view;
+   VkDeviceMemory memory;
+
+   VkFormat format;
+
+   VkDeviceSize memory_size;
+
+   VkImageLayout layout;
 };
 
 struct vk_buffer
@@ -263,39 +268,39 @@ struct vk_draw_quad
 
 struct vk_draw_triangles
 {
-   VkPipeline pipeline;
-   struct vk_texture *texture;
-   VkSampler sampler;
-
-   const void *uniform;
-   size_t uniform_size;
-
-   const struct vk_buffer_range *vbo;
    unsigned vertices;
+   size_t uniform_size;
+   const void *uniform;
+   const struct vk_buffer_range *vbo;
+   struct vk_texture *texture;
+   VkPipeline pipeline;
+   VkSampler sampler;
 };
 
 typedef struct vk
 {
-   vulkan_context_t *context;
-   video_info_t video;
-
-   unsigned tex_w, tex_h;
-   VkFormat tex_fmt;
    bool vsync;
    bool keep_aspect;
    bool fullscreen;
    bool quitting;
    bool should_resize;
+
+   unsigned tex_w, tex_h;
    unsigned vp_out_width, vp_out_height;
-
    unsigned rotation;
-   math_matrix_4x4 mvp, mvp_no_rot;
-   struct video_viewport vp;
-   VkViewport vk_vp;
-
-   VkRenderPass render_pass;
-   struct vk_per_frame swapchain[VULKAN_MAX_SWAPCHAIN_IMAGES];
    unsigned num_swapchain_images;
+   unsigned last_valid_index;
+
+   vulkan_context_t *context;
+   video_info_t video;
+
+   VkFormat tex_fmt;
+   math_matrix_4x4 mvp, mvp_no_rot;
+   VkViewport vk_vp;
+   VkRenderPass render_pass;
+   struct video_viewport vp;
+   struct vk_per_frame *chain;
+   struct vk_per_frame swapchain[VULKAN_MAX_SWAPCHAIN_IMAGES];
 
    /* Currently active command buffer. */
    VkCommandBuffer cmd;
@@ -304,19 +309,19 @@ typedef struct vk
 
    struct
    {
-      struct vk_texture staging[VULKAN_MAX_SWAPCHAIN_IMAGES];
-      struct scaler_ctx scaler;
       bool pending;
       bool streamed;
+      struct scaler_ctx scaler;
+      struct vk_texture staging[VULKAN_MAX_SWAPCHAIN_IMAGES];
    } readback;
 
    struct
    {
-      struct vk_texture *images;
-      struct vk_vertex *vertex;
-      unsigned count;
       bool enable;
       bool full_screen;
+      unsigned count;
+      struct vk_texture *images;
+      struct vk_vertex *vertex;
    } overlay;
 
    struct
@@ -337,14 +342,13 @@ typedef struct vk
 
    struct
    {
+      bool enable;
+      bool full_screen;
+      unsigned last_index;
+      float alpha;
       struct vk_texture textures[VULKAN_MAX_SWAPCHAIN_IMAGES];
       struct vk_texture textures_optimal[VULKAN_MAX_SWAPCHAIN_IMAGES];
       bool dirty[VULKAN_MAX_SWAPCHAIN_IMAGES];
-
-      float alpha;
-      unsigned last_index;
-      bool enable;
-      bool full_screen;
    } menu;
 
    struct
@@ -355,39 +359,33 @@ typedef struct vk
       VkSampler mipmap_linear;
    } samplers;
 
-   unsigned last_valid_index;
-
-   struct vk_per_frame *chain;
-
    struct
    {
+      bool enable;
+      bool valid_semaphore;
+
+      unsigned capacity_cmd;
+      unsigned last_width;
+      unsigned last_height;
+      uint32_t num_semaphores;
+      uint32_t num_cmd;
+      uint32_t src_queue_family;
+
       struct retro_hw_render_interface_vulkan iface;
       const struct retro_vulkan_image *image;
       const VkSemaphore *semaphores;
-      uint32_t num_semaphores;
       VkSemaphore signal_semaphore;
-
       VkPipelineStageFlags *wait_dst_stages;
-
       VkCommandBuffer *cmd;
-      uint32_t num_cmd;
-      unsigned capacity_cmd;
-
-      unsigned last_width;
-      unsigned last_height;
-      uint32_t src_queue_family;
-
-      bool enable;
-      bool valid_semaphore;
    } hw;
 
    struct
    {
+      uint64_t dirty;
       VkPipeline pipeline;
       VkImageView view;
       VkSampler sampler;
       math_matrix_4x4 mvp;
-      uint64_t dirty;
    } tracker;
 
    void *filter_chain;
@@ -413,7 +411,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 void vulkan_sync_texture_to_gpu(vk_t *vk, const struct vk_texture *tex);
 void vulkan_sync_texture_to_cpu(vk_t *vk, const struct vk_texture *tex);
 
-void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture);
+void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_texture *texture);
 
 void vulkan_transfer_image_ownership(VkCommandBuffer cmd,
       VkImage image, VkImageLayout layout,

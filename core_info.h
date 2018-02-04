@@ -1,9 +1,8 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2013-2015 - Jason Fetters
- *  Copyright (C) 2016 - Brad Parker
- * 
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -38,6 +37,9 @@ typedef struct
 
 typedef struct
 {
+   bool supports_no_game;
+   bool database_match_archive_member;
+   size_t firmware_count;
    char *path;
    void *config_data;
    char *display_name;
@@ -58,10 +60,7 @@ typedef struct
    struct string_list *authors_list;
    struct string_list *permissions_list;
    struct string_list *licenses_list;
-
    core_info_firmware_t *firmware;
-   size_t firmware_count;
-   bool supports_no_game;
    void *userdata;
 } core_info_t;
 
@@ -121,6 +120,8 @@ bool core_info_find(core_info_ctx_find_t *info, const char *name);
 bool core_info_load(core_info_ctx_find_t *info);
 
 bool core_info_database_supports_content_path(const char *database_path, const char *path);
+
+bool core_info_database_match_archive_member(const char *database_path);
 
 bool core_info_unsupported_content_path(const char *path);
 

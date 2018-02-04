@@ -28,7 +28,6 @@
 #endif
 
 #include "../input_driver.h"
-#include "../input_joypad_driver.h"
 
 #include "../../gfx/video_driver.h"
 #include "../../tasks/tasks_internal.h"
@@ -409,9 +408,16 @@ static void qnx_process_touch_event(
          {
             if(qnx->pointer[i].contact_id == -1)
             {
-               struct video_viewport vp = {0};
+               struct video_viewport vp;
 
-               qnx->pointer[i].contact_id = contact_id;
+               vp.x                        = 0;
+               vp.y                        = 0;
+               vp.width                    = 0;
+               vp.height                   = 0;
+               vp.full_width               = 0;
+               vp.full_height              = 0;
+
+               qnx->pointer[i].contact_id  = contact_id;
 
                video_driver_translate_coord_viewport_wrap(
                      &vp,
@@ -469,7 +475,15 @@ static void qnx_process_touch_event(
          {
             if(qnx->pointer[i].contact_id == contact_id)
             {
-               struct video_viewport vp = {0};
+               struct video_viewport vp;
+
+               vp.x                        = 0;
+               vp.y                        = 0;
+               vp.width                    = 0;
+               vp.height                   = 0;
+               vp.full_width               = 0;
+               vp.full_height              = 0;
+
 #if 0
                gl_t *gl = (gl_t*)video_driver_get_ptr(false);
 
@@ -644,7 +658,7 @@ static void qnx_handle_navigator_event(
        command_event(CMD_EVENT_MENU_TOGGLE, NULL);
        return;
    shutdown:
-       runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+       rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
        return;
 }
 
@@ -710,9 +724,9 @@ static void qnx_input_poll(void *data)
    }
 }
 
-bool qnx_keyboard_pressed(qnx_input_t *qnx, unsigned id)
+static bool qnx_keyboard_pressed(qnx_input_t *qnx, unsigned id)
 {
-    unsigned bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
+    unsigned bit = rarch_keysym_lut[(enum retro_key)id];
     return id < RETROK_LAST && BIT_GET(qnx->keyboard_state, bit);
 }
 
@@ -789,11 +803,6 @@ static int16_t qnx_input_state(void *data,
    return 0;
 }
 
-static bool qnx_input_meta_key_pressed(void *data, int key)
-{
-    return false;
-}
-
 static void qnx_input_free_input(void *data)
 {
    if (data)
@@ -839,7 +848,6 @@ input_driver_t input_qnx = {
    qnx_input_init,
    qnx_input_poll,
    qnx_input_state,
-   qnx_input_meta_key_pressed,
    qnx_input_free_input,
    NULL,
    NULL,

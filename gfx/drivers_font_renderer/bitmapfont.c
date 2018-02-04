@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -56,7 +56,7 @@ static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
       unsigned atlas_x, unsigned atlas_y)
 {
    unsigned y, x;
-   uint8_t *target = handle->atlas.buffer + atlas_x + 
+   uint8_t *target = handle->atlas.buffer + atlas_x +
       atlas_y * handle->atlas.width;
 
    for (y = 0; y < FONT_HEIGHT; y++)
@@ -101,9 +101,9 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
 
    for (i = 0; i < BMP_ATLAS_SIZE; i++)
    {
-      unsigned x                       = (i % BMP_ATLAS_COLS) * 
+      unsigned x                       = (i % BMP_ATLAS_COLS) *
          handle->scale_factor * FONT_WIDTH;
-      unsigned y                       = (i / BMP_ATLAS_COLS) * 
+      unsigned y                       = (i / BMP_ATLAS_COLS) *
          handle->scale_factor * FONT_HEIGHT;
 
       char_to_texture(handle, i, x, y);
@@ -138,10 +138,10 @@ static const char *font_renderer_bmp_get_default_font(void)
 static int font_renderer_bmp_get_line_height(void* data)
 {
     bm_renderer_t *handle = (bm_renderer_t*)data;
-    
+
     if (!handle)
       return FONT_HEIGHT;
-      
+
     return FONT_HEIGHT * handle->scale_factor;
 }
 

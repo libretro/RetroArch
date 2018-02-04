@@ -25,6 +25,10 @@
 
 #include <gfx/scaler/scaler.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 void scaler_argb8888_vert(const struct scaler_ctx *ctx,
       void *output, int stride);
 
@@ -36,6 +40,8 @@ void scaler_argb8888_point_special(const struct scaler_ctx *ctx,
       int out_width, int out_height,
       int in_width, int in_height,
       int out_stride, int in_stride);
+
+RETRO_END_DECLS
 
 #endif
 

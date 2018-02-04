@@ -48,7 +48,8 @@
 #endif
 
 #ifdef _WIN32
-void* mmap(void *addr, size_t len, int prot, int flags, int fildes, size_t offset)
+void* mmap(void *addr, size_t len, int prot, int flags,
+      int fildes, size_t offset)
 {
    void     *map = (void*)NULL;
    HANDLE handle = INVALID_HANDLE_VALUE;
@@ -57,36 +58,34 @@ void* mmap(void *addr, size_t len, int prot, int flags, int fildes, size_t offse
    {
       case PROT_READ:
       default:
-         {
-            handle = CreateFileMapping((HANDLE) _get_osfhandle(fildes), 0, PAGE_READONLY, 0,
-                  len, 0);
-            if (!handle)
-               break;
-            map = (void*)MapViewOfFile(handle, FILE_MAP_READ, 0, 0, len);
-            CloseHandle(handle);
+         handle = CreateFileMapping((HANDLE)
+               _get_osfhandle(fildes), 0, PAGE_READONLY, 0,
+               len, 0);
+         if (!handle)
             break;
-         }
+         map = (void*)MapViewOfFile(handle, FILE_MAP_READ, 0, 0, len);
+         CloseHandle(handle);
+         break;
       case PROT_WRITE:
-         {
-            handle = CreateFileMapping((HANDLE) _get_osfhandle(fildes),0,PAGE_READWRITE,0,
-                  len, 0);
-            if (!handle)
-               break;
-            map = (void*)MapViewOfFile(handle, FILE_MAP_WRITE, 0, 0, len);
-            CloseHandle(handle);
+         handle = CreateFileMapping((HANDLE)
+               _get_osfhandle(fildes),0,PAGE_READWRITE,0,
+               len, 0);
+         if (!handle)
             break;
-         }
+         map = (void*)MapViewOfFile(handle, FILE_MAP_WRITE, 0, 0, len);
+         CloseHandle(handle);
+         break;
       case PROT_READWRITE:
-         {
-            handle = CreateFileMapping((HANDLE) _get_osfhandle(fildes),0,PAGE_READWRITE,0,
-                  len, 0);
-            if (!handle)
-               break;
-            map = (void*)MapViewOfFile(handle, FILE_MAP_ALL_ACCESS, 0, 0, len);
-            CloseHandle(handle);
+         handle = CreateFileMapping((HANDLE)
+               _get_osfhandle(fildes),0,PAGE_READWRITE,0,
+               len, 0);
+         if (!handle)
             break;
-         }
+         map = (void*)MapViewOfFile(handle, FILE_MAP_ALL_ACCESS, 0, 0, len);
+         CloseHandle(handle);
+         break;
    }
+
    if (map == (void*)NULL)
       return((void*)MAP_FAILED);
    return((void*) ((int8_t*)map + offset));
@@ -110,7 +109,8 @@ int mprotect(void *addr, size_t len, int prot)
 }
 
 #elif !defined(HAVE_MMAN)
-void* mmap(void *addr, size_t len, int prot, int flags, int fildes, size_t offset)
+void* mmap(void *addr, size_t len, int prot, int flags,
+      int fildes, size_t offset)
 {
    return malloc(len);
 }
@@ -123,7 +123,8 @@ int munmap(void *addr, size_t len)
 
 int mprotect(void *addr, size_t len, int prot)
 {
-   /* stub - not really needed at this point since this codepath has no dynarecs */
+   /* stub - not really needed at this point
+    * since this codepath has no dynarecs. */
    return 0;
 }
 

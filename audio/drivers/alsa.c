@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -29,6 +29,7 @@ typedef struct alsa
    snd_pcm_t *pcm;
    size_t buffer_size;
    bool nonblock;
+   unsigned int frame_bits;
    bool has_float;
    bool can_pause;
    bool is_paused;
@@ -46,11 +47,11 @@ static bool find_float_format(snd_pcm_t *pcm, void *data)
 
    if (snd_pcm_hw_params_test_format(pcm, params, SND_PCM_FORMAT_FLOAT) == 0)
    {
-      RARCH_LOG("ALSA: Using floating point format.\n");
+      RARCH_LOG("[ALSA]: Using floating point format.\n");
       return true;
    }
 
-   RARCH_LOG("ALSA: Using signed 16-bit format.\n");
+   RARCH_LOG("[ALSA]: Using signed 16-bit format.\n");
    return false;
 }
 
@@ -92,6 +93,9 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
             alsa->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
       goto error;
 
+   /* channels hardcoded to 2 for now */
+   alsa->frame_bits = snd_pcm_format_physical_width(format) * 2;
+
    if (snd_pcm_hw_params_set_format(alsa->pcm, params, format) < 0)
       goto error;
 
@@ -117,22 +121,22 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    if (snd_pcm_hw_params(alsa->pcm, params) < 0)
       goto error;
 
-   /* Shouldn't have to bother with this, 
+   /* Shouldn't have to bother with this,
     * but some drivers are apparently broken. */
    if (snd_pcm_hw_params_get_period_size(params, &buffer_size, NULL))
       snd_pcm_hw_params_get_period_size_min(params, &buffer_size, NULL);
 
-   RARCH_LOG("ALSA: Period size: %d frames\n", (int)buffer_size);
+   RARCH_LOG("[ALSA]: Period size: %d frames\n", (int)buffer_size);
 
    if (snd_pcm_hw_params_get_buffer_size(params, &buffer_size))
       snd_pcm_hw_params_get_buffer_size_max(params, &buffer_size);
 
-   RARCH_LOG("ALSA: Buffer size: %d frames\n", (int)buffer_size);
+   RARCH_LOG("[ALSA]: Buffer size: %d frames\n", (int)buffer_size);
 
    alsa->buffer_size = snd_pcm_frames_to_bytes(alsa->pcm, buffer_size);
    alsa->can_pause = snd_pcm_hw_params_can_pause(params);
 
-   RARCH_LOG("ALSA: Can pause: %s.\n", alsa->can_pause ? "yes" : "no");
+   RARCH_LOG("[ALSA]: Can pause: %s.\n", alsa->can_pause ? "yes" : "no");
 
    if (snd_pcm_sw_params_malloc(&sw_params) < 0)
       goto error;
@@ -153,7 +157,7 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    return alsa;
 
 error:
-   RARCH_ERR("ALSA: Failed to initialize...\n");
+   RARCH_ERR("[ALSA]: Failed to initialize...\n");
    if (params)
       snd_pcm_hw_params_free(params);
 
@@ -173,74 +177,82 @@ error:
    return NULL;
 }
 
-static ssize_t alsa_write(void *data, const void *buf_, size_t size_,
-      bool is_perfcnt_enable)
+#define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
+#define FRAMES_TO_BYTES(frames, frame_bits) ((frames) * frame_bits / 8)
+
+static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
 {
    alsa_t *alsa              = (alsa_t*)data;
    const uint8_t *buf        = (const uint8_t*)buf_;
-   bool eagain_retry         = true;
    snd_pcm_sframes_t written = 0;
-   snd_pcm_sframes_t size    = snd_pcm_bytes_to_frames(alsa->pcm, size_);
+   snd_pcm_sframes_t size    = BYTES_TO_FRAMES(size_, alsa->frame_bits);
+   size_t frames_size        = alsa->has_float ? sizeof(float) : sizeof(int16_t);
 
-   while (size)
+   if (alsa->nonblock)
    {
-      snd_pcm_sframes_t frames;
-
-      if (!alsa->nonblock)
+      while (size)
       {
+         snd_pcm_sframes_t frames = snd_pcm_writei(alsa->pcm, buf, size);
+
+         if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
+         {
+            if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
+               return -1;
+
+            break;
+         }
+         else if (frames == -EAGAIN)
+            break;
+         else if (frames < 0)
+            return -1;
+
+         written += frames;
+         buf     += (frames << 1) * frames_size;
+         size    -= frames;
+      }
+   }
+   else
+   {
+      bool eagain_retry         = true;
+
+      while (size)
+      {
+         snd_pcm_sframes_t frames;
          int rc = snd_pcm_wait(alsa->pcm, -1);
 
          if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
          {
             if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
-            {
-               RARCH_ERR("[ALSA]: (#1) Failed to recover from error (%s)\n",
-                     snd_strerror(rc));
                return -1;
+            continue;
+         }
+
+         frames = snd_pcm_writei(alsa->pcm, buf, size);
+
+         if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
+         {
+            if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
+               return -1;
+
+            break;
+         }
+         else if (frames == -EAGAIN)
+         {
+            /* Definitely not supposed to happen. */
+            if (eagain_retry)
+            {
+               eagain_retry = false;
+               continue;
             }
-            continue;
+            break;
          }
-      }
-
-      frames = snd_pcm_writei(alsa->pcm, buf, size);
-
-      if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
-      {
-         if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
-         {
-            RARCH_ERR("[ALSA]: (#2) Failed to recover from error (%s)\n",
-                  snd_strerror(frames));
+         else if (frames < 0)
             return -1;
-         }
 
-         break;
+         written += frames;
+         buf     += (frames << 1) * frames_size;
+         size    -= frames;
       }
-      else if (frames == -EAGAIN && !alsa->nonblock)
-      {
-         /* Definitely not supposed to happen. */
-         RARCH_WARN("[ALSA]: poll() was signaled, but EAGAIN returned from write.\n"
-               "Your ALSA driver might be subtly broken.\n");
-
-         if (eagain_retry)
-         {
-            eagain_retry = false;
-            continue;
-         }
-         return written;
-      }
-      else if (frames == -EAGAIN) /* Expected if we're running nonblock. */
-         return written;
-      else if (frames < 0)
-      {
-         RARCH_ERR("[ALSA]: Unknown error occurred (%s).\n",
-               snd_strerror(frames));
-         return -1;
-      }
-
-      written += frames;
-      buf     += (frames << 1) *
-         (alsa->has_float ? sizeof(float) : sizeof(int16_t));
-      size    -= frames;
    }
 
    return written;
@@ -318,19 +330,13 @@ static void alsa_free(void *data)
 
 static size_t alsa_write_avail(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   alsa_t *alsa            = (alsa_t*)data;
    snd_pcm_sframes_t avail = snd_pcm_avail(alsa->pcm);
 
    if (avail < 0)
-   {
-#if 0
-      RARCH_WARN("[ALSA]: snd_pcm_avail() failed: %s\n",
-            snd_strerror(avail));
-#endif
       return alsa->buffer_size;
-   }
 
-   return snd_pcm_frames_to_bytes(alsa->pcm, avail);
+   return FRAMES_TO_BYTES(avail, alsa->frame_bits);
 }
 
 static size_t alsa_buffer_size(void *data)
@@ -364,7 +370,7 @@ static void *alsa_device_list_new(void *data)
       /* description of device IOID - input / output identifcation
        * ("Input" or "Output"), NULL means both) */
 
-      if (!io || string_is_equal(io,"Output"))
+      if (!io || (string_is_equal(io, "Output")))
          string_list_append(s, name, attr);
 
       if (name)

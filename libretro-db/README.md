@@ -66,6 +66,11 @@ Usecase: Search for all games released on October 1995.
 
 `libretrodb_tool <db file> find "{'releasemonth':10,'releaseyear':1995}"`
 
+3) Names only search
+Usecase: Search for all games released on October 1995, wont print checksums, filename or rom size, only the game name.
+
+`libretrodb_tool <db file> get-names "{'releasemonth':10,'releaseyear':1995}"`
+
 # Compiling the Database
 
 Use [libretro-super](https://github.com/libretro/libretro-super) to compile the entire database:

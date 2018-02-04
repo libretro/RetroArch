@@ -30,19 +30,16 @@
 #endif
 
 #ifdef HAVE_MENU
-#include "../../menu/menu_display.h"
+#include "../../menu/menu_driver.h"
 #endif
 
-#include "../input_config.h"
 #include "../input_driver.h"
 
-#include "../../frontend/drivers/platform_linux.h"
+#include "../../frontend/drivers/platform_unix.h"
 #include "../../gfx/video_driver.h"
-#include "../input_joypad_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
-#include "../../configuration.h"
 
 #define MAX_TOUCH 16
 #define MAX_NUM_KEYBOARDS 3
@@ -153,7 +150,7 @@ static void *libandroid_handle;
 
 static bool android_input_lookup_name_prekitkat(char *buf,
       int *vendorId, int *productId, size_t size, int id)
-{ 
+{
    jobject name      = NULL;
    jmethodID getName = NULL;
    jobject device    = NULL;
@@ -369,8 +366,8 @@ static void android_input_poll_main_cmd(void)
          {
             bool boolean = false;
 
-            runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-            runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
+            rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
+            rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
             video_driver_unset_stub_frame();
 
             if ((android_app->sensor_state_mask
@@ -389,8 +386,8 @@ static void android_input_poll_main_cmd(void)
          {
             bool boolean = true;
 
-            runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-            runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
+            rarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
+            rarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
             video_driver_set_stub_frame();
 
             /* Avoid draining battery while app is not being used. */
@@ -467,10 +464,15 @@ static bool android_input_init_handle(void)
 {
    if (libandroid_handle != NULL) /* already initialized */
       return true;
-
+#ifdef ANDROID_AARCH64
+   if ((libandroid_handle = dlopen("/system/lib64/libandroid.so",
+               RTLD_LOCAL | RTLD_LAZY)) == 0)
+   return false;
+#else
    if ((libandroid_handle = dlopen("/system/lib/libandroid.so",
                RTLD_LOCAL | RTLD_LAZY)) == 0)
-      return false;
+   return false;
+#endif
 
    if ((p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT,
                "AMotionEvent_getAxisValue")))
@@ -500,9 +502,9 @@ static void *android_input_init(const char *joypad_driver)
    android->pads_connected = 0;
    android->quick_tap_time = 0;
    android->joypad         = input_joypad_init_driver(joypad_driver, android);
- 
+
    input_keymaps_init_keyboard_lut(rarch_key_map_android);
- 
+
    frontend_android_get_version_sdk(&sdk);
 
    RARCH_LOG("sdk version: %d\n", sdk);
@@ -526,7 +528,7 @@ static void *android_input_init(const char *joypad_driver)
 
 static int android_check_quick_tap(android_input_t *android)
 {
-   /* Check if the touch screen has been been quick tapped 
+   /* Check if the touch screen has been been quick tapped
     * and then not touched again for 200ms
     * If so then return true and deactivate quick tap timer */
    retro_time_t now = cpu_features_get_time_usec();
@@ -602,16 +604,16 @@ static int16_t android_lightgun_device_state(android_input_t *android, unsigned 
 static INLINE void android_mouse_calculate_deltas(android_input_t *android,
       AInputEvent *event,size_t motion_ptr)
 {
-   /* Adjust mouse speed based on ratio 
+   /* Adjust mouse speed based on ratio
     * between core resolution and system resolution */
    float x, y;
    float                        x_scale = 1;
    float                        y_scale = 1;
-   video_viewport_t          *custom_vp = video_viewport_get_custom();
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
-   if(custom_vp && av_info)
+   if(av_info)
    {
+      video_viewport_t          *custom_vp   = video_viewport_get_custom();
       const struct retro_game_geometry *geom = (const struct retro_game_geometry*)&av_info->geometry;
       x_scale = 2 * (float)geom->base_width / (float)custom_vp->width;
       y_scale = 2 * (float)geom->base_height / (float)custom_vp->height;
@@ -661,7 +663,7 @@ static INLINE int android_input_poll_event_type_motion(
       (source == AINPUT_SOURCE_MOUSE &&
        action != AMOTION_EVENT_ACTION_DOWN);
 
-   /* If source is mouse then calculate button state 
+   /* If source is mouse then calculate button state
     * and mouse deltas and don't process as touchscreen event */
    if (source == AINPUT_SOURCE_MOUSE)
    {
@@ -675,7 +677,7 @@ static INLINE int android_input_poll_event_type_motion(
       }
       else
       {
-         /* If getButtonState is not available 
+         /* If getButtonState is not available
           * then treat all MotionEvent.ACTION_DOWN as left button presses */
          if (action == AMOTION_EVENT_ACTION_DOWN)
             android->mouse_l = 1;
@@ -692,7 +694,7 @@ static INLINE int android_input_poll_event_type_motion(
    {
       if(action == AMOTION_EVENT_ACTION_UP && ENABLE_TOUCH_SCREEN_MOUSE)
       {
-         /* If touchscreen was pressed for less than 200ms 
+         /* If touchscreen was pressed for less than 200ms
           * then register time stamp of a quick tap */
          if((AMotionEvent_getEventTime(event)-AMotionEvent_getDownTime(event))/1000000 < 200)
             android->quick_tap_time = AMotionEvent_getEventTime(event);
@@ -711,14 +713,14 @@ static INLINE int android_input_poll_event_type_motion(
 
       if(action == AMOTION_EVENT_ACTION_DOWN && ENABLE_TOUCH_SCREEN_MOUSE)
       {
-         /* When touch screen is pressed, set mouse 
+         /* When touch screen is pressed, set mouse
           * previous position to current position
           * before starting to calculate mouse movement deltas. */
          android->mouse_x_prev = AMotionEvent_getX(event, motion_ptr);
          android->mouse_y_prev = AMotionEvent_getY(event, motion_ptr);
 
-         /* If another touch happened within 200ms after a quick tap 
-          * then cancel the quick tap and register left mouse button 
+         /* If another touch happened within 200ms after a quick tap
+          * then cancel the quick tap and register left mouse button
           * as being held down */
          if((AMotionEvent_getEventTime(event) - android->quick_tap_time)/1000000 < 200)
          {
@@ -732,9 +734,16 @@ static INLINE int android_input_poll_event_type_motion(
 
       for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
       {
-         struct video_viewport vp = {0};
+         struct video_viewport vp;
          float x = AMotionEvent_getX(event, motion_ptr);
          float y = AMotionEvent_getY(event, motion_ptr);
+
+         vp.x                        = 0;
+         vp.y                        = 0;
+         vp.width                    = 0;
+         vp.height                   = 0;
+         vp.full_width               = 0;
+         vp.full_height              = 0;
 
          video_driver_translate_coord_viewport_wrap(
                &vp,
@@ -750,7 +759,7 @@ static INLINE int android_input_poll_event_type_motion(
       }
    }
 
-   /* If more than one pointer detected 
+   /* If more than one pointer detected
     * then count it as a mouse right click */
    if (ENABLE_TOUCH_SCREEN_MOUSE)
       android->mouse_r = (android->pointer_count == 2);
@@ -901,7 +910,7 @@ static void handle_hotplug(android_input_t *android,
     */
    if(strstr(device_model, "SHIELD Android TV") && (
       strstr(device_name, "Virtual") ||
-      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03")))
+      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.0")))
    {
       /* only use the hack if the device is one of the built-in devices */
       RARCH_LOG("Special Device Detected: %s\n", device_model);
@@ -911,7 +920,7 @@ static void handle_hotplug(android_input_t *android,
                android->pads_connected, device_name, id, pad_id1, pad_id2);
 #endif
          /* remove the remote or virtual controller device if it is mapped */
-         if (strstr(android->pad_states[0].name,"SHIELD Remote") || 
+         if (strstr(android->pad_states[0].name,"SHIELD Remote") ||
             strstr(android->pad_states[0].name,"SHIELD Virtual Controller"))
          {
             pad_id1 = -1;
@@ -921,7 +930,7 @@ static void handle_hotplug(android_input_t *android,
             strlcpy(name_buf, device_name, sizeof(name_buf));
          }
 
-         /* if the actual controller has not been mapped yet, 
+         /* if the actual controller has not been mapped yet,
           * then configure Virtual device for now */
          if (strstr(device_name, "Virtual") && android->pads_connected==0)
             strlcpy (name_buf, "SHIELD Virtual Controller", sizeof(name_buf));
@@ -931,7 +940,7 @@ static void handle_hotplug(android_input_t *android,
          /* apply the hack only for the first controller
           * store the id for later use
          */
-         if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03") 
+         if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.0")
                && android->pads_connected==0)
             pad_id1 = id;
          else if (strstr(device_name, "Virtual") && pad_id1 != -1)
@@ -942,13 +951,10 @@ static void handle_hotplug(android_input_t *android,
       }
    }
 
-   /* NVIDIA Shield Portable
-    * This is a simple hack, basically groups the "back"
-    * button with the rest of the gamepad
-    */
    else if(strstr(device_model, "SHIELD") && (
       strstr(device_name, "Virtual") || strstr(device_name, "gpio") ||
-      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01")))
+      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.01") ||
+      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.02")))
    {
       /* only use the hack if the device is one of the built-in devices */
       RARCH_LOG("Special Device Detected: %s\n", device_model);
@@ -960,8 +966,26 @@ static void handle_hotplug(android_input_t *android,
 
          if ( pad_id2 > 0)
             return;
-
          strlcpy (name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
+      }
+   }
+
+   else if(strstr(device_model, "SHIELD") && (
+      strstr(device_name, "Virtual") || strstr(device_name, "gpio") ||
+      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03")))
+   {
+      /* only use the hack if the device is one of the built-in devices */
+      RARCH_LOG("Special Device Detected: %s\n", device_model);
+      {
+         if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03")
+             && android->pads_connected==0)
+            pad_id1 = id;
+         else if (strstr(device_name, "Virtual") || strstr(device_name, "gpio"))
+         {
+            id = pad_id1;
+            return;
+         }
+         strlcpy (name_buf, "NVIDIA SHIELD Gamepad", sizeof(name_buf));
       }
    }
 
@@ -1001,9 +1025,9 @@ static void handle_hotplug(android_input_t *android,
     * This device is composed of two hid devices
     * We make it look like one device
     */
-   else if(strstr(device_model, "R800") && 
+   else if(strstr(device_model, "R800") &&
          (
-          strstr(device_name, "keypad-game-zeus") || 
+          strstr(device_name, "keypad-game-zeus") ||
           strstr(device_name, "keypad-zeus")
          )
          )
@@ -1044,6 +1068,32 @@ static void handle_hotplug(android_input_t *android,
 
          strlcpy (name_buf, "ARCHOS GamePad", sizeof(name_buf));
          *port = 0;
+      }
+   }
+
+   /* Amazon Fire TV & Fire stick */
+   else if(strstr(device_model, "AFTB") || strstr(device_model, "AFTT") ||
+           strstr(device_model, "AFTS") || strstr(device_model, "AFTM") ||
+           strstr(device_model, "AFTRS"))
+   {
+      RARCH_LOG("Special Device Detected: %s\n", device_model);
+      {
+         /* always map remote to port #0 */
+         if (strstr(device_name, "Amazon Fire TV Remote"))
+         {
+            android->pads_connected = 0;
+            *port = 0;
+            strlcpy(name_buf, device_name, sizeof(name_buf));
+         }
+         /* remove the remote when a gamepad enters */
+         else if(strstr(android->pad_states[0].name,"Amazon Fire TV Remote"))
+         {
+            android->pads_connected = 0;
+            *port = 0;
+            strlcpy(name_buf, device_name, sizeof(name_buf));
+         }
+         else
+            strlcpy(name_buf, device_name, sizeof(name_buf));
       }
    }
 
@@ -1107,15 +1157,11 @@ static void handle_hotplug(android_input_t *android,
          productId))
       input_config_set_device_name(*port, name_buf);
 
-   if (!string_is_empty(name_buf))
-   {
-      settings_t         *settings = config_get_ptr();
-      strlcpy(settings->input.device_names[*port],
-            name_buf, sizeof(settings->input.device_names[*port]));
-   }
+   input_config_set_device_name(*port, name_buf);
 
-   android->pad_states[android->pads_connected].id = id;
+   android->pad_states[android->pads_connected].id   = id;
    android->pad_states[android->pads_connected].port = *port;
+
    strlcpy(android->pad_states[*port].name, name_buf,
          sizeof(android->pad_states[*port].name));
 
@@ -1153,7 +1199,7 @@ static void android_input_poll_input(void *data)
          if (port < 0 && !is_keyboard_id(id))
             handle_hotplug(android, android_app,
             &port, id, source);
- 
+
          switch (type_event)
          {
             case AINPUT_EVENT_TYPE_MOTION:
@@ -1221,26 +1267,28 @@ static void android_input_poll_memcpy(void *data)
    }
 }
 
-static bool android_input_key_pressed(void *data, int key)		
-{		
+static bool android_input_key_pressed(void *data, int key)
+{
    rarch_joypad_info_t joypad_info;
-   android_input_t *android = (android_input_t*)data;		
-   settings_t *settings     = config_get_ptr();		
+   android_input_t *android           = (android_input_t*)data;
+   const struct retro_keybind *keyptr = (const struct retro_keybind*)
+      &input_config_binds[0][key];
 
-   if(       settings->input.binds[0][key].valid 
-         && android_keyboard_port_input_pressed(settings->input.binds[0],key))		
-      return true;		
+   if(       keyptr->valid
+         && android_keyboard_port_input_pressed(input_config_binds[0],
+            key))
+      return true;
 
    joypad_info.joy_idx        = 0;
-   joypad_info.auto_binds     = settings->input.autoconf_binds[0];
-   joypad_info.axis_threshold = settings->input.axis_threshold;
+   joypad_info.auto_binds     = input_autoconf_binds[0];
+   joypad_info.axis_threshold = *(input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD));
 
-   if (settings->input.binds[0][key].valid &&		
+   if (keyptr->valid &&
          input_joypad_pressed(android->joypad, joypad_info,
-            0, settings->input.binds[0], key))		
-      return true;		
+            0, input_config_binds[0], key))
+      return true;
 
-   return false;		
+   return false;
 }
 
 /* Handle all events. If our activity is in pause state,
@@ -1269,16 +1317,16 @@ static void android_input_poll(void *data)
             android_input_poll_main_cmd();
             break;
       }
-      
+
       if (android_app->destroyRequested != 0)
       {
-         runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+         rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
          return;
       }
 
       if (android_app->reinitRequested != 0)
       {
-         if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+         if (rarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
             command_event(CMD_EVENT_REINIT, NULL);
          android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
          return;
@@ -1299,13 +1347,13 @@ bool android_run_events(void *data)
    /* Check if we are exiting. */
    if (android_app->destroyRequested != 0)
    {
-      runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+      rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
       return false;
    }
 
    if (android_app->reinitRequested != 0)
    {
-      if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+      if (rarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
          command_event(CMD_EVENT_REINIT, NULL);
       android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
    }
@@ -1318,15 +1366,17 @@ static int16_t android_input_state(void *data,
       const struct retro_keybind **binds, unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   settings_t *settings               = config_get_ptr();
+   int16_t ret                        = 0;
    android_input_t *android           = (android_input_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(android->joypad, joypad_info,
-               port, binds[port], id) ||
-            android_keyboard_port_input_pressed(binds[port],id);
+         ret = input_joypad_pressed(android->joypad, joypad_info,
+               port, binds[port], id);
+         if (!ret)
+            ret = android_keyboard_port_input_pressed(binds[port],id);
+         return ret;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
             return input_joypad_analog(android->joypad, joypad_info,
@@ -1348,8 +1398,11 @@ static int16_t android_input_state(void *data,
                   (android->pointer[idx].x != -0x8000) &&
                   (android->pointer[idx].y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
-               if(settings->input.autoconf_binds[0][RARCH_MENU_TOGGLE].joykey == 0)
+            {
+               const struct retro_keybind *keyptr = &input_autoconf_binds[0][RARCH_MENU_TOGGLE];
+               if (keyptr->joykey == 0)
                   return android_keyboard_input_pressed(AKEYCODE_BACK);
+            }
          }
          break;
       case RARCH_DEVICE_POINTER_SCREEN:
@@ -1364,18 +1417,16 @@ static int16_t android_input_state(void *data,
                   (android->pointer[idx].full_x != -0x8000) &&
                   (android->pointer[idx].full_y != -0x8000);
             case RARCH_DEVICE_ID_POINTER_BACK:
-               if(settings->input.autoconf_binds[0][RARCH_MENU_TOGGLE].joykey == 0)
-                  return android_keyboard_input_pressed(AKEYCODE_BACK);
+               {
+                  const struct retro_keybind *keyptr = &input_autoconf_binds[0][RARCH_MENU_TOGGLE];
+                  if (keyptr->joykey == 0)
+                     return android_keyboard_input_pressed(AKEYCODE_BACK);
+               }
          }
          break;
    }
 
    return 0;
-}
-
-static bool android_input_meta_key_pressed(void *data, int key)
-{
-   return false;
 }
 
 static void android_input_free_input(void *data)
@@ -1531,7 +1582,6 @@ input_driver_t input_android = {
    android_input_init,
    android_input_poll,
    android_input_state,
-   android_input_meta_key_pressed,
    android_input_free_input,
    android_input_set_sensor_state,
    android_input_get_sensor_input,

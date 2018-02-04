@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Higor Euripedes
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -21,7 +21,6 @@
 
 #include "SDL.h"
 
-#include "../input_config.h"
 #include "../input_driver.h"
 
 #include "../../tasks/tasks_internal.h"
@@ -159,9 +158,36 @@ static void sdl_pad_connect(unsigned id)
              product, sdl_joypad_name(id));
 
 #ifdef HAVE_SDL2
-
    if (pad->controller)
+   {
+      /* SDL_GameController internally supports all axis/button IDs, even if
+       * the controller's mapping does not have a binding for it.
+       *
+       * So, we can claim to support all axes/buttons, and when we try to poll
+       * an unbound ID, SDL simply returns the correct unpressed value.
+       *
+       * Note that, in addition to 0 trackballs, we also have 0 hats. This is
+       * because the d-pad is in the button list, as the last 4 enum entries.
+       *
+       * -flibit
+       */
+      pad->num_axes    = SDL_CONTROLLER_AXIS_MAX;
+      pad->num_buttons = SDL_CONTROLLER_BUTTON_MAX;
+      pad->num_hats    = 0;
+      pad->num_balls   = 0;
+
       RARCH_LOG("[SDL]: Device #%u supports game controller api.\n", id);
+   }
+   else
+   {
+      pad->num_axes    = SDL_JoystickNumAxes(pad->joypad);
+      pad->num_buttons = SDL_JoystickNumButtons(pad->joypad);
+      pad->num_hats    = SDL_JoystickNumHats(pad->joypad);
+      pad->num_balls   = SDL_JoystickNumBalls(pad->joypad);
+
+      RARCH_LOG("[SDL]: Device #%u has: %u axes, %u buttons, %u hats and %u trackballs.\n",
+                id, pad->num_axes, pad->num_buttons, pad->num_hats, pad->num_balls);
+   }
 
    pad->haptic = g_has_haptic ? SDL_HapticOpenFromJoystick(pad->joypad) : NULL;
 
@@ -185,18 +211,11 @@ static void sdl_pad_connect(unsigned id)
          RARCH_WARN("[SDL]: Device #%u does not support rumble.\n", id);
       }
    }
-#endif
-
+#else
    pad->num_axes    = SDL_JoystickNumAxes(pad->joypad);
    pad->num_buttons = SDL_JoystickNumButtons(pad->joypad);
    pad->num_hats    = SDL_JoystickNumHats(pad->joypad);
 
-#ifdef HAVE_SDL2
-   pad->num_balls   = SDL_JoystickNumBalls(pad->joypad);
-
-   RARCH_LOG("[SDL]: Device #%u has: %u axes, %u buttons, %u hats and %u trackballs.\n",
-             id, pad->num_axes, pad->num_buttons, pad->num_hats, pad->num_balls);
-#else
    RARCH_LOG("[SDL]: Device #%u has: %u axes, %u buttons, %u hats.\n",
              id, pad->num_axes, pad->num_buttons, pad->num_hats);
 #endif

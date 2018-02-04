@@ -24,7 +24,7 @@
 
 #include <retro_common_api.h>
 
-#include "../../input/input_keyboard.h"
+#include "../../input/input_driver.h"
 
 RETRO_BEGIN_DECLS
 

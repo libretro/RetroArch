@@ -23,29 +23,31 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
- 
+
 #include <audio/audio_resampler.h>
 
 typedef struct rarch_null_resampler
 {
    void *empty;
 } rarch_null_resampler_t;
- 
+
 static void resampler_null_process(
       void *re_, struct resampler_data *data)
 {
 }
- 
+
 static void resampler_null_free(void *re_)
 {
 }
- 
+
 static void *resampler_null_init(const struct resampler_config *config,
-      double bandwidth_mod, resampler_simd_mask_t mask)
+      double bandwidth_mod, 
+      enum resampler_quality quality,
+      resampler_simd_mask_t mask)
 {
    return (void*)0;
 }
- 
+
 retro_resampler_t null_resampler = {
    resampler_null_init,
    resampler_null_process,

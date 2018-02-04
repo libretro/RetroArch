@@ -27,25 +27,31 @@
 #include "tasks_internal.h"
 
 #include "../file_path_special.h"
-#include "../input/input_config.h"
+#include "../gfx/video_driver.h"
+#include "../input/input_driver.h"
 #include "../input/input_overlay.h"
 #include "../configuration.h"
 #include "../verbosity.h"
 
-typedef struct
+typedef struct overlay_loader overlay_loader_t;
+
+struct overlay_loader
 {
    enum overlay_status state;
    enum overlay_image_transfer_status loading_status;
    config_file_t *conf;
    char *overlay_path;
+   struct overlay *overlays;
+   struct overlay *active;
+   bool overlay_enable;
+   bool overlay_hide_in_menu;
+   size_t resolve_pos;
    unsigned size;
    unsigned pos;
    unsigned pos_increment;
-   struct overlay *overlays;
-   struct overlay *active;
-   size_t resolve_pos;
-
-} overlay_loader_t;
+   float overlay_opacity;
+   float overlay_scale;
+};
 
 static void task_overlay_image_done(struct overlay *overlay)
 {
@@ -104,12 +110,12 @@ static bool task_overlay_load_desc(
       bool normalized, float alpha_mod, float range_mod)
 {
    float width_mod, height_mod;
-   float tmp_float;
    uint32_t box_hash, key_hash;
    char overlay_desc_key[64];
    char conf_key[64];
    char overlay_desc_normalized_key[64];
    char overlay[256];
+   float tmp_float                      = 0.0f;
    bool tmp_bool                        = false;
    bool ret                             = true;
    bool by_pixel                        = false;
@@ -120,7 +126,7 @@ static bool task_overlay_load_desc(
    const char *box                      = NULL;
    config_file_t *conf                  = loader->conf;
 
-   overlay_desc_key[0] = conf_key[0] = 
+   overlay_desc_key[0] = conf_key[0] =
       overlay_desc_normalized_key[0] = overlay[0] = '\0';
 
    snprintf(overlay_desc_key, sizeof(overlay_desc_key),
@@ -171,7 +177,8 @@ static bool task_overlay_load_desc(
    box_hash       = djb2_calculate(box);
    key_hash       = djb2_calculate(key);
 
-   desc->key_mask = 0;
+   desc->retro_key_idx = 0;
+   BIT256_CLEAR_ALL(desc->button_mask);
 
    switch (key_hash)
    {
@@ -184,8 +191,8 @@ static bool task_overlay_load_desc(
       default:
          if (strstr(key, "retrok_") == key)
          {
-            desc->type     = OVERLAY_TYPE_KEYBOARD;
-            desc->key_mask = input_config_translate_str_to_rk(key + 7);
+            desc->type          = OVERLAY_TYPE_KEYBOARD;
+            desc->retro_key_idx = input_config_translate_str_to_rk(key + 7);
          }
          else
          {
@@ -197,11 +204,10 @@ static bool task_overlay_load_desc(
             for (; tmp; tmp = strtok_r(NULL, "|", &save))
             {
                if (!string_is_equal(tmp, file_path_str(FILE_PATH_NUL)))
-                  desc->key_mask |= UINT64_C(1) 
-                     << input_config_translate_str_to_bind_id(tmp);
+                  BIT256_SET(desc->button_mask, input_config_translate_str_to_bind_id(tmp));
             }
 
-            if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
+            if (BIT256_GET(desc->button_mask, RARCH_OVERLAY_NEXT))
             {
                char overlay_target_key[64];
 
@@ -703,17 +709,16 @@ static void task_overlay_handler(retro_task_t *task)
 
    if (task_get_finished(task) && !task_get_cancelled(task))
    {
-      settings_t *settings      = config_get_ptr();
       overlay_task_data_t *data = (overlay_task_data_t*)
          calloc(1, sizeof(*data));
 
       data->overlays        = loader->overlays;
       data->size            = loader->size;
       data->active          = loader->active;
-      data->hide_in_menu    = settings->input.overlay_hide_in_menu;
-      data->overlay_enable  = settings->input.overlay_enable;
-      data->overlay_opacity = settings->input.overlay_opacity;
-      data->overlay_scale   = settings->input.overlay_scale;
+      data->hide_in_menu    = loader->overlay_hide_in_menu;
+      data->overlay_enable  = loader->overlay_enable;
+      data->overlay_opacity = loader->overlay_opacity;
+      data->overlay_scale   = loader->overlay_scale;
 
       task_set_data(task, data);
    }
@@ -736,21 +741,27 @@ static bool task_overlay_finder(retro_task_t *task, void *user_data)
    return string_is_equal(loader->overlay_path, (const char*)user_data);
 }
 
-static bool task_push_overlay_load(const char *overlay_path,
+bool task_push_overlay_load_default(
       retro_task_callback_t cb, void *user_data)
 {
    task_finder_data_t find_data;
+   settings_t *settings     = config_get_ptr();
+   const char *overlay_path = settings->paths.path_overlay;
    retro_task_t *t          = NULL;
    config_file_t *conf      = NULL;
    overlay_loader_t *loader = (overlay_loader_t*)calloc(1, sizeof(*loader));
 
    if (!loader)
+      return false;
+
+   if (string_is_empty(overlay_path))
       goto error;
 
    /* Prevent overlay from being loaded if it already is being loaded */
    find_data.func     = task_overlay_finder;
    find_data.userdata = (void*)overlay_path;
-   if (task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data))
+
+   if (task_queue_find(&find_data))
       goto error;
 
    conf = config_file_new(overlay_path);
@@ -770,12 +781,16 @@ static bool task_push_overlay_load(const char *overlay_path,
    if (!loader->overlays)
       goto error;
 
-   loader->overlay_path     = strdup(overlay_path);
-   loader->conf             = conf;
-   loader->state            = OVERLAY_STATUS_DEFERRED_LOAD;
-   loader->pos_increment    = (loader->size / 4) ? (loader->size / 4) : 4;
+   loader->overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
+   loader->overlay_enable       = settings->bools.input_overlay_enable;
+   loader->overlay_opacity      = settings->floats.input_overlay_opacity;
+   loader->overlay_scale        = settings->floats.input_overlay_scale;
+   loader->overlay_path         = strdup(overlay_path);
+   loader->conf                 = conf;
+   loader->state                = OVERLAY_STATUS_DEFERRED_LOAD;
+   loader->pos_increment        = (loader->size / 4) ? (loader->size / 4) : 4;
 
-   t                        = (retro_task_t*)calloc(1, sizeof(*t));
+   t                            = (retro_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
       goto error;
@@ -786,9 +801,10 @@ static bool task_push_overlay_load(const char *overlay_path,
    t->callback              = cb;
    t->user_data             = user_data;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
+   task_queue_push(t);
 
    return true;
+
 error:
    if (conf)
       config_file_free(conf);
@@ -803,16 +819,4 @@ error:
    }
 
    return false;
-}
-
-bool task_push_overlay_load_default(
-      retro_task_callback_t cb, void *user_data)
-{
-   settings_t *settings = config_get_ptr();
-   const char *path     = settings->path.overlay;
-
-   if (string_is_empty(path))
-      return false;
-
-   return task_push_overlay_load(path, cb, user_data);
 }

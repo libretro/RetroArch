@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -18,18 +18,32 @@
 #define __INPUT_DRIVER__H
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <stddef.h>
 #include <sys/types.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_inline.h>
+#include <libretro.h>
+#include <retro_miscellaneous.h>
 
-#include "input_joypad_driver.h"
 #include "input_defines.h"
 
 #include "../msg_hash.h"
 
 RETRO_BEGIN_DECLS
+
+typedef struct rarch_joypad_driver input_device_driver_t;
+
+typedef struct hid_driver hid_driver_t;
+
+/* Keyboard line reader. Handles textual input in a direct fashion. */
+typedef struct input_keyboard_line input_keyboard_line_t;
 
 enum input_device_type
 {
@@ -48,39 +62,75 @@ enum input_toggle_type
    INPUT_TOGGLE_LAST
 };
 
+enum input_action
+{
+   INPUT_ACTION_NONE = 0,
+   INPUT_ACTION_AXIS_THRESHOLD,
+   INPUT_ACTION_MAX_USERS
+};
+
+enum rarch_input_keyboard_ctl_state
+{
+   RARCH_INPUT_KEYBOARD_CTL_NONE = 0,
+   RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED,
+   RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED,
+   RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED,
+
+   RARCH_INPUT_KEYBOARD_CTL_LINE_FREE,
+
+   /*
+    * Waits for keys to be pressed (used for binding
+    * keys in the menu).
+    * Callback returns false when all polling is done.
+    **/
+   RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS,
+
+   /* Cancels keyboard wait for keys function callback. */
+   RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS
+};
+
 struct retro_keybind
 {
    bool valid;
-   unsigned id;
+   uint16_t id;
    enum msg_hash_enums enum_idx;
    enum retro_key key;
 
-   /* Joypad key. Joypad POV (hats) 
+   uint16_t mbutton;
+
+   /* Joypad key. Joypad POV (hats)
     * are embedded into this key as well. */
    uint64_t joykey;
 
-   /* Default key binding value - 
+   /* Default key binding value -
     * for resetting bind to default */
    uint64_t def_joykey;
 
-   /* Joypad axis. Negative and positive axes 
+   /* Joypad axis. Negative and positive axes
     * are embedded into this variable. */
    uint32_t joyaxis;
 
-   /* Default joy axis binding value - 
+   /* Default joy axis binding value -
     * for resetting bind to default */
    uint32_t def_joyaxis;
 
    /* Used by input_{push,pop}_analog_dpad(). */
    uint32_t orig_joyaxis;
 
-   char     joykey_label[256];
-   char     joyaxis_label[256];
+   char     *joykey_label;
+   char     *joyaxis_label;
 };
+
+typedef struct rarch_joypad_info
+{
+   uint16_t joy_idx;
+   const struct retro_keybind *auto_binds;
+   float axis_threshold;
+} rarch_joypad_info_t;
 
 typedef struct input_driver
 {
-   /* Inits input driver. 
+   /* Inits input driver.
     */
    void *(*init)(const char *joypad_driver);
 
@@ -96,8 +146,6 @@ typedef struct input_driver
          rarch_joypad_info_t joypad_info,
          const struct retro_keybind **retro_keybinds,
          unsigned port, unsigned device, unsigned index, unsigned id);
-
-   bool (*meta_key_pressed)(void *data, int key);
 
    /* Frees the input struct. */
    void (*free)(void *data);
@@ -118,8 +166,39 @@ typedef struct input_driver
    void (*keyboard_mapping_set_block)(void *data, bool value);
 } input_driver_t;
 
-extern const input_driver_t *current_input;
-extern void *current_input_data;
+struct rarch_joypad_driver
+{
+   bool (*init)(void *data);
+   bool (*query_pad)(unsigned);
+   void (*destroy)(void);
+   bool (*button)(unsigned, uint16_t);
+   void (*get_buttons)(unsigned, retro_bits_t *);
+   int16_t (*axis)(unsigned, uint32_t);
+   void (*poll)(void);
+   bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);
+   const char *(*name)(unsigned);
+
+   const char *ident;
+};
+
+struct hid_driver
+{
+   void *(*init)(void);
+   bool (*query_pad)(void *, unsigned);
+   void (*free)(const void *);
+   bool (*button)(void *, unsigned, uint16_t);
+   void (*get_buttons)(void *, unsigned, retro_bits_t *);
+   int16_t (*axis)(void *, unsigned, uint32_t);
+   void (*poll)(void *);
+   bool (*set_rumble)(void *, unsigned, enum retro_rumble_effect, uint16_t);
+   const char *(*name)(void *, unsigned);
+   const char *ident;
+   void (*send_control)(void *data, uint8_t *buf, size_t size);
+   int32_t (*set_report)(void *, uint8_t, uint8_t, void *, uint32_t);
+   int32_t (*set_idle)(void *, uint8_t);
+   int32_t (*set_protocol)(void *, uint8_t);
+
+};
 
 /**
  * input_driver_find_handle:
@@ -256,33 +335,23 @@ void input_poll(void);
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-uint64_t input_keys_pressed(
-      uint64_t old_input,
-      uint64_t *last_input,
-      uint64_t *trigger_input,
-      bool runloop_paused,
-      bool *nonblock_state);
+void input_keys_pressed(void *data, retro_bits_t* new_state);
 
 #ifdef HAVE_MENU
-uint64_t input_menu_keys_pressed(
-      uint64_t old_input,
-      uint64_t *last_input,
-      uint64_t *trigger_input,
-      bool runloop_paused,
-      bool *nonblock_state);
+void input_menu_keys_pressed(void *data, retro_bits_t* new_state);
 #endif
 
 void *input_driver_get_data(void);
 
 const input_driver_t *input_get_ptr(void);
 
+void *input_get_data(void);
+
 const input_driver_t **input_get_double_ptr(void);
 
 void **input_driver_get_data_ptr(void);
 
 bool input_driver_has_capabilities(void);
-
-void input_driver_poll(void);
 
 bool input_driver_init(void);
 
@@ -330,11 +399,422 @@ void input_driver_deinit_remote(void);
 
 bool input_driver_init_remote(void);
 
+void input_driver_deinit_mapper(void);
+
+bool input_driver_init_mapper(void);
+
 bool input_driver_grab_mouse(void);
 
 bool input_driver_ungrab_mouse(void);
 
+float *input_driver_get_float(enum input_action action);
+
+unsigned *input_driver_get_uint(enum input_action action);
+
 bool input_driver_is_data_ptr_same(void *data);
+
+/**
+ * joypad_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to joypad driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *joypad_driver_find_handle(int index);
+
+/**
+ * joypad_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of joypad driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *joypad_driver_find_ident(int index);
+
+/**
+ * config_get_joypad_driver_options:
+ *
+ * Get an enumerated list of all joypad driver names, separated by '|'.
+ *
+ * Returns: string listing of all joypad driver names, separated by '|'.
+ **/
+const char* config_get_joypad_driver_options(void);
+
+/**
+ * input_joypad_init_driver:
+ * @ident                           : identifier of driver to initialize.
+ *
+ * Initialize a joypad driver of name @ident.
+ *
+ * If ident points to NULL or a zero-length string,
+ * equivalent to calling input_joypad_init_first().
+ *
+ * Returns: joypad driver if found, otherwise NULL.
+ **/
+const input_device_driver_t *input_joypad_init_driver(const char *ident, void *data);
+
+/**
+ * input_joypad_init_first:
+ *
+ * Finds first suitable joypad driver and initializes.
+ *
+ * Returns: joypad driver if found, otherwise NULL.
+ **/
+const input_device_driver_t *input_joypad_init_first(void *data);
+
+/**
+ * input_conv_analog_id_to_bind_id:
+ * @idx                     : Analog key index.
+ *                            E.g.:
+ *                            - RETRO_DEVICE_INDEX_ANALOG_LEFT
+ *                            - RETRO_DEVICE_INDEX_ANALOG_RIGHT
+ * @ident                   : Analog key identifier.
+ *                            E.g.:
+ *                            - RETRO_DEVICE_ID_ANALOG_X
+ *                            - RETRO_DEVICE_ID_ANALOG_Y
+ * @ident_minus             : Bind ID minus, will be set by function.
+ * @ident_plus              : Bind ID plus,  will be set by function.
+ *
+ * Takes as input analog key identifiers and converts
+ * them to corresponding bind IDs @ident_minus and @ident_plus.
+ **/
+void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
+      unsigned *ident_minus, unsigned *ident_plus);
+
+/**
+ * input_joypad_pressed:
+ * @drv                     : Input device driver handle.
+ * @port                    : User number.
+ * @binds                   : Binds of user.
+ * @key                     : Identifier of key.
+ *
+ * Checks if key (@key) was being pressed by user
+ * with number @port with provided keybinds (@binds).
+ *
+ * Returns: true (1) if key was pressed, otherwise
+ * false (0).
+ **/
+static INLINE bool input_joypad_pressed(
+      const input_device_driver_t *drv,
+      rarch_joypad_info_t joypad_info,
+      unsigned port,
+      const struct retro_keybind *binds,
+      unsigned key)
+{
+   /* Auto-binds are per joypad, not per user. */
+   uint64_t                        joykey = (binds[key].joykey != NO_BTN)
+      ? binds[key].joykey : joypad_info.auto_binds[key].joykey;
+   uint32_t                       joyaxis = (binds[key].joyaxis != AXIS_NONE)
+      ? binds[key].joyaxis : joypad_info.auto_binds[key].joyaxis;
+
+   if ((uint16_t)joykey != NO_BTN && drv->button(joypad_info.joy_idx, (uint16_t)joykey))
+      return true;
+
+   return ((float)abs(drv->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold;
+
+}
+
+/**
+ * input_joypad_analog:
+ * @drv                     : Input device driver handle.
+ * @port                    : User number.
+ * @idx                     : Analog key index.
+ *                            E.g.:
+ *                            - RETRO_DEVICE_INDEX_ANALOG_LEFT
+ *                            - RETRO_DEVICE_INDEX_ANALOG_RIGHT
+ *                            - RETRO_DEVICE_INDEX_ANALOG_BUTTON
+ * @ident                   : Analog key identifier.
+ *                            E.g.:
+ *                            - RETRO_DEVICE_ID_ANALOG_X
+ *                            - RETRO_DEVICE_ID_ANALOG_Y
+ * @binds                   : Binds of user.
+ *
+ * Gets analog value of analog key identifiers @idx and @ident
+ * from user with number @port with provided keybinds (@binds).
+ *
+ * Returns: analog value on success, otherwise 0.
+ **/
+int16_t input_joypad_analog(const input_device_driver_t *driver,
+      rarch_joypad_info_t joypad_info,
+      unsigned port, unsigned idx, unsigned ident,
+      const struct retro_keybind *binds);
+
+/**
+ * input_joypad_set_rumble:
+ * @drv                     : Input device driver handle.
+ * @port                    : User number.
+ * @effect                  : Rumble effect to set.
+ * @strength                : Strength of rumble effect.
+ *
+ * Sets rumble effect @effect with strength @strength.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool input_joypad_set_rumble(const input_device_driver_t *driver,
+      unsigned port, enum retro_rumble_effect effect, uint16_t strength);
+
+/**
+ * input_joypad_axis_raw:
+ * @drv                     : Input device driver handle.
+ * @port                    : Joystick number.
+ * @axis                    : Identifier of axis.
+ *
+ * Checks if axis (@axis) was being pressed by user
+ * with joystick number @port.
+ *
+ * Returns: true (1) if axis was pressed, otherwise
+ * false (0).
+ **/
+int16_t input_joypad_axis_raw(const input_device_driver_t *driver,
+      unsigned port, unsigned axis);
+
+/**
+ * input_joypad_button_raw:
+ * @drv                     : Input device driver handle.
+ * @port                    : Joystick number.
+ * @button                  : Identifier of key.
+ *
+ * Checks if key (@button) was being pressed by user
+ * with joystick number @port.
+ *
+ * Returns: true (1) if key was pressed, otherwise
+ * false (0).
+ **/
+bool input_joypad_button_raw(const input_device_driver_t *driver,
+      unsigned port, unsigned button);
+
+bool input_joypad_hat_raw(const input_device_driver_t *driver,
+      unsigned joypad, unsigned hat_dir, unsigned hat);
+
+/**
+ * input_mouse_button_raw:
+ * @port                    : Mouse number.
+ * @button                  : Identifier of key (libretro mouse constant).
+ *
+ * Checks if key (@button) was being pressed by user
+ * with mouse number @port.
+ *
+ * Returns: true (1) if key was pressed, otherwise
+ * false (0).
+ **/
+bool input_mouse_button_raw(unsigned port, unsigned button);
+
+/**
+ * input_joypad_name:
+ * @drv                     : Input device driver handle.
+ * @port                    : Joystick number.
+ *
+ * Gets name of the joystick (@port).
+ *
+ * Returns: name of joystick #port.
+ **/
+const char *input_joypad_name(const input_device_driver_t *driver,
+      unsigned port);
+
+bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real);
+
+#ifdef HAVE_HID
+/**
+ * hid_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to HID driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *hid_driver_find_handle(int index);
+
+/**
+ * hid_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of HID driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *hid_driver_find_ident(int index);
+
+/**
+ * config_get_hid_driver_options:
+ *
+ * Get an enumerated list of all HID driver names, separated by '|'.
+ *
+ * Returns: string listing of all HID driver names, separated by '|'.
+ **/
+const char* config_get_hid_driver_options(void);
+
+/**
+ * input_hid_init_first:
+ *
+ * Finds first suitable HID driver and initializes.
+ *
+ * Returns: HID driver if found, otherwise NULL.
+ **/
+const hid_driver_t *input_hid_init_first(void);
+
+const void *hid_driver_get_data(void);
+void hid_driver_reset_data(void);
+#endif
+
+/** Line complete callback.
+ * Calls back after return is pressed with the completed line.
+ * Line can be NULL.
+ **/
+typedef void (*input_keyboard_line_complete_t)(void *userdata,
+      const char *line);
+
+typedef bool (*input_keyboard_press_t)(void *userdata, unsigned code);
+
+typedef struct input_keyboard_ctx_wait
+{
+   void *userdata;
+   input_keyboard_press_t cb;
+} input_keyboard_ctx_wait_t;
+
+/**
+ * input_keyboard_event:
+ * @down                     : Keycode was pressed down?
+ * @code                     : Keycode.
+ * @character                : Character inputted.
+ * @mod                      : TODO/FIXME: ???
+ *
+ * Keyboard event utils. Called by drivers when keyboard events are fired.
+ * This interfaces with the global driver struct and libretro callbacks.
+ **/
+void input_keyboard_event(bool down, unsigned code, uint32_t character,
+      uint16_t mod, unsigned device);
+
+bool input_keyboard_line_append(const char *word);
+
+/**
+ * input_keyboard_start_line:
+ * @userdata                 : Userdata.
+ * @cb                       : Line complete callback function.
+ *
+ * Sets function pointer for keyboard line handle.
+ *
+ * The underlying buffer can be reallocated at any time
+ * (or be NULL), but the pointer to it remains constant
+ * throughout the objects lifetime.
+ *
+ * Returns: underlying buffer of the keyboard line.
+ **/
+const char **input_keyboard_start_line(void *userdata,
+      input_keyboard_line_complete_t cb);
+
+
+bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data);
+
+extern struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
+extern struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
+extern const struct retro_keybind *libretro_input_binds[MAX_USERS];
+extern char input_device_names[MAX_USERS][64];
+
+const char *input_config_bind_map_get_base(unsigned i);
+
+unsigned input_config_bind_map_get_meta(unsigned i);
+
+const char *input_config_bind_map_get_desc(unsigned i);
+
+bool input_config_bind_map_get_valid(unsigned i);
+
+/* auto_bind can be NULL. */
+void input_config_get_bind_string(char *buf,
+      const struct retro_keybind *bind,
+      const struct retro_keybind *auto_bind, size_t size);
+
+/**
+ * input_config_translate_str_to_rk:
+ * @str                            : String to translate to key ID.
+ *
+ * Translates tring representation to key identifier.
+ *
+ * Returns: key identifier.
+ **/
+enum retro_key input_config_translate_str_to_rk(const char *str);
+
+const char *input_config_get_prefix(unsigned user, bool meta);
+
+/**
+ * input_config_translate_str_to_bind_id:
+ * @str                            : String to translate to bind ID.
+ *
+ * Translate string representation to bind ID.
+ *
+ * Returns: Bind ID value on success, otherwise
+ * RARCH_BIND_LIST_END on not found.
+ **/
+unsigned input_config_translate_str_to_bind_id(const char *str);
+
+void input_config_parse_key(void *data,
+      const char *prefix, const char *btn,
+      struct retro_keybind *bind);
+
+void input_config_parse_joy_button(void *data, const char *prefix,
+      const char *btn, struct retro_keybind *bind);
+
+void input_config_parse_joy_axis(void *data, const char *prefix,
+      const char *axis, struct retro_keybind *bind);
+
+void input_config_parse_mouse_button(void *data, const char *prefix,
+      const char *btn, struct retro_keybind *bind);
+
+void input_config_set_device_name(unsigned port, const char *name);
+
+void input_config_set_device_display_name(unsigned port, const char *name);
+
+void input_config_set_device_config_name(unsigned port, const char *name);
+
+void input_config_clear_device_name(unsigned port);
+
+void input_config_clear_device_display_name(unsigned port);
+
+void input_config_clear_device_config_name(unsigned port);
+
+unsigned input_config_get_device_count();
+
+unsigned *input_config_get_device_ptr(unsigned port);
+
+unsigned input_config_get_device(unsigned port);
+
+void input_config_set_device(unsigned port, unsigned id);
+
+const char *input_config_get_device_name(unsigned port);
+
+const char *input_config_get_device_display_name(unsigned port);
+
+const char *input_config_get_device_config_name(unsigned port);
+
+const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
+
+void input_config_set_pid(unsigned port, uint16_t pid);
+
+uint16_t input_config_get_pid(unsigned port);
+
+void input_config_set_vid(unsigned port, uint16_t vid);
+
+uint16_t input_config_get_vid(unsigned port);
+
+void input_config_reset(void);
+
+extern input_device_driver_t dinput_joypad;
+extern input_device_driver_t linuxraw_joypad;
+extern input_device_driver_t parport_joypad;
+extern input_device_driver_t udev_joypad;
+extern input_device_driver_t xinput_joypad;
+extern input_device_driver_t sdl_joypad;
+extern input_device_driver_t ps3_joypad;
+extern input_device_driver_t psp_joypad;
+extern input_device_driver_t ctr_joypad;
+extern input_device_driver_t switch_joypad;
+extern input_device_driver_t xdk_joypad;
+extern input_device_driver_t gx_joypad;
+extern input_device_driver_t wiiu_joypad;
+extern input_device_driver_t hid_joypad;
+extern input_device_driver_t android_joypad;
+extern input_device_driver_t qnx_joypad;
+extern input_device_driver_t null_joypad;
+extern input_device_driver_t mfi_joypad;
+extern input_device_driver_t dos_joypad;
+extern input_device_driver_t rwebpad_joypad;
 
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;
@@ -343,6 +823,7 @@ extern input_driver_t input_x;
 extern input_driver_t input_ps3;
 extern input_driver_t input_psp;
 extern input_driver_t input_ctr;
+extern input_driver_t input_switch;
 extern input_driver_t input_xenon360;
 extern input_driver_t input_gx;
 extern input_driver_t input_wiiu;
@@ -353,7 +834,18 @@ extern input_driver_t input_cocoa;
 extern input_driver_t input_qnx;
 extern input_driver_t input_rwebinput;
 extern input_driver_t input_dos;
+extern input_driver_t input_winraw;
+extern input_driver_t input_wayland;
 extern input_driver_t input_null;
+
+#ifdef HAVE_HID
+extern hid_driver_t iohidmanager_hid;
+extern hid_driver_t btstack_hid;
+extern hid_driver_t libusb_hid;
+extern hid_driver_t wiiusb_hid;
+extern hid_driver_t wiiu_hid;
+extern hid_driver_t null_hid;
+#endif
 
 RETRO_END_DECLS
 

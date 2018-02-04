@@ -35,6 +35,7 @@
 #include <compat/strl.h>
 #include <retro_dirent.h>
 
+#include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
 static int qstrcmp_plain(const void *a_, const void *b_)
@@ -123,7 +124,7 @@ static int parse_dir_entry(const char *name, char *file_path,
    if (!include_dirs && is_dir)
       return 1;
 
-   if (!strcmp(name, ".") || !strcmp(name, ".."))
+   if (string_is_equal(name, ".") || string_is_equal(name, ".."))
       return 1;
 
    if (!is_dir && ext_list &&
@@ -150,6 +151,80 @@ static int parse_dir_entry(const char *name, char *file_path,
       return -1;
 
    return 0;
+}
+
+/**
+ * dir_list_read:
+ * @dir                : directory path.
+ * @list               : the string list to add files to
+ * @ext_list           : the string list of extensions to include
+ * @include_dirs       : include directories as part of the finished directory listing?
+ * @include_hidden     : include hidden files and directories as part of the finished directory listing?
+ * @include_compressed : Only include files which match ext. Do not try to match compressed files, etc.
+ * @recursive          : list directory contents recursively
+ *
+ * Add files within a directory to an existing string list
+ *
+ * Returns: -1 on error, 0 on success.
+ **/
+static int dir_list_read(const char *dir,
+      struct string_list *list, struct string_list *ext_list,
+      bool include_dirs, bool include_hidden,
+      bool include_compressed, bool recursive)
+{
+   struct RDIR *entry = retro_opendir(dir);
+
+   if (!entry || retro_dirent_error(entry))
+      goto error;
+
+   retro_dirent_include_hidden(entry, include_hidden);
+
+   while (retro_readdir(entry))
+   {
+      char file_path[PATH_MAX_LENGTH];
+      bool is_dir                     = false;
+      int ret                         = 0;
+      const char *name                = retro_dirent_get_name(entry);
+      const char *file_ext            = path_get_extension(name);
+
+      file_path[0] = '\0';
+
+      fill_pathname_join(file_path, dir, name, sizeof(file_path));
+      is_dir = retro_dirent_is_dir(entry, file_path);
+
+      if (!include_hidden)
+      {
+         if (*name == '.')
+            continue;
+      }
+
+      if(is_dir && recursive)
+      {
+         if(strstr(name, ".") || strstr(name, ".."))
+            continue;
+
+         dir_list_read(file_path, list, ext_list, include_dirs,
+               include_hidden, include_compressed, recursive);
+      }
+
+      ret    = parse_dir_entry(name, file_path, is_dir,
+            include_dirs, include_compressed, list, ext_list, file_ext);
+
+      if (ret == -1)
+         goto error;
+
+      if (ret == 1)
+         continue;
+   }
+
+   retro_closedir(entry);
+
+   return 0;
+
+error:
+   if (entry)
+      retro_closedir(entry);
+   return -1;
 }
 
 /**
@@ -192,85 +267,3 @@ struct string_list *dir_list_new(const char *dir,
    return list;
 }
 
-/**
- * dir_list_read:
- * @dir                : directory path.
- * @list               : the string list to add files to
- * @ext_list           : the string list of extensions to include
- * @include_dirs       : include directories as part of the finished directory listing?
- * @include_hidden     : include hidden files and directories as part of the finished directory listing?
- * @include_compressed : Only include files which match ext. Do not try to match compressed files, etc.
- * @recursive          : list directory contents recursively
- *
- * Add files within a directory to an existing string list
- *
- * Returns: -1 on error, 0 on success.
- **/
-int dir_list_read(const char *dir,
-      struct string_list *list, struct string_list *ext_list,
-      bool include_dirs, bool include_hidden,
-      bool include_compressed, bool recursive)
-{
-   struct RDIR *entry = retro_opendir(dir);
-
-   if (!entry)
-      return -1;
-
-   if (retro_dirent_error(entry))
-   {
-      retro_closedir(entry);
-      return -1;
-   }
-
-#ifdef _WIN32
-   if (include_hidden)
-      entry->entry.dwFileAttributes |= FILE_ATTRIBUTE_HIDDEN;
-   else
-      entry->entry.dwFileAttributes &= ~FILE_ATTRIBUTE_HIDDEN;
-#endif
-
-   while (retro_readdir(entry))
-   {
-      char file_path[PATH_MAX_LENGTH];
-      bool is_dir                     = false;
-      int ret                         = 0;
-      const char *name                = retro_dirent_get_name(entry);
-      const char *file_ext            = path_get_extension(name);
-
-      file_path[0] = '\0';
-
-      fill_pathname_join(file_path, dir, name, sizeof(file_path));
-      is_dir = retro_dirent_is_dir(entry, file_path);
-
-      if (!include_hidden)
-      {
-         if (*name == '.')
-            continue;
-      }
-
-      if(is_dir && recursive)
-      {
-         if(strstr(name, ".") || strstr(name, ".."))
-            continue;
-
-         dir_list_read(file_path, list, ext_list, include_dirs,
-               include_hidden, include_compressed, recursive);
-      }
-
-      ret    = parse_dir_entry(name, file_path, is_dir,
-            include_dirs, include_compressed, list, ext_list, file_ext);
-
-      if (ret == -1)
-      {
-         retro_closedir(entry);
-         return -1;
-      }
-
-      if (ret == 1)
-         continue;
-   }
-
-   retro_closedir(entry);
-
-   return 0;
-}

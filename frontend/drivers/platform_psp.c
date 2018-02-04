@@ -26,9 +26,9 @@
 #include <psp2/power.h>
 #include <psp2/sysmodule.h>
 #include <psp2/appmgr.h>
-#include <pthread.h>
 
 #include "../../bootstrap/vita/sbrk.c"
+#include "../../bootstrap/vita/threading.c"
 
 #else
 #include <pspkernel.h>
@@ -37,6 +37,8 @@
 #include <psppower.h>
 #include <pspsdk.h>
 #endif
+
+#include <pthread.h>
 
 #include <string/stdstring.h>
 #include <boolean.h>
@@ -80,6 +82,7 @@ static enum frontend_fork psp_fork_mode = FRONTEND_FORK_NONE;
 static void frontend_psp_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
+   unsigned i;
    struct rarch_main_wrap *params = NULL;
 
    (void)args;
@@ -98,129 +101,93 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 
 #ifdef VITA
    strlcpy(eboot_path, "app0:/", sizeof(eboot_path));
-   strlcpy(g_defaults.dir.port, eboot_path, sizeof(g_defaults.dir.port));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
    strlcpy(user_path, "ux0:/data/retroarch/", sizeof(user_path));
 #else
    strlcpy(eboot_path, argv[0], sizeof(eboot_path));
    /* for PSP, use uppercase directories, and no trailing slashes
       otherwise mkdir fails */
    strlcpy(user_path, "ms0:/PSP/RETROARCH", sizeof(user_path));
-   fill_pathname_basedir(g_defaults.dir.port, argv[0], sizeof(g_defaults.dir.port));
+   fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], argv[0], sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 #endif
-   RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
+   RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
 #ifdef VITA
    /* bundle data*/
-   fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
-         "", sizeof(g_defaults.dir.core));
-   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
-         "assets", sizeof(g_defaults.dir.assets));
-   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
-         "info", sizeof(g_defaults.dir.core_info));
-   fill_pathname_join(g_defaults.dir.database, g_defaults.dir.port,
-         "database/rdb", sizeof(g_defaults.dir.database));
-   fill_pathname_join(g_defaults.dir.cursor, g_defaults.dir.port,
-         "database/cursors", sizeof(g_defaults.dir.cursor));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    /* user data*/
-   fill_pathname_join(g_defaults.dir.cheats, user_path,
-         "cheats", sizeof(g_defaults.dir.cheats));
-   fill_pathname_join(g_defaults.dir.menu_config, user_path,
-         "config", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_join(g_defaults.dir.core_assets, user_path,
-         "downloads", sizeof(g_defaults.dir.core_assets));
-   fill_pathname_join(g_defaults.dir.playlist, user_path,
-         "playlists", sizeof(g_defaults.dir.playlist));
-   fill_pathname_join(g_defaults.dir.remap, user_path,
-         "remaps", sizeof(g_defaults.dir.remap));
-   fill_pathname_join(g_defaults.dir.sram, user_path,
-         "savefiles", sizeof(g_defaults.dir.sram));
-   fill_pathname_join(g_defaults.dir.savestate, user_path,
-         "savestates", sizeof(g_defaults.dir.savestate));
-   fill_pathname_join(g_defaults.dir.system, user_path,
-         "system", sizeof(g_defaults.dir.system));
-   fill_pathname_join(g_defaults.dir.cache, user_path,
-         "temp", sizeof(g_defaults.dir.cache));
-   fill_pathname_join(g_defaults.dir.overlay, user_path,
-         "overlays", sizeof(g_defaults.dir.overlay));
-   fill_pathname_join(g_defaults.dir.thumbnails, user_path,
-         "thumbnails", sizeof(g_defaults.dir.thumbnails));
-   strlcpy(g_defaults.dir.content_history,
-         user_path, sizeof(g_defaults.dir.content_history));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], user_path,
+         "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], user_path,
+         "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], user_path,
+         "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path,
+         "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], user_path,
+         "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], user_path,
+         "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], user_path,
+         "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], user_path,
+         "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], user_path,
+         "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], user_path,
+         "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], user_path,
+         "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], user_path,
+         "temp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], user_path,
+         "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], user_path,
+         "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
+         user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
    fill_pathname_join(g_defaults.path.config, user_path,
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 #else
 
-   fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
-         "CORES", sizeof(g_defaults.dir.core));
-   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.port,
-         "INFO", sizeof(g_defaults.dir.core_info));
-
-   /* bundle data */
-   /*
-   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
-         "BUNDLE/ASSETS", sizeof(g_defaults.dir.assets));
-   fill_pathname_join(g_defaults.dir.autoconfig, g_defaults.dir.port,
-         "BUNDLE/AUTOCONFIG", sizeof(g_defaults.dir.autoconfig));
-   fill_pathname_join(g_defaults.dir.cursor, base_path,
-         "BUNDLE/DATABASE/CURSORS", sizeof(g_defaults.dir.cursor));
-   fill_pathname_join(g_defaults.dir.database, base_path,
-         "BUNDLE/DATABASE/RDB", sizeof(g_defaults.dir.database));
-   fill_pathname_join(g_defaults.dir.overlay, base_path,
-         "BUNDLE/OVERLAYS", sizeof(g_defaults.dir.overlay));
-   fill_pathname_join(g_defaults.dir.shader, base_path,
-         "BUNDLE/SHADERS", sizeof(g_defaults.dir.shader));
-   */
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "CORES", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "INFO", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
 
    /* user data */
-   fill_pathname_join(g_defaults.dir.cheats, user_path,
-         "CHEATS", sizeof(g_defaults.dir.cheats));
-   fill_pathname_join(g_defaults.dir.menu_config, user_path,
-         "CONFIG", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_join(g_defaults.dir.core_assets, user_path,
-         "DOWNLOADS", sizeof(g_defaults.dir.core_assets));
-   fill_pathname_join(g_defaults.dir.playlist, user_path,
-         "PLAYLISTS", sizeof(g_defaults.dir.playlist));
-   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config,
-         "REMAPS", sizeof(g_defaults.dir.remap));
-   fill_pathname_join(g_defaults.dir.sram, user_path,
-         "SAVEFILES", sizeof(g_defaults.dir.sram));
-   fill_pathname_join(g_defaults.dir.savestate, user_path,
-         "SAVESTATES", sizeof(g_defaults.dir.savestate));
-   fill_pathname_join(g_defaults.dir.screenshot, user_path,
-         "SCREENSHOTS", sizeof(g_defaults.dir.screenshot));
-   fill_pathname_join(g_defaults.dir.system, user_path,
-         "SYSTEM", sizeof(g_defaults.dir.system));
-   /* fill_pathname_join(g_defaults.dir.thumbnails, user_path,
-         "THUMBNAILS", sizeof(g_defaults.dir.thumbnails)); */
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path,
+         "CHEATS", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], user_path,
+         "CONFIG", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], user_path,
+         "DOWNLOADS", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], user_path,
+         "PLAYLISTS", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+         "REMAPS", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], user_path,
+         "SAVEFILES", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], user_path,
+         "SAVESTATES", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], user_path,
+         "SCREENSHOTS", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], user_path,
+         "SYSTEM", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 
    /* cache dir */
-   fill_pathname_join(g_defaults.dir.cache, user_path,
-         "TEMP", sizeof(g_defaults.dir.cache));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], user_path,
+         "TEMP", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
    /* history and main config */
-   strlcpy(g_defaults.dir.content_history,
-         user_path, sizeof(g_defaults.dir.content_history));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
+         user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
    fill_pathname_join(g_defaults.path.config, user_path,
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 #endif
-   /* create user data dirs */
-   path_mkdir(g_defaults.dir.cheats);
-   path_mkdir(g_defaults.dir.core_assets);
-   path_mkdir(g_defaults.dir.playlist);
-   path_mkdir(g_defaults.dir.menu_config);
-   path_mkdir(g_defaults.dir.playlist);
-   path_mkdir(g_defaults.dir.remap);
-   path_mkdir(g_defaults.dir.savestate);
-   path_mkdir(g_defaults.dir.screenshot);
-   path_mkdir(g_defaults.dir.sram);
-   path_mkdir(g_defaults.dir.system);
-#ifdef VITA
-   path_mkdir(g_defaults.dir.thumbnails);
-#endif
-   /* create cache dir */
-   path_mkdir(g_defaults.dir.cache);
-
-
 
 #ifndef IS_SALAMANDER
 #ifdef VITA
@@ -254,6 +221,13 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
       }
    }
 #endif
+
+   for (i = 0; i < DEFAULT_DIR_LAST; i++)
+   {
+      const char *dir_path = g_defaults.dirs[i];
+      if (!string_is_empty(dir_path))
+         path_mkdir(dir_path);
+   }
 }
 
 static void frontend_psp_deinit(void *data)
@@ -315,7 +289,6 @@ static void frontend_psp_init(void *data)
 #ifdef VITA
    scePowerSetArmClockFrequency(444);
    sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
-   pthread_init();
 #else
    (void)data;
    /* initialize debug screen */
@@ -327,6 +300,7 @@ static void frontend_psp_init(void *data)
    pspFpuSetEnable(0); /* disable FPU exceptions */
    scePowerSetClockFrequency(333,333,166);
 #endif
+   pthread_init();
 
 #endif
 
@@ -465,43 +439,51 @@ enum frontend_architecture frontend_psp_get_architecture(void)
 #endif
 }
 
-static int frontend_psp_parse_drive_list(void *data)
+static int frontend_psp_parse_drive_list(void *data, bool load_content)
 {
 #ifndef IS_SALAMANDER
    file_list_t *list = (file_list_t*)data;
+   enum msg_hash_enums enum_idx = load_content ?
+      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+      MSG_UNKNOWN;
 
 #ifdef VITA
    menu_entries_append_enum(list,
          "app0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "ur0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "ux0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_append_enum(list,
+         "uma0:/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
 #else
    menu_entries_append_enum(list,
          "ms0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "ef0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "host0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 #endif
 
@@ -536,6 +518,8 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* destroy_sighandler_state */
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
+   NULL,                         /* watch_path_for_changes */
+   NULL,                         /* check_for_path_changes */
 #ifdef VITA
    "vita",
 #else

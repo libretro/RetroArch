@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011 2017 - Daniel De Matteis
  *  Copyright (C) 2014 2015 - Jean-Andre Santoni
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -90,7 +90,7 @@ static void *gfx_ctx_vivante_init(video_frame_info_t *video_info, void *video_dr
    system("setterm -cursor off");
 
 #ifdef HAVE_EGL
-   if (!egl_init_context(&viv->egl, EGL_DEFAULT_DISPLAY, &major, &minor,
+   if (!egl_init_context(&viv->egl, EGL_NONE, EGL_DEFAULT_DISPLAY, &major, &minor,
             &n, attribs))
    {
       egl_report_error();
@@ -219,7 +219,7 @@ static void gfx_ctx_vivante_set_swap_interval(void *data, unsigned swap_interval
 #endif
 }
 
-static void gfx_ctx_vivante_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_vivante_swap_buffers(void *data, void *data2)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 

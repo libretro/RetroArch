@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -31,7 +31,6 @@
 
 #include "../input_keymaps.h"
 #include "../input_driver.h"
-#include "../input_joypad_driver.h"
 
 typedef struct linuxraw_input
 {
@@ -73,23 +72,6 @@ static void *linuxraw_input_init(const char *joypad_driver)
    return linuxraw;
 }
 
-static bool linuxraw_key_pressed(linuxraw_input_t *linuxraw, int key)
-{
-   unsigned sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
-   return linuxraw->state[sym];
-}
-
-static bool linuxraw_is_pressed(linuxraw_input_t *linuxraw,
-      const struct retro_keybind *binds, unsigned id)
-{
-   const struct retro_keybind *bind = binds ? &binds[id] : NULL;
-
-   if (id >= RARCH_BIND_LIST_END)
-      return false;
-
-   return bind && bind->valid && linuxraw_key_pressed(linuxraw, binds[id].key);
-}
-
 static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
       const struct retro_keybind *binds, unsigned idx, unsigned id)
 {
@@ -99,17 +81,16 @@ static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
 
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   if (linuxraw_is_pressed(linuxraw, binds, id_minus))
+   if ((id_minus < RARCH_BIND_LIST_END) && binds->valid &&
+         linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[id_minus].key]]
+      )
       pressed_minus = -0x7fff;
-   if (linuxraw_is_pressed(linuxraw, binds, id_plus))
+   if ((id_plus < RARCH_BIND_LIST_END)  && binds->valid &&
+         linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[id_plus].key]]
+      )
       pressed_plus = 0x7fff;
 
    return pressed_plus + pressed_minus;
-}
-
-static bool linuxraw_input_meta_key_pressed(void *data, int key)
-{
-   return false;
 }
 
 static int16_t linuxraw_input_state(void *data,
@@ -123,13 +104,18 @@ static int16_t linuxraw_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return linuxraw_is_pressed(linuxraw, binds[port], id) ||
-            input_joypad_pressed(linuxraw->joypad, joypad_info, port, binds[port], id);
+         ret = ((id < RARCH_BIND_LIST_END) && binds[port]->valid &&
+               linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]]
+               );
+         if (!ret)
+            ret = input_joypad_pressed(linuxraw->joypad,
+                  joypad_info, port, binds[port], id);
+         return ret;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);
+         ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);
          if (!ret && binds[port])
-            ret = input_joypad_analog(linuxraw->joypad, joypad_info, port, idx, id, binds[port]);
+            ret = input_joypad_analog(linuxraw->joypad,
+                  joypad_info, port, idx, id, binds[port]);
          return ret;
    }
 
@@ -170,12 +156,12 @@ static const input_device_driver_t *linuxraw_get_joypad_driver(void *data)
 static void linuxraw_input_poll(void *data)
 {
    uint8_t c;
-   uint16_t t;
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
 
    while (read(STDIN_FILENO, &c, 1) > 0)
    {
       bool pressed;
+      uint16_t t;
 
       if (c == KEY_C && (linuxraw->state[KEY_LEFTCTRL] || linuxraw->state[KEY_RIGHTCTRL]))
          kill(getpid(), SIGINT);
@@ -232,7 +218,6 @@ input_driver_t input_linuxraw = {
    linuxraw_input_init,
    linuxraw_input_poll,
    linuxraw_input_state,
-   linuxraw_input_meta_key_pressed,
    linuxraw_input_free,
    NULL,
    NULL,

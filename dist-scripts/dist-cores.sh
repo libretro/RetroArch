@@ -1,6 +1,6 @@
 #!/bin/sh
 
-RARCH_VERSION=1.3.6
+source ../version.all
 PLATFORM=$1
 SALAMANDER=no
 MAKEFILE_GRIFFIN=no
@@ -32,7 +32,6 @@ cp -f ../kernel_functions.prx ../pkg/${platform}/kernel_functions.prx
 # Vita
 elif [ $PLATFORM = "vita" ] ; then
 platform=vita
-MAKEFILE_GRIFFIN=yes
 SALAMANDER=yes
 EXT=a
 mkdir -p ../pkg/vita/vpk
@@ -74,6 +73,7 @@ elif [ $PLATFORM = "dex-ps3" ] ; then
 platform=ps3
 SALAMANDER=yes
 EXT=a
+OPTS=DEX_BUILD=1
 
 EXE_PATH=${CELL_SDK}/host-win32/bin
 MAKE_FSELF_NPDRM=${EXE_PATH}/make_fself_npdrm.exe
@@ -85,11 +85,14 @@ elif [ $PLATFORM = "cex-ps3" ]; then
 platform=ps3
 SALAMANDER=yes
 EXT=a
+OPTS=CEX_BUILD=1
 
 EXE_PATH=${CELL_SDK}/host-win32/bin
 SCETOOL_PATH=${PS3TOOLS_PATH}/scetool/scetool.exe
 SCETOOL_FLAGS_CORE="--sce-type=SELF --compress-data=TRUE --skip-sections=TRUE --key-revision=04 --self-auth-id=1010000001000003 --self-vendor-id=01000002 --self-type=APP --self-app-version=0001000000000000 --self-fw-version=0003004100000000 --encrypt"
 SCETOOL_FLAGS_EBOOT="--sce-type=SELF --compress-data=TRUE --skip-sections=TRUE --key-revision=04 --self-auth-id=1010000001000003 --self-vendor-id=01000002 --self-type=NPDRM --self-fw-version=0003004100000000 --np-license-type=FREE --np-content-id=UP0001-SSNE10000_00-0000000000000001 --np-app-type=EXEC --self-app-version=0001000000000000 --np-real-fname=EBOOT.BIN --encrypt"
+
+cp -rfv ${PS3TOOLS_PATH}/scetool/data .
 
 # ODE PS3
 elif [ $PLATFORM = "ode-ps3" ]; then
@@ -97,6 +100,7 @@ elif [ $PLATFORM = "ode-ps3" ]; then
 platform=ps3
 SALAMANDER=yes
 EXT=a
+OPTS=ODE_BUILD=1
 
 EXE_PATH=${CELL_SDK}/host-win32/bin
 GENPS3ISO_PATH=${PS3TOOLS_PATH}/ODE/genps3iso_v2.5
@@ -123,42 +127,17 @@ fi
 
 # Compile Salamander core
 if [ $SALAMANDER = "yes" ]; then
-   make -C ../ -f Makefile.${platform}.salamander || exit 1
+   make -C ../ -f Makefile.${platform}.salamander $OPTS || exit 1
    if [ $PLATFORM = "psp1" ] ; then
    mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
    fi
    if [ $PLATFORM = "vita" ] ; then
      mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/livearea/contents
-     vita-make-fself -s ../retroarchvita_salamander.velf ../pkg/${platform}/retroarch.vpk/vpk/eboot.bin
+     vita-make-fself -c -s ../retroarchvita_salamander.velf ../pkg/${platform}/retroarch.vpk/vpk/eboot.bin
      vita-mksfoex -s TITLE_ID=RETROVITA "RetroArch" ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/param.sfo
      cp ../pkg/${platform}/assets/ICON0.PNG ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/icon0.png
      cp -R ../pkg/${platform}/assets/livearea ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/
-     mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/assets
-      if [ -d ../media/assets/glui ]; then
-         cp -r ../media/assets/glui ../pkg/${platform}/retroarch.vpk/vpk/assets
-      fi
-      if [ -d ../media/assets/xmb ]; then
-         cp -r ../media/assets/xmb ../pkg/${platform}/retroarch.vpk/vpk/assets
-         # Strip source SVG files
-         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/flatui/src
-         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/monochrome/src
-         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/retroactive/src
-         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/retroactive_marked/src
-         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/dot-art/src
-      fi
-      if [ -d ../media/libretrodb/rdb ]; then
-         mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/rdb
-         cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/retroarch.vpk/vpk/database/rdb
-      fi
-      if [ -d ../media/libretrodb/cursors ]; then
-         mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/cursors
-         cp -r ../media/libretrodb/cursors/* ../pkg/${platform}/retroarch.vpk/vpk/database/cursors
-      fi
-      if [ -d ../../dist/info ]; then
-         mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/info
-         cp -fv ../../dist/info/*.info ../pkg/${platform}/retroarch.vpk/vpk/info/
-      fi
-      make -C ../ -f Makefile.${platform}.salamander clean || exit 1
+     make -C ../ -f Makefile.${platform}.salamander clean || exit 1
    fi
    if [ $PLATFORM = "ctr" ] ; then
    mv -f ../retroarch_3ds_salamander.cia ../pkg/3ds/cia/retroarch_3ds.cia
@@ -217,16 +196,16 @@ for f in `ls -v *_${platform}.${EXT}`; do
 
    # Compile core
    if [ $MAKEFILE_GRIFFIN = "yes" ]; then
-      make -C ../ -f Makefile.griffin platform=${platform} $whole_archive $big_stack -j3 || exit 1
+      make -C ../ -f Makefile.griffin $OPTS platform=${platform} $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "emscripten" ]; then
        echo "BUILD COMMAND: make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js"
-       make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js || exit 1
+       make -C ../ -f Makefile.emscripten $OPTS PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js || exit 1
    elif [ $PLATFORM = "unix" ]; then
       make -C ../ -f Makefile LINK=g++ $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "ctr" ]; then
-      make -C ../ -f Makefile.${platform} LIBRETRO=$name $whole_archive $big_stack -j3 || exit 1
+      make -C ../ -f Makefile.${platform} $OPTS LIBRETRO=$name $whole_archive $big_stack -j3 || exit 1
    else
-      make -C ../ -f Makefile.${platform} $whole_archive $big_stack -j3 || exit 1
+      make -C ../ -f Makefile.${platform} $OPTS $whole_archive $big_stack -j3 || exit 1
    fi
 
    # Do manual executable step
@@ -258,40 +237,10 @@ for f in `ls -v *_${platform}.${EXT}`; do
    elif [ $PLATFORM = "vita" ] ; then
       COUNTER=$((COUNTER + 1))
       COUNTER_ID=`printf  "%05d" ${COUNTER}`
-      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/
-      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea
-      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents
-      vita-make-fself -s ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin
-      cp ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin ../pkg/${platform}/retroarch.vpk/vpk/${name}_libretro.self
-      vita-mksfoex -s TITLE_ID=RETR${COUNTER_ID} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/param.sfo
-      cp ../pkg/${platform}/assets/ICON0.PNG ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/icon0.png
-      cp ../pkg/${platform}/assets/livearea/contents/bg.png ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/bg.png
-      cp ../pkg/${platform}/assets/livearea/contents/startup.png ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/startup.png
-      cp ../pkg/${platform}/assets/livearea/contents/website.png ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/website.png
-      cp ../pkg/${platform}/assets/livearea/contents/template.xml ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/template.xml
-      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/assets
-         if [ -d ../media/assets/glui ]; then
-            cp -r ../media/assets/glui ../pkg/${platform}/${name}_libretro.vpk/vpk/assets
-         fi
-         if [ -d ../media/assets/xmb ]; then
-            cp -r ../media/assets/xmb ../pkg/${platform}/${name}_libretro.vpk/vpk/assets
-            # Strip source SVG files
-            rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/flatui/src
-            rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/monochrome/src
-            rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/retroactive/src
-            rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/retroactive_marked/src
-         fi
-         if [ -d ../media/libretrodb/rdb ]; then
-            mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/rdb
-            cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/${name}_libretro.vpk/vpk/database/rdb
-         fi
-         if [ -d ../media/libretrodb/cursors ]; then
-            mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/cursors
-            cp -r ../media/libretrodb/cursors/* ../pkg/${platform}/${name}_libretro.vpk/vpk/database/cursors
-         fi
+      cp ../retroarch_${platform}.self ../pkg/${platform}/retroarch.vpk/vpk/${name}_libretro.self
          if [ -d ../../dist/info ]; then
             mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/info
-            cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/${platform}/${name}_libretro.vpk/vpk/info/"${name}_libretro.info"
+            cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/${platform}/retroarch.vpk/vpk/info/"${name}_libretro.info"
          fi
    elif [ $PLATFORM = "ctr" ] ; then
       mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
@@ -300,7 +249,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mkdir -p ../pkg/3ds/3ds/${name}_libretro
       mv -f ../retroarch_3ds.3dsx ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.3dsx
       mv -f ../retroarch_3ds.smdh ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.smdh
-      mv -f ../retroarch_3ds.xml  ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.xml
+      mv -f ../retroarch_3ds.xml  ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.xml 2> /dev/null
    elif [ $PLATFORM = "unix" ] ; then
       mv -f ../retroarch ../pkg/${platform}/${name}_libretro.elf
    elif [ $PLATFORM = "ngc" ] ; then
@@ -310,7 +259,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    elif [ $PLATFORM = "emscripten" ] ; then
       mkdir -p ../pkg/emscripten/
       mv -f ../${name}_libretro.js ../pkg/emscripten/${name}_libretro.js
-      mv -f ../${name}_libretro.js.mem ../pkg/emscripten/${name}_libretro.js.mem
+      mv -f ../${name}_libretro.wasm ../pkg/emscripten/${name}_libretro.wasm
       if [ $pthread != 0 ] ; then
          mv -f ../pthread-main.js ../pkg/emscripten/pthread-main.js
       fi
@@ -408,15 +357,20 @@ fi
 
 # Packaging
 if [ $PLATFORM = "dex-ps3" ] ; then
+   rsync -av ../pkg/${platform}/SSNE10000/USRDIR/cores/*.SELF ../pkg/${platform}/${PLATFORM}/
    $MAKE_FSELF_NPDRM -c ../retroarch-salamander_${platform}.elf ../pkg/${platform}/SSNE10000/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
    $MAKE_PACKAGE_NPDRM ../pkg/${platform}_dex/package.conf ../pkg/${platform}/SSNE10000
    mv UP0001-SSNE10000_00-0000000000000001.pkg ../pkg/${platform}/RetroArch.PS3.DEX.PS3.pkg
 elif [ $PLATFORM = "cex-ps3" ] ; then
+   rsync -av ../pkg/${platform}/SSNE10000/USRDIR/cores/*.SELF ../pkg/${platform}/${PLATFORM}/
    $SCETOOL_PATH $SCETOOL_FLAGS_EBOOT ../retroarch-salamander_${platform}.elf ../pkg/${platform}/SSNE10000/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
+   (cd ../tools/ps3/ps3py && python2 setup.py build)
+   find ../tools/ps3/ps3py/build -name '*.dll' -exec cp {} ../tools/ps3/ps3py \;
    ../tools/ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../pkg/${platform}/SSNE10000/ ../pkg/${platform}/RetroArch.PS3.CEX.PS3.pkg
 elif [ $PLATFORM = "ode-ps3" ] ; then
+   rsync -av ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/*.SELF ../pkg/${platform}/${PLATFORM}/
    $SCETOOL_PATH $SCETOOL_FLAGS_ODE ../retroarch-salamander_${platform}.elf ../pkg/${platform}_iso/PS3_GAME/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
 

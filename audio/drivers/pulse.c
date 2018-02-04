@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -20,6 +20,7 @@
 #include <pulse/pulseaudio.h>
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 #include <retro_endianness.h>
 
 #include "../audio_driver.h"
@@ -88,7 +89,7 @@ static void context_state_cb(pa_context *c, void *data)
    }
 }
 
-static void stream_state_cb(pa_stream *s, void *data) 
+static void stream_state_cb(pa_stream *s, void *data)
 {
    pa_t *pa = (pa_t*)data;
 
@@ -104,7 +105,7 @@ static void stream_state_cb(pa_stream *s, void *data)
    }
 }
 
-static void stream_request_cb(pa_stream *s, size_t length, void *data) 
+static void stream_request_cb(pa_stream *s, size_t length, void *data)
 {
    pa_t *pa = (pa_t*)data;
 
@@ -114,7 +115,7 @@ static void stream_request_cb(pa_stream *s, size_t length, void *data)
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
-static void stream_latency_update_cb(pa_stream *s, void *data) 
+static void stream_latency_update_cb(pa_stream *s, void *data)
 {
    pa_t *pa = (pa_t*)data;
 
@@ -149,7 +150,7 @@ static void buffer_attr_cb(pa_stream *s, void *data)
 }
 
 static void *pulse_init(const char *device, unsigned rate,
-      unsigned latency, 
+      unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
 {
@@ -232,12 +233,11 @@ static void *pulse_init(const char *device, unsigned rate,
 unlock_error:
    pa_threaded_mainloop_unlock(pa->mainloop);
 error:
-   pulse_free(pa); 
+   pulse_free(pa);
    return NULL;
 }
 
-static ssize_t pulse_write(void *data, const void *buf_, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t pulse_write(void *data, const void *buf_, size_t size)
 {
    pa_t           *pa = (pa_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;

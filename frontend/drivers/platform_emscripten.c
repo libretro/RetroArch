@@ -16,12 +16,16 @@
  */
 
 #include <emscripten/emscripten.h>
+#include <emscripten/html5.h>
 #include <string.h>
 
 #include <file/config_file.h>
 #include <queues/task_queue.h>
-#include <retro_stat.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
+#include <retro_timers.h>
+#include <gfx/video_frame.h>
+#include <glsym/glsym.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -37,24 +41,75 @@
 #include "../../defaults.h"
 #include "../../content.h"
 #include "../../retroarch.h"
-#include "../../runloop.h"
+#include "../../verbosity.h"
 #include "../../command.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"
 
+void RWebAudioRecalibrateTime(void);
+
+static unsigned emscripten_fullscreen_reinit;
+static unsigned emscripten_frame_count = 0;
+
+static EM_BOOL emscripten_fullscreenchange_cb(int event_type,
+   const EmscriptenFullscreenChangeEvent *fullscreen_change_event,
+   void *user_data)
+{
+   (void)event_type;
+   (void)fullscreen_change_event;
+   (void)user_data;
+
+   emscripten_fullscreen_reinit = 5;
+
+   return EM_TRUE;
+}
+
 static void emscripten_mainloop(void)
 {
+   int ret;
+   video_frame_info_t video_info;
    unsigned sleep_ms = 0;
-   int           ret = runloop_iterate(&sleep_ms);
+
+   RWebAudioRecalibrateTime();
+
+   emscripten_frame_count++;
+
+   video_driver_build_info(&video_info);
+
+   /* Disable BFI during fast forward, slow-motion,
+    * and pause to prevent flicker. */
+   if (
+         video_info.black_frame_insertion
+         && !video_info.input_driver_nonblock_state
+         && !video_info.runloop_is_slowmotion
+         && !video_info.runloop_is_paused)
+   {
+      if ((emscripten_frame_count & 1) == 0)
+      {
+         glClear(GL_COLOR_BUFFER_BIT);
+         video_info.cb_swap_buffers(video_info.context_data, &video_info);
+         return;
+      }
+   }
+
+   if (emscripten_fullscreen_reinit != 0)
+   {
+      if (--emscripten_fullscreen_reinit == 0)
+         command_event(CMD_EVENT_REINIT, NULL);
+   }
+
+   ret = runloop_iterate(&sleep_ms);
 
    if (ret == 1 && sleep_ms > 0)
       retro_sleep(sleep_ms);
-   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+
+   task_queue_check();
+
    if (ret != -1)
       return;
 
    main_exit(NULL);
-   exit(0);
+   emscripten_force_exit(0);
 }
 
 void cmd_savefiles(void)
@@ -82,6 +137,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 {
    (void)args;
 
+   unsigned i;
    char base_path[PATH_MAX] = {0};
    char user_path[PATH_MAX] = {0};
    const char *home         = getenv("HOME");
@@ -99,86 +155,83 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
       snprintf(user_path, sizeof(user_path), "retroarch/userdata");
    }
 
-   fill_pathname_join(g_defaults.dir.core, base_path,
-         "cores", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
+         "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 
    /* bundle data */
-   fill_pathname_join(g_defaults.dir.assets, base_path,
-         "bundle/assets", sizeof(g_defaults.dir.assets));
-   fill_pathname_join(g_defaults.dir.autoconfig, base_path,
-         "bundle/autoconfig", sizeof(g_defaults.dir.autoconfig));
-   fill_pathname_join(g_defaults.dir.cursor, base_path,
-         "bundle/database/cursors", sizeof(g_defaults.dir.cursor));
-   fill_pathname_join(g_defaults.dir.database, base_path,
-         "bundle/database/rdb", sizeof(g_defaults.dir.database));
-   fill_pathname_join(g_defaults.dir.core_info, base_path,
-         "bundle/info", sizeof(g_defaults.dir.core_info));
-   fill_pathname_join(g_defaults.dir.overlay, base_path,
-         "bundle/overlays", sizeof(g_defaults.dir.overlay));
-   fill_pathname_join(g_defaults.dir.shader, base_path,
-         "bundle/shaders", sizeof(g_defaults.dir.shader));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], base_path,
+         "bundle/assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
+         "bundle/autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], base_path,
+         "bundle/database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
+         "bundle/database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
+         "bundle/info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
+         "bundle/overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
+         "bundle/shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
 
    /* user data dirs */
-   fill_pathname_join(g_defaults.dir.cheats, user_path,
-         "cheats", sizeof(g_defaults.dir.cheats));
-   fill_pathname_join(g_defaults.dir.menu_config, user_path,
-         "config", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_join(g_defaults.dir.menu_content, user_path,
-         "content", sizeof(g_defaults.dir.menu_content));
-   fill_pathname_join(g_defaults.dir.core_assets, user_path,
-         "content/downloads", sizeof(g_defaults.dir.core_assets));
-   fill_pathname_join(g_defaults.dir.playlist, user_path,
-         "playlists", sizeof(g_defaults.dir.playlist));
-   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config,
-         "remaps", sizeof(g_defaults.dir.remap));
-   fill_pathname_join(g_defaults.dir.sram, user_path,
-         "saves", sizeof(g_defaults.dir.sram));
-   fill_pathname_join(g_defaults.dir.screenshot, user_path,
-         "screenshots", sizeof(g_defaults.dir.screenshot));
-   fill_pathname_join(g_defaults.dir.savestate, user_path,
-         "states", sizeof(g_defaults.dir.savestate));
-   fill_pathname_join(g_defaults.dir.system, user_path,
-         "system", sizeof(g_defaults.dir.system));
-   fill_pathname_join(g_defaults.dir.thumbnails, user_path,
-         "thumbnails", sizeof(g_defaults.dir.thumbnails));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path,
+         "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], user_path,
+         "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT], user_path,
+         "content", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], user_path,
+         "content/downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], user_path,
+         "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+         "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], user_path,
+         "saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], user_path,
+         "screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], user_path,
+         "states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], user_path,
+         "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], user_path,
+         "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
 
    /* cache dir */
-   fill_pathname_join(g_defaults.dir.cache, "/tmp/",
-         "retroarch", sizeof(g_defaults.dir.cache));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], "/tmp/",
+         "retroarch", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
    /* history and main config */
-   strlcpy(g_defaults.dir.content_history,
-         user_path, sizeof(g_defaults.dir.content_history));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
+         user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
    fill_pathname_join(g_defaults.path.config, user_path,
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 
-   /* create user data dirs */
-   path_mkdir(g_defaults.dir.cheats);
-   path_mkdir(g_defaults.dir.core_assets);
-   path_mkdir(g_defaults.dir.menu_config);
-   path_mkdir(g_defaults.dir.menu_content);
-   path_mkdir(g_defaults.dir.playlist);
-   path_mkdir(g_defaults.dir.remap);
-   path_mkdir(g_defaults.dir.savestate);
-   path_mkdir(g_defaults.dir.screenshot);
-   path_mkdir(g_defaults.dir.sram);
-   path_mkdir(g_defaults.dir.system);
-   path_mkdir(g_defaults.dir.thumbnails);
-
-   /* create cache dir */
-   path_mkdir(g_defaults.dir.cache);
-
-   snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "rgui");
+   for (i = 0; i < DEFAULT_DIR_LAST; i++)
+   {
+      const char *dir_path = g_defaults.dirs[i];
+      if (!string_is_empty(dir_path))
+         path_mkdir(dir_path);
+   }
 }
 
 int main(int argc, char *argv[])
 {
-   settings_t *settings = config_get_ptr();
+   EMSCRIPTEN_RESULT r;
 
-   emscripten_set_canvas_size(800, 600);
+   emscripten_set_canvas_element_size("#canvas", 800, 600);
+   emscripten_set_element_css_size("#canvas", 800.0, 600.0);
+   emscripten_set_main_loop(emscripten_mainloop, 0, 0);
    rarch_main(argc, argv, NULL);
-   emscripten_set_main_loop(emscripten_mainloop,
-         settings->video.vsync ? 0 : INT_MAX, 1);
+
+   r = emscripten_set_fullscreenchange_callback("#document", NULL, false,
+      emscripten_fullscreenchange_cb);
+   if (r != EMSCRIPTEN_RESULT_SUCCESS)
+   {
+      RARCH_ERR(
+         "[EMSCRIPTEN/CTX] failed to create fullscreen callback: %d\n", r);
+   }
 
    return 0;
 }
@@ -207,5 +260,7 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                         /* destroy_signal_handler_state */
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
+   NULL,                         /* watch_path_for_changes */
+   NULL,                         /* check_for_path_changes */
    "emscripten"
 };

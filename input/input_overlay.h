@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -24,6 +24,8 @@
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
 
+#include "input_driver.h"
+
 RETRO_BEGIN_DECLS
 
 #define BOX_RADIAL       0x18df06d2U
@@ -32,13 +34,13 @@ RETRO_BEGIN_DECLS
 #define KEY_ANALOG_LEFT  0x56b92e81U
 #define KEY_ANALOG_RIGHT 0x2e4dc654U
 
-/* Overlay driver acts as a medium between input drivers 
+/* Overlay driver acts as a medium between input drivers
  * and video driver.
  *
- * Coordinates are fetched from input driver, and an 
+ * Coordinates are fetched from input driver, and an
  * overlay with pressable actions are displayed on-screen.
  *
- * This interface requires that the video driver has support 
+ * This interface requires that the video driver has support
  * for the overlay interface.
  */
 
@@ -92,29 +94,43 @@ enum overlay_image_transfer_status
    OVERLAY_IMAGE_TRANSFER_ERROR
 };
 
+enum overlay_visibility
+{
+   OVERLAY_VISIBILITY_DEFAULT = 0,
+   OVERLAY_VISIBILITY_VISIBLE,
+   OVERLAY_VISIBILITY_HIDDEN
+};
+
 struct overlay
 {
-   unsigned id;
+   bool full_screen;
+   bool block_scale;
 
-   struct overlay_desc *descs;
-   size_t size;
-   size_t pos;
+   unsigned load_images_size;
+   unsigned id;
    unsigned pos_increment;
 
-   struct texture_image image;
+   size_t size;
+   size_t pos;
 
-   bool block_scale;
    float mod_x, mod_y, mod_w, mod_h;
    float x, y, w, h;
    float scale;
    float center_x, center_y;
 
-   bool full_screen;
+   struct overlay_desc *descs;
+   struct texture_image *load_images;
+
+   struct texture_image image;
 
    char name[64];
 
    struct
    {
+      bool normalized;
+      float alpha_mod;
+      float range_mod;
+
       struct
       {
          char key[64];
@@ -138,41 +154,40 @@ struct overlay
          unsigned size;
       } descs;
 
-      bool normalized;
-      float alpha_mod;
-      float range_mod;
    } config;
 
-   struct texture_image *load_images;
-   unsigned load_images_size;
 };
 
 struct overlay_desc
 {
-   float x;
-   float y;
-
    enum overlay_hitbox hitbox;
-   float range_x, range_y;
-   float range_x_mod, range_y_mod;
-   float mod_x, mod_y, mod_w, mod_h;
-   float delta_x, delta_y;
-
    enum overlay_type type;
-   uint64_t key_mask;
-   float analog_saturate_pct;
+
+   bool updated;
+   bool movable;
 
    unsigned next_index;
-   char next_index_name[64];
-
-   struct texture_image image;
    unsigned image_index;
 
    float alpha_mod;
    float range_mod;
+   float analog_saturate_pct;
+   float range_x, range_y;
+   float range_x_mod, range_y_mod;
+   float mod_x, mod_y, mod_w, mod_h;
+   float delta_x, delta_y;
+   float x;
+   float y;
 
-   bool updated;
-   bool movable;
+   /* This is a retro_key value for keyboards */
+   unsigned retro_key_idx;
+
+   /* This is a bit mask of all input binds to set with this overlay control */
+   retro_bits_t button_mask;
+
+   char next_index_name[64];
+
+   struct texture_image image;
 };
 
 typedef struct overlay_desc overlay_desc_t;
@@ -181,13 +196,13 @@ typedef struct input_overlay input_overlay_t;
 
 typedef struct
 {
-    struct overlay *overlays;
-    struct overlay *active;
-    size_t size;
     bool hide_in_menu;
     bool overlay_enable;
+    size_t size;
     float overlay_opacity;
     float overlay_scale;
+    struct overlay *overlays;
+    struct overlay *active;
 } overlay_task_data_t;
 
 /**
@@ -232,7 +247,7 @@ void input_overlay_next(input_overlay_t *ol, float opacity);
 
 /*
  * input_poll_overlay:
- * @ol : pointer to overlay 
+ * @ol : pointer to overlay
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
@@ -243,11 +258,13 @@ void input_state_overlay(input_overlay_t *ol,
       int16_t *ret, unsigned port, unsigned device, unsigned idx,
       unsigned id);
 
-bool input_overlay_key_pressed(input_overlay_t *ol, int key);
+bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key);
 
 bool input_overlay_is_alive(input_overlay_t *ol);
 
 void input_overlay_loaded(void *task_data, void *user_data, const char *err);
+
+void input_overlay_set_visibility(int overlay_idx,enum overlay_visibility vis);
 
 /* FIXME - temporary. Globals are bad */
 extern input_overlay_t *overlay_ptr;

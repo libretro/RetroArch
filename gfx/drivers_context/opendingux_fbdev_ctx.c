@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2014 2015 - Jean-Andre Santoni
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -79,11 +79,11 @@ static void *gfx_ctx_opendingux_init(video_frame_info_t *video_info, void *video
 
    if (!viv)
       return NULL;
-   
+
 #ifdef HAVE_EGL
    frontend_driver_install_signal_handler();
 
-   if (!egl_init_context(&viv->egl, EGL_DEFAULT_DISPLAY,
+   if (!egl_init_context(&viv->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
             &major, &minor,
             &n, attribs))
    {
@@ -203,7 +203,7 @@ static bool gfx_ctx_opendingux_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static void gfx_ctx_opendingux_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_opendingux_swap_buffers(void *data, void *data2)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
 

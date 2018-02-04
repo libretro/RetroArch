@@ -44,6 +44,7 @@ int main(int argc, char ** argv)
       printf("\tlist\n");
       printf("\tcreate-index <index name> <field name>\n");
       printf("\tfind <query expression>\n");
+      printf("\tget-names <query expression>\n");
       return 1;
    }
 
@@ -61,7 +62,7 @@ int main(int argc, char ** argv)
       printf("Could not open db file '%s': %s\n", path, strerror(-rv));
       goto error;
    }
-   else if (string_is_equal(command, "list"))
+   else if (memcmp(command, "list", 4) == 0)
    {
       if ((rv = libretrodb_cursor_open(db, cur, NULL)) != 0)
       {
@@ -82,7 +83,7 @@ int main(int argc, char ** argv)
          rmsgpack_dom_value_free(&item);
       }
    }
-   else if (string_is_equal(command, "find"))
+   else if (memcmp(command, "find", 4) == 0)
    {
       if (argc != 4)
       {
@@ -113,7 +114,49 @@ int main(int argc, char ** argv)
          rmsgpack_dom_value_free(&item);
       }
    }
-   else if (string_is_equal(command, "create-index"))
+   else if (memcmp(command, "get-names", 9) == 0)
+   {
+      if (argc != 4)
+      {
+         printf("Usage: %s <db file> get-names <query expression>\n", argv[0]);
+         goto error;
+      }
+
+      query_exp = argv[3];
+      error = NULL;
+      q = libretrodb_query_compile(db, query_exp, strlen(query_exp), &error);
+
+      if (error)
+      {
+         printf("%s\n", error);
+         goto error;
+      }
+
+      if ((rv = libretrodb_cursor_open(db, cur, q)) != 0)
+      {
+         printf("Could not open cursor: %s\n", strerror(-rv));
+         goto error;
+      }
+
+      while (libretrodb_cursor_read_item(cur, &item) == 0)
+      {
+         if (item.type == RDT_MAP) //should always be true, but if false the program would segfault
+         {
+            unsigned i;
+            for (i = 0; i < item.val.map.len; i++)
+            {
+               if (item.val.map.items[i].key.type == RDT_STRING && (strncmp(item.val.map.items[i].key.val.string.buff, "name", item.val.map.items[i].key.val.string.len) == 0))
+               {
+                  rmsgpack_dom_value_print(&item.val.map.items[i].value);
+                  printf("\n");
+               }
+            }
+         }
+
+         rmsgpack_dom_value_free(&item);
+      }
+   }
+   else if (memcmp(command, "create-index", 12) == 0)
    {
       const char * index_name, * field_name;
 
@@ -134,6 +177,7 @@ int main(int argc, char ** argv)
       goto error;
    }
 
+   libretrodb_cursor_close(cur);
    libretrodb_close(db);
 
 error:
@@ -141,5 +185,7 @@ error:
       libretrodb_free(db);
    if (cur)
       libretrodb_cursor_free(cur);
+   if (q)
+      libretrodb_query_free(q);
    return 1;
 }

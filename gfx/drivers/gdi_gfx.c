@@ -30,6 +30,7 @@
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
+#include "../../frontend/frontend_driver.h"
 #include "../common/gdi_common.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -47,9 +48,31 @@ static unsigned gdi_video_bits       = 0;
 static unsigned gdi_menu_bits        = 0;
 static bool gdi_rgb32                = false;
 static bool gdi_menu_rgb32           = false;
+static int gdi_win_major             = 0;
+static int gdi_win_minor             = 0;
+static bool gdi_lte_win98            = false;
+static unsigned short *gdi_temp_buf  = NULL;
 
 static void gdi_gfx_create(void)
 {
+   char os[64] = {0};
+
+   frontend_ctx_driver_t *ctx = frontend_get_ptr();
+
+   if (!ctx || !ctx->get_os)
+   {
+      RARCH_ERR("[GDI] No frontend driver found.\n");
+      return;
+   }
+
+   ctx->get_os(os, sizeof(os), &gdi_win_major, &gdi_win_minor);
+
+   /* Are we running on Windows 98 or below? */
+   if (gdi_win_major < 4 || (gdi_win_major == 4 && gdi_win_minor <= 10))
+   {
+      RARCH_LOG("[GDI] Win98 or lower detected, using slow frame conversion method for RGB444.\n");
+      gdi_lte_win98 = true;
+   }
 }
 
 static void *gdi_gfx_init(const video_info_t *video,
@@ -81,14 +104,14 @@ static void *gdi_gfx_init(const video_info_t *video,
    gdi_gfx_create();
 
    ctx_driver = video_context_driver_init_first(gdi,
-         settings->video.context_driver,
+         settings->arrays.video_context_driver,
          GFX_CTX_GDI_API, 1, 0, false);
    if (!ctx_driver)
       goto error;
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
-   RARCH_LOG("Found GDI context: %s\n", ctx_driver->ident);
+   RARCH_LOG("[GDI]: Found GDI context: %s\n", ctx_driver->ident);
 
    video_context_driver_get_video_size(&mode);
 
@@ -97,7 +120,7 @@ static void *gdi_gfx_init(const video_info_t *video,
    mode.width  = 0;
    mode.height = 0;
 
-   RARCH_LOG("Detecting screen resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[GDI]: Detecting screen resolution %ux%u.\n", full_x, full_y);
 
    win_width   = video->width;
    win_height  = video->height;
@@ -132,15 +155,17 @@ static void *gdi_gfx_init(const video_info_t *video,
 
    video_driver_get_size(&temp_width, &temp_height);
 
-   RARCH_LOG("GDI: Using resolution %ux%u\n", temp_width, temp_height);
+   RARCH_LOG("[GDI]: Using resolution %ux%u\n", temp_width, temp_height);
 
    inp.input      = input;
    inp.input_data = input_data;
 
    video_context_driver_input_driver(&inp);
 
-   if (settings->video.font_enable)
-      font_driver_init_osd(NULL, false, FONT_DRIVER_RENDER_GDI);
+   if (settings->bools.video_font_enable)
+      font_driver_init_osd(gdi, false,
+            video->is_threaded,
+            FONT_DRIVER_RENDER_GDI);
 
    RARCH_LOG("[GDI]: Init complete.\n");
 
@@ -158,7 +183,6 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    gfx_ctx_mode_t mode;
-   RECT rect;
    const void *frame_to_copy = frame;
    unsigned width            = 0;
    unsigned height           = 0;
@@ -166,6 +190,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    bool draw                 = true;
    gdi_t *gdi                = (gdi_t*)data;
    HWND hwnd                 = win32_get_window();
+   BITMAPINFO *info;
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -205,25 +230,73 @@ static bool gdi_gfx_frame(void *data, const void *frame,
          draw = false;
    }
 
-   GetClientRect(hwnd, &rect);
+   if (hwnd && !gdi->winDC)
+   {
+      gdi->winDC = GetDC(hwnd);
+      gdi->memDC = CreateCompatibleDC(gdi->winDC);
+      gdi->video_width = width;
+      gdi->video_height = height;
+      gdi->bmp = CreateCompatibleBitmap(gdi->winDC, gdi->video_width, gdi->video_height);
+   }
+
+   gdi->bmp_old  = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+
+   if (gdi->video_width != width || gdi->video_height != height)
+   {
+      SelectObject(gdi->memDC, gdi->bmp_old);
+      DeleteObject(gdi->bmp);
+
+      gdi->video_width = width;
+      gdi->video_height = height;
+      gdi->bmp = CreateCompatibleBitmap(gdi->winDC, gdi->video_width, gdi->video_height);
+      gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+
+      if (gdi_lte_win98)
+      {
+         if (gdi_temp_buf)
+         {
+            free(gdi_temp_buf);
+         }
+
+         gdi_temp_buf = (unsigned short*)malloc(width * height * sizeof(unsigned short));
+      }
+   }
+
    video_context_driver_get_video_size(&mode);
 
-   if (draw)
+   gdi->screen_width = mode.width;
+   gdi->screen_height = mode.height;
+
+   info = (BITMAPINFO*)calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
+
+   info->bmiHeader.biBitCount  = bits;
+   info->bmiHeader.biWidth     = pitch / (bits / 8);
+   info->bmiHeader.biHeight    = -height;
+   info->bmiHeader.biPlanes    = 1;
+   info->bmiHeader.biSize      = sizeof(BITMAPINFOHEADER);
+   info->bmiHeader.biSizeImage = 0;
+
+   if (bits == 16)
    {
-      HDC winDC        = GetDC(hwnd);
-      HDC memDC        = CreateCompatibleDC(winDC);
-      HBITMAP bmp      = CreateCompatibleBitmap(winDC, width, height);
-      BITMAPINFO *info = (BITMAPINFO*)calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
-      HBITMAP bmp_old  = (HBITMAP)SelectObject(memDC, bmp);
+      if (gdi_lte_win98 && gdi_temp_buf)
+      {
+         /* Win98 and below cannot use BI_BITFIELDS with RGB444,
+          * so convert it to RGB555 first. */
+         unsigned x, y;
 
-      info->bmiHeader.biBitCount  = bits;
-      info->bmiHeader.biWidth     = pitch / (bits / 8);
-      info->bmiHeader.biHeight    = -height;
-      info->bmiHeader.biPlanes    = 1;
-      info->bmiHeader.biSize      = sizeof(BITMAPINFOHEADER) + (3 * sizeof(RGBQUAD));
-      info->bmiHeader.biSizeImage = 0;
+         for (y = 0; y < height; y++)
+         {
+            for (x = 0; x < width; x++)
+            {
+               unsigned short pixel = ((unsigned short*)frame_to_copy)[width * y + x];
+               gdi_temp_buf[width * y + x] = (pixel & 0xF000) >> 1 | (pixel & 0x0F00) >> 2 | (pixel & 0x00F0) >> 3;
+            }
+         }
 
-      if (bits == 16)
+         frame_to_copy = gdi_temp_buf;
+         info->bmiHeader.biCompression = BI_RGB;
+      }
+      else
       {
          unsigned *masks = (unsigned*)info->bmiColors;
 
@@ -245,32 +318,27 @@ static bool gdi_gfx_frame(void *data, const void *frame,
             masks[2] = 0x001F;
          }
       }
-      else
-         info->bmiHeader.biCompression = BI_RGB;
-
-      StretchDIBits(memDC, 0, 0, width, height, 0, 0, width, height,
-            frame_to_copy, info, DIB_RGB_COLORS, SRCCOPY);
-
-      StretchBlt(winDC,
-            0, 0,
-            mode.width, mode.height,
-            memDC, 0, 0, width, height, SRCCOPY);
-
-      SelectObject(memDC, bmp_old);
-
-      DeleteObject(bmp);
-      DeleteDC(memDC);
-      ReleaseDC(hwnd, winDC);
-
-      free(info);
    }
+   else
+      info->bmiHeader.biCompression = BI_RGB;
+
+   if (draw)
+   {
+      StretchDIBits(gdi->memDC, 0, 0, width, height, 0, 0, width, height,
+            frame_to_copy, info, DIB_RGB_COLORS, SRCCOPY);
+   }
+
+   SelectObject(gdi->memDC, gdi->bmp_old);
+
+   free(info);
 
    if (msg)
       font_driver_render_msg(video_info, NULL, msg, NULL);
 
    InvalidateRect(hwnd, NULL, false);
 
-   video_context_driver_update_window_title(video_info);
+   video_info->cb_update_window_title(
+         video_info->context_data, video_info);
 
    return true;
 }
@@ -288,7 +356,8 @@ static bool gdi_gfx_alive(void *data)
    unsigned temp_height = 0;
    bool quit            = false;
    bool resize          = false;
- 
+   bool ret             = false;
+
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
@@ -297,12 +366,13 @@ static bool gdi_gfx_alive(void *data)
    size_data.width      = &temp_width;
    size_data.height     = &temp_height;
 
-   video_context_driver_check_window(&size_data);
+   if (video_context_driver_check_window(&size_data))
+      ret = !quit;
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
 
-   return true;
+   return ret;
 }
 
 static bool gdi_gfx_focus(void *data)
@@ -327,6 +397,7 @@ static bool gdi_gfx_has_windowed(void *data)
 static void gdi_gfx_free(void *data)
 {
    gdi_t *gdi = (gdi_t*)data;
+   HWND hwnd = win32_get_window();
 
    if (gdi_menu_frame)
    {
@@ -334,8 +405,27 @@ static void gdi_gfx_free(void *data)
       gdi_menu_frame = NULL;
    }
 
+   if (gdi_temp_buf)
+   {
+      free(gdi_temp_buf);
+      gdi_temp_buf = NULL;
+   }
+
    if (!gdi)
       return;
+
+   if (gdi->memDC)
+   {
+      DeleteObject(gdi->bmp);
+      DeleteDC(gdi->memDC);
+      gdi->memDC = 0;
+   }
+
+   if (hwnd && gdi->winDC)
+   {
+      ReleaseDC(hwnd, gdi->winDC);
+      gdi->winDC = 0;
+   }
 
    font_driver_free_osd();
    video_context_driver_free();
@@ -403,12 +493,12 @@ static void gdi_set_texture_frame(void *data,
    }
 }
 
-static void gdi_set_osd_msg(void *data, const char *msg,
+static void gdi_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
-   video_frame_info_t video_info;
-   video_driver_build_info(&video_info);
-   font_driver_render_msg(&video_info, font, msg, params);
+   font_driver_render_msg(video_info, font, msg, params);
 }
 
 static void gdi_get_video_output_size(void *data,
@@ -443,6 +533,8 @@ static void gdi_set_video_mode(void *data, unsigned width, unsigned height,
 }
 
 static const video_poke_interface_t gdi_poke_interface = {
+   NULL,                      /* set_coords */
+   NULL,                      /* set_mvp */
    NULL,
    NULL,
    gdi_set_video_mode,
@@ -450,30 +542,18 @@ static const video_poke_interface_t gdi_poke_interface = {
    gdi_get_video_output_size,
    gdi_get_video_output_prev,
    gdi_get_video_output_next,
-#ifdef HAVE_FBO
-   NULL,
-#else
-   NULL,
-#endif
    NULL,
    NULL,
    NULL,
-#if defined(HAVE_MENU)
+   NULL,
    gdi_set_texture_frame,
    NULL,
    gdi_set_osd_msg,
    NULL,
-#else
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-#endif
-
-   NULL,
-#ifdef HAVE_MENU
-   NULL,
-#endif
+   NULL,                         /* grab_mouse_toggle */
+   NULL,                         /* get_current_shader */
+   NULL,                         /* get_current_software_framebuffer */
+   NULL                          /* get_hw_render_interface */
 };
 
 static void gdi_gfx_get_poke_interface(void *data,

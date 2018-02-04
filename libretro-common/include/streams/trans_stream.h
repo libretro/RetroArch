@@ -35,6 +35,11 @@
 
 #include <retro_miscellaneous.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
+
 enum trans_stream_error
 {
     TRANS_STREAM_ERROR_NONE = 0,
@@ -96,6 +101,8 @@ const struct trans_stream_backend* trans_stream_get_pipe_backend(void);
 extern const struct trans_stream_backend zlib_deflate_backend;
 extern const struct trans_stream_backend zlib_inflate_backend;
 extern const struct trans_stream_backend pipe_backend;
+
+RETRO_END_DECLS
 
 #endif
 

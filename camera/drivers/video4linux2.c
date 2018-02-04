@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -16,7 +16,9 @@
  */
 
 #include <stdio.h>
+#if !defined(__FreeBSD__) || __FreeBSD__ < 5
 #include <malloc.h>
+#endif
 #include <string.h>
 #include <assert.h>
 #include <stddef.h>
@@ -28,7 +30,9 @@
 #include <sys/time.h>
 #include <sys/ioctl.h>
 
+#ifndef __FreeBSD__
 #include <asm/types.h>
+#endif
 #include <linux/videodev2.h>
 
 #include <memmap.h>
@@ -36,7 +40,8 @@
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <gfx/scaler/scaler.h>
-#include <retro_stat.h>
+#include <gfx/video_frame.h>
+#include <file/file_path.h>
 
 #include <compat/strl.h>
 
@@ -89,15 +94,15 @@ static bool init_mmap(void *data)
    if (xioctl(v4l->fd, (uint8_t)VIDIOC_REQBUFS, &req) == -1)
    {
       if (errno == EINVAL)
-         RARCH_ERR("%s does not support memory mapping.\n", v4l->dev_name);
+         RARCH_ERR("[V4L2]: %s does not support memory mapping.\n", v4l->dev_name);
       else
-         RARCH_ERR("xioctl of VIDIOC_REQBUFS failed.\n");
+         RARCH_ERR("[V4L2]: xioctl of VIDIOC_REQBUFS failed.\n");
       return false;
    }
 
    if (req.count < 2)
    {
-      RARCH_ERR("Insufficient buffer memory on %s.\n", v4l->dev_name);
+      RARCH_ERR("[V4L2]: Insufficient buffer memory on %s.\n", v4l->dev_name);
       return false;
    }
 
@@ -105,7 +110,7 @@ static bool init_mmap(void *data)
 
    if (!v4l->buffers)
    {
-      RARCH_ERR("Out of memory allocating V4L2 buffers.\n");
+      RARCH_ERR("[V4L2]: Out of memory allocating V4L2 buffers.\n");
       return false;
    }
 
@@ -119,7 +124,7 @@ static bool init_mmap(void *data)
 
       if (xioctl(v4l->fd, (uint8_t)VIDIOC_QUERYBUF, &buf) == -1)
       {
-         RARCH_ERR("Error - xioctl VIDIOC_QUERYBUF.\n");
+         RARCH_ERR("[V4L2]: Error - xioctl VIDIOC_QUERYBUF.\n");
          return false;
       }
 
@@ -131,7 +136,7 @@ static bool init_mmap(void *data)
 
       if (v4l->buffers[v4l->n_buffers].start == MAP_FAILED)
       {
-         RARCH_ERR("Error - mmap.\n");
+         RARCH_ERR("[V4L2]: Error - mmap.\n");
          return false;
       }
    }
@@ -150,21 +155,21 @@ static bool init_device(void *data)
    if (xioctl(v4l->fd, (uint8_t)VIDIOC_QUERYCAP, &cap) < 0)
    {
       if (errno == EINVAL)
-         RARCH_ERR("%s is no V4L2 device.\n", v4l->dev_name);
+         RARCH_ERR("[V4L2]: %s is no V4L2 device.\n", v4l->dev_name);
       else
-         RARCH_ERR("Error - VIDIOC_QUERYCAP.\n");
+         RARCH_ERR("[V4L2]: Error - VIDIOC_QUERYCAP.\n");
       return false;
    }
 
    if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
    {
-      RARCH_ERR("%s is no video capture device.\n", v4l->dev_name);
+      RARCH_ERR("[V4L2]: %s is no video capture device.\n", v4l->dev_name);
       return false;
    }
 
    if (!(cap.capabilities & V4L2_CAP_STREAMING))
    {
-      RARCH_ERR("%s does not support streaming I/O (V4L2_CAP_STREAMING).\n",
+      RARCH_ERR("[V4L2]: %s does not support streaming I/O (V4L2_CAP_STREAMING).\n",
             v4l->dev_name);
       return false;
    }
@@ -187,7 +192,7 @@ static bool init_device(void *data)
 
    if (xioctl(v4l->fd, (uint8_t)VIDIOC_S_FMT, &fmt) < 0)
    {
-      RARCH_ERR("Error - VIDIOC_S_FMT\n");
+      RARCH_ERR("[V4L2]: Error - VIDIOC_S_FMT\n");
       return false;
    }
 
@@ -202,18 +207,18 @@ static bool init_device(void *data)
     */
    if (fmt.fmt.pix.pixelformat != V4L2_PIX_FMT_YUYV)
    {
-      RARCH_ERR("The V4L2 device doesn't support YUYV.\n");
+      RARCH_ERR("[V4L2]: The V4L2 device doesn't support YUYV.\n");
       return false;
    }
 
    if (fmt.fmt.pix.field != V4L2_FIELD_NONE
          && fmt.fmt.pix.field != V4L2_FIELD_INTERLACED)
    {
-      RARCH_ERR("The V4L2 device doesn't support progressive nor interlaced video.\n");
+      RARCH_ERR("[V4L2]: The V4L2 device doesn't support progressive nor interlaced video.\n");
       return false;
    }
 
-   RARCH_LOG("V4L2 device: %u x %u.\n", v4l->width, v4l->height);
+   RARCH_LOG("[V4L2]: device: %u x %u.\n", v4l->width, v4l->height);
 
    return init_mmap(v4l);
 }
@@ -224,7 +229,7 @@ static void v4l_stop(void *data)
    enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
    if (xioctl(v4l->fd, VIDIOC_STREAMOFF, &type) == -1)
-      RARCH_ERR("Error - VIDIOC_STREAMOFF.\n");
+      RARCH_ERR("[V4L2]: Error - VIDIOC_STREAMOFF.\n");
 
    v4l->ready = false;
 }
@@ -245,7 +250,7 @@ static bool v4l_start(void *data)
 
       if (xioctl(v4l->fd, (uint8_t)VIDIOC_QBUF, &buf) == -1)
       {
-         RARCH_ERR("Error - VIDIOC_QBUF.\n");
+         RARCH_ERR("[V4L2]: Error - VIDIOC_QBUF.\n");
          return false;
       }
    }
@@ -254,7 +259,7 @@ static bool v4l_start(void *data)
 
    if (xioctl(v4l->fd, VIDIOC_STREAMON, &type) == -1)
    {
-      RARCH_ERR("Error - VIDIOC_STREAMON.\n");
+      RARCH_ERR("[V4L2]: Error - VIDIOC_STREAMON.\n");
       return false;
    }
 
@@ -270,7 +275,7 @@ static void v4l_free(void *data)
    unsigned i;
    for (i = 0; i < v4l->n_buffers; i++)
       if (munmap(v4l->buffers[i].start, v4l->buffers[i].length) == -1)
-         RARCH_ERR("munmap failed.\n");
+         RARCH_ERR("[V4L2]: munmap failed.\n");
 
    if (v4l->fd >= 0)
       close(v4l->fd);
@@ -287,7 +292,7 @@ static void *v4l_init(const char *device, uint64_t caps,
 
    if ((caps & (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)) == 0)
    {
-      RARCH_ERR("video4linux2 returns raw framebuffers.\n");
+      RARCH_ERR("[V4L2]: Returns raw framebuffers.\n");
       return NULL;
    }
 
@@ -304,7 +309,7 @@ static void *v4l_init(const char *device, uint64_t caps,
 
    if (!path_is_character_special(v4l->dev_name))
    {
-      RARCH_ERR("%s is no device.\n", v4l->dev_name);
+      RARCH_ERR("[V4L2]: %s is no device.\n", v4l->dev_name);
       goto error;
    }
 
@@ -312,7 +317,7 @@ static void *v4l_init(const char *device, uint64_t caps,
 
    if (v4l->fd == -1)
    {
-      RARCH_ERR("Cannot open '%s': %d, %s\n", v4l->dev_name,
+      RARCH_ERR("[V4L2]: Cannot open '%s': %d, %s\n", v4l->dev_name,
             errno, strerror(errno));
       goto error;
    }
@@ -325,7 +330,7 @@ static void *v4l_init(const char *device, uint64_t caps,
 
    if (!v4l->buffer_output)
    {
-      RARCH_ERR("Failed to allocate output buffer.\n");
+      RARCH_ERR("[V4L2]: Failed to allocate output buffer.\n");
       goto error;
    }
 
@@ -338,20 +343,21 @@ static void *v4l_init(const char *device, uint64_t caps,
 
    if (!scaler_ctx_gen_filter(&v4l->scaler))
    {
-      RARCH_ERR("Failed to create scaler.\n");
+      RARCH_ERR("[V4L2]: Failed to create scaler.\n");
       goto error;
    }
 
    return v4l;
 
 error:
-   RARCH_ERR("V4L2: Failed to initialize camera.\n");
+   RARCH_ERR("[V4L2]: Failed to initialize camera.\n");
    v4l_free(v4l);
    return NULL;
 }
 
 static bool preprocess_image(void *data)
 {
+   struct scaler_ctx *ctx = NULL;
    video4linux_t     *v4l = (video4linux_t*)data;
    struct v4l2_buffer buf = {0};
 
@@ -365,7 +371,7 @@ static bool preprocess_image(void *data)
          case EAGAIN:
             break;
          default:
-            RARCH_ERR("VIDIOC_DQBUF.\n");
+            RARCH_ERR("[V4L2]: VIDIOC_DQBUF.\n");
             break;
       }
 
@@ -374,10 +380,12 @@ static bool preprocess_image(void *data)
 
    retro_assert(buf.index < v4l->n_buffers);
 
-   scaler_ctx_scale(&v4l->scaler, v4l->buffer_output, (const uint8_t*)v4l->buffers[buf.index].start);
+   ctx = &v4l->scaler;
+
+   scaler_ctx_scale_direct(ctx, v4l->buffer_output, (const uint8_t*)v4l->buffers[buf.index].start);
 
    if (xioctl(v4l->fd, (uint8_t)VIDIOC_QBUF, &buf) == -1)
-      RARCH_ERR("VIDIOC_QBUF\n");
+      RARCH_ERR("[V4L2]: VIDIOC_QBUF\n");
 
    return true;
 }

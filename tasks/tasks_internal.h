@@ -24,7 +24,6 @@
 
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
-#include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -39,6 +38,12 @@ RETRO_BEGIN_DECLS
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
 
+typedef struct nbio_buf
+{
+   void *buf;
+   unsigned bufsize;
+} nbio_buf_t;
+
 enum content_mode_load
 {
    CONTENT_MODE_LOAD_NONE = 0,
@@ -50,10 +55,9 @@ enum content_mode_load
 enum nbio_status_enum
 {
    NBIO_STATUS_INIT = 0,
-   NBIO_STATUS_POLL,
    NBIO_STATUS_TRANSFER,
    NBIO_STATUS_TRANSFER_PARSE,
-   NBIO_STATUS_TRANSFER_PARSE_FREE
+   NBIO_STATUS_TRANSFER_FINISHED
 };
 
 enum nbio_status_flags
@@ -62,38 +66,55 @@ enum nbio_status_flags
    NBIO_FLAG_IMAGE_SUPPORTS_RGBA
 };
 
+enum nbio_type
+{
+   NBIO_TYPE_NONE = 0,
+   NBIO_TYPE_JPEG,
+   NBIO_TYPE_PNG,
+   NBIO_TYPE_TGA,
+   NBIO_TYPE_BMP,
+   NBIO_TYPE_OGG,
+   NBIO_TYPE_MOD,
+   NBIO_TYPE_WAV
+};
+
 typedef struct nbio_handle
 {
-   enum image_type_enum image_type;
-   void *data;
+   enum nbio_type type;
    bool is_finished;
-   transfer_cb_t  cb;
-   struct nbio_t *handle;
-   unsigned pos_increment;
-   msg_queue_t *msg_queue;
    unsigned status;
+   unsigned pos_increment;
    uint32_t status_flags;
-   char path[4096];
+   void *data;
+   char *path;
+   struct nbio_t *handle;
+   msg_queue_t *msg_queue;
+   transfer_cb_t  cb;
 } nbio_handle_t;
 
 #ifdef HAVE_NETWORKING
 typedef struct
 {
-    char *data;
-    size_t len;
+   char *data;
+   size_t len;
 } http_transfer_data_t;
 
 void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
+void *task_push_http_post_transfer(const char *url, const char *post_data, bool mute, const char *type,
+      retro_task_callback_t cb, void *userdata);
+
 task_retriever_info_t *http_task_get_transfer_list(void);
 
-bool task_push_wifi_scan(void);
+bool task_push_wifi_scan(retro_task_callback_t cb);
 
-bool task_push_netplay_lan_scan(void);
+bool task_push_netplay_lan_scan(retro_task_callback_t cb);
 
 bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       const char *hostname, const char *corename);
+
+bool task_push_netplay_lan_scan_rooms(retro_task_callback_t cb);
 
 bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port);
 
@@ -114,20 +135,8 @@ bool task_push_dbscan(
 bool task_push_overlay_load_default(
         retro_task_callback_t cb, void *user_data);
 #endif
-    
-int find_first_data_track(const char* cue_path,
-      int32_t* offset, char* track_path, size_t max_len);
-
-int detect_system(const char* track_path, int32_t offset,
-        const char** system_name);
-
-int detect_ps1_game(const char *track_path, char *game_id);
-
-int detect_psp_game(const char *track_path, char *game_id);
 
 bool task_check_decompress(const char *source_file);
-
-bool task_image_load_handler(retro_task_t *task);
 
 bool task_push_decompress(
       const char *source_file,
@@ -176,7 +185,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data);
-   
+
 #ifdef HAVE_MENU
 bool task_push_load_content_with_new_core_from_menu(
       const char *core_path,
@@ -189,6 +198,7 @@ bool task_push_load_content_with_new_core_from_menu(
 bool task_push_load_content_from_playlist_from_menu(
       const char *core_path,
       const char *fullpath,
+      const char *label,
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data);
@@ -201,21 +211,27 @@ bool task_push_load_content_with_core_from_menu(
       void *user_data);
 #endif
 
-void task_image_load_free(retro_task_t *task);
-
 void task_file_load_handler(retro_task_t *task);
 
-bool take_screenshot(const char *path, bool silence);
+bool task_audio_mixer_load_handler(retro_task_t *task);
+
+bool take_screenshot(const char *path, bool silence, bool has_valid_framebuffer);
 
 bool event_load_save_files(void);
 
 bool event_save_files(void);
 
-void path_init_savefile_rtc(void);
+void path_init_savefile_rtc(const char *savefile_path);
 
 void *savefile_ptr_get(void);
 
 void path_init_savefile_new(void);
+
+bool input_is_autoconfigured(unsigned i);
+
+unsigned input_autoconfigure_get_device_name_index(unsigned i);
+
+void input_autoconfigure_reset(void);
 
 bool input_autoconfigure_connect(
       const char *name,
@@ -227,9 +243,15 @@ bool input_autoconfigure_connect(
 
 bool input_autoconfigure_disconnect(unsigned i, const char *ident);
 
+bool input_autoconfigure_get_swap_override(void);
+
+void input_autoconfigure_joypad_reindex_devices(void);
+
 void task_push_get_powerstate(void);
 
 enum frontend_powerstate get_last_powerstate(int *percent);
+
+bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, void *user_data);
 
 extern const char* const input_builtin_autoconfs[];
 

@@ -120,7 +120,6 @@ uint32_t frame_offset_cmd(bool ntoh)
       case NETPLAY_CMD_CRC:
       case NETPLAY_CMD_LOAD_SAVESTATE:
       case NETPLAY_CMD_RESET:
-      case NETPLAY_CMD_FLIP_PLAYERS:
          frame = ntohl(payload[0]);
          if (ntoh)
             frame -= frame_offset;
@@ -285,7 +284,7 @@ int main(int argc, char **argv)
    }
 
    /* Expect the header */
-   if (!socket_receive_all_blocking(sock, payload, 4*sizeof(uint32_t)))
+   if (!socket_receive_all_blocking(sock, payload, 6*sizeof(uint32_t)))
    {
       fprintf(stderr, "Failed to receive connection header.\n");
       return 1;
@@ -299,7 +298,7 @@ int main(int argc, char **argv)
    }
 
    /* Echo the connection header back */
-   socket_send_all_blocking(sock, payload, 4*sizeof(uint32_t), true);
+   socket_send_all_blocking(sock, payload, 6*sizeof(uint32_t), true);
 
    /* Send a nickname */
    cmd = NETPLAY_CMD_NICK;
@@ -340,7 +339,8 @@ int main(int argc, char **argv)
    if (playing)
    {
       cmd = NETPLAY_CMD_PLAY;
-      cmd_size = 0;
+      cmd_size = sizeof(uint32_t);
+      payload[0] = htonl(1);
       SEND();
    }
 
@@ -397,7 +397,7 @@ int main(int argc, char **argv)
             /* Only sync based on server time */
             if (cmd == NETPLAY_CMD_INPUT &&
                 (cmd_size < 2*sizeof(uint32_t) ||
-                 !(ntohl(payload[1]) & NETPLAY_CMD_INPUT_BIT_SERVER)))
+                 (ntohl(payload[1]) != 0)))
             {
                break;
             }

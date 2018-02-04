@@ -20,6 +20,7 @@ PHDRS {
 
 SECTIONS {
    . = ORIGIN(code);
+   PROVIDE(__code_start = .);
 
    .syscall ALIGN(32) : { *(.syscall) } : hdr_text
 
@@ -52,6 +53,8 @@ SECTIONS {
       . = ALIGN(4);
 
    } : hdr_text
+
+   PROVIDE(__code_end = .);
 
    /* Standard data sections */
    . = ORIGIN(data);

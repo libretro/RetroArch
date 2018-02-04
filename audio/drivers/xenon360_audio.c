@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -57,8 +57,7 @@ static INLINE uint32_t bswap_32(uint32_t val)
       ((val >> 8) & 0xff00) | ((val << 8) & 0xff0000);
 }
 
-static ssize_t xenon360_audio_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t xenon360_audio_write(void *data, const void *buf, size_t size)
 {
    size_t written = 0, i;
    const uint32_t *in_buf = buf;
@@ -71,7 +70,7 @@ static ssize_t xenon360_audio_write(void *data, const void *buf, size_t size,
    {
       while (xenon_sound_get_unplayed() >= MAX_BUFFER)
       {
-         /* libxenon doesn't have proper 
+         /* libxenon doesn't have proper
           * synchronization primitives for this... */
          udelay(50);
       }

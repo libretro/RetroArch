@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -23,18 +23,22 @@
 
 #include "internal_cores.h"
 
-static uint16_t *frame_buf;
+static uint16_t *dummy_frame_buf;
 
 void libretro_dummy_retro_init(void)
 {
-   frame_buf = (uint16_t*)calloc(320 * 240, sizeof(uint16_t));
+   unsigned i;
+
+   dummy_frame_buf = (uint16_t*)calloc(320 * 240, sizeof(uint16_t));
+   for (i = 0; i < 320 * 240; i++)
+      dummy_frame_buf[i] = 4 << 5;
 }
 
 void libretro_dummy_retro_deinit(void)
 {
-   if (frame_buf)
-      free(frame_buf);
-   frame_buf = NULL;
+   if (dummy_frame_buf)
+      free(dummy_frame_buf);
+   dummy_frame_buf = NULL;
 }
 
 unsigned libretro_dummy_retro_api_version(void)
@@ -121,12 +125,8 @@ void libretro_dummy_retro_reset(void)
 
 void libretro_dummy_retro_run(void)
 {
-   unsigned i;
-
    dummy_input_poll_cb();
-   for (i = 0; i < 320 * 240; i++)
-      frame_buf[i] = 4 << 5;
-   dummy_video_cb(frame_buf, 320, 240, 640);
+   dummy_video_cb(dummy_frame_buf, 320, 240, 640);
 }
 
 /* This should never be called, it's only used as a placeholder. */

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2017 - Jean-André Santoni
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -19,7 +19,7 @@
 #include <retro_miscellaneous.h>
 
 #include "../wifi_driver.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../lakka.h"
 
 static bool connman_cache[256] = {0};
@@ -217,7 +217,7 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
       runloop_msg_queue_push(ln, 1, 180, true);
    }
    pclose(command_file);
-   
+
    return true;
 }
 

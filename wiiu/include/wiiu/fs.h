@@ -164,6 +164,7 @@ void FSInit();
 void FSShutdown();
 
 FSStatus FSAddClient(FSClient *client, uint32_t flags);
+FSStatus FSAddClientEx(FSClient *pClient, s32 unk_zero_param, uint32_t errHandling);
 FSStatus FSDelClient(FSClient *client, uint32_t flags);
 uint32_t FSGetClientNum();
 void FSInitCmdBlock(FSCmdBlock *block);

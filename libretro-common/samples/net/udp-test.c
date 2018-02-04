@@ -1,8 +1,8 @@
 /* public domain */
 /* gcc -o udptest udp-test.c */
 
-/* 
-   will send "RETROPAD RIGHT" indefinely to player 1 
+/*
+   will send "RETROPAD RIGHT" indefinely to player 1
    to send to player 2 change port to 55401 and so on
 */
 
@@ -50,7 +50,7 @@ int main(void)
             die("sendto()");
         }
         /* sleep for 1 frame (60hz) */
-        usleep(16*1000); 
+        usleep(16*1000);
 
     }
 

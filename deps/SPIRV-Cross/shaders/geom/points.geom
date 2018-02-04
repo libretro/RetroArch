@@ -4,11 +4,11 @@
 layout(points) in;
 layout(points, max_vertices = 3) out;
 
-in VertexData {
+layout(location = 0) in VertexData {
     vec3 normal;
 } vin[];
 
-out vec3 vNormal;
+layout(location = 0) out vec3 vNormal;
 
 void main()
 {

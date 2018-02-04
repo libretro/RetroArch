@@ -33,6 +33,15 @@
 
 RETRO_BEGIN_DECLS
 
+#define scaler_ctx_scale_direct(ctx, output, input) \
+   if (ctx->unscaled) \
+      /* Just perform straight pixel conversion. */ \
+      ctx->direct_pixconv(output, input, \
+            ctx->out_width, ctx->out_height, \
+            ctx->out_stride, ctx->in_stride); \
+   else \
+      scaler_ctx_scale(ctx, output, input)
+
 static INLINE void video_frame_convert_rgb16_to_rgb32(
       struct scaler_ctx *scaler,
       void *output,
@@ -55,7 +64,7 @@ static INLINE void video_frame_convert_rgb16_to_rgb32(
    scaler->in_stride  = in_pitch;
    scaler->out_stride = width * sizeof(uint32_t);
 
-   scaler_ctx_scale(scaler, output, input);
+   scaler_ctx_scale_direct(scaler, output, input);
 }
 
 static INLINE void video_frame_scale(
@@ -89,7 +98,7 @@ static INLINE void video_frame_scale(
       scaler_ctx_gen_filter(scaler);
    }
 
-   scaler_ctx_scale(scaler, output, input);
+   scaler_ctx_scale_direct(scaler, output, input);
 }
 
 static INLINE void video_frame_record_scale(
@@ -123,7 +132,7 @@ static INLINE void video_frame_record_scale(
       scaler_ctx_gen_filter(scaler);
    }
 
-   scaler_ctx_scale(scaler, output, input);
+   scaler_ctx_scale_direct(scaler, output, input);
 }
 
 static INLINE void video_frame_convert_argb8888_to_abgr8888(
@@ -145,7 +154,8 @@ static INLINE void video_frame_convert_argb8888_to_abgr8888(
 
    scaler->in_stride  = in_pitch;
    scaler->out_stride = width * sizeof(uint32_t);
-   scaler_ctx_scale(scaler, output, input);
+
+   scaler_ctx_scale_direct(scaler, output, input);
 }
 
 static INLINE void video_frame_convert_to_bgr24(
@@ -165,7 +175,7 @@ static INLINE void video_frame_convert_to_bgr24(
    scaler->in_stride   = in_pitch;
    scaler->out_stride  = width * 3;
 
-   scaler_ctx_scale(scaler, output, input);
+   scaler_ctx_scale_direct(scaler, output, input);
 }
 
 static INLINE void video_frame_convert_rgba_to_bgr(
@@ -198,7 +208,7 @@ static INLINE bool video_pixel_frame_scale(
    scaler->in_stride     = (int)pitch;
    scaler->out_stride    = width * sizeof(uint16_t);
 
-   scaler_ctx_scale(scaler, output, data);
+   scaler_ctx_scale_direct(scaler, output, data);
 
    return true;
 }
