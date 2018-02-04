@@ -166,18 +166,18 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    matrix_4x4_ortho(d3d10->mvp_no_rot, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
 
    {
-	  D3D10_BUFFER_DESC desc;
-	  D3D10_SUBRESOURCE_DATA ubo_data;
+      D3D10_BUFFER_DESC desc;
+      D3D10_SUBRESOURCE_DATA ubo_data;
 
-	  desc.ByteWidth            = sizeof(math_matrix_4x4);
-	  desc.Usage                = D3D10_USAGE_DYNAMIC;
+      desc.ByteWidth            = sizeof(math_matrix_4x4);
+      desc.Usage                = D3D10_USAGE_DYNAMIC;
       desc.BindFlags            = D3D10_BIND_CONSTANT_BUFFER;
       desc.CPUAccessFlags       = D3D10_CPU_ACCESS_WRITE;
-	  desc.MiscFlags            = 0;
+      desc.MiscFlags            = 0;
 
-	  ubo_data.pSysMem          = &d3d10->mvp_no_rot;
-	  ubo_data.SysMemPitch      = 0;
-	  ubo_data.SysMemSlicePitch = 0;
+      ubo_data.pSysMem          = &d3d10->mvp_no_rot;
+      ubo_data.SysMemPitch      = 0;
+      ubo_data.SysMemSlicePitch = 0;
 
       D3D10CreateBuffer(d3d10->device, &desc, &ubo_data, &d3d10->ubo);
       D3D10CreateBuffer(d3d10->device, &desc, NULL, &d3d10->frame.ubo);
@@ -218,18 +218,18 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       };
 
       {
-		 D3D10_SUBRESOURCE_DATA vertexData;
-		 D3D10_BUFFER_DESC desc;
+         D3D10_SUBRESOURCE_DATA vertexData;
+         D3D10_BUFFER_DESC desc;
 
-		 desc.ByteWidth              = sizeof(vertices);
-	     desc.Usage                  = D3D10_USAGE_DYNAMIC;
-	     desc.BindFlags              = D3D10_BIND_VERTEX_BUFFER;
-	     desc.CPUAccessFlags         = D3D10_CPU_ACCESS_WRITE;
-		 desc.MiscFlags              = 0;
+         desc.ByteWidth              = sizeof(vertices);
+         desc.Usage                  = D3D10_USAGE_DYNAMIC;
+         desc.BindFlags              = D3D10_BIND_VERTEX_BUFFER;
+         desc.CPUAccessFlags         = D3D10_CPU_ACCESS_WRITE;
+         desc.MiscFlags              = 0;
 
-		 vertexData.pSysMem          = vertices;
-		 vertexData.SysMemPitch      = 0;
-		 vertexData.SysMemSlicePitch = 0;
+         vertexData.pSysMem          = vertices;
+         vertexData.SysMemPitch      = 0;
+         vertexData.SysMemSlicePitch = 0;
 
          D3D10CreateBuffer(d3d10->device, &desc, &vertexData, &d3d10->frame.vbo);
          desc.Usage          = D3D10_USAGE_IMMUTABLE;
@@ -276,24 +276,24 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    D3D10SetPShader(d3d10->device, d3d10->ps);
 
    {
-	  unsigned k;
-	  D3D10_BLEND_DESC blend_desc;
+      unsigned k;
+      D3D10_BLEND_DESC blend_desc;
 
 
-	  
-	  for (k = 0; k < 8; k++)
-	  {
-		  blend_desc.BlendEnable[k]           = TRUE;
-		  blend_desc.RenderTargetWriteMask[k] = D3D10_COLOR_WRITE_ENABLE_ALL;
-	  }
 
-	  blend_desc.AlphaToCoverageEnable        = FALSE;
-	  blend_desc.SrcBlend                     = D3D10_BLEND_SRC_ALPHA;
-	  blend_desc.DestBlend                    = D3D10_BLEND_INV_SRC_ALPHA;
-	  blend_desc.BlendOp                      = D3D10_BLEND_OP_ADD;
-	  blend_desc.SrcBlendAlpha                = D3D10_BLEND_SRC_ALPHA;
-	  blend_desc.DestBlendAlpha               = D3D10_BLEND_INV_SRC_ALPHA;
-	  blend_desc.BlendOpAlpha                 = D3D10_BLEND_OP_ADD;
+      for (k = 0; k < 8; k++)
+      {
+         blend_desc.BlendEnable[k]           = TRUE;
+         blend_desc.RenderTargetWriteMask[k] = D3D10_COLOR_WRITE_ENABLE_ALL;
+      }
+
+      blend_desc.AlphaToCoverageEnable        = FALSE;
+      blend_desc.SrcBlend                     = D3D10_BLEND_SRC_ALPHA;
+      blend_desc.DestBlend                    = D3D10_BLEND_INV_SRC_ALPHA;
+      blend_desc.BlendOp                      = D3D10_BLEND_OP_ADD;
+      blend_desc.SrcBlendAlpha                = D3D10_BLEND_SRC_ALPHA;
+      blend_desc.DestBlendAlpha               = D3D10_BLEND_INV_SRC_ALPHA;
+      blend_desc.BlendOpAlpha                 = D3D10_BLEND_OP_ADD;
 
       D3D10CreateBlendState(d3d10->device, &blend_desc, &d3d10->blend_enable);
       blend_desc.BlendEnable[0] = FALSE;

@@ -80,7 +80,7 @@ static void d3d12_update_viewport(void* data, bool force_full)
    d3d12->resize_viewport = false;
 }
 
-static void*
+   static void*
 d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
    WNDCLASSEX      wndclass = { 0 };
@@ -127,15 +127,15 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d12->chain.vsync = video->vsync;
    d3d12->format      = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
    d3d12->frame.texture.desc.Format =
-         d3d12_get_closest_match_texture2D(d3d12->device, d3d12->format);
+      d3d12_get_closest_match_texture2D(d3d12->device, d3d12->format);
 
    d3d12->ubo_view.SizeInBytes = sizeof(math_matrix_4x4);
    d3d12->ubo_view.BufferLocation =
-         d3d12_create_buffer(d3d12->device, d3d12->ubo_view.SizeInBytes, &d3d12->ubo);
+      d3d12_create_buffer(d3d12->device, d3d12->ubo_view.SizeInBytes, &d3d12->ubo);
 
    d3d12->frame.ubo_view.SizeInBytes = sizeof(math_matrix_4x4);
    d3d12->frame.ubo_view.BufferLocation =
-         d3d12_create_buffer(d3d12->device, d3d12->frame.ubo_view.SizeInBytes, &d3d12->frame.ubo);
+      d3d12_create_buffer(d3d12->device, d3d12->frame.ubo_view.SizeInBytes, &d3d12->frame.ubo);
 
    matrix_4x4_ortho(d3d12->mvp_no_rot, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
 
@@ -200,7 +200,7 @@ static bool d3d12_gfx_frame(
    D3D12SetGraphicsRootSignature(d3d12->queue.cmd, d3d12->pipe.rootSignature);
    {
       D3D12DescriptorHeap desc_heaps[] = { d3d12->pipe.srv_heap.handle,
-                                           d3d12->pipe.sampler_heap.handle };
+         d3d12->pipe.sampler_heap.handle };
       D3D12SetDescriptorHeaps(d3d12->queue.cmd, countof(desc_heaps), desc_heaps);
    }
 
@@ -232,7 +232,7 @@ static bool d3d12_gfx_frame(
 #if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
    if (d3d12->resize_viewport)
 #endif
-   d3d12_update_viewport(d3d12, false);
+      d3d12_update_viewport(d3d12, false);
 
    D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->frame.viewport);
    D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->frame.scissorRect);
@@ -426,7 +426,7 @@ static void d3d12_set_menu_texture_frame(
       D3D12Unmap(d3d12->menu.vbo, 0, NULL);
    }
    d3d12->menu.sampler = config_get_ptr()->bools.menu_linear_filter ? d3d12->sampler_linear
-                                                                    : d3d12->sampler_nearest;
+      : d3d12->sampler_nearest;
 }
 static void d3d12_set_menu_texture_enable(void* data, bool state, bool full_screen)
 {
