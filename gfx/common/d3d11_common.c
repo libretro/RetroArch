@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <string.h>
 
 #include "d3d11_common.h"
@@ -122,9 +124,9 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
 
 void d3d11_update_texture(
       D3D11DeviceContext ctx,
-      int                width,
-      int                height,
-      int                pitch,
+      unsigned           width,
+      unsigned           height,
+      unsigned           pitch,
       DXGI_FORMAT        format,
       const void*        data,
       d3d11_texture_t*   texture)

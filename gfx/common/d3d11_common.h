@@ -18,6 +18,9 @@
 #include <retro_inline.h>
 
 #include "dxgi_common.h"
+#ifdef CINTERFACE
+#define D3D11_NO_HELPERS
+#endif
 #include <d3d11.h>
 
 typedef const ID3D11ShaderResourceView* D3D11ShaderResourceViewRef;
@@ -2578,9 +2581,9 @@ static INLINE void d3d11_release_texture(d3d11_texture_t* texture)
 
 void d3d11_update_texture(
       D3D11DeviceContext ctx,
-      int                width,
-      int                height,
-      int                pitch,
+      unsigned           width,
+      unsigned           height,
+      unsigned           pitch,
       DXGI_FORMAT        format,
       const void*        data,
       d3d11_texture_t*   texture);

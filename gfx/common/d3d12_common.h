@@ -1365,10 +1365,10 @@ typedef struct
 
 enum
 {
-   ROOT_INDEX_TEXTURE_TABLE = 0,
-   ROOT_INDEX_SAMPLER_TABLE,
-   ROOT_INDEX_UBO,
-   ROOT_INDEX_MAX,
+   ROOT_ID_TEXTURE_T = 0,
+   ROOT_ID_SAMPLER_T,
+   ROOT_ID_UBO,
+   ROOT_ID_MAX,
 } root_signature_parameter_index_t;
 
 typedef enum {
@@ -1420,13 +1420,13 @@ static INLINE void d3d12_resource_transition(
 
 static INLINE void d3d12_set_texture(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
 {
-   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_INDEX_TEXTURE_TABLE, texture->gpu_descriptor);
+   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, texture->gpu_descriptor);
 }
 
 static INLINE void
 d3d12_set_sampler(D3D12GraphicsCommandList cmd, D3D12_GPU_DESCRIPTOR_HANDLE sampler)
 {
-   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_INDEX_SAMPLER_TABLE, sampler);
+   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T, sampler);
 }
 
 static INLINE void d3d12_update_texture(

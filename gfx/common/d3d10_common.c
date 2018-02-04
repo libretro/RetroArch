@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <gfx/scaler/pixconv.h>
 
 #include "d3d10_common.h"

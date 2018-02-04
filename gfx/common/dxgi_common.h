@@ -247,17 +247,9 @@
 #endif
 #endif
 
+#if !defined(__cplusplus) || defined(CINTERFACE)
 #ifndef COM_RELEASE_DECLARED
 #define COM_RELEASE_DECLARED
-#if defined(__cplusplus) && !defined(CINTERFACE)
-static INLINE ULONG Release(IUnknown* object)
-{
-   if (object)
-      return object->Release();
-
-   return 0;
-}
-#else
 static INLINE ULONG Release(void* object)
 {
    if (object)

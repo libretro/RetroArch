@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
@@ -80,12 +82,12 @@ static void menu_display_d3d11_draw(void* data)
 
    {
       D3D11_MAPPED_SUBRESOURCE mapped_vbo;
-      d3d11_sprite_t                   *v = NULL;
+      d3d11_sprite_t*          v = NULL;
 
       D3D11MapBuffer(
             d3d11->context, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
 
-      v        = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
+      v = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
       v->pos.x = draw->x / (float)d3d11->viewport.Width;
       v->pos.y = (d3d11->viewport.Height - draw->y - draw->height) / (float)d3d11->viewport.Height;
@@ -139,15 +141,15 @@ static void menu_display_d3d11_draw_pipeline(void* data)
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       {
-         video_coord_array_t *ca = menu_display_get_coords_array();
+         video_coord_array_t* ca = menu_display_get_coords_array();
 
          if (!d3d11->menu_pipeline_vbo)
          {
-            D3D11_BUFFER_DESC desc = {
-               .Usage     = D3D11_USAGE_IMMUTABLE,
-               .ByteWidth = ca->coords.vertices * 2 * sizeof(float),
-               .BindFlags = D3D11_BIND_VERTEX_BUFFER,
-            };
+            D3D11_BUFFER_DESC desc = { 0 };
+            desc.Usage             = D3D11_USAGE_IMMUTABLE;
+            desc.ByteWidth         = ca->coords.vertices * 2 * sizeof(float);
+            desc.BindFlags         = D3D11_BIND_VERTEX_BUFFER;
+
             D3D11_SUBRESOURCE_DATA vertexData = { ca->coords.vertex };
             D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu_pipeline_vbo);
          }
@@ -199,12 +201,12 @@ static bool menu_display_d3d11_font_init_first(
       float       font_size,
       bool        is_threaded)
 {
-   font_data_t** handle    = (font_data_t**)font_handle;
-   font_data_t *new_handle = font_driver_init_first(
-	   video_data, font_path, font_size, true, is_threaded, FONT_DRIVER_RENDER_D3D11_API);
+   font_data_t** handle     = (font_data_t**)font_handle;
+   font_data_t*  new_handle = font_driver_init_first(
+         video_data, font_path, font_size, true, is_threaded, FONT_DRIVER_RENDER_D3D11_API);
    if (!new_handle)
-	   return false;
-   *handle                 = new_handle;
+      return false;
+   *handle = new_handle;
    return true;
 }
 
