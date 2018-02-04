@@ -108,27 +108,27 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    {
       UINT                 flags = 0;
-      DXGI_SWAP_CHAIN_DESC desc  = {
-         .BufferCount       = 2,
-         .BufferDesc.Width  = video->width,
-         .BufferDesc.Height = video->height,
-         .BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+      DXGI_SWAP_CHAIN_DESC desc  = {0};
+
+      desc.BufferCount           = 2;
+      desc.BufferDesc.Width      = video->width;
+      desc.BufferDesc.Height     = video->height;
+      desc.BufferDesc.Format     = DXGI_FORMAT_R8G8B8A8_UNORM;
 #if 0
-         .BufferDesc.RefreshRate.Numerator   = 60,
-         .BufferDesc.RefreshRate.Denominator = 1,
+      desc.BufferDesc.RefreshRate.Numerator   = 60;
+      desc.BufferDesc.RefreshRate.Denominator = 1;
 #endif
-         .BufferUsage        = DXGI_USAGE_RENDER_TARGET_OUTPUT,
-         .OutputWindow       = main_window.hwnd,
-         .SampleDesc.Count   = 1,
-         .SampleDesc.Quality = 0,
-         .Windowed           = TRUE,
-         .SwapEffect         = DXGI_SWAP_EFFECT_DISCARD,
+      desc.BufferUsage           = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+      desc.OutputWindow          = main_window.hwnd;
+      desc.SampleDesc.Count      = 1;
+      desc.SampleDesc.Quality    = 0;
+      desc.Windowed              = TRUE;
+      desc.SwapEffect            = DXGI_SWAP_EFFECT_DISCARD;
 #if 0
-         .SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL,
-         .SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
-         .SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+      desc.SwapEffect            = DXGI_SWAP_EFFECT_SEQUENTIAL;
+      desc.SwapEffect            = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+      desc.SwapEffect            = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
-      };
 
 #ifdef DEBUG
       flags |= D3D10_CREATE_DEVICE_DEBUG;
@@ -177,16 +177,17 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d10_gfx_set_rotation(d3d10, 0);
 
    {
-      D3D10_SAMPLER_DESC desc = {
-         .Filter         = D3D10_FILTER_MIN_MAG_MIP_POINT,
-         .AddressU       = D3D10_TEXTURE_ADDRESS_BORDER,
-         .AddressV       = D3D10_TEXTURE_ADDRESS_BORDER,
-         .AddressW       = D3D10_TEXTURE_ADDRESS_BORDER,
-         .MaxAnisotropy  = 1,
-         .ComparisonFunc = D3D10_COMPARISON_NEVER,
-         .MinLOD         = -D3D10_FLOAT32_MAX,
-         .MaxLOD         = D3D10_FLOAT32_MAX,
-      };
+      D3D10_SAMPLER_DESC desc = {};
+
+      desc.Filter         = D3D10_FILTER_MIN_MAG_MIP_POINT;
+      desc.AddressU       = D3D10_TEXTURE_ADDRESS_BORDER;
+      desc.AddressV       = D3D10_TEXTURE_ADDRESS_BORDER;
+      desc.AddressW       = D3D10_TEXTURE_ADDRESS_BORDER;
+      desc.MaxAnisotropy  = 1;
+      desc.ComparisonFunc = D3D10_COMPARISON_NEVER;
+      desc.MinLOD         = -D3D10_FLOAT32_MAX;
+      desc.MaxLOD         = D3D10_FLOAT32_MAX;
+
       D3D10CreateSamplerState(d3d10->device, &desc, &d3d10->sampler_nearest);
 
       desc.Filter = D3D10_FILTER_MIN_MAG_MIP_LINEAR;
@@ -473,7 +474,7 @@ static void d3d10_set_menu_texture_frame(
 {
    d3d10_video_t* d3d10  = (d3d10_video_t*)data;
    int            pitch  = width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
-   DXGI_FORMAT    format = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : DXGI_FORMAT_EX_A4R4G4B4_UNORM;
+   DXGI_FORMAT    format = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
    if (d3d10->menu.texture.desc.Width != width || d3d10->menu.texture.desc.Height != height)
    {
