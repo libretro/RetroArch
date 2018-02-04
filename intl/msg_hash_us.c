@@ -1655,9 +1655,15 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER:
             snprintf(s, len,
-                     "When hosting, relay connection through a\n"
-                             "man-in-the-middle server\n"
-                             "to get around firewalls or NAT/UPnP issues.\n");
+                     "When hosting a netplay session, relay connection through a \n"
+                             "man-in-the-middle server \n"
+                             "to get around firewalls or NAT/UPnP issues. \n");
+            break;
+        case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
+            snprintf(s, len,
+                     "Specifies the man-in-the-middle server \n"
+                             "to use for netplay. A server that is \n"
+                             "located closer to you may have less latency. \n");
             break;
         case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
             snprintf(s, len,

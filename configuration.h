@@ -408,6 +408,8 @@ typedef struct settings
       char bundle_assets_src[PATH_MAX_LENGTH];
       char bundle_assets_dst[PATH_MAX_LENGTH];
       char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
+
+      char netplay_mitm_server[255];
    } arrays;
 
    struct

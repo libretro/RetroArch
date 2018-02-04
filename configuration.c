@@ -1036,6 +1036,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("bundle_assets_dst_path",   settings->arrays.bundle_assets_dst, false, NULL, true);
    SETTING_ARRAY("bundle_assets_dst_path_subdir", settings->arrays.bundle_assets_dst_subdir, false, NULL, true);
    SETTING_ARRAY("led_driver",               settings->arrays.led_driver, false, NULL, true);
+   SETTING_ARRAY("netplay_mitm_server",      settings->arrays.netplay_mitm_server, false, NULL, true);
    *size = count;
 
    return tmp;
@@ -1551,6 +1552,7 @@ static void config_set_defaults(void)
    const char *def_led             = config_get_default_led();
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
+   const char *def_mitm            = netplay_mitm_server;
    struct config_float_setting      *float_settings = populate_settings_float  (settings, &float_settings_size);
    struct config_bool_setting       *bool_settings  = populate_settings_bool  (settings, &bool_settings_size);
    struct config_int_setting        *int_settings   = populate_settings_int   (settings, &int_settings_size);
@@ -1630,6 +1632,9 @@ static void config_set_defaults(void)
    if (def_record)
       strlcpy(settings->arrays.record_driver,
             def_record, sizeof(settings->arrays.record_driver));
+   if (def_mitm)
+      strlcpy(settings->arrays.netplay_mitm_server,
+            def_mitm, sizeof(settings->arrays.netplay_mitm_server));
 #ifdef HAVE_MENU
    if (def_menu)
       strlcpy(settings->arrays.menu_driver,
