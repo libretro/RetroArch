@@ -84,7 +84,7 @@ static void d3d11_update_viewport(void* data, bool force_full)
    d3d11->frame.viewport.MaxDepth = 1.0f;
 
    if (d3d11->shader_preset && (d3d11->frame.output_size.x != d3d11->vp.width ||
-                                d3d11->frame.output_size.y != d3d11->vp.height))
+            d3d11->frame.output_size.y != d3d11->vp.height))
       d3d11->resize_render_targets = true;
 
    d3d11->frame.output_size.x = d3d11->vp.width;
@@ -183,33 +183,33 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          {
             /* Original */
             { &d3d11->frame.texture[0].view, 0,
-              &d3d11->frame.texture[0].size_data, 0,
-              &d3d11->pass[i].sampler, 0 },
+               &d3d11->frame.texture[0].size_data, 0,
+               &d3d11->pass[i].sampler, 0 },
 
             /* Source */
             { &source->view, 0,
-              &source->size_data, 0,
-              &d3d11->pass[i].sampler, 0 },
+               &source->size_data, 0,
+               &d3d11->pass[i].sampler, 0 },
 
             /* OriginalHistory */
             { &d3d11->frame.texture[0].view, sizeof(*d3d11->frame.texture),
-              &d3d11->frame.texture[0].size_data, sizeof(*d3d11->frame.texture),
-              &d3d11->pass[i].sampler, 0 },
+               &d3d11->frame.texture[0].size_data, sizeof(*d3d11->frame.texture),
+               &d3d11->pass[i].sampler, 0 },
 
             /* PassOutput */
             { &d3d11->pass[0].rt.view, sizeof(*d3d11->pass),
-              &d3d11->pass[0].rt.size_data, sizeof(*d3d11->pass),
-              &d3d11->pass[i].sampler, 0 },
+               &d3d11->pass[0].rt.size_data, sizeof(*d3d11->pass),
+               &d3d11->pass[i].sampler, 0 },
 
             /* PassFeedback */
             { &d3d11->pass[0].feedback.view, sizeof(*d3d11->pass),
-              &d3d11->pass[0].feedback.size_data, sizeof(*d3d11->pass),
-              &d3d11->pass[i].sampler, 0 },
+               &d3d11->pass[0].feedback.size_data, sizeof(*d3d11->pass),
+               &d3d11->pass[i].sampler, 0 },
 
             /* User */
             { &d3d11->luts[0].view, sizeof(*d3d11->luts),
-              &d3d11->luts[0].size_data, sizeof(*d3d11->luts),
-              &d3d11->luts[0].sampler, sizeof(*d3d11->luts) },
+               &d3d11->luts[0].size_data, sizeof(*d3d11->luts),
+               &d3d11->luts[0].sampler, sizeof(*d3d11->luts) },
          },
          {
             &d3d11->mvp,                  /* MVP */
@@ -221,16 +221,16 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       /* clang-format on */
 
       if (!slang_process(
-                d3d11->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
-                &d3d11->pass[i].semantics))
+               d3d11->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
+               &d3d11->pass[i].semantics))
          goto error;
 
       {
          static const D3D11_INPUT_ELEMENT_DESC desc[] = {
             { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
-              D3D11_INPUT_PER_VERTEX_DATA, 0 },
+               D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
-              D3D11_INPUT_PER_VERTEX_DATA, 0 },
+               D3D11_INPUT_PER_VERTEX_DATA, 0 },
          };
 #ifdef DEBUG
          bool save_hlsl = true;
@@ -255,13 +255,13 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          strncpy(ps_path + base_len, ps_ext, sizeof(ps_ext));
 
          if (!d3d11_init_shader(
-                   d3d11->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
-                   &d3d11->pass[i].shader))
+                  d3d11->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
+                  &d3d11->pass[i].shader))
             save_hlsl = true;
 
          if (!d3d11_init_shader(
-                   d3d11->device, ps_src, 0, ps_path, NULL, "main", NULL, NULL, 0,
-                   &d3d11->pass[i].shader))
+                  d3d11->device, ps_src, 0, ps_path, NULL, "main", NULL, NULL, 0,
+                  &d3d11->pass[i].shader))
             save_hlsl = true;
 
          if (save_hlsl)
@@ -325,7 +325,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       image_texture_free(&image);
 
       d3d11->luts[i].sampler =
-            d3d11->samplers[d3d11->shader_preset->lut[i].filter][d3d11->shader_preset->lut[i].wrap];
+         d3d11->samplers[d3d11->shader_preset->lut[i].filter][d3d11->shader_preset->lut[i].wrap];
    }
 
    video_shader_resolve_current_parameters(conf, d3d11->shader_preset);
@@ -399,7 +399,7 @@ static void d3d11_gfx_free(void* data)
    free(d3d11);
 }
 
-static void*
+   static void*
 d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
    unsigned       i;
@@ -579,52 +579,52 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    {
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d11_vertex_t, color),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
 
       static const char shader[] =
 #include "d3d_shaders/opaque_sm5.hlsl.h"
-            ;
+         ;
 
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]))
+               d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
+               countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]))
          goto error;
    }
 
    {
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d11_sprite_t, pos),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d11_sprite_t, coords),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d11_sprite_t, colors[0]),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 1, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d11_sprite_t, colors[1]),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 2, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d11_sprite_t, colors[2]),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 3, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d11_sprite_t, colors[3]),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "PARAMS", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_sprite_t, params),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
 
       static const char shader[] =
 #include "d3d_shaders/sprite_sm4.hlsl.h"
-            ;
+         ;
 
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", "GSMain", desc,
-                countof(desc), &d3d11->sprites.shader))
+               d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", "GSMain", desc,
+               countof(desc), &d3d11->sprites.shader))
          goto error;
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMainA8", "GSMain", desc,
-                countof(desc), &d3d11->sprites.shader_font))
+               d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMainA8", "GSMain", desc,
+               countof(desc), &d3d11->sprites.shader_font))
          goto error;
    }
 
@@ -635,60 +635,60 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
       static const char ribbon[] =
 #include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
+         ;
       static const char ribbon_simple[] =
 #include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
-            ;
+         ;
 
       if (!d3d11_init_shader(
-                d3d11->device, ribbon, sizeof(ribbon), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU]))
+               d3d11->device, ribbon, sizeof(ribbon), NULL, "VSMain", "PSMain", NULL, desc,
+               countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU]))
          goto error;
 
       if (!d3d11_init_shader(
-                d3d11->device, ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "PSMain", NULL,
-                desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2]))
+               d3d11->device, ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "PSMain", NULL,
+               desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2]))
          goto error;
    }
 
    {
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
 
       static const char simple_snow[] =
 #include "d3d_shaders/simple_snow_sm4.hlsl.h"
-            ;
+         ;
       static const char snow[] =
 #include "d3d_shaders/snow_sm4.hlsl.h"
-            ;
+         ;
       static const char bokeh[] =
 #include "d3d_shaders/bokeh_sm4.hlsl.h"
-            ;
+         ;
       static const char snowflake[] =
 #include "d3d_shaders/snowflake_sm4.hlsl.h"
-            ;
+         ;
 
       if (!d3d11_init_shader(
-                d3d11->device, simple_snow, sizeof(simple_snow), NULL, "VSMain", "PSMain", NULL,
-                desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3]))
+               d3d11->device, simple_snow, sizeof(simple_snow), NULL, "VSMain", "PSMain", NULL,
+               desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3]))
          goto error;
       if (!d3d11_init_shader(
-                d3d11->device, snow, sizeof(snow), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_4]))
-         goto error;
-
-      if (!d3d11_init_shader(
-                d3d11->device, bokeh, sizeof(bokeh), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_5]))
+               d3d11->device, snow, sizeof(snow), NULL, "VSMain", "PSMain", NULL, desc,
+               countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_4]))
          goto error;
 
       if (!d3d11_init_shader(
-                d3d11->device, snowflake, sizeof(snowflake), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_6]))
+               d3d11->device, bokeh, sizeof(bokeh), NULL, "VSMain", "PSMain", NULL, desc,
+               countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_5]))
+         goto error;
+
+      if (!d3d11_init_shader(
+               d3d11->device, snowflake, sizeof(snowflake), NULL, "VSMain", "PSMain", NULL, desc,
+               countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_6]))
          goto error;
    }
 
@@ -715,7 +715,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       D3D11CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_disable);
    }
    {
-      D3D11_RASTERIZER_DESC desc = {};
+      D3D11_RASTERIZER_DESC desc = {(D3D11_FILL_MODE)0};
 
       desc.FillMode = D3D11_FILL_SOLID;
       desc.CullMode = D3D11_CULL_NONE;
@@ -825,7 +825,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
       RARCH_LOG("[D3D11]: Updating framebuffer size %u x %u.\n", width, height);
 
       if ((i != (d3d11->shader_preset->passes - 1)) || (width != d3d11->vp.width) ||
-          (height != d3d11->vp.height))
+            (height != d3d11->vp.height))
       {
          d3d11->pass[i].viewport.Width    = width;
          d3d11->pass[i].viewport.Height   = height;
@@ -908,7 +908,7 @@ static bool d3d11_gfx_frame(
 #if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
    if (d3d11->resize_viewport)
 #endif
-   d3d11_update_viewport(d3d11, false);
+      d3d11_update_viewport(d3d11, false);
 
    D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
@@ -917,7 +917,7 @@ static bool d3d11_gfx_frame(
       if (d3d11->shader_preset)
       {
          if (d3d11->frame.texture[0].desc.Width != width ||
-             d3d11->frame.texture[0].desc.Height != height)
+               d3d11->frame.texture[0].desc.Height != height)
             d3d11->resize_render_targets = true;
 
          if (d3d11->resize_render_targets)
@@ -946,7 +946,7 @@ static bool d3d11_gfx_frame(
 
       /* either no history, or we moved a texture of a different size in the front slot */
       if (d3d11->frame.texture[0].desc.Width != width ||
-          d3d11->frame.texture[0].desc.Height != height)
+            d3d11->frame.texture[0].desc.Height != height)
       {
          d3d11->frame.texture[0].desc.Width  = width;
          d3d11->frame.texture[0].desc.Height = height;
@@ -985,7 +985,7 @@ static bool d3d11_gfx_frame(
 
          if (d3d11->shader_preset->pass[i].frame_count_mod)
             d3d11->pass[i].frame_count =
-                  frame_count % d3d11->shader_preset->pass[i].frame_count_mod;
+               frame_count % d3d11->shader_preset->pass[i].frame_count_mod;
          else
             d3d11->pass[i].frame_count = frame_count;
 
@@ -1178,7 +1178,7 @@ static void d3d11_set_menu_texture_frame(
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
    DXGI_FORMAT    format =
-         rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
+      rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
    if (d3d11->menu.texture.desc.Width != width || d3d11->menu.texture.desc.Height != height)
    {
@@ -1190,9 +1190,9 @@ static void d3d11_set_menu_texture_frame(
 
    d3d11_update_texture(d3d11->context, width, height, 0, format, frame, &d3d11->menu.texture);
    d3d11->menu.texture.sampler = d3d11->samplers
-                                       [config_get_ptr()->bools.menu_linear_filter
-                                              ? RARCH_FILTER_LINEAR
-                                              : RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
+      [config_get_ptr()->bools.menu_linear_filter
+      ? RARCH_FILTER_LINEAR
+         : RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
 }
 
 static void d3d11_set_menu_texture_enable(void* data, bool state, bool full_screen)

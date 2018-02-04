@@ -72,7 +72,7 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    texture->desc.SampleDesc.Quality = 0;
    texture->desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
    texture->desc.CPUAccessFlags =
-         texture->desc.Usage == D3D11_USAGE_DYNAMIC ? D3D11_CPU_ACCESS_WRITE : 0;
+      texture->desc.Usage == D3D11_USAGE_DYNAMIC ? D3D11_CPU_ACCESS_WRITE : 0;
 
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
    {
@@ -95,7 +95,7 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    D3D11CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
 
    {
-      D3D11_SHADER_RESOURCE_VIEW_DESC view_desc = {};
+      D3D11_SHADER_RESOURCE_VIEW_DESC view_desc = { DXGI_FORMAT_UNKNOWN };
       view_desc.Format                          = texture->desc.Format;
       view_desc.ViewDimension                   = D3D_SRV_DIMENSION_TEXTURE2D;
       view_desc.Texture2D.MostDetailedMip       = 0;
@@ -149,7 +149,7 @@ void d3d11_update_texture(
       D3D11GenerateMips(ctx, texture->view);
 }
 
-DXGI_FORMAT
+   DXGI_FORMAT
 d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT desired_format_support)
 {
    DXGI_FORMAT default_list[] = {desired_format, DXGI_FORMAT_UNKNOWN};
@@ -162,7 +162,7 @@ d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT des
    {
       UINT         format_support;
       if (SUCCEEDED(D3D11CheckFormatSupport(device, *format, &format_support)) &&
-          ((format_support & desired_format_support) == desired_format_support))
+            ((format_support & desired_format_support) == desired_format_support))
          break;
       format++;
    }

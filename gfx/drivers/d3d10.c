@@ -73,7 +73,7 @@ static void d3d10_update_viewport(void* data, bool force_full)
    d3d10->resize_viewport = false;
 }
 
-static void*
+   static void*
 d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
    WNDCLASSEX      wndclass = { 0 };
@@ -158,7 +158,7 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d10->format      = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
 
    d3d10->frame.texture.desc.Format =
-         d3d10_get_closest_match_texture2D(d3d10->device, d3d10->format);
+      d3d10_get_closest_match_texture2D(d3d10->device, d3d10->format);
    d3d10->frame.texture.desc.Usage = D3D10_USAGE_DEFAULT;
 
    d3d10->menu.texture.desc.Usage  = D3D10_USAGE_DEFAULT;
@@ -179,16 +179,21 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d10_gfx_set_rotation(d3d10, 0);
 
    {
-      D3D10_SAMPLER_DESC desc = {};
+      unsigned k;
+      D3D10_SAMPLER_DESC desc;
 
       desc.Filter         = D3D10_FILTER_MIN_MAG_MIP_POINT;
       desc.AddressU       = D3D10_TEXTURE_ADDRESS_BORDER;
       desc.AddressV       = D3D10_TEXTURE_ADDRESS_BORDER;
       desc.AddressW       = D3D10_TEXTURE_ADDRESS_BORDER;
+      desc.MipLODBias     = 0.0f;
       desc.MaxAnisotropy  = 1;
       desc.ComparisonFunc = D3D10_COMPARISON_NEVER;
       desc.MinLOD         = -D3D10_FLOAT32_MAX;
       desc.MaxLOD         = D3D10_FLOAT32_MAX;
+
+      for (k = 0; k < 4; k++)
+         desc.BorderColor[k] = 0.0f;
 
       D3D10CreateSamplerState(d3d10->device, &desc, &d3d10->sampler_nearest);
 
@@ -228,15 +233,15 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
       static const char stock[] =
 #include "d3d_shaders/opaque_sm5.hlsl.h"
-            ;
+         ;
 
       D3D10_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d10_vertex_t, position),
-           D3D10_INPUT_PER_VERTEX_DATA, 0 },
+            D3D10_INPUT_PER_VERTEX_DATA, 0 },
          { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d10_vertex_t, texcoord),
-           D3D10_INPUT_PER_VERTEX_DATA, 0 },
+            D3D10_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d10_vertex_t, color),
-           D3D10_INPUT_PER_VERTEX_DATA, 0 },
+            D3D10_INPUT_PER_VERTEX_DATA, 0 },
       };
 
       d3d_compile(stock, sizeof(stock), NULL, "VSMain", "vs_4_0", &vs_code);
@@ -340,9 +345,9 @@ static bool d3d10_gfx_frame(
       UINT stride = sizeof(d3d10_vertex_t);
       UINT offset = 0;
 #if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
-   if (d3d10->resize_viewport)
+      if (d3d10->resize_viewport)
 #endif
-      d3d10_update_viewport(d3d10, false);
+         d3d10_update_viewport(d3d10, false);
 
       D3D10SetViewports(d3d10->device, 1, &d3d10->frame.viewport);
       D3D10SetVertexBuffers(d3d10->device, 0, 1, &d3d10->frame.vbo, &stride, &offset);
@@ -488,7 +493,7 @@ static void d3d10_set_menu_texture_frame(
 
    d3d10_update_texture(width, height, pitch, format, frame, &d3d10->menu.texture);
    d3d10->menu.sampler = config_get_ptr()->bools.menu_linear_filter ? d3d10->sampler_linear
-                                                                    : d3d10->sampler_nearest;
+      : d3d10->sampler_nearest;
 }
 static void d3d10_set_menu_texture_enable(void* data, bool state, bool full_screen)
 {
