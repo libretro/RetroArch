@@ -2271,7 +2271,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-      "Sincronizar o som. Recomendado."
+      "Sincronizar o som. Recomendado.")
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
    "Até que ponto um eixo deve estar inclinado para causar o pressionamento de um botão."
