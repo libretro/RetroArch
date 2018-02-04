@@ -2270,12 +2270,8 @@ MSG_HASH(
       "Volume de som (em dB). 0 dB representa o volume normal, sem aplicação de ganho."
       )
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-      "Permitir o controlo do menu por qualquer utilizador. Quando desativada, esta opção faz com que apenas o Utilizador 1 possa controlar o menu."
-      )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   "Sincronizar o som. Recomendado."
+      MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+      "Sincronizar o som. Recomendado."
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
    "Até que ponto um eixo deve estar inclinado para causar o pressionamento de um botão."
