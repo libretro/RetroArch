@@ -42,6 +42,8 @@ typedef struct ui_window_win32
    HWND hwnd;
 } ui_window_win32_t;
 
+extern VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
+
 RETRO_END_DECLS
 
 #endif
