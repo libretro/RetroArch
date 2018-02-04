@@ -383,19 +383,18 @@ void fill_pathname_application_special(char *s,
 void fill_short_pathname_representation_wrapper(char* out_rep,
       const char *in_path, size_t size)
 {
-   char *path_short = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 #ifdef HAVE_COMPRESSION
+   char *path_short = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *last_slash = NULL;
-#endif
 
-   path_short[0] = '\0';
+   path_short[0]    = '\0';
 
    fill_pathname(path_short, path_basename(in_path), "",
          PATH_MAX_LENGTH * sizeof(char)
          );
 
-#ifdef HAVE_COMPRESSION
    last_slash  = find_last_slash(path_short);
+
    if (last_slash != NULL)
    {
       /* We handle paths like:
@@ -410,8 +409,9 @@ void fill_short_pathname_representation_wrapper(char* out_rep,
       free(path_short);
       return;
    }
+
+   free(path_short);
 #endif
 
    fill_short_pathname_representation(out_rep, in_path, size);
-   free(path_short);
 }
