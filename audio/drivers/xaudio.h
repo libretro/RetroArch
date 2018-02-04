@@ -26,7 +26,7 @@
 /* All structures defined in this file use tight field packing */
 #pragma pack(push, 1)
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CINTERFACE)
 #define X2DEFAULT(x) = (x)
 #else
 #define X2DEFAULT(x)
@@ -183,6 +183,9 @@ typedef struct XAUDIO2_BUFFER
    void *pContext;
 } XAUDIO2_BUFFER;
 
+#undef INTERFACE
+#define INTERFACE IXAudio2VoiceCallback
+
 DECLARE_INTERFACE(IXAudio2VoiceCallback)
 {
    STDMETHOD_(void, OnVoiceProcessingPassStart) (THIS_ UINT32 BytesRequired) PURE;
@@ -193,6 +196,9 @@ DECLARE_INTERFACE(IXAudio2VoiceCallback)
    STDMETHOD_(void, OnLoopEnd) (THIS_ void *pBufferContext) PURE;
    STDMETHOD_(void, OnVoiceError) (THIS_ void *pBufferContext, HRESULT Error) PURE;
 };
+
+#undef INTERFACE
+#define INTERFACE IXAudio2Voice
 
 DECLARE_INTERFACE(IXAudio2Voice)
 {
@@ -235,10 +241,16 @@ DECLARE_INTERFACE(IXAudio2Voice)
    Declare_IXAudio2Voice_Methods();
 };
 
+#undef INTERFACE
+#define INTERFACE IXAudio2MasteringVoice
+
 DECLARE_INTERFACE_(IXAudio2MasteringVoice, IXAudio2Voice)
 {
    Declare_IXAudio2Voice_Methods();
 };
+
+#undef INTERFACE
+#define INTERFACE IXAudio2SourceVoice
 
 DECLARE_INTERFACE_(IXAudio2SourceVoice, IXAudio2Voice)
 {
@@ -255,6 +267,8 @@ DECLARE_INTERFACE_(IXAudio2SourceVoice, IXAudio2Voice)
    STDMETHOD_(void, GetFrequencyRatio) (THIS_ float* pRatio) PURE;
 };
 
+#undef INTERFACE
+#define INTERFACE IXAudio2
 
 DECLARE_INTERFACE_(IXAudio2, IUnknown)
 {
@@ -292,7 +306,7 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
          void *pReserved X2DEFAULT(NULL)) PURE;
 };
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CINTERFACE)
 /* C++ hooks */
 #define IXAudio2_Initialize(handle,a,b) handle->Initialize(a, b)
 #define IXAudio2SourceVoice_SubmitSourceBuffer(handle, a, b) handle->SubmitSourceBuffer(a, b)
@@ -305,17 +319,17 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
 #define IXAudio2SourceVoice_Start(handle, a, b) handle->Start(a, b)
 #else
 /* C hooks */
-#define IXAudio2_Initialize(THIS,a,b) (THIS)->lpVtbl->Initialize(THIS, a, b)
-#define IXAudio2_Release(THIS) (THIS)->lpVtbl->Release(THIS)
-#define IXAudio2_CreateSourceVoice(THIS,ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain) (THIS)->lpVtbl->CreateSourceVoice(THIS, ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain)
-#define IXAudio2_CreateMasteringVoice(THIS,ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain) (THIS)->lpVtbl->CreateMasteringVoice(THIS, ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain)
-#define IXAudio2_GetDeviceCount(THIS, puCount) (THIS)->lpVtbl->GetDeviceCount(THIS, puCount)
-#define IXAudio2_GetDeviceDetails(THIS, Index,pDeviceDetails) (THIS)->lpVtbl->GetDeviceDetails(THIS, Index, pDeviceDetails)
-#define IXAudio2SourceVoice_Start(THIS, Flags, OperationSet) (THIS)->lpVtbl->Start(THIS, Flags, OperationSet)
-#define IXAudio2SourceVoice_Stop(THIS, Flags, OperationSet) (THIS)->lpVtbl->Stop(THIS, Flags, OperationSet)
-#define IXAudio2SourceVoice_SubmitSourceBuffer(THIS, pBuffer, pBufferWMA) (THIS)->lpVtbl->SubmitSourceBuffer(THIS, pBuffer, pBufferWMA)
-#define IXAudio2SourceVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
-#define IXAudio2MasteringVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
+#define IXAudio2_Initialize(handle,a,b) (handle)->lpVtbl->Initialize(handle, a, b)
+#define IXAudio2_Release(handle) (handle)->lpVtbl->Release(handle)
+#define IXAudio2_CreateSourceVoice(handle,ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain) (handle)->lpVtbl->CreateSourceVoice(handle, ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain)
+#define IXAudio2_CreateMasteringVoice(handle,ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain) (handle)->lpVtbl->CreateMasteringVoice(handle, ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain)
+#define IXAudio2_GetDeviceCount(handle, puCount) (handle)->lpVtbl->GetDeviceCount(handle, puCount)
+#define IXAudio2_GetDeviceDetails(handle, Index,pDeviceDetails) (handle)->lpVtbl->GetDeviceDetails(handle, Index, pDeviceDetails)
+#define IXAudio2SourceVoice_Start(handle, Flags, OperationSet) (handle)->lpVtbl->Start(handle, Flags, OperationSet)
+#define IXAudio2SourceVoice_Stop(handle, Flags, OperationSet) (handle)->lpVtbl->Stop(handle, Flags, OperationSet)
+#define IXAudio2SourceVoice_SubmitSourceBuffer(handle, pBuffer, pBufferWMA) (handle)->lpVtbl->SubmitSourceBuffer(handle, pBuffer, pBufferWMA)
+#define IXAudio2SourceVoice_DestroyVoice(handle) (handle)->lpVtbl->DestroyVoice(handle)
+#define IXAudio2MasteringVoice_DestroyVoice(handle) (handle)->lpVtbl->DestroyVoice(handle)
 #endif
 
 #ifdef _XBOX
@@ -333,7 +347,8 @@ static INLINE HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32 flags, XAUDIO2_
 
    if (SUCCEEDED(hr))
    {
-      hr = IXAudio2_Initialize(pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
+      hr = pXAudio2->lpVtbl->Initialize(pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
+//      hr = IXAudio2_Initialize(pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
       if (SUCCEEDED(hr))
          *ppXAudio2 = pXAudio2;
       else

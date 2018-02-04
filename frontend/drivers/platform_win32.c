@@ -41,6 +41,7 @@
 #include "../../defaults.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#include "../../ui/drivers/ui_win32.h"
 
 /* We only load this library once, so we let it be
  * unloaded at application shutdown, since unloading

@@ -5,6 +5,7 @@ OS              = Win32
 ARCH            = amd64
 #TARGET_ARCH     = x86
 BUILD_DIR       = objs/msvc
+CXX_BUILD       = 0
 
 
 WindowsSdkDir = C:\Program Files (x86)\Windows Kits\10\$(NOTHING)
@@ -59,7 +60,6 @@ include Makefile.common
 INCLUDE_DIRS := $(patsubst  -isystem%,-I%,$(INCLUDE_DIRS))
 CFLAGS       := $(filter-out  -Wno-unknown-pragmas,$(CFLAGS))
 CXXFLAGS     := $(filter-out  -fpermissive -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses,$(CXXFLAGS))
-CXXFLAGS     += $(CFLAGS)
 LIBS         := $(filter-out  -lstdc++,$(LIBS))
 
 ifeq ($(ARCH),x64)
@@ -124,11 +124,16 @@ FLAGS  += -Gm- -Zc:inline -fp:precise -Zc:forScope -GR- -Gd -Oi -volatile:iso
 #FLAGS += -utf-8
 #FLAGS += -source-charset:utf-8
 
+CXXFLAGS += $(CFLAGS) -TP -EHsc
+ifeq ($(CXX_BUILD),1)
+   CFLAGS  := $(CXXFLAGS)
+   DEFINES += -DCXX_BUILD
+else
+   CFLAGS  += -TC
+endif
 
-CFLAGS += -TC
-CXXFLAGS += -TP -EHsc
 WARNINGS += -WX -W3
-WARNINGS += -wd4101 -wd4996 -wd4244 -wd4267 -wd4090 -wd4305 -wd4146 -wd4334 -wd4018 -wd4800
+WARNINGS += -wd4101 -wd4996 -wd4244 -wd4267 -wd4090 -wd4305 -wd4146 -wd4334 -wd4018 -wd4800 -wd4838
 
 CC = cl.exe
 CXX = cl.exe
