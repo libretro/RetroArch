@@ -2270,28 +2270,8 @@ MSG_HASH(
       "Volume de som (em dB). 0 dB representa o volume normal, sem aplicação de ganho."
       )
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
-      "Permitir ou não o acesso à câmera pelos núcleos."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
-      "Permitir ou não o acesso ao serviço de localização aos núcleos."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-      "Número máximo de utilizadores suportados pelo RetroArch."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-      "Comportamento de procura de periféricos de entrada no RetroArch. Se o valor for 'Cedo' ou 'Tarde', poder obter menos latência, dependendo da sua configuração."
-      )
-MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
       "Permitir o controlo do menu por qualquer utilizador. Quando desativada, esta opção faz com que apenas o Utilizador 1 possa controlar o menu."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-      "Volume de som (em dB). 0 dB representa o volume normal, sem aplicação de ganho."
       )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
