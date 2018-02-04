@@ -70,15 +70,18 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    texture->desc.ArraySize          = 1;
    texture->desc.SampleDesc.Count   = 1;
    texture->desc.SampleDesc.Quality = 0;
-   texture->desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
-   texture->desc.CPUAccessFlags =
+   texture->desc.BindFlags         |= D3D11_BIND_SHADER_RESOURCE;
+   texture->desc.CPUAccessFlags     =
       texture->desc.Usage == D3D11_USAGE_DYNAMIC ? D3D11_CPU_ACCESS_WRITE : 0;
 
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
    {
+      unsigned width, height;
+
       texture->desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-      unsigned width  = texture->desc.Width >> 5;
-      unsigned height = texture->desc.Height >> 5;
+      width                    = texture->desc.Width >> 5;
+      height                   = texture->desc.Height >> 5;
+
       while (width && height)
       {
          width >>= 1;
