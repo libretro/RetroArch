@@ -48,7 +48,14 @@
 #include <guiddef.h>
 #include <ks.h>
 #include <setupapi.h>
+#include <winapifamily.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <hidsdi.h>
+#ifdef __cplusplus
+}
+#endif
 
 /* Why doesn't including cguid.h work to get a GUID_NULL instead? */
 #ifdef __cplusplus
