@@ -15,5 +15,8 @@
     <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp">
       <Filter>griffin</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\griffin\griffin_glslang.cpp">
+      <Filter>griffin</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

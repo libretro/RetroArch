@@ -26,70 +26,6 @@
 #include <compat/posix_string.h>
 #endif
 
-#ifdef WANT_GLSLANG
-#include "../deps/glslang/glslang.cpp"
-#if 0
-#include "../deps/glslang/glslang_tab.cpp"
-#endif
-#include "../deps/glslang/glslang/SPIRV/disassemble.cpp"
-#include "../deps/glslang/glslang/SPIRV/doc.cpp"
-#include "../deps/glslang/glslang/SPIRV/GlslangToSpv.cpp"
-#include "../deps/glslang/glslang/SPIRV/InReadableOrder.cpp"
-#include "../deps/glslang/glslang/SPIRV/Logger.cpp"
-#include "../deps/glslang/glslang/SPIRV/SpvBuilder.cpp"
-#include "../deps/glslang/glslang/SPIRV/SPVRemapper.cpp"
-
-#include "../deps/glslang/glslang/glslang/GenericCodeGen/CodeGen.cpp"
-#include "../deps/glslang/glslang/glslang/GenericCodeGen/Link.cpp"
-
-#include "../deps/glslang/glslang/OGLCompilersDLL/InitializeDll.cpp"
-
-#include "../deps/glslang/glslang/glslang/MachineIndependent/Constant.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/glslang_tab.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/InfoSink.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/Initialize.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/Intermediate.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/intermOut.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/IntermTraverse.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/iomapper.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/limits.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/linkValidate.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/parseConst.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/ParseContextBase.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/ParseHelper.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/PoolAlloc.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/propagateNoContraction.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/reflection.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/RemoveTree.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/Scan.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/ShaderLang.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/SymbolTable.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/Versions.cpp"
-
-#include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/Pp.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpAtom.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpContext.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpMemory.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpScanner.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpSymbols.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpTokens.cpp"
-
-#include "../deps/glslang/glslang/hlsl/hlslAttributes.cpp"
-#include "../deps/glslang/glslang/hlsl/hlslGrammar.cpp"
-#include "../deps/glslang/glslang/hlsl/hlslOpMap.cpp"
-#include "../deps/glslang/glslang/hlsl/hlslParseables.cpp"
-#include "../deps/glslang/glslang/hlsl/hlslParseHelper.cpp"
-#include "../deps/glslang/glslang/hlsl/hlslScanContext.cpp"
-#include "../deps/glslang/glslang/hlsl/hlslTokenStream.cpp"
-#ifdef _WIN32
-#include "../deps/glslang/glslang/glslang/OSDependent/Windows/ossource.cpp"
-#endif
-
-#if defined(__linux__) && !defined(ANDROID)
-#include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp"
-#endif
-#endif
-
 /*============================================================
 MENU
 ============================================================ */
@@ -123,6 +59,11 @@ VIDEO DRIVER
 #ifdef HAVE_SPIRV_CROSS
 #include "../deps/SPIRV-Cross/spirv_cross.cpp"
 #include "../deps/SPIRV-Cross/spirv_cfg.cpp"
+#include "../deps/SPIRV-Cross/spirv_glsl.cpp"
+#include "../deps/SPIRV-Cross/spirv_hlsl.cpp"
+#if 0
+#include "../deps/SPIRV-Cross/spirv_msl.cpp"
+#endif
 #ifdef HAVE_SLANG
 #include "../gfx/drivers_shader/glslang_util.cpp"
 #include "../gfx/drivers_shader/slang_preprocess.cpp"
@@ -136,4 +77,14 @@ FONTS
 ============================================================ */
 #if defined(_XBOX360)
 #include "../gfx/drivers_font/xdk360_fonts.cpp"
+#endif
+
+#ifdef WANT_GLSLANG
+#ifdef _WIN32
+#include "../deps/glslang/glslang/glslang/OSDependent/Windows/ossource.cpp"
+#endif
+
+#if defined(__linux__) && !defined(ANDROID)
+#include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp"
+#endif
 #endif

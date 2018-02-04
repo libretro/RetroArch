@@ -74,8 +74,8 @@ struct HlslToken {
 //
 class HlslScanContext {
 public:
-    HlslScanContext(TParseContextBase& parseContext, TPpContext& ppContext)
-        : parseContext(parseContext), ppContext(ppContext) { }
+    HlslScanContext(TParseContextBase& _parseContext, TPpContext& ppContext)
+        : _parseContext(_parseContext), ppContext(ppContext) { }
     virtual ~HlslScanContext() { }
 
     static void fillInKeywordMap();
@@ -94,7 +94,7 @@ protected:
     EHlslTokenClass identifierOrReserved(bool reserved);
     EHlslTokenClass nonreservedKeyword(int version);
 
-    TParseContextBase& parseContext;
+    TParseContextBase&_parseContext;
     TPpContext& ppContext;
     TSourceLoc loc;
     TPpToken* ppToken;

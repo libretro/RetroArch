@@ -21,5 +21,8 @@
     <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\griffin\griffin_glslang.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

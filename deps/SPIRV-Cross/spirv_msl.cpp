@@ -1230,7 +1230,13 @@ void CompilerMSL::emit_specialization_constants()
 // Override for MSL-specific syntax instructions
 void CompilerMSL::emit_instruction(const Instruction &instruction)
 {
-
+#undef BOP
+#undef BOP_CAST
+#undef UOP
+#undef QFOP
+#undef TFOP
+#undef BFOP
+#undef BFOP_CAST
 #define BOP(op) emit_binary_op(ops[0], ops[1], ops[2], ops[3], #op)
 #define BOP_CAST(op, type) \
 	emit_binary_op_cast(ops[0], ops[1], ops[2], ops[3], #op, type, opcode_is_sign_invariant(opcode))

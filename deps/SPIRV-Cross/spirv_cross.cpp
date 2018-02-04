@@ -3368,7 +3368,7 @@ void Compiler::analyze_variable_scope(SPIRFunction &entry)
 	CFG cfg(*this, entry);
 
 	// Analyze if there are parameters which need to be implicitly preserved with an "in" qualifier.
-	analyze_parameter_preservation(entry, cfg, handler.accessed_variables_to_block,
+	this->analyze_parameter_preservation(entry, cfg, handler.accessed_variables_to_block,
 	                               handler.complete_write_variables_to_block);
 
 	unordered_map<uint32_t, uint32_t> potential_loop_variables;
@@ -3393,7 +3393,7 @@ void Compiler::analyze_variable_scope(SPIRFunction &entry)
 				// The continue block is dominated by the inner part of the loop, which does not make sense in high-level
 				// language output because it will be declared before the body,
 				// so we will have to lift the dominator up to the relevant loop header instead.
-				builder.add_block(continue_block_to_loop_header[block]);
+				builder.add_block(this->continue_block_to_loop_header[block]);
 
 				if (type.vecsize == 1 && type.columns == 1)
 				{
@@ -3447,7 +3447,7 @@ void Compiler::analyze_variable_scope(SPIRFunction &entry)
 			// If a temporary is used in more than one block, we might have to lift continue block
 			// access up to loop header like we did for variables.
 			if (blocks.size() != 1 && this->is_continue(block))
-				builder.add_block(continue_block_to_loop_header[block]);
+				builder.add_block(this->continue_block_to_loop_header[block]);
 		}
 
 		uint32_t dominating_block = builder.get_dominator();
@@ -3462,10 +3462,10 @@ void Compiler::analyze_variable_scope(SPIRFunction &entry)
 				// This should be very rare, but if we try to declare a temporary inside a loop,
 				// and that temporary is used outside the loop as well (spirv-opt inliner likes this)
 				// we should actually emit the temporary outside the loop.
-				hoisted_temporaries.insert(var.first);
-				forced_temporaries.insert(var.first);
+				this->hoisted_temporaries.insert(var.first);
+				this->forced_temporaries.insert(var.first);
 
-				auto &block_temporaries = get<SPIRBlock>(dominating_block).declare_temporary;
+				auto &block_temporaries = this->get<SPIRBlock>(dominating_block).declare_temporary;
 				block_temporaries.emplace_back(handler.result_id_to_type[var.first], var.first);
 			}
 		}

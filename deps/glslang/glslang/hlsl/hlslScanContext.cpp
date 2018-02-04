@@ -52,329 +52,306 @@
 // preprocessor includes
 #include "../glslang/MachineIndependent/preprocessor/PpContext.h"
 #include "../glslang/MachineIndependent/preprocessor/PpTokens.h"
+#include "../glslang/MachineIndependent/preprocessor/Compare.h"
     
 namespace {
 
-struct str_eq
-{
-    bool operator()(const char* lhs, const char* rhs) const
-    {
-        return strcmp(lhs, rhs) == 0;
-    }
-};
-
-struct str_hash
-{
-    size_t operator()(const char* str) const
-    {
-        // djb2
-        unsigned long hash = 5381;
-        int c;
-
-        while ((c = *str++) != 0)
-            hash = ((hash << 5) + hash) + c;
-
-        return hash;
-    }
-};
-
 // A single global usable by all threads, by all versions, by all languages.
 // After a single process-level initialization, this is read only and thread safe
-std::unordered_map<const char*, glslang::EHlslTokenClass, str_hash, str_eq>* KeywordMap = nullptr;
-std::unordered_set<const char*, str_hash, str_eq>* ReservedSet = nullptr;
-
+std::unordered_map<const char*, glslang::EHlslTokenClass, str_hash, str_eq>* hlslKeywordMap = nullptr;
+std::unordered_set<const char*, str_hash, str_eq>* hlslReservedSet = nullptr;
 };
 
 namespace glslang {
 
 void HlslScanContext::fillInKeywordMap()
 {
-    if (KeywordMap != nullptr) {
+    if (hlslKeywordMap != nullptr) {
         // this is really an error, as this should called only once per process
         // but, the only risk is if two threads called simultaneously
         return;
     }
-    KeywordMap = new std::unordered_map<const char*, EHlslTokenClass, str_hash, str_eq>;
+    hlslKeywordMap = new std::unordered_map<const char*, EHlslTokenClass, str_hash, str_eq>;
 
-    (*KeywordMap)["static"] =                  EHTokStatic;
-    (*KeywordMap)["const"] =                   EHTokConst;
-    (*KeywordMap)["unorm"] =                   EHTokUnorm;
-    (*KeywordMap)["snorm"] =                   EHTokSNorm;
-    (*KeywordMap)["extern"] =                  EHTokExtern;
-    (*KeywordMap)["uniform"] =                 EHTokUniform;
-    (*KeywordMap)["volatile"] =                EHTokVolatile;
-    (*KeywordMap)["precise"] =                 EHTokPrecise;
-    (*KeywordMap)["shared"] =                  EHTokShared;
-    (*KeywordMap)["groupshared"] =             EHTokGroupShared;
-    (*KeywordMap)["linear"] =                  EHTokLinear;
-    (*KeywordMap)["centroid"] =                EHTokCentroid;
-    (*KeywordMap)["nointerpolation"] =         EHTokNointerpolation;
-    (*KeywordMap)["noperspective"] =           EHTokNoperspective;
-    (*KeywordMap)["sample"] =                  EHTokSample;
-    (*KeywordMap)["row_major"] =               EHTokRowMajor;
-    (*KeywordMap)["column_major"] =            EHTokColumnMajor;
-    (*KeywordMap)["packoffset"] =              EHTokPackOffset;
-    (*KeywordMap)["in"] =                      EHTokIn;
-    (*KeywordMap)["out"] =                     EHTokOut;
-    (*KeywordMap)["inout"] =                   EHTokInOut;
-    (*KeywordMap)["layout"] =                  EHTokLayout;
+    (*hlslKeywordMap)["static"] =                  EHTokStatic;
+    (*hlslKeywordMap)["const"] =                   EHTokConst;
+    (*hlslKeywordMap)["unorm"] =                   EHTokUnorm;
+    (*hlslKeywordMap)["snorm"] =                   EHTokSNorm;
+    (*hlslKeywordMap)["extern"] =                  EHTokExtern;
+    (*hlslKeywordMap)["uniform"] =                 EHTokUniform;
+    (*hlslKeywordMap)["volatile"] =                EHTokVolatile;
+    (*hlslKeywordMap)["precise"] =                 EHTokPrecise;
+    (*hlslKeywordMap)["shared"] =                  EHTokShared;
+    (*hlslKeywordMap)["groupshared"] =             EHTokGroupShared;
+    (*hlslKeywordMap)["linear"] =                  EHTokLinear;
+    (*hlslKeywordMap)["centroid"] =                EHTokCentroid;
+    (*hlslKeywordMap)["nointerpolation"] =         EHTokNointerpolation;
+    (*hlslKeywordMap)["noperspective"] =           EHTokNoperspective;
+    (*hlslKeywordMap)["sample"] =                  EHTokSample;
+    (*hlslKeywordMap)["row_major"] =               EHTokRowMajor;
+    (*hlslKeywordMap)["column_major"] =            EHTokColumnMajor;
+    (*hlslKeywordMap)["packoffset"] =              EHTokPackOffset;
+    (*hlslKeywordMap)["in"] =                      EHTokIn;
+    (*hlslKeywordMap)["out"] =                     EHTokOut;
+    (*hlslKeywordMap)["inout"] =                   EHTokInOut;
+    (*hlslKeywordMap)["layout"] =                  EHTokLayout;
 
-    (*KeywordMap)["point"] =                   EHTokPoint;
-    (*KeywordMap)["line"] =                    EHTokLine;
-    (*KeywordMap)["triangle"] =                EHTokTriangle;
-    (*KeywordMap)["lineadj"] =                 EHTokLineAdj;
-    (*KeywordMap)["triangleadj"] =             EHTokTriangleAdj;
+    (*hlslKeywordMap)["point"] =                   EHTokPoint;
+    (*hlslKeywordMap)["line"] =                    EHTokLine;
+    (*hlslKeywordMap)["triangle"] =                EHTokTriangle;
+    (*hlslKeywordMap)["lineadj"] =                 EHTokLineAdj;
+    (*hlslKeywordMap)["triangleadj"] =             EHTokTriangleAdj;
 
-    (*KeywordMap)["PointStream"] =             EHTokPointStream;
-    (*KeywordMap)["LineStream"] =              EHTokLineStream;
-    (*KeywordMap)["TriangleStream"] =          EHTokTriangleStream;
+    (*hlslKeywordMap)["PointStream"] =             EHTokPointStream;
+    (*hlslKeywordMap)["LineStream"] =              EHTokLineStream;
+    (*hlslKeywordMap)["TriangleStream"] =          EHTokTriangleStream;
 
-    (*KeywordMap)["Buffer"] =                  EHTokBuffer;
-    (*KeywordMap)["vector"] =                  EHTokVector;
-    (*KeywordMap)["matrix"] =                  EHTokMatrix;
+    (*hlslKeywordMap)["Buffer"] =                  EHTokBuffer;
+    (*hlslKeywordMap)["vector"] =                  EHTokVector;
+    (*hlslKeywordMap)["matrix"] =                  EHTokMatrix;
 
-    (*KeywordMap)["void"] =                    EHTokVoid;
-    (*KeywordMap)["string"] =                  EHTokString;
-    (*KeywordMap)["bool"] =                    EHTokBool;
-    (*KeywordMap)["int"] =                     EHTokInt;
-    (*KeywordMap)["uint"] =                    EHTokUint;
-    (*KeywordMap)["dword"] =                   EHTokDword;
-    (*KeywordMap)["half"] =                    EHTokHalf;
-    (*KeywordMap)["float"] =                   EHTokFloat;
-    (*KeywordMap)["double"] =                  EHTokDouble;
-    (*KeywordMap)["min16float"] =              EHTokMin16float; 
-    (*KeywordMap)["min10float"] =              EHTokMin10float;
-    (*KeywordMap)["min16int"] =                EHTokMin16int;
-    (*KeywordMap)["min12int"] =                EHTokMin12int;
-    (*KeywordMap)["min16uint"] =               EHTokMin16uint;
+    (*hlslKeywordMap)["void"] =                    EHTokVoid;
+    (*hlslKeywordMap)["string"] =                  EHTokString;
+    (*hlslKeywordMap)["bool"] =                    EHTokBool;
+    (*hlslKeywordMap)["int"] =                     EHTokInt;
+    (*hlslKeywordMap)["uint"] =                    EHTokUint;
+    (*hlslKeywordMap)["dword"] =                   EHTokDword;
+    (*hlslKeywordMap)["half"] =                    EHTokHalf;
+    (*hlslKeywordMap)["float"] =                   EHTokFloat;
+    (*hlslKeywordMap)["double"] =                  EHTokDouble;
+    (*hlslKeywordMap)["min16float"] =              EHTokMin16float; 
+    (*hlslKeywordMap)["min10float"] =              EHTokMin10float;
+    (*hlslKeywordMap)["min16int"] =                EHTokMin16int;
+    (*hlslKeywordMap)["min12int"] =                EHTokMin12int;
+    (*hlslKeywordMap)["min16uint"] =               EHTokMin16uint;
 
-    (*KeywordMap)["bool1"] =                   EHTokBool1;
-    (*KeywordMap)["bool2"] =                   EHTokBool2;
-    (*KeywordMap)["bool3"] =                   EHTokBool3;
-    (*KeywordMap)["bool4"] =                   EHTokBool4;
-    (*KeywordMap)["float1"] =                  EHTokFloat1;
-    (*KeywordMap)["float2"] =                  EHTokFloat2;
-    (*KeywordMap)["float3"] =                  EHTokFloat3;
-    (*KeywordMap)["float4"] =                  EHTokFloat4;
-    (*KeywordMap)["int1"] =                    EHTokInt1;
-    (*KeywordMap)["int2"] =                    EHTokInt2;
-    (*KeywordMap)["int3"] =                    EHTokInt3;
-    (*KeywordMap)["int4"] =                    EHTokInt4;
-    (*KeywordMap)["double1"] =                 EHTokDouble1;
-    (*KeywordMap)["double2"] =                 EHTokDouble2;
-    (*KeywordMap)["double3"] =                 EHTokDouble3;
-    (*KeywordMap)["double4"] =                 EHTokDouble4;
-    (*KeywordMap)["uint1"] =                   EHTokUint1;
-    (*KeywordMap)["uint2"] =                   EHTokUint2;
-    (*KeywordMap)["uint3"] =                   EHTokUint3;
-    (*KeywordMap)["uint4"] =                   EHTokUint4;
+    (*hlslKeywordMap)["bool1"] =                   EHTokBool1;
+    (*hlslKeywordMap)["bool2"] =                   EHTokBool2;
+    (*hlslKeywordMap)["bool3"] =                   EHTokBool3;
+    (*hlslKeywordMap)["bool4"] =                   EHTokBool4;
+    (*hlslKeywordMap)["float1"] =                  EHTokFloat1;
+    (*hlslKeywordMap)["float2"] =                  EHTokFloat2;
+    (*hlslKeywordMap)["float3"] =                  EHTokFloat3;
+    (*hlslKeywordMap)["float4"] =                  EHTokFloat4;
+    (*hlslKeywordMap)["int1"] =                    EHTokInt1;
+    (*hlslKeywordMap)["int2"] =                    EHTokInt2;
+    (*hlslKeywordMap)["int3"] =                    EHTokInt3;
+    (*hlslKeywordMap)["int4"] =                    EHTokInt4;
+    (*hlslKeywordMap)["double1"] =                 EHTokDouble1;
+    (*hlslKeywordMap)["double2"] =                 EHTokDouble2;
+    (*hlslKeywordMap)["double3"] =                 EHTokDouble3;
+    (*hlslKeywordMap)["double4"] =                 EHTokDouble4;
+    (*hlslKeywordMap)["uint1"] =                   EHTokUint1;
+    (*hlslKeywordMap)["uint2"] =                   EHTokUint2;
+    (*hlslKeywordMap)["uint3"] =                   EHTokUint3;
+    (*hlslKeywordMap)["uint4"] =                   EHTokUint4;
 
-    (*KeywordMap)["min16float1"] =             EHTokMin16float1;
-    (*KeywordMap)["min16float2"] =             EHTokMin16float2;
-    (*KeywordMap)["min16float3"] =             EHTokMin16float3;
-    (*KeywordMap)["min16float4"] =             EHTokMin16float4;
-    (*KeywordMap)["min10float1"] =             EHTokMin10float1;
-    (*KeywordMap)["min10float2"] =             EHTokMin10float2;
-    (*KeywordMap)["min10float3"] =             EHTokMin10float3;
-    (*KeywordMap)["min10float4"] =             EHTokMin10float4;
-    (*KeywordMap)["min16int1"] =               EHTokMin16int1;
-    (*KeywordMap)["min16int2"] =               EHTokMin16int2;
-    (*KeywordMap)["min16int3"] =               EHTokMin16int3;
-    (*KeywordMap)["min16int4"] =               EHTokMin16int4;
-    (*KeywordMap)["min12int1"] =               EHTokMin12int1;
-    (*KeywordMap)["min12int2"] =               EHTokMin12int2;
-    (*KeywordMap)["min12int3"] =               EHTokMin12int3;
-    (*KeywordMap)["min12int4"] =               EHTokMin12int4;
-    (*KeywordMap)["min16uint1"] =              EHTokMin16uint1;
-    (*KeywordMap)["min16uint2"] =              EHTokMin16uint2;
-    (*KeywordMap)["min16uint3"] =              EHTokMin16uint3;
-    (*KeywordMap)["min16uint4"] =              EHTokMin16uint4;
+    (*hlslKeywordMap)["min16float1"] =             EHTokMin16float1;
+    (*hlslKeywordMap)["min16float2"] =             EHTokMin16float2;
+    (*hlslKeywordMap)["min16float3"] =             EHTokMin16float3;
+    (*hlslKeywordMap)["min16float4"] =             EHTokMin16float4;
+    (*hlslKeywordMap)["min10float1"] =             EHTokMin10float1;
+    (*hlslKeywordMap)["min10float2"] =             EHTokMin10float2;
+    (*hlslKeywordMap)["min10float3"] =             EHTokMin10float3;
+    (*hlslKeywordMap)["min10float4"] =             EHTokMin10float4;
+    (*hlslKeywordMap)["min16int1"] =               EHTokMin16int1;
+    (*hlslKeywordMap)["min16int2"] =               EHTokMin16int2;
+    (*hlslKeywordMap)["min16int3"] =               EHTokMin16int3;
+    (*hlslKeywordMap)["min16int4"] =               EHTokMin16int4;
+    (*hlslKeywordMap)["min12int1"] =               EHTokMin12int1;
+    (*hlslKeywordMap)["min12int2"] =               EHTokMin12int2;
+    (*hlslKeywordMap)["min12int3"] =               EHTokMin12int3;
+    (*hlslKeywordMap)["min12int4"] =               EHTokMin12int4;
+    (*hlslKeywordMap)["min16uint1"] =              EHTokMin16uint1;
+    (*hlslKeywordMap)["min16uint2"] =              EHTokMin16uint2;
+    (*hlslKeywordMap)["min16uint3"] =              EHTokMin16uint3;
+    (*hlslKeywordMap)["min16uint4"] =              EHTokMin16uint4;
 
-    (*KeywordMap)["bool1x1"] =                 EHTokBool1x1;
-    (*KeywordMap)["bool1x2"] =                 EHTokBool1x2;
-    (*KeywordMap)["bool1x3"] =                 EHTokBool1x3;
-    (*KeywordMap)["bool1x4"] =                 EHTokBool1x4;
-    (*KeywordMap)["bool2x1"] =                 EHTokBool2x1;
-    (*KeywordMap)["bool2x2"] =                 EHTokBool2x2;
-    (*KeywordMap)["bool2x3"] =                 EHTokBool2x3;
-    (*KeywordMap)["bool2x4"] =                 EHTokBool2x4;
-    (*KeywordMap)["bool3x1"] =                 EHTokBool3x1;
-    (*KeywordMap)["bool3x2"] =                 EHTokBool3x2;
-    (*KeywordMap)["bool3x3"] =                 EHTokBool3x3;
-    (*KeywordMap)["bool3x4"] =                 EHTokBool3x4;
-    (*KeywordMap)["bool4x1"] =                 EHTokBool4x1;
-    (*KeywordMap)["bool4x2"] =                 EHTokBool4x2;
-    (*KeywordMap)["bool4x3"] =                 EHTokBool4x3;
-    (*KeywordMap)["bool4x4"] =                 EHTokBool4x4;
-    (*KeywordMap)["int1x1"] =                  EHTokInt1x1;
-    (*KeywordMap)["int1x2"] =                  EHTokInt1x2;
-    (*KeywordMap)["int1x3"] =                  EHTokInt1x3;
-    (*KeywordMap)["int1x4"] =                  EHTokInt1x4;
-    (*KeywordMap)["int2x1"] =                  EHTokInt2x1;
-    (*KeywordMap)["int2x2"] =                  EHTokInt2x2;
-    (*KeywordMap)["int2x3"] =                  EHTokInt2x3;
-    (*KeywordMap)["int2x4"] =                  EHTokInt2x4;
-    (*KeywordMap)["int3x1"] =                  EHTokInt3x1;
-    (*KeywordMap)["int3x2"] =                  EHTokInt3x2;
-    (*KeywordMap)["int3x3"] =                  EHTokInt3x3;
-    (*KeywordMap)["int3x4"] =                  EHTokInt3x4;
-    (*KeywordMap)["int4x1"] =                  EHTokInt4x1;
-    (*KeywordMap)["int4x2"] =                  EHTokInt4x2;
-    (*KeywordMap)["int4x3"] =                  EHTokInt4x3;
-    (*KeywordMap)["int4x4"] =                  EHTokInt4x4;
-    (*KeywordMap)["uint1x1"] =                 EHTokUint1x1;
-    (*KeywordMap)["uint1x2"] =                 EHTokUint1x2;
-    (*KeywordMap)["uint1x3"] =                 EHTokUint1x3;
-    (*KeywordMap)["uint1x4"] =                 EHTokUint1x4;
-    (*KeywordMap)["uint2x1"] =                 EHTokUint2x1;
-    (*KeywordMap)["uint2x2"] =                 EHTokUint2x2;
-    (*KeywordMap)["uint2x3"] =                 EHTokUint2x3;
-    (*KeywordMap)["uint2x4"] =                 EHTokUint2x4;
-    (*KeywordMap)["uint3x1"] =                 EHTokUint3x1;
-    (*KeywordMap)["uint3x2"] =                 EHTokUint3x2;
-    (*KeywordMap)["uint3x3"] =                 EHTokUint3x3;
-    (*KeywordMap)["uint3x4"] =                 EHTokUint3x4;
-    (*KeywordMap)["uint4x1"] =                 EHTokUint4x1;
-    (*KeywordMap)["uint4x2"] =                 EHTokUint4x2;
-    (*KeywordMap)["uint4x3"] =                 EHTokUint4x3;
-    (*KeywordMap)["uint4x4"] =                 EHTokUint4x4;
-    (*KeywordMap)["bool1x1"] =                 EHTokBool1x1;
-    (*KeywordMap)["bool1x2"] =                 EHTokBool1x2;
-    (*KeywordMap)["bool1x3"] =                 EHTokBool1x3;
-    (*KeywordMap)["bool1x4"] =                 EHTokBool1x4;
-    (*KeywordMap)["bool2x1"] =                 EHTokBool2x1;
-    (*KeywordMap)["bool2x2"] =                 EHTokBool2x2;
-    (*KeywordMap)["bool2x3"] =                 EHTokBool2x3;
-    (*KeywordMap)["bool2x4"] =                 EHTokBool2x4;
-    (*KeywordMap)["bool3x1"] =                 EHTokBool3x1;
-    (*KeywordMap)["bool3x2"] =                 EHTokBool3x2;
-    (*KeywordMap)["bool3x3"] =                 EHTokBool3x3;
-    (*KeywordMap)["bool3x4"] =                 EHTokBool3x4;
-    (*KeywordMap)["bool4x1"] =                 EHTokBool4x1;
-    (*KeywordMap)["bool4x2"] =                 EHTokBool4x2;
-    (*KeywordMap)["bool4x3"] =                 EHTokBool4x3;
-    (*KeywordMap)["bool4x4"] =                 EHTokBool4x4;
-    (*KeywordMap)["float1x1"] =                EHTokFloat1x1;
-    (*KeywordMap)["float1x2"] =                EHTokFloat1x2;
-    (*KeywordMap)["float1x3"] =                EHTokFloat1x3;
-    (*KeywordMap)["float1x4"] =                EHTokFloat1x4;
-    (*KeywordMap)["float2x1"] =                EHTokFloat2x1;
-    (*KeywordMap)["float2x2"] =                EHTokFloat2x2;
-    (*KeywordMap)["float2x3"] =                EHTokFloat2x3;
-    (*KeywordMap)["float2x4"] =                EHTokFloat2x4;
-    (*KeywordMap)["float3x1"] =                EHTokFloat3x1;
-    (*KeywordMap)["float3x2"] =                EHTokFloat3x2;
-    (*KeywordMap)["float3x3"] =                EHTokFloat3x3;
-    (*KeywordMap)["float3x4"] =                EHTokFloat3x4;
-    (*KeywordMap)["float4x1"] =                EHTokFloat4x1;
-    (*KeywordMap)["float4x2"] =                EHTokFloat4x2;
-    (*KeywordMap)["float4x3"] =                EHTokFloat4x3;
-    (*KeywordMap)["float4x4"] =                EHTokFloat4x4;
-    (*KeywordMap)["double1x1"] =               EHTokDouble1x1;
-    (*KeywordMap)["double1x2"] =               EHTokDouble1x2;
-    (*KeywordMap)["double1x3"] =               EHTokDouble1x3;
-    (*KeywordMap)["double1x4"] =               EHTokDouble1x4;
-    (*KeywordMap)["double2x1"] =               EHTokDouble2x1;
-    (*KeywordMap)["double2x2"] =               EHTokDouble2x2;
-    (*KeywordMap)["double2x3"] =               EHTokDouble2x3;
-    (*KeywordMap)["double2x4"] =               EHTokDouble2x4;
-    (*KeywordMap)["double3x1"] =               EHTokDouble3x1;
-    (*KeywordMap)["double3x2"] =               EHTokDouble3x2;
-    (*KeywordMap)["double3x3"] =               EHTokDouble3x3;
-    (*KeywordMap)["double3x4"] =               EHTokDouble3x4;
-    (*KeywordMap)["double4x1"] =               EHTokDouble4x1;
-    (*KeywordMap)["double4x2"] =               EHTokDouble4x2;
-    (*KeywordMap)["double4x3"] =               EHTokDouble4x3;
-    (*KeywordMap)["double4x4"] =               EHTokDouble4x4;
+    (*hlslKeywordMap)["bool1x1"] =                 EHTokBool1x1;
+    (*hlslKeywordMap)["bool1x2"] =                 EHTokBool1x2;
+    (*hlslKeywordMap)["bool1x3"] =                 EHTokBool1x3;
+    (*hlslKeywordMap)["bool1x4"] =                 EHTokBool1x4;
+    (*hlslKeywordMap)["bool2x1"] =                 EHTokBool2x1;
+    (*hlslKeywordMap)["bool2x2"] =                 EHTokBool2x2;
+    (*hlslKeywordMap)["bool2x3"] =                 EHTokBool2x3;
+    (*hlslKeywordMap)["bool2x4"] =                 EHTokBool2x4;
+    (*hlslKeywordMap)["bool3x1"] =                 EHTokBool3x1;
+    (*hlslKeywordMap)["bool3x2"] =                 EHTokBool3x2;
+    (*hlslKeywordMap)["bool3x3"] =                 EHTokBool3x3;
+    (*hlslKeywordMap)["bool3x4"] =                 EHTokBool3x4;
+    (*hlslKeywordMap)["bool4x1"] =                 EHTokBool4x1;
+    (*hlslKeywordMap)["bool4x2"] =                 EHTokBool4x2;
+    (*hlslKeywordMap)["bool4x3"] =                 EHTokBool4x3;
+    (*hlslKeywordMap)["bool4x4"] =                 EHTokBool4x4;
+    (*hlslKeywordMap)["int1x1"] =                  EHTokInt1x1;
+    (*hlslKeywordMap)["int1x2"] =                  EHTokInt1x2;
+    (*hlslKeywordMap)["int1x3"] =                  EHTokInt1x3;
+    (*hlslKeywordMap)["int1x4"] =                  EHTokInt1x4;
+    (*hlslKeywordMap)["int2x1"] =                  EHTokInt2x1;
+    (*hlslKeywordMap)["int2x2"] =                  EHTokInt2x2;
+    (*hlslKeywordMap)["int2x3"] =                  EHTokInt2x3;
+    (*hlslKeywordMap)["int2x4"] =                  EHTokInt2x4;
+    (*hlslKeywordMap)["int3x1"] =                  EHTokInt3x1;
+    (*hlslKeywordMap)["int3x2"] =                  EHTokInt3x2;
+    (*hlslKeywordMap)["int3x3"] =                  EHTokInt3x3;
+    (*hlslKeywordMap)["int3x4"] =                  EHTokInt3x4;
+    (*hlslKeywordMap)["int4x1"] =                  EHTokInt4x1;
+    (*hlslKeywordMap)["int4x2"] =                  EHTokInt4x2;
+    (*hlslKeywordMap)["int4x3"] =                  EHTokInt4x3;
+    (*hlslKeywordMap)["int4x4"] =                  EHTokInt4x4;
+    (*hlslKeywordMap)["uint1x1"] =                 EHTokUint1x1;
+    (*hlslKeywordMap)["uint1x2"] =                 EHTokUint1x2;
+    (*hlslKeywordMap)["uint1x3"] =                 EHTokUint1x3;
+    (*hlslKeywordMap)["uint1x4"] =                 EHTokUint1x4;
+    (*hlslKeywordMap)["uint2x1"] =                 EHTokUint2x1;
+    (*hlslKeywordMap)["uint2x2"] =                 EHTokUint2x2;
+    (*hlslKeywordMap)["uint2x3"] =                 EHTokUint2x3;
+    (*hlslKeywordMap)["uint2x4"] =                 EHTokUint2x4;
+    (*hlslKeywordMap)["uint3x1"] =                 EHTokUint3x1;
+    (*hlslKeywordMap)["uint3x2"] =                 EHTokUint3x2;
+    (*hlslKeywordMap)["uint3x3"] =                 EHTokUint3x3;
+    (*hlslKeywordMap)["uint3x4"] =                 EHTokUint3x4;
+    (*hlslKeywordMap)["uint4x1"] =                 EHTokUint4x1;
+    (*hlslKeywordMap)["uint4x2"] =                 EHTokUint4x2;
+    (*hlslKeywordMap)["uint4x3"] =                 EHTokUint4x3;
+    (*hlslKeywordMap)["uint4x4"] =                 EHTokUint4x4;
+    (*hlslKeywordMap)["bool1x1"] =                 EHTokBool1x1;
+    (*hlslKeywordMap)["bool1x2"] =                 EHTokBool1x2;
+    (*hlslKeywordMap)["bool1x3"] =                 EHTokBool1x3;
+    (*hlslKeywordMap)["bool1x4"] =                 EHTokBool1x4;
+    (*hlslKeywordMap)["bool2x1"] =                 EHTokBool2x1;
+    (*hlslKeywordMap)["bool2x2"] =                 EHTokBool2x2;
+    (*hlslKeywordMap)["bool2x3"] =                 EHTokBool2x3;
+    (*hlslKeywordMap)["bool2x4"] =                 EHTokBool2x4;
+    (*hlslKeywordMap)["bool3x1"] =                 EHTokBool3x1;
+    (*hlslKeywordMap)["bool3x2"] =                 EHTokBool3x2;
+    (*hlslKeywordMap)["bool3x3"] =                 EHTokBool3x3;
+    (*hlslKeywordMap)["bool3x4"] =                 EHTokBool3x4;
+    (*hlslKeywordMap)["bool4x1"] =                 EHTokBool4x1;
+    (*hlslKeywordMap)["bool4x2"] =                 EHTokBool4x2;
+    (*hlslKeywordMap)["bool4x3"] =                 EHTokBool4x3;
+    (*hlslKeywordMap)["bool4x4"] =                 EHTokBool4x4;
+    (*hlslKeywordMap)["float1x1"] =                EHTokFloat1x1;
+    (*hlslKeywordMap)["float1x2"] =                EHTokFloat1x2;
+    (*hlslKeywordMap)["float1x3"] =                EHTokFloat1x3;
+    (*hlslKeywordMap)["float1x4"] =                EHTokFloat1x4;
+    (*hlslKeywordMap)["float2x1"] =                EHTokFloat2x1;
+    (*hlslKeywordMap)["float2x2"] =                EHTokFloat2x2;
+    (*hlslKeywordMap)["float2x3"] =                EHTokFloat2x3;
+    (*hlslKeywordMap)["float2x4"] =                EHTokFloat2x4;
+    (*hlslKeywordMap)["float3x1"] =                EHTokFloat3x1;
+    (*hlslKeywordMap)["float3x2"] =                EHTokFloat3x2;
+    (*hlslKeywordMap)["float3x3"] =                EHTokFloat3x3;
+    (*hlslKeywordMap)["float3x4"] =                EHTokFloat3x4;
+    (*hlslKeywordMap)["float4x1"] =                EHTokFloat4x1;
+    (*hlslKeywordMap)["float4x2"] =                EHTokFloat4x2;
+    (*hlslKeywordMap)["float4x3"] =                EHTokFloat4x3;
+    (*hlslKeywordMap)["float4x4"] =                EHTokFloat4x4;
+    (*hlslKeywordMap)["double1x1"] =               EHTokDouble1x1;
+    (*hlslKeywordMap)["double1x2"] =               EHTokDouble1x2;
+    (*hlslKeywordMap)["double1x3"] =               EHTokDouble1x3;
+    (*hlslKeywordMap)["double1x4"] =               EHTokDouble1x4;
+    (*hlslKeywordMap)["double2x1"] =               EHTokDouble2x1;
+    (*hlslKeywordMap)["double2x2"] =               EHTokDouble2x2;
+    (*hlslKeywordMap)["double2x3"] =               EHTokDouble2x3;
+    (*hlslKeywordMap)["double2x4"] =               EHTokDouble2x4;
+    (*hlslKeywordMap)["double3x1"] =               EHTokDouble3x1;
+    (*hlslKeywordMap)["double3x2"] =               EHTokDouble3x2;
+    (*hlslKeywordMap)["double3x3"] =               EHTokDouble3x3;
+    (*hlslKeywordMap)["double3x4"] =               EHTokDouble3x4;
+    (*hlslKeywordMap)["double4x1"] =               EHTokDouble4x1;
+    (*hlslKeywordMap)["double4x2"] =               EHTokDouble4x2;
+    (*hlslKeywordMap)["double4x3"] =               EHTokDouble4x3;
+    (*hlslKeywordMap)["double4x4"] =               EHTokDouble4x4;
 
-    (*KeywordMap)["sampler"] =                 EHTokSampler;
-    (*KeywordMap)["sampler1D"] =               EHTokSampler1d;
-    (*KeywordMap)["sampler2D"] =               EHTokSampler2d;
-    (*KeywordMap)["sampler3D"] =               EHTokSampler3d;
-    (*KeywordMap)["samplerCube"] =             EHTokSamplerCube;
-    (*KeywordMap)["sampler_state"] =           EHTokSamplerState;
-    (*KeywordMap)["SamplerState"] =            EHTokSamplerState;
-    (*KeywordMap)["SamplerComparisonState"] =  EHTokSamplerComparisonState;
-    (*KeywordMap)["texture"] =                 EHTokTexture;
-    (*KeywordMap)["Texture1D"] =               EHTokTexture1d;
-    (*KeywordMap)["Texture1DArray"] =          EHTokTexture1darray;
-    (*KeywordMap)["Texture2D"] =               EHTokTexture2d;
-    (*KeywordMap)["Texture2DArray"] =          EHTokTexture2darray;
-    (*KeywordMap)["Texture3D"] =               EHTokTexture3d;
-    (*KeywordMap)["TextureCube"] =             EHTokTextureCube;
-    (*KeywordMap)["TextureCubeArray"] =        EHTokTextureCubearray;
-    (*KeywordMap)["Texture2DMS"] =             EHTokTexture2DMS;
-    (*KeywordMap)["Texture2DMSArray"] =        EHTokTexture2DMSarray;
-    (*KeywordMap)["RWTexture1D"] =             EHTokRWTexture1d;
-    (*KeywordMap)["RWTexture1DArray"] =        EHTokRWTexture1darray;
-    (*KeywordMap)["RWTexture2D"] =             EHTokRWTexture2d;
-    (*KeywordMap)["RWTexture2DArray"] =        EHTokRWTexture2darray;
-    (*KeywordMap)["RWTexture3D"] =             EHTokRWTexture3d;
-    (*KeywordMap)["RWBuffer"] =                EHTokRWBuffer;
+    (*hlslKeywordMap)["sampler"] =                 EHTokSampler;
+    (*hlslKeywordMap)["sampler1D"] =               EHTokSampler1d;
+    (*hlslKeywordMap)["sampler2D"] =               EHTokSampler2d;
+    (*hlslKeywordMap)["sampler3D"] =               EHTokSampler3d;
+    (*hlslKeywordMap)["samplerCube"] =             EHTokSamplerCube;
+    (*hlslKeywordMap)["sampler_state"] =           EHTokSamplerState;
+    (*hlslKeywordMap)["SamplerState"] =            EHTokSamplerState;
+    (*hlslKeywordMap)["SamplerComparisonState"] =  EHTokSamplerComparisonState;
+    (*hlslKeywordMap)["texture"] =                 EHTokTexture;
+    (*hlslKeywordMap)["Texture1D"] =               EHTokTexture1d;
+    (*hlslKeywordMap)["Texture1DArray"] =          EHTokTexture1darray;
+    (*hlslKeywordMap)["Texture2D"] =               EHTokTexture2d;
+    (*hlslKeywordMap)["Texture2DArray"] =          EHTokTexture2darray;
+    (*hlslKeywordMap)["Texture3D"] =               EHTokTexture3d;
+    (*hlslKeywordMap)["TextureCube"] =             EHTokTextureCube;
+    (*hlslKeywordMap)["TextureCubeArray"] =        EHTokTextureCubearray;
+    (*hlslKeywordMap)["Texture2DMS"] =             EHTokTexture2DMS;
+    (*hlslKeywordMap)["Texture2DMSArray"] =        EHTokTexture2DMSarray;
+    (*hlslKeywordMap)["RWTexture1D"] =             EHTokRWTexture1d;
+    (*hlslKeywordMap)["RWTexture1DArray"] =        EHTokRWTexture1darray;
+    (*hlslKeywordMap)["RWTexture2D"] =             EHTokRWTexture2d;
+    (*hlslKeywordMap)["RWTexture2DArray"] =        EHTokRWTexture2darray;
+    (*hlslKeywordMap)["RWTexture3D"] =             EHTokRWTexture3d;
+    (*hlslKeywordMap)["RWBuffer"] =                EHTokRWBuffer;
 
 
-    (*KeywordMap)["struct"] =                  EHTokStruct;
-    (*KeywordMap)["cbuffer"] =                 EHTokCBuffer;
-    (*KeywordMap)["tbuffer"] =                 EHTokTBuffer;
-    (*KeywordMap)["typedef"] =                 EHTokTypedef;
+    (*hlslKeywordMap)["struct"] =                  EHTokStruct;
+    (*hlslKeywordMap)["cbuffer"] =                 EHTokCBuffer;
+    (*hlslKeywordMap)["tbuffer"] =                 EHTokTBuffer;
+    (*hlslKeywordMap)["typedef"] =                 EHTokTypedef;
 
-    (*KeywordMap)["true"] =                    EHTokBoolConstant;
-    (*KeywordMap)["false"] =                   EHTokBoolConstant;
+    (*hlslKeywordMap)["true"] =                    EHTokBoolConstant;
+    (*hlslKeywordMap)["false"] =                   EHTokBoolConstant;
 
-    (*KeywordMap)["for"] =                     EHTokFor;
-    (*KeywordMap)["do"] =                      EHTokDo;
-    (*KeywordMap)["while"] =                   EHTokWhile;
-    (*KeywordMap)["break"] =                   EHTokBreak;
-    (*KeywordMap)["continue"] =                EHTokContinue;
-    (*KeywordMap)["if"] =                      EHTokIf;
-    (*KeywordMap)["else"] =                    EHTokElse;
-    (*KeywordMap)["discard"] =                 EHTokDiscard;
-    (*KeywordMap)["return"] =                  EHTokReturn;
-    (*KeywordMap)["switch"] =                  EHTokSwitch;
-    (*KeywordMap)["case"] =                    EHTokCase;
-    (*KeywordMap)["default"] =                 EHTokDefault;
+    (*hlslKeywordMap)["for"] =                     EHTokFor;
+    (*hlslKeywordMap)["do"] =                      EHTokDo;
+    (*hlslKeywordMap)["while"] =                   EHTokWhile;
+    (*hlslKeywordMap)["break"] =                   EHTokBreak;
+    (*hlslKeywordMap)["continue"] =                EHTokContinue;
+    (*hlslKeywordMap)["if"] =                      EHTokIf;
+    (*hlslKeywordMap)["else"] =                    EHTokElse;
+    (*hlslKeywordMap)["discard"] =                 EHTokDiscard;
+    (*hlslKeywordMap)["return"] =                  EHTokReturn;
+    (*hlslKeywordMap)["switch"] =                  EHTokSwitch;
+    (*hlslKeywordMap)["case"] =                    EHTokCase;
+    (*hlslKeywordMap)["default"] =                 EHTokDefault;
 
     // TODO: get correct set here
-    ReservedSet = new std::unordered_set<const char*, str_hash, str_eq>;
+    hlslReservedSet = new std::unordered_set<const char*, str_hash, str_eq>;
     
-    ReservedSet->insert("auto");
-    ReservedSet->insert("catch");
-    ReservedSet->insert("char");
-    ReservedSet->insert("class");
-    ReservedSet->insert("const_cast");
-    ReservedSet->insert("enum");
-    ReservedSet->insert("explicit");
-    ReservedSet->insert("friend");
-    ReservedSet->insert("goto");
-    ReservedSet->insert("long");
-    ReservedSet->insert("mutable");
-    ReservedSet->insert("new");
-    ReservedSet->insert("operator");
-    ReservedSet->insert("private");
-    ReservedSet->insert("protected");
-    ReservedSet->insert("public");
-    ReservedSet->insert("reinterpret_cast");
-    ReservedSet->insert("short");
-    ReservedSet->insert("signed");
-    ReservedSet->insert("sizeof");
-    ReservedSet->insert("static_cast");
-    ReservedSet->insert("template");
-    ReservedSet->insert("this");
-    ReservedSet->insert("throw");
-    ReservedSet->insert("try");
-    ReservedSet->insert("typename");
-    ReservedSet->insert("union");
-    ReservedSet->insert("unsigned");
-    ReservedSet->insert("using");
-    ReservedSet->insert("virtual");
+    hlslReservedSet->insert("auto");
+    hlslReservedSet->insert("catch");
+    hlslReservedSet->insert("char");
+    hlslReservedSet->insert("class");
+    hlslReservedSet->insert("const_cast");
+    hlslReservedSet->insert("enum");
+    hlslReservedSet->insert("explicit");
+    hlslReservedSet->insert("friend");
+    hlslReservedSet->insert("goto");
+    hlslReservedSet->insert("long");
+    hlslReservedSet->insert("mutable");
+    hlslReservedSet->insert("new");
+    hlslReservedSet->insert("operator");
+    hlslReservedSet->insert("private");
+    hlslReservedSet->insert("protected");
+    hlslReservedSet->insert("public");
+    hlslReservedSet->insert("reinterpret_cast");
+    hlslReservedSet->insert("short");
+    hlslReservedSet->insert("signed");
+    hlslReservedSet->insert("sizeof");
+    hlslReservedSet->insert("static_cast");
+    hlslReservedSet->insert("template");
+    hlslReservedSet->insert("this");
+    hlslReservedSet->insert("throw");
+    hlslReservedSet->insert("try");
+    hlslReservedSet->insert("typename");
+    hlslReservedSet->insert("union");
+    hlslReservedSet->insert("unsigned");
+    hlslReservedSet->insert("using");
+    hlslReservedSet->insert("virtual");
 }
 
 void HlslScanContext::deleteKeywordMap()
 {
-    delete KeywordMap;
-    KeywordMap = nullptr;
-    delete ReservedSet;
-    ReservedSet = nullptr;
+    delete hlslKeywordMap;
+    hlslKeywordMap = nullptr;
+    delete hlslReservedSet;
+    hlslReservedSet = nullptr;
 }
 
 // Wrapper for tokenizeClass()"] =  to get everything inside the token.
@@ -426,7 +403,7 @@ EHlslTokenClass HlslScanContext::tokenizeClass(HlslToken& token)
         case '{':                       return EHTokLeftBrace;
         case '}':                       return EHTokRightBrace;
         case '\\':
-            parseContext.error(loc, "illegal use of escape character", "\\", "");
+            _parseContext.error(loc, "illegal use of escape character", "\\", "");
             break;
 
         case PpAtomAdd:                return EHTokAddAssign;
@@ -477,7 +454,7 @@ EHlslTokenClass HlslScanContext::tokenizeClass(HlslToken& token)
             char buf[2];
             buf[0] = (char)ppToken.token;
             buf[1] = 0;
-            parseContext.error(loc, "unexpected token", buf, "");
+            _parseContext.error(loc, "unexpected token", buf, "");
             break;
         }
     } while (true);
@@ -485,11 +462,11 @@ EHlslTokenClass HlslScanContext::tokenizeClass(HlslToken& token)
 
 EHlslTokenClass HlslScanContext::tokenizeIdentifier()
 {
-    if (ReservedSet->find(tokenText) != ReservedSet->end())
+    if (hlslReservedSet->find(tokenText) != hlslReservedSet->end())
         return reservedWord();
 
-    auto it = KeywordMap->find(tokenText);
-    if (it == KeywordMap->end()) {
+    auto it = hlslKeywordMap->find(tokenText);
+    if (it == hlslKeywordMap->end()) {
         // Should have an identifier of some sort
         return identifierOrType();
     }
@@ -738,7 +715,7 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
         return keyword;
 
     default:
-        parseContext.infoSink.info.message(EPrefixInternalError, "Unknown glslang keyword", loc);
+        _parseContext.infoSink.info.message(EPrefixInternalError, "Unknown glslang keyword", loc);
         return EHTokNone;
     }
 }
@@ -755,8 +732,8 @@ EHlslTokenClass HlslScanContext::identifierOrType()
 // extension support before the extension is enabled.
 EHlslTokenClass HlslScanContext::reservedWord()
 {
-    if (! parseContext.symbolTable.atBuiltInLevel())
-        parseContext.error(loc, "Reserved word.", tokenText, "", "");
+    if (!_parseContext.symbolTable.atBuiltInLevel())
+        _parseContext.error(loc, "Reserved word.", tokenText, "", "");
 
     return EHTokNone;
 }
@@ -769,8 +746,8 @@ EHlslTokenClass HlslScanContext::identifierOrReserved(bool reserved)
         return EHTokNone;
     }
 
-    if (parseContext.forwardCompatible)
-        parseContext.warn(loc, "using future reserved keyword", tokenText, "");
+    if (_parseContext.forwardCompatible)
+        _parseContext.warn(loc, "using future reserved keyword", tokenText, "");
 
     return identifierOrType();
 }
@@ -779,7 +756,7 @@ EHlslTokenClass HlslScanContext::identifierOrReserved(bool reserved)
 // showed up.
 EHlslTokenClass HlslScanContext::nonreservedKeyword(int version)
 {
-    if (parseContext.version < version)
+    if (_parseContext.version < version)
         return identifierOrType();
 
     return keyword;
