@@ -849,7 +849,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
 static bool task_load_content(content_ctx_info_t *content_info,
       content_information_ctx_t *content_ctx,
       bool launched_from_menu,
-      bool loading_from_cli,
+      bool launched_from_cli,
       char **error_string)
 {
    bool contentless = false;
@@ -888,6 +888,12 @@ static bool task_load_content(content_ctx_info_t *content_info,
                   PATH_MAX_LENGTH * sizeof(char));
       }
 
+#ifdef HAVE_MENU
+      /* Push quick menu onto menu stack */
+      if (launched_from_cli)
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
+
       if (info && !string_is_empty(tmp))
       {
          const char *core_path      = NULL;
@@ -923,7 +929,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
                break;
          }
 
-         if (loading_from_cli)
+         if (launched_from_cli)
          {
             settings_t *settings             = config_get_ptr();
             content_ctx->history_list_enable = settings->bools.history_list_enable;
@@ -952,6 +958,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
 #ifdef HAVE_MENU
 static bool command_event_cmd_exec(const char *data,
       content_information_ctx_t *content_ctx,
+      bool launched_from_cli,
       char **error_string)
 {
 #if defined(HAVE_DYNAMIC)
@@ -973,7 +980,7 @@ static bool command_event_cmd_exec(const char *data,
 
 #if defined(HAVE_DYNAMIC)
    if (!task_load_content(&content_info, content_ctx,
-            true, false, error_string))
+            true, launched_from_cli, error_string))
       return false;
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
@@ -1185,7 +1192,7 @@ bool task_push_load_content_from_playlist_from_menu(
    /* On targets that have no dynamic core loading support, we'd
     * execute the new core from this point. If this returns false,
     * we assume we can dynamically load the core. */
-   if (!command_event_cmd_exec(fullpath, &content_ctx, &error_string))
+   if (!command_event_cmd_exec(fullpath, &content_ctx, CONTENT_MODE_LOAD_NONE, &error_string))
    {
       if (error_string)
       {
@@ -1432,7 +1439,7 @@ bool task_push_load_content_with_new_core_from_menu(
 
 #else
    command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), &content_ctx,
-         &error_string);
+         false, &error_string);
    command_event(CMD_EVENT_QUIT, NULL);
 #endif
 
@@ -1574,11 +1581,6 @@ bool task_push_load_content_from_cli(
    /* Load content */
    if (!task_load_content_callback(content_info, true, true))
       return false;
-
-#ifdef HAVE_MENU
-   /* Push quick menu onto menu stack */
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
 
    return true;
 }
