@@ -1274,19 +1274,13 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
    for (i = 0; i < list_size; i++)
    {
-      char *path_copy                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       char *fill_buf                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       size_t path_size                = PATH_MAX_LENGTH * sizeof(char);
       const char *core_name           = NULL;
       const char *path                = NULL;
       const char *label               = NULL;
 
-      fill_buf[0] = path_copy[0]      = '\0';
-
-      if (!string_is_empty(info->path))
-         strlcpy(path_copy, info->path, path_size);
-
-      path                            = path_copy;
+      fill_buf[0]                     = '\0';
 
       playlist_get_index(playlist, i,
             &path, &label, NULL, &core_name, NULL, NULL);
@@ -1349,7 +1343,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          menu_entries_append_enum(info->list, label,
                path, MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i);
 
-      free(path_copy);
       free(fill_buf);
    }
 
