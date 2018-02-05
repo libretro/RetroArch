@@ -786,6 +786,10 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
       deferred_push_detect_core_list
+   },
+   {
+      MENU_ENUM_LABEL_CONFIGURATIONS,
+      deferred_push_configurations
    }
 };
 
@@ -1331,9 +1335,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_CONTENT_COLLECTION_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
-            break;
-         case MENU_LABEL_CONFIGURATIONS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations);
             break;
          case MENU_LABEL_CONTENT_HISTORY_PATH:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);

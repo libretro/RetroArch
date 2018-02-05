@@ -1846,7 +1846,6 @@ enum msg_hash_enums
 #define MENU_LABEL_CUSTOM_RATIO                                                0xf038731eU
 #define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
 #define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
-#define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
 #define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x32d1df83U

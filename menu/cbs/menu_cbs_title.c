@@ -540,6 +540,10 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
       action_get_title_audio_filter
+   },
+   {
+      MENU_ENUM_LABEL_CONFIGURATIONS,
+      action_get_title_configurations
    }
 };
 
@@ -927,9 +931,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DEFERRED_CORE_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_core_list);
-            break;
-         case MENU_LABEL_CONFIGURATIONS:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_configurations);
             break;
          case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_autoconfig_directory);
