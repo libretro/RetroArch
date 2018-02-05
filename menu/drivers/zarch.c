@@ -1142,7 +1142,7 @@ static bool zarch_menu_init_list(void *data)
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
 
-   menu_displaylist_info_free(&info);
+   menu_displaylist_info_init(&info);
 
    info.label    = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB));
