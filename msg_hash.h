@@ -1742,7 +1742,6 @@ enum msg_hash_enums
 
 /* Deferred */
 
-#define MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST                            0x364dfa2bU
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
 #define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
 #define MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST                              0x7c0b704fU
