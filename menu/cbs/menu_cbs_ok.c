@@ -3839,6 +3839,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_OK(cbs, action_ok_load_archive);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SHADER_APPLY_CHANGES)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_shader_apply_changes);
+      return 0;
+   }
    else if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
@@ -4284,9 +4289,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DETECT_CORE_LIST_OK:
             BIND_ACTION_OK(cbs, action_ok_file_load_detect_core);
-            break;
-         case MENU_LABEL_SHADER_APPLY_CHANGES:
-            BIND_ACTION_OK(cbs, action_ok_shader_apply_changes);
             break;
          case MENU_LABEL_CHEAT_APPLY_CHANGES:
             BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
