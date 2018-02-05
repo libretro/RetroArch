@@ -1871,9 +1871,6 @@ enum msg_hash_enums
 #define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
 #define MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS                          0xa6de9ba6U
 #define MENU_LABEL_SHADER_APPLY_CHANGES                                        0x4f7306b9U
-#define MENU_LABEL_CUSTOM_BIND                                                 0x1e84b3fcU
-#define MENU_LABEL_CUSTOM_BIND_ALL                                             0x79ac14f4U
-#define MENU_LABEL_CUSTOM_BIND_DEFAULTS                                        0xe88f7b13U
 #define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
