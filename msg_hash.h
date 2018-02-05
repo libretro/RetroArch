@@ -1942,13 +1942,7 @@ enum msg_hash_enums
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
 
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
-#define MENU_LABEL_HELP_CONTROLS                                               0x04859221U
 #define MENU_LABEL_HELP_LIST                                                   0x006af669U
-#define MENU_LABEL_HELP_WHAT_IS_A_CORE                                         0x83fcbc44U
-#define MENU_LABEL_HELP_LOADING_CONTENT                                        0x231d8245U
-#define MENU_LABEL_HELP_SCANNING_CONTENT                                       0x1dec52b8U
-#define MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD                                 0x6e66ef07U
-#define MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING                            0xd44d395cU
 
 /* Main menu */
 #define MENU_LABEL_NETPLAY                                                     0x0b511d22U
