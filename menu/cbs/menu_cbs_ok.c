@@ -3859,6 +3859,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_OK(cbs, action_ok_cheat_file);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_audio_dsp_plugin);
+      return 0;
+   }
    else if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
@@ -4284,9 +4289,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
    {
       switch (hash)
       {
-         case MENU_LABEL_AUDIO_DSP_PLUGIN:
-            BIND_ACTION_OK(cbs, action_ok_audio_dsp_plugin);
-            break;
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_OK(cbs, action_ok_remap_file);
             break;
