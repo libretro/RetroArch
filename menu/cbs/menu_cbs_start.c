@@ -16,6 +16,7 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <lists/string_list.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -274,8 +275,15 @@ static int action_start_lookup_setting(unsigned type, const char *label)
    return menu_setting_set(type, label, MENU_ACTION_START, false);
 }
 
-static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
+static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
+      const char *label)
 {
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCREEN_RESOLUTION)))
+   {
+      BIND_ACTION_START(cbs, action_start_video_resolution);
+      return 0;
+   }
+
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
@@ -354,10 +362,6 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_START(cbs, action_start_core_setting);
    }
-   else if (type == MENU_LABEL_SCREEN_RESOLUTION)
-   {
-      BIND_ACTION_START(cbs, action_start_video_resolution);
-   }
    else
       return -1;
 
@@ -372,7 +376,7 @@ int menu_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
 
    BIND_ACTION_START(cbs, action_start_lookup_setting);
 
-   if (menu_cbs_init_bind_start_compare_label(cbs) == 0)
+   if (menu_cbs_init_bind_start_compare_label(cbs, label) == 0)
       return 0;
 
    if (menu_cbs_init_bind_start_compare_type(cbs, type) == 0)

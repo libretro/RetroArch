@@ -1781,12 +1781,6 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST                                0x679a1b0bU
 #define MENU_LABEL_DEFERRED_BROWSE_URL_START                                   0xcef58296U
 
-/* Accounts settings */
-#define MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS                                 0xe6b7c16cU
-
-/* Information settings */
-#define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
-
 /* Directory settings */
 
 #define MENU_LABEL_CURSOR_DIRECTORY                                            0xdee8d377U

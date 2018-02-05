@@ -3874,6 +3874,16 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_OK(cbs, action_ok_push_downloads_dir);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_push_accounts_cheevos_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCREEN_RESOLUTION)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_video_resolution);
+      return 0;
+   }
    else if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
@@ -4302,9 +4312,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_OK(cbs, action_ok_remap_file);
             break;
-         case MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
-            BIND_ACTION_OK(cbs, action_ok_push_accounts_cheevos_list);
-            break;
          case MENU_LABEL_DETECT_CORE_LIST_OK:
             BIND_ACTION_OK(cbs, action_ok_file_load_detect_core);
             break;
@@ -4313,9 +4320,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_REMAP_FILE_SAVE_GAME:
             BIND_ACTION_OK(cbs, action_ok_remap_file_save_game);
-            break;
-         case MENU_LABEL_SCREEN_RESOLUTION:
-            BIND_ACTION_OK(cbs, action_ok_video_resolution);
             break;
          default:
             return -1;
