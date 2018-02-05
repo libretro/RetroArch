@@ -722,6 +722,10 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST,
       deferred_video_history_list
+   },
+   {
+      MENU_ENUM_LABEL_FAVORITES,
+      deferred_push_detect_core_list
    }
 };
 
@@ -1317,7 +1321,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);
             break;
          case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         case MENU_LABEL_FAVORITES:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
             break;
          default:
