@@ -995,6 +995,7 @@ RETROARCH
 #include "../intl/msg_hash_vn.c"
 #include "../intl/msg_hash_chs.c"
 #include "../intl/msg_hash_cht.c"
+#include "../intl/msg_hash_ar.c"
 #endif
 
 #include "../intl/msg_hash_us.c"

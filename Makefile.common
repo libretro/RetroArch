@@ -284,7 +284,8 @@ OBJ += intl/msg_hash_de.o \
        intl/msg_hash_ru.o \
        intl/msg_hash_vn.o \
        intl/msg_hash_chs.o \
-       intl/msg_hash_cht.o
+       intl/msg_hash_cht.o \
+       intl/msg_hash_ar.o
 
 endif
 
