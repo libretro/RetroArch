@@ -1802,11 +1802,6 @@ enum msg_hash_enums
 #define MENU_LABEL_CHEAT_FILE_SAVE_AS                                          0x1f58dccaU
 #define MENU_LABEL_CHEAT_APPLY_CHANGES                                         0xde88aa27U
 
-/* Disk settings */
-
-#define MENU_LABEL_DISK_OPTIONS                                                0xc61ab5fbU
-#define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
-
 /* Directory settings */
 
 #define MENU_LABEL_CURSOR_DIRECTORY                                            0xdee8d377U
@@ -1885,14 +1880,7 @@ enum msg_hash_enums
 #define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x32d1df83U
 #define MENU_LABEL_COLLECTION                                                  0x5fea5991U
 
-#define MENU_LABEL_OPEN_ARCHIVE                                                0x78c0ca58U
-#define MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE                                    0x92442638U
-#define MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE                                    0x681f2f46U
-#define MENU_LABEL_LOAD_ARCHIVE                                                0xc3834e66U
-
 /* Help */
-#define MENU_LABEL_LIBRETRO_INFO_PATH                                          0xe552b25fU
-
 #define MENU_LABEL_INPUT_DRIVER_LINUXRAW                                       0xc33c6b9fU
 #define MENU_LABEL_INPUT_DRIVER_UDEV                                           0x7c9eeeb9U
 

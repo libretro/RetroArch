@@ -512,6 +512,18 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_VIDEO_SHADER_PRESET,
       action_get_title_video_shader_preset
+   },
+   {
+      MENU_ENUM_LABEL_LIBRETRO_INFO_PATH,
+      action_get_title_core_info_directory
+   },
+   {
+      MENU_ENUM_LABEL_DISK_OPTIONS,
+      action_get_disk_options_list
+   },
+   {
+      MENU_ENUM_LABEL_DISK_IMAGE_APPEND,
+      action_get_title_disk_image_append
    }
 };
 
@@ -1005,9 +1017,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_SHADER_OPTIONS:
             BIND_ACTION_GET_TITLE(cbs, action_get_shader_options_list);
             break;
-         case MENU_LABEL_DISK_OPTIONS:
-            BIND_ACTION_GET_TITLE(cbs, action_get_disk_options_list);
-            break;
          case MENU_LABEL_FRONTEND_COUNTERS:
             BIND_ACTION_GET_TITLE(cbs, action_get_frontend_counters_list);
             break;
@@ -1041,9 +1050,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_MANAGEMENT:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
             break;
-         case MENU_LABEL_DISK_IMAGE_APPEND:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_disk_image_append);
-            break;
          case MENU_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_cheat_file_load);
             break;
@@ -1070,9 +1076,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_LIBRETRO_DIR_PATH:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_core_directory);
-            break;
-         case MENU_LABEL_LIBRETRO_INFO_PATH:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_core_info_directory);
             break;
          default:
             return -1;

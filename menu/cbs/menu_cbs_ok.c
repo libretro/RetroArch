@@ -3807,6 +3807,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
+      return 0;
+   }
 #ifdef HAVE_NETWORKING
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_LAKKA)))
    {
@@ -3814,6 +3819,26 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 #endif
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OPEN_ARCHIVE)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_open_archive);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_open_archive_detect_core);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_load_archive_detect_core);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_ARCHIVE)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_load_archive);
+      return 0;
+   }
    else if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
@@ -4239,18 +4264,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
    {
       switch (hash)
       {
-         case MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE:
-            BIND_ACTION_OK(cbs, action_ok_open_archive_detect_core);
-            break;
-         case MENU_LABEL_OPEN_ARCHIVE:
-            BIND_ACTION_OK(cbs, action_ok_open_archive);
-            break;
-         case MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE:
-            BIND_ACTION_OK(cbs, action_ok_load_archive_detect_core);
-            break;
-         case MENU_LABEL_LOAD_ARCHIVE:
-            BIND_ACTION_OK(cbs, action_ok_load_archive);
-            break;
          case MENU_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_OK(cbs, action_ok_cheat_file);
             break;
@@ -4286,9 +4299,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_REMAP_FILE_SAVE_GAME:
             BIND_ACTION_OK(cbs, action_ok_remap_file_save_game);
-            break;
-         case MENU_LABEL_DISK_IMAGE_APPEND:
-            BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
             break;
          case MENU_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_video_resolution);
