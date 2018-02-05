@@ -1735,12 +1735,6 @@ enum msg_hash_enums
    MSG_LAST
 };
 
-
-/* Callback strings */
-
-#define CB_CORE_UPDATER_DOWNLOAD                                               0x7412da7dU
-#define CB_UPDATE_ASSETS                                                       0xbf85795eU
-
 /* Deferred */
 
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U

@@ -2266,22 +2266,23 @@ static int action_ok_undo_save_state(const char *path,
 #ifdef HAVE_ZLIB
 static void cb_decompressed(void *task_data, void *user_data, const char *err)
 {
-   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
+   decompress_task_data_t   *dec = (decompress_task_data_t*)task_data;
+   enum msg_hash_enums *enum_idx = (enum msg_hash_enums*)user_data;
 
-   if (dec && !err)
+   if (dec && !err && enum_idx)
    {
-      unsigned type_hash = (unsigned)(uintptr_t)user_data;
+      const char *msg            = msg_hash_to_str(*enum_idx);
 
-      switch (type_hash)
-      {
-         case CB_CORE_UPDATER_DOWNLOAD:
-            generic_action_ok_command(CMD_EVENT_CORE_INFO_INIT);
-            break;
-         case CB_UPDATE_ASSETS:
-            generic_action_ok_command(CMD_EVENT_REINIT);
-            break;
-      }
+      if (string_is_equal(msg,
+               msg_hash_to_str(MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD)))
+         generic_action_ok_command(CMD_EVENT_CORE_INFO_INIT);
+      else if (string_is_equal(msg,
+               msg_hash_to_str(MENU_ENUM_LABEL_CB_UPDATE_ASSETS)))
+         generic_action_ok_command(CMD_EVENT_REINIT);
    }
+
+   if (user_data)
+      free(user_data);
 
    if (err)
       RARCH_ERR("%s", err);
@@ -2538,10 +2539,13 @@ static void cb_generic_download(void *task_data,
 
    if (path_is_compressed_file(output_path))
    {
+      enum msg_hash_enums *idx = (enum msg_hash_enums*)calloc(1, sizeof(*idx));
+
+      *idx                      = transf->enum_idx;
+
       if (!task_push_decompress(output_path, dir_path,
                NULL, NULL, NULL,
-               cb_decompressed, (void*)(uintptr_t)
-               msg_hash_calculate(msg_hash_to_str(transf->enum_idx))))
+               cb_decompressed, idx))
       {
         err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
         goto finish;
