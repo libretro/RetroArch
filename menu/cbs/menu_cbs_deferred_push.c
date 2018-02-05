@@ -882,6 +882,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_hotkey_binds_list);
    }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_load_content_list);
+   }
    else
    {
       if (cbs->enum_idx != MSG_UNKNOWN)
@@ -1225,9 +1230,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_ADD_CONTENT_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_content_list);
-               break;
-            case MENU_LABEL_LOAD_CONTENT_LIST:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_load_content_list);
                break;
             case MENU_LABEL_MANAGEMENT:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_management_options);
