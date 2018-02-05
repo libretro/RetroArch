@@ -1297,8 +1297,9 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
             menu_driver_set_thumbnail_content(content_basename, strlen(content_basename) + 1);
             menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
             menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
-            free(content_basename);
          }
+
+         free(content_basename);
       }
 
       if (path)
