@@ -770,6 +770,10 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_MENU_WALLPAPER,
       deferred_push_images
+   },
+   {
+      MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
+      deferred_push_cheat_file_load
    }
 };
 
@@ -1226,9 +1230,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_CURSOR_MANAGER_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list);
-            break;
-         case MENU_LABEL_CHEAT_FILE_LOAD:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_file_load);
             break;
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);

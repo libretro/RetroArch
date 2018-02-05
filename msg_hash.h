@@ -1795,13 +1795,6 @@ enum msg_hash_enums
 #define MENU_LABEL_INPUT_OVERLAY                                               0x24e24796U
 #define MENU_LABEL_INPUT_OSK_OVERLAY                                           0x11f1c582U
 
-/* Cheat options */
-
-#define MENU_LABEL_CHEAT_DATABASE_PATH                                         0x01388b8aU
-#define MENU_LABEL_CHEAT_FILE_LOAD                                             0x57336148U
-#define MENU_LABEL_CHEAT_FILE_SAVE_AS                                          0x1f58dccaU
-#define MENU_LABEL_CHEAT_APPLY_CHANGES                                         0xde88aa27U
-
 /* Directory settings */
 
 #define MENU_LABEL_CURSOR_DIRECTORY                                            0xdee8d377U

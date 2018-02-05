@@ -3844,6 +3844,21 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_OK(cbs, action_ok_shader_apply_changes);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_cheat_file);
+      return 0;
+   }
    else if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
@@ -4269,9 +4284,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
    {
       switch (hash)
       {
-         case MENU_LABEL_CHEAT_FILE_LOAD:
-            BIND_ACTION_OK(cbs, action_ok_cheat_file);
-            break;
          case MENU_LABEL_AUDIO_DSP_PLUGIN:
             BIND_ACTION_OK(cbs, action_ok_audio_dsp_plugin);
             break;
@@ -4289,12 +4301,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DETECT_CORE_LIST_OK:
             BIND_ACTION_OK(cbs, action_ok_file_load_detect_core);
-            break;
-         case MENU_LABEL_CHEAT_APPLY_CHANGES:
-            BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
-            break;
-         case MENU_LABEL_CHEAT_FILE_SAVE_AS:
-            BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
             break;
          case MENU_LABEL_REMAP_FILE_SAVE_CORE:
             BIND_ACTION_OK(cbs, action_ok_remap_file_save_core);

@@ -524,6 +524,14 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_DISK_IMAGE_APPEND,
       action_get_title_disk_image_append
+   },
+   {
+      MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
+      action_get_title_cheat_file_load
+   },
+   {
+      MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,
+      action_get_title_cheat_directory
    }
 };
 
@@ -1050,9 +1058,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_MANAGEMENT:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
             break;
-         case MENU_LABEL_CHEAT_FILE_LOAD:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_cheat_file_load);
-            break;
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_remap_file_load);
             break;
@@ -1070,9 +1075,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_AUDIO_DSP_PLUGIN:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_audio_filter);
-            break;
-         case MENU_LABEL_CHEAT_DATABASE_PATH:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_cheat_directory);
             break;
          case MENU_LABEL_LIBRETRO_DIR_PATH:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_core_directory);
