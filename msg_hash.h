@@ -908,6 +908,7 @@ enum msg_hash_enums
    MENU_LABEL(HELP_LOADING_CONTENT),
    MENU_LABEL(HELP_LIST),
    MENU_LABEL(HELP_CONTROLS),
+   MENU_LABEL(HELP_CHEEVOS_DESCRIPTION),
 
    MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
 
@@ -1784,10 +1785,6 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST                            0x10b41d97U
 #define MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST                                0x679a1b0bU
 #define MENU_LABEL_DEFERRED_BROWSE_URL_START                                   0xcef58296U
-
-/* Cheevos settings */
-
-#define MENU_LABEL_CHEEVOS_DESCRIPTION                                         0x7e00e0f5U
 
 /* Accounts settings */
 
