@@ -820,19 +820,14 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting,
       const char *label)
 {
-   uint32_t needle        = msg_hash_calculate(label);
    rarch_setting_t **list = &setting;
 
    for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
    {
-      if (     (needle                    == setting->name_hash)
+      if (string_is_equal(label, setting->name)
             && (setting_get_type(setting) <= ST_GROUP))
       {
-         const char *name              = setting->name;
          const char *short_description = setting->short_description;
-         /* make sure this isn't a collision */
-         if (!string_is_equal(label, name))
-            continue;
 
          if (string_is_empty(short_description))
             return NULL;
