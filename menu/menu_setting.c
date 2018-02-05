@@ -7786,7 +7786,6 @@ static void menu_setting_terminate_last(rarch_setting_t *list, unsigned pos)
    (*&list)[pos].type               = ST_NONE;
    (*&list)[pos].size               = 0;
    (*&list)[pos].name               = NULL;
-   (*&list)[pos].name_hash          = 0;
    (*&list)[pos].short_description  = NULL;
    (*&list)[pos].group              = NULL;
    (*&list)[pos].subgroup           = NULL;
