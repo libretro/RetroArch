@@ -827,6 +827,10 @@ static struct cbs_deferred_lbl_callback cbs_deferred2_lbl_list[] = {
    {
       MENU_ENUM_LABEL_SETTINGS,
       deferred_push_settings
+   },
+   {
+      MENU_ENUM_LABEL_ADD_CONTENT_LIST,
+      deferred_push_add_content_list
    }
 };
 
@@ -1189,9 +1193,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_CONTENT_SETTINGS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_settings);
-            break;
-         case MENU_LABEL_ADD_CONTENT_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_content_list);
             break;
          case MENU_LABEL_MANAGEMENT:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_management_options);
