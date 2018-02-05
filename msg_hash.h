@@ -1880,7 +1880,6 @@ enum msg_hash_enums
 
 /* RDB settings */
 
-#define MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE                               0x8888c5acU
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
 #define MENU_LABEL_RDB_ENTRY_PUBLISHER                                         0x4d7bcdfbU
 #define MENU_LABEL_RDB_ENTRY_DEVELOPER                                         0x06f61093U
