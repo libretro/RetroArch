@@ -726,6 +726,10 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_FAVORITES,
       deferred_push_detect_core_list
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_FILTER,
+      deferred_push_video_filter
    }
 };
 
@@ -1298,9 +1302,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_VIDEO_SHADER_PASS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_pass);
-            break;
-         case MENU_LABEL_VIDEO_FILTER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
             break;
          case MENU_LABEL_MENU_WALLPAPER:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_images);

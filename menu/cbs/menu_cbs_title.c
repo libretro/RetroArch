@@ -468,6 +468,14 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST,
       action_get_online_thumbnails_updater_list
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_FILTER,
+      action_get_title_video_filter
+   },
+   {
+      MENU_ENUM_LABEL_HELP_LIST,
+      action_get_title_help
    }
 };
 
@@ -1033,7 +1041,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_user_accounts_list);
             break;
-         case MENU_LABEL_HELP_LIST:
          case MENU_LABEL_HELP:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_help);
             break;
@@ -1043,9 +1050,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_VIDEO_FONT_PATH:
          case MENU_LABEL_XMB_FONT:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_font_path);
-            break;
-         case MENU_LABEL_VIDEO_FILTER:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_filter);
             break;
          case MENU_LABEL_AUDIO_DSP_PLUGIN:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_audio_filter);

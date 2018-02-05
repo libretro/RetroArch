@@ -1934,13 +1934,9 @@ enum msg_hash_enums
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
 
-#define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
-#define MENU_LABEL_HELP_LIST                                                   0x006af669U
-
 /* Main menu */
 #define MENU_LABEL_NETPLAY                                                     0x0b511d22U
 #define MENU_LABEL_HELP                                                        0x7c97d2eeU
-#define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
 
 const char *msg_hash_to_str(enum msg_hash_enums msg);
 

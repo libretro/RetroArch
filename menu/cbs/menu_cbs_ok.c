@@ -4444,15 +4444,22 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_DOWNLOAD_CORE_INFO:
             break;
          case FILE_TYPE_RDB:
-            switch (menu_label_hash)
+            if (string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
             {
-               case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-                  BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
-                  break;
-               case MENU_LABEL_DATABASE_MANAGER_LIST:
-               case MENU_VALUE_HORIZONTAL_MENU:
-                  BIND_ACTION_OK(cbs, action_ok_database_manager_list);
-                  break;
+               BIND_ACTION_OK(cbs, action_ok_database_manager_list);
+            }
+            else
+            {
+               switch (menu_label_hash)
+               {
+                  case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
+                     BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
+                     break;
+                  case MENU_LABEL_DATABASE_MANAGER_LIST:
+                     BIND_ACTION_OK(cbs, action_ok_database_manager_list);
+                     break;
+               }
             }
             break;
          case FILE_TYPE_RDB_ENTRY:
