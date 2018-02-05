@@ -1420,23 +1420,26 @@ static bool command_event_save_core_config(void)
    const char *core_path           = NULL;
    char *config_name               = NULL;
    char *config_path               = NULL;
-   char *config_dir                = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *config_dir                = NULL;
    size_t config_size              = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings            = config_get_ptr();
 
-   config_dir[0]  = msg[0]         = '\0';
+   msg[0]                          = '\0';
 
    if (settings && !string_is_empty(settings->paths.directory_menu_config))
-      strlcpy(config_dir, settings->paths.directory_menu_config,
-            config_size);
+      config_dir = strdup(settings->paths.directory_menu_config);
    else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
+   {
+      config_dir                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      config_dir[0]                = '\0';
       fill_pathname_basedir(config_dir, path_get(RARCH_PATH_CONFIG),
             config_size);
-   else
+   }
+
+   if (string_is_empty(config_dir))
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true);
       RARCH_ERR("[Config]: %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
-      free(config_dir);
       return false;
    }
 
