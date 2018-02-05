@@ -84,7 +84,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
-      "WARNING: A netlpay peer is running a different version of the core. If problems occur, use the same version."
+      "WARNING: A netplay peer is running a different version of the core. If problems occur, use the same version."
       )
 MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
@@ -2676,7 +2676,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-      "Start in fullscreen. Can be changed at runtime. Can be overriden by a command line switch"
+      "Start in fullscreen. Can be changed at runtime. Can be overridden by a command line switch"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
