@@ -1782,10 +1782,7 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_BROWSE_URL_START                                   0xcef58296U
 
 /* Accounts settings */
-
 #define MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS                                 0xe6b7c16cU
-
-#define MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST                            0xb4f82700U
 
 /* Information settings */
 #define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
