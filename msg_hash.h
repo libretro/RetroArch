@@ -1788,29 +1788,12 @@ enum msg_hash_enums
 
 #define MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST                            0xb4f82700U
 
-/* Online updater settings */
-
-#define MENU_LABEL_UPDATE_LAKKA                                                0x19b51eebU
-
 /* Information settings */
 #define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
-
-/* Video settings */
-#define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U
-#define MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER                                 0x4468cb1bU
-#define MENU_LABEL_VIDEO_SHADER_NUM_PASSES                                     0x79b2992fU
-#define MENU_LABEL_VIDEO_SHADER_PARAMETERS                                     0x9895c3e5U
-#define MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS                              0xd18158d7U
-#define MENU_LABEL_VIDEO_SHADER_PASS                                           0x4fa31028U
-#define MENU_LABEL_VIDEO_SHADER_PRESET                                         0xc5d3bae4U
 
 /* Input settings */
 #define MENU_LABEL_INPUT_OVERLAY                                               0x24e24796U
 #define MENU_LABEL_INPUT_OSK_OVERLAY                                           0x11f1c582U
-
-/* Record settings */
-
-#define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U
 
 /* Cheat options */
 
@@ -1823,11 +1806,6 @@ enum msg_hash_enums
 
 #define MENU_LABEL_DISK_OPTIONS                                                0xc61ab5fbU
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
-
-/* Menu settings */
-
-#define MENU_LABEL_MENU_WALLPAPER                                              0x3b84de01U
-#define MENU_LABEL_MENU_SETTINGS                                               0x61e4544bU
 
 /* Directory settings */
 

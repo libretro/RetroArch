@@ -500,6 +500,18 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_CONTENT_SETTINGS,
       action_get_quick_menu_list
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,
+      action_get_title_video_shader_parameters
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+      action_get_title_video_shader_preset_parameters
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET,
+      action_get_title_video_shader_preset
    }
 };
 
@@ -1026,20 +1038,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_ACHIEVEMENT_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_cheevos_list);
             break;
-         case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_parameters);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset_parameters);
-            break;
          case MENU_LABEL_MANAGEMENT:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
             break;
          case MENU_LABEL_DISK_IMAGE_APPEND:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_disk_image_append);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PRESET:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset);
             break;
          case MENU_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_cheat_file_load);

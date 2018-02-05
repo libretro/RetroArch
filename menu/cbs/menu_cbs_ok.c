@@ -3777,6 +3777,43 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       BIND_ACTION_OK(cbs, action_ok_push_content_list);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RECORD_CONFIG)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_record_configfile);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_shader_parameters);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_shader_parameters);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_shader_pass);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_shader_preset);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
+      return 0;
+   }
+#ifdef HAVE_NETWORKING
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_LAKKA)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_lakka_list);
+      return 0;
+   }
+#endif
    else if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
@@ -4214,12 +4251,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_LOAD_ARCHIVE:
             BIND_ACTION_OK(cbs, action_ok_load_archive);
             break;
-         case MENU_LABEL_VIDEO_SHADER_PASS:
-            BIND_ACTION_OK(cbs, action_ok_shader_pass);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PRESET:
-            BIND_ACTION_OK(cbs, action_ok_shader_preset);
-            break;
          case MENU_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_OK(cbs, action_ok_cheat_file);
             break;
@@ -4228,18 +4259,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_OK(cbs, action_ok_remap_file);
-            break;
-         case MENU_LABEL_RECORD_CONFIG:
-            BIND_ACTION_OK(cbs, action_ok_record_configfile);
-            break;
-#ifdef HAVE_NETWORKING
-         case MENU_LABEL_UPDATE_LAKKA:
-            BIND_ACTION_OK(cbs, action_ok_lakka_list);
-            break;
-#endif
-         case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
-         case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-            BIND_ACTION_OK(cbs, action_ok_shader_parameters);
             break;
          case MENU_LABEL_ACCOUNTS_LIST:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
@@ -4258,9 +4277,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_CHEAT_APPLY_CHANGES:
             BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
             break;
          case MENU_LABEL_CHEAT_FILE_SAVE_AS:
             BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);

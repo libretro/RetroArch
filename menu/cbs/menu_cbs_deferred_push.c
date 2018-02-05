@@ -746,6 +746,30 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_CONTENT_SETTINGS,
       deferred_push_content_settings
+   },
+   {
+      MENU_ENUM_LABEL_RECORD_CONFIG,
+      deferred_push_record_configfile
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+      deferred_push_video_shader_preset_parameters
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,
+      deferred_push_video_shader_parameters
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_SHADER_PASS,
+      deferred_push_video_shader_pass
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET,
+      deferred_push_video_shader_preset
+   },
+   {
+      MENU_ENUM_LABEL_MENU_WALLPAPER,
+      deferred_push_images
    }
 };
 
@@ -1209,9 +1233,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);
             break;
-         case MENU_LABEL_RECORD_CONFIG:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_record_configfile);
-            break;
          case MENU_LABEL_MANAGEMENT:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_management_options);
             break;
@@ -1289,12 +1310,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_LABEL_FRONTEND_COUNTERS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_frontend_counters);
             break;
-         case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_parameters);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_parameters);
-            break;
          case MENU_LABEL_CORE_CHEAT_OPTIONS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_cheat_options);
             break;
@@ -1306,15 +1321,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_CONFIGURATIONS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PRESET:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PASS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_pass);
-            break;
-         case MENU_LABEL_MENU_WALLPAPER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_images);
             break;
          case MENU_LABEL_AUDIO_DSP_PLUGIN:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_dsp_plugin);
