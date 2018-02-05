@@ -774,6 +774,10 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
       deferred_push_cheat_file_load
+   },
+   {
+      MENU_ENUM_LABEL_INPUT_OVERLAY,
+      deferred_push_input_overlay
    }
 };
 
@@ -1325,9 +1329,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_AUDIO_DSP_PLUGIN:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_dsp_plugin);
-            break;
-         case MENU_LABEL_INPUT_OVERLAY:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
             break;
          case MENU_LABEL_CONTENT_HISTORY_PATH:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);

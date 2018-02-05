@@ -532,6 +532,10 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,
       action_get_title_cheat_directory
+   },
+   {
+      MENU_ENUM_LABEL_INPUT_OVERLAY,
+      action_get_title_overlay
    }
 };
 
@@ -1069,9 +1073,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_user_accounts_list);
-            break;
-         case MENU_LABEL_INPUT_OVERLAY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_overlay);
             break;
          case MENU_LABEL_AUDIO_DSP_PLUGIN:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_audio_filter);

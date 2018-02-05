@@ -1791,10 +1791,6 @@ enum msg_hash_enums
 /* Information settings */
 #define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
 
-/* Input settings */
-#define MENU_LABEL_INPUT_OVERLAY                                               0x24e24796U
-#define MENU_LABEL_INPUT_OSK_OVERLAY                                           0x11f1c582U
-
 /* Directory settings */
 
 #define MENU_LABEL_CURSOR_DIRECTORY                                            0xdee8d377U
