@@ -56,6 +56,42 @@ MSG_HASH(
       "「プレイヤー%d」で接続しました"
       )
 MSG_HASH(
+      MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
+      "入力デバイス「%.*s」で接続しました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_PLAYER_S_LEFT,
+      "プレヤー「%.*s」が退出しました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
+      "「%2$.*1$s」がプレヤー「%3$u」で接続しました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
+      "「%2$.*1$s」が入力デバイス「%4$.*3$s」で接続しました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_NOT_RETROARCH,
+      "相手の接続が失敗しました。古いRetroArchバージョンを使っているかもしれません。"
+      )
+MSG_HASH(
+      MSG_NETPLAY_OUT_OF_DATE,
+      "相手のRetroArchバージョンは古いから接続できません。"
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_VERSIONS,
+      "警告：相手が違うRetroArchバージョンを使っています。問題があれば同じバージョンを使って下さい。"
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_CORES,
+      "相手が違うコアを使っています。接続できません。"
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
+      "警告：相手が違うコアのバージョンを使っています。問題があれば同じバージョンを使って下さい。"
+      )
+MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
       "This core does not support inter-architecture netplay between these systems"
       )
@@ -90,6 +126,10 @@ MSG_HASH(
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
       "空きプレイヤースロットはありません"
+      )
+MSG_HASH(
+      MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
+      "選択した入力デバイスが使えません。"
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY,
@@ -1022,7 +1062,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
       "横アニメーション")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
-      "メニュー")
+      "外観")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
       "メニューの壁紙")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
