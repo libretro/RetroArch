@@ -484,6 +484,22 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_NETPLAY,
       action_get_netplay_list
+   },
+   {
+      MENU_ENUM_LABEL_INFORMATION_LIST,
+      action_get_title_information_list
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_FONT_PATH,
+      action_get_title_font_path
+   },
+   {
+      MENU_ENUM_LABEL_XMB_FONT,
+      action_get_title_font_path
+   },
+   {
+      MENU_ENUM_LABEL_CONTENT_SETTINGS,
+      action_get_quick_menu_list
    }
 };
 
@@ -944,9 +960,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_config_directory);
             break;
-         case MENU_LABEL_INFORMATION_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_information_list);
-            break;
          case MENU_LABEL_DATABASE_MANAGER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_database_manager_list);
             break;
@@ -970,9 +983,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_CORE_OPTIONS:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_options_list);
-            break;
-         case MENU_LABEL_CONTENT_SETTINGS:
-            BIND_ACTION_GET_TITLE(cbs, action_get_quick_menu_list);
             break;
          case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
             BIND_ACTION_GET_TITLE(cbs, action_get_input_remapping_options_list);
@@ -1048,10 +1058,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_INPUT_OVERLAY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_overlay);
-            break;
-         case MENU_LABEL_VIDEO_FONT_PATH:
-         case MENU_LABEL_XMB_FONT:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_font_path);
             break;
          case MENU_LABEL_AUDIO_DSP_PLUGIN:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_audio_filter);

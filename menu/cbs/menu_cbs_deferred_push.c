@@ -734,6 +734,18 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_NETPLAY,
       deferred_push_netplay
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_FONT_PATH,
+      deferred_push_video_font_path
+   },
+   {
+      MENU_ENUM_LABEL_XMB_FONT,
+      deferred_push_xmb_font_path
+   },
+   {
+      MENU_ENUM_LABEL_CONTENT_SETTINGS,
+      deferred_push_content_settings
    }
 };
 
@@ -1200,9 +1212,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_LABEL_RECORD_CONFIG:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_record_configfile);
             break;
-         case MENU_LABEL_CONTENT_SETTINGS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_settings);
-            break;
          case MENU_LABEL_MANAGEMENT:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_management_options);
             break;
@@ -1312,12 +1321,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_INPUT_OVERLAY:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
-            break;
-         case MENU_LABEL_VIDEO_FONT_PATH:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);
-            break;
-         case MENU_LABEL_XMB_FONT:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_xmb_font_path);
             break;
          case MENU_LABEL_CONTENT_HISTORY_PATH:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);

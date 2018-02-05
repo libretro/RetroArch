@@ -1792,21 +1792,9 @@ enum msg_hash_enums
 #define MENU_LABEL_UPDATE_LAKKA                                                0x19b51eebU
 
 /* Information settings */
-
-#define MENU_LABEL_INFORMATION_LIST                                            0x225e7606U
-
-#define MENU_LABEL_CONTENT_SETTINGS                                            0xe789f7f6U
-
 #define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
 
-/* Menu settings */
-#define MENU_LABEL_XMB_FONT                                                    0x0ECA56CA2
-
-#define MENU_LABEL_PERFCNT_ENABLE                                              0x6823dbddU
-
 /* Video settings */
-#define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
-
 #define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U
 #define MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER                                 0x4468cb1bU
 #define MENU_LABEL_VIDEO_SHADER_NUM_PASSES                                     0x79b2992fU
