@@ -476,6 +476,14 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_HELP_LIST,
       action_get_title_help
+   },
+   {
+      MENU_ENUM_LABEL_HELP,
+      action_get_title_help
+   },
+   {
+      MENU_ENUM_LABEL_NETPLAY,
+      action_get_netplay_list
    }
 };
 
@@ -954,9 +962,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
             BIND_ACTION_GET_TITLE(cbs, action_get_load_content_special);
             break;
-         case MENU_LABEL_NETPLAY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_netplay_list);
-            break;
          case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_updater_list);
             break;
@@ -1040,9 +1045,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_user_accounts_list);
-            break;
-         case MENU_LABEL_HELP:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_help);
             break;
          case MENU_LABEL_INPUT_OVERLAY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_overlay);

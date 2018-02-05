@@ -730,6 +730,10 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_VIDEO_FILTER,
       deferred_push_video_filter
+   },
+   {
+      MENU_ENUM_LABEL_NETPLAY,
+      deferred_push_netplay
    }
 };
 
@@ -1195,9 +1199,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_RECORD_CONFIG:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_record_configfile);
-            break;
-         case MENU_LABEL_NETPLAY:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_netplay);
             break;
          case MENU_LABEL_CONTENT_SETTINGS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_settings);
