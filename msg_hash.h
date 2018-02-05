@@ -1784,7 +1784,6 @@ enum msg_hash_enums
 /* Accounts settings */
 
 #define MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS                                 0xe6b7c16cU
-#define MENU_LABEL_ACCOUNTS_LIST                                               0x774c15a0U
 
 #define MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST                            0xb4f82700U
 
