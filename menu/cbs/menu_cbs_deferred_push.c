@@ -725,11 +725,48 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    }
 };
 
+static struct cbs_deferred_lbl_callback cbs_deferred2_lbl_list[] = {
+#ifdef HAVE_NETWORKING
+   {
+      MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST,
+      deferred_push_core_updater_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST,
+      deferred_push_thumbnails_updater_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST,
+      deferred_push_core_content_list
+   },
+#endif
+   {
+      MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL,
+      deferred_push_rdb_entry_detail
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS,
+      deferred_push_rpl_entry_actions
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_NETPLAY,
+      deferred_push_netplay_sublist
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST,
+      deferred_push_input_settings_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST,
+      deferred_push_driver_settings_list
+   }
+};
+
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
       const char *label, uint32_t label_hash)
 {
-   unsigned k;
+   unsigned k, l;
 
    for (k = 0; k < ARRAY_SIZE(cbs_deferred_lbl_list); k++)
    {
@@ -740,48 +777,16 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       }
    }
 
-   if (strstr(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+   for (l = 0; l < ARRAY_SIZE(cbs_deferred2_lbl_list); l++)
    {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
+      if (strstr(label, msg_hash_to_str(cbs_deferred2_lbl_list[l].id)))
+      {
+         BIND_ACTION_DEFERRED_PUSH(cbs, cbs_deferred2_lbl_list[l].cbs);
+         return 0;
+      }
    }
-#ifdef HAVE_NETWORKING
-   else if (strstr(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_updater_list);
-   }
-   else if (strstr(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST)))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_thumbnails_updater_list);
-   }
-   else if (strstr(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST)))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_list);
-   }
-#endif
-   else if (strstr(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rpl_entry_actions);
-   }
-   else if (strstr(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_NETPLAY)))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_netplay_sublist);
-   }
-   else if (strstr(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST)))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_settings_list);
-   }
-   else if (strstr(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST)))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_driver_settings_list);
-   }
-   else if (strstr(label,
+
+   if (strstr(label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_settings_list);
