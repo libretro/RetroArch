@@ -709,7 +709,7 @@ void font_driver_render_msg(
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
 
-   if (font && font->renderer && font->renderer->render_msg)
+   if (msg && *msg && font && font->renderer && font->renderer->render_msg)
    {
 #ifdef HAVE_LANGEXTRA
       char* new_msg = font_driver_reshape_msg(msg);
