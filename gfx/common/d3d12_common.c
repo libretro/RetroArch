@@ -369,75 +369,53 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
    return true;
 }
 
-bool d3d12_init_pipeline(d3d12_video_t* d3d12)
+D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc =
 {
-   D3DBlob vs_code;
-   D3DBlob ps_code;
+   TRUE,
+   FALSE,
+   D3D12_BLEND_SRC_ALPHA,
+   D3D12_BLEND_INV_SRC_ALPHA,
+   D3D12_BLEND_OP_ADD,
+   D3D12_BLEND_SRC_ALPHA,
+   D3D12_BLEND_INV_SRC_ALPHA,
+   D3D12_BLEND_OP_ADD,
+   D3D12_LOGIC_OP_NOOP,
+   D3D12_COLOR_WRITE_ENABLE_ALL,
+};
 
-   static const char stock[] =
-#include "../drivers/d3d_shaders/opaque_sm5.hlsl.h"
-         ;
-
-   static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
-      { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
-        D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-      { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
-        D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-      { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d12_vertex_t, color),
-        D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-   };
-
-   if (!d3d_compile(stock, sizeof(stock), NULL, "VSMain", "vs_5_0", &vs_code))
-      return false;
-
-   if (!d3d_compile(stock, sizeof(stock), NULL, "PSMain", "ps_5_0", &ps_code))
-      return false;
-
+bool d3d12_init_pipeline(
+      D3D12Device                         device,
+      D3DBlob                             vs_code,
+      D3DBlob                             ps_code,
+      D3DBlob                             gs_code,
+      D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc,
+      D3D12PipelineState*                 out)
+{
+   if(vs_code)
    {
-      D3D12_GRAPHICS_PIPELINE_STATE_DESC psodesc               = { 0 };
-      psodesc.pRootSignature                                   = d3d12->pipe.rootSignature;
-      psodesc.VS.pShaderBytecode                               = D3DGetBufferPointer(vs_code);
-      psodesc.VS.BytecodeLength                                = D3DGetBufferSize(vs_code);
-      psodesc.PS.pShaderBytecode                               = D3DGetBufferPointer(ps_code);
-      psodesc.PS.BytecodeLength                                = D3DGetBufferSize(ps_code);
-      psodesc.BlendState.AlphaToCoverageEnable                 = FALSE;
-      psodesc.BlendState.IndependentBlendEnable                = FALSE;
-      psodesc.BlendState.RenderTarget[0].BlendEnable           = TRUE;
-      psodesc.BlendState.RenderTarget[0].LogicOpEnable         = FALSE;
-      psodesc.BlendState.RenderTarget[0].SrcBlend              = D3D12_BLEND_SRC_ALPHA;
-      psodesc.BlendState.RenderTarget[0].DestBlend             = D3D12_BLEND_INV_SRC_ALPHA;
-      psodesc.BlendState.RenderTarget[0].BlendOp               = D3D12_BLEND_OP_ADD;
-      psodesc.BlendState.RenderTarget[0].SrcBlendAlpha         = D3D12_BLEND_SRC_ALPHA;
-      psodesc.BlendState.RenderTarget[0].DestBlendAlpha        = D3D12_BLEND_INV_SRC_ALPHA;
-      psodesc.BlendState.RenderTarget[0].BlendOpAlpha          = D3D12_BLEND_OP_ADD;
-      psodesc.BlendState.RenderTarget[0].LogicOp               = D3D12_LOGIC_OP_NOOP;
-      psodesc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-      psodesc.SampleMask                                       = UINT_MAX;
-      psodesc.RasterizerState.FillMode                         = D3D12_FILL_MODE_SOLID;
-      psodesc.RasterizerState.CullMode                         = D3D12_CULL_MODE_BACK;
-      psodesc.RasterizerState.FrontCounterClockwise            = FALSE;
-      psodesc.RasterizerState.DepthBias                        = D3D12_DEFAULT_DEPTH_BIAS;
-      psodesc.RasterizerState.DepthBiasClamp                   = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-      psodesc.RasterizerState.SlopeScaledDepthBias  = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-      psodesc.RasterizerState.DepthClipEnable       = TRUE;
-      psodesc.RasterizerState.MultisampleEnable     = FALSE;
-      psodesc.RasterizerState.AntialiasedLineEnable = FALSE;
-      psodesc.RasterizerState.ForcedSampleCount     = 0;
-      psodesc.RasterizerState.ConservativeRaster    = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
-      psodesc.DepthStencilState.DepthEnable         = FALSE;
-      psodesc.DepthStencilState.StencilEnable       = FALSE;
-      psodesc.InputLayout.pInputElementDescs        = inputElementDesc;
-      psodesc.InputLayout.NumElements               = countof(inputElementDesc);
-      psodesc.PrimitiveTopologyType                 = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-      psodesc.NumRenderTargets                      = 1;
-      psodesc.RTVFormats[0]                         = DXGI_FORMAT_R8G8B8A8_UNORM;
-      psodesc.SampleDesc.Count                      = 1;
-
-      D3D12CreateGraphicsPipelineState(d3d12->device, &psodesc, &d3d12->pipe.handle);
+      desc->VS.pShaderBytecode             = D3DGetBufferPointer(vs_code);
+      desc->VS.BytecodeLength              = D3DGetBufferSize(vs_code);
    }
 
-   Release(vs_code);
-   Release(ps_code);
+   if(ps_code)
+   {
+      desc->PS.pShaderBytecode             = D3DGetBufferPointer(ps_code);
+      desc->PS.BytecodeLength              = D3DGetBufferSize(ps_code);
+   }
+
+   if(gs_code)
+   {
+      desc->GS.pShaderBytecode             = D3DGetBufferPointer(gs_code);
+      desc->GS.BytecodeLength              = D3DGetBufferSize(gs_code);
+   }
+
+   desc->SampleMask               = UINT_MAX;
+   desc->RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+   desc->RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+   desc->NumRenderTargets         = 1;
+   desc->SampleDesc.Count         = 1;
+
+   D3D12CreateGraphicsPipelineState(device, desc, out);
 
    return true;
 }

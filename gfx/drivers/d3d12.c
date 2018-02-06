@@ -109,8 +109,45 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    if (!d3d12_init_descriptors(d3d12))
       goto error;
 
-   if (!d3d12_init_pipeline(d3d12))
-      goto error;
+   {
+      bool success = false;
+      D3DBlob vs_code = NULL;
+      D3DBlob ps_code = NULL;
+      D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = { 0 };
+
+      static const char shader[] =
+#include "../drivers/d3d_shaders/opaque_sm5.hlsl.h"
+            ;
+
+      static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d12_vertex_t, color),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      };
+
+      desc.pRootSignature                 = d3d12->pipe.rootSignature;
+      desc.BlendState.RenderTarget[0]     = d3d12_blend_enable_desc;
+      desc.InputLayout.pInputElementDescs = inputElementDesc;
+      desc.InputLayout.NumElements        = countof(inputElementDesc);
+      desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+      desc.RTVFormats[0]                  = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+      d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code);
+      d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code);
+
+      if (vs_code && ps_code)
+         success = d3d12_init_pipeline(
+               d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipe.handle);
+
+      Release(vs_code);
+      Release(ps_code);
+
+      if(!success)
+         goto error;
+   }
 
    if (!d3d12_init_queue(d3d12))
       goto error;
