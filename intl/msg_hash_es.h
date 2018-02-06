@@ -51,6 +51,41 @@ MSG_HASH(
 	"Unido como jugador %d"
 	)
 MSG_HASH(
+	MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
+	"Se ha unido con el dispositivo de entrada %.*s"
+	)
+MSG_HASH(
+	MSG_NETPLAY_PLAYER_S_LEFT,
+	"Jugador %.*s dejó el juego"
+	)
+MSG_HASH(
+	MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
+	"%2$.*1$s se ha unido como jugador %3$u"
+	)
+MSG_HASH(
+	MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
+	"%2$.*1$s se ha unido con los dispositivos de entrada %4$.*3$s"
+	)
+MSG_HASH(
+	MSG_NETPLAY_NOT_RETROARCH,
+	"Una conexión de netplay falló, probablemente no este usando RetroArch o esté usando una versión antigua de RetroArch"
+	)
+MSG_HASH(
+	MSG_NETPLAY_OUT_OF_DATE,
+	"El par de netplay esta usando una versión antigua de RetroArch. No se puede conectar"
+	)
+MSG_HASH(
+	MSG_NETPLAY_DIFFERENT_VERSIONS,
+	"ADVERTENCIA: Un par de netplay esta usando una versión diferente de Retroarch. Si ocurren problemas, use la misma versión"
+	)
+MSG_HASH(
+	MSG_NETPLAY_DIFFERENT_CORES,
+	"Un par de netplay esta usando una versión diferente del núcleo. No se puede conectar"
+MSG_HASH(
+	MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
+	"ADVERTENCIA: Un par de netplay está ejecutando una versión diferente del núcleo. Si ocurren problemas, use la misma versión"
+	)
+MSG_HASH(
 	MSG_NETPLAY_ENDIAN_DEPENDENT,
 	"Este núcleo no soporta juego en red entre diferentes arquitecturas de sistemas"
 	)
@@ -85,6 +120,10 @@ MSG_HASH(
 MSG_HASH(
 	MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
 	"No hay lugar disponible"
+	)
+MSG_HASH(
+	MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
+	"El dispositivo de entrada pedido no esta disponible"
 	)
 MSG_HASH(
 	MSG_NETPLAY_CANNOT_PLAY,
@@ -1392,11 +1431,11 @@ MSG_HASH(
 	)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Arabic"
+   "Árabe"
    )
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-	"Analogico izquierdo"
+	"Analógico izquierdo"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -1626,6 +1665,9 @@ MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
 	"Anunciar juego en red públicamente"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
+	"Pedir dispositivo %u"
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
 	"Desactivar clientes sin modo esclavo"
@@ -1633,6 +1675,42 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
 	"Configurar juego en red"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
+	"Comparir entrada analoga"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
+	"Max"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
+	"Promedio"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
+	"Compartir entrada digital"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
+	"Compartir"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR,
+	"Grapple"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
+	"Votar"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+	"Nada"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE,
+	"Sin preferencia"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
@@ -4835,6 +4913,10 @@ MSG_HASH(
 	"Ordenar guardados rápidos en carpetas nombradas por núcleo"
 	)
 MSG_HASH(
+	MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
+	"Pedir jugar con el dispositivo de entrada dado"
+	)
+MSG_HASH(
 	MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
 	"URL de la carpeta del actualizador de núcleos en el buildbot Libretro"
 	)
@@ -5287,6 +5369,13 @@ MSG_HASH(
 	"Enviar conexiones de juego en red a través de otro servidor (man-in-the-middle). Útil si el servidor está detrás de un firewall o tiene problemas NAT/UPnP"
 	)
 MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
+	"Ubicación del servidor relé"
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
+	"Elegir un servidor relé especifico. Las ubicaciones geográficamente cercanas tienden a tener menor latencia"
+MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
 	"Agregar al mezclador"
 	)
@@ -5705,4 +5794,12 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
 	"Valores mas bajos favorecen el rendimiento y bajan la latencia a costa de la calidad, incrementar el valor aumentará la calidad a costa del rendimiento y latencia"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
+	"Vigilar cambios en los shader"
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
+	"Auto-aplica los cambios hechos a los archivos shader del disco"
 	)
