@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include "../../input/input_driver.h"
+#include "../../input/common/hid/hid_device_driver.h"
 #include "../../input/connect/joypad_connection.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../retroarch.h"
@@ -149,6 +150,7 @@ typedef struct wiiu_attach wiiu_attach_event;
 
 struct wiiu_attach {
   wiiu_attach_event *next;
+  hid_device_t *driver;
   uint32_t type;
   uint32_t handle;
   uint16_t vendor_id;

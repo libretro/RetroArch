@@ -649,10 +649,18 @@ static void delete_adapter(wiiu_adapter_t *adapter)
 
 static wiiu_attach_event *new_attach_event(HIDDevice *device)
 {
+   hid_device_t *driver = hid_device_driver_lookup(device->vid, device->pid);
+   if(!driver)
+   {
+      RARCH_ERR("[hid]: Failed to locate driver for device vid=%04x pid=%04x\n",
+        device->vid, device->pid);
+      return NULL;
+   }
    wiiu_attach_event *event = alloc_zeroed(4, sizeof(wiiu_attach_event));
    if(!event)
       return NULL;
 
+   event->driver             = driver;
    event->handle             = device->handle;
    event->vendor_id          = device->vid;
    event->product_id         = device->pid;

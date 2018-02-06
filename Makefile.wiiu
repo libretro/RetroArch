@@ -6,7 +6,7 @@ DEBUG                      = 0
 GRIFFIN_BUILD              = 0
 SALAMANDER_BUILD           = 0
 WHOLE_ARCHIVE_LINK         = 0
-WIIU_HID                   = 0
+WIIU_HID                   = 1
 WIIU_LOG_RPX               = 0
 BUILD_DIR                  = objs/wiiu
 PC_DEVELOPMENT_IP_ADDRESS  ?=
@@ -56,7 +56,11 @@ ifeq ($(WIIU_HID),1)
           input/connect/connect_nesusb.o \
           input/connect/connect_snesusb.o \
           input/connect/connect_wiiupro.o \
-          input/connect/connect_wiiugca.o
+          input/connect/connect_wiiugca.o \
+          input/common/hid/hid_device_driver.o \
+          input/common/hid/device_wiiu_gca.o \
+          input/common/hid/device_ds3.o \
+          input/common/hid/device_ds4.o
 endif
 
 ifeq ($(SALAMANDER_BUILD),1)
