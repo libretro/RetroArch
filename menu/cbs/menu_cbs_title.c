@@ -544,6 +544,10 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_CONFIGURATIONS,
       action_get_title_configurations
+   },
+   {
+      MENU_ENUM_LABEL_CORE_LIST,
+      action_get_core_list
    }
 };
 
@@ -1009,9 +1013,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_CORE_INFORMATION:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_information_list);
-            break;
-         case MENU_LABEL_CORE_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_core_list);
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
             BIND_ACTION_GET_TITLE(cbs, action_get_load_content_special);

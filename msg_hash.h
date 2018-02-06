@@ -1829,7 +1829,6 @@ enum msg_hash_enums
 #define MENU_LABEL_RDB_ENTRY_RELEASE_YEAR                                      0x14c9c6bfU
 #define MENU_LABEL_RDB_ENTRY_MAX_USERS                                         0xfae91cc4U
 
-#define MENU_LABEL_CORE_LIST                                                   0xa22bb14dU
 #define MENU_LABEL_MANAGEMENT                                                  0x2516c88aU
 #define MENU_LABEL_FRONTEND_COUNTERS                                           0xe5696877U
 #define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U

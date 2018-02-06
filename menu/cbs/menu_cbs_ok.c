@@ -4460,6 +4460,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      break;
                }
             }
+            else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
+            {
+               BIND_ACTION_OK(cbs, action_ok_load_core);
+               break;
+            }
             else
             {
                switch (menu_label_hash)
@@ -4469,9 +4474,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      break;
                   case MENU_LABEL_DEFERRED_CORE_LIST_SET:
                      BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
-                     break;
-                  case MENU_LABEL_CORE_LIST:
-                     BIND_ACTION_OK(cbs, action_ok_load_core);
                      break;
                }
             }
