@@ -701,6 +701,10 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
       action_get_configurations_list
+   },
+   {
+      MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
+      action_get_title_cheevos_list
    }
 };
 
@@ -1109,9 +1113,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_CONTENT_COLLECTION_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_collection);
-            break;
-         case MENU_LABEL_ACHIEVEMENT_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_cheevos_list);
             break;
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_remap_file_load);

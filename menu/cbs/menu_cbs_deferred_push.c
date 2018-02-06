@@ -814,6 +814,10 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
       deferred_push_configurations_list
+   },
+   {
+      MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
+      deferred_push_achievement_list
    }
 };
 
@@ -1337,9 +1341,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear);
             break;
 #endif
-         case MENU_LABEL_ACHIEVEMENT_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_achievement_list);
-            break;
          case MENU_LABEL_CORE_COUNTERS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_counters);
             break;
