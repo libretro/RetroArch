@@ -1781,34 +1781,6 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST                                0x679a1b0bU
 #define MENU_LABEL_DEFERRED_BROWSE_URL_START                                   0xcef58296U
 
-/* Directory settings */
-
-#define MENU_LABEL_CURSOR_DIRECTORY                                            0xdee8d377U
-#define MENU_LABEL_OSK_OVERLAY_DIRECTORY                                       0xcce86287U
-#define MENU_LABEL_JOYPAD_AUTOCONFIG_DIR                                       0x2f4822d8U
-#define MENU_LABEL_RECORDING_OUTPUT_DIRECTORY                                  0x30bece06U
-#define MENU_LABEL_RECORDING_CONFIG_DIRECTORY                                  0x3c3f274bU
-#define MENU_LABEL_LIBRETRO_DIR_PATH                                           0x1af1eb72U
-#define MENU_LABEL_AUDIO_FILTER_DIR                                            0x4bd96ebaU
-#define MENU_LABEL_VIDEO_SHADER_DIR                                            0x30f53b10U
-#define MENU_LABEL_VIDEO_FILTER_DIR                                            0x67603f1fU
-#define MENU_LABEL_SCREENSHOT_DIRECTORY                                        0x552612d7U
-#define MENU_LABEL_SYSTEM_DIRECTORY                                            0x35a6fb9eU
-#define MENU_LABEL_INPUT_REMAPPING_DIRECTORY                                   0x5233c20bU
-#define MENU_LABEL_OVERLAY_DIRECTORY                                           0xc4ed3d1bU
-#define MENU_LABEL_SAVEFILE_DIRECTORY                                          0x92773488U
-#define MENU_LABEL_SAVESTATE_DIRECTORY                                         0x90551289U
-#define MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY                                0x62f975b8U
-#define MENU_LABEL_THUMBNAILS_DIRECTORY                                        0xdea77410U
-#define MENU_LABEL_RGUI_BROWSER_DIRECTORY                                      0xa86cba73U
-#define MENU_LABEL_CONTENT_DATABASE_DIRECTORY                                  0x6b443f80U
-#define MENU_LABEL_PLAYLIST_DIRECTORY                                          0x6361820bU
-#define MENU_LABEL_CORE_ASSETS_DIRECTORY                                       0x8ba5ee54U
-#define MENU_LABEL_CONTENT_DIRECTORY                                           0x7738dc14U
-#define MENU_LABEL_RGUI_CONFIG_DIRECTORY                                       0x0cb3e005U
-#define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
-#define MENU_LABEL_CACHE_DIRECTORY                                             0x851dfb8dU
-
 /* RDB settings */
 
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
@@ -1829,14 +1801,12 @@ enum msg_hash_enums
 #define MENU_LABEL_RDB_ENTRY_RELEASE_YEAR                                      0x14c9c6bfU
 #define MENU_LABEL_RDB_ENTRY_MAX_USERS                                         0xfae91cc4U
 
-#define MENU_LABEL_MANAGEMENT                                                  0x2516c88aU
 #define MENU_LABEL_FRONTEND_COUNTERS                                           0xe5696877U
 #define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U
 #define MENU_LABEL_ACHIEVEMENT_LIST                                            0x7b90fc49U
 #define MENU_LABEL_DATABASE_MANAGER_LIST                                       0x7f853d8fU
 #define MENU_LABEL_CURSOR_MANAGER_LIST                                         0xa969e378U
 #define MENU_LABEL_REMAP_FILE_LOAD                                             0x9c2799b8U
-#define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
 #define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x32d1df83U

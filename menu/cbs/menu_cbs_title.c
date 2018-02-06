@@ -154,6 +154,7 @@ default_fill_title_macro(action_get_title_configurations,       MENU_ENUM_LABEL_
 default_fill_title_macro(action_get_title_content_database_directory,   MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY)
 default_fill_title_macro(action_get_title_savestate_directory,          MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY)
 default_fill_title_macro(action_get_title_dynamic_wallpapers_directory, MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY)
+default_fill_title_macro(action_get_title_thumbnails_directory, MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY)
 default_fill_title_macro(action_get_title_core_assets_directory, MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR)
 default_fill_title_macro(action_get_title_config_directory,      MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY)
 default_fill_title_macro(action_get_title_input_remapping_directory,    MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY)
@@ -568,6 +569,110 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
       action_get_input_remapping_options_list
+   },
+   {
+      MENU_ENUM_LABEL_MANAGEMENT,
+      action_get_title_action_generic
+   },
+   {
+      MENU_ENUM_LABEL_LIBRETRO_DIR_PATH,
+      action_get_title_core_directory
+   },
+   {
+      MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR,
+      action_get_title_autoconfig_directory
+   },
+   {
+      MENU_ENUM_LABEL_CURSOR_DIRECTORY,
+      action_get_title_cursor_directory
+   },
+   {
+      MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,
+      action_get_title_onscreen_overlay_keyboard_directory
+   },
+   {
+      MENU_ENUM_LABEL_ASSETS_DIRECTORY,
+      action_get_title_assets_directory
+   },
+   {
+      MENU_ENUM_LABEL_CACHE_DIRECTORY,
+      action_get_title_extraction_directory
+   },
+   {
+      MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,
+      action_get_title_config_directory
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_SHADER_DIR,
+      action_get_title_video_shader_directory
+   },
+   {
+      MENU_ENUM_LABEL_AUDIO_FILTER_DIR,
+      action_get_title_audio_filter_directory
+   },
+   {
+      MENU_ENUM_LABEL_SAVEFILE_DIRECTORY,
+      action_get_title_savefile_directory
+   },
+   {
+      MENU_ENUM_LABEL_SAVESTATE_DIRECTORY,
+      action_get_title_savestate_directory
+   },
+   {
+      MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY,
+      action_get_title_core_assets_directory
+   },
+   {
+      MENU_ENUM_LABEL_PLAYLIST_DIRECTORY,
+      action_get_title_playlist_directory
+   },
+   {
+      MENU_ENUM_LABEL_CONTENT_DIRECTORY,
+      action_get_title_content_directory
+   },
+   {
+      MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,
+      action_get_title_screenshot_directory
+   },
+   {
+      MENU_ENUM_LABEL_SYSTEM_DIRECTORY,
+      action_get_title_system_directory
+   },
+   {
+      MENU_ENUM_LABEL_OVERLAY_DIRECTORY,
+      action_get_title_overlay_directory
+   },
+   {
+      MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,
+      action_get_title_browser_directory
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_FILTER_DIR,
+      action_get_title_video_filter_directory
+   },
+   {
+      MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY,
+      action_get_title_recording_config_directory
+   },
+   {
+      MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
+      action_get_title_recording_output_directory
+   },
+   {
+      MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY,
+      action_get_title_input_remapping_directory
+   },
+   {
+      MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,
+      action_get_title_content_database_directory
+   },
+   {
+      MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
+      action_get_title_dynamic_wallpapers_directory
+   },
+   {
+      MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
+      action_get_title_thumbnails_directory
    }
 };
 
@@ -956,75 +1061,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_DEFERRED_CORE_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_core_list);
             break;
-         case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_autoconfig_directory);
-            break;
-         case MENU_LABEL_CACHE_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_extraction_directory);
-            break;
-         case MENU_LABEL_SYSTEM_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_system_directory);
-            break;
-         case MENU_LABEL_ASSETS_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_assets_directory);
-            break;
-         case MENU_LABEL_SAVEFILE_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_savefile_directory);
-            break;
-         case MENU_LABEL_OVERLAY_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_overlay_directory);
-            break;
-         case MENU_LABEL_RGUI_BROWSER_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_browser_directory);
-            break;
-         case MENU_LABEL_PLAYLIST_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_playlist_directory);
-            break;
-         case MENU_LABEL_CONTENT_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_content_directory);
-            break;
-         case MENU_LABEL_SCREENSHOT_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_screenshot_directory);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_DIR:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_directory);
-            break;
-         case MENU_LABEL_VIDEO_FILTER_DIR:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_filter_directory);
-            break;
-         case MENU_LABEL_AUDIO_FILTER_DIR:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_audio_filter_directory);
-            break;
-         case MENU_LABEL_CURSOR_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_cursor_directory);
-            break;
-         case MENU_LABEL_RECORDING_CONFIG_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_recording_config_directory);
-            break;
-         case MENU_LABEL_RECORDING_OUTPUT_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_recording_output_directory);
-            break;
-         case MENU_LABEL_OSK_OVERLAY_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_onscreen_overlay_keyboard_directory);
-            break;
-         case MENU_LABEL_INPUT_REMAPPING_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_input_remapping_directory);
-            break;
-         case MENU_LABEL_CONTENT_DATABASE_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_content_database_directory);
-            break;
-         case MENU_LABEL_SAVESTATE_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_savestate_directory);
-            break;
-         case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_dynamic_wallpapers_directory);
-            break;
-         case MENU_LABEL_CORE_ASSETS_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_core_assets_directory);
-            break;
-         case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_config_directory);
-            break;
          case MENU_LABEL_DATABASE_MANAGER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_database_manager_list);
             break;
@@ -1070,9 +1106,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_ACHIEVEMENT_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_cheevos_list);
             break;
-         case MENU_LABEL_MANAGEMENT:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
-            break;
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_remap_file_load);
             break;
@@ -1084,9 +1117,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_user_accounts_list);
-            break;
-         case MENU_LABEL_LIBRETRO_DIR_PATH:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_core_directory);
             break;
          default:
             return -1;

@@ -798,6 +798,14 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
       deferred_push_core_input_remapping_options
+   },
+   {
+      MENU_ENUM_LABEL_MANAGEMENT,
+      deferred_push_management_options
+   },
+   {
+      MENU_ENUM_LABEL_CONTENT_HISTORY_PATH,
+      deferred_push_content_history_path
    }
 };
 
@@ -1262,9 +1270,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);
             break;
-         case MENU_LABEL_MANAGEMENT:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_management_options);
-            break;
          case MENU_LABEL_DEFERRED_CORE_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list_deferred);
             break;
@@ -1341,9 +1346,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_CONTENT_COLLECTION_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
-            break;
-         case MENU_LABEL_CONTENT_HISTORY_PATH:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);
             break;
          default:
             return -1;
