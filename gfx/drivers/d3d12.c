@@ -30,12 +30,16 @@
 
 static void d3d12_set_filtering(void* data, unsigned index, bool smooth)
 {
+   int i;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
-   if (smooth)
-      d3d12->frame.sampler = d3d12->sampler_linear;
-   else
-      d3d12->frame.sampler = d3d12->sampler_nearest;
+   for (i = 0; i < RARCH_WRAP_MAX; i++)
+   {
+      if (smooth)
+         d3d12->samplers[RARCH_FILTER_UNSPEC][i] = d3d12->samplers[RARCH_FILTER_LINEAR][i];
+      else
+         d3d12->samplers[RARCH_FILTER_UNSPEC][i] = d3d12->samplers[RARCH_FILTER_NEAREST][i];
+   }
 }
 
 static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
@@ -155,10 +159,11 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    if (!d3d12_init_swapchain(d3d12, video->width, video->height, main_window.hwnd))
       goto error;
 
+   d3d12_init_samplers(d3d12);
+   d3d12_set_filtering(d3d12, 0, video->smooth);
+
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->frame.vbo_view, &d3d12->frame.vbo);
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->menu.vbo_view, &d3d12->menu.vbo);
-
-   d3d12_set_filtering(d3d12, 0, video->smooth);
 
    d3d12->keep_aspect = video->force_aspect;
    d3d12->chain.vsync = video->vsync;
@@ -277,7 +282,7 @@ static bool d3d12_gfx_frame(
    D3D12SetGraphicsRootConstantBufferView(
          d3d12->queue.cmd, ROOT_ID_UBO, d3d12->frame.ubo_view.BufferLocation);
    d3d12_set_texture(d3d12->queue.cmd, &d3d12->frame.texture);
-   d3d12_set_sampler(d3d12->queue.cmd, d3d12->frame.sampler);
+   d3d12_set_sampler(d3d12->queue.cmd, d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
    D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
    D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
 
@@ -295,8 +300,7 @@ static bool d3d12_gfx_frame(
          D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
       }
 
-      d3d12_set_texture(d3d12->queue.cmd, &d3d12->menu.texture);
-      d3d12_set_sampler(d3d12->queue.cmd, d3d12->menu.sampler);
+      d3d12_set_texture_and_sampler(d3d12->queue.cmd, &d3d12->menu.texture);
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->menu.vbo_view);
       D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
    }
@@ -462,8 +466,10 @@ static void d3d12_set_menu_texture_frame(
       v[3].color[3] = alpha;
       D3D12Unmap(d3d12->menu.vbo, 0, NULL);
    }
-   d3d12->menu.sampler = config_get_ptr()->bools.menu_linear_filter ? d3d12->sampler_linear
-      : d3d12->sampler_nearest;
+
+   d3d12->menu.texture.sampler = config_get_ptr()->bools.menu_linear_filter
+                                       ? d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_DEFAULT]
+                                       : d3d12->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
 }
 static void d3d12_set_menu_texture_enable(void* data, bool state, bool full_screen)
 {

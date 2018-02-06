@@ -1279,6 +1279,7 @@ typedef struct
    D3D12Resource                      upload_buffer;
    D3D12_RESOURCE_DESC                desc;
    D3D12_GPU_DESCRIPTOR_HANDLE        gpu_descriptor;
+   D3D12_GPU_DESCRIPTOR_HANDLE        sampler;
    D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
    UINT                               num_rows;
    UINT64                             row_size_in_bytes;
@@ -1331,7 +1332,6 @@ typedef struct
       D3D12Resource                   vbo;
       D3D12_VERTEX_BUFFER_VIEW        vbo_view;
       d3d12_texture_t                 texture;
-      D3D12_GPU_DESCRIPTOR_HANDLE     sampler;
       D3D12_VIEWPORT                  viewport;
       D3D12_RECT                      scissorRect;
       int                             rotation;
@@ -1342,7 +1342,6 @@ typedef struct
       D3D12Resource               vbo;
       D3D12_VERTEX_BUFFER_VIEW    vbo_view;
       d3d12_texture_t             texture;
-      D3D12_GPU_DESCRIPTOR_HANDLE sampler;
 
       float alpha;
       bool  enabled;
@@ -1352,8 +1351,7 @@ typedef struct
    D3D12Resource                   ubo;
    D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
    DXGI_FORMAT                     format;
-   D3D12_GPU_DESCRIPTOR_HANDLE     sampler_linear;
-   D3D12_GPU_DESCRIPTOR_HANDLE     sampler_nearest;
+   D3D12_GPU_DESCRIPTOR_HANDLE     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
    math_matrix_4x4                 mvp, mvp_no_rot;
    struct video_viewport           vp;
    bool                            resize_chain;
@@ -1374,10 +1372,6 @@ typedef enum
 } root_signature_parameter_index_t;
 
 typedef enum {
-   SAMPLER_HEAP_SLOT_LINEAR = 0,
-   SAMPLER_HEAP_SLOT_NEAREST,
-   SAMPLER_HEAP_SLOT_MAX,
-
    SRV_HEAP_SLOT_FRAME_TEXTURE = 0,
    SRV_HEAP_SLOT_MENU_TEXTURE,
    SRV_HEAP_SLOT_CUSTOM,
@@ -1391,6 +1385,7 @@ extern D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc;
 bool d3d12_init_base(d3d12_video_t* d3d12);
 
 bool d3d12_init_descriptors(d3d12_video_t* d3d12);
+void d3d12_init_samplers(d3d12_video_t* d3d12);
 
 bool d3d12_init_pipeline(
       D3D12Device                         device,
@@ -1449,6 +1444,12 @@ d3d12_set_sampler(D3D12GraphicsCommandList cmd, D3D12_GPU_DESCRIPTOR_HANDLE samp
    D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T, sampler);
 }
 
+static INLINE void d3d12_set_texture_and_sampler(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
+{
+   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, texture->gpu_descriptor);
+   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T, texture->sampler);
+}
+
 static INLINE void d3d12_update_texture(
       int              width,
       int              height,
@@ -1478,6 +1479,17 @@ d3d12_get_closest_match_texture2D(D3D12Device device, DXGI_FORMAT desired_format
          device, desired_format,
          D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE);
 }
+
+static INLINE D3D12_GPU_DESCRIPTOR_HANDLE d3d12_create_sampler(
+      D3D12Device device, D3D12_SAMPLER_DESC* desc, d3d12_descriptor_heap_t* heap, int slot)
+{
+   D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle = {heap->gpu.ptr + slot * heap->stride};
+   D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = {heap->cpu.ptr + slot * heap->stride};
+
+   D3D12CreateSampler(device, desc, cpu_handle);
+   return gpu_handle;
+}
+
 #endif
 
 RETRO_END_DECLS

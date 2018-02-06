@@ -260,24 +260,6 @@ static void d3d12_init_descriptor_heap(D3D12Device device, d3d12_descriptor_heap
    out->stride = D3D12GetDescriptorHandleIncrementSize(device, out->desc.Type);
 }
 
-static void d3d12_init_sampler(
-      D3D12Device                  device,
-      d3d12_descriptor_heap_t*     heap,
-      descriptor_heap_slot_t       heap_index,
-      D3D12_FILTER                 filter,
-      D3D12_TEXTURE_ADDRESS_MODE   address_mode,
-      D3D12_GPU_DESCRIPTOR_HANDLE* dst)
-{
-   D3D12_SAMPLER_DESC          sampler_desc = { filter, address_mode, address_mode, address_mode };
-   D3D12_CPU_DESCRIPTOR_HANDLE handle       = { heap->cpu.ptr + heap_index * heap->stride };
-
-   sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-   sampler_desc.MaxLOD         = D3D12_FLOAT32_MAX;
-
-   D3D12CreateSampler(device, &sampler_desc, handle);
-   dst->ptr = heap->gpu.ptr + heap_index * heap->stride;
-}
-
 bool d3d12_init_descriptors(d3d12_video_t* d3d12)
 {
    D3D12_ROOT_SIGNATURE_DESC           desc;
@@ -354,23 +336,58 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
    d3d12_init_descriptor_heap(d3d12->device, &d3d12->pipe.srv_heap);
 
    d3d12->pipe.sampler_heap.desc.Type           = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-   d3d12->pipe.sampler_heap.desc.NumDescriptors = SAMPLER_HEAP_SLOT_MAX;
+   d3d12->pipe.sampler_heap.desc.NumDescriptors = 2 * RARCH_WRAP_MAX;
    d3d12->pipe.sampler_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
    d3d12_init_descriptor_heap(d3d12->device, &d3d12->pipe.sampler_heap);
 
-   d3d12_init_sampler(
-         d3d12->device, &d3d12->pipe.sampler_heap, SAMPLER_HEAP_SLOT_LINEAR,
-         D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_BORDER,
-         &d3d12->sampler_linear);
-   d3d12_init_sampler(
-         d3d12->device, &d3d12->pipe.sampler_heap, SAMPLER_HEAP_SLOT_NEAREST,
-         D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_BORDER,
-         &d3d12->sampler_nearest);
    return true;
 }
 
-D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc =
+void d3d12_init_samplers(d3d12_video_t* d3d12)
 {
+   int                i;
+   D3D12_SAMPLER_DESC desc = { D3D12_FILTER_MIN_MAG_MIP_POINT };
+   desc.MaxAnisotropy      = 1;
+   desc.ComparisonFunc     = D3D12_COMPARISON_FUNC_NEVER;
+   desc.MinLOD             = -D3D12_FLOAT32_MAX;
+   desc.MaxLOD             = D3D12_FLOAT32_MAX;
+
+   for (i = 0; i < RARCH_WRAP_MAX; i++)
+   {
+      switch (i)
+      {
+         case RARCH_WRAP_BORDER:
+            desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+            break;
+
+         case RARCH_WRAP_EDGE:
+            desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+            break;
+
+         case RARCH_WRAP_REPEAT:
+            desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+            break;
+
+         case RARCH_WRAP_MIRRORED_REPEAT:
+            desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+            break;
+      }
+      desc.AddressV = desc.AddressU;
+      desc.AddressW = desc.AddressU;
+
+      desc.Filter                             = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+      d3d12->samplers[RARCH_FILTER_LINEAR][i] = d3d12_create_sampler(
+            d3d12->device, &desc, &d3d12->pipe.sampler_heap,
+            0 * RARCH_WRAP_MAX + i);
+
+      desc.Filter                              = D3D12_FILTER_MIN_MAG_MIP_POINT;
+      d3d12->samplers[RARCH_FILTER_NEAREST][i] = d3d12_create_sampler(
+            d3d12->device, &desc, &d3d12->pipe.sampler_heap,
+            1 * RARCH_WRAP_MAX + i);
+   }
+}
+
+D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc = {
    TRUE,
    FALSE,
    D3D12_BLEND_SRC_ALPHA,
@@ -391,22 +408,22 @@ bool d3d12_init_pipeline(
       D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc,
       D3D12PipelineState*                 out)
 {
-   if(vs_code)
+   if (vs_code)
    {
-      desc->VS.pShaderBytecode             = D3DGetBufferPointer(vs_code);
-      desc->VS.BytecodeLength              = D3DGetBufferSize(vs_code);
+      desc->VS.pShaderBytecode = D3DGetBufferPointer(vs_code);
+      desc->VS.BytecodeLength  = D3DGetBufferSize(vs_code);
    }
 
-   if(ps_code)
+   if (ps_code)
    {
-      desc->PS.pShaderBytecode             = D3DGetBufferPointer(ps_code);
-      desc->PS.BytecodeLength              = D3DGetBufferSize(ps_code);
+      desc->PS.pShaderBytecode = D3DGetBufferPointer(ps_code);
+      desc->PS.BytecodeLength  = D3DGetBufferSize(ps_code);
    }
 
-   if(gs_code)
+   if (gs_code)
    {
-      desc->GS.pShaderBytecode             = D3DGetBufferPointer(gs_code);
-      desc->GS.BytecodeLength              = D3DGetBufferSize(gs_code);
+      desc->GS.pShaderBytecode = D3DGetBufferPointer(gs_code);
+      desc->GS.BytecodeLength  = D3DGetBufferSize(gs_code);
    }
 
    desc->SampleMask               = UINT_MAX;
