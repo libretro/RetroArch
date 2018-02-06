@@ -364,13 +364,8 @@ static void d3d11_gfx_free(void* data)
    d3d11_release_shader(&d3d11->sprites.shader_font);
    Release(d3d11->sprites.vbo);
 
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU]);
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_2]);
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_3]);
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_4]);
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_5]);
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_6]);
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
+      d3d11_release_shader(&d3d11->shaders[i]);
 
    Release(d3d11->menu_pipeline_vbo);
    Release(d3d11->blend_pipeline);
