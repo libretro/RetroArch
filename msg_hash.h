@@ -1767,7 +1767,6 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE                           0xd9452498U
 #define MENU_LABEL_DEFERRED_ARCHIVE_OPEN                                       0xfa0938b8U
 #define MENU_LABEL_DEFERRED_LAKKA_LIST                                         0x3db437c4U
-#define MENU_LABEL_DEFERRED_BROWSE_URL_START                                   0xcef58296U
 
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
 
