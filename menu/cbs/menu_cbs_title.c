@@ -548,6 +548,14 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_CORE_LIST,
       action_get_core_list
+   },
+   {
+      MENU_ENUM_LABEL_CORE_INFORMATION,
+      action_get_core_information_list
+   },
+   {
+      MENU_ENUM_LABEL_CORE_OPTIONS,
+      action_get_core_options_list
    }
 };
 
@@ -1011,9 +1019,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_CURSOR_MANAGER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_cursor_manager_list);
             break;
-         case MENU_LABEL_CORE_INFORMATION:
-            BIND_ACTION_GET_TITLE(cbs, action_get_core_information_list);
-            break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
             BIND_ACTION_GET_TITLE(cbs, action_get_load_content_special);
             break;
@@ -1022,9 +1027,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_configurations_list);
-            break;
-         case MENU_LABEL_CORE_OPTIONS:
-            BIND_ACTION_GET_TITLE(cbs, action_get_core_options_list);
             break;
          case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
             BIND_ACTION_GET_TITLE(cbs, action_get_input_remapping_options_list);

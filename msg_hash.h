@@ -1833,8 +1833,6 @@ enum msg_hash_enums
 #define MENU_LABEL_FRONTEND_COUNTERS                                           0xe5696877U
 #define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U
 #define MENU_LABEL_ACHIEVEMENT_LIST                                            0x7b90fc49U
-#define MENU_LABEL_CORE_INFORMATION                                            0xb638e0d3U
-#define MENU_LABEL_CORE_OPTIONS                                                0xf65e60f9U
 #define MENU_LABEL_SHADER_OPTIONS                                              0x1f7d2fc7U
 #define MENU_LABEL_CORE_CHEAT_OPTIONS                                          0x9293171dU
 #define MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS                                0x7836a8caU
