@@ -435,6 +435,10 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
       action_get_driver_settings_list
    },
    {
+      MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST,
+      action_get_video_settings_list
+   },
+   {
       MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST,
       action_get_audio_settings_list
    },
@@ -673,6 +677,30 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
       action_get_title_thumbnails_directory
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST,
+      action_get_input_settings_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST,
+      action_get_playlist_settings_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST,
+      action_get_core_updater_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST,
+      action_get_title_input_binds_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST,
+      action_get_input_hotkey_binds_settings_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
+      action_get_configurations_list
    }
 };
 
@@ -1070,35 +1098,14 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
             BIND_ACTION_GET_TITLE(cbs, action_get_load_content_special);
             break;
-         case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_core_updater_list);
-            break;
-         case MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_configurations_list);
-            break;
          case MENU_LABEL_FRONTEND_COUNTERS:
             BIND_ACTION_GET_TITLE(cbs, action_get_frontend_counters_list);
             break;
          case MENU_LABEL_CORE_COUNTERS:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_counters_list);
             break;
-         case MENU_LABEL_DEFERRED_USER_BINDS_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_input_binds_list);
-            break;
-         case MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_input_hotkey_binds_settings_list);
-            break;
-         case MENU_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_video_settings_list);
-            break;
-         case MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_input_settings_list);
-            break;
          case MENU_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_recording_settings_list);
-            break;
-         case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_playlist_settings_list);
             break;
          case MENU_LABEL_CONTENT_COLLECTION_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_collection);

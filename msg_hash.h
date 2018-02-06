@@ -917,6 +917,7 @@ enum msg_hash_enums
    MENU_LABEL(BROWSE_URL),
    MENU_LABEL(BROWSE_START),
    /* Deferred */
+   MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
    MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST,
    MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST,
    MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST,
@@ -1761,14 +1762,7 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL                                   0xc35416c0U
 #define MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS                                  0x358a7494U
 #define MENU_LABEL_DEFERRED_CORE_LIST                                          0xf157d289U
-#define MENU_LABEL_DEFERRED_CORE_UPDATER_LIST                                  0xc315f682U
-#define MENU_LABEL_DEFERRED_DRIVER_SETTINGS_LIST                               0xaa5efefcU
-#define MENU_LABEL_DEFERRED_VIDEO_SETTINGS_LIST                                0x83c65827U
-#define MENU_LABEL_DEFERRED_AUDIO_SETTINGS_LIST                                0x5bba25e2U
 #define MENU_LABEL_DEFERRED_RECORDING_SETTINGS_LIST                            0x05548d52U
-#define MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST                             0x9518e0c7U
-#define MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST                                0x050bec60U
-#define MENU_LABEL_DEFERRED_USER_BINDS_LIST                                    0x28c5750eU
 #define MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST                              0x1322324cU
 #define MENU_LABEL_DEFERRED_ACCOUNTS_LIST                                      0x3d2b8860U
 #define MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE                         0xdc9c0064U
@@ -1777,8 +1771,6 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_ARCHIVE_OPEN                                       0xfa0938b8U
 #define MENU_LABEL_DEFERRED_CORE_CONTENT_LIST                                  0x76150c63U
 #define MENU_LABEL_DEFERRED_LAKKA_LIST                                         0x3db437c4U
-#define MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST                            0x10b41d97U
-#define MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST                                0x679a1b0bU
 #define MENU_LABEL_DEFERRED_BROWSE_URL_START                                   0xcef58296U
 
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
