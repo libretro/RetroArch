@@ -1781,25 +1781,7 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST                                0x679a1b0bU
 #define MENU_LABEL_DEFERRED_BROWSE_URL_START                                   0xcef58296U
 
-/* RDB settings */
-
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
-#define MENU_LABEL_RDB_ENTRY_PUBLISHER                                         0x4d7bcdfbU
-#define MENU_LABEL_RDB_ENTRY_DEVELOPER                                         0x06f61093U
-#define MENU_LABEL_RDB_ENTRY_ORIGIN                                            0xb176aad5U
-#define MENU_LABEL_RDB_ENTRY_FRANCHISE                                         0xb31764a0U
-#define MENU_LABEL_RDB_ENTRY_ENHANCEMENT_HW                                    0x79ee4f11U
-#define MENU_LABEL_RDB_ENTRY_ESRB_RATING                                       0xe138fa3dU
-#define MENU_LABEL_RDB_ENTRY_BBFC_RATING                                       0x82dbc01eU
-#define MENU_LABEL_RDB_ENTRY_ELSPA_RATING                                      0x0def0906U
-#define MENU_LABEL_RDB_ENTRY_PEGI_RATING                                       0xd814cb56U
-#define MENU_LABEL_RDB_ENTRY_CERO_RATING                                       0x9d436f5aU
-#define MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING                              0x9735f631U
-#define MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE                               0xd5706415U
-#define MENU_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING                           0x01a50315U
-#define MENU_LABEL_RDB_ENTRY_RELEASE_MONTH                                     0xad2f2c54U
-#define MENU_LABEL_RDB_ENTRY_RELEASE_YEAR                                      0x14c9c6bfU
-#define MENU_LABEL_RDB_ENTRY_MAX_USERS                                         0xfae91cc4U
 
 #define MENU_LABEL_FRONTEND_COUNTERS                                           0xe5696877U
 #define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U
