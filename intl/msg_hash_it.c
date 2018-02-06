@@ -25,7 +25,6 @@
 
 int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-   uint32_t driver_hash = 0;
    settings_t      *settings = config_get_ptr();
 
    switch (msg)
@@ -122,37 +121,34 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
          strlcpy(s, "Estraendo, per favore attendi...\n", len);
          break;
       case MENU_ENUM_LABEL_INPUT_DRIVER:
-         if (settings)
-            driver_hash = msg_hash_calculate(settings->arrays.input_driver);
-
-         switch (driver_hash)
          {
-            case MENU_LABEL_INPUT_DRIVER_UDEV:
-               {
-                  /* Work around C89 limitations */
-                  const char * t =
-                        "udev Input driver. \n"
-                        " \n"
-                        "Questo driver può caricare senza X. \n"
-                        " \n"
-                        "Usa la recente evdev joypad API \n"
-                        "per il supporto del joystick. Supporta \n"
-                        "hotplugging e force feedback (se \n"
-                        "supportato dal dispositivo). \n"
-                        " \n";
-                  const char * u =
-                        "Il driver legge gli eventi evdev per il supporto \n"
-                        "della tastiera. Supporta anche la callback della tastiera, \n"
-                        "mouse e touchpads. \n"
-                        " \n"
-                        "Come predefinito nella maggior parte delle distribuzioni, i nodi /dev/input \n"
-                        "sono only-root (modalità 600). Puoi settare una regola udev \n"
-                        "che fa queste accessibili ai non-root.";
-                  strlcpy(s, t, len);
-                  strlcat(s, u, len);
-               }
-               break;
-            case MENU_LABEL_INPUT_DRIVER_LINUXRAW:
+            const char *lbl = settings ? settings->arrays.input_driver : NULL;
+
+            if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_UDEV)))
+            {
+               /* Work around C89 limitations */
+               const char * t =
+                  "udev Input driver. \n"
+                  " \n"
+                  "Questo driver può caricare senza X. \n"
+                  " \n"
+                  "Usa la recente evdev joypad API \n"
+                  "per il supporto del joystick. Supporta \n"
+                  "hotplugging e force feedback (se \n"
+                  "supportato dal dispositivo). \n"
+                  " \n";
+               const char * u =
+                  "Il driver legge gli eventi evdev per il supporto \n"
+                  "della tastiera. Supporta anche la callback della tastiera, \n"
+                  "mouse e touchpads. \n"
+                  " \n"
+                  "Come predefinito nella maggior parte delle distribuzioni, i nodi /dev/input \n"
+                  "sono only-root (modalità 600). Puoi settare una regola udev \n"
+                  "che fa queste accessibili ai non-root.";
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
+            else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_LINUXRAW)))
                snprintf(s, len,
                      "linuxraw Input driver. \n"
                      " \n"
@@ -162,14 +158,12 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                      " \n"
                      "Questo driver usa la più vecchia API per il joystick \n"
                      "(/dev/input/js*).");
-               break;
-            default:
+            else
                snprintf(s, len,
                      "Driver input.\n"
                      " \n"
                      "Dipende dal driver video, potrebbe \n"
                      "forzare un differente driver input.");
-               break;
          }
          break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
@@ -284,19 +278,15 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                );
          break;
       case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
-         if (settings)
-            driver_hash = msg_hash_calculate(settings->arrays.audio_resampler);
-
-         switch (driver_hash)
          {
-            case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC:
-               snprintf(s, len,
-                     "Implementazione SINC in modalità finestra.");
-               break;
-            case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC:
-               snprintf(s, len,
-                     "Implementazione coseno complesso.");
-               break;
+            const char *lbl = settings ? settings->arrays.audio_resampler : NULL;
+
+            if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC)))
+               strlcpy(s,
+                     "Implementazione SINC in modalità finestra.", len);
+            else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
+               strlcpy(s, 
+                     "Implementazione coseno complesso.", len);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:

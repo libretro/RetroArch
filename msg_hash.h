@@ -1789,13 +1789,6 @@ enum msg_hash_enums
 #define MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST                            0xb4f82700U
 #define MENU_LABEL_FAVORITES                                                   0x67325138U
 
-/* Help */
-#define MENU_LABEL_INPUT_DRIVER_LINUXRAW                                       0xc33c6b9fU
-#define MENU_LABEL_INPUT_DRIVER_UDEV                                           0x7c9eeeb9U
-
-#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
-#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
-
 const char *msg_hash_to_str(enum msg_hash_enums msg);
 
 const char *msg_hash_to_str_fr(enum msg_hash_enums msg);

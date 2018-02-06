@@ -32,7 +32,6 @@
 
 int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-   uint32_t driver_hash = 0;
    settings_t      *settings = config_get_ptr();
 
    if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
@@ -670,12 +669,10 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
                );
          break;
       case MENU_ENUM_LABEL_INPUT_DRIVER:
-         if (settings)
-            driver_hash = msg_hash_calculate(settings->arrays.input_driver);
-
-         switch (driver_hash)
          {
-            case MENU_LABEL_INPUT_DRIVER_UDEV:
+            const char *lbl = settings ? settings->arrays.input_driver : NULL;
+
+            if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_UDEV)))
                snprintf(s, len,
                      "udev Input driver. \n"
                      " \n"
@@ -694,8 +691,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "are root-only (mode 600). You can set up a udev \n"
                      "rule which makes these accessible to non-root."
                      );
-               break;
-            case MENU_LABEL_INPUT_DRIVER_LINUXRAW:
+            else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_LINUXRAW)))
                snprintf(s, len,
                      "linuxraw Input driver. \n"
                      " \n"
@@ -705,14 +701,12 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
                      " \n"
                      "This driver uses the older joystick API \n"
                      "(/dev/input/js*).");
-               break;
-            default:
+            else
                snprintf(s, len,
                      "Input driver.\n"
                      " \n"
                      "Depending on video driver, it might \n"
                      "force a different input driver.");
-               break;
          }
          break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
@@ -834,23 +828,17 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
                );
          break;
       case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
-         if (settings)
-            driver_hash = msg_hash_calculate(settings->arrays.audio_resampler);
-
-         switch (driver_hash)
          {
-            case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC:
-               snprintf(s, len,
-                     "Windowed SINC implementation.");
-               break;
-            case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC:
-               snprintf(s, len,
-                     "Convoluted Cosine implementation.");
-               break;
-            default:
-               if (string_is_empty(s))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
-               break;
+            const char *lbl = settings ? settings->arrays.audio_resampler : NULL;
+
+            if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC)))
+               strlcpy(s,
+                     "Windowed SINC implementation.", len);
+            else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
+               strlcpy(s,
+                     "Convoluted Cosine implementation.", len);
+            else if (string_is_empty(s))
+               strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
