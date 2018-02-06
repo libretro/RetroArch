@@ -25,7 +25,6 @@
 
 int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-   uint32_t driver_hash = 0;
    settings_t      *settings = config_get_ptr();
 
    switch (msg)
@@ -45,12 +44,10 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                "o arquivo estiver.");
          break;
       case MENU_ENUM_LABEL_INPUT_DRIVER:
-         if (settings)
-            driver_hash = msg_hash_calculate(settings->arrays.input_driver);
-
-         switch (driver_hash)
          {
-            case MENU_LABEL_INPUT_DRIVER_UDEV:
+            const char *lbl = settings ? settings->arrays.input_driver : NULL;
+
+            if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_UDEV)))
                snprintf(s, len,
                      "Driver de entrada udev. \n"
                      " \n"
@@ -69,8 +66,7 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "/dev/input são root-only (modo 600). Mas você pode \n"
                      "definir uma regra udev para dar acesso a non-roots."
                      );
-               break;
-            case MENU_LABEL_INPUT_DRIVER_LINUXRAW:
+            else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_LINUXRAW)))
                snprintf(s, len,
                      "Driver de Entrada linuxraw. \n"
                      " \n"
@@ -80,14 +76,12 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                      " \n"
                      "Esse driver usa a antiga API de joysticks \n"
                      "(/dev/input/js*).");
-               break;
-            default:
+            else
                snprintf(s, len,
                      "Driver de Entrada.\n"
                      " \n"
                      "Dependendo do driver de vídeo, pode ser necessário \n"
                      "forçar um driver de entrada diferente.");
-               break;
          }
          break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
@@ -183,19 +177,15 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                );
          break;
       case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
-         if (settings)
-            driver_hash = msg_hash_calculate(settings->arrays.audio_resampler);
-
-         switch (driver_hash)
          {
-            case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC:
-               snprintf(s, len,
-                     "Implementação Windowed SINC.");
-               break;
-            case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC:
-               snprintf(s, len,
-                     "Implementação Convoluted Cosine.");
-               break;
+            const char *lbl = settings ? settings->arrays.audio_resampler : NULL;
+
+            if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC)))
+               strlcpy(s,
+                     "Implementação Windowed SINC.", len);
+            else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
+               strlcpy(s,
+                     "Implementação Convoluted Cosine.", len);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
