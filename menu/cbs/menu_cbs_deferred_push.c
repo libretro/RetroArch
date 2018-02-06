@@ -837,6 +837,10 @@ static struct cbs_deferred_lbl_callback cbs_deferred2_lbl_list[] = {
       deferred_push_audio_settings_list
    },
    {
+      MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST,
+      deferred_push_playlist_settings_list
+   },
+   {
       MENU_ENUM_LABEL_CORE_INFORMATION,
       deferred_push_core_information
    },
