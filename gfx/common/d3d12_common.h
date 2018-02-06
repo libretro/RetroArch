@@ -1255,6 +1255,7 @@ D3D12GetGPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
 
 #include "../common/d3dcompiler_common.h"
 #include "../video_driver.h"
+#include "../drivers_shader/slang_process.h"
 
 typedef struct d3d12_vertex_t
 {
@@ -1262,6 +1263,24 @@ typedef struct d3d12_vertex_t
    float texcoord[2];
    float color[4];
 } d3d12_vertex_t;
+
+typedef struct
+{
+   struct
+   {
+      float x, y, w, h;
+   } pos;
+   struct
+   {
+      float u, v, w, h;
+   } coords;
+   UINT32 colors[4];
+   struct
+   {
+      float scaling;
+      float rotation;
+   } params;
+} d3d12_sprite_t;
 
 typedef struct
 {
@@ -1306,12 +1325,11 @@ typedef struct
 
    struct
    {
-      D3D12PipelineState      handle;
       D3D12RootSignature      rootSignature; /* descriptor layout */
       d3d12_descriptor_heap_t srv_heap;      /* ShaderResouceView descritor heap */
       d3d12_descriptor_heap_t rtv_heap;      /* RenderTargetView descritor heap */
       d3d12_descriptor_heap_t sampler_heap;
-   } pipe;
+   } desc;
 
    struct
    {
@@ -1348,6 +1366,17 @@ typedef struct
       bool  fullscreen;
    } menu;
 
+   struct
+   {
+      D3D12PipelineState pipe;
+      D3D12PipelineState pipe_font;
+      D3D12Resource       vbo;
+      int                offset;
+      int                capacity;
+      bool               enabled;
+   } sprites;
+
+   D3D12PipelineState              pipes[GFX_MAX_SHADERS];
    D3D12Resource                   ubo;
    D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
    DXGI_FORMAT                     format;

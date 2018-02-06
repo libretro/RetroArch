@@ -75,16 +75,15 @@ HRESULT WINAPI D3D12CreateDevice(
       d3d12_dll = dylib_load(d3d12_dll_name);
 
    if (!d3d12_dll)
-      goto error;
+      return TYPE_E_CANTLOADLIBRARY;
 
    if (!fp)
       fp = (PFN_D3D12_CREATE_DEVICE)dylib_proc(d3d12_dll, "D3D12CreateDevice");
 
-   if (fp)
-      return fp(pAdapter, MinimumFeatureLevel, riid, ppDevice);
+   if (!fp)
+      return TYPE_E_DLLFUNCTIONNOTFOUND;
 
-error:
-   return TYPE_E_CANTLOADLIBRARY;
+   return fp(pAdapter, MinimumFeatureLevel, riid, ppDevice);
 }
 
 HRESULT WINAPI D3D12GetDebugInterface(REFIID riid, void** ppvDebug)
@@ -94,16 +93,15 @@ HRESULT WINAPI D3D12GetDebugInterface(REFIID riid, void** ppvDebug)
       d3d12_dll = dylib_load(d3d12_dll_name);
 
    if (!d3d12_dll)
-      goto error;
+      return TYPE_E_CANTLOADLIBRARY;
 
    if (!fp)
       fp = (PFN_D3D12_GET_DEBUG_INTERFACE)dylib_proc(d3d12_dll, "D3D12GetDebugInterface");
 
-   if (fp)
-      return fp(riid, ppvDebug);
+   if (!fp)
+      return TYPE_E_DLLFUNCTIONNOTFOUND;
 
-error:
-   return TYPE_E_CANTLOADLIBRARY;
+   return fp(riid, ppvDebug);
 }
 
 HRESULT WINAPI D3D12SerializeRootSignature(
@@ -117,16 +115,15 @@ HRESULT WINAPI D3D12SerializeRootSignature(
       d3d12_dll = dylib_load(d3d12_dll_name);
 
    if (!d3d12_dll)
-      goto error;
+      return TYPE_E_CANTLOADLIBRARY;
 
    if (!fp)
       fp = (PFN_D3D12_SERIALIZE_ROOT_SIGNATURE)dylib_proc(d3d12_dll, "D3D12SerializeRootSignature");
 
-   if (fp)
-      return fp(pRootSignature, Version, ppBlob, ppErrorBlob);
+   if (!fp)
+      return TYPE_E_DLLFUNCTIONNOTFOUND;
 
-error:
-   return TYPE_E_CANTLOADLIBRARY;
+   return fp(pRootSignature, Version, ppBlob, ppErrorBlob);
 }
 
 HRESULT WINAPI D3D12SerializeVersionedRootSignature(
@@ -139,17 +136,16 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
       d3d12_dll = dylib_load(d3d12_dll_name);
 
    if (!d3d12_dll)
-      goto error;
+      return TYPE_E_CANTLOADLIBRARY;
 
    if (!fp)
       fp = (PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE)dylib_proc(
             d3d12_dll, "D3D12SerializeRootSignature");
 
-   if (fp)
-      return fp(pRootSignature, ppBlob, ppErrorBlob);
+   if (!fp)
+      return TYPE_E_DLLFUNCTIONNOTFOUND;
 
-error:
-   return TYPE_E_CANTLOADLIBRARY;
+   return fp(pRootSignature, ppBlob, ppErrorBlob);
 }
 #endif
 
@@ -195,7 +191,7 @@ bool d3d12_init_queue(d3d12_video_t* d3d12)
 
    D3D12CreateGraphicsCommandList(
          d3d12->device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, d3d12->queue.allocator,
-         d3d12->pipe.handle, &d3d12->queue.cmd);
+         d3d12->pipes[VIDEO_SHADER_STOCK_BLEND], &d3d12->queue.cmd);
 
    D3D12CloseGraphicsCommandList(d3d12->queue.cmd);
 
@@ -238,7 +234,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, HWND hwnd
    for (int i = 0; i < countof(d3d12->chain.renderTargets); i++)
    {
       d3d12->chain.desc_handles[i].ptr =
-            d3d12->pipe.rtv_heap.cpu.ptr + i * d3d12->pipe.rtv_heap.stride;
+            d3d12->desc.rtv_heap.cpu.ptr + i * d3d12->desc.rtv_heap.stride;
       DXGIGetSwapChainBuffer(d3d12->chain.handle, i, &d3d12->chain.renderTargets[i]);
       D3D12CreateRenderTargetView(
             d3d12->device, d3d12->chain.renderTargets[i], NULL, d3d12->chain.desc_handles[i]);
@@ -297,7 +293,7 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
    rootParameters[ROOT_ID_UBO].ParameterType             = D3D12_ROOT_PARAMETER_TYPE_CBV;
    rootParameters[ROOT_ID_UBO].Descriptor.RegisterSpace  = 0;
    rootParameters[ROOT_ID_UBO].Descriptor.ShaderRegister = 0;
-   rootParameters[ROOT_ID_UBO].ShaderVisibility          = D3D12_SHADER_VISIBILITY_VERTEX;
+   rootParameters[ROOT_ID_UBO].ShaderVisibility          = D3D12_SHADER_VISIBILITY_ALL;
 
    desc.NumParameters     = countof(rootParameters);
    desc.pParameters       = rootParameters;
@@ -321,24 +317,24 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
 
       D3D12CreateRootSignature(
             d3d12->device, 0, D3DGetBufferPointer(signature), D3DGetBufferSize(signature),
-            &d3d12->pipe.rootSignature);
+            &d3d12->desc.rootSignature);
       Release(signature);
    }
 
-   d3d12->pipe.rtv_heap.desc.Type           = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-   d3d12->pipe.rtv_heap.desc.NumDescriptors = countof(d3d12->chain.renderTargets);
-   d3d12->pipe.rtv_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-   d3d12_init_descriptor_heap(d3d12->device, &d3d12->pipe.rtv_heap);
+   d3d12->desc.rtv_heap.desc.Type           = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+   d3d12->desc.rtv_heap.desc.NumDescriptors = countof(d3d12->chain.renderTargets);
+   d3d12->desc.rtv_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+   d3d12_init_descriptor_heap(d3d12->device, &d3d12->desc.rtv_heap);
 
-   d3d12->pipe.srv_heap.desc.Type           = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-   d3d12->pipe.srv_heap.desc.NumDescriptors = SRV_HEAP_SLOT_MAX;
-   d3d12->pipe.srv_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-   d3d12_init_descriptor_heap(d3d12->device, &d3d12->pipe.srv_heap);
+   d3d12->desc.srv_heap.desc.Type           = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+   d3d12->desc.srv_heap.desc.NumDescriptors = SRV_HEAP_SLOT_MAX;
+   d3d12->desc.srv_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+   d3d12_init_descriptor_heap(d3d12->device, &d3d12->desc.srv_heap);
 
-   d3d12->pipe.sampler_heap.desc.Type           = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-   d3d12->pipe.sampler_heap.desc.NumDescriptors = 2 * RARCH_WRAP_MAX;
-   d3d12->pipe.sampler_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-   d3d12_init_descriptor_heap(d3d12->device, &d3d12->pipe.sampler_heap);
+   d3d12->desc.sampler_heap.desc.Type           = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+   d3d12->desc.sampler_heap.desc.NumDescriptors = 2 * RARCH_WRAP_MAX;
+   d3d12->desc.sampler_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+   d3d12_init_descriptor_heap(d3d12->device, &d3d12->desc.sampler_heap);
 
    return true;
 }
@@ -377,12 +373,12 @@ void d3d12_init_samplers(d3d12_video_t* d3d12)
 
       desc.Filter                             = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
       d3d12->samplers[RARCH_FILTER_LINEAR][i] = d3d12_create_sampler(
-            d3d12->device, &desc, &d3d12->pipe.sampler_heap,
+            d3d12->device, &desc, &d3d12->desc.sampler_heap,
             0 * RARCH_WRAP_MAX + i);
 
       desc.Filter                              = D3D12_FILTER_MIN_MAG_MIP_POINT;
       d3d12->samplers[RARCH_FILTER_NEAREST][i] = d3d12_create_sampler(
-            d3d12->device, &desc, &d3d12->pipe.sampler_heap,
+            d3d12->device, &desc, &d3d12->desc.sampler_heap,
             1 * RARCH_WRAP_MAX + i);
    }
 }
@@ -413,17 +409,32 @@ bool d3d12_init_pipeline(
       desc->VS.pShaderBytecode = D3DGetBufferPointer(vs_code);
       desc->VS.BytecodeLength  = D3DGetBufferSize(vs_code);
    }
+   else
+   {
+      desc->VS.pShaderBytecode = NULL;
+      desc->VS.BytecodeLength  = 0;
+   }
 
    if (ps_code)
    {
       desc->PS.pShaderBytecode = D3DGetBufferPointer(ps_code);
       desc->PS.BytecodeLength  = D3DGetBufferSize(ps_code);
    }
+   else
+   {
+      desc->PS.pShaderBytecode = NULL;
+      desc->PS.BytecodeLength  = 0;
+   }
 
    if (gs_code)
    {
       desc->GS.pShaderBytecode = D3DGetBufferPointer(gs_code);
       desc->GS.BytecodeLength  = D3DGetBufferSize(gs_code);
+   }
+   else
+   {
+      desc->GS.pShaderBytecode = NULL;
+      desc->GS.BytecodeLength  = 0;
    }
 
    desc->SampleMask               = UINT_MAX;
