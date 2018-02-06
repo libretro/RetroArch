@@ -1851,6 +1851,10 @@ enum msg_hash_enums
 #define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x32d1df83U
 #define MENU_LABEL_COLLECTION                                                  0x5fea5991U
 
+
+#define MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST                            0xb4f82700U
+#define MENU_LABEL_FAVORITES                                                   0x67325138U
+
 /* Help */
 #define MENU_LABEL_INPUT_DRIVER_LINUXRAW                                       0xc33c6b9fU
 #define MENU_LABEL_INPUT_DRIVER_UDEV                                           0x7c9eeeb9U
