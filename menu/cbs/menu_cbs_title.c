@@ -733,6 +733,14 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST,
       action_get_title_deferred_database_manager_list
+   },
+   {
+      MENU_ENUM_LABEL_FRONTEND_COUNTERS,
+      action_get_frontend_counters_list
+   },
+   {
+      MENU_ENUM_LABEL_CORE_COUNTERS,
+      action_get_core_counters_list
    }
 };
 
@@ -1120,12 +1128,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
             BIND_ACTION_GET_TITLE(cbs, action_get_load_content_special);
-            break;
-         case MENU_LABEL_FRONTEND_COUNTERS:
-            BIND_ACTION_GET_TITLE(cbs, action_get_frontend_counters_list);
-            break;
-         case MENU_LABEL_CORE_COUNTERS:
-            BIND_ACTION_GET_TITLE(cbs, action_get_core_counters_list);
             break;
          case MENU_LABEL_CONTENT_COLLECTION_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_collection);

@@ -1737,8 +1737,6 @@ enum msg_hash_enums
    MSG_LAST
 };
 
-/* Deferred */
-
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
 #define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER            0xcbd89be5U
@@ -1766,8 +1764,6 @@ enum msg_hash_enums
 
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
 
-#define MENU_LABEL_FRONTEND_COUNTERS                                           0xe5696877U
-#define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U
 #define MENU_LABEL_DATABASE_MANAGER_LIST                                       0x7f853d8fU
 #define MENU_LABEL_CURSOR_MANAGER_LIST                                         0xa969e378U
 #define MENU_LABEL_REMAP_FILE_LOAD                                             0x9c2799b8U
