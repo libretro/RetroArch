@@ -818,6 +818,14 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
       deferred_push_achievement_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST,
+      deferred_push_recording_settings_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST,
+      deferred_push_accounts_cheevos_list
    }
 };
 
@@ -1244,12 +1252,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    {
       switch (label_hash)
       {
-         case MENU_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_recording_settings_list);
-            break;
-         case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_cheevos_list);
-            break;
          case MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action_detect_core);
             break;

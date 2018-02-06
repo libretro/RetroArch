@@ -709,6 +709,18 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST,
       action_get_download_core_content_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST,
+      action_get_recording_settings_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST,
+      action_get_user_accounts_cheevos_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST,
+      action_get_user_accounts_list
    }
 };
 
@@ -1112,20 +1124,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_CORE_COUNTERS:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_counters_list);
             break;
-         case MENU_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_recording_settings_list);
-            break;
          case MENU_LABEL_CONTENT_COLLECTION_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_collection);
             break;
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_remap_file_load);
-            break;
-         case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_user_accounts_cheevos_list);
-            break;
-         case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_user_accounts_list);
             break;
          default:
             return -1;

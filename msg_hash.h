@@ -1762,9 +1762,6 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL                                   0xc35416c0U
 #define MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS                                  0x358a7494U
 #define MENU_LABEL_DEFERRED_CORE_LIST                                          0xf157d289U
-#define MENU_LABEL_DEFERRED_RECORDING_SETTINGS_LIST                            0x05548d52U
-#define MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST                              0x1322324cU
-#define MENU_LABEL_DEFERRED_ACCOUNTS_LIST                                      0x3d2b8860U
 #define MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE                         0xdc9c0064U
 #define MENU_LABEL_DEFERRED_ARCHIVE_ACTION                                     0x7faf0284U
 #define MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE                           0xd9452498U
