@@ -81,6 +81,7 @@ MSG_HASH(
 MSG_HASH(
 	MSG_NETPLAY_DIFFERENT_CORES,
 	"Un par de netplay esta usando una versión diferente del núcleo. No se puede conectar"
+	)
 MSG_HASH(
 	MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
 	"ADVERTENCIA: Un par de netplay está ejecutando una versión diferente del núcleo. Si ocurren problemas, use la misma versión"
@@ -1430,9 +1431,9 @@ MSG_HASH(
 	"Vietnamita"
 	)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Árabe"
-   )
+	MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
+	"Árabe"
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
 	"Analógico izquierdo"
@@ -5375,6 +5376,7 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
 	"Elegir un servidor relé especifico. Las ubicaciones geográficamente cercanas tienden a tener menor latencia"
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
 	"Agregar al mezclador"
