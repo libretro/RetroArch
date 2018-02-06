@@ -790,6 +790,10 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_CONFIGURATIONS,
       deferred_push_configurations
+   },
+   {
+      MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
+      deferred_push_core_cheat_options
    }
 };
 
@@ -1330,9 +1334,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_FRONTEND_COUNTERS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_frontend_counters);
-            break;
-         case MENU_LABEL_CORE_CHEAT_OPTIONS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_cheat_options);
             break;
          case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_input_remapping_options);
