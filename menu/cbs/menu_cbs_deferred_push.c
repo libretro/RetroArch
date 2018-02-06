@@ -826,11 +826,26 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST,
       deferred_push_accounts_cheevos_list
+   },
+#ifdef HAVE_LIBRETRODB
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST,
+      deferred_push_cursor_manager_list_deferred
+   },
+#endif
+   {
+      MENU_ENUM_LABEL_DEFERRED_CORE_LIST,
+      deferred_push_core_list_deferred
    }
 };
 
 static struct cbs_deferred_lbl_callback cbs_deferred2_lbl_list[] = {
 #ifdef HAVE_NETWORKING
+   {
+      MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST,
+      deferred_push_lakka_list
+
+   },
    {
       MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST,
       deferred_push_core_updater_list
@@ -939,6 +954,10 @@ static struct cbs_deferred_lbl_callback cbs_deferred2_lbl_list[] = {
    {
       MENU_ENUM_LABEL_ADD_CONTENT_LIST,
       deferred_push_add_content_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST,
+      deferred_push_database_manager_list_deferred
    }
 };
 
@@ -1264,11 +1283,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_LABEL_DEFERRED_ARCHIVE_OPEN:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open);
             break;
-         case MENU_LABEL_DEFERRED_LAKKA_LIST:
-#ifdef HAVE_NETWORKING
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_lakka_list);
-#endif
-            break;
          case MENU_LABEL_DATABASE_MANAGER_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list);
             break;
@@ -1278,22 +1292,13 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);
             break;
-         case MENU_LABEL_DEFERRED_CORE_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list_deferred);
-            break;
          case MENU_LABEL_DEFERRED_CORE_LIST_SET:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_collection_list_deferred);
             break;
          case MENU_LABEL_DEFERRED_VIDEO_FILTER:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
             break;
-         case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list_deferred);
-            break;
 #ifdef HAVE_LIBRETRODB
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred);
-            break;
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher);
             break;

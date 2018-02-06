@@ -1741,8 +1741,6 @@ enum msg_hash_enums
 
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
 #define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
-#define MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST                              0x7c0b704fU
-#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST                                0x45446638U
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER            0xcbd89be5U
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER            0x125e594dU
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN               0x4ebaa767U
@@ -1761,12 +1759,10 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS            0xbfcba816U
 #define MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL                                   0xc35416c0U
 #define MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS                                  0x358a7494U
-#define MENU_LABEL_DEFERRED_CORE_LIST                                          0xf157d289U
 #define MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE                         0xdc9c0064U
 #define MENU_LABEL_DEFERRED_ARCHIVE_ACTION                                     0x7faf0284U
 #define MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE                           0xd9452498U
 #define MENU_LABEL_DEFERRED_ARCHIVE_OPEN                                       0xfa0938b8U
-#define MENU_LABEL_DEFERRED_LAKKA_LIST                                         0x3db437c4U
 
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
 
