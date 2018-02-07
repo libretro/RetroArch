@@ -2487,8 +2487,9 @@ bool cheevos_apply_cheats(bool *data_bool)
 
 bool cheevos_unload(void)
 {
+   bool running;
    CHEEVOS_LOCK(cheevos_locals.task_lock);
-   bool running = cheevos_locals.task != NULL;
+   running = cheevos_locals.task != NULL;
    CHEEVOS_UNLOCK(cheevos_locals.task_lock);
 
    if (running)

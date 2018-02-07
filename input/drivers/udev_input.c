@@ -776,14 +776,14 @@ static int16_t udev_lightgun_aiming_state(udev_input_t *udev, unsigned port, uns
    int16_t res_screen_x        = 0;
    int16_t res_screen_y        = 0;
 
+   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
+
    vp.x                        = 0;
    vp.y                        = 0;
    vp.width                    = 0;
    vp.height                   = 0;
    vp.full_width               = 0;
    vp.full_height              = 0;
-
-   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
 
    if (!mouse)
       return 0;
