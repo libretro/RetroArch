@@ -866,6 +866,14 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
       MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR,
       deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear
    },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER,
+      deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER,
+      deferred_push_cursor_manager_list_deferred_query_rdb_entry_developer
+   },
 #endif
    {
       MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING,
@@ -1345,12 +1353,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
             break;
 #ifdef HAVE_LIBRETRODB
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_developer);
-            break;
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_origin);
             break;
