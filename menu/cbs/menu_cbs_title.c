@@ -741,6 +741,26 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_CORE_COUNTERS,
       action_get_core_counters_list
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING,
+      action_get_title_list_rdb_entry_bbfc_rating
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING,
+      action_get_title_list_rdb_entry_pegi_rating
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING,
+      action_get_title_list_rdb_entry_cero_rating
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING,
+      action_get_title_list_rdb_entry_esrb_rating
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING,
+      action_get_title_list_rdb_entry_elspa_rating
    }
 };
 
@@ -1098,21 +1118,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_releasedate_by_year);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_esrb_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_elspa_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_pegi_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_cero_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_bbfc_rating);
             break;
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_max_users);

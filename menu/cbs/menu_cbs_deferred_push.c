@@ -844,6 +844,26 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_FRONTEND_COUNTERS,
       deferred_push_frontend_counters
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING,
+      deferred_push_cursor_manager_list_deferred_query_rdb_entry_bbfc_rating
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING,
+      deferred_push_cursor_manager_list_deferred_query_rdb_entry_pegi_rating
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING,
+      deferred_push_cursor_manager_list_deferred_query_rdb_entry_cero_rating
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING,
+      deferred_push_cursor_manager_list_deferred_query_rdb_entry_esrb_rating
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING,
+      deferred_push_cursor_manager_list_deferred_query_rdb_entry_elspa_rating
    }
 };
 
@@ -1321,21 +1341,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_esrb_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_bbfc_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_elspa_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_pegi_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_cero_rating);
             break;
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_rating);
