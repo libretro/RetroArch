@@ -3232,11 +3232,7 @@ bool config_load_shader_preset(void)
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system ? system->info.library_name : NULL;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
-   char *parent_path                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));          /* final path for parent-dir-specific configuration (prefix+suffix) */
    char parent_name[PATH_MAX_LENGTH];
-
-   settings_t *settings                   = config_get_ptr();
-   rarch_system_info_t *system            = runloop_get_system_info();
 
    if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
       fill_pathname_parent_dir_name(parent_name, path_get(RARCH_PATH_BASENAME), sizeof(parent_name));
@@ -3255,6 +3251,9 @@ bool config_load_shader_preset(void)
    core_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    /* final path for game-specific configuration (prefix+suffix) */
    game_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   /* final path for parent-dir-specific configuration (prefix+suffix) */
+   parent_path                            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
    shader_directory[0] = core_path[0] = game_path[0] = '\0';
 
    fill_pathname_join (shader_directory, settings->paths.directory_video_shader,
