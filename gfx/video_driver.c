@@ -678,12 +678,6 @@ bool video_driver_set_shader(enum rarch_shader_type type,
    if (current_video->set_shader)
       ret = current_video->set_shader(video_driver_data, type, path);
 
-   if (ret)
-   {
-      menu_shader_manager_free();
-      menu_shader_manager_init();
-   }
-
    return ret;
 }
 
