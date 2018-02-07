@@ -906,6 +906,10 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    },
 #endif
    {
+      MENU_ENUM_LABEL_CURSOR_MANAGER_LIST,
+      deferred_push_cursor_manager_list
+   },
+   {
       MENU_ENUM_LABEL_FRONTEND_COUNTERS,
       deferred_push_frontend_counters
    }
@@ -1357,9 +1361,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_DATABASE_MANAGER_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list);
-            break;
-         case MENU_LABEL_CURSOR_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list);
             break;
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);

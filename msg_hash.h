@@ -1749,7 +1749,6 @@ enum msg_hash_enums
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
 
 #define MENU_LABEL_DATABASE_MANAGER_LIST                                       0x7f853d8fU
-#define MENU_LABEL_CURSOR_MANAGER_LIST                                         0xa969e378U
 #define MENU_LABEL_REMAP_FILE_LOAD                                             0x9c2799b8U
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U

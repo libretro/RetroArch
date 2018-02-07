@@ -797,6 +797,10 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
       action_get_title_list_rdb_entry_edge_magazine_issue
+   },
+   {
+      MENU_ENUM_LABEL_CURSOR_MANAGER_LIST,
+      action_get_cursor_manager_list
    }
 };
 
@@ -1136,9 +1140,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DATABASE_MANAGER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_database_manager_list);
-            break;
-         case MENU_LABEL_CURSOR_MANAGER_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_cursor_manager_list);
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
             BIND_ACTION_GET_TITLE(cbs, action_get_load_content_special);
