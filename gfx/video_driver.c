@@ -31,7 +31,7 @@
 #include <gfx/video_frame.h>
 #include <formats/image.h>
 
-#include "menu/menu_shader.h"
+#include "../menu/menu_shader.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
