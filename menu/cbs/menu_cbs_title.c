@@ -783,6 +783,18 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
       action_get_title_list_rdb_entry_publisher
    },
    {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN,
+      action_get_title_list_rdb_entry_origin
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE,
+      action_get_title_list_rdb_entry_franchise
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS,
+      action_get_title_list_rdb_entry_max_users
+   },
+   {
       MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
       action_get_title_list_rdb_entry_edge_magazine_issue
    }
@@ -1119,15 +1131,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
    {
       switch (label_hash)
       {
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_origin);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_franchise);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_max_users);
-            break;
          case MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_database_info);
             break;
