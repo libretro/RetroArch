@@ -3844,7 +3844,7 @@ static struct cbs_push_lbl_callback cbs_ok_lbl_list[] = {
 };
 
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t hash)
+      const char *label)
 {
    unsigned k;
 
@@ -3890,7 +3890,27 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (cbs->enum_idx != MSG_UNKNOWN)
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_push_content_list);	
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_remap_file);	
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_remap_file_save_core);	
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME)))
+   {
+      BIND_ACTION_OK(cbs, action_ok_remap_file_save_game);	
+      return 0;
+   }
+   else if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
       {
@@ -4310,29 +4330,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          default:
             return -1;
       }
-   }
-   else
-   {
-      switch (hash)
-      {
-         case MENU_LABEL_FAVORITES:	
-            BIND_ACTION_OK(cbs, action_ok_push_content_list);	
-            break;
-         case MENU_LABEL_REMAP_FILE_LOAD:
-            BIND_ACTION_OK(cbs, action_ok_remap_file);
-            break;
-         case MENU_LABEL_REMAP_FILE_SAVE_CORE:
-            BIND_ACTION_OK(cbs, action_ok_remap_file_save_core);
-            break;
-         case MENU_LABEL_REMAP_FILE_SAVE_GAME:
-            BIND_ACTION_OK(cbs, action_ok_remap_file_save_game);
-            break;
-         default:
-            return -1;
-      }
+
+      return 0;
    }
 
-   return 0;
+   return -1;
 }
 
 static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
@@ -4645,15 +4647,14 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *menu_label,
-      const char *label, unsigned type, size_t idx,
-      uint32_t label_hash)
+      const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;
 
    BIND_ACTION_OK(cbs, action_ok_lookup_setting);
 
-   if (menu_cbs_init_bind_ok_compare_label(cbs, label, label_hash) == 0)
+   if (menu_cbs_init_bind_ok_compare_label(cbs, label) == 0)
       return 0;
 
    if (menu_cbs_init_bind_ok_compare_type(cbs, menu_label, type) == 0)
