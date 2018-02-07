@@ -910,6 +910,42 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
       deferred_push_cursor_manager_list
    },
    {
+      MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE,
+      deferred_archive_action_detect_core
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION,
+      deferred_archive_action
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE,
+      deferred_archive_open_detect_core
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN,
+      deferred_archive_open
+   },
+   {
+      MENU_ENUM_LABEL_DATABASE_MANAGER_LIST,
+      deferred_push_database_manager_list
+   },
+   {
+      MENU_ENUM_LABEL_REMAP_FILE_LOAD,
+      deferred_push_remap_file_load
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET,
+      deferred_push_core_collection_list_deferred
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_VIDEO_FILTER,
+      deferred_push_video_filter
+   },
+   {
+      MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
+      deferred_push_content_collection_list
+   },
+   {
       MENU_ENUM_LABEL_FRONTEND_COUNTERS,
       deferred_push_frontend_counters
    }
@@ -1038,8 +1074,7 @@ static struct cbs_deferred_lbl_callback cbs_deferred2_lbl_list[] = {
 };
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
-      menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t label_hash)
+      menu_file_list_cbs_t *cbs, const char *label)
 {
    unsigned k, l;
 
@@ -1343,41 +1378,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             return -1;
       }
    }
-   else
-   {
-      switch (label_hash)
-      {
-         case MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action_detect_core);
-            break;
-         case MENU_LABEL_DEFERRED_ARCHIVE_ACTION:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action);
-            break;
-         case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open_detect_core);
-            break;
-         case MENU_LABEL_DEFERRED_ARCHIVE_OPEN:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open);
-            break;
-         case MENU_LABEL_DATABASE_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list);
-            break;
-         case MENU_LABEL_REMAP_FILE_LOAD:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);
-            break;
-         case MENU_LABEL_DEFERRED_CORE_LIST_SET:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_collection_list_deferred);
-            break;
-         case MENU_LABEL_DEFERRED_VIDEO_FILTER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
-            break;
-         case MENU_LABEL_CONTENT_COLLECTION_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
-            break;
-         default:
-            return -1;
-      }
-   }
 
    return 0;
 }
@@ -1400,8 +1400,7 @@ static int menu_cbs_init_bind_deferred_push_compare_type(
 }
 
 int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;
@@ -1415,7 +1414,7 @@ int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
    }
 
    if (cbs->enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY &&
-       menu_cbs_init_bind_deferred_push_compare_label(cbs, label, label_hash) == 0)
+       menu_cbs_init_bind_deferred_push_compare_label(cbs, label) == 0)
       return 0;
 
    if (menu_cbs_init_bind_deferred_push_compare_type(

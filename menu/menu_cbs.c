@@ -302,7 +302,7 @@ void menu_cbs_init(void *data,
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_deferred_push.c, then map this callback to the entry. */
-   menu_cbs_init_bind_deferred_push(cbs, path, label, type, idx, label_hash);
+   menu_cbs_init_bind_deferred_push(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "DEFERRED PUSH", cbs->action_deferred_push_ident);
 
