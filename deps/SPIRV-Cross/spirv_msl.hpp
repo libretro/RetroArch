@@ -65,7 +65,7 @@ using MSLStructMemberKey = uint64_t;
 
 // Special constant used in a MSLResourceBinding desc_set
 // element to indicate the bindings for the push constants.
-static const uint32_t kPushConstDescSet = UINT32_MAX;
+static const uint32_t kPushConstDescSet = ((uint32_t)-1);
 
 // Special constant used in a MSLResourceBinding binding
 // element to indicate the bindings for the push constants.
