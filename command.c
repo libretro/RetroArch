@@ -220,6 +220,7 @@ bool command_set_shader(const char *arg)
 {
    char msg[256];
    enum rarch_shader_type type = RARCH_SHADER_NONE;
+   struct video_shader      *shader  = menu_shader_get();
 
    switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(arg))))
    {
@@ -246,7 +247,7 @@ bool command_set_shader(const char *arg)
          arg);
 
    retroarch_set_shader_preset(arg);
-   return video_driver_set_shader(type, arg);
+   return menu_shader_manager_set_preset(shader, type, arg);
 }
 
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)

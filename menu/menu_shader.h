@@ -48,7 +48,7 @@ bool menu_shader_manager_init(void);
  *
  * Sets shader preset.
  **/
-void menu_shader_manager_set_preset(
+bool menu_shader_manager_set_preset(
       void *data, unsigned type, const char *preset_path);
 
 /**

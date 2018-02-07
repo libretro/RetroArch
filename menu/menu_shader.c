@@ -249,7 +249,7 @@ bool menu_shader_manager_init(void)
  *
  * Sets shader preset.
  **/
-void menu_shader_manager_set_preset(void *data,
+bool menu_shader_manager_set_preset(void *data,
       unsigned type, const char *preset_path)
 {
 #ifdef HAVE_SHADER_MANAGER
@@ -261,7 +261,7 @@ void menu_shader_manager_set_preset(void *data,
    if (!video_driver_set_shader((enum rarch_shader_type)type, preset_path))
    {
       configuration_set_bool(settings, settings->bools.video_shader_enable, false);
-      return;
+      return false;
    }
 
    /* Makes sure that we use Menu Preset shader on driver reinit.
@@ -272,7 +272,7 @@ void menu_shader_manager_set_preset(void *data,
    configuration_set_bool(settings, settings->bools.video_shader_enable, true);
 
    if (!preset_path || !shader)
-      return;
+      return false;
 
    /* Load stored Preset into menu on success.
     * Used when a preset is directly loaded.
@@ -281,7 +281,7 @@ void menu_shader_manager_set_preset(void *data,
    conf = config_file_new(preset_path);
 
    if (!conf)
-      return;
+      return false;
 
    RARCH_LOG("Setting Menu shader: %s.\n", preset_path);
 
@@ -293,6 +293,8 @@ void menu_shader_manager_set_preset(void *data,
    config_file_free(conf);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+
+   return true;
 #endif
 }
 
