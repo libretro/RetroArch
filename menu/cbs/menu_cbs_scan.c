@@ -153,9 +153,9 @@ static int action_scan_input_desc(const char *path,
 static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
 {
-
    switch (type)
    {
+#if 0
 #ifdef HAVE_LIBRETRODB
       case FILE_TYPE_DIRECTORY:
          BIND_ACTION_SCAN(cbs, action_scan_directory);
@@ -164,6 +164,7 @@ static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       case FILE_TYPE_PLAIN:
          BIND_ACTION_SCAN(cbs, action_scan_file);
          return 0;
+#endif
 #endif
       case FILE_TYPE_RPL_ENTRY:
          BIND_ACTION_SCAN(cbs, action_switch_thumbnail);
