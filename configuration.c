@@ -3355,6 +3355,7 @@ success:
    free(shader_directory);
    free(core_path);
    free(game_path);
+   free(parent_path);
    config_file_free(new_conf);
    return true;
 }

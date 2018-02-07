@@ -1424,6 +1424,7 @@ static bool command_event_save_core_config(void)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true);
       RARCH_ERR("[Config]: %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
+      free (config_dir);
       return false;
    }
 
