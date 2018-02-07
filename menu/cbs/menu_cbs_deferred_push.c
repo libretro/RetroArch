@@ -835,10 +835,7 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
       MENU_ENUM_LABEL_CORE_COUNTERS,
       deferred_push_core_counters
    },
-   {
-      MENU_ENUM_LABEL_FRONTEND_COUNTERS,
-      deferred_push_frontend_counters
-   },
+#ifdef HAVE_LIBRETRODB
    {
       MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING,
       deferred_push_cursor_manager_list_deferred_query_rdb_entry_bbfc_rating
@@ -851,7 +848,6 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
       MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING,
       deferred_push_cursor_manager_list_deferred_query_rdb_entry_cero_rating
    },
-#ifdef HAVE_LIBRETRODB
    {
       MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS,
       deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users
@@ -892,7 +888,6 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
       MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW,
       deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw
    },
-#endif
    {
       MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING,
       deferred_push_cursor_manager_list_deferred_query_rdb_entry_esrb_rating
@@ -908,6 +903,11 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
       deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_issue
+   },
+#endif
+   {
+      MENU_ENUM_LABEL_FRONTEND_COUNTERS,
+      deferred_push_frontend_counters
    }
 };
 
