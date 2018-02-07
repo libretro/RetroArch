@@ -212,9 +212,12 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
    return MSG_UNKNOWN;
 }
 
-int generic_action_ok_displaylist_push(const char *path,
+int generic_action_ok_displaylist_push(
+      const char *path,
       const char *new_path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      const char *label,
+      unsigned type,
+      size_t idx, size_t entry_idx,
       unsigned action_type)
 {
    menu_displaylist_info_t      info;
@@ -3736,9 +3739,45 @@ static int is_rdb_entry(enum msg_hash_enums enum_idx)
    return 0;
 }
 
+struct cbs_push_lbl_callback
+{
+   enum msg_hash_enums id;
+   int (*cbs)(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+};
+
+static struct cbs_push_lbl_callback cbs_ok_lbl_list[] = {
+   {
+      MENU_ENUM_LABEL_FAVORITES,
+      action_ok_push_content_list
+   },
+   {
+      MENU_ENUM_LABEL_RECORD_CONFIG,
+      action_ok_record_configfile
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,
+      action_ok_shader_parameters
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+      action_ok_shader_parameters
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_SHADER_PASS,
+      action_ok_shader_pass
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET,
+      action_ok_shader_preset
+   }
+};
+
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t hash)
 {
+   unsigned k;
+
    if (cbs->enum_idx != MSG_UNKNOWN && is_rdb_entry(cbs->enum_idx) == 0)
    {
       BIND_ACTION_OK(cbs, action_ok_rdb_entry_submenu);
@@ -3772,37 +3811,16 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)))
+   for (k = 0; k < ARRAY_SIZE(cbs_ok_lbl_list); k++)
    {
-      BIND_ACTION_OK(cbs, action_ok_push_content_list);
-      return 0;
+      if (string_is_equal(label, msg_hash_to_str(cbs_ok_lbl_list[k].id)))
+      {
+         BIND_ACTION_OK(cbs, cbs_ok_lbl_list[k].cbs);
+         return 0;
+      }
    }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RECORD_CONFIG)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_record_configfile);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_shader_parameters);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_shader_parameters);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_shader_pass);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_shader_preset);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS)))
+
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS)))
    {
       BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
       return 0;
