@@ -799,13 +799,33 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
       action_get_title_list_rdb_entry_edge_magazine_issue
    },
    {
+      MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL,
+      action_get_title_list_rdb_entry_database_info
+   },
+   {
+      MENU_ENUM_LABEL_DATABASE_MANAGER_LIST,
+      action_get_database_manager_list
+   },
+   {
+      MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL,
+      action_get_load_content_special
+   },
+   {
+      MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
+      action_get_title_collection
+   },
+   {
+      MENU_ENUM_LABEL_REMAP_FILE_LOAD,
+      action_get_title_remap_file_load
+   },
+   {
       MENU_ENUM_LABEL_CURSOR_MANAGER_LIST,
       action_get_cursor_manager_list
    }
 };
 
 static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t label_hash)
+      const char *label)
 {
    unsigned k;
 
@@ -1131,29 +1151,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             return -1;
       }
    }
-   else
-   {
-      switch (label_hash)
-      {
-         case MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_database_info);
-            break;
-         case MENU_LABEL_DATABASE_MANAGER_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_database_manager_list);
-            break;
-         case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
-            BIND_ACTION_GET_TITLE(cbs, action_get_load_content_special);
-            break;
-         case MENU_LABEL_CONTENT_COLLECTION_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_collection);
-            break;
-         case MENU_LABEL_REMAP_FILE_LOAD:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_remap_file_load);
-            break;
-         default:
-            return -1;
-      }
-   }
 
    return 0;
 }
@@ -1181,8 +1178,7 @@ static int menu_cbs_init_bind_title_compare_type(menu_file_list_cbs_t *cbs,
 }
 
 int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;
@@ -1190,7 +1186,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
    BIND_ACTION_GET_TITLE(cbs, action_get_title_default);
 
    if (cbs->enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY &&
-       menu_cbs_init_bind_title_compare_label(cbs, label, label_hash) == 0)
+       menu_cbs_init_bind_title_compare_label(cbs, label) == 0)
       return 0;
 
    if (menu_cbs_init_bind_title_compare_type(cbs, type) == 0)

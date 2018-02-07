@@ -320,7 +320,7 @@ void menu_cbs_init(void *data,
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_title.c, then map this callback to the entry. */
-   menu_cbs_init_bind_title(cbs, path, label, type, idx, label_hash);
+   menu_cbs_init_bind_title(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "GET TITLE", cbs->action_get_title_ident);
 
