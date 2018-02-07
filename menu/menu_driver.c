@@ -93,6 +93,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_D3D11
    &menu_display_ctx_d3d11,
 #endif
+#ifdef HAVE_D3D12
+   &menu_display_ctx_d3d12,
+#endif
 #ifdef HAVE_OPENGL
    &menu_display_ctx_gl,
 #endif
@@ -227,6 +230,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D11:
          if (string_is_equal(video_driver, "d3d11"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_DIRECT3D12:
+         if (string_is_equal(video_driver, "d3d12"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_VITA2D:

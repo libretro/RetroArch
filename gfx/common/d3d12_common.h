@@ -1311,7 +1311,27 @@ typedef struct
    bool                               dirty;
 } d3d12_texture_t;
 
-#define TEXTURE_DESC_SLOTS_COUNT 128
+#ifndef ALIGN
+#ifdef _MSC_VER
+#define ALIGN(x) __declspec(align(x))
+#else
+#define ALIGN(x) __attribute__((aligned(x)))
+#endif
+#endif
+
+typedef struct ALIGN(16)
+{
+   math_matrix_4x4 mvp;
+   struct
+   {
+      float width;
+      float height;
+   } OutputSize;
+   float time;
+} d3d12_uniform_t;
+
+static_assert(
+      (!(sizeof(d3d12_uniform_t) & 0xF)), "sizeof(d3d12_uniform_t) must be a multiple of 16");
 
 typedef struct
 {
@@ -1386,6 +1406,7 @@ typedef struct
    } sprites;
 
    D3D12PipelineState              pipes[GFX_MAX_SHADERS];
+   d3d12_uniform_t                 ubo_values;
    D3D12Resource                   ubo;
    D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
    DXGI_FORMAT                     format;
@@ -1395,6 +1416,8 @@ typedef struct
    bool                            resize_chain;
    bool                            keep_aspect;
    bool                            resize_viewport;
+   D3D12Resource                   menu_pipeline_vbo;
+   D3D12_VERTEX_BUFFER_VIEW        menu_pipeline_vbo_view;
 
 #ifdef DEBUG
    D3D12Debug debugController;

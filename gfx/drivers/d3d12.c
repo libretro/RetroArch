@@ -26,10 +26,12 @@
 #include "../common/d3d12_common.h"
 #include "../common/d3dcompiler_common.h"
 
-//#include "../../menu/menu_driver.h"
+#include "../../menu/menu_driver.h"
 #include "../../driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
+
+#include "wiiu/wiiu_dbg.h"
 
 static void d3d12_set_filtering(void* data, unsigned index, bool smooth)
 {
@@ -71,10 +73,10 @@ static void d3d12_update_viewport(void* data, bool force_full)
 
    video_driver_update_viewport(&d3d12->vp, force_full, d3d12->keep_aspect);
 
-   d3d12->frame.viewport.TopLeftX = (float)d3d12->vp.x;
-   d3d12->frame.viewport.TopLeftY = (float)d3d12->vp.y;
-   d3d12->frame.viewport.Width    = (float)d3d12->vp.width;
-   d3d12->frame.viewport.Height   = (float)d3d12->vp.height;
+   d3d12->frame.viewport.TopLeftX = d3d12->vp.x;
+   d3d12->frame.viewport.TopLeftY = d3d12->vp.y;
+   d3d12->frame.viewport.Width    = d3d12->vp.width;
+   d3d12->frame.viewport.Height   = d3d12->vp.height;
    d3d12->frame.viewport.MaxDepth = 0.0f;
    d3d12->frame.viewport.MaxDepth = 1.0f;
 
@@ -160,6 +162,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       if (!d3d_compile(shader, sizeof(shader), NULL, "GSMain", "gs_5_0", &gs_code))
          goto error;
 
+      //      desc.BlendState.RenderTarget[0].BlendEnable = false;
       desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
       desc.InputLayout.pInputElementDescs = inputElementDesc;
       desc.InputLayout.NumElements        = countof(inputElementDesc);
@@ -301,9 +304,9 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       vs_code = NULL;
       ps_code = NULL;
 
-      if (!d3d_compile(ribbon_simple, sizeof(ribbon), NULL, "VSMain", "vs_5_0", &vs_code))
+      if (!d3d_compile(ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "vs_5_0", &vs_code))
          goto error;
-      if (!d3d_compile(ribbon_simple, sizeof(ribbon), NULL, "PSMain", "ps_5_0", &ps_code))
+      if (!d3d_compile(ribbon_simple, sizeof(ribbon_simple), NULL, "PSMain", "ps_5_0", &ps_code))
          goto error;
 
       if (!d3d12_init_pipeline(
@@ -383,6 +386,8 @@ static void*
 d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
    WNDCLASSEX     wndclass = { 0 };
+   MONITORINFOEX  current_mon;
+   HMONITOR       hm_to_use;
    settings_t*    settings = config_get_ptr();
    d3d12_video_t* d3d12    = (d3d12_video_t*)calloc(1, sizeof(*d3d12));
 
@@ -394,7 +399,17 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    wndclass.lpfnWndProc = WndProcD3D;
    win32_window_init(&wndclass, true, NULL);
 
-   if (!win32_set_video_mode(d3d12, video->width, video->height, video->fullscreen))
+   win32_monitor_info(&current_mon, &hm_to_use, &d3d12->cur_mon_id);
+
+   d3d12->vp.full_width  = video->width;
+   d3d12->vp.full_height = video->height;
+
+   if (!d3d12->vp.full_width)
+      d3d12->vp.full_width = current_mon.rcMonitor.right - current_mon.rcMonitor.left;
+   if (!d3d12->vp.full_height)
+      d3d12->vp.full_height = current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+
+   if (!win32_set_video_mode(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, video->fullscreen))
    {
       RARCH_ERR("[D3D12]: win32_set_video_mode failed.\n");
       goto error;
@@ -414,7 +429,7 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    if (!d3d12_init_queue(d3d12))
       goto error;
 
-   if (!d3d12_init_swapchain(d3d12, video->width, video->height, main_window.hwnd))
+   if (!d3d12_init_swapchain(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, main_window.hwnd))
       goto error;
 
    d3d12_init_samplers(d3d12);
@@ -429,20 +444,19 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d12->sprites.vbo_view.BufferLocation = d3d12_create_buffer(
          d3d12->device, d3d12->sprites.vbo_view.SizeInBytes, &d3d12->sprites.vbo);
 
-   d3d12->keep_aspect = video->force_aspect;
-   d3d12->chain.vsync = video->vsync;
-   d3d12->format      = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
-   d3d12->frame.texture.desc.Format = d3d12->format;
-
-   d3d12->ubo_view.SizeInBytes = sizeof(math_matrix_4x4);
+   d3d12->ubo_view.SizeInBytes = sizeof(d3d12_uniform_t);
    d3d12->ubo_view.BufferLocation =
          d3d12_create_buffer(d3d12->device, d3d12->ubo_view.SizeInBytes, &d3d12->ubo);
 
-   d3d12->frame.ubo_view.SizeInBytes = sizeof(math_matrix_4x4);
+   d3d12->frame.ubo_view.SizeInBytes = sizeof(d3d12_uniform_t);
    d3d12->frame.ubo_view.BufferLocation =
          d3d12_create_buffer(d3d12->device, d3d12->frame.ubo_view.SizeInBytes, &d3d12->frame.ubo);
 
    matrix_4x4_ortho(d3d12->mvp_no_rot, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
+
+   d3d12->ubo_values.mvp               = d3d12->mvp_no_rot;
+   d3d12->ubo_values.OutputSize.width  = d3d12->chain.viewport.Width;
+   d3d12->ubo_values.OutputSize.height = d3d12->chain.viewport.Height;
 
    {
       math_matrix_4x4* mvp;
@@ -453,9 +467,14 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    }
 
    d3d12_gfx_set_rotation(d3d12, 0);
-   d3d12->vp.full_width   = video->width;
-   d3d12->vp.full_height  = video->height;
-   d3d12->resize_viewport = true;
+   video_driver_set_size(&d3d12->vp.full_width, &d3d12->vp.full_height);
+   d3d12->chain.viewport.Width  = d3d12->vp.full_width;
+   d3d12->chain.viewport.Height = d3d12->vp.full_height;
+   d3d12->resize_viewport       = true;
+   d3d12->keep_aspect           = video->force_aspect;
+   d3d12->chain.vsync           = video->vsync;
+   d3d12->format = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
+   d3d12->frame.texture.desc.Format = d3d12->format;
 
    font_driver_init_osd(d3d12, false, video->is_threaded, FONT_DRIVER_RENDER_D3D12_API);
 
@@ -496,8 +515,18 @@ static bool d3d12_gfx_frame(
       }
 
       d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
-      d3d12->resize_chain      = false;
-      d3d12->resize_viewport   = true;
+
+      d3d12->chain.viewport.Width     = video_info->width;
+      d3d12->chain.viewport.Height    = video_info->height;
+      d3d12->chain.scissorRect.right  = video_info->width;
+      d3d12->chain.scissorRect.bottom = video_info->height;
+      d3d12->resize_chain             = false;
+      d3d12->resize_viewport          = true;
+
+      d3d12->ubo_values.OutputSize.width  = d3d12->chain.viewport.Width;
+      d3d12->ubo_values.OutputSize.height = d3d12->chain.viewport.Height;
+
+      video_driver_set_size(&video_info->width, &video_info->height);
    }
 
    PERF_START();
@@ -578,7 +607,7 @@ static bool d3d12_gfx_frame(
    D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
 
    d3d12->sprites.enabled = true;
-#if 0
+#if 1
    if (d3d12->menu.enabled)
       menu_driver_frame(video_info);
 #endif
@@ -588,7 +617,6 @@ static bool d3d12_gfx_frame(
       dxgi_update_title(video_info);
    }
    d3d12->sprites.enabled = false;
-
 
    d3d12_resource_transition(
          d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
@@ -759,11 +787,64 @@ static void d3d12_gfx_set_osd_msg(
    }
 }
 
+static uintptr_t d3d12_gfx_load_texture(
+      void* video_data, void* data, bool threaded, enum texture_filter_type filter_type)
+{
+   d3d12_texture_t*      texture = NULL;
+   d3d12_video_t*        d3d12   = (d3d12_video_t*)video_data;
+   struct texture_image* image   = (struct texture_image*)data;
+
+   if (!d3d12)
+      return 0;
+
+   texture = (d3d12_texture_t*)calloc(1, sizeof(*texture));
+
+   if (!texture)
+      return 0;
+
+   /* todo : mipmapping */
+   switch (filter_type)
+   {
+      case TEXTURE_FILTER_MIPMAP_LINEAR:
+         /* fallthrough */
+      case TEXTURE_FILTER_LINEAR:
+         texture->sampler = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_DEFAULT];
+         break;
+      case TEXTURE_FILTER_MIPMAP_NEAREST:
+         /* fallthrough */
+      case TEXTURE_FILTER_NEAREST:
+         texture->sampler = d3d12->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
+         break;
+   }
+
+   texture->desc.Width  = image->width;
+   texture->desc.Height = image->height;
+   texture->desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+   texture->srv_heap    = &d3d12->desc.srv_heap;
+
+   d3d12_init_texture(d3d12->device, texture);
+
+   d3d12_update_texture(
+         image->width, image->height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels, texture);
+
+   return (uintptr_t)texture;
+}
+static void d3d12_gfx_unload_texture(void* data, uintptr_t handle)
+{
+   d3d12_texture_t* texture = (d3d12_texture_t*)handle;
+
+   if (!texture)
+      return;
+
+   d3d12_release_texture(texture);
+   free(texture);
+}
+
 static const video_poke_interface_t d3d12_poke_interface = {
    NULL, /* set_coords */
    NULL, /* set_mvp */
-   NULL, /* load_texture */
-   NULL, /* unload_texture */
+   d3d12_gfx_load_texture,
+   d3d12_gfx_unload_texture,
    NULL, /* set_video_mode */
    d3d12_set_filtering,
    NULL, /* get_video_output_size */
