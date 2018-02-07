@@ -4073,8 +4073,6 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
                MENU_INFO_MESSAGE, 0, 0);
 
-      if (!string_is_empty(info->label))
-         info->label_hash = msg_hash_calculate(info->label);
       menu_driver_populate_entries(info);
       ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
    }
@@ -4120,7 +4118,6 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info)
    info->type                     = 0;
    info->type_default             = 0;
    info->flags                    = 0;
-   info->label_hash               = 0;
    info->directory_ptr            = 0;
    info->label                    = NULL;
    info->path                     = NULL;

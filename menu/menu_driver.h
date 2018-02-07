@@ -552,7 +552,6 @@ typedef struct menu_ctx_bind
    const char *path;
    const char *label;
    unsigned type;
-   uint32_t label_hash;
    size_t idx;
    int retcode;
    menu_file_list_cbs_t *cbs;
