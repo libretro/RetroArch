@@ -4525,7 +4525,8 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             {
                BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
             }
-            else if (menu_label_hash == MENU_LABEL_CURSOR_MANAGER_LIST)
+            else if (string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST)))
             {
                BIND_ACTION_OK(cbs, action_ok_cursor_manager_list);
             }
@@ -4643,7 +4644,8 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 }
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
+      const char *path, const char *menu_label,
+      const char *label, unsigned type, size_t idx,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
@@ -4654,7 +4656,7 @@ int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    if (menu_cbs_init_bind_ok_compare_label(cbs, label, label_hash) == 0)
       return 0;
 
-   if (menu_cbs_init_bind_ok_compare_type(cbs, label, label_hash, menu_label_hash, type) == 0)
+   if (menu_cbs_init_bind_ok_compare_type(cbs, menu_label, label_hash, menu_label_hash, type) == 0)
       return 0;
 
    return -1;
