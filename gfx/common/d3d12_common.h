@@ -101,11 +101,13 @@ static INLINE ULONG D3D12ReleaseResource(void* resource)
 static INLINE HRESULT
 D3D12Map(void* resource, UINT subresource, D3D12_RANGE* read_range, void** data)
 {
-   return ((ID3D12Resource*)resource)->lpVtbl->Map((ID3D12Resource*)resource, subresource, read_range, data);
+   return ((ID3D12Resource*)resource)
+         ->lpVtbl->Map((ID3D12Resource*)resource, subresource, read_range, data);
 }
 static INLINE void D3D12Unmap(void* resource, UINT subresource, D3D12_RANGE* written_range)
 {
-   ((ID3D12Resource*)resource)->lpVtbl->Unmap((ID3D12Resource*)resource, subresource, written_range);
+   ((ID3D12Resource*)resource)
+         ->lpVtbl->Unmap((ID3D12Resource*)resource, subresource, written_range);
 }
 static INLINE D3D12_GPU_VIRTUAL_ADDRESS D3D12GetGPUVirtualAddress(void* resource)
 {
@@ -121,7 +123,8 @@ static INLINE HRESULT D3D12WriteToSubresource(
 {
    return ((ID3D12Resource*)resource)
          ->lpVtbl->WriteToSubresource(
-               (ID3D12Resource*)resource, dst_subresource, dst_box, src_data, src_row_pitch, src_depth_pitch);
+               (ID3D12Resource*)resource, dst_subresource, dst_box, src_data, src_row_pitch,
+               src_depth_pitch);
 }
 static INLINE HRESULT D3D12ReadFromSubresource(
       void*      resource,
@@ -133,7 +136,8 @@ static INLINE HRESULT D3D12ReadFromSubresource(
 {
    return ((ID3D12Resource*)resource)
          ->lpVtbl->ReadFromSubresource(
-               (ID3D12Resource*)resource, dst_data, dst_row_pitch, dst_depth_pitch, src_subresource, src_box);
+               (ID3D12Resource*)resource, dst_data, dst_row_pitch, dst_depth_pitch, src_subresource,
+               src_box);
 }
 static INLINE HRESULT D3D12GetHeapProperties(
       void* resource, D3D12_HEAP_PROPERTIES* heap_properties, D3D12_HEAP_FLAGS* heap_flags)
@@ -639,8 +643,7 @@ static INLINE UINT D3D12GetNodeCount(D3D12Device device)
 static INLINE HRESULT D3D12CreateCommandQueue(
       D3D12Device device, D3D12_COMMAND_QUEUE_DESC* desc, ID3D12CommandQueue** out)
 {
-   return device->lpVtbl->CreateCommandQueue(
-         device, desc, uuidof(ID3D12CommandQueue), (void**)out);
+   return device->lpVtbl->CreateCommandQueue(device, desc, uuidof(ID3D12CommandQueue), (void**)out);
 }
 static INLINE HRESULT D3D12CreateCommandAllocator(
       D3D12Device device, D3D12_COMMAND_LIST_TYPE type, ID3D12CommandAllocator** out)
@@ -1207,8 +1210,7 @@ static INLINE void D3D12ExecuteGraphicsCommandLists(
 static INLINE HRESULT
 DXGIGetSwapChainBuffer(DXGISwapChain swapchain, UINT buffer, D3D12Resource* surface)
 {
-   return swapchain->lpVtbl->GetBuffer(
-         swapchain, buffer, uuidof(ID3D12Resource), (void**)surface);
+   return swapchain->lpVtbl->GetBuffer(swapchain, buffer, uuidof(ID3D12Resource), (void**)surface);
 }
 static INLINE void D3D12SetDescriptorHeaps(
       D3D12GraphicsCommandList   command_list,
@@ -1289,7 +1291,8 @@ typedef struct
    D3D12_CPU_DESCRIPTOR_HANDLE cpu; /* descriptor */
    D3D12_GPU_DESCRIPTOR_HANDLE gpu; /* descriptor */
    UINT                        stride;
-   UINT                        count;
+   bool*                       map;
+   int                         start;
 } d3d12_descriptor_heap_t;
 
 typedef struct
@@ -1297,14 +1300,18 @@ typedef struct
    D3D12Resource                      handle;
    D3D12Resource                      upload_buffer;
    D3D12_RESOURCE_DESC                desc;
+   D3D12_CPU_DESCRIPTOR_HANDLE        cpu_descriptor;
    D3D12_GPU_DESCRIPTOR_HANDLE        gpu_descriptor;
    D3D12_GPU_DESCRIPTOR_HANDLE        sampler;
    D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
    UINT                               num_rows;
    UINT64                             row_size_in_bytes;
    UINT64                             total_bytes;
+   d3d12_descriptor_heap_t*           srv_heap;
    bool                               dirty;
 } d3d12_texture_t;
+
+#define TEXTURE_DESC_SLOTS_COUNT 128
 
 typedef struct
 {
@@ -1325,9 +1332,10 @@ typedef struct
 
    struct
    {
-      D3D12RootSignature      rootSignature; /* descriptor layout */
-      d3d12_descriptor_heap_t srv_heap;      /* ShaderResouceView descritor heap */
-      d3d12_descriptor_heap_t rtv_heap;      /* RenderTargetView descritor heap */
+      D3D12RootSignature      sl_rootSignature; /* descriptor layout */
+      D3D12RootSignature      rootSignature;    /* descriptor layout */
+      d3d12_descriptor_heap_t srv_heap;         /* ShaderResouceView descritor heap */
+      d3d12_descriptor_heap_t rtv_heap;         /* RenderTargetView descritor heap */
       d3d12_descriptor_heap_t sampler_heap;
    } desc;
 
@@ -1357,9 +1365,9 @@ typedef struct
 
    struct
    {
-      D3D12Resource               vbo;
-      D3D12_VERTEX_BUFFER_VIEW    vbo_view;
-      d3d12_texture_t             texture;
+      D3D12Resource            vbo;
+      D3D12_VERTEX_BUFFER_VIEW vbo_view;
+      d3d12_texture_t          texture;
 
       float alpha;
       bool  enabled;
@@ -1370,7 +1378,7 @@ typedef struct
    {
       D3D12PipelineState pipe;
       D3D12PipelineState pipe_font;
-      D3D12Resource       vbo;
+      D3D12Resource      vbo;
       int                offset;
       int                capacity;
       bool               enabled;
@@ -1392,20 +1400,12 @@ typedef struct
 #endif
 } d3d12_video_t;
 
-typedef enum
-{
+typedef enum {
    ROOT_ID_TEXTURE_T = 0,
    ROOT_ID_SAMPLER_T,
    ROOT_ID_UBO,
    ROOT_ID_MAX,
 } root_signature_parameter_index_t;
-
-typedef enum {
-   SRV_HEAP_SLOT_FRAME_TEXTURE = 0,
-   SRV_HEAP_SLOT_MENU_TEXTURE,
-   SRV_HEAP_SLOT_CUSTOM,
-   SRV_HEAP_SLOT_MAX = 16
-} descriptor_heap_slot_t;
 
 RETRO_BEGIN_DECLS
 
@@ -1431,11 +1431,15 @@ bool d3d12_init_queue(d3d12_video_t* d3d12);
 D3D12_GPU_VIRTUAL_ADDRESS
 d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer);
 
-void d3d12_init_texture(
-      D3D12Device              device,
-      d3d12_descriptor_heap_t* heap,
-      descriptor_heap_slot_t   heap_index,
-      d3d12_texture_t*         tex);
+void d3d12_init_texture(D3D12Device device, d3d12_texture_t* tex);
+
+void d3d12_update_texture(
+      int              width,
+      int              height,
+      int              pitch,
+      DXGI_FORMAT      format,
+      const void*      data,
+      d3d12_texture_t* texture);
 
 void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t* texture);
 
@@ -1445,7 +1449,7 @@ void d3d12_create_fullscreen_quad_vbo(
 DXGI_FORMAT d3d12_get_closest_match(
       D3D12Device device, DXGI_FORMAT desired_format, D3D12_FORMAT_SUPPORT1 desired_format_support);
 
-#if !defined(__cplusplus ) || defined(CINTERFACE)
+#if !defined(__cplusplus) || defined(CINTERFACE)
 static INLINE void d3d12_resource_transition(
       D3D12GraphicsCommandList cmd,
       D3D12Resource            resource,
@@ -1473,50 +1477,11 @@ d3d12_set_sampler(D3D12GraphicsCommandList cmd, D3D12_GPU_DESCRIPTOR_HANDLE samp
    D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T, sampler);
 }
 
-static INLINE void d3d12_set_texture_and_sampler(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
+static INLINE void
+d3d12_set_texture_and_sampler(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
 {
    D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, texture->gpu_descriptor);
    D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T, texture->sampler);
-}
-
-static INLINE void d3d12_update_texture(
-      int              width,
-      int              height,
-      int              pitch,
-      DXGI_FORMAT      format,
-      const void*      data,
-      d3d12_texture_t* texture)
-{
-   uint8_t*    dst;
-   D3D12_RANGE read_range = { 0, 0 };
-
-   D3D12Map(texture->upload_buffer, 0, &read_range, (void**)&dst);
-
-   dxgi_copy(
-         width, height, format, pitch, data, texture->desc.Format,
-         texture->layout.Footprint.RowPitch, dst + texture->layout.Offset);
-
-   D3D12Unmap(texture->upload_buffer, 0, NULL);
-
-   texture->dirty = true;
-}
-
-static INLINE DXGI_FORMAT
-d3d12_get_closest_match_texture2D(D3D12Device device, DXGI_FORMAT desired_format)
-{
-   return d3d12_get_closest_match(
-         device, desired_format,
-         D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE);
-}
-
-static INLINE D3D12_GPU_DESCRIPTOR_HANDLE d3d12_create_sampler(
-      D3D12Device device, D3D12_SAMPLER_DESC* desc, d3d12_descriptor_heap_t* heap, int slot)
-{
-   D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle = {heap->gpu.ptr + slot * heap->stride};
-   D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = {heap->cpu.ptr + slot * heap->stride};
-
-   D3D12CreateSampler(device, desc, cpu_handle);
-   return gpu_handle;
 }
 
 #endif

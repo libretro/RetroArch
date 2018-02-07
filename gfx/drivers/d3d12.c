@@ -114,9 +114,9 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       if (!d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
          goto error;
 
-      desc.PrimitiveTopologyType                  = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-      desc.InputLayout.pInputElementDescs         = inputElementDesc;
-      desc.InputLayout.NumElements                = countof(inputElementDesc);
+      desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+      desc.InputLayout.pInputElementDescs = inputElementDesc;
+      desc.InputLayout.NumElements        = countof(inputElementDesc);
 
       if (!d3d12_init_pipeline(
                 d3d12->device, vs_code, ps_code, NULL, &desc,
@@ -157,9 +157,9 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       if (!d3d_compile(shader, sizeof(shader), NULL, "GSMain", "gs_5_0", &gs_code))
          goto error;
 
-      desc.PrimitiveTopologyType                  = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
-      desc.InputLayout.pInputElementDescs         = inputElementDesc;
-      desc.InputLayout.NumElements                = countof(inputElementDesc);
+      desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+      desc.InputLayout.pInputElementDescs = inputElementDesc;
+      desc.InputLayout.NumElements        = countof(inputElementDesc);
 
       if (!d3d12_init_pipeline(
                 d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe))
@@ -186,27 +186,27 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
    {
       static const char simple_snow[] =
 #include "d3d_shaders/simple_snow_sm4.hlsl.h"
-         ;
+            ;
       static const char snow[] =
 #include "d3d_shaders/snow_sm4.hlsl.h"
-         ;
+            ;
       static const char bokeh[] =
 #include "d3d_shaders/bokeh_sm4.hlsl.h"
-         ;
+            ;
       static const char snowflake[] =
 #include "d3d_shaders/snowflake_sm4.hlsl.h"
-         ;
+            ;
 
       D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
-            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
          { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
-            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
       };
 
-      desc.PrimitiveTopologyType                  = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-      desc.InputLayout.pInputElementDescs         = inputElementDesc;
-      desc.InputLayout.NumElements                = countof(inputElementDesc);
+      desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+      desc.InputLayout.pInputElementDescs = inputElementDesc;
+      desc.InputLayout.NumElements        = countof(inputElementDesc);
 
       if (!d3d_compile(simple_snow, sizeof(simple_snow), NULL, "VSMain", "vs_5_0", &vs_code))
          goto error;
@@ -214,8 +214,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
          goto error;
 
       if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, NULL, &desc,
-                &d3d12->pipes[VIDEO_SHADER_MENU_3]))
+                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_3]))
          goto error;
 
       Release(vs_code);
@@ -229,8 +228,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
          goto error;
 
       if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, NULL, &desc,
-                &d3d12->pipes[VIDEO_SHADER_MENU_4]))
+                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_4]))
          goto error;
 
       Release(vs_code);
@@ -244,8 +242,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
          goto error;
 
       if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, NULL, &desc,
-                &d3d12->pipes[VIDEO_SHADER_MENU_5]))
+                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_5]))
          goto error;
 
       Release(vs_code);
@@ -259,8 +256,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
          goto error;
 
       if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, NULL, &desc,
-                &d3d12->pipes[VIDEO_SHADER_MENU_6]))
+                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_6]))
          goto error;
 
       Release(vs_code);
@@ -272,13 +268,14 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
    {
       static const char ribbon[] =
 #include "d3d_shaders/ribbon_sm4.hlsl.h"
-         ;
+            ;
       static const char ribbon_simple[] =
 #include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
-         ;
+            ;
 
       D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
-         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
       };
 
       desc.BlendState.RenderTarget[0].SrcBlend  = D3D12_BLEND_ONE;
@@ -293,8 +290,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
          goto error;
 
       if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, NULL, &desc,
-                &d3d12->pipes[VIDEO_SHADER_MENU]))
+                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU]))
          goto error;
 
       Release(vs_code);
@@ -308,8 +304,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
          goto error;
 
       if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, NULL, &desc,
-                &d3d12->pipes[VIDEO_SHADER_MENU_2]))
+                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_2]))
          goto error;
 
       Release(vs_code);
@@ -340,11 +335,17 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->menu.texture.handle);
    Release(d3d12->menu.texture.upload_buffer);
 
-   Release(d3d12->ubo);
+   free(d3d12->desc.sampler_heap.map);
+   free(d3d12->desc.srv_heap.map);
+   free(d3d12->desc.rtv_heap.map);
    Release(d3d12->desc.sampler_heap.handle);
    Release(d3d12->desc.srv_heap.handle);
    Release(d3d12->desc.rtv_heap.handle);
+
+   Release(d3d12->desc.sl_rootSignature);
    Release(d3d12->desc.rootSignature);
+
+   Release(d3d12->ubo);
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
       Release(d3d12->pipes[i]);
@@ -418,8 +419,7 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d12->keep_aspect = video->force_aspect;
    d3d12->chain.vsync = video->vsync;
    d3d12->format      = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
-   d3d12->frame.texture.desc.Format =
-         d3d12_get_closest_match_texture2D(d3d12->device, d3d12->format);
+   d3d12->frame.texture.desc.Format = d3d12->format;
 
    d3d12->ubo_view.SizeInBytes = sizeof(math_matrix_4x4);
    d3d12->ubo_view.BufferLocation =
@@ -514,9 +514,8 @@ static bool d3d12_gfx_frame(
       {
          d3d12->frame.texture.desc.Width  = width;
          d3d12->frame.texture.desc.Height = height;
-         d3d12_init_texture(
-               d3d12->device, &d3d12->desc.srv_heap, SRV_HEAP_SLOT_FRAME_TEXTURE,
-               &d3d12->frame.texture);
+         d3d12->frame.texture.srv_heap    = &d3d12->desc.srv_heap;
+         d3d12_init_texture(d3d12->device, &d3d12->frame.texture);
       }
       d3d12_update_texture(width, height, pitch, d3d12->format, frame, &d3d12->frame.texture);
 
@@ -660,9 +659,9 @@ static void d3d12_set_menu_texture_frame(
    {
       d3d12->menu.texture.desc.Width  = width;
       d3d12->menu.texture.desc.Height = height;
-      d3d12->menu.texture.desc.Format = d3d12_get_closest_match_texture2D(d3d12->device, format);
-      d3d12_init_texture(
-            d3d12->device, &d3d12->desc.srv_heap, SRV_HEAP_SLOT_MENU_TEXTURE, &d3d12->menu.texture);
+      d3d12->menu.texture.desc.Format = format;
+      d3d12->menu.texture.srv_heap    = &d3d12->desc.srv_heap;
+      d3d12_init_texture(d3d12->device, &d3d12->menu.texture);
    }
 
    d3d12_update_texture(width, height, pitch, format, frame, &d3d12->menu.texture);
