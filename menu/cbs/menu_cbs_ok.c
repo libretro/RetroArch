@@ -3770,6 +3770,76 @@ static struct cbs_push_lbl_callback cbs_ok_lbl_list[] = {
    {
       MENU_ENUM_LABEL_VIDEO_SHADER_PRESET,
       action_ok_shader_preset
+   },
+   {
+      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+      action_ok_shader_preset_save_as
+   },
+   {
+      MENU_ENUM_LABEL_DISK_IMAGE_APPEND,
+      action_ok_disk_image_append_list
+   },
+   {
+      MENU_ENUM_LABEL_SCREEN_RESOLUTION,
+      action_ok_video_resolution
+   },
+   {
+      MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+      action_ok_file_load_detect_core
+   },
+   {
+      MENU_ENUM_LABEL_ACCOUNTS_LIST,
+      action_ok_push_accounts_list
+   },
+   {
+      MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
+      action_ok_push_downloads_dir
+   },
+   {
+      MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
+      action_ok_push_accounts_cheevos_list
+   },
+   {
+      MENU_ENUM_LABEL_LOAD_ARCHIVE,
+      action_ok_load_archive
+   },
+   {
+      MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,
+      action_ok_shader_apply_changes
+   },
+   {
+      MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,
+      action_ok_cheat_apply_changes
+   },
+   {
+      MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
+      action_ok_cheat_file_save_as
+   },
+   {
+      MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
+      action_ok_cheat_file
+   },
+   {
+      MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
+      action_ok_audio_dsp_plugin
+   },
+#ifdef HAVE_NETWORKING
+   {
+      MENU_ENUM_LABEL_UPDATE_LAKKA,
+      action_ok_lakka_list
+   },
+#endif
+   {
+      MENU_ENUM_LABEL_OPEN_ARCHIVE,
+      action_ok_open_archive
+   },
+   {
+      MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE,
+      action_ok_open_archive_detect_core
+   },
+   {
+      MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE,
+      action_ok_load_archive_detect_core
    }
 };
 
@@ -3820,94 +3890,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
-      return 0;
-   }
-#ifdef HAVE_NETWORKING
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_LAKKA)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_lakka_list);
-      return 0;
-   }
-#endif
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OPEN_ARCHIVE)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_open_archive);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_open_archive_detect_core);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_load_archive_detect_core);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_ARCHIVE)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_load_archive);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SHADER_APPLY_CHANGES)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_shader_apply_changes);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_cheat_file);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_audio_dsp_plugin);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_LIST)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_push_downloads_dir);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_push_accounts_cheevos_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCREEN_RESOLUTION)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_video_resolution);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_file_load_detect_core);
-      return 0;
-   }
-   else if (cbs->enum_idx != MSG_UNKNOWN)
+   if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
       {
