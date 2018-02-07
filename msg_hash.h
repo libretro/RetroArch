@@ -1737,27 +1737,6 @@ enum msg_hash_enums
    MSG_LAST
 };
 
-#define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
-#define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
-#define MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL                                   0xc35416c0U
-#define MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS                                  0x358a7494U
-#define MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE                         0xdc9c0064U
-#define MENU_LABEL_DEFERRED_ARCHIVE_ACTION                                     0x7faf0284U
-#define MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE                           0xd9452498U
-#define MENU_LABEL_DEFERRED_ARCHIVE_OPEN                                       0xfa0938b8U
-
-#define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
-
-#define MENU_LABEL_DATABASE_MANAGER_LIST                                       0x7f853d8fU
-#define MENU_LABEL_REMAP_FILE_LOAD                                             0x9c2799b8U
-#define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
-#define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
-#define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x32d1df83U
-#define MENU_LABEL_COLLECTION                                                  0x5fea5991U
-
-#define MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST                            0xb4f82700U
-#define MENU_LABEL_FAVORITES                                                   0x67325138U
-
 const char *msg_hash_to_str(enum msg_hash_enums msg);
 
 const char *msg_hash_to_str_fr(enum msg_hash_enums msg);
