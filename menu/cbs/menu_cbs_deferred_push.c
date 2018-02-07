@@ -874,6 +874,14 @@ static struct cbs_deferred_lbl_callback cbs_deferred_lbl_list[] = {
    {
       MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING,
       deferred_push_cursor_manager_list_deferred_query_rdb_entry_elspa_rating
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+      deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_rating
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+      deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_issue
    }
 };
 
@@ -1351,12 +1359,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_issue);
             break;
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_famitsu_magazine_rating);

@@ -769,6 +769,14 @@ static struct cbs_title_lbl_callback cbs_title_lbl_list[] = {
    {
       MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR,
       action_get_title_list_rdb_entry_releasedate_by_year
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+      action_get_title_list_rdb_entry_edge_magazine_rating
+   },
+   {
+      MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+      action_get_title_list_rdb_entry_edge_magazine_issue
    }
 };
 
@@ -1114,12 +1122,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_franchise);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_edge_magazine_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_edge_magazine_issue);
             break;
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_max_users);
