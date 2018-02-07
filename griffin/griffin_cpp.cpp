@@ -82,7 +82,7 @@ FONTS
 #include "../deps/glslang/glslang/glslang/OSDependent/Windows/ossource.cpp"
 #endif
 
-#if defined(__linux__) && !defined(ANDROID)
+#if defined(__linux__)
 #include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp"
 #endif
 #endif
