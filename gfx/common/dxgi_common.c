@@ -47,7 +47,7 @@ HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void** ppFactory)
       fp = (HRESULT(WINAPI*)(REFIID, void**))dylib_proc(dxgi_dll, "CreateDXGIFactory1");
 
    if (!fp)
-      return TYPE_E_CANTLOADLIBRARY;
+      return TYPE_E_DLLFUNCTIONNOTFOUND;
 
    return fp(riid, ppFactory);
 }

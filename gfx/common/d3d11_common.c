@@ -51,7 +51,7 @@ HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
             d3d11_dll, "D3D11CreateDeviceAndSwapChain");
 
    if (!fp)
-      return TYPE_E_CANTLOADLIBRARY;
+      return TYPE_E_DLLFUNCTIONNOTFOUND;
 
    return fp(
          pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion,

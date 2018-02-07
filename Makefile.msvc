@@ -55,6 +55,7 @@ HAVE_LANGEXTRA           := 1
 HAVE_CHEEVOS             := 1
 HAVE_KEYMAPPER           := 1
 HAVE_SHADERPIPELINE      := 1
+HAVE_IMAGEVIEWER         := 1
 
 include Makefile.common
 INCLUDE_DIRS := $(patsubst  -isystem%,-I%,$(INCLUDE_DIRS))

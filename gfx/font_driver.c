@@ -309,6 +309,37 @@ static bool d3d11_font_init_first(
 }
 #endif
 
+#ifdef HAVE_D3D12
+static const font_renderer_t *d3d12_font_backends[] = {
+   &d3d12_font,
+   NULL,
+};
+
+static bool d3d12_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; d3d12_font_backends[i]; i++)
+   {
+      void *data = d3d12_font_backends[i]->init(video_data,
+            font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = d3d12_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 #ifdef HAVE_VITA2D
 static const font_renderer_t *vita2d_font_backends[] = {
    &vita2d_vita_font
@@ -428,6 +459,11 @@ static bool font_init_first(
 #ifdef HAVE_D3D11
       case FONT_DRIVER_RENDER_D3D11_API:
          return d3d11_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
+#ifdef HAVE_D3D12
+      case FONT_DRIVER_RENDER_D3D12_API:
+         return d3d12_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_VITA2D
