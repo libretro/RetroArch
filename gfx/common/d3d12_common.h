@@ -1376,12 +1376,13 @@ typedef struct
 
    struct
    {
-      D3D12PipelineState pipe;
-      D3D12PipelineState pipe_font;
-      D3D12Resource      vbo;
-      int                offset;
-      int                capacity;
-      bool               enabled;
+      D3D12PipelineState       pipe;
+      D3D12PipelineState       pipe_font;
+      D3D12Resource            vbo;
+      D3D12_VERTEX_BUFFER_VIEW vbo_view;
+      int                      offset;
+      int                      capacity;
+      bool                     enabled;
    } sprites;
 
    D3D12PipelineState              pipes[GFX_MAX_SHADERS];
@@ -1432,6 +1433,7 @@ D3D12_GPU_VIRTUAL_ADDRESS
 d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer);
 
 void d3d12_init_texture(D3D12Device device, d3d12_texture_t* tex);
+void d3d12_release_texture(d3d12_texture_t* texture);
 
 void d3d12_update_texture(
       int              width,

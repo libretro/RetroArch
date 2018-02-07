@@ -517,6 +517,10 @@ FONTS
 #include "../gfx/drivers_font/d3d11_font.c"
 #endif
 
+#if defined(HAVE_D3D12)
+#include "../gfx/drivers_font/d3d12_font.c"
+#endif
+
 /*============================================================
 INPUT
 ============================================================ */

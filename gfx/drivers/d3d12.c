@@ -16,14 +16,17 @@
 #define CINTERFACE
 
 #include <assert.h>
+#include <stdbool.h>
 #include <string/stdstring.h>
 
 #include "../video_driver.h"
+#include "../font_driver.h"
 #include "../common/win32_common.h"
 #include "../common/dxgi_common.h"
 #include "../common/d3d12_common.h"
 #include "../common/d3dcompiler_common.h"
 
+//#include "../../menu/menu_driver.h"
 #include "../../driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
@@ -327,6 +330,10 @@ static void d3d12_gfx_free(void* data)
    unsigned       i;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
+   font_driver_free_osd();
+
+   Release(d3d12->sprites.vbo);
+
    Release(d3d12->frame.ubo);
    Release(d3d12->frame.vbo);
    Release(d3d12->frame.texture.handle);
@@ -416,6 +423,12 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->frame.vbo_view, &d3d12->frame.vbo);
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->menu.vbo_view, &d3d12->menu.vbo);
 
+   d3d12->sprites.capacity                = 4096;
+   d3d12->sprites.vbo_view.SizeInBytes    = sizeof(d3d12_sprite_t) * d3d12->sprites.capacity;
+   d3d12->sprites.vbo_view.StrideInBytes  = sizeof(d3d12_sprite_t);
+   d3d12->sprites.vbo_view.BufferLocation = d3d12_create_buffer(
+         d3d12->device, d3d12->sprites.vbo_view.SizeInBytes, &d3d12->sprites.vbo);
+
    d3d12->keep_aspect = video->force_aspect;
    d3d12->chain.vsync = video->vsync;
    d3d12->format      = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
@@ -444,6 +457,8 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d12->vp.full_height  = video->height;
    d3d12->resize_viewport = true;
 
+   font_driver_init_osd(d3d12, false, video->is_threaded, FONT_DRIVER_RENDER_D3D12_API);
+
    return d3d12;
 
 error:
@@ -471,7 +486,7 @@ static bool d3d12_gfx_frame(
       for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
          Release(d3d12->chain.renderTargets[i]);
 
-      DXGIResizeBuffers(d3d12->chain.handle, 0, 0, 0, (DXGI_FORMAT)0, 0);
+      DXGIResizeBuffers(d3d12->chain.handle, 0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
 
       for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
       {
@@ -555,11 +570,30 @@ static bool d3d12_gfx_frame(
       D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
    }
 
+   D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
+   D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
+
+   D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
+   D3D12IASetPrimitiveTopology(d3d12->queue.cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+   D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
+
+   d3d12->sprites.enabled = true;
+#if 0
+   if (d3d12->menu.enabled)
+      menu_driver_frame(video_info);
+#endif
+   if (msg && *msg)
+   {
+      font_driver_render_msg(video_info, NULL, msg, NULL);
+      dxgi_update_title(video_info);
+   }
+   d3d12->sprites.enabled = false;
+
+
    d3d12_resource_transition(
          d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
          D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
    D3D12CloseGraphicsCommandList(d3d12->queue.cmd);
-
    D3D12ExecuteGraphicsCommandLists(d3d12->queue.handle, 1, &d3d12->queue.cmd);
 
 #if 1
@@ -711,6 +745,20 @@ static void d3d12_gfx_apply_state_changes(void* data)
       d3d12->resize_viewport = true;
 }
 
+static void d3d12_gfx_set_osd_msg(
+      void* data, video_frame_info_t* video_info, const char* msg, const void* params, void* font)
+{
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   if (d3d12)
+   {
+      if (d3d12->sprites.enabled)
+         font_driver_render_msg(video_info, font, msg, params);
+      else
+         printf("OSD msg: %s\n", msg);
+   }
+}
+
 static const video_poke_interface_t d3d12_poke_interface = {
    NULL, /* set_coords */
    NULL, /* set_mvp */
@@ -727,7 +775,7 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_gfx_apply_state_changes,
    d3d12_set_menu_texture_frame,
    d3d12_set_menu_texture_enable,
-   NULL, /* set_osd_msg */
+   d3d12_gfx_set_osd_msg,
    NULL, /* show_mouse */
    NULL, /* grab_mouse_toggle */
    NULL, /* get_current_shader */
