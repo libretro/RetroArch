@@ -4645,7 +4645,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *menu_label,
       const char *label, unsigned type, size_t idx,
-      uint32_t label_hash, uint32_t menu_label_hash)
+      uint32_t label_hash)
 {
    if (!cbs)
       return -1;

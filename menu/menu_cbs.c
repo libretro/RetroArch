@@ -210,7 +210,6 @@ void menu_cbs_init(void *data,
    const char *repr_label        = NULL;
    const char *menu_label        = NULL;
    uint32_t label_hash           = 0;
-   uint32_t menu_label_hash      = 0;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
    file_list_t *list             = (file_list_t*)data;
    if (!list)
@@ -222,7 +221,6 @@ void menu_cbs_init(void *data,
       return;
 
    label_hash      = msg_hash_calculate(label);
-   menu_label_hash = msg_hash_calculate(menu_label);
 
 #ifdef DEBUG_LOG
    RARCH_LOG("\n");
@@ -238,7 +236,7 @@ void menu_cbs_init(void *data,
    /* It will try to find a corresponding callback function inside
     * menu_cbs_ok.c, then map this callback to the entry. */
    menu_cbs_init_bind_ok(cbs, path, menu_label,
-         label, type, idx, label_hash, menu_label_hash);
+         label, type, idx, label_hash);
 
    menu_cbs_init_log(repr_label, "OK", cbs->action_ok_ident);
 
