@@ -4337,7 +4337,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 
 static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
       const char *menu_label,
-      uint32_t label_hash, uint32_t menu_label_hash, unsigned type)
+      uint32_t label_hash, unsigned type)
 {
    if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
          type == MENU_SETTINGS_CUSTOM_BIND)
@@ -4434,18 +4434,15 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                BIND_ACTION_OK(cbs, action_ok_scan_file);
 #endif
             }
+            else if (string_is_equal(
+                     menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)))
+            {
+               BIND_ACTION_OK(cbs,
+                     action_ok_compressed_archive_push_detect_core);
+            }
             else
             {
-               switch (menu_label_hash)
-               {
-                  case MENU_LABEL_FAVORITES:
-                     BIND_ACTION_OK(cbs,
-                           action_ok_compressed_archive_push_detect_core);
-                     break;
-                  default:
-                     BIND_ACTION_OK(cbs, action_ok_compressed_archive_push);
-                     break;
-               }
+               BIND_ACTION_OK(cbs, action_ok_compressed_archive_push);
             }
             break;
          case FILE_TYPE_CORE:
@@ -4461,15 +4458,18 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      break;
                }
             }
-            else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
+            else if (string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
             {
                BIND_ACTION_OK(cbs, action_ok_load_core);
             }
-            else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST)))
+            else if (string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST)))
             {
                BIND_ACTION_OK(cbs, action_ok_load_core_deferred);
             }
-            else if (menu_label_hash == MENU_LABEL_DEFERRED_CORE_LIST_SET)
+            else if (string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET)))
             {
                BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
             }
@@ -4505,7 +4505,8 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             {
                BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
             }
-            else if (menu_label_hash == MENU_LABEL_DATABASE_MANAGER_LIST)
+            else if (string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST)))
             {
                BIND_ACTION_OK(cbs, action_ok_database_manager_list);
             }
@@ -4579,33 +4580,31 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      break;
                }
             }
+            else if (
+                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST)) ||
+                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
+                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE))
+                  )
+            {
+#ifdef HAVE_COMPRESSION
+               if (type == FILE_TYPE_IN_CARCHIVE)
+               {
+                  BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
+               }
+               else
+#endif
+                  if (filebrowser_get_type() == FILEBROWSER_APPEND_IMAGE)
+                  {
+                     BIND_ACTION_OK(cbs, action_ok_disk_image_append);
+                  }
+                  else
+                  {
+                     BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
+                  }
+            }
             else
             {
-               switch (menu_label_hash)
-               {
-                  case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:	
-                  case MENU_LABEL_FAVORITES:	
-                  case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
-#ifdef HAVE_COMPRESSION
-                     if (type == FILE_TYPE_IN_CARCHIVE)
-                     {
-                        BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
-                     }
-                     else
-#endif
-                        if (filebrowser_get_type() == FILEBROWSER_APPEND_IMAGE)
-                        {
-                           BIND_ACTION_OK(cbs, action_ok_disk_image_append);
-                        }
-                        else
-                        {
-                           BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
-                        }
-                     break;
-                  default:
-                     BIND_ACTION_OK(cbs, action_ok_file_load);
-                     break;
-               }
+               BIND_ACTION_OK(cbs, action_ok_file_load);
             }
             break;
          case FILE_TYPE_MOVIE:
@@ -4656,7 +4655,7 @@ int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    if (menu_cbs_init_bind_ok_compare_label(cbs, label, label_hash) == 0)
       return 0;
 
-   if (menu_cbs_init_bind_ok_compare_type(cbs, menu_label, label_hash, menu_label_hash, type) == 0)
+   if (menu_cbs_init_bind_ok_compare_type(cbs, menu_label, label_hash, type) == 0)
       return 0;
 
    return -1;
