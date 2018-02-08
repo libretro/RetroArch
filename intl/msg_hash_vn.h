@@ -48,7 +48,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
-      "You have joined as player %d"
+      "You have joined as player %u"
       )
 MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,

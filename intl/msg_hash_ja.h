@@ -53,7 +53,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
-      "「プレイヤー%d」で接続しました"
+      "「プレイヤー%u」で接続しました"
       )
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,

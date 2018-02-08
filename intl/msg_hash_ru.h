@@ -53,7 +53,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
-      "Вы присоединились под именем %d"
+      "Вы присоединились под именем %u"
       )
 MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
