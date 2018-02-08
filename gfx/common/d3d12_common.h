@@ -20,6 +20,8 @@
 #include "dxgi_common.h"
 #include <d3d12.h>
 
+typedef const ID3D12PipelineState* D3D12PipelineStateRef;
+
 /* auto-generated */
 
 typedef ID3D12Object*                             D3D12Object;
@@ -318,9 +320,9 @@ D3D12OMSetStencilRef(D3D12GraphicsCommandList graphics_command_list, UINT stenci
    graphics_command_list->lpVtbl->OMSetStencilRef(graphics_command_list, stencil_ref);
 }
 static INLINE void D3D12SetPipelineState(
-      D3D12GraphicsCommandList graphics_command_list, D3D12PipelineState pipeline_state)
+      D3D12GraphicsCommandList graphics_command_list, D3D12PipelineStateRef pipeline_state)
 {
-   graphics_command_list->lpVtbl->SetPipelineState(graphics_command_list, pipeline_state);
+   graphics_command_list->lpVtbl->SetPipelineState(graphics_command_list, (D3D12PipelineState)pipeline_state);
 }
 static INLINE void D3D12ResourceBarrier(
       D3D12GraphicsCommandList graphics_command_list,
@@ -1396,7 +1398,9 @@ typedef struct
 
    struct
    {
-      D3D12PipelineState       pipe;
+      D3D12PipelineStateRef    pipe;
+      D3D12PipelineState       pipe_blend;
+      D3D12PipelineState       pipe_noblend;
       D3D12PipelineState       pipe_font;
       D3D12Resource            vbo;
       D3D12_VERTEX_BUFFER_VIEW vbo_view;

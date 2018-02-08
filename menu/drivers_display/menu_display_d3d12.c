@@ -38,7 +38,7 @@ static void menu_display_d3d12_blend_begin(void)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)video_driver_get_ptr(false);
 
-   /*todo: d3d12->sprites.pipe_blend */
+   d3d12->sprites.pipe = d3d12->sprites.pipe_blend;
    D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
 }
 
@@ -46,7 +46,7 @@ static void menu_display_d3d12_blend_end(void)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)video_driver_get_ptr(false);
 
-   /*todo: d3d12->sprites.pipe_noblend */
+   d3d12->sprites.pipe = d3d12->sprites.pipe_noblend;
    D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
 }
 
@@ -54,6 +54,7 @@ static void menu_display_d3d12_viewport(void* data) {}
 
 static void menu_display_d3d12_draw(void* data)
 {
+   int                      vertex_count;
    d3d12_video_t*           d3d12 = (d3d12_video_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t* draw  = (menu_display_ctx_draw_t*)data;
 
@@ -76,51 +77,84 @@ static void menu_display_d3d12_draw(void* data)
          return;
    }
 
-   if (!d3d12->sprites.enabled)
+   if (draw->coords->vertex && draw->coords->tex_coord && draw->coords->color)
+      vertex_count = draw->coords->vertices;
+   else
+      vertex_count = 1;
+
+   if (!d3d12->sprites.enabled || vertex_count > d3d12->sprites.capacity)
       return;
 
-   if (d3d12->sprites.offset + 1 > d3d12->sprites.capacity)
+   if (d3d12->sprites.offset + vertex_count > d3d12->sprites.capacity)
       d3d12->sprites.offset = 0;
 
    {
-      d3d12_sprite_t* v;
+      d3d12_sprite_t* sprite;
       D3D12_RANGE     range = { 0, 0 };
-      D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&v);
-      v += d3d12->sprites.offset;
+      D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&sprite);
+      sprite += d3d12->sprites.offset;
 
-      v->pos.x = draw->x / (float)d3d12->chain.viewport.Width;
-      v->pos.y = (d3d12->chain.viewport.Height - draw->y - draw->height) /
-                 (float)d3d12->chain.viewport.Height;
-      v->pos.w = draw->width / (float)d3d12->chain.viewport.Width;
-      v->pos.h = draw->height / (float)d3d12->chain.viewport.Height;
+      if (vertex_count == 1)
+      {
 
-      v->coords.u = 0.0f;
-      v->coords.v = 0.0f;
-      v->coords.w = 1.0f;
-      v->coords.h = 1.0f;
+         sprite->pos.x = draw->x / (float)d3d12->chain.viewport.Width;
+         sprite->pos.y = (d3d12->chain.viewport.Height - draw->y - draw->height) /
+                         (float)d3d12->chain.viewport.Height;
+         sprite->pos.w = draw->width / (float)d3d12->chain.viewport.Width;
+         sprite->pos.h = draw->height / (float)d3d12->chain.viewport.Height;
 
-      if (draw->scale_factor)
-         v->params.scaling = draw->scale_factor;
+         sprite->coords.u = 0.0f;
+         sprite->coords.v = 0.0f;
+         sprite->coords.w = 1.0f;
+         sprite->coords.h = 1.0f;
+
+         if (draw->scale_factor)
+            sprite->params.scaling = draw->scale_factor;
+         else
+            sprite->params.scaling = 1.0f;
+
+         sprite->params.rotation = draw->rotation;
+
+         sprite->colors[3] = DXGI_COLOR_RGBA(
+               0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
+               0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
+         sprite->colors[2] = DXGI_COLOR_RGBA(
+               0xFF * draw->coords->color[4], 0xFF * draw->coords->color[5],
+               0xFF * draw->coords->color[6], 0xFF * draw->coords->color[7]);
+         sprite->colors[1] = DXGI_COLOR_RGBA(
+               0xFF * draw->coords->color[8], 0xFF * draw->coords->color[9],
+               0xFF * draw->coords->color[10], 0xFF * draw->coords->color[11]);
+         sprite->colors[0] = DXGI_COLOR_RGBA(
+               0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
+               0xFF * draw->coords->color[14], 0xFF * draw->coords->color[15]);
+      }
       else
-         v->params.scaling = 1.0f;
+      {
+         int          i;
+         const float* vertex    = draw->coords->vertex;
+         const float* tex_coord = draw->coords->tex_coord;
+         const float* color     = draw->coords->color;
 
-      v->params.rotation = draw->rotation;
+         for (i = 0; i < vertex_count; i++)
+         {
+            d3d12_vertex_t* v = (d3d12_vertex_t*)sprite;
+            v->position[0]    = *vertex++;
+            v->position[1]    = *vertex++;
+            v->texcoord[0]    = *tex_coord++;
+            v->texcoord[1]    = *tex_coord++;
+            v->color[0]       = *color++;
+            v->color[1]       = *color++;
+            v->color[2]       = *color++;
+            v->color[3]       = *color++;
 
-      v->colors[3] = DXGI_COLOR_RGBA(
-            0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
-            0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
-      v->colors[2] = DXGI_COLOR_RGBA(
-            0xFF * draw->coords->color[4], 0xFF * draw->coords->color[5],
-            0xFF * draw->coords->color[6], 0xFF * draw->coords->color[7]);
-      v->colors[1] = DXGI_COLOR_RGBA(
-            0xFF * draw->coords->color[8], 0xFF * draw->coords->color[9],
-            0xFF * draw->coords->color[10], 0xFF * draw->coords->color[12]);
-      v->colors[0] = DXGI_COLOR_RGBA(
-            0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
-            0xFF * draw->coords->color[14], 0xFF * draw->coords->color[15]);
+            sprite++;
+         }
+         D3D12SetPipelineState(d3d12->queue.cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+         D3D12IASetPrimitiveTopology(d3d12->queue.cmd, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+      }
 
-      range.Begin = d3d12->sprites.offset * sizeof(*v);
-      range.End   = (d3d12->sprites.offset + 1) * sizeof(*v);
+      range.Begin = d3d12->sprites.offset * sizeof(*sprite);
+      range.End   = (d3d12->sprites.offset + vertex_count) * sizeof(*sprite);
       D3D12Unmap(d3d12->sprites.vbo, 0, &range);
    }
 
@@ -129,10 +163,21 @@ static void menu_display_d3d12_draw(void* data)
       if (texture->dirty)
          d3d12_upload_texture(d3d12->queue.cmd, texture);
       d3d12_set_texture_and_sampler(d3d12->queue.cmd, texture);
+
+      D3D12SetGraphicsRootDescriptorTable(
+            d3d12->queue.cmd, ROOT_ID_SAMPLER_T,
+            d3d12->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_BORDER]);
    }
 
-   D3D12DrawInstanced(d3d12->queue.cmd, 1, 1, d3d12->sprites.offset, 0);
-   d3d12->sprites.offset++;
+   D3D12DrawInstanced(d3d12->queue.cmd, vertex_count, 1, d3d12->sprites.offset, 0);
+   d3d12->sprites.offset += vertex_count;
+
+   if (vertex_count > 1)
+   {
+      D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
+      D3D12IASetPrimitiveTopology(d3d12->queue.cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+   }
+
    return;
 }
 
@@ -187,7 +232,7 @@ static void menu_display_d3d12_draw_pipeline(void* data)
    d3d12->ubo_values.time += 0.01f;
 
    {
-      D3D12_RANGE read_range = { 0, 0 };
+      D3D12_RANGE      read_range = { 0, 0 };
       d3d12_uniform_t* mapped_ubo;
       D3D12Map(d3d12->ubo, 0, &read_range, (void**)&mapped_ubo);
       *mapped_ubo = d3d12->ubo_values;
