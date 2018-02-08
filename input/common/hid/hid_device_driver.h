@@ -18,9 +18,11 @@
 #define HID_DEVICE_DRIVER__H
 
 #include "../../input_driver.h"
+#include "../../connect/joypad_connection.h"
 
 typedef struct hid_device {
   bool (*detect)(uint16_t vid, uint16_t pid);
+  const char *name;
 } hid_device_t;
 
 extern hid_device_t wiiu_gca_hid_device;

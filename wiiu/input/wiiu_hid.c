@@ -656,6 +656,7 @@ static wiiu_attach_event *new_attach_event(HIDDevice *device)
         device->vid, device->pid);
       return NULL;
    }
+   RARCH_LOG("[hid]: Found HID device driver: %s\n", driver->name);
    wiiu_attach_event *event = alloc_zeroed(4, sizeof(wiiu_attach_event));
    if(!event)
       return NULL;

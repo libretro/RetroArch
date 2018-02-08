@@ -17,9 +17,10 @@
 #include "hid_device_driver.h"
 
 static bool wiiu_gca_detect(uint16_t vendor_id, uint16_t product_id) {
-  return false;
+  return vendor_id == VID_NINTENDO && product_id == PID_NINTENDO_GCA;
 }
 
 hid_device_t wiiu_gca_hid_device = {
-  wiiu_gca_detect
+  wiiu_gca_detect,
+  "Wii U Gamecube Adapter"
 };

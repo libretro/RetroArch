@@ -18,9 +18,10 @@
 
 static bool ds3_detect(uint16_t vendor_id, uint16_t product_id)
 {
-  return false;
+  return vendor_id == VID_SONY && product_id == PID_SONY_DS3;
 }
 
 hid_device_t ds3_hid_device = {
-  ds3_detect
+  ds3_detect,
+  "Sony DualShock 3"
 };

@@ -18,9 +18,10 @@
 
 static bool ds4_detect(uint16_t vendor_id, uint16_t product_id)
 {
-  return false;
+  return vendor_id == VID_SONY && product_id == PID_SONY_DS4;
 }
 
 hid_device_t ds4_hid_device = {
-  ds4_detect
+  ds4_detect,
+  "Sony DualShock 4"
 };
