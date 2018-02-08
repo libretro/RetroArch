@@ -1261,13 +1261,13 @@ static uintptr_t d3d11_gfx_load_texture(
          texture->desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
          /* fallthrough */
       case TEXTURE_FILTER_LINEAR:
-         texture->sampler = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_DEFAULT];
+         texture->sampler = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
          break;
       case TEXTURE_FILTER_MIPMAP_NEAREST:
          texture->desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
          /* fallthrough */
       case TEXTURE_FILTER_NEAREST:
-         texture->sampler = d3d11->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
+         texture->sampler = d3d11->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE];
          break;
    }
 

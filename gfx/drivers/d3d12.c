@@ -162,13 +162,18 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       if (!d3d_compile(shader, sizeof(shader), NULL, "GSMain", "gs_5_0", &gs_code))
          goto error;
 
-      //      desc.BlendState.RenderTarget[0].BlendEnable = false;
-      desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
-      desc.InputLayout.pInputElementDescs = inputElementDesc;
-      desc.InputLayout.NumElements        = countof(inputElementDesc);
+      desc.BlendState.RenderTarget[0].BlendEnable = false;
+      desc.PrimitiveTopologyType                  = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+      desc.InputLayout.pInputElementDescs         = inputElementDesc;
+      desc.InputLayout.NumElements                = countof(inputElementDesc);
 
       if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe))
+                d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_noblend))
+         goto error;
+
+      desc.BlendState.RenderTarget[0].BlendEnable = true;
+      if (!d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_blend))
          goto error;
 
       Release(ps_code);
@@ -335,7 +340,8 @@ static void d3d12_gfx_free(void* data)
 
    font_driver_free_osd();
 
-   Release(d3d12->sprites.vbo);
+   Release(d3d12->sprites.vbo);   
+   Release(d3d12->menu_pipeline_vbo);
 
    Release(d3d12->frame.ubo);
    Release(d3d12->frame.vbo);
@@ -360,7 +366,8 @@ static void d3d12_gfx_free(void* data)
    for (i = 0; i < GFX_MAX_SHADERS; i++)
       Release(d3d12->pipes[i]);
 
-   Release(d3d12->sprites.pipe);
+   Release(d3d12->sprites.pipe_blend);
+   Release(d3d12->sprites.pipe_noblend);
    Release(d3d12->sprites.pipe_font);
 
    Release(d3d12->queue.fence);
@@ -602,6 +609,7 @@ static bool d3d12_gfx_frame(
    D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
    D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
 
+   d3d12->sprites.pipe = d3d12->sprites.pipe_noblend;
    D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
    D3D12IASetPrimitiveTopology(d3d12->queue.cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
    D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
@@ -808,12 +816,12 @@ static uintptr_t d3d12_gfx_load_texture(
       case TEXTURE_FILTER_MIPMAP_LINEAR:
          /* fallthrough */
       case TEXTURE_FILTER_LINEAR:
-         texture->sampler = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_DEFAULT];
+         texture->sampler = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
          break;
       case TEXTURE_FILTER_MIPMAP_NEAREST:
          /* fallthrough */
       case TEXTURE_FILTER_NEAREST:
-         texture->sampler = d3d12->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
+         texture->sampler = d3d12->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE];
          break;
    }
 

@@ -50,6 +50,7 @@ static void menu_display_d3d11_viewport(void* data) {}
 
 static void menu_display_d3d11_draw(void* data)
 {
+   int                      vertex_count;
    d3d11_video_t*           d3d11 = (d3d11_video_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t* draw  = (menu_display_ctx_draw_t*)data;
 
@@ -74,57 +75,98 @@ static void menu_display_d3d11_draw(void* data)
          return;
    }
 
-   if (!d3d11->sprites.enabled)
+   if (draw->coords->vertex && draw->coords->tex_coord && draw->coords->color)
+      vertex_count = draw->coords->vertices;
+   else
+      vertex_count = 1;
+
+   if (!d3d11->sprites.enabled || vertex_count > d3d11->sprites.capacity)
       return;
 
-   if (d3d11->sprites.offset + 1 > d3d11->sprites.capacity)
+   if (d3d11->sprites.offset + vertex_count > d3d11->sprites.capacity)
       d3d11->sprites.offset = 0;
 
    {
       D3D11_MAPPED_SUBRESOURCE mapped_vbo;
-      d3d11_sprite_t*          v = NULL;
+      d3d11_sprite_t*          sprite = NULL;
 
       D3D11MapBuffer(
             d3d11->context, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
 
-      v = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
+      sprite = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
-      v->pos.x = draw->x / (float)d3d11->viewport.Width;
-      v->pos.y = (d3d11->viewport.Height - draw->y - draw->height) / (float)d3d11->viewport.Height;
-      v->pos.w = draw->width / (float)d3d11->viewport.Width;
-      v->pos.h = draw->height / (float)d3d11->viewport.Height;
+      if (vertex_count == 1)
+      {
+         sprite->pos.x = draw->x / (float)d3d11->viewport.Width;
+         sprite->pos.y =
+               (d3d11->viewport.Height - draw->y - draw->height) / (float)d3d11->viewport.Height;
+         sprite->pos.w = draw->width / (float)d3d11->viewport.Width;
+         sprite->pos.h = draw->height / (float)d3d11->viewport.Height;
 
-      v->coords.u = 0.0f;
-      v->coords.v = 0.0f;
-      v->coords.w = 1.0f;
-      v->coords.h = 1.0f;
+         sprite->coords.u = 0.0f;
+         sprite->coords.v = 0.0f;
+         sprite->coords.w = 1.0f;
+         sprite->coords.h = 1.0f;
 
-      if (draw->scale_factor)
-         v->params.scaling = draw->scale_factor;
+         if (draw->scale_factor)
+            sprite->params.scaling = draw->scale_factor;
+         else
+            sprite->params.scaling = 1.0f;
+
+         sprite->params.rotation = draw->rotation;
+
+         sprite->colors[3] = DXGI_COLOR_RGBA(
+               0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
+               0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
+         sprite->colors[2] = DXGI_COLOR_RGBA(
+               0xFF * draw->coords->color[4], 0xFF * draw->coords->color[5],
+               0xFF * draw->coords->color[6], 0xFF * draw->coords->color[7]);
+         sprite->colors[1] = DXGI_COLOR_RGBA(
+               0xFF * draw->coords->color[8], 0xFF * draw->coords->color[9],
+               0xFF * draw->coords->color[10], 0xFF * draw->coords->color[11]);
+         sprite->colors[0] = DXGI_COLOR_RGBA(
+               0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
+               0xFF * draw->coords->color[14], 0xFF * draw->coords->color[15]);
+      }
       else
-         v->params.scaling = 1.0f;
+      {
+         int          i;
+         const float* vertex    = draw->coords->vertex;
+         const float* tex_coord = draw->coords->tex_coord;
+         const float* color     = draw->coords->color;
 
-      v->params.rotation = draw->rotation;
+         for (i = 0; i < vertex_count; i++)
+         {
+            d3d11_vertex_t* v = (d3d11_vertex_t*)sprite;
+            v->position[0]    = *vertex++;
+            v->position[1]    = *vertex++;
+            v->texcoord[0]    = *tex_coord++;
+            v->texcoord[1]    = *tex_coord++;
+            v->color[0]       = *color++;
+            v->color[1]       = *color++;
+            v->color[2]       = *color++;
+            v->color[3]       = *color++;
 
-      v->colors[3] = DXGI_COLOR_RGBA(
-            0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
-            0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
-      v->colors[2] = DXGI_COLOR_RGBA(
-            0xFF * draw->coords->color[4], 0xFF * draw->coords->color[5],
-            0xFF * draw->coords->color[6], 0xFF * draw->coords->color[7]);
-      v->colors[1] = DXGI_COLOR_RGBA(
-            0xFF * draw->coords->color[8], 0xFF * draw->coords->color[9],
-            0xFF * draw->coords->color[10], 0xFF * draw->coords->color[11]);
-      v->colors[0] = DXGI_COLOR_RGBA(
-            0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
-            0xFF * draw->coords->color[14], 0xFF * draw->coords->color[15]);
+            sprite++;
+         }
+
+         d3d11_set_shader(d3d11->context, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
+         D3D11SetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+      }
 
       D3D11UnmapBuffer(d3d11->context, d3d11->sprites.vbo, 0);
    }
 
    d3d11_set_texture_and_sampler(d3d11->context, 0, (d3d11_texture_t*)draw->texture);
-   D3D11Draw(d3d11->context, 1, d3d11->sprites.offset);
-   d3d11->sprites.offset++;
+   D3D11Draw(d3d11->context, vertex_count, d3d11->sprites.offset);
+   d3d11->sprites.offset += vertex_count;
+
+   if (vertex_count > 1)
+   {
+      d3d11_set_shader(d3d11->context, &d3d11->sprites.shader);
+      D3D11SetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+   }
+
    return;
 }
 
