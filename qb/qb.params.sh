@@ -34,6 +34,7 @@ General options:
 EOF
 	print_help_option "--prefix=PATH"            "Install path prefix"
 	print_help_option "--global-config-dir=PATH" "System wide config file prefix"
+	print_help_option "--datarootdir=PATH"       "Read-only data install directory"
 	print_help_option "--build=BUILD"            "The build system (no-op)"
 	print_help_option "--host=HOST"              "Cross-compile with HOST-gcc instead of gcc"
 	print_help_option "--help"                   "Show this help"
@@ -85,6 +86,7 @@ parse_input() # Parse stuff :V
 			--prefix=*) PREFIX=${1##--prefix=};;
 			--global-config-dir=*) GLOBAL_CONFIG_DIR=${1##--global-config-dir=};;
 			--build=*) BUILD="${1#*=}";;
+			--datarootdir=*) SHARE_DIR="${1#*=}";;
 			--host=*) CROSS_COMPILE=${1##--host=}-;;
 			--enable-*)
 				opt_exists "${1##--enable-}" "$1"

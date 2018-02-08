@@ -201,29 +201,29 @@ install: $(TARGET)
 	rm -f $(OBJDIR)/git_version.o
 	mkdir -p $(DESTDIR)$(BIN_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(GLOBAL_CONFIG_DIR) 2>/dev/null || /bin/true
-	mkdir -p $(DESTDIR)$(PREFIX)/share/applications 2>/dev/null || /bin/true
+	mkdir -p $(DESTDIR)$(DATA_DIR)/applications 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(MAN_DIR)/man6 2>/dev/null || /bin/true
-	mkdir -p $(DESTDIR)$(PREFIX)/share/pixmaps 2>/dev/null || /bin/true
+	mkdir -p $(DESTDIR)$(DATA_DIR)/pixmaps 2>/dev/null || /bin/true
 	cp $(TARGET) $(DESTDIR)$(BIN_DIR)
 	cp tools/cg2glsl.py $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	cp retroarch.cfg $(DESTDIR)$(GLOBAL_CONFIG_DIR)
-	cp retroarch.desktop $(DESTDIR)$(PREFIX)/share/applications
+	cp retroarch.desktop $(DESTDIR)$(DATA_DIR)/applications
 	cp docs/retroarch.6 $(DESTDIR)$(MAN_DIR)/man6
 	cp docs/retroarch-cg2glsl.6 $(DESTDIR)$(MAN_DIR)/man6
-	cp media/retroarch.svg $(DESTDIR)$(PREFIX)/share/pixmaps
+	cp media/retroarch.svg $(DESTDIR)$(DATA_DIR)/pixmaps
 	chmod 755 $(DESTDIR)$(BIN_DIR)/$(TARGET)
 	chmod 755 $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	chmod 644 $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
-	chmod 644 $(DESTDIR)$(PREFIX)/share/applications/retroarch.desktop
+	chmod 644 $(DESTDIR)$(DATA_DIR)/applications/retroarch.desktop
 	chmod 644 $(DESTDIR)$(MAN_DIR)/man6/retroarch.6
 	chmod 644 $(DESTDIR)$(MAN_DIR)/man6/retroarch-cg2glsl.6
-	chmod 644 $(DESTDIR)$(PREFIX)/share/pixmaps/retroarch.svg
+	chmod 644 $(DESTDIR)$(DATA_DIR)/pixmaps/retroarch.svg
 	@if test -d media/assets; then \
 		echo "Installing media assets..."; \
-		mkdir -p $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb; \
-		mkdir -p $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/glui; \
-		cp -r media/assets/xmb/  $(DESTDIR)$(ASSETS_DIR)/retroarch/assets; \
-		cp -r media/assets/glui/ $(DESTDIR)$(ASSETS_DIR)/retroarch/assets; \
+		mkdir -p $(DESTDIR)$(ASSETS_DIR)/assets/xmb; \
+		mkdir -p $(DESTDIR)$(ASSETS_DIR)/assets/glui; \
+		cp -r media/assets/xmb/ $(DESTDIR)$(ASSETS_DIR)/assets; \
+		cp -r media/assets/glui/ $(DESTDIR)$(ASSETS_DIR)/assets; \
 		echo "Asset copying done."; \
 	fi
 
@@ -231,11 +231,11 @@ uninstall:
 	rm -f $(DESTDIR)$(BIN_DIR)/retroarch
 	rm -f $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	rm -f $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
-	rm -f $(DESTDIR)$(PREFIX)/share/applications/retroarch.desktop
+	rm -f $(DESTDIR)$(DATA_DIR)/applications/retroarch.desktop
 	rm -f $(DESTDIR)$(MAN_DIR)/man6/retroarch.6
 	rm -f $(DESTDIR)$(MAN_DIR)/man6/retroarch-cg2glsl.6
-	rm -f $(DESTDIR)$(PREFIX)/share/pixmaps/retroarch.svg
-	rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch
+	rm -f $(DESTDIR)$(DATA_DIR)/pixmaps/retroarch.svg
+	rm -rf $(DESTDIR)$(ASSETS_DIR)
 
 clean:
 	rm -rf $(OBJDIR_BASE)
