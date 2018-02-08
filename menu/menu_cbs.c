@@ -24,13 +24,15 @@
 #define DEBUG_LOG
 #endif
 
+#ifdef DEBUG_LOG
 static void menu_cbs_init_log(const char *entry_label, const char *bind_label, const char *label)
 {
-#ifdef DEBUG_LOG
    if (!string_is_empty(label))
       RARCH_LOG("[%s]\t\t\tFound %s bind : [%s]\n", entry_label, bind_label, label);
-#endif
 }
+#else
+#define menu_cbs_init_log(a, b, c)
+#endif
 
 struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END] =
 {
@@ -211,23 +213,20 @@ void menu_cbs_init(void *data,
    const char *menu_label        = NULL;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
    file_list_t *list             = (file_list_t*)data;
-   if (!list)
+   if (!list || !label)
       return;
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, &enum_idx, NULL);
 
-   if (!label || !menu_label)
+   if (!menu_label)
       return;
 
 #ifdef DEBUG_LOG
    RARCH_LOG("\n");
-#endif
 
-   repr_label = (!string_is_empty(label)) ? label : path;
-
-#ifdef DEBUG_LOG
    if (cbs && cbs->enum_idx != MSG_UNKNOWN)
       RARCH_LOG("\t\t\tenum_idx %d [%s]\n", cbs->enum_idx, msg_hash_to_str(cbs->enum_idx));
+   repr_label = (!string_is_empty(label)) ? label : path;
 #endif
 
    /* It will try to find a corresponding callback function inside
