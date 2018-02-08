@@ -1868,7 +1868,8 @@ default_action_dialog_start(action_ok_rename_entry,
 enum
 {
    ACTION_OK_SHADER_PRESET_SAVE_CORE = 0,
-   ACTION_OK_SHADER_PRESET_SAVE_GAME
+   ACTION_OK_SHADER_PRESET_SAVE_GAME,
+   ACTION_OK_SHADER_PRESET_SAVE_PARENT
 };
 
 static int generic_action_ok_shader_preset_save(const char *path,
@@ -1915,6 +1916,12 @@ static int generic_action_ok_shader_preset_save(const char *path,
             fill_pathname_join(file, directory, game_name, sizeof(file));
          }
          break;
+      case ACTION_OK_SHADER_PRESET_SAVE_PARENT:
+         {
+            fill_pathname_parent_dir_name(tmp, path_get(RARCH_PATH_BASENAME), sizeof(tmp));
+            fill_pathname_join(file, directory, tmp, sizeof(file));
+         }
+         break;
    }
 
    if(menu_shader_manager_save_preset(file, false, true))
@@ -1943,7 +1950,12 @@ static int action_ok_shader_preset_save_game(const char *path,
          idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_GAME);
 }
 
-
+static int action_ok_shader_preset_save_parent(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_shader_preset_save(path, label, type,
+         idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_PARENT);
+}
 
 static int generic_action_ok_remap_file_operation(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -4188,6 +4200,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_core);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_parent);
             break;
          case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
             BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);

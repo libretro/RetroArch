@@ -56,6 +56,7 @@
 
 #include "../../core.h"
 #include "../../verbosity.h"
+#include "../../retroarch.h"
 
 static LPDIRECT3D9 g_pD3D9;
 
@@ -1081,7 +1082,7 @@ static bool d3d9_init_internal(d3d_video_t *d3d,
    if (settings->bools.video_shader_enable)
    {
       enum rarch_shader_type type =
-         video_shader_parse_type(settings->paths.path_shader,
+         video_shader_parse_type(retroarch_get_shader_preset(),
                RARCH_SHADER_NONE);
 
       switch (type)
@@ -1089,8 +1090,8 @@ static bool d3d9_init_internal(d3d_video_t *d3d,
          case RARCH_SHADER_CG:
             if (!string_is_empty(d3d->shader_path))
                free(d3d->shader_path);
-            if (!string_is_empty(settings->paths.path_shader))
-               d3d->shader_path = strdup(settings->paths.path_shader);
+            if (!string_is_empty(retroarch_get_shader_preset()))
+               d3d->shader_path = strdup(retroarch_get_shader_preset());
             break;
          default:
             break;

@@ -135,12 +135,7 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
 
 #endif
 
-   return 0;
-}
-
-static int action_start_shader_action_preset_parameter(unsigned type, const char *label)
-{
-   unsigned parameter = type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0;
+   unsigned parameter = type - MENU_SETTINGS_SHADER_PARAMETER_0;
    return menu_shader_manager_clear_parameter(parameter);
 }
 
@@ -337,7 +332,7 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
    {
-      BIND_ACTION_START(cbs, action_start_shader_action_preset_parameter);
+      BIND_ACTION_START(cbs, action_start_shader_action_parameter);
    }
    else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)

@@ -2986,10 +2986,6 @@ MSG_HASH(
 	"Cargar preset de shaders"
 	)
 MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS,
-	"Parámetros de shaders del menú"
-	)
-MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
 	"Guardar preset de shaders como.."
 	)

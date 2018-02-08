@@ -220,6 +220,7 @@ bool command_set_shader(const char *arg)
 {
    char msg[256];
    enum rarch_shader_type type = RARCH_SHADER_NONE;
+   struct video_shader      *shader  = menu_shader_get();
 
    switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(arg))))
    {
@@ -245,7 +246,8 @@ bool command_set_shader(const char *arg)
          msg_hash_to_str(MSG_APPLYING_SHADER),
          arg);
 
-   return video_driver_set_shader(type, arg);
+   retroarch_set_shader_preset(arg);
+   return menu_shader_manager_set_preset(shader, type, arg);
 }
 
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
@@ -1295,31 +1297,13 @@ static void command_event_disable_overrides(void)
       return;
 
    /* reload the original config */
-
    config_unload_override();
    rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
 }
 
 static void command_event_restore_default_shader_preset(void)
 {
-   if (!path_is_empty(RARCH_PATH_DEFAULT_SHADER_PRESET))
-   {
-      /* auto shader preset: reload the original shader */
-      settings_t *settings      = config_get_ptr();
-      const char *shader_preset = path_get(RARCH_PATH_DEFAULT_SHADER_PRESET);
-
-      if (!string_is_empty(shader_preset))
-      {
-         RARCH_LOG("%s %s\n",
-               msg_hash_to_str(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO),
-               shader_preset);
-         strlcpy(settings->paths.path_shader,
-               shader_preset,
-               sizeof(settings->paths.path_shader));
-      }
-   }
-
-   path_clear(RARCH_PATH_DEFAULT_SHADER_PRESET);
+   retroarch_unset_shader_preset();
 }
 
 static void command_event_restore_remaps(void)
@@ -1440,6 +1424,7 @@ static bool command_event_save_core_config(void)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true);
       RARCH_ERR("[Config]: %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
+      free (config_dir);
       return false;
    }
 

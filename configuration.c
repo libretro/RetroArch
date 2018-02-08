@@ -2875,29 +2875,29 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    config_read_keybinds_conf(conf);
 
+
+   const char *shader_ext = path_get_extension(settings->paths.path_shader);
+
+   if (!string_is_empty(shader_ext))
+   {
+      for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
+      {
+         enum file_path_enum ext = (enum file_path_enum)(i);
+         if(!strstr(file_path_str(ext), shader_ext))
+            continue;
+
+         if (check_shader_compatibility(ext))
+            continue;
+
+         RARCH_LOG("Incompatible shader for backend %s, clearing...\n",
+               settings->arrays.video_driver);
+         settings->paths.path_shader[0] = '\0';
+         break;
+   }
+}
+
    ret = true;
 
-   {
-      const char *shader_ext = path_get_extension(settings->paths.path_shader);
-
-      if (!string_is_empty(shader_ext))
-      {
-         for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
-         {
-            enum file_path_enum ext = (enum file_path_enum)(i);
-            if(!strstr(file_path_str(ext), shader_ext))
-               continue;
-
-            if (check_shader_compatibility(ext))
-               continue;
-
-            RARCH_LOG("Incompatible shader for backend %s, clearing...\n",
-                  settings->arrays.video_driver);
-            settings->paths.path_shader[0] = '\0';
-            break;
-         }
-      }
-   }
 
 end:
    if (conf)
@@ -3227,10 +3227,15 @@ bool config_load_shader_preset(void)
    char *shader_directory                 = NULL;
    char *core_path                        = NULL;
    char *game_path                        = NULL;
+   char *parent_path                      = NULL;
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system ? system->info.library_name : NULL;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
+   char parent_name[PATH_MAX_LENGTH];
+
+   if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
+      fill_pathname_parent_dir_name(parent_name, path_get(RARCH_PATH_BASENAME), sizeof(parent_name));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -3246,6 +3251,9 @@ bool config_load_shader_preset(void)
    core_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    /* final path for game-specific configuration (prefix+suffix) */
    game_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   /* final path for parent-dir-specific configuration (prefix+suffix) */
+   parent_path                            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
    shader_directory[0] = core_path[0] = game_path[0] = '\0';
 
    fill_pathname_join (shader_directory, settings->paths.directory_video_shader,
@@ -3282,9 +3290,33 @@ bool config_load_shader_preset(void)
 
       /* Game shader preset exists, load it. */
       RARCH_LOG("Shaders: game-specific shader preset found at %s.\n", game_path);
+      retroarch_set_shader_preset(game_path);
+      goto success;
+   }
 
-      path_set(RARCH_PATH_DEFAULT_SHADER_PRESET, settings->paths.path_shader);
-      strlcpy(settings->paths.path_shader, game_path, sizeof(settings->paths.path_shader));
+   for(idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
+   {
+      if (!check_shader_compatibility((enum file_path_enum)(idx)))
+         continue;
+      /* Concatenate strings into full paths for core_path, parent path */
+      fill_pathname_join_special_ext(parent_path,
+            shader_directory, core_name,
+            parent_name,
+            file_path_str((enum file_path_enum)(idx)),
+            path_size);
+
+      /* Create a new config file from parent path */
+      new_conf = config_file_new(parent_path);
+
+      if (!new_conf)
+      {
+         RARCH_LOG("Shaders: no parent-dir-specific preset found at %s.\n", parent_path);
+         continue;
+      }
+
+      /* Parent-dir shader preset exists, load it. */
+      RARCH_LOG("Shaders: parent-dir-specific shader preset found at %s.\n", parent_path);
+      retroarch_set_shader_preset(parent_path);
       goto success;
    }
 
@@ -3310,8 +3342,7 @@ bool config_load_shader_preset(void)
 
       /* Core shader preset exists, load it. */
       RARCH_LOG("Shaders: core-specific shader preset found at %s.\n", core_path);
-      path_set(RARCH_PATH_DEFAULT_SHADER_PRESET, settings->paths.path_shader);
-      strlcpy(settings->paths.path_shader, core_path, sizeof(settings->paths.path_shader));
+      retroarch_set_shader_preset(core_path);
       goto success;
    }
 
@@ -3324,6 +3355,7 @@ success:
    free(shader_directory);
    free(core_path);
    free(game_path);
+   free(parent_path);
    config_file_free(new_conf);
    return true;
 }
