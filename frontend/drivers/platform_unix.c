@@ -24,6 +24,7 @@
 
 #include <errno.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/utsname.h>
 #include <sys/resource.h>
 
@@ -35,7 +36,6 @@
 #define INOTIFY_BUF_LEN (1024 * (sizeof(struct inotify_event) + 16))
 
 #include <sys/inotify.h>
-#include <net/net_socket.h>
 
 #define VECTOR_LIST_TYPE int
 #define VECTOR_LIST_NAME int
@@ -2346,7 +2346,7 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
       return;
    }
 
-   if (!socket_nonblock(fd))
+   if (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK))
    {
       RARCH_WARN("watch_path_for_changes: Could not set socket to non-blocking.\n");
       return;
