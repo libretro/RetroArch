@@ -787,6 +787,36 @@ MSG_HASH(MENU_ENUM_LABEL_RDB_ENTRY_CRC32,
       "rdb_entry_crc32")
 MSG_HASH(MENU_ENUM_LABEL_RDB_ENTRY_DESCRIPTION,
       "rdb_entry_description")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER,
+      "deferred_cursor_manager_list_rdb_entry_developer")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER,
+      "deferred_cursor_manager_list_rdb_entry_publisher")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN,
+      "deferred_cursor_manager_list_rdb_entry_origin")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE,
+      "deferred_cursor_manager_list_rdb_entry_franchise")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+      "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+      "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+      "deferred_cursor_manager_list_rdb_entry_famitsu_magazine_rating")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW,
+      "deferred_cursor_manager_list_rdb_entry_enhancement_hw")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH,
+      "deferred_cursor_manager_list_rdb_entry_releasemonth")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR,
+      "deferred_cursor_manager_list_rdb_entry_releaseyear")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING,
+      "deferred_cursor_manager_list_rdb_entry_esrb_rating")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING,
+      "deferred_cursor_manager_list_rdb_entry_pegi_rating")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING,
+      "deferred_cursor_manager_list_rdb_entry_cero_rating")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING,
+      "deferred_cursor_manager_list_rdb_entry_bbfc_rating")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS,
+      "deferred_cursor_manager_list_rdb_entry_max_users")
 MSG_HASH(MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER,
       "rdb_entry_developer")
 MSG_HASH(MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
