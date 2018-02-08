@@ -4338,6 +4338,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 }
 
 static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
+      const char *label,
       const char *menu_label, unsigned type)
 {
    if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
@@ -4369,7 +4370,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_PLAYLIST_ENTRY:
             if (string_is_equal(
-                     menu_label, msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION)))
+                     menu_label, msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION)) ||
+                  string_is_equal(
+                     menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
             {
                BIND_ACTION_OK(cbs, action_ok_playlist_entry_collection);
             }
@@ -4657,7 +4660,7 @@ int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    if (menu_cbs_init_bind_ok_compare_label(cbs, label) == 0)
       return 0;
 
-   if (menu_cbs_init_bind_ok_compare_type(cbs, menu_label, type) == 0)
+   if (menu_cbs_init_bind_ok_compare_type(cbs, label, menu_label, type) == 0)
       return 0;
 
    return -1;
