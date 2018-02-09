@@ -75,6 +75,12 @@
 
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+#define ATLEAST_VC2005
+#endif
+#endif
+
 #ifdef RARCH_INTERNAL
 #ifndef VFS_FRONTEND
 #define VFS_FRONTEND
@@ -373,7 +379,12 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
       return -1;
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+/* VC2005 and up have a special 64-bit ftell */
+#ifdef ATLEAST_VC2005
+      return _ftelli64(stream->fp);
+#else
       return ftell(stream->fp);
+#endif
 
 #ifdef HAVE_MMAP
    /* Need to check stream->mapped because this function
