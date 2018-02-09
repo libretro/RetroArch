@@ -2936,7 +2936,19 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    strlcpy(title_truncated, xmb->title_name, sizeof(title_truncated));
    if (selection > 1)
-      title_truncated[25] = '\0';
+   {
+      /* skip 25 utf8 multi-byte chars */
+      char* end = title_truncated;
+
+      for(i = 0; i < 25 && *end; i++)
+      {
+         end++;
+         while((*end & 0xC0) == 0x80)
+            end++;
+      }
+
+      *end = '\0';
+   }
 
    /* Title text */
    xmb_draw_text(menu_disp_info, xmb,
