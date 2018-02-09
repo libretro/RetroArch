@@ -24,15 +24,13 @@
 #define DEBUG_LOG
 #endif
 
-#ifdef DEBUG_LOG
 static void menu_cbs_init_log(const char *entry_label, const char *bind_label, const char *label)
 {
+#ifdef DEBUG_LOG
    if (!string_is_empty(label))
       RARCH_LOG("[%s]\t\t\tFound %s bind : [%s]\n", entry_label, bind_label, label);
-}
-#else
-#define menu_cbs_init_log(a, b, c)
 #endif
+}
 
 struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END] =
 {
@@ -211,28 +209,35 @@ void menu_cbs_init(void *data,
    menu_ctx_bind_t bind_info;
    const char *repr_label        = NULL;
    const char *menu_label        = NULL;
+   uint32_t label_hash           = 0;
+   uint32_t menu_label_hash      = 0;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
    file_list_t *list             = (file_list_t*)data;
-   if (!list || !label)
+   if (!list)
       return;
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, &enum_idx, NULL);
 
-   if (!menu_label)
+   if (!label || !menu_label)
       return;
+
+   label_hash      = msg_hash_calculate(label);
+   menu_label_hash = msg_hash_calculate(menu_label);
 
 #ifdef DEBUG_LOG
    RARCH_LOG("\n");
+#endif
 
+   repr_label = (!string_is_empty(label)) ? label : path;
+
+#ifdef DEBUG_LOG
    if (cbs && cbs->enum_idx != MSG_UNKNOWN)
       RARCH_LOG("\t\t\tenum_idx %d [%s]\n", cbs->enum_idx, msg_hash_to_str(cbs->enum_idx));
-   repr_label = (!string_is_empty(label)) ? label : path;
 #endif
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_ok.c, then map this callback to the entry. */
-   menu_cbs_init_bind_ok(cbs, path, menu_label,
-         label, type, idx);
+   menu_cbs_init_bind_ok(cbs, path, label, type, idx, label_hash, menu_label_hash);
 
    menu_cbs_init_log(repr_label, "OK", cbs->action_ok_ident);
 
@@ -286,19 +291,19 @@ void menu_cbs_init(void *data,
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_left.c, then map this callback to the entry. */
-   menu_cbs_init_bind_left(cbs, path, label, type, idx, menu_label);
+   menu_cbs_init_bind_left(cbs, path, label, type, idx, menu_label, label_hash);
 
    menu_cbs_init_log(repr_label, "LEFT", cbs->action_left_ident);
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_right.c, then map this callback to the entry. */
-   menu_cbs_init_bind_right(cbs, path, label, type, idx, menu_label);
+   menu_cbs_init_bind_right(cbs, path, label, type, idx, menu_label, label_hash);
 
    menu_cbs_init_log(repr_label, "RIGHT", cbs->action_right_ident);
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_deferred_push.c, then map this callback to the entry. */
-   menu_cbs_init_bind_deferred_push(cbs, path, label, type, idx);
+   menu_cbs_init_bind_deferred_push(cbs, path, label, type, idx, label_hash);
 
    menu_cbs_init_log(repr_label, "DEFERRED PUSH", cbs->action_deferred_push_ident);
 
@@ -316,7 +321,7 @@ void menu_cbs_init(void *data,
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_title.c, then map this callback to the entry. */
-   menu_cbs_init_bind_title(cbs, path, label, type, idx);
+   menu_cbs_init_bind_title(cbs, path, label, type, idx, label_hash);
 
    menu_cbs_init_log(repr_label, "GET TITLE", cbs->action_get_title_ident);
 
@@ -337,6 +342,7 @@ void menu_cbs_init(void *data,
    bind_info.label           = label;
    bind_info.type            = type;
    bind_info.idx             = idx;
+   bind_info.label_hash      = label_hash;
 
    menu_driver_ctl(RARCH_MENU_CTL_BIND_INIT, &bind_info);
 }

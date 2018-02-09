@@ -1274,13 +1274,19 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
    for (i = 0; i < list_size; i++)
    {
+      char *path_copy                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       char *fill_buf                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       size_t path_size                = PATH_MAX_LENGTH * sizeof(char);
       const char *core_name           = NULL;
       const char *path                = NULL;
       const char *label               = NULL;
 
-      fill_buf[0]                     = '\0';
+      fill_buf[0] = path_copy[0]      = '\0';
+
+      if (!string_is_empty(info->path))
+         strlcpy(path_copy, info->path, path_size);
+
+      path                            = path_copy;
 
       playlist_get_index(playlist, i,
             &path, &label, NULL, &core_name, NULL, NULL);
@@ -1297,9 +1303,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
             menu_driver_set_thumbnail_content(content_basename, strlen(content_basename) + 1);
             menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
             menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+            free(content_basename);
          }
-
-         free(content_basename);
       }
 
       if (path)
@@ -1344,6 +1349,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          menu_entries_append_enum(info->list, label,
                path, MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i);
 
+      free(path_copy);
       free(fill_buf);
    }
 
@@ -1384,23 +1390,23 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE),
-         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE),
+         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS),
          MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT),
-         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT),
-         MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
-         MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME),
-         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME),
+         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS),
          MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS),
          msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS),
          MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,
+         MENU_SETTING_ACTION, 0, 0);
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS),
+         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS),
+         MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES),
@@ -4073,6 +4079,8 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
                MENU_INFO_MESSAGE, 0, 0);
 
+      if (!string_is_empty(info->label))
+         info->label_hash = msg_hash_calculate(info->label);
       menu_driver_populate_entries(info);
       ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
    }
@@ -4118,6 +4126,7 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info)
    info->type                     = 0;
    info->type_default             = 0;
    info->flags                    = 0;
+   info->label_hash               = 0;
    info->directory_ptr            = 0;
    info->label                    = NULL;
    info->path                     = NULL;

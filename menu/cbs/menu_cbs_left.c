@@ -60,25 +60,33 @@ static int generic_shader_action_parameter_left(
    return 0;
 }
 
-static int shader_action_parameter_left(unsigned type, const char *label, bool wraparound)
+static int shader_action_parameter_left(unsigned type, const char *label,
+      bool wraparound)
 {
    video_shader_ctx_t shader_info;
    struct video_shader_parameter *param = NULL;
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   param = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
+   param = &shader_info.data->parameters[type
+      - MENU_SETTINGS_SHADER_PARAMETER_0];
    if (!param)
-      return menu_cbs_exit();
-   generic_shader_action_parameter_left(param, type, label, wraparound);
-
-   param = menu_shader_manager_get_parameters(
-         type - MENU_SETTINGS_SHADER_PARAMETER_0);
-   if (!param)
-      return menu_cbs_exit();
-   return generic_shader_action_parameter_left(param, type, label, wraparound);
+      return 0;
+   return generic_shader_action_parameter_left(param,
+         type, label, wraparound);
 }
 
+static int shader_action_parameter_preset_left(unsigned type,
+      const char *label,
+      bool wraparound)
+{
+   struct video_shader_parameter *param = menu_shader_manager_get_parameters(
+         type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
+   if (!param)
+      return 0;
+   return generic_shader_action_parameter_left(param,
+         type, label, wraparound);
+}
 #endif
 
 static int action_left_cheat(unsigned type, const char *label,
@@ -457,7 +465,7 @@ static int bind_left_generic(unsigned type, const char *label,
 }
 
 static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, const char *menu_label)
+      const char *label, uint32_t label_hash, const char *menu_label)
 {
 
    if (cbs->setting)
@@ -477,12 +485,15 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       unsigned i;
       for (i = 0; i < MAX_USERS; i++)
       {
+         uint32_t label_setting_hash;
          char label_setting[128];
+
          label_setting[0] = '\0';
 
          snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
+         label_setting_hash = msg_hash_calculate(label_setting);
 
-         if (!string_is_equal(label_setting, label))
+         if (label_hash != label_setting_hash)
             continue;
 
          BIND_ACTION_LEFT(cbs, bind_left_generic);
@@ -606,7 +617,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
    {
-      BIND_ACTION_LEFT(cbs, shader_action_parameter_left);
+      BIND_ACTION_LEFT(cbs, shader_action_parameter_preset_left);
    }
 #endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
@@ -700,7 +711,8 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
 
 int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label)
+      const char *menu_label,
+      uint32_t label_hash)
 {
    if (!cbs)
       return -1;
@@ -727,7 +739,7 @@ int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (menu_cbs_init_bind_left_compare_label(cbs, label, menu_label) == 0)
+   if (menu_cbs_init_bind_left_compare_label(cbs, label, label_hash, menu_label) == 0)
       return 0;
 
    if (menu_cbs_init_bind_left_compare_type(cbs, type, menu_label) == 0)

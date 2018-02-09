@@ -212,12 +212,9 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
    return MSG_UNKNOWN;
 }
 
-int generic_action_ok_displaylist_push(
-      const char *path,
+int generic_action_ok_displaylist_push(const char *path,
       const char *new_path,
-      const char *label,
-      unsigned type,
-      size_t idx, size_t entry_idx,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
    menu_displaylist_info_t      info;
@@ -1868,8 +1865,7 @@ default_action_dialog_start(action_ok_rename_entry,
 enum
 {
    ACTION_OK_SHADER_PRESET_SAVE_CORE = 0,
-   ACTION_OK_SHADER_PRESET_SAVE_GAME,
-   ACTION_OK_SHADER_PRESET_SAVE_PARENT
+   ACTION_OK_SHADER_PRESET_SAVE_GAME
 };
 
 static int generic_action_ok_shader_preset_save(const char *path,
@@ -1916,12 +1912,6 @@ static int generic_action_ok_shader_preset_save(const char *path,
             fill_pathname_join(file, directory, game_name, sizeof(file));
          }
          break;
-      case ACTION_OK_SHADER_PRESET_SAVE_PARENT:
-         {
-            fill_pathname_parent_dir_name(tmp, path_get(RARCH_PATH_BASENAME), sizeof(tmp));
-            fill_pathname_join(file, directory, tmp, sizeof(file));
-         }
-         break;
    }
 
    if(menu_shader_manager_save_preset(file, false, true))
@@ -1950,12 +1940,7 @@ static int action_ok_shader_preset_save_game(const char *path,
          idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_GAME);
 }
 
-static int action_ok_shader_preset_save_parent(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_shader_preset_save(path, label, type,
-         idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_PARENT);
-}
+
 
 static int generic_action_ok_remap_file_operation(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -2281,23 +2266,22 @@ static int action_ok_undo_save_state(const char *path,
 #ifdef HAVE_ZLIB
 static void cb_decompressed(void *task_data, void *user_data, const char *err)
 {
-   decompress_task_data_t   *dec = (decompress_task_data_t*)task_data;
-   enum msg_hash_enums *enum_idx = (enum msg_hash_enums*)user_data;
+   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
 
-   if (dec && !err && enum_idx)
+   if (dec && !err)
    {
-      const char *msg            = msg_hash_to_str(*enum_idx);
+      unsigned type_hash = (unsigned)(uintptr_t)user_data;
 
-      if (string_is_equal(msg,
-               msg_hash_to_str(MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD)))
-         generic_action_ok_command(CMD_EVENT_CORE_INFO_INIT);
-      else if (string_is_equal(msg,
-               msg_hash_to_str(MENU_ENUM_LABEL_CB_UPDATE_ASSETS)))
-         generic_action_ok_command(CMD_EVENT_REINIT);
+      switch (type_hash)
+      {
+         case CB_CORE_UPDATER_DOWNLOAD:
+            generic_action_ok_command(CMD_EVENT_CORE_INFO_INIT);
+            break;
+         case CB_UPDATE_ASSETS:
+            generic_action_ok_command(CMD_EVENT_REINIT);
+            break;
+      }
    }
-
-   if (user_data)
-      free(user_data);
 
    if (err)
       RARCH_ERR("%s", err);
@@ -2554,13 +2538,10 @@ static void cb_generic_download(void *task_data,
 
    if (path_is_compressed_file(output_path))
    {
-      enum msg_hash_enums *idx = (enum msg_hash_enums*)calloc(1, sizeof(*idx));
-
-      *idx                      = transf->enum_idx;
-
       if (!task_push_decompress(output_path, dir_path,
                NULL, NULL, NULL,
-               cb_decompressed, idx))
+               cb_decompressed, (void*)(uintptr_t)
+               msg_hash_calculate(msg_hash_to_str(transf->enum_idx))))
       {
         err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
         goto finish;
@@ -3751,115 +3732,9 @@ static int is_rdb_entry(enum msg_hash_enums enum_idx)
    return 0;
 }
 
-struct cbs_push_lbl_callback
-{
-   enum msg_hash_enums id;
-   int (*cbs)(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx);
-};
-
-static struct cbs_push_lbl_callback cbs_ok_lbl_list[] = {
-   {
-      MENU_ENUM_LABEL_FAVORITES,
-      action_ok_push_content_list
-   },
-   {
-      MENU_ENUM_LABEL_RECORD_CONFIG,
-      action_ok_record_configfile
-   },
-   {
-      MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,
-      action_ok_shader_parameters
-   },
-   {
-      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,
-      action_ok_shader_parameters
-   },
-   {
-      MENU_ENUM_LABEL_VIDEO_SHADER_PASS,
-      action_ok_shader_pass
-   },
-   {
-      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET,
-      action_ok_shader_preset
-   },
-   {
-      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,
-      action_ok_shader_preset_save_as
-   },
-   {
-      MENU_ENUM_LABEL_DISK_IMAGE_APPEND,
-      action_ok_disk_image_append_list
-   },
-   {
-      MENU_ENUM_LABEL_SCREEN_RESOLUTION,
-      action_ok_video_resolution
-   },
-   {
-      MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
-      action_ok_file_load_detect_core
-   },
-   {
-      MENU_ENUM_LABEL_ACCOUNTS_LIST,
-      action_ok_push_accounts_list
-   },
-   {
-      MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
-      action_ok_push_downloads_dir
-   },
-   {
-      MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
-      action_ok_push_accounts_cheevos_list
-   },
-   {
-      MENU_ENUM_LABEL_LOAD_ARCHIVE,
-      action_ok_load_archive
-   },
-   {
-      MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,
-      action_ok_shader_apply_changes
-   },
-   {
-      MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,
-      action_ok_cheat_apply_changes
-   },
-   {
-      MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
-      action_ok_cheat_file_save_as
-   },
-   {
-      MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
-      action_ok_cheat_file
-   },
-   {
-      MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
-      action_ok_audio_dsp_plugin
-   },
-#ifdef HAVE_NETWORKING
-   {
-      MENU_ENUM_LABEL_UPDATE_LAKKA,
-      action_ok_lakka_list
-   },
-#endif
-   {
-      MENU_ENUM_LABEL_OPEN_ARCHIVE,
-      action_ok_open_archive
-   },
-   {
-      MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE,
-      action_ok_open_archive_detect_core
-   },
-   {
-      MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE,
-      action_ok_load_archive_detect_core
-   }
-};
-
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label)
+      const char *label, uint32_t hash)
 {
-   unsigned k;
-
    if (cbs->enum_idx != MSG_UNKNOWN && is_rdb_entry(cbs->enum_idx) == 0)
    {
       BIND_ACTION_OK(cbs, action_ok_rdb_entry_submenu);
@@ -3893,36 +3768,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   for (k = 0; k < ARRAY_SIZE(cbs_ok_lbl_list); k++)
-   {
-      if (string_is_equal(label, msg_hash_to_str(cbs_ok_lbl_list[k].id)))
-      {
-         BIND_ACTION_OK(cbs, cbs_ok_lbl_list[k].cbs);
-         return 0;
-      }
-   }
-
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_push_content_list);	
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_remap_file);	
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_remap_file_save_core);	
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME)))
-   {
-      BIND_ACTION_OK(cbs, action_ok_remap_file_save_game);	
-      return 0;
-   }
-   else if (cbs->enum_idx != MSG_UNKNOWN)
+   if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
       {
@@ -4201,9 +4047,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_core);
             break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_parent);
-            break;
          case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
             BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
             break;
@@ -4345,16 +4188,99 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          default:
             return -1;
       }
-
-      return 0;
+   }
+   else
+   {
+      switch (hash)
+      {
+         case MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE:
+            BIND_ACTION_OK(cbs, action_ok_open_archive_detect_core);
+            break;
+         case MENU_LABEL_OPEN_ARCHIVE:
+            BIND_ACTION_OK(cbs, action_ok_open_archive);
+            break;
+         case MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE:
+            BIND_ACTION_OK(cbs, action_ok_load_archive_detect_core);
+            break;
+         case MENU_LABEL_LOAD_ARCHIVE:
+            BIND_ACTION_OK(cbs, action_ok_load_archive);
+            break;
+         case MENU_LABEL_VIDEO_SHADER_PASS:
+            BIND_ACTION_OK(cbs, action_ok_shader_pass);
+            break;
+         case MENU_LABEL_VIDEO_SHADER_PRESET:
+            BIND_ACTION_OK(cbs, action_ok_shader_preset);
+            break;
+         case MENU_LABEL_CHEAT_FILE_LOAD:
+            BIND_ACTION_OK(cbs, action_ok_cheat_file);
+            break;
+         case MENU_LABEL_AUDIO_DSP_PLUGIN:
+            BIND_ACTION_OK(cbs, action_ok_audio_dsp_plugin);
+            break;
+         case MENU_LABEL_REMAP_FILE_LOAD:
+            BIND_ACTION_OK(cbs, action_ok_remap_file);
+            break;
+         case MENU_LABEL_RECORD_CONFIG:
+            BIND_ACTION_OK(cbs, action_ok_record_configfile);
+            break;
+#ifdef HAVE_NETWORKING
+         case MENU_LABEL_UPDATE_LAKKA:
+            BIND_ACTION_OK(cbs, action_ok_lakka_list);
+            break;
+#endif
+         case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
+         case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+            BIND_ACTION_OK(cbs, action_ok_shader_parameters);
+            break;
+         case MENU_LABEL_ACCOUNTS_LIST:
+            BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
+            break;
+         case MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
+            BIND_ACTION_OK(cbs, action_ok_push_accounts_cheevos_list);
+            break;
+         case MENU_LABEL_FAVORITES:
+            BIND_ACTION_OK(cbs, action_ok_push_content_list);
+            break;
+         case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
+            BIND_ACTION_OK(cbs, action_ok_push_downloads_dir);
+            break;
+         case MENU_LABEL_DETECT_CORE_LIST_OK:
+            BIND_ACTION_OK(cbs, action_ok_file_load_detect_core);
+            break;
+         case MENU_LABEL_SHADER_APPLY_CHANGES:
+            BIND_ACTION_OK(cbs, action_ok_shader_apply_changes);
+            break;
+         case MENU_LABEL_CHEAT_APPLY_CHANGES:
+            BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
+            break;
+         case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
+            break;
+         case MENU_LABEL_CHEAT_FILE_SAVE_AS:
+            BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
+            break;
+         case MENU_LABEL_REMAP_FILE_SAVE_CORE:
+            BIND_ACTION_OK(cbs, action_ok_remap_file_save_core);
+            break;
+         case MENU_LABEL_REMAP_FILE_SAVE_GAME:
+            BIND_ACTION_OK(cbs, action_ok_remap_file_save_game);
+            break;
+         case MENU_LABEL_DISK_IMAGE_APPEND:
+            BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
+            break;
+         case MENU_LABEL_SCREEN_RESOLUTION:
+            BIND_ACTION_OK(cbs, action_ok_video_resolution);
+            break;
+         default:
+            return -1;
+      }
    }
 
-   return -1;
+   return 0;
 }
 
 static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
-      const char *label,
-      const char *menu_label, unsigned type)
+      uint32_t label_hash, uint32_t menu_label_hash, unsigned type)
 {
    if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
          type == MENU_SETTINGS_CUSTOM_BIND)
@@ -4384,15 +4310,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_default);
             break;
          case FILE_TYPE_PLAYLIST_ENTRY:
-            if (string_is_equal(
-                     menu_label, msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION)) ||
-                  string_is_equal(
-                     menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
+            if (label_hash == MENU_LABEL_COLLECTION)
             {
                BIND_ACTION_OK(cbs, action_ok_playlist_entry_collection);
             }
-            else if (string_is_equal(
-                     menu_label, msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_START_CONTENT)))
+            else if (label_hash == MENU_LABEL_RDB_ENTRY_START_CONTENT)
             {
                BIND_ACTION_OK(cbs, action_ok_playlist_entry_start_content);
             }
@@ -4455,15 +4377,17 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                BIND_ACTION_OK(cbs, action_ok_scan_file);
 #endif
             }
-            else if (string_is_equal(
-                     menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)))
-            {
-               BIND_ACTION_OK(cbs,
-                     action_ok_compressed_archive_push_detect_core);
-            }
             else
             {
-               BIND_ACTION_OK(cbs, action_ok_compressed_archive_push);
+               switch (menu_label_hash)
+               {
+                  case MENU_LABEL_FAVORITES:
+                     BIND_ACTION_OK(cbs, action_ok_compressed_archive_push_detect_core);
+                     break;
+                  default:
+                     BIND_ACTION_OK(cbs, action_ok_compressed_archive_push);
+                     break;
+               }
             }
             break;
          case FILE_TYPE_CORE:
@@ -4479,20 +4403,20 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      break;
                }
             }
-            else if (string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
+            else
             {
-               BIND_ACTION_OK(cbs, action_ok_load_core);
-            }
-            else if (string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST)))
-            {
-               BIND_ACTION_OK(cbs, action_ok_load_core_deferred);
-            }
-            else if (string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET)))
-            {
-               BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
+               switch (menu_label_hash)
+               {
+                  case MENU_LABEL_DEFERRED_CORE_LIST:
+                     BIND_ACTION_OK(cbs, action_ok_load_core_deferred);
+                     break;
+                  case MENU_LABEL_DEFERRED_CORE_LIST_SET:
+                     BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
+                     break;
+                  case MENU_LABEL_CORE_LIST:
+                     BIND_ACTION_OK(cbs, action_ok_load_core);
+                     break;
+               }
             }
             break;
          case FILE_TYPE_DOWNLOAD_CORE_CONTENT:
@@ -4516,20 +4440,15 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_DOWNLOAD_CORE_INFO:
             break;
          case FILE_TYPE_RDB:
-            if (string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
+            switch (menu_label_hash)
             {
-               BIND_ACTION_OK(cbs, action_ok_database_manager_list);
-            }
-            else if (string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST)))
-            {
-               BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
-            }
-            else if (string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST)))
-            {
-               BIND_ACTION_OK(cbs, action_ok_database_manager_list);
+               case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
+                  BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
+                  break;
+               case MENU_LABEL_DATABASE_MANAGER_LIST:
+               case MENU_VALUE_HORIZONTAL_MENU:
+                  BIND_ACTION_OK(cbs, action_ok_database_manager_list);
+                  break;
             }
             break;
          case FILE_TYPE_RDB_ENTRY:
@@ -4542,15 +4461,14 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan);
             break;
          case FILE_TYPE_CURSOR:
-            if (string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST)))
+            switch (menu_label_hash)
             {
-               BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
-            }
-            else if (string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST)))
-            {
-               BIND_ACTION_OK(cbs, action_ok_cursor_manager_list);
+               case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
+                  BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
+                  break;
+               case MENU_LABEL_CURSOR_MANAGER_LIST:
+                  BIND_ACTION_OK(cbs, action_ok_cursor_manager_list);
+                  break;
             }
             break;
          case FILE_TYPE_VIDEOFILTER:
@@ -4601,31 +4519,33 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      break;
                }
             }
-            else if (
-                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST)) ||
-                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
-                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE))
-                  )
-            {
-#ifdef HAVE_COMPRESSION
-               if (type == FILE_TYPE_IN_CARCHIVE)
-               {
-                  BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
-               }
-               else
-#endif
-                  if (filebrowser_get_type() == FILEBROWSER_APPEND_IMAGE)
-                  {
-                     BIND_ACTION_OK(cbs, action_ok_disk_image_append);
-                  }
-                  else
-                  {
-                     BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
-                  }
-            }
             else
             {
-               BIND_ACTION_OK(cbs, action_ok_file_load);
+               switch (menu_label_hash)
+               {
+                  case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
+                  case MENU_LABEL_FAVORITES:
+                  case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
+#ifdef HAVE_COMPRESSION
+                     if (type == FILE_TYPE_IN_CARCHIVE)
+                     {
+                        BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
+                     }
+                     else
+#endif
+                     if (filebrowser_get_type() == FILEBROWSER_APPEND_IMAGE)
+                     {
+                        BIND_ACTION_OK(cbs, action_ok_disk_image_append);
+                     }
+                     else
+                     {
+                        BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
+                     }
+                     break;
+                  default:
+                     BIND_ACTION_OK(cbs, action_ok_file_load);
+                     break;
+               }
             }
             break;
          case FILE_TYPE_MOVIE:
@@ -4664,18 +4584,18 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 }
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
-      const char *path, const char *menu_label,
-      const char *label, unsigned type, size_t idx)
+      const char *path, const char *label, unsigned type, size_t idx,
+      uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
       return -1;
 
    BIND_ACTION_OK(cbs, action_ok_lookup_setting);
 
-   if (menu_cbs_init_bind_ok_compare_label(cbs, label) == 0)
+   if (menu_cbs_init_bind_ok_compare_label(cbs, label, label_hash) == 0)
       return 0;
 
-   if (menu_cbs_init_bind_ok_compare_type(cbs, label, menu_label, type) == 0)
+   if (menu_cbs_init_bind_ok_compare_type(cbs, label_hash, menu_label_hash, type) == 0)
       return 0;
 
    return -1;

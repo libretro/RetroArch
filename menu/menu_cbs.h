@@ -141,6 +141,9 @@ int action_refresh_default(file_list_t *list, file_list_t *menu_list);
 
 int shader_action_parameter_right(unsigned type, const char *label, bool wraparound);
 
+int shader_action_parameter_preset_right(unsigned type, const char *label,
+      bool wraparound);
+
 int generic_action_ok_displaylist_push(const char *path, const char *new_path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type);
@@ -173,11 +176,13 @@ int action_right_cheat(unsigned type, const char *label,
 
 int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label);
+      const char *menu_label,
+      uint32_t label_hash);
 
 int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label);
+      const char *menu_label,
+      uint32_t label_hash);
 
 int menu_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
@@ -210,11 +215,12 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
-      const char *path, const char *menu_label,
-      const char *label, unsigned type, size_t idx);
+      const char *path, const char *label, unsigned type, size_t idx,
+      uint32_t label_hash, uint32_t menu_label_hash);
 
 int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
+      const char *path, const char *label, unsigned type, size_t idx,
+      uint32_t label_hash);
 
 int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
@@ -223,7 +229,8 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
+      const char *path, const char *label, unsigned type, size_t idx,
+      uint32_t label_hash);
 
 #ifdef HAVE_LIBRETRODB
 int action_scan_directory(const char *path,

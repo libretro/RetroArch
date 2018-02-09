@@ -194,6 +194,7 @@ typedef struct menu_displaylist_info
    unsigned type;
    unsigned type_default;
    unsigned flags;
+   uint32_t label_hash;
    size_t directory_ptr;
    file_list_t *list;
    file_list_t *menu_list;

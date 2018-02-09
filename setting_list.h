@@ -104,6 +104,7 @@ struct rarch_setting
 
    unsigned             bind_type;
    uint32_t             size;
+   uint32_t             name_hash;
 
    float                step;
 

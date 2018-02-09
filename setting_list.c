@@ -618,6 +618,7 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.size                      = 0;
 
    result.name                      = name;
+   result.name_hash                 = 0;
    result.short_description         = short_description;
    result.group                     = group;
    result.subgroup                  = subgroup;
@@ -680,6 +681,7 @@ static rarch_setting_t setting_group_setting(enum setting_type type, const char*
    result.size                      = 0;
 
    result.name                      = name;
+   result.name_hash                 = 0;
    result.short_description         = name;
    result.group                     = NULL;
    result.subgroup                  = NULL;
@@ -753,6 +755,7 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.size                      = sizeof(float);
 
    result.name                      = name;
+   result.name_hash                 = 0;
    result.short_description         = short_description;
    result.group                     = group;
    result.subgroup                  = subgroup;
@@ -829,6 +832,7 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.size                      = sizeof(unsigned int);
 
    result.name                      = name;
+   result.name_hash                 = 0;
    result.short_description         = short_description;
    result.group                     = group;
    result.subgroup                  = subgroup;
@@ -905,6 +909,7 @@ static rarch_setting_t setting_hex_setting(const char* name,
    result.size                      = sizeof(unsigned int);
 
    result.name                      = name;
+   result.name_hash                 = 0;
    result.short_description         = short_description;
    result.group                     = group;
    result.subgroup                  = subgroup;
@@ -982,6 +987,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
    result.size                      = 0;
 
    result.name                      = name;
+   result.name_hash                 = 0;
    result.short_description         = short_description;
    result.group                     = group;
    result.subgroup                  = subgroup;
@@ -1141,6 +1147,7 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
    result.size                      = size;
 
    result.name                      = name;
+   result.name_hash                 = 0;
    result.short_description         = short_description;
    result.group                     = group;
    result.subgroup                  = subgroup;
@@ -1262,6 +1269,7 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
    result.size                      = 0;
 
    result.name                      = name;
+   result.name_hash                 = 0;
    result.short_description         = name;
    result.group                     = parent_name;
    result.parent_group              = parent_group;
@@ -1336,6 +1344,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.size                      = sizeof(bool);
 
    result.name                      = name;
+   result.name_hash                 = name ? msg_hash_calculate(name) : 0;
    result.short_description         = short_description;
    result.group                     = group;
    result.subgroup                  = subgroup;
@@ -1414,6 +1423,7 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.size                      = sizeof(int);
 
    result.name                      = name;
+   result.name_hash                 = name ? msg_hash_calculate(name) : 0;
    result.short_description         = short_description;
    result.group                     = group;
    result.subgroup                  = subgroup;
@@ -1483,6 +1493,8 @@ bool CONFIG_BOOL_ALT(
 
    if (!settings_list_append(list, list_info))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    if (flags != SD_FLAG_NONE)
       settings_data_list_current_add_flags(list, list_info, flags);
@@ -1517,6 +1529,8 @@ bool CONFIG_BOOL(
 
    if (!settings_list_append(list, list_info))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    if (flags != SD_FLAG_NONE)
       settings_data_list_current_add_flags(list, list_info, flags);
@@ -1550,6 +1564,8 @@ bool CONFIG_INT(
          false);
    if (!(settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
 
 #ifdef HAVE_MENU
@@ -1577,6 +1593,8 @@ bool CONFIG_UINT_ALT(
                   true);
    if (!(settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    return true;
 }
@@ -1603,6 +1621,8 @@ bool CONFIG_UINT(
          false);
    if (!(settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
 
 #ifdef HAVE_MENU
@@ -1631,6 +1651,8 @@ bool CONFIG_FLOAT(
          false);
    if (!(settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
 
 #ifdef HAVE_MENU
@@ -1662,6 +1684,8 @@ bool CONFIG_PATH(
          false);
    if (!(settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 #ifdef HAVE_MENU
@@ -1694,6 +1718,8 @@ bool CONFIG_DIR(
          false);
    if (!(settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    settings_data_list_current_add_flags(
          list,
@@ -1727,6 +1753,8 @@ bool CONFIG_STRING(
          change_handler, read_handler, false);
    if (!(settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
 #ifdef HAVE_MENU
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
@@ -1756,6 +1784,8 @@ bool CONFIG_STRING_OPTIONS(
    if (!(settings_list_append(list, list_info)))
       return false;
 
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
 
 #ifdef HAVE_MENU
@@ -1788,6 +1818,8 @@ bool CONFIG_HEX(
          change_handler, read_handler, false);
    if (!(settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
 
 #ifdef HAVE_MENU
@@ -1817,6 +1849,8 @@ bool CONFIG_BIND(
    if (!(settings_list_append(list, list_info)))
       return false;
 
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    /* Request name and short description to be freed later */
    settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
@@ -1842,6 +1876,8 @@ bool CONFIG_BIND_ALT(
    if (!(settings_list_append(list, list_info)))
       return false;
 
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    /* Request name and short description to be freed later */
    settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
@@ -1863,6 +1899,8 @@ bool CONFIG_ACTION_ALT(
 
    if (!settings_list_append(list, list_info))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    return true;
 }
@@ -1885,6 +1923,8 @@ bool CONFIG_ACTION(
 
    if (!settings_list_append(list, list_info))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
 
 #ifdef HAVE_MENU
@@ -1904,6 +1944,8 @@ bool START_GROUP(rarch_setting_t **list, rarch_setting_info_t *list_info,
    if (!(settings_list_append(list, list_info)))
       return false;
 
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    return true;
 }
@@ -1914,6 +1956,8 @@ bool END_GROUP(rarch_setting_t **list, rarch_setting_info_t *list_info,
    rarch_setting_t value = setting_group_setting (ST_END_GROUP, 0, parent_group);
    if (!(settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    return true;
 }
@@ -1931,6 +1975,8 @@ bool START_SUB_GROUP(rarch_setting_t **list,
 
    if (!(settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    return true;
 }
@@ -1943,6 +1989,8 @@ bool END_SUB_GROUP(
    rarch_setting_t value = setting_group_setting (ST_END_SUB_GROUP, 0, parent_group);
    if (!(settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    return true;
 }

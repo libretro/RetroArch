@@ -1738,6 +1738,236 @@ enum msg_hash_enums
    MSG_LAST
 };
 
+/* Callback strings */
+
+#define CB_CORE_UPDATER_DOWNLOAD                                               0x7412da7dU
+#define CB_UPDATE_ASSETS                                                       0xbf85795eU
+
+/* Deferred */
+
+#define MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST                            0x364dfa2bU
+#define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
+#define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
+#define MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST                              0x7c0b704fU
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST                                0x45446638U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER            0xcbd89be5U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER            0x125e594dU
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN               0x4ebaa767U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE            0x77f9eff2U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING 0x1c7f8a43U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE  0xaaeebde7U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING 0xbf7ff5e7U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW       0x9866bda3U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH         0x2b36ce66U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR          0x9c7c6e91U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING          0x68eba20fU
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING         0x8bf6ab18U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING          0x5fc77328U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING          0x24f6172cU
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING          0x0a8e67f0U
+#define MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS            0xbfcba816U
+#define MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL                                   0xc35416c0U
+#define MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS                                  0x358a7494U
+#define MENU_LABEL_DEFERRED_CORE_LIST                                          0xf157d289U
+#define MENU_LABEL_DEFERRED_CORE_UPDATER_LIST                                  0xc315f682U
+#define MENU_LABEL_DEFERRED_DRIVER_SETTINGS_LIST                               0xaa5efefcU
+#define MENU_LABEL_DEFERRED_VIDEO_SETTINGS_LIST                                0x83c65827U
+#define MENU_LABEL_DEFERRED_AUDIO_SETTINGS_LIST                                0x5bba25e2U
+#define MENU_LABEL_DEFERRED_RECORDING_SETTINGS_LIST                            0x05548d52U
+#define MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST                             0x9518e0c7U
+#define MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST                                0x050bec60U
+#define MENU_LABEL_DEFERRED_USER_BINDS_LIST                                    0x28c5750eU
+#define MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST                              0x1322324cU
+#define MENU_LABEL_DEFERRED_ACCOUNTS_LIST                                      0x3d2b8860U
+#define MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE                         0xdc9c0064U
+#define MENU_LABEL_DEFERRED_ARCHIVE_ACTION                                     0x7faf0284U
+#define MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE                           0xd9452498U
+#define MENU_LABEL_DEFERRED_ARCHIVE_OPEN                                       0xfa0938b8U
+#define MENU_LABEL_DEFERRED_CORE_CONTENT_LIST                                  0x76150c63U
+#define MENU_LABEL_DEFERRED_LAKKA_LIST                                         0x3db437c4U
+#define MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST                            0x10b41d97U
+#define MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST                                0x679a1b0bU
+#define MENU_LABEL_DEFERRED_BROWSE_URL_START                                   0xcef58296U
+
+/* Cheevos settings */
+
+#define MENU_LABEL_CHEEVOS_DESCRIPTION                                         0x7e00e0f5U
+
+/* Accounts settings */
+
+#define MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS                                 0xe6b7c16cU
+#define MENU_LABEL_ACCOUNTS_LIST                                               0x774c15a0U
+
+#define MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST                            0xb4f82700U
+
+/* Online updater settings */
+
+#define MENU_LABEL_UPDATE_LAKKA                                                0x19b51eebU
+
+/* Information settings */
+
+#define MENU_LABEL_INFORMATION_LIST                                            0x225e7606U
+
+#define MENU_LABEL_CONTENT_SETTINGS                                            0xe789f7f6U
+
+#define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
+
+/* Menu settings */
+#define MENU_LABEL_XMB_FONT                                                    0x0ECA56CA2
+
+#define MENU_LABEL_PERFCNT_ENABLE                                              0x6823dbddU
+
+/* Video settings */
+#define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
+
+#define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U
+#define MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER                                 0x4468cb1bU
+#define MENU_LABEL_VIDEO_SHADER_NUM_PASSES                                     0x79b2992fU
+#define MENU_LABEL_VIDEO_SHADER_PARAMETERS                                     0x9895c3e5U
+#define MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS                              0xd18158d7U
+#define MENU_LABEL_VIDEO_SHADER_PASS                                           0x4fa31028U
+#define MENU_LABEL_VIDEO_SHADER_PRESET                                         0xc5d3bae4U
+
+/* Input settings */
+#define MENU_LABEL_INPUT_OVERLAY                                               0x24e24796U
+#define MENU_LABEL_INPUT_OSK_OVERLAY                                           0x11f1c582U
+
+/* Record settings */
+
+#define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U
+
+/* Cheat options */
+
+#define MENU_LABEL_CHEAT_DATABASE_PATH                                         0x01388b8aU
+#define MENU_LABEL_CHEAT_FILE_LOAD                                             0x57336148U
+#define MENU_LABEL_CHEAT_FILE_SAVE_AS                                          0x1f58dccaU
+#define MENU_LABEL_CHEAT_APPLY_CHANGES                                         0xde88aa27U
+
+/* Disk settings */
+
+#define MENU_LABEL_DISK_OPTIONS                                                0xc61ab5fbU
+#define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
+
+/* Menu settings */
+
+#define MENU_LABEL_MENU_WALLPAPER                                              0x3b84de01U
+#define MENU_LABEL_MENU_SETTINGS                                               0x61e4544bU
+
+/* Directory settings */
+
+#define MENU_LABEL_CURSOR_DIRECTORY                                            0xdee8d377U
+#define MENU_LABEL_OSK_OVERLAY_DIRECTORY                                       0xcce86287U
+#define MENU_LABEL_JOYPAD_AUTOCONFIG_DIR                                       0x2f4822d8U
+#define MENU_LABEL_RECORDING_OUTPUT_DIRECTORY                                  0x30bece06U
+#define MENU_LABEL_RECORDING_CONFIG_DIRECTORY                                  0x3c3f274bU
+#define MENU_LABEL_LIBRETRO_DIR_PATH                                           0x1af1eb72U
+#define MENU_LABEL_AUDIO_FILTER_DIR                                            0x4bd96ebaU
+#define MENU_LABEL_VIDEO_SHADER_DIR                                            0x30f53b10U
+#define MENU_LABEL_VIDEO_FILTER_DIR                                            0x67603f1fU
+#define MENU_LABEL_SCREENSHOT_DIRECTORY                                        0x552612d7U
+#define MENU_LABEL_SYSTEM_DIRECTORY                                            0x35a6fb9eU
+#define MENU_LABEL_INPUT_REMAPPING_DIRECTORY                                   0x5233c20bU
+#define MENU_LABEL_OVERLAY_DIRECTORY                                           0xc4ed3d1bU
+#define MENU_LABEL_SAVEFILE_DIRECTORY                                          0x92773488U
+#define MENU_LABEL_SAVESTATE_DIRECTORY                                         0x90551289U
+#define MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY                                0x62f975b8U
+#define MENU_LABEL_THUMBNAILS_DIRECTORY                                        0xdea77410U
+#define MENU_LABEL_RGUI_BROWSER_DIRECTORY                                      0xa86cba73U
+#define MENU_LABEL_CONTENT_DATABASE_DIRECTORY                                  0x6b443f80U
+#define MENU_LABEL_PLAYLIST_DIRECTORY                                          0x6361820bU
+#define MENU_LABEL_CORE_ASSETS_DIRECTORY                                       0x8ba5ee54U
+#define MENU_LABEL_CONTENT_DIRECTORY                                           0x7738dc14U
+#define MENU_LABEL_RGUI_CONFIG_DIRECTORY                                       0x0cb3e005U
+#define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
+#define MENU_LABEL_CACHE_DIRECTORY                                             0x851dfb8dU
+
+/* RDB settings */
+
+#define MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE                               0x8888c5acU
+#define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
+#define MENU_LABEL_RDB_ENTRY_PUBLISHER                                         0x4d7bcdfbU
+#define MENU_LABEL_RDB_ENTRY_DEVELOPER                                         0x06f61093U
+#define MENU_LABEL_RDB_ENTRY_ORIGIN                                            0xb176aad5U
+#define MENU_LABEL_RDB_ENTRY_FRANCHISE                                         0xb31764a0U
+#define MENU_LABEL_RDB_ENTRY_ENHANCEMENT_HW                                    0x79ee4f11U
+#define MENU_LABEL_RDB_ENTRY_ESRB_RATING                                       0xe138fa3dU
+#define MENU_LABEL_RDB_ENTRY_BBFC_RATING                                       0x82dbc01eU
+#define MENU_LABEL_RDB_ENTRY_ELSPA_RATING                                      0x0def0906U
+#define MENU_LABEL_RDB_ENTRY_PEGI_RATING                                       0xd814cb56U
+#define MENU_LABEL_RDB_ENTRY_CERO_RATING                                       0x9d436f5aU
+#define MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING                              0x9735f631U
+#define MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE                               0xd5706415U
+#define MENU_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING                           0x01a50315U
+#define MENU_LABEL_RDB_ENTRY_RELEASE_MONTH                                     0xad2f2c54U
+#define MENU_LABEL_RDB_ENTRY_RELEASE_YEAR                                      0x14c9c6bfU
+#define MENU_LABEL_RDB_ENTRY_MAX_USERS                                         0xfae91cc4U
+
+#define MENU_LABEL_FAVORITES                                                   0x67325138U
+#define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
+#define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
+#define MENU_LABEL_CORE_LIST                                                   0xa22bb14dU
+#define MENU_LABEL_MANAGEMENT                                                  0x2516c88aU
+#define MENU_LABEL_FRONTEND_COUNTERS                                           0xe5696877U
+#define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U
+#define MENU_LABEL_ACHIEVEMENT_LIST                                            0x7b90fc49U
+#define MENU_LABEL_CORE_INFORMATION                                            0xb638e0d3U
+#define MENU_LABEL_CORE_OPTIONS                                                0xf65e60f9U
+#define MENU_LABEL_SHADER_OPTIONS                                              0x1f7d2fc7U
+#define MENU_LABEL_CORE_CHEAT_OPTIONS                                          0x9293171dU
+#define MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS                                0x7836a8caU
+#define MENU_LABEL_DATABASE_MANAGER_LIST                                       0x7f853d8fU
+#define MENU_LABEL_CURSOR_MANAGER_LIST                                         0xa969e378U
+#define MENU_LABEL_REMAP_FILE_LOAD                                             0x9c2799b8U
+#define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
+#define MENU_LABEL_CUSTOM_RATIO                                                0xf038731eU
+#define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
+#define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
+#define MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS                          0xa6de9ba6U
+#define MENU_LABEL_SHADER_APPLY_CHANGES                                        0x4f7306b9U
+#define MENU_LABEL_CUSTOM_BIND                                                 0x1e84b3fcU
+#define MENU_LABEL_CUSTOM_BIND_ALL                                             0x79ac14f4U
+#define MENU_LABEL_CUSTOM_BIND_DEFAULTS                                        0xe88f7b13U
+#define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
+#define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
+#define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
+#define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x32d1df83U
+#define MENU_LABEL_COLLECTION                                                  0x5fea5991U
+
+#define MENU_LABEL_OPEN_ARCHIVE                                                0x78c0ca58U
+#define MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE                                    0x92442638U
+#define MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE                                    0x681f2f46U
+#define MENU_LABEL_LOAD_ARCHIVE                                                0xc3834e66U
+
+/* Help */
+#define MENU_LABEL_LIBRETRO_INFO_PATH                                          0xe552b25fU
+
+#define MENU_LABEL_INPUT_DRIVER_LINUXRAW                                       0xc33c6b9fU
+#define MENU_LABEL_INPUT_DRIVER_UDEV                                           0x7c9eeeb9U
+
+#define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
+
+#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
+#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
+
+#define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
+#define MENU_LABEL_HELP_CONTROLS                                               0x04859221U
+#define MENU_LABEL_HELP_LIST                                                   0x006af669U
+#define MENU_LABEL_HELP_WHAT_IS_A_CORE                                         0x83fcbc44U
+#define MENU_LABEL_HELP_LOADING_CONTENT                                        0x231d8245U
+#define MENU_LABEL_HELP_SCANNING_CONTENT                                       0x1dec52b8U
+#define MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD                                 0x6e66ef07U
+#define MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING                            0xd44d395cU
+
+/* Main menu */
+#define MENU_LABEL_LOAD_CONTENT_LIST                                           0x5745de1fU
+#define MENU_LABEL_LOAD_CONTENT_HISTORY                                        0xfe1d79e5U
+#define MENU_LABEL_ADD_CONTENT_LIST                                            0x046f4668U
+#define MENU_LABEL_ONLINE_UPDATER                                              0xcac0025eU
+#define MENU_LABEL_NETPLAY                                                     0x0b511d22U
+#define MENU_LABEL_SETTINGS                                                    0x1304dc16U
+#define MENU_LABEL_HELP                                                        0x7c97d2eeU
+#define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
+
 const char *msg_hash_to_str(enum msg_hash_enums msg);
 
 const char *msg_hash_to_str_fr(enum msg_hash_enums msg);

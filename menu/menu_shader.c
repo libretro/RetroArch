@@ -30,7 +30,6 @@
 #include "../file_path_special.h"
 #include "../configuration.h"
 #include "../paths.h"
-#include "../retroarch.h"
 #include "../verbosity.h"
 
 #ifdef HAVE_SHADER_MANAGER
@@ -131,14 +130,14 @@ bool menu_shader_manager_init(void)
 #ifdef HAVE_SHADER_MANAGER
    settings_t *settings        = config_get_ptr();
    const char *config_path     = path_get(RARCH_PATH_CONFIG);
-   const char *path_shader     = retroarch_get_shader_preset();
+   const char *path_shader     = settings->paths.path_shader;
 
    menu_shader_manager_free();
 
    menu_driver_shader          = (struct video_shader*)
       calloc(1, sizeof(struct video_shader));
 
-   if (!menu_driver_shader || !path_shader)
+   if (!menu_driver_shader)
       return false;
 
    /* In a multi-config setting, we can't have
@@ -249,7 +248,7 @@ bool menu_shader_manager_init(void)
  *
  * Sets shader preset.
  **/
-bool menu_shader_manager_set_preset(void *data,
+void menu_shader_manager_set_preset(void *data,
       unsigned type, const char *preset_path)
 {
 #ifdef HAVE_SHADER_MANAGER
@@ -261,7 +260,7 @@ bool menu_shader_manager_set_preset(void *data,
    if (!video_driver_set_shader((enum rarch_shader_type)type, preset_path))
    {
       configuration_set_bool(settings, settings->bools.video_shader_enable, false);
-      return false;
+      return;
    }
 
    /* Makes sure that we use Menu Preset shader on driver reinit.
@@ -272,7 +271,7 @@ bool menu_shader_manager_set_preset(void *data,
    configuration_set_bool(settings, settings->bools.video_shader_enable, true);
 
    if (!preset_path || !shader)
-      return false;
+      return;
 
    /* Load stored Preset into menu on success.
     * Used when a preset is directly loaded.
@@ -281,7 +280,7 @@ bool menu_shader_manager_set_preset(void *data,
    conf = config_file_new(preset_path);
 
    if (!conf)
-      return false;
+      return;
 
    RARCH_LOG("Setting Menu shader: %s.\n", preset_path);
 
@@ -293,8 +292,6 @@ bool menu_shader_manager_set_preset(void *data,
    config_file_free(conf);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-
-   return true;
 #endif
 }
 

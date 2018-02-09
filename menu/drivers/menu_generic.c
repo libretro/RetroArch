@@ -29,62 +29,29 @@
 #include "../../content.h"
 #include "../../retroarch.h"
 
-struct menu_generic_iterate_type
+static enum action_iterate_type action_iterate_type(uint32_t hash)
 {
-   enum msg_hash_enums id;
-   enum action_iterate_type type;
-};
-
-static struct menu_generic_iterate_type iterate_lbl_list[] = {
+   switch (hash)
    {
-      MENU_ENUM_LABEL_HELP,
-      ITERATE_TYPE_HELP
-   },
-   {
-      MENU_ENUM_LABEL_HELP_CONTROLS,
-      ITERATE_TYPE_HELP
-   },
-   {
-      MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE,
-      ITERATE_TYPE_HELP
-   },
-   {
-      MENU_ENUM_LABEL_HELP_LOADING_CONTENT,
-      ITERATE_TYPE_HELP
-   },
-   {
-      MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD,
-      ITERATE_TYPE_HELP
-   },
-   {
-      MENU_ENUM_LABEL_HELP_CHEEVOS_DESCRIPTION,
-      ITERATE_TYPE_HELP
-   },
-   {
-      MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
-      ITERATE_TYPE_HELP
-   },
-   {
-      MENU_ENUM_LABEL_HELP_SCANNING_CONTENT,
-      ITERATE_TYPE_HELP
-   },
-   {
-      MENU_ENUM_LABEL_INFO_SCREEN,
-      ITERATE_TYPE_INFO
-   },
-   {
-      MENU_ENUM_LABEL_CUSTOM_BIND,
-      ITERATE_TYPE_BIND
-   },
-   {
-      MENU_ENUM_LABEL_CUSTOM_BIND_ALL,
-      ITERATE_TYPE_BIND
-   },
-   {
-      MENU_ENUM_LABEL_CUSTOM_BIND_DEFAULTS,
-      ITERATE_TYPE_BIND
+      case MENU_LABEL_HELP:
+      case MENU_LABEL_HELP_CONTROLS:
+      case MENU_LABEL_HELP_WHAT_IS_A_CORE:
+      case MENU_LABEL_HELP_LOADING_CONTENT:
+      case MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
+      case MENU_LABEL_CHEEVOS_DESCRIPTION:
+      case MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
+      case MENU_LABEL_HELP_SCANNING_CONTENT:
+         return ITERATE_TYPE_HELP;
+      case MENU_LABEL_INFO_SCREEN:
+         return ITERATE_TYPE_INFO;
+      case MENU_LABEL_CUSTOM_BIND:
+      case MENU_LABEL_CUSTOM_BIND_ALL:
+      case MENU_LABEL_CUSTOM_BIND_DEFAULTS:
+         return ITERATE_TYPE_BIND;
    }
-};
+
+   return ITERATE_TYPE_DEFAULT;
+}
 
 /**
  * menu_iterate:
@@ -99,13 +66,14 @@ static struct menu_generic_iterate_type iterate_lbl_list[] = {
  **/
 int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 {
-   enum action_iterate_type iterate_type = ITERATE_TYPE_DEFAULT;
-   unsigned file_type                    = 0;
-   int ret                               = 0;
-   enum msg_hash_enums enum_idx          = MSG_UNKNOWN;
-   const char *label                     = NULL;
-   menu_handle_t *menu                   = (menu_handle_t*)data;
-   size_t selection                      = menu_navigation_get_selection();
+   enum action_iterate_type iterate_type;
+   unsigned file_type             = 0;
+   int ret                        = 0;
+   uint32_t hash                  = 0;
+   enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
+   const char *label              = NULL;
+   menu_handle_t *menu            = (menu_handle_t*)data;
+   size_t selection               = menu_navigation_get_selection();
 
    menu_entries_get_last_stack(NULL, &label, &file_type, &enum_idx, NULL);
 
@@ -115,17 +83,8 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    menu->menu_state_msg[0]   = '\0';
 
    if (!string_is_empty(label))
-   {
-      unsigned k;
-      for (k = 0; k < ARRAY_SIZE(iterate_lbl_list); k++)
-      {
-         if (string_is_equal(label, msg_hash_to_str(iterate_lbl_list[k].id)))
-         {
-            iterate_type        = iterate_lbl_list[k].type;
-            break;
-         }
-      }
-   }
+      hash                   = msg_hash_calculate(label);
+   iterate_type              = action_iterate_type(hash);
 
    menu_driver_set_binding_state(iterate_type == ITERATE_TYPE_BIND);
 

@@ -71,12 +71,16 @@ int shader_action_parameter_right(unsigned type, const char *label, bool wraparo
    video_shader_driver_get_current_shader(&shader_info);
 
    param = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-
    if (!param)
       return menu_cbs_exit();
-   generic_shader_action_parameter_right(param, type, label, wraparound);
-   param = menu_shader_manager_get_parameters(
-         type - MENU_SETTINGS_SHADER_PARAMETER_0);
+   return generic_shader_action_parameter_right(param, type, label, wraparound);
+}
+
+int shader_action_parameter_preset_right(unsigned type, const char *label,
+      bool wraparound)
+{
+   struct video_shader_parameter *param = menu_shader_manager_get_parameters(
+         type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
    if (!param)
       return menu_cbs_exit();
    return generic_shader_action_parameter_right(param, type, label, wraparound);
@@ -477,7 +481,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
    {
-      BIND_ACTION_RIGHT(cbs, shader_action_parameter_right);
+      BIND_ACTION_RIGHT(cbs, shader_action_parameter_preset_right);
    }
 #endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
@@ -571,7 +575,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
 }
 
 static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, const char *menu_label)
+      const char *label, uint32_t label_hash, const char *menu_label)
 {
 
    if (cbs->setting)
@@ -591,12 +595,15 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       unsigned i;
       for (i = 0; i < MAX_USERS; i++)
       {
+         uint32_t label_setting_hash;
          char label_setting[128];
+
          label_setting[0] = '\0';
 
          snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
+         label_setting_hash = msg_hash_calculate(label_setting);
 
-         if (!string_is_equal(label, label_setting))
+         if (label_hash != label_setting_hash)
             continue;
 
          BIND_ACTION_RIGHT(cbs, bind_right_generic);
@@ -703,7 +710,8 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
 
 int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label)
+      const char *menu_label,
+      uint32_t label_hash)
 {
    if (!cbs)
       return menu_cbs_exit();
@@ -730,7 +738,8 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (menu_cbs_init_bind_right_compare_label(cbs, label, menu_label) == 0)
+   if (menu_cbs_init_bind_right_compare_label(cbs, label, label_hash, menu_label
+            ) == 0)
       return 0;
 
    if (menu_cbs_init_bind_right_compare_type(cbs, type, menu_label ) == 0)
