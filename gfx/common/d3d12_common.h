@@ -1302,8 +1302,9 @@ typedef struct
    D3D12Resource                      handle;
    D3D12Resource                      upload_buffer;
    D3D12_RESOURCE_DESC                desc;
-   D3D12_CPU_DESCRIPTOR_HANDLE        cpu_descriptor;
-   D3D12_GPU_DESCRIPTOR_HANDLE        gpu_descriptor;
+   /* the first view is srv, the rest are mip levels uavs */
+   D3D12_CPU_DESCRIPTOR_HANDLE        cpu_descriptor[D3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP - 5];
+   D3D12_GPU_DESCRIPTOR_HANDLE        gpu_descriptor[D3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP - 5];
    D3D12_GPU_DESCRIPTOR_HANDLE        sampler;
    D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
    UINT                               num_rows;
@@ -1354,6 +1355,7 @@ typedef struct
 
    struct
    {
+      D3D12RootSignature      cs_rootSignature; /* descriptor layout */
       D3D12RootSignature      sl_rootSignature; /* descriptor layout */
       D3D12RootSignature      rootSignature;    /* descriptor layout */
       d3d12_descriptor_heap_t srv_heap;         /* ShaderResouceView descritor heap */
@@ -1410,6 +1412,7 @@ typedef struct
    } sprites;
 
    D3D12PipelineState              pipes[GFX_MAX_SHADERS];
+   D3D12PipelineState              mipmapgen_pipe;
    d3d12_uniform_t                 ubo_values;
    D3D12Resource                   ubo;
    D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
@@ -1434,6 +1437,13 @@ typedef enum {
    ROOT_ID_UBO,
    ROOT_ID_MAX,
 } root_signature_parameter_index_t;
+
+typedef enum {
+   CS_ROOT_ID_TEXTURE_T = 0,
+   CS_ROOT_ID_UAV_T,
+   CS_ROOT_ID_CONSTANTS,
+   CS_ROOT_ID_MAX,
+} compute_root_index_t;
 
 RETRO_BEGIN_DECLS
 
@@ -1475,8 +1485,7 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t* texture
 void d3d12_create_fullscreen_quad_vbo(
       D3D12Device device, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo);
 
-DXGI_FORMAT d3d12_get_closest_match(
-      D3D12Device device, DXGI_FORMAT desired_format, D3D12_FORMAT_SUPPORT1 desired_format_support);
+DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DATA_FORMAT_SUPPORT* desired);
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
 static INLINE void d3d12_resource_transition(
@@ -1497,7 +1506,7 @@ static INLINE void d3d12_resource_transition(
 
 static INLINE void d3d12_set_texture(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
 {
-   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, texture->gpu_descriptor);
+   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, texture->gpu_descriptor[0]);
 }
 
 static INLINE void
@@ -1509,7 +1518,7 @@ d3d12_set_sampler(D3D12GraphicsCommandList cmd, D3D12_GPU_DESCRIPTOR_HANDLE samp
 static INLINE void
 d3d12_set_texture_and_sampler(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
 {
-   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, texture->gpu_descriptor);
+   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, texture->gpu_descriptor[0]);
    D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T, texture->sampler);
 }
 

@@ -1,5 +1,5 @@
 
-#define SRC(src) #src
+#define SRC(...) #__VA_ARGS__
 SRC(
    struct UBO
    {

@@ -161,12 +161,15 @@ static void menu_display_d3d12_draw(void* data)
    {
       d3d12_texture_t* texture = (d3d12_texture_t*)draw->texture;
       if (texture->dirty)
+      {
          d3d12_upload_texture(d3d12->queue.cmd, texture);
-      d3d12_set_texture_and_sampler(d3d12->queue.cmd, texture);
 
-      D3D12SetGraphicsRootDescriptorTable(
-            d3d12->queue.cmd, ROOT_ID_SAMPLER_T,
-            d3d12->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_BORDER]);
+         if (vertex_count > 1)
+            D3D12SetPipelineState(d3d12->queue.cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+         else
+            D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
+      }
+      d3d12_set_texture_and_sampler(d3d12->queue.cmd, texture);
    }
 
    D3D12DrawInstanced(d3d12->queue.cmd, vertex_count, 1, d3d12->sprites.offset, 0);
