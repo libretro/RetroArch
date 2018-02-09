@@ -55,6 +55,8 @@
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter)
 {
+   char ext_shaders[255];
+   char ext_name[255];
    const char *exts                  = NULL;
    bool recursive                    = false;
    settings_t *settings              = config_get_ptr();
@@ -66,7 +68,6 @@ struct string_list *dir_list_new_special(const char *input_dir,
          break;
       case DIR_LIST_CORES:
          {
-            char ext_name[255];
             ext_name[0]         = '\0';
 
             if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
@@ -96,7 +97,6 @@ struct string_list *dir_list_new_special(const char *input_dir,
        break;
       case DIR_LIST_SHADERS:
          {
-            char ext_shaders[255];
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
             union string_list_elem_attr attr;
 #endif
