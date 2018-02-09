@@ -94,6 +94,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
    D3DBlob                            vs_code = NULL;
    D3DBlob                            ps_code = NULL;
    D3DBlob                            gs_code = NULL;
+   D3DBlob                            cs_code = NULL;
    D3D12_GRAPHICS_PIPELINE_STATE_DESC desc    = { 0 };
 
    desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
@@ -324,12 +325,29 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       ps_code = NULL;
    }
 
+   {
+      static const char shader[] =
+#include "d3d_shaders/mimpapgen_sm5.h"
+            ;
+      D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {d3d12->desc.cs_rootSignature};
+      if (!d3d_compile(shader, sizeof(shader), NULL, "CSMain", "cs_5_0", &cs_code))
+         goto error;
+
+      desc.CS.pShaderBytecode = D3DGetBufferPointer(cs_code);
+      desc.CS.BytecodeLength  = D3DGetBufferSize(cs_code);
+      if(!D3D12CreateComputePipelineState(d3d12->device, &desc, &d3d12->mipmapgen_pipe))
+
+      Release(cs_code);
+      cs_code = NULL;
+   }
+
    return true;
 
 error:
    Release(vs_code);
    Release(ps_code);
    Release(gs_code);
+   Release(cs_code);
    return false;
 }
 
@@ -340,7 +358,7 @@ static void d3d12_gfx_free(void* data)
 
    font_driver_free_osd();
 
-   Release(d3d12->sprites.vbo);   
+   Release(d3d12->sprites.vbo);
    Release(d3d12->menu_pipeline_vbo);
 
    Release(d3d12->frame.ubo);
@@ -358,6 +376,7 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->desc.srv_heap.handle);
    Release(d3d12->desc.rtv_heap.handle);
 
+   Release(d3d12->desc.cs_rootSignature);
    Release(d3d12->desc.sl_rootSignature);
    Release(d3d12->desc.rootSignature);
 
@@ -366,6 +385,7 @@ static void d3d12_gfx_free(void* data)
    for (i = 0; i < GFX_MAX_SHADERS; i++)
       Release(d3d12->pipes[i]);
 
+   Release(d3d12->mipmapgen_pipe);
    Release(d3d12->sprites.pipe_blend);
    Release(d3d12->sprites.pipe_noblend);
    Release(d3d12->sprites.pipe_font);
@@ -810,16 +830,15 @@ static uintptr_t d3d12_gfx_load_texture(
    if (!texture)
       return 0;
 
-   /* todo : mipmapping */
    switch (filter_type)
    {
       case TEXTURE_FILTER_MIPMAP_LINEAR:
-         /* fallthrough */
+         texture->desc.MipLevels = UINT16_MAX;
       case TEXTURE_FILTER_LINEAR:
          texture->sampler = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
          break;
       case TEXTURE_FILTER_MIPMAP_NEAREST:
-         /* fallthrough */
+         texture->desc.MipLevels = UINT16_MAX;
       case TEXTURE_FILTER_NEAREST:
          texture->sampler = d3d12->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE];
          break;
