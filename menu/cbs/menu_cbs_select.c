@@ -132,7 +132,7 @@ static int shader_action_parameter_select(const char *path, const char *label, u
 static int shader_action_parameter_preset_select(const char *path, const char *label, unsigned type,
       size_t idx)
 {
-   return shader_action_parameter_preset_right(type, label, true);
+   return shader_action_parameter_right(type, label, true);
 }
 #endif
 
