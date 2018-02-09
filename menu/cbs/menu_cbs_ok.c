@@ -437,7 +437,6 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
          filebrowser_clear_type();
-         filebrowser_set_type(FILEBROWSER_APPEND_IMAGE);
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->paths.directory_menu_content;
@@ -4520,14 +4519,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      }
                      else
 #endif
-                     if (filebrowser_get_type() == FILEBROWSER_APPEND_IMAGE)
-                     {
-                        BIND_ACTION_OK(cbs, action_ok_disk_image_append);
-                     }
-                     else
                      {
                         BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
                      }
+                     break;
+                  case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
+                     BIND_ACTION_OK(cbs, action_ok_disk_image_append);
                      break;
                   default:
                      BIND_ACTION_OK(cbs, action_ok_file_load);
@@ -4548,14 +4545,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      }
                      else
 #endif
-                     if (filebrowser_get_type() == FILEBROWSER_APPEND_IMAGE)
-                     {
-                        BIND_ACTION_OK(cbs, action_ok_disk_image_append);
-                     }
-                     else
                      {
                         BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
                      }
+                     break;
+                  case MENU_LABEL_DISK_IMAGE_APPEND:
+                     BIND_ACTION_OK(cbs, action_ok_disk_image_append);
                      break;
                   default:
                      BIND_ACTION_OK(cbs, action_ok_file_load);
