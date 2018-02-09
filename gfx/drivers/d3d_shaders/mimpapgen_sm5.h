@@ -35,7 +35,12 @@ SRC(
       float4 c = 0.0f;
       for (i = 0; i < 4; i++)
          for (j = 0; j < 4; j++)
-             c += w[i] * w[j] * t0.SampleLevel(s0, texel_size * (DTid.xy + 0.5f * float2(i - 0.5f,j - 0.5f)), src_level);
+         {
+            float4 c0 = t0.SampleLevel(s0, texel_size * (DTid.xy + 0.5f * float2(i - 0.5f,j - 0.5f)), src_level);
+            c0.rgb *= c0.a;
+            c += w[i] * w[j] * c0;
+         }
+      c.rgb /= c.a;
 
       u0[DTid.xy] = c;
       return;
