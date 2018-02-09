@@ -122,6 +122,7 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
 #ifdef HAVE_SHADER_MANAGER
    video_shader_ctx_t shader_info;
    struct video_shader_parameter *param = NULL;
+   unsigned parameter = type - MENU_SETTINGS_SHADER_PARAMETER_0;
 
    video_shader_driver_get_current_shader(&shader_info);
 
@@ -129,13 +130,12 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
       return 0;
 
    param          = &shader_info.data->parameters
-      [type - MENU_SETTINGS_SHADER_PARAMETER_0];
+      [parameter];
    param->current = param->initial;
    param->current = MIN(MAX(param->minimum, param->current), param->maximum);
 
 #endif
 
-   unsigned parameter = type - MENU_SETTINGS_SHADER_PARAMETER_0;
    return menu_shader_manager_clear_parameter(parameter);
 }
 
