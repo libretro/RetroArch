@@ -332,11 +332,7 @@ static void d3d9_set_mvp(void *data,
       const void *mat_data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-
-   if (  d3d &&
-         d3d->renderchain_driver &&
-         d3d->renderchain_driver->set_mvp)
-      d3d->renderchain_driver->set_mvp(d3d, d3d->renderchain_data, shader_data, mat_data);
+   d3d_set_vertex_shader_constantf(d3d->dev, 0, (const float*)mat_data, 4);
 }
 
 static void d3d9_overlay_render(d3d_video_t *d3d,
