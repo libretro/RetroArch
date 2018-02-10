@@ -121,26 +121,9 @@ unsigned menu_shader_manager_get_amount_passes(void) { return 0; }
 void menu_shader_manager_free(void) { }
 #endif
 
-/**
- * menu_shader_manager_init:
- *
- * Initializes shader manager.
- **/
-bool menu_shader_manager_init(void)
+void menu_shader_manager_init_paths(void)
 {
-#ifdef HAVE_SHADER_MANAGER
-   settings_t *settings        = config_get_ptr();
    const char *config_path     = path_get(RARCH_PATH_CONFIG);
-   const char *path_shader     = retroarch_get_shader_preset();
-
-   menu_shader_manager_free();
-
-   menu_driver_shader          = (struct video_shader*)
-      calloc(1, sizeof(struct video_shader));
-
-   if (!menu_driver_shader || !path_shader)
-      return false;
-
    /* In a multi-config setting, we can't have
     * conflicts on menu.cgp/menu.glslp. */
    if (config_path)
@@ -166,6 +149,29 @@ bool menu_shader_manager_init(void)
       strlcpy(default_slangp, "menu.slangp",
             sizeof(default_slangp));
    }
+}
+
+/**
+ * menu_shader_manager_init:
+ *
+ * Initializes shader manager.
+ **/
+bool menu_shader_manager_init(void)
+{
+#ifdef HAVE_SHADER_MANAGER
+   settings_t *settings        = config_get_ptr();
+
+   const char *path_shader     = retroarch_get_shader_preset();
+
+   menu_shader_manager_free();
+
+   menu_driver_shader          = (struct video_shader*)
+      calloc(1, sizeof(struct video_shader));
+
+   if (!menu_driver_shader || !path_shader)
+      return false;
+
+   menu_shader_manager_init_paths();
 
    switch (msg_hash_to_file_type(msg_hash_calculate(
                path_get_extension(path_shader))))
@@ -321,6 +327,7 @@ bool menu_shader_manager_save_preset(
    buffer[0] = config_directory[0]        = '\0';
    preset_path[0]                         = '\0';
 
+   menu_shader_manager_init_paths();
 
    if (!shader)
       return false;
