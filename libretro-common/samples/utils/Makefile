@@ -2,7 +2,7 @@ compiler    := gcc
 extra_flags :=
 use_neon    := 0
 release	   := release
-DYLIB	      :=
+EXE_EXT	      :=
 
 ifeq ($(platform),)
 platform = unix
@@ -21,7 +21,7 @@ else ifneq ($(findstring win,$(shell uname -a)),)
 endif
 endif
 
-ifeq ($(platform),gcc)
+ifeq ($(compiler),gcc)
 extra_rules_gcc := $(shell $(compiler) -dumpmachine)
 endif
 
@@ -42,17 +42,14 @@ ifeq (debug,$(build))
 extra_flags += -O0 -g
 endif
 
-ldflags := -shared -Wl,--version-script=link.T
+ldflags :=
 
+EXE_EXT :=
 ifeq ($(platform), unix)
-DYLIB =
 else ifeq ($(platform), osx)
 compiler := $(CC)
-DYLIB =
-ldflags := -dynamiclib
 else
-extra_flags += -static-libgcc -static-libstdc++
-DYLIB = exe
+EXE_EXT = .exe
 endif
 
 LIBRETRO_COMM_DIR := ../..
@@ -60,8 +57,8 @@ CORE_DIR := $(LIBRETRO_COMM_DIR)/utils
 
 CC      := $(compiler)
 CXX     := $(subst CC,++,$(compiler))
-flags   := -fPIC $(extra_flags) -I$(LIBRETRO_COMM_DIR)/include
-asflags := -fPIC  $(extra_flags)
+flags   := -I$(LIBRETRO_COMM_DIR)/include
+asflags := $(extra_flags)
 LDFLAGS := 
 flags   += -std=c99 -DMD5_BUILD_UTILITY -DSHA1_BUILD_UTILITY
 
@@ -77,17 +74,18 @@ OBJS += $(CORE_DIR)/djb2.o \
 		  $(CORE_DIR)/sha1.o \
 		  $(CORE_DIR)/sha1_main.o \
 		  $(CORE_DIR)/crc32.o
-UTILS += djb2$(DYLIB) md5$(DYLIB) sha1$(DYLIB) crc32$(DYLIB)
 
-all: djb2$(DYLIB) md5$(DYLIB) sha1$(DYLIB) crc32$(DYLIB)
+UTILS := djb2$(EXE_EXT) md5$(EXE_EXT) sha1$(EXE_EXT) crc32$(EXE_EXT)
 
-djb2$(DYLIB): $(CORE_DIR)/djb2.o
+all: $(UTILS)
 
-md5$(DYLIB): $(CORE_DIR)/md5.o
+djb2$(EXE_EXT): $(CORE_DIR)/djb2.o
 
-sha1$(DYLIB): $(CORE_DIR)/sha1.o
+md5$(EXE_EXT): $(CORE_DIR)/md5.o
 
-crc32$(DYLIB): $(CORE_DIR)/crc32.o $(CORE_DIR)/../encodings/encoding_crc32.o
+sha1$(EXE_EXT): $(CORE_DIR)/sha1.o $(CORE_DIR)/sha1_main.o
+
+crc32$(EXE_EXT): $(CORE_DIR)/crc32.o $(CORE_DIR)/../encodings/encoding_crc32.o
 
 %.o: %.S
 	$(CC) -c -o $@ $(asflags) $(LDFLAGS)  $(ASMFLAGS)  $<
@@ -95,12 +93,12 @@ crc32$(DYLIB): $(CORE_DIR)/crc32.o $(CORE_DIR)/../encodings/encoding_crc32.o
 %.o: %.c
 	$(CC) -c -o $@ $(flags) $<
 
-%.$(DYLIB): %.o
+$(UTILS):
 	$(CC) -o $@ $(ldflags) $(flags) $^
 
 clean:
-	rm -f *.o
-	rm -f djb2$(DYLIB) md5$(DYLIB) sha1$(DYLIB) crc32$(DYLIB)
+	rm -f $(CORE_DIR)/*.o
+	rm -f $(UTILS)
 
 strip:
-	strip -s *.$(DYLIB)
+	strip -s $(UTILS)
