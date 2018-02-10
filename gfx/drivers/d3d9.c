@@ -1649,7 +1649,8 @@ struct d3d9_texture_info
    enum texture_filter_type type;
 };
 
-static void d3d9_video_texture_load_d3d(struct d3d9_texture_info *info,
+static void d3d9_video_texture_load_d3d(
+      struct d3d9_texture_info *info,
       uintptr_t *id)
 {
    D3DLOCKED_RECT d3dlr;
@@ -1709,8 +1710,8 @@ static uintptr_t d3d9_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
    uintptr_t id = 0;
-   struct d3d9_texture_info *info = (struct d3d9_texture_info*)calloc(1, sizeof(*info));
-
+   struct d3d9_texture_info *info = (struct d3d9_texture_info*)
+      calloc(1, sizeof(*info));
    if (!info)
       return 0;
 
@@ -1719,7 +1720,8 @@ static uintptr_t d3d9_load_texture(void *video_data, void *data,
    info->type     = filter_type;
 
    if (threaded)
-      return video_thread_texture_load(info, d3d9_video_texture_load_wrap_d3d);
+      return video_thread_texture_load(info,
+            d3d9_video_texture_load_wrap_d3d);
 
    d3d9_video_texture_load_d3d(info, &id);
    free(info);

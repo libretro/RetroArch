@@ -1647,14 +1647,15 @@ static void d3d8_set_menu_texture_enable(void *data,
    d3d->menu->fullscreen         = full_screen;
 }
 
-static void d3d8_video_texture_load_d3d(d3d_video_t *d3d,
-      struct texture_image *ti,
-      enum texture_filter_type filter_type,
+static void d3d8_video_texture_load_d3d(
+      struct d3d9_texture_info *info,
       uintptr_t *id)
 {
    D3DLOCKED_RECT d3dlr;
-   unsigned usage         = 0;
-   LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)d3d_texture_new(d3d->dev, NULL,
+   unsigned usage           = 0;
+   d3d_video_t *d3d         = (d3d_video_t*)info->userdata;
+   struct texture_image *ti = (struct texture_image*)info->data;
+   LPDIRECT3DTEXTURE8 tex   = (LPDIRECT3DTEXTURE8)d3d_texture_new(d3d->dev, NULL,
                ti->width, ti->height, 0,
                usage, d3d_get_argb8888_format(),
                D3DPOOL_MANAGED, 0, 0, 0,
@@ -1685,8 +1686,11 @@ static void d3d8_video_texture_load_d3d(d3d_video_t *d3d,
 static int d3d8_video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
-   d3d8_video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true),
-         (struct texture_image*)data, TEXTURE_FILTER_LINEAR, &id);
+   struct d3d8_texture_info *info = (struct d3d8_texture_info*)data;
+   if (!info)
+      return 0;
+   d3d8_video_texture_load_d3d(info, &id);
+   free(info);
    return id;
 }
 
@@ -1694,15 +1698,21 @@ static uintptr_t d3d8_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
    uintptr_t id = 0;
+   struct d3d8_texture_info *info = (struct d3d8_texture_info*)
+      calloc(1, sizeof(*info));
+   if (!info)
+      return 0;
+
+   info->userdata = video_data;
+   info->data     = data;
+   info->type     = filter_type;
 
    if (threaded)
-   {
-      custom_command_method_t func = d3d8_video_texture_load_wrap_d3d;
-      return video_thread_texture_load(data, func);
-   }
+      return video_thread_texture_load(info,
+            d3d8_video_texture_load_wrap_d3d);
 
-   d3d8_video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(false),
-         (struct texture_image*)data, filter_type, &id);
+   d3d8_video_texture_load_d3d(info, &id);
+   free(info);
    return id;
 }
 
