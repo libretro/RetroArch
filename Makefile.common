@@ -1271,6 +1271,9 @@ ifeq ($(HAVE_D3D12), 1)
    OBJ += gfx/drivers/d3d12.o gfx/common/d3d12_common.o \
       gfx/drivers_font/d3d12_font.o menu/drivers_display/menu_display_d3d12.o
    DEFINES += -DHAVE_D3D12
+   HAVE_SLANG       = 1
+   HAVE_GLSLANG     = 1
+   HAVE_SPIRV_CROSS = 1
 endif
 
 ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)

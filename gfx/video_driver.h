@@ -43,7 +43,7 @@
 
 #define RARCH_SCALE_BASE 256
 
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_D3D11)
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL) || defined(HAVE_SLANG)
 #ifndef HAVE_SHADER_MANAGER
 #define HAVE_SHADER_MANAGER
 #endif
@@ -97,7 +97,9 @@ enum gfx_ctx_api
    GFX_CTX_OPENGL_ES_API,
    GFX_CTX_DIRECT3D8_API,
    GFX_CTX_DIRECT3D9_API,
+   GFX_CTX_DIRECT3D10_API,
    GFX_CTX_DIRECT3D11_API,
+   GFX_CTX_DIRECT3D12_API,
    GFX_CTX_OPENVG_API,
    GFX_CTX_VULKAN_API,
    GFX_CTX_GDI_API,

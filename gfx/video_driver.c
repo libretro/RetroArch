@@ -599,8 +599,12 @@ static void video_context_driver_reset(void)
    {
       const char *video_driver = video_driver_get_ident();
 
-      if(string_is_equal(video_driver, "d3d11"))
+      if(string_is_equal(video_driver, "d3d10"))
+         current_video_context_api = GFX_CTX_DIRECT3D10_API;
+      else if(string_is_equal(video_driver, "d3d11"))
          current_video_context_api = GFX_CTX_DIRECT3D11_API;
+      else if(string_is_equal(video_driver, "d3d12"))
+         current_video_context_api = GFX_CTX_DIRECT3D12_API;
       else if(string_is_equal(video_driver, "gx2"))
          current_video_context_api = GFX_CTX_GX2_API;
    }

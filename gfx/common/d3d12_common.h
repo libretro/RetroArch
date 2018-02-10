@@ -1306,12 +1306,14 @@ typedef struct
    D3D12_CPU_DESCRIPTOR_HANDLE        cpu_descriptor[D3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP - 5];
    D3D12_GPU_DESCRIPTOR_HANDLE        gpu_descriptor[D3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP - 5];
    D3D12_GPU_DESCRIPTOR_HANDLE        sampler;
+   D3D12_CPU_DESCRIPTOR_HANDLE        rt_view;
    D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
    UINT                               num_rows;
    UINT64                             row_size_in_bytes;
    UINT64                             total_bytes;
    d3d12_descriptor_heap_t*           srv_heap;
    bool                               dirty;
+   float4_t                           size_data;
 } d3d12_texture_t;
 
 #ifndef ALIGN
@@ -1377,13 +1379,14 @@ typedef struct
 
    struct
    {
+      d3d12_texture_t                 texture[GFX_MAX_FRAME_HISTORY + 1];
       D3D12Resource                   ubo;
       D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
       D3D12Resource                   vbo;
       D3D12_VERTEX_BUFFER_VIEW        vbo_view;
-      d3d12_texture_t                 texture;
       D3D12_VIEWPORT                  viewport;
       D3D12_RECT                      scissorRect;
+      float4_t                        output_size;
       int                             rotation;
    } frame;
 
@@ -1411,6 +1414,25 @@ typedef struct
       bool                     enabled;
    } sprites;
 
+   struct
+   {
+      D3D12PipelineState              pipe;
+      D3D12_GPU_DESCRIPTOR_HANDLE     sampler;
+      D3D12Resource                   buffers[SLANG_CBUFFER_MAX];
+      D3D12_CONSTANT_BUFFER_VIEW_DESC buffer_view[SLANG_CBUFFER_MAX];
+      d3d12_texture_t                 rt;
+      d3d12_texture_t                 feedback;
+      D3D12_VIEWPORT                  viewport;
+      D3D12_RECT                      scissorRect;
+      pass_semantics_t                semantics;
+      uint32_t                        frame_count;
+      D3D12_GPU_DESCRIPTOR_HANDLE     textures;
+      D3D12_GPU_DESCRIPTOR_HANDLE     samplers;
+   } pass[GFX_MAX_SHADERS];
+
+   struct video_shader* shader_preset;
+   d3d12_texture_t      luts[GFX_MAX_TEXTURES];
+
    D3D12PipelineState              pipes[GFX_MAX_SHADERS];
    D3D12PipelineState              mipmapgen_pipe;
    d3d12_uniform_t                 ubo_values;
@@ -1423,6 +1445,8 @@ typedef struct
    bool                            resize_chain;
    bool                            keep_aspect;
    bool                            resize_viewport;
+   bool                            resize_render_targets;
+   bool                            init_history;
    D3D12Resource                   menu_pipeline_vbo;
    D3D12_VERTEX_BUFFER_VIEW        menu_pipeline_vbo_view;
 
@@ -1435,6 +1459,7 @@ typedef enum {
    ROOT_ID_TEXTURE_T = 0,
    ROOT_ID_SAMPLER_T,
    ROOT_ID_UBO,
+   ROOT_ID_PC,
    ROOT_ID_MAX,
 } root_signature_parameter_index_t;
 
