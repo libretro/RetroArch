@@ -202,6 +202,7 @@ install: $(TARGET)
 	mkdir -p $(DESTDIR)$(BIN_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(GLOBAL_CONFIG_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(DATA_DIR)/applications 2>/dev/null || /bin/true
+	mkdir -p $(DESTDIR)$(DOC_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(MAN_DIR)/man6 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(DATA_DIR)/pixmaps 2>/dev/null || /bin/true
 	cp $(TARGET) $(DESTDIR)$(BIN_DIR)
@@ -211,6 +212,8 @@ install: $(TARGET)
 	cp docs/retroarch.6 $(DESTDIR)$(MAN_DIR)/man6
 	cp docs/retroarch-cg2glsl.6 $(DESTDIR)$(MAN_DIR)/man6
 	cp media/retroarch.svg $(DESTDIR)$(DATA_DIR)/pixmaps
+	cp COPYING $(DESTDIR)$(DOC_DIR)
+	cp README.md $(DESTDIR)$(DOC_DIR)
 	chmod 755 $(DESTDIR)$(BIN_DIR)/$(TARGET)
 	chmod 755 $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	chmod 644 $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
@@ -224,6 +227,7 @@ install: $(TARGET)
 		mkdir -p $(DESTDIR)$(ASSETS_DIR)/assets/glui; \
 		cp -r media/assets/xmb/ $(DESTDIR)$(ASSETS_DIR)/assets; \
 		cp -r media/assets/glui/ $(DESTDIR)$(ASSETS_DIR)/assets; \
+		cp media/assets/COPYING $(DESTDIR)$(DOC_DIR)/COPYING.assets; \
 		echo "Asset copying done."; \
 	fi
 
@@ -232,9 +236,12 @@ uninstall:
 	rm -f $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	rm -f $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
 	rm -f $(DESTDIR)$(DATA_DIR)/applications/retroarch.desktop
+	rm -f $(DESTDIR)$(DATA_DIR)/pixmaps/retroarch.svg
+	rm -f $(DESTDIR)$(DOC_DIR)/COPYING
+	rm -f $(DESTDIR)$(DOC_DIR)/COPYING.assets
+	rm -f $(DESTDIR)$(DOC_DIR)/README.md
 	rm -f $(DESTDIR)$(MAN_DIR)/man6/retroarch.6
 	rm -f $(DESTDIR)$(MAN_DIR)/man6/retroarch-cg2glsl.6
-	rm -f $(DESTDIR)$(DATA_DIR)/pixmaps/retroarch.svg
 	rm -rf $(DESTDIR)$(ASSETS_DIR)
 
 clean:

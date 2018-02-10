@@ -36,6 +36,7 @@ EOF
 	print_help_option "--global-config-dir=PATH" "System wide config file prefix"
 	print_help_option "--bindir=PATH"            "Binary install directory"
 	print_help_option "--datarootdir=PATH"       "Read-only data install directory"
+	print_help_option "--docdir=PATH"            "Documentation install directory"
 	print_help_option "--mandir=PATH"            "Manpage install directory"
 	print_help_option "--build=BUILD"            "The build system (no-op)"
 	print_help_option "--host=HOST"              "Cross-compile with HOST-gcc instead of gcc"
@@ -90,6 +91,7 @@ parse_input() # Parse stuff :V
 			--bindir=*) BIN_DIR="${1#*=}";;
 			--build=*) BUILD="${1#*=}";;
 			--datarootdir=*) SHARE_DIR="${1#*=}";;
+			--docdir=*) DOC_DIR="${1#*=}";;
 			--host=*) CROSS_COMPILE=${1##--host=}-;;
 			--mandir=*) MAN_DIR="${1#*=}";;
 			--enable-*)
