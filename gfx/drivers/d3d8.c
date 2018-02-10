@@ -1690,7 +1690,6 @@ static int d3d8_video_texture_load_wrap_d3d(void *data)
    if (!info)
       return 0;
    d3d8_video_texture_load_d3d(info, &id);
-   free(info);
    return id;
 }
 
@@ -1698,21 +1697,17 @@ static uintptr_t d3d8_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
    uintptr_t id = 0;
-   struct d3d8_texture_info *info = (struct d3d8_texture_info*)
-      calloc(1, sizeof(*info));
-   if (!info)
-      return 0;
+   struct d3d8_texture_info info;
 
-   info->userdata = video_data;
-   info->data     = data;
-   info->type     = filter_type;
+   info.userdata = video_data;
+   info.data     = data;
+   info.type     = filter_type;
 
    if (threaded)
-      return video_thread_texture_load(info,
+      return video_thread_texture_load(&info,
             d3d8_video_texture_load_wrap_d3d);
 
-   d3d8_video_texture_load_d3d(info, &id);
-   free(info);
+   d3d8_video_texture_load_d3d(&info, &id);
    return id;
 }
 
