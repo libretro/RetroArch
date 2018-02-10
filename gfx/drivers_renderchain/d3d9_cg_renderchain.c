@@ -1530,8 +1530,7 @@ static bool d3d9_cg_renderchain_render(
       viewport.Width  = out_width;
       viewport.Height = out_height;
 
-      if (chain)
-         d3d_set_viewports(chain, &viewport);
+      d3d_set_viewports(chain->dev, &viewport);
 
       cg_d3d9_renderchain_set_vertices(chain, from_pass,
             current_width, current_height,
@@ -1556,8 +1555,7 @@ static bool d3d9_cg_renderchain_render(
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
 
-   if (chain)
-      d3d_set_viewports(chain, chain->final_viewport);
+   d3d_set_viewports(chain->dev, chain->final_viewport);
 
    cg_d3d9_renderchain_set_vertices(chain, last_pass,
          current_width, current_height,
