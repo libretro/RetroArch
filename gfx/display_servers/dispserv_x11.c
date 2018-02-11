@@ -22,6 +22,7 @@
 typedef struct
 {
    unsigned opacity;
+   bool decorations;
 } dispserv_x11_t;
 
 static void* x11_display_server_init(void)
@@ -47,7 +48,6 @@ static bool x11_set_window_opacity(void *data, unsigned opacity)
    dispserv_x11_t *serv = (dispserv_x11_t*)data;
    Atom net_wm_opacity  = XInternAtom(g_x11_dpy, "_NET_WM_WINDOW_OPACITY", False);
    Atom cardinal        = XInternAtom(g_x11_dpy, "CARDINAL", False);
-   settings_t *settings = config_get_ptr();
 
    serv->opacity        = opacity;
 
@@ -61,11 +61,23 @@ static bool x11_set_window_opacity(void *data, unsigned opacity)
    return true;
 }
 
+static bool x11_set_window_decorations(void *data, bool on)
+{
+   dispserv_x11_t *serv = (dispserv_x11_t*)data;
+
+   serv->decorations = on;
+
+   /* menu_setting performs a reinit instead to properly apply decoration changes */
+
+   return true;
+}
+
 const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
    x11_display_server_destroy,
    x11_set_window_opacity,
    NULL,
+   x11_set_window_decorations,
    "x11"
 };
 

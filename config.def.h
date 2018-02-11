@@ -125,6 +125,9 @@ static const unsigned fullscreen_y = 0;
  */
 static const unsigned window_opacity = 100;
 
+/* Whether to show the usual window decorations like border, titlebar etc. */
+static const bool window_decorations = true;
+
 #if defined(RARCH_CONSOLE) || defined(__APPLE__)
 static const bool load_dummy_on_core_shutdown = false;
 #else

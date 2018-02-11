@@ -254,6 +254,7 @@ typedef struct settings
       bool bluetooth_enable;
 
       bool automatically_add_content_to_playlist;
+      bool video_window_show_decorations;
    } bools;
 
    struct
