@@ -41,6 +41,7 @@ typedef struct content_ctx_info
 
 int pending_subsystem;
 int pending_subsystem_rom_id;
+int pending_subsystem_rom_num;
 
 char pending_subsystem_ident[255];
 char pending_subsystem_extensions[PATH_MAX_LENGTH];
