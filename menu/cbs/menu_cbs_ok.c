@@ -64,6 +64,7 @@ enum
    ACTION_OK_LOAD_REMAPPING_FILE,
    ACTION_OK_LOAD_CHEAT_FILE,
    ACTION_OK_APPEND_DISK_IMAGE,
+   ACTION_OK_SUBSYSTEM_ADD,
    ACTION_OK_LOAD_CONFIG_FILE,
    ACTION_OK_LOAD_CORE,
    ACTION_OK_LOAD_WALLPAPER,
@@ -437,6 +438,18 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
          filebrowser_clear_type();
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = settings->paths.directory_menu_content;
+         info_label         = label;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         break;
+      case ACTION_OK_DL_SUBSYSTEM_ADD_LIST:
+         filebrowser_clear_type();
+         if (pending_subsystem != type - MENU_SETTINGS_SUBSYSTEM_ADD)
+            content_clear_subsystem();
+         pending_subsystem = type - MENU_SETTINGS_SUBSYSTEM_ADD;
+         filebrowser_set_type(FILEBROWSER_SELECT_FILE_SUBSYSTEM);
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->paths.directory_menu_content;
@@ -1168,6 +1181,10 @@ static int generic_action_ok(const char *path,
          command_event(CMD_EVENT_DISK_APPEND_IMAGE, action_path);
          generic_action_ok_command(CMD_EVENT_RESUME);
          break;
+      case ACTION_OK_SUBSYSTEM_ADD:
+         flush_type = MENU_SETTINGS;
+         content_add_subsystem(action_path);
+         break;
       case ACTION_OK_SET_DIRECTORY:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST);
          ret        = set_path_generic(filebrowser_label, action_path);
@@ -1246,6 +1263,7 @@ default_action_ok_set(action_ok_set_path,             ACTION_OK_SET_PATH,       
 default_action_ok_set(action_ok_load_core,            ACTION_OK_LOAD_CORE,             MSG_UNKNOWN)
 default_action_ok_set(action_ok_config_load,          ACTION_OK_LOAD_CONFIG_FILE,      MSG_UNKNOWN)
 default_action_ok_set(action_ok_disk_image_append,    ACTION_OK_APPEND_DISK_IMAGE,     MSG_UNKNOWN)
+default_action_ok_set(action_ok_subsystem_add,        ACTION_OK_SUBSYSTEM_ADD,         MSG_UNKNOWN)
 default_action_ok_set(action_ok_cheat_file_load,      ACTION_OK_LOAD_CHEAT_FILE,       MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)
 default_action_ok_set(action_ok_record_configfile_load,      ACTION_OK_LOAD_RECORD_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
 default_action_ok_set(action_ok_remap_file_load,      ACTION_OK_LOAD_REMAPPING_FILE,   MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS    )
@@ -2972,6 +2990,7 @@ default_action_ok_func(action_ok_core_list, ACTION_OK_DL_CORE_LIST)
 default_action_ok_func(action_ok_cheat_file, ACTION_OK_DL_CHEAT_FILE)
 default_action_ok_func(action_ok_playlist_collection, ACTION_OK_DL_PLAYLIST_COLLECTION)
 default_action_ok_func(action_ok_disk_image_append_list, ACTION_OK_DL_DISK_IMAGE_APPEND_LIST)
+default_action_ok_func(action_ok_subsystem_add_list, ACTION_OK_DL_SUBSYSTEM_ADD_LIST)
 default_action_ok_func(action_ok_record_configfile, ACTION_OK_DL_RECORD_CONFIGFILE)
 default_action_ok_func(action_ok_remap_file, ACTION_OK_DL_REMAP_FILE)
 default_action_ok_func(action_ok_shader_preset, ACTION_OK_DL_SHADER_PRESET)
@@ -4088,6 +4107,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
             BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
             break;
+         case MENU_ENUM_LABEL_SUBSYSTEM_ADD:
+            BIND_ACTION_OK(cbs, action_ok_subsystem_add_list);
+            break;
          case MENU_ENUM_LABEL_CONFIGURATIONS:
             BIND_ACTION_OK(cbs, action_ok_configurations_list);
             break;
@@ -4281,6 +4303,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DISK_IMAGE_APPEND:
             BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
+            break;
+         case MENU_LABEL_SUBSYSTEM_ADD:
+            BIND_ACTION_OK(cbs, action_ok_subsystem_add_list);
             break;
          case MENU_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_video_resolution);
@@ -4526,6 +4551,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
                      BIND_ACTION_OK(cbs, action_ok_disk_image_append);
                      break;
+                  case MENU_ENUM_LABEL_SUBSYSTEM_ADD:
+                     BIND_ACTION_OK(cbs, action_ok_subsystem_add);
+                     break;
                   default:
                      BIND_ACTION_OK(cbs, action_ok_file_load);
                      break;
@@ -4551,6 +4579,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      break;
                   case MENU_LABEL_DISK_IMAGE_APPEND:
                      BIND_ACTION_OK(cbs, action_ok_disk_image_append);
+                     break;
+                  case MENU_LABEL_SUBSYSTEM_ADD:
+                     BIND_ACTION_OK(cbs, action_ok_subsystem_add);
                      break;
                   default:
                      BIND_ACTION_OK(cbs, action_ok_file_load);
