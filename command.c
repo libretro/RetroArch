@@ -1219,6 +1219,8 @@ static bool event_init_content(void)
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return true;
 
+   content_set_subsystem_info();
+
    if (!contentless)
       path_fill_names();
 

@@ -100,6 +100,9 @@ void content_add_subsystem(const char* path);
 /* Get the current subsystem rom id */
 int content_get_subsystem_rom_id();
 
+/* Set environment variables before a subsystem load */
+void content_set_subsystem_info();
+
 
 RETRO_END_DECLS
 

@@ -285,7 +285,7 @@ static bool content_load(content_ctx_info_t *info)
 
    if (pending_subsystem_init)
    {
-      content_init();
+      command_event(CMD_EVENT_CORE_INIT, NULL);
       content_clear_subsystem();
    }
 
@@ -1834,9 +1834,8 @@ void content_deinit(void)
    core_does_not_need_content = false;
 }
 
-/* Initializes and loads a content file for the currently
- * selected libretro core. */
-bool content_init(void)
+/* Set environment variables before a subsystem load */
+void content_set_subsystem_info()
 {
    if (pending_subsystem_init)
    {
@@ -1845,6 +1844,12 @@ bool content_init(void)
       /* hardcoded to 2 for testing please fix */
       path_set_special(roms, pending_subsystem_rom_num);
    }
+}
+
+/* Initializes and loads a content file for the currently
+ * selected libretro core. */
+bool content_init(void)
+{
    content_information_ctx_t content_ctx;
 
    bool ret                                   = true;
