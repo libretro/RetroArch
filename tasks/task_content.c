@@ -1670,6 +1670,22 @@ void content_get_status(
    *is_inited   = _content_is_inited;
 }
 
+/* Clears the pending subsystem rom buffer*/
+void content_clear_subsystem(void)
+{
+   pending_subsystem_rom_id = 0;
+   for (int i = 0; i < RARCH_MAX_SUBSYSTEM_ROMS; i++)
+      pending_subsystem_roms[i][0] = '\0';
+}
+
+/* Add a rom to the subsystem rom buffer */
+void content_add_subsystem(const char* path)
+{
+   strlcpy(pending_subsystem_roms[pending_subsystem_rom_id], path, sizeof(pending_subsystem_roms[pending_subsystem_rom_id]));
+   RARCH_LOG("[subsystem] subsystem id: %d rom id: %d, rom path: %s\n", pending_subsystem, pending_subsystem_rom_id, pending_subsystem_roms[pending_subsystem_rom_id]);
+   pending_subsystem_rom_id++;
+}
+
 void content_set_does_not_need_content(void)
 {
    core_does_not_need_content = true;

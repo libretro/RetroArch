@@ -4340,6 +4340,8 @@ static int xmb_list_push(void *data, void *userdata,
 {
    menu_displaylist_ctx_parse_entry_t entry;
    int ret = -1;
+   int i = 0;
+   int j = 0;
    core_info_list_t *list = NULL;
    menu_handle_t *menu    = (menu_handle_t*)data;
 
@@ -4435,6 +4437,22 @@ static int xmb_list_push(void *data, void *userdata,
             {
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+
+               const struct retro_subsystem_info* subsystem = NULL;
+               subsystem = system->subsystem.data;
+               if (subsystem)
+               {
+                  for (i = 0; i < system->subsystem.size; i++, subsystem++)
+                  {
+                     char s[PATH_MAX_LENGTH];
+                     snprintf(s, sizeof(s), "Load: %s %c", subsystem->desc, i == pending_subsystem ? '*': ' ');
+                     menu_entries_append_enum(info->list,
+                           s,
+                           msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
+                           MENU_ENUM_LABEL_SUBSYSTEM_ADD,
+                           MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
+                  }
+               }
             }
 
             entry.enum_idx      = MENU_ENUM_LABEL_ADD_CONTENT_LIST;

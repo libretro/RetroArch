@@ -25,6 +25,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_miscellaneous.h>
 
 #include "frontend/frontend_driver.h"
 
@@ -37,6 +38,12 @@ typedef struct content_ctx_info
    void *args;                     /* Arguments passed from callee */
    environment_get_t environ_get;  /* Function passed for environment_get function */
 } content_ctx_info_t;
+
+int pending_subsystem;
+int pending_subsystem_rom_id;
+
+char pending_subsystem_extensions[PATH_MAX_LENGTH];
+char pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS][PATH_MAX_LENGTH];
 
 /* Load a RAM state from disk to memory. */
 bool content_load_ram_file(unsigned slot);
@@ -80,6 +87,13 @@ bool content_reset_savestate_backups(void);
 /* Checks if the buffers are empty */
 bool content_undo_load_buf_is_empty(void);
 bool content_undo_save_buf_is_empty(void);
+
+/* Clears the pending subsystem rom buffer*/
+void content_clear_subsystem(void);
+
+/* Add a rom to the subsystem rom buffer */
+void content_add_subsystem(const char* path);
+
 
 RETRO_END_DECLS
 
