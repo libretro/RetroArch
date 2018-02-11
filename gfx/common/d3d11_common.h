@@ -2549,7 +2549,6 @@ typedef struct
    struct
    {
       d3d11_shader_t             shader;
-      D3D11SamplerStateRef       sampler;
       D3D11Buffer                buffers[SLANG_CBUFFER_MAX];
       d3d11_texture_t            rt;
       d3d11_texture_t            feedback;

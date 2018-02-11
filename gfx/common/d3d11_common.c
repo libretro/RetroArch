@@ -202,9 +202,6 @@ bool d3d11_init_shader(
    }
    else /* char array */
    {
-      if (!size)
-         size = strlen(src);
-
       if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, "vs_5_0", &vs_code))
          success = false;
       if (ps_entry && !d3d_compile(src, size, (LPCSTR)src_name, ps_entry, "ps_5_0", &ps_code))

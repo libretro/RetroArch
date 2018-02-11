@@ -142,10 +142,10 @@ static bool slang_process_reflection(
 
    for (unsigned i = 0; i < shader_info->num_parameters; i++)
    {
-	   if (!set_unique_map(
-		   uniform_semantic_map, shader_info->parameters[i].id,
-		   slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, i }))
-		   return false;
+      if (!set_unique_map(
+                uniform_semantic_map, shader_info->parameters[i].id,
+                slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, i }))
+         return false;
    }
 
    slang_reflection sl_reflection;
@@ -228,9 +228,19 @@ static bool slang_process_reflection(
          if (src.stage_mask)
          {
             texture_sem_t texture = {
-               (void*)((uintptr_t)map->textures[semantic].image + index * map->textures[semantic].image_stride),
-               (void*)((uintptr_t)map->textures[semantic].sampler + index * map->textures[semantic].sampler_stride),
+               (void*)((uintptr_t)map->textures[semantic].image + index * map->textures[semantic].image_stride)
             };
+
+            if (semantic == SLANG_TEXTURE_SEMANTIC_USER)
+            {
+               texture.wrap   = shader_info->lut[index].wrap;
+               texture.filter = shader_info->lut[index].filter;
+            }
+            else
+            {
+               texture.wrap   = shader_info->pass[pass_number].wrap;
+               texture.filter = shader_info->pass[pass_number].filter;
+            }
             texture.stage_mask = src.stage_mask;
             texture.binding    = src.binding;
             string id = get_semantic_name(sl_reflection, (slang_texture_semantic)semantic, index);

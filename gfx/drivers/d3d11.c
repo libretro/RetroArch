@@ -183,33 +183,27 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          {
             /* Original */
             { &d3d11->frame.texture[0].view, 0,
-               &d3d11->frame.texture[0].size_data, 0,
-               &d3d11->pass[i].sampler, 0 },
+               &d3d11->frame.texture[0].size_data, 0},
 
             /* Source */
             { &source->view, 0,
-               &source->size_data, 0,
-               &d3d11->pass[i].sampler, 0 },
+               &source->size_data, 0},
 
             /* OriginalHistory */
             { &d3d11->frame.texture[0].view, sizeof(*d3d11->frame.texture),
-               &d3d11->frame.texture[0].size_data, sizeof(*d3d11->frame.texture),
-               &d3d11->pass[i].sampler, 0 },
+               &d3d11->frame.texture[0].size_data, sizeof(*d3d11->frame.texture)},
 
             /* PassOutput */
             { &d3d11->pass[0].rt.view, sizeof(*d3d11->pass),
-               &d3d11->pass[0].rt.size_data, sizeof(*d3d11->pass),
-               &d3d11->pass[i].sampler, 0 },
+               &d3d11->pass[0].rt.size_data, sizeof(*d3d11->pass)},
 
             /* PassFeedback */
             { &d3d11->pass[0].feedback.view, sizeof(*d3d11->pass),
-               &d3d11->pass[0].feedback.size_data, sizeof(*d3d11->pass),
-               &d3d11->pass[i].sampler, 0 },
+               &d3d11->pass[0].feedback.size_data, sizeof(*d3d11->pass)},
 
             /* User */
             { &d3d11->luts[0].view, sizeof(*d3d11->luts),
-               &d3d11->luts[0].size_data, sizeof(*d3d11->luts),
-               &d3d11->luts[0].sampler, sizeof(*d3d11->luts) },
+               &d3d11->luts[0].size_data, sizeof(*d3d11->luts)},
          },
          {
             &d3d11->mvp,                  /* MVP */
@@ -324,9 +318,6 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d11->luts[i]);
 
       image_texture_free(&image);
-
-      d3d11->luts[i].sampler =
-         d3d11->samplers[d3d11->shader_preset->lut[i].filter][d3d11->shader_preset->lut[i].wrap];
    }
 
    video_shader_resolve_current_parameters(conf, d3d11->shader_preset);
@@ -852,8 +843,6 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
          d3d11->pass[i].rt.size_data.z = 1.0f / width;
          d3d11->pass[i].rt.size_data.w = 1.0f / height;
       }
-
-      d3d11->pass[i].sampler = d3d11->samplers[pass->filter][pass->wrap];
    }
 
    d3d11->resize_render_targets = false;
@@ -926,7 +915,12 @@ static bool d3d11_gfx_frame(
          {
             /* release all render targets first to avoid memory fragmentation */
             for (i = 0; i < d3d11->shader_preset->passes; i++)
+            {
                d3d11_release_texture(&d3d11->pass[i].rt);
+               d3d11_release_texture(&d3d11->pass[i].feedback);
+               memset(&d3d11->pass[i].rt, 0, sizeof(d3d11->pass[i].rt));
+               memset(&d3d11->pass[i].feedback, 0, sizeof(d3d11->pass[i].feedback));
+            }
          }
 
          if (d3d11->shader_preset->history_size)
@@ -1032,7 +1026,7 @@ static bool d3d11_gfx_frame(
             {
                int binding       = texture_sem->binding;
                textures[binding] = *(D3D11ShaderResourceView*)texture_sem->texture_data;
-               samplers[binding] = *(D3D11SamplerState*)texture_sem->sampler_data;
+               samplers[binding] = d3d11->samplers[texture_sem->filter][texture_sem->wrap];
                texture_sem++;
             }
 
@@ -1043,7 +1037,9 @@ static bool d3d11_gfx_frame(
          if (d3d11->pass[i].rt.handle)
          {
             D3D11SetRenderTargets(context, 1, &d3d11->pass[i].rt.rt_view, NULL);
+#if 0
             D3D11ClearRenderTargetView(context, d3d11->pass[i].rt.rt_view, d3d11->clearcolor);
+#endif
             D3D11SetViewports(context, 1, &d3d11->pass[i].viewport);
 
             D3D11Draw(context, 4, 0);

@@ -201,6 +201,8 @@ bool d3d12_init_queue(d3d12_video_t* d3d12)
    d3d12->queue.fenceValue = 1;
    d3d12->queue.fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 
+   D3D12SignalCommandQueue(d3d12->queue.handle, d3d12->queue.fence, d3d12->queue.fenceValue);
+
    return true;
 }
 

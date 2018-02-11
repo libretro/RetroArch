@@ -36,8 +36,6 @@ typedef struct
    size_t image_stride;
    void*  size;
    size_t size_stride;
-   void*  sampler;
-   size_t sampler_stride;
 } texture_map_t;
 
 typedef struct
@@ -48,19 +46,20 @@ typedef struct
 
 typedef struct
 {
-   void*       data;
-   unsigned    size;
-   unsigned    offset;
-   char        id[64];
+   void*    data;
+   unsigned size;
+   unsigned offset;
+   char     id[64];
 } uniform_sem_t;
 
 typedef struct
 {
-   void*       texture_data;
-   void*       sampler_data;
-   unsigned    stage_mask;
-   unsigned    binding;
-   char        id[64];
+   void*              texture_data;
+   enum gfx_wrap_type wrap;
+   unsigned           filter;
+   unsigned           stage_mask;
+   unsigned           binding;
+   char               id[64];
 } texture_sem_t;
 
 typedef struct
