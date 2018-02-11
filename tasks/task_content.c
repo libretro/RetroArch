@@ -187,7 +187,6 @@ static void content_load_init_wrap(
    }
 #endif
 
-
    if (args->sram_path)
    {
       argv[(*argc)++] = strdup("-s");
@@ -235,6 +234,7 @@ static void content_load_init_wrap(
  **/
 static bool content_load(content_ctx_info_t *info)
 {
+   RARCH_LOG("content_load\n");
    unsigned i;
    bool retval                       = true;
    int rarch_argc                    = 0;
@@ -271,6 +271,11 @@ static bool content_load(content_ctx_info_t *info)
    {
       retval = false;
       goto end;
+   }
+   
+   {
+
+      content_init();
    }
 
 #ifdef HAVE_MENU
@@ -860,6 +865,8 @@ static bool task_load_content(content_ctx_info_t *content_info,
       *error_string = strdup("This core requires a content file, could not load content.\n");
       return false;
    }
+
+
 
    content_get_status(&contentless, &is_inited);
 
@@ -1472,6 +1479,7 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
+   struct string_list *content          = NULL;
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
@@ -1491,6 +1499,26 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
 
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
+
+   rarch_system_info_t *sys_info              = runloop_get_system_info();
+   if (sys_info)
+   {
+      content_ctx.history_list_enable         = settings->bools.history_list_enable;
+      content_ctx.set_supports_no_game_enable = settings->bools.set_supports_no_game_enable;
+
+      if (!string_is_empty(settings->paths.directory_system))
+         content_ctx.directory_system         = strdup(settings->paths.directory_system);
+      if (!string_is_empty(settings->paths.directory_cache))
+         content_ctx.directory_cache          = strdup(settings->paths.directory_cache);
+      if (!string_is_empty(sys_info->info.valid_extensions))
+         content_ctx.valid_extensions         = strdup(sys_info->info.valid_extensions);
+
+      content_ctx.block_extract               = sys_info->info.block_extract;
+      content_ctx.need_fullpath               = sys_info->info.need_fullpath;
+
+      content_ctx.subsystem.data              = sys_info->subsystem.data;
+      content_ctx.subsystem.size              = sys_info->subsystem.size;
+   }
 
    content_ctx.history_list_enable            = settings->bools.history_list_enable;
 
@@ -1660,6 +1688,35 @@ bool task_push_load_content_with_core_from_menu(
 
    return true;
 }
+
+
+bool task_push_load_subsystem_with_core_from_menu(
+      const char *fullpath,
+      content_ctx_info_t *content_info,
+      enum rarch_core_type type,
+      retro_task_callback_t cb,
+      void *user_data)
+{
+   /* Set content path */
+   path_set(RARCH_PATH_SUBSYSTEM, pending_subsystem_ident);
+   /* hardcoded to 2 for testing */
+   char* roms[2] = { pending_subsystem_roms[0], pending_subsystem_roms[1] };
+   path_set_special(roms, pending_subsystem_rom_num);
+
+   /* Load content */
+   if (!task_load_content_callback(content_info, true, false))
+   {
+      rarch_menu_running();
+      return false;
+   }
+
+   /* Push quick menu onto menu stack */
+   if (type != CORE_TYPE_DUMMY)
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+
+   return true;
+}
+
 #endif
 
 void content_get_status(
@@ -1674,6 +1731,7 @@ void content_get_status(
 void content_clear_subsystem(void)
 {
    pending_subsystem_rom_id = 0;
+   pending_subsystem_init = false;
    for (int i = 0; i < RARCH_MAX_SUBSYSTEM_ROMS; i++)
       pending_subsystem_roms[i][0] = '\0';
 }
@@ -1749,6 +1807,14 @@ void content_deinit(void)
  * selected libretro core. */
 bool content_init(void)
 {
+   if (pending_subsystem_init)
+   {
+      path_set(RARCH_PATH_SUBSYSTEM, pending_subsystem_ident);
+      /* hardcoded to 2 for testing */
+      char* roms[2] = { pending_subsystem_roms[0], pending_subsystem_roms[1] };
+      path_set_special(roms, pending_subsystem_rom_num);
+      RARCH_LOG("********%s %s \n", pending_subsystem_ident, path_get(RARCH_PATH_SUBSYSTEM));
+   }
    content_information_ctx_t content_ctx;
 
    bool ret                                   = true;

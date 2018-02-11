@@ -463,7 +463,8 @@ int generic_action_ok_displaylist_push(const char *path,
          char* roms[2] = { pending_subsystem_roms[0], pending_subsystem_roms[1] };
          path_set_special(roms, pending_subsystem_rom_num);
          content_ctx_info_t content_info = {0};
-         task_push_load_content_with_core_from_menu(
+         pending_subsystem_init = true;
+         task_push_load_subsystem_with_core_from_menu(
                NULL, &content_info,
                CORE_TYPE_PLAIN, NULL, NULL);
 

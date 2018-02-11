@@ -39,6 +39,8 @@ typedef struct content_ctx_info
    environment_get_t environ_get;  /* Function passed for environment_get function */
 } content_ctx_info_t;
 
+bool pending_subsystem_init;
+
 int pending_subsystem;
 int pending_subsystem_rom_id;
 int pending_subsystem_rom_num;
