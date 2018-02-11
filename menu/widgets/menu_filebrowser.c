@@ -91,7 +91,7 @@ void filebrowser_parse(void *data, unsigned type_data)
       subsystem = system->subsystem.data + pending_subsystem;
       if (subsystem && pending_subsystem_rom_id < subsystem->num_roms)
       {
-         RARCH_LOG("[subsystem] valid xtensions: %s\n", subsystem->roms[pending_subsystem_rom_id].valid_extensions);
+         RARCH_LOG("[subsystem] valid extensions: %s\n", subsystem->roms[pending_subsystem_rom_id].valid_extensions);
          str_list = dir_list_new(path,
             (filter_ext && info) ? subsystem->roms[pending_subsystem_rom_id].valid_extensions : NULL,
             true, settings->bools.show_hidden_files, true, false);
