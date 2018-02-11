@@ -160,6 +160,7 @@ fi
 
 add_define MAKEFILE ASSETS_DIR "${ASSETS_DIR:-$SHARE_DIR}/retroarch"
 add_define MAKEFILE BIN_DIR "${BIN_DIR:-${PREFIX}/bin}"
+add_define MAKEFILE DOC_DIR "${DOC_DIR:-${SHARE_DIR}/doc/retroarch}"
 add_define MAKEFILE MAN_DIR "${MAN_DIR:-${SHARE_DIR}/man}"
 
 if [ "$OS" = 'DOS' ]; then
