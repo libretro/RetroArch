@@ -1052,7 +1052,7 @@ static void command_event_init_controllers(void)
    }
 }
 
-static void command_event_deinit_core(bool reinit)
+void command_event_deinit_core(bool reinit)
 {
 #ifdef HAVE_CHEEVOS
    cheevos_unload();
@@ -1205,7 +1205,7 @@ error:
    free(state_base);
 }
 
-static bool event_init_content(void)
+bool event_init_content(void)
 {
    bool contentless = false;
    bool is_inited   = false;
