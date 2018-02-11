@@ -1678,11 +1678,23 @@ void content_clear_subsystem(void)
       pending_subsystem_roms[i][0] = '\0';
 }
 
+/* Set the current subsystem*/
+void content_set_subsystem(unsigned sub)
+{
+   rarch_system_info_t *system = runloop_get_system_info();
+   const struct retro_subsystem_info* subsystem = NULL;
+
+   pending_subsystem = sub;
+   subsystem = system->subsystem.data + pending_subsystem;
+
+   strlcpy(pending_subsystem_ident, subsystem->ident, sizeof(pending_subsystem_ident));
+}
+
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path)
 {
    strlcpy(pending_subsystem_roms[pending_subsystem_rom_id], path, sizeof(pending_subsystem_roms[pending_subsystem_rom_id]));
-   RARCH_LOG("[subsystem] subsystem id: %d rom id: %d, rom path: %s\n", pending_subsystem, pending_subsystem_rom_id, pending_subsystem_roms[pending_subsystem_rom_id]);
+   RARCH_LOG("[subsystem] subsystem id: %d subsystem ident: %s rom id: %d, rom path: %s\n", pending_subsystem, pending_subsystem_ident, pending_subsystem_rom_id, pending_subsystem_roms[pending_subsystem_rom_id]);
    pending_subsystem_rom_id++;
 }
 

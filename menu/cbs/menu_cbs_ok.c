@@ -448,7 +448,7 @@ int generic_action_ok_displaylist_push(const char *path,
          filebrowser_clear_type();
          if (pending_subsystem != type - MENU_SETTINGS_SUBSYSTEM_ADD)
             content_clear_subsystem();
-         pending_subsystem = type - MENU_SETTINGS_SUBSYSTEM_ADD;
+         content_set_subsystem(type - MENU_SETTINGS_SUBSYSTEM_ADD);
          filebrowser_set_type(FILEBROWSER_SELECT_FILE_SUBSYSTEM);
          info.type          = type;
          info.directory_ptr = idx;
