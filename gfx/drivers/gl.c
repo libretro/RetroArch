@@ -378,9 +378,8 @@ static bool gl_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
       )
 {
    video_shader_ctx_init_t init_data;
-   settings_t *settings            = config_get_ptr();
+   enum rarch_shader_type type     = DEFAULT_SHADER_TYPE;
    const char *shader_path         = retroarch_get_shader_preset();
-   enum rarch_shader_type type;
    
    if (shader_path)
    {
@@ -388,8 +387,6 @@ static bool gl_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
          gl->core_context_in_use
          ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
    }
-   else
-      type = DEFAULT_SHADER_TYPE;
 
    switch (type)
    {
