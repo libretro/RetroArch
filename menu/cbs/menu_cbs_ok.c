@@ -458,7 +458,8 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_SUBSYSTEM_LOAD:
          filebrowser_clear_type();
-         RARCH_LOG("LOADING!!!!!!!\n");
+         path_set(RARCH_PATH_SUBSYSTEM, pending_subsystem_ident);
+         path_set_special((char**)pending_subsystem_roms, pending_subsystem_rom_num);
          break;
       case ACTION_OK_DL_CHEAT_FILE:
          filebrowser_clear_type();

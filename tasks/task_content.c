@@ -776,7 +776,6 @@ static bool content_file_init(
    const struct retro_subsystem_info *special =
       path_is_empty(RARCH_PATH_SUBSYSTEM)
       ? NULL : content_file_init_subsystem(content_ctx, error_string, &ret);
-
    if (  !ret ||
          !content_file_init_set_attribs(content, special, content_ctx, error_string))
       return false;
@@ -788,6 +787,7 @@ static bool content_file_init(
    {
       unsigned i;
       struct string_list *additional_path_allocs = string_list_new();
+
       ret = content_file_load(info, content, content_ctx, error_string,
             special, additional_path_allocs);
       string_list_free(additional_path_allocs);
@@ -1688,6 +1688,7 @@ void content_set_subsystem(unsigned sub)
    subsystem = system->subsystem.data + pending_subsystem;
 
    strlcpy(pending_subsystem_ident, subsystem->ident, sizeof(pending_subsystem_ident));
+   pending_subsystem_rom_num = subsystem->num_roms;
 }
 
 /* Add a rom to the subsystem rom buffer */
