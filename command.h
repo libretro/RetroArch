@@ -273,8 +273,6 @@ void command_playlist_update_write(
       const char *label,
       const char *path);
 
-bool event_init_content(void);
-void command_event_deinit_core(bool reinit);
 
 RETRO_END_DECLS
 
