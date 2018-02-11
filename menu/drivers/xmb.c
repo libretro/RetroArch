@@ -4448,7 +4448,7 @@ static int xmb_list_push(void *data, void *userdata,
                      char s[PATH_MAX_LENGTH];
                      if (content_get_subsystem() == i)
                      {
-                        if (pending_subsystem_rom_id < subsystem->num_roms)
+                        if (content_get_subsystem_rom_id() < subsystem->num_roms)
                         {
                            snprintf(s, sizeof(s), "Load %s %s", subsystem->desc, i == content_get_subsystem() ? "\u2605" : " ");
                            menu_entries_append_enum(info->list,

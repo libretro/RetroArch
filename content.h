@@ -39,12 +39,6 @@ typedef struct content_ctx_info
    environment_get_t environ_get;  /* Function passed for environment_get function */
 } content_ctx_info_t;
 
-int pending_subsystem_rom_id;
-
-char pending_subsystem_ident[255];
-char pending_subsystem_extensions[PATH_MAX_LENGTH];
-char pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS][PATH_MAX_LENGTH];
-
 /* Load a RAM state from disk to memory. */
 bool content_load_ram_file(unsigned slot);
 
@@ -102,6 +96,9 @@ int content_get_subsystem();
 
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path);
+
+/* Get the current subsystem rom id */
+int content_get_subsystem_rom_id();
 
 
 RETRO_END_DECLS

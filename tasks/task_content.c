@@ -144,6 +144,12 @@ static uint32_t content_rom_crc                               = 0;
 static bool pending_subsystem_init                            = false;
 static int  pending_subsystem_rom_num                         = 0;
 static int  pending_subsystem_id                              = 0;
+static int  pending_subsystem_rom_id                          = 0;
+
+static char pending_subsystem_ident[255];
+static char pending_subsystem_extensions[PATH_MAX_LENGTH];
+static char pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS][PATH_MAX_LENGTH];
+
 
 static int content_file_read(const char *path, void **buf, ssize_t *length)
 {
@@ -1774,6 +1780,12 @@ void content_add_subsystem(const char* path)
       pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_id, 
       pending_subsystem_roms[pending_subsystem_rom_id]);
    pending_subsystem_rom_id++;
+}
+
+/* Get the current subsystem rom id */
+int content_get_subsystem_rom_id()
+{
+   return pending_subsystem_rom_id;
 }
 
 void content_set_does_not_need_content(void)
