@@ -23,6 +23,7 @@
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
+#include "../../retroarch.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -446,7 +447,7 @@ static void *wiiu_gfx_init(const video_info_t *video,
 
    if(settings->bools.video_shader_enable)
    {
-      const char* ext = path_get_extension(settings->paths.path_shader);
+      const char* ext = retroarch_get_shader_preset();
 
       if(ext && !strncmp(ext, "slang", 5))
          wiiu_gfx_set_shader(wiiu, RARCH_SHADER_SLANG, settings->paths.path_shader);

@@ -35,7 +35,7 @@ MSG_HASH(MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
 	 "Você deixou o jogo"
 	)
 MSG_HASH(MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
-	 "Você se juntou como jogador %d"
+	 "Você se juntou como jogador %u"
 	)
 MSG_HASH(MSG_NETPLAY_ENDIAN_DEPENDENT,
 	 "Este núcleo não suporta Netplay inter-arquitetura entre estes sistemas"
@@ -1013,6 +1013,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
 	 "Vietnamita"
 	)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
+   "Arabic"
+   )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
 	 "Analógico Esquerdo"
 	)
@@ -2143,9 +2147,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
 	 "Carregar Predefinição de Shader"
-	)
-MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS,
-	 "Menu de Parâmetros de Shader"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
 	 "Salvar Predefinição de Shader Como"

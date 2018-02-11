@@ -5,7 +5,7 @@
 # and icons (https://github.com/libretro/retroarch-assets/tree/master/pkg/wiiu) to this directory then run
 # the script. the output will be in retroarch/pkg/wiiu
 
-source ../version.all
+. ../version.all
 
 platform=wiiu
 EXT=a

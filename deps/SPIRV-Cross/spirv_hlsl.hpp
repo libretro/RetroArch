@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 Robert Konrad
+ * Copyright 2016-2018 Robert Konrad
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,6 +91,7 @@ private:
 	void emit_modern_uniform(const SPIRVariable &var);
 	void emit_legacy_uniform(const SPIRVariable &var);
 	void emit_specialization_constants();
+	void emit_composite_constants();
 	void emit_fixup() override;
 	std::string builtin_to_glsl(spv::BuiltIn builtin, spv::StorageClass storage) override;
 	std::string layout_for_member(const SPIRType &type, uint32_t index) override;

@@ -10,7 +10,7 @@ struct SSBO2
 
 constant int _69 = {};
 
-kernel void main0(uint3 gl_GlobalInvocationID [[thread_position_in_grid]], device SSBO2& _27 [[buffer(0)]])
+kernel void main0(device SSBO2& _27 [[buffer(0)]], uint3 gl_GlobalInvocationID [[thread_position_in_grid]])
 {
     if (gl_GlobalInvocationID.x == 2u)
     {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 Robert Konrad
+ * Copyright 2016-2018 Robert Konrad
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -204,7 +204,7 @@ static string image_format_to_type(ImageFormat fmt, SPIRType::BaseType basetype)
 }
 
 // Returns true if an arithmetic operation does not change behavior depending on signedness.
-static bool opcode_is_sign_invariant(Op opcode)
+static bool hlsl_opcode_is_sign_invariant(Op opcode)
 {
 	switch (opcode)
 	{
@@ -841,6 +841,34 @@ void CompilerHLSL::emit_builtin_variables()
 	}
 }
 
+void CompilerHLSL::emit_composite_constants()
+{
+	// HLSL cannot declare structs or arrays inline, so we must move them out to
+	// global constants directly.
+	bool emitted = false;
+
+	for (auto &id : ids)
+	{
+		if (id.get_type() == TypeConstant)
+		{
+			auto &c = id.get<SPIRConstant>();
+			if (c.specialization)
+				continue;
+
+			auto &type = get<SPIRType>(c.constant_type);
+			if (type.basetype == SPIRType::Struct || !type.array.empty())
+			{
+				auto name = to_name(c.self);
+				statement("static const ", variable_decl(type, name), " = ", constant_expression(c), ";");
+				emitted = true;
+			}
+		}
+	}
+
+	if (emitted)
+		statement("");
+}
+
 void CompilerHLSL::emit_specialization_constants()
 {
 	bool emitted = false;
@@ -880,6 +908,8 @@ void CompilerHLSL::emit_resources()
 {
 	auto &execution = get_entry_point();
 
+	replace_illegal_names();
+
 	emit_specialization_constants();
 
 	// Output all basic struct types which are not Block or BufferBlock as these are declared inplace
@@ -897,6 +927,8 @@ void CompilerHLSL::emit_resources()
 			}
 		}
 	}
+
+	emit_composite_constants();
 
 	bool emitted = false;
 
@@ -3022,15 +3054,24 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 	auto ops = stream(instruction);
 	auto opcode = static_cast<Op>(instruction.op);
 
+#undef BOP
+#undef BOP_CAST
+#undef UOP
+#undef QFOP
+#undef TFOP
+#undef BFOP
+#undef BFOP_CAST
+#undef BFOP
+#undef UFOP
 #define BOP(op) emit_binary_op(ops[0], ops[1], ops[2], ops[3], #op)
 #define BOP_CAST(op, type) \
-	emit_binary_op_cast(ops[0], ops[1], ops[2], ops[3], #op, type, opcode_is_sign_invariant(opcode))
+	emit_binary_op_cast(ops[0], ops[1], ops[2], ops[3], #op, type, hlsl_opcode_is_sign_invariant(opcode))
 #define UOP(op) emit_unary_op(ops[0], ops[1], ops[2], #op)
 #define QFOP(op) emit_quaternary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], ops[5], #op)
 #define TFOP(op) emit_trinary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], #op)
 #define BFOP(op) emit_binary_func_op(ops[0], ops[1], ops[2], ops[3], #op)
 #define BFOP_CAST(op, type) \
-	emit_binary_func_op_cast(ops[0], ops[1], ops[2], ops[3], #op, type, opcode_is_sign_invariant(opcode))
+	emit_binary_func_op_cast(ops[0], ops[1], ops[2], ops[3], #op, type, hlsl_opcode_is_sign_invariant(opcode))
 #define BFOP(op) emit_binary_func_op(ops[0], ops[1], ops[2], ops[3], #op)
 #define UFOP(op) emit_unary_func_op(ops[0], ops[1], ops[2], #op)
 
@@ -3088,8 +3129,11 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
-		emit_op(result_type, id, to_expression(ops[2]), true, true);
-		// TODO: Maybe change this when separate samplers/images are supported
+		auto *combined = maybe_get<SPIRCombinedImageSampler>(ops[2]);
+		if (combined)
+			emit_op(result_type, id, to_expression(combined->image), true, true);
+		else
+			emit_op(result_type, id, to_expression(ops[2]), true, true);
 		break;
 	}
 
@@ -3645,6 +3689,7 @@ string CompilerHLSL::compile()
 	backend.boolean_mix_support = false;
 	backend.can_swizzle_scalar = true;
 	backend.can_declare_struct_inline = false;
+	backend.can_declare_arrays_inline = false;
 
 	update_active_builtins();
 	analyze_sampler_comparison_states();

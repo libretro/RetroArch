@@ -857,27 +857,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
 
    if (!content_load(content_info))
    {
-      /* TODO/FIXME - Hardcoded sizes */
-      char *name = (char*)malloc(255 * sizeof(char));
-      char *msg  = (char*)malloc(255 * sizeof(char));
-
-      name[0] = msg[0] = '\0';
-
-      if (launched_from_menu)
-      {
-         if (!path_is_empty(RARCH_PATH_CONTENT) && !string_is_empty(name))
-         {
-            snprintf(msg,
-                  255 * sizeof(char), "%s %s.\n",
-                  msg_hash_to_str(MSG_FAILED_TO_LOAD),
-                  name);
-            *error_string = strdup(msg);
-         }
-      }
-      if (string_is_empty(name))
-         *error_string = strdup("This core requires a content file.\n");
-      free(name);
-      free(msg);
+      *error_string = strdup("This core requires a content file, could not load content.\n");
       return false;
    }
 

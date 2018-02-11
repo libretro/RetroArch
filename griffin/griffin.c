@@ -14,6 +14,7 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define CINTERFACE
 #define HAVE_IBXM 1
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
@@ -516,6 +517,10 @@ FONTS
 #include "../gfx/drivers_font/d3d11_font.c"
 #endif
 
+#if defined(HAVE_D3D12)
+#include "../gfx/drivers_font/d3d12_font.c"
+#endif
+
 /*============================================================
 INPUT
 ============================================================ */
@@ -994,6 +999,7 @@ RETROARCH
 #include "../intl/msg_hash_vn.c"
 #include "../intl/msg_hash_chs.c"
 #include "../intl/msg_hash_cht.c"
+#include "../intl/msg_hash_ar.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
@@ -1164,6 +1170,10 @@ MENU
 
 #if defined(HAVE_D3D11)
 #include "../menu/drivers_display/menu_display_d3d11.c"
+#endif
+
+#if defined(HAVE_D3D12)
+#include "../menu/drivers_display/menu_display_d3d12.c"
 #endif
 
 #ifdef HAVE_OPENGL

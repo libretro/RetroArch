@@ -363,7 +363,7 @@ bool glslang::compile_spirv(const string &source, Stage stage, std::vector<uint3
             messages, &msg, forbid_include))
    {
       fprintf(stderr, "%s\n", msg.c_str());
-      return {};
+      return false;
    }
 
    if (!shader.parse(&process.GetResources(), 100, false, messages))

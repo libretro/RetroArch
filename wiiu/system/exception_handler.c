@@ -79,8 +79,8 @@ typedef struct _framerec
 /* Clear if srr0 points to the address that caused the exception (yes, really) */
 #define SRR1_PROG_SRR0_INACCURATE 0x10000
 
-#define buf_add(...) pos += sprintf(exception_msgbuf + pos, __VA_ARGS__)
-size_t pos = 0;
+#define buf_add(...) wiiu_exception_handler_pos += sprintf(exception_msgbuf + wiiu_exception_handler_pos, __VA_ARGS__)
+size_t wiiu_exception_handler_pos = 0;
 char* exception_msgbuf;
 
 void __attribute__((__noreturn__)) exception_cb(OSContext* ctx, OSExceptionType type)

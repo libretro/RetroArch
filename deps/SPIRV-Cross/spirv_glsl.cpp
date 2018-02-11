@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 ARM Limited
+ * Copyright 2015-2018 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1634,10 +1634,10 @@ void CompilerGLSL::replace_illegal_names()
 		"iimageCubeArray", "image1D", "image1DArray", "image2D", "image2DArray", "image2DMS", "image2DMSArray", "image2DRect",
 		"image3D", "imageBuffer", "imageCube", "imageCubeArray", "in", "inline", "inout", "input", "int", "interface", "invariant",
 		"isampler1D", "isampler1DArray", "isampler2D", "isampler2DArray", "isampler2DMS", "isampler2DMSArray", "isampler2DRect",
-		"isampler3D", "isamplerBuffer", "isamplerCube", "isamplerCubeArray", "ivec2", "ivec3", "ivec4", "layout", "long", "lowp",
-		"mat2", "mat2x2", "mat2x3", "mat2x4", "mat3", "mat3x2", "mat3x3", "mat3x4", "mat4", "mat4x2", "mat4x3", "mat4x4", "mediump",
-		"namespace", "noinline", "noperspective", "out", "output", "packed", "partition", "patch", "precision", "public", "readonly",
-		"resource", "restrict", "return", "row_major", "sample", "sampler1D", "sampler1DArray", "sampler1DArrayShadow",
+		"isampler3D", "isamplerBuffer", "isamplerCube", "isamplerCubeArray", "ivec2", "ivec3", "ivec4", "layout", "line", "linear", "long", "lowp",
+		"mat2", "mat2x2", "mat2x3", "mat2x4", "mat3", "mat3x2", "mat3x3", "mat3x4", "mat4", "mat4x2", "mat4x3", "mat4x4", "matrix", "mediump",
+		"namespace", "noinline", "noperspective", "out", "output", "packed", "partition", "patch", "point", "precision", "public", "readonly",
+		"resource", "restrict", "return", "row_major", "sample", "sampler", "sampler1D", "sampler1DArray", "sampler1DArrayShadow",
 		"sampler1DShadow", "sampler2D", "sampler2DArray", "sampler2DArrayShadow", "sampler2DMS", "sampler2DMSArray",
 		"sampler2DRect", "sampler2DRectShadow", "sampler2DShadow", "sampler3D", "sampler3DRect", "samplerBuffer",
 		"samplerCube", "samplerCubeArray", "samplerCubeArrayShadow", "samplerCubeShadow", "short", "sizeof", "smooth", "static",
@@ -2256,12 +2256,17 @@ string CompilerGLSL::to_expression(uint32_t id)
 	case TypeConstant:
 	{
 		auto &c = get<SPIRConstant>(id);
+		auto &type = get<SPIRType>(c.constant_type);
 
 		// WorkGroupSize may be a constant.
 		auto &dec = meta[c.self].decoration;
 		if (dec.builtin)
 			return builtin_to_glsl(dec.builtin_type, StorageClassGeneric);
 		else if (c.specialization && options.vulkan_semantics)
+			return to_name(id);
+		else if (type.basetype == SPIRType::Struct && !backend.can_declare_struct_inline)
+			return to_name(id);
+		else if (!type.array.empty() && !backend.can_declare_arrays_inline)
 			return to_name(id);
 		else
 			return constant_expression(c);
@@ -5497,6 +5502,8 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 		if (out_type.basetype == SPIRType::Struct && !backend.can_declare_struct_inline)
 			forward = false;
+		if (!out_type.array.empty() && !backend.can_declare_arrays_inline)
+			forward = false;
 
 		string constructor_op;
 		if (backend.use_initializer_list && composite)
@@ -7881,11 +7888,29 @@ void CompilerGLSL::branch(uint32_t from, uint32_t to)
 		else
 		{
 			auto &from_block = get<SPIRBlock>(from);
-			auto &dominator = get<SPIRBlock>(from_block.loop_dominator);
+			bool outside_control_flow = false;
+			uint32_t loop_dominator = 0;
 
-			// For non-complex continue blocks, we implicitly branch to the continue block
-			// by having the continue block be part of the loop header in for (; ; continue-block).
-			bool outside_control_flow = block_is_outside_flow_control_from_block(dominator, from_block);
+			// FIXME: Refactor this to not use the old loop_dominator tracking.
+			if (from_block.merge_block)
+			{
+				// If we are a loop header, we don't set the loop dominator,
+				// so just use "self" here.
+				loop_dominator = from;
+			}
+			else if (from_block.loop_dominator != -1u)
+			{
+				loop_dominator = from_block.loop_dominator;
+			}
+
+			if (loop_dominator != 0)
+			{
+				auto &dominator = get<SPIRBlock>(loop_dominator);
+
+				// For non-complex continue blocks, we implicitly branch to the continue block
+				// by having the continue block be part of the loop header in for (; ; continue-block).
+				outside_control_flow = block_is_outside_flow_control_from_block(dominator, from_block);
+			}
 
 			// Some simplification for for-loops. We always end up with a useless continue;
 			// statement since we branch to a loop block.
@@ -8265,6 +8290,10 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 	bool emitted_for_loop_header = false;
 
 	// If we need to force temporaries for certain IDs due to continue blocks, do it before starting loop header.
+	// Need to sort these to ensure that reference output is stable.
+	sort(begin(block.declare_temporary), end(block.declare_temporary),
+	     [](const pair<uint32_t, uint32_t> &a, const pair<uint32_t, uint32_t> &b) { return a.second < b.second; });
+
 	for (auto &tmp : block.declare_temporary)
 	{
 		auto flags = meta[tmp.second].decoration.decoration_flags;

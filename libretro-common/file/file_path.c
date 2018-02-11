@@ -602,20 +602,30 @@ void fill_pathname_basedir_noext(char *out_dir,
  *
  * Copies only the parent directory name of @in_dir into @out_dir.
  * The two buffers must not overlap. Removes trailing '/'.
+ * Returns true on success, false if a slash was not found in the path.
  **/
-void fill_pathname_parent_dir_name(char *out_dir,
+bool fill_pathname_parent_dir_name(char *out_dir,
       const char *in_dir, size_t size)
 {
    char *temp = strdup(in_dir);
    char *last = find_last_slash(temp);
+   bool ret = false;
 
    *last = '\0';
 
-   in_dir = find_last_slash(temp) + 1;
+   in_dir = find_last_slash(temp);
 
-   strlcpy(out_dir, in_dir, size);
+   if (in_dir && in_dir + 1)
+   {
+      strlcpy(out_dir, in_dir + 1, size);
+      ret = true;
+   }
+   else
+      ret = false;
 
    free(temp);
+
+   return ret;
 }
 
 /**

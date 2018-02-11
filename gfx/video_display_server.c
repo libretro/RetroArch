@@ -74,3 +74,10 @@ bool video_display_server_set_window_progress(int progress, bool finished)
       return current_display_server->set_window_progress(current_display_server_data, progress, finished);
    return false;
 }
+
+bool video_display_server_set_window_decorations(bool on)
+{
+   if (current_display_server && current_display_server->set_window_decorations)
+      return current_display_server->set_window_decorations(current_display_server_data, on);
+   return false;
+}

@@ -585,12 +585,15 @@ static void mui_render_messagebox(mui_handle_t *mui,
    int x, y, line_height, longest = 0, longest_width = 0;
    unsigned width           = video_info->width;
    unsigned height          = video_info->height;
-   struct string_list *list = (struct string_list*)
+   struct string_list *list = NULL;
+
+   if (!mui || !mui->font)
+      goto end;
+
+   list                     = (struct string_list*)
       string_split(message, "\n");
 
-   if (!list)
-      return;
-   if (list->elems == 0)
+   if (!list || list->elems == 0)
       goto end;
 
    line_height = mui->font->size * 1.2;
@@ -610,16 +613,18 @@ static void mui_render_messagebox(mui_handle_t *mui,
       if (len > longest)
       {
          longest = len;
-         longest_width = font_driver_get_message_width(mui->font, msg, strlen(msg), 1);
+         longest_width = font_driver_get_message_width(
+               mui->font, msg, strlen(msg), 1);
       }
    }
 
    menu_display_set_alpha(body_bg_color, 1.0);
 
-   menu_display_draw_quad(         x - longest_width/2.0 - mui->margin*2.0,
-         y - line_height/2.0 - mui->margin*2.0,
-         longest_width + mui->margin*4.0,
-         line_height * list->size + mui->margin*4.0,
+   menu_display_draw_quad(
+         x - longest_width / 2.0 -  mui->margin * 2.0,
+         y - line_height   / 2.0 -  mui->margin * 2.0,
+         longest_width +            mui->margin * 4.0,
+         line_height * list->size + mui->margin * 4.0,
          width,
          height,
          &body_bg_color[0]);
@@ -629,7 +634,8 @@ static void mui_render_messagebox(mui_handle_t *mui,
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         menu_display_draw_text(mui->font, msg,
+         menu_display_draw_text(
+               mui->font, msg,
                x - longest_width/2.0,
                y + i * line_height + mui->font->size / 3,
                width, height, font_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
@@ -642,7 +648,8 @@ static void mui_render_messagebox(mui_handle_t *mui,
             menu_event_get_osk_grid(), menu_event_get_osk_ptr());
 
 end:
-   string_list_free(list);
+   if (list)
+      string_list_free(list);
 }
 
 /* Used for the sublabels */
@@ -660,12 +667,15 @@ static unsigned mui_count_lines(const char *str)
 static void mui_compute_entries_box(mui_handle_t* mui, int width)
 {
    unsigned i;
-   size_t usable_width = width - (mui->margin * 2);
-   file_list_t *list   = menu_entries_get_selection_buf_ptr(0);
-   float sum           = 0;
-   size_t entries_end  = menu_entries_get_size();
-   float scale_factor  = menu_display_get_dpi();
+   size_t usable_width       = width - (mui->margin * 2);
+   file_list_t *list         = menu_entries_get_selection_buf_ptr(0);
+   float sum                 = 0;
+   size_t entries_end        = menu_entries_get_size();
+   float scale_factor        = menu_display_get_dpi();
    uintptr_t texture_switch2 = 0;
+
+   if (!mui->font)
+	   return;
 
    for (i = 0; i < entries_end; i++)
    {
@@ -930,7 +940,8 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
 
          word_wrap(sublabel_str, sublabel_str, (int)((usable_width - icon_margin) / mui->glyph_width2), false);
 
-         menu_display_draw_text(mui->font2, sublabel_str,
+		 if (mui->font)
+            menu_display_draw_text(mui->font2, sublabel_str,
                mui->margin + (texture_switch2 ? mui->icon_size : 0),
                y + (scale_factor / 4) + mui->font->size,
                width, height, sublabel_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
@@ -1597,7 +1608,8 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
       strlcpy(title_buf, title_buf_msg_tmp, sizeof(title_buf));
    }
 
-   menu_display_draw_text(mui->font, title_buf,
+   if (mui->font)
+      menu_display_draw_text(mui->font, title_buf,
          title_margin,
          header_height / 2 + mui->font->size / 3,
          width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);

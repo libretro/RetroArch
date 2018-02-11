@@ -119,7 +119,6 @@ static void null_renderchain_convert_geometry(
 }
 
 d3d_renderchain_driver_t null_d3d_renderchain = {
-   NULL,
    null_renderchain_free,
    null_renderchain_new,
    null_renderchain_init,

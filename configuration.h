@@ -254,6 +254,7 @@ typedef struct settings
       bool bluetooth_enable;
 
       bool automatically_add_content_to_playlist;
+      bool video_window_show_decorations;
    } bools;
 
    struct
@@ -408,6 +409,8 @@ typedef struct settings
       char bundle_assets_src[PATH_MAX_LENGTH];
       char bundle_assets_dst[PATH_MAX_LENGTH];
       char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
+
+      char netplay_mitm_server[255];
    } arrays;
 
    struct

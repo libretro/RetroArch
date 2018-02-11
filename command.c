@@ -220,6 +220,7 @@ bool command_set_shader(const char *arg)
 {
    char msg[256];
    enum rarch_shader_type type = RARCH_SHADER_NONE;
+   struct video_shader      *shader  = menu_shader_get();
 
    switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(arg))))
    {
@@ -245,7 +246,8 @@ bool command_set_shader(const char *arg)
          msg_hash_to_str(MSG_APPLYING_SHADER),
          arg);
 
-   return video_driver_set_shader(type, arg);
+   retroarch_set_shader_preset(arg);
+   return menu_shader_manager_set_preset(shader, type, arg);
 }
 
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
@@ -1295,31 +1297,13 @@ static void command_event_disable_overrides(void)
       return;
 
    /* reload the original config */
-
    config_unload_override();
    rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
 }
 
 static void command_event_restore_default_shader_preset(void)
 {
-   if (!path_is_empty(RARCH_PATH_DEFAULT_SHADER_PRESET))
-   {
-      /* auto shader preset: reload the original shader */
-      settings_t *settings      = config_get_ptr();
-      const char *shader_preset = path_get(RARCH_PATH_DEFAULT_SHADER_PRESET);
-
-      if (!string_is_empty(shader_preset))
-      {
-         RARCH_LOG("%s %s\n",
-               msg_hash_to_str(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO),
-               shader_preset);
-         strlcpy(settings->paths.path_shader,
-               shader_preset,
-               sizeof(settings->paths.path_shader));
-      }
-   }
-
-   path_clear(RARCH_PATH_DEFAULT_SHADER_PRESET);
+   retroarch_unset_shader_preset();
 }
 
 static void command_event_restore_remaps(void)
@@ -1418,29 +1402,37 @@ static bool command_event_save_core_config(void)
    bool found_path                 = false;
    bool overrides_active           = false;
    const char *core_path           = NULL;
-   char *config_dir                = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *config_name               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *config_path               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *config_name               = NULL;
+   char *config_path               = NULL;
+   char *config_dir                = NULL;
    size_t config_size              = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings            = config_get_ptr();
 
-   config_dir[0]  = config_name[0] =
-   config_path[0] = msg[0]         = '\0';
+   msg[0]                          = '\0';
 
-   if (!string_is_empty(settings->paths.directory_menu_config))
-      strlcpy(config_dir, settings->paths.directory_menu_config,
-            config_size);
+   if (settings && !string_is_empty(settings->paths.directory_menu_config))
+      config_dir = strdup(settings->paths.directory_menu_config);
    else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
+   {
+      config_dir                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      config_dir[0]                = '\0';
       fill_pathname_basedir(config_dir, path_get(RARCH_PATH_CONFIG),
             config_size);
-   else
+   }
+
+   if (string_is_empty(config_dir))
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true);
       RARCH_ERR("[Config]: %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
-      goto error;
+      free (config_dir);
+      return false;
    }
 
-   core_path = path_get(RARCH_PATH_CORE);
+   core_path                       = path_get(RARCH_PATH_CORE);
+   config_name                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   config_path                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   config_name[0]                  = '\0';
+   config_path[0]                  = '\0';
 
    /* Infer file name based on libretro core. */
    if (!string_is_empty(core_path) && filestream_exists(core_path))
@@ -1514,12 +1506,6 @@ static bool command_event_save_core_config(void)
    free(config_name);
    free(config_path);
    return ret;
-
-error:
-   free(config_dir);
-   free(config_name);
-   free(config_path);
-   return false;
 }
 
 /**

@@ -20,6 +20,8 @@
 #include "dxgi_common.h"
 #include <d3d12.h>
 
+typedef const ID3D12PipelineState* D3D12PipelineStateRef;
+
 /* auto-generated */
 
 typedef ID3D12Object*                             D3D12Object;
@@ -49,7 +51,7 @@ typedef ID3D12InfoQueue*                          D3D12InfoQueue;
 
 static INLINE ULONG D3D12Release(void* object)
 {
-   return ((ID3D12Object*)object)->lpVtbl->Release(object);
+   return ((ID3D12Object*)object)->lpVtbl->Release((ID3D12Object*)object);
 }
 static INLINE ULONG D3D12ReleaseDeviceChild(D3D12DeviceChild device_child)
 {
@@ -96,20 +98,22 @@ static INLINE ULONG D3D12ReleasePageable(D3D12Pageable pageable)
 static INLINE ULONG D3D12ReleaseHeap(D3D12Heap heap) { return heap->lpVtbl->Release(heap); }
 static INLINE ULONG D3D12ReleaseResource(void* resource)
 {
-   return ((ID3D12Resource*)resource)->lpVtbl->Release(resource);
+   return ((ID3D12Resource*)resource)->lpVtbl->Release((ID3D12Resource*)resource);
 }
 static INLINE HRESULT
 D3D12Map(void* resource, UINT subresource, D3D12_RANGE* read_range, void** data)
 {
-   return ((ID3D12Resource*)resource)->lpVtbl->Map(resource, subresource, read_range, data);
+   return ((ID3D12Resource*)resource)
+         ->lpVtbl->Map((ID3D12Resource*)resource, subresource, read_range, data);
 }
 static INLINE void D3D12Unmap(void* resource, UINT subresource, D3D12_RANGE* written_range)
 {
-   ((ID3D12Resource*)resource)->lpVtbl->Unmap(resource, subresource, written_range);
+   ((ID3D12Resource*)resource)
+         ->lpVtbl->Unmap((ID3D12Resource*)resource, subresource, written_range);
 }
 static INLINE D3D12_GPU_VIRTUAL_ADDRESS D3D12GetGPUVirtualAddress(void* resource)
 {
-   return ((ID3D12Resource*)resource)->lpVtbl->GetGPUVirtualAddress(resource);
+   return ((ID3D12Resource*)resource)->lpVtbl->GetGPUVirtualAddress((ID3D12Resource*)resource);
 }
 static INLINE HRESULT D3D12WriteToSubresource(
       void*      resource,
@@ -121,7 +125,8 @@ static INLINE HRESULT D3D12WriteToSubresource(
 {
    return ((ID3D12Resource*)resource)
          ->lpVtbl->WriteToSubresource(
-               resource, dst_subresource, dst_box, src_data, src_row_pitch, src_depth_pitch);
+               (ID3D12Resource*)resource, dst_subresource, dst_box, src_data, src_row_pitch,
+               src_depth_pitch);
 }
 static INLINE HRESULT D3D12ReadFromSubresource(
       void*      resource,
@@ -133,13 +138,14 @@ static INLINE HRESULT D3D12ReadFromSubresource(
 {
    return ((ID3D12Resource*)resource)
          ->lpVtbl->ReadFromSubresource(
-               resource, dst_data, dst_row_pitch, dst_depth_pitch, src_subresource, src_box);
+               (ID3D12Resource*)resource, dst_data, dst_row_pitch, dst_depth_pitch, src_subresource,
+               src_box);
 }
 static INLINE HRESULT D3D12GetHeapProperties(
       void* resource, D3D12_HEAP_PROPERTIES* heap_properties, D3D12_HEAP_FLAGS* heap_flags)
 {
    return ((ID3D12Resource*)resource)
-         ->lpVtbl->GetHeapProperties(resource, heap_properties, heap_flags);
+         ->lpVtbl->GetHeapProperties((ID3D12Resource*)resource, heap_properties, heap_flags);
 }
 static INLINE ULONG D3D12ReleaseCommandAllocator(D3D12CommandAllocator command_allocator)
 {
@@ -314,9 +320,9 @@ D3D12OMSetStencilRef(D3D12GraphicsCommandList graphics_command_list, UINT stenci
    graphics_command_list->lpVtbl->OMSetStencilRef(graphics_command_list, stencil_ref);
 }
 static INLINE void D3D12SetPipelineState(
-      D3D12GraphicsCommandList graphics_command_list, D3D12PipelineState pipeline_state)
+      D3D12GraphicsCommandList graphics_command_list, D3D12PipelineStateRef pipeline_state)
 {
-   graphics_command_list->lpVtbl->SetPipelineState(graphics_command_list, pipeline_state);
+   graphics_command_list->lpVtbl->SetPipelineState(graphics_command_list, (D3D12PipelineState)pipeline_state);
 }
 static INLINE void D3D12ResourceBarrier(
       D3D12GraphicsCommandList graphics_command_list,
@@ -639,8 +645,7 @@ static INLINE UINT D3D12GetNodeCount(D3D12Device device)
 static INLINE HRESULT D3D12CreateCommandQueue(
       D3D12Device device, D3D12_COMMAND_QUEUE_DESC* desc, ID3D12CommandQueue** out)
 {
-   return device->lpVtbl->CreateCommandQueue(
-         device, desc, uuidof(ID3D12CommandQueue), (void**)out);
+   return device->lpVtbl->CreateCommandQueue(device, desc, uuidof(ID3D12CommandQueue), (void**)out);
 }
 static INLINE HRESULT D3D12CreateCommandAllocator(
       D3D12Device device, D3D12_COMMAND_LIST_TYPE type, ID3D12CommandAllocator** out)
@@ -1207,8 +1212,7 @@ static INLINE void D3D12ExecuteGraphicsCommandLists(
 static INLINE HRESULT
 DXGIGetSwapChainBuffer(DXGISwapChain swapchain, UINT buffer, D3D12Resource* surface)
 {
-   return swapchain->lpVtbl->GetBuffer(
-         swapchain, buffer, uuidof(ID3D12Resource), (void**)surface);
+   return swapchain->lpVtbl->GetBuffer(swapchain, buffer, uuidof(ID3D12Resource), (void**)surface);
 }
 static INLINE void D3D12SetDescriptorHeaps(
       D3D12GraphicsCommandList   command_list,
@@ -1250,9 +1254,12 @@ D3D12GetGPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
    /* internal */
 
 #include <retro_math.h>
+#include <retro_common_api.h>
 #include <gfx/math/matrix_4x4.h>
 
+#include "../common/d3dcompiler_common.h"
 #include "../video_driver.h"
+#include "../drivers_shader/slang_process.h"
 
 typedef struct d3d12_vertex_t
 {
@@ -1263,12 +1270,31 @@ typedef struct d3d12_vertex_t
 
 typedef struct
 {
+   struct
+   {
+      float x, y, w, h;
+   } pos;
+   struct
+   {
+      float u, v, w, h;
+   } coords;
+   UINT32 colors[4];
+   struct
+   {
+      float scaling;
+      float rotation;
+   } params;
+} d3d12_sprite_t;
+
+typedef struct
+{
    D3D12DescriptorHeap         handle; /* descriptor pool */
    D3D12_DESCRIPTOR_HEAP_DESC  desc;
    D3D12_CPU_DESCRIPTOR_HANDLE cpu; /* descriptor */
    D3D12_GPU_DESCRIPTOR_HANDLE gpu; /* descriptor */
    UINT                        stride;
-   UINT                        count;
+   bool*                       map;
+   int                         start;
 } d3d12_descriptor_heap_t;
 
 typedef struct
@@ -1276,13 +1302,41 @@ typedef struct
    D3D12Resource                      handle;
    D3D12Resource                      upload_buffer;
    D3D12_RESOURCE_DESC                desc;
-   D3D12_GPU_DESCRIPTOR_HANDLE        gpu_descriptor;
+   /* the first view is srv, the rest are mip levels uavs */
+   D3D12_CPU_DESCRIPTOR_HANDLE        cpu_descriptor[D3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP - 5];
+   D3D12_GPU_DESCRIPTOR_HANDLE        gpu_descriptor[D3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP - 5];
+   D3D12_GPU_DESCRIPTOR_HANDLE        sampler;
+   D3D12_CPU_DESCRIPTOR_HANDLE        rt_view;
    D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
    UINT                               num_rows;
    UINT64                             row_size_in_bytes;
    UINT64                             total_bytes;
+   d3d12_descriptor_heap_t*           srv_heap;
    bool                               dirty;
+   float4_t                           size_data;
 } d3d12_texture_t;
+
+#ifndef ALIGN
+#ifdef _MSC_VER
+#define ALIGN(x) __declspec(align(x))
+#else
+#define ALIGN(x) __attribute__((aligned(x)))
+#endif
+#endif
+
+typedef struct ALIGN(16)
+{
+   math_matrix_4x4 mvp;
+   struct
+   {
+      float width;
+      float height;
+   } OutputSize;
+   float time;
+} d3d12_uniform_t;
+
+static_assert(
+      (!(sizeof(d3d12_uniform_t) & 0xF)), "sizeof(d3d12_uniform_t) must be a multiple of 16");
 
 typedef struct
 {
@@ -1303,12 +1357,13 @@ typedef struct
 
    struct
    {
-      D3D12PipelineState      handle;
-      D3D12RootSignature      rootSignature; /* descriptor layout */
-      d3d12_descriptor_heap_t srv_heap;      /* ShaderResouceView descritor heap */
-      d3d12_descriptor_heap_t rtv_heap;      /* RenderTargetView descritor heap */
+      D3D12RootSignature      cs_rootSignature; /* descriptor layout */
+      D3D12RootSignature      sl_rootSignature; /* descriptor layout */
+      D3D12RootSignature      rootSignature;    /* descriptor layout */
+      d3d12_descriptor_heap_t srv_heap;         /* ShaderResouceView descritor heap */
+      d3d12_descriptor_heap_t rtv_heap;         /* RenderTargetView descritor heap */
       d3d12_descriptor_heap_t sampler_heap;
-   } pipe;
+   } desc;
 
    struct
    {
@@ -1324,91 +1379,147 @@ typedef struct
 
    struct
    {
+      d3d12_texture_t                 texture[GFX_MAX_FRAME_HISTORY + 1];
       D3D12Resource                   ubo;
       D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
       D3D12Resource                   vbo;
       D3D12_VERTEX_BUFFER_VIEW        vbo_view;
-      d3d12_texture_t                 texture;
-      D3D12_GPU_DESCRIPTOR_HANDLE     sampler;
       D3D12_VIEWPORT                  viewport;
       D3D12_RECT                      scissorRect;
+      float4_t                        output_size;
       int                             rotation;
    } frame;
 
    struct
    {
-      D3D12Resource               vbo;
-      D3D12_VERTEX_BUFFER_VIEW    vbo_view;
-      d3d12_texture_t             texture;
-      D3D12_GPU_DESCRIPTOR_HANDLE sampler;
+      D3D12Resource            vbo;
+      D3D12_VERTEX_BUFFER_VIEW vbo_view;
+      d3d12_texture_t          texture;
 
       float alpha;
       bool  enabled;
       bool  fullscreen;
    } menu;
 
+   struct
+   {
+      D3D12PipelineStateRef    pipe;
+      D3D12PipelineState       pipe_blend;
+      D3D12PipelineState       pipe_noblend;
+      D3D12PipelineState       pipe_font;
+      D3D12Resource            vbo;
+      D3D12_VERTEX_BUFFER_VIEW vbo_view;
+      int                      offset;
+      int                      capacity;
+      bool                     enabled;
+   } sprites;
+
+   struct
+   {
+      D3D12PipelineState              pipe;
+      D3D12_GPU_DESCRIPTOR_HANDLE     sampler;
+      D3D12Resource                   buffers[SLANG_CBUFFER_MAX];
+      D3D12_CONSTANT_BUFFER_VIEW_DESC buffer_view[SLANG_CBUFFER_MAX];
+      d3d12_texture_t                 rt;
+      d3d12_texture_t                 feedback;
+      D3D12_VIEWPORT                  viewport;
+      D3D12_RECT                      scissorRect;
+      pass_semantics_t                semantics;
+      uint32_t                        frame_count;
+      D3D12_GPU_DESCRIPTOR_HANDLE     textures;
+      D3D12_GPU_DESCRIPTOR_HANDLE     samplers;
+   } pass[GFX_MAX_SHADERS];
+
+   struct video_shader* shader_preset;
+   d3d12_texture_t      luts[GFX_MAX_TEXTURES];
+
+   D3D12PipelineState              pipes[GFX_MAX_SHADERS];
+   D3D12PipelineState              mipmapgen_pipe;
+   d3d12_uniform_t                 ubo_values;
    D3D12Resource                   ubo;
    D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
    DXGI_FORMAT                     format;
-   D3D12_GPU_DESCRIPTOR_HANDLE     sampler_linear;
-   D3D12_GPU_DESCRIPTOR_HANDLE     sampler_nearest;
+   D3D12_GPU_DESCRIPTOR_HANDLE     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
    math_matrix_4x4                 mvp, mvp_no_rot;
    struct video_viewport           vp;
    bool                            resize_chain;
    bool                            keep_aspect;
    bool                            resize_viewport;
+   bool                            resize_render_targets;
+   bool                            init_history;
+   D3D12Resource                   menu_pipeline_vbo;
+   D3D12_VERTEX_BUFFER_VIEW        menu_pipeline_vbo_view;
 
 #ifdef DEBUG
    D3D12Debug debugController;
 #endif
 } d3d12_video_t;
 
-enum
-{
-   ROOT_INDEX_TEXTURE_TABLE = 0,
-   ROOT_INDEX_SAMPLER_TABLE,
-   ROOT_INDEX_UBO,
-   ROOT_INDEX_MAX,
+typedef enum {
+   ROOT_ID_TEXTURE_T = 0,
+   ROOT_ID_SAMPLER_T,
+   ROOT_ID_UBO,
+   ROOT_ID_PC,
+   ROOT_ID_MAX,
 } root_signature_parameter_index_t;
 
 typedef enum {
-   SAMPLER_HEAP_SLOT_LINEAR = 0,
-   SAMPLER_HEAP_SLOT_NEAREST,
-   SAMPLER_HEAP_SLOT_MAX,
+   CS_ROOT_ID_TEXTURE_T = 0,
+   CS_ROOT_ID_UAV_T,
+   CS_ROOT_ID_CONSTANTS,
+   CS_ROOT_ID_MAX,
+} compute_root_index_t;
 
-   SRV_HEAP_SLOT_FRAME_TEXTURE = 0,
-   SRV_HEAP_SLOT_MENU_TEXTURE,
-   SRV_HEAP_SLOT_CUSTOM,
-   SRV_HEAP_SLOT_MAX = 16
-} descriptor_heap_slot_t;
+RETRO_BEGIN_DECLS
+
+extern D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc;
 
 bool d3d12_init_base(d3d12_video_t* d3d12);
+
 bool d3d12_init_descriptors(d3d12_video_t* d3d12);
-bool d3d12_init_pipeline(d3d12_video_t* d3d12);
+void d3d12_init_samplers(d3d12_video_t* d3d12);
+
+bool d3d12_init_pipeline(
+      D3D12Device                         device,
+      D3DBlob                             vs_code,
+      D3DBlob                             ps_code,
+      D3DBlob                             gs_code,
+      D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc,
+      D3D12PipelineState*                 out);
+
 bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, HWND hwnd);
+
 bool d3d12_init_queue(d3d12_video_t* d3d12);
 
 D3D12_GPU_VIRTUAL_ADDRESS
 d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer);
 
-void d3d12_init_texture(
-      D3D12Device              device,
-      d3d12_descriptor_heap_t* heap,
-      descriptor_heap_slot_t   heap_index,
-      d3d12_texture_t*         tex);
+void d3d12_init_texture(D3D12Device device, d3d12_texture_t* tex);
+void d3d12_release_texture(d3d12_texture_t* texture);
+
+void d3d12_update_texture(
+      int              width,
+      int              height,
+      int              pitch,
+      DXGI_FORMAT      format,
+      const void*      data,
+      d3d12_texture_t* texture);
 
 void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t* texture);
 
 void d3d12_create_fullscreen_quad_vbo(
       D3D12Device device, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo);
 
+DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DATA_FORMAT_SUPPORT* desired);
+
+#if !defined(__cplusplus) || defined(CINTERFACE)
 static INLINE void d3d12_resource_transition(
       D3D12GraphicsCommandList cmd,
       D3D12Resource            resource,
       D3D12_RESOURCE_STATES    state_before,
       D3D12_RESOURCE_STATES    state_after)
 {
-   D3D12_RESOURCE_BARRIER barrier = { 0 };
+   D3D12_RESOURCE_BARRIER barrier;
    barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
    barrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
    barrier.Transition.pResource   = resource;
@@ -1420,44 +1531,22 @@ static INLINE void d3d12_resource_transition(
 
 static INLINE void d3d12_set_texture(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
 {
-   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_INDEX_TEXTURE_TABLE, texture->gpu_descriptor);
+   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, texture->gpu_descriptor[0]);
 }
 
 static INLINE void
 d3d12_set_sampler(D3D12GraphicsCommandList cmd, D3D12_GPU_DESCRIPTOR_HANDLE sampler)
 {
-   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_INDEX_SAMPLER_TABLE, sampler);
+   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T, sampler);
 }
 
-static INLINE void d3d12_update_texture(
-      int              width,
-      int              height,
-      int              pitch,
-      DXGI_FORMAT      format,
-      const void*      data,
-      d3d12_texture_t* texture)
+static INLINE void
+d3d12_set_texture_and_sampler(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
 {
-   uint8_t*    dst;
-   D3D12_RANGE read_range = { 0, 0 };
-
-   D3D12Map(texture->upload_buffer, 0, &read_range, (void**)&dst);
-
-   dxgi_copy(
-         width, height, format, pitch, data, texture->desc.Format,
-         texture->layout.Footprint.RowPitch, dst + texture->layout.Offset);
-
-   D3D12Unmap(texture->upload_buffer, 0, NULL);
-
-   texture->dirty = true;
+   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, texture->gpu_descriptor[0]);
+   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T, texture->sampler);
 }
 
-DXGI_FORMAT d3d12_get_closest_match(
-      D3D12Device device, DXGI_FORMAT desired_format, D3D12_FORMAT_SUPPORT1 desired_format_support);
+#endif
 
-static INLINE DXGI_FORMAT
-d3d12_get_closest_match_texture2D(D3D12Device device, DXGI_FORMAT desired_format)
-{
-   return d3d12_get_closest_match(
-         device, desired_format,
-         D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE);
-}
+RETRO_END_DECLS

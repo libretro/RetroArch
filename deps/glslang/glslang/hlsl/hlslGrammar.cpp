@@ -67,12 +67,12 @@ bool HlslGrammar::parse()
 
 void HlslGrammar::expected(const char* syntax)
 {
-    parseContext.error(token.loc, "Expected", syntax, "");
+    _parseContext.error(token.loc, "Expected", syntax, "");
 }
 
 void HlslGrammar::unimplemented(const char* error)
 {
-    parseContext.error(token.loc, "Unimplemented", error, "");
+    _parseContext.error(token.loc, "Unimplemented", error, "");
 }
 
 // Only process the next token if it is an identifier.
@@ -154,7 +154,7 @@ bool HlslGrammar::acceptSamplerState()
     if (! acceptTokenClass(EHTokLeftBrace))
         return true;
 
-    parseContext.warn(token.loc, "unimplemented", "immediate sampler state", "");
+    _parseContext.warn(token.loc, "unimplemented", "immediate sampler state", "");
     
     do {
         // read state name
@@ -311,7 +311,7 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
         TString* fnName = idToken.string;
 
         // Potentially rename shader entry point function.  No-op most of the time.
-        parseContext.renameShaderFunction(fnName);
+        _parseContext.renameShaderFunction(fnName);
 
         // function_parameters
         TFunction& function = *new TFunction(fnName, declaredType);
@@ -322,18 +322,18 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
             // compound_statement (function body definition) or just a prototype?
             if (peekTokenClass(EHTokLeftBrace)) {
                 if (list)
-                    parseContext.error(idToken.loc, "function body can't be in a declarator list", "{", "");
+                    _parseContext.error(idToken.loc, "function body can't be in a declarator list", "{", "");
                 if (typedefDecl)
-                    parseContext.error(idToken.loc, "function body can't be in a typedef", "{", "");
+                    _parseContext.error(idToken.loc, "function body can't be in a typedef", "{", "");
                 return acceptFunctionDefinition(function, node, attributes);
             } else {
                 if (typedefDecl)
-                    parseContext.error(idToken.loc, "function typedefs not implemented", "{", "");
-                parseContext.handleFunctionDeclarator(idToken.loc, function, true);
+                    _parseContext.error(idToken.loc, "function typedefs not implemented", "{", "");
+                _parseContext.handleFunctionDeclarator(idToken.loc, function, true);
             }
         } else {
             // A variable declaration. Fix the storage qualifier if it's a global.
-            if (declaredType.getQualifier().storage == EvqTemporary && parseContext.symbolTable.atGlobalLevel())
+            if (declaredType.getQualifier().storage == EvqTemporary && _parseContext.symbolTable.atGlobalLevel())
                 declaredType.getQualifier().storage = EvqUniform;
 
             // We can handle multiple variables per type declaration, so 
@@ -356,7 +356,7 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
                 // In the most general case, arrayness is potentially coming both from the
                 // declared type and from the variable: "int[] a[];" or just one or the other.
                 // Merge it all to the variableType, so all arrayness is part of the variableType.
-                parseContext.arrayDimMerge(variableType, arraySizes);
+                _parseContext.arrayDimMerge(variableType, arraySizes);
             }
 
             // samplers accept immediate sampler state
@@ -372,7 +372,7 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
             TIntermTyped* expressionNode = nullptr;
             if (acceptTokenClass(EHTokAssign)) {
                 if (typedefDecl)
-                    parseContext.error(idToken.loc, "can't have an initializer", "typedef", "");
+                    _parseContext.error(idToken.loc, "can't have an initializer", "typedef", "");
                 if (! acceptAssignmentExpression(expressionNode)) {
                     expected("initializer");
                     return false;
@@ -383,21 +383,21 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
 
             // TODO: things scoped within an annotation need their own name space;
             // TODO: strings are not yet handled.
-            if (variableType.getBasicType() != EbtString && parseContext.getAnnotationNestingLevel() == 0) {
+            if (variableType.getBasicType() != EbtString && _parseContext.getAnnotationNestingLevel() == 0) {
                 if (typedefDecl)
-                    parseContext.declareTypedef(idToken.loc, *idToken.string, variableType);
+                    _parseContext.declareTypedef(idToken.loc, *idToken.string, variableType);
                 else if (variableType.getBasicType() == EbtBlock)
-                    parseContext.declareBlock(idToken.loc, variableType, idToken.string);
+                    _parseContext.declareBlock(idToken.loc, variableType, idToken.string);
                 else {
                     if (variableType.getQualifier().storage == EvqUniform && ! variableType.containsOpaque()) {
                         // this isn't really an individual variable, but a member of the $Global buffer
-                        parseContext.growGlobalUniformBlock(idToken.loc, variableType, *idToken.string);
+                        _parseContext.growGlobalUniformBlock(idToken.loc, variableType, *idToken.string);
                     } else {
                         // Declare the variable and add any initializer code to the AST.
                         // The top-level node is always made into an aggregate, as that's
                         // historically how the AST has been.
                         node = intermediate.growAggregate(node,
-                                                          parseContext.declareVariable(idToken.loc, *idToken.string, variableType,
+                                                          _parseContext.declareVariable(idToken.loc, *idToken.string, variableType,
                                                                                        expressionNode),
                                                           idToken.loc);
                     }
@@ -456,7 +456,7 @@ bool HlslGrammar::acceptControlDeclaration(TIntermNode*& node)
         return false;
     }
 
-    node = parseContext.declareVariable(idToken.loc, *idToken.string, type, expressionNode);
+    node = _parseContext.declareVariable(idToken.loc, *idToken.string, type, expressionNode);
 
     return true;
 }
@@ -479,10 +479,10 @@ bool HlslGrammar::acceptFullySpecifiedType(TType& type)
         return false;
     if (type.getBasicType() == EbtBlock) {
         // the type was a block, which set some parts of the qualifier
-        parseContext.mergeQualifiers(type.getQualifier(), qualifier);
+        _parseContext.mergeQualifiers(type.getQualifier(), qualifier);
         // further, it can create an anonymous instance of the block
         if (peekTokenClass(EHTokSemicolon))
-            parseContext.declareBlock(loc, type);
+            _parseContext.declareBlock(loc, type);
     } else {
         // Some qualifiers are set when parsing the type.  Merge those with
         // whatever comes from acceptQualifier.
@@ -510,7 +510,7 @@ bool HlslGrammar::acceptQualifier(TQualifier& qualifier)
     do {
         switch (peek()) {
         case EHTokStatic:
-            qualifier.storage = parseContext.symbolTable.atGlobalLevel() ? EvqGlobal : EvqTemporary;
+            qualifier.storage = _parseContext.symbolTable.atGlobalLevel() ? EvqGlobal : EvqTemporary;
             break;
         case EHTokExtern:
             // TODO: no meaning in glslang?
@@ -572,27 +572,27 @@ bool HlslGrammar::acceptQualifier(TQualifier& qualifier)
         // for output variables.
         case EHTokPoint:
             qualifier.storage = EvqIn;
-            if (!parseContext.handleInputGeometry(token.loc, ElgPoints))
+            if (!_parseContext.handleInputGeometry(token.loc, ElgPoints))
                 return false;
             break;
         case EHTokLine:
             qualifier.storage = EvqIn;
-            if (!parseContext.handleInputGeometry(token.loc, ElgLines))
+            if (!_parseContext.handleInputGeometry(token.loc, ElgLines))
                 return false;
             break;
         case EHTokTriangle:
             qualifier.storage = EvqIn;
-            if (!parseContext.handleInputGeometry(token.loc, ElgTriangles))
+            if (!_parseContext.handleInputGeometry(token.loc, ElgTriangles))
                 return false;
             break;
         case EHTokLineAdj:
             qualifier.storage = EvqIn;
-            if (!parseContext.handleInputGeometry(token.loc, ElgLinesAdjacency))
+            if (!_parseContext.handleInputGeometry(token.loc, ElgLinesAdjacency))
                 return false;
             break; 
         case EHTokTriangleAdj:
             qualifier.storage = EvqIn;
-            if (!parseContext.handleInputGeometry(token.loc, ElgTrianglesAdjacency))
+            if (!_parseContext.handleInputGeometry(token.loc, ElgTrianglesAdjacency))
                 return false;
             break; 
             
@@ -634,9 +634,9 @@ bool HlslGrammar::acceptLayoutQualifierList(TQualifier& qualifier)
                 expected("expression");
                 return false;
             }
-            parseContext.setLayoutQualifier(idToken.loc, qualifier, *idToken.string, expr);
+            _parseContext.setLayoutQualifier(idToken.loc, qualifier, *idToken.string, expr);
         } else
-            parseContext.setLayoutQualifier(idToken.loc, qualifier, *idToken.string);
+            _parseContext.setLayoutQualifier(idToken.loc, qualifier, *idToken.string);
 
         // COMMA
         if (! acceptTokenClass(EHTokComma))
@@ -864,7 +864,7 @@ bool HlslGrammar::acceptAnnotations(TQualifier&)
         return false;
 
     // note that we are nesting a name space
-    parseContext.nestAnnotations();
+    _parseContext.nestAnnotations();
 
     // declaration SEMI_COLON ... declaration SEMICOLON RIGHT_ANGLE
     do {
@@ -883,7 +883,7 @@ bool HlslGrammar::acceptAnnotations(TQualifier&)
         }
     } while (true);
 
-    parseContext.unnestAnnotations();
+    _parseContext.unnestAnnotations();
     return true;
 }
 
@@ -1045,7 +1045,7 @@ bool HlslGrammar::acceptTextureType(TType& type)
 
     // Buffer, RWBuffer and RWTexture (images) require a TLayoutFormat.  We handle only a limit set.
     if (image || dim == EsdBuffer)
-        format = parseContext.getLayoutFromTxType(token.loc, txType);
+        format = _parseContext.getLayoutFromTxType(token.loc, txType);
 
     // Non-image Buffers are combined
     if (dim == EsdBuffer && !image) {
@@ -1099,7 +1099,7 @@ bool HlslGrammar::acceptType(TType& type)
             if (! acceptStreamOutTemplateType(type, geometry))
                 return false;
 
-            if (! parseContext.handleOutputGeometry(token.loc, geometry))
+            if (!_parseContext.handleOutputGeometry(token.loc, geometry))
                 return false;
             
             return true;
@@ -1144,7 +1144,7 @@ bool HlslGrammar::acceptType(TType& type)
         // An identifier could be for a user-defined type.
         // Note we cache the symbol table lookup, to save for a later rule
         // when this is not a type.
-        token.symbol = parseContext.symbolTable.find(*token.string);
+        token.symbol = _parseContext.symbolTable.find(*token.string);
         if (token.symbol && token.symbol->getAsVariable() && token.symbol->getAsVariable()->isUserType()) {
             type.shallowCopy(token.symbol->getType());
             advanceToken();
@@ -1655,8 +1655,8 @@ bool HlslGrammar::acceptStruct(TType& type)
     // case the name is not a type.)
     if (type.getBasicType() != EbtBlock && structName.size() > 0) {
         TVariable* userTypeDef = new TVariable(&structName, type, true);
-        if (! parseContext.symbolTable.insert(*userTypeDef))
-            parseContext.error(token.loc, "redefinition", structName.c_str(), "struct");
+        if (!_parseContext.symbolTable.insert(*userTypeDef))
+            _parseContext.error(token.loc, "redefinition", structName.c_str(), "struct");
     }
 
     return true;
@@ -1788,7 +1788,7 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
     acceptArraySpecifier(arraySizes);
     if (arraySizes) {
         if (arraySizes->isImplicit()) {
-            parseContext.error(token.loc, "function parameter array cannot be implicitly sized", "", "");
+            _parseContext.error(token.loc, "function parameter array cannot be implicitly sized", "", "");
             return false;
         }
 
@@ -1798,7 +1798,7 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
     // post_decls
     acceptPostDecls(type->getQualifier());
 
-    parseContext.paramFix(*type);
+    _parseContext.paramFix(*type);
 
     TParameter param = { idToken.string, type };
     function.addParameter(param);
@@ -1810,16 +1810,16 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
 // parsing the body (compound_statement).
 bool HlslGrammar::acceptFunctionDefinition(TFunction& function, TIntermNode*& node, const TAttributeMap& attributes)
 {
-    TFunction& functionDeclarator = parseContext.handleFunctionDeclarator(token.loc, function, false /* not prototype */);
+    TFunction& functionDeclarator = _parseContext.handleFunctionDeclarator(token.loc, function, false /* not prototype */);
     TSourceLoc loc = token.loc;
 
     // This does a pushScope()
-    node = parseContext.handleFunctionDefinition(loc, functionDeclarator, attributes);
+    node = _parseContext.handleFunctionDefinition(loc, functionDeclarator, attributes);
 
     // compound_statement
     TIntermNode* functionBody = nullptr;
     if (acceptCompoundStatement(functionBody)) {
-        parseContext.handleFunctionBody(loc, functionDeclarator, functionBody, node);
+        _parseContext.handleFunctionBody(loc, functionDeclarator, functionBody, node);
         return true;
     }
 
@@ -1991,11 +1991,11 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
         return false;
     }
 
-    node = parseContext.handleAssign(loc, assignOp, node, rightNode);
-    node = parseContext.handleLvalue(loc, "assign", node);
+    node = _parseContext.handleAssign(loc, assignOp, node, rightNode);
+    node = _parseContext.handleLvalue(loc, "assign", node);
 
     if (node == nullptr) {
-        parseContext.error(loc, "could not create assignment", "", "");
+        _parseContext.error(loc, "could not create assignment", "", "");
         return false;
     }
 
@@ -2083,7 +2083,7 @@ bool HlslGrammar::acceptBinaryExpression(TIntermTyped*& node, PrecedenceLevel pr
 
         node = intermediate.addBinaryMath(op, node, rightNode, loc);
         if (node == nullptr) {
-            parseContext.error(loc, "Could not perform requested binary operation", "", "");
+            _parseContext.error(loc, "Could not perform requested binary operation", "", "");
             return false;
         }
     } while (true);
@@ -2114,14 +2114,14 @@ bool HlslGrammar::acceptUnaryExpression(TIntermTyped*& node)
                     return false;
 
                 // Hook it up like a constructor
-                TFunction* constructorFunction = parseContext.handleConstructorCall(loc, castType);
+                TFunction* constructorFunction = _parseContext.handleConstructorCall(loc, castType);
                 if (constructorFunction == nullptr) {
                     expected("type that can be constructed");
                     return false;
                 }
                 TIntermTyped* arguments = nullptr;
-                parseContext.handleFunctionArgument(constructorFunction, arguments, node);
-                node = parseContext.handleFunctionCall(loc, constructorFunction, arguments);
+                _parseContext.handleFunctionArgument(constructorFunction, arguments, node);
+                node = _parseContext.handleFunctionCall(loc, constructorFunction, arguments);
 
                 return true;
             } else {
@@ -2160,7 +2160,7 @@ bool HlslGrammar::acceptUnaryExpression(TIntermTyped*& node)
 
     // These unary ops require lvalues
     if (unaryOp == EOpPreIncrement || unaryOp == EOpPreDecrement)
-        node = parseContext.handleLvalue(loc, "unary operator", node);
+        node = _parseContext.handleLvalue(loc, "unary operator", node);
 
     return node != nullptr;
 }
@@ -2203,7 +2203,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
     } else if (acceptIdentifier(idToken)) {
         // identifier or function_call name
         if (! peekTokenClass(EHTokLeftParen)) {
-            node = parseContext.handleVariable(idToken.loc, idToken.symbol, token.string);
+            node = _parseContext.handleVariable(idToken.loc, idToken.symbol, token.string);
         } else if (acceptFunctionCall(idToken, node)) {
             // function_call (nothing else to do yet)
         } else {
@@ -2218,16 +2218,16 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
     // This is to guarantee we do this no matter how we get out of the stack frame.
     // This way there's no bug if an early return forgets to do it.
     struct tFinalize {
-        tFinalize(HlslParseContext& p) : parseContext(p) { }
-        ~tFinalize() { parseContext.finalizeFlattening(); }
-       HlslParseContext& parseContext;
-    } finalize(parseContext);
+        tFinalize(HlslParseContext& p) : _parseContext(p) { }
+        ~tFinalize() { _parseContext.finalizeFlattening(); }
+       HlslParseContext& _parseContext;
+    } finalize(_parseContext);
 
     // Initialize the flattening accumulation data, so we can track data across multiple bracket or
     // dot operators.  This can also be nested, e.g, for [], so we have to track each nesting
     // level: hence the init and finalize.  Even though in practice these must be
     // constants, they are parsed no matter what.
-    parseContext.initFlattening();
+    _parseContext.initFlattening();
 
     // Something was found, chain as many postfix operations as exist.
     do {
@@ -2259,7 +2259,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
             }
 
             TIntermTyped* base = node; // preserve for method function calls
-            node = parseContext.handleDotDereference(field.loc, node, *field.string);
+            node = _parseContext.handleDotDereference(field.loc, node, *field.string);
 
             // In the event of a method node, we look for an open paren and accept the function call.
             if (node != nullptr && node->getAsMethodNode() != nullptr && peekTokenClass(EHTokLeftParen)) {
@@ -2281,7 +2281,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
                 return false;
             }
             advanceToken();
-            node = parseContext.handleBracketDereference(indexNode->getLoc(), node, indexNode);
+            node = _parseContext.handleBracketDereference(indexNode->getLoc(), node, indexNode);
             break;
         }
         case EOpPostIncrement:
@@ -2290,7 +2290,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
         case EOpPostDecrement:
             // DEC_OP
             node = intermediate.addUnaryMath(postOp, node, loc);
-            node = parseContext.handleLvalue(loc, "unary operator", node);
+            node = _parseContext.handleLvalue(loc, "unary operator", node);
             break;
         default:
             assert(0);
@@ -2307,7 +2307,7 @@ bool HlslGrammar::acceptConstructor(TIntermTyped*& node)
     // type
     TType type;
     if (acceptType(type)) {
-        TFunction* constructorFunction = parseContext.handleConstructorCall(token.loc, type);
+        TFunction* constructorFunction = _parseContext.handleConstructorCall(token.loc, type);
         if (constructorFunction == nullptr)
             return false;
 
@@ -2319,7 +2319,7 @@ bool HlslGrammar::acceptConstructor(TIntermTyped*& node)
         }
 
         // hook it up
-        node = parseContext.handleFunctionCall(arguments->getLoc(), constructorFunction, arguments);
+        node = _parseContext.handleFunctionCall(arguments->getLoc(), constructorFunction, arguments);
 
         return true;
     }
@@ -2340,12 +2340,12 @@ bool HlslGrammar::acceptFunctionCall(HlslToken idToken, TIntermTyped*& node, TIn
 
     // methods have an implicit first argument of the calling object.
     if (base != nullptr)
-        parseContext.handleFunctionArgument(function, arguments, base);
+        _parseContext.handleFunctionArgument(function, arguments, base);
 
     if (! acceptArguments(function, arguments))
         return false;
 
-    node = parseContext.handleFunctionCall(idToken.loc, function, arguments);
+    node = _parseContext.handleFunctionCall(idToken.loc, function, arguments);
 
     return true;
 }
@@ -2369,7 +2369,7 @@ bool HlslGrammar::acceptArguments(TFunction* function, TIntermTyped*& arguments)
             break;
 
         // hook it up
-        parseContext.handleFunctionArgument(function, arguments, arg);
+        _parseContext.handleFunctionArgument(function, arguments, arg);
 
         // COMMA
         if (! acceptTokenClass(EHTokComma))
@@ -2434,7 +2434,7 @@ bool HlslGrammar::acceptCompoundStatement(TIntermNode*& retStatement)
         if (branch != nullptr && (branch->getFlowOp() == EOpCase ||
                                   branch->getFlowOp() == EOpDefault)) {
             // hook up individual subsequences within a switch statement
-            parseContext.wrapupSwitchSubsequence(compoundStatement, statement);
+            _parseContext.wrapupSwitchSubsequence(compoundStatement, statement);
             compoundStatement = nullptr;
         } else {
             // hook it up to the growing compound statement
@@ -2452,18 +2452,18 @@ bool HlslGrammar::acceptCompoundStatement(TIntermNode*& retStatement)
 
 bool HlslGrammar::acceptScopedStatement(TIntermNode*& statement)
 {
-    parseContext.pushScope();
+    _parseContext.pushScope();
     bool result = acceptStatement(statement);
-    parseContext.popScope();
+    _parseContext.popScope();
 
     return result;
 }
 
 bool HlslGrammar::acceptScopedCompoundStatement(TIntermNode*& statement)
 {
-    parseContext.pushScope();
+    _parseContext.pushScope();
     bool result = acceptCompoundStatement(statement);
-    parseContext.popScope();
+    _parseContext.popScope();
 
     return result;
 }
@@ -2642,7 +2642,7 @@ bool HlslGrammar::acceptSelectionStatement(TIntermNode*& statement)
 
     // so that something declared in the condition is scoped to the lifetimes
     // of the then-else statements
-    parseContext.pushScope();
+    _parseContext.pushScope();
 
     // LEFT_PAREN expression RIGHT_PAREN
     TIntermTyped* condition;
@@ -2669,7 +2669,7 @@ bool HlslGrammar::acceptSelectionStatement(TIntermNode*& statement)
 
     // Put the pieces together
     statement = intermediate.addSelection(condition, thenElse, loc);
-    parseContext.popScope();
+    _parseContext.popScope();
 
     return true;
 }
@@ -2685,21 +2685,21 @@ bool HlslGrammar::acceptSwitchStatement(TIntermNode*& statement)
         return false;
 
     // LEFT_PAREN expression RIGHT_PAREN
-    parseContext.pushScope();
+    _parseContext.pushScope();
     TIntermTyped* switchExpression;
     if (! acceptParenExpression(switchExpression)) {
-        parseContext.popScope();
+        _parseContext.popScope();
         return false;
     }
 
     // compound_statement
-    parseContext.pushSwitchSequence(new TIntermSequence);
+    _parseContext.pushSwitchSequence(new TIntermSequence);
     bool statementOkay = acceptCompoundStatement(statement);
     if (statementOkay)
-        statement = parseContext.addSwitch(loc, switchExpression, statement ? statement->getAsAggregate() : nullptr);
+        statement = _parseContext.addSwitch(loc, switchExpression, statement ? statement->getAsAggregate() : nullptr);
 
-    parseContext.popSwitchSequence();
-    parseContext.popScope();
+    _parseContext.popSwitchSequence();
+    _parseContext.popScope();
 
     return statementOkay;
 }
@@ -2725,8 +2725,8 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement)
     case EHTokWhile:
         // so that something declared in the condition is scoped to the lifetime
         // of the while sub-statement
-        parseContext.pushScope();
-        parseContext.nestLooping();
+        _parseContext.pushScope();
+        _parseContext.nestLooping();
 
         // LEFT_PAREN condition RIGHT_PAREN
         if (! acceptParenExpression(condition))
@@ -2738,15 +2738,15 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement)
             return false;
         }
 
-        parseContext.unnestLooping();
-        parseContext.popScope();
+        _parseContext.unnestLooping();
+        _parseContext.popScope();
 
         statement = intermediate.addLoop(statement, condition, nullptr, true, loc);
 
         return true;
 
     case EHTokDo:
-        parseContext.nestLooping();
+        _parseContext.nestLooping();
 
         if (! acceptTokenClass(EHTokLeftBrace))
             expected("{");
@@ -2774,7 +2774,7 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement)
         if (! acceptTokenClass(EHTokSemicolon))
             expected(";");
 
-        parseContext.unnestLooping();
+        _parseContext.unnestLooping();
 
         statement = intermediate.addLoop(statement, condition, 0, false, loc);
 
@@ -2788,7 +2788,7 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement)
 
         // so that something declared in the condition is scoped to the lifetime
         // of the for sub-statement
-        parseContext.pushScope();
+        _parseContext.pushScope();
 
         // initializer
         TIntermNode* initNode = nullptr;
@@ -2801,7 +2801,7 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement)
         if (! acceptTokenClass(EHTokSemicolon))
             expected(";");
 
-        parseContext.nestLooping();
+        _parseContext.nestLooping();
 
         // condition SEMI_COLON
         acceptExpression(condition);
@@ -2822,8 +2822,8 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement)
 
         statement = intermediate.addForLoop(statement, initNode, condition, iterator, true, loc);
 
-        parseContext.popScope();
-        parseContext.unnestLooping();
+        _parseContext.popScope();
+        _parseContext.unnestLooping();
 
         return true;
     }
@@ -2872,7 +2872,7 @@ bool HlslGrammar::acceptJumpStatement(TIntermNode*& statement)
         TIntermTyped* node;
         if (acceptExpression(node)) {
             // hook it up
-            statement = parseContext.handleReturnValue(token.loc, node);
+            statement = _parseContext.handleReturnValue(token.loc, node);
         } else
             statement = intermediate.addBranch(EOpReturn, token.loc);
         break;
@@ -2910,7 +2910,7 @@ bool HlslGrammar::acceptCaseLabel(TIntermNode*& statement)
         return false;
     }
 
-    statement = parseContext.intermediate.addBranch(EOpCase, expression, loc);
+    statement = _parseContext.intermediate.addBranch(EOpCase, expression, loc);
 
     return true;
 }
@@ -2929,7 +2929,7 @@ bool HlslGrammar::acceptDefaultLabel(TIntermNode*& statement)
         return false;
     }
 
-    statement = parseContext.intermediate.addBranch(EOpDefault, loc);
+    statement = _parseContext.intermediate.addBranch(EOpDefault, loc);
 
     return true;
 }
@@ -2964,7 +2964,7 @@ void HlslGrammar::acceptArraySpecifier(TArraySizes*& arraySizes)
 
         if (hasArraySize) {
             TArraySize arraySize;
-            parseContext.arraySizeCheck(loc, sizeExpr, arraySize);
+            _parseContext.arraySizeCheck(loc, sizeExpr, arraySize);
             arraySizes->addInnerSize(arraySize);
         } else {
             arraySizes->addInnerSize(0);  // sized by initializers.
@@ -3009,7 +3009,7 @@ void HlslGrammar::acceptPostDecls(TQualifier& qualifier)
                     expected(")");
                     break;
                 }
-                parseContext.handlePackOffset(locationToken.loc, qualifier, *locationToken.string, componentToken.string);
+                _parseContext.handlePackOffset(locationToken.loc, qualifier, *locationToken.string, componentToken.string);
             } else if (! acceptIdentifier(idToken)) {
                 expected("layout, semantic, packoffset, or register");
                 return;
@@ -3063,10 +3063,10 @@ void HlslGrammar::acceptPostDecls(TQualifier& qualifier)
                     expected(")");
                     break;
                 }
-                parseContext.handleRegister(registerDesc.loc, qualifier, profile.string, *registerDesc.string, subComponent, spaceDesc.string);
+                _parseContext.handleRegister(registerDesc.loc, qualifier, profile.string, *registerDesc.string, subComponent, spaceDesc.string);
             } else {
                 // semantic, in idToken.string
-                parseContext.handleSemantic(idToken.loc, qualifier, *idToken.string);
+                _parseContext.handleSemantic(idToken.loc, qualifier, *idToken.string);
             }
         } else if (peekTokenClass(EHTokLeftAngle))
             acceptAnnotations(qualifier);

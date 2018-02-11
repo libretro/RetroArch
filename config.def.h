@@ -125,6 +125,9 @@ static const unsigned fullscreen_y = 0;
  */
 static const unsigned window_opacity = 100;
 
+/* Whether to show the usual window decorations like border, titlebar etc. */
+static const bool window_decorations = true;
+
 #if defined(RARCH_CONSOLE) || defined(__APPLE__)
 static const bool load_dummy_on_core_shutdown = false;
 #else
@@ -550,6 +553,8 @@ static const unsigned netplay_delay_frames = 16;
 static const int netplay_check_frames = 600;
 
 static const bool netplay_use_mitm_server = false;
+
+static const char *netplay_mitm_server = "nyc";
 
 #ifdef HAVE_NETWORKING
 static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;

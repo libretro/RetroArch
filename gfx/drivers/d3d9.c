@@ -56,6 +56,7 @@
 
 #include "../../core.h"
 #include "../../verbosity.h"
+#include "../../retroarch.h"
 
 static LPDIRECT3D9 g_pD3D9;
 
@@ -331,11 +332,7 @@ static void d3d9_set_mvp(void *data,
       const void *mat_data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-
-   if (  d3d &&
-         d3d->renderchain_driver &&
-         d3d->renderchain_driver->set_mvp)
-      d3d->renderchain_driver->set_mvp(d3d, d3d->renderchain_data, shader_data, mat_data);
+   d3d_set_vertex_shader_constantf(d3d->dev, 0, (const float*)mat_data, 4);
 }
 
 static void d3d9_overlay_render(d3d_video_t *d3d,
@@ -1081,7 +1078,7 @@ static bool d3d9_init_internal(d3d_video_t *d3d,
    if (settings->bools.video_shader_enable)
    {
       enum rarch_shader_type type =
-         video_shader_parse_type(settings->paths.path_shader,
+         video_shader_parse_type(retroarch_get_shader_preset(),
                RARCH_SHADER_NONE);
 
       switch (type)
@@ -1089,8 +1086,8 @@ static bool d3d9_init_internal(d3d_video_t *d3d,
          case RARCH_SHADER_CG:
             if (!string_is_empty(d3d->shader_path))
                free(d3d->shader_path);
-            if (!string_is_empty(settings->paths.path_shader))
-               d3d->shader_path = strdup(settings->paths.path_shader);
+            if (!string_is_empty(retroarch_get_shader_preset()))
+               d3d->shader_path = strdup(retroarch_get_shader_preset());
             break;
          default:
             break;
@@ -1645,18 +1642,29 @@ static void d3d9_set_menu_texture_enable(void *data,
    d3d->menu->fullscreen         = full_screen;
 }
 
-static void d3d9_video_texture_load_d3d(d3d_video_t *d3d,
-      struct texture_image *ti,
-      enum texture_filter_type filter_type,
+struct d3d9_texture_info
+{
+   void *userdata;
+   void *data;
+   enum texture_filter_type type;
+};
+
+static void d3d9_video_texture_load_d3d(
+      struct d3d9_texture_info *info,
       uintptr_t *id)
 {
    D3DLOCKED_RECT d3dlr;
-   LPDIRECT3DTEXTURE9 tex = NULL;
-   unsigned usage         = 0;
-   bool want_mipmap       = false;
+   LPDIRECT3DTEXTURE9 tex   = NULL;
+   unsigned usage           = 0;
+   bool want_mipmap         = false;
+   d3d_video_t *d3d         = (d3d_video_t*)info->userdata;
+   struct texture_image *ti = (struct texture_image*)info->data;
 
-   if((filter_type == TEXTURE_FILTER_MIPMAP_LINEAR) ||
-      (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST))
+   if (!ti)
+      return;
+
+   if((info->type == TEXTURE_FILTER_MIPMAP_LINEAR) ||
+      (info->type == TEXTURE_FILTER_MIPMAP_NEAREST))
       want_mipmap        = true;
 
    tex = (LPDIRECT3DTEXTURE9)d3d_texture_new(d3d->dev, NULL,
@@ -1687,19 +1695,13 @@ static void d3d9_video_texture_load_d3d(d3d_video_t *d3d,
    *id = (uintptr_t)tex;
 }
 
-static int d3d9_video_texture_load_wrap_d3d_mipmap(void *data)
-{
-   uintptr_t id = 0;
-   d3d9_video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true),
-         (struct texture_image*)data, TEXTURE_FILTER_MIPMAP_LINEAR, &id);
-   return id;
-}
-
 static int d3d9_video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
-   d3d9_video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true),
-         (struct texture_image*)data, TEXTURE_FILTER_LINEAR, &id);
+   struct d3d9_texture_info *info = (struct d3d9_texture_info*)data;
+   if (!info)
+      return 0;
+   d3d9_video_texture_load_d3d(info, &id);
    return id;
 }
 
@@ -1707,27 +1709,17 @@ static uintptr_t d3d9_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
    uintptr_t id = 0;
+   struct d3d9_texture_info info;
+
+   info.userdata = video_data;
+   info.data     = data;
+   info.type     = filter_type;
 
    if (threaded)
-   {
-      custom_command_method_t func = d3d9_video_texture_load_wrap_d3d;
+      return video_thread_texture_load(&info,
+            d3d9_video_texture_load_wrap_d3d);
 
-      switch (filter_type)
-      {
-         case TEXTURE_FILTER_MIPMAP_LINEAR:
-         case TEXTURE_FILTER_MIPMAP_NEAREST:
-            func = d3d9_video_texture_load_wrap_d3d_mipmap;
-            break;
-         default:
-            func = d3d9_video_texture_load_wrap_d3d;
-            break;
-      }
-
-      return video_thread_texture_load(data, func);
-   }
-
-   d3d9_video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(false),
-         (struct texture_image*)data, filter_type, &id);
+   d3d9_video_texture_load_d3d(&info, &id);
    return id;
 }
 

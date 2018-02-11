@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <gfx/scaler/pixconv.h>
 
 #include "d3d10_common.h"
@@ -55,7 +57,7 @@ HRESULT WINAPI D3D10CreateDeviceAndSwapChain(
             d3d10_dll, "D3D10CreateDeviceAndSwapChain");
 
    if (!fp)
-      return TYPE_E_CANTLOADLIBRARY;
+      return TYPE_E_DLLFUNCTIONNOTFOUND;
 
    return fp(
          pAdapter, DriverType, Software, Flags, SDKVersion,
@@ -82,7 +84,7 @@ void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
    D3D10CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
 
    {
-      D3D10_SHADER_RESOURCE_VIEW_DESC view_desc = { 0 };
+      D3D10_SHADER_RESOURCE_VIEW_DESC view_desc = { DXGI_FORMAT_UNKNOWN };
       view_desc.Format                    = texture->desc.Format;
       view_desc.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
       view_desc.Texture2D.MostDetailedMip = 0;
@@ -132,7 +134,7 @@ void d3d10_update_texture(
       texture->dirty = true;
 }
 
-DXGI_FORMAT
+   DXGI_FORMAT
 d3d10_get_closest_match(D3D10Device device,
       DXGI_FORMAT desired_format, UINT desired_format_support)
 {
@@ -146,7 +148,7 @@ d3d10_get_closest_match(D3D10Device device,
    {
       UINT format_support;
       if (SUCCEEDED(D3D10CheckFormatSupport(device, *format, &format_support)) &&
-          ((format_support & desired_format_support) == desired_format_support))
+            ((format_support & desired_format_support) == desired_format_support))
          break;
       format++;
    }

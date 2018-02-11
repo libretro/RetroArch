@@ -62,7 +62,9 @@ enum slang_semantic
    // vec4, viewport size of final pass
    SLANG_SEMANTIC_FINAL_VIEWPORT = 2,
    // uint, frame count with modulo
-   SLANG_SEMANTIC_FRAME_COUNT = 3,
+   SLANG_SEMANTIC_FRAME_COUNT = 3,   
+   SLANG_NUM_BASE_SEMANTICS,
+
    // float, user defined parameter, arrayed
    SLANG_SEMANTIC_FLOAT_PARAMETER = 4,
 
@@ -91,7 +93,7 @@ enum slang_constant_buffer
 #include <string>
 #include <unordered_map>
 #include <stdint.h>
-#include "spirv_cross.hpp"
+#include <spirv_cross.hpp>
 
 struct slang_texture_semantic_meta
 {

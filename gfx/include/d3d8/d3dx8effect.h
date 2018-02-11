@@ -1,11 +1,10 @@
-///////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (C) Microsoft Corporation.  All Rights Reserved.
-//
-//  File:       d3dx8effect.h
-//  Content:    D3DX effect types and functions
-//
-///////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
+ *
+ *  File:       d3dx8effect.h
+ *  Content:    D3DX effect types and functions
+ */
 
 #include "d3dx8.h"
 
@@ -67,14 +66,14 @@ typedef struct _D3DXPASS_DESC
 
 
 
-//////////////////////////////////////////////////////////////////////////////
-// ID3DXEffect ///////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
+/*
+ * ID3DXEffect
+ */
 
 typedef interface ID3DXEffect ID3DXEffect;
 typedef interface ID3DXEffect *LPD3DXEFFECT;
 
-// {648B1CEB-8D4E-4d66-B6FA-E44969E82E89}
+/* {648B1CEB-8D4E-4d66-B6FA-E44969E82E89} */
 DEFINE_GUID( IID_ID3DXEffect,
 0x648b1ceb, 0x8d4e, 0x4d66, 0xb6, 0xfa, 0xe4, 0x49, 0x69, 0xe8, 0x2e, 0x89);
 
@@ -84,12 +83,12 @@ DEFINE_GUID( IID_ID3DXEffect,
 
 DECLARE_INTERFACE_(ID3DXEffect, IUnknown)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // ID3DXEffect
+    /* ID3DXEffect */
     STDMETHOD(GetDevice)(THIS_ LPDIRECT3DDEVICE8* ppDevice) PURE;
     STDMETHOD(GetDesc)(THIS_ D3DXEFFECT_DESC* pDesc) PURE;
     STDMETHOD(GetParameterDesc)(THIS_ LPCSTR pParameter, D3DXPARAMETER_DESC* pDesc) PURE;
@@ -130,41 +129,41 @@ DECLARE_INTERFACE_(ID3DXEffect, IUnknown)
 
 
 
-//////////////////////////////////////////////////////////////////////////////
-// APIs //////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
+/*
+ * APIs
+ */
 
 
 #ifdef __cplusplus
 extern "C" {
-#endif //__cplusplus
+#endif /* __cplusplus */
 
 
-//----------------------------------------------------------------------------
-// D3DXCreateEffect:
-// -----------------
-// Creates an effect from an ascii or binaray effect description.
-//
-// Parameters:
-//  pDevice
-//      Pointer of the device on which to create the effect
-//  pSrcFile
-//      Name of the file containing the effect description
-//  hSrcModule
-//      Module handle. if NULL, current module will be used.
-//  pSrcResource
-//      Resource name in module
-//  pSrcData
-//      Pointer to effect description
-//  SrcDataSize
-//      Size of the effect description in bytes
-//  ppEffect
-//      Returns a buffer containing created effect.
-//  ppCompilationErrors
-//      Returns a buffer containing any error messages which occurred during
-//      compile.  Or NULL if you do not care about the error messages.
-//
-//----------------------------------------------------------------------------
+/*
+ * D3DXCreateEffect:
+ * -----------------
+ * Creates an effect from an ascii or binaray effect description.
+ *
+ * Parameters:
+ *  pDevice
+ *      Pointer of the device on which to create the effect
+ *  pSrcFile
+ *      Name of the file containing the effect description
+ *  hSrcModule
+ *      Module handle. if NULL, current module will be used.
+ *  pSrcResource
+ *      Resource name in module
+ *  pSrcData
+ *      Pointer to effect description
+ *  SrcDataSize
+ *      Size of the effect description in bytes
+ *  ppEffect
+ *      Returns a buffer containing created effect.
+ *  ppCompilationErrors
+ *      Returns a buffer containing any error messages which occurred during
+ *      compile.  Or NULL if you do not care about the error messages.
+ *
+ */
 
 HRESULT WINAPI
     D3DXCreateEffectFromFileA(
@@ -221,6 +220,6 @@ HRESULT WINAPI
 
 #ifdef __cplusplus
 }
-#endif //__cplusplus
+#endif /* __cplusplus */
 
-#endif //__D3DX8EFFECT_H__
+#endif /* __D3DX8EFFECT_H__ */

@@ -280,6 +280,7 @@ enum menu_display_driver_type
    MENU_VIDEO_DRIVER_VULKAN,
    MENU_VIDEO_DRIVER_DIRECT3D,
    MENU_VIDEO_DRIVER_DIRECT3D11,
+   MENU_VIDEO_DRIVER_DIRECT3D12,
    MENU_VIDEO_DRIVER_VITA2D,
    MENU_VIDEO_DRIVER_CTR,
    MENU_VIDEO_DRIVER_WIIU,
@@ -736,6 +737,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_gl;
 extern menu_display_ctx_driver_t menu_display_ctx_vulkan;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d11;
+extern menu_display_ctx_driver_t menu_display_ctx_d3d12;
 extern menu_display_ctx_driver_t menu_display_ctx_vita2d;
 extern menu_display_ctx_driver_t menu_display_ctx_ctr;
 extern menu_display_ctx_driver_t menu_display_ctx_wiiu;

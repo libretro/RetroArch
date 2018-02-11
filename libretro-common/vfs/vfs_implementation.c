@@ -75,6 +75,12 @@
 
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX)
+#if !defined(_MSC_VER) || (defined(_MSC_VER) && _MSC_VER >= 1400)
+#define ATLEAST_VC2005
+#endif
+#endif
+
 #ifdef RARCH_INTERNAL
 #ifndef VFS_FRONTEND
 #define VFS_FRONTEND
@@ -251,12 +257,9 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
-      if (!mode_str)
-         goto error;
+      FILE   *fp = fopen_utf8(path, mode_str);
 
-      stream->fp = fopen_utf8(path, mode_str);
-
-      if (!stream->fp)
+      if (!fp)
          goto error;
 
       /* Regarding setvbuf:
@@ -269,6 +272,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
        * Since C89 does not support specifying a null buffer with a non-zero size, we create and track our own buffer for it.
        */
       /* TODO: this is only useful for a few platforms, find which and add ifdef */
+      stream->fp  = fp;
       stream->buf = (char*)calloc(1, 0x4000);
       setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
    }
@@ -375,7 +379,12 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
       return -1;
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+/* VC2005 and up have a special 64-bit ftell */
+#ifdef ATLEAST_VC2005
+      return _ftelli64(stream->fp);
+#else
       return ftell(stream->fp);
+#endif
 
 #ifdef HAVE_MMAP
    /* Need to check stream->mapped because this function

@@ -14,7 +14,7 @@ struct _6
     float _m0[1];
 };
 
-kernel void main0(uint3 gl_WorkGroupID [[threadgroup_position_in_grid]], device _6& _8 [[buffer(0)]], device _6& _9 [[buffer(1)]])
+kernel void main0(device _6& _8 [[buffer(0)]], device _6& _9 [[buffer(1)]], uint3 gl_WorkGroupID [[threadgroup_position_in_grid]])
 {
     _8._m0[gl_WorkGroupID.x] = _9._m0[gl_WorkGroupID.x] + _8._m0[gl_WorkGroupID.x];
 }

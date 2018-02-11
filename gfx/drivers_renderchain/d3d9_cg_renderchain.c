@@ -284,8 +284,6 @@ static void d3d9_cg_renderchain_set_shader_params(
    set_cg_param(pass->vPrg, "IN.frame_count", frame_cnt);
 }
 
-
-
 #define DECL_FVF_TEXCOORD(stream, offset, index) \
    { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, \
       D3DDECLUSAGE_TEXCOORD, (BYTE)(index) }
@@ -1147,7 +1145,7 @@ static bool d3d9_cg_renderchain_add_lut(void *data,
          D3D_DEFAULT_NONPOW2,
          0,
          0,
-         D3DFMT_FROM_FILE,
+         ((D3DFORMAT)-3), /* D3DFMT_FROM_FILE */
          D3DPOOL_MANAGED,
          smooth ? D3D_FILTER_LINEAR : D3D_FILTER_POINT,
          0,
@@ -1223,20 +1221,6 @@ static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
    d3d_matrix_transpose(&matrix, &proj);
 
    d3d9_cg_renderchain_set_shader_mvp(chain, vPrg, &matrix);
-}
-
-static void d3d9_cg_renderchain_set_mvp(
-         void *data,
-         void *chain_data,
-         void *shader_data,
-         const void *mat_data)
-{   
-   d3d_video_t *d3d        = (d3d_video_t*)data;
-
-   if (!d3d)
-      return;
-
-   d3d_set_vertex_shader_constantf(d3d->dev, 0, (const float*)mat_data, 4);
 }
 
 static void cg_d3d9_renderchain_set_vertices(
@@ -1334,13 +1318,6 @@ static void cg_d3d9_renderchain_set_vertices(
                info->tex_w, info->tex_h,
                vp_width, vp_height);
    }
-}
-
-static void cg_d3d9_renderchain_set_viewport(
-      cg_renderchain_t *chain,
-      D3DVIEWPORT9 *vp)
-{
-   d3d_set_viewports(chain->dev, vp);
 }
 
 static void cg_d3d9_renderchain_blit_to_texture(
@@ -1553,8 +1530,7 @@ static bool d3d9_cg_renderchain_render(
       viewport.Width  = out_width;
       viewport.Height = out_height;
 
-      if (chain)
-         cg_d3d9_renderchain_set_viewport(chain, &viewport);
+      d3d_set_viewports(chain->dev, &viewport);
 
       cg_d3d9_renderchain_set_vertices(chain, from_pass,
             current_width, current_height,
@@ -1579,8 +1555,7 @@ static bool d3d9_cg_renderchain_render(
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
 
-   if (chain)
-      cg_d3d9_renderchain_set_viewport(chain, chain->final_viewport);
+   d3d_set_viewports(chain->dev, chain->final_viewport);
 
    cg_d3d9_renderchain_set_vertices(chain, last_pass,
          current_width, current_height,
@@ -1725,7 +1700,6 @@ static void d3d9_cg_renderchain_viewport_info(
 }
 
 d3d_renderchain_driver_t cg_d3d9_renderchain = {
-   d3d9_cg_renderchain_set_mvp,
    d3d9_cg_renderchain_free,
    d3d9_cg_renderchain_new,
    d3d9_cg_renderchain_init,

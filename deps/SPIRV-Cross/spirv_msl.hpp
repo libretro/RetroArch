@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 The Brenwill Workshop Ltd.
+ * Copyright 2016-2018 The Brenwill Workshop Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #define SPIRV_CROSS_MSL_HPP
 
 #include "spirv_glsl.hpp"
+#include <stdint.h>
 #include <limits>
 #include <map>
 #include <set>
@@ -64,7 +65,7 @@ using MSLStructMemberKey = uint64_t;
 
 // Special constant used in a MSLResourceBinding desc_set
 // element to indicate the bindings for the push constants.
-static const uint32_t kPushConstDescSet = std::numeric_limits<uint32_t>::max();
+static const uint32_t kPushConstDescSet = ((uint32_t)-1);
 
 // Special constant used in a MSLResourceBinding binding
 // element to indicate the bindings for the push constants.

@@ -42,7 +42,7 @@ static ITaskbarList3 *g_taskbarList = NULL;
 
 /* MSVC really doesn't want CINTERFACE to be used with shobjidl for some reason, but since we use C++ mode,
  * we need a workaround... so use the names of the COBJMACROS functions instead. */
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CINTERFACE)
 #define ITaskbarList3_Release(x) g_taskbarList->Release()
 #define ITaskbarList3_SetProgressState(a, b, c) g_taskbarList->SetProgressState(b, c)
 #define ITaskbarList3_SetProgressValue(a, b, c, d) g_taskbarList->SetProgressValue(b, c, d)
@@ -54,6 +54,7 @@ typedef struct
 {
    unsigned opacity;
    int progress;
+   bool decorations;
 } dispserv_win32_t;
 
 /*
@@ -85,7 +86,7 @@ static void* win32_display_server_init(void)
 
    if (!SUCCEEDED(hr))
    {
-      g_taskbarList = false;
+      g_taskbarList = NULL;
       RARCH_ERR("[dispserv]: CoCreateInstance of ITaskbarList3 failed.\n");
    }
 #endif
@@ -180,11 +181,23 @@ static bool win32_set_window_progress(void *data, int progress, bool finished)
    return ret;
 }
 
+static bool win32_set_window_decorations(void *data, bool on)
+{
+   dispserv_win32_t *serv = (dispserv_win32_t*)data;
+
+   serv->decorations = on;
+
+   /* menu_setting performs a reinit instead to properly apply decoration changes */
+
+   return true;
+}
+
 const video_display_server_t dispserv_win32 = {
    win32_display_server_init,
    win32_display_server_destroy,
    win32_set_window_opacity,
    win32_set_window_progress,
+   win32_set_window_decorations,
    "win32"
 };
 

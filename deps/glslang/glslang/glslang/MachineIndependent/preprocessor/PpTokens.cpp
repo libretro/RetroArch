@@ -177,7 +177,7 @@ int TPpContext::ReadToken(TokenStream *pTok, TPpToken *ppToken)
     int ch;
 
     ltoken = lReadByte(pTok);
-    ppToken->loc = parseContext.getCurrentLoc();
+    ppToken->loc = _parseContext.getCurrentLoc();
     if (ltoken > 127)
         ltoken += 128;
     switch (ltoken) {
@@ -185,9 +185,9 @@ int TPpContext::ReadToken(TokenStream *pTok, TPpToken *ppToken)
         // Check for ##, unless the current # is the last character
         if (pTok->current < pTok->data.size()) {
             if (lReadByte(pTok) == '#') {
-                parseContext.requireProfile(ppToken->loc, ~EEsProfile, "token pasting (##)");
-                parseContext.profileRequires(ppToken->loc, ~EEsProfile, 130, 0, "token pasting (##)");
-                parseContext.error(ppToken->loc, "token pasting not implemented (internal error)", "##", "");
+                _parseContext.requireProfile(ppToken->loc, ~EEsProfile, "token pasting (##)");
+                _parseContext.profileRequires(ppToken->loc, ~EEsProfile, 130, 0, "token pasting (##)");
+                _parseContext.error(ppToken->loc, "token pasting not implemented (internal error)", "##", "");
                 //return PpAtomPaste;
                 return ReadToken(pTok, ppToken);
             } else
@@ -213,7 +213,7 @@ int TPpContext::ReadToken(TokenStream *pTok, TPpToken *ppToken)
                 len++;
                 ch = lReadByte(pTok);
             } else {
-                parseContext.error(ppToken->loc, "token too long", "", "");
+                _parseContext.error(ppToken->loc, "token too long", "", "");
                 break;
             }
         }

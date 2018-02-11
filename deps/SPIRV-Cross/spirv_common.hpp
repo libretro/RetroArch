@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 ARM Limited
+ * Copyright 2015-2018 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -723,16 +723,30 @@ struct SPIRConstant : IVariant
 	{
 		Constant r[4];
 		// If != 0, this element is a specialization constant, and we should keep track of it as such.
-		uint32_t id[4] = {};
+		uint32_t id[4];
 		uint32_t vecsize = 1;
+
+		ConstantVector()
+		{
+			unsigned i;
+			for (i = 0; i < 4; i++)
+				id[i] = 0;
+		}
 	};
 
 	struct ConstantMatrix
 	{
 		ConstantVector c[4];
 		// If != 0, this column is a specialization constant, and we should keep track of it as such.
-		uint32_t id[4] = {};
+		uint32_t id[4];
 		uint32_t columns = 1;
+
+		ConstantMatrix()
+		{
+			unsigned i;
+			for (i = 0; i < 4; i++)
+				id[i] = 0;
+		}
 	};
 
 	inline uint32_t specialization_constant_id(uint32_t col, uint32_t row) const

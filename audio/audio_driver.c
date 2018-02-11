@@ -146,8 +146,10 @@ static size_t audio_driver_rewind_size                   = 0;
 static int16_t *audio_driver_rewind_buf                  = NULL;
 static int16_t *audio_driver_output_samples_conv_buf     = NULL;
 
+#ifdef DEBUG
 static unsigned audio_driver_free_samples_buf[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
 static uint64_t audio_driver_free_samples_count          = 0;
+#endif
 
 static size_t audio_driver_buffer_size                   = 0;
 static size_t audio_driver_data_ptr                      = 0;
@@ -191,6 +193,7 @@ enum resampler_quality audio_driver_get_resampler_quality(void)
    return (enum resampler_quality)settings->uints.audio_resampler_quality;
 }
 
+#ifdef DEBUG
 /**
  * compute_audio_buffer_statistics:
  *
@@ -255,6 +258,7 @@ static void compute_audio_buffer_statistics(void)
          (100.0 * low_water_count) / (samples - 1),
          (100.0 * high_water_count) / (samples - 1));
 }
+#endif
 
 /**
  * audio_driver_find_handle:
@@ -339,7 +343,9 @@ static bool audio_driver_deinit_internal(void)
 
    command_event(CMD_EVENT_DSP_FILTER_DEINIT, NULL);
 
+#ifdef DEBUG
    compute_audio_buffer_statistics();
+#endif
 
    return true;
 }
@@ -508,7 +514,9 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
 
+#ifdef DEBUG
    audio_driver_free_samples_count = 0;
+#endif
 
    audio_mixer_init(settings->uints.audio_out_rate);
 
@@ -612,17 +620,19 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
    if (audio_driver_control)
    {
       /* Readjust the audio input rate. */
-      unsigned write_idx   = audio_driver_free_samples_count++ &
-         (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
       int      half_size   = (int)(audio_driver_buffer_size / 2);
       int      avail       =
          (int)current_audio->write_avail(audio_driver_context_audio_data);
       int      delta_mid   = avail - half_size;
       double   direction   = (double)delta_mid / half_size;
       double   adjust      = 1.0 + audio_driver_rate_control_delta * direction;
+#ifdef DEBUG
+      unsigned write_idx   = audio_driver_free_samples_count++ &
+         (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
 
       audio_driver_free_samples_buf
          [write_idx]               = avail;
+#endif
       audio_source_ratio_current   =
          audio_source_ratio_original * adjust;
 

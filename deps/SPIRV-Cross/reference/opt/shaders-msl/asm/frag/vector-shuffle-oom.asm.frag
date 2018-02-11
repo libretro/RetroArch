@@ -95,7 +95,7 @@ struct main0_out
     float4 m_5 [[color(0)]];
 };
 
-fragment main0_out main0(float4 gl_FragCoord [[position]], constant _6& _7 [[buffer(0)]], texture2d<float> _8 [[texture(0)]], sampler _9 [[sampler(0)]], constant _10& _11 [[buffer(1)]], texture2d<float> _12 [[texture(1)]], sampler _13 [[sampler(1)]], texture2d<float> _14 [[texture(2)]], sampler _15 [[sampler(2)]], constant _18& _19 [[buffer(2)]])
+fragment main0_out main0(constant _6& _7 [[buffer(0)]], constant _10& _11 [[buffer(1)]], constant _18& _19 [[buffer(2)]], texture2d<float> _8 [[texture(0)]], texture2d<float> _12 [[texture(1)]], texture2d<float> _14 [[texture(2)]], sampler _9 [[sampler(0)]], sampler _13 [[sampler(1)]], sampler _15 [[sampler(2)]], float4 gl_FragCoord [[position]])
 {
     main0_out out = {};
     _28 _77 = _74;

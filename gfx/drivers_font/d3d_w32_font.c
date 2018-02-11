@@ -16,6 +16,8 @@
 
 #include <tchar.h>
 
+#include <compat/strl.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -54,22 +56,25 @@ static void *d3dfonts_w32_init_font(void *video_data,
       bool is_threaded)
 {
    TEXTMETRICA metrics;
-   settings_t *settings = config_get_ptr();
-   d3dx_font_desc_t desc   = {
-      (int)(font_size), 0, 400, 0,
-      false, DEFAULT_CHARSET,
-      OUT_TT_PRECIS,
-      CLIP_DEFAULT_PRECIS,
-      DEFAULT_PITCH,
-#ifdef UNICODE
-	  _T(L"Verdana")
-#else
-      _T("Verdana")
-#endif
-   };
+   d3dx_font_desc_t desc;
    d3dfonts_t *d3dfonts = (d3dfonts_t*)calloc(1, sizeof(*d3dfonts));
    if (!d3dfonts)
-      return NULL;
+	   return NULL;
+
+   desc.Height          = (int)font_size;
+   desc.Width           = 0;
+   desc.Weight          = 400;
+   desc.MipLevels       = 0;
+   desc.Italic          = FALSE;
+   desc.CharSet         = DEFAULT_CHARSET;
+   desc.OutputPrecision = OUT_TT_PRECIS;
+   desc.Quality         = CLIP_DEFAULT_PRECIS;
+   desc.PitchAndFamily  = DEFAULT_PITCH;
+#ifdef UNICODE
+   strlcpy(desc.FaceName, T(L"Verdana"), sizeof(desc.FaceName));
+#else
+   strlcpy(desc.FaceName, _T("Verdana"), sizeof(desc.FaceName));
+#endif
 
    d3dfonts->font_size  = font_size * 1.2; /* to match the other font drivers */
    d3dfonts->d3d        = (d3d_video_t*)video_data;
@@ -130,7 +135,6 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info,
    RECT rect, rect_shifted;
    RECT *p_rect_shifted             = NULL;
    RECT *p_rect                     = NULL;
-   settings_t *settings             = config_get_ptr();
    const struct font_params *params = (const struct font_params*)userdata;
    d3dfonts_t *d3dfonts             = (d3dfonts_t*)data;
    unsigned width                   = video_info->width;

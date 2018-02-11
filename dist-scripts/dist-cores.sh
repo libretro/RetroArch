@@ -1,6 +1,6 @@
 #!/bin/sh
 
-source ../version.all
+. ../version.all
 PLATFORM=$1
 SALAMANDER=no
 MAKEFILE_GRIFFIN=no

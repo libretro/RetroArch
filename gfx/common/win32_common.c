@@ -561,8 +561,6 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
    return 0;
 }
 
-extern VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
-
 static void win32_set_droppable(ui_window_win32_t *window, bool droppable)
 {
    if (DragAcceptFiles_func != NULL)
@@ -810,7 +808,7 @@ bool win32_window_create(void *data, unsigned style,
    notification_handler                = RegisterDeviceNotification(
 	   main_window.hwnd, &notification_filter, DEVICE_NOTIFY_WINDOW_HANDLE);
 
-   if (notification_handler)
+   if (!notification_handler)
       RARCH_ERR("Error registering for notifications\n");
 #endif
 
@@ -819,8 +817,11 @@ bool win32_window_create(void *data, unsigned style,
    video_driver_window_set((uintptr_t)main_window.hwnd);
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
+   if (!settings->bools.video_window_show_decorations)
+      SetWindowLongPtr(main_window.hwnd, GWL_STYLE, WS_POPUP);
+
    /* Windows 2000 and above use layered windows to enable transparency */
-   if(settings->uints.video_window_opacity < 100)
+   if (settings->uints.video_window_opacity < 100)
    {
       SetWindowLongPtr(main_window.hwnd,
            GWL_EXSTYLE,

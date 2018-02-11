@@ -182,6 +182,7 @@ static jmp_buf error_sjlj_context;
 static enum rarch_core_type current_core_type           = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type  = CORE_TYPE_PLAIN;
 static char error_string[255]                           = {0};
+static char runtime_shader_preset[255]                          = {0};
 
 #ifdef HAVE_THREAD_STORAGE
 static sthread_tls_t rarch_tls;
@@ -1114,15 +1115,17 @@ static bool retroarch_init_state(void)
 
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 {
-   char *core_path                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *config_directory                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *core_path                        = NULL;
+   char *config_directory                 = NULL;
    size_t str_size                        = PATH_MAX_LENGTH * sizeof(char);
    const char *core_name                  = runloop_system.info.library_name;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
-      goto error;
+      return false;
 
+   core_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   config_directory                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    config_directory[0] = core_path[0]     = '\0';
 
    fill_pathname_application_special(config_directory,
@@ -1143,11 +1146,6 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    free(core_path);
    free(config_directory);
    return true;
-
-error:
-   free(core_path);
-   free(config_directory);
-   return false;
 }
 
 /* Validates CPU features for given processor architecture.
@@ -1925,6 +1923,36 @@ bool retroarch_is_forced_fullscreen(void)
 void retroarch_unset_forced_fullscreen(void)
 {
    rarch_force_fullscreen = false;
+}
+
+/* set a runtime shader preset without overwriting the settings value */
+void retroarch_set_shader_preset(const char* preset)
+{
+   if (!string_is_empty(preset))
+      strlcpy(runtime_shader_preset, preset, sizeof(runtime_shader_preset));
+   else
+      runtime_shader_preset[0] = '\0';
+}
+
+/* unset a runtime shader preset */
+void retroarch_unset_shader_preset(void)
+{
+   runtime_shader_preset[0] = '\0';
+}
+
+/* get the name of the current shader preset */
+char* retroarch_get_shader_preset(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (!settings->bools.video_shader_enable)
+      return NULL;
+
+   if (!string_is_empty(runtime_shader_preset))
+      return runtime_shader_preset;
+   else if (!string_is_empty(settings->paths.path_shader))
+      return settings->paths.path_shader;
+   else
+      return NULL;
 }
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data)

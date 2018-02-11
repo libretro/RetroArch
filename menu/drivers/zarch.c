@@ -729,7 +729,9 @@ static int zarch_zui_render_lay_root_downloads(
 static int zarch_zui_render_lay_root(video_frame_info_t *video_info,
       zui_t *zui)
 {
+#ifdef ZARCH_DEBUG
    char item[PATH_MAX_LENGTH];
+#endif
    static struct zui_tabbed tabbed = {~0U};
 
    zarch_zui_tabbed_begin(zui, &tabbed, 0, 0);
@@ -1140,7 +1142,7 @@ static bool zarch_menu_init_list(void *data)
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
 
-   menu_displaylist_info_free(&info);
+   menu_displaylist_info_init(&info);
 
    info.label    = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB));

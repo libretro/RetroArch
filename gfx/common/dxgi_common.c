@@ -47,7 +47,7 @@ HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void** ppFactory)
       fp = (HRESULT(WINAPI*)(REFIID, void**))dylib_proc(dxgi_dll, "CreateDXGIFactory1");
 
    if (!fp)
-      return TYPE_E_CANTLOADLIBRARY;
+      return TYPE_E_DLLFUNCTIONNOTFOUND;
 
    return fp(riid, ppFactory);
 }
@@ -143,8 +143,8 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
           ((src_bs == dst_bs && src_bb == dst_bb) || !dst_bb) && \
           ((src_as == dst_as && src_ab == dst_ab) || !dst_ab)) \
       { \
-         const UINT8* in  = src_data; \
-         UINT8*       out = dst_data; \
+         const UINT8* in  = (const UINT8*)src_data; \
+         UINT8*       out = (UINT8*)dst_data; \
          for (i = 0; i < height; i++) \
          { \
             memcpy(out, in, width * sizeof(src_type)); \

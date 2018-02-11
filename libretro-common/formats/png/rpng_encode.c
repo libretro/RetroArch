@@ -354,7 +354,8 @@ static bool rpng_save_image(const char *path,
       GOTO_END_ERROR();
 
 end:
-   filestream_close(file);
+   if (file)
+      filestream_close(file);
    free(encode_buf);
    free(deflate_buf);
    free(rgba_line);

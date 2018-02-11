@@ -30,7 +30,7 @@
 #endif
 
 #include "glslang_util.h"
-#ifdef HAVE_VULKAN
+#if defined(HAVE_GLSLANG) && !defined(HAVE_GRIFFIN)
 #include "glslang.hpp"
 #endif
 #include "../../verbosity.h"

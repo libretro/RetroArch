@@ -30,6 +30,7 @@
 #include "../file_path_special.h"
 #include "../configuration.h"
 #include "../paths.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 
 #ifdef HAVE_SHADER_MANAGER
@@ -120,26 +121,9 @@ unsigned menu_shader_manager_get_amount_passes(void) { return 0; }
 void menu_shader_manager_free(void) { }
 #endif
 
-/**
- * menu_shader_manager_init:
- *
- * Initializes shader manager.
- **/
-bool menu_shader_manager_init(void)
+void menu_shader_manager_init_paths(void)
 {
-#ifdef HAVE_SHADER_MANAGER
-   settings_t *settings        = config_get_ptr();
    const char *config_path     = path_get(RARCH_PATH_CONFIG);
-   const char *path_shader     = settings->paths.path_shader;
-
-   menu_shader_manager_free();
-
-   menu_driver_shader          = (struct video_shader*)
-      calloc(1, sizeof(struct video_shader));
-
-   if (!menu_driver_shader)
-      return false;
-
    /* In a multi-config setting, we can't have
     * conflicts on menu.cgp/menu.glslp. */
    if (config_path)
@@ -165,6 +149,28 @@ bool menu_shader_manager_init(void)
       strlcpy(default_slangp, "menu.slangp",
             sizeof(default_slangp));
    }
+}
+
+/**
+ * menu_shader_manager_init:
+ *
+ * Initializes shader manager.
+ **/
+bool menu_shader_manager_init(void)
+{
+#ifdef HAVE_SHADER_MANAGER
+   settings_t *settings        = config_get_ptr();
+   const char *path_shader     = retroarch_get_shader_preset();
+
+   menu_shader_manager_free();
+
+   menu_driver_shader          = (struct video_shader*)
+      calloc(1, sizeof(struct video_shader));
+
+   if (!menu_driver_shader || !path_shader)
+      return false;
+
+   menu_shader_manager_init_paths();
 
    switch (msg_hash_to_file_type(msg_hash_calculate(
                path_get_extension(path_shader))))
@@ -248,7 +254,7 @@ bool menu_shader_manager_init(void)
  *
  * Sets shader preset.
  **/
-void menu_shader_manager_set_preset(void *data,
+bool menu_shader_manager_set_preset(void *data,
       unsigned type, const char *preset_path)
 {
 #ifdef HAVE_SHADER_MANAGER
@@ -260,7 +266,7 @@ void menu_shader_manager_set_preset(void *data,
    if (!video_driver_set_shader((enum rarch_shader_type)type, preset_path))
    {
       configuration_set_bool(settings, settings->bools.video_shader_enable, false);
-      return;
+      return false;
    }
 
    /* Makes sure that we use Menu Preset shader on driver reinit.
@@ -271,7 +277,7 @@ void menu_shader_manager_set_preset(void *data,
    configuration_set_bool(settings, settings->bools.video_shader_enable, true);
 
    if (!preset_path || !shader)
-      return;
+      return false;
 
    /* Load stored Preset into menu on success.
     * Used when a preset is directly loaded.
@@ -280,7 +286,7 @@ void menu_shader_manager_set_preset(void *data,
    conf = config_file_new(preset_path);
 
    if (!conf)
-      return;
+      return false;
 
    RARCH_LOG("Setting Menu shader: %s.\n", preset_path);
 
@@ -292,6 +298,8 @@ void menu_shader_manager_set_preset(void *data,
    config_file_free(conf);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+
+   return true;
 #endif
 }
 
@@ -318,6 +326,7 @@ bool menu_shader_manager_save_preset(
    buffer[0] = config_directory[0]        = '\0';
    preset_path[0]                         = '\0';
 
+   menu_shader_manager_init_paths();
 
    if (!shader)
       return false;

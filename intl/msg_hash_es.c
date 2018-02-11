@@ -30,7 +30,6 @@
 
 int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-   uint32_t driver_hash = 0;
    settings_t      *settings = config_get_ptr();
 
    switch (msg)
@@ -129,43 +128,41 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          strlcpy(s, "Extrayendo, espera, por favor...\n", len);
          break;
       case MENU_ENUM_LABEL_INPUT_DRIVER:
-         if (settings)
-            driver_hash = msg_hash_calculate(settings->arrays.input_driver);
-
-         switch (driver_hash)
          {
-            case MENU_LABEL_INPUT_DRIVER_UDEV:
-               {
-                  /* Work around C89 limitations */
-                  char u[501];
-                  char t[501];
+            const char *lbl = settings ? settings->arrays.input_driver : NULL;
 
-                  strlcpy(t,
-                        "Controlador de entrada udev. \n"
-                        " \n"
-                        "Utiliza la API evdev más reciente \n"
-                        "para dar compatibilidad con mandos. \n"
-                        "Permite hotplug (conexión en caliente) \n"
-                        "y force feedback (fuerza de respuesta). \n",
-                        sizeof(t));
-                  strlcpy(u,
-                        " \n"
-                        "El controlador lee los eventos evdev para \n"
-                        "dar compatibilidad con teclados. También \n"
-                        "es compatible con callbacks de teclado, \n"
-                        "ratones y pantallas táctiles. \n"
-                        " \n"
-                        "La mayoría de las distros tienen los nodos \n"
-                        "/dev/input en modo solo root (modo 600). \n"
-                        "Puedes configurar una regla udev que los haga \n"
-                        "accesibles a otros usuarios.", sizeof(u)
-                        );
+            if (string_is_equal(lbl, msg_hash_to_str(
+                        MENU_ENUM_LABEL_INPUT_DRIVER_UDEV)))
+            {
+               /* Work around C89 limitations */
+               char u[501];
+               char t[501];
 
-                  strlcpy(s, t, len);
-                  strlcat(s, u, len);
-               }
-               break;
-            case MENU_LABEL_INPUT_DRIVER_LINUXRAW:
+               strlcpy(t,
+                     "Controlador de entrada udev. \n"
+                     " \n"
+                     "Utiliza la API evdev más reciente \n"
+                     "para dar compatibilidad con mandos. \n"
+                     "Permite hotplug (conexión en caliente) \n"
+                     "y force feedback (fuerza de respuesta). \n",
+                     sizeof(t));
+               strlcpy(u,
+                     " \n"
+                     "El controlador lee los eventos evdev para \n"
+                     "dar compatibilidad con teclados. También \n"
+                     "es compatible con callbacks de teclado, \n"
+                     "ratones y pantallas táctiles. \n"
+                     " \n"
+                     "La mayoría de las distros tienen los nodos \n"
+                     "/dev/input en modo solo root (modo 600). \n"
+                     "Puedes configurar una regla udev que los haga \n"
+                     "accesibles a otros usuarios.", sizeof(u)
+                     );
+
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
+            else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_LINUXRAW)))
                snprintf(s, len,
                      "Controlador de entrada linuxraw. \n"
                      " \n"
@@ -177,15 +174,13 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      " \n"
                      "Este controlador utiliza la antigua API de mandos \n"
                      "(/dev/input/js*).");
-               break;
-            default:
+            else
                snprintf(s, len,
                      "Controlador de entrada.\n"
                      " \n"
                      "El controlador de vídeo podría forzar \n"
                      "el uso de un controlador de entrada \n"
                      "distinto.");
-               break;
          }
          break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
@@ -320,19 +315,15 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                );
          break;
       case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
-         if (settings)
-            driver_hash = msg_hash_calculate(settings->arrays.audio_resampler);
-
-         switch (driver_hash)
          {
-            case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC:
-               snprintf(s, len,
-                     "Implementación windowed SINC.");
-               break;
-            case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC:
-               snprintf(s, len,
-                     "Implementación de cosenos complejos.");
-               break;
+            const char *lbl = settings ? settings->arrays.audio_resampler : NULL;
+
+            if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC)))
+               strlcpy(s, 
+                     "Implementación windowed SINC.", len);
+            else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
+               strlcpy(s,
+                     "Implementación de cosenos complejos.", len);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:

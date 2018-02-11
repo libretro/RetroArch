@@ -59,7 +59,11 @@
 #include "cg.h"
 
 #include <d3d9.h>
+#if 0
+#ifdef HAVE_D3DX
 #include "../d3d9/d3dx9.h"
+#endif
+#endif
 #include <windows.h>
 
 /* Set up for either Win32 import/export/lib. */
@@ -86,11 +90,11 @@ enum cgD3D9Errors
   cgD3D9DebugTrace = 1001
 };
 
-/*---------------------------------------------------------------------------
-// HRESULTs specific to cgD3D9. When the CGerror is set to cgD3D9Failed
-// cgD3D9GetLastError will return an HRESULT that could be one these.
-// Use cgD3D9TranslateHRESULT() to translate these errors into strings.
----------------------------------------------------------------------------*/
+/*
+ * HRESULTs specific to cgD3D9. When the CGerror is set to cgD3D9Failed
+ * cgD3D9GetLastError will return an HRESULT that could be one these.
+ * Use cgD3D9TranslateHRESULT() to translate these errors into strings.
+*/
 
 static const HRESULT CGD3D9ERR_NOTLOADED       = MAKE_HRESULT(1, 0x877,  1);
 static const HRESULT CGD3D9ERR_NODEVICE        = MAKE_HRESULT(1, 0x877,  2);
@@ -102,9 +106,9 @@ static const HRESULT CGD3D9ERR_NOTUNIFORM      = MAKE_HRESULT(1, 0x877,  7);
 static const HRESULT CGD3D9ERR_NOTMATRIX       = MAKE_HRESULT(1, 0x877,  8);
 static const HRESULT CGD3D9ERR_INVALIDPARAM    = MAKE_HRESULT(1, 0x877,  9);
 
-/*---------------------------------------------------------------------------
-// Other error return values
----------------------------------------------------------------------------*/
+/*
+ * Other error return values
+*/
 
 static const DWORD CGD3D9_INVALID_USAGE = 0xFF;
 

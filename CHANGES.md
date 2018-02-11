@@ -15,28 +15,40 @@
 - D3D9: Add menu support for MaterialUI/XMB.
 - D3D10: Initial video driver implementation.
 - D3D11: Initial video driver implementation.
+- D3D11: SPIRV-Cross/slang shader support for D3D11.
 - D3D12: Initial video driver implementation.
 - DINPUT: don't reinitialize input driver on network events / media insertion / network drive connection
 - INPUT: show friendly names when available under input binds and system information
 - INPUT: show the config name when available under system information
 - GUI: Allow changing menu font color.
 - GUI: Menu visibility options for RGUI and MaterialUI.
+- GUI/MaterialUI: Works now with D3D8, D3D9 Cg, D3D11 and D3D12 drivers.
 - GUI/XMB: Add Monochrome Inverted icon theme.
 - GUI/XMB: Allow changing menu scale to 200%.
+- GUI/XMB: Works now with D3D8, D3D9 Cg, D3D11 and D3D12 drivers. Menu shader effects currently don't work on D3D8/D3D9 Cg.
 - HAIKU: Restored port.
 - KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
 - GL: ignore hard gpu sync when fast-forwarding
 - IOS10/11: Handle hardware keyboards and iCade controllers
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
+- LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Spanish translation.
-- OSX: Modify HID buttons detection algorithm. 
+- NETPLAY: Add menu option to select different MITM (relay) server locations.
+- OSX: Modify HID buttons detection algorithm.
+- QB: Added --datarootdir.
+- QB: Added --bindir and --mandir and deprecated --with-bin_dir and --with-man_dir.
+- QB: Added --docdir.
+- SHADERS: Allow saving of shader presets based on the parent directory (Saving one for */foo/bar/mario.sfc* would result in *shaders/presets/corename/bar.ext*). We decided it's safer to still isolate the presets to a single core because different cores may treat video output differently.
+- SHADERS: Don't save the path to the current preset to the main config. This was causing weird behavior, instead it will try to load *currentconfig.ext* and it will save a preset with that name when select *apply shader preset*. The resulting shader will restore properly after restarting and even after core/parent/game specific presets are loaded
 - SOLARIS: Initial port.
 - SWITCH: Initial Nintendo Switch port, based on libtransistor SDK.
 - PS3: Enable Cheevos.
 - PSP: Enable threading support through pthreads.
+- SHADERS: SPIRV-Cross/slang shader support for D3D11.
 - SHIELD ATV: Allow the remote / gamepad takeover hack to work with the 2017 gamepad
-- VULKAN: Fix swapchain recreation bug on Nvidia GPUs with Windows 10 through workaround (will be properly resolved in a future driver version).
+- SUBSYSTEM: Subsystem saves now respect the save directory
+- VULKAN: Fix swapchain recreation bug on Nvidia GPUs with Windows 10 (resolved in Windows Nvidia driver version 390.77).
 - WINDOWS: Improved Unicode support (for cores/directory creation and 7zip archives).
 - WINDOWS: Show progress meter on taskbar for downloads (Windows 7 and up).
 - WINDOWS: WS_EX_LAYERED drastically decreases performance, so only set it when needed (transparency in windowed mode).
@@ -45,6 +57,7 @@
 - WIIU: Increased stability during core switching.
 - WIIU: Shader support.
 - WIIU: Menu shader effects added (shaders).
+- WIIU: Add missing time/clock support. (also fixes RTC [Real Time Clock] in Gambatte)
 - XBOX OG: Restored port.
 
 # 1.7.0

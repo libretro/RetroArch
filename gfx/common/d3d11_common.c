@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <string.h>
 
 #include "d3d11_common.h"
@@ -49,7 +51,7 @@ HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
             d3d11_dll, "D3D11CreateDeviceAndSwapChain");
 
    if (!fp)
-      return TYPE_E_CANTLOADLIBRARY;
+      return TYPE_E_DLLFUNCTIONNOTFOUND;
 
    return fp(
          pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion,
@@ -68,15 +70,18 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    texture->desc.ArraySize          = 1;
    texture->desc.SampleDesc.Count   = 1;
    texture->desc.SampleDesc.Quality = 0;
-   texture->desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
-   texture->desc.CPUAccessFlags =
-         texture->desc.Usage == D3D11_USAGE_DYNAMIC ? D3D11_CPU_ACCESS_WRITE : 0;
+   texture->desc.BindFlags         |= D3D11_BIND_SHADER_RESOURCE;
+   texture->desc.CPUAccessFlags     =
+      texture->desc.Usage == D3D11_USAGE_DYNAMIC ? D3D11_CPU_ACCESS_WRITE : 0;
 
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
    {
+      unsigned width, height;
+
       texture->desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-      unsigned width  = texture->desc.Width >> 5;
-      unsigned height = texture->desc.Height >> 5;
+      width                    = texture->desc.Width >> 5;
+      height                   = texture->desc.Height >> 5;
+
       while (width && height)
       {
          width >>= 1;
@@ -93,7 +98,7 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    D3D11CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
 
    {
-      D3D11_SHADER_RESOURCE_VIEW_DESC view_desc = { 0 };
+      D3D11_SHADER_RESOURCE_VIEW_DESC view_desc = { DXGI_FORMAT_UNKNOWN };
       view_desc.Format                          = texture->desc.Format;
       view_desc.ViewDimension                   = D3D_SRV_DIMENSION_TEXTURE2D;
       view_desc.Texture2D.MostDetailedMip       = 0;
@@ -122,9 +127,9 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
 
 void d3d11_update_texture(
       D3D11DeviceContext ctx,
-      int                width,
-      int                height,
-      int                pitch,
+      unsigned           width,
+      unsigned           height,
+      unsigned           pitch,
       DXGI_FORMAT        format,
       const void*        data,
       d3d11_texture_t*   texture)
@@ -147,7 +152,7 @@ void d3d11_update_texture(
       D3D11GenerateMips(ctx, texture->view);
 }
 
-DXGI_FORMAT
+   DXGI_FORMAT
 d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT desired_format_support)
 {
    DXGI_FORMAT default_list[] = {desired_format, DXGI_FORMAT_UNKNOWN};
@@ -160,7 +165,7 @@ d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT des
    {
       UINT         format_support;
       if (SUCCEEDED(D3D11CheckFormatSupport(device, *format, &format_support)) &&
-          ((format_support & desired_format_support) == desired_format_support))
+            ((format_support & desired_format_support) == desired_format_support))
          break;
       format++;
    }
@@ -188,11 +193,11 @@ bool d3d11_init_shader(
 
    if (!src) /* LPCWSTR filename */
    {
-      if (vs_entry && !d3d_compile_from_file(src_name, vs_entry, "vs_5_0", &vs_code))
+      if (vs_entry && !d3d_compile_from_file((LPCWSTR)src_name, vs_entry, "vs_5_0", &vs_code))
          success = false;
-      if (ps_entry && !d3d_compile_from_file(src_name, ps_entry, "ps_5_0", &ps_code))
+      if (ps_entry && !d3d_compile_from_file((LPCWSTR)src_name, ps_entry, "ps_5_0", &ps_code))
          success = false;
-      if (gs_entry && !d3d_compile_from_file(src_name, gs_entry, "gs_5_0", &gs_code))
+      if (gs_entry && !d3d_compile_from_file((LPCWSTR)src_name, gs_entry, "gs_5_0", &gs_code))
          success = false;
    }
    else /* char array */
@@ -200,11 +205,11 @@ bool d3d11_init_shader(
       if (!size)
          size = strlen(src);
 
-      if (vs_entry && !d3d_compile(src, size, src_name, vs_entry, "vs_5_0", &vs_code))
+      if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, "vs_5_0", &vs_code))
          success = false;
-      if (ps_entry && !d3d_compile(src, size, src_name, ps_entry, "ps_5_0", &ps_code))
+      if (ps_entry && !d3d_compile(src, size, (LPCSTR)src_name, ps_entry, "ps_5_0", &ps_code))
          success = false;
-      if (gs_entry && !d3d_compile(src, size, src_name, gs_entry, "gs_5_0", &gs_code))
+      if (gs_entry && !d3d_compile(src, size, (LPCSTR)src_name, gs_entry, "gs_5_0", &gs_code))
          success = false;
    }
 

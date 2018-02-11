@@ -43,23 +43,6 @@ typedef struct hlsl_d3d9_renderchain
    LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
 } hlsl_d3d9_renderchain_t;
 
-/* TODO/FIXME - this forward declaration should not be necesary */
-void hlsl_set_proj_matrix(void *data, void *matrix_data);
-
-static void hlsl_d3d9_renderchain_set_mvp(
-      void *data,
-      void *chain_data,
-      void *shader_data,
-      const void *mat_data)
-{
-   d3d_video_t      *d3d = (d3d_video_t*)data;
-
-   if(shader_data)
-      hlsl_set_proj_matrix(shader_data, (void*)mat_data);
-   else
-      hlsl_set_proj_matrix((void*)&d3d->shader, (void*)mat_data);
-}
-
 static void hlsl_d3d9_renderchain_clear(void *data)
 {
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)data;
@@ -190,11 +173,6 @@ static void hlsl_d3d9_renderchain_set_vertices(
       d3d_vertex_buffer_unlock(chain->vertex_buf);
    }
 
-   /* TODO/FIXME - last parameter is mat_data, should be set to
-   something other than NULL */
-   hlsl_d3d9_renderchain_set_mvp(d3d, chain, &d3d->shader,
-         NULL);
-
    shader_info.data = d3d;
    shader_info.idx  = pass;
    shader_info.set_active = true;
@@ -224,8 +202,6 @@ static void hlsl_d3d9_renderchain_blit_to_texture(
 {
    D3DLOCKED_RECT d3dlr;
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)data;
-
-   d3d_frame_postprocess(chain);
 
    if (chain->last_width != width || chain->last_height != height)
    {
@@ -296,7 +272,7 @@ static bool hlsl_d3d9_renderchain_init_shader(void *data,
 
    init.shader_type               = RARCH_SHADER_HLSL;
    init.data                      = data;
-   init.path                      = settings->paths.path_shader;
+   init.path                      = retroarch_get_shader_preset();
    init.shader                    = &hlsl_backend;
 
    RARCH_LOG("D3D]: Using HLSL shader backend.\n");
@@ -390,10 +366,6 @@ static bool hlsl_d3d9_renderchain_render(void *data, const void *frame,
    for (i = 0; i < 4; i++)
       d3d_set_stream_source(chain->dev, i, chain->vertex_buf, 0, sizeof(Vertex));
    d3d_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
-   /* TODO/FIXME - last parameter is mat_data - should be something
-   other than NULL */
-   hlsl_d3d9_renderchain_set_mvp(d3d,
-         chain, &d3d->shader, NULL);
 
    return true;
 }
@@ -455,7 +427,6 @@ static void hlsl_d3d9_renderchain_viewport_info(
 }
 
 d3d_renderchain_driver_t hlsl_d3d9_renderchain = {
-   hlsl_d3d9_renderchain_set_mvp,
    hlsl_d3d9_renderchain_free,
    hlsl_d3d9_renderchain_new,
    hlsl_d3d9_renderchain_init,

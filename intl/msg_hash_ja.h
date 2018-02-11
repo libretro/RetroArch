@@ -53,7 +53,43 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
-      "「プレイヤー%d」で接続しました"
+      "「プレイヤー%u」で接続しました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
+      "入力デバイス「%.*s」で接続しました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_PLAYER_S_LEFT,
+      "プレヤー「%.*s」が退出しました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
+      "「%2$.*1$s」がプレヤー「%3$u」で接続しました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
+      "「%2$.*1$s」が入力デバイス「%4$.*3$s」で接続しました"
+      )
+MSG_HASH(
+      MSG_NETPLAY_NOT_RETROARCH,
+      "相手の接続が失敗しました。古いRetroArchバージョンを使っているかもしれません。"
+      )
+MSG_HASH(
+      MSG_NETPLAY_OUT_OF_DATE,
+      "相手のRetroArchバージョンは古いから接続できません。"
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_VERSIONS,
+      "警告：相手が違うRetroArchバージョンを使っています。問題があれば同じバージョンを使って下さい。"
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_CORES,
+      "相手が違うコアを使っています。接続できません。"
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
+      "警告：相手が違うコアのバージョンを使っています。問題があれば同じバージョンを使って下さい。"
       )
 MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
@@ -90,6 +126,10 @@ MSG_HASH(
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
       "空きプレイヤースロットはありません"
+      )
+MSG_HASH(
+      MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
+      "選択した入力デバイスが使えません。"
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY,
@@ -258,7 +298,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-      "オーディをリサンプルのドライバ"
+      "オーディオリサンプラーのドライバ"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
@@ -961,6 +1001,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
       "スペイン語")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
       "ベトナム語")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
+      "アラビア語")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
       "左のアナログ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -1022,7 +1064,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
       "横アニメーション")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
-      "メニュー")
+      "外観")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
       "メニューの壁紙")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
@@ -1711,8 +1753,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
       "シェーダーパラメータのプレビュー")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
       "シェーダーのプリセットをロード")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS,
-      "メニューのシェーダーパラメータ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
       "シェーダーのプリセットを名前を付けて保存")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
@@ -1762,11 +1802,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
       "メニューの透明性")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-      "Menu Font Red Color")
+      "メニューフォントの赤色値")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-      "Menu Font Green Color")
+      "メニューフォントの緑色値")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-      "Menu Font Blue Color")
+      "メニューフォントの青色値")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_FONT,
       "メニューのフォント")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
@@ -2686,7 +2726,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-      "使用するオーディオリサンプルドライバ"
+      "使用するオーディオリサンプラーのドライバ"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
@@ -3041,6 +3081,8 @@ MSG_HASH(
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
       "MITMサーバーを使用")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
+      "MITMサーバーの設置場所")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
       "中間者のサーバーにネットプレイ接続を転送する。ファイアウォールやNAT/UPnPが問題の時に便利。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
@@ -3264,8 +3306,10 @@ MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
       "ウィンドウの不透明性")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-      "Audio Resampler Quality")
+      "オーディオリサンプラーの音質")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
       "Lower this value to favor performance/lower latency over audio quality, increase if you want better audio quality at the expense of performance/lower latency.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
       "シェーダーファイルの変更を監視")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+      "ウィンドウ枠を表示")

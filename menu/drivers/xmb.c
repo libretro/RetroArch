@@ -878,7 +878,7 @@ static void xmb_render_messagebox_internal(
    struct string_list *list = !string_is_empty(message) 
       ? string_split(message, "\n") : NULL;
 
-   if (!list || !xmb)
+   if (!list || !xmb || !xmb->font)
    {
       if (list)
          string_list_free(list);
@@ -1065,7 +1065,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
             sizeof(new_path));
 
 end:
-   if (!string_is_empty(new_path))
+   if (xmb && !string_is_empty(new_path))
       xmb->thumbnail_file_path = strdup(new_path);
    menu_entry_free(&entry);
 }
@@ -2936,7 +2936,19 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    strlcpy(title_truncated, xmb->title_name, sizeof(title_truncated));
    if (selection > 1)
-      title_truncated[25] = '\0';
+   {
+      /* skip 25 utf8 multi-byte chars */
+      char* end = title_truncated;
+
+      for(i = 0; i < 25 && *end; i++)
+      {
+         end++;
+         while((*end & 0xC0) == 0x80)
+            end++;
+      }
+
+      *end = '\0';
+   }
 
    /* Title text */
    xmb_draw_text(menu_disp_info, xmb,

@@ -8,7 +8,7 @@ struct main0_out
     float4 FragColor [[color(0)]];
 };
 
-fragment main0_out main0(float4 gl_FragCoord [[position]], texture2d_ms<float> uSampler [[texture(0)]], sampler uSamplerSmplr [[sampler(0)]])
+fragment main0_out main0(texture2d_ms<float> uSampler [[texture(0)]], sampler uSamplerSmplr [[sampler(0)]], float4 gl_FragCoord [[position]])
 {
     main0_out out = {};
     int2 _17 = int2(gl_FragCoord.xy);

@@ -575,6 +575,14 @@ static void setting_get_string_representation_uint_autosave_interval(void *data,
 }
 #endif
 
+#if defined(HAVE_NETWORKING)
+static void setting_get_string_representation_netplay_mitm_server(void *data,
+      char *s, size_t len)
+{
+
+}
+#endif
+
 #ifdef HAVE_LANGEXTRA
 static void setting_get_string_representation_uint_user_language(void *data,
       char *s, size_t len)
@@ -597,6 +605,7 @@ static void setting_get_string_representation_uint_user_language(void *data,
    modes[RETRO_LANGUAGE_ESPERANTO]              = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO);
    modes[RETRO_LANGUAGE_POLISH]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_POLISH);
    modes[RETRO_LANGUAGE_VIETNAMESE]             = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE);
+   modes[RETRO_LANGUAGE_ARABIC]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ARABIC);
 
    strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
 }
@@ -1465,7 +1474,8 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
    if (!setting)
       return;
 
-   if (video_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
+   if (video_monitor_fps_statistics(&video_refresh_rate,
+            &deviation, &sample_points))
    {
       snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
@@ -1843,6 +1853,9 @@ void general_write_handler(void *data)
          break;
       case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
          video_display_server_set_window_opacity(settings->uints.video_window_opacity);
+         break;
+      case MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS:
+         video_display_server_set_window_decorations(settings->bools.video_window_show_decorations);
          break;
       default:
          break;
@@ -3652,6 +3665,22 @@ static bool setting_append_list(
                menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             }
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_window_show_decorations,
+                  MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+                  window_decorations,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -6717,6 +6746,21 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+
+            CONFIG_STRING(
+                  list, list_info,
+                  settings->arrays.netplay_mitm_server,
+                  sizeof(settings->arrays.netplay_mitm_server),
+                  MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
+                  netplay_mitm_server,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_netplay_mitm_server;
 
             CONFIG_STRING(
                   list, list_info,

@@ -32,6 +32,7 @@ enum font_driver_render_api
    FONT_DRIVER_RENDER_OPENGL_API,
    FONT_DRIVER_RENDER_DIRECT3D_API,
    FONT_DRIVER_RENDER_D3D11_API,
+   FONT_DRIVER_RENDER_D3D12_API,
    FONT_DRIVER_RENDER_VITA2D,
    FONT_DRIVER_RENDER_CTR,
    FONT_DRIVER_RENDER_WIIU,
@@ -186,6 +187,7 @@ extern font_renderer_t ctr_font;
 extern font_renderer_t wiiu_font;
 extern font_renderer_t vulkan_raster_font;
 extern font_renderer_t d3d11_font;
+extern font_renderer_t d3d12_font;
 extern font_renderer_t caca_font;
 extern font_renderer_t gdi_font;
 extern font_renderer_t vga_font;

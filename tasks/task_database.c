@@ -1137,28 +1137,32 @@ static void task_database_handler(retro_task_t *task)
                if (!string_is_empty(db->fullpath))
                   dirname    = find_last_slash(db->fullpath) + 1;
 
-               for (i = 0; i < dbstate->list->size; i++)
+               if (!string_is_empty(dirname))
                {
-                  char *dbname;
-                  char *dbpath = strdup(dbstate->list->elems[i].data);
-                  path_remove_extension(dbpath);
-
-                  dbname = find_last_slash(dbpath) + 1;
-
-                  if (strcasecmp(dbname, dirname) == 0)
+                  for (i = 0; i < dbstate->list->size; i++)
                   {
-                     struct string_list *single_list = NULL;
+                     const char *data = dbstate->list->elems[i].data;
+                     char *dbname     = NULL;
+                     bool strmatch    = false;
+                     char *dbpath     = strdup(data);
+
+                     path_remove_extension(dbpath);
+
+                     dbname         = find_last_slash(dbpath) + 1;
+                     strmatch       = strcasecmp(dbname, dirname) == 0;
+
                      free(dbpath);
-                     single_list = string_list_new();
-                     string_list_append(single_list, dbstate->list->elems[i].data,
-                           dbstate->list->elems[i].attr);
-                     dir_list_free(dbstate->list);
-                     dbstate->list = single_list;
-                     break;
-                  }
-                  else
-                  {
-                     free(dbpath);
+
+                     if (strmatch)
+                     {
+                        struct string_list *single_list = string_list_new();
+                        string_list_append(single_list,
+                              data,
+                              dbstate->list->elems[i].attr);
+                        dir_list_free(dbstate->list);
+                        dbstate->list = single_list;
+                        break;
+                     }
                   }
                }
             }

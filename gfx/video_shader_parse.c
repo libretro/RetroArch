@@ -35,7 +35,7 @@
 #include "../frontend/frontend_driver.h"
 #include "video_shader_parse.h"
 
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
 #include "drivers_shader/slang_preprocess.h"
 #endif
 
@@ -144,7 +144,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    char frame_count_mod[64];
    size_t path_size             = PATH_MAX_LENGTH * sizeof(char);
    char *tmp_str                = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *tmp_path               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *tmp_path               = NULL;
    struct gfx_fbo_scale *scale  = NULL;
    bool tmp_bool                = false;
    float fattr                  = 0.0f;
@@ -165,6 +165,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       goto error;
    }
 
+   tmp_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    strlcpy(tmp_path, tmp_str, path_size);
    path_resolve_realpath(tmp_path, path_size);
 
@@ -172,6 +173,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       strlcpy(pass->source.path, tmp_str, sizeof(pass->source.path));
    else
       strlcpy(pass->source.path, tmp_path, sizeof(pass->source.path));
+   free(tmp_path);
 
    /* Smooth */
    snprintf(filter_name_buf, sizeof(filter_name_buf), "filter_linear%u", i);
@@ -329,12 +331,10 @@ static bool video_shader_parse_pass(config_file_t *conf,
    }
 
    free(tmp_str);
-   free(tmp_path);
    return true;
 
 error:
    free(tmp_str);
-   free(tmp_path);
    return false;
 }
 
@@ -354,14 +354,12 @@ static bool video_shader_parse_textures(config_file_t *conf,
    const char *id       = NULL;
    char *save           = NULL;
    char *textures       = (char*)malloc(1024 * sizeof(char));
-   char *tmp_path       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
-   textures[0] = '\0';
+   textures[0]          = '\0';
 
    if (!config_get_array(conf, "textures", textures, 1024 * sizeof(char)))
    {
       free(textures);
-      free(tmp_path);
       return true;
    }
 
@@ -375,6 +373,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
       char id_mipmap[64];
       bool mipmap         = false;
       bool smooth         = false;
+      char *tmp_path      = NULL;
 
       id_filter[0] = id_wrap[0] = wrap_mode[0] = id_mipmap[0] = '\0';
 
@@ -382,9 +381,12 @@ static bool video_shader_parse_textures(config_file_t *conf,
                sizeof(shader->lut[shader->luts].path)))
       {
          RARCH_ERR("Cannot find path to texture \"%s\" ...\n", id);
-         goto error;
+         free(textures);
+         return false;
       }
 
+      tmp_path            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      tmp_path[0]         = '\0';
       strlcpy(tmp_path, shader->lut[shader->luts].path,
             path_size);
       path_resolve_realpath(tmp_path, path_size);
@@ -394,6 +396,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
          strlcpy(shader->lut[shader->luts].path,
             tmp_path, sizeof(shader->lut[shader->luts].path));
       }
+      free(tmp_path);
 
       strlcpy(shader->lut[shader->luts].id, id,
             sizeof(shader->lut[shader->luts].id));
@@ -417,13 +420,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
    }
 
    free(textures);
-   free(tmp_path);
    return true;
-
-error:
-   free(textures);
-   free(tmp_path);
-   return false;
 }
 
 /**
@@ -464,17 +461,15 @@ bool video_shader_resolve_current_parameters(config_file_t *conf,
       struct video_shader *shader)
 {
    size_t param_size     = 4096 * sizeof(char);
-   char *parameters      = (char*)malloc(4096 * sizeof(char));
    const char *id        = NULL;
+   char *parameters      = NULL;
    char *save            = NULL;
 
    if (!conf)
-   {
-      free(parameters);
       return false;
-   }
 
-   parameters[0] = '\0';
+   parameters            = (char*)malloc(4096 * sizeof(char));
+   parameters[0]         = '\0';
 
    /* Read in parameters which override the defaults. */
    if (!config_get_array(conf, "parameters",
@@ -529,25 +524,19 @@ bool video_shader_resolve_parameters(config_file_t *conf,
    {
       intfstream_t *file = NULL;
       size_t line_size   = 4096 * sizeof(char);
-      char *line         = (char*)malloc(4096 * sizeof(char));
+      char *line         = NULL;
       const char *path   = shader->pass[i].source.path;
 
 	  if (string_is_empty(path))
-	  {
-		  free(line);
 		  continue;
-	  }
 
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
       /* First try to use the more robust slang implementation to support #includes. */
       /* FIXME: The check for slang can be removed if it's sufficiently tested for
        * GLSL/Cg as well, it should be the same implementation. */
       if (string_is_equal(path_get_extension(path), "slang") &&
             slang_preprocess_parse_parameters(shader->pass[i].source.path, shader))
-      {
-         free(line);
          continue;
-      }
 
       /* If that doesn't work, fallback to the old path.
        * Ideally, we'd get rid of this path sooner or later. */
@@ -557,11 +546,9 @@ bool video_shader_resolve_parameters(config_file_t *conf,
             RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!file)
-      {
-         free(line);
          continue;
-      }
 
+      line    = (char*)malloc(4096 * sizeof(char));
       line[0] = '\0';
 
       while (shader->num_parameters < ARRAY_SIZE(shader->parameters)
@@ -614,18 +601,17 @@ static bool video_shader_parse_imports(config_file_t *conf,
       struct video_shader *shader)
 {
    size_t path_size   = PATH_MAX_LENGTH * sizeof(char);
-   char *imports      = (char*)malloc(1024 * sizeof(char));
-   char *tmp_str      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    const char *id     = NULL;
    char *save         = NULL;
+   char *tmp_str      = NULL;
+   char *imports      = (char*)malloc(1024 * sizeof(char));
 
-   imports[0] = tmp_str[0] = '\0';
+   imports[0]         = '\0';
 
    if (!config_get_array(conf, "imports", imports,
             1024 * sizeof(char)))
    {
       free(imports);
-      free(tmp_str);
       return true;
    }
 
@@ -730,18 +716,19 @@ static bool video_shader_parse_imports(config_file_t *conf,
          var->equal = equal;
    }
 
+   tmp_str    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   tmp_str[0] = '\0';
    if (config_get_path(conf, "import_script", tmp_str, path_size))
       strlcpy(shader->script_path, tmp_str, sizeof(shader->script_path));
    config_get_array(conf, "import_script_class",
          shader->script_class, sizeof(shader->script_class));
+   free(tmp_str);
 
    free(imports);
-   free(tmp_str);
    return true;
 
 error:
    free(imports);
-   free(tmp_str);
    return false;
 }
 
@@ -1175,6 +1162,7 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
             return shader_type;
          break;
       case GFX_CTX_DIRECT3D11_API:
+      case GFX_CTX_DIRECT3D12_API:
       case GFX_CTX_VULKAN_API:
       case GFX_CTX_GX2_API:
          if (shader_type == RARCH_SHADER_SLANG)

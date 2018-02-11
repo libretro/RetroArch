@@ -22,7 +22,7 @@ Tx mod(Tx x, Ty y)
     return x - y * floor(x / y);
 }
 
-kernel void main0(uint3 gl_GlobalInvocationID [[thread_position_in_grid]], device SSBO& _23 [[buffer(0)]], device SSBO2& _33 [[buffer(1)]])
+kernel void main0(device SSBO& _23 [[buffer(0)]], device SSBO2& _33 [[buffer(1)]], uint3 gl_GlobalInvocationID [[thread_position_in_grid]])
 {
     uint ident = gl_GlobalInvocationID.x;
     float4 v = mod(_23.in_data[ident], _33.out_data[ident]);

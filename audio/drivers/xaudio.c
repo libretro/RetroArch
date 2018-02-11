@@ -59,13 +59,13 @@ typedef struct
    size_t bufsize;
 } xa_t;
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CINTERFACE)
 struct xaudio2 : public IXAudio2VoiceCallback
 #else
 struct xaudio2
 #endif
 {
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CINTERFACE)
    xaudio2() :
       buf(0), pXAudio2(0), pMasterVoice(0),
       pSourceVoice(0), hEvent(0), buffers(0), bufsize(0),
@@ -101,8 +101,8 @@ struct xaudio2
    unsigned write_buffer;
 };
 
-#ifndef __cplusplus
-static void WINAPI voice_on_buffer_end(void *handle_, void *data)
+#if !defined(__cplusplus) || defined(CINTERFACE)
+static void WINAPI voice_on_buffer_end(IXAudio2VoiceCallback *handle_, void *data)
 {
    xaudio2_t *handle = (xaudio2_t*)handle_;
    (void)data;
@@ -110,10 +110,10 @@ static void WINAPI voice_on_buffer_end(void *handle_, void *data)
    SetEvent(handle->hEvent);
 }
 
-static void WINAPI dummy_voidp(void *handle, void *data) { (void)handle; (void)data; }
-static void WINAPI dummy_nil(void *handle) { (void)handle; }
-static void WINAPI dummy_uint32(void *handle, UINT32 dummy) { (void)handle; (void)dummy; }
-static void WINAPI dummy_voidp_hresult(void *handle, void *data, HRESULT dummy) { (void)handle; (void)data; (void)dummy; }
+static void WINAPI dummy_voidp(IXAudio2VoiceCallback *handle, void *data) { (void)handle; (void)data; }
+static void WINAPI dummy_nil(IXAudio2VoiceCallback *handle) { (void)handle; }
+static void WINAPI dummy_uint32(IXAudio2VoiceCallback *handle, UINT32 dummy) { (void)handle; (void)dummy; }
+static void WINAPI dummy_voidp_hresult(IXAudio2VoiceCallback *handle, void *data, HRESULT dummy) { (void)handle; (void)data; (void)dummy; }
 
 const struct IXAudio2VoiceCallbackVtbl voice_vtable = {
    dummy_uint32,
@@ -189,7 +189,7 @@ static void xaudio2_free(xaudio2_t *handle)
 
    free(handle->buf);
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CINTERFACE)
    delete handle;
 #else
    free(handle);
@@ -206,7 +206,7 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
    CoInitializeEx(0, COINIT_MULTITHREADED);
 #endif
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CINTERFACE)
    handle = new xaudio2;
 #else
    handle = (xaudio2_t*)calloc(1, sizeof(*handle));
@@ -215,7 +215,7 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
    if (!handle)
       goto error;
 
-#ifndef __cplusplus
+#if !defined(__cplusplus) || defined(CINTERFACE)
    handle->lpVtbl = &voice_vtable;
 #endif
 

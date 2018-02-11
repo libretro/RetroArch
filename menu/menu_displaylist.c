@@ -1390,23 +1390,23 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE),
-         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS),
+         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE),
          MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT),
+         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT),
+         MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+         MENU_SETTING_ACTION, 0, 0);
+   menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME),
-         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS),
+         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME),
          MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS),
          msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS),
          MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,
-         MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS),
-         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS),
-         MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES),
@@ -1453,20 +1453,17 @@ static int create_string_list_rdb_entry_string(
       file_list_t *list)
 {
    union string_list_elem_attr attr;
-   size_t path_size                 = PATH_MAX_LENGTH * sizeof(char);
-   char *tmp                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *tmp                        = NULL;
    char *output_label               = NULL;
    int str_len                      = 0;
    struct string_list *str_list     = string_list_new();
 
    if (!str_list)
-   {
-      free(tmp);
       return -1;
-   }
 
-   attr.i = 0;
-   tmp[0] = '\0';
+   attr.i                           = 0;
+   tmp                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   tmp[0]                           = '\0';
 
    str_len += strlen(label) + 1;
    string_list_append(str_list, label, attr);
@@ -1490,7 +1487,7 @@ static int create_string_list_rdb_entry_string(
 
    fill_pathname_join_concat_noext(tmp, desc, ": ",
          actual_string,
-         path_size);
+         PATH_MAX_LENGTH * sizeof(char));
    menu_entries_append_enum(list, tmp, output_label,
          enum_idx,
          0, 0, 0);
@@ -1511,8 +1508,8 @@ static int create_string_list_rdb_entry_int(
 {
    union string_list_elem_attr attr;
    size_t path_size                 = PATH_MAX_LENGTH * sizeof(char);
-   char *tmp                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *str                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *tmp                        = NULL;
+   char *str                        = NULL;
    char *output_label               = NULL;
    int str_len                      = 0;
    struct string_list *str_list     = string_list_new();
@@ -1520,7 +1517,9 @@ static int create_string_list_rdb_entry_int(
    if (!str_list)
       goto error;
 
-   attr.i = 0;
+   attr.i                           = 0;
+   tmp                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   str                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    tmp[0] = str[0] = '\0';
 
    str_len += strlen(label) + 1;
@@ -5499,6 +5498,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ONLY_BOOL, false) != -1)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,
+                  PARSE_ONLY_STRING, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,
                   PARSE_ONLY_STRING, false) != -1)
                count++;
@@ -5826,6 +5829,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
                PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+               PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
                PARSE_ONLY_BOOL, false);

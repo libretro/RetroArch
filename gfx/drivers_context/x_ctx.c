@@ -113,6 +113,16 @@ static enum gfx_ctx_api x_api                 = GFX_CTX_NONE;
 
 static gfx_ctx_x_data_t *current_context_data = NULL;
 
+typedef struct Hints
+{
+   unsigned long flags;
+   unsigned long functions;
+   unsigned long decorations;
+   long          inputMode;
+   unsigned long status;
+} Hints;
+
+/* We use long because X11 wants 32-bit pixels for 32-bit systems and 64 for 64... */
 const unsigned long retroarch_icon_data[] = {
    16, 16,
    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
@@ -623,7 +633,6 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
    gfx_ctx_x_data_t *x       = (gfx_ctx_x_data_t*)data;
    Atom net_wm_icon = XInternAtom(g_x11_dpy, "_NET_WM_ICON", False);
-   Atom net_wm_opacity = XInternAtom(g_x11_dpy, "_NET_WM_WINDOW_OPACITY", False);
    Atom cardinal = XInternAtom(g_x11_dpy, "CARDINAL", False);
    settings_t *settings = config_get_ptr();
    unsigned opacity = settings->uints.video_window_opacity * ((unsigned)-1 / 100.0);
@@ -717,7 +726,23 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    XChangeProperty(g_x11_dpy, g_x11_win, net_wm_icon, cardinal, 32, PropModeReplace, (const unsigned char*)retroarch_icon_data, sizeof(retroarch_icon_data) / sizeof(*retroarch_icon_data));
 
    if (opacity < (unsigned)-1)
+   {
+      Atom net_wm_opacity = XInternAtom(g_x11_dpy, "_NET_WM_WINDOW_OPACITY", False);
       XChangeProperty(g_x11_dpy, g_x11_win, net_wm_opacity, cardinal, 32, PropModeReplace, (const unsigned char*)&opacity, 1);
+   }
+
+   if (!settings->bools.video_window_show_decorations)
+   {
+      /* We could have just set _NET_WM_WINDOW_TYPE_DOCK instead, but that removes the window from any taskbar/panel,
+       * so we are forced to use the old motif hints method. */
+      Hints hints;
+      Atom property = XInternAtom(g_x11_dpy, "_MOTIF_WM_HINTS", False);
+
+      hints.flags = 2;
+      hints.decorations = 0;
+
+      XChangeProperty(g_x11_dpy, g_x11_win, property, property, 32, PropModeReplace, (const unsigned char*)&hints, 5);
+   }
 
    switch (x_api)
    {

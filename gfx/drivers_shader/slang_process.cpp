@@ -4,13 +4,16 @@
 #include <spirv_hlsl.hpp>
 #include <stdint.h>
 
-#include "verbosity.h"
 #include "glslang_util.h"
 #include "slang_preprocess.h"
 #include "slang_reflection.h"
 #include "slang_process.h"
 
+#include "../../verbosity.h"
+
+#ifdef HAVE_SPIRV_CROSS
 using namespace spirv_cross;
+#endif
 using namespace std;
 
 template <typename P>
@@ -88,33 +91,39 @@ static bool slang_process_reflection(
       const ShaderResources& ps_resources,
       video_shader*          shader_info,
       unsigned               pass_number,
-      const semantics_map_t* semantics_map,
+      const semantics_map_t* map,
       pass_semantics_t*      out)
 {
    unordered_map<string, slang_texture_semantic_map> texture_semantic_map;
    unordered_map<string, slang_texture_semantic_map> texture_semantic_uniform_map;
 
-   string name = shader_info->pass[pass_number].alias;
+   for (unsigned i = 0; i <= pass_number; i++)
+   {
+      if (!*shader_info->pass[i].alias)
+         continue;
 
-   if (!set_unique_map(
-             texture_semantic_map, name,
-             slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, pass_number }))
-      return false;
+      string name = shader_info->pass[i].alias;
 
-   if (!set_unique_map(
-             texture_semantic_uniform_map, name + "Size",
-             slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, pass_number }))
-      return false;
+      if (!set_unique_map(
+                texture_semantic_map, name,
+                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+         return false;
 
-   if (!set_unique_map(
-             texture_semantic_map, name + "Feedback",
-             slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, pass_number }))
-      return false;
+      if (!set_unique_map(
+                texture_semantic_uniform_map, name + "Size",
+                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+         return false;
 
-   if (!set_unique_map(
-             texture_semantic_uniform_map, name + "FeedbackSize",
-             slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, pass_number }))
-      return false;
+      if (!set_unique_map(
+                texture_semantic_map, name + "Feedback",
+                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+         return false;
+
+      if (!set_unique_map(
+                texture_semantic_uniform_map, name + "FeedbackSize",
+                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+         return false;
+   }
 
    for (unsigned i = 0; i < shader_info->luts; i++)
    {
@@ -130,12 +139,13 @@ static bool slang_process_reflection(
    }
 
    unordered_map<string, slang_semantic_map> uniform_semantic_map;
+
    for (unsigned i = 0; i < shader_info->num_parameters; i++)
    {
-      if (!set_unique_map(
-                uniform_semantic_map, shader_info->parameters[i].id,
-                { SLANG_SEMANTIC_FLOAT_PARAMETER, i }))
-         return false;
+	   if (!set_unique_map(
+		   uniform_semantic_map, shader_info->parameters[i].id,
+		   slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, i }))
+		   return false;
    }
 
    slang_reflection sl_reflection;
@@ -161,17 +171,15 @@ static bool slang_process_reflection(
    vector<uniform_sem_t> uniforms[SLANG_CBUFFER_MAX];
    vector<texture_sem_t> textures;
 
-   uniform_map_t* uniform_map = semantics_map->uniform_map;
-   while (uniform_map->data)
+   for (int semantic = 0; semantic < SLANG_NUM_BASE_SEMANTICS; semantic++)
    {
-      slang_semantic_meta& src = sl_reflection.semantics[uniform_map->semantic];
-
+      slang_semantic_meta& src = sl_reflection.semantics[semantic];
       if (src.push_constant || src.uniform)
       {
-         uniform_sem_t uniform = { uniform_map->data, uniform_map->id,
+         uniform_sem_t uniform = { map->uniforms[semantic],
                                    src.num_components * (unsigned)sizeof(float) };
 
-         string uniform_id = get_semantic_name(sl_reflection, uniform_map->semantic, 0);
+         string uniform_id = get_semantic_name(sl_reflection, (slang_semantic)semantic, 0);
          strncpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
 
          if (src.push_constant)
@@ -185,8 +193,6 @@ static bool slang_process_reflection(
             uniforms[SLANG_CBUFFER_UBO].push_back(uniform);
          }
       }
-
-      uniform_map++;
    }
 
    for (int i = 0; i < sl_reflection.semantic_float_parameters.size(); i++)
@@ -195,8 +201,7 @@ static bool slang_process_reflection(
 
       if (src.push_constant || src.uniform)
       {
-         uniform_sem_t uniform = { &shader_info->parameters[i].current,
-                                   "shader_info->parameter[i].current", sizeof(float) };
+         uniform_sem_t uniform = { &shader_info->parameters[i].current, sizeof(float) };
 
          string uniform_id = get_semantic_name(sl_reflection, SLANG_SEMANTIC_FLOAT_PARAMETER, i);
          strncpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
@@ -214,35 +219,43 @@ static bool slang_process_reflection(
       }
    }
 
-   texture_map_t* texture_map = semantics_map->texture_map;
-
-   while (texture_map->texture_data)
+   for (int semantic = 0; semantic < SLANG_NUM_TEXTURE_SEMANTICS; semantic++)
    {
-      if (texture_map->index < sl_reflection.semantic_textures[texture_map->semantic].size())
+      for (int index = 0; index < sl_reflection.semantic_textures[semantic].size(); index++)
       {
-         slang_texture_semantic_meta& src =
-               sl_reflection.semantic_textures[texture_map->semantic][texture_map->index];
+         slang_texture_semantic_meta& src = sl_reflection.semantic_textures[semantic][index];
 
          if (src.stage_mask)
          {
-            texture_sem_t texture = { texture_map->texture_data, texture_map->texture_id,
-                                      texture_map->sampler_data, texture_map->sampler_id };
-            texture.stage_mask    = src.stage_mask;
-            texture.binding       = src.binding;
-            string id = get_semantic_name(sl_reflection, texture_map->semantic, texture_map->index);
+            texture_sem_t texture = {
+               (void*)((uintptr_t)map->textures[semantic].image + index * map->textures[semantic].image_stride),
+               (void*)((uintptr_t)map->textures[semantic].sampler + index * map->textures[semantic].sampler_stride),
+            };
+            texture.stage_mask = src.stage_mask;
+            texture.binding    = src.binding;
+            string id = get_semantic_name(sl_reflection, (slang_texture_semantic)semantic, index);
 
             strncpy(texture.id, id.c_str(), sizeof(texture.id));
 
             textures.push_back(texture);
+
+            if (semantic == SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK)
+               shader_info->pass[index].feedback = true;
+
+            if (semantic == SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY &&
+                shader_info->history_size < index)
+               shader_info->history_size = index;
          }
 
          if (src.push_constant || src.uniform)
          {
-            uniform_sem_t uniform = { texture_map->size_data, texture_map->size_id,
-                                      4 * sizeof(float) };
+            uniform_sem_t uniform = {
+               (void*)((uintptr_t)map->textures[semantic].size + index * map->textures[semantic].size_stride),
+               4 * sizeof(float)
+            };
 
             string uniform_id =
-                  get_size_semantic_name(sl_reflection, texture_map->semantic, texture_map->index);
+                  get_size_semantic_name(sl_reflection, (slang_texture_semantic)semantic, index);
 
             strncpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
 
@@ -258,8 +271,6 @@ static bool slang_process_reflection(
             }
          }
       }
-
-      texture_map++;
    }
 
    out->texture_count = textures.size();
@@ -305,6 +316,9 @@ bool slang_process(
    if (!slang_preprocess_parse_parameters(output.meta, shader_info))
       return false;
 
+   if (!*pass.alias && !output.meta.name.empty())
+      strncpy(pass.alias, output.meta.name.c_str(), sizeof(pass.alias) - 1);
+
    out->format = output.meta.rt_format;
 
    if (out->format == SLANG_FORMAT_UNKNOWN)
@@ -341,6 +355,18 @@ bool slang_process(
       vs_resources = vs_compiler->get_shader_resources();
       ps_resources = ps_compiler->get_shader_resources();
 
+      if (!vs_resources.uniform_buffers.empty())
+         vs_compiler->set_decoration(vs_resources.uniform_buffers[0].id, spv::DecorationBinding, 0);
+      if (!ps_resources.uniform_buffers.empty())
+         ps_compiler->set_decoration(ps_resources.uniform_buffers[0].id, spv::DecorationBinding, 0);
+
+      if (!vs_resources.push_constant_buffers.empty())
+         vs_compiler->set_decoration(
+               vs_resources.push_constant_buffers[0].id, spv::DecorationBinding, 1);
+      if (!ps_resources.push_constant_buffers.empty())
+         ps_compiler->set_decoration(
+               ps_resources.push_constant_buffers[0].id, spv::DecorationBinding, 1);
+
       if (dst_type == RARCH_SHADER_HLSL || dst_type == RARCH_SHADER_CG)
       {
          CompilerHLSL::Options options;
@@ -350,27 +376,28 @@ bool slang_process(
          vs->set_options(options);
          ps->set_options(options);
 
-         std::vector<HLSLVertexAttributeRemap> vs_attrib_remap;
-
          /* not exactly a vertex attribute but this remaps
           * float2 FragCoord :TEXCOORD# to float4 FragCoord : SV_POSITION */
          std::vector<HLSLVertexAttributeRemap> ps_attrib_remap;
+
+         VariableTypeRemapCallback ps_var_remap_cb =
+               [&](const SPIRType& type, const std::string& var_name, std::string& name_of_type) {
+                  if (var_name == "FragCoord")
+                  {
+                     name_of_type = "float4";
+                  }
+               };
          for (Resource& resource : ps_resources.stage_inputs)
          {
             if (ps->get_name(resource.id) == "FragCoord")
             {
                uint32_t location = ps->get_decoration(resource.id, spv::DecorationLocation);
                ps_attrib_remap.push_back({ location, "SV_Position" });
+               ps->set_variable_type_remap_callback(ps_var_remap_cb);
             }
          }
-         VariableTypeRemapCallback ps_var_remap_cb =
-               [](const SPIRType& type, const std::string& var_name, std::string& name_of_type) {
-                  if (var_name == "FragCoord")
-                     name_of_type = "float4";
-               };
-         ps->set_variable_type_remap_callback(ps_var_remap_cb);
 
-         vs_code = vs->compile(vs_attrib_remap);
+         vs_code = vs->compile();
          ps_code = ps->compile(ps_attrib_remap);
       }
       else if (shader_info->type == RARCH_SHADER_GLSL)

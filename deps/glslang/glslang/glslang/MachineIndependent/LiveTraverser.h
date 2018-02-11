@@ -33,6 +33,9 @@
 //POSSIBILITY OF SUCH DAMAGE.
 //
 
+#ifndef _MACHINE_INDEPENDENT_LIVE_TRAVERSER_H
+#define _MACHINE_INDEPENDENT_LIVE_TRAVERSER_H
+
 #include "../Include/Common.h"
 #include "reflection.h"
 #include "localintermediate.h"
@@ -134,3 +137,5 @@ private:
 };
 
 } // namespace glslang
+
+#endif

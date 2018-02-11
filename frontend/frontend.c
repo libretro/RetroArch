@@ -146,6 +146,9 @@ int rarch_main(int argc, char *argv[], void *data)
 }
 
 #ifndef HAVE_MAIN
+#ifdef __cplusplus
+extern "C"
+#endif
 int main(int argc, char *argv[])
 {
    return rarch_main(argc, argv, NULL);

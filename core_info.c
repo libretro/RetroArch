@@ -189,14 +189,16 @@ static bool core_info_list_iterate(
       struct string_list *contents, size_t i)
 {
    size_t info_path_base_size = PATH_MAX_LENGTH * sizeof(char);
-   char *info_path_base       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA))
+   char *info_path_base       = NULL;
    char             *substr   = NULL;
-#endif
-   const char *current_path   = contents->elems[i].data;
+   const char *current_path   = contents ? contents->elems[i].data : NULL;
 
-   if (!contents || !current_path)
-      goto error;
+   (void)substr;
+
+   if (!current_path)
+      return false;
+
+   info_path_base             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
    info_path_base[0] = '\0';
 
@@ -220,10 +222,6 @@ static bool core_info_list_iterate(
 
    free(info_path_base);
    return true;
-
-error:
-   free(info_path_base);
-   return false;
 }
 
 static core_info_list_t *core_info_list_new(const char *path)
@@ -524,19 +522,21 @@ static bool core_info_list_update_missing_firmware_internal(
 {
    size_t i;
    core_info_t      *info = NULL;
+   char             *path = NULL;
    size_t       path_size = PATH_MAX_LENGTH * sizeof(char);
-   char             *path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
    if (!core_info_list || !core)
-      goto error;
+      return false;
 
-   path[0] = '\0';
-   info    = core_info_find_internal(core_info_list, core);
+   info                   = core_info_find_internal(core_info_list, core);
 
    if (!info)
-      goto error;
+      return false;
 
+   path                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   path[0]                = '\0';
    rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+
    for (i = 0; i < info->firmware_count; i++)
    {
       if (string_is_empty(info->firmware[i].path))
@@ -554,10 +554,6 @@ static bool core_info_list_update_missing_firmware_internal(
 
    free(path);
    return true;
-
-error:
-   free(path);
-   return false;
 }
 
 #if 0

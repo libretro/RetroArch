@@ -31,6 +31,7 @@
 #endif
 
 #include <streams/file_stream.h>
+#define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
 
 static const int64_t vfs_error_return_value      = -1;

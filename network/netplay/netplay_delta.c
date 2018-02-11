@@ -152,7 +152,7 @@ netplay_input_state_t netplay_input_state_for(netplay_input_state_t *list,
       return NULL;
 
    /* Couldn't find a slot, allocate a fresh one */
-   ret = calloc(1, sizeof(struct netplay_input_state) + (size-1) * sizeof(uint32_t));
+   ret = (netplay_input_state_t)calloc(1, sizeof(struct netplay_input_state) + (size-1) * sizeof(uint32_t));
    if (!ret)
       return NULL;
    *list = ret;

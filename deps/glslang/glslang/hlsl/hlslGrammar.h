@@ -50,8 +50,8 @@ namespace glslang {
 
     class HlslGrammar : public HlslTokenStream {
     public:
-        HlslGrammar(HlslScanContext& scanner, HlslParseContext& parseContext)
-            : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate) { }
+        HlslGrammar(HlslScanContext& scanner, HlslParseContext&_parseContext)
+            : HlslTokenStream(scanner), _parseContext(_parseContext), intermediate(_parseContext.intermediate) { }
         virtual ~HlslGrammar() { }
 
         bool parse();
@@ -112,7 +112,7 @@ namespace glslang {
         void acceptArraySpecifier(TArraySizes*&);
         void acceptPostDecls(TQualifier&);
 
-        HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
+        HlslParseContext&_parseContext;  // state of parsing and helper functions for building the intermediate
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST
     };
 

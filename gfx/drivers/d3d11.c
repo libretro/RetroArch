@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <assert.h>
 
 #include <string/stdstring.h>
@@ -33,16 +35,22 @@
 #include "../common/d3d11_common.h"
 #include "../common/dxgi_common.h"
 #include "../common/d3dcompiler_common.h"
+#ifdef HAVE_SLANG
 #include "../drivers_shader/slang_process.h"
+#endif
 
 static void d3d11_set_filtering(void* data, unsigned index, bool smooth)
 {
+   unsigned       i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
-   if (smooth)
-      d3d11->frame.texture.sampler = d3d11->sampler_linear;
-   else
-      d3d11->frame.texture.sampler = d3d11->sampler_nearest;
+   for (i = 0; i < RARCH_WRAP_MAX; i++)
+   {
+      if (smooth)
+         d3d11->samplers[RARCH_FILTER_UNSPEC][i] = d3d11->samplers[RARCH_FILTER_LINEAR][i];
+      else
+         d3d11->samplers[RARCH_FILTER_UNSPEC][i] = d3d11->samplers[RARCH_FILTER_NEAREST][i];
+   }
 }
 
 static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
@@ -53,15 +61,13 @@ static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
    if (!d3d11)
       return;
 
-   d3d11->frame.rotation = rotation;
-
-   matrix_4x4_rotate_z(rot, d3d11->frame.rotation * (M_PI / 2.0f));
+   matrix_4x4_rotate_z(rot, rotation * (M_PI / 2.0f));
    matrix_4x4_multiply(d3d11->mvp, rot, d3d11->ubo_values.mvp);
 
    D3D11_MAPPED_SUBRESOURCE mapped_ubo;
-   D3D11MapBuffer(d3d11->ctx, d3d11->frame.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+   D3D11MapBuffer(d3d11->context, d3d11->frame.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
    *(math_matrix_4x4*)mapped_ubo.pData = d3d11->mvp;
-   D3D11UnmapBuffer(d3d11->ctx, d3d11->frame.ubo, 0);
+   D3D11UnmapBuffer(d3d11->context, d3d11->frame.ubo, 0);
 }
 
 static void d3d11_update_viewport(void* data, bool force_full)
@@ -76,9 +82,10 @@ static void d3d11_update_viewport(void* data, bool force_full)
    d3d11->frame.viewport.Height   = d3d11->vp.height;
    d3d11->frame.viewport.MaxDepth = 0.0f;
    d3d11->frame.viewport.MaxDepth = 1.0f;
-   if (d3d11->frame.output_size.x != d3d11->vp.width ||
-       d3d11->frame.output_size.y != d3d11->vp.height)
-      d3d11->resize_fbos = true;
+
+   if (d3d11->shader_preset && (d3d11->frame.output_size.x != d3d11->vp.width ||
+            d3d11->frame.output_size.y != d3d11->vp.height))
+      d3d11->resize_render_targets = true;
 
    d3d11->frame.output_size.x = d3d11->vp.width;
    d3d11->frame.output_size.y = d3d11->vp.height;
@@ -90,17 +97,22 @@ static void d3d11_update_viewport(void* data, bool force_full)
 
 static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
 {
+   unsigned i;
    if (!d3d11->shader_preset)
       return;
 
-   for (int i = 0; i < d3d11->shader_preset->passes; i++)
+   for (i = 0; i < d3d11->shader_preset->passes; i++)
    {
+      unsigned j;
+
       free(d3d11->shader_preset->pass[i].source.string.vertex);
       free(d3d11->shader_preset->pass[i].source.string.fragment);
+      free(d3d11->pass[i].semantics.textures);
       d3d11_release_shader(&d3d11->pass[i].shader);
       d3d11_release_texture(&d3d11->pass[i].rt);
-      free(d3d11->pass[i].semantics.textures);
-      for (int j = 0; j < SLANG_CBUFFER_MAX; j++)
+      d3d11_release_texture(&d3d11->pass[i].feedback);
+
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          free(d3d11->pass[i].semantics.cbuffers[j].uniforms);
          Release(d3d11->pass[i].buffers[j]);
@@ -109,23 +121,36 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
 
    memset(d3d11->pass, 0, sizeof(d3d11->pass));
 
-   for (int i = 0; i < d3d11->shader_preset->luts; i++)
+   /* only free the history textures here */
+   for (i = 1; i <= d3d11->shader_preset->history_size; i++)
+      d3d11_release_texture(&d3d11->frame.texture[i]);
+
+   memset(
+         &d3d11->frame.texture[1], 0,
+         sizeof(d3d11->frame.texture[1]) * d3d11->shader_preset->history_size);
+
+   for (i = 0; i < d3d11->shader_preset->luts; i++)
       d3d11_release_texture(&d3d11->luts[i]);
 
    memset(d3d11->luts, 0, sizeof(d3d11->luts));
 
    free(d3d11->shader_preset);
-   d3d11->shader_preset = NULL;
+   d3d11->shader_preset         = NULL;
+   d3d11->init_history          = false;
+   d3d11->resize_render_targets = false;
 }
 
 static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
-   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   unsigned         i;
+   d3d11_texture_t* source;
+   d3d11_video_t*   d3d11 = (d3d11_video_t*)data;
 
    if (!d3d11)
       return false;
 
-   D3D11Flush(d3d11->ctx);
+   D3D11Flush(d3d11->context);
    d3d11_free_shader_preset(d3d11);
 
    if (!path)
@@ -142,116 +167,113 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    if (!conf)
       return false;
 
-   d3d11->shader_preset = calloc(1, sizeof(*d3d11->shader_preset));
+   d3d11->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d11->shader_preset));
 
    if (!video_shader_read_conf_cgp(conf, d3d11->shader_preset))
       goto error;
 
    video_shader_resolve_relative(d3d11->shader_preset, path);
 
-   d3d11_texture_t* source = &d3d11->frame.texture;
-   for (int i = 0; i < d3d11->shader_preset->passes; i++)
+   source = &d3d11->frame.texture[0];
+   for (i = 0; i < d3d11->shader_preset->passes; source = &d3d11->pass[i++].rt)
    {
-      {
-         /* no history support yet */
-         texture_map_t texture_map[3 + GFX_MAX_SHADERS + GFX_MAX_TEXTURES + 1] = {
-            SL_TEXTURE_MAP(
-                  SLANG_TEXTURE_SEMANTIC_ORIGINAL, d3d11->frame.texture, d3d11->pass[i].sampler,
-                  d3d11->frame.texture.size_data),
-            SL_TEXTURE_MAP(
-                  SLANG_TEXTURE_SEMANTIC_SOURCE, *source, d3d11->pass[i].sampler,
-                  source->size_data),
-            SL_TEXTURE_MAP(
-                  SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, d3d11->frame.texture,
-                  d3d11->pass[i].sampler, d3d11->frame.texture.size_data),
-         };
-
+      unsigned j;
+      /* clang-format off */
+      semantics_map_t semantics_map = {
          {
-            texture_map_t* ptr = texture_map;
-            while (ptr->texture_data)
-               ptr++;
+            /* Original */
+            { &d3d11->frame.texture[0].view, 0,
+               &d3d11->frame.texture[0].size_data, 0,
+               &d3d11->pass[i].sampler, 0 },
 
-            for (int j = 0; j < i; j++)
-            {
-               *ptr = (texture_map_t)SL_TEXTURE_MAP_ARRAY(
-                     SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j, d3d11->pass[j].rt,
-                     d3d11->pass[i].sampler, d3d11->pass[j].rt.size_data);
-               ptr++;
-            }
+            /* Source */
+            { &source->view, 0,
+               &source->size_data, 0,
+               &d3d11->pass[i].sampler, 0 },
 
-            for (int j = 0; j < d3d11->shader_preset->luts; j++)
-            {
-               *ptr = (texture_map_t)SL_TEXTURE_MAP_ARRAY(
-                     SLANG_TEXTURE_SEMANTIC_USER, j, d3d11->luts[j], d3d11->luts[j].sampler,
-                     d3d11->luts[j].size_data);
-               ptr++;
-            }
+            /* OriginalHistory */
+            { &d3d11->frame.texture[0].view, sizeof(*d3d11->frame.texture),
+               &d3d11->frame.texture[0].size_data, sizeof(*d3d11->frame.texture),
+               &d3d11->pass[i].sampler, 0 },
+
+            /* PassOutput */
+            { &d3d11->pass[0].rt.view, sizeof(*d3d11->pass),
+               &d3d11->pass[0].rt.size_data, sizeof(*d3d11->pass),
+               &d3d11->pass[i].sampler, 0 },
+
+            /* PassFeedback */
+            { &d3d11->pass[0].feedback.view, sizeof(*d3d11->pass),
+               &d3d11->pass[0].feedback.size_data, sizeof(*d3d11->pass),
+               &d3d11->pass[i].sampler, 0 },
+
+            /* User */
+            { &d3d11->luts[0].view, sizeof(*d3d11->luts),
+               &d3d11->luts[0].size_data, sizeof(*d3d11->luts),
+               &d3d11->luts[0].sampler, sizeof(*d3d11->luts) },
+         },
+         {
+            &d3d11->mvp,                  /* MVP */
+            &d3d11->pass[i].rt.size_data, /* OutputSize */
+            &d3d11->frame.output_size,    /* FinalViewportSize */
+            &d3d11->pass[i].frame_count,  /* FrameCount */
          }
+      };
+      /* clang-format on */
 
-         uniform_map_t uniform_map[] = {
-            SL_UNIFORM_MAP(SLANG_SEMANTIC_MVP, d3d11->mvp),
-            SL_UNIFORM_MAP(SLANG_SEMANTIC_OUTPUT, d3d11->pass[i].rt.size_data),
-            SL_UNIFORM_MAP(SLANG_SEMANTIC_FRAME_COUNT, d3d11->pass[i].frame_count),
-            SL_UNIFORM_MAP(SLANG_SEMANTIC_FINAL_VIEWPORT, d3d11->frame.output_size),
-            { 0 }
-         };
-
-         semantics_map_t semantics_map = { texture_map, uniform_map };
-
-         if (!slang_process(
-                   d3d11->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
-                   &d3d11->pass[i].semantics))
-            goto error;
-      }
+      if (!slang_process(
+               d3d11->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
+               &d3d11->pass[i].semantics))
+         goto error;
 
       {
          static const D3D11_INPUT_ELEMENT_DESC desc[] = {
             { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
-              D3D11_INPUT_PER_VERTEX_DATA, 0 },
+               D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
-              D3D11_INPUT_PER_VERTEX_DATA, 0 },
+               D3D11_INPUT_PER_VERTEX_DATA, 0 },
          };
 #ifdef DEBUG
          bool save_hlsl = true;
 #else
          bool save_hlsl = false;
 #endif
-         const char* vs_src = d3d11->shader_preset->pass[i].source.string.vertex;
-         const char* ps_src = d3d11->shader_preset->pass[i].source.string.fragment;
-         const char* vs_ext = ".vs.hlsl";
-         const char* ps_ext = ".ps.hlsl";
-         int   base_len     = strlen(d3d11->shader_preset->pass[i].source.path) - strlen(".slang");
-         char* vs_filename  = (char*)malloc(base_len + strlen(vs_ext) + 1);
-         char* ps_filename  = (char*)malloc(base_len + strlen(ps_ext) + 1);
+         static const char vs_ext[] = ".vs.hlsl";
+         static const char ps_ext[] = ".ps.hlsl";
+         char              vs_path[PATH_MAX_LENGTH];
+         char              ps_path[PATH_MAX_LENGTH];
+         const char*       slang_path = d3d11->shader_preset->pass[i].source.path;
+         const char*       vs_src     = d3d11->shader_preset->pass[i].source.string.vertex;
+         const char*       ps_src     = d3d11->shader_preset->pass[i].source.string.fragment;
+         int               base_len   = strlen(slang_path) - strlen(".slang");
 
-         strncpy(vs_filename, d3d11->shader_preset->pass[i].source.path, base_len);
-         strncpy(ps_filename, d3d11->shader_preset->pass[i].source.path, base_len);
-         strncpy(vs_filename + base_len, vs_ext, strlen(vs_ext) + 1);
-         strncpy(ps_filename + base_len, ps_ext, strlen(ps_ext) + 1);
+         if (base_len <= 0)
+            base_len = strlen(slang_path);
+
+         strncpy(vs_path, slang_path, base_len);
+         strncpy(ps_path, slang_path, base_len);
+         strncpy(vs_path + base_len, vs_ext, sizeof(vs_ext));
+         strncpy(ps_path + base_len, ps_ext, sizeof(ps_ext));
 
          if (!d3d11_init_shader(
-                   d3d11->device, vs_src, 0, vs_filename, "main", NULL, NULL, desc, countof(desc),
-                   &d3d11->pass[i].shader))
+                  d3d11->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
+                  &d3d11->pass[i].shader))
             save_hlsl = true;
 
          if (!d3d11_init_shader(
-                   d3d11->device, ps_src, 0, ps_filename, NULL, "main", NULL, NULL, 0,
-                   &d3d11->pass[i].shader))
+                  d3d11->device, ps_src, 0, ps_path, NULL, "main", NULL, NULL, 0,
+                  &d3d11->pass[i].shader))
             save_hlsl = true;
 
          if (save_hlsl)
          {
-            FILE* fp = fopen(vs_filename, "w");
+            FILE* fp = fopen(vs_path, "w");
             fwrite(vs_src, 1, strlen(vs_src), fp);
             fclose(fp);
 
-            fp = fopen(ps_filename, "w");
+            fp = fopen(ps_path, "w");
             fwrite(ps_src, 1, strlen(ps_src), fp);
             fclose(fp);
          }
-
-         free(vs_filename);
-         free(ps_filename);
 
          free(d3d11->shader_preset->pass[i].source.string.vertex);
          free(d3d11->shader_preset->pass[i].source.string.fragment);
@@ -263,57 +285,67 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             goto error;
       }
 
-      for (int j = 0; j < SLANG_CBUFFER_MAX; j++)
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
-         D3D11_BUFFER_DESC desc = {
-            .ByteWidth      = d3d11->pass[i].semantics.cbuffers[j].size,
-            .Usage          = D3D11_USAGE_DYNAMIC,
-            .BindFlags      = D3D11_BIND_CONSTANT_BUFFER,
-            .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-         };
+         D3D11_BUFFER_DESC desc;
+         desc.ByteWidth           = d3d11->pass[i].semantics.cbuffers[j].size;
+         desc.Usage               = D3D11_USAGE_DYNAMIC;
+         desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+         desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+         desc.MiscFlags           = 0;
+         desc.StructureByteStride = 0;
 
          if (!desc.ByteWidth)
             continue;
 
          D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->pass[i].buffers[j]);
       }
-
-      source = &d3d11->pass[i].rt;
    }
 
-   for (int i = 0; i < d3d11->shader_preset->luts; i++)
+   for (i = 0; i < d3d11->shader_preset->luts; i++)
    {
       struct texture_image image = { 0 };
       image.supports_rgba        = true;
 
       if (!image_texture_load(&image, d3d11->shader_preset->lut[i].path))
          goto error;
+
       d3d11->luts[i].desc.Width  = image.width;
       d3d11->luts[i].desc.Height = image.height;
       d3d11->luts[i].desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+      if (d3d11->shader_preset->lut[i].mipmap)
+         d3d11->luts[i].desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+
       d3d11_init_texture(d3d11->device, &d3d11->luts[i]);
+
       d3d11_update_texture(
-            d3d11->ctx, image.width, image.height, 0, DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
+            d3d11->context, image.width, image.height, 0, DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
             &d3d11->luts[i]);
+
       image_texture_free(&image);
 
-      d3d11->luts[i].sampler = d3d11->shader_preset->lut[i].filter == RARCH_FILTER_NEAREST
-                                     ? d3d11->sampler_nearest
-                                     : d3d11->sampler_linear;
+      d3d11->luts[i].sampler =
+         d3d11->samplers[d3d11->shader_preset->lut[i].filter][d3d11->shader_preset->lut[i].wrap];
    }
 
    video_shader_resolve_current_parameters(conf, d3d11->shader_preset);
    config_file_free(conf);
 
+   d3d11->resize_render_targets = true;
+   d3d11->init_history          = true;
+
    return true;
 
 error:
    d3d11_free_shader_preset(d3d11);
+#endif
    return false;
 }
 
 static void d3d11_gfx_free(void* data)
 {
+   unsigned       i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
    if (!d3d11)
@@ -321,7 +353,7 @@ static void d3d11_gfx_free(void* data)
 
    d3d11_free_shader_preset(d3d11);
 
-   d3d11_release_texture(&d3d11->frame.texture);
+   d3d11_release_texture(&d3d11->frame.texture[0]);
    Release(d3d11->frame.ubo);
    Release(d3d11->frame.vbo);
 
@@ -332,13 +364,8 @@ static void d3d11_gfx_free(void* data)
    d3d11_release_shader(&d3d11->sprites.shader_font);
    Release(d3d11->sprites.vbo);
 
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU]);
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_2]);
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_3]);
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_4]);
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_5]);
-   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_6]);
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
+      d3d11_release_shader(&d3d11->shaders[i]);
 
    Release(d3d11->menu_pipeline_vbo);
    Release(d3d11->blend_pipeline);
@@ -348,8 +375,11 @@ static void d3d11_gfx_free(void* data)
    Release(d3d11->blend_enable);
    Release(d3d11->blend_disable);
 
-   Release(d3d11->sampler_nearest);
-   Release(d3d11->sampler_linear);
+   for (i = 0; i < RARCH_WRAP_MAX; i++)
+   {
+      Release(d3d11->samplers[RARCH_FILTER_LINEAR][i]);
+      Release(d3d11->samplers[RARCH_FILTER_NEAREST][i]);
+   }
 
    Release(d3d11->state);
    Release(d3d11->renderTargetView);
@@ -357,7 +387,7 @@ static void d3d11_gfx_free(void* data)
 
    font_driver_free_osd();
 
-   Release(d3d11->ctx);
+   Release(d3d11->context);
    Release(d3d11->device);
 
    win32_monitor_from_window();
@@ -365,9 +395,10 @@ static void d3d11_gfx_free(void* data)
    free(d3d11);
 }
 
-static void*
+   static void*
 d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
+   unsigned       i;
    WNDCLASSEX     wndclass = { 0 };
    MONITORINFOEX  current_mon;
    HMONITOR       hm_to_use;
@@ -403,25 +434,25 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    {
       UINT                 flags                   = 0;
       D3D_FEATURE_LEVEL    requested_feature_level = D3D_FEATURE_LEVEL_11_0;
-      DXGI_SWAP_CHAIN_DESC desc                    = {
-         .BufferCount                        = 1,
-         .BufferDesc.Width                   = d3d11->vp.full_width,
-         .BufferDesc.Height                  = d3d11->vp.full_height,
-         .BufferDesc.Format                  = DXGI_FORMAT_R8G8B8A8_UNORM,
-         .BufferDesc.RefreshRate.Numerator   = 60,
-         .BufferDesc.RefreshRate.Denominator = 1,
-         .BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT,
-         .OutputWindow                       = main_window.hwnd,
-         .SampleDesc.Count                   = 1,
-         .SampleDesc.Quality                 = 0,
-         .Windowed                           = TRUE,
-         .SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL,
+      DXGI_SWAP_CHAIN_DESC desc                    = { 0 };
+
+      desc.BufferCount                        = 1;
+      desc.BufferDesc.Width                   = d3d11->vp.full_width;
+      desc.BufferDesc.Height                  = d3d11->vp.full_height;
+      desc.BufferDesc.Format                  = DXGI_FORMAT_R8G8B8A8_UNORM;
+      desc.BufferDesc.RefreshRate.Numerator   = 60;
+      desc.BufferDesc.RefreshRate.Denominator = 1;
+      desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+      desc.OutputWindow                       = main_window.hwnd;
+      desc.SampleDesc.Count                   = 1;
+      desc.SampleDesc.Quality                 = 0;
+      desc.Windowed                           = TRUE;
+      desc.SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL;
 #if 0
-         .SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD,
-         .SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
-         .SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+      desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
+      desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+      desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
-      };
 
 #ifdef DEBUG
       flags |= D3D11_CREATE_DEVICE_DEBUG;
@@ -430,7 +461,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       D3D11CreateDeviceAndSwapChain(
             NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags, &requested_feature_level, 1,
             D3D11_SDK_VERSION, &desc, (IDXGISwapChain**)&d3d11->swapChain, &d3d11->device,
-            &d3d11->supportedFeatureLevel, &d3d11->ctx);
+            &d3d11->supportedFeatureLevel, &d3d11->context);
    }
 
    {
@@ -441,7 +472,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       Release(backBuffer);
    }
 
-   D3D11SetRenderTargets(d3d11->ctx, 1, &d3d11->renderTargetView, NULL);
+   D3D11SetRenderTargets(d3d11->context, 1, &d3d11->renderTargetView, NULL);
 
    video_driver_set_size(&d3d11->vp.full_width, &d3d11->vp.full_height);
    d3d11->viewport.Width  = d3d11->vp.full_width;
@@ -450,8 +481,8 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d11->vsync           = video->vsync;
    d3d11->format          = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
 
-   d3d11->frame.texture.desc.Format = d3d11->format;
-   d3d11->frame.texture.desc.Usage  = D3D11_USAGE_DEFAULT;
+   d3d11->frame.texture[0].desc.Format = d3d11->format;
+   d3d11->frame.texture[0].desc.Usage  = D3D11_USAGE_DEFAULT;
 
    d3d11->menu.texture.desc.Usage = D3D11_USAGE_DEFAULT;
 
@@ -461,13 +492,19 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d11->ubo_values.OutputSize.height = d3d11->viewport.Height;
 
    {
-      D3D11_BUFFER_DESC desc = {
-         .ByteWidth      = sizeof(d3d11->ubo_values),
-         .Usage          = D3D11_USAGE_DYNAMIC,
-         .BindFlags      = D3D11_BIND_CONSTANT_BUFFER,
-         .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-      };
-      D3D11_SUBRESOURCE_DATA ubo_data = { &d3d11->ubo_values.mvp };
+      D3D11_SUBRESOURCE_DATA ubo_data;
+      D3D11_BUFFER_DESC desc;
+      desc.ByteWidth            = sizeof(d3d11->ubo_values);
+      desc.Usage                = D3D11_USAGE_DYNAMIC;
+      desc.BindFlags            = D3D11_BIND_CONSTANT_BUFFER;
+      desc.CPUAccessFlags       = D3D11_CPU_ACCESS_WRITE;
+      desc.MiscFlags            = 0;
+      desc.StructureByteStride  = 0;
+
+      ubo_data.pSysMem          = &d3d11->ubo_values.mvp;
+      ubo_data.SysMemPitch      = 0;
+      ubo_data.SysMemSlicePitch = 0;
+
       D3D11CreateBuffer(d3d11->device, &desc, &ubo_data, &d3d11->ubo);
       D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->frame.ubo);
    }
@@ -475,20 +512,42 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d11_gfx_set_rotation(d3d11, 0);
 
    {
-      D3D11_SAMPLER_DESC desc = {
-         .Filter         = D3D11_FILTER_MIN_MAG_MIP_POINT,
-         .AddressU       = D3D11_TEXTURE_ADDRESS_CLAMP,
-         .AddressV       = D3D11_TEXTURE_ADDRESS_CLAMP,
-         .AddressW       = D3D11_TEXTURE_ADDRESS_CLAMP,
-         .MaxAnisotropy  = 1,
-         .ComparisonFunc = D3D11_COMPARISON_NEVER,
-         .MinLOD         = -D3D11_FLOAT32_MAX,
-         .MaxLOD         = D3D11_FLOAT32_MAX,
-      };
-      D3D11CreateSamplerState(d3d11->device, &desc, &d3d11->sampler_nearest);
+      D3D11_SAMPLER_DESC desc = { D3D11_FILTER_MIN_MAG_MIP_POINT };
+      desc.MaxAnisotropy      = 1;
+      desc.ComparisonFunc     = D3D11_COMPARISON_NEVER;
+      desc.MinLOD             = -D3D11_FLOAT32_MAX;
+      desc.MaxLOD             = D3D11_FLOAT32_MAX;
 
-      desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-      D3D11CreateSamplerState(d3d11->device, &desc, &d3d11->sampler_linear);
+      /* Initialize samplers */
+      for (i = 0; i < RARCH_WRAP_MAX; i++)
+      {
+         switch (i)
+         {
+            case RARCH_WRAP_BORDER:
+               desc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+               break;
+
+            case RARCH_WRAP_EDGE:
+               desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+               break;
+
+            case RARCH_WRAP_REPEAT:
+               desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+               break;
+
+            case RARCH_WRAP_MIRRORED_REPEAT:
+               desc.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
+               break;
+         }
+         desc.AddressV = desc.AddressU;
+         desc.AddressW = desc.AddressU;
+
+         desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+         D3D11CreateSamplerState(d3d11->device, &desc, &d3d11->samplers[RARCH_FILTER_LINEAR][i]);
+
+         desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+         D3D11CreateSamplerState(d3d11->device, &desc, &d3d11->samplers[RARCH_FILTER_NEAREST][i]);
+      }
    }
 
    d3d11_set_filtering(d3d11, 0, video->smooth);
@@ -502,11 +561,11 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       };
 
       {
-         D3D11_BUFFER_DESC desc = {
-            .Usage     = D3D11_USAGE_IMMUTABLE,
-            .ByteWidth = sizeof(vertices),
-            .BindFlags = D3D11_BIND_VERTEX_BUFFER,
-         };
+         D3D11_BUFFER_DESC desc = { 0 };
+         desc.Usage             = D3D11_USAGE_IMMUTABLE;
+         desc.ByteWidth         = sizeof(vertices);
+         desc.BindFlags         = D3D11_BIND_VERTEX_BUFFER;
+
          D3D11_SUBRESOURCE_DATA vertexData = { vertices };
          D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->frame.vbo);
          desc.Usage          = D3D11_USAGE_DYNAMIC;
@@ -522,52 +581,52 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    {
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d11_vertex_t, color),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
 
       static const char shader[] =
 #include "d3d_shaders/opaque_sm5.hlsl.h"
-            ;
+         ;
 
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]))
+               d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
+               countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]))
          goto error;
    }
 
    {
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d11_sprite_t, pos),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d11_sprite_t, coords),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d11_sprite_t, colors[0]),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 1, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d11_sprite_t, colors[1]),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 2, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d11_sprite_t, colors[2]),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 3, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d11_sprite_t, colors[3]),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "PARAMS", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_sprite_t, params),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
 
       static const char shader[] =
 #include "d3d_shaders/sprite_sm4.hlsl.h"
-            ;
+         ;
 
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", "GSMain", desc,
-                countof(desc), &d3d11->sprites.shader))
+               d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", "GSMain", desc,
+               countof(desc), &d3d11->sprites.shader))
          goto error;
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMainA8", "GSMain", desc,
-                countof(desc), &d3d11->sprites.shader_font))
+               d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMainA8", "GSMain", desc,
+               countof(desc), &d3d11->sprites.shader_font))
          goto error;
    }
 
@@ -578,79 +637,76 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
       static const char ribbon[] =
 #include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
+         ;
       static const char ribbon_simple[] =
 #include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
-            ;
+         ;
 
       if (!d3d11_init_shader(
-                d3d11->device, ribbon, sizeof(ribbon), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU]))
+               d3d11->device, ribbon, sizeof(ribbon), NULL, "VSMain", "PSMain", NULL, desc,
+               countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU]))
          goto error;
 
       if (!d3d11_init_shader(
-                d3d11->device, ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "PSMain", NULL,
-                desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2]))
+               d3d11->device, ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "PSMain", NULL,
+               desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2]))
          goto error;
    }
 
    {
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
 
       static const char simple_snow[] =
 #include "d3d_shaders/simple_snow_sm4.hlsl.h"
-            ;
+         ;
       static const char snow[] =
 #include "d3d_shaders/snow_sm4.hlsl.h"
-            ;
+         ;
       static const char bokeh[] =
 #include "d3d_shaders/bokeh_sm4.hlsl.h"
-            ;
+         ;
       static const char snowflake[] =
 #include "d3d_shaders/snowflake_sm4.hlsl.h"
-            ;
+         ;
 
       if (!d3d11_init_shader(
-                d3d11->device, simple_snow, sizeof(simple_snow), NULL, "VSMain", "PSMain", NULL,
-                desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3]))
+               d3d11->device, simple_snow, sizeof(simple_snow), NULL, "VSMain", "PSMain", NULL,
+               desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3]))
          goto error;
       if (!d3d11_init_shader(
-                d3d11->device, snow, sizeof(snow), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_4]))
-         goto error;
-
-      if (!d3d11_init_shader(
-                d3d11->device, bokeh, sizeof(bokeh), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_5]))
+               d3d11->device, snow, sizeof(snow), NULL, "VSMain", "PSMain", NULL, desc,
+               countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_4]))
          goto error;
 
       if (!d3d11_init_shader(
-                d3d11->device, snowflake, sizeof(snowflake), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_6]))
+               d3d11->device, bokeh, sizeof(bokeh), NULL, "VSMain", "PSMain", NULL, desc,
+               countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_5]))
+         goto error;
+
+      if (!d3d11_init_shader(
+               d3d11->device, snowflake, sizeof(snowflake), NULL, "VSMain", "PSMain", NULL, desc,
+               countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_6]))
          goto error;
    }
 
    {
-      D3D11_BLEND_DESC blend_desc = {
-         .AlphaToCoverageEnable  = FALSE,
-         .IndependentBlendEnable = FALSE,
-         .RenderTarget[0] =
-               {
-                     .BlendEnable = TRUE,
-                     D3D11_BLEND_SRC_ALPHA,
-                     D3D11_BLEND_INV_SRC_ALPHA,
-                     D3D11_BLEND_OP_ADD,
-                     D3D11_BLEND_SRC_ALPHA,
-                     D3D11_BLEND_INV_SRC_ALPHA,
-                     D3D11_BLEND_OP_ADD,
-                     D3D11_COLOR_WRITE_ENABLE_ALL,
-               },
-      };
+      D3D11_BLEND_DESC blend_desc = { 0 };
+
+      blend_desc.AlphaToCoverageEnable                 = FALSE;
+      blend_desc.IndependentBlendEnable                = FALSE;
+      blend_desc.RenderTarget[0].BlendEnable           = TRUE;
+      blend_desc.RenderTarget[0].SrcBlend              = D3D11_BLEND_SRC_ALPHA;
+      blend_desc.RenderTarget[0].DestBlend             = D3D11_BLEND_INV_SRC_ALPHA;
+      blend_desc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
+      blend_desc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_SRC_ALPHA;
+      blend_desc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_INV_SRC_ALPHA;
+      blend_desc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
+      blend_desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
       D3D11CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_enable);
 
       blend_desc.RenderTarget[0].SrcBlend  = D3D11_BLEND_ONE;
@@ -661,13 +717,14 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       D3D11CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_disable);
    }
    {
-      D3D11_RASTERIZER_DESC desc = {
-         .FillMode = D3D11_FILL_SOLID,
-         .CullMode = D3D11_CULL_NONE,
-      };
+      D3D11_RASTERIZER_DESC desc = {(D3D11_FILL_MODE)0};
+
+      desc.FillMode = D3D11_FILL_SOLID;
+      desc.CullMode = D3D11_CULL_NONE;
+
       D3D11CreateRasterizerState(d3d11->device, &desc, &d3d11->state);
    }
-   D3D11SetState(d3d11->ctx, d3d11->state);
+   D3D11SetState(d3d11->context, d3d11->state);
 
    font_driver_init_osd(d3d11, false, video->is_threaded, FONT_DRIVER_RENDER_D3D11_API);
 
@@ -685,32 +742,44 @@ error:
    d3d11_gfx_free(d3d11);
    return NULL;
 }
-static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsigned height)
+
+static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned height)
 {
-   if (d3d11->shader_preset)
+   unsigned i;
+
+   /* todo: should we init history to max_width/max_height instead ?
+    * to prevent out of memory errors happening several frames later
+    * and to reduce memory fragmentation */
+
+   assert(d3d11->shader_preset);
+   for (i = 0; i < d3d11->shader_preset->history_size + 1; i++)
    {
-      for (int i = 0; i < d3d11->shader_preset->passes; i++)
-      {
-         d3d11_release_texture(&d3d11->pass[i].rt);
-         memset(&d3d11->pass[i].rt, 0x00, sizeof(d3d11->pass[i].rt));
-      }
+      d3d11->frame.texture[i].desc.Width  = width;
+      d3d11->frame.texture[i].desc.Height = height;
+      d3d11->frame.texture[i].desc.Format = d3d11->frame.texture[0].desc.Format;
+      d3d11->frame.texture[i].desc.Usage  = d3d11->frame.texture[0].desc.Usage;
+      d3d11_init_texture(d3d11->device, &d3d11->frame.texture[i]);
+      /* todo: clear texture ?  */
    }
+   d3d11->init_history = false;
+}
+static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsigned height)
+{
+   unsigned i;
 
-   d3d11->frame.texture.desc.Width  = width;
-   d3d11->frame.texture.desc.Height = height;
-   d3d11_init_texture(d3d11->device, &d3d11->frame.texture);
+   assert(d3d11->shader_preset);
 
-   if (d3d11->shader_preset)
+   for (i = 0; i < d3d11->shader_preset->passes; i++)
    {
-      for (int i = 0; i < d3d11->shader_preset->passes; i++)
+      struct video_shader_pass* pass = &d3d11->shader_preset->pass[i];
+
+      if (pass->fbo.valid)
       {
-         struct video_shader_pass* pass = &d3d11->shader_preset->pass[i];
 
          switch (pass->fbo.type_x)
          {
             case RARCH_SCALE_INPUT:
-               if (pass->fbo.scale_x)
-                  width *= pass->fbo.scale_x;
+               width *= pass->fbo.scale_x;
                break;
 
             case RARCH_SCALE_VIEWPORT:
@@ -725,11 +794,13 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
                break;
          }
 
+         if (!width)
+            width = d3d11->vp.width;
+
          switch (pass->fbo.type_y)
          {
             case RARCH_SCALE_INPUT:
-               if (pass->fbo.scale_y)
-                  height *= pass->fbo.scale_y;
+               height *= pass->fbo.scale_y;
                break;
 
             case RARCH_SCALE_VIEWPORT:
@@ -744,12 +815,20 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
                break;
          }
 
-         if (!width)
-            width = d3d11->vp.width;
-
          if (!height)
             height = d3d11->vp.height;
+      }
+      else if (i == (d3d11->shader_preset->passes - 1))
+      {
+         width  = d3d11->vp.width;
+         height = d3d11->vp.height;
+      }
 
+      RARCH_LOG("[D3D11]: Updating framebuffer size %u x %u.\n", width, height);
+
+      if ((i != (d3d11->shader_preset->passes - 1)) || (width != d3d11->vp.width) ||
+            (height != d3d11->vp.height))
+      {
          d3d11->pass[i].viewport.Width    = width;
          d3d11->pass[i].viewport.Height   = height;
          d3d11->pass[i].viewport.MaxDepth = 1.0;
@@ -757,37 +836,28 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
          d3d11->pass[i].rt.desc.Height    = height;
          d3d11->pass[i].rt.desc.BindFlags = D3D11_BIND_RENDER_TARGET;
          d3d11->pass[i].rt.desc.Format    = glslang_format_to_dxgi(d3d11->pass[i].semantics.format);
+         d3d11_init_texture(d3d11->device, &d3d11->pass[i].rt);
 
-         if ((i != (d3d11->shader_preset->passes - 1)) || (width != d3d11->vp.width) ||
-             (height != d3d11->vp.height))
+         if (pass->feedback)
          {
-            d3d11_init_texture(d3d11->device, &d3d11->pass[i].rt);
-         }
-         else
-         {
-            d3d11->pass[i].rt.size_data.x = width;
-            d3d11->pass[i].rt.size_data.y = height;
-            d3d11->pass[i].rt.size_data.z = 1.0f / width;
-            d3d11->pass[i].rt.size_data.w = 1.0f / height;
-         }
-
-         d3d11->pass[i].sampler = pass->filter == RARCH_FILTER_NEAREST ? d3d11->sampler_nearest
-                                                                       : d3d11->sampler_linear;
-
-         for (int j = 0; j < d3d11->pass[i].semantics.texture_count; j++)
-         {
-            texture_sem_t*          texture_sem = &d3d11->pass[i].semantics.textures[j];
-            D3D11ShaderResourceView view    = ((d3d11_texture_t*)texture_sem->texture_data)->view;
-            D3D11SamplerStateRef    sampler = *(D3D11SamplerStateRef*)texture_sem->sampler_data;
-
-            d3d11->pass[i].textures[texture_sem->binding] = view;
-            d3d11->pass[i].samplers[texture_sem->binding] = sampler;
+            d3d11->pass[i].feedback.desc = d3d11->pass[i].rt.desc;
+            d3d11_init_texture(d3d11->device, &d3d11->pass[i].feedback);
+            /* todo: do we need to clear it to black here ? */
          }
       }
+      else
+      {
+         d3d11->pass[i].rt.size_data.x = width;
+         d3d11->pass[i].rt.size_data.y = height;
+         d3d11->pass[i].rt.size_data.z = 1.0f / width;
+         d3d11->pass[i].rt.size_data.w = 1.0f / height;
+      }
+
+      d3d11->pass[i].sampler = d3d11->samplers[pass->filter][pass->wrap];
    }
 
-   d3d11->resize_fbos = false;
-   return true;
+   d3d11->resize_render_targets = false;
+
 #if 0
 error:
    d3d11_free_shader_preset(d3d11);
@@ -805,21 +875,24 @@ static bool d3d11_gfx_frame(
       const char*         msg,
       video_frame_info_t* video_info)
 {
-   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+   unsigned           i;
+   d3d11_texture_t*   texture = NULL;
+   d3d11_video_t*     d3d11   = (d3d11_video_t*)data;
+   D3D11DeviceContext context = d3d11->context;
 
    if (d3d11->resize_chain)
    {
       D3D11Texture2D backBuffer;
 
       Release(d3d11->renderTargetView);
-      DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0, 0, 0);
+      DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
 
       DXGIGetSwapChainBufferD3D11(d3d11->swapChain, 0, &backBuffer);
       D3D11CreateTexture2DRenderTargetView(
             d3d11->device, backBuffer, NULL, &d3d11->renderTargetView);
       Release(backBuffer);
 
-      D3D11SetRenderTargets(d3d11->ctx, 1, &d3d11->renderTargetView, NULL);
+      D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
 
       d3d11->viewport.Width  = video_info->width;
       d3d11->viewport.Height = video_info->height;
@@ -837,39 +910,88 @@ static bool d3d11_gfx_frame(
 #if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
    if (d3d11->resize_viewport)
 #endif
-   d3d11_update_viewport(d3d11, false);
+      d3d11_update_viewport(d3d11, false);
 
-   D3D11SetPrimitiveTopology(d3d11->ctx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+   D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
    if (frame && width && height)
    {
-      if (d3d11->frame.texture.desc.Width != width || d3d11->frame.texture.desc.Height != height)
-         d3d11_init_frame_textures(d3d11, width, height);
+      if (d3d11->shader_preset)
+      {
+         if (d3d11->frame.texture[0].desc.Width != width ||
+               d3d11->frame.texture[0].desc.Height != height)
+            d3d11->resize_render_targets = true;
+
+         if (d3d11->resize_render_targets)
+         {
+            /* release all render targets first to avoid memory fragmentation */
+            for (i = 0; i < d3d11->shader_preset->passes; i++)
+               d3d11_release_texture(&d3d11->pass[i].rt);
+         }
+
+         if (d3d11->shader_preset->history_size)
+         {
+            if (d3d11->init_history)
+               d3d11_init_history(d3d11, width, height);
+            else
+            {
+               int k;
+               /* todo: what about frame-duping ?
+                * maybe clone d3d11_texture_t with AddRef */
+               d3d11_texture_t tmp = d3d11->frame.texture[d3d11->shader_preset->history_size];
+               for (k = d3d11->shader_preset->history_size; k > 0; k--)
+                  d3d11->frame.texture[k] = d3d11->frame.texture[k - 1];
+               d3d11->frame.texture[0] = tmp;
+            }
+         }
+      }
+
+      /* either no history, or we moved a texture of a different size in the front slot */
+      if (d3d11->frame.texture[0].desc.Width != width ||
+            d3d11->frame.texture[0].desc.Height != height)
+      {
+         d3d11->frame.texture[0].desc.Width  = width;
+         d3d11->frame.texture[0].desc.Height = height;
+         d3d11_init_texture(d3d11->device, &d3d11->frame.texture[0]);
+      }
+
+      if (d3d11->resize_render_targets)
+         d3d11_init_render_targets(d3d11, width, height);
 
       d3d11_update_texture(
-            d3d11->ctx, width, height, pitch, d3d11->format, frame, &d3d11->frame.texture);
+            context, width, height, pitch, d3d11->format, frame, &d3d11->frame.texture[0]);
    }
 
-   D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
-   D3D11SetBlendState(d3d11->ctx, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   D3D11SetVertexBuffer(context, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
+   D3D11SetBlendState(context, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
-   /* todo: single pass shaders can also have an empty rt texture */
-   if (d3d11->shader_preset && (d3d11->resize_fbos || !d3d11->pass[0].rt.handle))
-      d3d11_init_frame_textures(d3d11, width, height);
-
-   d3d11_texture_t* texture = &d3d11->frame.texture;
+   texture = d3d11->frame.texture;
 
    if (d3d11->shader_preset)
    {
-      for (int i = 0; i < d3d11->shader_preset->passes; i++)
+      for (i = 0; i < d3d11->shader_preset->passes; i++)
       {
+         if (d3d11->shader_preset->pass[i].feedback)
+         {
+            d3d11_texture_t tmp     = d3d11->pass[i].feedback;
+            d3d11->pass[i].feedback = d3d11->pass[i].rt;
+            d3d11->pass[i].rt       = tmp;
+         }
+      }
+
+      for (i = 0; i < d3d11->shader_preset->passes; i++)
+      {
+         unsigned j;
+
+         d3d11_set_shader(context, &d3d11->pass[i].shader);
+
          if (d3d11->shader_preset->pass[i].frame_count_mod)
             d3d11->pass[i].frame_count =
-                  frame_count % d3d11->shader_preset->pass[i].frame_count_mod;
+               frame_count % d3d11->shader_preset->pass[i].frame_count_mod;
          else
             d3d11->pass[i].frame_count = frame_count;
 
-         for (int j = 0; j < SLANG_CBUFFER_MAX; j++)
+         for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {
             D3D11Buffer    buffer     = d3d11->pass[i].buffers[j];
             cbuffer_sem_t* buffer_sem = &d3d11->pass[i].semantics.cbuffers[j];
@@ -879,37 +1001,52 @@ static bool d3d11_gfx_frame(
                D3D11_MAPPED_SUBRESOURCE res;
                uniform_sem_t*           uniform = buffer_sem->uniforms;
 
-               D3D11MapBuffer(d3d11->ctx, buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
+               D3D11MapBuffer(context, buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
                while (uniform->size)
                {
                   if (uniform->data)
                      memcpy((uint8_t*)res.pData + uniform->offset, uniform->data, uniform->size);
                   uniform++;
                }
-               D3D11UnmapBuffer(d3d11->ctx, buffer, 0);
+               D3D11UnmapBuffer(context, buffer, 0);
 
                if (buffer_sem->stage_mask & SLANG_STAGE_VERTEX_MASK)
-                  D3D11SetVShaderConstantBuffers(d3d11->ctx, buffer_sem->binding, 1, &buffer);
+                  D3D11SetVShaderConstantBuffers(context, buffer_sem->binding, 1, &buffer);
 
                if (buffer_sem->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
-                  D3D11SetPShaderConstantBuffers(d3d11->ctx, buffer_sem->binding, 1, &buffer);
+                  D3D11SetPShaderConstantBuffers(context, buffer_sem->binding, 1, &buffer);
             }
          }
 
-         d3d11_set_shader(d3d11->ctx, &d3d11->pass[i].shader);
+         {
+            D3D11RenderTargetView null_rt = NULL;
+            D3D11SetRenderTargets(context, 1, &null_rt, NULL);
+         }
 
-         D3D11RenderTargetView null_rt = NULL;
-         D3D11SetRenderTargets(d3d11->ctx, 1, &null_rt, NULL);
-         D3D11SetPShaderResources(d3d11->ctx, 0, SLANG_NUM_BINDINGS, d3d11->pass[i].textures);
-         D3D11SetPShaderSamplers(d3d11->ctx, 0, SLANG_NUM_BINDINGS, d3d11->pass[i].samplers);
+         {
+            D3D11ShaderResourceView textures[SLANG_NUM_BINDINGS] = { NULL };
+            D3D11SamplerState       samplers[SLANG_NUM_BINDINGS] = { NULL };
+
+            texture_sem_t* texture_sem = d3d11->pass[i].semantics.textures;
+            while (texture_sem->stage_mask)
+            {
+               int binding       = texture_sem->binding;
+               textures[binding] = *(D3D11ShaderResourceView*)texture_sem->texture_data;
+               samplers[binding] = *(D3D11SamplerState*)texture_sem->sampler_data;
+               texture_sem++;
+            }
+
+            D3D11SetPShaderResources(context, 0, SLANG_NUM_BINDINGS, textures);
+            D3D11SetPShaderSamplers(context, 0, SLANG_NUM_BINDINGS, samplers);
+         }
 
          if (d3d11->pass[i].rt.handle)
          {
-            D3D11SetRenderTargets(d3d11->ctx, 1, &d3d11->pass[i].rt.rt_view, NULL);
-            D3D11ClearRenderTargetView(d3d11->ctx, d3d11->pass[i].rt.rt_view, d3d11->clearcolor);
-            D3D11SetViewports(d3d11->ctx, 1, &d3d11->pass[i].viewport);
+            D3D11SetRenderTargets(context, 1, &d3d11->pass[i].rt.rt_view, NULL);
+            D3D11ClearRenderTargetView(context, d3d11->pass[i].rt.rt_view, d3d11->clearcolor);
+            D3D11SetViewports(context, 1, &d3d11->pass[i].viewport);
 
-            D3D11Draw(d3d11->ctx, 4, 0);
+            D3D11Draw(context, 4, 0);
             texture = &d3d11->pass[i].rt;
          }
          else
@@ -918,43 +1055,44 @@ static bool d3d11_gfx_frame(
             break;
          }
       }
-      D3D11SetRenderTargets(d3d11->ctx, 1, &d3d11->renderTargetView, NULL);
+      D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
    }
 
    if (texture)
    {
-      d3d11_set_shader(d3d11->ctx, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
-      D3D11SetPShaderResources(d3d11->ctx, 0, 1, &texture->view);
-      D3D11SetPShaderSamplers(d3d11->ctx, 0, 1, &d3d11->frame.texture.sampler);
-      D3D11SetVShaderConstantBuffers(d3d11->ctx, 0, 1, &d3d11->frame.ubo);
+      d3d11_set_shader(context, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
+      D3D11SetPShaderResources(context, 0, 1, &texture->view);
+      D3D11SetPShaderSamplers(
+            context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+      D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->frame.ubo);
    }
 
-   D3D11ClearRenderTargetView(d3d11->ctx, d3d11->renderTargetView, d3d11->clearcolor);
-   D3D11SetViewports(d3d11->ctx, 1, &d3d11->frame.viewport);
+   D3D11ClearRenderTargetView(context, d3d11->renderTargetView, d3d11->clearcolor);
+   D3D11SetViewports(context, 1, &d3d11->frame.viewport);
 
-   D3D11Draw(d3d11->ctx, 4, 0);
+   D3D11Draw(context, 4, 0);
 
-   D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   D3D11SetBlendState(context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
    if (d3d11->menu.enabled && d3d11->menu.texture.handle)
    {
       if (d3d11->menu.fullscreen)
-         D3D11SetViewports(d3d11->ctx, 1, &d3d11->viewport);
+         D3D11SetViewports(context, 1, &d3d11->viewport);
 
-      d3d11_set_shader(d3d11->ctx, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
-      D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->menu.vbo, sizeof(d3d11_vertex_t), 0);
-      D3D11SetVShaderConstantBuffers(d3d11->ctx, 0, 1, &d3d11->ubo);
-      d3d11_set_texture_and_sampler(d3d11->ctx, 0, &d3d11->menu.texture);
-      D3D11Draw(d3d11->ctx, 4, 0);
+      d3d11_set_shader(context, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
+      D3D11SetVertexBuffer(context, 0, d3d11->menu.vbo, sizeof(d3d11_vertex_t), 0);
+      D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->ubo);
+      d3d11_set_texture_and_sampler(context, 0, &d3d11->menu.texture);
+      D3D11Draw(context, 4, 0);
    }
 
-   D3D11SetViewports(d3d11->ctx, 1, &d3d11->viewport);
+   D3D11SetViewports(context, 1, &d3d11->viewport);
 
-   d3d11_set_shader(d3d11->ctx, &d3d11->sprites.shader);
-   D3D11SetPrimitiveTopology(d3d11->ctx, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-   D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
-   D3D11SetVShaderConstantBuffer(d3d11->ctx, 0, d3d11->ubo);
-   D3D11SetPShaderConstantBuffer(d3d11->ctx, 0, d3d11->ubo);
+   d3d11_set_shader(context, &d3d11->sprites.shader);
+   D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+   D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
+   D3D11SetVShaderConstantBuffer(context, 0, d3d11->ubo);
+   D3D11SetPShaderConstantBuffer(context, 0, d3d11->ubo);
 
    d3d11->sprites.enabled = true;
 
@@ -1040,8 +1178,9 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 static void d3d11_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32, unsigned width, unsigned height, float alpha)
 {
-   d3d11_video_t* d3d11  = (d3d11_video_t*)data;
-   DXGI_FORMAT    format = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : DXGI_FORMAT_EX_A4R4G4B4_UNORM;
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+   DXGI_FORMAT    format =
+      rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
    if (d3d11->menu.texture.desc.Width != width || d3d11->menu.texture.desc.Height != height)
    {
@@ -1051,10 +1190,11 @@ static void d3d11_set_menu_texture_frame(
       d3d11_init_texture(d3d11->device, &d3d11->menu.texture);
    }
 
-   d3d11_update_texture(d3d11->ctx, width, height, 0, format, frame, &d3d11->menu.texture);
-   d3d11->menu.texture.sampler = config_get_ptr()->bools.menu_linear_filter
-                                       ? d3d11->sampler_linear
-                                       : d3d11->sampler_nearest;
+   d3d11_update_texture(d3d11->context, width, height, 0, format, frame, &d3d11->menu.texture);
+   d3d11->menu.texture.sampler = d3d11->samplers
+      [config_get_ptr()->bools.menu_linear_filter
+      ? RARCH_FILTER_LINEAR
+         : RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
 }
 
 static void d3d11_set_menu_texture_enable(void* data, bool state, bool full_screen)
@@ -1112,19 +1252,22 @@ static uintptr_t d3d11_gfx_load_texture(
 
    texture = (d3d11_texture_t*)calloc(1, sizeof(*texture));
 
+   if (!texture)
+      return 0;
+
    switch (filter_type)
    {
       case TEXTURE_FILTER_MIPMAP_LINEAR:
          texture->desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
          /* fallthrough */
       case TEXTURE_FILTER_LINEAR:
-         texture->sampler = d3d11->sampler_linear;
+         texture->sampler = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
          break;
       case TEXTURE_FILTER_MIPMAP_NEAREST:
          texture->desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
          /* fallthrough */
       case TEXTURE_FILTER_NEAREST:
-         texture->sampler = d3d11->sampler_nearest;
+         texture->sampler = d3d11->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE];
          break;
    }
 
@@ -1135,7 +1278,7 @@ static uintptr_t d3d11_gfx_load_texture(
    d3d11_init_texture(d3d11->device, texture);
 
    d3d11_update_texture(
-         d3d11->ctx, image->width, image->height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels,
+         d3d11->context, image->width, image->height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels,
          texture);
 
    return (uintptr_t)texture;

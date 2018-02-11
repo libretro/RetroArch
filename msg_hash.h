@@ -908,6 +908,7 @@ enum msg_hash_enums
    MENU_LABEL(HELP_LOADING_CONTENT),
    MENU_LABEL(HELP_LIST),
    MENU_LABEL(HELP_CONTROLS),
+   MENU_LABEL(HELP_CHEEVOS_DESCRIPTION),
 
    MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
 
@@ -916,6 +917,7 @@ enum msg_hash_enums
    MENU_LABEL(BROWSE_URL),
    MENU_LABEL(BROWSE_START),
    /* Deferred */
+   MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
    MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST,
    MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST,
    MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST,
@@ -1512,6 +1514,7 @@ enum msg_hash_enums
    MENU_LABEL(VIDEO_SHADER_PRESET_SAVE_AS),
    MENU_LABEL(VIDEO_SHADER_PRESET_SAVE_CORE),
    MENU_LABEL(VIDEO_SHADER_PRESET_SAVE_GAME),
+   MENU_LABEL(VIDEO_SHADER_PRESET_SAVE_PARENT),
    MENU_LABEL(USER_LANGUAGE),
    MENU_LABEL(NETPLAY_NICKNAME),
    MENU_LABEL(VIDEO_VI_WIDTH),
@@ -1658,6 +1661,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
    MENU_ENUM_LABEL_VALUE_LANG_POLISH,
    MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
+   MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
 
    MENU_ENUM_LABEL_VALUE_NONE,
    MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
@@ -1729,10 +1733,11 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
 
    MENU_LABEL(NETPLAY_USE_MITM_SERVER),
+   MENU_LABEL(NETPLAY_MITM_SERVER),
+   MENU_LABEL(VIDEO_WINDOW_SHOW_DECORATIONS),
 
    MSG_LAST
 };
-
 
 /* Callback strings */
 
@@ -2012,6 +2017,9 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_us(enum msg_hash_enums msg);
 int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len);
+
+const char *msg_hash_to_str_ar(enum msg_hash_enums msg);
+int menu_hash_get_help_ar_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);
 

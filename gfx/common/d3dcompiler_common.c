@@ -13,7 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <stdio.h>
+#include <string.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -57,12 +60,12 @@ HRESULT WINAPI D3DCompile(
    if (!fp)
       fp = (pD3DCompile)dylib_proc(d3dcompiler_dll, "D3DCompile");
 
-   if (fp)
-      return fp(
-		  pSrcData, SrcDataSize, pSourceName, pDefines, pInclude, pEntrypoint, pTarget, Flags1,
-		  Flags2, ppCode, ppErrorMsgs);
+   if (!fp)
+      return TYPE_E_DLLFUNCTIONNOTFOUND;
 
-   return TYPE_E_CANTLOADLIBRARY;
+   return fp(
+         pSrcData, SrcDataSize, pSourceName, pDefines, pInclude, pEntrypoint, pTarget, Flags1,
+         Flags2, ppCode, ppErrorMsgs);
 }
 
 HRESULT WINAPI D3DCompileFromFile(
@@ -77,9 +80,8 @@ HRESULT WINAPI D3DCompileFromFile(
       ID3DBlob**              ppErrorMsgs)
 {
    typedef HRESULT(WINAPI * pD3DCompileFromFile)(
-		LPCWSTR pFileName, const D3D_SHADER_MACRO* pDefines, ID3DInclude* pInclude,
-		LPCSTR pEntrypoint, LPCSTR pTarget, UINT Flags1, UINT Flags2, ID3DBlob** ppCode,
-		ID3DBlob** ppErrorMsgs);
+         LPCWSTR, const D3D_SHADER_MACRO*, ID3DInclude*, LPCSTR, LPCSTR, UINT, UINT, ID3DBlob**,
+         ID3DBlob**);
    static pD3DCompileFromFile fp;
    const char** dll_name = d3dcompiler_dll_list;
    while (!d3dcompiler_dll && *dll_name)
@@ -91,19 +93,17 @@ HRESULT WINAPI D3DCompileFromFile(
    if (!fp)
       fp = (pD3DCompileFromFile)dylib_proc(d3dcompiler_dll, "D3DCompileFromFile");
 
-   if (fp)
-      return fp(
-               pFileName, pDefines, pInclude, pEntrypoint, pTarget, Flags1, Flags2, ppCode,
-               ppErrorMsgs);
+   if (!fp)
+      return TYPE_E_DLLFUNCTIONNOTFOUND;
 
-   return TYPE_E_CANTLOADLIBRARY;
+   return fp(
+         pFileName, pDefines, pInclude, pEntrypoint, pTarget, Flags1, Flags2, ppCode, ppErrorMsgs);
 }
 
 HRESULT WINAPI
         D3DReflect(LPCVOID pSrcData, SIZE_T SrcDataSize, REFIID pInterface, void** ppReflector)
 {
-   typedef HRESULT(WINAPI * pD3DCompileFromFile)(
-         LPCVOID pSrcData, SIZE_T SrcDataSize, REFIID pInterface, void** ppReflector);
+   typedef HRESULT(WINAPI * pD3DCompileFromFile)(LPCVOID, SIZE_T, REFIID, void**);
    static pD3DCompileFromFile fp;
 
    const char** dll_name = d3dcompiler_dll_list;
@@ -116,10 +116,10 @@ HRESULT WINAPI
    if (!fp)
       fp = (pD3DCompileFromFile)dylib_proc(d3dcompiler_dll, "D3DReflect");
 
-   if (fp)
-      return fp(pSrcData, SrcDataSize, pInterface, ppReflector);
+   if (!fp)
+      return TYPE_E_DLLFUNCTIONNOTFOUND;
 
-   return TYPE_E_CANTLOADLIBRARY;
+   return fp(pSrcData, SrcDataSize, pInterface, ppReflector);
 }
 #endif
 
@@ -132,6 +132,10 @@ bool d3d_compile(const char* src, size_t size, LPCSTR src_name, LPCSTR entrypoin
    compileflags        |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
+   
+   if (!size)
+      size = strlen(src);
+   
    if (FAILED(D3DCompile(
              src, size, src_name, NULL, NULL, entrypoint, target, compileflags, 0, out, &error_msg)))
    {

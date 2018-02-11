@@ -51,9 +51,23 @@ void usage(void);
  *  Comments:
  *
  */
+typedef struct SHA1Context
+{
+   unsigned Message_Digest[5]; /* Message Digest (output)          */
+
+   unsigned Length_Low;        /* Message length in bits           */
+   unsigned Length_High;       /* Message length in bits           */
+
+   unsigned char Message_Block[64]; /* 512-bit message blocks      */
+   int Message_Block_Index;    /* Index into message block array   */
+
+   int Computed;               /* Is the digest computed?          */
+   int Corrupted;              /* Is the message digest corruped?  */
+} SHA1Context;
+
 int main(int argc, char *argv[])
 {
-   SHA1Context sha;                /* SHA-1 context                 */
+   struct SHA1Context sha;         /* SHA-1 context                 */
    FILE        *fp;                /* File pointer for reading files*/
    char        c;                  /* Character read from file      */
    int         i;                  /* Counter                       */

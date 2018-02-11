@@ -31,6 +31,8 @@
 #include <gfx/video_frame.h>
 #include <formats/image.h>
 
+#include "../menu/menu_shader.h"
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -597,8 +599,12 @@ static void video_context_driver_reset(void)
    {
       const char *video_driver = video_driver_get_ident();
 
-      if(string_is_equal(video_driver, "d3d11"))
+      if(string_is_equal(video_driver, "d3d10"))
+         current_video_context_api = GFX_CTX_DIRECT3D10_API;
+      else if(string_is_equal(video_driver, "d3d11"))
          current_video_context_api = GFX_CTX_DIRECT3D11_API;
+      else if(string_is_equal(video_driver, "d3d12"))
+         current_video_context_api = GFX_CTX_DIRECT3D12_API;
       else if(string_is_equal(video_driver, "gx2"))
          current_video_context_api = GFX_CTX_GX2_API;
    }
@@ -672,9 +678,11 @@ retro_proc_address_t video_driver_get_proc_address(const char *sym)
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path)
 {
+   bool ret = false;
    if (current_video->set_shader)
-      return current_video->set_shader(video_driver_data, type, path);
-   return false;
+      ret = current_video->set_shader(video_driver_data, type, path);
+
+   return ret;
 }
 
 static void video_driver_filter_free(void)
@@ -1303,26 +1311,31 @@ bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points)
 {
    unsigned i;
-   retro_time_t accum   = 0, avg, accum_var = 0;
-   unsigned samples      = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
-         (unsigned)video_driver_frame_time_count);
+   retro_time_t accum     = 0;
+   retro_time_t avg       = 0;
+   retro_time_t accum_var = 0;
+   unsigned samples       = 0;
+
 #ifdef HAVE_THREADS
    if (video_driver_is_threaded())
       return false;
 #endif
+
+   samples = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
+         (unsigned)video_driver_frame_time_count);
 
    if (samples < 2)
       return false;
 
    /* Measure statistics on frame time (microsecs), *not* FPS. */
    for (i = 0; i < samples; i++)
+   {
       accum += video_driver_frame_time_samples[i];
-
 #if 0
-   for (i = 0; i < samples; i++)
       RARCH_LOG("[Video]: Interval #%u: %d usec / frame.\n",
             i, (int)frame_time_samples[i]);
 #endif
+   }
 
    avg = accum / samples;
 
@@ -1330,7 +1343,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    for (i = 0; i < samples; i++)
    {
       retro_time_t diff = video_driver_frame_time_samples[i] - avg;
-      accum_var += diff * diff;
+      accum_var         += diff * diff;
    }
 
    *deviation     = sqrt((double)accum_var / (samples - 1)) / avg;

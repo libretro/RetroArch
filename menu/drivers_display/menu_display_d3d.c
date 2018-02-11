@@ -169,10 +169,10 @@ static void menu_display_d3d_draw(void *data)
       pv[i].z     = 0.5f;
       pv[i].u     = *tex_coord++;
       pv[i].v     = *tex_coord++;
-#ifdef _XBOX1
+#ifdef HAVE_D3D8
       {
          D3DSURFACE_DESC desc;
-         if (d3d_texture_get_level_desc(draw->texture, 0, &desc))
+         if (d3d_texture_get_level_desc((void*)draw->texture, 0, &desc))
          {
             pv[i].u *= desc.Width;
             pv[i].v *= desc.Height;

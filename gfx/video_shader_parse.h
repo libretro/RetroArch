@@ -42,6 +42,11 @@ RETRO_BEGIN_DECLS
 #define GFX_MAX_PARAMETERS 128
 #endif
 
+#ifndef GFX_MAX_FRAME_HISTORY
+#define GFX_MAX_FRAME_HISTORY 128
+#endif
+
+
 enum rarch_shader_type
 {
    RARCH_SHADER_NONE = 0,
@@ -62,7 +67,8 @@ enum
 {
    RARCH_FILTER_UNSPEC = 0,
    RARCH_FILTER_LINEAR,
-   RARCH_FILTER_NEAREST
+   RARCH_FILTER_NEAREST,
+   RARCH_FILTER_MAX
 };
 
 enum gfx_wrap_type
@@ -118,6 +124,7 @@ struct video_shader_pass
    bool mipmap;
    unsigned filter;
    unsigned frame_count_mod;
+   bool feedback;
 };
 
 struct video_shader_lut
@@ -149,6 +156,7 @@ struct video_shader
    /* If < 0, no feedback pass is used. Otherwise,
     * the FBO after pass #N is passed a texture to next frame. */
    int feedback_pass;
+   int history_size;
 
    struct video_shader_pass pass[GFX_MAX_SHADERS];
 

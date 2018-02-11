@@ -810,8 +810,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 static bool vulkan_init_filter_chain(vk_t *vk)
 {
    settings_t *settings = config_get_ptr();
-   const char *shader_path = (settings->bools.video_shader_enable && *settings->paths.path_shader) ?
-      settings->paths.path_shader : NULL;
+   const char *shader_path = retroarch_get_shader_preset();
 
    enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_NONE);
 
@@ -1290,8 +1289,9 @@ static bool vulkan_alive(void *data)
 
 static bool vulkan_suppress_screensaver(void *data, bool enable)
 {
-   (void)data;
    bool enabled = enable;
+   (void)data;
+
    return video_context_driver_suppress_screensaver(&enabled);
 }
 

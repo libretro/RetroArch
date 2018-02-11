@@ -13,27 +13,39 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <assert.h>
+#include <stdbool.h>
 #include <string/stdstring.h>
+#include <file/file_path.h>
 
 #include "../video_driver.h"
+#include "../font_driver.h"
 #include "../common/win32_common.h"
 #include "../common/dxgi_common.h"
 #include "../common/d3d12_common.h"
 #include "../common/d3dcompiler_common.h"
 
+#include "../../menu/menu_driver.h"
 #include "../../driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
+#include "wiiu/wiiu_dbg.h"
+
 static void d3d12_set_filtering(void* data, unsigned index, bool smooth)
 {
+   int            i;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
-   if (smooth)
-      d3d12->frame.sampler = d3d12->sampler_linear;
-   else
-      d3d12->frame.sampler = d3d12->sampler_nearest;
+   for (i = 0; i < RARCH_WRAP_MAX; i++)
+   {
+      if (smooth)
+         d3d12->samplers[RARCH_FILTER_UNSPEC][i] = d3d12->samplers[RARCH_FILTER_LINEAR][i];
+      else
+         d3d12->samplers[RARCH_FILTER_UNSPEC][i] = d3d12->samplers[RARCH_FILTER_NEAREST][i];
+   }
 }
 
 static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
@@ -43,7 +55,7 @@ static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
    D3D12_RANGE      read_range = { 0, 0 };
    d3d12_video_t*   d3d12      = (d3d12_video_t*)data;
 
-   if(!d3d12)
+   if (!d3d12)
       return;
 
    d3d12->frame.rotation = rotation;
@@ -62,10 +74,10 @@ static void d3d12_update_viewport(void* data, bool force_full)
 
    video_driver_update_viewport(&d3d12->vp, force_full, d3d12->keep_aspect);
 
-   d3d12->frame.viewport.TopLeftX = (float)d3d12->vp.x;
-   d3d12->frame.viewport.TopLeftY = (float)d3d12->vp.y;
-   d3d12->frame.viewport.Width    = (float)d3d12->vp.width;
-   d3d12->frame.viewport.Height   = (float)d3d12->vp.height;
+   d3d12->frame.viewport.TopLeftX = d3d12->vp.x;
+   d3d12->frame.viewport.TopLeftY = d3d12->vp.y;
+   d3d12->frame.viewport.Width    = d3d12->vp.width;
+   d3d12->frame.viewport.Height   = d3d12->vp.height;
    d3d12->frame.viewport.MaxDepth = 0.0f;
    d3d12->frame.viewport.MaxDepth = 1.0f;
 
@@ -75,15 +87,615 @@ static void d3d12_update_viewport(void* data, bool force_full)
    d3d12->frame.scissorRect.right  = d3d12->vp.x + d3d12->vp.width;
    d3d12->frame.scissorRect.bottom = d3d12->vp.y + d3d12->vp.height;
 
+   if (d3d12->shader_preset && (d3d12->frame.output_size.x != d3d12->vp.width ||
+                                d3d12->frame.output_size.y != d3d12->vp.height))
+      d3d12->resize_render_targets = true;
+
+   d3d12->frame.output_size.x = d3d12->vp.width;
+   d3d12->frame.output_size.y = d3d12->vp.height;
+   d3d12->frame.output_size.z = 1.0f / d3d12->vp.width;
+   d3d12->frame.output_size.w = 1.0f / d3d12->vp.height;
+
    d3d12->resize_viewport = false;
+}
+
+static void d3d12_free_shader_preset(d3d12_video_t* d3d12)
+{
+   unsigned i;
+   if (!d3d12->shader_preset)
+      return;
+
+   for (i = 0; i < d3d12->shader_preset->passes; i++)
+   {
+      unsigned j;
+
+      free(d3d12->shader_preset->pass[i].source.string.vertex);
+      free(d3d12->shader_preset->pass[i].source.string.fragment);
+      free(d3d12->pass[i].semantics.textures);
+      d3d12_release_texture(&d3d12->pass[i].rt);
+      d3d12_release_texture(&d3d12->pass[i].feedback);
+
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+      {
+         free(d3d12->pass[i].semantics.cbuffers[j].uniforms);
+         Release(d3d12->pass[i].buffers[j]);
+      }
+
+      Release(d3d12->pass[i].pipe);
+   }
+
+   memset(d3d12->pass, 0, sizeof(d3d12->pass));
+
+   /* only free the history textures here */
+   for (i = 1; i <= d3d12->shader_preset->history_size; i++)
+      d3d12_release_texture(&d3d12->frame.texture[i]);
+
+   memset(
+         &d3d12->frame.texture[1], 0,
+         sizeof(d3d12->frame.texture[1]) * d3d12->shader_preset->history_size);
+
+   for (i = 0; i < d3d12->shader_preset->luts; i++)
+      d3d12_release_texture(&d3d12->luts[i]);
+
+   memset(d3d12->luts, 0, sizeof(d3d12->luts));
+
+   free(d3d12->shader_preset);
+   d3d12->shader_preset         = NULL;
+   d3d12->init_history          = false;
+   d3d12->resize_render_targets = false;
+}
+
+static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
+{
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   unsigned         i;
+   d3d12_texture_t* source;
+   d3d12_video_t*   d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12)
+      return false;
+
+   d3d12_free_shader_preset(d3d12);
+
+   if (!path)
+      return true;
+
+   if (type != RARCH_SHADER_SLANG)
+   {
+      RARCH_WARN("Only .slang or .slangp shaders are supported. Falling back to stock.\n");
+      return false;
+   }
+
+   config_file_t* conf = config_file_new(path);
+
+   if (!conf)
+      return false;
+
+   d3d12->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d12->shader_preset));
+
+   if (!video_shader_read_conf_cgp(conf, d3d12->shader_preset))
+      goto error;
+
+   video_shader_resolve_relative(d3d12->shader_preset, path);
+
+   source = &d3d12->frame.texture[0];
+   for (i = 0; i < d3d12->shader_preset->passes; source = &d3d12->pass[i++].rt)
+   {
+      unsigned j;
+      /* clang-format off */
+      semantics_map_t semantics_map = {
+         {
+            /* Original */
+            { &d3d12->frame.texture[0], 0,
+               &d3d12->frame.texture[0].size_data, 0,
+               &d3d12->pass[i].sampler, 0 },
+
+            /* Source */
+            { source, 0,
+               &source->size_data, 0,
+               &d3d12->pass[i].sampler, 0 },
+
+            /* OriginalHistory */
+            { &d3d12->frame.texture[0], sizeof(*d3d12->frame.texture),
+               &d3d12->frame.texture[0].size_data, sizeof(*d3d12->frame.texture),
+               &d3d12->pass[i].sampler, 0 },
+
+            /* PassOutput */
+            { &d3d12->pass[0].rt, sizeof(*d3d12->pass),
+               &d3d12->pass[0].rt.size_data, sizeof(*d3d12->pass),
+               &d3d12->pass[i].sampler, 0 },
+
+            /* PassFeedback */
+            { &d3d12->pass[0].feedback, sizeof(*d3d12->pass),
+               &d3d12->pass[0].feedback.size_data, sizeof(*d3d12->pass),
+               &d3d12->pass[i].sampler, 0 },
+
+            /* User */
+            { &d3d12->luts[0], sizeof(*d3d12->luts),
+               &d3d12->luts[0].size_data, sizeof(*d3d12->luts),
+               &d3d12->luts[0].sampler, sizeof(*d3d12->luts) },
+         },
+         {
+            &d3d12->mvp,                  /* MVP */
+            &d3d12->pass[i].rt.size_data, /* OutputSize */
+            &d3d12->frame.output_size,    /* FinalViewportSize */
+            &d3d12->pass[i].frame_count,  /* FrameCount */
+         }
+      };
+      /* clang-format on */
+
+      if (!slang_process(
+                d3d12->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
+                &d3d12->pass[i].semantics))
+         goto error;
+
+      {
+         D3DBlob                            vs_code = NULL;
+         D3DBlob                            ps_code = NULL;
+         D3D12_GRAPHICS_PIPELINE_STATE_DESC desc    = { d3d12->desc.sl_rootSignature };
+
+         static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
+              D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
+              D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         };
+#ifdef DEBUG
+         bool save_hlsl = true;
+#else
+         bool save_hlsl = false;
+#endif
+         static const char vs_ext[] = ".vs.hlsl";
+         static const char ps_ext[] = ".ps.hlsl";
+         char              vs_path[PATH_MAX_LENGTH];
+         char              ps_path[PATH_MAX_LENGTH];
+         const char*       slang_path = d3d12->shader_preset->pass[i].source.path;
+         const char*       vs_src     = d3d12->shader_preset->pass[i].source.string.vertex;
+         const char*       ps_src     = d3d12->shader_preset->pass[i].source.string.fragment;
+         int               base_len   = strlen(slang_path) - strlen(".slang");
+
+         if (base_len <= 0)
+            base_len = strlen(slang_path);
+
+         strncpy(vs_path, slang_path, base_len);
+         strncpy(ps_path, slang_path, base_len);
+         strncpy(vs_path + base_len, vs_ext, sizeof(vs_ext));
+         strncpy(ps_path + base_len, ps_ext, sizeof(ps_ext));
+
+         if (!d3d_compile(vs_src, 0, vs_path, "main", "vs_5_0", &vs_code))
+            save_hlsl = true;
+         if (!d3d_compile(ps_src, 0, ps_path, "main", "ps_5_0", &ps_code))
+            save_hlsl = true;
+
+         desc.BlendState.RenderTarget[0]     = d3d12_blend_enable_desc;
+         desc.RTVFormats[0]                  = glslang_format_to_dxgi(d3d12->pass[i].semantics.format);
+         desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+         desc.InputLayout.pInputElementDescs = inputElementDesc;
+         desc.InputLayout.NumElements        = countof(inputElementDesc);
+
+         if (!d3d12_init_pipeline(
+                   d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pass[i].pipe))
+            save_hlsl = true;
+
+         if (save_hlsl)
+         {
+            FILE* fp = fopen(vs_path, "w");
+            fwrite(vs_src, 1, strlen(vs_src), fp);
+            fclose(fp);
+
+            fp = fopen(ps_path, "w");
+            fwrite(ps_src, 1, strlen(ps_src), fp);
+            fclose(fp);
+         }
+
+         free(d3d12->shader_preset->pass[i].source.string.vertex);
+         free(d3d12->shader_preset->pass[i].source.string.fragment);
+
+         d3d12->shader_preset->pass[i].source.string.vertex   = NULL;
+         d3d12->shader_preset->pass[i].source.string.fragment = NULL;
+
+         Release(vs_code);
+         Release(ps_code);
+
+         if (!d3d12->pass[i].pipe)
+            goto error;
+
+         d3d12->pass[i].rt.rt_view.ptr =
+               d3d12->desc.rtv_heap.cpu.ptr +
+               (countof(d3d12->chain.renderTargets) + i) * d3d12->desc.rtv_heap.stride;
+
+         d3d12->pass[i].textures.ptr =
+               d3d12->desc.srv_heap.gpu.ptr + i * SLANG_NUM_SEMANTICS * d3d12->desc.srv_heap.stride;
+         d3d12->pass[i].samplers.ptr = d3d12->desc.sampler_heap.gpu.ptr +
+                                       i * SLANG_NUM_SEMANTICS * d3d12->desc.sampler_heap.stride;
+      }
+
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+      {
+         if (!d3d12->pass[i].semantics.cbuffers[j].size)
+            continue;
+
+         d3d12->pass[i].buffer_view[j].SizeInBytes    = d3d12->pass[i].semantics.cbuffers[j].size;
+         d3d12->pass[i].buffer_view[j].BufferLocation = d3d12_create_buffer(
+               d3d12->device, d3d12->pass[i].buffer_view[j].SizeInBytes,
+               &d3d12->pass[i].buffers[j]);
+      }
+   }
+
+   for (i = 0; i < d3d12->shader_preset->luts; i++)
+   {
+      struct texture_image image = { 0 };
+      image.supports_rgba        = true;
+
+      if (!image_texture_load(&image, d3d12->shader_preset->lut[i].path))
+         goto error;
+
+      d3d12->luts[i].desc.Width  = image.width;
+      d3d12->luts[i].desc.Height = image.height;
+      d3d12->luts[i].desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+      d3d12->luts[i].srv_heap    = &d3d12->desc.srv_heap;
+
+      if (d3d12->shader_preset->lut[i].mipmap)
+         d3d12->luts[i].desc.MipLevels = UINT16_MAX;
+
+      d3d12_init_texture(d3d12->device, &d3d12->luts[i]);
+
+      d3d12_update_texture(
+            image.width, image.height, 0, DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
+            &d3d12->luts[i]);
+
+      image_texture_free(&image);
+
+      d3d12->luts[i].sampler =
+            d3d12->samplers[d3d12->shader_preset->lut[i].filter][d3d12->shader_preset->lut[i].wrap];
+   }
+
+   video_shader_resolve_current_parameters(conf, d3d12->shader_preset);
+   config_file_free(conf);
+
+   d3d12->resize_render_targets = true;
+   d3d12->init_history          = true;
+
+   return true;
+
+error:
+   d3d12_free_shader_preset(d3d12);
+#endif
+   return false;
+}
+
+static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
+{
+   D3DBlob                            vs_code = NULL;
+   D3DBlob                            ps_code = NULL;
+   D3DBlob                            gs_code = NULL;
+   D3DBlob                            cs_code = NULL;
+   D3D12_GRAPHICS_PIPELINE_STATE_DESC desc    = { d3d12->desc.rootSignature };
+
+   desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
+   desc.RTVFormats[0]              = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+   {
+      static const char shader[] =
+#include "../drivers/d3d_shaders/opaque_sm5.hlsl.h"
+            ;
+
+      static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d12_vertex_t, color),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      };
+
+      if (!d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code))
+         goto error;
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
+         goto error;
+
+      desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+      desc.InputLayout.pInputElementDescs = inputElementDesc;
+      desc.InputLayout.NumElements        = countof(inputElementDesc);
+
+      if (!d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, NULL, &desc,
+                &d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]))
+         goto error;
+
+      Release(vs_code);
+      Release(ps_code);
+      vs_code = NULL;
+      ps_code = NULL;
+   }
+   {
+      static const char shader[] =
+#include "d3d_shaders/sprite_sm4.hlsl.h"
+            ;
+
+      D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d12_sprite_t, pos),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d12_sprite_t, coords),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d12_sprite_t, colors[0]),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 1, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d12_sprite_t, colors[1]),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 2, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d12_sprite_t, colors[2]),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 3, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d12_sprite_t, colors[3]),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "PARAMS", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_sprite_t, params),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      };
+
+      if (!d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code))
+         goto error;
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
+         goto error;
+      if (!d3d_compile(shader, sizeof(shader), NULL, "GSMain", "gs_5_0", &gs_code))
+         goto error;
+
+      desc.BlendState.RenderTarget[0].BlendEnable = false;
+      desc.PrimitiveTopologyType                  = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+      desc.InputLayout.pInputElementDescs         = inputElementDesc;
+      desc.InputLayout.NumElements                = countof(inputElementDesc);
+
+      if (!d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_noblend))
+         goto error;
+
+      desc.BlendState.RenderTarget[0].BlendEnable = true;
+      if (!d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_blend))
+         goto error;
+
+      Release(ps_code);
+      ps_code = NULL;
+
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainA8", "ps_5_0", &ps_code))
+         goto error;
+
+      if (!d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, gs_code, &desc, &d3d12->sprites.pipe_font))
+         goto error;
+
+      Release(vs_code);
+      Release(ps_code);
+      Release(gs_code);
+      vs_code = NULL;
+      ps_code = NULL;
+      gs_code = NULL;
+   }
+
+   {
+      static const char simple_snow[] =
+#include "d3d_shaders/simple_snow_sm4.hlsl.h"
+            ;
+      static const char snow[] =
+#include "d3d_shaders/snow_sm4.hlsl.h"
+            ;
+      static const char bokeh[] =
+#include "d3d_shaders/bokeh_sm4.hlsl.h"
+            ;
+      static const char snowflake[] =
+#include "d3d_shaders/snowflake_sm4.hlsl.h"
+            ;
+
+      D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      };
+
+      desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+      desc.InputLayout.pInputElementDescs = inputElementDesc;
+      desc.InputLayout.NumElements        = countof(inputElementDesc);
+
+      if (!d3d_compile(simple_snow, sizeof(simple_snow), NULL, "VSMain", "vs_5_0", &vs_code))
+         goto error;
+      if (!d3d_compile(simple_snow, sizeof(simple_snow), NULL, "PSMain", "ps_5_0", &ps_code))
+         goto error;
+
+      if (!d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_3]))
+         goto error;
+
+      Release(vs_code);
+      Release(ps_code);
+      vs_code = NULL;
+      ps_code = NULL;
+
+      if (!d3d_compile(snow, sizeof(snow), NULL, "VSMain", "vs_5_0", &vs_code))
+         goto error;
+      if (!d3d_compile(snow, sizeof(snow), NULL, "PSMain", "ps_5_0", &ps_code))
+         goto error;
+
+      if (!d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_4]))
+         goto error;
+
+      Release(vs_code);
+      Release(ps_code);
+      vs_code = NULL;
+      ps_code = NULL;
+
+      if (!d3d_compile(bokeh, sizeof(bokeh), NULL, "VSMain", "vs_5_0", &vs_code))
+         goto error;
+      if (!d3d_compile(bokeh, sizeof(bokeh), NULL, "PSMain", "ps_5_0", &ps_code))
+         goto error;
+
+      if (!d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_5]))
+         goto error;
+
+      Release(vs_code);
+      Release(ps_code);
+      vs_code = NULL;
+      ps_code = NULL;
+
+      if (!d3d_compile(snowflake, sizeof(snowflake), NULL, "VSMain", "vs_5_0", &vs_code))
+         goto error;
+      if (!d3d_compile(snowflake, sizeof(snowflake), NULL, "PSMain", "ps_5_0", &ps_code))
+         goto error;
+
+      if (!d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_6]))
+         goto error;
+
+      Release(vs_code);
+      Release(ps_code);
+      vs_code = NULL;
+      ps_code = NULL;
+   }
+
+   {
+      static const char ribbon[] =
+#include "d3d_shaders/ribbon_sm4.hlsl.h"
+            ;
+      static const char ribbon_simple[] =
+#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
+            ;
+
+      D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
+           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      };
+
+      desc.BlendState.RenderTarget[0].SrcBlend  = D3D12_BLEND_ONE;
+      desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+      desc.PrimitiveTopologyType                = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+      desc.InputLayout.pInputElementDescs       = inputElementDesc;
+      desc.InputLayout.NumElements              = countof(inputElementDesc);
+
+      if (!d3d_compile(ribbon, sizeof(ribbon), NULL, "VSMain", "vs_5_0", &vs_code))
+         goto error;
+      if (!d3d_compile(ribbon, sizeof(ribbon), NULL, "PSMain", "ps_5_0", &ps_code))
+         goto error;
+
+      if (!d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU]))
+         goto error;
+
+      Release(vs_code);
+      Release(ps_code);
+      vs_code = NULL;
+      ps_code = NULL;
+
+      if (!d3d_compile(ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "vs_5_0", &vs_code))
+         goto error;
+      if (!d3d_compile(ribbon_simple, sizeof(ribbon_simple), NULL, "PSMain", "ps_5_0", &ps_code))
+         goto error;
+
+      if (!d3d12_init_pipeline(
+                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_2]))
+         goto error;
+
+      Release(vs_code);
+      Release(ps_code);
+      vs_code = NULL;
+      ps_code = NULL;
+   }
+
+   {
+      static const char shader[] =
+#include "d3d_shaders/mimpapgen_sm5.h"
+            ;
+      D3D12_COMPUTE_PIPELINE_STATE_DESC desc = { d3d12->desc.cs_rootSignature };
+      if (!d3d_compile(shader, sizeof(shader), NULL, "CSMain", "cs_5_0", &cs_code))
+         goto error;
+
+      desc.CS.pShaderBytecode = D3DGetBufferPointer(cs_code);
+      desc.CS.BytecodeLength  = D3DGetBufferSize(cs_code);
+      if (!D3D12CreateComputePipelineState(d3d12->device, &desc, &d3d12->mipmapgen_pipe))
+
+         Release(cs_code);
+      cs_code = NULL;
+   }
+
+   return true;
+
+error:
+   Release(vs_code);
+   Release(ps_code);
+   Release(gs_code);
+   Release(cs_code);
+   return false;
+}
+
+static void d3d12_gfx_free(void* data)
+{
+   unsigned       i;
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12)
+      return;
+
+   d3d12_free_shader_preset(d3d12);
+
+   font_driver_free_osd();
+
+   Release(d3d12->sprites.vbo);
+   Release(d3d12->menu_pipeline_vbo);
+
+   Release(d3d12->frame.ubo);
+   Release(d3d12->frame.vbo);
+   Release(d3d12->frame.texture[0].handle);
+   Release(d3d12->frame.texture[0].upload_buffer);
+   Release(d3d12->menu.vbo);
+   Release(d3d12->menu.texture.handle);
+   Release(d3d12->menu.texture.upload_buffer);
+
+   free(d3d12->desc.sampler_heap.map);
+   free(d3d12->desc.srv_heap.map);
+   free(d3d12->desc.rtv_heap.map);
+   Release(d3d12->desc.sampler_heap.handle);
+   Release(d3d12->desc.srv_heap.handle);
+   Release(d3d12->desc.rtv_heap.handle);
+
+   Release(d3d12->desc.cs_rootSignature);
+   Release(d3d12->desc.sl_rootSignature);
+   Release(d3d12->desc.rootSignature);
+
+   Release(d3d12->ubo);
+
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
+      Release(d3d12->pipes[i]);
+
+   Release(d3d12->mipmapgen_pipe);
+   Release(d3d12->sprites.pipe_blend);
+   Release(d3d12->sprites.pipe_noblend);
+   Release(d3d12->sprites.pipe_font);
+
+   Release(d3d12->queue.fence);
+   Release(d3d12->chain.renderTargets[0]);
+   Release(d3d12->chain.renderTargets[1]);
+   Release(d3d12->chain.handle);
+
+   Release(d3d12->queue.cmd);
+   Release(d3d12->queue.allocator);
+   Release(d3d12->queue.handle);
+
+   Release(d3d12->factory);
+   Release(d3d12->device);
+   Release(d3d12->adapter);
+
+   win32_monitor_from_window();
+   win32_destroy_window();
+
+   free(d3d12);
 }
 
 static void*
 d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
-   WNDCLASSEX      wndclass = { 0 };
-   settings_t*     settings = config_get_ptr();
-   d3d12_video_t*  d3d12    = (d3d12_video_t*)calloc(1, sizeof(*d3d12));
+   WNDCLASSEX     wndclass = { 0 };
+   MONITORINFOEX  current_mon;
+   HMONITOR       hm_to_use;
+   settings_t*    settings = config_get_ptr();
+   d3d12_video_t* d3d12    = (d3d12_video_t*)calloc(1, sizeof(*d3d12));
 
    if (!d3d12)
       return NULL;
@@ -93,7 +705,17 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    wndclass.lpfnWndProc = WndProcD3D;
    win32_window_init(&wndclass, true, NULL);
 
-   if (!win32_set_video_mode(d3d12, video->width, video->height, video->fullscreen))
+   win32_monitor_info(&current_mon, &hm_to_use, &d3d12->cur_mon_id);
+
+   d3d12->vp.full_width  = video->width;
+   d3d12->vp.full_height = video->height;
+
+   if (!d3d12->vp.full_width)
+      d3d12->vp.full_width = current_mon.rcMonitor.right - current_mon.rcMonitor.left;
+   if (!d3d12->vp.full_height)
+      d3d12->vp.full_height = current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+
+   if (!win32_set_video_mode(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, video->fullscreen))
    {
       RARCH_ERR("[D3D12]: win32_set_video_mode failed.\n");
       goto error;
@@ -107,35 +729,40 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    if (!d3d12_init_descriptors(d3d12))
       goto error;
 
-   if (!d3d12_init_pipeline(d3d12))
+   if (!d3d12_gfx_init_pipelines(d3d12))
       goto error;
 
    if (!d3d12_init_queue(d3d12))
       goto error;
 
-   if (!d3d12_init_swapchain(d3d12, video->width, video->height, main_window.hwnd))
+   if (!d3d12_init_swapchain(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, main_window.hwnd))
       goto error;
+
+   d3d12_init_samplers(d3d12);
+   d3d12_set_filtering(d3d12, 0, video->smooth);
 
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->frame.vbo_view, &d3d12->frame.vbo);
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->menu.vbo_view, &d3d12->menu.vbo);
 
-   d3d12_set_filtering(d3d12, 0, video->smooth);
+   d3d12->sprites.capacity                = 4096;
+   d3d12->sprites.vbo_view.SizeInBytes    = sizeof(d3d12_sprite_t) * d3d12->sprites.capacity;
+   d3d12->sprites.vbo_view.StrideInBytes  = sizeof(d3d12_sprite_t);
+   d3d12->sprites.vbo_view.BufferLocation = d3d12_create_buffer(
+         d3d12->device, d3d12->sprites.vbo_view.SizeInBytes, &d3d12->sprites.vbo);
 
-   d3d12->keep_aspect = video->force_aspect;
-   d3d12->chain.vsync = video->vsync;
-   d3d12->format      = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
-   d3d12->frame.texture.desc.Format =
-         d3d12_get_closest_match_texture2D(d3d12->device, d3d12->format);
-
-   d3d12->ubo_view.SizeInBytes = sizeof(math_matrix_4x4);
+   d3d12->ubo_view.SizeInBytes = sizeof(d3d12_uniform_t);
    d3d12->ubo_view.BufferLocation =
          d3d12_create_buffer(d3d12->device, d3d12->ubo_view.SizeInBytes, &d3d12->ubo);
 
-   d3d12->frame.ubo_view.SizeInBytes = sizeof(math_matrix_4x4);
+   d3d12->frame.ubo_view.SizeInBytes = sizeof(d3d12_uniform_t);
    d3d12->frame.ubo_view.BufferLocation =
          d3d12_create_buffer(d3d12->device, d3d12->frame.ubo_view.SizeInBytes, &d3d12->frame.ubo);
 
    matrix_4x4_ortho(d3d12->mvp_no_rot, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
+
+   d3d12->ubo_values.mvp               = d3d12->mvp_no_rot;
+   d3d12->ubo_values.OutputSize.width  = d3d12->chain.viewport.Width;
+   d3d12->ubo_values.OutputSize.height = d3d12->chain.viewport.Height;
 
    {
       math_matrix_4x4* mvp;
@@ -146,16 +773,158 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    }
 
    d3d12_gfx_set_rotation(d3d12, 0);
-   d3d12->vp.full_width   = video->width;
-   d3d12->vp.full_height  = video->height;
-   d3d12->resize_viewport = true;
+   video_driver_set_size(&d3d12->vp.full_width, &d3d12->vp.full_height);
+   d3d12->chain.viewport.Width  = d3d12->vp.full_width;
+   d3d12->chain.viewport.Height = d3d12->vp.full_height;
+   d3d12->resize_viewport       = true;
+   d3d12->keep_aspect           = video->force_aspect;
+   d3d12->chain.vsync           = video->vsync;
+   d3d12->format = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
+   d3d12->frame.texture[0].desc.Format = d3d12->format;
+
+   font_driver_init_osd(d3d12, false, video->is_threaded, FONT_DRIVER_RENDER_D3D12_API);
+
+   if (settings->bools.video_shader_enable)
+   {
+      const char* ext = path_get_extension(settings->paths.path_shader);
+
+      if (ext && !strcmp(ext, "slangp"))
+         d3d12_gfx_set_shader(d3d12, RARCH_SHADER_SLANG, settings->paths.path_shader);
+   }
 
    return d3d12;
 
 error:
    RARCH_ERR("[D3D12]: failed to init video driver.\n");
-   free(d3d12);
+   d3d12_gfx_free(d3d12);
    return NULL;
+}
+
+static void d3d12_init_history(d3d12_video_t* d3d12, unsigned width, unsigned height)
+{
+   unsigned i;
+
+   /* todo: should we init history to max_width/max_height instead ?
+    * to prevent out of memory errors happening several frames later
+    * and to reduce memory fragmentation */
+
+   assert(d3d12->shader_preset);
+   for (i = 0; i < d3d12->shader_preset->history_size + 1; i++)
+   {
+      d3d12->frame.texture[i].desc.Width     = width;
+      d3d12->frame.texture[i].desc.Height    = height;
+      d3d12->frame.texture[i].desc.Format    = d3d12->frame.texture[0].desc.Format;
+      d3d12->frame.texture[i].desc.MipLevels = d3d12->frame.texture[0].desc.MipLevels;
+      d3d12->frame.texture[i].srv_heap       = &d3d12->desc.srv_heap;
+      d3d12_init_texture(d3d12->device, &d3d12->frame.texture[i]);
+      /* todo: clear texture ?  */
+   }
+   d3d12->init_history = false;
+}
+static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsigned height)
+{
+   unsigned i;
+
+   assert(d3d12->shader_preset);
+
+   for (i = 0; i < d3d12->shader_preset->passes; i++)
+   {
+      struct video_shader_pass* pass = &d3d12->shader_preset->pass[i];
+
+      if (pass->fbo.valid)
+      {
+
+         switch (pass->fbo.type_x)
+         {
+            case RARCH_SCALE_INPUT:
+               width *= pass->fbo.scale_x;
+               break;
+
+            case RARCH_SCALE_VIEWPORT:
+               width = d3d12->vp.width * pass->fbo.scale_x;
+               break;
+
+            case RARCH_SCALE_ABSOLUTE:
+               width = pass->fbo.abs_x;
+               break;
+
+            default:
+               break;
+         }
+
+         if (!width)
+            width = d3d12->vp.width;
+
+         switch (pass->fbo.type_y)
+         {
+            case RARCH_SCALE_INPUT:
+               height *= pass->fbo.scale_y;
+               break;
+
+            case RARCH_SCALE_VIEWPORT:
+               height = d3d12->vp.height * pass->fbo.scale_y;
+               break;
+
+            case RARCH_SCALE_ABSOLUTE:
+               height = pass->fbo.abs_y;
+               break;
+
+            default:
+               break;
+         }
+
+         if (!height)
+            height = d3d12->vp.height;
+      }
+      else if (i == (d3d12->shader_preset->passes - 1))
+      {
+         width  = d3d12->vp.width;
+         height = d3d12->vp.height;
+      }
+
+      RARCH_LOG("[d3d12]: Updating framebuffer size %u x %u.\n", width, height);
+
+      if ((i != (d3d12->shader_preset->passes - 1)) || (width != d3d12->vp.width) ||
+          (height != d3d12->vp.height))
+      {
+         d3d12->pass[i].viewport.Width     = width;
+         d3d12->pass[i].viewport.Height    = height;
+         d3d12->pass[i].viewport.MaxDepth  = 1.0;
+         d3d12->pass[i].scissorRect.right  = width;
+         d3d12->pass[i].scissorRect.bottom = height;
+         d3d12->pass[i].rt.desc.Width      = width;
+         d3d12->pass[i].rt.desc.Height     = height;
+         d3d12->pass[i].rt.desc.Flags      = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+         d3d12->pass[i].rt.srv_heap        = &d3d12->desc.srv_heap;
+         d3d12->pass[i].rt.desc.Format = glslang_format_to_dxgi(d3d12->pass[i].semantics.format);
+         d3d12_init_texture(d3d12->device, &d3d12->pass[i].rt);
+
+         if (pass->feedback)
+         {
+            d3d12->pass[i].feedback.desc     = d3d12->pass[i].rt.desc;
+            d3d12->pass[i].feedback.srv_heap = &d3d12->desc.srv_heap;
+            d3d12_init_texture(d3d12->device, &d3d12->pass[i].feedback);
+            /* todo: do we need to clear it to black here ? */
+         }
+      }
+      else
+      {
+         d3d12->pass[i].rt.size_data.x = width;
+         d3d12->pass[i].rt.size_data.y = height;
+         d3d12->pass[i].rt.size_data.z = 1.0f / width;
+         d3d12->pass[i].rt.size_data.w = 1.0f / height;
+      }
+
+      d3d12->pass[i].sampler = d3d12->samplers[pass->filter][pass->wrap];
+   }
+
+   d3d12->resize_render_targets = false;
+
+#if 0
+error:
+   d3d12_free_shader_preset(d3d12);
+   return false;
+#endif
 }
 
 static bool d3d12_gfx_frame(
@@ -168,7 +937,9 @@ static bool d3d12_gfx_frame(
       const char*         msg,
       video_frame_info_t* video_info)
 {
-   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+   unsigned         i;
+   d3d12_texture_t* texture = NULL;
+   d3d12_video_t*   d3d12   = (d3d12_video_t*)data;
 
    if (d3d12->resize_chain)
    {
@@ -177,7 +948,7 @@ static bool d3d12_gfx_frame(
       for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
          Release(d3d12->chain.renderTargets[i]);
 
-      DXGIResizeBuffers(d3d12->chain.handle, 0, 0, 0, 0, 0);
+      DXGIResizeBuffers(d3d12->chain.handle, 0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
 
       for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
       {
@@ -187,19 +958,231 @@ static bool d3d12_gfx_frame(
       }
 
       d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
-      d3d12->resize_chain      = false;
-      d3d12->resize_viewport   = true;
+
+      d3d12->chain.viewport.Width     = video_info->width;
+      d3d12->chain.viewport.Height    = video_info->height;
+      d3d12->chain.scissorRect.right  = video_info->width;
+      d3d12->chain.scissorRect.bottom = video_info->height;
+      d3d12->resize_chain             = false;
+      d3d12->resize_viewport          = true;
+
+      d3d12->ubo_values.OutputSize.width  = d3d12->chain.viewport.Width;
+      d3d12->ubo_values.OutputSize.height = d3d12->chain.viewport.Height;
+
+      video_driver_set_size(&video_info->width, &video_info->height);
    }
 
    PERF_START();
    D3D12ResetCommandAllocator(d3d12->queue.allocator);
 
-   D3D12ResetGraphicsCommandList(d3d12->queue.cmd, d3d12->queue.allocator, d3d12->pipe.handle);
-   D3D12SetGraphicsRootSignature(d3d12->queue.cmd, d3d12->pipe.rootSignature);
+   D3D12ResetGraphicsCommandList(
+         d3d12->queue.cmd, d3d12->queue.allocator, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+
    {
-      D3D12DescriptorHeap desc_heaps[] = { d3d12->pipe.srv_heap.handle,
-                                           d3d12->pipe.sampler_heap.handle };
+      D3D12DescriptorHeap desc_heaps[] = { d3d12->desc.srv_heap.handle,
+                                           d3d12->desc.sampler_heap.handle };
       D3D12SetDescriptorHeaps(d3d12->queue.cmd, countof(desc_heaps), desc_heaps);
+   }
+
+#if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
+   if (d3d12->resize_viewport)
+#endif
+   d3d12_update_viewport(d3d12, false);
+
+   D3D12IASetPrimitiveTopology(d3d12->queue.cmd, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+   if (data && width && height)
+   {
+      if (d3d12->shader_preset)
+      {
+         if (d3d12->frame.texture[0].desc.Width != width ||
+             d3d12->frame.texture[0].desc.Height != height)
+            d3d12->resize_render_targets = true;
+
+         if (d3d12->resize_render_targets)
+         {
+            /* release all render targets first to avoid memory fragmentation */
+            for (i = 0; i < d3d12->shader_preset->passes; i++)
+               d3d12_release_texture(&d3d12->pass[i].rt);
+         }
+
+         if (d3d12->shader_preset->history_size)
+         {
+            if (d3d12->init_history)
+               d3d12_init_history(d3d12, width, height);
+            else
+            {
+               int k;
+               /* todo: what about frame-duping ?
+                * maybe clone d3d12_texture_t with AddRef */
+               d3d12_texture_t tmp = d3d12->frame.texture[d3d12->shader_preset->history_size];
+               for (k = d3d12->shader_preset->history_size; k > 0; k--)
+                  d3d12->frame.texture[k] = d3d12->frame.texture[k - 1];
+               d3d12->frame.texture[0] = tmp;
+            }
+         }
+      }
+
+      /* either no history, or we moved a texture of a different size in the front slot */
+      if (d3d12->frame.texture[0].desc.Width != width ||
+          d3d12->frame.texture[0].desc.Height != height)
+      {
+         d3d12->frame.texture[0].desc.Width  = width;
+         d3d12->frame.texture[0].desc.Height = height;
+         d3d12->frame.texture[0].srv_heap    = &d3d12->desc.srv_heap;
+         d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
+      }
+
+      if (d3d12->resize_render_targets)
+         d3d12_init_render_targets(d3d12, width, height);
+
+      d3d12_update_texture(width, height, pitch, d3d12->format, frame, &d3d12->frame.texture[0]);
+
+      d3d12_upload_texture(d3d12->queue.cmd, &d3d12->frame.texture[0]);
+   }
+   D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
+
+   texture = d3d12->frame.texture;
+
+   if (d3d12->shader_preset)
+   {
+      D3D12SetGraphicsRootSignature(d3d12->queue.cmd, d3d12->desc.sl_rootSignature);
+
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
+      {
+         if (d3d12->shader_preset->pass[i].feedback)
+         {
+            d3d12_texture_t tmp     = d3d12->pass[i].feedback;
+            d3d12->pass[i].feedback = d3d12->pass[i].rt;
+            d3d12->pass[i].rt       = tmp;
+         }
+      }
+
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
+      {
+         unsigned j;
+
+         D3D12SetPipelineState(d3d12->queue.cmd, d3d12->pass[i].pipe);
+
+         if (d3d12->shader_preset->pass[i].frame_count_mod)
+            d3d12->pass[i].frame_count =
+                  frame_count % d3d12->shader_preset->pass[i].frame_count_mod;
+         else
+            d3d12->pass[i].frame_count = frame_count;
+
+         for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+         {
+            cbuffer_sem_t* buffer_sem = &d3d12->pass[i].semantics.cbuffers[j];
+
+            if (buffer_sem->stage_mask && buffer_sem->uniforms)
+            {
+               D3D12_RANGE    range       = { 0, 0 };
+               uint8_t*       mapped_data = NULL;
+               uniform_sem_t* uniform     = buffer_sem->uniforms;
+
+               D3D12Map(d3d12->pass[i].buffers[j], 0, &range, (void**)&mapped_data);
+               while (uniform->size)
+               {
+                  if (uniform->data)
+                     memcpy(mapped_data + uniform->offset, uniform->data, uniform->size);
+                  uniform++;
+               }
+               D3D12Unmap(d3d12->pass[i].buffers[j], 0, NULL);
+
+               D3D12SetGraphicsRootConstantBufferView(
+                     d3d12->queue.cmd, j == SLANG_CBUFFER_UBO ? ROOT_ID_UBO : ROOT_ID_PC,
+                     d3d12->pass[i].buffer_view[j].BufferLocation);
+            }
+         }
+#if 0
+         D3D12OMSetRenderTargets(d3d12->queue.cmd, 1, NULL, FALSE, NULL);
+#endif
+
+         {
+            texture_sem_t* texture_sem = d3d12->pass[i].semantics.textures;
+            while (texture_sem->stage_mask)
+            {
+               {
+                  D3D12_CPU_DESCRIPTOR_HANDLE handle = {
+                     d3d12->pass[i].textures.ptr - d3d12->desc.srv_heap.gpu.ptr +
+                     d3d12->desc.srv_heap.cpu.ptr +
+                     texture_sem->binding * d3d12->desc.srv_heap.stride
+                  };
+                  d3d12_texture_t*                tex  = texture_sem->texture_data;
+                  D3D12_SHADER_RESOURCE_VIEW_DESC desc = { tex->desc.Format };
+
+                  desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+                  desc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
+                  desc.Texture2D.MipLevels     = tex->desc.MipLevels;
+
+                  D3D12CreateShaderResourceView(d3d12->device, tex->handle, &desc, handle);
+               }
+
+               {
+                  D3D12_CPU_DESCRIPTOR_HANDLE handle = {
+                     d3d12->pass[i].samplers.ptr - d3d12->desc.sampler_heap.gpu.ptr +
+                     d3d12->desc.sampler_heap.cpu.ptr +
+                     texture_sem->binding * d3d12->desc.sampler_heap.stride
+                  };
+                  D3D12_SAMPLER_DESC desc = { D3D12_FILTER_MIN_MAG_MIP_POINT };
+                  desc.MaxAnisotropy      = 1;
+                  desc.ComparisonFunc     = D3D12_COMPARISON_FUNC_NEVER;
+                  desc.MinLOD             = -D3D12_FLOAT32_MAX;
+                  desc.MaxLOD             = D3D12_FLOAT32_MAX;
+                  desc.AddressU           = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+                  desc.AddressV           = desc.AddressU;
+                  desc.AddressW           = desc.AddressU;
+                  desc.Filter             = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+
+                  D3D12CreateSampler(d3d12->device, &desc, handle);
+               }
+
+               texture_sem++;
+            }
+
+            D3D12SetGraphicsRootDescriptorTable(
+                  d3d12->queue.cmd, ROOT_ID_TEXTURE_T, d3d12->pass[i].textures);
+            D3D12SetGraphicsRootDescriptorTable(
+                  d3d12->queue.cmd, ROOT_ID_SAMPLER_T, d3d12->pass[i].samplers);
+         }
+
+         if (d3d12->pass[i].rt.handle)
+         {
+            d3d12_resource_transition(
+                  d3d12->queue.cmd, d3d12->pass[i].rt.handle,
+                  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+            D3D12OMSetRenderTargets(d3d12->queue.cmd, 1, &d3d12->pass[i].rt.rt_view, FALSE, NULL);
+#if 0
+            D3D12ClearRenderTargetView(
+                  d3d12->queue.cmd, d3d12->pass[i].rt.rt_view, d3d12->chain.clearcolor, 0, NULL);
+#endif
+            D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->pass[i].viewport);
+            D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->pass[i].scissorRect);
+
+            D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
+
+            d3d12_resource_transition(
+                  d3d12->queue.cmd, d3d12->pass[i].rt.handle, D3D12_RESOURCE_STATE_RENDER_TARGET,
+                  D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+            texture = &d3d12->pass[i].rt;
+         }
+         else
+         {
+            texture = NULL;
+            break;
+         }
+      }
+   }
+
+   if (texture)
+   {
+      D3D12SetPipelineState(d3d12->queue.cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+      D3D12SetGraphicsRootSignature(d3d12->queue.cmd, d3d12->desc.rootSignature);
+      d3d12_set_texture(d3d12->queue.cmd, &d3d12->frame.texture[0]);
+      d3d12_set_sampler(d3d12->queue.cmd, d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+      D3D12SetGraphicsRootConstantBufferView(
+            d3d12->queue.cmd, ROOT_ID_UBO, d3d12->frame.ubo_view.BufferLocation);
    }
 
    d3d12_resource_transition(
@@ -212,35 +1195,13 @@ static bool d3d12_gfx_frame(
          d3d12->queue.cmd, d3d12->chain.desc_handles[d3d12->chain.frame_index],
          d3d12->chain.clearcolor, 0, NULL);
 
-   D3D12IASetPrimitiveTopology(d3d12->queue.cmd, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-   if (data && width && height)
-   {
-      if (d3d12->frame.texture.desc.Width != width || d3d12->frame.texture.desc.Height != height)
-      {
-         d3d12->frame.texture.desc.Width  = width;
-         d3d12->frame.texture.desc.Height = height;
-         d3d12_init_texture(
-               d3d12->device, &d3d12->pipe.srv_heap, SRV_HEAP_SLOT_FRAME_TEXTURE,
-               &d3d12->frame.texture);
-      }
-      d3d12_update_texture(width, height, pitch, d3d12->format, frame, &d3d12->frame.texture);
-
-      d3d12_upload_texture(d3d12->queue.cmd, &d3d12->frame.texture);
-   }
-#if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
-   if (d3d12->resize_viewport)
-#endif
-   d3d12_update_viewport(d3d12, false);
-
    D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->frame.viewport);
    D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->frame.scissorRect);
 
-   D3D12SetGraphicsRootConstantBufferView(
-         d3d12->queue.cmd, ROOT_INDEX_UBO, d3d12->frame.ubo_view.BufferLocation);
-   d3d12_set_texture(d3d12->queue.cmd, &d3d12->frame.texture);
-   d3d12_set_sampler(d3d12->queue.cmd, d3d12->frame.sampler);
-   D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
    D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
+
+   D3D12SetPipelineState(d3d12->queue.cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+   D3D12SetGraphicsRootSignature(d3d12->queue.cmd, d3d12->desc.rootSignature);
 
    if (d3d12->menu.enabled && d3d12->menu.texture.handle)
    {
@@ -248,7 +1209,7 @@ static bool d3d12_gfx_frame(
          d3d12_upload_texture(d3d12->queue.cmd, &d3d12->menu.texture);
 
       D3D12SetGraphicsRootConstantBufferView(
-            d3d12->queue.cmd, ROOT_INDEX_UBO, d3d12->ubo_view.BufferLocation);
+            d3d12->queue.cmd, ROOT_ID_UBO, d3d12->ubo_view.BufferLocation);
 
       if (d3d12->menu.fullscreen)
       {
@@ -256,17 +1217,35 @@ static bool d3d12_gfx_frame(
          D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
       }
 
-      d3d12_set_texture(d3d12->queue.cmd, &d3d12->menu.texture);
-      d3d12_set_sampler(d3d12->queue.cmd, d3d12->menu.sampler);
+      d3d12_set_texture_and_sampler(d3d12->queue.cmd, &d3d12->menu.texture);
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->menu.vbo_view);
       D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
    }
+
+   D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
+   D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
+
+   d3d12->sprites.pipe = d3d12->sprites.pipe_noblend;
+   D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
+   D3D12IASetPrimitiveTopology(d3d12->queue.cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+   D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
+
+   d3d12->sprites.enabled = true;
+#if 1
+   if (d3d12->menu.enabled)
+      menu_driver_frame(video_info);
+#endif
+   if (msg && *msg)
+   {
+      font_driver_render_msg(video_info, NULL, msg, NULL);
+      dxgi_update_title(video_info);
+   }
+   d3d12->sprites.enabled = false;
 
    d3d12_resource_transition(
          d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
          D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
    D3D12CloseGraphicsCommandList(d3d12->queue.cmd);
-
    D3D12ExecuteGraphicsCommandLists(d3d12->queue.handle, 1, &d3d12->queue.cmd);
 
 #if 1
@@ -330,51 +1309,14 @@ static bool d3d12_gfx_has_windowed(void* data)
    return true;
 }
 
-static void d3d12_gfx_free(void* data)
+static struct video_shader* d3d12_gfx_get_current_shader(void* data)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
-   Release(d3d12->frame.ubo);
-   Release(d3d12->frame.vbo);
-   Release(d3d12->frame.texture.handle);
-   Release(d3d12->frame.texture.upload_buffer);
-   Release(d3d12->menu.vbo);
-   Release(d3d12->menu.texture.handle);
-   Release(d3d12->menu.texture.upload_buffer);
+   if (!d3d12)
+      return NULL;
 
-   Release(d3d12->ubo);
-   Release(d3d12->pipe.sampler_heap.handle);
-   Release(d3d12->pipe.srv_heap.handle);
-   Release(d3d12->pipe.rtv_heap.handle);
-   Release(d3d12->pipe.rootSignature);
-   Release(d3d12->pipe.handle);
-
-   Release(d3d12->queue.fence);
-   Release(d3d12->chain.renderTargets[0]);
-   Release(d3d12->chain.renderTargets[1]);
-   Release(d3d12->chain.handle);
-
-   Release(d3d12->queue.cmd);
-   Release(d3d12->queue.allocator);
-   Release(d3d12->queue.handle);
-
-   Release(d3d12->factory);
-   Release(d3d12->device);
-   Release(d3d12->adapter);
-
-   win32_monitor_from_window();
-   win32_destroy_window();
-
-   free(d3d12);
-}
-
-static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
+   return d3d12->shader_preset;
 }
 
 static void d3d12_gfx_viewport_info(void* data, struct video_viewport* vp)
@@ -395,17 +1337,18 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 static void d3d12_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32, unsigned width, unsigned height, float alpha)
 {
-   d3d12_video_t* d3d12  = (d3d12_video_t*)data;
-   int            pitch  = width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
-   DXGI_FORMAT    format = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : DXGI_FORMAT_EX_A4R4G4B4_UNORM;
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+   int            pitch = width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
+   DXGI_FORMAT    format =
+         rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
    if (d3d12->menu.texture.desc.Width != width || d3d12->menu.texture.desc.Height != height)
    {
       d3d12->menu.texture.desc.Width  = width;
       d3d12->menu.texture.desc.Height = height;
-      d3d12->menu.texture.desc.Format = d3d12_get_closest_match_texture2D(d3d12->device, format);
-      d3d12_init_texture(
-            d3d12->device, &d3d12->pipe.srv_heap, SRV_HEAP_SLOT_MENU_TEXTURE, &d3d12->menu.texture);
+      d3d12->menu.texture.desc.Format = format;
+      d3d12->menu.texture.srv_heap    = &d3d12->desc.srv_heap;
+      d3d12_init_texture(d3d12->device, &d3d12->menu.texture);
    }
 
    d3d12_update_texture(width, height, pitch, format, frame, &d3d12->menu.texture);
@@ -423,8 +1366,10 @@ static void d3d12_set_menu_texture_frame(
       v[3].color[3] = alpha;
       D3D12Unmap(d3d12->menu.vbo, 0, NULL);
    }
-   d3d12->menu.sampler = config_get_ptr()->bools.menu_linear_filter ? d3d12->sampler_linear
-                                                                    : d3d12->sampler_nearest;
+
+   d3d12->menu.texture.sampler = config_get_ptr()->bools.menu_linear_filter
+                                       ? d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_DEFAULT]
+                                       : d3d12->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
 }
 static void d3d12_set_menu_texture_enable(void* data, bool state, bool full_screen)
 {
@@ -453,11 +1398,77 @@ static void d3d12_gfx_apply_state_changes(void* data)
       d3d12->resize_viewport = true;
 }
 
+static void d3d12_gfx_set_osd_msg(
+      void* data, video_frame_info_t* video_info, const char* msg, const void* params, void* font)
+{
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   if (d3d12)
+   {
+      if (d3d12->sprites.enabled)
+         font_driver_render_msg(video_info, font, msg, params);
+      else
+         printf("OSD msg: %s\n", msg);
+   }
+}
+
+static uintptr_t d3d12_gfx_load_texture(
+      void* video_data, void* data, bool threaded, enum texture_filter_type filter_type)
+{
+   d3d12_texture_t*      texture = NULL;
+   d3d12_video_t*        d3d12   = (d3d12_video_t*)video_data;
+   struct texture_image* image   = (struct texture_image*)data;
+
+   if (!d3d12)
+      return 0;
+
+   texture = (d3d12_texture_t*)calloc(1, sizeof(*texture));
+
+   if (!texture)
+      return 0;
+
+   switch (filter_type)
+   {
+      case TEXTURE_FILTER_MIPMAP_LINEAR:
+         texture->desc.MipLevels = UINT16_MAX;
+      case TEXTURE_FILTER_LINEAR:
+         texture->sampler = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
+         break;
+      case TEXTURE_FILTER_MIPMAP_NEAREST:
+         texture->desc.MipLevels = UINT16_MAX;
+      case TEXTURE_FILTER_NEAREST:
+         texture->sampler = d3d12->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE];
+         break;
+   }
+
+   texture->desc.Width  = image->width;
+   texture->desc.Height = image->height;
+   texture->desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+   texture->srv_heap    = &d3d12->desc.srv_heap;
+
+   d3d12_init_texture(d3d12->device, texture);
+
+   d3d12_update_texture(
+         image->width, image->height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels, texture);
+
+   return (uintptr_t)texture;
+}
+static void d3d12_gfx_unload_texture(void* data, uintptr_t handle)
+{
+   d3d12_texture_t* texture = (d3d12_texture_t*)handle;
+
+   if (!texture)
+      return;
+
+   d3d12_release_texture(texture);
+   free(texture);
+}
+
 static const video_poke_interface_t d3d12_poke_interface = {
    NULL, /* set_coords */
    NULL, /* set_mvp */
-   NULL, /* load_texture */
-   NULL, /* unload_texture */
+   d3d12_gfx_load_texture,
+   d3d12_gfx_unload_texture,
    NULL, /* set_video_mode */
    d3d12_set_filtering,
    NULL, /* get_video_output_size */
@@ -469,10 +1480,10 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_gfx_apply_state_changes,
    d3d12_set_menu_texture_frame,
    d3d12_set_menu_texture_enable,
-   NULL, /* set_osd_msg */
+   d3d12_gfx_set_osd_msg,
    NULL, /* show_mouse */
    NULL, /* grab_mouse_toggle */
-   NULL, /* get_current_shader */
+   d3d12_gfx_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
 };

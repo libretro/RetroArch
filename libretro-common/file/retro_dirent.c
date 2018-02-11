@@ -30,6 +30,7 @@
 #include <retro_dirent.h>
 #include <encodings/utf.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #if defined(_WIN32)
 #  ifdef _MSC_VER
@@ -122,6 +123,7 @@ struct RDIR *retro_opendir(const char *name)
       snprintf(path_buf, sizeof(path_buf), "%s*", name);
    else
       snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
+
 #if defined(LEGACY_WIN32)
    path_local      = utf8_to_local_string_alloc(path_buf);
    rdir->directory = FindFirstFile(path_local, &rdir->entry);
@@ -135,19 +137,24 @@ struct RDIR *retro_opendir(const char *name)
    if (path_wide)
       free(path_wide);
 #endif
+
 #elif defined(VITA) || defined(PSP)
    rdir->directory = sceIoDopen(name);
 #elif defined(_3DS)
-   rdir->directory = (name && *name)? opendir(name) : NULL;
+   rdir->directory = !string_is_empty(name) ? opendir(name) : NULL;
    rdir->entry     = NULL;
 #elif defined(__CELLOS_LV2__)
-   rdir->error = cellFsOpendir(name, &rdir->directory);
+   rdir->error     = cellFsOpendir(name, &rdir->directory);
 #else
    rdir->directory = opendir(name);
    rdir->entry     = NULL;
 #endif
 
-   return rdir;
+   if (rdir->directory)
+      return rdir;
+
+   free(rdir);
+   return NULL;
 }
 
 bool retro_dirent_error(struct RDIR *rdir)
@@ -208,6 +215,7 @@ const char *retro_dirent_get_name(struct RDIR *rdir)
 #elif defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
    return rdir->entry.d_name;
 #else
+
    return rdir->entry->d_name;
 #endif
 }

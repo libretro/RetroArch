@@ -50,6 +50,7 @@ typedef ID3D10Debug*              D3D10Debug;
 typedef ID3D10SwitchToRef*        D3D10SwitchToRef;
 typedef ID3D10InfoQueue*          D3D10InfoQueue;
 
+#if !defined(__cplusplus) || defined(CINTERFACE)
 static INLINE void D3D10SetResourceEvictionPriority(D3D10Resource resource, UINT eviction_priority)
 {
    resource->lpVtbl->SetEvictionPriority(resource, eviction_priority);
@@ -1024,7 +1025,7 @@ static INLINE HRESULT D3D10CreateTexture2DShaderResourceView(
 {
    return device->lpVtbl->CreateShaderResourceView(device, (D3D10Resource)texture, desc, srview);
 }
-
+#endif
    /* internal */
 
 #include <stdbool.h>

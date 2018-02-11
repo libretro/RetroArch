@@ -426,8 +426,8 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
       {
          /* Merge them */
          /* Most devices have all the digital parts in the first word. */
-         static const uint32_t digital_common[3] = {-1, 0, 0};
-         static const uint32_t digital_keyboard[5] = {-1, -1, -1, -1, -1};
+         static const uint32_t digital_common[3] = {~0u, 0u, 0u};
+         static const uint32_t digital_keyboard[5] = {~0u, ~0u, ~0u, ~0u, ~0u};
          const uint32_t *digital;
          if (dtype == RETRO_DEVICE_KEYBOARD)
             digital = digital_keyboard;

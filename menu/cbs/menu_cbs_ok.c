@@ -437,7 +437,6 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
          filebrowser_clear_type();
-         filebrowser_set_type(FILEBROWSER_APPEND_IMAGE);
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->paths.directory_menu_content;
@@ -1865,7 +1864,8 @@ default_action_dialog_start(action_ok_rename_entry,
 enum
 {
    ACTION_OK_SHADER_PRESET_SAVE_CORE = 0,
-   ACTION_OK_SHADER_PRESET_SAVE_GAME
+   ACTION_OK_SHADER_PRESET_SAVE_GAME,
+   ACTION_OK_SHADER_PRESET_SAVE_PARENT
 };
 
 static int generic_action_ok_shader_preset_save(const char *path,
@@ -1912,6 +1912,12 @@ static int generic_action_ok_shader_preset_save(const char *path,
             fill_pathname_join(file, directory, game_name, sizeof(file));
          }
          break;
+      case ACTION_OK_SHADER_PRESET_SAVE_PARENT:
+         {
+            fill_pathname_parent_dir_name(tmp, path_get(RARCH_PATH_BASENAME), sizeof(tmp));
+            fill_pathname_join(file, directory, tmp, sizeof(file));
+         }
+         break;
    }
 
    if(menu_shader_manager_save_preset(file, false, true))
@@ -1940,7 +1946,12 @@ static int action_ok_shader_preset_save_game(const char *path,
          idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_GAME);
 }
 
-
+static int action_ok_shader_preset_save_parent(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_shader_preset_save(path, label, type,
+         idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_PARENT);
+}
 
 static int generic_action_ok_remap_file_operation(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -3461,17 +3472,10 @@ static int action_ok_load_archive_detect_core(const char *path,
    menu_handle_t *menu                 = NULL;
    const char *menu_path               = NULL;
    const char *content_path            = NULL;
-   size_t path_size                    = PATH_MAX_LENGTH * sizeof(char);
-   char *new_core_path                 = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-
-   new_core_path[0]                    = '\0';
+   char *new_core_path                 = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-   {
-      free(new_core_path);
       return menu_cbs_exit();
-   }
 
    menu_path           = menu->scratch2_buf;
    content_path        = menu->scratch_buf;
@@ -3485,8 +3489,12 @@ static int action_ok_load_archive_detect_core(const char *path,
    def_info.s          = menu->deferred_path;
    def_info.len        = sizeof(menu->deferred_path);
 
+   new_core_path       = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
+   new_core_path[0]    = '\0';
+
    if (menu_content_find_first_core(&def_info, false,
-            new_core_path, path_size))
+            new_core_path, PATH_MAX_LENGTH * sizeof(char)))
       ret = -1;
 
    fill_pathname_join(detect_content_path, menu_path, content_path,
@@ -3503,17 +3511,15 @@ static int action_ok_load_archive_detect_core(const char *path,
             content_info.args                   = NULL;
             content_info.environ_get            = NULL;
 
+            ret                                 = 0;
+
             if (!task_push_load_content_with_new_core_from_menu(
                      new_core_path, def_info.s,
                      &content_info,
                      CORE_TYPE_PLAIN,
                      NULL, NULL))
-            {
-               free(new_core_path);
-               return -1;
-            }
+               ret = -1;
          }
-         ret = 0;
          break;
       case 0:
          idx = menu_navigation_get_selection();
@@ -3577,9 +3583,8 @@ static int action_ok_netplay_enable_host(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   bool contentless = false;
-   bool is_inited   = false;
-
+   bool contentless  = false;
+   bool is_inited    = false;
    file_list_t *list = menu_entries_get_selection_buf_ptr(0);
 
    content_get_status(&contentless, &is_inited);
@@ -4053,6 +4058,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_core);
             break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_parent);
+            break;
          case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
             BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
             break;
@@ -4511,14 +4519,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      }
                      else
 #endif
-                     if (filebrowser_get_type() == FILEBROWSER_APPEND_IMAGE)
-                     {
-                        BIND_ACTION_OK(cbs, action_ok_disk_image_append);
-                     }
-                     else
                      {
                         BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
                      }
+                     break;
+                  case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
+                     BIND_ACTION_OK(cbs, action_ok_disk_image_append);
                      break;
                   default:
                      BIND_ACTION_OK(cbs, action_ok_file_load);
@@ -4539,14 +4545,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      }
                      else
 #endif
-                     if (filebrowser_get_type() == FILEBROWSER_APPEND_IMAGE)
-                     {
-                        BIND_ACTION_OK(cbs, action_ok_disk_image_append);
-                     }
-                     else
                      {
                         BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
                      }
+                     break;
+                  case MENU_LABEL_DISK_IMAGE_APPEND:
+                     BIND_ACTION_OK(cbs, action_ok_disk_image_append);
                      break;
                   default:
                      BIND_ACTION_OK(cbs, action_ok_file_load);

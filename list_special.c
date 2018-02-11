@@ -57,36 +57,29 @@ struct string_list *dir_list_new_special(const char *input_dir,
 {
    char ext_shaders[255];
    char ext_name[255];
-   const char *dir                   = NULL;
    const char *exts                  = NULL;
-   bool include_dirs                 = false;
    bool recursive                    = false;
    settings_t *settings              = config_get_ptr();
-
-   ext_shaders[0] = ext_name[0] = '\0';
-
-   (void)input_dir;
 
    switch (type)
    {
       case DIR_LIST_AUTOCONFIG:
-         dir  = input_dir;
          exts = filter;
          break;
       case DIR_LIST_CORES:
-         dir  = input_dir;
+         {
+            ext_name[0]         = '\0';
 
-         if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
-            return NULL;
+            if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+               return NULL;
 
-         exts = ext_name;
+            exts = ext_name;
+         }
          break;
       case DIR_LIST_CORE_INFO:
          {
             core_info_list_t *list = NULL;
             core_info_get_list(&list);
-
-            dir  = input_dir;
 
             if (list)
                exts = list->all_ext;
@@ -96,8 +89,6 @@ struct string_list *dir_list_new_special(const char *input_dir,
        {
           core_info_list_t *list = NULL;
           core_info_get_list(&list);
-
-          dir     = input_dir;
 
           if (list)
              exts = list->all_ext;
@@ -113,12 +104,13 @@ struct string_list *dir_list_new_special(const char *input_dir,
 
             if (!str_list)
                return NULL;
+            
+            ext_shaders[0]                   = '\0';
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
             attr.i = 0;
 #endif
 
-            dir  = input_dir;
 #ifdef HAVE_CG
             string_list_append(str_list, "cg", attr);
             string_list_append(str_list, "cgp", attr);
@@ -137,15 +129,12 @@ struct string_list *dir_list_new_special(const char *input_dir,
          }
          break;
       case DIR_LIST_COLLECTIONS:
-         dir  = input_dir;
          exts = "lpl";
          break;
       case DIR_LIST_DATABASES:
-         dir  = input_dir;
          exts = "rdb";
          break;
       case DIR_LIST_PLAIN:
-         dir  = input_dir;
          exts = filter;
          break;
       case DIR_LIST_NONE:
@@ -153,7 +142,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
          return NULL;
    }
 
-   return dir_list_new(dir, exts, include_dirs, settings->bools.show_hidden_files,
+   return dir_list_new(input_dir, exts, false, settings->bools.show_hidden_files,
          type == DIR_LIST_CORE_INFO, recursive);
 }
 

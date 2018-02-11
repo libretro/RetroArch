@@ -44,6 +44,7 @@ elif [ "$OS" = 'SunOS' ]; then
    SORT='gsort'
 fi
 
+add_define MAKEFILE DATA_DIR "$SHARE_DIR"
 add_define MAKEFILE DYLIB_LIB "$DYLIB"
 
 check_lib '' SYSTEMD -lsystemd sd_get_machine_names
@@ -157,9 +158,10 @@ fi
    add_define MAKEFILE libretro "$LIBRETRO"
 }
 
-add_define MAKEFILE ASSETS_DIR "${ASSETS_DIR:-${PREFIX}/share}"
+add_define MAKEFILE ASSETS_DIR "${ASSETS_DIR:-$SHARE_DIR}/retroarch"
 add_define MAKEFILE BIN_DIR "${BIN_DIR:-${PREFIX}/bin}"
-add_define MAKEFILE MAN_DIR "${MAN_DIR:-${PREFIX}/share/man}"
+add_define MAKEFILE DOC_DIR "${DOC_DIR:-${SHARE_DIR}/doc/retroarch}"
+add_define MAKEFILE MAN_DIR "${MAN_DIR:-${SHARE_DIR}/man}"
 
 if [ "$OS" = 'DOS' ]; then
    HAVE_SHADERPIPELINE=no
