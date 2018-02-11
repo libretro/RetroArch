@@ -35,9 +35,18 @@
 
 #ifdef HAVE_SHADER_MANAGER
 /* Menu shader */
+#ifdef HAVE_GLSL
 static char default_glslp[PATH_MAX_LENGTH];
+#endif
+
+#ifdef HAVE_CG
 static char default_cgp[PATH_MAX_LENGTH];
+#endif
+
+#ifdef HAVE_SLANG
 static char default_slangp[PATH_MAX_LENGTH];
+#endif
+
 static struct video_shader *menu_driver_shader = NULL;
 
 struct video_shader *menu_shader_get(void)
@@ -128,26 +137,36 @@ void menu_shader_manager_init_paths(void)
     * conflicts on menu.cgp/menu.glslp. */
    if (config_path)
    {
+#ifdef HAVE_GLSL
       fill_pathname_base_ext(default_glslp, config_path,
             file_path_str(FILE_PATH_GLSLP_EXTENSION),
             sizeof(default_glslp));
-
+#endif
+#ifdef HAVE_CG
       fill_pathname_base_ext(default_cgp, config_path,
             file_path_str(FILE_PATH_CGP_EXTENSION),
             sizeof(default_cgp));
-
+#endif
+#ifdef HAVE_SLANG
       fill_pathname_base_ext(default_slangp, config_path,
             file_path_str(FILE_PATH_SLANGP_EXTENSION),
             sizeof(default_slangp));
+#endif
    }
    else
    {
+#ifdef HAVE_GLSL
       strlcpy(default_glslp, "menu.glslp",
             sizeof(default_glslp));
+#endif
+#ifdef HAVE_CG
       strlcpy(default_cgp, "menu.cgp",
             sizeof(default_cgp));
+#endif
+#ifdef HAVE_SLANG
       strlcpy(default_slangp, "menu.slangp",
             sizeof(default_slangp));
+#endif
    }
 }
 
@@ -373,16 +392,22 @@ bool menu_shader_manager_save_preset(
       switch (type)
       {
          case RARCH_SHADER_GLSL:
+#ifdef HAVE_GLSL
             conf_path = default_glslp;
+#endif
             break;
 
          case RARCH_SHADER_SLANG:
+#ifdef HAVE_SLANG
             conf_path = default_slangp;
+#endif
             break;
 
          default:
          case RARCH_SHADER_CG:
+#ifdef HAVE_CG
             conf_path = default_cgp;
+#endif
             break;
       }
 

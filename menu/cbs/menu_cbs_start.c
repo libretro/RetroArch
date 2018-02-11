@@ -134,9 +134,10 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
    param->current = param->initial;
    param->current = MIN(MAX(param->minimum, param->current), param->maximum);
 
-#endif
-
    return menu_shader_manager_clear_parameter(parameter);
+#else
+   return 0;
+#endif
 }
 
 static int action_start_shader_pass(unsigned type, const char *label)
