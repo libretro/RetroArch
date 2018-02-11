@@ -72,8 +72,114 @@ struct input_overlay
 
 input_overlay_t *overlay_ptr = NULL;
 
+/**
+ * input_overlay_add_inputs:
+ * @ol : pointer to overlay
+ * @port : the user to show the inputs of
+ *
+ * Adds inputs from current_input to the overlay, so it's displayed
+ * returns true if an input that is pressed will change the overlay
+ */
+static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
+      unsigned port, unsigned analog_dpad_mode)
+{
+   switch(desc->type)
+   {
+      case OVERLAY_TYPE_BUTTONS:
+         {
+            unsigned i;
+            unsigned id;
+            uint32_t bank_mask;
+            bool all_buttons_pressed        = false;
+
+            /*Check each bank of the mask*/
+            for (i=0; i<ARRAY_SIZE(desc->button_mask.data); ++i)
+            {
+               /*Get bank*/
+               bank_mask = BITS_GET_ELEM(desc->button_mask,i);
+               id = i*32;
+
+               /*Worth pursuing? Have we got any bits left in here?*/
+               while (bank_mask)
+               {
+                  /*If this bit is set then we need to query the pad
+                   *The button must be pressed.*/
+                  if (bank_mask & 1)
+                  {
+                     bool var            = input_state(port, RETRO_DEVICE_JOYPAD, 0, id);
+
+                     all_buttons_pressed = var;
+                     desc->updated       = var;
+
+                     if (!var)
+                        return false;
+                  }
+
+                  bank_mask >>= 1;
+                  ++id;
+               }
+            }
+
+            return all_buttons_pressed;
+         }
+
+      case OVERLAY_TYPE_ANALOG_LEFT:
+      case OVERLAY_TYPE_ANALOG_RIGHT:
+         {
+            float analog_x, analog_y;
+            float dx, dy;
+            unsigned int index = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ?
+               RETRO_DEVICE_INDEX_ANALOG_RIGHT : RETRO_DEVICE_INDEX_ANALOG_LEFT;
+
+            analog_x = input_state(port, RETRO_DEVICE_ANALOG, index, RETRO_DEVICE_ID_ANALOG_X);
+            analog_y = input_state(port, RETRO_DEVICE_ANALOG, index, RETRO_DEVICE_ID_ANALOG_Y);
+            dx = (analog_x/0x8000)*(desc->range_x/2);
+            dy = (analog_y/0x8000)*(desc->range_y/2);
+
+            desc->delta_x = dx;
+            desc->delta_y = dy;
+
+            /*Maybe use some option here instead of 0, only display
+              changes greater than some magnitude.
+              */
+            if ((dx*dx) > 0 || (dy*dy) > 0)
+               return true;
+         }
+         break;
+
+      case OVERLAY_TYPE_KEYBOARD:
+         if (input_state(port, RETRO_DEVICE_KEYBOARD, 0, desc->retro_key_idx))
+         {
+            desc->updated  = true;
+            return true;
+         }
+         break;
+
+      default:
+         break;
+   }
+
+   return false;
+}
+
 static bool input_overlay_add_inputs(input_overlay_t *ol,
-      unsigned port, unsigned analog_dpad_mode);
+      unsigned port, unsigned analog_dpad_mode)
+{
+   unsigned i;
+   input_overlay_state_t *ol_state = &ol->overlay_state;
+
+   if (!ol_state)
+      return false;
+
+   for (i = 0; i < ol->active->size; i++)
+   {
+      overlay_desc_t *desc = &(ol->active->descs[i]);
+      if (input_overlay_add_inputs_inner(desc, port, analog_dpad_mode))
+         return true;
+   }
+
+   return false;
+}
 /**
  * input_overlay_scale:
  * @ol                    : Overlay handle.
@@ -536,26 +642,30 @@ void input_overlay_set_visibility(int overlay_idx,enum overlay_visibility vis)
     int i;
     input_overlay_t *ol = overlay_ptr;
       
-    if(visibility == NULL)
+    if (!visibility)
     {
-        visibility = (enum overlay_visibility *)calloc(MAX_VISIBILITY,sizeof(enum overlay_visibility));
-        for(i=0;i<MAX_VISIBILITY;i++)
-        {
+        visibility = (enum overlay_visibility *)
+           calloc(MAX_VISIBILITY,sizeof(enum overlay_visibility));
+
+        for (i=0;i<MAX_VISIBILITY;i++)
             visibility[i] = OVERLAY_VISIBILITY_DEFAULT;
-        }
     }
 
     visibility[overlay_idx] = vis;
 
-    if(ol == NULL) return;
-    if(vis == OVERLAY_VISIBILITY_HIDDEN)
+    if (!ol)
+       return;
+    if (vis == OVERLAY_VISIBILITY_HIDDEN)
       ol->iface->set_alpha(ol->iface_data, overlay_idx, 0.0);
 }
 
 static enum overlay_visibility input_overlay_get_visibility(int overlay_idx)
 {
-    if(visibility == NULL) return OVERLAY_VISIBILITY_DEFAULT;
-    if((overlay_idx < 0) || (overlay_idx >= MAX_VISIBILITY)) return OVERLAY_VISIBILITY_DEFAULT;
+    if (!visibility)
+       return OVERLAY_VISIBILITY_DEFAULT;
+
+    if ((overlay_idx < 0) || (overlay_idx >= MAX_VISIBILITY))
+       return OVERLAY_VISIBILITY_DEFAULT;
     return visibility[overlay_idx];
 }
 
@@ -581,7 +691,7 @@ void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
 
    for (i = 0; i < ol->active->load_images_size; i++)
    {
-      if(input_overlay_is_hidden(i))
+      if (input_overlay_is_hidden(i))
           ol->iface->set_alpha(ol->iface_data, i, 0.0);
       else
           ol->iface->set_alpha(ol->iface_data, i, mod);
@@ -617,7 +727,6 @@ void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad
    settings_t *settings            = config_get_ptr();
    uint16_t key_mod                = 0;
    bool polled                     = false;
-   bool button_pressed             = false;
    void *input_data                = input_get_data();
    input_overlay_state_t *ol_state = &ol->overlay_state;
    const input_driver_t *input_ptr = input_get_ptr();
@@ -748,11 +857,11 @@ void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad
          break;
    }
 
-   if(settings->bools.input_overlay_show_physical_inputs)
-   {
-      button_pressed = input_overlay_add_inputs(ol, settings->uints.input_overlay_show_physical_inputs_port, analog_dpad_mode);
-   }
-   if (button_pressed || polled)
+   if (settings->bools.input_overlay_show_physical_inputs)
+      if (input_overlay_add_inputs(ol, settings->uints.input_overlay_show_physical_inputs_port, analog_dpad_mode))
+         polled = true;
+
+   if (polled)
       input_overlay_post_poll(ol, opacity);
    else
       input_overlay_poll_clear(ol, opacity);
@@ -799,119 +908,4 @@ void input_state_overlay(input_overlay_t *ol, int16_t *ret,
          }
          break;
    }
-}
-/**
- * input_overlay_add_inputs:
- * @ol : pointer to overlay
- * @port : the user to show the inputs of
- *
- * Adds inputs from current_input to the overlay, so it's displayed
- * returns true if an input that is pressed will change the overlay
- */
-static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
-      unsigned port, unsigned analog_dpad_mode)
-{
-   switch(desc->type)
-   {
-      case OVERLAY_TYPE_BUTTONS:
-         {
-            unsigned i;
-            unsigned id;
-            uint32_t bank_mask;
-            bool all_buttons_pressed        = false;
-
-            /*Check each bank of the mask*/
-            for (i=0; i<ARRAY_SIZE(desc->button_mask.data); ++i)
-            {
-               /*Get bank*/
-               bank_mask = BITS_GET_ELEM(desc->button_mask,i);
-               id = i*32;
-
-               /*Worth pursuing? Have we got any bits left in here?*/
-               while (bank_mask)
-               {
-                  /*If this bit is set then we need to query the pad
-                   *The button must be pressed.*/
-                  if (bank_mask & 1)
-                  {
-                     /* Light up the button if pressed */
-                     if(input_state(port, RETRO_DEVICE_JOYPAD, 0, id))
-                     {
-                        all_buttons_pressed = true;
-                        desc->updated = true;
-                     }
-                     else
-                     {
-                        /*we need ALL of the inputs to be active*/
-                        all_buttons_pressed = false;
-                        desc->updated = false;
-
-                        /*abort*/
-                        return false;
-                     }
-                  }
-
-                  bank_mask >>= 1;
-                  ++id;
-               }
-            }
-
-            return all_buttons_pressed;
-         }
-
-      case OVERLAY_TYPE_ANALOG_LEFT:
-      case OVERLAY_TYPE_ANALOG_RIGHT:
-         {
-            float analog_x, analog_y;
-            float dx, dy;
-            unsigned int index = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ?
-               RETRO_DEVICE_INDEX_ANALOG_RIGHT : RETRO_DEVICE_INDEX_ANALOG_LEFT;
-
-            analog_x = input_state(port, RETRO_DEVICE_ANALOG, index, RETRO_DEVICE_ID_ANALOG_X);
-            analog_y = input_state(port, RETRO_DEVICE_ANALOG, index, RETRO_DEVICE_ID_ANALOG_Y);
-            dx = (analog_x/0x8000)*(desc->range_x/2);
-            dy = (analog_y/0x8000)*(desc->range_y/2);
-
-            desc->delta_x = dx;
-            desc->delta_y = dy;
-            /*Maybe use some option here instead of 0, only display
-              changes greater than some magnitude.
-              */
-            if((dx*dx) > 0 || (dy*dy) > 0)
-               return true;
-         }
-         break;
-
-      case OVERLAY_TYPE_KEYBOARD:
-         if(input_state(port, RETRO_DEVICE_KEYBOARD, 0, desc->retro_key_idx))
-         {
-            desc->updated  = true;
-            return true;
-         }
-         break;
-
-      default:
-         break;
-   }
-
-   return false;
-}
-
-static bool input_overlay_add_inputs(input_overlay_t *ol,
-      unsigned port, unsigned analog_dpad_mode)
-{
-   unsigned i;
-   bool button_pressed             = false;
-   input_overlay_state_t *ol_state = &ol->overlay_state;
-
-   if(!ol_state)
-      return false;
-
-   for(i = 0; i < ol->active->size; i++)
-   {
-      overlay_desc_t *desc = &(ol->active->descs[i]);
-      button_pressed |= input_overlay_add_inputs_inner(desc, port, analog_dpad_mode);
-   }
-
-   return button_pressed;
 }
