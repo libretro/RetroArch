@@ -456,6 +456,10 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
+      case ACTION_OK_DL_SUBSYSTEM_LOAD:
+         filebrowser_clear_type();
+         RARCH_LOG("LOADING!!!!!!!\n");
+         break;
       case ACTION_OK_DL_CHEAT_FILE:
          filebrowser_clear_type();
          info.type          = type;
@@ -2991,6 +2995,7 @@ default_action_ok_func(action_ok_cheat_file, ACTION_OK_DL_CHEAT_FILE)
 default_action_ok_func(action_ok_playlist_collection, ACTION_OK_DL_PLAYLIST_COLLECTION)
 default_action_ok_func(action_ok_disk_image_append_list, ACTION_OK_DL_DISK_IMAGE_APPEND_LIST)
 default_action_ok_func(action_ok_subsystem_add_list, ACTION_OK_DL_SUBSYSTEM_ADD_LIST)
+default_action_ok_func(action_ok_subsystem_add_load, ACTION_OK_DL_SUBSYSTEM_LOAD)
 default_action_ok_func(action_ok_record_configfile, ACTION_OK_DL_RECORD_CONFIGFILE)
 default_action_ok_func(action_ok_remap_file, ACTION_OK_DL_REMAP_FILE)
 default_action_ok_func(action_ok_shader_preset, ACTION_OK_DL_SHADER_PRESET)
@@ -4109,6 +4114,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SUBSYSTEM_ADD:
             BIND_ACTION_OK(cbs, action_ok_subsystem_add_list);
+            break;
+         case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
+            BIND_ACTION_OK(cbs, action_ok_subsystem_add_load);
             break;
          case MENU_ENUM_LABEL_CONFIGURATIONS:
             BIND_ACTION_OK(cbs, action_ok_configurations_list);

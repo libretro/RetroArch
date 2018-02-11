@@ -4462,9 +4462,9 @@ static int xmb_list_push(void *data, void *userdata,
                            snprintf(s, sizeof(s), "Start %s %c", subsystem->desc, i == pending_subsystem ? '*': ' ');
                            menu_entries_append_enum(info->list,
                                  s,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
-                                 MENU_ENUM_LABEL_SUBSYSTEM_ADD,
-                                 MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
+                                 msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD),
+                                 MENU_ENUM_LABEL_SUBSYSTEM_LOAD,
+                                 MENU_SETTINGS_SUBSYSTEM_LOAD, 0, 0);
                         }
                      }
                      else
@@ -4474,7 +4474,7 @@ static int xmb_list_push(void *data, void *userdata,
                               s,
                               msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
                               MENU_ENUM_LABEL_SUBSYSTEM_ADD,
-                              MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
+                              MENU_SETTINGS_SUBSYSTEM_ADD, 0, 0);
                      }
                   }
                }
