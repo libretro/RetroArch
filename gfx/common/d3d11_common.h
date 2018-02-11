@@ -2423,14 +2423,6 @@ D3D11UnmapBuffer(D3D11DeviceContext device_context, D3D11Buffer buffer, UINT sub
 #include "../video_driver.h"
 #include "../drivers_shader/slang_process.h"
 
-typedef struct
-{
-   float x;
-   float y;
-   float z;
-   float w;
-} float4_t;
-
 typedef struct d3d11_vertex_t
 {
    float position[2];

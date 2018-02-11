@@ -235,8 +235,6 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, HWND hwnd
 
    for (int i = 0; i < countof(d3d12->chain.renderTargets); i++)
    {
-      d3d12->chain.desc_handles[i].ptr =
-            d3d12->desc.rtv_heap.cpu.ptr + i * d3d12->desc.rtv_heap.stride;
       DXGIGetSwapChainBuffer(d3d12->chain.handle, i, &d3d12->chain.renderTargets[i]);
       D3D12CreateRenderTargetView(
             d3d12->device, d3d12->chain.renderTargets[i], NULL, d3d12->chain.desc_handles[i]);
@@ -328,10 +326,11 @@ bool d3d12_create_root_signature(
 
 bool d3d12_init_descriptors(d3d12_video_t* d3d12)
 {
+   int                       i, j;
    D3D12_ROOT_SIGNATURE_DESC desc;
-   D3D12_DESCRIPTOR_RANGE    srv_tbl[]      = { { D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1 } };
-   D3D12_DESCRIPTOR_RANGE    uav_tbl[]      = { { D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1 } };
-   D3D12_DESCRIPTOR_RANGE    sampler_tbl[]  = { { D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1 } };
+   D3D12_DESCRIPTOR_RANGE    srv_tbl[1]     = { { D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1 } };
+   D3D12_DESCRIPTOR_RANGE    uav_tbl[1]     = { { D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1 } };
+   D3D12_DESCRIPTOR_RANGE    sampler_tbl[1] = { { D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1 } };
    D3D12_STATIC_SAMPLER_DESC static_sampler = { D3D12_FILTER_MIN_MAG_MIP_POINT };
    D3D12_ROOT_PARAMETER      root_params[ROOT_ID_MAX];
    D3D12_ROOT_PARAMETER      cs_root_params[CS_ROOT_ID_MAX];
@@ -350,6 +349,11 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
    root_params[ROOT_ID_UBO].Descriptor.RegisterSpace  = 0;
    root_params[ROOT_ID_UBO].Descriptor.ShaderRegister = 0;
    root_params[ROOT_ID_UBO].ShaderVisibility          = D3D12_SHADER_VISIBILITY_ALL;
+
+   root_params[ROOT_ID_PC].ParameterType             = D3D12_ROOT_PARAMETER_TYPE_CBV;
+   root_params[ROOT_ID_PC].Descriptor.RegisterSpace  = 0;
+   root_params[ROOT_ID_PC].Descriptor.ShaderRegister = 1;
+   root_params[ROOT_ID_PC].ShaderVisibility          = D3D12_SHADER_VISIBILITY_ALL;
 
    desc.NumParameters     = countof(root_params);
    desc.pParameters       = root_params;
@@ -407,14 +411,40 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
    d3d12_init_descriptor_heap(d3d12->device, &d3d12->desc.rtv_heap);
 
    d3d12->desc.srv_heap.desc.Type           = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-   d3d12->desc.srv_heap.desc.NumDescriptors = 1024;
+   d3d12->desc.srv_heap.desc.NumDescriptors = SLANG_NUM_BINDINGS * GFX_MAX_SHADERS + 1024;
    d3d12->desc.srv_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
    d3d12_init_descriptor_heap(d3d12->device, &d3d12->desc.srv_heap);
 
-   d3d12->desc.sampler_heap.desc.Type           = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-   d3d12->desc.sampler_heap.desc.NumDescriptors = 2 * RARCH_WRAP_MAX;
-   d3d12->desc.sampler_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+   d3d12->desc.sampler_heap.desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+   d3d12->desc.sampler_heap.desc.NumDescriptors =
+         SLANG_NUM_BINDINGS * GFX_MAX_SHADERS + 2 * RARCH_WRAP_MAX;
+   d3d12->desc.sampler_heap.desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
    d3d12_init_descriptor_heap(d3d12->device, &d3d12->desc.sampler_heap);
+
+   for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
+   {
+      d3d12->chain.desc_handles[i].ptr =
+            d3d12->desc.rtv_heap.cpu.ptr + i * d3d12->desc.rtv_heap.stride;
+   }
+
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
+   {
+      d3d12->pass[i].rt.rt_view.ptr =
+            d3d12->desc.rtv_heap.cpu.ptr +
+            (countof(d3d12->chain.renderTargets) + i) * d3d12->desc.rtv_heap.stride;
+
+      d3d12->pass[i].textures.ptr = d3d12_descriptor_heap_slot_alloc(&d3d12->desc.srv_heap).ptr -
+                                    d3d12->desc.srv_heap.cpu.ptr + d3d12->desc.srv_heap.gpu.ptr;
+      d3d12->pass[i].samplers.ptr =
+            d3d12_descriptor_heap_slot_alloc(&d3d12->desc.sampler_heap).ptr -
+            d3d12->desc.sampler_heap.cpu.ptr + d3d12->desc.sampler_heap.gpu.ptr;
+
+      for (j = 1; j < SLANG_NUM_BINDINGS; j++)
+      {
+         d3d12_descriptor_heap_slot_alloc(&d3d12->desc.srv_heap);
+         d3d12_descriptor_heap_slot_alloc(&d3d12->desc.sampler_heap);
+      }
+   }
 
    return true;
 }
@@ -577,9 +607,14 @@ void d3d12_release_texture(d3d12_texture_t* texture)
 }
 void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
 {
+   int i;
    d3d12_release_texture(texture);
 
-   if (texture->desc.MipLevels > 1)
+   if (!texture->desc.MipLevels)
+      texture->desc.MipLevels = 1;
+
+   if (!(texture->desc.Width >> (texture->desc.MipLevels - 1)) &&
+       !(texture->desc.Height >> (texture->desc.MipLevels - 1)))
    {
       unsigned width          = texture->desc.Width >> 5;
       unsigned height         = texture->desc.Height >> 5;
@@ -591,8 +626,6 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
          texture->desc.MipLevels++;
       }
    }
-   else
-      texture->desc.MipLevels = 1;
 
    {
       D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support = {
@@ -621,38 +654,39 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, NULL, &texture->handle);
    }
 
-   if (texture->srv_heap)
-   {
-      int                             i;
-      D3D12_SHADER_RESOURCE_VIEW_DESC view_desc = { texture->desc.Format };
+   assert(texture->srv_heap);
 
-      view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-      view_desc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
-      view_desc.Texture2D.MipLevels     = texture->desc.MipLevels;
+   {
+      D3D12_SHADER_RESOURCE_VIEW_DESC desc = { texture->desc.Format };
+
+      desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+      desc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
+      desc.Texture2D.MipLevels     = texture->desc.MipLevels;
 
       texture->cpu_descriptor[0] = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
-      D3D12CreateShaderResourceView(
-            device, texture->handle, &view_desc, texture->cpu_descriptor[0]);
+      D3D12CreateShaderResourceView(device, texture->handle, &desc, texture->cpu_descriptor[0]);
       texture->gpu_descriptor[0].ptr = texture->cpu_descriptor[0].ptr - texture->srv_heap->cpu.ptr +
                                        texture->srv_heap->gpu.ptr;
+   }
 
-      for (i = 1; i < texture->desc.MipLevels; i++)
-      {
-         D3D12_UNORDERED_ACCESS_VIEW_DESC desc = { texture->desc.Format };
+   for (i = 1; i < texture->desc.MipLevels; i++)
+   {
+      D3D12_UNORDERED_ACCESS_VIEW_DESC desc = { texture->desc.Format };
 
-         desc.ViewDimension      = D3D12_UAV_DIMENSION_TEXTURE2D;
-         desc.Texture2D.MipSlice = i;
+      desc.ViewDimension      = D3D12_UAV_DIMENSION_TEXTURE2D;
+      desc.Texture2D.MipSlice = i;
 
-         texture->cpu_descriptor[i] = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
-         D3D12CreateUnorderedAccessView(
-               device, texture->handle, NULL, &desc, texture->cpu_descriptor[i]);
-         texture->gpu_descriptor[i].ptr = texture->cpu_descriptor[i].ptr -
-                                          texture->srv_heap->cpu.ptr + texture->srv_heap->gpu.ptr;
-      }
+      texture->cpu_descriptor[i] = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
+      D3D12CreateUnorderedAccessView(
+            device, texture->handle, NULL, &desc, texture->cpu_descriptor[i]);
+      texture->gpu_descriptor[i].ptr = texture->cpu_descriptor[i].ptr - texture->srv_heap->cpu.ptr +
+                                       texture->srv_heap->gpu.ptr;
    }
 
    if (texture->desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
    {
+      assert(texture->rt_view.ptr);
+      D3D12CreateRenderTargetView(device, texture->handle, NULL, texture->rt_view);
    }
    else
    {
@@ -670,11 +704,19 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
       buffer_desc.MipLevels        = 1;
       buffer_desc.SampleDesc.Count = 1;
       buffer_desc.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+#if 0
+      buffer_desc.Flags            = D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+#endif
 
       D3D12CreateCommittedResource(
             device, &heap_props, D3D12_HEAP_FLAG_NONE, &buffer_desc,
             D3D12_RESOURCE_STATE_GENERIC_READ, NULL, &texture->upload_buffer);
    }
+
+   texture->size_data.x = texture->desc.Width;
+   texture->size_data.y = texture->desc.Height;
+   texture->size_data.z = 1.0f / texture->desc.Width;
+   texture->size_data.w = 1.0f / texture->desc.Height;
 }
 
 void d3d12_update_texture(

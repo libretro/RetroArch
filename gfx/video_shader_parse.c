@@ -1162,6 +1162,7 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
             return shader_type;
          break;
       case GFX_CTX_DIRECT3D11_API:
+      case GFX_CTX_DIRECT3D12_API:
       case GFX_CTX_VULKAN_API:
       case GFX_CTX_GX2_API:
          if (shader_type == RARCH_SHADER_SLANG)

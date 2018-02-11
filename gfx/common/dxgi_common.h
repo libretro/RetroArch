@@ -770,6 +770,14 @@ typedef enum {
    DXGI_FORMAT_EX_A4R4G4B4_UNORM = 1000,
 } DXGI_FORMAT_EX;
 
+typedef struct
+{
+   float x;
+   float y;
+   float z;
+   float w;
+} float4_t;
+
 RETRO_BEGIN_DECLS
 
 DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format);
