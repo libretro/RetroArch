@@ -1385,6 +1385,8 @@ enum msg_hash_enums
    MENU_LABEL(SHUTDOWN),
    MENU_LABEL(REBOOT),
    MENU_LABEL(DISK_IMAGE_APPEND),
+   MENU_LABEL(SUBSYSTEM_ADD),
+   MENU_LABEL(SUBSYSTEM_LOAD),
    MENU_LABEL(CORE_LIST),
    MENU_LABEL(MANAGEMENT),
    MENU_LABEL(ONLINE),
@@ -1847,6 +1849,9 @@ enum msg_hash_enums
 
 #define MENU_LABEL_DISK_OPTIONS                                                0xc61ab5fbU
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
+
+/* Subsystem stuff */
+#define MENU_LABEL_SUBSYSTEM_ADD                                               0x576da67cU
 
 /* Menu settings */
 

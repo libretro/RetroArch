@@ -776,7 +776,6 @@ static bool content_file_init(
    const struct retro_subsystem_info *special =
       path_is_empty(RARCH_PATH_SUBSYSTEM)
       ? NULL : content_file_init_subsystem(content_ctx, error_string, &ret);
-
    if (  !ret ||
          !content_file_init_set_attribs(content, special, content_ctx, error_string))
       return false;
@@ -788,6 +787,7 @@ static bool content_file_init(
    {
       unsigned i;
       struct string_list *additional_path_allocs = string_list_new();
+
       ret = content_file_load(info, content, content_ctx, error_string,
             special, additional_path_allocs);
       string_list_free(additional_path_allocs);
@@ -1670,6 +1670,35 @@ void content_get_status(
    *is_inited   = _content_is_inited;
 }
 
+/* Clears the pending subsystem rom buffer*/
+void content_clear_subsystem(void)
+{
+   pending_subsystem_rom_id = 0;
+   for (int i = 0; i < RARCH_MAX_SUBSYSTEM_ROMS; i++)
+      pending_subsystem_roms[i][0] = '\0';
+}
+
+/* Set the current subsystem*/
+void content_set_subsystem(unsigned sub)
+{
+   rarch_system_info_t *system = runloop_get_system_info();
+   const struct retro_subsystem_info* subsystem = NULL;
+
+   pending_subsystem = sub;
+   subsystem = system->subsystem.data + pending_subsystem;
+
+   strlcpy(pending_subsystem_ident, subsystem->ident, sizeof(pending_subsystem_ident));
+   pending_subsystem_rom_num = subsystem->num_roms;
+}
+
+/* Add a rom to the subsystem rom buffer */
+void content_add_subsystem(const char* path)
+{
+   strlcpy(pending_subsystem_roms[pending_subsystem_rom_id], path, sizeof(pending_subsystem_roms[pending_subsystem_rom_id]));
+   RARCH_LOG("[subsystem] subsystem id: %d subsystem ident: %s rom id: %d, rom path: %s\n", pending_subsystem, pending_subsystem_ident, pending_subsystem_rom_id, pending_subsystem_roms[pending_subsystem_rom_id]);
+   pending_subsystem_rom_id++;
+}
+
 void content_set_does_not_need_content(void)
 {
    core_does_not_need_content = true;
@@ -1720,6 +1749,7 @@ void content_deinit(void)
  * selected libretro core. */
 bool content_init(void)
 {
+   RARCH_LOG("THIS CODEPATH");
    content_information_ctx_t content_ctx;
 
    bool ret                                   = true;
