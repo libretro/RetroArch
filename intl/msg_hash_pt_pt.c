@@ -546,62 +546,62 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_VOLUME:
          snprintf(s, len,
-               "Volume de Áudio, em dB.\n"
+               "Volume de som, em dB.\n"
                " \n"
-               " 0 dB é o volume normal. Nenhum ganho aplicado.\n"
+               " 0 dB representa o nível normal do volume. Nenhum ganho será aplicado.\n"
                "O ganho pode ser controlado em execução com \n"
-               "Aumentar Volume / Baixar Volume.");
+               "Aumentar volume / Diminuir volume.");
          break;
       case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
          snprintf(s, len,
-               "Controle de taxa de áudio.\n"
+               "Controlo de taxa de som.\n"
                " \n"
-               "Definindo como 0 desativa o controle de taxa.\n"
+               "Se o valor 0 estiver definido, o controlo da taxa será desativado.\n"
                "Outros valores controlam a variação da taxa \n"
-               "de áudio.\n"
+               "de som.\n"
                " \n"
-               "Define quanto de taxa de entrada pode ser \n"
-               "regulada dinamicamente.\n"
+               "Define o intervalo de variação da taxa de entrada, \n"
+               "em termos de regulação.\n"
                " \n"
-               " Taxa de entrada é definida como: \n"
-               " input rate * (1.0 +/- (rate control delta))");
+               " A taxa de entrada é definida como: \n"
+               " taxa entrada * (1.0 +/- (Controlo da taxa de som))");
          break;
       case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
          snprintf(s, len,
-               "Distorção de áudio máxima.\n"
+               "Distorção de som máxima.\n"
                " \n"
                "Define a máxima variação da taxa de entrada.\n"
                "Você pode querer aumentá-la para obter grandes\n"
-               "variações no compasso, por exemplo, ao rodar\n"
-               "cores PAL em telas NTSC, ao custo de um pitch\n"
-               "de áudio inexato.\n"
+               "variações no compasso, por exemplo, ao executar\n"
+               "núcleos PAL em ecrãs NTSC, sofrendo uma penalização da tonalidade\n"
+               "do som.\n"
                " \n"
                " A taxa de entrada é definida como: \n"
-               " input rate * (1.0 +/- (max timing skew))");
+               " taxa de entrada * (1.0 +/- (distorção máxima do som))");
          break;
       case MENU_ENUM_LABEL_OVERLAY_NEXT:
          snprintf(s, len,
-               "Alterna para o próximo overlay.\n"
+               "Muda para o próximo overlay.\n"
                " \n"
                "Navegação circular.");
          break;
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
          snprintf(s, len,
-               "Ativa ou desativa nível de prolixidade \n"
+               "Ativa ou desativa o nível de verbosidade \n"
                "do frontend.");
          break;
       case MENU_ENUM_LABEL_VOLUME_UP:
          snprintf(s, len,
-               "Aumenta o volume de áudio.");
+               "Aumenta o volume de som.");
          break;
       case MENU_ENUM_LABEL_VOLUME_DOWN:
          snprintf(s, len,
-               "Baixa o volume de áudio.");
+               "Diminui o volume do som.");
          break;
       case MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION:
          snprintf(s, len,
-               "Desativa composition à força.\n"
-               "Válido somente para Windows Vista/7 atualmente.");
+               "Força a desativação de composição.\n"
+               "Válido apenas para o Windows Vista/7.");
          break;
       case MENU_ENUM_LABEL_PERFCNT_ENABLE:
          snprintf(s, len,
@@ -610,271 +610,271 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SYSTEM_DIRECTORY:
          snprintf(s, len,
-               "Diretório system. \n"
+               "Pasta do sistema. \n"
                " \n"
-               "Define o diretório 'system'.\n"
-               "Cores podem consultar esse diretório\n"
+               "Define a pasta 'system'.\n"
+               "Os núcleos poderão consultar esta pasta\n"
                "para carregar BIOS, configurações\n"
-               "específicas de sistemas, etc.");
+               "específicas de sistema, etc.");
          break;
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
          snprintf(s, len,
-               "Automaticamente salva um Savestate ao fechar \n"
-               "o RetroArch.\n"
+               "Guardar automaticamente o estado de gravação ao sair \n"
+               "do RetroArch.\n"
                " \n"
-               "RetroArch carregará automaticamente qualquer\n"
-               "Savestate com esse caminho ao iniciar se 'Carregar\n"
-               "Savestate Automaticamente' estiver ativado.");
+               "O RetroArch carregará automaticamente qualquer\n"
+               "estado de gravação com este caminho ao iniciar, \n"
+               "caso a opção 'Carregar estado de gravação automaticamente' estiver ativa.");
          break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:
          snprintf(s, len,
-               "Usa driver de vídeo em thread.\n"
+               "Utiliza um controlador de vídeo segmentado.\n"
                " \n"
-               "Usando isso pode melhorar o desempenho ao \n"
-               "possível custo de latência e mais engasgos \n"
+               "Utilizando esta opção, poderá melhorar o desempenho, \n"
+               "com um custo a nível de latência e mais engasgamentos \n"
                "de vídeo.");
          break;
       case MENU_ENUM_LABEL_VIDEO_VSYNC:
          snprintf(s, len,
-               "Sincronismo Vertical de vídeo.\n");
+               "Sincronia vertical de vídeo.\n");
          break;
       case MENU_ENUM_LABEL_VIDEO_HARD_SYNC:
          snprintf(s, len,
-               "Tenta sincronizar CPU com GPU via \n"
-               "hardware.\n"
+               "Tenta sincronizar o processador com a GPU, \n"
+               "com recurso ao hardware.\n"
                " \n"
-               "Pode reduzir a latência ao custo de \n"
-               "desempenho.");
+               "Pode reduzir a latência, a troco de uma \n"
+               "diminuição de desempenho.");
          break;
       case MENU_ENUM_LABEL_REWIND_GRANULARITY:
          snprintf(s, len,
-               "Granularidade do retrocesso.\n"
-               " \n"
-               " Ao retroceder um número definido de \n"
-               "quadros, você pode retroceder vários \n"
-               "quadros por vez, aumentando a velocidade \n"
-               "de retrocesso.");
+               "Granularidade da função de retrocedimento \n"
+               "do tempo.\n"
+               "Ao retroceder um número definido de \n"
+               "fotogramas, você poderá retroceder vários \n"
+               "fotogramas de cada vez, aumentando assim a velocidade \n"
+               "do retrocedimento.");
          break;
       case MENU_ENUM_LABEL_SCREENSHOT:
          snprintf(s, len,
-               "Tira uma foto da tela.");
+               "Obtem uma captura de ecrã.");
          break;
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
          snprintf(s, len,
-               "Define quantos milissegundos retardar \n"
-               "após o VSync antes de executar o core.\n"
-               "\n"
-               "Pode reduzir a latência ao custo de\n"
-               "um maior risco de engasgo de vídeo.\n"
+               "Define quantos milissegundos serão utilizados \n"
+               "para atraso, após a sincronização vertical, \n"
+               "antes de iniciar o núcleo.\n"
+               "Pode reduzir a latência a troco de\n"
+               "um aumento do risco de engasgamento de vídeo.\n"
                " \n"
                "O valor máximo é 15.");
          break;
       case MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES:
          snprintf(s, len,
-               "Define quantos quadros a CPU pode rodar \n"
-               "adiante da GPU com a opção 'Sincronismo \n"
-               "de GPU via Hardware' ativada.\n"
+               "Define quantos fotogramas o processador pode processar \n"
+               "à frente da da GPU com a opção 'Sincronismo \n"
+               "de GPU através de hardware' ativada.\n"
                " \n"
                "O valor máximo é 3.\n"
                " \n"
-               " 0: Sincroniza com GPU de imediato.\n"
-               " 1: Sincroniza com quadro anterior.\n"
+               " 0: Sincroniza com a GPU de imediato.\n"
+               " 1: Sincroniza com o fotograma anterior.\n"
                " 2: Etc ...");
          break;
       case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
          snprintf(s, len,
-               "Insere um quadro preto entre quadros. \n"
+               "Introduz um fotograma preto entre fotogramas. \n"
                " \n"
-               "Útil para monitores de 120 Hz ao rodar \n"
-               "material de 60 Hz com eliminação do efeito \n"
+               "Útil para monitores de 120 Hz que executam \n"
+               "conteúdo a 60 Hz, eliminando o efeito \n"
                "'ghosting'.\n"
                " \n"
                "A taxa de atualização de vídeo deve ainda \n"
-               "ser configurada como se fosse um monitor de \n"
-               "60 Hz (divida a taxa de atualização por 2).");
+               "ser configurada para 60 Hz \n"
+               "(divida a taxa de atualização por 2).");
          break;
       case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
          snprintf(s, len,
-               "Mostra a tela inicial no menu.\n"
-               "É definida automaticamente como falso quando\n"
+               "Mostra o ecrã inicial no menu.\n"
+               "Esta definição é desativada automaticamente quando\n"
                "vista pela primeira vez.\n"
                " \n"
-               "É atualizada na configuração apenas quando a\n"
-               "opção 'Salvar Configuração ao Sair' está ativada.\n");
+               "Esta definição é definida na configuração apenas quando a\n"
+               "opção 'Guardar configuração ao sair' estiver ativada.\n");
          break;
       case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
-         snprintf(s, len, "Alterna tela cheia.");
+         snprintf(s, len, "Ativa/desativa ecrã completo.");
          break;
       case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
          snprintf(s, len,
-               "Previne SRAM de ser sobrescrita ao \n"
-               "carregar Savestates.\n"
+               "Previne a sobrescrição da SRAM durante \n"
+               "o carregamento de estados de gravação.\n"
                " \n"
-               "Pode potencialmente levar a jogos bugados.");
+               "Pode originar erros durante a execução de conteúdos.");
          break;
       case MENU_ENUM_LABEL_PAUSE_NONACTIVE:
          snprintf(s, len,
-               "Pausa a jogatina quando o foco da janela \n"
-               "é perdido.");
+               "Colocar em pausa o jogo quando o foco da janela \n"
+               "for perdido.");
          break;
       case MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT:
          snprintf(s, len,
-               "Captura material gráfico de saída da \n"
-               "GPU se estiver disponível.");
+               "Captura vídeo renderizado da saída da \n"
+               "GPU, caso esteja disponível.");
          break;
       case MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY:
          snprintf(s, len,
-               "Diretório de Capturas de Tela. \n"
+               "Pasta de capturas de ecrã. \n"
                " \n"
-               "Diretório para guardar as capturas de tela."
+               "Pasta para armazenamento das capturas de ecrã."
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
          snprintf(s, len,
-               "Intervalo de Troca de VSync.\n"
+               "Intervalo de troca de sincronização vertical.\n"
                " \n"
-               "Usa um intervalo de troca personalizado. \n"
-               "Use-e para reduzir à metade a taxa de \n"
-               "atualização do monitor.");
+               "Utiliza um intervalo de troca personalizado. \n"
+               "Use-o para reduzir até metade a taxa de \n"
+               "atualização do ecrã.");
          break;
       case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
          snprintf(s, len,
-               "Diretório de Saves. \n"
+               "Pasta de jogos guardados. \n"
                " \n"
-               "Salva todos os arquivos de save (*.srm) nesse \n"
-               "diretório. Isso inclui arquivos relacionados \n"
-               "como .bsv, .rt, .psrm, etc...\n"
+               "Guarda todos os ficheiros de gravação (*.srm) nesta \n"
+               "pasta, tais como ficheiros relacionados: \n"
+               ".bsv, .rt, .psrm, etc.\n"
                " \n"
-               "Pode ser sobreposto por opções explícitas de\n"
-               "linha de comando.");
+               "Pode perder prevalência em relação a opções explícitas\n"
+               "passadas como parâmetros na linha de comandos.");
          break;
       case MENU_ENUM_LABEL_SAVESTATE_DIRECTORY:
          snprintf(s, len,
-               "Diretório de Savestates. \n"
+               "Pasta de gravação de estados. \n"
                " \n"
-               "Salva todos os Savestates (*.state) nesse \n"
-               "diretório.\n"
+               "Todos os estados de gravação (*.state) serão \n"
+               "guardados nesta pasta.\n"
                " \n"
-               "Pode ser sobreposto por opções explícitas de\n"
-               "linha de comando.");
+               "Pode deixar de ter prevalência em relação a opções explícitas\n"
+               "passadas como parâmetros na linha de comandos.");
          break;
       case MENU_ENUM_LABEL_ASSETS_DIRECTORY:
          snprintf(s, len,
-               "Diretório de Recursos (Assets). \n"
+               "Pasta de recursos (assets). \n"
                " \n"
-               " Essa localização é consultada quando se \n"
-               "tenta buscar pelo menu recursos (assets) \n"
-               "carregáveis, etc.");
+               "Esta localização é consultada por omissão \n"
+               "pela interface do menu para procura de recursos (assets) \n"
+               "recarregáveis.");
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
          snprintf(s, len,
-               "Diretório de Papéis de Parede Dinâmicos. \n"
+               "Pasta de imagens de fundo dinâmicos. \n"
                " \n"
-               " O lugar para armazenar papéis de parede que \n"
-               "serão carregados dinamicamente pelo menu \n"
+               " O lugar para armazenar imagens de fundo que \n"
+               "serão carregadas dinamicamente pelo menu, \n"
                "dependendo do contexto.");
          break;
       case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
          snprintf(s, len,
-               "Taxa de câmera lenta."
+               "Rácio da câmera lenta."
                " \n"
-               "Quando ativado, o conteúdo rodará em velocidade\n"
-               "reduzida por um fator.");
+               "Quando ativo, o conteúdo será executado numa velocidade\n"
+               "reduzida por esse fator.");
          break;
       case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
          snprintf(s, len,
-               "Define o limiar de eixo.\n"
+               "Define o limite de eixo.\n"
                " \n"
-               "O quanto deve ser torcido um eixo para\n"
-               "resultar em um botão pressionado.\n"
+               "Representa o valor que deve ser atingido para\n"
+               "significar o pressionamento de um botão.\n"
                " Valores possíveis são [0.0, 1.0].");
          break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
          snprintf(s, len,
                "Período de turbo.\n"
                " \n"
-               "Descreve a velocidade na qual se alternam\n"
-               "os botões com turbo ativado."
+               "Descreve a velocidade com que os botões\n"
+               "com turbo ativo se alternam entre si."
                );
          break;
       case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
          snprintf(s, len,
-               "Ativa autodetecção de entrada.\n"
+               "Ativa auto-detecção de periféricos de entrada.\n"
                " \n"
-               "Tentará autoconfigurar joypads \n"
-               "em um estilo Plug-and-Play.");
+               "Os comandos serão configurados, de forma automática, \n"
+               "através do Plug and Play.");
          break;
       case MENU_ENUM_LABEL_CAMERA_ALLOW:
          snprintf(s, len,
                "Autorizar ou desautorizar o acesso da câmera \n"
-               "pelos cores.");
+               "pelos núcleos.");
          break;
       case MENU_ENUM_LABEL_LOCATION_ALLOW:
          snprintf(s, len,
                "Autorizar ou desautorizar o acesso de \n"
-               "serviços de localização pelas cores.");
+               "serviços de localização pelos núcleos.");
          break;
       case MENU_ENUM_LABEL_TURBO:
          snprintf(s, len,
                "Ativar turbo.\n"
                " \n"
-               "Segurando o turbo enquanto se pressiona outro \n"
-               "botão permitirá que o botão entre em modo \n"
-               "turbo em que o seu estado será modulado com \n"
+               "Se manter o botão turbo pressionado e pressionar outro \n"
+               "botão, este último entrará no modo \n"
+               "turbo e o seu estado será modulado com \n"
                "um sinal periódico. \n"
                " \n"
                "A modulação pára quando o próprio botão \n"
-               "(não é o botão de turbo) é solto.");
+               "(não o botão de turbo) já no se encontrar pressionado.");
          break;
       case MENU_ENUM_LABEL_OSK_ENABLE:
          snprintf(s, len,
-               "Ativar/desativar teclado na tela.");
+               "Ativar/desativar teclado no ecrã.");
          break;
       case MENU_ENUM_LABEL_AUDIO_MUTE:
          snprintf(s, len,
-               "Ligar/desligar áudio.");
+               "Silenciar ou remover silêncio do dispositivo.");
          break;
       case MENU_ENUM_LABEL_REWIND:
          snprintf(s, len,
-               "Segure o botão para retroceder.\n"
-               " \n"
-               "Retrocesso deve estar ativado.");
+               "Mantenha o botão pressionado para\n"
+               "ativar o retrocedimento do tempo. \n"
+               "O retrocedimento de tempo deve estar ativo.");
          break;
       case MENU_ENUM_LABEL_EXIT_EMULATOR:
          snprintf(s, len,
-               "Tecla para sair corretamente do RetroArch."
+               "Tecla para encerrar o RetroArch."
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
-               "\nFechando-o de outra forma mais agressiva \n"
-               "(SIGKILL, etc) sairá sem salvar RAM, etc.\n"
+               "\nSe o fechar abruptamente, \n"
+               "(SIGKILL, etc) sairá sem guardar a RAM, entre outros dados.\n"
                "Em sistemas baseados em Unix,\n"
-               "SIGINT/SIGTERM permite um\n"
-               "fechamento correto."
+               "o SIGINT/SIGTERM permite um\n"
+               "encerramento seguro."
 #endif
                );
          break;
       case MENU_ENUM_LABEL_LOAD_STATE:
          snprintf(s, len,
-               "Carrega Savestates.");
+               "Carrega o estado de gravação.");
          break;
       case MENU_ENUM_LABEL_SAVE_STATE:
          snprintf(s, len,
-               "Salva Savestates.");
+               "Guarda o estado de gravação.");
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,
-               "Incrementa o índice de cheats.\n");
+               "Incrementa o índice de batota.\n");
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_MINUS:
          snprintf(s, len,
-               "Decrementa o índice de cheats.\n");
+               "Decrementa o índice de batota.\n");
          break;
       case MENU_ENUM_LABEL_SHADER_PREV:
          snprintf(s, len,
-               "Aplica o shader anterior no diretório.");
+               "Aplica o shader anterior na pasta.");
          break;
       case MENU_ENUM_LABEL_SHADER_NEXT:
          snprintf(s, len,
-               "Aplica o próximo shader no diretório.");
+               "Aplica o próximo shader na pasta.");
          break;
       case MENU_ENUM_LABEL_RESET:
          snprintf(s, len,
@@ -882,28 +882,28 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_PAUSE_TOGGLE:
          snprintf(s, len,
-               "Alterna estado de pausado e não pausado.");
+               "Pausa/resume o conteúdo.");
          break;
       case MENU_ENUM_LABEL_CHEAT_TOGGLE:
          snprintf(s, len,
-               "Alterna índice de cheats.\n");
+               "Alterna entre os índices de batota.\n");
          break;
       case MENU_ENUM_LABEL_HOLD_FAST_FORWARD:
          snprintf(s, len,
-               "Segure para avanço rápido. Soltando o botão \n"
-               "desativa o avanço rápido.");
+               "Continue a pressionar para ativar a função de avanço rápido. Se soltar o botão \n"
+               "irá desativar a função de avanço-rápido.");
          break;
       case MENU_ENUM_LABEL_SLOWMOTION:
          snprintf(s, len,
-               "Segure para câmera lenta.");
+               "Continue a pressionar para manter o modo de câmera lenta.");
          break;
       case MENU_ENUM_LABEL_FRAME_ADVANCE:
          snprintf(s, len,
-               "O quadro avança quando o conteúdo está pausado.");
+               "O fotograma avança enquanto o conteúdo está em pausa.");
          break;
       case MENU_ENUM_LABEL_MOVIE_RECORD_TOGGLE:
          snprintf(s, len,
-               "Alterna entre estar gravando ou não.");
+               "Ativa ou desativa a gravação.");
          break;
       case MENU_ENUM_LABEL_L_X_PLUS:
       case MENU_ENUM_LABEL_L_X_MINUS:
@@ -916,12 +916,12 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Eixo para o analógico (esquema DualShock).\n"
                " \n"
-               "Associa normalmente, porém, se um analógico real \n"
-               "é associado, pode ser lido como um analógico\n"
+               "A associação é feita normalmente, no entanto, se um analógico real \n"
+               "for associado, pode ser lido como um analógico\n"
                "verdadeiro. \n"
                " \n"
-               "Eixo positivo X é para direita. \n"
-               "Eixo positivo Y é para baixo.");
+               "O eixo positivo X é para direita. \n"
+               "O eixo positivo Y é para baixo.");
          break;
       case MSG_UNKNOWN:
       default:
