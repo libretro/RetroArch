@@ -584,8 +584,7 @@ static INLINE unsigned font_get_replacement(const char* src, const char* start)
 {
    if ((*src & 0xFC) == 0xD8) /* 0x0600 to 0x06FF */
    {
-      int           lookup;
-      unsigned      result;
+      unsigned      result         = 0;
       bool          prev_connected = false;
       bool          next_connected = false;
       unsigned char id             = (src[0] << 6) | (src[1] & 0x3F);
@@ -595,10 +594,10 @@ static INLINE unsigned font_get_replacement(const char* src, const char* start)
       if (id < 0x21 || id > 0x4A)
          return 0;
 
-      if(prev2 < start)
+      if (prev2 < start)
       {
          prev2 = NULL;
-         if(prev1 < start)
+         if (prev1 < start)
             prev1 = NULL;
       }
 
