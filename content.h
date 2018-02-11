@@ -42,6 +42,7 @@ typedef struct content_ctx_info
 int pending_subsystem;
 int pending_subsystem_rom_id;
 
+char pending_subsystem_ident[255];
 char pending_subsystem_extensions[PATH_MAX_LENGTH];
 char pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS][PATH_MAX_LENGTH];
 
@@ -90,6 +91,9 @@ bool content_undo_save_buf_is_empty(void);
 
 /* Clears the pending subsystem rom buffer*/
 void content_clear_subsystem(void);
+
+/* Set the current subsystem*/
+void content_set_subsystem(unsigned subsystem);
 
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path);
