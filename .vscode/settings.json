@@ -12,6 +12,7 @@
    "files.associations": {
       "frontend_driver.h": "c",
       "*.in": "c",
-      "*.rh": "c"
+      "*.rh": "c",
+      "menu_driver.h": "c"
    },
 }

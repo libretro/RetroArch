@@ -4445,12 +4445,37 @@ static int xmb_list_push(void *data, void *userdata,
                   for (i = 0; i < system->subsystem.size; i++, subsystem++)
                   {
                      char s[PATH_MAX_LENGTH];
-                     snprintf(s, sizeof(s), "Load: %s %c", subsystem->desc, i == pending_subsystem ? '*': ' ');
-                     menu_entries_append_enum(info->list,
-                           s,
-                           msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
-                           MENU_ENUM_LABEL_SUBSYSTEM_ADD,
-                           MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
+                     if (pending_subsystem == i)
+                     {
+                        if (pending_subsystem_rom_id < subsystem->num_roms)
+                        {
+                           snprintf(s, sizeof(s), "Load %s %c", subsystem->desc, i == pending_subsystem ? '*': ' ');
+                           menu_entries_append_enum(info->list,
+                                 s,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
+                                 MENU_ENUM_LABEL_SUBSYSTEM_ADD,
+                                 MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
+                        }
+                        else
+                        {
+                           /* To-Do: replace the MENU_ENUM_LABEL_SUBSYSTEM_ADD for the proper labels and trigger the load action */
+                           snprintf(s, sizeof(s), "Start %s %c", subsystem->desc, i == pending_subsystem ? '*': ' ');
+                           menu_entries_append_enum(info->list,
+                                 s,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
+                                 MENU_ENUM_LABEL_SUBSYSTEM_ADD,
+                                 MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
+                        }
+                     }
+                     else
+                     {
+                        snprintf(s, sizeof(s), "Load %s %c", subsystem->desc, i == pending_subsystem ? '*': ' ');
+                        menu_entries_append_enum(info->list,
+                              s,
+                              msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
+                              MENU_ENUM_LABEL_SUBSYSTEM_ADD,
+                              MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
+                     }
                   }
                }
             }
