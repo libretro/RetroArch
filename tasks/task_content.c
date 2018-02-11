@@ -1749,6 +1749,7 @@ void content_deinit(void)
  * selected libretro core. */
 bool content_init(void)
 {
+   RARCH_LOG("THIS CODEPATH");
    content_information_ctx_t content_ctx;
 
    bool ret                                   = true;

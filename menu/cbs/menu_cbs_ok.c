@@ -459,7 +459,11 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_SUBSYSTEM_LOAD:
          filebrowser_clear_type();
          path_set(RARCH_PATH_SUBSYSTEM, pending_subsystem_ident);
-         path_set_special((char**)pending_subsystem_roms, pending_subsystem_rom_num);
+         /* hardcoded to 2 for testing */
+         static enum rarch_core_type explicit_current_core_type  = CORE_TYPE_PLAIN;
+         char* roms[2] = { pending_subsystem_roms[0], pending_subsystem_roms[1] };
+         path_set_special(roms, pending_subsystem_rom_num);
+         command_event(CMD_EVENT_CORE_INIT, &explicit_current_core_type);
          break;
       case ACTION_OK_DL_CHEAT_FILE:
          filebrowser_clear_type();
