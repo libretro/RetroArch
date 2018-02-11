@@ -54,6 +54,7 @@ typedef struct
 {
    unsigned opacity;
    int progress;
+   bool decorations;
 } dispserv_win32_t;
 
 /*
@@ -180,11 +181,23 @@ static bool win32_set_window_progress(void *data, int progress, bool finished)
    return ret;
 }
 
+static bool win32_set_window_decorations(void *data, bool on)
+{
+   dispserv_win32_t *serv = (dispserv_win32_t*)data;
+
+   serv->decorations = on;
+
+   /* menu_setting performs a reinit instead to properly apply decoration changes */
+
+   return true;
+}
+
 const video_display_server_t dispserv_win32 = {
    win32_display_server_init,
    win32_display_server_destroy,
    win32_set_window_opacity,
    win32_set_window_progress,
+   win32_set_window_decorations,
    "win32"
 };
 

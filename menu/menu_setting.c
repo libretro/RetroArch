@@ -1854,6 +1854,9 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
          video_display_server_set_window_opacity(settings->uints.video_window_opacity);
          break;
+      case MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS:
+         video_display_server_set_window_decorations(settings->bools.video_window_show_decorations);
+         break;
       default:
          break;
    }
@@ -3662,6 +3665,22 @@ static bool setting_append_list(
                menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             }
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_window_show_decorations,
+                  MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+                  window_decorations,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
 
             CONFIG_BOOL(
                   list, list_info,
