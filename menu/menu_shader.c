@@ -333,14 +333,16 @@ bool menu_shader_manager_save_preset(
       const char *basename, bool apply, bool fullpath)
 {
 #ifdef HAVE_SHADER_MANAGER
-   bool ret                               = false;
    char buffer[PATH_MAX_LENGTH];
    char preset_path[PATH_MAX_LENGTH];
+   char config_directory[PATH_MAX_LENGTH];
+   bool ret                               = false;
    unsigned d, type                       = RARCH_SHADER_NONE;
    const char *dirs[3]                    = {0};
    config_file_t *conf                    = NULL;
    struct video_shader *shader            = menu_shader_get();
 
+   config_directory[0]                    = '\0';
    buffer[0]                              = '\0';
    preset_path[0]                         = '\0';
 
@@ -417,10 +419,8 @@ bool menu_shader_manager_save_preset(
 
    if (!fullpath)
    {
-      char config_directory[PATH_MAX_LENGTH];
       settings_t *settings = config_get_ptr();
 
-      *config_directory    = '\0';
 
       if (!path_is_empty(RARCH_PATH_CONFIG))
          fill_pathname_basedir(
