@@ -446,7 +446,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_SUBSYSTEM_ADD_LIST:
          filebrowser_clear_type();
-         if (pending_subsystem != type - MENU_SETTINGS_SUBSYSTEM_ADD)
+         if (content_get_subsystem() != type - MENU_SETTINGS_SUBSYSTEM_ADD)
             content_clear_subsystem();
          content_set_subsystem(type - MENU_SETTINGS_SUBSYSTEM_ADD);
          filebrowser_set_type(FILEBROWSER_SELECT_FILE_SUBSYSTEM);
@@ -457,17 +457,13 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_SUBSYSTEM_LOAD:
-         filebrowser_clear_type();
-         path_set(RARCH_PATH_SUBSYSTEM, pending_subsystem_ident);
-         /* hardcoded to 2 for testing */
-         char* roms[2] = { pending_subsystem_roms[0], pending_subsystem_roms[1] };
-         path_set_special(roms, pending_subsystem_rom_num);
-         content_ctx_info_t content_info = {0};
-         pending_subsystem_init = true;
-         task_push_load_subsystem_with_core_from_menu(
-               NULL, &content_info,
-               CORE_TYPE_PLAIN, NULL, NULL);
-
+         {
+            content_ctx_info_t content_info = {0};
+            filebrowser_clear_type();
+            task_push_load_subsystem_with_core_from_menu(
+                  NULL, &content_info,
+                  CORE_TYPE_PLAIN, NULL, NULL);
+         }
          break;
       case ACTION_OK_DL_CHEAT_FILE:
          filebrowser_clear_type();

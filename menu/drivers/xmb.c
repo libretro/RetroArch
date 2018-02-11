@@ -61,6 +61,7 @@
 #include "../../tasks/tasks_internal.h"
 
 #include "../../cheevos/badges.h"
+#include "../../content.h"
 
 #define XMB_RIBBON_ROWS 64
 #define XMB_RIBBON_COLS 64
@@ -4445,11 +4446,11 @@ static int xmb_list_push(void *data, void *userdata,
                   for (i = 0; i < system->subsystem.size; i++, subsystem++)
                   {
                      char s[PATH_MAX_LENGTH];
-                     if (pending_subsystem == i)
+                     if (content_get_subsystem() == i)
                      {
                         if (pending_subsystem_rom_id < subsystem->num_roms)
                         {
-                           snprintf(s, sizeof(s), "Load %s %c", subsystem->desc, i == pending_subsystem ? '*': ' ');
+                           snprintf(s, sizeof(s), "Load %s %s", subsystem->desc, i == content_get_subsystem() ? "\u2605" : " ");
                            menu_entries_append_enum(info->list,
                                  s,
                                  msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
@@ -4458,8 +4459,7 @@ static int xmb_list_push(void *data, void *userdata,
                         }
                         else
                         {
-                           /* To-Do: replace the MENU_ENUM_LABEL_SUBSYSTEM_ADD for the proper labels and trigger the load action */
-                           snprintf(s, sizeof(s), "Start %s %c", subsystem->desc, i == pending_subsystem ? '*': ' ');
+                           snprintf(s, sizeof(s), "Start %s %s", subsystem->desc, i == content_get_subsystem() ? "\u2605" : " ");
                            menu_entries_append_enum(info->list,
                                  s,
                                  msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD),
@@ -4469,7 +4469,7 @@ static int xmb_list_push(void *data, void *userdata,
                      }
                      else
                      {
-                        snprintf(s, sizeof(s), "Load %s %c", subsystem->desc, i == pending_subsystem ? '*': ' ');
+                        snprintf(s, sizeof(s), "Load %s %s", subsystem->desc, i == content_get_subsystem() ? "\u2605" : " ");
                         menu_entries_append_enum(info->list,
                               s,
                               msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),

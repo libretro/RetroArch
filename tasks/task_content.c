@@ -141,6 +141,10 @@ static bool _content_is_inited                                = false;
 static bool core_does_not_need_content                        = false;
 static uint32_t content_rom_crc                               = 0;
 
+static bool pending_subsystem_init                            = false;
+static int  pending_subsystem_rom_num                         = 0;
+static int  pending_subsystem_id                              = 0;
+
 static int content_file_read(const char *path, void **buf, ssize_t *length)
 {
 #ifdef HAVE_COMPRESSION
@@ -272,11 +276,13 @@ static bool content_load(content_ctx_info_t *info)
       retval = false;
       goto end;
    }
-   
-   {
 
+   if (pending_subsystem_init)
+   {
       content_init();
+      content_clear_subsystem();
    }
+
 
 #ifdef HAVE_MENU
    /* TODO/FIXME - can we get rid of this? */
@@ -1697,6 +1703,9 @@ bool task_push_load_subsystem_with_core_from_menu(
       retro_task_callback_t cb,
       void *user_data)
 {
+
+   pending_subsystem_init = true;
+
    /* Set content path */
    path_set(RARCH_PATH_SUBSYSTEM, pending_subsystem_ident);
    /* hardcoded to 2 for testing */
@@ -1736,14 +1745,21 @@ void content_clear_subsystem(void)
       pending_subsystem_roms[i][0] = '\0';
 }
 
+/* Get the current subsystem */
+int content_get_subsystem()
+{
+   return pending_subsystem_id;
+}
+
 /* Set the current subsystem*/
-void content_set_subsystem(unsigned sub)
+void content_set_subsystem(unsigned idx)
 {
    rarch_system_info_t *system = runloop_get_system_info();
    const struct retro_subsystem_info* subsystem = NULL;
 
-   pending_subsystem = sub;
-   subsystem = system->subsystem.data + pending_subsystem;
+   subsystem = system->subsystem.data + pending_subsystem_id;
+
+   pending_subsystem_id = idx;
 
    strlcpy(pending_subsystem_ident, subsystem->ident, sizeof(pending_subsystem_ident));
    pending_subsystem_rom_num = subsystem->num_roms;
@@ -1752,8 +1768,11 @@ void content_set_subsystem(unsigned sub)
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path)
 {
-   strlcpy(pending_subsystem_roms[pending_subsystem_rom_id], path, sizeof(pending_subsystem_roms[pending_subsystem_rom_id]));
-   RARCH_LOG("[subsystem] subsystem id: %d subsystem ident: %s rom id: %d, rom path: %s\n", pending_subsystem, pending_subsystem_ident, pending_subsystem_rom_id, pending_subsystem_roms[pending_subsystem_rom_id]);
+   strlcpy(pending_subsystem_roms[pending_subsystem_rom_id], path, 
+      sizeof(pending_subsystem_roms[pending_subsystem_rom_id]));
+   RARCH_LOG("[subsystem] subsystem id: %d subsystem ident: %s rom id: %d, rom path: %s\n", 
+      pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_id, 
+      pending_subsystem_roms[pending_subsystem_rom_id]);
    pending_subsystem_rom_id++;
 }
 
@@ -1810,10 +1829,9 @@ bool content_init(void)
    if (pending_subsystem_init)
    {
       path_set(RARCH_PATH_SUBSYSTEM, pending_subsystem_ident);
-      /* hardcoded to 2 for testing */
       char* roms[2] = { pending_subsystem_roms[0], pending_subsystem_roms[1] };
+      /* hardcoded to 2 for testing please fix */
       path_set_special(roms, pending_subsystem_rom_num);
-      RARCH_LOG("********%s %s \n", pending_subsystem_ident, path_get(RARCH_PATH_SUBSYSTEM));
    }
    content_information_ctx_t content_ctx;
 

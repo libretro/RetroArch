@@ -409,7 +409,7 @@ static int action_bind_sublabel_subsystem_add(
    const struct retro_subsystem_info* subsystem = NULL;
    subsystem = system->subsystem.data + (type - MENU_SETTINGS_SUBSYSTEM_ADD);
    if (subsystem && pending_subsystem_rom_id < subsystem->num_roms)
-      snprintf(s, len, " Current Content: %s", pending_subsystem == type - MENU_SETTINGS_SUBSYSTEM_ADD ? subsystem->roms[pending_subsystem_rom_id].desc : subsystem->roms[0].desc);
+      snprintf(s, len, " Current Content: %s", content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD ? subsystem->roms[pending_subsystem_rom_id].desc : subsystem->roms[0].desc);
    return 0;
 }
 
@@ -428,7 +428,7 @@ static int action_bind_sublabel_netplay_room(
    const char *gamename   = NULL;
    const char *core_ver   = NULL;
    const char *frontend   = NULL;
-   
+
    /* This offset may cause issues if any entries are added to this menu */
    unsigned offset        = i - 3;
 

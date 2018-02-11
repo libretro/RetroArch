@@ -88,10 +88,9 @@ void filebrowser_parse(void *data, unsigned type_data)
    {
       rarch_system_info_t *system = runloop_get_system_info();
       const struct retro_subsystem_info* subsystem = NULL;
-      subsystem = system->subsystem.data + pending_subsystem;
+      subsystem = system->subsystem.data + content_get_subsystem();
       if (subsystem && pending_subsystem_rom_id < subsystem->num_roms)
       {
-         RARCH_LOG("[subsystem] valid extensions: %s\n", subsystem->roms[pending_subsystem_rom_id].valid_extensions);
          str_list = dir_list_new(path,
             (filter_ext && info) ? subsystem->roms[pending_subsystem_rom_id].valid_extensions : NULL,
             true, settings->bools.show_hidden_files, true, false);

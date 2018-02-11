@@ -39,11 +39,7 @@ typedef struct content_ctx_info
    environment_get_t environ_get;  /* Function passed for environment_get function */
 } content_ctx_info_t;
 
-bool pending_subsystem_init;
-
-int pending_subsystem;
 int pending_subsystem_rom_id;
-int pending_subsystem_rom_num;
 
 char pending_subsystem_ident[255];
 char pending_subsystem_extensions[PATH_MAX_LENGTH];
@@ -93,10 +89,16 @@ bool content_undo_load_buf_is_empty(void);
 bool content_undo_save_buf_is_empty(void);
 
 /* Clears the pending subsystem rom buffer*/
+bool content_is_subsystem_pending_load(void);
+
+/* Clears the pending subsystem rom buffer*/
 void content_clear_subsystem(void);
 
 /* Set the current subsystem*/
 void content_set_subsystem(unsigned subsystem);
+
+/* Get the current subsystem*/
+int content_get_subsystem();
 
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path);
