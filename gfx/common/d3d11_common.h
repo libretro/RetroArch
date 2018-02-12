@@ -2528,6 +2528,17 @@ typedef struct
       bool           enabled;
    } sprites;
 
+#ifdef HAVE_OVERLAY
+   struct
+   {
+      D3D11Buffer      vbo;
+      d3d11_texture_t* textures;
+      bool             enabled;
+      bool             fullscreen;
+      int              count;
+   } overlays;
+#endif
+
    struct
    {
       d3d11_texture_t texture;
