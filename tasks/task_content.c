@@ -1712,12 +1712,6 @@ bool task_push_load_subsystem_with_core_from_menu(
 
    pending_subsystem_init = true;
 
-   /* Set content path */
-   path_set(RARCH_PATH_SUBSYSTEM, pending_subsystem_ident);
-   /* hardcoded to 2 for testing */
-   char* roms[2] = { pending_subsystem_roms[0], pending_subsystem_roms[1] };
-   path_set_special(roms, pending_subsystem_rom_num);
-
    /* Load content */
    if (!task_load_content_callback(content_info, true, false))
    {
@@ -1774,10 +1768,10 @@ void content_set_subsystem(unsigned idx)
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path)
 {
-   strlcpy(pending_subsystem_roms[pending_subsystem_rom_id], path, 
+   strlcpy(pending_subsystem_roms[pending_subsystem_rom_id], path,
       sizeof(pending_subsystem_roms[pending_subsystem_rom_id]));
-   RARCH_LOG("[subsystem] subsystem id: %d subsystem ident: %s rom id: %d, rom path: %s\n", 
-      pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_id, 
+   RARCH_LOG("[subsystem] subsystem id: %d subsystem ident: %s rom id: %d, rom path: %s\n",
+      pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_id,
       pending_subsystem_roms[pending_subsystem_rom_id]);
    pending_subsystem_rom_id++;
 }
