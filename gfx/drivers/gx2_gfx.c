@@ -447,10 +447,10 @@ static void *wiiu_gfx_init(const video_info_t *video,
 
    if(settings->bools.video_shader_enable)
    {
-      const char* ext = retroarch_get_shader_preset();
+      const char* ext = path_get_extension(retroarch_get_shader_preset());
 
       if(ext && !strncmp(ext, "slang", 5))
-         wiiu_gfx_set_shader(wiiu, RARCH_SHADER_SLANG, settings->paths.path_shader);
+         wiiu_gfx_set_shader(wiiu, RARCH_SHADER_SLANG, retroarch_get_shader_preset());
    }
 
    return wiiu;
