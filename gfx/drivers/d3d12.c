@@ -961,6 +961,10 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d12->chain.vsync           = video->vsync;
    d3d12->format = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
    d3d12->frame.texture[0].desc.Format = d3d12->format;
+   d3d12->frame.texture[0].desc.Width  = 4;
+   d3d12->frame.texture[0].desc.Height = 4;
+   d3d12->frame.texture[0].srv_heap    = &d3d12->desc.srv_heap;
+   d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
 
    font_driver_init_osd(d3d12, false, video->is_threaded, FONT_DRIVER_RENDER_D3D12_API);
 
@@ -1171,7 +1175,7 @@ static bool d3d12_gfx_frame(
 
    D3D12IASetPrimitiveTopology(d3d12->queue.cmd, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-   if (data && width && height)
+   if (frame && width && height)
    {
       if (d3d12->shader_preset)
       {
