@@ -44,6 +44,172 @@ static void d3d12_gfx_sync(d3d12_video_t* d3d12)
    }
 }
 
+#ifdef HAVE_OVERLAY
+static void d3d12_free_overlays(d3d12_video_t* d3d12)
+{
+   unsigned i;
+   for (i = 0; i < d3d12->overlays.count; i++)
+      d3d12_release_texture(&d3d12->overlays.textures[i]);
+
+   Release(d3d12->overlays.vbo);
+}
+
+static void
+d3d12_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w, float h)
+{
+   d3d12_sprite_t* sprites = NULL;
+   D3D12_RANGE     range   = { 0, 0 };
+   d3d12_video_t*  d3d12   = (d3d12_video_t*)data;
+
+   if (!d3d12)
+      return;
+
+   D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites);
+
+   sprites[index].pos.x = x;
+   sprites[index].pos.y = y;
+   sprites[index].pos.w = w;
+   sprites[index].pos.h = h;
+
+   range.Begin = index * sizeof(*sprites);
+   range.End   = range.Begin + sizeof(*sprites);
+   D3D12Unmap(d3d12->overlays.vbo, 0, &range);
+}
+
+static void d3d12_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)
+{
+   d3d12_sprite_t* sprites = NULL;
+   D3D12_RANGE     range   = { 0, 0 };
+   d3d12_video_t*  d3d12   = (d3d12_video_t*)data;
+
+   if (!d3d12)
+      return;
+
+   D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites);
+
+   sprites[index].coords.u = u;
+   sprites[index].coords.v = v;
+   sprites[index].coords.w = w;
+   sprites[index].coords.h = h;
+
+   range.Begin = index * sizeof(*sprites);
+   range.End   = range.Begin + sizeof(*sprites);
+   D3D12Unmap(d3d12->overlays.vbo, 0, &range);
+}
+
+static void d3d12_overlay_set_alpha(void* data, unsigned index, float mod)
+{
+   d3d12_sprite_t* sprites = NULL;
+   D3D12_RANGE     range   = { 0, 0 };
+   d3d12_video_t*  d3d12   = (d3d12_video_t*)data;
+
+   if (!d3d12)
+      return;
+
+   D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites);
+
+   sprites[index].colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, mod * 0xFF);
+   sprites[index].colors[1] = sprites[index].colors[0];
+   sprites[index].colors[2] = sprites[index].colors[0];
+   sprites[index].colors[3] = sprites[index].colors[0];
+
+   range.Begin = index * sizeof(*sprites);
+   range.End   = range.Begin + sizeof(*sprites);
+   D3D12Unmap(d3d12->overlays.vbo, 0, &range);
+}
+
+static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_images)
+{
+   int                         i;
+   d3d12_sprite_t*             sprites = NULL;
+   D3D12_RANGE                 range   = { 0, 0 };
+   d3d12_video_t*              d3d12   = (d3d12_video_t*)data;
+   const struct texture_image* images  = (const struct texture_image*)image_data;
+
+   if (!d3d12)
+      return false;
+
+   d3d12_gfx_sync(d3d12);
+   d3d12_free_overlays(d3d12);
+   d3d12->overlays.count    = num_images;
+   d3d12->overlays.textures = (d3d12_texture_t*)calloc(num_images, sizeof(d3d12_texture_t));
+
+   d3d12->overlays.count                   = num_images;
+   d3d12->overlays.vbo_view.SizeInBytes    = sizeof(d3d12_sprite_t) * d3d12->overlays.count;
+   d3d12->overlays.vbo_view.StrideInBytes  = sizeof(d3d12_sprite_t);
+   d3d12->overlays.vbo_view.BufferLocation = d3d12_create_buffer(
+         d3d12->device, d3d12->overlays.vbo_view.SizeInBytes, &d3d12->overlays.vbo);
+
+   D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites);
+
+   for (i = 0; i < num_images; i++)
+   {
+
+      d3d12->overlays.textures[i].desc.Width  = images[i].width;
+      d3d12->overlays.textures[i].desc.Height = images[i].height;
+      d3d12->overlays.textures[i].desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+      d3d12->overlays.textures[i].srv_heap    = &d3d12->desc.srv_heap;
+      d3d12_init_texture(d3d12->device, &d3d12->overlays.textures[i]);
+
+      d3d12_update_texture(
+            images[i].width, images[i].height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, images[i].pixels,
+            &d3d12->overlays.textures[i]);
+
+      sprites[i].pos.x = 0.0f;
+      sprites[i].pos.y = 0.0f;
+      sprites[i].pos.w = 1.0f;
+      sprites[i].pos.h = 1.0f;
+
+      sprites[i].coords.u = 0.0f;
+      sprites[i].coords.v = 0.0f;
+      sprites[i].coords.w = 1.0f;
+      sprites[i].coords.h = 1.0f;
+
+      sprites[i].params.scaling  = 1;
+      sprites[i].params.rotation = 0;
+
+      sprites[i].colors[0] = 0xFFFFFFFF;
+      sprites[i].colors[1] = sprites[i].colors[0];
+      sprites[i].colors[2] = sprites[i].colors[0];
+      sprites[i].colors[3] = sprites[i].colors[0];
+   }
+   D3D12Unmap(d3d12->overlays.vbo, 0, NULL);
+
+   return true;
+}
+
+static void d3d12_overlay_enable(void* data, bool state)
+{
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12)
+      return;
+
+   d3d12->overlays.enabled = state;
+   win32_show_cursor(state);
+}
+
+static void d3d12_overlay_full_screen(void* data, bool enable)
+{
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12)
+      return;
+
+   d3d12->overlays.fullscreen = enable;
+}
+
+static void d3d12_get_overlay_interface(void* data, const video_overlay_interface_t** iface)
+{
+   static const video_overlay_interface_t overlay_interface = {
+      d3d12_overlay_enable,      d3d12_overlay_load,        d3d12_overlay_tex_geom,
+      d3d12_overlay_vertex_geom, d3d12_overlay_full_screen, d3d12_overlay_set_alpha,
+   };
+
+   *iface = &overlay_interface;
+}
+#endif
+
 static void d3d12_set_filtering(void* data, unsigned index, bool smooth)
 {
    int            i;
@@ -643,6 +809,10 @@ static void d3d12_gfx_free(void* data)
 
    d3d12_gfx_sync(d3d12);
 
+#ifdef HAVE_OVERLAY
+   d3d12_free_overlays(d3d12);
+#endif
+
    d3d12_free_shader_preset(d3d12);
 
    font_driver_free_osd();
@@ -951,9 +1121,8 @@ static bool d3d12_gfx_frame(
    d3d12_texture_t* texture = NULL;
    d3d12_video_t*   d3d12   = (d3d12_video_t*)data;
 
-   PERF_START();
-
    d3d12_gfx_sync(d3d12);
+   PERF_START();
 
    if (d3d12->resize_chain)
    {
@@ -1264,21 +1433,61 @@ static bool d3d12_gfx_frame(
       D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
    }
 
-   D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
-   D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
-
    d3d12->sprites.pipe = d3d12->sprites.pipe_noblend;
    D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
    D3D12IASetPrimitiveTopology(d3d12->queue.cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
-   D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
 
    d3d12->sprites.enabled = true;
-#if 1
+
    if (d3d12->menu.enabled)
+   {
+      D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
+      D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
+      D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
       menu_driver_frame(video_info);
+   }
+
+#ifdef HAVE_OVERLAY
+   if (d3d12->overlays.enabled)
+   {
+      if (d3d12->overlays.fullscreen)
+      {
+         D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
+         D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
+      }
+      else
+      {
+         D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->frame.viewport);
+         D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->frame.scissorRect);
+      }
+
+      D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->overlays.vbo_view);
+
+      D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe_blend);
+
+      D3D12SetGraphicsRootDescriptorTable(
+            d3d12->queue.cmd, ROOT_ID_SAMPLER_T,
+            d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+
+      for (i = 0; i < d3d12->overlays.count; i++)
+      {
+         if (d3d12->overlays.textures[i].dirty)
+            d3d12_upload_texture(d3d12->queue.cmd, &d3d12->overlays.textures[i]);
+
+         D3D12SetGraphicsRootDescriptorTable(
+               d3d12->queue.cmd, ROOT_ID_TEXTURE_T, d3d12->overlays.textures[i].gpu_descriptor[0]);
+         D3D12DrawInstanced(d3d12->queue.cmd, 1, 1, i, 0);
+      }
+   }
 #endif
+
    if (msg && *msg)
    {
+      D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe_blend);
+      D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
+      D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
+      D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
+
       font_driver_render_msg(video_info, NULL, msg, NULL);
       dxgi_update_title(video_info);
    }
@@ -1292,17 +1501,13 @@ static bool d3d12_gfx_frame(
    D3D12ExecuteGraphicsCommandLists(d3d12->queue.handle, 1, &d3d12->queue.cmd);
    D3D12SignalCommandQueue(d3d12->queue.handle, d3d12->queue.fence, ++d3d12->queue.fenceValue);
 
+   PERF_STOP();
 #if 1
    DXGIPresent(d3d12->chain.handle, !!d3d12->chain.vsync, 0);
 #else
    DXGI_PRESENT_PARAMETERS pp = { 0 };
    DXGIPresent1(d3d12->swapchain, 0, 0, &pp);
 #endif
-
-   PERF_STOP();
-
-   if (msg && *msg)
-      dxgi_update_title(video_info);
 
    return true;
 }
@@ -1411,6 +1616,8 @@ static void d3d12_set_menu_texture_enable(void* data, bool state, bool full_scre
    d3d12->menu.fullscreen = full_screen;
 }
 
+static void d3d12_gfx_show_mouse(void* data, bool state) { win32_show_cursor(state); }
+
 static void d3d12_gfx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
@@ -1514,7 +1721,7 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_set_menu_texture_frame,
    d3d12_set_menu_texture_enable,
    d3d12_gfx_set_osd_msg,
-   NULL, /* show_mouse */
+   d3d12_gfx_show_mouse,
    NULL, /* grab_mouse_toggle */
    d3d12_gfx_get_current_shader,
    NULL, /* get_current_software_framebuffer */
@@ -1544,7 +1751,7 @@ video_driver_t video_d3d12 = {
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
-   NULL, /* overlay_interface */
+   d3d12_get_overlay_interface,
 #endif
    d3d12_gfx_get_poke_interface,
 };

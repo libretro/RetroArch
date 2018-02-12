@@ -1414,6 +1414,18 @@ typedef struct
       bool                     enabled;
    } sprites;
 
+#ifdef HAVE_OVERLAY
+   struct
+   {
+      D3D12Resource            vbo;
+      D3D12_VERTEX_BUFFER_VIEW vbo_view;
+      d3d12_texture_t*         textures;
+      bool                     enabled;
+      bool                     fullscreen;
+      int                      count;
+   } overlays;
+#endif
+
    struct
    {
       D3D12PipelineState              pipe;
