@@ -60,11 +60,11 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
-	"%2$.*1$s se ha unido como jugador %3$u"
+	"%.*s se ha unido como jugador %u"
 	)
 MSG_HASH(
 	MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
-	"%2$.*1$s se ha unido con los dispositivos de entrada %4$.*3$s"
+	"%.*s se ha unido con los dispositivos de entrada %.*s"
 	)
 MSG_HASH(
 	MSG_NETPLAY_NOT_RETROARCH,

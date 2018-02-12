@@ -65,11 +65,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
-      "「%2$.*1$s」がプレヤー「%3$u」で接続しました"
+      "「%.*s」がプレヤー「%u」で接続しました"
       )
 MSG_HASH(
       MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
-      "「%2$.*1$s」が入力デバイス「%4$.*3$s」で接続しました"
+      "「%.*s」が入力デバイス「%.*s」で接続しました"
       )
 MSG_HASH(
       MSG_NETPLAY_NOT_RETROARCH,
