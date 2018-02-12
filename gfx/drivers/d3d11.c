@@ -644,6 +644,9 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    d3d11->frame.texture[0].desc.Format = d3d11->format;
    d3d11->frame.texture[0].desc.Usage  = D3D11_USAGE_DEFAULT;
+   d3d11->frame.texture[0].desc.Width  = 4;
+   d3d11->frame.texture[0].desc.Height = 4;
+   d3d11_init_texture(d3d11->device, &d3d11->frame.texture[0]);
 
    d3d11->menu.texture.desc.Usage = D3D11_USAGE_DEFAULT;
 
