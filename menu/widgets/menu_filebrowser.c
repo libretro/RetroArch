@@ -35,6 +35,11 @@
 #include "../../configuration.h"
 #include "../../paths.h"
 
+#include "../../retroarch.h"
+#include "../../core.h"
+#include "../../content.h"
+#include "../../verbosity.h"
+
 static enum filebrowser_enums filebrowser_types = FILEBROWSER_NONE;
 
 enum filebrowser_enums filebrowser_get_type(void)
@@ -75,10 +80,23 @@ void filebrowser_parse(void *data, unsigned type_data)
 
    if (info && path_is_compressed)
       str_list = file_archive_get_file_list(path, info->exts);
-   else if (!string_is_empty(path))
+   else if (!string_is_empty(path) && filebrowser_types != FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       str_list = dir_list_new(path,
             (filter_ext && info) ? info->exts : NULL,
             true, settings->bools.show_hidden_files, true, false);
+   else if (!string_is_empty(path) && filebrowser_types == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
+   {
+      rarch_system_info_t *system = runloop_get_system_info();
+      const struct retro_subsystem_info* subsystem = NULL;
+      subsystem = system->subsystem.data + content_get_subsystem();
+      if (subsystem && content_get_subsystem_rom_id() < subsystem->num_roms)
+      {
+         str_list = dir_list_new(path,
+            (filter_ext && info) ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
+            true, settings->bools.show_hidden_files, true, false);
+      }
+
+   }
 
    switch (filebrowser_types)
    {

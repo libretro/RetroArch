@@ -297,7 +297,6 @@ static bool path_init_subsystem(void)
 
    if (!system || path_is_empty(RARCH_PATH_SUBSYSTEM))
       return false;
-
    /* For subsystems, we know exactly which RAM types are supported. */
 
    info = libretro_find_subsystem_info(
@@ -306,7 +305,6 @@ static bool path_init_subsystem(void)
          path_get(RARCH_PATH_SUBSYSTEM));
 
    /* We'll handle this error gracefully later. */
-
    if (info)
    {
       unsigned num_content = MIN(info->num_roms,

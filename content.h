@@ -25,6 +25,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_miscellaneous.h>
 
 #include "frontend/frontend_driver.h"
 
@@ -80,6 +81,28 @@ bool content_reset_savestate_backups(void);
 /* Checks if the buffers are empty */
 bool content_undo_load_buf_is_empty(void);
 bool content_undo_save_buf_is_empty(void);
+
+/* Clears the pending subsystem rom buffer*/
+bool content_is_subsystem_pending_load(void);
+
+/* Clears the pending subsystem rom buffer*/
+void content_clear_subsystem(void);
+
+/* Set the current subsystem*/
+void content_set_subsystem(unsigned subsystem);
+
+/* Get the current subsystem*/
+int content_get_subsystem();
+
+/* Add a rom to the subsystem rom buffer */
+void content_add_subsystem(const char* path);
+
+/* Get the current subsystem rom id */
+int content_get_subsystem_rom_id();
+
+/* Set environment variables before a subsystem load */
+void content_set_subsystem_info();
+
 
 RETRO_END_DECLS
 

@@ -37,6 +37,9 @@
 #include "../../network/netplay/netplay_discovery.h"
 #endif
 
+#include "../../retroarch.h"
+#include "../../content.h"
+
 #define default_sublabel_macro(func_name, lbl) \
   static int (func_name)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
 { \
@@ -396,6 +399,22 @@ static int action_bind_sublabel_cheevos_entry(
    return 0;
 }
 
+static int action_bind_sublabel_subsystem_add(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   rarch_system_info_t *system = runloop_get_system_info();
+   const struct retro_subsystem_info* subsystem = NULL;
+   subsystem = system->subsystem.data + (type - MENU_SETTINGS_SUBSYSTEM_ADD);
+   if (subsystem && content_get_subsystem_rom_id() < subsystem->num_roms)
+      snprintf(s, len, " Current Content: %s", content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD ? subsystem->roms[content_get_subsystem_rom_id()].desc : subsystem->roms[0].desc);
+   return 0;
+}
+
+
+
 #ifdef HAVE_NETWORKING
 static int action_bind_sublabel_netplay_room(
       file_list_t *list,
@@ -409,7 +428,7 @@ static int action_bind_sublabel_netplay_room(
    const char *gamename   = NULL;
    const char *core_ver   = NULL;
    const char *frontend   = NULL;
-   
+
    /* This offset may cause issues if any entries are added to this menu */
    unsigned offset        = i - 3;
 
@@ -743,6 +762,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_disk_image_append);
+            break;
+         case MENU_ENUM_LABEL_SUBSYSTEM_ADD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_subsystem_add);
             break;
          case MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_disk_cycle_tray_status);
