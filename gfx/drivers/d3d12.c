@@ -1320,6 +1320,7 @@ static bool d3d12_gfx_frame(
 
                   switch (texture_sem->wrap)
                   {
+                     default:
                      case RARCH_WRAP_BORDER:
                         desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
                         break;

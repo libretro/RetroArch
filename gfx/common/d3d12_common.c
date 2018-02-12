@@ -474,6 +474,7 @@ void d3d12_init_samplers(d3d12_video_t* d3d12)
    {
       switch (i)
       {
+         default:
          case RARCH_WRAP_BORDER:
             desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
             break;
