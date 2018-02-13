@@ -148,7 +148,7 @@ static int  pending_subsystem_rom_id                          = 0;
 
 static char pending_subsystem_ident[255];
 static char pending_subsystem_extensions[PATH_MAX_LENGTH];
-static char pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS][PATH_MAX_LENGTH];
+static char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
 
 
 static int content_file_read(const char *path, void **buf, ssize_t *length)
@@ -1742,7 +1742,13 @@ void content_clear_subsystem(void)
    pending_subsystem_rom_id = 0;
    pending_subsystem_init = false;
    for (i = 0; i < RARCH_MAX_SUBSYSTEM_ROMS; i++)
-      pending_subsystem_roms[i][0] = '\0';
+   {
+      if (pending_subsystem_roms[i])
+      {
+         free(pending_subsystem_roms[i]);
+         pending_subsystem_roms[i] = NULL;
+      }
+   }
 }
 
 /* Get the current subsystem */
@@ -1768,8 +1774,10 @@ void content_set_subsystem(unsigned idx)
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path)
 {
+   pending_subsystem_roms[pending_subsystem_rom_id] = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
    strlcpy(pending_subsystem_roms[pending_subsystem_rom_id], path,
-      sizeof(pending_subsystem_roms[pending_subsystem_rom_id]));
+      PATH_MAX_LENGTH * sizeof(char));
    RARCH_LOG("[subsystem] subsystem id: %d subsystem ident: %s rom id: %d, rom path: %s\n",
       pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_id,
       pending_subsystem_roms[pending_subsystem_rom_id]);
@@ -1831,12 +1839,10 @@ void content_deinit(void)
 /* Set environment variables before a subsystem load */
 void content_set_subsystem_info()
 {
-   /* hardcoded to 2 for testing please fix */
-   char* roms[2] = { pending_subsystem_roms[0], pending_subsystem_roms[1] };
    if (pending_subsystem_init)
    {
       path_set(RARCH_PATH_SUBSYSTEM, pending_subsystem_ident);
-      path_set_special(roms, pending_subsystem_rom_num);
+      path_set_special(pending_subsystem_roms, pending_subsystem_rom_num);
    }
 }
 
