@@ -244,7 +244,6 @@ static void content_load_init_wrap(
  **/
 static bool content_load(content_ctx_info_t *info)
 {
-   RARCH_LOG("content_load\n");
    unsigned i;
    bool retval                       = true;
    int rarch_argc                    = 0;
@@ -1491,6 +1490,7 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
+   rarch_system_info_t *sys_info              = runloop_get_system_info();
    struct string_list *content          = NULL;
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
@@ -1512,7 +1512,6 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
 
-   rarch_system_info_t *sys_info              = runloop_get_system_info();
    if (sys_info)
    {
       content_ctx.history_list_enable         = settings->bools.history_list_enable;
@@ -1739,9 +1738,10 @@ void content_get_status(
 /* Clears the pending subsystem rom buffer*/
 void content_clear_subsystem(void)
 {
+   int i;
    pending_subsystem_rom_id = 0;
    pending_subsystem_init = false;
-   for (int i = 0; i < RARCH_MAX_SUBSYSTEM_ROMS; i++)
+   for (i = 0; i < RARCH_MAX_SUBSYSTEM_ROMS; i++)
       pending_subsystem_roms[i][0] = '\0';
 }
 
@@ -1831,11 +1831,11 @@ void content_deinit(void)
 /* Set environment variables before a subsystem load */
 void content_set_subsystem_info()
 {
+   /* hardcoded to 2 for testing please fix */
+   char* roms[2] = { pending_subsystem_roms[0], pending_subsystem_roms[1] };
    if (pending_subsystem_init)
    {
       path_set(RARCH_PATH_SUBSYSTEM, pending_subsystem_ident);
-      char* roms[2] = { pending_subsystem_roms[0], pending_subsystem_roms[1] };
-      /* hardcoded to 2 for testing please fix */
       path_set_special(roms, pending_subsystem_rom_num);
    }
 }
