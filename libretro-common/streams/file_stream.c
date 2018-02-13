@@ -26,9 +26,9 @@
 #include <stdarg.h>
 #include <errno.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+/* #ifdef HAVE_CONFIG_H */
+/* #include "config.h" */
+/* #endif */
 
 #include <streams/file_stream.h>
 #define VFS_FRONTEND
