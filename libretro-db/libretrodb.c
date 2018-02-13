@@ -444,7 +444,7 @@ int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
 
    fd = filestream_open(db->path,
          RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!fd)
       return -errno;
