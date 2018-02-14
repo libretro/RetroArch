@@ -120,7 +120,12 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
       goto error;
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-      return fseek(stream->fp, (long)offset, whence);
+/* VC2005 and up have a special 64-bit fseek */
+#ifdef ATLEAST_VC2005
+      return _fseeki64(stream->fp, offset, whence);
+#else
+      return fseeko(stream->fp, (off_t)offset, whence);
+#endif
 
 #ifdef HAVE_MMAP
    /* Need to check stream->mapped because this function is
