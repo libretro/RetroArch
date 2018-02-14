@@ -2414,17 +2414,17 @@ void video_driver_frame(const void *data, unsigned width,
       {
          char frames_text[64];
 
-         fill_pathname_noext(video_driver_window_title,
+         if (video_info.fps_show)
+         {
+            fill_pathname_noext(video_driver_window_title,
                video_driver_title_buf,
                " || ",
                sizeof(video_driver_window_title));
 
-         if (video_info.fps_show)
-         {
             last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
             snprintf(video_info.fps_text,
                   sizeof(video_info.fps_text),
-                  " FPS: %6.1f", last_fps);
+                  " FPS: %6.1f ", last_fps);
             strlcat(video_driver_window_title,
                   video_info.fps_text,
                   sizeof(video_driver_window_title));
@@ -2435,7 +2435,7 @@ void video_driver_frame(const void *data, unsigned width,
          if (video_info.framecount_show)
          {
             strlcat(video_driver_window_title,
-                  " || Frames: ",
+                  " ||  Frames: ",
                   sizeof(video_driver_window_title));
 
             snprintf(frames_text,
