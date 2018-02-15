@@ -2364,6 +2364,7 @@ void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
    static char video_driver_msg[256];
+   static char title[256];
    video_frame_info_t video_info;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
@@ -2410,44 +2411,36 @@ void video_driver_frame(const void *data, unsigned width,
       video_driver_frame_time_samples[write_index] = new_time - fps_time;
       fps_time                                     = new_time;
 
+      if (video_driver_frame_count == 1)
+         strlcpy(title, video_driver_window_title, sizeof(title));
+
       if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
       {
          char frames_text[64];
 
          if (video_info.fps_show)
          {
-            fill_pathname_noext(video_driver_window_title,
-               video_driver_title_buf,
-               " || ",
-               sizeof(video_driver_window_title));
-
             last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
-            snprintf(video_info.fps_text,
-                  sizeof(video_info.fps_text),
-                  " FPS: %6.1f ", last_fps);
-            strlcat(video_driver_window_title,
-                  video_info.fps_text,
-                  sizeof(video_driver_window_title));
+            snprintf(video_info.fps_text, sizeof(video_info.fps_text),
+                  "||  FPS: %6.1f ", last_fps);
+            if (video_info.framecount_show)
+            {
+               snprintf(frames_text,
+                     sizeof(frames_text),
+                     " ||  Frames: %" PRIu64,
+                     (uint64_t)video_driver_frame_count);
+            }
+            snprintf(video_driver_window_title, sizeof(video_driver_window_title),
+               "%s%s%s", title, video_info.fps_text,
+               video_info.framecount_show ? frames_text : "");
+         }
+         else
+         {
+            if (!string_is_equal(video_driver_window_title, title))
+               strlcpy(video_driver_window_title, title, sizeof(video_driver_window_title));
          }
 
          curr_time = new_time;
-
-         if (video_info.framecount_show)
-         {
-            strlcat(video_driver_window_title,
-                  " ||  Frames: ",
-                  sizeof(video_driver_window_title));
-
-            snprintf(frames_text,
-                  sizeof(frames_text),
-                  "%" PRIu64,
-                  (uint64_t)video_driver_frame_count);
-
-            strlcat(video_driver_window_title,
-                  frames_text,
-                  sizeof(video_driver_window_title));
-         }
-
          video_driver_window_title_update = true;
       }
 
