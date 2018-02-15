@@ -123,6 +123,8 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
 /* VC2005 and up have a special 64-bit fseek */
 #ifdef ATLEAST_VC2005
       return _fseeki64(stream->fp, offset, whence);
+#elif defined(__CELLOS_LV2__)
+      return fseek(stream->fp, (long)offset, whence);
 #else
       return fseeko(stream->fp, (off_t)offset, whence);
 #endif
