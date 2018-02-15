@@ -308,12 +308,13 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
 {
    unsigned i;
    union string_list_elem_attr attr;
-   core_info_list_t *info      = NULL;
-   settings_t        *settings = config_get_ptr();
-   retro_task_t          *task = (retro_task_t *)calloc(1, sizeof(*task));
-   netplay_crc_handle_t *state = (netplay_crc_handle_t*)calloc(1, sizeof(*state));
-
-   core_info_get_list(&info);
+   struct string_list *lpl_list = NULL;
+   core_info_list_t *info       = NULL;
+   settings_t        *settings  = config_get_ptr();
+   retro_task_t          *task  = (retro_task_t *)
+      calloc(1, sizeof(*task));
+   netplay_crc_handle_t *state  = (netplay_crc_handle_t*)
+      calloc(1, sizeof(*state));
 
    if (!task || !state)
       goto error;
@@ -322,21 +323,34 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
    state->content_path[0] = '\0';
    state->hostname[0]     = '\0';
    state->core_name[0]    = '\0';
+   attr.i = 0;
 
-   snprintf(state->content_crc, sizeof(state->content_crc), "%08X|crc", crc);
+   snprintf(state->content_crc,
+         sizeof(state->content_crc),
+         "%08X|crc", crc);
 
-   strlcpy(state->content_path,  name,       sizeof(state->content_path));
-   strlcpy(state->hostname,      hostname,   sizeof(state->hostname));
-   strlcpy(state->core_name,     core_name,  sizeof(state->core_name));
+   strlcpy(state->content_path,
+         name, sizeof(state->content_path));
+   strlcpy(state->hostname,
+         hostname, sizeof(state->hostname));
+   strlcpy(state->core_name,
+         core_name, sizeof(state->core_name));
 
-   state->lpl_list = dir_list_new(settings->paths.directory_playlist,
+   lpl_list = dir_list_new(settings->paths.directory_playlist,
          NULL, true, true, true, false);
 
-   attr.i = 0;
-   string_list_append(state->lpl_list, settings->paths.path_content_history, attr);
+   if (!lpl_list)
+      goto error;
+
+   state->lpl_list = lpl_list;
+
+   string_list_append(state->lpl_list,
+         settings->paths.path_content_history, attr);
    state->found = false;
 
-   for (i=0; i < info->count; i++)
+   core_info_get_list(&info);
+
+   for (i = 0; i < info->count; i++)
    {
       /* check if the core name matches.
          TO-DO :we could try to load the core too to check
@@ -346,13 +360,15 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
 #endif
       if(string_is_equal(info->list[i].core_name, state->core_name))
       {
-         strlcpy(state->core_path, info->list[i].path, sizeof(state->core_path));
+         strlcpy(state->core_path,
+               info->list[i].path, sizeof(state->core_path));
 
          if (string_is_not_equal(state->content_path, "N/A") &&
             !string_is_empty(info->list[i].supported_extensions))
          {
             strlcpy(state->core_extensions,
-                  info->list[i].supported_extensions, sizeof(state->core_extensions));
+                  info->list[i].supported_extensions,
+                  sizeof(state->core_extensions));
          }
          break;
       }
