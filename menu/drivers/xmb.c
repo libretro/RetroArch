@@ -4453,10 +4453,10 @@ static int xmb_list_push(void *data, void *userdata,
                         if (content_get_subsystem_rom_id() < subsystem->num_roms)
                         {
                            snprintf(s, sizeof(s),
-					   "Load %s %s",
-					   subsystem->desc,
-					   i == content_get_subsystem() 
-					   ? "\u2605" : " ");
+                                 "Load %s %s",
+                                 subsystem->desc,
+                                 i == content_get_subsystem() 
+                                 ? "\u2605" : " ");
                            menu_entries_append_enum(info->list,
                                  s,
                                  msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
@@ -4466,10 +4466,10 @@ static int xmb_list_push(void *data, void *userdata,
                         else
                         {
                            snprintf(s, sizeof(s),
-					   "Start %s %s",
-					   subsystem->desc,
-					  i == content_get_subsystem() 
-					  ? "\u2605" : " ");
+                                 "Start %s %s",
+                                 subsystem->desc,
+                                 i == content_get_subsystem() 
+                                 ? "\u2605" : " ");
                            menu_entries_append_enum(info->list,
                                  s,
                                  msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD),
@@ -4480,10 +4480,10 @@ static int xmb_list_push(void *data, void *userdata,
                      else
                      {
                         snprintf(s, sizeof(s),
-					"Load %s %s",
-					subsystem->desc,
-					i == content_get_subsystem() 
-					? "\u2605" : " ");
+                              "Load %s %s",
+                              subsystem->desc,
+                              i == content_get_subsystem() 
+                              ? "\u2605" : " ");
                         menu_entries_append_enum(info->list,
                               s,
                               msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
