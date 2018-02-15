@@ -1691,11 +1691,11 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
          continue;
       }
 
-      if (  (cheevos_locals.add_hits > 0) &&
-            (cond->req_hits != 0) &&
+      if (  (cond->req_hits != 0) &&
             (cond->curr_hits + cheevos_locals.add_hits) >= cond->req_hits)
          {
-            cheevos_locals.add_hits = 0;
+            cheevos_locals.add_buffer = 0;
+            cheevos_locals.add_hits   = 0;
             continue;
          }
 
