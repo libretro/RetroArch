@@ -127,13 +127,13 @@ static void menu_display_d3d12_draw(void* data, video_frame_info_t *video_info)
          sprite->params.rotation = draw->rotation;
 
          sprite->colors[3] = DXGI_COLOR_RGBA(
-               0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
-               0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
+               0xFF * draw->coords->color[0],  0xFF * draw->coords->color[1],
+               0xFF * draw->coords->color[2],  0xFF * draw->coords->color[3]);
          sprite->colors[2] = DXGI_COLOR_RGBA(
-               0xFF * draw->coords->color[4], 0xFF * draw->coords->color[5],
-               0xFF * draw->coords->color[6], 0xFF * draw->coords->color[7]);
+               0xFF * draw->coords->color[4],  0xFF * draw->coords->color[5],
+               0xFF * draw->coords->color[6],  0xFF * draw->coords->color[7]);
          sprite->colors[1] = DXGI_COLOR_RGBA(
-               0xFF * draw->coords->color[8], 0xFF * draw->coords->color[9],
+               0xFF * draw->coords->color[8],  0xFF * draw->coords->color[9],
                0xFF * draw->coords->color[10], 0xFF * draw->coords->color[11]);
          sprite->colors[0] = DXGI_COLOR_RGBA(
                0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
@@ -160,8 +160,10 @@ static void menu_display_d3d12_draw(void* data, video_frame_info_t *video_info)
 
             sprite++;
          }
-         D3D12SetPipelineState(d3d12->queue.cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
-         D3D12IASetPrimitiveTopology(d3d12->queue.cmd, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+         D3D12SetPipelineState(d3d12->queue.cmd,
+               d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+         D3D12IASetPrimitiveTopology(d3d12->queue.cmd,
+               D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
       }
 
       range.Begin = d3d12->sprites.offset * sizeof(*sprite);
@@ -173,12 +175,15 @@ static void menu_display_d3d12_draw(void* data, video_frame_info_t *video_info)
       d3d12_texture_t* texture = (d3d12_texture_t*)draw->texture;
       if (texture->dirty)
       {
-         d3d12_upload_texture(d3d12->queue.cmd, texture);
+         d3d12_upload_texture(d3d12->queue.cmd,
+               texture, video_info->userdata);
 
          if (vertex_count > 1)
-            D3D12SetPipelineState(d3d12->queue.cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+            D3D12SetPipelineState(d3d12->queue.cmd,
+                  d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
          else
-            D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
+            D3D12SetPipelineState(d3d12->queue.cmd,
+                  d3d12->sprites.pipe);
       }
       d3d12_set_texture_and_sampler(d3d12->queue.cmd, texture);
    }

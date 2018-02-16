@@ -1517,7 +1517,8 @@ void d3d12_update_texture(
       const void*      data,
       d3d12_texture_t* texture);
 
-void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t* texture);
+void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
+      d3d12_texture_t* texture, void *userdata);
 
 void d3d12_create_fullscreen_quad_vbo(
       D3D12Device device, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo);

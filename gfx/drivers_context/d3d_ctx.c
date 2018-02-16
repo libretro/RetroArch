@@ -60,7 +60,8 @@ static bool widescreen_mode = false;
 
 void *dinput;
 
-static bool gfx_ctx_d3d_set_resize(void *data, unsigned new_width, unsigned new_height)
+static bool gfx_ctx_d3d_set_resize(void *data,
+      unsigned new_width, unsigned new_height)
 {
    d3d_video_t *d3d      = (d3d_video_t*)video_driver_get_ptr(false);
 
@@ -68,7 +69,8 @@ static bool gfx_ctx_d3d_set_resize(void *data, unsigned new_width, unsigned new_
       return false;
 
    /* No changes? */
-   if (new_width == d3d->video_info.width && new_height == d3d->video_info.height)
+   if (     (new_width  == d3d->video_info.width)
+         && (new_height == d3d->video_info.height))
       return false;
 
    RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);

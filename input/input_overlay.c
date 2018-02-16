@@ -614,7 +614,8 @@ void input_overlay_loaded(void *task_data, void *user_data, const char *err)
    ol->overlays   = data->overlays;
    ol->size       = data->size;
    ol->active     = data->active;
-   ol->iface      = iface; ol->iface_data = video_driver_get_ptr(true);
+   ol->iface      = iface;
+   ol->iface_data = video_driver_get_ptr(true);
 
    input_overlay_load_active(ol, data->overlay_opacity);
    input_overlay_enable(ol, data->overlay_enable);

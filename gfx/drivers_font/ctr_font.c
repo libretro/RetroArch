@@ -161,13 +161,16 @@ static void ctr_font_render_line(
    unsigned i;
 
    ctr_vertex_t* v  = NULL;
-   ctr_video_t* ctr = (ctr_video_t*)video_driver_get_ptr(false);
+   ctr_video_t* ctr = (ctr_video_t*)video_info->userdata;
    unsigned width   = video_info->width;
    unsigned height  = video_info->height;
    int x            = roundf(pos_x * width);
    int y            = roundf((1.0f - pos_y) * height);
    int delta_x      = 0;
    int delta_y      = 0;
+
+   if (!ctr)
+      return;
 
    switch (text_align)
    {

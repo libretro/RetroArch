@@ -130,13 +130,15 @@ static void d3d11_font_render_line(
    unsigned                 i, count;
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
    d3d11_sprite_t*          v;
-   d3d11_video_t*           d3d11  = (d3d11_video_t*)video_driver_get_ptr(false);
+   d3d11_video_t*           d3d11  = (d3d11_video_t*)video_info->userdata;
    unsigned                 width  = video_info->width;
    unsigned                 height = video_info->height;
    int                      x      = roundf(pos_x * width);
    int                      y      = roundf((1.0 - pos_y) * height);
 
-   if (!d3d11->sprites.enabled || msg_len > (unsigned)d3d11->sprites.capacity)
+   if (  !d3d11                  || 
+         !d3d11->sprites.enabled || 
+         msg_len > (unsigned)d3d11->sprites.capacity)
       return;
 
    if (d3d11->sprites.offset + msg_len > (unsigned)d3d11->sprites.capacity)

@@ -131,14 +131,14 @@ static void d3d12_font_render_line(
    void*           mapped_vbo;
    d3d12_sprite_t* v;
    d3d12_sprite_t* vbo_start;
-   d3d12_video_t*  d3d12  = (d3d12_video_t*)video_driver_get_ptr(false);
+   d3d12_video_t*  d3d12  = (d3d12_video_t*)video_info->userdata;
    unsigned        width  = video_info->width;
    unsigned        height = video_info->height;
    int             x      = roundf(pos_x * width);
    int             y      = roundf((1.0 - pos_y) * height);
    D3D12_RANGE     range  = { 0, 0 };
 
-   if (!d3d12->sprites.enabled || msg_len > (unsigned)d3d12->sprites.capacity)
+   if (!d3d12 || !d3d12->sprites.enabled || msg_len > (unsigned)d3d12->sprites.capacity)
       return;
 
    if (d3d12->sprites.offset + msg_len > (unsigned)d3d12->sprites.capacity)
@@ -219,7 +219,8 @@ static void d3d12_font_render_line(
    }
 
    if(font->texture.dirty)
-      d3d12_upload_texture(d3d12->queue.cmd, &font->texture);
+      d3d12_upload_texture(d3d12->queue.cmd, &font->texture,
+            video_info->userdata);
 
    D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe_font);
    d3d12_set_texture_and_sampler(d3d12->queue.cmd, &font->texture);

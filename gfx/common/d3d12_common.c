@@ -743,7 +743,8 @@ void d3d12_update_texture(
 
    texture->dirty = true;
 }
-void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t* texture)
+void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
+      d3d12_texture_t* texture, void *userdata)
 {
    D3D12_TEXTURE_COPY_LOCATION src = { 0 };
    D3D12_TEXTURE_COPY_LOCATION dst = { 0 };
@@ -769,7 +770,7 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t* texture
    if (texture->desc.MipLevels > 1)
    {
       unsigned       i;
-      d3d12_video_t* d3d12 = (d3d12_video_t*)video_driver_get_ptr(false);
+      d3d12_video_t* d3d12 = (d3d12_video_t*)userdata;
 
       D3D12SetComputeRootSignature(cmd, d3d12->desc.cs_rootSignature);
       D3D12SetPipelineState(cmd, d3d12->mipmapgen_pipe);

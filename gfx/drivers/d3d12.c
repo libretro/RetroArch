@@ -1181,7 +1181,8 @@ static bool d3d12_gfx_frame(
       {
          if (d3d12->shader_preset->luts && d3d12->luts[0].dirty)
             for (i = 0; i < d3d12->shader_preset->luts; i++)
-               d3d12_upload_texture(d3d12->queue.cmd, &d3d12->luts[i]);
+               d3d12_upload_texture(d3d12->queue.cmd, &d3d12->luts[i],
+                     video_info->userdata);
 
          if (d3d12->frame.texture[0].desc.Width != width ||
              d3d12->frame.texture[0].desc.Height != height)
@@ -1231,7 +1232,8 @@ static bool d3d12_gfx_frame(
 
       d3d12_update_texture(width, height, pitch, d3d12->format, frame, &d3d12->frame.texture[0]);
 
-      d3d12_upload_texture(d3d12->queue.cmd, &d3d12->frame.texture[0]);
+      d3d12_upload_texture(d3d12->queue.cmd, &d3d12->frame.texture[0],
+            video_info->userdata);
    }
    D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
 
@@ -1422,7 +1424,8 @@ static bool d3d12_gfx_frame(
    if (d3d12->menu.enabled && d3d12->menu.texture.handle)
    {
       if (d3d12->menu.texture.dirty)
-         d3d12_upload_texture(d3d12->queue.cmd, &d3d12->menu.texture);
+         d3d12_upload_texture(d3d12->queue.cmd, &d3d12->menu.texture,
+               video_info->userdata);
 
       D3D12SetGraphicsRootConstantBufferView(
             d3d12->queue.cmd, ROOT_ID_UBO, d3d12->ubo_view.BufferLocation);
@@ -1477,7 +1480,9 @@ static bool d3d12_gfx_frame(
       for (i = 0; i < d3d12->overlays.count; i++)
       {
          if (d3d12->overlays.textures[i].dirty)
-            d3d12_upload_texture(d3d12->queue.cmd, &d3d12->overlays.textures[i]);
+            d3d12_upload_texture(d3d12->queue.cmd,
+                  &d3d12->overlays.textures[i],
+                  video_info->userdata);
 
          D3D12SetGraphicsRootDescriptorTable(
                d3d12->queue.cmd, ROOT_ID_TEXTURE_T, d3d12->overlays.textures[i].gpu_descriptor[0]);

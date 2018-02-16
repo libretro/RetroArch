@@ -150,13 +150,14 @@ static void wiiu_font_render_line(
       float pos_y, unsigned text_align)
 {
    unsigned i;
-   wiiu_video_t* wiiu = (wiiu_video_t*)video_driver_get_ptr(false);
+   wiiu_video_t* wiiu = (wiiu_video_t*)video_info->userdata;
    unsigned width   = video_info->width;
    unsigned height  = video_info->height;
    int x            = roundf(pos_x * width);
    int y            = roundf((1.0 - pos_y) * height);
 
-   if(wiiu->vertex_cache.current + (msg_len * 4) > wiiu->vertex_cache.size)
+   if(  !wiiu ||
+         wiiu->vertex_cache.current + (msg_len * 4) > wiiu->vertex_cache.size)
       return;
 
    switch (text_align)
