@@ -325,9 +325,9 @@ typedef struct menu_display_ctx_driver
    void (*draw_pipeline)(void *data);
    void (*viewport)(void *data);
    /* Start blending operation. */
-   void (*blend_begin)(void);
+   void (*blend_begin)(video_frame_info_t *video_info);
    /* Finish blending operation. */
-   void (*blend_end)(void);
+   void (*blend_end)(video_frame_info_t *video_info);
    /* Set the clear color back to its default values. */
    void (*restore_clear_color)(void);
    /* Set the color to be used when clearing the screen */
@@ -641,8 +641,8 @@ void menu_navigation_set_selection(size_t val);
 enum menu_toggle_reason menu_display_toggle_get_reason(void);
 void menu_display_toggle_set_reason(enum menu_toggle_reason reason);
 
-void menu_display_blend_begin(void);
-void menu_display_blend_end(void);
+void menu_display_blend_begin(video_frame_info_t *video_info);
+void menu_display_blend_end(video_frame_info_t *video_info);
 
 void menu_display_font_free(font_data_t *font);
 
@@ -685,7 +685,9 @@ void menu_display_draw_bg(
 void menu_display_draw_gradient(
       menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info);
-void menu_display_draw_quad(int x, int y, unsigned w, unsigned h,
+void menu_display_draw_quad(
+      video_frame_info_t *video_info,
+      int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color);
 void menu_display_draw_texture(int x, int y, unsigned w, unsigned h,
@@ -718,6 +720,7 @@ void menu_display_snow(int width, int height);
 void menu_display_allocate_white_texture(void);
 
 void menu_display_draw_cursor(
+      video_frame_info_t *video_info,
       float *color, float cursor_size, uintptr_t texture,
       float x, float y, unsigned width, unsigned height);
 

@@ -43,12 +43,12 @@ static void *menu_display_ctr_get_default_mvp(void)
    return NULL;
 }
 
-static void menu_display_ctr_blend_begin(void)
+static void menu_display_ctr_blend_begin(video_frame_info_t *video_info)
 {
 
 }
 
-static void menu_display_ctr_blend_end(void)
+static void menu_display_ctr_blend_end(video_frame_info_t *video_info)
 {
 
 }

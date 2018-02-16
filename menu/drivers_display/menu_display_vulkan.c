@@ -306,16 +306,20 @@ static void menu_display_vk_clear_color(
    vkCmdClearAttachments(vk->cmd, 1, &attachment, 1, &rect);
 }
 
-static void menu_display_vk_blend_begin(void)
+static void menu_display_vk_blend_begin(video_frame_info_t *video_info)
 {
-   vk_t *vk = (vk_t*)video_driver_get_ptr(false);
-   vk->display.blend = true;
+   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
+
+   if (vk)
+      vk->display.blend = true;
 }
 
-static void menu_display_vk_blend_end(void)
+static void menu_display_vk_blend_end(video_frame_info_t *video_info)
 {
-   vk_t *vk = (vk_t*)video_driver_get_ptr(false);
-   vk->display.blend = false;
+   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
+
+   if (vk)
+      vk->display.blend = false;
 }
 
 static bool menu_display_vk_font_init_first(

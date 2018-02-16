@@ -303,17 +303,17 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
 }
 
 /* Begin blending operation */
-void menu_display_blend_begin(void)
+void menu_display_blend_begin(video_frame_info_t *video_info)
 {
    if (menu_disp && menu_disp->blend_begin)
-      menu_disp->blend_begin();
+      menu_disp->blend_begin(video_info);
 }
 
 /* End blending operation */
-void menu_display_blend_end(void)
+void menu_display_blend_end(video_frame_info_t *video_info)
 {
    if (menu_disp && menu_disp->blend_end)
-      menu_disp->blend_end();
+      menu_disp->blend_end(video_info);
 }
 
 /* Teardown; deinitializes and frees all
@@ -653,6 +653,7 @@ void menu_display_draw_gradient(menu_display_ctx_draw_t *draw,
 }
 
 void menu_display_draw_quad(
+      video_frame_info_t *video_info,
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color)
@@ -667,7 +668,7 @@ void menu_display_draw_quad(
    coords.color         = color;
 
    if (menu_disp && menu_disp->blend_begin)
-      menu_disp->blend_begin();
+      menu_disp->blend_begin(video_info);
 
    draw.x            = x;
    draw.y            = (int)height - y - (int)h;
@@ -684,7 +685,7 @@ void menu_display_draw_quad(
    menu_display_draw(&draw);
 
    if (menu_disp && menu_disp->blend_end)
-      menu_disp->blend_end();
+      menu_disp->blend_end(video_info);
 }
 
 void menu_display_draw_texture(
@@ -1114,6 +1115,7 @@ void menu_display_allocate_white_texture(void)
  * Draw a hardware cursor on top of the screen for the mouse.
  */
 void menu_display_draw_cursor(
+      video_frame_info_t *video_info,
       float *color, float cursor_size, uintptr_t texture,
       float x, float y, unsigned width, unsigned height)
 {
@@ -1133,7 +1135,7 @@ void menu_display_draw_cursor(
    coords.color         = (const float*)color;
 
    if (menu_disp && menu_disp->blend_begin)
-      menu_disp->blend_begin();
+      menu_disp->blend_begin(video_info);
 
    draw.x               = x - (cursor_size / 2);
    draw.y               = (int)height - y - (cursor_size / 2);
@@ -1148,7 +1150,7 @@ void menu_display_draw_cursor(
    menu_display_draw(&draw);
 
    if (menu_disp && menu_disp->blend_end)
-      menu_disp->blend_end();
+      menu_disp->blend_end(video_info);
 }
 
 static INLINE float menu_display_scalef(float val,

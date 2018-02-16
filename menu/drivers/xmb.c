@@ -797,7 +797,9 @@ static void xmb_render_keyboard(xmb_handle_t *xmb,
       1.00, 1.00, 1.00, 1.00,
    };
 
-   menu_display_draw_quad(0, height/2.0, width, height/2.0,
+   menu_display_draw_quad(
+         video_info,
+         0, height/2.0, width, height/2.0,
          width, height,
          &dark[0]);
 
@@ -815,7 +817,7 @@ static void xmb_render_keyboard(xmb_handle_t *xmb,
       {
          uintptr_t texture = xmb->textures.list[XMB_TEXTURE_KEY_HOVER];
 
-         menu_display_blend_begin();
+         menu_display_blend_begin(video_info);
 
          menu_display_draw_texture(
                width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
@@ -825,7 +827,7 @@ static void xmb_render_keyboard(xmb_handle_t *xmb,
                &white[0],
                texture);
 
-         menu_display_blend_end();
+         menu_display_blend_end(video_info);
       }
 
       menu_display_draw_text(xmb->font, grid[i],
@@ -911,7 +913,7 @@ static void xmb_render_messagebox_internal(
       }
    }
 
-   menu_display_blend_begin();
+   menu_display_blend_begin(video_info);
 
    menu_display_draw_texture_slice(
          x - longest_width/2 - xmb->margins_dialog,
@@ -2642,7 +2644,7 @@ static void xmb_draw_items(
 
    xmb_calculate_visible_range(xmb, height, end, current, &first, &last);
 
-   menu_display_blend_begin();
+   menu_display_blend_begin(video_info);
 
    for (i = first; i <= last; i++)
    {
@@ -2663,7 +2665,7 @@ static void xmb_draw_items(
          break;
    }
 
-   menu_display_blend_end();
+   menu_display_blend_end(video_info);
 }
 
 static void xmb_render(void *data, bool is_idle)
@@ -2768,7 +2770,7 @@ static void xmb_draw_bg(
    draw.pipeline.id          = 0;
    draw.pipeline.active      = xmb_shader_pipeline_active(video_info);
 
-   menu_display_blend_begin();
+   menu_display_blend_begin(video_info);
    menu_display_set_viewport(video_info->width, video_info->height);
 
 #ifdef HAVE_SHADERPIPELINE
@@ -2844,11 +2846,12 @@ static void xmb_draw_bg(
    }
 
    menu_display_draw(&draw);
-   menu_display_blend_end();
+   menu_display_blend_end(video_info);
 }
 
 static void xmb_draw_dark_layer(
       xmb_handle_t *xmb,
+      video_frame_info_t *video_info,
       unsigned width,
       unsigned height)
 {
@@ -2879,9 +2882,9 @@ static void xmb_draw_dark_layer(
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id = 0;
 
-   menu_display_blend_begin();
+   menu_display_blend_begin(video_info);
    menu_display_draw(&draw);
-   menu_display_blend_end();
+   menu_display_blend_end(video_info);
 }
 
 static void xmb_frame(void *data, video_frame_info_t *video_info)
@@ -2972,7 +2975,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    rotate_draw.scale_enable = true;
 
    menu_display_rotate_z(&rotate_draw);
-   menu_display_blend_begin();
+   menu_display_blend_begin(video_info);
 
    if (xmb->savestate_thumbnail)
       xmb_draw_thumbnail(menu_disp_info,
@@ -3125,7 +3128,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             &coord_white[0],
             xmb->shadow_offset);
 
-   menu_display_blend_begin();
+   menu_display_blend_begin(video_info);
 
    /* Horizontal tab icons */
    for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
@@ -3176,7 +3179,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
-   menu_display_blend_end();
+   menu_display_blend_end(video_info);
 
    /* Vertical icons */
    if (xmb)
@@ -3234,9 +3237,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (render_background)
    {
-      xmb_draw_dark_layer(xmb, width, height);
-
-      xmb_render_messagebox_internal(menu_disp_info, video_info, xmb, msg, &coord_white[0]);
+      xmb_draw_dark_layer(xmb, video_info, width, height);
+      xmb_render_messagebox_internal(menu_disp_info,
+            video_info, xmb, msg, &coord_white[0]);
    }
 
    /* Cursor image */
@@ -3244,6 +3247,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
       menu_display_draw_cursor(
+            video_info,
             &coord_white[0],
             xmb->cursor_size,
             xmb->textures.list[XMB_TEXTURE_POINTER],

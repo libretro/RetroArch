@@ -2708,6 +2708,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->cb_shader_use          = video_driver_cb_shader_use;
    video_info->cb_set_mvp             = video_driver_cb_shader_set_mvp;
 
+   video_info->userdata               = video_driver_get_ptr(false);
 #if 0
    video_info->cb_set_coords          = video_driver_cb_set_coords;
 #endif

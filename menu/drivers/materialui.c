@@ -321,6 +321,7 @@ static void mui_context_reset_textures(mui_handle_t *mui)
 }
 
 static void mui_draw_icon(
+      video_frame_info_t *video_info,
       unsigned icon_size,
       uintptr_t texture,
       float x, float y,
@@ -333,7 +334,7 @@ static void mui_draw_icon(
    struct video_coords coords;
    math_matrix_4x4 mymat;
 
-   menu_display_blend_begin();
+   menu_display_blend_begin(video_info);
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = rotation;
@@ -361,11 +362,13 @@ static void mui_draw_icon(
    draw.pipeline.id     = 0;
 
    menu_display_draw(&draw);
-   menu_display_blend_end();
+   menu_display_blend_end(video_info);
 }
 
 /* Draw a single tab */
-static void mui_draw_tab(mui_handle_t *mui,
+static void mui_draw_tab(
+      mui_handle_t *mui,
+      video_frame_info_t *video_info,
       unsigned i,
       unsigned width, unsigned height,
       float *tab_color,
@@ -392,7 +395,7 @@ static void mui_draw_tab(mui_handle_t *mui,
          break;
    }
 
-   mui_draw_icon(
+   mui_draw_icon(video_info,
          mui->icon_size,
          mui->textures.list[tab_icon],
          width / (MUI_SYSTEM_TAB_END+1) * (i+0.5) - mui->icon_size/2,
@@ -427,7 +430,10 @@ static void mui_render_keyboard(mui_handle_t *mui,
       1.00, 1.00, 1.00, 1.00,
    };
 
-   menu_display_draw_quad(0, height/2.0, width, height/2.0,
+   menu_display_draw_quad(
+         video_info,
+         0,
+         height/2.0, width, height/2.0,
          width, height,
          &dark[0]);
 
@@ -445,7 +451,7 @@ static void mui_render_keyboard(mui_handle_t *mui,
       if (i == id)
          texture = mui->textures.list[MUI_TEXTURE_KEY_HOVER];
 
-      menu_display_blend_begin();
+      menu_display_blend_begin(video_info);
 
       menu_display_draw_texture(
             width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
@@ -495,7 +501,9 @@ static int mui_osk_ptr_at_pos(void *data, int x, int y,
 }
 
 /* Draw the tabs background */
-static void mui_draw_tab_begin(mui_handle_t *mui,
+static void mui_draw_tab_begin(
+      mui_handle_t *mui,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       float *tabs_bg_color, float *tabs_separator_color)
 {
@@ -504,13 +512,17 @@ static void mui_draw_tab_begin(mui_handle_t *mui,
    mui->tabs_height   = scale_factor / 3;
 
    /* tabs background */
-   menu_display_draw_quad(0, height - mui->tabs_height, width,
+   menu_display_draw_quad(
+         video_info,
+         0, height - mui->tabs_height, width,
          mui->tabs_height,
          width, height,
          tabs_bg_color);
 
    /* tabs separator */
-   menu_display_draw_quad(0, height - mui->tabs_height, width,
+   menu_display_draw_quad(
+         video_info,
+         0, height - mui->tabs_height, width,
          1,
          width, height,
          tabs_separator_color);
@@ -518,6 +530,7 @@ static void mui_draw_tab_begin(mui_handle_t *mui,
 
 /* Draw the active tab */
 static void mui_draw_tab_end(mui_handle_t *mui,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       unsigned header_height,
       float *active_tab_marker_color)
@@ -526,7 +539,8 @@ static void mui_draw_tab_end(mui_handle_t *mui,
    unsigned tab_width = width / (MUI_SYSTEM_TAB_END+1);
 
    menu_display_draw_quad(
-        (int)(mui->categories_selection_ptr * tab_width),
+         video_info,
+         (int)(mui->categories_selection_ptr * tab_width),
          height - (header_height/16),
          tab_width,
          header_height/16,
@@ -536,6 +550,7 @@ static void mui_draw_tab_end(mui_handle_t *mui,
 
 /* Draw the scrollbar */
 static void mui_draw_scrollbar(mui_handle_t *mui,
+      video_frame_info_t *video_info,
       unsigned width, unsigned height, float *coord_color)
 {
    unsigned header_height = menu_display_get_header_height();
@@ -556,6 +571,7 @@ static void mui_draw_scrollbar(mui_handle_t *mui,
       scrollbar_height = mui->scrollbar_width;
 
    menu_display_draw_quad(
+         video_info,
          width - mui->scrollbar_width - scrollbar_margin,
          header_height + y,
          mui->scrollbar_width,
@@ -621,6 +637,7 @@ static void mui_render_messagebox(mui_handle_t *mui,
    menu_display_set_alpha(body_bg_color, 1.0);
 
    menu_display_draw_quad(
+         video_info,
          x - longest_width / 2.0 -  mui->margin * 2.0,
          y - line_height   / 2.0 -  mui->margin * 2.0,
          longest_width +            mui->margin * 4.0,
@@ -810,7 +827,10 @@ static void mui_render(void *data, bool is_idle)
 }
 
 /* Display an entry value on the right of the screen. */
-static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
+static void mui_render_label_value(
+      mui_handle_t *mui,
+      video_frame_info_t *video_info,
+      mui_node_t *node,
       int i, int y, unsigned width, unsigned height,
       uint64_t index, uint32_t color, bool selected, const char *label,
       const char *value, float *label_color,
@@ -961,7 +981,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
             width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0);
 
    if (texture_switch2)
-      mui_draw_icon(
+      mui_draw_icon(video_info,
             mui->icon_size,
             (uintptr_t)texture_switch2,
             0,
@@ -974,7 +994,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       );
 
    if (texture_switch)
-      mui_draw_icon(
+      mui_draw_icon(video_info,
             mui->icon_size,
             (uintptr_t)texture_switch,
             width - mui->margin - mui->icon_size,
@@ -1046,6 +1066,7 @@ static void mui_render_menu_list(
 
       mui_render_label_value(
          mui,
+         video_info,
          node,
          (int)i,
          y,
@@ -1119,7 +1140,7 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw,
    bool add_opacity       = false;
    float opacity_override = video_info->menu_wallpaper_opacity;
 
-   menu_display_blend_begin();
+   menu_display_blend_begin(video_info);
 
    draw->x               = 0;
    draw->y               = 0;
@@ -1135,7 +1156,7 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw,
    menu_display_draw_bg(draw, video_info, add_opacity,
          opacity_override);
    menu_display_draw(draw);
-   menu_display_blend_end();
+   menu_display_blend_end(video_info);
 }
 
 /* Main function of the menu driver. Takes care of drawing the header, the tabs,
@@ -1488,14 +1509,15 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    if (node)
       menu_display_draw_quad(
-      0,
-      header_height - mui->scroll_y + node->y,
-      width,
-      node->line_height,
-      width,
-      height,
-      &highlighted_entry_color[0]
-   );
+            video_info,
+            0,
+            header_height - mui->scroll_y + node->y,
+            width,
+            node->line_height,
+            width,
+            height,
+            &highlighted_entry_color[0]
+            );
 
    font_driver_bind_block(mui->font, &mui->raster_block);
    font_driver_bind_block(mui->font2, &mui->raster_block2);
@@ -1524,42 +1546,50 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    /* header */
    menu_display_draw_quad(
-      0,
-      0,
-      width,
-      header_height,
-      width,
-      height,
-      &header_bg_color[0]);
+         video_info,
+         0,
+         0,
+         width,
+         header_height,
+         width,
+         height,
+         &header_bg_color[0]);
 
    mui->tabs_height = 0;
 
    /* display tabs if depth equal one, if not hide them */
    if (mui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
    {
-      mui_draw_tab_begin(mui, width, height, &footer_bg_color[0], &grey_bg[0]);
+      mui_draw_tab_begin(mui,
+            video_info,
+            width, height, &footer_bg_color[0], &grey_bg[0]);
 
       for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
-         mui_draw_tab(mui, i, width, height, &passive_tab_icon_color[0], &active_tab_marker_color[0]);
+         mui_draw_tab(mui, video_info,
+               i, width, height,
+               &passive_tab_icon_color[0], &active_tab_marker_color[0]);
 
-      mui_draw_tab_end(mui, width, height, header_height, &active_tab_marker_color[0]);
+      mui_draw_tab_end(mui,
+            video_info,
+            width, height, header_height, &active_tab_marker_color[0]);
    }
 
    menu_display_draw_quad(
-      0,
-      header_height,
-      width,
-      mui->shadow_height,
-      width,
-      height,
-      &shadow_bg[0]);
+         video_info,
+         0,
+         header_height,
+         width,
+         mui->shadow_height,
+         width,
+         height,
+         &shadow_bg[0]);
 
    title_margin = mui->margin;
 
    if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
    {
       title_margin = mui->icon_size;
-      mui_draw_icon(
+      mui_draw_icon(video_info,
          mui->icon_size,
          mui->textures.list[MUI_TEXTURE_BACK],
          0,
@@ -1614,14 +1644,15 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          header_height / 2 + mui->font->size / 3,
          width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
 
-   mui_draw_scrollbar(mui, width, height, &grey_bg[0]);
+   mui_draw_scrollbar(mui, video_info, width, height, &grey_bg[0]);
 
    if (menu_input_dialog_get_display_kb())
    {
       const char *str          = menu_input_dialog_get_buffer();
       const char *label        = menu_input_dialog_get_label_buffer();
 
-      menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
+      menu_display_draw_quad(video_info,
+            0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
 
       mui_render_messagebox(mui, video_info,
@@ -1630,7 +1661,8 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    if (!string_is_empty(mui->box_message))
    {
-      menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
+      menu_display_draw_quad(video_info,
+            0, 0, width, height, width, height, &black_bg[0]);
 
       mui_render_messagebox(mui, video_info,
                mui->box_message, &body_bg_color[0], font_hover_color);
@@ -1641,6 +1673,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    if (mui->mouse_show)
       menu_display_draw_cursor(
+            video_info,
             &white_bg[0],
             mui->cursor_size,
             mui->textures.list[MUI_TEXTURE_POINTER],

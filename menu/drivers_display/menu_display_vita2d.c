@@ -82,12 +82,12 @@ static SceGxmPrimitiveType menu_display_prim_to_vita2d_enum(
 }
 #endif
 
-static void menu_display_vita2d_blend_begin(void)
+static void menu_display_vita2d_blend_begin(video_frame_info_t *video_info)
 {
 
 }
 
-static void menu_display_vita2d_blend_end(void)
+static void menu_display_vita2d_blend_end(video_frame_info_t *video_info)
 {
 
 }

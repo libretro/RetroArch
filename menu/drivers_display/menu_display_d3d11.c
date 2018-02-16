@@ -34,16 +34,18 @@ static const float* menu_display_d3d11_get_default_tex_coords(void) { return NUL
 
 static void* menu_display_d3d11_get_default_mvp(void) { return NULL; }
 
-static void menu_display_d3d11_blend_begin(void)
+static void menu_display_d3d11_blend_begin(video_frame_info_t *video_info)
 {
-   d3d11_video_t* d3d11 = (d3d11_video_t*)video_driver_get_ptr(false);
-   D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   d3d11_video_t* d3d11 = video_info ? (d3d11_video_t*)video_info->userdata : NULL;
+   D3D11SetBlendState(d3d11->context,
+         d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
-static void menu_display_d3d11_blend_end(void)
+static void menu_display_d3d11_blend_end(video_frame_info_t *video_info)
 {
-   d3d11_video_t* d3d11 = (d3d11_video_t*)video_driver_get_ptr(false);
-   D3D11SetBlendState(d3d11->context, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   d3d11_video_t* d3d11 = video_info ? (d3d11_video_t*)video_info->userdata : NULL;
+   D3D11SetBlendState(d3d11->context,
+         d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
 static void menu_display_d3d11_viewport(void* data) {}

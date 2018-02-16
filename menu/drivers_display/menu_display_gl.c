@@ -77,7 +77,7 @@ static GLenum menu_display_prim_to_gl_enum(
    return 0;
 }
 
-static void menu_display_gl_blend_begin(void)
+static void menu_display_gl_blend_begin(video_frame_info_t *video_info)
 {
    video_shader_ctx_info_t shader_info;
 
@@ -91,7 +91,7 @@ static void menu_display_gl_blend_begin(void)
    video_shader_driver_use(shader_info);
 }
 
-static void menu_display_gl_blend_end(void)
+static void menu_display_gl_blend_end(video_frame_info_t *video_info)
 {
    glDisable(GL_BLEND);
 }

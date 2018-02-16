@@ -78,9 +78,10 @@ static INT32 menu_display_prim_to_d3d_enum(
    return 0;
 }
 
-static void menu_display_d3d_blend_begin(void)
+static void menu_display_d3d_blend_begin(video_frame_info_t *video_info)
 {
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
+   d3d_video_t *d3d = video_info ? 
+      (d3d_video_t*)video_info->userdata : NULL;
 
    if (!d3d)
       return;
@@ -88,9 +89,10 @@ static void menu_display_d3d_blend_begin(void)
    d3d_enable_blend_func(d3d->dev);
 }
 
-static void menu_display_d3d_blend_end(void)
+static void menu_display_d3d_blend_end(video_frame_info_t *video_info)
 {
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
+   d3d_video_t *d3d = video_info ? 
+      (d3d_video_t*)video_info->userdata : NULL;
 
    if (!d3d)
       return;
