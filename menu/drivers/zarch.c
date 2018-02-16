@@ -951,7 +951,7 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
    else if (zui->item.active == 0)
       zui->item.active = -1;
 
-   menu_display_blend_begin();
+   menu_display_blend_begin(video_info);
 
    draw.x           = 0;
    draw.y           = 0;
@@ -963,8 +963,8 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLES;
    draw.pipeline.id = 0;
 
-   menu_display_draw(&draw);
-   menu_display_blend_end();
+   menu_display_draw(&draw, video_info);
+   menu_display_blend_end(video_info);
 
    memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
 
@@ -984,14 +984,14 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
    if (!video_info->libretro_running && draw.texture)
       draw.color           = &coord_color2[0];
 
-   menu_display_blend_begin();
+   menu_display_blend_begin(video_info);
    draw.x              = 0;
    draw.y              = 0;
 
    menu_display_draw_bg(&draw, video_info, false,
          video_info->menu_wallpaper_opacity);
-   menu_display_draw(&draw);
-   menu_display_blend_end();
+   menu_display_draw(&draw, video_info);
+   menu_display_blend_end(video_info);
 
    zui->rendering = false;
 
