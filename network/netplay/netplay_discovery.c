@@ -295,8 +295,23 @@ bool netplay_lan_ad_server(netplay_t *netplay)
             char frontend[NETPLAY_HOST_STR_LEN];
             netplay_get_architecture(frontend, sizeof(frontend));
 
+            /* The following code is horrible and should be fixed by someone who
+               knows sockets programming.
+
+               What it does right now is check the address from the reply and check
+               if it's IPv4 in the most naive way possible (filters if : is found)
+
+               If it's IPv4, it removes the last octet (using string manipulation)
+               and checks if the other three octets match, which means it will
+               only match if hosts are in the same class C or close to each
+               other in a bigger class
+
+               This was done because on some devices all the addresses are IPv6 mapped
+               IPv4 addresses, and on IPv6 you can't easily figure out the source
+               address so I had to embed the source address on the announcement payload*/
+
             p=strrchr(reply_addr,'.');
-            if (p)
+            if (p && !strstr(reply_addr, ":"))
             {
                strlcpy(sub, reply_addr, p - reply_addr + 1);
                if (strstr(interfaces.entries[k].host, sub) &&
