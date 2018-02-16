@@ -1666,6 +1666,36 @@ static void gl_begin_debug(gl_t *gl)
 }
 #endif
 
+extern gl_renderchain_driver_t gl2_renderchain;
+
+static const gl_renderchain_driver_t *renderchain_gl_drivers[] = {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+   &gl2_renderchain,
+#endif
+   NULL
+};
+
+
+static bool renderchain_gl_init_first(
+      const gl_renderchain_driver_t **renderchain_driver,
+      void **renderchain_handle)
+{
+   unsigned i;
+
+   for (i = 0; renderchain_gl_drivers[i]; i++)
+   {
+      void *data = renderchain_gl_drivers[i]->chain_new();
+
+      if (!data)
+         continue;
+
+      *renderchain_driver = renderchain_gl_drivers[i];
+      *renderchain_handle = data;
+      return true;
+   }
+
+   return false;
+}
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {

@@ -1316,15 +1316,6 @@ bool video_shader_driver_compile_program(struct shader_program_info *program_inf
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
 
-bool renderchain_d3d_init_first(
-      enum gfx_ctx_api,
-      const d3d_renderchain_driver_t **renderchain_driver,
-      void **renderchain_handle);
-
-bool renderchain_gl_init_first(
-      const gl_renderchain_driver_t **renderchain_driver,
-      void **renderchain_handle);
-
 extern bool (*video_driver_cb_has_focus)(void);
 
 extern shader_backend_t *current_shader;
@@ -1386,12 +1377,6 @@ extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
-
-extern d3d_renderchain_driver_t cg_d3d9_renderchain;
-extern d3d_renderchain_driver_t hlsl_d3d9_renderchain;
-extern d3d_renderchain_driver_t null_d3d_renderchain;
-
-extern gl_renderchain_driver_t gl2_renderchain;
 
 RETRO_END_DECLS
 

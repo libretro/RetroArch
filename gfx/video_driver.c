@@ -421,14 +421,6 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
-
-static const gl_renderchain_driver_t *renderchain_gl_drivers[] = {
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-   &gl2_renderchain,
-#endif
-   NULL
-};
-
 /* Stub functions */
 
 static void update_window_title_null(void *data, void *data2)
@@ -3542,69 +3534,4 @@ void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
       if (video_driver_poke && video_driver_poke->set_mvp)
          video_driver_poke->set_mvp(mvp->data, shader_data, mvp->matrix);
    }
-}
-
-bool renderchain_d3d_init_first(
-      enum gfx_ctx_api api,
-      const d3d_renderchain_driver_t **renderchain_driver,
-      void **renderchain_handle)
-{
-   switch (api)
-   {
-      case GFX_CTX_DIRECT3D9_API:
-#ifdef HAVE_D3D9
-         {
-            static const d3d_renderchain_driver_t *renderchain_d3d_drivers[] = {
-#if defined(_WIN32) && defined(HAVE_CG)
-               &cg_d3d9_renderchain,
-#endif
-#if defined(_WIN32) && defined(HAVE_HLSL)
-               &hlsl_d3d9_renderchain,
-#endif
-               &null_d3d_renderchain,
-               NULL
-            };
-            unsigned i;
-
-            for (i = 0; renderchain_d3d_drivers[i]; i++)
-            {
-               void *data = renderchain_d3d_drivers[i]->chain_new();
-
-               if (!data)
-                  continue;
-
-               *renderchain_driver = renderchain_d3d_drivers[i];
-               *renderchain_handle = data;
-               return true;
-            }
-         }
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
-   return false;
-}
-
-bool renderchain_gl_init_first(
-      const gl_renderchain_driver_t **renderchain_driver,
-      void **renderchain_handle)
-{
-   unsigned i;
-
-   for (i = 0; renderchain_gl_drivers[i]; i++)
-   {
-      void *data = renderchain_gl_drivers[i]->chain_new();
-
-      if (!data)
-         continue;
-
-      *renderchain_driver = renderchain_gl_drivers[i];
-      *renderchain_handle = data;
-      return true;
-   }
-
-   return false;
 }

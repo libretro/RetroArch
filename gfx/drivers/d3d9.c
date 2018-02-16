@@ -106,6 +106,54 @@ static bool d3d9_init_imports(d3d_video_t *d3d)
    return true;
 }
 
+extern d3d_renderchain_driver_t cg_d3d9_renderchain;
+extern d3d_renderchain_driver_t hlsl_d3d9_renderchain;
+extern d3d_renderchain_driver_t null_d3d_renderchain;
+
+static bool renderchain_d3d_init_first(
+      enum gfx_ctx_api api,
+      const d3d_renderchain_driver_t **renderchain_driver,
+      void **renderchain_handle)
+{
+   switch (api)
+   {
+      case GFX_CTX_DIRECT3D9_API:
+#ifdef HAVE_D3D9
+         {
+            static const d3d_renderchain_driver_t *renderchain_d3d_drivers[] = {
+#if defined(_WIN32) && defined(HAVE_CG)
+               &cg_d3d9_renderchain,
+#endif
+#if defined(_WIN32) && defined(HAVE_HLSL)
+               &hlsl_d3d9_renderchain,
+#endif
+               &null_d3d_renderchain,
+               NULL
+            };
+            unsigned i;
+
+            for (i = 0; renderchain_d3d_drivers[i]; i++)
+            {
+               void *data = renderchain_d3d_drivers[i]->chain_new();
+
+               if (!data)
+                  continue;
+
+               *renderchain_driver = renderchain_d3d_drivers[i];
+               *renderchain_handle = data;
+               return true;
+            }
+         }
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
+   return false;
+}
+
 static bool d3d9_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
    struct LinkInfo link_info;
