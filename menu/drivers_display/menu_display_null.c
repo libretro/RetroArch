@@ -41,7 +41,8 @@ static void menu_display_null_draw(void *data, video_frame_info_t *video_info)
    (void)data;
 }
 
-static void menu_display_null_draw_pipeline(void *data, video_frame_info_t *video_info)
+static void menu_display_null_draw_pipeline(
+      void *data, video_frame_info_t *video_info)
 {
    (void)data;
 }
@@ -55,7 +56,9 @@ static void menu_display_null_restore_clear_color(void)
 {
 }
 
-static void menu_display_null_clear_color(menu_display_ctx_clearcolor_t *clearcolor)
+static void menu_display_null_clear_color(
+      menu_display_ctx_clearcolor_t *clearcolor,
+      video_frame_info_t *video_info)
 {
    (void)clearcolor;
 }

@@ -168,7 +168,7 @@ static void menu_display_ctr_restore_clear_color(void)
 #endif
 }
 
-static void menu_display_ctr_clear_color(menu_display_ctx_clearcolor_t *clearcolor)
+static void menu_display_ctr_clear_color(menu_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info)
 {
    if (!clearcolor)
       return;

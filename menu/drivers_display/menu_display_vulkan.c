@@ -282,11 +282,12 @@ static void menu_display_vk_restore_clear_color(void)
 }
 
 static void menu_display_vk_clear_color(
-      menu_display_ctx_clearcolor_t *clearcolor)
+      menu_display_ctx_clearcolor_t *clearcolor,
+      video_frame_info_t *video_info)
 {
    VkClearRect rect;
    VkClearAttachment attachment;
-   vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
+   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
    if (!vk || !clearcolor)
       return;
 

@@ -210,7 +210,9 @@ static void menu_display_vita2d_restore_clear_color(void)
    vita2d_set_clear_color(RGBA8(0x00, 0x00, 0x00, 0xFF));
 }
 
-static void menu_display_vita2d_clear_color(menu_display_ctx_clearcolor_t *clearcolor)
+static void menu_display_vita2d_clear_color(
+      menu_display_ctx_clearcolor_t *clearcolor,
+      video_frame_info_t *video_info)
 {
    if (!clearcolor)
       return;

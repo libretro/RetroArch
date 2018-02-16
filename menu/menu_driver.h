@@ -331,7 +331,8 @@ typedef struct menu_display_ctx_driver
    /* Set the clear color back to its default values. */
    void (*restore_clear_color)(void);
    /* Set the color to be used when clearing the screen */
-   void (*clear_color)(menu_display_ctx_clearcolor_t *clearcolor);
+   void (*clear_color)(menu_display_ctx_clearcolor_t *clearcolor,
+         video_frame_info_t *video_info);
    /* Get the default Model-View-Projection matrix */
    void *(*get_default_mvp)(void);
    /* Get the default vertices matrix */
@@ -674,8 +675,10 @@ void menu_display_unset_framebuffer_dirty_flag(void);
 float menu_display_get_dpi(void);
 bool menu_display_init_first_driver(bool video_is_threaded);
 bool menu_display_restore_clear_color(void);
-void menu_display_clear_color(menu_display_ctx_clearcolor_t *color);
-void menu_display_draw(menu_display_ctx_draw_t *draw, video_frame_info_t *video_info);
+void menu_display_clear_color(menu_display_ctx_clearcolor_t *color,
+      video_frame_info_t *video_info);
+void menu_display_draw(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info);
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info);

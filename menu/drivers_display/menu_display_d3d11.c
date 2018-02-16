@@ -229,14 +229,18 @@ static void menu_display_d3d11_draw_pipeline(void* data,
 
 static void menu_display_d3d11_restore_clear_color(void) {}
 
-static void menu_display_d3d11_clear_color(menu_display_ctx_clearcolor_t* clearcolor)
+static void menu_display_d3d11_clear_color(
+      menu_display_ctx_clearcolor_t* clearcolor,
+      video_frame_info_t *video_info)
 {
-   d3d11_video_t* d3d11 = (d3d11_video_t*)video_driver_get_ptr(false);
+   d3d11_video_t *d3d11 = video_info ? 
+      (d3d11_video_t*)video_info->userdata : NULL;
 
    if (!d3d11 || !clearcolor)
       return;
 
-   D3D11ClearRenderTargetView(d3d11->context, d3d11->renderTargetView, (float*)clearcolor);
+   D3D11ClearRenderTargetView(d3d11->context,
+         d3d11->renderTargetView, (float*)clearcolor);
 }
 
 static bool menu_display_d3d11_font_init_first(
@@ -248,7 +252,8 @@ static bool menu_display_d3d11_font_init_first(
 {
    font_data_t** handle     = (font_data_t**)font_handle;
    font_data_t*  new_handle = font_driver_init_first(
-         video_data, font_path, font_size, true, is_threaded, FONT_DRIVER_RENDER_D3D11_API);
+         video_data, font_path, font_size, true,
+         is_threaded, FONT_DRIVER_RENDER_D3D11_API);
    if (!new_handle)
       return false;
    *handle = new_handle;

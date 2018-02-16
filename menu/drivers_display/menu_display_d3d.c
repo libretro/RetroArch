@@ -277,11 +277,11 @@ static void menu_display_d3d_restore_clear_color(void)
 }
 
 static void menu_display_d3d_clear_color(
-      menu_display_ctx_clearcolor_t *clearcolor)
+      menu_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info)
 {
    DWORD    clear_color = 0;
-   d3d_video_t     *d3d = (d3d_video_t*)
-      video_driver_get_ptr(false);
+   d3d_video_t     *d3d = video_info ? 
+      (d3d_video_t*)video_info->userdata : NULL;
 
    if (!d3d || !clearcolor)
       return;

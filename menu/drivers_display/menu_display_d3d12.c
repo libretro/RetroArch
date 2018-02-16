@@ -249,9 +249,10 @@ static void menu_display_d3d12_draw_pipeline(void* data,
 
 static void menu_display_d3d12_restore_clear_color(void) {}
 
-static void menu_display_d3d12_clear_color(menu_display_ctx_clearcolor_t* clearcolor)
+static void menu_display_d3d12_clear_color(
+      menu_display_ctx_clearcolor_t* clearcolor, video_frame_info_t *video_info)
 {
-   d3d12_video_t* d3d12 = (d3d12_video_t*)video_driver_get_ptr(false);
+   d3d12_video_t* d3d12 = video_info ? (d3d12_video_t*)video_info->userdata : NULL;
 
    if (!d3d12 || !clearcolor)
       return;

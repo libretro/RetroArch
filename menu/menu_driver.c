@@ -576,10 +576,11 @@ bool menu_display_restore_clear_color(void)
    return true;
 }
 
-void menu_display_clear_color(menu_display_ctx_clearcolor_t *color)
+void menu_display_clear_color(menu_display_ctx_clearcolor_t *color,
+      video_frame_info_t *video_info)
 {
    if (menu_disp && menu_disp->clear_color)
-      menu_disp->clear_color(color);
+      menu_disp->clear_color(color, video_info);
 }
 
 void menu_display_draw(menu_display_ctx_draw_t *draw,

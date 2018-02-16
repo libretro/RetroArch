@@ -1459,7 +1459,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    }
    else
    {
-      menu_display_clear_color(&clearcolor);
+      menu_display_clear_color(&clearcolor, video_info);
 
       if (mui->textures.bg)
       {
