@@ -776,7 +776,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
       "Roulette gauche")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
-      "Roulette droitee")
+      "Roulette droite")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
       "Type de mappage manette/clavier")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
@@ -1324,11 +1324,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
       "Réglages")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER,
-      "Nuanceur")
+      "Shader")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
       "Appliquer les changements")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
-      "Nuanceur")
+      "Shader")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON,
       "Ruban")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
@@ -1708,11 +1708,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
       "Transparence du fond")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-      "Menu Police Couleur Rouge")
+      "Menu police couleur rouge")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-      "Menu Police Couleur verte")
+      "Menu police couleur verte")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-      "Menu Police Couleur bleue")
+      "Menu police couleur bleue")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_FONT,
       "Police du menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
@@ -2511,19 +2511,19 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
 MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
       "Quitter le programe.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-      "Définissez la taille de largeur personnalisée pour la fenêtre d'affichage. Le laisser à 0 essayera d'agrandir la fenêtre aussi grande que possible.")
+      "Définit la taille de largeur personnalisée pour la fenêtre d'affichage. Le laisser à 0 essayera d'agrandir la fenêtre aussi grande que possible.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-      "Définissez la taille de hauteur personnalisée pour la fenêtre d'affichage. Le laisser à 0 essayera d'agrandir la fenêtre aussi grande que possible.")
+      "Définit la taille de hauteur personnalisée pour la fenêtre d'affichage. Le laisser à 0 essayera d'agrandir la fenêtre aussi grande que possible.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-      "Définissez la taille de largeur personnalisée pour le mode plein écran non fenêtré. Le laisser à 0 utilisera la résolution de bureau.")
+      "Définit la taille de largeur personnalisée pour le mode plein écran non fenêtré. Le laisser à 0 utilisera la résolution de bureau.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-      "Définissez la taille de hauteur personnalisée pour le mode plein écran non fenêtré. Le laisser à 0 utilisera la résolution de bureau")
+      "Définit la taille de hauteur personnalisée pour le mode plein écran non fenêtré. Le laisser à 0 utilisera la résolution de bureau")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
-      "Spécifiez la position de l'axe X personnalisée pour le texte à l'écran.")
+      "Spécifie la position de l'axe X personnalisée pour le texte à l'écran.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
-      "Spécifiez la position de l'axe Y personnalisée pour le texte à l'écran.")
+      "Spécifie la position de l'axe Y personnalisée pour le texte à l'écran.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-      "Spécifier la taille de la police en points.")
+      "Spécifie la taille de la police en points.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "Cacher l'overlay quand vous êtes dans le menu. Il sera actif uniquement dans les jeux.")
 MSG_HASH(
@@ -2532,19 +2532,19 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-      "Échelle uniquement la vidéo en étapes entières. La taille de base dépend de la géométrie rapportée par le système et des proportions. Si 'Forcer l'aspect' n'est pas défini, X/Y sera mis à l'échelle indépendamment."
+      "Redimensionner uniquement la vidéo en étapes entières. La taille de base dépend de la géométrie rapportée par le système et des proportions. Si 'Forcer l'aspect' n'est pas défini, X/Y sera mis à l'échelle indépendamment."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-      "Captures d'écran en sortie de matériau ombré GPU si disponible."
+      "Capture d'écran en sortie du shader GPU si disponible."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-      "Force une certaine rotation de l'écran. La rotation est ajoutée aux rotations que les ensembles de noyau."
+      "Force une certaine rotation de l'écran. La rotation est ajoutée aux rotations que sur l'ensembles des coeurs."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-      "Désactivez de force le support sRGB FBO. Certains pilotes Intel OpenGL sur Windows ont des problèmes de vidéo avec la prise en charge sRGB FBO si cela est activé. Activer cela peut contourner cela."
+      "Désactivez de force le support des pilotes OpenGL Intel. Certains pilotes Intel OpenGL sur Windows ont des problèmes de vidéo avec la prise en charge sRGB FBO si cela est activé. Activer cela peut contourner cela."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
@@ -2552,19 +2552,19 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-      "Si écran plein, préférez utiliser un mode plein écran fenêtré."
+      "Si en mode plein écran, préférez utiliser un mode plein écran fenêtré."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
-      "Enregistre la sortie du matériau ombré GPU si disponible."
+      "Enregistre la sortie du matériel d'ombrage du GPU si disponible."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-      "Lors de la création d'un sauvestat, l'index d'état de sauvegarde est automatiquement augmenté avant d'être sauvegardé. Lors du chargement du contenu, l'index sera défini sur l'index existant le plus élevé."
+      "Lors de la création d'un savestat, l'index d'état de sauvegarde est automatiquement augmenté avant d'être sauvegardé. Lors du chargement du contenu, l'index sera défini sur l'index existant le plus élevé."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-      "Bloquer Sauver la RAM d'être écrasée lors du chargement des sauvegardes. Peut potentiellement conduire à des jeux buggés."
+      "Empêcher la sauvegarde de la RAM d'être écrasée lors du chargement des sauvegardes. Peut potentiellement conduire à des jeux buggés."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
@@ -2948,13 +2948,13 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
       "Enregistrer tous les fichiers téléchargés dans ce répertoire.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
-      "Enregistrer tous les contrôles remappés dans ce répertoire.")
+      "Enregistrer tous les contrôles réaffectés dans ce répertoire.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
       "Répertoire où le programme recherche du contenu/des cœurs.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
       "Les fichiers d'informations d'application/de base stockés ici.")
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
-      "Si une manette est branché, cette manette sera autoconfiguré si un fichier de configuration correspondant est présent dans ce répertoire.")
+      "Si une manette est branchée, cette manette sera autoconfiguré si un fichier de configuration correspondant est présent dans ce répertoire.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
       "Enregistrer toutes les collections dans ce répertoire.")
 MSG_HASH(
