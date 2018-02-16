@@ -104,9 +104,8 @@ static void menu_display_d3d_viewport(void *data)
 {
 }
 
-static void menu_display_d3d_bind_texture(void *data)
+static void menu_display_d3d_bind_texture(void *data, d3d_video_t *d3d)
 {
-   d3d_video_t              *d3d = (d3d_video_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
 
    if (!d3d || !draw || !draw->texture)
@@ -215,7 +214,7 @@ static void menu_display_d3d_draw(void *data, video_frame_info_t *video_info)
    mvp.data   = d3d;
    mvp.matrix = &m1;
    video_driver_set_mvp(&mvp);
-   menu_display_d3d_bind_texture(draw);
+   menu_display_d3d_bind_texture(draw, (d3d_video_t*)video_info->userdata);
    d3d_draw_primitive(d3d->dev,
          menu_display_prim_to_d3d_enum(draw->prim_type),
          d3d->menu_display.offset,
