@@ -42,7 +42,7 @@ static void menu_display_gdi_blend_end(video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_gdi_draw(void *data)
+static void menu_display_gdi_draw(void *data, video_frame_info_t *video_info)
 {
    (void)data;
 }

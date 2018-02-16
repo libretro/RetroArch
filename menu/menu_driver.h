@@ -320,7 +320,7 @@ typedef struct menu_display_frame_info
 typedef struct menu_display_ctx_driver
 {
    /* Draw graphics to the screen. */
-   void (*draw)(void *data);
+   void (*draw)(void *data, video_frame_info_t *video_info);
    /* Draw one of the menu pipeline shaders. */
    void (*draw_pipeline)(void *data);
    void (*viewport)(void *data);
@@ -675,7 +675,7 @@ float menu_display_get_dpi(void);
 bool menu_display_init_first_driver(bool video_is_threaded);
 bool menu_display_restore_clear_color(void);
 void menu_display_clear_color(menu_display_ctx_clearcolor_t *color);
-void menu_display_draw(menu_display_ctx_draw_t *draw);
+void menu_display_draw(menu_display_ctx_draw_t *draw, video_frame_info_t *video_info);
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw);
 void menu_display_draw_bg(
@@ -690,10 +690,14 @@ void menu_display_draw_quad(
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color);
-void menu_display_draw_texture(int x, int y, unsigned w, unsigned h,
+void menu_display_draw_texture(
+      video_frame_info_t *video_info,
+      int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color, uintptr_t texture);
-void menu_display_draw_texture_slice(int x, int y, unsigned w, unsigned h,
+void menu_display_draw_texture_slice(
+      video_frame_info_t *video_info,
+      int x, int y, unsigned w, unsigned h,
       unsigned new_w, unsigned new_h, unsigned width, unsigned height,
       float *color, unsigned offset, float scale_factor, uintptr_t texture);
 void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw);

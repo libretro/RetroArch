@@ -122,13 +122,13 @@ static void menu_display_d3d_bind_texture(void *data)
 
 }
 
-static void menu_display_d3d_draw(void *data)
+static void menu_display_d3d_draw(void *data, video_frame_info_t *video_info)
 {
    unsigned i;
    video_shader_ctx_mvp_t mvp;
    math_matrix_4x4 mop, m1, m2;
    unsigned width, height;
-   d3d_video_t *d3d              = (d3d_video_t*)video_driver_get_ptr(false);   
+   d3d_video_t *d3d              = video_info ? (d3d_video_t*)video_info->userdata : NULL;   
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    Vertex * pv                   = NULL;
    const float *vertex           = NULL;

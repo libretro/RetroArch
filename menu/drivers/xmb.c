@@ -602,6 +602,7 @@ static INLINE float xmb_item_y(const xmb_handle_t *xmb, int i, size_t current)
 }
 
 static void xmb_draw_icon(
+      video_frame_info_t *video_info,
       menu_display_frame_info_t menu_disp_info,
       int icon_size,
       math_matrix_4x4 *mymat,
@@ -661,7 +662,7 @@ static void xmb_draw_icon(
          draw.y         = draw.y + (icon_size-draw.width)/2;
       }
 #endif
-      menu_display_draw(&draw);
+      menu_display_draw(&draw, video_info);
    }
 
    coords.color         = (const float*)color;
@@ -675,10 +676,11 @@ static void xmb_draw_icon(
       draw.y            = draw.y + (icon_size-draw.width)/2;
    }
 #endif
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 }
 
 static void xmb_draw_thumbnail(
+      video_frame_info_t *video_info,
       menu_display_frame_info_t menu_disp_info,
       xmb_handle_t *xmb, float *color,
       unsigned width, unsigned height,
@@ -720,7 +722,7 @@ static void xmb_draw_thumbnail(
       draw.x                = x + xmb->shadow_offset;
       draw.y                = height - y - xmb->shadow_offset;
 
-      menu_display_draw(&draw);
+      menu_display_draw(&draw, video_info);
    }
 
    coords.color             = (const float*)color;
@@ -729,7 +731,7 @@ static void xmb_draw_thumbnail(
 
    menu_display_set_alpha(color, 1.0f);
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 }
 
 static void xmb_draw_text(
@@ -820,6 +822,7 @@ static void xmb_render_keyboard(xmb_handle_t *xmb,
          menu_display_blend_begin(video_info);
 
          menu_display_draw_texture(
+               video_info,
                width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
                height/2.0 + ptr_height*1.5 + line_y,
                ptr_width, ptr_height,
@@ -916,6 +919,7 @@ static void xmb_render_messagebox_internal(
    menu_display_blend_begin(video_info);
 
    menu_display_draw_texture_slice(
+         video_info,
          x - longest_width/2 - xmb->margins_dialog,
          y + xmb->margins_slice - xmb->margins_dialog,
          256, 256,
@@ -2339,6 +2343,7 @@ static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
 }
 
 static int xmb_draw_item(
+      video_frame_info_t *video_info,
       menu_display_frame_info_t menu_disp_info,
       menu_entry_t *entry,
       math_matrix_4x4 *mymat,
@@ -2545,7 +2550,7 @@ static int xmb_draw_item(
 
       menu_display_rotate_z(&rotate_draw);
 
-      xmb_draw_icon(
+      xmb_draw_icon(video_info,
             menu_disp_info,
             xmb->icon_size,
             &mymat_tmp,
@@ -2564,7 +2569,7 @@ static int xmb_draw_item(
    menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
 
    if (texture_switch != 0 && color[3] != 0)
-      xmb_draw_icon(
+      xmb_draw_icon(video_info,
             menu_disp_info,
             xmb->icon_size,
             mymat,
@@ -2652,7 +2657,8 @@ static void xmb_draw_items(
       menu_entry_t entry;
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, i, list, true);
-      ret = xmb_draw_item(menu_disp_info,
+      ret = xmb_draw_item(video_info,
+            menu_disp_info,
             &entry,
             &mymat,
             xmb, core_node,
@@ -2845,7 +2851,7 @@ static void xmb_draw_bg(
       }
    }
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
    menu_display_blend_end(video_info);
 }
 
@@ -2883,7 +2889,7 @@ static void xmb_draw_dark_layer(
    draw.pipeline.id = 0;
 
    menu_display_blend_begin(video_info);
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
    menu_display_blend_end(video_info);
 }
 
@@ -2978,7 +2984,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    menu_display_blend_begin(video_info);
 
    if (xmb->savestate_thumbnail)
-      xmb_draw_thumbnail(menu_disp_info,
+      xmb_draw_thumbnail(video_info,
+            menu_disp_info,
             xmb, &coord_white[0], width, height,
             xmb->margins_screen_left
             + xmb->icon_spacing_horizontal +
@@ -2995,7 +3002,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-      xmb_draw_thumbnail(menu_disp_info,
+      xmb_draw_thumbnail(video_info,
+            menu_disp_info,
             xmb, &coord_white[0], width, height,
             xmb->margins_screen_left + xmb->icon_spacing_horizontal +
                   xmb->icon_spacing_horizontal*4 - xmb->icon_size / 4,
@@ -3033,7 +3041,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          size_t x_pos_icon = xmb->margins_title_left;
 
          if (coord_white[3] != 0)
-            xmb_draw_icon(
+            xmb_draw_icon(video_info,
                   menu_disp_info,
                   xmb->icon_size,
                   &mymat,
@@ -3073,7 +3081,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          if (percent_width)
             x_pos = percent_width + (xmb->icon_size / 2.5);
 
-         xmb_draw_icon(
+         xmb_draw_icon(video_info,
                menu_disp_info,
                xmb->icon_size,
                &mymat,
@@ -3110,7 +3118,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    menu_display_set_alpha(coord_white, MIN(xmb->textures_arrow_alpha, xmb->alpha));
 
    if (coord_white[3] != 0)
-      xmb_draw_icon(
+      xmb_draw_icon(video_info,
             menu_disp_info,
             xmb->icon_size,
             &mymat,
@@ -3162,7 +3170,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          menu_display_rotate_z(&rotate_draw);
 
-         xmb_draw_icon(
+         xmb_draw_icon(video_info,
                menu_disp_info,
                xmb->icon_size,
                &mymat,

@@ -361,7 +361,7 @@ static void mui_draw_icon(
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
    menu_display_blend_end(video_info);
 }
 
@@ -454,6 +454,7 @@ static void mui_render_keyboard(mui_handle_t *mui,
       menu_display_blend_begin(video_info);
 
       menu_display_draw_texture(
+            video_info,
             width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
             height/2.0 + ptr_height*1.5 + line_y,
             ptr_width, ptr_height,
@@ -1155,7 +1156,7 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw,
 
    menu_display_draw_bg(draw, video_info, add_opacity,
          opacity_override);
-   menu_display_draw(draw);
+   menu_display_draw(draw, video_info);
    menu_display_blend_end(video_info);
 }
 

@@ -60,10 +60,10 @@ static void menu_display_wiiu_viewport(void *data)
 }
 
 
-static void menu_display_wiiu_draw(void *data)
+static void menu_display_wiiu_draw(void *data, video_frame_info_t *video_info)
 {
-   wiiu_video_t             *wiiu = (wiiu_video_t*)video_driver_get_ptr(false);
-   menu_display_ctx_draw_t *draw    = (menu_display_ctx_draw_t*)data;
+   wiiu_video_t             *wiiu  = video_info ? (wiiu_video_t*)video_info->userdata : NULL;
+   menu_display_ctx_draw_t *draw   = (menu_display_ctx_draw_t*)data;
 
 
    if (!wiiu || !draw)

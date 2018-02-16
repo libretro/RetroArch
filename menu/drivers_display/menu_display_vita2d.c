@@ -106,7 +106,8 @@ static void menu_display_vita2d_viewport(void *data)
 }
 
 
-static void menu_display_vita2d_draw(void *data)
+static void menu_display_vita2d_draw(void *data,
+      video_frame_info_t *video_info)
 {
 #if 0
     unsigned i;
@@ -116,7 +117,7 @@ static void menu_display_vita2d_draw(void *data)
     const float *vertex              = NULL;
     const float *tex_coord           = NULL;
     const float *color               = NULL;
-    vita_video_t             *vita2d = (vita_video_t*)video_driver_get_ptr(false);
+    vita_video_t             *vita2d = video_info ? (vita_video_t*)video_info->userdata : NULL;
     menu_display_ctx_draw_t *draw    = (menu_display_ctx_draw_t*)data;
 
    if (!vita2d || !draw)

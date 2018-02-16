@@ -173,7 +173,7 @@ static void menu_display_vk_draw_pipeline(void *data)
 #endif
 }
 
-static void menu_display_vk_draw(void *data)
+static void menu_display_vk_draw(void *data, video_frame_info_t *video_info)
 {
    unsigned i;
    struct vk_buffer_range range;
@@ -183,7 +183,7 @@ static void menu_display_vk_draw(void *data)
    const float *color            = NULL;
    struct vk_vertex *pv          = NULL;
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
+   vk_t *vk                      = video_info ? (vk_t*)video_info->userdata : NULL;
 
    if (!vk || !draw)
       return;

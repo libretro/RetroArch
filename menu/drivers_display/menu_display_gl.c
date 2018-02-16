@@ -116,11 +116,11 @@ static void menu_display_gl_bind_texture(void *data)
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 }
 
-static void menu_display_gl_draw(void *data)
+static void menu_display_gl_draw(void *data, video_frame_info_t *video_info)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
-   gl_t             *gl          = (gl_t*)video_driver_get_ptr(false);
+   gl_t             *gl          = video_info ? (gl_t*)video_info->userdata : NULL;
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
 
    if (!gl || !draw)

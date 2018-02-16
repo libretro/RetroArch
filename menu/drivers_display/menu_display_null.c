@@ -36,7 +36,7 @@ static void menu_display_null_blend_end(video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_null_draw(void *data)
+static void menu_display_null_draw(void *data, video_frame_info_t *video_info)
 {
    (void)data;
 }

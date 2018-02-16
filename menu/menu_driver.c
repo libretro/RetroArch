@@ -582,7 +582,8 @@ void menu_display_clear_color(menu_display_ctx_clearcolor_t *color)
       menu_disp->clear_color(color);
 }
 
-void menu_display_draw(menu_display_ctx_draw_t *draw)
+void menu_display_draw(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
    if (!menu_disp || !draw || !menu_disp->draw)
       return;
@@ -591,7 +592,7 @@ void menu_display_draw(menu_display_ctx_draw_t *draw)
    if (draw->height <= 0)
       draw->height = 1;
 
-   menu_disp->draw(draw);
+   menu_disp->draw(draw, video_info);
 }
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw)
@@ -649,7 +650,7 @@ void menu_display_draw_gradient(menu_display_ctx_draw_t *draw,
 
    menu_display_draw_bg(draw, video_info, false,
          video_info->menu_wallpaper_opacity);
-   menu_display_draw(draw);
+   menu_display_draw(draw, video_info);
 }
 
 void menu_display_draw_quad(
@@ -682,13 +683,14 @@ void menu_display_draw_quad(
    draw.scale_factor = 1.0f;
    draw.rotation     = 0.0f;
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 
    if (menu_disp && menu_disp->blend_end)
       menu_disp->blend_end(video_info);
 }
 
 void menu_display_draw_texture(
+      video_frame_info_t *video_info,
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color, uintptr_t texture)
@@ -720,13 +722,14 @@ void menu_display_draw_texture(
    draw.texture             = texture;
    draw.x                   = x;
    draw.y                   = height - y;
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 }
 
 /* Draw the texture split into 9 sections, without scaling the corners.
  * The middle sections will only scale in the X axis, and the side
  * sections will only scale in the Y axis. */
 void menu_display_draw_texture_slice(
+      video_frame_info_t *video_info,
       int x, int y, unsigned w, unsigned h,
       unsigned new_w, unsigned new_h,
       unsigned width, unsigned height,
@@ -832,7 +835,7 @@ void menu_display_draw_texture_slice(
    tex_coord[6] = T_TR[0];
    tex_coord[7] = T_TR[1];
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 
    /* top-middle section */
    vert_coord[0] = V_BL[0] + vert_woff;
@@ -853,7 +856,7 @@ void menu_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width;
    tex_coord[7] = T_TR[1];
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 
    /* top-right corner */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
@@ -874,7 +877,7 @@ void menu_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width + tex_woff;
    tex_coord[7] = T_TR[1];
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 
    /* middle-left section */
    vert_coord[0] = V_BL[0];
@@ -895,7 +898,7 @@ void menu_display_draw_texture_slice(
    tex_coord[6] = T_TR[0];
    tex_coord[7] = T_TR[1] + tex_hoff;
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 
    /* center section */
    vert_coord[0] = V_BL[0] + vert_woff;
@@ -916,7 +919,7 @@ void menu_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff;
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 
    /* middle-right section */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
@@ -937,7 +940,7 @@ void menu_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_woff + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff;
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 
    /* bottom-left corner */
    vert_coord[0] = V_BL[0];
@@ -958,7 +961,7 @@ void menu_display_draw_texture_slice(
    tex_coord[6] = T_TR[0];
    tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 
    /* bottom-middle section */
    vert_coord[0] = V_BL[0] + vert_woff;
@@ -979,7 +982,7 @@ void menu_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_mid_height;
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 
    /* bottom-right corner */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
@@ -1000,7 +1003,7 @@ void menu_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_woff + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 
    free(colors);
    free(vert_coord);
@@ -1147,7 +1150,7 @@ void menu_display_draw_cursor(
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   menu_display_draw(&draw);
+   menu_display_draw(&draw, video_info);
 
    if (menu_disp && menu_disp->blend_end)
       menu_disp->blend_end(video_info);

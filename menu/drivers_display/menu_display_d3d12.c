@@ -52,10 +52,10 @@ static void menu_display_d3d12_blend_end(video_frame_info_t *video_info)
 
 static void menu_display_d3d12_viewport(void* data) {}
 
-static void menu_display_d3d12_draw(void* data)
+static void menu_display_d3d12_draw(void* data, video_frame_info_t *video_info)
 {
    int                      vertex_count;
-   d3d12_video_t*           d3d12 = (d3d12_video_t*)video_driver_get_ptr(false);
+   d3d12_video_t*           d3d12 = video_info ? (d3d12_video_t*)video_info->userdata : NULL;
    menu_display_ctx_draw_t* draw  = (menu_display_ctx_draw_t*)data;
 
    if (!d3d12 || !draw || !draw->texture)

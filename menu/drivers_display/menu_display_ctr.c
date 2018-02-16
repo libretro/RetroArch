@@ -59,11 +59,11 @@ static void menu_display_ctr_viewport(void *data)
 }
 
 
-static void menu_display_ctr_draw(void *data)
+static void menu_display_ctr_draw(void *data, video_frame_info_t *video_info)
 {
-   struct ctr_texture *texture = NULL;
-   const float *color          = NULL;
-   ctr_video_t             *ctr = (ctr_video_t*)video_driver_get_ptr(false);
+   struct ctr_texture *texture      = NULL;
+   const float *color               = NULL;
+   ctr_video_t             *ctr     = video_info ? (ctr_video_t*)video_info->userdata : NULL;
    menu_display_ctx_draw_t *draw    = (menu_display_ctx_draw_t*)data;
 
    if (!ctr || !draw)
