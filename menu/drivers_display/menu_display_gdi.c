@@ -47,7 +47,7 @@ static void menu_display_gdi_draw(void *data, video_frame_info_t *video_info)
    (void)data;
 }
 
-static void menu_display_gdi_draw_pipeline(void *data)
+static void menu_display_gdi_draw_pipeline(void *data, video_frame_info_t *video_info)
 {
    (void)data;
 }

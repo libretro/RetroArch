@@ -152,7 +152,8 @@ static void menu_display_gl_draw(void *data, video_frame_info_t *video_info)
    gl->coords.color     = gl->white_color_ptr;
 }
 
-static void menu_display_gl_draw_pipeline(void *data)
+static void menu_display_gl_draw_pipeline(void *data,
+      video_frame_info_t *video_info)
 {
 #ifdef HAVE_SHADERPIPELINE
    video_shader_ctx_info_t shader_info;
@@ -161,10 +162,10 @@ static void menu_display_gl_draw_pipeline(void *data)
    menu_display_ctx_draw_t *draw    = (menu_display_ctx_draw_t*)data;
    video_coord_array_t *ca          = menu_display_get_coords_array();
 
-   draw->x           = 0;
-   draw->y           = 0;
-   draw->coords      = (struct video_coords*)(&ca->coords);
-   draw->matrix_data = NULL;
+   draw->x                          = 0;
+   draw->y                          = 0;
+   draw->coords                     = (struct video_coords*)(&ca->coords);
+   draw->matrix_data                = NULL;
 
    switch (draw->pipeline.id)
    {

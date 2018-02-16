@@ -2816,7 +2816,7 @@ static void xmb_draw_bg(
             break;
       }
 
-      menu_display_draw_pipeline(&draw);
+      menu_display_draw_pipeline(&draw, video_info);
    }
    else
 #endif

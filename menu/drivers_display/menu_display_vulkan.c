@@ -115,13 +115,13 @@ static void menu_display_vk_viewport(void *data)
    vk->vk_vp.maxDepth = 1.0f;
 }
 
-static void menu_display_vk_draw_pipeline(void *data)
+static void menu_display_vk_draw_pipeline(void *data, video_frame_info_t *video_info)
 {
 #ifdef HAVE_SHADERPIPELINE
    float output_size[2];
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
    video_coord_array_t *ca       = NULL;
+   vk_t *vk                      = video_info ? (vk_t*)video_info->userdata : NULL;
 
    static uint8_t ubo_scratch_data[768];
    static float t                = 0.0f;

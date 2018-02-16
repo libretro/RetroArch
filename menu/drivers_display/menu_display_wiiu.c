@@ -237,12 +237,11 @@ static void menu_display_wiiu_draw(void *data, video_frame_info_t *video_info)
                       sizeof(*wiiu->vertex_cache.v), wiiu->vertex_cache.v);
 }
 
-static void menu_display_wiiu_draw_pipeline(void *data)
+static void menu_display_wiiu_draw_pipeline(void *data, video_frame_info_t *video_info)
 {
    menu_display_ctx_draw_t *draw  = (menu_display_ctx_draw_t*)data;
-   wiiu_video_t             *wiiu = (wiiu_video_t*)video_driver_get_ptr(false);
-
-   video_coord_array_t *ca       = NULL;
+   video_coord_array_t *ca        = NULL;
+   wiiu_video_t             *wiiu = video_info ? (wiiu_video_t*)video_info->userdata : NULL;
 
    if (!wiiu || !draw)
       return;

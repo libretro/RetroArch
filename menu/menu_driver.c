@@ -595,10 +595,11 @@ void menu_display_draw(menu_display_ctx_draw_t *draw,
    menu_disp->draw(draw, video_info);
 }
 
-void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw)
+void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
    if (menu_disp && draw && menu_disp->draw_pipeline)
-      menu_disp->draw_pipeline(draw);
+      menu_disp->draw_pipeline(draw, video_info);
 }
 
 void menu_display_draw_bg(menu_display_ctx_draw_t *draw,

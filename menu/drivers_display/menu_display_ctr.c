@@ -157,7 +157,7 @@ static void menu_display_ctr_draw(void *data, video_frame_info_t *video_info)
 #endif
 }
 
-static void menu_display_ctr_draw_pipeline(void *data)
+static void menu_display_ctr_draw_pipeline(void *data, video_frame_info_t *video_info)
 {
 }
 

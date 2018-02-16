@@ -322,7 +322,7 @@ typedef struct menu_display_ctx_driver
    /* Draw graphics to the screen. */
    void (*draw)(void *data, video_frame_info_t *video_info);
    /* Draw one of the menu pipeline shaders. */
-   void (*draw_pipeline)(void *data);
+   void (*draw_pipeline)(void *data, video_frame_info_t *video_info);
    void (*viewport)(void *data);
    /* Start blending operation. */
    void (*blend_begin)(video_frame_info_t *video_info);
@@ -677,7 +677,8 @@ bool menu_display_restore_clear_color(void);
 void menu_display_clear_color(menu_display_ctx_clearcolor_t *color);
 void menu_display_draw(menu_display_ctx_draw_t *draw, video_frame_info_t *video_info);
 
-void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw);
+void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info);
 void menu_display_draw_bg(
       menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info,

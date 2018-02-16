@@ -112,14 +112,12 @@ static void menu_display_d3d_bind_texture(void *data)
    if (!d3d || !draw || !draw->texture)
       return;
 
-
    d3d_set_texture(d3d->dev, 0, (void*)draw->texture);
    d3d_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_COMM_CLAMP);
    d3d_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_COMM_CLAMP);
    d3d_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_COMM_LINEAR);
    d3d_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_COMM_LINEAR);
    d3d_set_sampler_mipfilter(d3d->dev, 0, D3DTEXF_COMM_LINEAR);
-
 }
 
 static void menu_display_d3d_draw(void *data, video_frame_info_t *video_info)
@@ -228,7 +226,8 @@ static void menu_display_d3d_draw(void *data, video_frame_info_t *video_info)
    d3d->menu_display.offset += draw->coords->vertices;
 }
 
-static void menu_display_d3d_draw_pipeline(void *data)
+static void menu_display_d3d_draw_pipeline(void *data,
+      video_frame_info_t *video_info)
 {
 #if defined(HAVE_HLSL) || defined(HAVE_CG)
    menu_display_ctx_draw_t *draw     = (menu_display_ctx_draw_t*)data;

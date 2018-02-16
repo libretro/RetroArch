@@ -198,7 +198,7 @@ static void menu_display_vita2d_draw(void *data,
   }
 }
 
-static void menu_display_vita2d_draw_pipeline(void *data)
+static void menu_display_vita2d_draw_pipeline(void *data, video_frame_info_t *video_info)
 {
 #ifdef HAVE_SHADERPIPELINE
 
