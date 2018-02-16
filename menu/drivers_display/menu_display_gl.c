@@ -98,10 +98,9 @@ static void menu_display_gl_blend_end(video_frame_info_t *video_info)
 
 static void menu_display_gl_viewport(void *data)
 {
-   gl_t             *gl          = (gl_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
 
-   if (!gl || !draw)
+   if (!draw)
       return;
    glViewport(draw->x, draw->y, draw->width, draw->height);
 }
