@@ -323,7 +323,7 @@ typedef struct menu_display_ctx_driver
    void (*draw)(void *data, video_frame_info_t *video_info);
    /* Draw one of the menu pipeline shaders. */
    void (*draw_pipeline)(void *data, video_frame_info_t *video_info);
-   void (*viewport)(void *data);
+   void (*viewport)(void *data, video_frame_info_t *video_info);
    /* Start blending operation. */
    void (*blend_begin)(video_frame_info_t *video_info);
    /* Finish blending operation. */
@@ -334,7 +334,7 @@ typedef struct menu_display_ctx_driver
    void (*clear_color)(menu_display_ctx_clearcolor_t *clearcolor,
          video_frame_info_t *video_info);
    /* Get the default Model-View-Projection matrix */
-   void *(*get_default_mvp)(void);
+   void *(*get_default_mvp)(video_frame_info_t *video_info);
    /* Get the default vertices matrix */
    const float *(*get_default_vertices)(void);
    /* Get the default texture coordinates matrix */
@@ -704,7 +704,8 @@ void menu_display_draw_texture_slice(
       int x, int y, unsigned w, unsigned h,
       unsigned new_w, unsigned new_h, unsigned width, unsigned height,
       float *color, unsigned offset, float scale_factor, uintptr_t texture);
-void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw);
+void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw,
+      video_frame_info_t *video_info);
 bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw);
 
 void menu_display_timedate(menu_display_ctx_datetime_t *datetime);

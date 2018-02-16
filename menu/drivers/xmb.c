@@ -699,7 +699,7 @@ static void xmb_draw_thumbnail(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   menu_display_rotate_z(&rotate_draw);
+   menu_display_rotate_z(&rotate_draw, video_info);
 
    coords.vertices          = 4;
    coords.vertex            = NULL;
@@ -2548,7 +2548,7 @@ static int xmb_draw_item(
       rotate_draw.scale_z      = 1;
       rotate_draw.scale_enable = true;
 
-      menu_display_rotate_z(&rotate_draw);
+      menu_display_rotate_z(&rotate_draw, video_info);
 
       xmb_draw_icon(video_info,
             menu_disp_info,
@@ -2629,7 +2629,7 @@ static void xmb_draw_items(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   menu_display_rotate_z(&rotate_draw);
+   menu_display_rotate_z(&rotate_draw, video_info);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -2980,7 +2980,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   menu_display_rotate_z(&rotate_draw);
+   menu_display_rotate_z(&rotate_draw, video_info);
    menu_display_blend_begin(video_info);
 
    if (xmb->savestate_thumbnail)
@@ -3168,7 +3168,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          rotate_draw.scale_z      = 1;
          rotate_draw.scale_enable = true;
 
-         menu_display_rotate_z(&rotate_draw);
+         menu_display_rotate_z(&rotate_draw, video_info);
 
          xmb_draw_icon(video_info,
                menu_disp_info,

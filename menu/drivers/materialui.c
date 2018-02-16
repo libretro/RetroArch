@@ -343,7 +343,7 @@ static void mui_draw_icon(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   menu_display_rotate_z(&rotate_draw);
+   menu_display_rotate_z(&rotate_draw, video_info);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;

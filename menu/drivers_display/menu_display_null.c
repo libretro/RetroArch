@@ -23,7 +23,7 @@
 
 #include "../menu_driver.h"
 
-static void *menu_display_null_get_default_mvp(void)
+static void *menu_display_null_get_default_mvp(video_frame_info_t *video_info)
 {
    return NULL;
 }
@@ -47,7 +47,7 @@ static void menu_display_null_draw_pipeline(
    (void)data;
 }
 
-static void menu_display_null_viewport(void *data)
+static void menu_display_null_viewport(void *data, video_frame_info_t *video_info)
 {
    (void)data;
 }

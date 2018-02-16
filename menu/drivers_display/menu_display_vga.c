@@ -25,7 +25,7 @@
 
 #include "../menu_driver.h"
 
-static void *menu_display_vga_get_default_mvp(void)
+static void *menu_display_vga_get_default_mvp(video_frame_info_t *video_info)
 {
    return NULL;
 }
@@ -48,7 +48,7 @@ static void menu_display_vga_draw_pipeline(void *data, video_frame_info_t *video
    (void)data;
 }
 
-static void menu_display_vga_viewport(void *data)
+static void menu_display_vga_viewport(void *data, video_frame_info_t *video_info)
 {
    (void)data;
 }

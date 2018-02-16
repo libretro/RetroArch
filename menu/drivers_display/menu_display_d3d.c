@@ -53,7 +53,7 @@ static const float *menu_display_d3d_get_default_tex_coords(void)
    return &d3d_tex_coords[0];
 }
 
-static void *menu_display_d3d_get_default_mvp(void)
+static void *menu_display_d3d_get_default_mvp(video_frame_info_t *video_info)
 {
    static math_matrix_4x4 id;
    matrix_4x4_identity(id);
@@ -100,7 +100,7 @@ static void menu_display_d3d_blend_end(video_frame_info_t *video_info)
    d3d_disable_blend_func(d3d->dev);
 }
 
-static void menu_display_d3d_viewport(void *data)
+static void menu_display_d3d_viewport(void *data, video_frame_info_t *video_info)
 {
 }
 
@@ -190,7 +190,7 @@ static void menu_display_d3d_draw(void *data, video_frame_info_t *video_info)
    d3d_vertex_buffer_unlock(d3d->menu_display.buffer);
 
    if(!draw->matrix_data)
-      draw->matrix_data = menu_display_d3d_get_default_mvp();
+      draw->matrix_data = menu_display_d3d_get_default_mvp(video_info);
 
    /* ugh */
    video_driver_get_size(&width, &height);

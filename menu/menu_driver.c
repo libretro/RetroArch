@@ -640,7 +640,7 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
    if (!draw->texture)
       draw->texture     = menu_display_white_texture;
 
-   draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp();
+   draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp(video_info);
 }
 
 void menu_display_draw_gradient(menu_display_ctx_draw_t *draw,
@@ -719,7 +719,7 @@ void menu_display_draw_texture(
    draw.pipeline.id         = 0;
    coords.color             = (const float*)color;
 
-   menu_display_rotate_z(&rotate_draw);
+   menu_display_rotate_z(&rotate_draw, video_info);
 
    draw.texture             = texture;
    draw.x                   = x;
@@ -806,7 +806,7 @@ void menu_display_draw_texture_slice(
    draw.pipeline.id         = 0;
    coords.color             = (const float*)colors;
 
-   menu_display_rotate_z(&rotate_draw);
+   menu_display_rotate_z(&rotate_draw, video_info);
 
    draw.texture             = texture;
    draw.x                   = 0;
@@ -1012,7 +1012,8 @@ void menu_display_draw_texture_slice(
    free(tex_coord);
 }
 
-void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw)
+void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw,
+      video_frame_info_t *video_info)
 {
 #if !defined(VITA) && !defined(_3DS) && !defined(WIIU)
    math_matrix_4x4 matrix_rotated, matrix_scaled;
@@ -1021,7 +1022,7 @@ void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw)
    if (!draw || !menu_disp || !menu_disp->get_default_mvp)
       return;
 
-   b = (math_matrix_4x4*)menu_disp->get_default_mvp();
+   b = (math_matrix_4x4*)menu_disp->get_default_mvp(video_info);
 
    if (!b)
       return;

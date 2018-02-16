@@ -29,7 +29,7 @@
 #include "../../gfx/common/win32_common.h"
 #endif
 
-static void *menu_display_gdi_get_default_mvp(void)
+static void *menu_display_gdi_get_default_mvp(video_frame_info_t *video_info)
 {
    return NULL;
 }
@@ -52,7 +52,7 @@ static void menu_display_gdi_draw_pipeline(void *data, video_frame_info_t *video
    (void)data;
 }
 
-static void menu_display_gdi_viewport(void *data)
+static void menu_display_gdi_viewport(void *data, video_frame_info_t *video_info)
 {
    (void)data;
 }

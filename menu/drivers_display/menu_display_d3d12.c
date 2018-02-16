@@ -28,11 +28,20 @@
 #include "../../gfx/video_driver.h"
 #include "../../gfx/common/d3d12_common.h"
 
-static const float* menu_display_d3d12_get_default_vertices(void) { return NULL; }
+static const float* menu_display_d3d12_get_default_vertices(void)
+{
+   return NULL;
+}
 
-static const float* menu_display_d3d12_get_default_tex_coords(void) { return NULL; }
+static const float* menu_display_d3d12_get_default_tex_coords(void)
+{
+   return NULL;
+}
 
-static void* menu_display_d3d12_get_default_mvp(void) { return NULL; }
+static void* menu_display_d3d12_get_default_mvp(video_frame_info_t *video_info)
+{
+   return NULL;
+}
 
 static void menu_display_d3d12_blend_begin(video_frame_info_t *video_info)
 {
@@ -50,7 +59,9 @@ static void menu_display_d3d12_blend_end(video_frame_info_t *video_info)
    D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
 }
 
-static void menu_display_d3d12_viewport(void* data) {}
+static void menu_display_d3d12_viewport(void* data, video_frame_info_t *video_info)
+{
+}
 
 static void menu_display_d3d12_draw(void* data, video_frame_info_t *video_info)
 {

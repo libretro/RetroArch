@@ -38,7 +38,7 @@ static const float *menu_display_ctr_get_default_tex_coords(void)
    return NULL;
 }
 
-static void *menu_display_ctr_get_default_mvp(void)
+static void *menu_display_ctr_get_default_mvp(video_frame_info_t *video_info)
 {
    return NULL;
 }
@@ -53,7 +53,7 @@ static void menu_display_ctr_blend_end(video_frame_info_t *video_info)
 
 }
 
-static void menu_display_ctr_viewport(void *data)
+static void menu_display_ctr_viewport(void *data, video_frame_info_t *video_info)
 {
 
 }

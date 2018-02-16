@@ -53,9 +53,11 @@ static const float *menu_display_vita2d_get_default_tex_coords(void)
    return &vita2d_tex_coords[0];
 }
 
-static void *menu_display_vita2d_get_default_mvp(void)
+static void *menu_display_vita2d_get_default_mvp(
+      video_frame_info_t *video_info)
 {
-   vita_video_t *vita2d = (vita_video_t*)video_driver_get_ptr(false);
+   vita_video_t *vita2d = video_info ? 
+      (vita_video_t*)video_info->userdata : NULL;
 
    if (!vita2d)
       return NULL;
@@ -92,10 +94,10 @@ static void menu_display_vita2d_blend_end(video_frame_info_t *video_info)
 
 }
 
-static void menu_display_vita2d_viewport(void *data)
+static void menu_display_vita2d_viewport(void *data, video_frame_info_t *video_info)
 {
-   vita_video_t             *vita2d          = (vita_video_t*)video_driver_get_ptr(false);
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+    vita_video_t             *vita2d = video_info ? (vita_video_t*)video_info->userdata : NULL;
+   menu_display_ctx_draw_t     *draw = (menu_display_ctx_draw_t*)data;
 
    if (!vita2d || !draw)
       return;

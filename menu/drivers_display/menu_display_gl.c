@@ -50,9 +50,9 @@ static const float *menu_display_gl_get_default_tex_coords(void)
    return &gl_tex_coords[0];
 }
 
-static void *menu_display_gl_get_default_mvp(void)
+static void *menu_display_gl_get_default_mvp(video_frame_info_t *video_info)
 {
-   gl_t *gl = (gl_t*)video_driver_get_ptr(false);
+   gl_t *gl = video_info ? (gl_t*)video_info->userdata : NULL;
 
    if (!gl)
       return NULL;
@@ -96,13 +96,12 @@ static void menu_display_gl_blend_end(video_frame_info_t *video_info)
    glDisable(GL_BLEND);
 }
 
-static void menu_display_gl_viewport(void *data)
+static void menu_display_gl_viewport(void *data, video_frame_info_t *video_info)
 {
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
 
-   if (!draw)
-      return;
-   glViewport(draw->x, draw->y, draw->width, draw->height);
+   if (draw)
+      glViewport(draw->x, draw->y, draw->width, draw->height);
 }
 
 static void menu_display_gl_bind_texture(void *data)
@@ -132,7 +131,7 @@ static void menu_display_gl_draw(void *data, video_frame_info_t *video_info)
    if (!draw->coords->lut_tex_coord)
       draw->coords->lut_tex_coord = menu_display_gl_get_default_tex_coords();
 
-   menu_display_gl_viewport(draw);
+   menu_display_gl_viewport(draw, video_info);
    menu_display_gl_bind_texture(draw);
 
    coords.handle_data = gl;
@@ -142,7 +141,7 @@ static void menu_display_gl_draw(void *data, video_frame_info_t *video_info)
 
    mvp.data   = gl;
    mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
-      : (math_matrix_4x4*)menu_display_gl_get_default_mvp();
+      : (math_matrix_4x4*)menu_display_gl_get_default_mvp(video_info);
 
    video_driver_set_mvp(&mvp);
 

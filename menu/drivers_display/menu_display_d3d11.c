@@ -28,11 +28,20 @@
 #include "../../gfx/video_driver.h"
 #include "../../gfx/common/d3d11_common.h"
 
-static const float* menu_display_d3d11_get_default_vertices(void) { return NULL; }
+static const float* menu_display_d3d11_get_default_vertices(void)
+{
+   return NULL;
+}
 
-static const float* menu_display_d3d11_get_default_tex_coords(void) { return NULL; }
+static const float* menu_display_d3d11_get_default_tex_coords(void)
+{
+   return NULL;
+}
 
-static void* menu_display_d3d11_get_default_mvp(void) { return NULL; }
+static void* menu_display_d3d11_get_default_mvp(video_frame_info_t *video_info)
+{
+   return NULL;
+}
 
 static void menu_display_d3d11_blend_begin(video_frame_info_t *video_info)
 {
@@ -48,7 +57,9 @@ static void menu_display_d3d11_blend_end(video_frame_info_t *video_info)
          d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
-static void menu_display_d3d11_viewport(void* data) {}
+static void menu_display_d3d11_viewport(void* data, video_frame_info_t *video_info)
+{
+}
 
 static void menu_display_d3d11_draw(void* data, video_frame_info_t *video_info)
 {

@@ -48,9 +48,9 @@ static const float vk_colors[] = {
    1.0f, 1.0f, 1.0f, 1.0f,
 };
 
-static void *menu_display_vk_get_default_mvp(void)
+static void *menu_display_vk_get_default_mvp(video_frame_info_t *video_info)
 {
-   vk_t *vk = (vk_t*)video_driver_get_ptr(false);
+   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
    if (!vk)
       return NULL;
    return &vk->mvp_no_rot;
@@ -99,10 +99,12 @@ static unsigned to_menu_pipeline(
 }
 #endif
 
-static void menu_display_vk_viewport(void *data)
+static void menu_display_vk_viewport(void *data,
+      video_frame_info_t *video_info)
 {
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
+   vk_t *vk                      = video_info ? (vk_t*)video_info->userdata 
+      : NULL;
 
    if (!vk || !draw)
       return;
@@ -160,8 +162,12 @@ static void menu_display_vk_draw_pipeline(void *data, video_frame_info_t *video_
          draw->pipeline.backend_data_size = sizeof(math_matrix_4x4) + 3 * sizeof(float);
 
          /* Match UBO layout in shader. */
-         memcpy(ubo_scratch_data, menu_display_vk_get_default_mvp(), sizeof(math_matrix_4x4));
-         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4), output_size, sizeof(output_size));
+         memcpy(ubo_scratch_data,
+               menu_display_vk_get_default_mvp(video_info),
+               sizeof(math_matrix_4x4));
+         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4),
+               output_size,
+               sizeof(output_size));
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) + 2 * sizeof(float), &t, sizeof(t));
          draw->coords = &blank_coords;
          blank_coords.vertices = 4;
@@ -204,7 +210,8 @@ static void menu_display_vk_draw(void *data, video_frame_info_t *video_info)
    if (!color)
       color           = menu_display_vk_get_default_color();
 
-   menu_display_vk_viewport(draw);
+   menu_display_vk_viewport(draw, video_info);
+
    vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 
    /* Bake interleaved VBO. Kinda ugly, we should probably try to move to
@@ -266,7 +273,7 @@ static void menu_display_vk_draw(void *data, video_frame_info_t *video_info)
             (texture->default_smooth ? vk->samplers.linear
              : vk->samplers.nearest);
          call.uniform      = draw->matrix_data
-            ? draw->matrix_data : menu_display_vk_get_default_mvp();
+            ? draw->matrix_data : menu_display_vk_get_default_mvp(video_info);
          call.uniform_size = sizeof(math_matrix_4x4);
          call.vbo          = &range;
          call.vertices     = draw->coords->vertices;
