@@ -19,6 +19,7 @@
 #include <wiiu/gx2.h>
 #include <formats/image.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "../../driver.h"
 #include "../../configuration.h"
