@@ -1296,7 +1296,13 @@ static int action_ok_file_load(const char *path,
       /* TODO/FIXME - this path is triggered when we try to load a 
        * file from an archive while inside the load subsystem
        * action */
-#if 0
+      menu_handle_t *menu                 = NULL;
+      if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+         return menu_cbs_exit();
+
+      fill_pathname_join(menu_path_new,
+            menu->scratch2_buf, menu->scratch_buf,
+            sizeof(menu_path_new));
       switch (type)
       {
          case FILE_TYPE_IN_CARCHIVE:
@@ -1312,7 +1318,6 @@ static int action_ok_file_load(const char *path,
       content_add_subsystem(full_path_new);
       menu_entries_flush_stack(NULL, MENU_SETTINGS);
       return 0;
-#endif
    }
 
    file_list_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
