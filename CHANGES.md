@@ -1,4 +1,6 @@
-# 1.7.1 (future)
+# 1.7.2 (future)
+
+# 1.7.1
 - 3DS: Now correctly reports amount of CPU cores.
 - 3DS: Frontend rating is now correctly implemented for both New 3DS/2DS and Old 3DS/2DS.
 - 3DS: Initial networking support, HTTP requests won't work yet.
