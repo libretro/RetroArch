@@ -2885,7 +2885,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
       {
          enum file_path_enum ext = (enum file_path_enum)(i);
-         if(!strstr(file_path_str(ext), shader_ext))
+         if (!strstr(file_path_str(ext), shader_ext))
             continue;
 
          if (check_shader_compatibility(ext))
@@ -2949,16 +2949,21 @@ bool config_load_override(void)
    config_file_t *new_conf                = NULL;
    bool should_append                     = false;
    rarch_system_info_t *system            = runloop_get_system_info();
-   const char *core_name                  = system ? system->info.library_name : NULL;
+   const char *core_name                  = system ? 
+      system->info.library_name : NULL;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
-   game_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   core_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   buf                                    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   config_directory                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   game_path                              = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
+   core_path                              = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
+   buf                                    = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
+   config_directory                       = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
    config_directory[0] = core_path[0] = game_path[0] = '\0';
 
    fill_pathname_application_special(config_directory, path_size,
@@ -2983,7 +2988,8 @@ bool config_load_override(void)
    /* If a core override exists, add its location to append_config_path */
    if (new_conf)
    {
-      RARCH_LOG("[overrides] core-specific overrides found at %s.\n", core_path);
+      RARCH_LOG("[overrides] core-specific overrides found at %s.\n",
+            core_path);
 
       config_file_free(new_conf);
       path_set(RARCH_PATH_CONFIG_APPEND, core_path);
@@ -2991,7 +2997,8 @@ bool config_load_override(void)
       should_append = true;
    }
    else
-      RARCH_LOG("[overrides] no core-specific overrides found at %s.\n", core_path);
+      RARCH_LOG("[overrides] no core-specific overrides found at %s.\n",
+            core_path);
 
    /* Create a new config file from game_path */
    new_conf = config_file_new(game_path);
@@ -3005,7 +3012,8 @@ bool config_load_override(void)
 
       config_file_free(new_conf);
 
-      RARCH_LOG("[overrides] game-specific overrides found at %s.\n", game_path);
+      RARCH_LOG("[overrides] game-specific overrides found at %s.\n",
+            game_path);
 
       if (should_append)
       {
@@ -3023,12 +3031,14 @@ bool config_load_override(void)
       should_append = true;
    }
    else
-      RARCH_LOG("[overrides] no game-specific overrides found at %s.\n", game_path);
+      RARCH_LOG("[overrides] no game-specific overrides found at %s.\n",
+            game_path);
 
    if (!should_append)
       goto error;
 
-   /* Re-load the configuration with any overrides that might have been found */
+   /* Re-load the configuration with any overrides 
+    * that might have been found */
    buf[0] = '\0';
 
    /* Store the libretro_path we're using since it will be
@@ -3045,7 +3055,8 @@ bool config_load_override(void)
    /* Restore the libretro_path we're using
     * since it will be overwritten by the override when reloading. */
    path_set(RARCH_PATH_CORE, buf);
-   runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED), 1, 100, true);
+   runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED),
+         1, 100, true);
 
    /* Reset save paths. */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
@@ -3129,11 +3140,14 @@ bool config_load_remap(void)
       return false;
 
    /* path to the directory containing retroarch.cfg (prefix)    */
-   remap_directory                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   remap_directory                        = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
    /* final path for core-specific configuration (prefix+suffix) */    
-   core_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   core_path                              = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
    /* final path for game-specific configuration (prefix+suffix) */
-   game_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));          
+   game_path                              = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));          
    remap_directory[0] = core_path[0] = game_path[0] = '\0';
 
    strlcpy(remap_directory,
@@ -3163,7 +3177,8 @@ bool config_load_remap(void)
       RARCH_LOG("Remaps: game-specific remap found at %s.\n", game_path);
       if (input_remapping_load_file(new_conf, game_path))
       {
-         runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_REMAP_FILE_LOADED), 1, 100, true);
+         runloop_msg_queue_push(msg_hash_to_str(
+                  MSG_GAME_REMAP_FILE_LOADED), 1, 100, true);
          rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
          goto success;
       }
@@ -3183,7 +3198,8 @@ bool config_load_remap(void)
       RARCH_LOG("Remaps: core-specific remap found at %s.\n", core_path);
       if (input_remapping_load_file(new_conf, core_path))
       {
-         runloop_msg_queue_push(msg_hash_to_str(MSG_CORE_REMAP_FILE_LOADED), 1, 100, true);
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_CORE_REMAP_FILE_LOADED), 1, 100, true);
          rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
          goto success;
       }
@@ -3224,6 +3240,7 @@ success:
 bool config_load_shader_preset(void)
 {
    unsigned idx;
+   char parent_name[PATH_MAX_LENGTH];
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
    config_file_t *new_conf                = NULL;
    char *shader_directory                 = NULL;
@@ -3232,9 +3249,9 @@ bool config_load_shader_preset(void)
    char *parent_path                      = NULL;
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = runloop_get_system_info();
-   const char *core_name                  = system ? system->info.library_name : NULL;
+   const char *core_name                  = system 
+      ? system->info.library_name : NULL;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
-   char parent_name[PATH_MAX_LENGTH];
 
    if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
       fill_pathname_parent_dir_name(parent_name, path_get(RARCH_PATH_BASENAME), sizeof(parent_name));
@@ -3248,18 +3265,23 @@ bool config_load_shader_preset(void)
       return false;
 
    /* path to the directory containing retroarch.cfg (prefix)    */
-   shader_directory                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   shader_directory                       = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
    /* final path for core-specific configuration (prefix+suffix) */
-   core_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   core_path                              = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
    /* final path for game-specific configuration (prefix+suffix) */
-   game_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   game_path                              = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
    /* final path for parent-dir-specific configuration (prefix+suffix) */
-   parent_path                            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   parent_path                            = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
 
    shader_directory[0] = core_path[0] = game_path[0] = '\0';
 
-   fill_pathname_join (shader_directory, settings->paths.directory_video_shader,
-       "presets", path_size);
+   fill_pathname_join (shader_directory,
+         settings->paths.directory_video_shader,
+         "presets", path_size);
 
    RARCH_LOG("Shaders: preset directory: %s\n", shader_directory);
 
@@ -3286,12 +3308,14 @@ bool config_load_shader_preset(void)
 
       if (!new_conf)
       {
-         RARCH_LOG("Shaders: no game-specific preset found at %s.\n", game_path);
+         RARCH_LOG("Shaders: no game-specific preset found at %s.\n",
+               game_path);
          continue;
       }
 
       /* Game shader preset exists, load it. */
-      RARCH_LOG("Shaders: game-specific shader preset found at %s.\n", game_path);
+      RARCH_LOG("Shaders: game-specific shader preset found at %s.\n",
+            game_path);
       retroarch_set_shader_preset(game_path);
       goto success;
    }
@@ -3312,12 +3336,14 @@ bool config_load_shader_preset(void)
 
       if (!new_conf)
       {
-         RARCH_LOG("Shaders: no parent-dir-specific preset found at %s.\n", parent_path);
+         RARCH_LOG("Shaders: no parent-dir-specific preset found at %s.\n",
+               parent_path);
          continue;
       }
 
       /* Parent-dir shader preset exists, load it. */
-      RARCH_LOG("Shaders: parent-dir-specific shader preset found at %s.\n", parent_path);
+      RARCH_LOG("Shaders: parent-dir-specific shader preset found at %s.\n",
+            parent_path);
       retroarch_set_shader_preset(parent_path);
       goto success;
    }
@@ -3338,12 +3364,14 @@ bool config_load_shader_preset(void)
 
       if (!new_conf)
       {
-         RARCH_LOG("Shaders: no core-specific preset found at %s.\n", core_path);
+         RARCH_LOG("Shaders: no core-specific preset found at %s.\n",
+               core_path);
          continue;
       }
 
       /* Core shader preset exists, load it. */
-      RARCH_LOG("Shaders: core-specific shader preset found at %s.\n", core_path);
+      RARCH_LOG("Shaders: core-specific shader preset found at %s.\n",
+            core_path);
       retroarch_set_shader_preset(core_path);
       goto success;
    }
@@ -3351,6 +3379,7 @@ bool config_load_shader_preset(void)
    free(shader_directory);
    free(core_path);
    free(game_path);
+   free(parent_path);
    return false;
 
 success:
@@ -3368,14 +3397,19 @@ static void parse_config_file(void)
    {
       RARCH_LOG("[Config]: Loading default config.\n");
       if (!path_is_empty(RARCH_PATH_CONFIG))
-         RARCH_LOG("[Config]: found default config: %s.\n", path_get(RARCH_PATH_CONFIG));
+         RARCH_LOG("[Config]: found default config: %s.\n",
+               path_get(RARCH_PATH_CONFIG));
    }
 
-   RARCH_LOG("[Config]: loading config from: %s.\n", path_get(RARCH_PATH_CONFIG));
-   if (config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
+   RARCH_LOG("[Config]: loading config from: %s.\n",
+         path_get(RARCH_PATH_CONFIG));
+
+   if (config_load_file(path_get(RARCH_PATH_CONFIG),
+            false, config_get_ptr()))
       return;
 
-   RARCH_ERR("[Config]: couldn't find config at path: \"%s\"\n", path_get(RARCH_PATH_CONFIG));
+   RARCH_ERR("[Config]: couldn't find config at path: \"%s\"\n",
+         path_get(RARCH_PATH_CONFIG));
 }
 
 
@@ -3429,8 +3463,10 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
    config_set_string(conf, key, config);
 }
 
-static void save_keybind_joykey(config_file_t *conf, const char *prefix,
-      const char *base, const struct retro_keybind *bind, bool save_empty)
+static void save_keybind_joykey(config_file_t *conf,
+      const char *prefix,
+      const char *base,
+      const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
 
@@ -3450,8 +3486,10 @@ static void save_keybind_joykey(config_file_t *conf, const char *prefix,
       config_set_uint64(conf, key, bind->joykey);
 }
 
-static void save_keybind_axis(config_file_t *conf, const char *prefix,
-      const char *base, const struct retro_keybind *bind, bool save_empty)
+static void save_keybind_axis(config_file_t *conf,
+      const char *prefix,
+      const char *base,
+      const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
    unsigned axis   = 0;
@@ -3491,8 +3529,10 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
    }
 }
 
-static void save_keybind_mbutton(config_file_t *conf, const char *prefix,
-      const char *base, const struct retro_keybind *bind, bool save_empty)
+static void save_keybind_mbutton(config_file_t *conf,
+      const char *prefix,
+      const char *base,
+      const struct retro_keybind *bind, bool save_empty)
 {
 	char key[64];
 
@@ -3502,25 +3542,39 @@ static void save_keybind_mbutton(config_file_t *conf, const char *prefix,
 		base, '_', "_mbtn", sizeof(key));
 
 	switch ( bind->mbutton )
-	{
-
-	case RETRO_DEVICE_ID_MOUSE_LEFT:			config_set_uint64(conf, key, 1);		break;
-	case RETRO_DEVICE_ID_MOUSE_RIGHT:			config_set_uint64(conf, key, 2);		break;
-	case RETRO_DEVICE_ID_MOUSE_MIDDLE:			config_set_uint64(conf, key, 3);		break;
-	case RETRO_DEVICE_ID_MOUSE_BUTTON_4:		config_set_uint64(conf, key, 4);		break;
-	case RETRO_DEVICE_ID_MOUSE_BUTTON_5:		config_set_uint64(conf, key, 5);		break;
-
-	case RETRO_DEVICE_ID_MOUSE_WHEELUP:			config_set_string(conf, key, "wu");		break;
-	case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:		config_set_string(conf, key, "wd");		break;
-	case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:	config_set_string(conf, key, "whu");	break;
-	case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:	config_set_string(conf, key, "whd");	break;
-
-	default:
-		if ( save_empty ) {
-			config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
-		}
-		break;
-	}
+   {
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         config_set_uint64(conf, key, 1);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         config_set_uint64(conf, key, 2);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         config_set_uint64(conf, key, 3);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         config_set_uint64(conf, key, 4);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         config_set_uint64(conf, key, 5);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         config_set_string(conf, key, "wu");
+         break;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         config_set_string(conf, key, "wd");
+         break;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+         config_set_string(conf, key, "whu");
+         break;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+         config_set_string(conf, key, "whd");
+         break;
+      default:
+         if (save_empty)
+            config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
+         break;
+   }
 }
 
 /**
@@ -3644,8 +3698,10 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    if (string_is_empty(path))
       return false;
 
-   buf                                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   autoconf_file                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   buf                                  = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
+   autoconf_file                        = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
    buf[0] = autoconf_file[0]            = '\0';
    path_new                             = strdup(path);
 
@@ -3666,7 +3722,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
 
    fill_pathname_join(buf, autoconf_dir, joypad_ident, path_size);
 
-   if(path_is_directory(buf))
+   if (path_is_directory(buf))
    {
       char *buf_new = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
@@ -3706,7 +3762,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    pid_user = input_config_get_pid(user);
    vid_user = input_config_get_vid(user);
 
-   if(pid_user && vid_user)
+   if (pid_user && vid_user)
    {
       config_set_int(conf, "input_vendor_id",
             vid_user);
@@ -4133,23 +4189,29 @@ bool config_save_overrides(int override_type)
          char cfg[64];
 
          cfg[0] = '\0';
-         if (settings->uints.input_device[i] != overrides->uints.input_device[i])
+         if (settings->uints.input_device[i] 
+               != overrides->uints.input_device[i])
          {
             snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
             config_set_int(conf, cfg, overrides->uints.input_device[i]);
          }
-         if (settings->uints.input_joypad_map[i] != overrides->uints.input_joypad_map[i])
+
+         if (settings->uints.input_joypad_map[i] 
+               != overrides->uints.input_joypad_map[i])
          {
             snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
             config_set_int(conf, cfg, overrides->uints.input_joypad_map[i]);
          }
 
-         if (settings->uints.input_libretro_device[i] != overrides->uints.input_libretro_device[i])
+         if (settings->uints.input_libretro_device[i] 
+               != overrides->uints.input_libretro_device[i])
          {
             snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
             config_set_int(conf, cfg, overrides->uints.input_libretro_device[i]);
          }
-         if (settings->uints.input_analog_dpad_mode[i] != overrides->uints.input_analog_dpad_mode[i])
+
+         if (settings->uints.input_analog_dpad_mode[i] 
+               != overrides->uints.input_analog_dpad_mode[i])
          {
             snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
             config_set_int(conf, cfg, overrides->uints.input_analog_dpad_mode[i]);
