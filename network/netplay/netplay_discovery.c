@@ -488,7 +488,7 @@ static bool netplay_lan_ad_client(void)
          strlcpy(host->content, ad_packet_buffer.content,
             NETPLAY_HOST_LONGSTR_LEN);
          strlcpy(host->frontend, ad_packet_buffer.frontend,
-            NETPLAY_HOST_LONGSTR_LEN);
+            NETPLAY_HOST_STR_LEN);
 
          host->content_crc                  =
             atoi(ad_packet_buffer.content_crc);
