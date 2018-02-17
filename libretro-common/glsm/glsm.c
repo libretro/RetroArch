@@ -2217,7 +2217,7 @@ static bool glsm_state_ctx_init(void *data)
    hw_render.stencil            = params->stencil;
    hw_render.depth              = true;
    hw_render.bottom_left_origin = true;
-   hw_render.cache_context      = true;
+   hw_render.cache_context      = false;
 
    if (!params->environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
       return false;
