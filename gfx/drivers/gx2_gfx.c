@@ -445,7 +445,8 @@ static void *wiiu_gfx_init(const video_info_t *video,
                         video->is_threaded,
                         FONT_DRIVER_RENDER_WIIU);
 
-   if(settings->bools.video_shader_enable)
+   if(settings->bools.video_shader_enable &&
+      !string_is_empty(retroarch_get_shader_preset()))
    {
       const char* ext = path_get_extension(retroarch_get_shader_preset());
 
