@@ -1291,6 +1291,30 @@ static int action_ok_file_load(const char *path,
 
    menu_path_new[0] = full_path_new[0] = '\0';
 
+   if (filebrowser_get_type() == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
+   {
+      /* TODO/FIXME - this path is triggered when we try to load a 
+       * file from an archive while inside the load subsystem
+       * action */
+#if 0
+      switch (type)
+      {
+         case FILE_TYPE_IN_CARCHIVE:
+            fill_pathname_join_delim(full_path_new, menu_path_new, path,
+                  '#',sizeof(full_path_new));
+            break;
+         default:
+            fill_pathname_join(full_path_new, menu_path_new, path,
+                  sizeof(full_path_new));
+            break;
+      }
+
+      content_add_subsystem(full_path_new);
+      menu_entries_flush_stack(NULL, MENU_SETTINGS);
+      return 0;
+#endif
+   }
+
    file_list_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
 
    if (!string_is_empty(menu_label))
