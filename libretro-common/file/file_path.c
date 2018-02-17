@@ -367,7 +367,8 @@ const char *path_get_archive_delim(const char *path)
  */
 const char *path_get_extension(const char *path)
 {
-   const char *ext = strrchr(path_basename(path), '.');
+   const char *ext = !string_is_empty(path) 
+      ? strrchr(path_basename(path), '.') : NULL;
    if (!ext)
       return "";
    return ext + 1;
@@ -385,7 +386,8 @@ const char *path_get_extension(const char *path)
  */
 char *path_remove_extension(char *path)
 {
-   char *last = (char*)strrchr(path_basename(path), '.');
+   char *last = !string_is_empty(path) 
+      ? (char*)strrchr(path_basename(path), '.') : NULL;
    if (!last)
       return NULL;
    if (*last)
