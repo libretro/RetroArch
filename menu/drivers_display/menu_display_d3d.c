@@ -169,6 +169,7 @@ static void menu_display_d3d_draw(void *data, video_frame_info_t *video_info)
       pv[i].u     = *tex_coord++;
       pv[i].v     = *tex_coord++;
 #ifdef HAVE_D3D8
+	  if ((void*)draw->texture)
       {
          D3DSURFACE_DESC desc;
          if (d3d_texture_get_level_desc((void*)draw->texture, 0, &desc))
