@@ -1647,8 +1647,15 @@ static void d3d8_set_menu_texture_enable(void *data,
    d3d->menu->fullscreen         = full_screen;
 }
 
+struct d3d8_texture_info
+{
+   void *userdata;
+   void *data;
+   enum texture_filter_type type;
+};
+
 static void d3d8_video_texture_load_d3d(
-      struct d3d9_texture_info *info,
+      struct d3d8_texture_info *info,
       uintptr_t *id)
 {
    D3DLOCKED_RECT d3dlr;
@@ -1696,8 +1703,8 @@ static int d3d8_video_texture_load_wrap_d3d(void *data)
 static uintptr_t d3d8_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
-   uintptr_t id = 0;
    struct d3d8_texture_info info;
+   uintptr_t id = 0;
 
    info.userdata = video_data;
    info.data     = data;

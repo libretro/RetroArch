@@ -319,6 +319,8 @@ bool menu_shader_manager_set_preset(void *data,
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
    return true;
+#else
+   return false;
 #endif
 }
 
