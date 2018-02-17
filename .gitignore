@@ -13,7 +13,7 @@
 .tmp.cxx
 config.log
 /.project
-/.externalToolBuilders
+/.externalToolBuilders/
 /retroarch
 /retroarch.cfg
 /retroarch.exe
