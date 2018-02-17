@@ -1319,13 +1319,13 @@ static int setting_action_right_libretro_device_type(
 
 static int setting_action_left_bind_device(void *data, bool wraparound)
 {
-   unsigned index_offset;
    unsigned               *p = NULL;
-   unsigned max_devices        = input_config_get_device_count();
+   unsigned index_offset     = 0;
+   unsigned max_devices      = input_config_get_device_count();
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
-   if (!setting)
+   if (!setting || max_devices == 0)
       return -1;
 
    index_offset = setting->index_offset;
