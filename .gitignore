@@ -12,6 +12,8 @@
 .tmp.c
 .tmp.cxx
 config.log
+/.project
+/.externalToolBuilders
 /retroarch
 /retroarch.cfg
 /retroarch.exe
