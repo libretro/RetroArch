@@ -36,7 +36,8 @@ typedef struct
 } d3d12_font_t;
 
 static void*
-d3d12_font_init_font(void* data, const char* font_path, float font_size, bool is_threaded)
+d3d12_font_init_font(void* data, const char* font_path,
+      float font_size, bool is_threaded)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
    d3d12_font_t*  font  = (d3d12_font_t*)calloc(1, sizeof(*font));
@@ -45,7 +46,8 @@ d3d12_font_init_font(void* data, const char* font_path, float font_size, bool is
       return NULL;
 
    if (!font_renderer_create_default(
-             (const void**)&font->font_driver, &font->font_data, font_path, font_size))
+             (const void**)&font->font_driver,
+             &font->font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");
       free(font);
@@ -60,7 +62,8 @@ d3d12_font_init_font(void* data, const char* font_path, float font_size, bool is
    font->texture.srv_heap    = &d3d12->desc.srv_heap;
    d3d12_init_texture(d3d12->device, &font->texture);
    d3d12_update_texture(
-         font->atlas->width, font->atlas->height, font->atlas->width, DXGI_FORMAT_A8_UNORM,
+         font->atlas->width, font->atlas->height,
+         font->atlas->width, DXGI_FORMAT_A8_UNORM,
          font->atlas->buffer, &font->texture);
    font->atlas->dirty = false;
 
@@ -82,7 +85,8 @@ static void d3d12_font_free_font(void* data, bool is_threaded)
    free(font);
 }
 
-static int d3d12_font_get_message_width(void* data, const char* msg, unsigned msg_len, float scale)
+static int d3d12_font_get_message_width(void* data,
+      const char* msg, unsigned msg_len, float scale)
 {
    d3d12_font_t* font = (d3d12_font_t*)data;
 
@@ -128,17 +132,19 @@ static void d3d12_font_render_line(
       unsigned            text_align)
 {
    unsigned        i, count;
-   void*           mapped_vbo;
-   d3d12_sprite_t* v;
-   d3d12_sprite_t* vbo_start;
-   d3d12_video_t*  d3d12  = (d3d12_video_t*)video_info->userdata;
-   unsigned        width  = video_info->width;
-   unsigned        height = video_info->height;
-   int             x      = roundf(pos_x * width);
-   int             y      = roundf((1.0 - pos_y) * height);
-   D3D12_RANGE     range  = { 0, 0 };
+   void*           mapped_vbo = NULL;
+   d3d12_sprite_t* v          = NULL;
+   d3d12_sprite_t* vbo_start  = NULL;
+   d3d12_video_t*  d3d12      = (d3d12_video_t*)video_info->userdata;
+   unsigned        width      = video_info->width;
+   unsigned        height     = video_info->height;
+   int             x          = roundf(pos_x * width);
+   int             y          = roundf((1.0 - pos_y) * height);
+   D3D12_RANGE     range      = { 0, 0 };
 
-   if (!d3d12 || !d3d12->sprites.enabled || msg_len > (unsigned)d3d12->sprites.capacity)
+   if (  !d3d12                  || 
+         !d3d12->sprites.enabled || 
+         msg_len > (unsigned)d3d12->sprites.capacity)
       return;
 
    if (d3d12->sprites.offset + msg_len > (unsigned)d3d12->sprites.capacity)
@@ -180,13 +186,13 @@ static void d3d12_font_render_line(
 
       v->pos.x = (x + glyph->draw_offset_x) * scale / (float)d3d12->chain.viewport.Width;
       v->pos.y = (y + glyph->draw_offset_y) * scale / (float)d3d12->chain.viewport.Height;
-      v->pos.w = glyph->width * scale / (float)d3d12->chain.viewport.Width;
+      v->pos.w = glyph->width * scale  / (float)d3d12->chain.viewport.Width;
       v->pos.h = glyph->height * scale / (float)d3d12->chain.viewport.Height;
 
       v->coords.u = glyph->atlas_offset_x / (float)font->texture.desc.Width;
       v->coords.v = glyph->atlas_offset_y / (float)font->texture.desc.Height;
-      v->coords.w = glyph->width / (float)font->texture.desc.Width;
-      v->coords.h = glyph->height / (float)font->texture.desc.Height;
+      v->coords.w = glyph->width          / (float)font->texture.desc.Width;
+      v->coords.h = glyph->height         / (float)font->texture.desc.Height;
 
       v->params.scaling  = 1;
       v->params.rotation = 0;
@@ -213,7 +219,8 @@ static void d3d12_font_render_line(
    if (font->atlas->dirty)
    {
       d3d12_update_texture(
-            font->atlas->width, font->atlas->height, font->atlas->width, DXGI_FORMAT_A8_UNORM,
+            font->atlas->width, font->atlas->height,
+            font->atlas->width, DXGI_FORMAT_A8_UNORM,
             font->atlas->buffer, &font->texture);
       font->atlas->dirty = false;
    }
@@ -251,11 +258,13 @@ static void d3d12_font_render_message(
    if (!font->font_driver->get_line_height)
    {
       d3d12_font_render_line(
-            video_info, font, msg, strlen(msg), scale, color, pos_x, pos_y, text_align);
+            video_info, font, msg, strlen(msg),
+            scale, color, pos_x, pos_y, text_align);
       return;
    }
 
-   line_height = font->font_driver->get_line_height(font->font_data) * scale / video_info->height;
+   line_height = font->font_driver->get_line_height(font->font_data) 
+      * scale / video_info->height;
 
    for (;;)
    {
@@ -283,7 +292,8 @@ static void d3d12_font_render_message(
 }
 
 static void d3d12_font_render_msg(
-      video_frame_info_t* video_info, void* data, const char* msg, const void* userdata)
+      video_frame_info_t* video_info, void* data,
+      const char* msg, const void* userdata)
 {
    float                     x, y, scale, drop_mod, drop_alpha;
    int                       drop_x, drop_y;
@@ -341,14 +351,18 @@ static void d3d12_font_render_msg(
       color_dark = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
 
       d3d12_font_render_message(
-            video_info, font, msg, scale, color_dark, x + scale * drop_x / width,
-            y + scale * drop_y / height, text_align);
+            video_info, font, msg, scale, color_dark,
+            x + scale * drop_x / width,
+            y + scale * drop_y / height,
+            text_align);
    }
 
-   d3d12_font_render_message(video_info, font, msg, scale, color, x, y, text_align);
+   d3d12_font_render_message(video_info, font,
+         msg, scale, color, x, y, text_align);
 }
 
-static const struct font_glyph* d3d12_font_get_glyph(void* data, uint32_t code)
+static const struct font_glyph* d3d12_font_get_glyph(
+      void* data, uint32_t code)
 {
    d3d12_font_t* font = (d3d12_font_t*)data;
 
@@ -361,7 +375,10 @@ static const struct font_glyph* d3d12_font_get_glyph(void* data, uint32_t code)
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
-static void d3d12_font_bind_block(void* data, void* userdata) { (void)data; }
+static void d3d12_font_bind_block(void* data, void* userdata)
+{
+   (void)data;
+}
 
 font_renderer_t d3d12_font = {
    d3d12_font_init_font,
