@@ -1769,6 +1769,8 @@ void content_set_subsystem(unsigned idx)
 
    strlcpy(pending_subsystem_ident, subsystem->ident, sizeof(pending_subsystem_ident));
    pending_subsystem_rom_num = subsystem->num_roms;
+   RARCH_LOG("[subsystem] settings current subsytem to: %d(%s) roms: %d\n",
+      pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_num);
 }
 
 /* Add a rom to the subsystem rom buffer */
