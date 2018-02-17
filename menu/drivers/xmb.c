@@ -4500,7 +4500,7 @@ static int xmb_list_push(void *data, void *userdata,
                               s,
                               msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
                               MENU_ENUM_LABEL_SUBSYSTEM_ADD,
-                              MENU_SETTINGS_SUBSYSTEM_ADD, 0, 0);
+                              MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
                      }
                   }
                }
