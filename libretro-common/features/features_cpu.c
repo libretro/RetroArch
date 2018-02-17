@@ -649,6 +649,10 @@ uint64_t cpu_features_get(void)
    if (sysctlbyname("hw.optional.neon", NULL, &len, NULL, 0) == 0)
       cpu |= RETRO_SIMD_NEON;
 
+#elif defined(XBOX1)
+   cpu |= RETRO_SIMD_MMX;
+   cpu |= RETRO_SIMD_SSE;
+   cpu |= RETRO_SIMD_MMXEXT;
 #elif defined(CPU_X86)
    (void)avx_flags;
 
