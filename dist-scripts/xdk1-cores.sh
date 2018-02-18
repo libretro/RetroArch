@@ -1,6 +1,6 @@
 #!/bin/sh
 
-platform=xdk
+platform=xdk1
 
 ip='192.168.1.10'
 
