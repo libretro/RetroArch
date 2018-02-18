@@ -2,7 +2,7 @@
 
 platform=xdk1
 
-ip='192.168.1.10'
+ip='192.168.178.227'
 
 mkdir -p ../pkg/msvc/RetroArch-Xbox1/Debug
 mkdir -p ../pkg/msvc/RetroArch-Xbox1/Release
