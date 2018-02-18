@@ -232,7 +232,7 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
    bool original_verbose       = verbosity_is_enabled();
 #endif
 #if defined(_XBOX1)
-   LAUNCH_DATA ptr             = NULL;
+   LAUNCH_DATA ptr;
 #elif defined(_XBOX360)
    char game_path[1024]        = {0};
 #endif
