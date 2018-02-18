@@ -42,7 +42,7 @@
 
 :end
 
-cd ../msvc/
+cd ../pkg/msvc/
 devenv /clean Release_LTCG_BigStack RetroArch-Xbox1.sln
 devenv /build Release_LTCG_BigStack RetroArch-Xbox1.sln
 copy RetroArch-Xbox1\Release_LTCG_BigStack\RetroArch.xbe RetroArch-Xbox1\%1.xbe

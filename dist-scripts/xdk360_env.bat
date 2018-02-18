@@ -119,7 +119,7 @@
 
 :end
 
-cd ../msvc/
+cd ../pkg/msvc/
 msbuild RetroArch-360.sln /p:Configuration=Release_LTCG
 copy RetroArch-360\Release_LTCG\CORE.xex RetroArch-360\%1.xex
 del RetroArch-360\Release_LTCG\CORE.xex
