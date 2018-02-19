@@ -128,7 +128,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    joypad_info.auto_binds = input_autoconf_binds[joypad_info.joy_idx];
 
    if (!input_driver_is_libretro_input_blocked())
-      res = current_input->input_state(current_input_data, joypad_info,
+      res = input_driver_input_state(joypad_info,
             py_binds,
             user - 1, RETRO_DEVICE_JOYPAD, 0, key);
    return PyBool_FromLong(res);
@@ -156,7 +156,7 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
    joypad_info.joy_idx    = settings->uints.input_joypad_map[user - 1];
    joypad_info.auto_binds = input_autoconf_binds[joypad_info.joy_idx];
 
-   res = current_input->input_state(current_input_data,
+   res = input_driver_input_state(
          joypad_info, py_binds,
          user - 1, RETRO_DEVICE_ANALOG, index, id);
    return PyFloat_FromDouble((double)res / 0x7fff);

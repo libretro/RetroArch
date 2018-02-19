@@ -1035,6 +1035,18 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
 }
 #endif
 
+int16_t input_driver_input_state(
+         rarch_joypad_info_t joypad_info,
+         const struct retro_keybind **retro_keybinds,
+         unsigned port, unsigned device, unsigned index, unsigned id)
+{
+   if (current_input && current_input->input_state)
+      return current_input->input_state(current_input_data, joypad_info,
+            retro_keybinds,
+            port, device, index, id);
+   return 0;
+}
+
 /**
  * input_keys_pressed:
  *
