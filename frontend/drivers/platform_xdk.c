@@ -123,6 +123,9 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
          g_defaults.dirs[DEFAULT_DIR_CORE],
          "overlays",
          sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+         g_defaults.dirs[DEFAULT_DIR_CORE],
+         "media", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
          g_defaults.dirs[DEFAULT_DIR_CORE],
          "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
