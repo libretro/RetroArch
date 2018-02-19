@@ -119,6 +119,16 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
          g_defaults.dirs[DEFAULT_DIR_CORE],
          "screenshots",
          sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
+         g_defaults.dirs[DEFAULT_DIR_CORE],
+         "overlays",
+         sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+         g_defaults.dirs[DEFAULT_DIR_CORE],
+         "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+         g_defaults.dirs[DEFAULT_DIR_CORE],
+         "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
 #elif defined(_XBOX360)
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE],
          "game:",
