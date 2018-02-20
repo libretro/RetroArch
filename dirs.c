@@ -109,14 +109,16 @@ bool dir_free_shader(void)
 void dir_check_shader(bool pressed_next, bool pressed_prev)
 {
    struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&dir_shader_list;
+   static bool change_triggered = false;
 
    if (!dir_list || !dir_list->list)
       return;
 
    if (pressed_next)
    {
-      dir_list->ptr = (dir_list->ptr + 1) %
-         dir_list->list->size;
+      if (change_triggered)
+         dir_list->ptr = (dir_list->ptr + 1) %
+            dir_list->list->size;
    }
    else if (pressed_prev)
    {
@@ -127,6 +129,7 @@ void dir_check_shader(bool pressed_next, bool pressed_prev)
    }
    else
       return;
+   change_triggered = true;
 
    command_set_shader(dir_list->list->elems[dir_list->ptr].data);
 }
