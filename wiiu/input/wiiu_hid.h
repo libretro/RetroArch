@@ -18,6 +18,7 @@
 #define __WIIU_HID__H
 
 #include <wiiu/pad_driver.h>
+#include "../../input/include/hid_driver.h"
 
 #define DEVICE_UNUSED 0
 #define DEVICE_USED   1

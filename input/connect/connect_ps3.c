@@ -21,10 +21,7 @@
 #include <boolean.h>
 #include "joypad_connection.h"
 #include "../input_defines.h"
-
-#ifdef WIIU
-#include <wiiu/syshid.h>
-#endif
+#include "../common/hid/hid_device_driver.h"
 
 struct hidpad_ps3_data
 {

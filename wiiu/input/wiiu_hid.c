@@ -19,13 +19,15 @@
 static wiiu_event_list events;
 static wiiu_adapter_list adapters;
 
+static void log_buffer(uint8_t *data, uint32_t len);
+
 static bool wiiu_hid_joypad_query(void *data, unsigned slot)
 {
    wiiu_hid_t *hid = (wiiu_hid_t *)data;
-   if (!hid)
+   if (!hid || !hid->driver)
       return false;
 
-   return slot < hid->connections_size;
+   return slot < hid->driver->max_slot;
 }
 
 static const char *wiiu_hid_joypad_name(void *data, unsigned slot)
@@ -35,7 +37,7 @@ static const char *wiiu_hid_joypad_name(void *data, unsigned slot)
 
    wiiu_hid_t *hid = (wiiu_hid_t *)data;
 
-   return hid->connections[slot].iface->get_name(data);
+   return hid->driver->pad_connection_list[slot].iface->get_name(data);
 }
 
 static void wiiu_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
@@ -75,7 +77,7 @@ static int16_t wiiu_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
    return 0;
 }
 
-static void *wiiu_hid_init(void)
+static void *wiiu_hid_init(hid_driver_instance_t *driver)
 {
    RARCH_LOG("[hid]: initializing HID subsystem\n");
    wiiu_hid_t *hid = new_hid();
@@ -83,6 +85,8 @@ static void *wiiu_hid_init(void)
 
    if (!hid || !client)
       goto error;
+
+   hid->driver = driver;
 
    wiiu_hid_init_lists();
    start_polling_thread(hid);
@@ -98,6 +102,7 @@ static void *wiiu_hid_init(void)
 
 error:
    RARCH_LOG("[hid]: initialization failed. cleaning up.\n");
+
    stop_polling_thread(hid);
    delete_hid(hid);
    delete_hidclient(client);
@@ -196,6 +201,26 @@ static int32_t wiiu_hid_set_protocol(void *data, uint8_t protocol)
          protocol,
          NULL, NULL);
 }
+
+static int32_t wiiu_hid_read(void *data, void *buffer, size_t size)
+{
+  wiiu_adapter_t *adapter = (wiiu_adapter_t *)data;
+
+  if(!adapter)
+    return -1;
+
+  if(size > adapter->rx_size)
+    return -1;
+
+#if 1
+  int32_t result = HIDRead(adapter->handle, buffer, size, NULL, NULL);
+  log_buffer(buffer, size);
+  return result;
+#else
+  return HIDRead(adapter->handle, buffer, size, NULL, NULL);
+#endif
+}
+
 
 static void start_polling_thread(wiiu_hid_t *hid)
 {
@@ -357,23 +382,12 @@ static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event)
    }
 
    adapter->hid    = hid;
-   adapter->slot   = pad_connection_pad_init(hid->connections,
-         "hid", event->vendor_id, event->product_id, adapter,
-         &wiiu_hid);
+   adapter->driver = event->driver;
 
-   if(adapter->slot < 0)
-   {
-      RARCH_ERR("[hid]: No available slots.\n");
-      goto error;
-   }
-
-   RARCH_LOG("[hid]: got slot %d\n", adapter->slot);
-
-   if(!pad_connection_has_interface(hid->connections, adapter->slot))
-   {
-      RARCH_ERR("[hid]: Interface not found for HID device with vid=0x%04x pid=0x%04x\n",
-            event->vendor_id, event->product_id);
-      goto error;
+   adapter->driver_handle = adapter->driver->init(hid->driver);
+   if(adapter->driver_handle == NULL) {
+      RARCH_ERR("[hid]: Failed to initialize driver: %s\n",
+        adapter->driver->name);
    }
 
    RARCH_LOG("[hid]: adding to adapter list\n");
@@ -446,16 +460,6 @@ static void log_buffer(uint8_t *data, uint32_t len)
 
 }
 
-static void wiiu_hid_do_read(wiiu_adapter_t *adapter,
-      uint8_t *data, uint32_t length)
-{
-#if 0
-   log_buffer(data, length);
-#endif
-
-   /* TODO: get this data to the connect_xxx driver somehow. */
-}
-
 static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
               uint8_t *buffer, uint32_t buffer_size, void *userdata)
 {
@@ -468,12 +472,13 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
 
   if(adapter->hid->polling_thread_quit)
   {
-    RARCH_LOG("Shutting down read loop for slot %d\n", adapter->slot);
+    RARCH_LOG("Shutting down read loop for device: %s\n",
+       adapter->driver->name);
     adapter->state = ADAPTER_STATE_DONE;
     return;
   }
 
-  wiiu_hid_do_read(adapter, buffer, buffer_size);
+  adapter->driver->handle_packet(adapter->driver_handle, buffer, buffer_size);
 
   adapter->state = ADAPTER_STATE_READING;
   HIDRead(adapter->handle, adapter->rx_buffer, adapter->rx_size,
@@ -644,6 +649,11 @@ static void delete_adapter(wiiu_adapter_t *adapter)
       free(adapter->tx_buffer);
       adapter->tx_buffer = NULL;
    }
+   if(adapter->driver && adapter->driver_handle) {
+      adapter->driver->free(adapter->driver_handle);
+      adapter->driver_handle = NULL;
+      adapter->driver = NULL;
+   }
    free(adapter);
 }
 
@@ -707,6 +717,7 @@ hid_driver_t wiiu_hid = {
    wiiu_hid_send_control,
    wiiu_hid_set_report,
    wiiu_hid_set_idle,
-   wiiu_hid_set_protocol
+   wiiu_hid_set_protocol,
+   wiiu_hid_read,
 };
 

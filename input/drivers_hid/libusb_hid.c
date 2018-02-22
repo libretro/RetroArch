@@ -546,7 +546,7 @@ static void poll_thread(void *data)
    }
 }
 
-static void *libusb_hid_init(void)
+static void *libusb_hid_init(joypad_connection_t *connections)
 {
    unsigned i, count;
    int ret;
@@ -578,7 +578,10 @@ static void *libusb_hid_init(void)
       hid->can_hotplug = 0;
 #endif
 
-   hid->slots = pad_connection_init(MAX_USERS);
+   if (connections == NULL)
+      connections = pad_connection_init(MAX_USERS);
+
+   hid->slots = connections;
 
    if (!hid->slots)
       goto error;

@@ -19,8 +19,12 @@
 
 #include "../../input_driver.h"
 #include "../../connect/joypad_connection.h"
+#include "../../include/hid_driver.h"
 
 typedef struct hid_device {
+  void *(*init)(hid_driver_instance_t *driver);
+  void (*free)(void *data);
+  void (*handle_packet)(void *data, uint8_t *buffer, size_t size);
   bool (*detect)(uint16_t vid, uint16_t pid);
   const char *name;
 } hid_device_t;
@@ -28,7 +32,12 @@ typedef struct hid_device {
 extern hid_device_t wiiu_gca_hid_device;
 extern hid_device_t ds3_hid_device;
 extern hid_device_t ds4_hid_device;
+extern hid_driver_instance_t hid_instance;
 
 hid_device_t *hid_device_driver_lookup(uint16_t vendor_id, uint16_t product_id);
+
+void hid_pad_connect(hid_driver_instance_t *instance, int pad);
+bool hid_init(hid_driver_instance_t *instance, hid_driver_t *hid_driver, input_device_driver_t *pad_driver, unsigned slots);
+void hid_deinit(hid_driver_instance_t *instance);
 
 #endif /* HID_DEVICE_DRIVER__H */

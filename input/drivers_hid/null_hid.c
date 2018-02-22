@@ -18,6 +18,7 @@
 
 #include "../input_defines.h"
 #include "../input_driver.h"
+#include "../include/hid_driver.h"
 
 typedef struct null_hid
 {
@@ -75,8 +76,10 @@ static int16_t null_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
    return 0;
 }
 
-static void *null_hid_init(void)
+static void *null_hid_init(hid_driver_instance_t *instance)
 {
+   (void)instance;
+
    return (null_hid_t*)calloc(1, sizeof(null_hid_t));
 }
 

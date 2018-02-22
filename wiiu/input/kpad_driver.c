@@ -117,7 +117,7 @@ static void kpad_register(unsigned channel, uint8_t device_type)
    if (wiimotes[channel].type != device_type)
    {
       wiimotes[channel].type = device_type;
-      pad_functions.connect(to_retro_pad(channel), &kpad_driver);
+      input_pad_connect(to_retro_pad(channel), &kpad_driver);
    }
 }
 

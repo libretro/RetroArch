@@ -854,14 +854,18 @@ static int iohidmanager_hid_manager_set_device_matching(
    return 0;
 }
 
-static void *iohidmanager_hid_init(void)
+static void *iohidmanager_hid_init(joypad_connection_t *connections)
 {
    iohidmanager_hid_t *hid_apple = (iohidmanager_hid_t*)
       calloc(1, sizeof(*hid_apple));
 
    if (!hid_apple)
       goto error;
-   hid_apple->slots = pad_connection_init(MAX_USERS);
+
+   if (connections == NULL)
+      connections = pad_connection_init(MAX_USERS);
+
+   hid_apple->slots = connections;
 
    if (!hid_apple->slots)
       goto error;

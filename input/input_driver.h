@@ -35,12 +35,11 @@
 #include "input_defines.h"
 
 #include "../msg_hash.h"
+#include "include/hid_types.h"
 
 RETRO_BEGIN_DECLS
 
 typedef struct rarch_joypad_driver input_device_driver_t;
-
-typedef struct hid_driver hid_driver_t;
 
 /* Keyboard line reader. Handles textual input in a direct fashion. */
 typedef struct input_keyboard_line input_keyboard_line_t;
@@ -179,25 +178,6 @@ struct rarch_joypad_driver
    const char *(*name)(unsigned);
 
    const char *ident;
-};
-
-struct hid_driver
-{
-   void *(*init)(void);
-   bool (*query_pad)(void *, unsigned);
-   void (*free)(const void *);
-   bool (*button)(void *, unsigned, uint16_t);
-   void (*get_buttons)(void *, unsigned, retro_bits_t *);
-   int16_t (*axis)(void *, unsigned, uint32_t);
-   void (*poll)(void *);
-   bool (*set_rumble)(void *, unsigned, enum retro_rumble_effect, uint16_t);
-   const char *(*name)(void *, unsigned);
-   const char *ident;
-   void (*send_control)(void *data, uint8_t *buf, size_t size);
-   int32_t (*set_report)(void *, uint8_t, uint8_t, void *, uint32_t);
-   int32_t (*set_idle)(void *, uint8_t);
-   int32_t (*set_protocol)(void *, uint8_t);
-
 };
 
 /**
@@ -592,6 +572,15 @@ bool input_joypad_hat_raw(const input_device_driver_t *driver,
       unsigned joypad, unsigned hat_dir, unsigned hat);
 
 /**
+ * input_pad_connect:
+ * @port                    : Joystick number.
+ * @driver                  : handle for joypad driver handling joystick's input
+ *
+ * Registers a newly connected pad with RetroArch.
+ **/
+void input_pad_connect(unsigned port, input_device_driver_t *driver);
+
+/**
  * input_mouse_button_raw:
  * @port                    : Mouse number.
  * @button                  : Identifier of key (libretro mouse constant).
@@ -848,7 +837,6 @@ extern hid_driver_t iohidmanager_hid;
 extern hid_driver_t btstack_hid;
 extern hid_driver_t libusb_hid;
 extern hid_driver_t wiiusb_hid;
-extern hid_driver_t wiiu_hid;
 extern hid_driver_t null_hid;
 #endif
 

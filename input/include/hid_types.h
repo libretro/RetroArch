@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Andrés Suárez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,40 +15,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "hid_device_driver.h"
+#ifndef HID_TYPES_H__
+#define HID_TYPES_H__
 
-struct ds3_instance {
-  hid_driver_t *driver;
-  void *handle;
-};
+typedef struct hid_driver hid_driver_t;
+typedef struct hid_driver_instance hid_driver_instance_t;
 
-static void *ds3_init(hid_driver_instance_t *hid_driver)
-{
-  return NULL;
-}
-
-static void ds3_free(void *data)
-{
-  struct ds3_instance *instance = (struct ds3_instance *)data;
-  if(!instance)
-    return;
-
-  free(instance);
-}
-
-static void ds3_handle_packet(void *data, uint8_t *buffer, size_t size)
-{
-}
-
-static bool ds3_detect(uint16_t vendor_id, uint16_t product_id)
-{
-  return vendor_id == VID_SONY && product_id == PID_SONY_DS3;
-}
-
-hid_device_t ds3_hid_device = {
-  ds3_init,
-  ds3_free,
-  ds3_handle_packet,
-  ds3_detect,
-  "Sony DualShock 3"
-};
+#endif /* HID_TYPES_H__ */

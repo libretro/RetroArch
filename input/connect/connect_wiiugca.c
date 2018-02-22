@@ -21,6 +21,7 @@
 #include <boolean.h>
 #include "joypad_connection.h"
 #include "../input_defines.h"
+#include "../common/hid/hid_device_driver.h"
 
 struct hidpad_wiiugca_data
 {

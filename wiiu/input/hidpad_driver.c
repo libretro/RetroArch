@@ -15,6 +15,8 @@
  */
 
 #include <wiiu/pad_driver.h>
+#include "../../input/include/hid_driver.h"
+#include "../../input/common/hid/hid_device_driver.h"
 
 static bool hidpad_init(void *data);
 static bool hidpad_query_pad(unsigned pad);
@@ -27,51 +29,25 @@ static const char *hidpad_name(unsigned pad);
 
 static bool ready = false;
 
-static wiiu_hid_t *hid_data;
-static hid_driver_t *hid_driver;
-
 static unsigned to_slot(unsigned pad)
 {
    return pad - (WIIU_WIIMOTE_CHANNELS+1);
 }
 
-const void *get_hid_data(void)
+static bool init_hid_driver(void)
 {
-   return hid_data;
-}
-
-static hid_driver_t *init_hid_driver(void)
-{
-   joypad_connection_t *connections = NULL;
    unsigned connections_size        = MAX_USERS - (WIIU_WIIMOTE_CHANNELS+1);
 
-   hid_data                         = (wiiu_hid_t *)wiiu_hid.init();
-   connections                      = pad_connection_init(connections_size);
+   memset(&hid_instance, 0, sizeof(hid_instance));
 
-   if (!hid_data || !connections)
-      goto error;
-
-   hid_data->connections = connections;
-   hid_data->connections_size = connections_size;
-   return &wiiu_hid;
-
-error:
-   if (connections)
-      free(connections);
-   if (hid_data)
-   {
-      wiiu_hid.free(hid_data);
-      hid_data = NULL;
-   }
-   return NULL;
+   return hid_init(&hid_instance, &wiiu_hid, &hidpad_driver, connections_size);
 }
 
 static bool hidpad_init(void *data)
 {
    (void *)data;
 
-   hid_driver = init_hid_driver();
-   if (!hid_driver)
+   if(!init_hid_driver())
    {
       RARCH_ERR("Failed to initialize HID driver.\n");
       return false;
@@ -92,16 +68,7 @@ static void hidpad_destroy(void)
 {
    ready = false;
 
-   if(hid_driver) {
-     hid_driver->free(hid_data);
-     hid_data = NULL;
-     hid_driver = NULL;
-   }
-
-   if(hid_data) {
-     free(hid_data);
-     hid_data = NULL;
-   }
+   hid_deinit(&hid_instance);
 }
 
 static bool hidpad_button(unsigned pad, uint16_t button)

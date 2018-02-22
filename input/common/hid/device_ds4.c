@@ -16,12 +16,38 @@
 
 #include "hid_device_driver.h"
 
+struct ds4_instance {
+  hid_driver_t *driver;
+  void *handle;
+};
+
+static void *ds4_init(hid_driver_instance_t *hid_driver)
+{
+  return NULL;
+}
+
+static void ds4_free(void *data)
+{
+  struct ds4_instance *instance = (struct ds4_instance *)data;
+  if(!instance)
+    return;
+
+  free(instance);
+}
+
+static void ds4_handle_packet(void *data, uint8_t *buffer, size_t size)
+{
+}
+
 static bool ds4_detect(uint16_t vendor_id, uint16_t product_id)
 {
   return vendor_id == VID_SONY && product_id == PID_SONY_DS4;
 }
 
 hid_device_t ds4_hid_device = {
+  ds4_init,
+  ds4_free,
+  ds4_handle_packet,
   ds4_detect,
   "Sony DualShock 4"
 };

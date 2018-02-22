@@ -16,6 +16,8 @@
 
 #include "hid_device_driver.h"
 
+hid_driver_instance_t hid_instance = {0};
+
 hid_device_t *hid_device_list[] = {
   &wiiu_gca_hid_device,
   &ds3_hid_device,
@@ -34,3 +36,102 @@ hid_device_t *hid_device_driver_lookup(uint16_t vendor_id, uint16_t product_id) 
   return NULL;
 }
 
+void hid_pad_connect(hid_driver_instance_t *instance, int pad)
+{
+   if(!instance || !instance->pad_driver)
+      return;
+
+   input_pad_connect(pad, instance->pad_driver);
+}
+
+/**
+ * Fill in instance with data from initialized hid subsystem.
+ *
+ * @argument instance the hid_driver_instance_t struct to fill in
+ * @argument hid_driver the HID driver to initialize
+ * @argument pad_driver the gamepad driver to handle HID pads detected by the HID driver.
+ *
+ * @returns true if init is successful, false otherwise.
+ */
+bool hid_init(hid_driver_instance_t *instance,
+              hid_driver_t *hid_driver,
+              input_device_driver_t *pad_driver,
+              unsigned slots)
+{
+   if(!instance || !hid_driver || !pad_driver || slots > MAX_USERS)
+      return false;
+
+   instance->hid_data = hid_driver->init(instance);
+   if(!instance->hid_data)
+      return false;
+
+   instance->pad_connection_list = pad_connection_init(slots);
+   if(!instance->pad_connection_list)
+   {
+      hid_driver->free(instance->hid_data);
+      instance->hid_data = NULL;
+      return false;
+   }
+
+   instance->max_slot = slots;
+   instance->hid_driver = hid_driver;
+   instance->pad_driver = pad_driver;
+
+   return true;
+}
+
+/**
+ * Tear down the HID system set up by hid_init()
+ *
+ * @argument instance the hid_driver_instance_t to tear down.
+ */
+void hid_deinit(hid_driver_instance_t *instance)
+{
+   if(!instance)
+      return;
+
+   pad_connection_destroy(instance->pad_connection_list);
+
+   if(instance->hid_driver && instance->hid_data)
+   {
+      instance->hid_driver->free(instance->hid_data);
+   }
+
+   memset(instance, 0, sizeof(hid_driver_instance_t));
+}
+
+static void hid_device_log_buffer(uint8_t *data, uint32_t len)
+{
+#if 0
+  int i, offset;
+  int padding = len % 0x0F;
+  uint8_t buf[16];
+
+  RARCH_LOG("%d bytes read:\n", len);
+
+  for(i = 0, offset = 0; i < len; i++)
+  {
+    buf[offset] = data[i];
+    offset++;
+    if(offset == 16)
+    {
+      offset = 0;
+      RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x %02x%02x%02x%02x%02x%02x%02x%02x\n",
+        buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
+        buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+    }
+  }
+
+  if(padding)
+  {
+    for(i = padding; i < 16; i++)
+      buf[i] = 0xff;
+
+    RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x %02x%02x%02x%02x%02x%02x%02x%02x\n",
+        buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
+        buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+  }
+
+  RARCH_LOG("=================================\n");
+  #endif
+}

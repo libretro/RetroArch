@@ -1782,6 +1782,19 @@ bool input_mouse_button_raw(unsigned port, unsigned id)
    return false;
 }
 
+void input_pad_connect(unsigned port, input_device_driver_t *driver)
+{
+   if(port >= MAX_USERS || !driver)
+   {
+      RARCH_ERR("[input]: input_pad_connect: bad parameters\n");
+      return;
+   }
+
+   if(!input_autoconfigure_connect(driver->name(port), NULL, driver->ident,
+          port, 0, 0))
+      input_config_set_device_name(port, driver->name(port));
+}
+
 /**
  * input_conv_analog_id_to_bind_id:
  * @idx                     : Analog key index.

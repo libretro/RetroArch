@@ -88,16 +88,8 @@ void wiiu_pad_read_axis_data(uint32_t axis, axis_data *data)
    }
 }
 
-void wiiu_pad_connect(unsigned pad, input_device_driver_t *driver)
-{
-   if(!input_autoconfigure_connect(driver->name(pad), NULL, driver->ident,
-            pad, VID_NONE, PID_NONE))
-      input_config_set_device_name(pad, driver->name(pad));
-}
-
 wiiu_pad_functions_t pad_functions = {
   wiiu_pad_get_axis_value,
   wiiu_pad_set_axis_value,
   wiiu_pad_read_axis_data,
-  wiiu_pad_connect
 };

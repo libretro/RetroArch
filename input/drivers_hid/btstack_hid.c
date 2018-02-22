@@ -1439,14 +1439,17 @@ static void btstack_hid_free(const void *data)
       free(hid);
 }
 
-static void *btstack_hid_init(void)
+static void *btstack_hid_init(joypad_connection_t *connections)
 {
    btstack_hid_t *hid = (btstack_hid_t*)calloc(1, sizeof(btstack_hid_t));
 
    if (!hid)
       goto error;
 
-   hid->slots = pad_connection_init(MAX_USERS);
+   if(connections == NULL)
+      connections = pad_connection_init(MAX_USERS);
+
+   hid->slots = connections;
 
    if (!hid->slots)
       goto error;

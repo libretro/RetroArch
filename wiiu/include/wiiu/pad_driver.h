@@ -32,8 +32,8 @@
 
 #include "../../input/input_driver.h"
 #include "../../input/common/hid/hid_device_driver.h"
-#include "../../input/connect/joypad_connection.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../input/connect/joypad_connection.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../command.h"
@@ -119,8 +119,8 @@ struct _wiiu_pad_functions {
 typedef struct wiiu_hid {
   /* used to register for HID notifications */
   HIDClient *client;
-  /* list of HID pads */
-  joypad_connection_t *connections;
+  /* pointer to HID driver state */
+  hid_driver_instance_t *driver;
   /* size of connections list */
   unsigned connections_size;
   /* thread state data for HID polling thread */
@@ -135,13 +135,14 @@ typedef struct wiiu_adapter wiiu_adapter_t;
 
 struct wiiu_adapter {
   wiiu_adapter_t *next;
+  hid_device_t *driver;
+  void *driver_handle;
   wiiu_hid_t *hid;
   uint8_t state;
   uint8_t *rx_buffer;
   int32_t rx_size;
   uint8_t *tx_buffer;
   int32_t tx_size;
-  int32_t slot;
   uint32_t handle;
   uint8_t interface_index;
 };

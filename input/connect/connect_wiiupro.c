@@ -23,6 +23,7 @@
 #include "joypad_connection.h"
 #include "../input_defines.h"
 #include "../../driver.h"
+#include "../common/hid/hid_device_driver.h"
 
 struct wiiupro_buttons
 {

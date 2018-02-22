@@ -184,7 +184,7 @@ static void wpad_poll(void)
 
 static bool wpad_init(void *data)
 {
-   pad_functions.connect(PAD_GAMEPAD, &wpad_driver);
+   input_pad_connect(PAD_GAMEPAD, &wpad_driver);
    wpad_poll();
    ready = true;
 
