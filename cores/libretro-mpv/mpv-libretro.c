@@ -1,26 +1,30 @@
 /* mpv media player libretro core
  * Copyright (C) 2018 Mahyar Koshkouei
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <dlfcn.h>
+ 
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#ifdef HAVE_OPENGLES
+#include <dlfcn.h>
+#endif
 
 #ifdef HAVE_LOCALE
 #include <locale.h>
@@ -29,7 +33,7 @@
 #include <mpv/client.h>
 #include <mpv/opengl_cb.h>
 
-#include "libretro.h"
+#include <libretro.h>
 #include "version.h"
 
 static struct retro_hw_render_callback hw_render;
@@ -55,6 +59,13 @@ static int64_t *playback_time = 0;
 
 /* filepath required globaly as mpv is reopened on context change */
 static char *filepath = NULL;
+
+static volatile int frame_queue = 0;
+
+void queue_new_frame(void *cb_ctx)
+{
+	frame_queue++;
+}
 
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
@@ -123,19 +134,24 @@ static void *get_proc_address_mpv(void *fn_ctx, const char *name)
 	void *proc_addr = (void *) hw_render.get_proc_address(name);
 #pragma GCC diagnostic pop
 
-    // EGL 1.4 (supported by the RPI firmware) does not necessarily return
-    // function pointers for core functions.
-    if (!proc_addr) {
-		void *h = dlopen("/opt/vc/lib/libGLESv2.so", RTLD_LAZY);
+#ifdef HAVE_OPENGLES
+	/* EGL 1.4 (supported by the RPI firmware) does not necessarily return
+	 * function pointers for core functions.
+	 */
+	if (!proc_addr)
+   {
+      void *h = dlopen("/opt/vc/lib/libGLESv2.so", RTLD_LAZY);
 
-		if (!h)
-			h = dlopen("/usr/lib/libGLESv2.so", RTLD_LAZY);
+      if (!h)
+         h = dlopen("/usr/lib/libGLESv2.so", RTLD_LAZY);
 
-        if (h) {
-            proc_addr = dlsym(h, name);
-            dlclose(h);
-        }
-    }
+      if (h)
+      {
+         proc_addr = dlsym(h, name);
+         dlclose(h);
+      }
+   }
+#endif
 
 	if(proc_addr == NULL)
 		log_cb(RETRO_LOG_ERROR, "Failure obtaining %s proc address\n", name);
@@ -293,6 +309,13 @@ static void context_reset(void)
 		goto err;
 	}
 
+	mpv_opengl_cb_set_update_callback(mpv_gl, queue_new_frame, NULL);
+
+	mpv_set_option_string(mpv, "ao", "audio-cb");
+
+	/* Attempt to enable hardware acceleration. MPV will fallback to software
+	 * decoding on failure.
+	 */
 	if(mpv_set_option_string(mpv, "hwdec", "auto") < 0)
 		log_cb(RETRO_LOG_ERROR, "failed to set hwdec option\n");
 
@@ -315,6 +338,17 @@ static void context_reset(void)
 		/* Garbage fix to overflowing log */
 		usleep(10);
 	}
+
+	/* TODO #2: Check for the highest samplerate in audio stream, and use that.
+	 * Fall back to 48kHz otherwise.
+	 * We currently force the audio to be sampled at 48KHz.
+	 */
+	mpv_set_option_string(mpv, "audio-samplerate", "48000");
+	mpv_set_option_string(mpv, "opengl-swapinterval", "0");
+
+	/* The following works best when vsync is switched off in Retroarch. */
+	//mpv_set_option_string(mpv, "video-sync", "display-resample");
+	//mpv_set_option_string(mpv, "display-fps", "60");
 
 	log_cb(RETRO_LOG_INFO, "Context reset.\n");
 
@@ -380,20 +414,25 @@ void retro_reset(void)
 	return;
 }
 
-#if 0
-static void audio_callback(void)
+static void audio_callback(double fps)
 {
-	static unsigned phase;
+	/* Obtain len samples to reduce lag. */
+	int len = 48000 / (int)floor(fps);
+	static int16_t frames[512];
 
-	for (unsigned i = 0; i < 30000 / 60; i++, phase++)
+	while(len > 0)
 	{
-		int16_t val = 0x800 * sinf(2.0f * M_PI * phase * 300.0f / 30000.0f);
-		audio_cb(val, val);
-	}
+		int mpv_len = mpv_audio_callback(&frames, len > 512 ? 512*2 : len*2);
+		//printf("mpv cb: %d\n", mpv_len);
+		if(mpv_len < 1)
+			return;
 
-	phase %= 100;
+		len -= mpv_len;
+
+		//printf("acb: %lu\n", audio_batch_cb(frames, mpv_len));
+		audio_batch_cb(frames, mpv_len);
+	}
 }
-#endif
 
 static void retropad_update_input(void)
 {
@@ -413,7 +452,7 @@ static void retropad_update_input(void)
 	/* A ternary operator is used since input_state_cb returns an int16_t, but
 	 * we only care about whether the button is on or off which is why we store
 	 * the value in a single bit for each button.
-	 * 
+	 *
 	 * Unsure if saving the memory is worth the extra checks, costing CPU time,
 	 * but both are incredibly miniscule anyway.
 	 */
@@ -470,12 +509,14 @@ void retro_run(void)
 	 * retro_get_system_av_info() call.
 	 */
 	static bool updated_video_dimensions = false;
-	static int64_t width, height;
+	static int64_t width = 0, height = 0;
+	static double container_fps = 30.0f;
 
 	if(updated_video_dimensions == false)
 	{
 		mpv_get_property(mpv, "dwidth", MPV_FORMAT_INT64, &width);
 		mpv_get_property(mpv, "dheight", MPV_FORMAT_INT64, &height);
+		mpv_get_property(mpv, "container-fps", MPV_FORMAT_DOUBLE, &container_fps);
 
 		/* We don't know the dimensions of the video when
 		 * retro_get_system_av_info is called, so we have to set it here for
@@ -492,18 +533,44 @@ void retro_run(void)
 			.aspect_ratio = -1,
 		};
 
-		environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &geometry);
+		log_cb(RETRO_LOG_INFO, "Setting fps to %f\n", container_fps);
+
+		struct retro_system_timing timing = {
+			.fps = container_fps,
+			.sample_rate = 48000.0f,
+		};
+
+		struct retro_system_av_info av_info = {
+			.geometry = geometry,
+			.timing = timing,
+		};
+
+		if(width > 0 && height > 0)
+			environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &av_info);
+
 		updated_video_dimensions = true;
 	}
 
 	print_mpv_logs();
 
 	retropad_update_input();
-	/* TODO #2: Implement an audio callback feature in to libmpv */
-	/* audio_callback(); */
 
+	/* TODO #2: Implement an audio callback feature in to libmpv */
+	audio_callback(container_fps);
+
+#if 1
+	if(frame_queue > 0)
+	{
+		mpv_opengl_cb_draw(mpv_gl, hw_render.get_current_framebuffer(), width, height);
+		video_cb(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
+		frame_queue--;
+	}
+	else
+		video_cb(NULL, width, height, 0);
+#else
 	mpv_opengl_cb_draw(mpv_gl, hw_render.get_current_framebuffer(), width, height);
 	video_cb(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
+#endif
 	return;
 }
 
