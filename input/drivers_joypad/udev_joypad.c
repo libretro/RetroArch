@@ -151,6 +151,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    unsigned axes                        = 0;
    struct udev_device *parent           = NULL;
    struct udev_joypad *pad              = (struct udev_joypad*)&udev_pads[p];
+   struct input_id inputid              = {0};
    unsigned long keybit[NBITS(KEY_MAX)] = {0};
    unsigned long absbit[NBITS(ABS_MAX)] = {0};
    unsigned long ffbit[NBITS(FF_MAX)]   = {0};
@@ -163,16 +164,12 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       return -1;
    }
 
-   /* Don't worry about unref'ing the parent. */
-   parent = udev_device_get_parent_with_subsystem_devtype(dev, "usb", "usb_device");
-
    pad->vid = pad->pid = 0;
 
-   if ((buf = udev_device_get_sysattr_value(parent, "idVendor")) != NULL)
-      pad->vid = strtol(buf, NULL, 16);
-
-   if ((buf = udev_device_get_sysattr_value(parent, "idProduct")) != NULL)
-      pad->pid = strtol(buf, NULL, 16);
+   if (ioctl(fd, EVIOCGID, &inputid) >= 0) {
+      pad->vid = inputid.vendor;
+      pad->pid = inputid.product;
+   }
 
    RARCH_LOG("[udev]: Plugged pad: %s (%u:%u) on port #%u.\n",
              pad->ident, pad->vid, pad->pid, p);
