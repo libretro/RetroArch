@@ -33,7 +33,6 @@
 #include "menu_networking.h"
 #include "menu_cbs.h"
 #include "menu_entries.h"
-#include "widgets/menu_list.h"
 
 #include "../core_info.h"
 #include "../configuration.h"

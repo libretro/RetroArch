@@ -24,12 +24,11 @@
 
 #include "../menu_content.h"
 #include "../menu_driver.h"
+#include "../menu_entries.h"
 #include "../menu_cbs.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
-
-#include "../widgets/menu_list.h"
 
 #include "../../configuration.h"
 #include "../../core.h"

@@ -39,8 +39,8 @@
 #include "menu_driver.h"
 #include "menu_cbs.h"
 #include "menu_event.h"
+#include "menu_entries.h"
 #include "widgets/menu_dialog.h"
-#include "widgets/menu_list.h"
 #include "menu_shader.h"
 
 #include "../config.def.h"

@@ -51,14 +51,14 @@
 #include "../frontend/drivers/platform_unix.h"
 #endif
 
+#include "menu_cbs.h"
 #include "menu_content.h"
 #include "menu_driver.h"
+#include "menu_entries.h"
 #include "menu_shader.h"
 #include "menu_networking.h"
 #include "widgets/menu_dialog.h"
-#include "widgets/menu_list.h"
 #include "widgets/menu_filebrowser.h"
-#include "menu_cbs.h"
 
 #include "../audio/audio_driver.h"
 #include "../configuration.h"
