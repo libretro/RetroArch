@@ -115,8 +115,6 @@ typedef struct menu_file_list_cbs
 
 int menu_entries_get_title(char *title, size_t title_len);
 
-bool menu_entries_current_core_is_no_core(void);
-
 int menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
 int menu_entries_get_core_name(char *s, size_t len);

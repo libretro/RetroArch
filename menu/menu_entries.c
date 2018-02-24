@@ -213,20 +213,6 @@ int menu_entries_get_core_name(char *s, size_t len)
    return 0;
 }
 
-bool menu_entries_current_core_is_no_core(void)
-{
-   char corename[255];
-   const char *no_core_str = NULL;
-
-   corename[0] = '\0';
-
-   menu_entries_get_core_name(corename, sizeof(corename));
-
-   no_core_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
-
-   return string_is_equal(corename, no_core_str);
-}
-
 /* Sets 's' to the name of the current core
  * (shown at the top of the UI). */
 int menu_entries_get_core_title(char *s, size_t len)
