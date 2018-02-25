@@ -103,11 +103,6 @@ void menu_shader_manager_free(void)
    menu_driver_shader = NULL;
 }
 
-void menu_shader_manager_init_paths(void)
-{
-
-}
-
 /**
  * menu_shader_manager_init:
  *
@@ -129,8 +124,6 @@ bool menu_shader_manager_init(void)
 
    if (!menu_driver_shader || !path_shader)
       return false;
-
-   menu_shader_manager_init_paths();
 
    type = video_shader_get_type_from_ext(path_get_extension(path_shader),
          &is_preset);
@@ -275,8 +268,6 @@ bool menu_shader_manager_save_preset(
    config_directory[0]                    = '\0';
    buffer[0]                              = '\0';
    preset_path[0]                         = '\0';
-
-   menu_shader_manager_init_paths();
 
    if (!shader)
       return false;
