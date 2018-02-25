@@ -110,7 +110,6 @@ static bool task_overlay_load_desc(
       bool normalized, float alpha_mod, float range_mod)
 {
    float width_mod, height_mod;
-   uint32_t box_hash, key_hash;
    char overlay_desc_key[64];
    char conf_key[64];
    char overlay_desc_normalized_key[64];
@@ -174,50 +173,40 @@ static bool task_overlay_load_desc(
    y              = list->elems[2].data;
    box            = list->elems[3].data;
 
-   box_hash       = djb2_calculate(box);
-   key_hash       = djb2_calculate(key);
-
    desc->retro_key_idx = 0;
    BIT256_CLEAR_ALL(desc->button_mask);
 
-   switch (key_hash)
+   if (string_is_equal(key, "analog_left"))
+      desc->type          = OVERLAY_TYPE_ANALOG_LEFT;
+   else if (string_is_equal(key, "analog_right"))
+      desc->type          = OVERLAY_TYPE_ANALOG_RIGHT;
+   else if (strstr(key, "retrok_") == key)
    {
-      case KEY_ANALOG_LEFT:
-         desc->type = OVERLAY_TYPE_ANALOG_LEFT;
-         break;
-      case KEY_ANALOG_RIGHT:
-         desc->type = OVERLAY_TYPE_ANALOG_RIGHT;
-         break;
-      default:
-         if (strstr(key, "retrok_") == key)
-         {
-            desc->type          = OVERLAY_TYPE_KEYBOARD;
-            desc->retro_key_idx = input_config_translate_str_to_rk(key + 7);
-         }
-         else
-         {
-            char      *save = NULL;
-            const char *tmp = strtok_r(key, "|", &save);
+      desc->type          = OVERLAY_TYPE_KEYBOARD;
+      desc->retro_key_idx = input_config_translate_str_to_rk(key + 7);
+   }
+   else
+   {
+      char      *save = NULL;
+      const char *tmp = strtok_r(key, "|", &save);
 
-            desc->type = OVERLAY_TYPE_BUTTONS;
+      desc->type = OVERLAY_TYPE_BUTTONS;
 
-            for (; tmp; tmp = strtok_r(NULL, "|", &save))
-            {
-               if (!string_is_equal(tmp, file_path_str(FILE_PATH_NUL)))
-                  BIT256_SET(desc->button_mask, input_config_translate_str_to_bind_id(tmp));
-            }
+      for (; tmp; tmp = strtok_r(NULL, "|", &save))
+      {
+         if (!string_is_equal(tmp, file_path_str(FILE_PATH_NUL)))
+            BIT256_SET(desc->button_mask, input_config_translate_str_to_bind_id(tmp));
+      }
 
-            if (BIT256_GET(desc->button_mask, RARCH_OVERLAY_NEXT))
-            {
-               char overlay_target_key[64];
+      if (BIT256_GET(desc->button_mask, RARCH_OVERLAY_NEXT))
+      {
+         char overlay_target_key[64];
 
-               snprintf(overlay_target_key, sizeof(overlay_target_key),
-                     "overlay%u_desc%u_next_target", ol_idx, desc_idx);
-               config_get_array(conf, overlay_target_key,
-                     desc->next_index_name, sizeof(desc->next_index_name));
-            }
-         }
-         break;
+         snprintf(overlay_target_key, sizeof(overlay_target_key),
+               "overlay%u_desc%u_next_target", ol_idx, desc_idx);
+         config_get_array(conf, overlay_target_key,
+               desc->next_index_name, sizeof(desc->next_index_name));
+      }
    }
 
    width_mod  = 1.0f;
@@ -232,18 +221,15 @@ static bool task_overlay_load_desc(
    desc->x = (float)strtod(x, NULL) * width_mod;
    desc->y = (float)strtod(y, NULL) * height_mod;
 
-   switch (box_hash)
+   if (string_is_equal(box, "radial"))
+      desc->hitbox = OVERLAY_HITBOX_RADIAL;
+   else if (string_is_equal(box, "rect"))
+      desc->hitbox = OVERLAY_HITBOX_RECT;
+   else
    {
-      case BOX_RADIAL:
-         desc->hitbox = OVERLAY_HITBOX_RADIAL;
-         break;
-      case BOX_RECT:
-         desc->hitbox = OVERLAY_HITBOX_RECT;
-         break;
-      default:
-         RARCH_ERR("[Overlay]: Hitbox type (%s) is invalid. Use \"radial\" or \"rect\".\n", box);
-         ret = false;
-         goto end;
+      RARCH_ERR("[Overlay]: Hitbox type (%s) is invalid. Use \"radial\" or \"rect\".\n", box);
+      ret = false;
+      goto end;
    }
 
    switch (desc->type)
