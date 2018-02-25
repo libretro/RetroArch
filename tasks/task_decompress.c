@@ -293,10 +293,12 @@ bool task_push_decompress(
    /* ZIP or APK only */
    if (
          !filestream_exists(source_file) ||
-         !string_is_equal_noncase(ext, "zip")
+         (
+          (!string_is_equal_noncase(ext, "zip"))
 #ifdef HAVE_7ZIP
-         && !string_is_equal_noncase(ext, "7z")
+         && (!string_is_equal_noncase(ext, "7z"))
 #endif
+         )
       )
    {
       RARCH_WARN(

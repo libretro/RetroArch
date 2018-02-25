@@ -219,26 +219,13 @@ static bool command_reply(const char * data, size_t len)
 bool command_set_shader(const char *arg)
 {
    char msg[256];
-   enum rarch_shader_type type = RARCH_SHADER_NONE;
-   struct video_shader      *shader  = menu_shader_get();
+   bool is_preset                  = false;
+   struct video_shader    *shader  = menu_shader_get();
+   enum rarch_shader_type     type = video_shader_get_type_from_ext(
+         path_get_extension(arg), &is_preset);
 
-   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(arg))))
-   {
-      case FILE_TYPE_SHADER_GLSL:
-      case FILE_TYPE_SHADER_PRESET_GLSLP:
-         type = RARCH_SHADER_GLSL;
-         break;
-      case FILE_TYPE_SHADER_CG:
-      case FILE_TYPE_SHADER_PRESET_CGP:
-         type = RARCH_SHADER_CG;
-         break;
-      case FILE_TYPE_SHADER_SLANG:
-      case FILE_TYPE_SHADER_PRESET_SLANGP:
-         type = RARCH_SHADER_SLANG;
-         break;
-      default:
-         return false;
-   }
+   if (type == RARCH_SHADER_NONE)
+      return false;
 
    snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
    runloop_msg_queue_push(msg, 1, 120, true);

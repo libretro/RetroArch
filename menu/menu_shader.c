@@ -104,12 +104,6 @@ void menu_shader_manager_increment_amount_passes(void)
    shader->passes++;
 }
 
-void menu_shader_manager_free(void)
-{
-   if (menu_driver_shader)
-      free(menu_driver_shader);
-   menu_driver_shader = NULL;
-}
 #else
 struct video_shader *menu_shader_get(void)
 {
@@ -127,8 +121,14 @@ struct video_shader_pass *menu_shader_manager_get_pass(unsigned i)
 }
 
 unsigned menu_shader_manager_get_amount_passes(void) { return 0; }
-void menu_shader_manager_free(void) { }
 #endif
+
+void menu_shader_manager_free(void)
+{
+   if (menu_driver_shader)
+      free(menu_driver_shader);
+   menu_driver_shader = NULL;
+}
 
 void menu_shader_manager_init_paths(void)
 {
@@ -177,9 +177,12 @@ void menu_shader_manager_init_paths(void)
  **/
 bool menu_shader_manager_init(void)
 {
-#ifdef HAVE_SHADER_MANAGER
+   bool is_preset              = false;
+   config_file_t *conf         = NULL;
    settings_t *settings        = config_get_ptr();
+   char *new_path              = NULL;
    const char *path_shader     = retroarch_get_shader_preset();
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
 
    menu_shader_manager_free();
 
@@ -191,76 +194,68 @@ bool menu_shader_manager_init(void)
 
    menu_shader_manager_init_paths();
 
-   switch (msg_hash_to_file_type(msg_hash_calculate(
-               path_get_extension(path_shader))))
-   {
-      case FILE_TYPE_SHADER_PRESET_GLSLP:
-      case FILE_TYPE_SHADER_PRESET_CGP:
-      case FILE_TYPE_SHADER_PRESET_SLANGP:
-         {
-            config_file_t *conf = config_file_new(path_shader);
+   type = video_shader_get_type_from_ext(path_get_extension(path_shader),
+         &is_preset);
 
-            if (conf)
-            {
-               if (video_shader_read_conf_cgp(conf, menu_driver_shader))
-               {
-                  video_shader_resolve_relative(menu_driver_shader,
-                        path_shader);
-                  video_shader_resolve_parameters(conf, menu_driver_shader);
-               }
-               config_file_free(conf);
-            }
-         }
-         break;
-      case FILE_TYPE_SHADER_GLSL:
-      case FILE_TYPE_SHADER_CG:
-      case FILE_TYPE_SHADER_SLANG:
+   if (is_preset)
+   {
+      conf     = config_file_new(path_shader);
+      new_path = strdup(path_shader);
+   }
+   else
+   {
+      if (video_shader_is_supported(type))
+      {
          strlcpy(menu_driver_shader->pass[0].source.path, path_shader,
                sizeof(menu_driver_shader->pass[0].source.path));
          menu_driver_shader->passes = 1;
-         break;
-      default:
+      }
+      else
+      {
+         char preset_path[PATH_MAX_LENGTH];
+         config_file_t *conf               = NULL;
+         const char *shader_dir            =
+            *settings->paths.directory_video_shader ?
+            settings->paths.directory_video_shader :
+            settings->paths.directory_system;
+
+         preset_path[0] = '\0';
+
+         fill_pathname_join(preset_path, shader_dir,
+               "menu.glslp", sizeof(preset_path));
+         conf = config_file_new(preset_path);
+
+         if (!conf)
          {
-            char preset_path[PATH_MAX_LENGTH];
-            config_file_t *conf               = NULL;
-            const char *shader_dir            =
-               *settings->paths.directory_video_shader ?
-               settings->paths.directory_video_shader :
-               settings->paths.directory_system;
-
-            preset_path[0] = '\0';
-
             fill_pathname_join(preset_path, shader_dir,
-                  "menu.glslp", sizeof(preset_path));
+                  "menu.cgp", sizeof(preset_path));
             conf = config_file_new(preset_path);
-
-            if (!conf)
-            {
-               fill_pathname_join(preset_path, shader_dir,
-                     "menu.cgp", sizeof(preset_path));
-               conf = config_file_new(preset_path);
-            }
-
-            if (!conf)
-            {
-               fill_pathname_join(preset_path, shader_dir,
-                     "menu.slangp", sizeof(preset_path));
-               conf = config_file_new(preset_path);
-            }
-
-            if (conf)
-            {
-               if (video_shader_read_conf_cgp(conf, menu_driver_shader))
-               {
-                  video_shader_resolve_relative(menu_driver_shader, preset_path);
-                  video_shader_resolve_parameters(conf, menu_driver_shader);
-               }
-               config_file_free(conf);
-            }
          }
-         break;
+
+         if (!conf)
+         {
+            fill_pathname_join(preset_path, shader_dir,
+                  "menu.slangp", sizeof(preset_path));
+            conf = config_file_new(preset_path);
+         }
+
+         new_path = strdup(preset_path);
+      }
    }
-#endif
+
+   if (!string_is_empty(new_path))
+   {
+      if (conf)
+      {
+         if (video_shader_read_conf_cgp(conf, menu_driver_shader))
+         {
+            video_shader_resolve_relative(menu_driver_shader, new_path);
+            video_shader_resolve_parameters(conf, menu_driver_shader);
+         }
+         config_file_free(conf);
+      }
+      free(new_path);
+   }
 
    return true;
 }
@@ -393,25 +388,23 @@ bool menu_shader_manager_save_preset(
    else
    {
       const char *conf_path = NULL;
+
       switch (type)
       {
          case RARCH_SHADER_GLSL:
-#ifdef HAVE_GLSL
-            conf_path = default_glslp;
-#endif
+            if (video_shader_is_supported(type))
+               conf_path = default_glslp;
             break;
 
          case RARCH_SHADER_SLANG:
-#ifdef HAVE_SLANG
-            conf_path = default_slangp;
-#endif
+            if (video_shader_is_supported(type))
+               conf_path = default_slangp;
             break;
 
          default:
          case RARCH_SHADER_CG:
-#ifdef HAVE_CG
-            conf_path = default_cgp;
-#endif
+            if (video_shader_is_supported(type))
+               conf_path = default_cgp;
             break;
       }
 
@@ -639,13 +632,15 @@ void menu_shader_manager_apply_changes(void)
 
    if (shader_type == RARCH_SHADER_NONE)
    {
-#if defined(HAVE_GLSL)
-      shader_type = RARCH_SHADER_GLSL;
-#elif defined(HAVE_CG) || defined(HAVE_HLSL)
-      shader_type = RARCH_SHADER_CG;
-#elif defined(HAVE_SLANG)
-      shader_type = RARCH_SHADER_SLANG;
-#endif
+      if (video_shader_is_supported(RARCH_SHADER_GLSL))
+         shader_type = RARCH_SHADER_GLSL;
+      else if (
+            video_shader_is_supported(RARCH_SHADER_CG) ||
+            video_shader_is_supported(RARCH_SHADER_HLSL)
+            )
+         shader_type = RARCH_SHADER_CG;
+      else if (video_shader_is_supported(RARCH_SHADER_SLANG))
+         shader_type = RARCH_SHADER_SLANG;
    }
    menu_shader_manager_set_preset(NULL, shader_type, NULL);
 #endif

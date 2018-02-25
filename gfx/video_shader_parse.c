@@ -1062,6 +1062,56 @@ void video_shader_write_conf_cgp(config_file_t *conf,
    }
 }
 
+bool video_shader_is_supported(enum rarch_shader_type type)
+{
+#ifdef HAVE_SLANG
+   if (type == RARCH_SHADER_SLANG)
+      return true;
+#endif
+#ifdef HAVE_GLSL
+   if (type == RARCH_SHADER_GLSL)
+      return true;
+#endif
+#ifdef HAVE_HLSL
+   if (type == RARCH_SHADER_HLSL)
+      return true;
+#endif
+#ifdef HAVE_CG
+   if (type == RARCH_SHADER_CG)
+      return true;
+#endif
+   return false;
+}
+
+enum rarch_shader_type video_shader_get_type_from_ext(
+      const char *ext, bool *is_preset)
+{
+   *is_preset = false;
+
+   if (string_is_equal_noncase(ext, "cg"))
+      return RARCH_SHADER_CG;
+   if (string_is_equal_noncase(ext, "cgp"))
+   {
+      *is_preset = true;
+      return RARCH_SHADER_CG;
+   }
+   if (string_is_equal_noncase(ext, "glsl"))
+      return RARCH_SHADER_GLSL;
+   if (string_is_equal_noncase(ext, "glslp"))
+   {
+      *is_preset = true;
+      return RARCH_SHADER_GLSL;
+   }
+   if (string_is_equal_noncase(ext, "slang"))
+      return RARCH_SHADER_SLANG;
+   if (string_is_equal_noncase(ext, "slangp"))
+   {
+      *is_preset = true;
+      return RARCH_SHADER_SLANG;
+   }
+   return RARCH_SHADER_NONE;
+}
+
 /**
  * video_shader_parse_type:
  * @path              : Shader path.
@@ -1076,35 +1126,17 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback)
 {
+   bool is_preset                     = false;
    enum rarch_shader_type shader_type = RARCH_SHADER_NONE;
    enum gfx_ctx_api api               = video_context_driver_get_api();
-#ifdef HAVE_CG
-   bool cg_supported                  = true;
-#else
-   bool cg_supported                  = false;
-#endif
+   bool cg_supported                  = video_shader_is_supported(RARCH_SHADER_CG);
    const char *ext                    = NULL;
 
    if (!path)
       return fallback;
 
    ext                                = path_get_extension(path);
-
-   if (
-         string_is_equal_noncase(ext, "cg") ||
-         string_is_equal_noncase(ext, "cgp")
-      )
-      shader_type = RARCH_SHADER_CG;
-   else if (
-         string_is_equal_noncase(ext, "glsl") ||
-         string_is_equal_noncase(ext, "glslp")
-         )
-      shader_type = RARCH_SHADER_GLSL;
-   else if (
-         string_is_equal_noncase(ext, "slang") ||
-         string_is_equal_noncase(ext, "slangp")
-         )
-      shader_type = RARCH_SHADER_SLANG;
+   shader_type                        = video_shader_get_type_from_ext(ext, &is_preset);
 
    switch (api)
    {
