@@ -29,26 +29,25 @@
 #include "../../content.h"
 #include "../../retroarch.h"
 
-static enum action_iterate_type action_iterate_type(uint32_t hash)
+static enum action_iterate_type action_iterate_type(const char *label)
 {
-   switch (hash)
-   {
-      case MENU_LABEL_HELP:
-      case MENU_LABEL_HELP_CONTROLS:
-      case MENU_LABEL_HELP_WHAT_IS_A_CORE:
-      case MENU_LABEL_HELP_LOADING_CONTENT:
-      case MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
-      case MENU_LABEL_CHEEVOS_DESCRIPTION:
-      case MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
-      case MENU_LABEL_HELP_SCANNING_CONTENT:
-         return ITERATE_TYPE_HELP;
-      case MENU_LABEL_INFO_SCREEN:
-         return ITERATE_TYPE_INFO;
-      case MENU_LABEL_CUSTOM_BIND:
-      case MENU_LABEL_CUSTOM_BIND_ALL:
-      case MENU_LABEL_CUSTOM_BIND_DEFAULTS:
+   if (string_is_equal(label, "info_screen"))
+      return ITERATE_TYPE_INFO;
+   if (
+         string_is_equal(label, "help_controls") ||
+         string_is_equal(label, "help_what_is_a_core") ||
+         string_is_equal(label, "help_loading_content") ||
+         string_is_equal(label, "help_scanning_content") ||
+         string_is_equal(label, "help_change_virtual_gamepad") ||
+         string_is_equal(label, "help_audio_video_troubleshooting")
+         )
+      return ITERATE_TYPE_HELP;
+   if (
+         string_is_equal(label, "custom_bind") ||
+         string_is_equal(label, "custom_bind_all") ||
+         string_is_equal(label, "custom_bind_defaults")
+      )
          return ITERATE_TYPE_BIND;
-   }
 
    return ITERATE_TYPE_DEFAULT;
 }
@@ -69,7 +68,6 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    enum action_iterate_type iterate_type;
    unsigned file_type             = 0;
    int ret                        = 0;
-   uint32_t hash                  = 0;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    const char *label              = NULL;
    menu_handle_t *menu            = (menu_handle_t*)data;
@@ -82,9 +80,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
    menu->menu_state_msg[0]   = '\0';
 
-   if (!string_is_empty(label))
-      hash                   = msg_hash_calculate(label);
-   iterate_type              = action_iterate_type(hash);
+   iterate_type              = action_iterate_type(label);
 
    menu_driver_set_binding_state(iterate_type == ITERATE_TYPE_BIND);
 
