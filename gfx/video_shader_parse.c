@@ -749,9 +749,7 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
       }
 
       if (settings->bools.video_shader_watch_files)
-      {
          string_list_append(file_list, shader->pass[i].source.path, attr);
-      }
    }
 
    if (settings->bools.video_shader_watch_files)
@@ -1143,14 +1141,16 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
    bool is_preset                     = false;
    enum rarch_shader_type shader_type = RARCH_SHADER_NONE;
    enum gfx_ctx_api api               = video_context_driver_get_api();
-   bool cg_supported                  = video_shader_is_supported(RARCH_SHADER_CG);
+   bool cg_supported                  = video_shader_is_supported(
+         RARCH_SHADER_CG);
    const char *ext                    = NULL;
 
    if (!path)
       return fallback;
 
    ext                                = path_get_extension(path);
-   shader_type                        = video_shader_get_type_from_ext(ext, &is_preset);
+   shader_type                        = video_shader_get_type_from_ext(
+         ext, &is_preset);
 
    switch (api)
    {
@@ -1179,7 +1179,8 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
          break;
    }
 
-   RARCH_WARN("Rendering context is incompatible with shader type: %s\n", path);
+   RARCH_WARN("Rendering context is incompatible with shader type: %s\n",
+         path);
    return fallback;
 }
 
