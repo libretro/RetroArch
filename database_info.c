@@ -27,7 +27,6 @@
 
 #include "list_special.h"
 #include "database_info.h"
-#include "msg_hash.h"
 #include "verbosity.h"
 
 int database_info_build_query_enum(char *s, size_t len,
