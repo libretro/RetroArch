@@ -821,22 +821,19 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting,
       const char *label)
 {
-   uint32_t needle        = msg_hash_calculate(label);
    rarch_setting_t **list = &setting;
 
    for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
    {
-      if (     (needle                    == setting->name_hash)
-            && (setting_get_type(setting) <= ST_GROUP))
-      {
-         const char *name              = setting->name;
-         const char *short_description = setting->short_description;
-         /* make sure this isn't a collision */
-         if (!string_is_equal(label, name))
-            continue;
+      const char *name              = setting->name;
+      const char *short_description = setting->short_description;
 
+      if (
+            string_is_equal(label, name) &&
+            (setting_get_type(setting) <= ST_GROUP))
+      {
          if (string_is_empty(short_description))
-            return NULL;
+            break;
 
          if (setting->read_handler)
             setting->read_handler(setting);
@@ -7811,7 +7808,6 @@ static void menu_setting_terminate_last(rarch_setting_t *list, unsigned pos)
    (*&list)[pos].type               = ST_NONE;
    (*&list)[pos].size               = 0;
    (*&list)[pos].name               = NULL;
-   (*&list)[pos].name_hash          = 0;
    (*&list)[pos].short_description  = NULL;
    (*&list)[pos].group              = NULL;
    (*&list)[pos].subgroup           = NULL;
