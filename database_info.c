@@ -30,37 +30,6 @@
 #include "msg_hash.h"
 #include "verbosity.h"
 
-#define DB_CURSOR_ROM_NAME                      0x16bbcf13U
-#define DB_CURSOR_NAME                          0x7c9b0c46U
-#define DB_CURSOR_DESCRIPTION                   0x91b0c789U
-#define DB_CURSOR_GENRE                         0x0f802156U
-#define DB_CURSOR_PUBLISHER                     0x5e099013U
-#define DB_CURSOR_DEVELOPER                     0x1783d2abU
-#define DB_CURSOR_ORIGIN                        0x1315e3edU
-#define DB_CURSOR_FRANCHISE                     0xc3a526b8U
-#define DB_CURSOR_BBFC_RATING                   0xede26836U
-#define DB_CURSOR_ESRB_RATING                   0x4c3fa255U
-#define DB_CURSOR_ELSPA_RATING                  0xd9cab41eU
-#define DB_CURSOR_CERO_RATING                   0x084a1772U
-#define DB_CURSOR_PEGI_RATING                   0x431b736eU
-#define DB_CURSOR_CHECKSUM_CRC32                0x0b88671dU
-#define DB_CURSOR_CHECKSUM_SHA1                 0x7c9de632U
-#define DB_CURSOR_CHECKSUM_MD5                  0x0b888fabU
-#define DB_CURSOR_ENHANCEMENT_HW                0xab612029U
-#define DB_CURSOR_EDGE_MAGAZINE_REVIEW          0xd3573eabU
-#define DB_CURSOR_EDGE_MAGAZINE_RATING          0xd30dc4feU
-#define DB_CURSOR_EDGE_MAGAZINE_ISSUE           0xa0f30d42U
-#define DB_CURSOR_FAMITSU_MAGAZINE_RATING       0x0a50ca62U
-#define DB_CURSOR_TGDB_RATING                   0x8d61458aU
-#define DB_CURSOR_MAX_USERS                     0x1084ff77U
-#define DB_CURSOR_RELEASEDATE_MONTH             0x790ad76cU
-#define DB_CURSOR_RELEASEDATE_YEAR              0x7fd06ed7U
-#define DB_CURSOR_RUMBLE_SUPPORTED              0x1a4dc3ecU
-#define DB_CURSOR_COOP_SUPPORTED                0x7c953ff6U
-#define DB_CURSOR_ANALOG_SUPPORTED              0xf220fc17U
-#define DB_CURSOR_SIZE                          0x7c9dede0U
-#define DB_CURSOR_SERIAL                        0x1b843ec5U
-
 int database_info_build_query_enum(char *s, size_t len,
       enum database_query_type type,
       const char *path)
@@ -201,7 +170,6 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
 
    for (i = 0; i < item.val.map.len; i++)
    {
-      uint32_t                 value = 0;
       struct rmsgpack_dom_value *key = &item.val.map.items[i].key;
       struct rmsgpack_dom_value *val = &item.val.map.items[i].value;
       const char *val_string         = NULL;
@@ -209,121 +177,123 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
       if (!key || !val)
          continue;
 
-      val_string = val->val.string.buff;
-      str        = key->val.string.buff;
-      value      = msg_hash_calculate(str);
+      val_string                     = val->val.string.buff;
+      str                            = key->val.string.buff;
 
-      switch (value)
+      if (string_is_equal(str, "publisher"))
       {
-         case DB_CURSOR_SERIAL:
-            if (!string_is_empty(val_string))
-               db_info->serial = strdup(val_string);
-            break;
-         case DB_CURSOR_ROM_NAME:
-            if (!string_is_empty(val_string))
-               db_info->rom_name = strdup(val_string);
-            break;
-         case DB_CURSOR_NAME:
-            if (!string_is_empty(val_string))
-               db_info->name = strdup(val_string);
-            break;
-         case DB_CURSOR_DESCRIPTION:
-            if (!string_is_empty(val_string))
-               db_info->description = strdup(val_string);
-            break;
-         case DB_CURSOR_GENRE:
-            if (!string_is_empty(val_string))
-               db_info->genre = strdup(val_string);
-            break;
-         case DB_CURSOR_PUBLISHER:
-            if (!string_is_empty(val_string))
-               db_info->publisher = strdup(val_string);
-            break;
-         case DB_CURSOR_DEVELOPER:
-            if (!string_is_empty(val_string))
-               db_info->developer = string_split(val_string, "|");
-            break;
-         case DB_CURSOR_ORIGIN:
-            if (!string_is_empty(val_string))
-               db_info->origin = strdup(val_string);
-            break;
-         case DB_CURSOR_FRANCHISE:
-            if (!string_is_empty(val_string))
-               db_info->franchise = strdup(val_string);
-            break;
-         case DB_CURSOR_BBFC_RATING:
-            if (!string_is_empty(val_string))
-               db_info->bbfc_rating = strdup(val_string);
-            break;
-         case DB_CURSOR_ESRB_RATING:
-            if (!string_is_empty(val_string))
-               db_info->esrb_rating = strdup(val_string);
-            break;
-         case DB_CURSOR_ELSPA_RATING:
-            if (!string_is_empty(val_string))
-               db_info->elspa_rating = strdup(val_string);
-            break;
-         case DB_CURSOR_CERO_RATING:
-            if (!string_is_empty(val_string))
-               db_info->cero_rating          = strdup(val_string);
-            break;
-         case DB_CURSOR_PEGI_RATING:
-            if (!string_is_empty(val_string))
-               db_info->pegi_rating          = strdup(val_string);
-            break;
-         case DB_CURSOR_ENHANCEMENT_HW:
-            if (!string_is_empty(val_string))
-               db_info->enhancement_hw       = strdup(val_string);
-            break;
-         case DB_CURSOR_EDGE_MAGAZINE_REVIEW:
-            if (!string_is_empty(val_string))
-               db_info->edge_magazine_review = strdup(val_string);
-            break;
-         case DB_CURSOR_EDGE_MAGAZINE_RATING:
-            db_info->edge_magazine_rating    = (unsigned)val->val.uint_;
-            break;
-         case DB_CURSOR_EDGE_MAGAZINE_ISSUE:
-            db_info->edge_magazine_issue     = (unsigned)val->val.uint_;
-            break;
-         case DB_CURSOR_FAMITSU_MAGAZINE_RATING:
-            db_info->famitsu_magazine_rating = (unsigned)val->val.uint_;
-            break;
-         case DB_CURSOR_TGDB_RATING:
-            db_info->tgdb_rating             = (unsigned)val->val.uint_;
-            break;
-         case DB_CURSOR_MAX_USERS:
-            db_info->max_users               = (unsigned)val->val.uint_;
-            break;
-         case DB_CURSOR_RELEASEDATE_MONTH:
-            db_info->releasemonth            = (unsigned)val->val.uint_;
-            break;
-         case DB_CURSOR_RELEASEDATE_YEAR:
-            db_info->releaseyear             = (unsigned)val->val.uint_;
-            break;
-         case DB_CURSOR_RUMBLE_SUPPORTED:
-            db_info->rumble_supported        = (int)val->val.uint_;
-            break;
-         case DB_CURSOR_COOP_SUPPORTED:
-            db_info->coop_supported          = (int)val->val.uint_;
-            break;
-         case DB_CURSOR_ANALOG_SUPPORTED:
-            db_info->analog_supported        = (int)val->val.uint_;
-            break;
-         case DB_CURSOR_SIZE:
-            db_info->size                    = (unsigned)val->val.uint_;
-            break;
-         case DB_CURSOR_CHECKSUM_CRC32:
-            db_info->crc32 = swap_if_little32(*(uint32_t*)val->val.binary.buff);
-            break;
-         case DB_CURSOR_CHECKSUM_SHA1:
-            db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->val.binary.buff, val->val.binary.len);
-            break;
-         case DB_CURSOR_CHECKSUM_MD5:
-            db_info->md5 = bin_to_hex_alloc((uint8_t*)val->val.binary.buff, val->val.binary.len);
-            break;
-         default:
-            RARCH_LOG("Unknown key: %s\n", str);
-            break;
+         if (!string_is_empty(val_string))
+            db_info->publisher = strdup(val_string);
+      }
+      else if (string_is_equal(str, "developer"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->developer = string_split(val_string, "|");
+      }
+      else if (string_is_equal(str, "serial"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->serial = strdup(val_string);
+      }
+      else if (string_is_equal(str, "rom_name"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->rom_name = strdup(val_string);
+      }
+      else if (string_is_equal(str, "name"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->name = strdup(val_string);
+      }
+      else if (string_is_equal(str, "description"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->description = strdup(val_string);
+      }
+      else if (string_is_equal(str, "genre"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->genre = strdup(val_string);
+      }
+      else if (string_is_equal(str, "origin"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->origin = strdup(val_string);
+      }
+      else if (string_is_equal(str, "franchise"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->franchise = strdup(val_string);
+      }
+      else if (string_is_equal(str, "bbfc_rating"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->bbfc_rating = strdup(val_string);
+      }
+      else if (string_is_equal(str, "esrb_rating"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->esrb_rating = strdup(val_string);
+      }
+      else if (string_is_equal(str, "elspa_rating"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->elspa_rating = strdup(val_string);
+      }
+      else if (string_is_equal(str, "cero_rating"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->cero_rating          = strdup(val_string);
+      }
+      else if (string_is_equal(str, "pegi_rating"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->pegi_rating          = strdup(val_string);
+      }
+      else if (string_is_equal(str, "enhancement_hw"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->enhancement_hw       = strdup(val_string);
+      }
+      else if (string_is_equal(str, "edge_review"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->edge_magazine_review = strdup(val_string);
+      }
+      else if (string_is_equal(str, "edge_rating"))
+         db_info->edge_magazine_rating    = (unsigned)val->val.uint_;
+      else if (string_is_equal(str, "edge_issue"))
+         db_info->edge_magazine_issue     = (unsigned)val->val.uint_;
+      else if (string_is_equal(str, "famitsu_rating"))
+         db_info->famitsu_magazine_rating = (unsigned)val->val.uint_;
+      else if (string_is_equal(str, "tgdb_rating"))
+         db_info->tgdb_rating             = (unsigned)val->val.uint_;
+      else if (string_is_equal(str, "users"))
+         db_info->max_users               = (unsigned)val->val.uint_;
+      else if (string_is_equal(str, "releasemonth"))
+         db_info->releasemonth            = (unsigned)val->val.uint_;
+      else if (string_is_equal(str, "releaseyear"))
+         db_info->releaseyear             = (unsigned)val->val.uint_;
+      else if (string_is_equal(str, "rumble"))
+         db_info->rumble_supported        = (int)val->val.uint_;
+      else if (string_is_equal(str, "coop"))
+         db_info->coop_supported          = (int)val->val.uint_;
+      else if (string_is_equal(str, "analog"))
+         db_info->analog_supported        = (int)val->val.uint_;
+      else if (string_is_equal(str, "size"))
+         db_info->size                    = (unsigned)val->val.uint_;
+      else if (string_is_equal(str, "crc"))
+         db_info->crc32 = swap_if_little32(
+               *(uint32_t*)val->val.binary.buff);
+      else if (string_is_equal(str, "sha1"))
+         db_info->sha1 = bin_to_hex_alloc(
+               (uint8_t*)val->val.binary.buff, val->val.binary.len);
+      else if (string_is_equal(str, "md5"))
+         db_info->md5 = bin_to_hex_alloc(
+               (uint8_t*)val->val.binary.buff, val->val.binary.len);
+      else
+      {
+         RARCH_LOG("Unknown key: %s\n", str);
       }
    }
 
