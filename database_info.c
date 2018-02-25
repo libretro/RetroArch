@@ -341,22 +341,22 @@ static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
    return 0;
 }
 
-static bool type_is_prioritized(enum msg_file_type type)
+static bool type_is_prioritized(const char *path)
 {
-   return (type == FILE_TYPE_CUE || type == FILE_TYPE_GDI);
-}
-
-static enum msg_file_type file_type(const char *path)
-{
-   return msg_hash_to_file_type(msg_hash_calculate(path_get_extension(path)));
+   const char *ext = path_get_extension(path);
+   if (string_is_equal_noncase(ext, "cue"))
+      return true;
+   if (string_is_equal_noncase(ext, "gdi"))
+      return true;
+   return false;
 }
 
 static int dir_entry_compare(const void *left, const void *right)
 {
    const struct string_list_elem *le = (const struct string_list_elem*)left;
    const struct string_list_elem *re = (const struct string_list_elem*)right;
-   bool                            l = type_is_prioritized(file_type(le->data));
-   bool                            r = type_is_prioritized(file_type(re->data));
+   bool                            l = type_is_prioritized(le->data);
+   bool                            r = type_is_prioritized(re->data);
 
    return (int) r - (int) l;
 }
