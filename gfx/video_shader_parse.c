@@ -1083,28 +1083,29 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
 #else
    bool cg_supported                  = false;
 #endif
+   const char *ext                    = NULL;
 
    if (!path)
       return fallback;
 
-   switch (msg_hash_to_file_type(
-            msg_hash_calculate(path_get_extension(path))))
-   {
-      case FILE_TYPE_SHADER_CG:
-      case FILE_TYPE_SHADER_PRESET_CGP:
-         shader_type = RARCH_SHADER_CG;
-         break;
-      case FILE_TYPE_SHADER_GLSL:
-      case FILE_TYPE_SHADER_PRESET_GLSLP:
-         shader_type = RARCH_SHADER_GLSL;
-         break;
-      case FILE_TYPE_SHADER_SLANG:
-      case FILE_TYPE_SHADER_PRESET_SLANGP:
-         shader_type = RARCH_SHADER_SLANG;
-         break;
-      default:
-         break;
-   }
+   ext                                = path_get_extension(path);
+
+   if (
+         string_is_equal_noncase(ext, "cg") ||
+         string_is_equal_noncase(ext, "cgp")
+      )
+      shader_type = RARCH_SHADER_CG;
+   else if (
+         string_is_equal_noncase(ext, "glsl") ||
+         string_is_equal_noncase(ext, "glslp")
+         )
+      shader_type = RARCH_SHADER_GLSL;
+   else if (
+         string_is_equal_noncase(ext, "slang") ||
+         string_is_equal_noncase(ext, "slangp")
+         )
+      shader_type = RARCH_SHADER_SLANG;
+
    switch (api)
    {
       case GFX_CTX_OPENGL_API:

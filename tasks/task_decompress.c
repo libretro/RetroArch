@@ -50,7 +50,9 @@ static int file_decompressed_subdir(const char *name,
    path_dir[0] = path[0] = '\0';
 
    /* Ignore directories. */
-   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
+   if (
+         name[strlen(name) - 1] == '/' || 
+         name[strlen(name) - 1] == '\\')
       goto next_file;
 
    if (strstr(name, userdata->dec->subdir) != name)
@@ -58,7 +60,8 @@ static int file_decompressed_subdir(const char *name,
 
    name += strlen(userdata->dec->subdir) + 1;
 
-   fill_pathname_join(path, userdata->dec->target_dir, name, sizeof(path));
+   fill_pathname_join(path,
+         userdata->dec->target_dir, name, sizeof(path));
    fill_pathname_basedir(path_dir, path, sizeof(path_dir));
 
    /* Make directory */
@@ -94,7 +97,8 @@ static int file_decompressed(const char *name, const char *valid_exts,
    path[0] = '\0';
 
    /* Ignore directories. */
-   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
+   if (  name[strlen(name) - 1] == '/' || 
+         name[strlen(name) - 1] == '\\')
       goto next_file;
 
    /* Make directory */
@@ -157,16 +161,20 @@ static void task_decompress_handler(retro_task_t *task)
    int ret;
    bool retdec                              = false;
    struct archive_extract_userdata userdata = {{0}};
-   decompress_state_t *dec                  = (decompress_state_t*)task->state;
+   decompress_state_t *dec                  = (decompress_state_t*)
+      task->state;
 
    userdata.dec            = dec;
-   strlcpy(userdata.archive_path, dec->source_file, sizeof(userdata.archive_path));
+   strlcpy(userdata.archive_path,
+         dec->source_file, sizeof(userdata.archive_path));
 
-   ret                     = file_archive_parse_file_iterate(&dec->archive,
+   ret                     = file_archive_parse_file_iterate(
+         &dec->archive,
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed, &userdata);
 
-   task_set_progress(task, file_archive_parse_file_progress(&dec->archive));
+   task_set_progress(task,
+         file_archive_parse_file_progress(&dec->archive));
 
    if (task_get_cancelled(task) || ret != 0)
    {
@@ -182,7 +190,8 @@ static void task_decompress_handler_target_file(retro_task_t *task)
    bool retdec;
    int ret;
    struct archive_extract_userdata userdata = {{0}};
-   decompress_state_t *dec                  = (decompress_state_t*)task->state;
+   decompress_state_t *dec                  = (decompress_state_t*)
+      task->state;
 
    strlcpy(userdata.archive_path,
          dec->source_file, sizeof(userdata.archive_path));
@@ -191,7 +200,8 @@ static void task_decompress_handler_target_file(retro_task_t *task)
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_target_file, &userdata);
 
-   task_set_progress(task, file_archive_parse_file_progress(&dec->archive));
+   task_set_progress(task,
+         file_archive_parse_file_progress(&dec->archive));
 
    if (task_get_cancelled(task) || ret != 0)
    {
@@ -210,13 +220,17 @@ static void task_decompress_handler_subdir(retro_task_t *task)
    struct archive_extract_userdata userdata = {{0}};
 
    userdata.dec            = dec;
-   strlcpy(userdata.archive_path, dec->source_file, sizeof(userdata.archive_path));
+   strlcpy(userdata.archive_path,
+         dec->source_file,
+         sizeof(userdata.archive_path));
 
-   ret                     = file_archive_parse_file_iterate(&dec->archive,
+   ret                     = file_archive_parse_file_iterate(
+         &dec->archive,
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_subdir, &userdata);
 
-   task_set_progress(task, file_archive_parse_file_progress(&dec->archive));
+   task_set_progress(task,
+         file_archive_parse_file_progress(&dec->archive));
 
    if (task_get_cancelled(task) || ret != 0)
    {
@@ -260,6 +274,7 @@ bool task_push_decompress(
       void *user_data)
 {
    char tmp[PATH_MAX_LENGTH];
+   const char *ext            = NULL;
    decompress_state_t *s      = NULL;
    retro_task_t *t            = NULL;
 
@@ -267,17 +282,26 @@ bool task_push_decompress(
 
    if (string_is_empty(target_dir) || string_is_empty(source_file))
    {
-      RARCH_WARN("[decompress] Empty or null source file or"
+      RARCH_WARN(
+            "[decompress] Empty or null source file or"
             " target directory arguments.\n");
       return false;
    }
 
+   ext = path_get_extension(source_file);
+
    /* ZIP or APK only */
-   if (!filestream_exists(source_file) ||
-         msg_hash_to_file_type(msg_hash_calculate(path_get_extension(source_file)))
-         != FILE_TYPE_COMPRESSED)
+   if (
+         !filestream_exists(source_file) ||
+         !string_is_equal_noncase(ext, "zip")
+#ifdef HAVE_7ZIP
+         && !string_is_equal_noncase(ext, "7z")
+#endif
+      )
    {
-      RARCH_WARN("[decompress] File '%s' does not exist or is not a compressed file.\n",
+      RARCH_WARN(
+            "[decompress] File '%s' does not exist"
+            " or is not a compressed file.\n",
             source_file);
       return false;
    }
@@ -287,7 +311,8 @@ bool task_push_decompress(
 
    if (task_check_decompress(source_file))
    {
-      RARCH_LOG("[decompress] File '%s' already being decompressed.\n",
+      RARCH_LOG(
+            "[decompress] File '%s' already being decompressed.\n",
             source_file);
       return false;
    }
@@ -328,7 +353,8 @@ bool task_push_decompress(
    t->user_data   = user_data;
 
    snprintf(tmp, sizeof(tmp), "%s '%s'",
-         msg_hash_to_str(MSG_EXTRACTING), path_basename(source_file));
+         msg_hash_to_str(MSG_EXTRACTING),
+         path_basename(source_file));
 
    t->title       = strdup(tmp);
 
