@@ -27,7 +27,6 @@
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
-#include <rhash.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -50,13 +49,6 @@
 #include "../video_shader_parse.h"
 #include "../../core.h"
 #include "../../managers/state_manager.h"
-
-#define SEMANTIC_TEXCOORD     0x92ee91cdU
-#define SEMANTIC_TEXCOORD0    0xf0c0cb9dU
-#define SEMANTIC_TEXCOORD1    0xf0c0cb9eU
-#define SEMANTIC_COLOR        0x0ce809a4U
-#define SEMANTIC_COLOR0       0xa9e93e54U
-#define SEMANTIC_POSITION     0xd87309baU
 
 #define PREV_TEXTURES         (GFX_MAX_TEXTURES - 1)
 
@@ -589,7 +581,6 @@ static void gl_cg_set_program_base_attrib(void *data, unsigned i)
 
    for (; param; param = cgGetNextParameter(param))
    {
-      uint32_t semantic_hash;
       const char *semantic = NULL;
       if (     (cgGetParameterDirection(param)   != CG_IN)
             || (cgGetParameterVariability(param) != CG_VARYING))
@@ -601,25 +592,20 @@ static void gl_cg_set_program_base_attrib(void *data, unsigned i)
 
       RARCH_LOG("[CG]: Found semantic \"%s\" in prog #%u.\n", semantic, i);
 
-      semantic_hash = djb2_calculate(semantic);
-
-      switch (semantic_hash)
-      {
-         case SEMANTIC_TEXCOORD:
-         case SEMANTIC_TEXCOORD0:
-            cg->prg[i].tex     = param;
-            break;
-         case SEMANTIC_COLOR:
-         case SEMANTIC_COLOR0:
+      if (
+            string_is_equal(semantic, "TEXCOORD") ||
+            string_is_equal(semantic, "TEXCOORD0")
+         )
+         cg->prg[i].tex     = param;
+      else if (
+            string_is_equal(semantic, "COLOR") ||
+            string_is_equal(semantic, "COLOR0")
+            )
             cg->prg[i].color   = param;
-            break;
-         case SEMANTIC_POSITION:
-            cg->prg[i].vertex  = param;
-            break;
-         case SEMANTIC_TEXCOORD1:
-            cg->prg[i].lut_tex = param;
-            break;
-      }
+      else if (string_is_equal(semantic, "POSITION"))
+         cg->prg[i].vertex  = param;
+      else if (string_is_equal(semantic, "TEXCOORD1"))
+         cg->prg[i].lut_tex = param;
    }
 
    if (!cg->prg[i].tex)
