@@ -1139,7 +1139,6 @@ static int generic_action_ok(const char *path,
             }
          }
          break;
-#ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_PRESET:
          {
             struct video_shader      *shader  = menu_shader_get();
@@ -1160,7 +1159,6 @@ static int generic_action_ok(const char *path,
             video_shader_resolve_parameters(NULL, menu_shader_get());
          }
          break;
-#endif
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
          {
             global_t *global = global_get_ptr();
@@ -2978,9 +2976,7 @@ end:
    return ret;
 }
 
-#ifdef HAVE_SHADER_MANAGER
 extern size_t hack_shader_pass;
-#endif
 
 #define default_action_ok_func(func_name, lbl) \
 int (func_name)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \

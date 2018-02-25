@@ -2017,7 +2017,6 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
 #endif
 
 
-#ifdef HAVE_SHADER_MANAGER
 static int deferred_push_video_shader_parameters_common(
       menu_displaylist_info_t *info,
       struct video_shader *shader, unsigned base_parameter)
@@ -2042,7 +2041,6 @@ static int deferred_push_video_shader_parameters_common(
 
    return 0;
 }
-#endif
 
 static int menu_displaylist_parse_settings_internal(void *data,
       menu_displaylist_info_t *info,
@@ -6241,7 +6239,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_SHADER_PARAMETERS:
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-#ifdef HAVE_SHADER_MANAGER
          {
             video_shader_ctx_t shader_info;
             video_shader_driver_get_current_shader(&shader_info);
@@ -6265,7 +6262,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             info->need_push = true;
          }
-#endif
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:

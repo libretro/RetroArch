@@ -48,7 +48,6 @@
 
 extern struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END];
 
-#ifdef HAVE_SHADER_MANAGER
 static int generic_shader_action_parameter_left(
       struct video_shader_parameter *param,
       unsigned type, const char *label, bool wraparound)
@@ -77,8 +76,6 @@ static int shader_action_parameter_left(unsigned type, const char *label, bool w
       return menu_cbs_exit();
    return generic_shader_action_parameter_left(param, type, label, wraparound);
 }
-
-#endif
 
 static int action_left_cheat(unsigned type, const char *label,
       bool wraparound)
@@ -229,7 +226,6 @@ static int action_left_mainmenu(unsigned type, const char *label,
 static int action_left_shader_scale_pass(unsigned type, const char *label,
       bool wraparound)
 {
-#ifdef HAVE_SHADER_MANAGER
    unsigned current_scale, delta;
    unsigned pass                         = type -
       MENU_SETTINGS_SHADER_PASS_SCALE_0;
@@ -245,14 +241,12 @@ static int action_left_shader_scale_pass(unsigned type, const char *label,
    shader_pass->fbo.valid   = current_scale;
    shader_pass->fbo.scale_x = current_scale;
    shader_pass->fbo.scale_y = current_scale;
-#endif
    return 0;
 }
 
 static int action_left_shader_filter_pass(unsigned type, const char *label,
       bool wraparound)
 {
-#ifdef HAVE_SHADER_MANAGER
    unsigned delta = 2;
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
    struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(pass);
@@ -261,23 +255,18 @@ static int action_left_shader_filter_pass(unsigned type, const char *label,
       return menu_cbs_exit();
 
    shader_pass->filter = ((shader_pass->filter + delta) % 3);
-#endif
    return 0;
 }
 
 static int action_left_shader_filter_default(unsigned type, const char *label,
       bool wraparound)
 {
-#ifdef HAVE_SHADER_MANAGER
    rarch_setting_t *setting = menu_setting_find_enum(
          MENU_ENUM_LABEL_VIDEO_SMOOTH);
    if (!setting)
       return menu_cbs_exit();
    return menu_action_handle_setting(setting,
          setting_get_type(setting), MENU_ACTION_LEFT, wraparound);
-#else
-   return 0;
-#endif
 }
 
 static int action_left_cheat_num_passes(unsigned type, const char *label,
@@ -298,7 +287,6 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
 static int action_left_shader_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
-#ifdef HAVE_SHADER_MANAGER
    bool refresh      = false;
    struct video_shader *shader = menu_shader_get();
 
@@ -312,7 +300,6 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    video_shader_resolve_parameters(NULL, shader);
 
-#endif
    return 0;
 }
 
@@ -599,7 +586,6 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_LEFT(cbs, action_left_cheat);
    }
-#ifdef HAVE_SHADER_MANAGER
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
@@ -610,7 +596,6 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_LEFT(cbs, shader_action_parameter_left);
    }
-#endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {

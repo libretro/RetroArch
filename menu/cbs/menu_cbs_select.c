@@ -122,7 +122,6 @@ static int action_select_core_setting(const char *path, const char *label, unsig
    return core_setting_right(type, label, true);
 }
 
-#ifdef HAVE_SHADER_MANAGER
 static int shader_action_parameter_select(const char *path, const char *label, unsigned type,
       size_t idx)
 {
@@ -134,7 +133,6 @@ static int shader_action_parameter_preset_select(const char *path, const char *l
 {
    return shader_action_parameter_right(type, label, true);
 }
-#endif
 
 static int action_select_cheat(const char *path, const char *label, unsigned type,
       size_t idx)
@@ -210,7 +208,6 @@ static int menu_cbs_init_bind_select_compare_type(
    {
       BIND_ACTION_SELECT(cbs, action_select_cheat);
    }
-#ifdef HAVE_SHADER_MANAGER
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
@@ -221,7 +218,6 @@ static int menu_cbs_init_bind_select_compare_type(
    {
       BIND_ACTION_SELECT(cbs, shader_action_parameter_preset_select);
    }
-#endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {

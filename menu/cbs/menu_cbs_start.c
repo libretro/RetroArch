@@ -117,9 +117,9 @@ static int action_start_input_desc(unsigned type, const char *label)
    return 0;
 }
 
-static int action_start_shader_action_parameter(unsigned type, const char *label)
+static int action_start_shader_action_parameter(
+      unsigned type, const char *label)
 {
-#ifdef HAVE_SHADER_MANAGER
    video_shader_ctx_t shader_info;
    struct video_shader_parameter *param = NULL;
    unsigned parameter = type - MENU_SETTINGS_SHADER_PARAMETER_0;
@@ -135,9 +135,6 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
    param->current = MIN(MAX(param->minimum, param->current), param->maximum);
 
    return menu_shader_manager_clear_parameter(parameter);
-#else
-   return 0;
-#endif
 }
 
 static int action_start_shader_pass(unsigned type, const char *label)
