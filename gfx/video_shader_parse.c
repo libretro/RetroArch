@@ -497,11 +497,13 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 		  continue;
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-      /* First try to use the more robust slang implementation to support #includes. */
-      /* FIXME: The check for slang can be removed if it's sufficiently tested for
+      /* First try to use the more robust slang 
+       * implementation to support #includes. */
+      /* FIXME: The check for slang can be removed 
+       * if it's sufficiently tested for
        * GLSL/Cg as well, it should be the same implementation. */
       if (string_is_equal(path_get_extension(path), "slang") &&
-            slang_preprocess_parse_parameters(shader->pass[i].source.path, shader))
+            slang_preprocess_parse_parameters(path, shader))
          continue;
 
       /* If that doesn't work, fallback to the old path.
@@ -522,7 +524,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       {
          int ret = sscanf(line,
                "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
-               param->id, param->desc, &param->initial,
+               param->id,        param->desc,    &param->initial,
                &param->minimum, &param->maximum, &param->step);
 
          if (ret < 5)
@@ -535,7 +537,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
             param->step = 0.1f * (param->maximum - param->minimum);
 
          RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f\n",
-               param->desc, param->id, param->initial,
+               param->desc,    param->id,      param->initial,
                param->minimum, param->maximum, param->step);
          param->current = param->initial;
 
