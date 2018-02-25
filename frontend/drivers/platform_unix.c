@@ -1158,57 +1158,40 @@ static enum frontend_powerstate frontend_unix_get_powerstate(
    return ret;
 }
 
-#define UNIX_ARCH_X86_64     0x23dea434U
-#define UNIX_ARCH_X86        0x0b88b8cbU
-#define UNIX_ARCH_ARM        0x0b885ea5U
-#define UNIX_ARCH_PPC64      0x1028cf52U
-#define UNIX_ARCH_MIPS       0x7c9aa25eU
-#define UNIX_ARCH_TILE       0x7c9e7873U
-#define UNIX_ARCH_AARCH64    0x191bfc0eU
-#define UNIX_ARCH_ARMV7B     0xf27015f4U
-#define UNIX_ARCH_ARMV7L     0xf27015feU
-#define UNIX_ARCH_ARMV6L     0xf27015ddU
-#define UNIX_ARCH_ARMV6B     0xf27015d3U
-#define UNIX_ARCH_ARMV5TEB   0x28612995U
-#define UNIX_ARCH_ARMV5TEL   0x4ecca435U
-
 static enum frontend_architecture frontend_unix_get_architecture(void)
 {
    struct utsname buffer;
-   uint32_t buffer_hash   = 0;
    const char *val        = NULL;
 
    if (uname(&buffer) != 0)
       return FRONTEND_ARCH_NONE;
 
    val         = buffer.machine;
-   buffer_hash = djb2_calculate(val);
 
-   switch (buffer_hash)
-   {
-      case UNIX_ARCH_AARCH64:
-         return FRONTEND_ARCH_ARMV8;
-      case UNIX_ARCH_ARMV7L:
-      case UNIX_ARCH_ARMV7B:
-         return FRONTEND_ARCH_ARMV7;
-      case UNIX_ARCH_ARMV6L:
-      case UNIX_ARCH_ARMV6B:
-      case UNIX_ARCH_ARMV5TEB:
-      case UNIX_ARCH_ARMV5TEL:
-         return FRONTEND_ARCH_ARM;
-      case UNIX_ARCH_X86_64:
-         return FRONTEND_ARCH_X86_64;
-      case UNIX_ARCH_X86:
+   if (string_is_equal(hash, "aarch64"))
+      return FRONTEND_ARCH_ARMV8;
+   else if (
+         string_is_equal(hash, "armv7l") ||
+         string_is_equal(hash, "armv7b")
+      )
+      return FRONTEND_ARCH_ARMV7;
+   else if (
+         string_is_equal(hash, "armv6l") ||
+         string_is_equal(hash, "armv6b") ||
+         string_is_equal(hash, "armv5tel") ||
+         string_is_equal(hash, "arm")
+      )
+      return FRONTEND_ARCH_ARM;
+   else if (string_is_equal(hash, "x86_64"))
+      return FRONTEND_ARCH_X86_64;
+   else if (string_is_equal(hash, "x86"))
          return FRONTEND_ARCH_X86;
-      case UNIX_ARCH_ARM:
-         return FRONTEND_ARCH_ARM;
-      case UNIX_ARCH_PPC64:
+   else if (string_is_equal(hash, "ppc64"))
          return FRONTEND_ARCH_PPC;
-      case UNIX_ARCH_MIPS:
+   else if (string_is_equal(hash, "mips"))
          return FRONTEND_ARCH_MIPS;
-      case UNIX_ARCH_TILE:
+   else if (string_is_equal(hash, "tile"))
          return FRONTEND_ARCH_TILE;
-   }
 
    return FRONTEND_ARCH_NONE;
 }
