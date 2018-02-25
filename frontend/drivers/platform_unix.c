@@ -663,22 +663,14 @@ static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
     return true;
 }
 
-#define ACPI_KEY_STATE                 0x10614a06U
-#define ACPI_KEY_PRESENT               0xc28ac046U
-#define ACPI_KEY_CHARGING_STATE        0x5ba13e29U
-#define ACPI_KEY_REMAINING_CAPACITY    0xf36952edU
-#define ACPI_KEY_DESIGN_CAPACITY       0x05e6488dU
-
 #define ACPI_VAL_CHARGING_DISCHARGING  0xf268327aU
-#define ACPI_VAL_CHARGING              0x095ee228U
-#define ACPI_VAL_YES                   0x0b88c316U
 #define ACPI_VAL_ONLINE                0x6842bf17U
 
 static void check_proc_acpi_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
 {
-   const char *base  = proc_acpi_battery_path;
    char path[1024];
+   const char *base  = proc_acpi_battery_path;
    ssize_t length    = 0;
    char         *ptr = NULL;
    char  *buf        = NULL;
@@ -710,33 +702,35 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
 
    while (make_proc_acpi_key_val(&ptr, &key, &val))
    {
-      uint32_t key_hash = djb2_calculate(key);
-      uint32_t val_hash = djb2_calculate(val);
-
-      switch (key_hash)
+      if (string_is_equal(key, "present"))
       {
-         case ACPI_KEY_PRESENT:
-            if (val_hash == ACPI_VAL_YES)
-               *have_battery = true;
-            break;
-         case ACPI_KEY_CHARGING_STATE:
+         if (string_is_equal(val, "yes"))
+            *have_battery = true;
+      }
+      else if (string_is_equal(key, "charging state"))
+      {
+         if (string_is_equal(val, "charging"))
+            charge = true;
+         else
+         {
+            uint32_t val_hash = djb2_calculate(val);
+
             switch (val_hash)
             {
                case ACPI_VAL_CHARGING_DISCHARGING:
-               case ACPI_VAL_CHARGING:
                   charge = true;
                   break;
+               default:
+                  break;
             }
-            break;
-         case ACPI_KEY_REMAINING_CAPACITY:
-            {
-               char  *endptr = NULL;
-               const int cvt = (int)strtol(val, &endptr, 10);
+         }
+      }
+      else if (string_is_equal(key, "remaining capacity"))
+      {
+         char *endptr = NULL;
 
-               if (*endptr == ' ')
-                  remaining = cvt;
-            }
-            break;
+         if (*endptr == ' ')
+            remaining = (int)strtol(val, &endptr, 10);
       }
    }
 
@@ -744,20 +738,11 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
 
    while (make_proc_acpi_key_val(&ptr, &key, &val))
    {
-      uint32_t key_hash = djb2_calculate(key);
+      char      *endptr = NULL;
 
-      switch (key_hash)
-      {
-         case ACPI_KEY_DESIGN_CAPACITY:
-            {
-               char  *endptr = NULL;
-               const int cvt = (int)strtol(val, &endptr, 10);
-
-               if (*endptr == ' ')
-                  maximum = cvt;
-            }
-            break;
-      }
+      if (string_is_equal(key, "design capacity"))
+         if (*endptr == ' ')
+            maximum = (int)strtol(val, &endptr, 10);
    }
 
    if ((maximum >= 0) && (remaining >= 0))
@@ -787,8 +772,8 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
 
    if (choose)
    {
-      *seconds = secs;
-      *percent = pct;
+      *seconds  = secs;
+      *percent  = pct;
       *charging = charge;
    }
 
@@ -881,10 +866,9 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
    ptr = &buf[0];
    while (make_proc_acpi_key_val(&ptr, &key, &val))
    {
-      uint32_t key_hash = djb2_calculate(key);
       uint32_t val_hash = djb2_calculate(val);
 
-      if (key_hash == ACPI_KEY_STATE &&
+      if (string_is_equal(key, "state") &&
             val_hash == ACPI_VAL_ONLINE)
          *have_ac = true;
    }
