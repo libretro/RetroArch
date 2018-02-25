@@ -368,35 +368,36 @@ static void dir_list_prioritize(struct string_list *list)
 database_info_handle_t *database_info_dir_init(const char *dir,
       enum database_type type, retro_task_t *task)
 {
+   struct string_list       *list  = NULL;
    database_info_handle_t     *db  = (database_info_handle_t*)
       calloc(1, sizeof(*db));
 
    if (!db)
       return NULL;
 
-   db->list           = dir_list_new_special(dir, DIR_LIST_RECURSIVE, NULL);
+   list               = dir_list_new_special(dir, DIR_LIST_RECURSIVE, NULL);
 
-   if (!db->list)
-      goto error;
+   if (!list)
+   {
+      free(db);
+      return NULL;
+   }
 
-   dir_list_prioritize(db->list);
+   dir_list_prioritize(list);
 
+   db->list           = list;
    db->list_ptr       = 0;
    db->status         = DATABASE_STATUS_ITERATE;
    db->type           = type;
 
    return db;
-
-error:
-   if (db)
-      free(db);
-   return NULL;
 }
 
 database_info_handle_t *database_info_file_init(const char *path,
       enum database_type type, retro_task_t *task)
 {
    union string_list_elem_attr attr;
+   struct string_list        *list  = NULL;
    database_info_handle_t      *db  = (database_info_handle_t*)
       calloc(1, sizeof(*db));
 
@@ -405,23 +406,22 @@ database_info_handle_t *database_info_file_init(const char *path,
 
    attr.i             = 0;
 
-   db->list           = string_list_new();
+   list               = string_list_new();
 
-   if (!db->list)
-      goto error;
+   if (!list)
+   {
+      free(db);
+      return NULL;
+   }
 
-   string_list_append(db->list, path, attr);
+   string_list_append(list, path, attr);
 
    db->list_ptr       = 0;
+   db->list           = list;
    db->status         = DATABASE_STATUS_ITERATE;
    db->type           = type;
 
    return db;
-
-error:
-   if (db)
-      free(db);
-   return NULL;
 }
 
 void database_info_free(database_info_handle_t *db)
