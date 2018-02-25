@@ -28,6 +28,8 @@ IMPORT(OSSetThreadCleanupCallback);
 IMPORT(OSResumeThread);
 IMPORT(OSIsThreadSuspended);
 IMPORT(OSSuspendThread);
+IMPORT(OSGetCurrentThread);
+IMPORT(OSExitThread);
 IMPORT(OSJoinThread);
 IMPORT(OSYieldThread);
 IMPORT(OSGetCoreId);
