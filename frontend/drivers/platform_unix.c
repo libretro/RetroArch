@@ -1168,29 +1168,29 @@ static enum frontend_architecture frontend_unix_get_architecture(void)
 
    val         = buffer.machine;
 
-   if (string_is_equal(hash, "aarch64"))
+   if (string_is_equal(val, "aarch64"))
       return FRONTEND_ARCH_ARMV8;
    else if (
-         string_is_equal(hash, "armv7l") ||
-         string_is_equal(hash, "armv7b")
+         string_is_equal(val, "armv7l") ||
+         string_is_equal(val, "armv7b")
       )
       return FRONTEND_ARCH_ARMV7;
    else if (
-         string_is_equal(hash, "armv6l") ||
-         string_is_equal(hash, "armv6b") ||
-         string_is_equal(hash, "armv5tel") ||
-         string_is_equal(hash, "arm")
+         string_is_equal(val, "armv6l") ||
+         string_is_equal(val, "armv6b") ||
+         string_is_equal(val, "armv5tel") ||
+         string_is_equal(val, "arm")
       )
       return FRONTEND_ARCH_ARM;
-   else if (string_is_equal(hash, "x86_64"))
+   else if (string_is_equal(val, "x86_64"))
       return FRONTEND_ARCH_X86_64;
-   else if (string_is_equal(hash, "x86"))
+   else if (string_is_equal(val, "x86"))
          return FRONTEND_ARCH_X86;
-   else if (string_is_equal(hash, "ppc64"))
+   else if (string_is_equal(val, "ppc64"))
          return FRONTEND_ARCH_PPC;
-   else if (string_is_equal(hash, "mips"))
+   else if (string_is_equal(val, "mips"))
          return FRONTEND_ARCH_MIPS;
-   else if (string_is_equal(hash, "tile"))
+   else if (string_is_equal(val, "tile"))
          return FRONTEND_ARCH_TILE;
 
    return FRONTEND_ARCH_NONE;
