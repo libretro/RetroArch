@@ -29,7 +29,6 @@
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
 
-#include "../msg_hash.h"
 #include "../verbosity.h"
 #include "../configuration.h"
 #include "../frontend/frontend_driver.h"
@@ -358,10 +357,8 @@ static bool video_shader_parse_textures(config_file_t *conf,
       path_resolve_realpath(tmp_path, path_size);
 
       if (filestream_exists(tmp_path))
-      {
          strlcpy(shader->lut[shader->luts].path,
             tmp_path, sizeof(shader->lut[shader->luts].path));
-      }
       free(tmp_path);
 
       strlcpy(shader->lut[shader->luts].id, id,
@@ -704,9 +701,9 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
       struct video_shader *shader)
 {
    unsigned i;
-   unsigned shaders = 0;
-   settings_t *settings = config_get_ptr();
-   struct string_list *file_list = NULL;
+   unsigned shaders                 = 0;
+   settings_t *settings             = config_get_ptr();
+   struct string_list *file_list    = NULL;
    union string_list_elem_attr attr = {0};
 
    (void)file_list;
@@ -726,7 +723,8 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
       return false;
    }
 
-   if (!config_get_int(conf, "feedback_pass", &shader->feedback_pass))
+   if (!config_get_int(conf, "feedback_pass",
+            &shader->feedback_pass))
       shader->feedback_pass = -1;
 
    shader->passes = MIN(shaders, GFX_MAX_SHADERS);
@@ -734,10 +732,11 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
    if (settings->bools.video_shader_watch_files)
    {
       if (file_change_data)
-         frontend_driver_watch_path_for_changes(NULL, 0, &file_change_data);
+         frontend_driver_watch_path_for_changes(NULL,
+               0, &file_change_data);
 
       file_change_data = NULL;
-      file_list = string_list_new();
+      file_list        = string_list_new();
       string_list_append(file_list, conf->path, attr);
    }
 
@@ -751,17 +750,19 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
       }
 
       if (settings->bools.video_shader_watch_files)
-         string_list_append(file_list, shader->pass[i].source.path, attr);
+         string_list_append(file_list,
+               shader->pass[i].source.path, attr);
    }
 
    if (settings->bools.video_shader_watch_files)
    {
-      int flags = PATH_CHANGE_TYPE_MODIFIED |
+      int flags = PATH_CHANGE_TYPE_MODIFIED          |
                   PATH_CHANGE_TYPE_WRITE_FILE_CLOSED |
-                  PATH_CHANGE_TYPE_FILE_MOVED |
+                  PATH_CHANGE_TYPE_FILE_MOVED        |
                   PATH_CHANGE_TYPE_FILE_DELETED;
 
-      frontend_driver_watch_path_for_changes(file_list, flags, &file_change_data);
+      frontend_driver_watch_path_for_changes(file_list,
+            flags, &file_change_data);
       string_list_free(file_list);
    }
 
@@ -792,8 +793,10 @@ static const char *scale_type_to_str(enum gfx_scale_type type)
    return "?";
 }
 
-static void shader_write_scale_dim(config_file_t *conf, const char *dim,
-      enum gfx_scale_type type, float scale, unsigned absolute, unsigned i)
+static void shader_write_scale_dim(config_file_t *conf,
+      const char *dim,
+      enum gfx_scale_type type, float scale,
+      unsigned absolute, unsigned i)
 {
    char key[64];
 
@@ -824,8 +827,10 @@ static void shader_write_fbo(config_file_t *conf,
    if (!fbo->valid)
       return;
 
-   shader_write_scale_dim(conf, "x", fbo->type_x, fbo->scale_x, fbo->abs_x, i);
-   shader_write_scale_dim(conf, "y", fbo->type_y, fbo->scale_y, fbo->abs_y, i);
+   shader_write_scale_dim(conf, "x", fbo->type_x,
+         fbo->scale_x, fbo->abs_x, i);
+   shader_write_scale_dim(conf, "y", fbo->type_y,
+         fbo->scale_y, fbo->abs_y, i);
 }
 
 /**
@@ -1026,11 +1031,15 @@ void video_shader_write_conf_cgp(config_file_t *conf,
                   shader->lut[i].filter == RARCH_FILTER_LINEAR);
          }
 
-         snprintf(key, sizeof(key), "%s_wrap_mode", shader->lut[i].id);
-         config_set_string(conf, key, wrap_mode_to_str(shader->lut[i].wrap));
+         snprintf(key, sizeof(key),
+               "%s_wrap_mode", shader->lut[i].id);
+         config_set_string(conf, key,
+               wrap_mode_to_str(shader->lut[i].wrap));
 
-         snprintf(key, sizeof(key), "%s_mipmap", shader->lut[i].id);
-         config_set_bool(conf, key, shader->lut[i].mipmap);
+         snprintf(key, sizeof(key),
+               "%s_mipmap", shader->lut[i].id);
+         config_set_bool(conf, key,
+               shader->lut[i].mipmap);
       }
    }
 
@@ -1093,9 +1102,7 @@ bool video_shader_any_supported(void)
       )
       return true;
    return false;
-
 }
-
 
 enum rarch_shader_type video_shader_get_type_from_ext(
       const char *ext, bool *is_preset)
