@@ -5635,20 +5635,21 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
-#ifdef HAVE_SHADERPIPELINE
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.menu_xmb_shader_pipeline,
-                  MENU_ENUM_LABEL_XMB_RIBBON_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-                  menu_shader_pipeline,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, XMB_SHADER_PIPELINE_LAST-1, 1, true, true);
-#endif
+            if (video_shader_any_supported())
+            {
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.menu_xmb_shader_pipeline,
+                     MENU_ENUM_LABEL_XMB_RIBBON_ENABLE,
+                     MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
+                     menu_shader_pipeline,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, XMB_SHADER_PIPELINE_LAST-1, 1, true, true);
+            }
 
             CONFIG_UINT(
                   list, list_info,
@@ -6345,22 +6346,23 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-#ifdef HAVE_SHADER_MANAGER
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.quick_menu_show_shaders,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
-               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-               quick_menu_show_shaders,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-#endif
+         if (video_shader_any_supported())
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.quick_menu_show_shaders,
+                  MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
+                  MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+                  quick_menu_show_shaders,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+         }
 
          CONFIG_BOOL(
                list, list_info,

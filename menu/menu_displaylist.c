@@ -2689,16 +2689,17 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_DISK_OPTIONS,
                MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0);
 
-#ifdef HAVE_SHADER_MANAGER
-      if (settings->bools.quick_menu_show_shaders && !settings->bools.kiosk_mode_enable)
+      if (video_shader_any_supported())
       {
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
-               MENU_ENUM_LABEL_SHADER_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0);
+         if (settings->bools.quick_menu_show_shaders && !settings->bools.kiosk_mode_enable)
+         {
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
+                  MENU_ENUM_LABEL_SHADER_OPTIONS,
+                  MENU_SETTING_ACTION, 0, 0);
+         }
       }
-#endif
 
       if (settings->bools.quick_menu_show_save_core_overrides && !settings->bools.kiosk_mode_enable)
       {
@@ -5213,11 +5214,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS,
                PARSE_ONLY_BOOL, false);
-#ifdef HAVE_SHADER_MANAGER
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
-               PARSE_ONLY_BOOL, false);
-#endif
+         if (video_shader_any_supported())
+            menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
+                  PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
                PARSE_ONLY_BOOL, false);

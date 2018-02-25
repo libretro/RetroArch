@@ -1083,6 +1083,20 @@ bool video_shader_is_supported(enum rarch_shader_type type)
    return false;
 }
 
+bool video_shader_any_supported(void)
+{
+   if (
+         video_shader_is_supported(RARCH_SHADER_SLANG) ||
+         video_shader_is_supported(RARCH_SHADER_HLSL)  ||
+         video_shader_is_supported(RARCH_SHADER_GLSL)  ||
+         video_shader_is_supported(RARCH_SHADER_CG)
+      )
+      return true;
+   return false;
+
+}
+
+
 enum rarch_shader_type video_shader_get_type_from_ext(
       const char *ext, bool *is_preset)
 {

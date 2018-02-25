@@ -39,11 +39,9 @@ static struct video_shader *menu_driver_shader = NULL;
 
 struct video_shader *menu_shader_get(void)
 {
-#ifdef HAVE_SHADER_MANAGER
-   return menu_driver_shader;
-#else
+   if (video_shader_any_supported())
+      return menu_driver_shader;
    return NULL;
-#endif
 }
 
 struct video_shader_parameter *menu_shader_manager_get_parameters(unsigned i)

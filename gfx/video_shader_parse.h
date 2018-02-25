@@ -244,6 +244,8 @@ enum rarch_shader_type video_shader_get_type_from_ext(
 
 bool video_shader_is_supported(enum rarch_shader_type type);
 
+bool video_shader_any_supported(void);
+
 bool video_shader_check_for_changes(void);
 
 RETRO_END_DECLS
