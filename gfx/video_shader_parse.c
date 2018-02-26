@@ -1115,17 +1115,55 @@ enum rarch_shader_type video_shader_get_type_from_ext(
    *is_preset = false;
 
    if (string_is_equal_noncase(ext, "cg"))
+   {
+      switch (api)
+      {
+         case GFX_CTX_DIRECT3D8_API:
+         case GFX_CTX_VULKAN_API:
+            return RARCH_SHADER_NONE;
+         default:
+            break;
+      }
       return RARCH_SHADER_CG;
+   }
    if (string_is_equal_noncase(ext, "cgp"))
    {
       *is_preset = true;
+      switch (api)
+      {
+         case GFX_CTX_DIRECT3D8_API:
+         case GFX_CTX_VULKAN_API:
+            return RARCH_SHADER_NONE;
+         default:
+            break;
+      }
       return RARCH_SHADER_CG;
    }
    if (string_is_equal_noncase(ext, "glsl"))
+   {
+      switch (api)
+      {
+         case GFX_CTX_DIRECT3D8_API:
+         case GFX_CTX_DIRECT3D9_API:
+         case GFX_CTX_VULKAN_API:
+            return RARCH_SHADER_NONE;
+         default:
+            break;
+      }
       return RARCH_SHADER_GLSL;
+   }
    if (string_is_equal_noncase(ext, "glslp"))
    {
       *is_preset = true;
+      switch (api)
+      {
+         case GFX_CTX_DIRECT3D8_API:
+         case GFX_CTX_DIRECT3D9_API:
+         case GFX_CTX_VULKAN_API:
+            return RARCH_SHADER_NONE;
+         default:
+            break;
+      }
       return RARCH_SHADER_GLSL;
    }
    if (string_is_equal_noncase(ext, "slang"))
