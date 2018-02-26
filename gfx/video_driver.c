@@ -768,7 +768,8 @@ static void video_driver_init_input(const input_driver_t *tmp)
 
    /* Video driver didn't provide an input driver,
     * so we use configured one. */
-   RARCH_LOG("[Video]: Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
+   RARCH_LOG("[Video]: Graphics driver did not initialize an input driver."
+         " Attempting to pick a suitable driver.\n");
 
    if (tmp)
       *input = tmp;
@@ -804,14 +805,16 @@ static void video_driver_monitor_compute_fps_statistics(void)
          (2 * MEASURE_FRAME_TIME_SAMPLES_COUNT))
    {
       RARCH_LOG(
-            "[Video]: Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
+            "[Video]: Does not have enough samples for monitor refresh rate"
+            " estimation. Requires to run for at least %u frames.\n",
             2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
       return;
    }
 
    if (video_monitor_fps_statistics(&avg_fps, &stddev, &samples))
    {
-      RARCH_LOG("[Video]: Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
+      RARCH_LOG("[Video]: Average monitor Hz: %.6f Hz. (%.3f %% frame time"
+            " deviation, based on %u last samples).\n",
             avg_fps, 100.0 * stddev, samples);
    }
 }
@@ -3247,7 +3250,8 @@ static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type t
 
             if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
             {
-               RARCH_ERR("[Shader driver]: Cg cannot be used with core GL context. Trying to fall back to GLSL...\n");
+               RARCH_ERR("[Shader driver]: Cg cannot be used with core"
+                     " GL context. Trying to fall back to GLSL...\n");
                return video_shader_set_backend(RARCH_SHADER_GLSL);
             }
 
@@ -3343,7 +3347,8 @@ static struct video_shader *video_shader_driver_get_current_shader_null(void *da
    return NULL;
 }
 
-static void video_shader_driver_set_params_null(void *data, void *shader_data,
+static void video_shader_driver_set_params_null(
+      void *data, void *shader_data,
       unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
       unsigned out_width, unsigned out_height,
@@ -3515,11 +3520,13 @@ bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
 void video_driver_set_coords(video_shader_ctx_coords_t *coords)
 {
    if (current_shader && current_shader->set_coords)
-      current_shader->set_coords(coords->handle_data, shader_data, (const struct video_coords*)coords->data);
+      current_shader->set_coords(coords->handle_data,
+            shader_data, (const struct video_coords*)coords->data);
    else
    {
       if (video_driver_poke && video_driver_poke->set_coords)
-         video_driver_poke->set_coords(coords->handle_data, shader_data, (const struct video_coords*)coords->data);
+         video_driver_poke->set_coords(coords->handle_data,
+               shader_data, (const struct video_coords*)coords->data);
    }
 }
 

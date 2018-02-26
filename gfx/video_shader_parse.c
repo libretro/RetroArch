@@ -86,7 +86,8 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
    else if (string_is_equal(wrap_mode, "mirrored_repeat"))
       return RARCH_WRAP_MIRRORED_REPEAT;
 
-   RARCH_WARN("Invalid wrapping type %s. Valid ones are: clamp_to_border (default), clamp_to_edge, repeat and mirrored_repeat. Falling back to default.\n",
+   RARCH_WARN("Invalid wrapping type %s. Valid ones are: clamp_to_border"
+         " (default), clamp_to_edge, repeat and mirrored_repeat. Falling back to default.\n",
          wrap_mode);
    return RARCH_WRAP_DEFAULT;
 }
@@ -452,7 +453,8 @@ bool video_shader_resolve_current_parameters(config_file_t *conf,
 
       if (!parameter)
       {
-         RARCH_WARN("[CGP/GLSLP]: Parameter %s is set in the preset, but no shader uses this parameter, ignoring.\n", id);
+         RARCH_WARN("[CGP/GLSLP]: Parameter %s is set in the preset,"
+               " but no shader uses this parameter, ignoring.\n", id);
          continue;
       }
 
@@ -701,10 +703,10 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
       struct video_shader *shader)
 {
    unsigned i;
+   union string_list_elem_attr attr;
    unsigned shaders                 = 0;
    settings_t *settings             = config_get_ptr();
    struct string_list *file_list    = NULL;
-   union string_list_elem_attr attr = {0};
 
    (void)file_list;
 
@@ -728,6 +730,7 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
       shader->feedback_pass = -1;
 
    shader->passes = MIN(shaders, GFX_MAX_SHADERS);
+   attr.i         = 0;
 
    if (settings->bools.video_shader_watch_files)
    {
