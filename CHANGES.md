@@ -1,4 +1,5 @@
 # 1.7.2 (future)
+- SHADERS: Prevent crashes from occurring if we have the GL video driver in use and we try to skip to a slang shader through next/previous hotkeys
 
 # 1.7.1
 - 3DS: Now correctly reports amount of CPU cores.
