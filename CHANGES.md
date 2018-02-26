@@ -1,4 +1,6 @@
 # 1.7.2 (future)
+- SHADERS: Hide cg/glsl shaders from being able to be selected if D3D8/9/10/11/Vulkan video drivers are selected.
+- SHADERS: Hide slang shaders from being able to be selected if D3D8/9/OpenGL video drivers are selected.
 - SHADERS: Prevent crashes from occurring if we have the GL video driver in use and we try to skip to a slang shader through next/previous hotkeys
 
 # 1.7.1
