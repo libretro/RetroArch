@@ -1119,6 +1119,9 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       switch (api)
       {
          case GFX_CTX_DIRECT3D8_API:
+         case GFX_CTX_DIRECT3D10_API:
+         case GFX_CTX_DIRECT3D11_API:
+         case GFX_CTX_DIRECT3D12_API:
          case GFX_CTX_VULKAN_API:
             return RARCH_SHADER_NONE;
          default:
@@ -1132,6 +1135,9 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       switch (api)
       {
          case GFX_CTX_DIRECT3D8_API:
+         case GFX_CTX_DIRECT3D10_API:
+         case GFX_CTX_DIRECT3D11_API:
+         case GFX_CTX_DIRECT3D12_API:
          case GFX_CTX_VULKAN_API:
             return RARCH_SHADER_NONE;
          default:
@@ -1145,6 +1151,9 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       {
          case GFX_CTX_DIRECT3D8_API:
          case GFX_CTX_DIRECT3D9_API:
+         case GFX_CTX_DIRECT3D10_API:
+         case GFX_CTX_DIRECT3D11_API:
+         case GFX_CTX_DIRECT3D12_API:
          case GFX_CTX_VULKAN_API:
             return RARCH_SHADER_NONE;
          default:
@@ -1159,6 +1168,9 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       {
          case GFX_CTX_DIRECT3D8_API:
          case GFX_CTX_DIRECT3D9_API:
+         case GFX_CTX_DIRECT3D10_API:
+         case GFX_CTX_DIRECT3D11_API:
+         case GFX_CTX_DIRECT3D12_API:
          case GFX_CTX_VULKAN_API:
             return RARCH_SHADER_NONE;
          default:
