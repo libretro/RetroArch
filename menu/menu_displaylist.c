@@ -3080,29 +3080,26 @@ static int menu_displaylist_parse_options(
          MENU_ENUM_LABEL_UPDATE_OVERLAYS,
          MENU_SETTING_ACTION, 0, 0);
 
-#ifdef HAVE_CG
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS),
-         msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CG_SHADERS),
-         MENU_ENUM_LABEL_UPDATE_CG_SHADERS,
-         MENU_SETTING_ACTION, 0, 0);
-#endif
+   if (video_shader_is_supported(RARCH_SHADER_CG))
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS),
+            msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CG_SHADERS),
+            MENU_ENUM_LABEL_UPDATE_CG_SHADERS,
+            MENU_SETTING_ACTION, 0, 0);
 
-#ifdef HAVE_GLSL
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS),
-         msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS),
-         MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,
-         MENU_SETTING_ACTION, 0, 0);
-#endif
+   if (video_shader_is_supported(RARCH_SHADER_GLSL))
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS),
+            msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS),
+            MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,
+            MENU_SETTING_ACTION, 0, 0);
 
-#ifdef HAVE_SLANG
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS),
-         msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS),
-         MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS,
-         MENU_SETTING_ACTION, 0, 0);
-#endif
+   if (video_shader_is_supported(RARCH_SHADER_SLANG))
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS),
+            msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS),
+            MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS,
+            MENU_SETTING_ACTION, 0, 0);
 
 #else
    menu_entries_append_enum(info->list,
@@ -6621,11 +6618,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
             char new_exts[PATH_MAX_LENGTH];
-            struct string_list *str_list;
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG)
             union string_list_elem_attr attr;
+            struct string_list *str_list    = NULL;
+            bool is_preset                  = false;
             attr.i = 0;
-#endif
 
             new_exts[0] = '\0';
             str_list    = string_list_new();
@@ -6633,15 +6629,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             filebrowser_clear_type();
             info->type_default = FILE_TYPE_SHADER_PRESET;
 
-#ifdef HAVE_CG
-            string_list_append(str_list, "cgp", attr);
-#endif
-#ifdef HAVE_GLSL
-            string_list_append(str_list, "glslp", attr);
-#endif
-#ifdef HAVE_SLANG
-            string_list_append(str_list, "slangp", attr);
-#endif
+            if (video_shader_is_supported(RARCH_SHADER_CG) &&
+                  video_shader_get_type_from_ext("cgp", &is_preset) 
+                  != RARCH_SHADER_NONE)
+               string_list_append(str_list, "cgp", attr);
+
+            if (video_shader_is_supported(RARCH_SHADER_GLSL) &&
+                  video_shader_get_type_from_ext("glslp", &is_preset) 
+                  != RARCH_SHADER_NONE)
+               string_list_append(str_list, "glslp", attr);
+
+            if (video_shader_is_supported(RARCH_SHADER_SLANG) &&
+                  video_shader_get_type_from_ext("slangp", &is_preset) 
+                  != RARCH_SHADER_NONE)
+               string_list_append(str_list, "slangp", attr);
             string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
             if (!string_is_empty(info->exts))
                free(info->exts);
@@ -6654,11 +6655,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
             char new_exts[PATH_MAX_LENGTH];
-            struct string_list *str_list;
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG)
             union string_list_elem_attr attr;
+            struct string_list *str_list    = NULL;
+            bool is_preset                  = false;
+
             attr.i = 0;
-#endif
 
             new_exts[0] = '\0';
             str_list    = string_list_new();
@@ -6667,15 +6668,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             info->type_default = FILE_TYPE_SHADER;
 
 
-#ifdef HAVE_CG
-            string_list_append(str_list, "cg", attr);
-#endif
-#ifdef HAVE_GLSL
-            string_list_append(str_list, "glsl", attr);
-#endif
-#ifdef HAVE_SLANG
-            string_list_append(str_list, "slang", attr);
-#endif
+            if (video_shader_is_supported(RARCH_SHADER_CG) &&
+                  video_shader_get_type_from_ext("cg", &is_preset) 
+                  != RARCH_SHADER_NONE)
+               string_list_append(str_list, "cg", attr);
+
+            if (video_shader_is_supported(RARCH_SHADER_GLSL) &&
+                  video_shader_get_type_from_ext("glsl", &is_preset) 
+                  != RARCH_SHADER_NONE)
+               string_list_append(str_list, "glsl", attr);
+
+            if (video_shader_is_supported(RARCH_SHADER_SLANG) &&
+                  video_shader_get_type_from_ext("slang", &is_preset) 
+                  != RARCH_SHADER_NONE)
+               string_list_append(str_list, "slang", attr);
+
             string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
             if (!string_is_empty(info->exts))
                free(info->exts);
