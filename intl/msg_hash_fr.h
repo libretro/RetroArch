@@ -2684,7 +2684,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-      "Frequency of audio output."
+      "Fréquence de la sortie audio."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
@@ -2744,7 +2744,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-      "Lors de l'hébergement, essayez d'écouter les connexions à partir de l'Internet public, en utilisant UPnP ou des technologies similaires pour échapper aux LAN."
+      "Lors de l'hébergement, essayez d'écouter les connexions à partir d'internet public, en utilisant UPnP ou des technologies similaires pour échapper aux réseaux locaux."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
@@ -2796,9 +2796,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
       "Trier les états de sauvegarde dans les dossiers nommés après le coeur utilisé."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
-      "URL vers le répertoire du programme de mise à jour de base sur le LibreRetro.")
+      "URL vers le répertoire du programme de mise à jour de base sur le Libretro Buildbot.")
 MSG_HASH(MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
-      "URL du répertoire de mise à jour des ressources sur le Libbotro.")
+      "URL du répertoire de mise à jour des ressources sur le Libretro Buildbot.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
       "Après le téléchargement, extraire automatiquement les fichiers contenus dans les archives téléchargées."
       )
@@ -2821,11 +2821,11 @@ MSG_HASH(
       "Activer la configuration personnalisée par défaut au démarrage."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
-      "Activer les options de base personnalisées par défaut au démarrage.")
+      "Activer les options des coeurs personnalisées par défaut au démarrage.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ENABLE,
-      "Affiche le nom de base actuel dans le menu.")
+      "Affiche le nom du coeur actuel dans le menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
-      "Afficher les bases.")
+      "Afficher les bases de données.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
       "Voir les recherches précédentes.")
 MSG_HASH(MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
