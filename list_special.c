@@ -97,9 +97,8 @@ struct string_list *dir_list_new_special(const char *input_dir,
        break;
       case DIR_LIST_SHADERS:
          {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
             union string_list_elem_attr attr;
-#endif
+            bool is_preset                   = false;
             struct string_list *str_list     = string_list_new();
 
             if (!str_list)
@@ -107,22 +106,26 @@ struct string_list *dir_list_new_special(const char *input_dir,
             
             ext_shaders[0]                   = '\0';
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
             attr.i = 0;
-#endif
 
-#ifdef HAVE_CG
-            string_list_append(str_list, "cg", attr);
-            string_list_append(str_list, "cgp", attr);
-#endif
-#ifdef HAVE_GLSL
-            string_list_append(str_list, "glsl", attr);
-            string_list_append(str_list, "glslp", attr);
-#endif
-#ifdef HAVE_VULKAN
-            string_list_append(str_list, "slang", attr);
-            string_list_append(str_list, "slangp", attr);
-#endif
+            if (video_shader_is_supported(RARCH_SHADER_CG) &&
+                  video_shader_get_type_from_ext("cgp", &is_preset))
+               string_list_append(str_list, "cgp", attr);
+            if (video_shader_is_supported(RARCH_SHADER_CG) &&
+                  video_shader_get_type_from_ext("cg", &is_preset))
+               string_list_append(str_list, "cg", attr);
+            if (video_shader_is_supported(RARCH_SHADER_GLSL) &&
+                  video_shader_get_type_from_ext("glsl", &is_preset))
+               string_list_append(str_list, "glsl", attr);
+            if (video_shader_is_supported(RARCH_SHADER_GLSL) &&
+                  video_shader_get_type_from_ext("glslp", &is_preset))
+               string_list_append(str_list, "glslp", attr);
+            if (video_shader_is_supported(RARCH_SHADER_SLANG) &&
+                  video_shader_get_type_from_ext("slang", &is_preset))
+               string_list_append(str_list, "slang", attr);
+            if (video_shader_is_supported(RARCH_SHADER_SLANG) &&
+                  video_shader_get_type_from_ext("slangp", &is_preset))
+               string_list_append(str_list, "slangp", attr);
             string_list_join_concat(ext_shaders, sizeof(ext_shaders), str_list, "|");
             string_list_free(str_list);
             exts = ext_shaders;
