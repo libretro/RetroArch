@@ -610,7 +610,7 @@ static INLINE void gl_set_shader_viewports(gl_t *gl)
    shader_info.idx        = 0;
    shader_info.set_active = true;
 
-   video_shader_driver_use(shader_info);
+   video_shader_driver_use(&shader_info);
 
    gl_set_viewport_wrapper(gl, width, height, false, true);
 
@@ -618,7 +618,7 @@ static INLINE void gl_set_shader_viewports(gl_t *gl)
    shader_info.idx        = 1;
    shader_info.set_active = true;
 
-   video_shader_driver_use(shader_info);
+   video_shader_driver_use(&shader_info);
    gl_set_viewport_wrapper(gl, width, height, false, true);
 }
 
@@ -829,7 +829,7 @@ static void gl_render_osd_background(
    uniform_param.result.f.v2       = colors[2];
    uniform_param.result.f.v3       = colors[3];
 
-   video_shader_driver_set_parameter(uniform_param);
+   video_shader_driver_set_parameter(&uniform_param);
 
    glDrawArrays(GL_TRIANGLES, 0, coords.vertices);
 
@@ -839,7 +839,7 @@ static void gl_render_osd_background(
    uniform_param.result.f.v2       = 0.0f;
    uniform_param.result.f.v3       = 0.0f;
 
-   video_shader_driver_set_parameter(uniform_param);
+   video_shader_driver_set_parameter(&uniform_param);
 
    free(dummy);
    free(verts);

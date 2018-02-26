@@ -408,7 +408,7 @@ static void gl_raster_font_setup_viewport(unsigned width, unsigned height,
    shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_shader_driver_use(shader_info);
+   video_shader_driver_use(&shader_info);
 }
 
 static void gl_raster_font_render_msg(

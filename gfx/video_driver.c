@@ -225,8 +225,8 @@ static gfx_ctx_flags_t deferred_flag_data                = {0};
 
 static enum gfx_ctx_api current_video_context_api        = GFX_CTX_NONE;
 
-shader_backend_t *current_shader                         = NULL;
-void *shader_data                                        = NULL;
+static shader_backend_t *current_shader                  = NULL;
+static void *current_shader_data                         = NULL;
 
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "4:3",           1.3333f },
@@ -2701,7 +2701,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->input_driver_nonblock_state = input_driver_is_nonblock_state();
 
    video_info->context_data           = video_context_data;
-   video_info->shader_data            = shader_data;
+   video_info->shader_data            = current_shader_data;
 
    video_info->cb_update_window_title = current_video_context.update_window_title;
    video_info->cb_swap_buffers        = current_video_context.swap_buffers;
@@ -3276,17 +3276,41 @@ static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type t
    return NULL;
 }
 
-void video_shader_driver_set_parameters(video_shader_ctx_params_t *params)
+void video_shader_driver_use(void *data)
+{
+   if (current_shader && current_shader->use)
+   {
+      video_shader_ctx_info_t *shader_info = 
+         (video_shader_ctx_info_t*)data;
+      current_shader->use(shader_info->data, current_shader_data,
+            shader_info->idx, shader_info->set_active);
+   }
+}
+
+void video_shader_driver_set_parameter(void *data)
+{
+   if (current_shader && current_shader->set_uniform_parameter)
+   {
+      struct uniform_info *param = (struct uniform_info*)data;
+      current_shader->set_uniform_parameter(current_shader_data,
+            param, NULL);
+   }
+}
+
+void video_shader_driver_set_parameters(void *data)
 {
    if (current_shader && current_shader->set_params)
-      current_shader->set_params(params, shader_data);
+   {
+      video_shader_ctx_params_t *params = (video_shader_ctx_params_t*)data;
+      current_shader->set_params(params, current_shader_data);
+   }
 }
 
 bool video_shader_driver_get_prev_textures(video_shader_ctx_texture_t *texture)
 {
    if (!texture || !current_shader)
       return false;
-   texture->id = current_shader->get_prev_textures(shader_data);
+   texture->id = current_shader->get_prev_textures(current_shader_data);
 
    return true;
 }
@@ -3313,7 +3337,7 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 
 bool video_shader_driver_direct_get_current_shader(video_shader_ctx_t *shader)
 {
-   shader->data = current_shader->get_current_shader(shader_data);
+   shader->data = current_shader->get_current_shader(current_shader_data);
 
    return true;
 }
@@ -3324,9 +3348,9 @@ bool video_shader_driver_deinit(void)
       return false;
 
    if (current_shader->deinit)
-      current_shader->deinit(shader_data);
+      current_shader->deinit(current_shader_data);
 
-   shader_data    = NULL;
+   current_shader_data    = NULL;
    current_shader = NULL;
    return true;
 }
@@ -3454,8 +3478,8 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
    if (!tmp)
       return false;
 
-   shader_data    = tmp;
-   current_shader = (shader_backend_t*)init->shader;
+   current_shader_data    = tmp;
+   current_shader         = (shader_backend_t*)init->shader;
    video_shader_driver_reset_to_defaults();
 
    return true;
@@ -3463,12 +3487,12 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
 
 bool video_shader_driver_get_feedback_pass(unsigned *data)
 {
-   return current_shader->get_feedback_pass(shader_data, data);
+   return current_shader->get_feedback_pass(current_shader_data, data);
 }
 
 bool video_shader_driver_mipmap_input(unsigned *index)
 {
-   return current_shader->mipmap_input(shader_data, *index);
+   return current_shader->mipmap_input(current_shader_data, *index);
 }
 
 bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler)
@@ -3478,7 +3502,8 @@ bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler)
 
    scaler->scale->valid = false;
 
-   current_shader->shader_scale(shader_data, scaler->idx, scaler->scale);
+   current_shader->shader_scale(current_shader_data,
+         scaler->idx, scaler->scale);
    return true;
 }
 
@@ -3487,7 +3512,7 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
    if (!shader_info)
       return false;
 
-   shader_info->num = current_shader->num_shaders(shader_data);
+   shader_info->num = current_shader->num_shaders(current_shader_data);
 
    return true;
 }
@@ -3495,7 +3520,7 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
 bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter)
 {
    if (filter)
-      return current_shader->filter_type(shader_data,
+      return current_shader->filter_type(current_shader_data,
             filter->index, filter->smooth);
    return false;
 }
@@ -3511,7 +3536,8 @@ bool video_shader_driver_compile_program(
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
 {
-   wrap->type = current_shader->wrap_type(shader_data, wrap->idx);
+   wrap->type = current_shader->wrap_type(
+         current_shader_data, wrap->idx);
    return true;
 }
 
@@ -3519,12 +3545,12 @@ void video_driver_set_coords(video_shader_ctx_coords_t *coords)
 {
    if (current_shader && current_shader->set_coords)
       current_shader->set_coords(coords->handle_data,
-            shader_data, (const struct video_coords*)coords->data);
+            current_shader_data, (const struct video_coords*)coords->data);
    else
    {
       if (video_driver_poke && video_driver_poke->set_coords)
          video_driver_poke->set_coords(coords->handle_data,
-               shader_data, (const struct video_coords*)coords->data);
+               current_shader_data, (const struct video_coords*)coords->data);
    }
 }
 
@@ -3534,10 +3560,10 @@ void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
       return;
 
    if (current_shader && current_shader->set_mvp)
-      current_shader->set_mvp(mvp->data, shader_data, mvp->matrix);
+      current_shader->set_mvp(mvp->data, current_shader_data, mvp->matrix);
    else
    {
       if (video_driver_poke && video_driver_poke->set_mvp)
-         video_driver_poke->set_mvp(mvp->data, shader_data, mvp->matrix);
+         video_driver_poke->set_mvp(mvp->data, current_shader_data, mvp->matrix);
    }
 }

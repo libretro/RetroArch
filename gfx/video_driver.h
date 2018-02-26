@@ -1270,11 +1270,9 @@ bool video_shader_driver_direct_get_current_shader(video_shader_ctx_t *shader);
 
 bool video_shader_driver_deinit(void);
 
-#define video_shader_driver_set_parameter(param) \
-   if (current_shader && current_shader->set_uniform_parameter) \
-      current_shader->set_uniform_parameter(shader_data, &param, NULL)
+void video_shader_driver_set_parameter(void *data);
 
-void video_shader_driver_set_parameters(video_shader_ctx_params_t *params);
+void video_shader_driver_set_parameters(void *data);
 
 bool video_shader_driver_init_first(void);
 
@@ -1296,15 +1294,11 @@ bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter);
 
 bool video_shader_driver_compile_program(struct shader_program_info *program_info);
 
-#define video_shader_driver_use(shader_info) \
-   current_shader->use(shader_info.data, shader_data, shader_info.idx, shader_info.set_active)
+void video_shader_driver_use(void *data);
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
 
 extern bool (*video_driver_cb_has_focus)(void);
-
-extern shader_backend_t *current_shader;
-extern void *shader_data;
 
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;
