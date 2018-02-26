@@ -1110,6 +1110,8 @@ bool video_shader_any_supported(void)
 enum rarch_shader_type video_shader_get_type_from_ext(
       const char *ext, bool *is_preset)
 {
+   enum gfx_ctx_api api               = video_context_driver_get_api();
+
    *is_preset = false;
 
    if (string_is_equal_noncase(ext, "cg"))
@@ -1127,10 +1129,38 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       return RARCH_SHADER_GLSL;
    }
    if (string_is_equal_noncase(ext, "slang"))
+   {
+      /* TODO/FIXME - once the OpenGL/Direct3D9 drivers
+       * have slang support, we can get rid of this */
+      switch (api)
+      {
+         case GFX_CTX_OPENGL_API:
+         case GFX_CTX_OPENGL_ES_API:
+         case GFX_CTX_DIRECT3D8_API:
+         case GFX_CTX_DIRECT3D9_API:
+            return RARCH_SHADER_NONE;
+         default:
+            break;
+      }
       return RARCH_SHADER_SLANG;
+   }
    if (string_is_equal_noncase(ext, "slangp"))
    {
       *is_preset = true;
+
+      /* TODO/FIXME - once the OpenGL/Direct3D9 drivers
+       * have slang support, we can get rid of these conditionals */
+      switch (api)
+      {
+         case GFX_CTX_OPENGL_API:
+         case GFX_CTX_OPENGL_ES_API:
+         case GFX_CTX_DIRECT3D8_API:
+         case GFX_CTX_DIRECT3D9_API:
+            return RARCH_SHADER_NONE;
+         default:
+            break;
+      }
+
       return RARCH_SHADER_SLANG;
    }
    return RARCH_SHADER_NONE;
