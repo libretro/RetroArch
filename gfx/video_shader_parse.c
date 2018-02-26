@@ -1119,8 +1119,25 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       switch (api)
       {
          case GFX_CTX_DIRECT3D9_API:
+            return RARCH_SHADER_CG;
          case GFX_CTX_OPENGL_API:
          case GFX_CTX_OPENGL_ES_API:
+            {
+               struct retro_hw_render_callback *hwr = 
+                  video_driver_get_hw_context();
+               if (hwr)
+               {
+                  switch (hwr->context_type)
+                  {
+                     case RETRO_HW_CONTEXT_OPENGLES2:
+                     case RETRO_HW_CONTEXT_OPENGL_CORE:
+                     case RETRO_HW_CONTEXT_OPENGLES3:
+                        return RARCH_SHADER_NONE;
+                     default:
+                        break;
+                  }
+               }
+            }
             return RARCH_SHADER_CG;
          default:
             break;
@@ -1132,8 +1149,25 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       switch (api)
       {
          case GFX_CTX_DIRECT3D9_API:
+            return RARCH_SHADER_CG;
          case GFX_CTX_OPENGL_API:
          case GFX_CTX_OPENGL_ES_API:
+            {
+               struct retro_hw_render_callback *hwr = 
+                  video_driver_get_hw_context();
+               if (hwr)
+               {
+                  switch (hwr->context_type)
+                  {
+                     case RETRO_HW_CONTEXT_OPENGLES2:
+                     case RETRO_HW_CONTEXT_OPENGL_CORE:
+                     case RETRO_HW_CONTEXT_OPENGLES3:
+                        return RARCH_SHADER_NONE;
+                     default:
+                        break;
+                  }
+               }
+            }
             return RARCH_SHADER_CG;
          default:
             break;
