@@ -193,7 +193,7 @@ static void hlsl_d3d9_renderchain_set_vertices(
    params.fbo_info      = NULL;
    params.fbo_info_cnt  = 0;
 
-   video_shader_driver_set_parameters(params);
+   video_shader_driver_set_parameters(&params);
 }
 
 static void hlsl_d3d9_renderchain_blit_to_texture(
