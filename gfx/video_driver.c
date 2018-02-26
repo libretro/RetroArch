@@ -947,7 +947,6 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
       video_driver_init_filter(video_driver_pix_fmt);
 
-   command_event(CMD_EVENT_SHADER_DIR_INIT, NULL);
 
    max_dim   = MAX(geom->max_width, geom->max_height);
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
@@ -1111,6 +1110,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video_context_driver_reset();
 
    video_display_server_init();
+
+   command_event(CMD_EVENT_SHADER_DIR_INIT, NULL);
 
    return true;
 
