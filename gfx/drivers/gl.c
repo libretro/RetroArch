@@ -1114,7 +1114,7 @@ static bool gl_frame(void *data, const void *frame,
    params.fbo_info      = NULL;
    params.fbo_info_cnt  = 0;
 
-   video_shader_driver_set_parameters(params);
+   video_shader_driver_set_parameters(&params);
 
    gl->coords.vertices  = 4;
    coords.handle_data   = NULL;

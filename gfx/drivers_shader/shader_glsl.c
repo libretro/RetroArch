@@ -1186,20 +1186,26 @@ static void gl_glsl_set_uniform_parameter(
    }
 }
 
-static void gl_glsl_set_params(void *data, void *shader_data,
-      unsigned width, unsigned height,
-      unsigned tex_width, unsigned tex_height,
-      unsigned out_width, unsigned out_height,
-      unsigned frame_count,
-      const void *_info,
-      const void *_prev_info,
-      const void *_feedback_info,
-      const void *_fbo_info, unsigned fbo_info_cnt)
+static void gl_glsl_set_params(void *dat, void *shader_data)
 {
    unsigned i;
    GLfloat buffer[512];
    struct glsl_attrib attribs[32];
    float input_size[2], output_size[2], texture_size[2];
+   video_shader_ctx_params_t          *params = (video_shader_ctx_params_t*)dat;
+   void *data                                 = params->data;
+   unsigned width                             = params->width;
+   unsigned height                            = params->height;
+   unsigned tex_width                         = params->tex_width;
+   unsigned tex_height                        = params->tex_height;
+   unsigned out_width                         = params->out_width;
+   unsigned out_height                        = params->out_height;
+   unsigned frame_count                       = params->frame_counter;
+   const void *_info                          = params->info;
+   const void *_prev_info                     = params->prev_info;
+   const void *_feedback_info                 = params->feedback_info;
+   const void *_fbo_info                      = params->fbo_info;
+   unsigned fbo_info_cnt                      = params->fbo_info_cnt;
    unsigned                           texunit = 1;
    const struct          shader_uniforms *uni = NULL;
    size_t                                size = 0;

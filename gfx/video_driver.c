@@ -3276,9 +3276,15 @@ static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type t
    return NULL;
 }
 
+void video_shader_driver_set_parameters(video_shader_ctx_params_t *params)
+{
+   if (current_shader && current_shader->set_params)
+      current_shader->set_params(params, shader_data);
+}
+
 bool video_shader_driver_get_prev_textures(video_shader_ctx_texture_t *texture)
 {
-   if (!texture)
+   if (!texture || !current_shader)
       return false;
    texture->id = current_shader->get_prev_textures(shader_data);
 
@@ -3287,7 +3293,7 @@ bool video_shader_driver_get_prev_textures(video_shader_ctx_texture_t *texture)
 
 bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident)
 {
-   if (!ident)
+   if (!ident || !current_shader)
       return false;
    ident->ident = current_shader->ident;
    return true;
@@ -3348,15 +3354,7 @@ static struct video_shader *video_shader_driver_get_current_shader_null(void *da
 }
 
 static void video_shader_driver_set_params_null(
-      void *data, void *shader_data,
-      unsigned width, unsigned height,
-      unsigned tex_width, unsigned tex_height,
-      unsigned out_width, unsigned out_height,
-      unsigned frame_count,
-      const void *info,
-      const void *prev_info,
-      const void *feedback_info,
-      const void *fbo_info, unsigned fbo_info_cnt)
+      void *data, void *shader_data)
 {
 }
 

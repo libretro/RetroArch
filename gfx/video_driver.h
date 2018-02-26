@@ -202,15 +202,7 @@ typedef struct shader_backend
    void (*deinit)(void *data);
 
    /* Set shader parameters. */
-   void (*set_params)(void *data, void *shader_data,
-         unsigned width, unsigned height,
-         unsigned tex_width, unsigned tex_height,
-         unsigned out_width, unsigned out_height,
-         unsigned frame_counter,
-         const void *info,
-         const void *prev_info,
-         const void *feedback_info,
-         const void *fbo_info, unsigned fbo_info_cnt);
+   void (*set_params)(void *data, void *shader_data);
 
    void (*set_uniform_parameter)(void *data, struct uniform_info *param,
          void *uniform_data);
@@ -1282,8 +1274,7 @@ bool video_shader_driver_deinit(void);
    if (current_shader && current_shader->set_uniform_parameter) \
       current_shader->set_uniform_parameter(shader_data, &param, NULL)
 
-#define video_shader_driver_set_parameters(params) \
-   current_shader->set_params(params.data, shader_data, params.width, params.height, params.tex_width, params.tex_height, params.out_width, params.out_height, params.frame_counter, params.info, params.prev_info, params.feedback_info, params.fbo_info, params.fbo_info_cnt)
+void video_shader_driver_set_parameters(video_shader_ctx_params_t *params);
 
 bool video_shader_driver_init_first(void);
 

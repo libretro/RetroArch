@@ -406,7 +406,7 @@ static void gl2_renderchain_render(
       params.fbo_info      = fbo_tex_info;
       params.fbo_info_cnt  = fbo_tex_info_cnt;
 
-      video_shader_driver_set_parameters(params);
+      video_shader_driver_set_parameters(&params);
 
       gl->coords.vertices = 4;
 
@@ -479,7 +479,7 @@ static void gl2_renderchain_render(
    params.fbo_info      = fbo_tex_info;
    params.fbo_info_cnt  = fbo_tex_info_cnt;
 
-   video_shader_driver_set_parameters(params);
+   video_shader_driver_set_parameters(&params);
 
    gl->coords.vertex    = gl->vertex_ptr;
 

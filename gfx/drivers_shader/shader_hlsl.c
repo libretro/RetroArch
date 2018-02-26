@@ -162,18 +162,24 @@ static void hlsl_set_uniform_parameter(
    }
 }
 
-static void hlsl_set_params(void *data, void *shader_data,
-      unsigned width, unsigned height,
-      unsigned tex_width, unsigned tex_height,
-      unsigned out_width, unsigned out_height,
-      unsigned frame_counter,
-      const void *_info,
-      const void *_prev_info,
-      const void *_feedback_info,
-      const void *_fbo_info, unsigned fbo_info_cnt)
+static void hlsl_set_params(void *dat, void *shader_data)
 {
    float ori_size[2], tex_size[2], out_size[2];
-   float frame_cnt                        = frame_counter;
+   video_shader_ctx_params_t      *params = (video_shader_ctx_params_t*)dat;
+   void *data                             = params->data;
+   unsigned width                         = params->width;
+   unsigned height                        = params->height;
+   unsigned tex_width                     = params->tex_width;
+   unsigned tex_height                    = params->tex_height;
+   unsigned out_width                     = params->out_width;
+   unsigned out_height                    = params->out_height;
+   unsigned frame_count                   = params->frame_counter;
+   const void *_info                      = params->info;
+   const void *_prev_info                 = params->prev_info;
+   const void *_feedback_info             = params->feedback_info;
+   const void *_fbo_info                  = params->fbo_info;
+   unsigned fbo_info_cnt                  = params->fbo_info_cnt;
+   float frame_cnt                        = frame_count;
    const struct video_tex_info *info      = (const struct video_tex_info*)_info;
    const struct video_tex_info *prev_info = (const struct video_tex_info*)_prev_info;
    const struct video_tex_info *fbo_info  = (const struct video_tex_info*)_fbo_info;

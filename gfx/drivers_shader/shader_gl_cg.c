@@ -307,23 +307,29 @@ static void gl_cg_set_texture_info(
       gl_cg_set_coord_array(params->coord, cg, info->coord, 2);
 }
 
-static void gl_cg_set_params(void *data, void *shader_data,
-      unsigned width, unsigned height,
-      unsigned tex_width, unsigned tex_height,
-      unsigned out_width, unsigned out_height,
-      unsigned frame_count,
-      const void *_info,
-      const void *_prev_info,
-      const void *_feedback_info,
-      const void *_fbo_info,
-      unsigned fbo_info_cnt)
+static void gl_cg_set_params(void *dat, void *shader_data)
 {
    unsigned i;
+   video_shader_ctx_params_t          *params = 
+      (video_shader_ctx_params_t*)dat;
+   void *data                                 = params->data;
+   unsigned width                             = params->width;
+   unsigned height                            = params->height;
+   unsigned tex_width                         = params->tex_width;
+   unsigned tex_height                        = params->tex_height;
+   unsigned out_width                         = params->out_width;
+   unsigned out_height                        = params->out_height;
+   unsigned frame_count                       = params->frame_counter;
+   const void *_info                          = params->info;
+   const void *_prev_info                     = params->prev_info;
+   const void *_feedback_info                 = params->feedback_info;
+   const void *_fbo_info                      = params->fbo_info;
+   unsigned fbo_info_cnt                      = params->fbo_info_cnt;
    const struct video_tex_info *info          = (const struct video_tex_info*)_info;
    const struct video_tex_info *prev_info     = (const struct video_tex_info*)_prev_info;
    const struct video_tex_info *feedback_info = (const struct video_tex_info*)_feedback_info;
    const struct video_tex_info *fbo_info      = (const struct video_tex_info*)_fbo_info;
-   cg_shader_data_t *cg                = (cg_shader_data_t*)shader_data;
+   cg_shader_data_t *cg                       = (cg_shader_data_t*)shader_data;
 
    if (!cg || (cg->active_idx == 0))
          return;
