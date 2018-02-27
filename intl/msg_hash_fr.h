@@ -404,7 +404,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
-      "Charger un fichier de triche"
+      "Charger un fichier de codes de triche."
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
@@ -2744,7 +2744,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-      "Lors de l'hébergement, essayez d'écouter les connexions à partir d'internet public, en utilisant UPnP ou des technologies similaires pour échapper aux réseaux locaux."
+      "Lors de l'hébergement, essayez d'écouter les connexions à partir d'internet, en utilisant UPnP ou des technologies similaires pour échapper aux réseaux locaux."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
@@ -3003,10 +3003,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
       "Les modifications apportées à la configuration des shaders prendront effet immédiatement. Utilisez ceci si vous avez changé la quantité de passes de shader, le filtrage, l'échelle FBO, etc..")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
-      "Augmentez ou diminuez la quantité de passages de pipeline de shader. Vous pouvez lier un shader séparé à chaque passe de pipeline et configurer son échelle et son filtrage."
+      "Augmente ou diminue la quantité de liaison de shader. Vous pouvez lier un shader pour chaque liaison et configurer son échelle et son filtrage."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
-      "Charger un preset de shader. Le pipeline de shader sera automatiquement configuré.")
+      "Charger un préréglage de shader. La liaison avec celui-ci sera automatiquement configuré..")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
       "Enregistrer les paramètres de shader actuels en tant que nouveau préréglage de shader.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
@@ -3019,24 +3019,24 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
       "Modifie le préréglage du shader lui-même actuellement utilisé dans le menu.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
-      "Augmenter ou diminuer la quantité de triche."
+      "Augmenter ou diminuer la quantité de codes de triche."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
-      "Les changements de triche prendront effet immédiatement.")
+      "Les changements de codes de triche prendront effet immédiatement..")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
       "Charger un fichier de triche."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
-      "Enregistrer les cheats actuels en tant que fichier de sauvegarde."
+      "Enregistrer les codes de triche actuels en tant que fichier de sauvegarde.."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
       "Accédez rapidement à tous les paramètres de jeu pertinents.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INFORMATION,
       "Voir les informations relatives à l'application/coeur.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-      "Valeur de virgule flottante pour le rapport d'aspect vidéo (largeur/hauteur), utilisée si le rapport d'aspect est défini sur "Config".")
+      "Valeur de virgule flottante pour le rapport vidéo (largeur/hauteur), utilisé si le celui-ci est défini sur "configuration".")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
       "Hauteur de la fenêtre d'affichage personnalisée utilisée si le rapport d'aspect est défini sur "Personnalisé".")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -3048,11 +3048,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
       "Utiliser le serveur relais")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-      "Transférer les connexions via un serveur man-in-the-middle. Utile si l'hôte est derrière un pare-feu ou a des problèmes NAT/UPnP.")
+      "Transférer les connexions netplay via un serveur intermédiaire. Utile si l'hôte posséde un pare-feu ou a des problèmes NAT/UPnP..")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
-      "Ajouter au mixeur")
+      "Ajouter au mixeur et à la collection")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
-      "Ajouter au mixeur")
+      "Ajouter au mixeur et à la collection")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
       "Filtrer par coeur actuel")
 MSG_HASH(
@@ -3069,10 +3069,10 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-      "Muter Audio Mixeur"
+      "Rendre muer le mixeur audio"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-      "Muter/réactiver mixer audio.")
+      "Rendre muer/réactiver le mixeur audio.")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
       "Afficher la mise à jour en ligne")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
@@ -3080,7 +3080,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
       "Afficher les mises à jour des cœurs")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-      "Afficher/masquer la possibilité de mettre à jour les cœurs (et les fichiers d'informations de base).")
+      "Afficher/masquer la possibilité de mettre à jour les coeurs (et les fichiers d'informations de ceux-ci).")
 MSG_HASH(MSG_PREPARING_FOR_CONTENT_SCAN,
       "Préparation à l'analyse du contenu ...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -3098,7 +3098,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
       "Favoris")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-      "Le contenu que vous avez ajouté à "Favoris" apparaîtra ici.")
+      "Le contenu que vous avez ajouté aux "Favoris" apparaîtra ici.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
       "Musique")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_MUSIC,
@@ -3172,9 +3172,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
       "Afficher l'état de sauvegarde/chargement")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-      "Afficher/masquer les options sauvegarde/chargement.")
+      "Afficher/masquer les options de sauvegarde/chargement.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-      "Afficher l'état annuler l'état de sauvegarde/chargement")
+      "Afficher l'état de l'annulation de sauvegarde/chargement")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
       "Afficher/masquer les options pour annuler l'état de sauvegarde/chargement.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
@@ -3182,7 +3182,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "Afficher/masquer l'option 'Ajouter aux favoris'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
-      "Afficher options")
+      "Afficher les options")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
       "Afficher/masquer l'option 'Options'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
@@ -3190,7 +3190,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
       "Afficher/masquer l'option 'Contrôles'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-      "Afficher codes de triche")
+      "Afficher les codes de triches")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
       "Afficher/masquer l'option 'Codes de triche'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
@@ -3202,9 +3202,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
       "Afficher/masquer l'option 'Enregistrer les remplacements de Coeurs'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-      "Afficher les remplacements de jeu")
+      "Afficher les remplacements de sauvegarde de jeu")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-      "Afficher/masquer l'option "Enregistrer les remplacements".")
+      "Afficher/masquer l'option "Remplacements des sauvegardes de jeux".")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
       "Montrer l'information")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
@@ -3220,7 +3220,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
       "Définir le mot de passe pour désactiver le mode Kiosque")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
-      "La fourniture d'un mot de passe lors de l'activation du mode kiosque permet de le désactiver ultérieurement dans le menu, en allant dans le menu principal, en sélectionnant Désactiver le mode Kiosque et en entrant le mot de passe.")
+      "Fournir un mot de passe quand l'on active le mode kiosque fait qu'il est possible de le désactiver ultérieurement depuis le menu, en allant dans le menu principale, puis en sélectionnant désactiver le mode kiosque et en entrant le mot de passe.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD,
       "Entrer le mot de passe")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
