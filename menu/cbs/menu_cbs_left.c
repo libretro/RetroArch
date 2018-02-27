@@ -61,6 +61,7 @@ static int generic_shader_action_parameter_left(
 static int shader_action_parameter_left(unsigned type, const char *label, bool wraparound)
 {
    video_shader_ctx_t shader_info;
+   struct video_shader *shader          = menu_shader_get();
    struct video_shader_parameter *param = NULL;
 
    video_shader_driver_get_current_shader(&shader_info);
@@ -70,8 +71,8 @@ static int shader_action_parameter_left(unsigned type, const char *label, bool w
       return menu_cbs_exit();
    generic_shader_action_parameter_left(param, type, label, wraparound);
 
-   param = menu_shader_manager_get_parameters(
-         type - MENU_SETTINGS_SHADER_PARAMETER_0);
+   param = shader ? &shader->parameters[type - 
+      MENU_SETTINGS_SHADER_PARAMETER_0] : NULL;
    if (!param)
       return menu_cbs_exit();
    return generic_shader_action_parameter_left(param, type, label, wraparound);
@@ -229,7 +230,8 @@ static int action_left_shader_scale_pass(unsigned type, const char *label,
    unsigned current_scale, delta;
    unsigned pass                         = type -
       MENU_SETTINGS_SHADER_PASS_SCALE_0;
-   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(pass);
+   struct video_shader *shader           = menu_shader_get();
+   struct video_shader_pass *shader_pass = shader ? &shader->pass[pass] : NULL;
 
    if (!shader_pass)
       return menu_cbs_exit();
@@ -249,7 +251,8 @@ static int action_left_shader_filter_pass(unsigned type, const char *label,
 {
    unsigned delta = 2;
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(pass);
+   struct video_shader *shader           = menu_shader_get();
+   struct video_shader_pass *shader_pass = shader ? &shader->pass[pass] : NULL;
 
    if (!shader_pass)
       return menu_cbs_exit();
@@ -289,11 +292,12 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
 {
    bool refresh      = false;
    struct video_shader *shader = menu_shader_get();
+   unsigned pass_count         = shader ? shader->passes : 0;
 
    if (!shader)
       return menu_cbs_exit();
 
-   if (menu_shader_manager_get_amount_passes())
+   if (pass_count > 0)
       menu_shader_manager_decrement_amount_passes();
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);

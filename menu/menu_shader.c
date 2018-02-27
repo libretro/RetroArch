@@ -44,36 +44,6 @@ struct video_shader *menu_shader_get(void)
    return NULL;
 }
 
-struct video_shader_parameter *menu_shader_manager_get_parameters(unsigned i)
-{
-   struct video_shader *shader = menu_shader_get();
-
-   if (!shader)
-      return NULL;
-
-   return &shader->parameters[i];
-}
-
-struct video_shader_pass *menu_shader_manager_get_pass(unsigned i)
-{
-   struct video_shader *shader = menu_shader_get();
-
-   if (!shader)
-      return NULL;
-
-   return &shader->pass[i];
-}
-
-unsigned menu_shader_manager_get_amount_passes(void)
-{
-   struct video_shader *shader = menu_shader_get();
-
-   if (!shader)
-      return 0;
-
-   return shader->passes;
-}
-
 void menu_shader_manager_decrement_amount_passes(void)
 {
    struct video_shader *shader = menu_shader_get();
@@ -444,8 +414,9 @@ int menu_shader_manager_clear_num_passes(void)
 
 int menu_shader_manager_clear_parameter(unsigned i)
 {
-   struct video_shader_parameter *param =
-      menu_shader_manager_get_parameters(i);
+   struct video_shader *shader          = menu_shader_get();
+   struct video_shader_parameter *param = shader ?
+      &shader->parameters[i] : NULL;
 
    if (!param)
       return 0;
@@ -459,8 +430,9 @@ int menu_shader_manager_clear_parameter(unsigned i)
 
 int menu_shader_manager_clear_pass_filter(unsigned i)
 {
-   struct video_shader_pass *shader_pass =
-      menu_shader_manager_get_pass(i);
+   struct video_shader *shader           = menu_shader_get();
+   struct video_shader_pass *shader_pass = shader ?
+      &shader->pass[i] : NULL;
 
    if (!shader_pass)
       return -1;
@@ -472,8 +444,9 @@ int menu_shader_manager_clear_pass_filter(unsigned i)
 
 void menu_shader_manager_clear_pass_scale(unsigned i)
 {
-   struct video_shader_pass *shader_pass =
-      menu_shader_manager_get_pass(i);
+   struct video_shader *shader           = menu_shader_get();
+   struct video_shader_pass *shader_pass = shader ?
+      &shader->pass[i] : NULL;
 
    if (!shader_pass)
       return;
@@ -485,8 +458,9 @@ void menu_shader_manager_clear_pass_scale(unsigned i)
 
 void menu_shader_manager_clear_pass_path(unsigned i)
 {
-   struct video_shader_pass *shader_pass =
-      menu_shader_manager_get_pass(i);
+   struct video_shader *shader           = menu_shader_get();
+   struct video_shader_pass *shader_pass = shader ?
+      &shader->pass[i] : NULL;
 
    if (shader_pass)
       *shader_pass->source.path = '\0';

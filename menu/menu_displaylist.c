@@ -1363,7 +1363,8 @@ error:
 static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
 {
    unsigned i;
-   unsigned pass_count = menu_shader_manager_get_amount_passes();
+   struct video_shader *shader = menu_shader_get();
+   unsigned pass_count         = shader ? shader->passes : 0;
 
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES),

@@ -160,8 +160,8 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
       const char *path,
       char *s2, size_t len2)
 {
-   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(
-         type - MENU_SETTINGS_SHADER_PASS_FILTER_0);
+   struct video_shader *shader           = menu_shader_get();
+   struct video_shader_pass *shader_pass = shader ? &shader->pass[type - MENU_SETTINGS_SHADER_PASS_FILTER_0] : NULL;
 
    *s = '\0';
    *w = 19;
@@ -374,10 +374,13 @@ static void menu_action_setting_disp_set_label_shader_num_passes(
       const char *path,
       char *s2, size_t len2)
 {
+   struct video_shader *shader = menu_shader_get();
+   unsigned pass_count         = shader ? shader->passes : 0;
+
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
-   snprintf(s, len, "%u", menu_shader_manager_get_amount_passes());
+   snprintf(s, len, "%u", pass_count);
 }
 
 static void menu_action_setting_disp_set_label_shader_pass(
@@ -389,8 +392,8 @@ static void menu_action_setting_disp_set_label_shader_pass(
       const char *path,
       char *s2, size_t len2)
 {
-   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(
-         type - MENU_SETTINGS_SHADER_PASS_0);
+   struct video_shader *shader           = menu_shader_get();
+   struct video_shader_pass *shader_pass = shader ? &shader->pass[type - MENU_SETTINGS_SHADER_PASS_0] : NULL;
 
    *s = '\0';
    *w = 19;
@@ -468,9 +471,10 @@ static void menu_action_setting_disp_set_label_shader_preset_parameter(
       const char *path,
       char *s2, size_t len2)
 {
-   const struct video_shader_parameter *param =
-      menu_shader_manager_get_parameters(
-            type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
+   struct video_shader *shader          = menu_shader_get();
+   struct video_shader_parameter *param = shader ?
+      &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0] 
+      : NULL;
 
    *s = '\0';
    *w = 19;
@@ -490,10 +494,10 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned pass               = 0;
-   unsigned scale_value        = 0;
-   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(
-         type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
+   unsigned pass                         = 0;
+   unsigned scale_value                  = 0;
+   struct video_shader *shader           = menu_shader_get();
+   struct video_shader_pass *shader_pass = shader ? &shader->pass[type - MENU_SETTINGS_SHADER_PASS_SCALE_0] : NULL;
 
    *s = '\0';
    *w = 19;
