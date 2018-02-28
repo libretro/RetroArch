@@ -76,6 +76,7 @@ struct sthread
 {
 #ifdef USE_WIN32_THREADS
    HANDLE thread;
+   DWORD id;
 #else
    pthread_t id;
 #endif
@@ -161,9 +162,7 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    bool thread_created      = false;
    struct thread_data *data = NULL;
    sthread_t *thread        = (sthread_t*)calloc(1, sizeof(*thread));
-#if defined(_WIN32_WINNT) && _WIN32_WINNT <= 0x0410
-   DWORD thread_id          = 0;
-#endif
+
    if (!thread)
       return NULL;
 
@@ -175,11 +174,7 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    data->userdata = userdata;
 
 #ifdef USE_WIN32_THREADS
-#if defined(_WIN32_WINNT) && _WIN32_WINNT <= 0x0410
-   thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, &thread_id);
-#else
-   thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, NULL);
-#endif
+   thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, &thread->id);
    thread_created = !!thread->thread;
 #else
 #if defined(VITA)
@@ -259,10 +254,11 @@ void sthread_join(sthread_t *thread)
 bool sthread_isself(sthread_t *thread)
 {
   /* This thread can't possibly be a null thread */
-  if (!thread) return false;
+  if (!thread)
+     return false;
 
 #ifdef USE_WIN32_THREADS
-   return GetCurrentThread() == thread->thread;
+   return GetCurrentThreadId() == thread->id;
 #else
    return pthread_equal(pthread_self(),thread->id);
 #endif
