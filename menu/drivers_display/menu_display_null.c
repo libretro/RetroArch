@@ -97,4 +97,5 @@ menu_display_ctx_driver_t menu_display_ctx_null = {
    menu_display_null_font_init_first,
    MENU_VIDEO_DRIVER_GENERIC,
    "menu_display_null",
+   false
 };

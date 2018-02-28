@@ -360,4 +360,5 @@ menu_display_ctx_driver_t menu_display_ctx_vulkan = {
    menu_display_vk_font_init_first,
    MENU_VIDEO_DRIVER_VULKAN,
    "menu_display_vulkan",
+   false
 };

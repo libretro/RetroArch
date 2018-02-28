@@ -1015,11 +1015,15 @@ void menu_display_draw_texture_slice(
 void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw,
       video_frame_info_t *video_info)
 {
-#if !defined(VITA) && !defined(_3DS) && !defined(WIIU)
    math_matrix_4x4 matrix_rotated, matrix_scaled;
    math_matrix_4x4 *b = NULL;
 
-   if (!draw || !menu_disp || !menu_disp->get_default_mvp)
+   if (
+         !draw                       || 
+         !menu_disp                  || 
+         !menu_disp->get_default_mvp || 
+         menu_disp->handles_transform
+      )
       return;
 
    b = (math_matrix_4x4*)menu_disp->get_default_mvp(video_info);
@@ -1036,7 +1040,6 @@ void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw,
    matrix_4x4_scale(matrix_scaled,
          draw->scale_x, draw->scale_y, draw->scale_z);
    matrix_4x4_multiply(*draw->matrix, matrix_scaled, *draw->matrix);
-#endif
 }
 
 bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw)

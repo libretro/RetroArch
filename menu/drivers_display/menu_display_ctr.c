@@ -208,4 +208,5 @@ menu_display_ctx_driver_t menu_display_ctx_ctr = {
    menu_display_ctr_font_init_first,
    MENU_VIDEO_DRIVER_CTR,
    "menu_display_ctr",
+   true
 };

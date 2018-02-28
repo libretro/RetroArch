@@ -340,4 +340,5 @@ menu_display_ctx_driver_t menu_display_ctx_wiiu = {
    menu_display_wiiu_font_init_first,
    MENU_VIDEO_DRIVER_WIIU,
    "menu_display_wiiu",
+   true
 };

@@ -346,6 +346,7 @@ typedef struct menu_display_ctx_driver
          bool is_threaded);
    enum menu_display_driver_type type;
    const char *ident;
+   bool handles_transform;
 } menu_display_ctx_driver_t;
 
 
