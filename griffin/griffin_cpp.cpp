@@ -13,10 +13,6 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#define HAVE_SHADERS 1
-#endif
-
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
 #define HAVE_COMPRESSION 1
 #endif

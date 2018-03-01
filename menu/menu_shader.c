@@ -530,7 +530,7 @@ void menu_shader_manager_apply_changes(void)
    }
 
    /* Fall-back */
-   shader_type = video_shader_parse_type("", DEFAULT_SHADER_TYPE);
+   shader_type = DEFAULT_SHADER_TYPE;
 
    if (shader_type == RARCH_SHADER_NONE)
    {
