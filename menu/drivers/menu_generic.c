@@ -34,6 +34,7 @@ static enum action_iterate_type action_iterate_type(const char *label)
    if (string_is_equal(label, "info_screen"))
       return ITERATE_TYPE_INFO;
    if (
+         string_is_equal(label, "help") ||
          string_is_equal(label, "help_controls") ||
          string_is_equal(label, "help_what_is_a_core") ||
          string_is_equal(label, "help_loading_content") ||

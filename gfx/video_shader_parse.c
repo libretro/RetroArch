@@ -1243,49 +1243,16 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback)
 {
    bool is_preset                     = false;
-   enum rarch_shader_type shader_type = RARCH_SHADER_NONE;
-   enum gfx_ctx_api api               = video_context_driver_get_api();
-   bool cg_supported                  = video_shader_is_supported(
-         RARCH_SHADER_CG);
-   const char *ext                    = NULL;
 
    if (!path)
-      return fallback;
-
-   ext                                = path_get_extension(path);
-   shader_type                        = video_shader_get_type_from_ext(
-         ext, &is_preset);
-
-   switch (api)
    {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-         if (shader_type == RARCH_SHADER_GLSL
-            || (cg_supported && shader_type == RARCH_SHADER_CG))
-            return shader_type;
-         break;
-      case GFX_CTX_DIRECT3D9_API:
-         if (cg_supported && shader_type == RARCH_SHADER_CG)
-            return shader_type;
-         break;
-      case GFX_CTX_DIRECT3D11_API:
-      case GFX_CTX_DIRECT3D12_API:
-      case GFX_CTX_VULKAN_API:
-      case GFX_CTX_GX2_API:
-         if (shader_type == RARCH_SHADER_SLANG)
-            return shader_type;
-         break;
-      case GFX_CTX_GDI_API:
-      case GFX_CTX_OPENVG_API:
-      case GFX_CTX_DIRECT3D8_API:
-      case GFX_CTX_NONE:
-      default:
-         break;
+      RARCH_WARN("Rendering context is incompatible with shader type: %s\n",
+            path);
+      return fallback;
    }
 
-   RARCH_WARN("Rendering context is incompatible with shader type: %s\n",
-         path);
-   return fallback;
+   return  video_shader_get_type_from_ext(path_get_extension(path),
+         &is_preset);
 }
 
 /**
