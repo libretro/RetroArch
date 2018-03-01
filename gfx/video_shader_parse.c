@@ -1195,7 +1195,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
    }
    if (
          string_is_equal(ext, "glslp") ||
-         string_is_equal(ext, "GLSLP") ||
+         string_is_equal(ext, "GLSLP")
          )
    {
       *is_preset = true;
