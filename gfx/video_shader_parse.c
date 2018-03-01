@@ -1114,7 +1114,10 @@ enum rarch_shader_type video_shader_get_type_from_ext(
 
    *is_preset           = false;
 
-   if (string_is_equal_noncase(ext, "cg"))
+   if (
+         string_is_equal(ext, "cg") ||
+         string_is_equal(ext, "CG")
+         )
    {
       switch (api)
       {
@@ -1143,7 +1146,10 @@ enum rarch_shader_type video_shader_get_type_from_ext(
             break;
       }
    }
-   if (string_is_equal_noncase(ext, "cgp"))
+   if (
+         string_is_equal(ext, "cgp") ||
+         string_is_equal(ext, "CGP")
+         )
    {
       *is_preset = true;
       switch (api)
@@ -1173,7 +1179,10 @@ enum rarch_shader_type video_shader_get_type_from_ext(
             break;
       }
    }
-   if (string_is_equal_noncase(ext, "glsl"))
+   if (
+         string_is_equal(ext, "glsl") ||
+         string_is_equal(ext, "GLSL")
+         )
    {
       switch (api)
       {
@@ -1184,7 +1193,10 @@ enum rarch_shader_type video_shader_get_type_from_ext(
             break;
       }
    }
-   if (string_is_equal_noncase(ext, "glslp"))
+   if (
+         string_is_equal(ext, "glslp") ||
+         string_is_equal(ext, "GLSLP") ||
+         )
    {
       *is_preset = true;
       switch (api)
@@ -1196,7 +1208,10 @@ enum rarch_shader_type video_shader_get_type_from_ext(
             break;
       }
    }
-   if (string_is_equal_noncase(ext, "slang"))
+   if (
+         string_is_equal(ext, "slang") ||
+         string_is_equal(ext, "SLANG")
+         )
    {
       switch (api)
       {
@@ -1209,7 +1224,10 @@ enum rarch_shader_type video_shader_get_type_from_ext(
             break;
       }
    }
-   if (string_is_equal_noncase(ext, "slangp"))
+   if (
+         string_is_equal(ext, "slang") ||
+         string_is_equal(ext, "SLANG")
+         )
    {
       *is_preset = true;
 
