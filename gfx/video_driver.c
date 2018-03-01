@@ -586,19 +586,24 @@ static void video_context_driver_reset(void)
    if (current_video_context.has_focus)
       video_driver_cb_has_focus                 = video_context_has_focus;
 
-
-   if(current_video_context_api == GFX_CTX_NONE)
+   if (current_video_context_api == GFX_CTX_NONE)
    {
       const char *video_driver = video_driver_get_ident();
 
-      if(string_is_equal(video_driver, "d3d10"))
+      if (string_is_equal(video_driver, "d3d9"))
+         current_video_context_api = GFX_CTX_DIRECT3D9_API;
+      else if (string_is_equal(video_driver, "d3d10"))
          current_video_context_api = GFX_CTX_DIRECT3D10_API;
-      else if(string_is_equal(video_driver, "d3d11"))
+      else if (string_is_equal(video_driver, "d3d11"))
          current_video_context_api = GFX_CTX_DIRECT3D11_API;
-      else if(string_is_equal(video_driver, "d3d12"))
+      else if (string_is_equal(video_driver, "d3d12"))
          current_video_context_api = GFX_CTX_DIRECT3D12_API;
-      else if(string_is_equal(video_driver, "gx2"))
+      else if (string_is_equal(video_driver, "gx2"))
          current_video_context_api = GFX_CTX_GX2_API;
+      else if (string_is_equal(video_driver, "gl"))
+         current_video_context_api = GFX_CTX_OPENGL_API;
+      else if (string_is_equal(video_driver, "vulkan"))
+         current_video_context_api = GFX_CTX_VULKAN_API;
    }
 }
 
@@ -981,7 +986,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    }
    else
    {
-      if(settings->uints.video_window_x || settings->uints.video_window_y)
+      if (settings->uints.video_window_x || settings->uints.video_window_y)
       {
          width  = settings->uints.video_window_x;
          height = settings->uints.video_window_y;
