@@ -1245,12 +1245,7 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
    bool is_preset                     = false;
 
    if (!path)
-   {
-      RARCH_WARN("Rendering context is incompatible with shader type: %s\n",
-            path);
       return fallback;
-   }
-
    return  video_shader_get_type_from_ext(path_get_extension(path),
          &is_preset);
 }
