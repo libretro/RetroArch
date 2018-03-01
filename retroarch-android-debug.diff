@@ -1,0 +1,37 @@
+diff --git a/pkg/android/phoenix/AndroidManifest.xml b/pkg/android/phoenix/AndroidManifest.xml
+index ce2114c..12d8fbb 100644
+--- a/pkg/android/phoenix/AndroidManifest.xml
++++ b/pkg/android/phoenix/AndroidManifest.xml
+@@ -21,7 +21,8 @@
+         android:label="RetroArch"
+         android:hasCode="true"
+         android:isGame="true"
+-        android:banner="@drawable/banner">
++        android:banner="@drawable/banner"
++        android:debuggable="true">
+         <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
+         <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true" android:launchMode="singleInstance">
+             <intent-filter>
+diff --git a/pkg/android/phoenix/build.xml b/pkg/android/phoenix/build.xml
+index 9698a04..6b2c101 100644
+--- a/pkg/android/phoenix/build.xml
++++ b/pkg/android/phoenix/build.xml
+@@ -96,7 +96,7 @@
+               <replaceregexp
+                       file="AndroidManifest.xml"
+                       match="(android:debuggable=&#34;).*(&#34;)"
+-                      replace="\1false\2"/>
++                      replace="\1true\2"/>
+           </else>
+        </if>
+        <exec executable="${ndk.dir}/${ndk.cmd}" failonerror="true">
+diff --git a/pkg/android/phoenix/jni/Application.mk b/pkg/android/phoenix/jni/Application.mk
+index b179dbf..84ade89 100644
+--- a/pkg/android/phoenix/jni/Application.mk
++++ b/pkg/android/phoenix/jni/Application.mk
+@@ -1,3 +1,5 @@
++APP_OPTIM := debug
++
+ ifeq ($(GLES),3)
+    ifndef NDK_GL_HEADER_VER
+       APP_PLATFORM := android-18
