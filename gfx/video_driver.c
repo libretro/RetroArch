@@ -3212,6 +3212,8 @@ enum gfx_ctx_api video_context_driver_get_api(void)
          return GFX_CTX_DIRECT3D12_API;
       else if (string_is_equal(video_driver, "gx2"))
          return GFX_CTX_GX2_API;
+      else if (string_is_equal(video_driver, "gx"))
+         return GFX_CTX_GX_API;
       else if (string_is_equal(video_driver, "gl"))
          return GFX_CTX_OPENGL_API;
       else if (string_is_equal(video_driver, "vulkan"))
