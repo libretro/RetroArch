@@ -1,4 +1,5 @@
 # 1.7.2 (future)
+- MENU: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
 - SHADERS: If GL context is GLES2/3/Core context, Cg shaders are unavailable. Applies to shader list too.
 - SHADERS: Hide cg/glsl shaders from being able to be selected if D3D8/9/10/11/Vulkan video drivers are selected.
 - SHADERS: Hide slang shaders from being able to be selected if D3D8/9/OpenGL video drivers are selected.
