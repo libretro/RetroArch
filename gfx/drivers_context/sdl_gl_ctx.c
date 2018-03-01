@@ -380,7 +380,6 @@ static void sdl_ctx_swap_buffers(void *data, void *data2)
 #else
    SDL_GL_SwapBuffers();
 #endif
-   (void)data;
 }
 
 static void sdl_ctx_input_driver(void *data,

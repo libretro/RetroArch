@@ -650,7 +650,8 @@ static void gfx_ctx_vc_swap_buffers(void *data, void *data2)
 
    egl_swap_buffers(&vc->egl);
 
-   /* Wait for vsync immediately if we don't want egl_swap_buffers to triple-buffer */
+   /* Wait for vsync immediately if we don't 
+    * want egl_swap_buffers to triple-buffer */
    if (video_info->max_swapchain_images <= 2)
    {
       /* We DON'T wait to wait without callback function ready! */
