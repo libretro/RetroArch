@@ -302,7 +302,7 @@ static unsigned menu_font_color_green = 255;
 static unsigned menu_font_color_blue = 255;
 static unsigned xmb_icon_theme   = XMB_ICON_THEME_MONOCHROME;
 static unsigned xmb_theme        = XMB_THEME_ELECTRIC_BLUE;
-#ifdef HAVE_LAKKA
+#if defined(HAVE_LAKKA) || defined(__arm__) || defined(__PPC64__) || defined(__ppc64__) || defined(__powerpc64__) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
 static bool xmb_shadows_enable   = false;
 #else
 static bool xmb_shadows_enable   = true;
