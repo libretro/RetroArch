@@ -1043,6 +1043,11 @@ static gfx_ctx_proc_t gfx_ctx_x_get_proc_address(const char *symbol)
    return NULL;
 }
 
+static enum gfx_ctx_api gfx_ctx_x_get_api(void *data)
+{
+   return x_api;
+}
+
 static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
       unsigned major, unsigned minor)
 {
@@ -1187,6 +1192,7 @@ static void gfx_ctx_x_make_current(bool release)
 const gfx_ctx_driver_t gfx_ctx_x = {
    gfx_ctx_x_init,
    gfx_ctx_x_destroy,
+   gfx_ctx_x_get_api,
    gfx_ctx_x_bind_api,
    gfx_ctx_x_swap_interval,
    gfx_ctx_x_set_video_mode,

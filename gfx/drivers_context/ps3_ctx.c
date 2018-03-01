@@ -45,6 +45,8 @@ typedef struct gfx_ctx_ps3_data
 #endif
 } gfx_ctx_ps3_data_t;
 
+static enum gfx_ctx_api ps3_api = GFX_CTX_NONE;
+
 static void gfx_ctx_ps3_get_resolution(unsigned idx,
       unsigned *width, unsigned *height)
 {
@@ -317,6 +319,11 @@ static void gfx_ctx_ps3_input_driver(void *data,
    *input_data          = ps3input;
 }
 
+static enum gfx_ctx_api gfx_ctx_ps3_get_api(void *data)
+{
+   return ps3_api;
+}
+
 static bool gfx_ctx_ps3_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -324,7 +331,15 @@ static bool gfx_ctx_ps3_bind_api(void *data,
    (void)major;
    (void)minor;
 
-   return api == GFX_CTX_OPENGL_API || GFX_CTX_OPENGL_ES_API;
+   ps3_api = api;
+
+   if (
+         api == GFX_CTX_OPENGL_API ||
+         api == GFX_CTX_OPENGL_ES_API
+      )
+      return true;
+
+   return false;
 }
 
 static void gfx_ctx_ps3_get_video_output_size(void *data,
@@ -398,6 +413,7 @@ static void gfx_ctx_ps3_set_flags(void *data, uint32_t flags)
 const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_init,
    gfx_ctx_ps3_destroy,
+   gfx_ctx_ps3_get_api,
    gfx_ctx_ps3_bind_api,
    gfx_ctx_ps3_set_swap_interval,
    gfx_ctx_ps3_set_video_mode,

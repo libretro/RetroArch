@@ -75,7 +75,7 @@ typedef struct
    VGImage vgimage[MAX_EGLIMAGE_TEXTURES];
 } vc_ctx_data_t;
 
-static enum gfx_ctx_api vc_api;
+static enum gfx_ctx_api vc_api = GFX_CTX_NONE;
 static PFNEGLCREATEIMAGEKHRPROC peglCreateImageKHR;
 static PFNEGLDESTROYIMAGEKHRPROC peglDestroyImageKHR;
 
@@ -357,6 +357,11 @@ static bool gfx_ctx_vc_set_video_mode(void *data,
 #endif
 
    return true;
+}
+
+stati bool gfx_ctx_api gfx_ctx_vc_get_api(void *data)
+{
+   return vc_api;
 }
 
 static bool gfx_ctx_vc_bind_api(void *data,
@@ -701,6 +706,7 @@ static void gfx_ctx_vc_set_flags(void *data, uint32_t flags)
 const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_init,
    gfx_ctx_vc_destroy,
+   gfx_ctx_vc_get_api,
    gfx_ctx_vc_bind_api,
    gfx_ctx_vc_set_swap_interval,
    gfx_ctx_vc_set_video_mode,
@@ -728,5 +734,4 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_bind_hw_render,
    NULL,
    NULL
-
 };

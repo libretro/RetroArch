@@ -47,6 +47,7 @@ typedef struct
 
 static int emscripten_initial_width;
 static int emscripten_initial_height;
+static enum gfx_ctx_api emscripten_api = GFX_CTX_NONE;
 
 static void gfx_ctx_emscripten_swap_interval(void *data, unsigned interval)
 {
@@ -254,12 +255,19 @@ static bool gfx_ctx_emscripten_set_video_mode(void *data,
    return true;
 }
 
+static enum gfx_ctx_api gfx_ctx_emscripten_get_api(void *data)
+{
+   return emscripten_api;
+}
+
 static bool gfx_ctx_emscripten_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    (void)major;
    (void)minor;
+
+   emscripten_api = api;
 
    switch (api)
    {
@@ -363,6 +371,7 @@ static void gfx_ctx_emscripten_set_flags(void *data, uint32_t flags)
 const gfx_ctx_driver_t gfx_ctx_emscripten = {
    gfx_ctx_emscripten_init,
    gfx_ctx_emscripten_destroy,
+   gfx_ctx_emscripten_get_api,
    gfx_ctx_emscripten_bind_api,
    gfx_ctx_emscripten_swap_interval,
    gfx_ctx_emscripten_set_video_mode,

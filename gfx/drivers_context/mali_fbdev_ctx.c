@@ -209,12 +209,21 @@ static void gfx_ctx_mali_fbdev_input_driver(void *data,
    *input_data = NULL;
 }
 
+static enum gfx_ctx_api gfx_ctx_mali_fbdev_get_api(void *data)
+{
+   return mali_api;
+}
+
 static bool gfx_ctx_mali_fbdev_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    mali_api = api;
-   return api == GFX_CTX_OPENGL_ES_API;
+
+   if (api == GFX_CTX_OPENGL_ES_API)
+      return true;
+
+   return false;
 }
 
 static bool gfx_ctx_mali_fbdev_has_focus(void *data)
@@ -280,6 +289,7 @@ static void gfx_ctx_mali_fbdev_set_flags(void *data, uint32_t flags)
 const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_init,
    gfx_ctx_mali_fbdev_destroy,
+   gfx_ctx_mali_fbdev_get_api,
    gfx_ctx_mali_fbdev_bind_api,
    gfx_ctx_mali_fbdev_set_swap_interval,
    gfx_ctx_mali_fbdev_set_video_mode,

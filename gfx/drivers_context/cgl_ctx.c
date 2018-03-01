@@ -54,6 +54,8 @@ extern CGLError CGLSetSurface(CGLContextObj gl, CGSConnectionID cid, CGSWindowID
 }
 #endif
 
+static enum gfx_ctx_api cgl_api = GFX_CTX_NONE;
+
 typedef struct gfx_ctx_cgl_data
 {
    CGLContextObj glCtx;
@@ -171,6 +173,11 @@ static bool gfx_ctx_cgl_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
+static enum gfx_ctx_api gfx_ctx_cgl_get_api(void *data)
+{
+   return cgl_api;
+}
+
 static bool gfx_ctx_cgl_bind_api(void *data, enum gfx_ctx_api api,
    unsigned major, unsigned minor)
 {
@@ -179,7 +186,13 @@ static bool gfx_ctx_cgl_bind_api(void *data, enum gfx_ctx_api api,
    (void)major;
    (void)minor;
 
-   return api == GFX_CTX_OPENGL_API;
+   if (api == GFX_CTX_OPENGL_API)
+   {
+      cgl_api = api;
+      return true;
+   }
+
+   return false;
 }
 
 static void gfx_ctx_cgl_show_mouse(void *data, bool state)
@@ -325,6 +338,7 @@ static void gfx_ctx_cgl_set_flags(void *data, uint32_t flags)
 const gfx_ctx_driver_t gfx_ctx_cgl = {
    gfx_ctx_cgl_init,
    gfx_ctx_cgl_destroy,
+   gfx_ctx_cgl_get_api,
    gfx_ctx_cgl_bind_api,
    gfx_ctx_cgl_swap_interval,
    gfx_ctx_cgl_set_video_mode,

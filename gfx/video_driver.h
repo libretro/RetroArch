@@ -480,6 +480,8 @@ typedef struct gfx_ctx_driver
    void* (*init)(video_frame_info_t *video_info, void *video_driver);
    void (*destroy)(void *data);
 
+   enum gfx_ctx_api (*get_api)(void *data);
+
    /* Which API to bind to. */
    bool (*bind_api)(void *video_driver, enum gfx_ctx_api,
          unsigned major, unsigned minor);

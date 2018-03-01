@@ -49,7 +49,7 @@ typedef struct
    bool should_reset_mode;
 } xegl_ctx_data_t;
 
-static enum gfx_ctx_api x_api = GFX_CTX_NONE;
+static enum gfx_ctx_api xegl_api = GFX_CTX_NONE;
 
 static int x_nul_handler(Display *dpy, XErrorEvent *event)
 {
@@ -144,7 +144,7 @@ static void *gfx_ctx_xegl_init(video_frame_info_t *video_info, void *video_drive
    if (!xegl)
       return NULL;
 
-   switch (x_api)
+   switch (xegl_api)
    {
       case GFX_CTX_OPENGL_API:
          attrib_ptr = egl_attribs_gl;
@@ -190,7 +190,7 @@ error:
 
 static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 {
-   switch (x_api)
+   switch (xegl_api)
    {
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
@@ -452,12 +452,17 @@ static bool gfx_ctx_xegl_has_windowed(void *data)
    return true;
 }
 
+static enum gfx_ctx_api gfx_ctx_xegl_get_api(void *data)
+{
+   return xegl_api;
+}
+
 static bool gfx_ctx_xegl_bind_api(void *video_driver,
    enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    g_egl_major  = major;
    g_egl_minor  = minor;
-   x_api        = api;
+   xegl_api     = api;
 
    switch (api)
    {
@@ -494,7 +499,7 @@ static void gfx_ctx_xegl_swap_buffers(void *data, void *data2)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 
-   switch (x_api)
+   switch (xegl_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
@@ -512,7 +517,7 @@ static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 
-   switch (x_api)
+   switch (xegl_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
@@ -531,7 +536,7 @@ static void gfx_ctx_xegl_set_swap_interval(void *data, unsigned swap_interval)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 
-   switch (x_api)
+   switch (xegl_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
@@ -547,7 +552,7 @@ static void gfx_ctx_xegl_set_swap_interval(void *data, unsigned swap_interval)
 
 static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
 {
-   switch (x_api)
+   switch (xegl_api)
    {
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
@@ -582,6 +587,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
 {
    gfx_ctx_xegl_init,
    gfx_ctx_xegl_destroy,
+   gfx_ctx_xegl_get_api,
    gfx_ctx_xegl_bind_api,
    gfx_ctx_xegl_set_swap_interval,
    gfx_ctx_xegl_set_video_mode,

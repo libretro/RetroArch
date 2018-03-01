@@ -48,6 +48,8 @@ static int            g_osmesa_format  = OSMESA_RGBA;
 static int            g_osmesa_bpp     = 4;
 static const char    *g_osmesa_fifo    = "/tmp/osmesa-retroarch.sock";
 
+static enum gfx_ctx_api osmesa_api     = GFX_CTX_NONE;
+
 typedef struct gfx_osmesa_ctx_data
 {
    uint8_t *screen;
@@ -209,12 +211,19 @@ static void osmesa_ctx_destroy(void *data)
    free(osmesa);
 }
 
-static bool osmesa_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major,
-                             unsigned minor)
+static enum gfx_ctx_api osmesa_ctx_get_api(void *data)
+{
+   return osmesa_api;
+}
+
+static bool osmesa_ctx_bind_api(void *data,
+      enum gfx_ctx_api api, unsigned major,
+      unsigned minor)
 {
    if (api != GFX_CTX_OPENGL_API)
       return false;
 
+   osmesa_api       = api;
    g_osmesa_profile = OSMESA_COMPAT_PROFILE;
 
    if (major)
@@ -384,6 +393,7 @@ const gfx_ctx_driver_t gfx_ctx_osmesa =
 {
    osmesa_ctx_init,
    osmesa_ctx_destroy,
+   osmesa_ctx_get_api,
    osmesa_ctx_bind_api,
    osmesa_ctx_swap_interval,
    osmesa_ctx_set_video_mode,

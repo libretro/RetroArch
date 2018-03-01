@@ -60,6 +60,8 @@ typedef struct
    bool resize;
 } qnx_ctx_data_t;
 
+static enum gfx_ctx_api qnx_api = GFX_CTX_NONE;
+
 static void gfx_ctx_qnx_destroy(void *data)
 {
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
@@ -330,11 +332,22 @@ static void gfx_ctx_qnx_input_driver(void *data,
    *input_data          = qnxinput;
 }
 
+static enum gfx_ctx_api gfx_ctx_qnx_get_api(void *data)
+{
+   return qnx_api;
+}
+
 static bool gfx_ctx_qnx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
-   return api == GFX_CTX_OPENGL_ES_API;
+
+   qnx_api = api;
+
+   if (api == GFX_CTX_OPENGL_ES_API)
+      return true;
+
+   return false;
 }
 
 static bool gfx_ctx_qnx_has_focus(void *data)
@@ -453,6 +466,7 @@ static void gfx_ctx_qnx_set_flags(void *data, uint32_t flags)
 const gfx_ctx_driver_t gfx_ctx_qnx = {
    gfx_ctx_qnx_init,
    gfx_ctx_qnx_destroy,
+   gfx_ctx_qnx_get_api,
    gfx_ctx_qnx_bind_api,
    gfx_ctx_qnx_set_swap_interval,
    gfx_ctx_qnx_set_video_mode,

@@ -104,6 +104,11 @@ static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
 static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll */
 #endif
 
+typedef struct gfx_ctx_cgl_data
+{
+   void *empty;
+} gfx_ctx_wgl_data_t;
+
 static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 {
    switch (win32_api)
@@ -460,12 +465,14 @@ static void gfx_ctx_wgl_get_video_size(void *data,
 
 static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver)
 {
-   WNDCLASSEX wndclass = {0};
+   WNDCLASSEX wndclass     = {0};
+   gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)calloc(1, sizeof(*wgl));
 
-   (void)video_driver;
+   if (!wgl)
+      return NULL;
 
    if (g_inited)
-      return NULL;
+      goto error;
 
 #ifdef HAVE_DYNAMIC
    dll_handle = dylib_load("OpenGL32.dll");
@@ -476,14 +483,14 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
 
    wndclass.lpfnWndProc   = WndProcGL;
    if (!win32_window_init(&wndclass, true, NULL))
-           return NULL;
+      goto error;
 
    switch (win32_api)
    {
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
          if (!vulkan_context_init(&win32_vk, VULKAN_WSI_WIN32))
-            return NULL;
+            goto error;
 #endif
          break;
       case GFX_CTX_NONE:
@@ -491,14 +498,18 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
          break;
    }
 
-   return (void*)"wgl";
+   return wgl;
+
+error:
+   if (wgl)
+      free(wgl);
+   return NULL;
 }
 
 static void gfx_ctx_wgl_destroy(void *data)
 {
-   HWND     window  = win32_get_window();
-
-   (void)data;
+   HWND            window  = win32_get_window();
+   gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)data;
 
    switch (win32_api)
    {
@@ -556,6 +567,9 @@ static void gfx_ctx_wgl_destroy(void *data)
 #ifdef HAVE_DYNAMIC
    dylib_close(dll_handle);
 #endif
+
+   if (wgl)
+      free(wgl);
 
    win32_core_hw_context_enable = false;
    g_inited                     = false;
@@ -641,6 +655,11 @@ static bool gfx_ctx_wgl_get_metrics(void *data,
 	enum display_metric_types type, float *value)
 {
    return win32_get_metrics(data, type, value);
+}
+
+static enum gfx_ctx_api gfx_ctx_wgl_get_api(void *data)
+{
+   return win32_api;
 }
 
 static bool gfx_ctx_wgl_bind_api(void *data,
@@ -734,6 +753,7 @@ static void gfx_ctx_wgl_get_video_output_next(void *data)
 const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_init,
    gfx_ctx_wgl_destroy,
+   gfx_ctx_wgl_get_api,
    gfx_ctx_wgl_bind_api,
    gfx_ctx_wgl_swap_interval,
    gfx_ctx_wgl_set_video_mode,

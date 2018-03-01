@@ -789,16 +789,21 @@ static bool gfx_ctx_drm_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
+static enum gfx_ctx_api gfx_ctx_drm_get_api(void *data)
+{
+   return drm_api;
+}
+
 static bool gfx_ctx_drm_bind_api(void *video_driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)video_driver;
 
+   drm_api     = api;
 #ifdef HAVE_EGL
    g_egl_major = major;
    g_egl_minor = minor;
 #endif
-   drm_api     = api;
 
    switch (api)
    {

@@ -48,6 +48,11 @@ static unsigned         win32_gdi_minor       = 0;
 static unsigned         win32_gdi_interval    = 0;
 static enum gfx_ctx_api win32_gdi_api         = GFX_CTX_NONE;
 
+typedef struct gfx_ctx_gdi_data
+{
+   void *empty;
+} gfx_ctx_gdi_data_t;
+
 void *dinput_gdi;
 
 static void setup_gdi_pixel_format(HDC hdc)
@@ -130,19 +135,21 @@ static void gfx_ctx_gdi_get_video_size(void *data,
 static void *gfx_ctx_gdi_init(
       video_frame_info_t *video_info, void *video_driver)
 {
-   WNDCLASSEX wndclass = {0};
+   WNDCLASSEX wndclass     = {0};
+   gfx_ctx_gdi_data_t *gdi = (gfx_ctx_gdi_data_t*)calloc(1, sizeof(*gdi));
 
-   (void)video_driver;
+   if (!gdi)
+      return NULL;
 
    if (g_inited)
-      return NULL;
+      goto error;
 
    win32_window_reset();
    win32_monitor_init();
 
    wndclass.lpfnWndProc   = WndProcGDI;
    if (!win32_window_init(&wndclass, true, NULL))
-           return NULL;
+      goto error;
 
    switch (win32_gdi_api)
    {
@@ -151,14 +158,18 @@ static void *gfx_ctx_gdi_init(
          break;
    }
 
-   return (void*)"gdi";
+   return gdi;
+
+error:
+   if (gdi)
+      free(gdi);
+   return NULL;
 }
 
 static void gfx_ctx_gdi_destroy(void *data)
 {
-   HWND     window  = win32_get_window();
-
-   (void)data;
+   gfx_ctx_gdi_data_t *gdi = (gfx_ctx_gdi_data_t*)data;
+   HWND     window         = win32_get_window();
 
    switch (win32_gdi_api)
    {
@@ -184,6 +195,9 @@ static void gfx_ctx_gdi_destroy(void *data)
       win32_monitor_get_info();
       g_restore_desktop     = false;
    }
+
+   if (gdi)
+      free(gdi);
 
    g_inited                     = false;
    win32_gdi_major                  = 0;
@@ -271,6 +285,11 @@ static bool gfx_ctx_gdi_get_metrics(void *data,
    return win32_get_metrics(data, type, value);
 }
 
+static enum gfx_ctx_api gfx_ctx_gdi_get_api(void *data)
+{
+   return win32_gdi_api;
+}
+
 static bool gfx_ctx_gdi_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -328,6 +347,7 @@ void create_gdi_context(HWND hwnd, bool *quit)
 const gfx_ctx_driver_t gfx_ctx_gdi = {
    gfx_ctx_gdi_init,
    gfx_ctx_gdi_destroy,
+   gfx_ctx_gdi_get_api,
    gfx_ctx_gdi_bind_api,
    gfx_ctx_gdi_swap_interval,
    gfx_ctx_gdi_set_video_mode,

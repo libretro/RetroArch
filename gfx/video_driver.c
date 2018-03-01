@@ -223,8 +223,6 @@ static void *video_context_data                          = NULL;
 static bool deferred_video_context_driver_set_flags      = false;
 static gfx_ctx_flags_t deferred_flag_data                = {0};
 
-static enum gfx_ctx_api current_video_context_api        = GFX_CTX_NONE;
-
 static shader_backend_t *current_shader                  = NULL;
 static void *current_shader_data                         = NULL;
 
@@ -627,8 +625,6 @@ void video_context_driver_destroy(void)
    current_video_context.bind_hw_render             = NULL;
    current_video_context.get_context_data           = NULL;
    current_video_context.make_current               = NULL;
-
-   current_video_context_api = GFX_CTX_NONE;
 }
 
 /**
@@ -2890,8 +2886,6 @@ static const gfx_ctx_driver_t *video_context_driver_init(
 
       video_context_driver_set_data(ctx_data);
 
-      current_video_context_api = api;
-
       return ctx;
    }
 
@@ -3202,27 +3196,31 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
 
 enum gfx_ctx_api video_context_driver_get_api(void)
 {
-   if (current_video_context_api == GFX_CTX_NONE)
+   enum gfx_ctx_api ctx_api = video_context_data ? 
+      current_video_context.get_api(video_context_data) : GFX_CTX_NONE;
+
+   if (ctx_api == GFX_CTX_NONE)
    {
       const char *video_driver = video_driver_get_ident();
-
       if (string_is_equal(video_driver, "d3d9"))
-         current_video_context_api = GFX_CTX_DIRECT3D9_API;
+         return GFX_CTX_DIRECT3D9_API;
       else if (string_is_equal(video_driver, "d3d10"))
-         current_video_context_api = GFX_CTX_DIRECT3D10_API;
+         return GFX_CTX_DIRECT3D10_API;
       else if (string_is_equal(video_driver, "d3d11"))
-         current_video_context_api = GFX_CTX_DIRECT3D11_API;
+         return GFX_CTX_DIRECT3D11_API;
       else if (string_is_equal(video_driver, "d3d12"))
-         current_video_context_api = GFX_CTX_DIRECT3D12_API;
+         return GFX_CTX_DIRECT3D12_API;
       else if (string_is_equal(video_driver, "gx2"))
-         current_video_context_api = GFX_CTX_GX2_API;
+         return GFX_CTX_GX2_API;
       else if (string_is_equal(video_driver, "gl"))
-         current_video_context_api = GFX_CTX_OPENGL_API;
+         return GFX_CTX_OPENGL_API;
       else if (string_is_equal(video_driver, "vulkan"))
-         current_video_context_api = GFX_CTX_VULKAN_API;
+         return GFX_CTX_VULKAN_API;
+
+      return GFX_CTX_NONE;
    }
 
-   return current_video_context_api;
+   return ctx_api;
 }
 
 bool video_driver_has_windowed(void)

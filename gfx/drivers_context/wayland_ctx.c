@@ -1198,6 +1198,11 @@ static bool gfx_ctx_wl_has_windowed(void *data)
    return true;
 }
 
+static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data)
+{
+   return wl_api;
+}
+
 static bool gfx_ctx_wl_bind_api(void *video_driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -1205,6 +1210,7 @@ static bool gfx_ctx_wl_bind_api(void *video_driver,
    g_egl_major = major;
    g_egl_minor = minor;
 #endif
+   wl_api      = api;
 
    switch (api)
    {
@@ -1214,7 +1220,6 @@ static bool gfx_ctx_wl_bind_api(void *video_driver,
          if ((major * 1000 + minor) >= 3001)
             return false;
 #endif
-         wl_api = api;
          return eglBindAPI(EGL_OPENGL_API);
 #else
          break;
@@ -1225,21 +1230,18 @@ static bool gfx_ctx_wl_bind_api(void *video_driver,
          if (major >= 3)
             return false;
 #endif
-         wl_api = api;
          return eglBindAPI(EGL_OPENGL_ES_API);
 #else
          break;
 #endif
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_VG
-         wl_api = api;
          return eglBindAPI(EGL_OPENVG_API);
 #else
          break;
 #endif
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         wl_api = api;
          return true;
 #else
          break;
@@ -1370,6 +1372,7 @@ static void gfx_ctx_wl_show_mouse(void *data, bool state)
 const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_init,
    gfx_ctx_wl_destroy,
+   gfx_ctx_wl_get_api,
    gfx_ctx_wl_bind_api,
    gfx_ctx_wl_set_swap_interval,
    gfx_ctx_wl_set_video_mode,

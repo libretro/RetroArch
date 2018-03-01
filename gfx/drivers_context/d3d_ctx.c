@@ -58,7 +58,14 @@
 static bool widescreen_mode = false;
 #endif
 
+typedef struct gfx_ctx_d3d_data
+{
+   void *empty;
+} gfx_ctx_d3d_data_t;
+
 void *dinput;
+
+static enum gfx_ctx_api d3d_api = GFX_CTX_NONE;
 
 static bool gfx_ctx_d3d_set_resize(void *data,
       unsigned new_width, unsigned new_height)
@@ -172,12 +179,19 @@ static bool gfx_ctx_d3d_has_windowed(void *data)
 #endif
 }
 
+static enum gfx_ctx_api gfx_ctx_d3d_get_api(void *data)
+{
+   return d3d_api;
+}
+
 static bool gfx_ctx_d3d_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    (void)major;
    (void)minor;
+
+   d3d_api = api;
 
    switch (api)
    {
@@ -198,16 +212,24 @@ static bool gfx_ctx_d3d_bind_api(void *data,
 
 static void *gfx_ctx_d3d_init(video_frame_info_t *video_info, void *video_driver)
 {
+   gfx_ctx_d3d_data_t *d3d = (gfx_ctx_d3d_data_t*)calloc(1, sizeof(*d3d));
+
+   if (!d3d)
+      return NULL;
+
 #ifndef _XBOX
    win32_monitor_init();
 #endif
 
-   return video_driver;
+   return d3d;
 }
 
 static void gfx_ctx_d3d_destroy(void *data)
 {
-   (void)data;
+   gfx_ctx_d3d_data_t *d3d = (gfx_ctx_d3d_data_t*)data;
+
+   if (d3d)
+      free(d3d);
 }
 
 static void gfx_ctx_d3d_input_driver(void *data,
@@ -388,6 +410,7 @@ static void gfx_ctx_d3d_set_flags(void *data, uint32_t flags)
 const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_init,
    gfx_ctx_d3d_destroy,
+   gfx_ctx_d3d_get_api,
    gfx_ctx_d3d_bind_api,
    gfx_ctx_d3d_swap_interval,
    gfx_ctx_d3d_set_video_mode,

@@ -366,10 +366,17 @@ static void android_gfx_ctx_input_driver(void *data,
    *input_data          = androidinput;
 }
 
+static enum gfx_ctx_api android_gfx_ctx_get_api(void *data)
+{
+   return android_api;
+}
+
 static bool android_gfx_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    unsigned version;
+
+   android_api = api;
 
    switch (api)
    {
@@ -385,15 +392,11 @@ static bool android_gfx_ctx_bind_api(void *data,
             g_es3 = true;
 
          if (api == GFX_CTX_OPENGL_ES_API)
-         {
-            android_api = api;
             return true;
-         }
 #endif
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         android_api = api;
          return true;
 #else
          break;
@@ -594,6 +597,7 @@ static void android_gfx_ctx_set_flags(void *data, uint32_t flags)
 const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_init,
    android_gfx_ctx_destroy,
+   android_gfx_ctx_get_api,
    android_gfx_ctx_bind_api,
    android_gfx_ctx_set_swap_interval,
    android_gfx_ctx_set_video_mode,

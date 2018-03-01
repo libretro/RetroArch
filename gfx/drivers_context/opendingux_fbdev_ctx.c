@@ -40,6 +40,8 @@ typedef struct
    unsigned width, height;
 } opendingux_ctx_data_t;
 
+static enum gfx_ctx_api opendingux_api = GFX_CTX_NONE;
+
 static void gfx_ctx_opendingux_destroy(void *data)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
@@ -183,11 +185,21 @@ static void gfx_ctx_opendingux_input_driver(void *data,
    *input_data = NULL;
 }
 
+static enum gfx_ctx_api gfx_ctx_opendingux_get_api(void *data)
+{
+   return opendingux_api;
+}
+
 static bool gfx_ctx_opendingux_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
-   return api == GFX_CTX_OPENGL_ES_API;
+
+   opendingux_api = api;
+
+   if (api == GFX_CTX_OPENGL_ES_API)
+      return true;
+   return false;
 }
 
 static bool gfx_ctx_opendingux_has_focus(void *data)
@@ -254,6 +266,7 @@ static void gfx_ctx_opendingux_set_flags(void *data, uint32_t flags)
 const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev = {
    gfx_ctx_opendingux_init,
    gfx_ctx_opendingux_destroy,
+   gfx_ctx_opendingux_get_api,
    gfx_ctx_opendingux_bind_api,
    gfx_ctx_opendingux_set_swap_interval,
    gfx_ctx_opendingux_set_video_mode,
