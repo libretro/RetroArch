@@ -90,7 +90,8 @@ static bool gfx_ctx_d3d_set_resize(void *data,
 
 static void gfx_ctx_d3d_swap_buffers(void *data, void *data2)
 {
-   d3d_video_t      *d3d = (d3d_video_t*)data;
+   video_frame_info_t *video_info = (video_frame_info_t*)data2;
+   d3d_video_t      *d3d = video_info ? (d3d_video_t*)video_info->userdata : NULL;
    if (d3d)
       d3d_swap(d3d, d3d->dev);
 }
