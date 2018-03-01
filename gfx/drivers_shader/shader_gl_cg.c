@@ -312,7 +312,6 @@ static void gl_cg_set_params(void *dat, void *shader_data)
    unsigned i;
    video_shader_ctx_params_t          *params = 
       (video_shader_ctx_params_t*)dat;
-   void *data                                 = params->data;
    unsigned width                             = params->width;
    unsigned height                            = params->height;
    unsigned tex_width                         = params->tex_width;

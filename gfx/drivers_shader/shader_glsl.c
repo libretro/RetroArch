@@ -1193,7 +1193,6 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    struct glsl_attrib attribs[32];
    float input_size[2], output_size[2], texture_size[2];
    video_shader_ctx_params_t          *params = (video_shader_ctx_params_t*)dat;
-   void *data                                 = params->data;
    unsigned width                             = params->width;
    unsigned height                            = params->height;
    unsigned tex_width                         = params->tex_width;

@@ -1491,7 +1491,6 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
-   struct string_list *content          = NULL;
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);

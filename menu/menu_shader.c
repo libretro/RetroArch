@@ -112,7 +112,6 @@ bool menu_shader_manager_init(void)
       else
       {
          char preset_path[PATH_MAX_LENGTH];
-         config_file_t *conf               = NULL;
          const char *shader_dir            =
             *settings->paths.directory_video_shader ?
             settings->paths.directory_video_shader :
