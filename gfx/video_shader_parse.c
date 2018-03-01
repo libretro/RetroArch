@@ -1147,8 +1147,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       }
    }
    if (
-         string_is_equal(ext, "cgp") ||
-         string_is_equal(ext, "CGP")
+         string_is_equal_case_insensitive(ext, "cgp")
          )
    {
       *is_preset = true;
@@ -1180,8 +1179,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       }
    }
    if (
-         string_is_equal(ext, "glsl") ||
-         string_is_equal(ext, "GLSL")
+         string_is_equal_case_insensitive(ext, "glsl")
          )
    {
       switch (api)
@@ -1194,8 +1192,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       }
    }
    if (
-         string_is_equal(ext, "glslp") ||
-         string_is_equal(ext, "GLSLP")
+         string_is_equal_case_insensitive(ext, "glslp")
          )
    {
       *is_preset = true;
@@ -1209,8 +1206,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       }
    }
    if (
-         string_is_equal(ext, "slang") ||
-         string_is_equal(ext, "SLANG")
+         string_is_equal_case_insensitive(ext, "slang")
          )
    {
       switch (api)
@@ -1225,8 +1221,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       }
    }
    if (
-         string_is_equal(ext, "slangp") ||
-         string_is_equal(ext, "SLANGP")
+         string_is_equal_case_insensitive(ext, "slangp") 
          )
    {
       *is_preset = true;

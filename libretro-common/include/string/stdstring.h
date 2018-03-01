@@ -75,9 +75,28 @@ static INLINE void string_add_between_pairs(char *s, const char *str,
 #define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
 #define string_is_equal_fast(a, b, size) (memcmp(a, b, size) == 0)
 
+static INLINE bool string_is_equal_case_insensitive(const char *a,
+      const char *b)
+{
+   int result              = 0;
+   const unsigned char *p1 = (const unsigned char*)a;
+   const unsigned char *p2 = (const unsigned char*)b;
+
+   if (!a || !b)
+      return false;
+   if (p1 == p2)
+      return true;
+
+   while ((result = tolower (*p1) - tolower (*p2++)) == 0)
+      if (*p1++ == '\0')
+         break;
+
+   return (result == 0);
+}
+
 static INLINE bool string_is_equal_noncase(const char *a, const char *b)
 {
-   int result;
+   int result              = 0;
    const unsigned char *p1 = (const unsigned char*)a;
    const unsigned char *p2 = (const unsigned char*)b;
 
