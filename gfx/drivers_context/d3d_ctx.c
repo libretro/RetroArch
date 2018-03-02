@@ -36,26 +36,13 @@
 
 #ifdef _MSC_VER
 #ifndef _XBOX
-#ifndef HAVE_DYLIB
-#pragma comment( lib, "d3d9" )
-#pragma comment( lib, "d3dx9" )
-#endif
-#ifdef HAVE_CG
-#pragma comment( lib, "cgd3d9" )
-#endif
 #pragma comment( lib, "dxguid" )
 #endif
 #endif
 
-#if defined(_XBOX1)
+#if defined(_XBOX)
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTATIONINTERVAL
 #define PresentationInterval FullScreen_PresentationInterval
-#elif defined(_XBOX360)
-#define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
-#endif
-
-#ifdef _XBOX
-static bool widescreen_mode = false;
 #endif
 
 typedef struct gfx_ctx_d3d_data
@@ -200,10 +187,6 @@ static bool gfx_ctx_d3d_bind_api(void *data,
          if (api == GFX_CTX_DIRECT3D8_API)
             return true;
          break;
-      case GFX_CTX_DIRECT3D9_API:
-         if (api == GFX_CTX_DIRECT3D9_API)
-            return true;
-         break;
       default:
          break;
    }
@@ -281,96 +264,64 @@ static void gfx_ctx_d3d_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
 #ifdef _XBOX
-#ifdef _XBOX360
-   XVIDEO_MODE video_mode;
-#endif
    d3d_video_t *d3d = (d3d_video_t*)data;
+   DWORD video_mode = XGetVideoFlags();
 
-   (void)width;
-   (void)height;
-#if defined(_XBOX360)
-   XGetVideoMode(&video_mode);
+   *width           = 640;
+   *height          = 480;
+   widescreen_mode  = false;
 
-   *width  = video_mode.dwDisplayWidth;
-   *height = video_mode.dwDisplayHeight;
+   /* Only valid in PAL mode, not valid for HDTV modes! */
 
-   d3d->resolution_hd_enable = false;
-
-   if(video_mode.fIsHiDef)
+   if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
-      *width = 1280;
-      *height = 720;
-      d3d->resolution_hd_enable = true;
+      /* Check for 16:9 mode (PAL REGION) */
+      if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      {
+         *width = 720;
+         //60 Hz, 720x480i
+         if(video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+            *height = 480;
+         else //50 Hz, 720x576i
+            *height = 576;
+         widescreen_mode = true;
+      }
    }
    else
    {
-      *width = 640;
-      *height = 480;
+      /* Check for 16:9 mode (NTSC REGIONS) */
+      if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      {
+         *width = 720;
+         *height = 480;
+         widescreen_mode = true;
+      }
    }
 
-   widescreen_mode = video_mode.fIsWideScreen;
-#elif defined(_XBOX1)
+   if(XGetAVPack() == XC_AV_PACK_HDTV)
    {
-      DWORD video_mode = XGetVideoFlags();
-
-      *width  = 640;
-      *height = 480;
-
-      widescreen_mode = false;
-
-      /* Only valid in PAL mode, not valid for HDTV modes! */
-
-      if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
+      if(video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       {
-         /* Check for 16:9 mode (PAL REGION) */
-         if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
-         {
-            *width = 720;
-            //60 Hz, 720x480i
-            if(video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
-               *height = 480;
-            else //50 Hz, 720x576i
-               *height = 576;
-            widescreen_mode = true;
-         }
+         *width = 640;
+         *height  = 480;
+         widescreen_mode = false;
+         d3d->resolution_hd_enable = true;
       }
-      else
+      else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
       {
-         /* Check for 16:9 mode (NTSC REGIONS) */
-         if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
-         {
-            *width = 720;
-            *height = 480;
-            widescreen_mode = true;
-         }
+         *width = 1280;
+         *height  = 720;
+         widescreen_mode = true;
+         d3d->resolution_hd_enable = true;
       }
-
-      if(XGetAVPack() == XC_AV_PACK_HDTV)
+      else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
       {
-         if(video_mode & XC_VIDEO_FLAGS_HDTV_480p)
-         {
-            *width = 640;
-            *height  = 480;
-            widescreen_mode = false;
-            d3d->resolution_hd_enable = true;
-         }
-         else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
-         {
-            *width = 1280;
-            *height  = 720;
-            widescreen_mode = true;
-            d3d->resolution_hd_enable = true;
-         }
-         else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
-         {
-            *width = 1920;
-            *height  = 1080;
-            widescreen_mode = true;
-            d3d->resolution_hd_enable = true;
-         }
+         *width = 1920;
+         *height  = 1080;
+         widescreen_mode = true;
+         d3d->resolution_hd_enable = true;
       }
    }
-#endif
 #endif
 }
 

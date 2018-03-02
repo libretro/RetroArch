@@ -46,6 +46,7 @@
 #ifndef _XBOX
 #define HAVE_MONITOR
 #define HAVE_WINDOW
+#define D3D9_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
 #endif
 
 #ifdef HAVE_MENU
@@ -61,6 +62,10 @@
 static LPDIRECT3D9 g_pD3D9;
 
 void *dinput;
+
+#ifdef _XBOX
+static bool d3d9_widescreen_mode = false;
+#endif
 
 static bool d3d9_set_resize(d3d_video_t *d3d,
       unsigned new_width, unsigned new_height)
@@ -603,7 +608,7 @@ static void d3d9_get_video_size(d3d_video_t *d3d,
       *height = 480;
    }
 
-   widescreen_mode = video_mode.fIsWideScreen;
+   d3d9_widescreen_mode = video_mode.fIsWideScreen;
 }
 #endif
 
@@ -679,10 +684,8 @@ void d3d_make_d3dpp(void *data,
 #ifdef _XBOX
    d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;
    d3dpp->EnableAutoDepthStencil  = FALSE;
-#if 0
-   if (!widescreen_mode)
+   if (!d3d9_widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
-#endif
    d3dpp->MultiSampleQuality      = 0;
 #endif
 }
@@ -960,7 +963,7 @@ static void d3d9_set_nonblock_state(void *data, bool state)
 
 #ifdef _XBOX
    d3d_set_render_state(d3d->dev,
-         XBOX_PRESENTATIONINTERVAL,
+         D3D9_PRESENTATIONINTERVAL,
          interval ?
          D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE
          );
