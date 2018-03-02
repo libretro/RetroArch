@@ -65,6 +65,8 @@ static LPDIRECT3D8 g_pD3D8;
 static bool d3d8_widescreen_mode = false;
 #endif
 
+void *dinput;
+
 typedef struct d3d8_renderchain
 {
    unsigned pixel_size;
