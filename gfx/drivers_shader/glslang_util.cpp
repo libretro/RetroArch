@@ -30,7 +30,7 @@
 #endif
 
 #include "glslang_util.h"
-#if defined(HAVE_GLSLANG) && !defined(HAVE_GRIFFIN)
+#if defined(HAVE_GLSLANG)
 #include "glslang.hpp"
 #endif
 #include "../../verbosity.h"
@@ -369,7 +369,7 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
 }
 
 
-#if defined(HAVE_GLSLANG) && !defined(HAVE_GRIFFIN)
+#if defined(HAVE_GLSLANG)
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
    vector<string> lines;
