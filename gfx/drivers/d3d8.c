@@ -1468,7 +1468,7 @@ static void d3d8_overlay_enable(void *data, bool state)
    for (i = 0; i < d3d->overlays_size; i++)
       d3d->overlays_enabled = state;
 
-   d3d8_show_mouse(state);
+   d3d8_show_mouse(d3d, state);
 }
 
 static void d3d8_overlay_full_screen(void *data, bool enable)
