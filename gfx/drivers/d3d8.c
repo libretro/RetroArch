@@ -61,6 +61,10 @@
 
 static LPDIRECT3D8 g_pD3D8;
 
+#ifdef _XBOX
+static bool d3d8_widescreen_mode = false;
+#endif
+
 typedef struct d3d8_renderchain
 {
    unsigned pixel_size;
@@ -583,11 +587,11 @@ static bool d3d8_is_windowed_enable(bool info_fullscreen)
 static void d3d8_get_video_size(d3d_video_t *d3d,
       unsigned *width, unsigned *height)
 {
-   DWORD video_mode = XGetVideoFlags();
+   DWORD video_mode      = XGetVideoFlags();
 
-   *width           = 640;
-   *height          = 480;
-   widescreen_mode  = false;
+   *width                = 640;
+   *height               = 480;
+   d3d8_widescreen_mode  = false;
 
    /* Only valid in PAL mode, not valid for HDTV modes! */
 
@@ -602,7 +606,7 @@ static void d3d8_get_video_size(d3d_video_t *d3d,
             *height = 480;
          else //50 Hz, 720x576i
             *height = 576;
-         widescreen_mode = true;
+         d3d8_widescreen_mode = true;
       }
    }
    else
@@ -610,9 +614,9 @@ static void d3d8_get_video_size(d3d_video_t *d3d,
       /* Check for 16:9 mode (NTSC REGIONS) */
       if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
-         *width = 720;
-         *height = 480;
-         widescreen_mode = true;
+         *width                    = 720;
+         *height                   = 480;
+         d3d8_widescreen_mode      = true;
       }
    }
 
@@ -620,23 +624,23 @@ static void d3d8_get_video_size(d3d_video_t *d3d,
    {
       if(video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       {
-         *width = 640;
-         *height  = 480;
-         widescreen_mode = false;
+         *width                    = 640;
+         *height                   = 480;
+         d3d8_widescreen_mode      = false;
          d3d->resolution_hd_enable = true;
       }
       else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
       {
-         *width = 1280;
-         *height  = 720;
-         widescreen_mode = true;
+         *width                    = 1280;
+         *height                   = 720;
+         d3d8_widescreen_mode      = true;
          d3d->resolution_hd_enable = true;
       }
       else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
       {
-         *width = 1920;
-         *height  = 1080;
-         widescreen_mode = true;
+         *width                    = 1920;
+         *height                   = 1080;
+         d3d8_widescreen_mode      = true;
          d3d->resolution_hd_enable = true;
       }
    }
@@ -735,7 +739,7 @@ void d3d8_make_d3dpp(void *data,
       }
 
 #if 0
-      if (widescreen_mode)
+      if (d3d8_widescreen_mode)
          d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
 #endif
    }
