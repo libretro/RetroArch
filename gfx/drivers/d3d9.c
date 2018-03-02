@@ -1876,6 +1876,15 @@ static void d3d9_get_poke_interface(void *data,
    *iface = &d3d9_poke_interface;
 }
 
+static bool d3d9_has_windowed(void *data)
+{
+#ifdef _XBOX
+   return false;
+#else
+   return true;
+#endif
+}
+
 video_driver_t video_d3d9 = {
    d3d9_init,
    d3d9_frame,
@@ -1883,7 +1892,7 @@ video_driver_t video_d3d9 = {
    d3d9_alive,
    NULL,                      /* focus */
    d3d9_suppress_screensaver,
-   NULL,                      /* has_windowed */
+   d3d9_has_windowed,
    d3d9_set_shader,
    d3d9_free,
    "d3d9",
