@@ -43,10 +43,11 @@
 
 #include "../common/win32_common.h"
 
-#ifndef _XBOX
+#ifdef _XBOX
+#define D3D9_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
+#else
 #define HAVE_MONITOR
 #define HAVE_WINDOW
-#define D3D9_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
 #endif
 
 #ifdef HAVE_MENU
