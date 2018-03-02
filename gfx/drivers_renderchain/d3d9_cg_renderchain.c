@@ -37,6 +37,10 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
+#ifdef _MSC_VER
+#pragma comment(lib, "cgd3d9")
+#endif
+
 #define D3D_DEFAULT_NONPOW2         ((UINT)-2)
 #define D3D_FILTER_LINEAR           (3 << 0)
 #define D3D_FILTER_POINT            (2 << 0)
