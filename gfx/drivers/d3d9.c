@@ -1844,12 +1844,21 @@ static void d3d9_unload_texture(void *data, uintptr_t id)
    d3d_texture_free(texid);
 }
 
+static void d3d9_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen)
+{
+#ifndef _XBOX
+   win32_show_cursor(!fullscreen);
+#endif
+}
+
 static const video_poke_interface_t d3d9_poke_interface = {
    NULL,                            /* set_coords */
    d3d9_set_mvp,
    d3d9_load_texture,
    d3d9_unload_texture,
-   NULL,
+   d3d9_set_video_mode,
    NULL,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
