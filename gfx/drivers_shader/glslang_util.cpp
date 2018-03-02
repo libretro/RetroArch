@@ -31,7 +31,7 @@
 
 #include "glslang_util.h"
 #if defined(HAVE_GLSLANG)
-#include "glslang.hpp"
+#include <glslang.hpp>
 #endif
 #include "../../verbosity.h"
 
