@@ -60,6 +60,22 @@
 
 static LPDIRECT3D9 g_pD3D9;
 
+static bool d3d9_set_resize(d3d_video_t *d3d,
+      unsigned new_width, unsigned new_height)
+{
+   /* No changes? */
+   if (     (new_width  == d3d->video_info.width)
+         && (new_height == d3d->video_info.height))
+      return false;
+
+   RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
+   d3d->video_info.width  = new_width;
+   d3d->video_info.height = new_height;
+   video_driver_set_size(&new_width, &new_height);
+
+   return true;
+}
+
 static bool d3d9_init_imports(d3d_video_t *d3d)
 {
    retro_ctx_memory_info_t    mem_info;
@@ -711,21 +727,14 @@ static void d3d_calculate_rect(void *data,
       bool force_full,
       bool allow_rotate)
 {
-   gfx_ctx_aspect_t aspect_data;
    float device_aspect  = (float)*width / *height;
    d3d_video_t *d3d     = (d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
 
    video_driver_get_size(width, height);
 
-   aspect_data.aspect   = &device_aspect;
-   aspect_data.width    = *width;
-   aspect_data.height   = *height;
-
-   video_context_driver_translate_aspect(&aspect_data);
-
-   *x = 0;
-   *y = 0;
+   *x                   = 0;
+   *y                   = 0;
 
    if (settings->bools.video_scale_integer && !force_full)
    {
@@ -981,7 +990,7 @@ static bool d3d9_alive(void *data)
    if (resize)
    {
       d3d->should_resize = true;
-      video_driver_set_resize(temp_width, temp_height);
+      d3d9_set_resize(d3d, temp_width, temp_height);
       d3d9_restore(d3d);
    }
 
@@ -1457,6 +1466,42 @@ static void d3d9_get_overlay_interface(void *data,
 }
 #endif
 
+static void d3d9_update_title(video_frame_info_t *video_info)
+{
+#ifdef _XBOX
+   const ui_window_t *window      = NULL;
+#else
+   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
+#endif
+
+   if (video_info->fps_show)
+   {
+      MEMORYSTATUS stat;
+      char mem[128];
+
+      mem[0] = '\0';
+
+      GlobalMemoryStatus(&stat);
+      snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2fMB",
+            stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
+   }
+
+#ifndef _XBOX
+   if (window)
+   {
+      char title[128];
+
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         window->set_title(&main_window, title);
+   }
+#endif
+}
+
 static bool d3d9_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count, unsigned pitch,
@@ -1558,9 +1603,7 @@ static bool d3d9_frame(void *data, const void *frame,
       font_driver_render_msg(video_info, NULL, msg, NULL);
    }
 
-   video_info->cb_update_window_title(
-         video_info->context_data, video_info);
-
+   d3d9_update_title(video_info);
    d3d_swap(d3d, d3d->dev);
 
    return true;

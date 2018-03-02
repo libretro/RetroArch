@@ -1331,8 +1331,6 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    return true;
 }
 
-
-
 float video_driver_get_aspect_ratio(void)
 {
    return video_driver_aspect_ratio;
