@@ -560,6 +560,35 @@ static bool d3d_is_windowed_enable(bool info_fullscreen)
    return false;
 }
 
+#ifdef _XBOX
+static void d3d9_get_video_size(d3d_video_t *d3d,
+      unsigned *width, unsigned *height)
+{
+   XVIDEO_MODE video_mode;
+
+   XGetVideoMode(&video_mode);
+
+   *width  = video_mode.dwDisplayWidth;
+   *height = video_mode.dwDisplayHeight;
+
+   d3d->resolution_hd_enable = false;
+
+   if(video_mode.fIsHiDef)
+   {
+      *width = 1280;
+      *height = 720;
+      d3d->resolution_hd_enable = true;
+   }
+   else
+   {
+      *width = 640;
+      *height = 480;
+   }
+
+   widescreen_mode = video_mode.fIsWideScreen;
+}
+#endif
+
 void d3d_make_d3dpp(void *data,
       const video_info_t *info, void *_d3dpp)
 {
@@ -622,16 +651,7 @@ void d3d_make_d3dpp(void *data,
    if (!windowed_enable)
    {
 #ifdef _XBOX
-      gfx_ctx_mode_t mode;
-      unsigned width              = 0;
-      unsigned height             = 0;
-
-      video_context_driver_get_video_size(&mode);
-
-      width                       = mode.width;
-      height                      = mode.height;
-      mode.width                  = 0;
-      mode.height                 = 0;
+      d3d9_get_video_size(d3d, &width, &height);
       video_driver_set_size(&width, &height);
 #endif
       video_driver_get_size(&d3dpp->BackBufferWidth,
@@ -927,8 +947,13 @@ static void d3d9_set_nonblock_state(void *data, bool state)
 
    d3d->video_info.vsync = !state;
 
-   video_context_driver_swap_interval(&interval);
-#ifndef _XBOX
+#ifdef _XBOX
+   d3d_set_render_state(d3d->dev,
+         XBOX_PRESENTATIONINTERVAL,
+         interval ?
+         D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE
+         );
+#else
    d3d->needs_restore = true;
    d3d9_restore(d3d);
 #endif
@@ -936,38 +961,34 @@ static void d3d9_set_nonblock_state(void *data, bool state)
 
 static bool d3d9_alive(void *data)
 {
-   gfx_ctx_size_t size_data;
    unsigned temp_width  = 0;
    unsigned temp_height = 0;
    bool ret             = false;
-   d3d_video_t *d3d     = (d3d_video_t*)data;
    bool        quit     = false;
    bool        resize   = false;
+   d3d_video_t *d3d     = (d3d_video_t*)data;
 
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
-   size_data.quit       = &quit;
-   size_data.resize     = &resize;
-   size_data.width      = &temp_width;
-   size_data.height     = &temp_height;
+#ifndef _XBOX
+   win32_check_window(&quit, &resize, &temp_width, &temp_height);
+#endif
 
-   if (video_context_driver_check_window(&size_data))
+   if (quit)
+      d3d->quitting      = quit;
+
+   if (resize)
    {
-      if (quit)
-         d3d->quitting = quit;
-
-      if (resize)
-      {
-         d3d->should_resize = true;
-         video_driver_set_resize(temp_width, temp_height);
-         d3d9_restore(d3d);
-      }
-
-      ret = !quit;
+      d3d->should_resize = true;
+      video_driver_set_resize(temp_width, temp_height);
+      d3d9_restore(d3d);
    }
 
-   if (temp_width != 0 && temp_height != 0)
+   ret = !quit;
+
+   if (  temp_width  != 0 && 
+         temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
 
    return ret;
@@ -975,8 +996,11 @@ static bool d3d9_alive(void *data)
 
 static bool d3d9_suppress_screensaver(void *data, bool enable)
 {
-   bool enabled = enable;
-   return video_context_driver_suppress_screensaver(&enabled);
+#ifdef _XBOX
+   return true;
+#else
+   return win32_suppress_screensaver(data, enable);
+#endif
 }
 
 static void d3d9_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -1093,12 +1117,7 @@ static bool d3d9_init_internal(d3d_video_t *d3d,
          (int)(mon_rect.bottom - mon_rect.top));
 #else
    {
-      gfx_ctx_mode_t mode;
-
-      video_context_driver_get_video_size(&mode);
-
-      full_x   = mode.width;
-      full_y   = mode.height;
+      d3d9_get_video_size(d3d, &full_x, &full_y);
    }
 #endif
    {
@@ -1171,7 +1190,9 @@ static void d3d9_set_rotation(void *data, unsigned rot)
 
 static void d3d9_show_mouse(void *data, bool state)
 {
-   video_context_driver_show_mouse(&state);
+#ifndef XBOX
+   win32_show_cursor(state);
+#endif
 }
 
 static const gfx_ctx_driver_t *d3d9_get_context(void *data)
@@ -1400,7 +1421,7 @@ static void d3d9_overlay_enable(void *data, bool state)
    for (i = 0; i < d3d->overlays_size; i++)
       d3d->overlays_enabled = state;
 
-   video_context_driver_show_mouse(&state);
+   d3d9_show_mouse(d3d, state);
 }
 
 static void d3d9_overlay_full_screen(void *data, bool enable)
@@ -1540,8 +1561,7 @@ static bool d3d9_frame(void *data, const void *frame,
    video_info->cb_update_window_title(
          video_info->context_data, video_info);
 
-   video_info->cb_swap_buffers(
-         video_info->context_data, video_info);
+   d3d_swap(d3d, d3d->dev);
 
    return true;
 }
