@@ -60,6 +60,8 @@
 
 static LPDIRECT3D9 g_pD3D9;
 
+void *dinput;
+
 static bool d3d9_set_resize(d3d_video_t *d3d,
       unsigned new_width, unsigned new_height)
 {
@@ -1064,11 +1066,42 @@ static void d3d9_set_osd_msg(void *data,
    font_driver_render_msg(video_info, font, msg, params);
 }
 
+static void d3d9_input_driver(
+      const input_driver_t **input, void **input_data)
+{
+   settings_t *settings = config_get_ptr();
+   const char *name     = settings ? 
+      settings->arrays.input_joypad_driver : NULL;
+#ifdef _XBOX
+   void *xinput         = input_xinput.init(name);
+   *input               = xinput ? (const input_driver_t*)&input_xinput : NULL;
+   *input_data          = xinput;
+#else
+
+#if _WIN32_WINNT >= 0x0501
+   /* winraw only available since XP */
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+   {
+      *input_data = input_winraw.init(name);
+      if (*input_data)
+      {
+         *input = &input_winraw;
+         dinput = NULL;
+         return;
+      }
+   }
+#endif
+
+   dinput               = input_dinput.init(name);
+   *input               = dinput ? &input_dinput : NULL;
+   *input_data          = dinput;
+#endif
+}
+
 static bool d3d9_init_internal(d3d_video_t *d3d,
       const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
-   gfx_ctx_input_t inp;
 #ifdef HAVE_MONITOR
    bool windowed_full;
    RECT mon_rect;
@@ -1177,10 +1210,7 @@ static bool d3d9_init_internal(d3d_video_t *d3d,
    if (!d3d9_initialize(d3d, &d3d->video_info))
       return false;
 
-   inp.input      = input;
-   inp.input_data = input_data;
-
-   video_context_driver_input_driver(&inp);
+   d3d9_input_driver(input, input_data);
 
    RARCH_LOG("[D3D]: Init complete.\n");
    return true;
@@ -1204,35 +1234,24 @@ static void d3d9_show_mouse(void *data, bool state)
 #endif
 }
 
-static const gfx_ctx_driver_t *d3d9_get_context(void *data)
-{
-   /* TODO: GL core contexts through ANGLE? */
-   unsigned minor       = 0;
-   unsigned major       = 9;
-   enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
-   settings_t *settings = config_get_ptr();
-
-   return video_context_driver_init_first(data,
-         settings->arrays.video_context_driver,
-         api, major, minor, false);
-}
-
 static void *d3d9_init(const video_info_t *info,
       const input_driver_t **input, void **input_data)
 {
-   d3d_video_t            *d3d        = NULL;
-   const gfx_ctx_driver_t *ctx_driver = NULL;
+   d3d_video_t *d3d = (d3d_video_t*)calloc(1, sizeof(*d3d));
 
-   if (!d3d_initialize_symbols(GFX_CTX_DIRECT3D9_API))
+   if (!d3d)
       return NULL;
 
-   d3d = (d3d_video_t*)calloc(1, sizeof(*d3d));
-   if (!d3d)
-      goto error;
+   if (!d3d_initialize_symbols(GFX_CTX_DIRECT3D9_API))
+   {
+      free(d3d);
+      return NULL;
+   }
 
-   ctx_driver = d3d9_get_context(d3d);
-   if (!ctx_driver)
-      goto error;
+#ifndef _XBOX
+   win32_window_reset();
+   win32_monitor_init();
+#endif
 
    /* Default values */
    d3d->dev                  = NULL;
@@ -1243,8 +1262,6 @@ static void *d3d9_init(const video_info_t *info,
 #endif
    d3d->should_resize        = false;
    d3d->menu                 = NULL;
-
-   video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
    if (!d3d9_init_internal(d3d, info, input, input_data))
    {
@@ -1257,7 +1274,6 @@ static void *d3d9_init(const video_info_t *info,
    return d3d;
 
 error:
-   video_context_driver_destroy();
    if (d3d)
       free(d3d);
    return NULL;
@@ -1301,8 +1317,6 @@ static void d3d9_free(void *data)
 
    d3d_deinitialize(d3d);
 
-   video_context_driver_free();
-
    if (!string_is_empty(d3d->shader_path))
       free(d3d->shader_path);
 
@@ -1311,18 +1325,13 @@ static void d3d9_free(void *data)
    d3d->dev         = NULL;
    g_pD3D9          = NULL;
 
-#ifndef _XBOX
-   win32_monitor_from_window();
-#endif
-
-   if (d3d)
-      free(d3d);
-
    d3d_deinitialize_symbols();
 
 #ifndef _XBOX
+   win32_monitor_from_window();
    win32_destroy_window();
 #endif
+   free(d3d);
 }
 
 #ifdef HAVE_OVERLAY
