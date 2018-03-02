@@ -17,12 +17,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include <libretro.h>
 #include <compat/posix_string.h>
 #include <compat/msvc.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
-#include "video_driver.h" /* video_context_driver_get_api */
 #include <rhash.h>
 #include <string/stdstring.h>
 #include <streams/interface_stream.h>
@@ -32,6 +35,7 @@
 #include "../verbosity.h"
 #include "../configuration.h"
 #include "../frontend/frontend_driver.h"
+#include "video_driver.h"
 #include "video_shader_parse.h"
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
