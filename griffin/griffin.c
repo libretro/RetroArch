@@ -321,7 +321,6 @@ VIDEO DRIVER
 ============================================================ */
 #if defined(HAVE_D3D)
 #include "../gfx/common/d3d_common.c"
-#include "../gfx/drivers_context/d3d_ctx.c"
 
 #if defined(HAVE_D3D8)
 #include "../gfx/drivers/d3d8.c"

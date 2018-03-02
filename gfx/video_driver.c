@@ -342,9 +342,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(__CELLOS_LV2__)
    &gfx_ctx_ps3,
 #endif
-#if defined(HAVE_D3D)
-   &gfx_ctx_d3d,
-#endif
 #if defined(HAVE_VIDEOCORE)
    &gfx_ctx_videocore,
 #endif

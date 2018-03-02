@@ -45,6 +45,7 @@
 
 #ifdef _XBOX
 #define D3D9_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
+#define PresentationInterval FullScreen_PresentationInterval
 #else
 #define HAVE_MONITOR
 #define HAVE_WINDOW
@@ -1270,17 +1271,13 @@ static void *d3d9_init(const video_info_t *info,
    if (!d3d9_init_internal(d3d, info, input, input_data))
    {
       RARCH_ERR("[D3D]: Failed to init D3D.\n");
-      goto error;
+      free(d3d);
+      return NULL;
    }
 
    d3d->keep_aspect       = info->force_aspect;
 
    return d3d;
-
-error:
-   if (d3d)
-      free(d3d);
-   return NULL;
 }
 
 #ifdef HAVE_OVERLAY
