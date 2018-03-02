@@ -36,6 +36,7 @@
 #include "../../configuration.h"
 #include "../../dynamic.h"
 #include "../video_driver.h"
+#include "../../ui/ui_companion_driver.h"
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
@@ -45,11 +46,12 @@
 
 #ifdef _XBOX
 #define D3D9_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
-#define PresentationInterval FullScreen_PresentationInterval
 #else
 #define HAVE_MONITOR
 #define HAVE_WINDOW
 #endif
+
+#define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -547,8 +549,6 @@ static void d3d_deinitialize(d3d_video_t *d3d)
    d3d->menu_display.decl = NULL;
 }
 
-#define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)
-
 static D3DFORMAT d3d_get_color_format_backbuffer(bool rgb32, bool windowed)
 {
    D3DFORMAT fmt = D3DFMT_X8R8G8B8;
@@ -676,6 +676,8 @@ void d3d_make_d3dpp(void *data,
    if (!windowed_enable)
    {
 #ifdef _XBOX
+      unsigned width  = 0;
+      unsigned height = 0;
       d3d9_get_video_size(d3d, &width, &height);
       video_driver_set_size(&width, &height);
 #endif

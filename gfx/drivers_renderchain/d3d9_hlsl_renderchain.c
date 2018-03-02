@@ -177,7 +177,7 @@ static void hlsl_d3d9_renderchain_set_vertices(
    shader_info.idx  = pass;
    shader_info.set_active = true;
 
-   video_shader_driver_use(shader_info);
+   video_shader_driver_use(&shader_info);
 
    params.data          = d3d;
    params.width         = vert_width;
