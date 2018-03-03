@@ -1070,7 +1070,9 @@ static void d3d9_set_osd_msg(void *data,
    if (d3d->renderchain_driver->set_font_rect && params)
       d3d->renderchain_driver->set_font_rect(d3d, params);
 
+   d3d_begin_scene(d3d->dev);
    font_driver_render_msg(video_info, font, msg, params);
+   d3d_end_scene(d3d->dev);
 }
 
 static void d3d9_input_driver(
@@ -1612,7 +1614,9 @@ static bool d3d9_frame(void *data, const void *frame,
    if (msg && *msg)
    {
       d3d_set_viewports(d3d->dev, &screen_vp);
+      d3d_begin_scene(d3d->dev);
       font_driver_render_msg(video_info, NULL, msg, NULL);
+      d3d_end_scene(d3d->dev);
    }
 
    d3d9_update_title(video_info);

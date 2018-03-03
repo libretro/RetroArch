@@ -117,7 +117,7 @@ static int d3dfonts_w32_get_message_width(void* data, const char* msg,
    RECT box             = {0,0,0,0};
    d3dfonts_t *d3dfonts = (d3dfonts_t*)data;
 
-   if (!d3dfonts || !d3dfonts->d3d | !msg)
+   if (!d3dfonts || !msg)
       return 0;
 
    d3dx_font_draw_text(d3dfonts->font, NULL, (void*)msg,
@@ -145,8 +145,6 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info,
    int drop_y                       = -2;
 
    if (!d3dfonts || !d3dfonts->d3d || !msg)
-      return;
-   if (!d3d_begin_scene(d3dfonts->d3d->dev))
       return;
 
    format         = DT_LEFT;
@@ -222,8 +220,6 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info,
 
    d3dx_font_draw_text(d3dfonts->font, NULL, (void*)msg, -1,
       p_rect, format, D3DCOLOR_ARGB(a, r, g, b));
-
-   d3d_end_scene(d3dfonts->d3d->dev);
 }
 
 font_renderer_t d3d_win32_font = {

@@ -1117,7 +1117,9 @@ static void d3d8_set_osd_msg(void *data,
 {
    d3d_video_t          *d3d = (d3d_video_t*)data;
 
+   d3d_begin_scene(d3d->dev);
    font_driver_render_msg(video_info, font, msg, params);
+   d3d_end_scene(d3d->dev);
 }
 
 static void d3d8_input_driver(
@@ -1636,7 +1638,9 @@ static bool d3d8_frame(void *data, const void *frame,
    if (!string_is_empty(msg))
    {
       d3d_set_viewports(d3d->dev, &screen_vp);
+      d3d_begin_scene(d3d->dev);
       font_driver_render_msg(video_info, NULL, msg, NULL);
+      d3d_end_scene(d3d->dev);
    }
 
    d3d8_update_title(video_info);
