@@ -45,7 +45,7 @@
 #include <xgraphics.h>
 #endif
 
-static UINT SDKVersion = 0;
+static UINT d3d9_SDKVersion = 0;
 
 #ifdef HAVE_DYNAMIC_D3D
 static dylib_t g_d3d9_dll;
@@ -55,10 +55,10 @@ static dylib_t g_d3d9x_dll;
 static bool d3d9_dylib_initialized = false;
 #endif
 
-typedef IDirect3D9 *(__stdcall *D3DCreate_t)(UINT);
+typedef IDirect3D9 *(__stdcall *D3D9Create_t)(UINT);
 #ifdef HAVE_D3DX
 typedef HRESULT (__stdcall
-      *D3DCompileShader_t)(
+      *D3D9CompileShader_t)(
          LPCSTR              pSrcData,
          UINT                srcDataLen,
          const D3DXMACRO     *pDefines,
@@ -70,7 +70,7 @@ typedef HRESULT (__stdcall
          LPD3DXBUFFER        *ppErrorMsgs,
          LPD3DXCONSTANTTABLE *ppConstantTable);
 typedef HRESULT (__stdcall
-      *D3DCompileShaderFromFile_t)(
+      *D3D9CompileShaderFromFile_t)(
           LPCTSTR             pSrcFile,
     const D3DXMACRO           *pDefines,
           LPD3DXINCLUDE       pInclude,
@@ -82,7 +82,7 @@ typedef HRESULT (__stdcall
          LPD3DXCONSTANTTABLE *ppConstantTable);
 
 typedef HRESULT (__stdcall
-    *D3DCreateTextureFromFile_t)(
+    *D3D9CreateTextureFromFile_t)(
         LPDIRECT3DDEVICE9         pDevice,
         LPCSTR                    pSrcFile,
         UINT                      Width,
@@ -99,7 +99,7 @@ typedef HRESULT (__stdcall
         LPDIRECT3DTEXTURE9*       ppTexture);
 
 typedef HRESULT (__stdcall
-    *D3DXCreateFontIndirect_t)(
+    *D3D9XCreateFontIndirect_t)(
         LPDIRECT3DDEVICE9       pDevice,
         D3DXFONT_DESC*   pDesc,
         LPD3DXFONT*             ppFont);
@@ -107,16 +107,16 @@ typedef HRESULT (__stdcall
 
 
 #ifdef HAVE_D3DX
-static D3DXCreateFontIndirect_t   D3DCreateFontIndirect;
-static D3DCreateTextureFromFile_t D3DCreateTextureFromFile;
-static D3DCompileShaderFromFile_t D3DCompileShaderFromFile;
-static D3DCompileShader_t         D3DCompileShader;
+static D3D9XCreateFontIndirect_t    D3D9CreateFontIndirect;
+static D3D9CreateTextureFromFile_t  D3D9CreateTextureFromFile;
+static D3D9CompileShaderFromFile_t  D3D9CompileShaderFromFile;
+static D3D9CompileShader_t          D3D9CompileShader;
 #endif
-static D3DCreate_t D3DCreate;
+static D3D9Create_t D3D9Create;
 
 void *d3d9_create(void)
 {
-   return D3DCreate(SDKVersion);
+   return D3D9Create(d3d9_SDKVersion);
 }
 
 #ifdef HAVE_DYNAMIC_D3D
@@ -184,34 +184,34 @@ bool d3d9_initialize_symbols(enum gfx_ctx_api api)
       return false;
 #endif
    
-   SDKVersion               = 31;
+   d3d9_SDKVersion            = 31;
 #ifdef HAVE_DYNAMIC_D3D
-   D3DCreate                = (D3DCreate_t)dylib_proc(g_d3d9_dll, "Direct3DCreate9");
+   D3D9Create                 = (D3D9Create_t)dylib_proc(g_d3d9_dll, "Direct3DCreate9");
 #ifdef HAVE_D3DX
-   D3DCompileShaderFromFile = (D3DCompileShaderFromFile_t)dylib_proc(g_d3d9x_dll, "D3DXCompileShaderFromFile");
-   D3DCompileShader         = (D3DCompileShader_t)dylib_proc(g_d3d9x_dll, "D3DXCompileShader");
+   D3D9CompileShaderFromFile  = (D3D9CompileShaderFromFile_t)dylib_proc(g_d3d9x_dll, "D3DXCompileShaderFromFile");
+   D3D9CompileShader          = (D3D9CompileShader_t)dylib_proc(g_d3d9x_dll, "D3DXCompileShader");
 #ifdef UNICODE
-   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3d9x_dll, "D3DXCreateFontIndirectW");
+   D3D9CreateFontIndirect     = (D3D9XCreateFontIndirect_t)dylib_proc(g_d3d9x_dll, "D3DXCreateFontIndirectW");
 #else
-   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3d9x_dll, "D3DXCreateFontIndirectA");
+   D3D9CreateFontIndirect     = (D3D9XCreateFontIndirect_t)dylib_proc(g_d3d9x_dll, "D3DXCreateFontIndirectA");
 #endif
-   D3DCreateTextureFromFile = (D3DCreateTextureFromFile_t)dylib_proc(g_d3d9x_dll, "D3DXCreateTextureFromFileExA");
+   D3D9CreateTextureFromFile  = (D3D9CreateTextureFromFile_t)dylib_proc(g_d3d9x_dll, "D3DXCreateTextureFromFileExA");
 #endif
 #else
-   D3DCreate                = Direct3DCreate9;
+   D3D9Create                 = Direct3DCreate9;
 #ifdef HAVE_D3DX
-   D3DCompileShaderFromFile = D3DXCompileShaderFromFile;
-   D3DCompileShader         = D3DXCompileShader;
-   D3DCreateFontIndirect    = D3DXCreateFontIndirect;
-   D3DCreateTextureFromFile = D3DXCreateTextureFromFileExA;
+   D3D9CompileShaderFromFile  = D3DXCompileShaderFromFile;
+   D3D9CompileShader          = D3DXCompileShader;
+   D3D9CreateFontIndirect     = D3DXCreateFontIndirect;
+   D3D9CreateTextureFromFile  = D3DXCreateTextureFromFileExA;
 #endif
 #endif
 
-   if (!D3DCreate)
+   if (!D3D9Create)
       goto error;
 
 #ifdef _XBOX
-   SDKVersion        = 0;
+   d3d9_SDKVersion          = 0;
 #endif
 #ifdef HAVE_DYNAMIC_D3D
    d3d9_dylib_initialized = true;
@@ -375,7 +375,7 @@ static void *d3d9_texture_new_from_file(
       PALETTEENTRY *palette)
 {
    void *buf  = NULL;
-   HRESULT hr = D3DCreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
+   HRESULT hr = D3D9CreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
          path, width, height, miplevels, usage, format,
          (D3DPOOL)pool, filter, mipfilter, color_key,
          (D3DXIMAGE_INFO*)src_info_data,
@@ -1358,12 +1358,12 @@ bool d3d9x_create_font_indirect(void *_dev,
 #ifdef HAVE_D3DX
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
 #ifdef __cplusplus
-   if (SUCCEEDED(D3DCreateFontIndirect(
+   if (SUCCEEDED(D3D9CreateFontIndirect(
                dev, (D3DXFONT_DESC*)desc,
                (struct ID3DXFont**)font_data)))
       return true;
 #else
-   if (SUCCEEDED(D3DCreateFontIndirect(
+   if (SUCCEEDED(D3D9CreateFontIndirect(
                dev, (D3DXFONT_DESC*)desc,
                (struct ID3DXFont**)font_data)))
       return true;
@@ -1405,8 +1405,8 @@ bool d3d9x_compile_shader(
       void *ppconstanttable)
 {
 #if defined(HAVE_D3DX)
-   if (D3DCompileShader)
-      if (D3DCompileShader(
+   if (D3D9CompileShader)
+      if (D3D9CompileShader(
                (LPCTSTR)src,
                (UINT)src_data_len,
                (const D3DXMACRO*)pdefines,
@@ -1490,8 +1490,8 @@ bool d3d9x_compile_shader_from_file(
       void *ppconstanttable)
 {
 #if defined(HAVE_D3DX)
-   if (D3DCompileShaderFromFile)
-      if (D3DCompileShaderFromFile(
+   if (D3D9CompileShaderFromFile)
+      if (D3D9CompileShaderFromFile(
                (LPCTSTR)src,
                (const D3DXMACRO*)pdefines,
                (LPD3DXINCLUDE)pinclude,
