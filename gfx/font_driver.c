@@ -82,35 +82,67 @@ int font_renderer_create_default(const void **data, void **handle,
    return 0;
 }
 
-#ifdef HAVE_D3D
-static const font_renderer_t *d3d_font_backends[] = {
-#if defined(_XBOX360)
-   &d3d_xbox360_font,
-#elif defined(_WIN32) && defined(HAVE_D3DX)
-   &d3d_win32_font,
-#elif defined(_XBOX1)
+#ifdef HAVE_D3D8
+static const font_renderer_t *d3d8_font_backends[] = {
+#if defined(_XBOX1)
    &d3d_xdk1_font,
 #endif
    NULL
 };
 
-static bool d3d_font_init_first(
+static bool d3d8_font_init_first(
       const void **font_driver, void **font_handle,
       void *video_data, const char *font_path,
       float font_size, bool is_threaded)
 {
    unsigned i;
 
-   for (i = 0; i < ARRAY_SIZE(d3d_font_backends); i++)
+   for (i = 0; i < ARRAY_SIZE(d3d8_font_backends); i++)
    {
-      void *data = d3d_font_backends[i] ? d3d_font_backends[i]->init(
+      void *data = d3d8_font_backends[i] ? d3d8_font_backends[i]->init(
             video_data, font_path, font_size,
             is_threaded) : NULL;
 
       if (!data)
          continue;
 
-      *font_driver = d3d_font_backends[i];
+      *font_driver = d3d8_font_backends[i];
+      *font_handle = data;
+
+      return true;
+   }
+
+   return false;
+}
+#endif
+
+#ifdef HAVE_D3D9
+static const font_renderer_t *d3d9_font_backends[] = {
+#if defined(_XBOX)
+   &d3d_xbox360_font,
+#elif defined(_WIN32) && defined(HAVE_D3DX)
+   &d3d_win32_font,
+#endif
+   NULL
+};
+
+static bool d3d9_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; i < ARRAY_SIZE(d3d9_font_backends); i++)
+   {
+      void *data = d3d9_font_backends[i] ? d3d9_font_backends[i]->init(
+            video_data, font_path, font_size,
+            is_threaded) : NULL;
+
+      if (!data)
+         continue;
+
+      *font_driver = d3d9_font_backends[i];
       *font_handle = data;
 
       return true;
@@ -441,11 +473,6 @@ static bool font_init_first(
 
    switch (api)
    {
-#ifdef HAVE_D3D
-      case FONT_DRIVER_RENDER_DIRECT3D_API:
-         return d3d_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size, is_threaded);
-#endif
 #ifdef HAVE_OPENGL
       case FONT_DRIVER_RENDER_OPENGL_API:
          return gl_font_init_first(font_driver, font_handle,
@@ -454,6 +481,16 @@ static bool font_init_first(
 #ifdef HAVE_VULKAN
       case FONT_DRIVER_RENDER_VULKAN_API:
          return vulkan_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
+#ifdef HAVE_D3D8
+      case FONT_DRIVER_RENDER_D3D8_API:
+         return d3d8_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
+#ifdef HAVE_D3D9
+      case FONT_DRIVER_RENDER_D3D9_API:
+         return d3d9_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_D3D11

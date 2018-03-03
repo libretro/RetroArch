@@ -87,8 +87,11 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 
 /* Menu display drivers */
 static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
-#ifdef HAVE_D3D
-   &menu_display_ctx_d3d,
+#ifdef HAVE_D3D8
+   &menu_display_ctx_d3d8,
+#endif
+#ifdef HAVE_D3D9
+   &menu_display_ctx_d3d9,
 #endif
 #ifdef HAVE_D3D11
    &menu_display_ctx_d3d11,
@@ -222,10 +225,12 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "vulkan"))
             return true;
          break;
-      case MENU_VIDEO_DRIVER_DIRECT3D:
-         if (  string_is_equal(video_driver, "d3d9") ||
-               string_is_equal(video_driver, "d3d8")
-               )
+      case MENU_VIDEO_DRIVER_DIRECT3D8:
+         if (string_is_equal(video_driver, "d3d8"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_DIRECT3D9:
+         if (string_is_equal(video_driver, "d3d9"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D11:

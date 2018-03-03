@@ -22,6 +22,8 @@
 #endif
 
 #include "../drivers/d3d.h"
+#include "../drivers/d3d_common.h"
+#include "../drivers/d3d8_common.h"
 
 #include "../font_driver.h"
 
@@ -96,7 +98,7 @@ static void xfonts_render_msg(
       y = video_info->font_msg_pos_y;
    }
 
-   d3d_device_get_backbuffer(xfonts->d3d->dev, -1, 0, D3DBACKBUFFER_TYPE_MONO, &xfonts->surf);
+   d3d8_device_get_backbuffer(xfonts->d3d->dev, -1, 0, D3DBACKBUFFER_TYPE_MONO, &xfonts->surf);
 
    mbstowcs(str, msg, sizeof(str) / sizeof(wchar_t));
 
@@ -105,7 +107,7 @@ static void xfonts_render_msg(
 #else
    XFONT_TextOut(xfonts->debug_font, xfonts->surf, str, (unsigned)-1, x, y);
 #endif
-   d3d_surface_free(xfonts->surf);
+   d3d8_surface_free(xfonts->surf);
 }
 
 font_renderer_t d3d_xdk1_font = {

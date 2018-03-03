@@ -1305,21 +1305,27 @@ endif
 
 ifeq ($(HAVE_D3D8), 1)
 	DEFINES += -DHAVE_D3D8
-	OBJ += gfx/drivers/d3d9.o
+	OBJ += gfx/drivers/d3d8.o
+	OBJ += gfx/common/d3d8_common.o
+
+ifeq ($(HAVE_MENU_COMMON), 1)
+	OBJ += menu/drivers_display/menu_display_d3d8.o
+endif
 endif
 
 ifeq ($(HAVE_D3D9), 1)
 	DEFINES += -DHAVE_D3D9
 	OBJ += gfx/drivers/d3d9.o
+	OBJ += gfx/common/d3d9_common.o
+
+ifeq ($(HAVE_MENU_COMMON), 1)
+	OBJ += menu/drivers_display/menu_display_d3d9.o
+endif
 endif
 
 ifeq ($(HAVE_D3D_COMMON), 1)
 	DEFINES += -DHAVE_D3D
 	OBJ     += gfx/common/d3d_common.o
-
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_d3d.o
-   endif
 endif
 
 ifeq ($(HAVE_SLANG),1)

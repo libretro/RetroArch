@@ -29,6 +29,10 @@ typedef struct d3d_texture
    INT32 pool;
 } d3d_texture_t;
 
+#ifndef BYTE_CLAMP
+#define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))
+#endif
+
 #ifndef D3DCOLOR_ARGB
 #define D3DCOLOR_ARGB(_a, _r, _g, _b) ( (DWORD)( ( ( (_a)&0xff)<<24)|( ( (_r)&0xff)<<16)|( ( (_g)&0xff)<<8)|( (_b)&0xff) ) )
 #endif

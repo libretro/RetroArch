@@ -271,6 +271,8 @@ cleanup:
    return hr;
 }
 
+void d3d9_make_d3dpp(void *data, const video_info_t *info, void *_d3dpp);
+
 static void* xui_init(void **userdata, bool video_is_threaded)
 {
    HRESULT hr;
@@ -296,7 +298,7 @@ static void* xui_init(void **userdata, bool video_is_threaded)
    video_info.fullscreen   = true;
    video_info.rgb32        = false;
 
-   d3d_make_d3dpp(d3d, &video_info, &d3dpp);
+   d3d9_make_d3dpp(d3d, &video_info, &d3dpp);
 
    hr = app.InitShared((D3DDevice*)d3d->dev, &d3dpp,
          (PFN_XUITEXTURELOADER)XuiTextureLoader);

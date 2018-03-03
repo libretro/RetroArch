@@ -1158,8 +1158,12 @@ MENU
 
 #include "../menu/drivers_display/menu_display_null.c"
 
-#if defined(HAVE_D3D)
-#include "../menu/drivers_display/menu_display_d3d.c"
+#if defined(HAVE_D3D8)
+#include "../menu/drivers_display/menu_display_d3d8.c"
+#endif
+
+#if defined(HAVE_D3D9)
+#include "../menu/drivers_display/menu_display_d3d9.c"
 #endif
 
 #if defined(HAVE_D3D11)

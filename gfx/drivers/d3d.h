@@ -108,7 +108,5 @@ typedef struct d3d_video
    overlay_t *overlays;
 } d3d_video_t;
 
-void d3d_make_d3dpp(void *data, const video_info_t *info, void *_d3dpp);
-
 #endif
 
