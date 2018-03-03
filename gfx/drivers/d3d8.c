@@ -1597,9 +1597,9 @@ static bool d3d8_frame(void *data, const void *frame,
     * can screenshot, etc. */
    if (video_info->black_frame_insertion)
    {
-      if (!d3d_swap(d3d, d3d->dev) || d3d->needs_restore)
+      if (!d3d8_swap(d3d, d3d->dev) || d3d->needs_restore)
          return true;
-      d3d_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      d3d8_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
    if (!d3d8_renderchain_render(
@@ -1619,10 +1619,9 @@ static bool d3d8_frame(void *data, const void *frame,
       d3d8_overlay_render(d3d, video_info, d3d->menu);
 
       d3d->menu_display.offset = 0;
-      d3d_set_vertex_declaration(d3d->dev, d3d->menu_display.decl);
-      d3d_set_stream_source(d3d->dev, 0, d3d->menu_display.buffer, 0, sizeof(Vertex));
+      d3d8_set_stream_source(d3d->dev, 0, d3d->menu_display.buffer, 0, sizeof(Vertex));
 
-      d3d_set_viewports(d3d->dev, &screen_vp);
+      d3d8_set_viewports(d3d->dev, &screen_vp);
       menu_driver_frame(video_info);
    }
 #endif
