@@ -13,9 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* For Xbox we will just link statically 
- * to Direct3D libraries instead. */
-
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
