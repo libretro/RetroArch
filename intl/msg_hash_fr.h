@@ -1898,7 +1898,7 @@ MSG_HASH(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
 MSG_HASH(MSG_AUTOSAVE_FAILED,
       "Impossible d'activer l'enregistrement automatique.")
 MSG_HASH(MSG_AUTO_SAVE_STATE_TO,
-      "Savestate automatique vers")
+      "Sauvegarde instantanée automatique vers")
 MSG_HASH(MSG_BLOCKING_SRAM_OVERWRITE,
       "Bloque l'écrasement de la SRAM")
 MSG_HASH(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -1906,11 +1906,11 @@ MSG_HASH(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
 MSG_HASH(MSG_BYTES,
       "octets")
 MSG_HASH(MSG_CANNOT_INFER_NEW_CONFIG_PATH,
-      "Impossiblede déduire le nouveau chemin de configuration. Utilisation de l'heure actuelle.")
+      "Impossible de déduire le nouveau chemin de configuration. Utilisation de l'heure actuelle.")
 MSG_HASH(MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "Mode matériel activé, sauvegarde instantanée et retour rapide sont désactivés.")
+      "Mode hardcore activé, La sauvegarde instantanée et le retour rapide sont désactivés.")
 MSG_HASH(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
-      "Comparaison avec les numéros magiques connus...")
+      "Comparaison avec les nombres magiques connus...")
 MSG_HASH(MSG_COMPILED_AGAINST_API,
       "Compilé depuis l'API")
 MSG_HASH(MSG_CONFIG_DIRECTORY_NOT_SET,
@@ -2060,7 +2060,7 @@ MSG_HASH(MSG_FATAL_ERROR_RECEIVED_IN,
 MSG_HASH(MSG_FILE_NOT_FOUND,
       "Fichier non trouvé.")
 MSG_HASH(MSG_FOUND_AUTO_SAVESTATE_IN,
-      "Savestate automatique trouvée dans")
+      "Sauvegarde instantanée automatique trouvée dans")
 MSG_HASH(MSG_FOUND_DISK_LABEL,
       "Étiquette du disque trouvée")
 MSG_HASH(MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
