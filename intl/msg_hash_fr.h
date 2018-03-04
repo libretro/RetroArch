@@ -838,7 +838,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
       "Shader suivant")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
-      "Shader précédant")
+      "Shader précédent")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION,
       "Ralenti")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
@@ -1008,7 +1008,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
       "Autoriser les clients en mode passif")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-      "Vérification des frames en réseau")
+      "Délai de resynchronisation du jeu en réseau (en frames)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
       "Latence d'entrées minimale")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -2112,9 +2112,9 @@ MSG_HASH(MSG_LIBRETRO_ABI_BREAK,
 MSG_HASH(MSG_LIBRETRO_FRONTEND,
       "Frontend pour libretro")
 MSG_HASH(MSG_LOADED_STATE_FROM_SLOT,
-      "Chargement du savestate à partir de l'emplacement #%d.")
+      "Chargement de la sauvegarde instantanée à partir de l'emplacement #%d.")
 MSG_HASH(MSG_LOADED_STATE_FROM_SLOT_AUTO,
-      "Chargement du savestate à partir de l'emplacement #-1 (auto).")
+      "Chargement de la sauvegarde instantanée à partir de l'emplacement #-1 (auto).")
 MSG_HASH(MSG_LOADING,
       "Chargement")
 MSG_HASH(MSG_FIRMWARE,
@@ -2540,7 +2540,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-      "Forcer une rotation de l'écran. la rotation est ajoutée à celles que le cœur utilisera."
+      "Forcer une rotation de l'écran. Elle sera en supplément d'une autre éventuellement appliquée par le cœur."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
@@ -3114,11 +3114,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_VIDEO,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
       "Icônes du menu")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-      "Activer/Désactiver les icônes du menu visibles à gauche des entrées du menu.")
+      "Activer/Désactiver les icônes précédant chaque entrée du menu.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
       "Activer l'onglet des réglages")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-      "Défnir le mot de passe pour activer l'onglet des réglages.")
+      "Définir le mot de passe pour activer l'onglet des réglages.")
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
       "Entrer le mot de passe")
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
@@ -3164,13 +3164,13 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
       "Menu rapide")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
-      "Afficher ou cacher les éléments sur l'écran du menu rapide.")
+      "Afficher ou cacher des éléments du menu rapide.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
       "Afficher Prendre une capture d'écran")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
       "Afficher/cacher l'option 'Prendre une capture d'écran'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-      "Afficher Show Save/Load State")
+      "Afficher Sauver/Charger une sauvegarde instantanée")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
       "Show/hide the options for saving/loading state.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
