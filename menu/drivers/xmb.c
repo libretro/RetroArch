@@ -274,8 +274,6 @@ typedef struct xmb_handle
    video_font_raster_block_t raster_block2;
 } xmb_handle_t;
 
-float scale_value;
-
 /* scaling multiplier resulting from equations using values below   */
 /* applied in xmb_init                                              */
 /* values for xmb_scale 50 = {2.5, 2.5, 2, 1.7, 2.5, 4, 2.4, 2.5}   */
@@ -3568,8 +3566,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb_handle_t *xmb          = NULL;
    settings_t *settings       = config_get_ptr();
    menu_handle_t *menu        = (menu_handle_t*)calloc(1, sizeof(*menu));
-
-   scale_value = settings->uints.menu_xmb_scale_factor;
+   float scale_value          = settings->uints.menu_xmb_scale_factor;
 
    if (scale_value < 100)
    {
