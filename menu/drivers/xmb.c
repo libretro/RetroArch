@@ -2924,6 +2924,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    size_t percent_width = 0;
    math_matrix_4x4 mymat;
    unsigned i;
+   float thumb_width, thumb_height;
    menu_display_ctx_rotate_draw_t rotate_draw;
    char msg[1024];
    char title_msg[255];
@@ -3027,13 +3028,27 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
+      /* Resize thumbnail if its height cross the bottom of the screen */
+      if(xmb->margins_screen_top + xmb->icon_size + xmb->thumbnail_height * scale_mod[4] >= 1040)
+      {
+         thumb_width = xmb->thumbnail_width * 
+            ((1040 - xmb->margins_screen_top - xmb->icon_size) / (xmb->thumbnail_height * scale_mod[4]));
+         thumb_height = xmb->thumbnail_height * 
+            ((1040 - xmb->margins_screen_top - xmb->icon_size) / (xmb->thumbnail_height * scale_mod[4]));
+      }
+      else
+      {
+         thumb_width = xmb->thumbnail_width;
+         thumb_height = xmb->thumbnail_height;
+      }
+
       xmb_draw_thumbnail(video_info,
             menu_disp_info,
             xmb, &coord_white[0], width, height,
             xmb->margins_screen_left * scale_mod[5] + xmb->icon_spacing_horizontal +
                   xmb->icon_spacing_horizontal*4 - xmb->icon_size / 4,
-            xmb->margins_screen_top + xmb->icon_size + xmb->thumbnail_height * scale_mod[4],
-            xmb->thumbnail_width, xmb->thumbnail_height,
+            xmb->margins_screen_top + xmb->icon_size + thumb_height * scale_mod[4],
+            thumb_width, thumb_height,
             xmb->thumbnail);
    }
 
@@ -3562,15 +3577,15 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
       scale_mod[1] = -0.03 * scale_value + 3.95;
       scale_mod[2] = -0.02 * scale_value + 3.033333;
       scale_mod[3] = -0.014 * scale_value + 2.416667;
-      scale_mod[4] = 404.2147 * pow(scale_value, -1.299484);
+      scale_mod[4] = -0.03 * scale_value + 3.916667;
       scale_mod[5] = -0.06 * scale_value + 6.933333;
       scale_mod[6] = -0.028 * scale_value + 3.866667;
       scale_mod[7] = 134.179 * pow(scale_value, -1.077852);
-   }
 
-   for (i = 0; i < 8; i++)
-      if (scale_mod[i] < 1)
-         scale_mod[i] = 1;
+      for (i = 0; i < 8; i++)
+         if (scale_mod[i] < 1)
+            scale_mod[i] = 1;
+   }
 
    if (!menu)
       goto error;
