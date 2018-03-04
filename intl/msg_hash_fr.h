@@ -830,7 +830,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
       "Redémarrer le jeu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
-      "Rembobinage")
+      "Retour rapide")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
       "Sauvegarder l'état")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
@@ -1262,11 +1262,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
       "Trophées")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
-      "Activer le rembobinage")
+      "Activer le retour rapide")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
-      "Précision du rembobinage")
+      "Précision du retour rapide")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
-      "Rembobinage")
+      "Retour rapide")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
       "Racine de la navigation")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
@@ -1542,9 +1542,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
       "Impossible de lire l'archive.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
-      "Annuler charger une sauvegarde instantanée")
+      "Annuler le dernier chargement de sauvegarde instantanée")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
-      "Annuler prendre une sauvegarde instantanée")
+      "Annuler la dernière sauvegarde instantanée")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNKNOWN,
       "Inconnu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
@@ -1784,7 +1784,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
       "Activer/désactiver les trophées non-officiels et/ou les fonctionnalités en beta à des fins de test.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "En mode hardcode, les sauvegardes instantanées, la triche, le rembobinage, la pause et le ralenti seront désactivés.")
+      "En mode hardcore, les sauvegardes instantanées, la triche, le retour rapide, la pause et le ralenti seront désactivés.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
       "Modifier les pilotes pour ce système.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
@@ -1796,7 +1796,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
       "Modifier les paramètres d'overlay à l'écran, d'overlay clavier et de notifications.")
 MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-      "Modifier les paramètres de rembobinage, d'avance rapide et de ralenti.")
+      "Modifier les paramètres de retour rapide, d'avance rapide et de ralenti.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
       "Modifier les paramètres de sauvegarde.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
@@ -1908,7 +1908,7 @@ MSG_HASH(MSG_BYTES,
 MSG_HASH(MSG_CANNOT_INFER_NEW_CONFIG_PATH,
       "Impossiblede déduire le nouveau chemin de configuration. Utilisation de l'heure actuelle.")
 MSG_HASH(MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "Mode matériel activé, sauvegarde instantanée et rembobinage sont désactivés.")
+      "Mode matériel activé, sauvegarde instantanée et retour rapide sont désactivés.")
 MSG_HASH(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
       "Comparaison avec les numéros magiques connus...")
 MSG_HASH(MSG_COMPILED_AGAINST_API,
@@ -2184,7 +2184,7 @@ MSG_HASH(MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
 MSG_HASH(MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
       "Annulation des changements du répertoire de sauvegarde instantanée vers")
 MSG_HASH(MSG_REWINDING,
-      "Rembobinage.")
+      "Retour rapide.")
 MSG_HASH(MSG_REWIND_INIT,
       "Initialisation du tampon pour le retour rapide avec une taille")
 MSG_HASH(MSG_REWIND_INIT_FAILED,
@@ -2192,7 +2192,7 @@ MSG_HASH(MSG_REWIND_INIT_FAILED,
 MSG_HASH(MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
       "L'implémentation utilise audio thread. Impossible d'activer le retour rapide.")
 MSG_HASH(MSG_REWIND_REACHED_END,
-      "Atteinte de la fin du tampon de rembobinage.")
+      "Atteinte de la fin du tampon de retour rapide.")
 MSG_HASH(MSG_SAVED_NEW_CONFIG_TO,
       "Nouvelle configuration sauvegardée vers")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT,
@@ -2224,7 +2224,7 @@ MSG_HASH(MSG_SLOW_MOTION,
 MSG_HASH(MSG_FAST_FORWARD,
       "Avance rapide.")
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
-      "Rembobinage ralenti.")
+      "Retour rapide ralenti.")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
       "La SRAM ne sera pas sauvegardée.")
 MSG_HASH(MSG_STARTING_MOVIE_PLAYBACK,
@@ -2576,7 +2576,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-      "Activer le retour rapide. Cela diminuera les performances en jeu."
+      "Activer le retour rapide. Affecte négativement les performances en jeu."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
