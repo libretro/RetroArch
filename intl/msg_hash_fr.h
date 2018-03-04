@@ -2240,7 +2240,7 @@ MSG_HASH(MSG_TAKING_SCREENSHOT,
 MSG_HASH(MSG_TO,
       "de")
 MSG_HASH(MSG_UNDID_LOAD_STATE,
-      "Sauvegarde instantanée annulée.")
+      "Chargement de la sauvegarde instantanée annulé.")
 MSG_HASH(MSG_UNDOING_SAVE_STATE,
       "Annulation de la sauvegarde instantanée")
 MSG_HASH(MSG_UNKNOWN,
@@ -2596,7 +2596,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-      "Charger automatiquement la sauvegarde instantanée automatique au démarrage."
+      "Charger la sauvegarde instantanée automatique au démarrage."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
@@ -2620,7 +2620,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-      "Si désactivé, le contenu continuera de s'exécuter en arrière plan quand le menu rapide est actif."
+      "Si désactivé, lorsque le menu de RetroArch sera actif il ne suspendra pas le déroulement du contenu en arrière plan."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
@@ -2664,7 +2664,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-      "Filtre les fichiers qui sont visibles dans l'explorateur de fichiers par extensions supportées."
+      "Filtre les fichiers qui sont visibles dans l'explorateur de fichiers selon les extensions supportées."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
@@ -2839,11 +2839,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_STATE,
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_STATE,
       "Enregistrer une sauvegarde instantanée dans l'emplacement actif.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESUME,
-      "Reprendre le contenu exécuté actuellement et quitter le menu rapide.")
+      "Reprendre le contenu en cours et quitter le menu rapide.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-      "Reprendre le contenu exécuté actuellement et quitter le menu rapide.")
+      "Reprendre le contenu en cours et quitter le menu rapide.")
 MSG_HASH(MENU_ENUM_SUBLABEL_STATE_SLOT,
-      "Changer l'emplacement actif de sauvegarde instantanée.")
+      "Changer l'emplacement de destination de la sauvegarde instantanée.")
 MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
       "If a state was loaded, content will go back to the state prior to loading.")
 MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
@@ -2861,9 +2861,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
 MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
       "Redémarrer le contenu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-      "Sauvegarde un fichier de configuration qui s'appliquera à tout le contenu utilisé par le cœur. Prendra le dessus sur la configuration principale.")
+      "Sauvegarde un fichier de configuration qui s'appliquera à tout contenu chargé dorénavant par ce cœur. Prioritaire sur la configuration principale.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-      "Sauvegarde un fichier de configuration qui s'appliquera uniquement au contenu actuel. Prendra le dessus sur la configuration principale.")
+      "Sauvegarde un fichier de configuration qui s'appliquera uniquement au contenu actuel. Prioritaire sur la configuration principale.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
       "Paramétrer les codes de triche.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
@@ -3019,7 +3019,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
       "Modifies the shader preset itself currently used in the menu.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
-      "Augmenter ou réduite le nombre de codes de triche."
+      "Augmenter ou réduire le nombre de codes de triche."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
       "Cheat changes will take effect immediately.")
@@ -3032,7 +3032,7 @@ MSG_HASH(
       "Save current cheats as a save file."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-      "Accéder rapidement aux option utiles en jeu.")
+      "Accéder rapidement aux options utiles en jeu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INFORMATION,
       "View information pertaining to the application/core.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
