@@ -124,7 +124,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_AUTOLOADING_SAVESTATE_FROM,
-      "Chargement auto d'une savestate depuis"
+      "Chargement auto d'une sauvegarde instantanée depuis"
       )
 MSG_HASH(
       MSG_CAPABILITIES,
@@ -364,7 +364,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-      "Ne pas écraser la SaveRAM en chargeant la savestate"
+      "Ne pas écraser la SaveRAM en chargeant la sauvegarde instantanée"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
@@ -940,7 +940,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
       "Charger du contenu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-      "Charger une savestate")
+      "Charger une sauvegarde instantanée")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
       "Activer la géolocalisation")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1348,7 +1348,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
       "Classer les sauvegardes par dossier")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-      "Classer les savestates par dossier")
+      "Classer les sauvegardes instantanées par dossier")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
       "Activer SSH")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_CORE,
@@ -1358,7 +1358,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
       "Démarrer le processeur vidéo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-      "Emplacement de savestate")
+      "Emplacement de sauvegarde instantanée")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATUS,
       "Statut")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
@@ -1542,9 +1542,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
       "Impossible de lire l'archive.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
-      "Annuler charger une savestate")
+      "Annuler charger une sauvegarde instantanée")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
-      "Annuler sauvegarder une savestate")
+      "Annuler prendre une sauvegarde instantanée")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNKNOWN,
       "Inconnu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
@@ -1784,7 +1784,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
       "Activer/désactiver les trophées non-officiels et/ou les fonctionnalités en beta à des fins de test.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "En mode hardcode, les savestates, la triche, le rembobinage, la pause et le ralenti seront désactivés.")
+      "En mode hardcode, les sauvegardes instantanées, la triche, le rembobinage, la pause et le ralenti seront désactivés.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
       "Modifier les pilotes pour ce système.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
@@ -1908,7 +1908,7 @@ MSG_HASH(MSG_BYTES,
 MSG_HASH(MSG_CANNOT_INFER_NEW_CONFIG_PATH,
       "Impossiblede déduire le nouveau chemin de configuration. Utilisation de l'heure actuelle.")
 MSG_HASH(MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "Mode matériel activé , savestate et rembobinage sont désactivés.")
+      "Mode matériel activé, sauvegarde instantanée et rembobinage sont désactivés.")
 MSG_HASH(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
       "Comparaison avec les numéros magiques connus...")
 MSG_HASH(MSG_COMPILED_AGAINST_API,
@@ -1922,7 +1922,7 @@ MSG_HASH(MSG_CONTENT_CRC32S_DIFFER,
 MSG_HASH(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
       "Chargement du contenu ignoré. L'implémentation va le charger d'elle-même.")
 MSG_HASH(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-      "Le core ne supporte pas les savestates.")
+      "Le cœur ne supporte pas les sauvegardes instantanées.")
 MSG_HASH(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
       "Le fichier d'options du cœur a été créé.")
 MSG_HASH(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
@@ -2008,7 +2008,7 @@ MSG_HASH(MSG_FAILED_TO_LOAD_MOVIE_FILE,
 MSG_HASH(MSG_FAILED_TO_LOAD_OVERLAY,
       "Impossible de charger l'overlay.")
 MSG_HASH(MSG_FAILED_TO_LOAD_STATE,
-      "Impossible de charger la savestate à partir de")
+      "Impossible de charger la sauvegarde instantanée à partir de")
 MSG_HASH(MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
       "Échec de l'ouverture du cœur Libretro")
 MSG_HASH(MSG_FAILED_TO_PATCH,
@@ -2030,7 +2030,7 @@ MSG_HASH(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
 MSG_HASH(MSG_FAILED_TO_SAVE_SRAM,
       "Impossible de sauvegarder la SRAM")
 MSG_HASH(MSG_FAILED_TO_SAVE_STATE_TO,
-      "Impossible de sauvegarder la savestate vers")
+      "Impossible d'enregistrer la sauvegarde instantanée vers")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME,
       "Échec de l'envoi du pseudo.")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_SIZE,
@@ -2048,7 +2048,7 @@ MSG_HASH(MSG_FAILED_TO_START_MOVIE_RECORD,
 MSG_HASH(MSG_FAILED_TO_START_RECORDING,
       "Échec de l'activation de l'enregistrement.")
 MSG_HASH(MSG_FAILED_TO_TAKE_SCREENSHOT,
-      "Échec de la copie d'écran.")
+      "Échec de la capture d'écran.")
 MSG_HASH(MSG_FAILED_TO_UNDO_LOAD_STATE,
       "Aucun savestate de retour arrière trouvé")
 MSG_HASH(MSG_FAILED_TO_UNDO_SAVE_STATE,
@@ -2124,7 +2124,7 @@ MSG_HASH(MSG_LOADING_CONTENT_FILE,
 MSG_HASH(MSG_LOADING_HISTORY_FILE,
       "Chargement du fichier d'historique")
 MSG_HASH(MSG_LOADING_STATE,
-      "Chargement savestate")
+      "Chargement de la sauvegarde instantanée")
 MSG_HASH(MSG_MEMORY,
       "Mémoire")
 MSG_HASH(MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
@@ -2162,9 +2162,9 @@ MSG_HASH(MSG_RECORDING_TO,
 MSG_HASH(MSG_REDIRECTING_CHEATFILE_TO,
       "Redirection du fichier triche vers")
 MSG_HASH(MSG_REDIRECTING_SAVEFILE_TO,
-      "Redirection de la sauvegarde vers")
+      "Redirection de la sauvegarde instantanée vers")
 MSG_HASH(MSG_REDIRECTING_SAVESTATE_TO,
-      "Redirection de la savestate vers")
+      "Redirection de la sauvegarde instantanée vers")
 MSG_HASH(MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
       "Fichier de remap sauvegardé.")
 MSG_HASH(MSG_REMOVED_DISK_FROM_TRAY,
@@ -2182,7 +2182,7 @@ MSG_HASH(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
 MSG_HASH(MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
       "Annulation des changements du répertoire de sauvegarde vers")
 MSG_HASH(MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-      "Annulation des changements du répertoire de savestate vers")
+      "Annulation des changements du répertoire de sauvegarde instantanée vers")
 MSG_HASH(MSG_REWINDING,
       "Rembobinage.")
 MSG_HASH(MSG_REWIND_INIT,
@@ -2196,15 +2196,15 @@ MSG_HASH(MSG_REWIND_REACHED_END,
 MSG_HASH(MSG_SAVED_NEW_CONFIG_TO,
       "Nouvelle configuration sauvegardée vers")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT,
-      "Savestate vers slot #%d.")
+      "Sauvegarde instantanée vers l'emplacement #%d.")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT_AUTO,
-      "Savestate vers slot #-1 (auto).")
+      "Sauvegarde instantanée vers l'emplacement #-1 (auto).")
 MSG_HASH(MSG_SAVED_SUCCESSFULLY_TO,
       "Sauvegarde réussie vers")
 MSG_HASH(MSG_SAVING_RAM_TYPE,
       "Sauvegarde du type de RAM")
 MSG_HASH(MSG_SAVING_STATE,
-      "Sauvegarde savestate")
+      "Sauvegarde instantanée en cours")
 MSG_HASH(MSG_SCANNING,
       "Analyse")
 MSG_HASH(MSG_SCANNING_OF_DIRECTORY_FINISHED,
