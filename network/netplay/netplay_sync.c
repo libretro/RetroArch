@@ -768,8 +768,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
 
    /* Now replay the real input if we've gotten ahead of it */
    if (netplay->force_rewind ||
-       (netplay->replay_frame_count < netplay->unread_frame_count &&
-        netplay->replay_frame_count < netplay->run_frame_count))
+       netplay->replay_frame_count < netplay->run_frame_count)
    {
       retro_ctx_serialize_info_t serial_info;
 
