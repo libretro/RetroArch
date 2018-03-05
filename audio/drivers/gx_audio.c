@@ -83,12 +83,13 @@ static void *gx_audio_init(const char *device,
    AIInit(NULL);
    AIRegisterDMACallback(dma_callback);
 
-   if (rate < 33000)
+   //ranges 0-32000 (default low) and 40000-47999 (in settings going down from 48000) -> set to 32000 hz
+   if (rate <= 32000 || (rate >= 40000 && rate < 48000))
    {
       AISetDSPSampleRate(AI_SAMPLERATE_32KHZ);
       *new_rate = 32000;
    }
-   else
+   else //ranges 32001-39999 (in settings going up from 32000) and 48000-max (default high) -> set to 48000 hz
    {
       AISetDSPSampleRate(AI_SAMPLERATE_48KHZ);
       *new_rate = 48000;
