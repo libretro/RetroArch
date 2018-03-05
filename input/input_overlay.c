@@ -591,6 +591,7 @@ void input_overlay_loaded(void *task_data, void *user_data, const char *err)
    overlay_task_data_t              *data = (overlay_task_data_t*)task_data;
    input_overlay_t                    *ol = NULL;
    const video_overlay_interface_t *iface = NULL;
+   settings_t *settings                   = config_get_ptr();
 
    if (err)
       return;
@@ -628,6 +629,10 @@ void input_overlay_loaded(void *task_data, void *user_data, const char *err)
    overlay_ptr    = ol;
 
    free(data);
+
+   if (settings->bools.video_fullscreen)
+      video_driver_hide_mouse();
+
    return;
 
 abort_load:
