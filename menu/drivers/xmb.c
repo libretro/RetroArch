@@ -626,7 +626,6 @@ static INLINE float xmb_item_y(const xmb_handle_t *xmb, int i, size_t current)
 
 static void xmb_draw_icon(
       video_frame_info_t *video_info,
-      menu_display_frame_info_t menu_disp_info,
       int icon_size,
       math_matrix_4x4 *mymat,
       uintptr_t texture,
@@ -670,7 +669,7 @@ static void xmb_draw_icon(
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   if (menu_disp_info.shadows_enable)
+   if (video_info->xmb_shadows_enable)
    {
       menu_display_set_alpha(coord_shadow, color[3] * 0.35f);
 
@@ -704,7 +703,6 @@ static void xmb_draw_icon(
 
 static void xmb_draw_thumbnail(
       video_frame_info_t *video_info,
-      menu_display_frame_info_t menu_disp_info,
       xmb_handle_t *xmb, float *color,
       unsigned width, unsigned height,
       float x, float y,
@@ -737,7 +735,7 @@ static void xmb_draw_thumbnail(
    draw.prim_type           = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id         = 0;
 
-   if (menu_disp_info.shadows_enable)
+   if (video_info->xmb_shadows_enable)
    {
       menu_display_set_alpha(coord_shadow, color[3] * 0.35f);
 
@@ -758,7 +756,7 @@ static void xmb_draw_thumbnail(
 }
 
 static void xmb_draw_text(
-      menu_display_frame_info_t menu_disp_info,
+      video_frame_info_t *video_info,
       xmb_handle_t *xmb,
       const char *str, float x,
       float y, float scale_factor, float alpha,
@@ -786,7 +784,7 @@ static void xmb_draw_text(
 
    menu_display_draw_text(font, str, x, y,
          width, height, color, text_align, scale_factor,
-         menu_disp_info.shadows_enable,
+         video_info->xmb_shadows_enable,
          xmb->shadow_offset);
 }
 
@@ -895,7 +893,6 @@ static int xmb_osk_ptr_at_pos(void *data, int x, int y, unsigned width, unsigned
 }
 
 static void xmb_render_messagebox_internal(
-      menu_display_frame_info_t menu_disp_info,
       video_frame_info_t *video_info,
       xmb_handle_t *xmb, const char *message, float* coord_white)
 {
@@ -917,25 +914,26 @@ static void xmb_render_messagebox_internal(
    if (list->elems == 0)
       goto end;
 
-   line_height = xmb->font->size * 1.2;
+   line_height      = xmb->font->size * 1.2;
 
-   y_position = height / 2;
+   y_position       = height / 2;
    if (menu_input_dialog_get_display_kb())
-      y_position = height / 4;
+      y_position    = height / 4;
 
-   x = width  / 2;
-   y = y_position - (list->size-1) * line_height / 2;
+   x                = width  / 2;
+   y                = y_position - (list->size-1) * line_height / 2;
 
    /* find the longest line width */
    for (i = 0; i < list->size; i++)
    {
-      const char *msg = list->elems[i].data;
-      int len         = (int)utf8len(msg);
+      const char *msg  = list->elems[i].data;
+      int len          = (int)utf8len(msg);
 
       if (len > longest)
       {
-         longest = len;
-         longest_width = font_driver_get_message_width(xmb->font, msg, strlen(msg), 1);
+         longest       = len;
+         longest_width = font_driver_get_message_width(
+               xmb->font, msg, strlen(msg), 1);
       }
    }
 
@@ -950,7 +948,8 @@ static void xmb_render_messagebox_internal(
          line_height * list->size + xmb->margins_dialog * 2,
          width, height,
          &coord_white[0],
-         xmb->margins_slice, 1.0, xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]);
+         xmb->margins_slice, 1.0,
+         xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]);
 
    for (i = 0; i < list->size; i++)
    {
@@ -2367,7 +2366,6 @@ static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
 
 static int xmb_draw_item(
       video_frame_info_t *video_info,
-      menu_display_frame_info_t menu_disp_info,
       menu_entry_t *entry,
       math_matrix_4x4 *mymat,
       xmb_handle_t *xmb,
@@ -2509,7 +2507,7 @@ static int xmb_draw_item(
 
       word_wrap(entry_sublabel, entry->sublabel, 50 * scale_mod[3], true);
 
-      xmb_draw_text(menu_disp_info, xmb, entry_sublabel,
+      xmb_draw_text(video_info, xmb, entry_sublabel,
             node->x + xmb->margins_screen_left +
             xmb->icon_spacing_horizontal + xmb->margins_label_left,
             xmb->margins_screen_top + node->y + xmb->margins_label_top*3.5,
@@ -2517,7 +2515,7 @@ static int xmb_draw_item(
             width, height, xmb->font2);
    }
 
-   xmb_draw_text(menu_disp_info, xmb, tmp,
+   xmb_draw_text(video_info, xmb, tmp,
          node->x + xmb->margins_screen_left +
          xmb->icon_spacing_horizontal + xmb->margins_label_left,
          xmb->margins_screen_top + node->y + label_offset,
@@ -2538,7 +2536,7 @@ static int xmb_draw_item(
    }
 
    if (do_draw_text)
-      xmb_draw_text(menu_disp_info, xmb, tmp,
+      xmb_draw_text(video_info, xmb, tmp,
             node->x +
             + xmb->margins_screen_left
             + xmb->icon_spacing_horizontal
@@ -2574,7 +2572,6 @@ static int xmb_draw_item(
       menu_display_rotate_z(&rotate_draw, video_info);
 
       xmb_draw_icon(video_info,
-            menu_disp_info,
             xmb->icon_size,
             &mymat_tmp,
             texture,
@@ -2593,7 +2590,6 @@ static int xmb_draw_item(
 
    if (texture_switch != 0 && color[3] != 0)
       xmb_draw_icon(video_info,
-            menu_disp_info,
             xmb->icon_size,
             mymat,
             texture_switch,
@@ -2621,7 +2617,6 @@ end:
 
 static void xmb_draw_items(
       video_frame_info_t *video_info,
-      menu_display_frame_info_t menu_disp_info,
       xmb_handle_t *xmb,
       file_list_t *list,
       size_t current, size_t cat_selection_ptr, float *color,
@@ -2681,7 +2676,6 @@ static void xmb_draw_items(
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, i, list, true);
       ret = xmb_draw_item(video_info,
-            menu_disp_info,
             &entry,
             &mymat,
             xmb, core_node,
@@ -2927,7 +2921,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    char msg[1024];
    char title_msg[255];
    char title_truncated[255];
-   menu_display_frame_info_t menu_disp_info;
    settings_t *settings                    = config_get_ptr();
    unsigned width                          = video_info->width;
    unsigned height                         = video_info->height;
@@ -2939,8 +2932,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       return;
 
    xmb->frame_count++;
-
-   menu_disp_info.shadows_enable           = video_info->xmb_shadows_enable;
 
    msg[0]             = '\0';
    title_msg[0]       = '\0';
@@ -2985,7 +2976,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Title text */
-   xmb_draw_text(menu_disp_info, xmb,
+   xmb_draw_text(video_info, xmb,
          title_truncated, xmb->margins_title_left,
          xmb->margins_title_top,
          1, 1, TEXT_ALIGN_LEFT,
@@ -2993,7 +2984,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (settings->bools.menu_core_enable &&
          menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
-      xmb_draw_text(menu_disp_info, xmb, title_msg, xmb->margins_title_left,
+      xmb_draw_text(video_info, xmb, title_msg, xmb->margins_title_left,
             height - xmb->margins_title_bottom, 1, 1, TEXT_ALIGN_LEFT,
             width, height, xmb->font);
 
@@ -3009,7 +3000,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (xmb->savestate_thumbnail)
       xmb_draw_thumbnail(video_info,
-            menu_disp_info,
             xmb, &coord_white[0], width, height,
             xmb->margins_screen_left * scale_mod[5]
             + xmb->icon_spacing_horizontal +
@@ -3041,7 +3031,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       }
 
       xmb_draw_thumbnail(video_info,
-            menu_disp_info,
             xmb, &coord_white[0], width, height,
             xmb->margins_screen_left * scale_mod[5] + xmb->icon_spacing_horizontal +
                   xmb->icon_spacing_horizontal*4 - xmb->icon_size / 4,
@@ -3080,7 +3069,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          if (coord_white[3] != 0)
             xmb_draw_icon(video_info,
-                  menu_disp_info,
                   xmb->icon_size,
                   &mymat,
                   xmb->textures.list[charging
@@ -3099,7 +3087,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          percent_width = (unsigned)font_driver_get_message_width(xmb->font, msg, (unsigned)strlen(msg), 1);
 
-         xmb_draw_text(menu_disp_info, xmb, msg,
+         xmb_draw_text(video_info, xmb, msg,
                width - xmb->margins_title_left - x_pos,
                xmb->margins_title_top, 1, 1, TEXT_ALIGN_RIGHT,
                width, height, xmb->font);
@@ -3120,7 +3108,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             x_pos = percent_width + (xmb->icon_size / 2.5);
 
          xmb_draw_icon(video_info,
-               menu_disp_info,
                xmb->icon_size,
                &mymat,
                xmb->textures.list[XMB_TEXTURE_CLOCK],
@@ -3146,7 +3133,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       if (percent_width)
          x_pos = percent_width + (xmb->icon_size / 2.5);
 
-      xmb_draw_text(menu_disp_info, xmb, timedate,
+      xmb_draw_text(video_info, xmb, timedate,
             width - xmb->margins_title_left - xmb->icon_size / 4 - x_pos,
             xmb->margins_title_top, 1, 1, TEXT_ALIGN_RIGHT,
             width, height, xmb->font);
@@ -3157,7 +3144,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (coord_white[3] != 0)
       xmb_draw_icon(video_info,
-            menu_disp_info,
             xmb->icon_size,
             &mymat,
             xmb->textures.list[XMB_TEXTURE_ARROW],
@@ -3209,7 +3195,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          menu_display_rotate_z(&rotate_draw, video_info);
 
          xmb_draw_icon(video_info,
-               menu_disp_info,
                xmb->icon_size,
                &mymat,
                texture,
@@ -3231,7 +3216,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (xmb)
       xmb_draw_items(
             video_info,
-            menu_disp_info,
             xmb,
             xmb->selection_buf_old,
             xmb->selection_ptr_old,
@@ -3246,7 +3230,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (xmb)
       xmb_draw_items(
             video_info,
-            menu_disp_info,
             xmb,
             selection_buf,
             selection,
@@ -3284,7 +3267,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (render_background)
    {
       xmb_draw_dark_layer(xmb, video_info, width, height);
-      xmb_render_messagebox_internal(menu_disp_info,
+      xmb_render_messagebox_internal(
             video_info, xmb, msg, &coord_white[0]);
    }
 
