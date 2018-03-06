@@ -125,6 +125,8 @@ inline std::string convert_to_string(T &&t)
 #endif
 
 #ifdef _MSC_VER
+// sprintf warning.
+// We cannot rely on snprintf existing because, ..., MSVC.
 #pragma warning(push)
 #pragma warning(disable : 4996)
 #endif
@@ -726,10 +728,10 @@ struct SPIRConstant : IVariant
 		uint32_t id[4];
 		uint32_t vecsize = 1;
 
+		// Workaround for MSVC 2013, initializing an array breaks.
 		ConstantVector()
 		{
-			unsigned i;
-			for (i = 0; i < 4; i++)
+			for (unsigned i = 0; i < 4; i++)
 				id[i] = 0;
 		}
 	};
@@ -741,10 +743,10 @@ struct SPIRConstant : IVariant
 		uint32_t id[4];
 		uint32_t columns = 1;
 
+		// Workaround for MSVC 2013, initializing an array breaks.
 		ConstantMatrix()
 		{
-			unsigned i;
-			for (i = 0; i < 4; i++)
+			for (unsigned i = 0; i < 4; i++)
 				id[i] = 0;
 		}
 	};
@@ -1034,6 +1036,23 @@ public:
 
 private:
 	std::locale old;
+};
+
+class Hasher
+{
+public:
+	inline void u32(uint32_t value)
+	{
+		h = (h * 0x100000001b3ull) ^ value;
+	}
+
+	inline uint64_t get() const
+	{
+		return h;
+	}
+
+private:
+	uint64_t h = 0xcbf29ce484222325ull;
 };
 }
 

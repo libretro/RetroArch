@@ -72,5 +72,6 @@ layout(binding = 0, std140) buffer SSBO0
 void main()
 {
     ssbo_430.content = ssbo_140.content;
+    ssbo_430.content.m1.a = ssbo_430.m6[1][1] * ssbo_430.content.m3.a;	// test packed matrix access
 }
 

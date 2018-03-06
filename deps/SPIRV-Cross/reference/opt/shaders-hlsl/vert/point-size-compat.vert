@@ -8,7 +8,7 @@ struct SPIRV_Cross_Output
 void vert_main()
 {
     gl_Position = 1.0f.xxxx;
-    gl_PointSize = 10.0f;
+    gl_PointSize = 1.0f;
 }
 
 SPIRV_Cross_Output main()
