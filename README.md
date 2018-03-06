@@ -7,8 +7,8 @@ SPIRV-Cross is a tool designed for parsing and converting SPIR-V to other shader
 ## Features
 
   - Convert SPIR-V to readable, usable and efficient GLSL
-  - Convert SPIR-V to readable, usable and efficient Metal Shading Language (MSL) [EXPERIMENTAL]
-  - Convert SPIR-V to readable, usable and efficient HLSL [EXPERIMENTAL]
+  - Convert SPIR-V to readable, usable and efficient Metal Shading Language (MSL)
+  - Convert SPIR-V to readable, usable and efficient HLSL
   - Convert SPIR-V to debuggable C++ [EXPERIMENTAL]
   - Reflection API to simplify the creation of Vulkan pipeline layouts
   - Reflection API to modify and tweak OpDecorations

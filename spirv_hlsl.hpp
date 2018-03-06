@@ -29,6 +29,18 @@ struct HLSLVertexAttributeRemap
 	uint32_t location;
 	std::string semantic;
 };
+// Specifying a root constant (d3d12) or push constant range (vulkan).
+//
+// `start` and `end` denotes the range of the root constant in bytes.
+// Both values need to be multiple of 4.
+struct RootConstants
+{
+	uint32_t start;
+	uint32_t end;
+
+	uint32_t binding;
+	uint32_t space;
+};
 
 class CompilerHLSL : public CompilerGLSL
 {
@@ -39,6 +51,9 @@ public:
 
 		// Allows the PointSize builtin, and ignores it, as PointSize is not supported in HLSL.
 		bool point_size_compat = false;
+
+		// Allows the PointCoord builtin, returns float2(0.5, 0.5), as PointCoord is not supported in HLSL.
+		bool point_coord_compat = false;
 	};
 
 	CompilerHLSL(std::vector<uint32_t> spirv_)
@@ -61,12 +76,33 @@ public:
 		options = opts;
 	}
 
+	// Optionally specify a custom root constant layout.
+	//
+	// Push constants ranges will be split up according to the
+	// layout specified.
+	void set_root_constant_layouts(std::vector<RootConstants> layout)
+	{
+		root_constants_layout = std::move(layout);
+	}
+
 	// Compiles and remaps vertex attributes at specific locations to a fixed semantic.
 	// The default is TEXCOORD# where # denotes location.
 	// Matrices are unrolled to vectors with notation ${SEMANTIC}_#, where # denotes row.
 	// $SEMANTIC is either TEXCOORD# or a semantic name specified here.
 	std::string compile(std::vector<HLSLVertexAttributeRemap> vertex_attributes);
 	std::string compile() override;
+
+	// This is a special HLSL workaround for the NumWorkGroups builtin.
+	// This does not exist in HLSL, so the calling application must create a dummy cbuffer in
+	// which the application will store this builtin.
+	// The cbuffer layout will be:
+	// cbuffer SPIRV_Cross_NumWorkgroups : register(b#, space#) { uint3 SPIRV_Cross_NumWorkgroups_count; };
+	// This must be called before compile().
+	// The function returns 0 if NumWorkGroups builtin is not statically used in the shader from the current entry point.
+	// If non-zero, this returns the variable ID of a cbuffer which corresponds to
+	// the cbuffer declared above. By default, no binding or descriptor set decoration is set,
+	// so the calling application should declare explicit bindings on this ID before calling compile().
+	uint32_t remap_num_workgroups_builtin();
 
 private:
 	std::string type_to_glsl(const SPIRType &type, uint32_t id = 0) override;
@@ -101,6 +137,7 @@ private:
 	std::string to_sampler_expression(uint32_t id);
 	std::string to_resource_binding(const SPIRVariable &var);
 	std::string to_resource_binding_sampler(const SPIRVariable &var);
+	std::string to_resource_register(char space, uint32_t binding, uint32_t set);
 	void emit_sampled_image_op(uint32_t result_type, uint32_t result_id, uint32_t image_id, uint32_t samp_id) override;
 	void emit_access_chain(const Instruction &instruction);
 	void emit_load(const Instruction &instruction);
@@ -109,8 +146,8 @@ private:
 	void emit_store(const Instruction &instruction);
 	void emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op);
 
-	void emit_struct_member(const SPIRType &type, uint32_t member_type_id, uint32_t index,
-	                        const std::string &qualifier) override;
+	void emit_struct_member(const SPIRType &type, uint32_t member_type_id, uint32_t index, const std::string &qualifier,
+	                        uint32_t base_offset = 0) override;
 
 	const char *to_storage_qualifiers_glsl(const SPIRVariable &var) override;
 
@@ -124,6 +161,9 @@ private:
 	bool requires_snorm16_packing = false;
 	bool requires_bitfield_insert = false;
 	bool requires_bitfield_extract = false;
+	bool requires_inverse_2x2 = false;
+	bool requires_inverse_3x3 = false;
+	bool requires_inverse_4x4 = false;
 	uint64_t required_textureSizeVariants = 0;
 	void require_texture_query_variant(const SPIRType &type);
 
@@ -159,6 +199,12 @@ private:
 
 	void emit_io_block(const SPIRVariable &var);
 	std::string to_semantic(uint32_t vertex_location);
+
+	uint32_t num_workgroups_builtin = 0;
+
+	// Custom root constant layout, which should be emitted
+	// when translating push constant ranges.
+	std::vector<RootConstants> root_constants_layout;
 };
 }
 

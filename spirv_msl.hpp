@@ -135,9 +135,9 @@ public:
 		SPVFuncImplFindSMsb,
 		SPVFuncImplFindUMsb,
 		SPVFuncImplArrayCopy,
-		SPVFuncImplInverse2x2,
-		SPVFuncImplInverse3x3,
 		SPVFuncImplInverse4x4,
+		SPVFuncImplInverse3x3,
+		SPVFuncImplInverse2x2,
 		SPVFuncImplRowMajor2x3,
 		SPVFuncImplRowMajor2x4,
 		SPVFuncImplRowMajor3x2,
@@ -187,7 +187,7 @@ protected:
 	void emit_sampled_image_op(uint32_t result_type, uint32_t result_id, uint32_t image_id, uint32_t samp_id) override;
 	void emit_fixup() override;
 	void emit_struct_member(const SPIRType &type, uint32_t member_type_id, uint32_t index,
-	                        const std::string &qualifier = "") override;
+	                        const std::string &qualifier = "", uint32_t base_offset = 0) override;
 	std::string type_to_glsl(const SPIRType &type, uint32_t id = 0) override;
 	std::string image_type_glsl(const SPIRType &type, uint32_t id = 0) override;
 	std::string builtin_to_glsl(spv::BuiltIn builtin, spv::StorageClass storage) override;
@@ -208,9 +208,10 @@ protected:
 	std::string to_qualifiers_glsl(uint32_t id) override;
 	void replace_illegal_names() override;
 	void declare_undefined_values() override;
+	void declare_constant_arrays();
 	bool is_non_native_row_major_matrix(uint32_t id) override;
 	bool member_is_non_native_row_major_matrix(const SPIRType &type, uint32_t index) override;
-	std::string convert_row_major_matrix(std::string exp_str, const SPIRType &exp_type) override;
+	std::string convert_row_major_matrix(std::string exp_str, const SPIRType &exp_type, bool is_packed) override;
 
 	void preprocess_op_codes();
 	void localize_global_variables();
@@ -225,6 +226,7 @@ protected:
 	                                            std::unordered_set<uint32_t> &processed_func_ids);
 	uint32_t add_interface_block(spv::StorageClass storage);
 	void mark_location_as_used_by_shader(uint32_t location, spv::StorageClass storage);
+	uint32_t ensure_correct_builtin_type(uint32_t type_id, spv::BuiltIn builtin);
 
 	void emit_custom_functions();
 	void emit_resources();
@@ -250,7 +252,7 @@ protected:
 	uint32_t get_ordered_member_location(uint32_t type_id, uint32_t index);
 	size_t get_declared_struct_member_alignment(const SPIRType &struct_type, uint32_t index) const;
 	std::string to_component_argument(uint32_t id);
-	bool should_move_to_input_buffer(SPIRType &type, bool is_builtin, spv::StorageClass storage);
+	bool should_move_to_input_buffer(uint32_t type_id, bool is_builtin, spv::StorageClass storage);
 	void move_to_input_buffer(SPIRVariable &var);
 	void move_member_to_input_buffer(const SPIRType &type, uint32_t index);
 	std::string add_input_buffer_block_member(uint32_t mbr_type_id, std::string mbr_name, uint32_t mbr_locn);
@@ -264,7 +266,11 @@ protected:
 	                         bool op1_is_pointer = false, uint32_t op2 = 0);
 	const char *get_memory_order(uint32_t spv_mem_sem);
 	void add_pragma_line(const std::string &line);
+	void add_typedef_line(const std::string &line);
 	void emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uint32_t id_mem_sem);
+	void emit_array_copy(const std::string &lhs, uint32_t rhs_id) override;
+	void build_implicit_builtins();
+	uint32_t builtin_frag_coord_id = 0;
 
 	Options options;
 	std::set<SPVFuncImpl> spv_function_implementations;
@@ -272,6 +278,7 @@ protected:
 	std::map<uint32_t, uint32_t> non_stage_in_input_var_ids;
 	std::unordered_map<MSLStructMemberKey, uint32_t> struct_member_padding;
 	std::set<std::string> pragma_lines;
+	std::set<std::string> typedef_lines;
 	std::vector<MSLResourceBinding *> resource_bindings;
 	MSLResourceBinding next_metal_resource_index;
 	uint32_t stage_in_var_id = 0;
