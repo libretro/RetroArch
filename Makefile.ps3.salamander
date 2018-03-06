@@ -1,4 +1,4 @@
-CELL_BUILD_TOOLS	= SNC
+CELL_BUILD_TOOLS	= GCC
 CELL_SDK		?= /usr/local/cell
 HAVE_LOGGER		= 0
 CELL_MK_DIR ?= $(CELL_SDK)/samples/mk
