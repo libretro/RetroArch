@@ -96,8 +96,7 @@ ifeq ($(CELL_BUILD_TOOLS), SNC)
 	PPU_CXXLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
 	PPU_CXX	= $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
 	PPU_CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
-else
-ifneq($(system_platform), win)
+else ifneq($(system_platform), win)
 	PPU_CXX	= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-g++.exe
 	PPU_CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
 	PPU_CXXLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
