@@ -386,6 +386,11 @@ bool slang_process(
          vs->set_options(options);
          ps->set_options(options);
 
+         CompilerGLSL::Options glsl_options;
+         glsl_options.vertex.flip_vert_y = true;
+         ((CompilerGLSL*)vs)->set_options(glsl_options);
+         ((CompilerGLSL*)ps)->set_options(glsl_options);
+
          /* not exactly a vertex attribute but this remaps
           * float2 FragCoord :TEXCOORD# to float4 FragCoord : SV_POSITION */
          std::vector<HLSLVertexAttributeRemap> ps_attrib_remap;
