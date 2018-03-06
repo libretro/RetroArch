@@ -130,6 +130,7 @@
     <ClCompile Include="..\spirv_hlsl.cpp" />
     <ClCompile Include="..\spirv_msl.cpp" />
     <ClCompile Include="..\spirv_cfg.cpp" />
+    <ClCompile Include="..\spirv_cross_util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\GLSL.std.450.h" />
@@ -141,6 +142,7 @@
     <ClInclude Include="..\spirv_hlsl.hpp" />
     <ClInclude Include="..\spirv_msl.hpp" />
     <ClInclude Include="..\spirv_cfg.hpp" />
+    <ClInclude Include="..\spirv_cross_util.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

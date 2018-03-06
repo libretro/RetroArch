@@ -375,6 +375,9 @@ void CompilerCPP::emit_c_linkage()
 
 void CompilerCPP::emit_function_prototype(SPIRFunction &func, uint64_t)
 {
+	if (func.self != entry_point)
+		add_function_overload(func);
+
 	local_variable_names = resource_names;
 	string decl;
 

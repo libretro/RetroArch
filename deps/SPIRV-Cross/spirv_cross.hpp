@@ -108,6 +108,12 @@ enum BufferPackingStandard
 	BufferPackingHLSLCbufferPackOffset
 };
 
+struct EntryPoint
+{
+	std::string name;
+	spv::ExecutionModel execution_model;
+};
+
 class Compiler
 {
 public:
@@ -261,17 +267,23 @@ public:
 	// Entry points should be set right after the constructor completes as some reflection functions traverse the graph from the entry point.
 	// Resource reflection also depends on the entry point.
 	// By default, the current entry point is set to the first OpEntryPoint which appears in the SPIR-V module.
+	SPIRV_CROSS_DEPRECATED("Please use get_entry_points_and_stages instead.")
 	std::vector<std::string> get_entry_points() const;
+	SPIRV_CROSS_DEPRECATED("Please use set_entry_point(const std::string &, spv::ExecutionModel) instead.")
 	void set_entry_point(const std::string &name);
 
 	// Renames an entry point from old_name to new_name.
 	// If old_name is currently selected as the current entry point, it will continue to be the current entry point,
 	// albeit with a new name.
 	// get_entry_points() is essentially invalidated at this point.
+	SPIRV_CROSS_DEPRECATED(
+	    "Please use rename_entry_point(const std::string&, const std::string&, spv::ExecutionModel) instead.")
 	void rename_entry_point(const std::string &old_name, const std::string &new_name);
 
 	// Returns the internal data structure for entry points to allow poking around.
+	SPIRV_CROSS_DEPRECATED("Please use get_entry_point(const std::string &, spv::ExecutionModel instead.")
 	const SPIREntryPoint &get_entry_point(const std::string &name) const;
+	SPIRV_CROSS_DEPRECATED("Please use get_entry_point(const std::string &, spv::ExecutionModel instead.")
 	SPIREntryPoint &get_entry_point(const std::string &name);
 
 	// Some shader languages restrict the names that can be given to entry points, and the
@@ -282,7 +294,21 @@ public:
 	// the name, as updated by the backend during the call to compile(). If the name is not
 	// illegal, and has not been renamed, or if this function is called before compile(),
 	// this function will simply return the same name.
+	SPIRV_CROSS_DEPRECATED(
+	    "Please use get_cleansed_entry_point_name(const std::string &, spv::ExecutionModel) instead.")
 	const std::string &get_cleansed_entry_point_name(const std::string &name) const;
+
+	// New variants of entry point query and reflection.
+	// Names for entry points in the SPIR-V module may alias if they belong to different execution models.
+	// To disambiguate, we must pass along with the entry point names the execution model.
+	std::vector<EntryPoint> get_entry_points_and_stages() const;
+	void set_entry_point(const std::string &entry, spv::ExecutionModel execution_model);
+	void rename_entry_point(const std::string &old_name, const std::string &new_name,
+	                        spv::ExecutionModel execution_model);
+	const SPIREntryPoint &get_entry_point(const std::string &name, spv::ExecutionModel execution_model) const;
+	SPIREntryPoint &get_entry_point(const std::string &name, spv::ExecutionModel execution_model);
+	const std::string &get_cleansed_entry_point_name(const std::string &name,
+	                                                 spv::ExecutionModel execution_model) const;
 
 	// Query and modify OpExecutionMode.
 	uint64_t get_execution_mode_mask() const;
@@ -313,6 +339,22 @@ public:
 	// for most use cases.
 	uint32_t get_work_group_size_specialization_constants(SpecializationConstant &x, SpecializationConstant &y,
 	                                                      SpecializationConstant &z) const;
+
+	// Analyzes all OpImageFetch (texelFetch) opcodes and checks if there are instances where
+	// said instruction is used without a combined image sampler.
+	// GLSL targets do not support the use of texelFetch without a sampler.
+	// To workaround this, we must inject a dummy sampler which can be used to form a sampler2D at the call-site of
+	// texelFetch as necessary.
+	//
+	// This must be called before build_combined_image_samplers().
+	// build_combined_image_samplers() may refer to the ID returned by this method if the returned ID is non-zero.
+	// The return value will be the ID of a sampler object if a dummy sampler is necessary, or 0 if no sampler object
+	// is required.
+	//
+	// If the returned ID is non-zero, it can be decorated with set/bindings as desired before calling compile().
+	// Calling this function also invalidates get_active_interface_variables(), so this should be called
+	// before that function.
+	uint32_t build_dummy_sampler_for_combined_images();
 
 	// Analyzes all separate image and samplers used from the currently selected entry point,
 	// and re-routes them all to a combined image sampler instead.
@@ -678,6 +720,18 @@ protected:
 		                                     bool depth);
 	};
 
+	struct DummySamplerForCombinedImageHandler : OpcodeHandler
+	{
+		DummySamplerForCombinedImageHandler(Compiler &compiler_)
+		    : compiler(compiler_)
+		{
+		}
+		bool handle(spv::Op opcode, const uint32_t *args, uint32_t length) override;
+
+		Compiler &compiler;
+		bool need_dummy_sampler = false;
+	};
+
 	struct ActiveBuiltinHandler : OpcodeHandler
 	{
 		ActiveBuiltinHandler(Compiler &compiler_)
@@ -687,6 +741,8 @@ protected:
 
 		bool handle(spv::Op opcode, const uint32_t *args, uint32_t length) override;
 		Compiler &compiler;
+
+		void handle_builtin(const SPIRType &type, spv::BuiltIn builtin, uint64_t decoration_flags);
 	};
 
 	bool traverse_all_reachable_opcodes(const SPIRBlock &block, OpcodeHandler &handler) const;
@@ -707,6 +763,10 @@ protected:
 
 	uint64_t active_input_builtins = 0;
 	uint64_t active_output_builtins = 0;
+	uint32_t clip_distance_count = 0;
+	uint32_t cull_distance_count = 0;
+	bool position_invariant = false;
+
 	// Traverses all reachable opcodes and sets active_builtins to a bitmask of all builtin variables which are accessed in the shader.
 	void update_active_builtins();
 	bool has_active_builtin(spv::BuiltIn builtin, spv::StorageClass storage);
@@ -720,8 +780,17 @@ protected:
 	// SPIR-V does not support this distinction, so we must keep track of this information outside the type system.
 	// There might be unrelated IDs found in this set which do not correspond to actual variables.
 	// This set should only be queried for the existence of samplers which are already known to be variables or parameter IDs.
+	// Similar is implemented for images, as well as if subpass inputs are needed.
 	std::unordered_set<uint32_t> comparison_samplers;
-	void analyze_sampler_comparison_states();
+	std::unordered_set<uint32_t> comparison_images;
+	bool need_subpass_input = false;
+
+	// In certain backends, we will need to use a dummy sampler to be able to emit code.
+	// GLSL does not support texelFetch on texture2D objects, but SPIR-V does,
+	// so we need to workaround by having the application inject a dummy sampler.
+	uint32_t dummy_sampler_id = 0;
+
+	void analyze_image_and_sampler_usage();
 	struct CombinedImageSamplerUsageHandler : OpcodeHandler
 	{
 		CombinedImageSamplerUsageHandler(Compiler &compiler_)
@@ -734,9 +803,12 @@ protected:
 		Compiler &compiler;
 
 		std::unordered_map<uint32_t, std::unordered_set<uint32_t>> dependency_hierarchy;
+		std::unordered_set<uint32_t> comparison_images;
 		std::unordered_set<uint32_t> comparison_samplers;
 
 		void add_hierarchy_to_comparison_samplers(uint32_t sampler);
+		void add_hierarchy_to_comparison_images(uint32_t sampler);
+		bool need_subpass_input = false;
 	};
 
 	void make_constant_null(uint32_t id, uint32_t type);
@@ -747,6 +819,11 @@ protected:
 
 	bool instruction_to_result_type(uint32_t &result_type, uint32_t &result_id, spv::Op op, const uint32_t *args,
 	                                uint32_t length);
+
+private:
+	// Used only to implement the old deprecated get_entry_point() interface.
+	const SPIREntryPoint &get_first_entry_point(const std::string &name) const;
+	SPIREntryPoint &get_first_entry_point(const std::string &name);
 };
 }
 
