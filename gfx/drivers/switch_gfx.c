@@ -49,15 +49,20 @@ typedef struct
 		unsigned width;
 		unsigned height;
 
+		unsigned tgtw;
+		unsigned tgth;
+
 		struct scaler_ctx scaler;
 	} menu_texture;
+
+	surface_t surface;
+	revent_h vsync_h;
+	uint32_t image[1280*720];
+	
+	struct scaler_ctx scaler;
+	uint32_t last_width;
+	uint32_t last_height;
 } switch_video_t;
-
-static uint32_t image[1280*720];
-
-static bool has_initialized = false;
-static surface_t surface;
-static revent_h vsync_h;
 
 static void *switch_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
@@ -69,35 +74,28 @@ static void *switch_init(const video_info_t *video,
 
    RARCH_LOG("loading switch gfx driver, width: %d, height: %d\n", video->width, video->height);
 
-   if (has_initialized)
-	   RARCH_LOG("global graphics were already initialized; skipping...\n");
-   else
+   result_t r = display_init();
+   if (r != RESULT_OK)
    {
-      result_t r = display_init();
-      if (r != RESULT_OK)
-      {
-         free(sw);
-         return NULL;
-      }
-      r = display_open_layer(&surface);
+      free(sw);
+      return NULL;
+   }
+   r = display_open_layer(&sw->surface);
 
-      if (r != RESULT_OK)
-      {
-         display_finalize();
-         free(sw);
-         return NULL;
-      }
-      r = display_get_vsync_event(&vsync_h);
+   if (r != RESULT_OK)
+   {
+      display_finalize();
+      free(sw);
+      return NULL;
+   }
+   r = display_get_vsync_event(&sw->vsync_h);
 
-      if (r != RESULT_OK)
-      {
-         display_finalize();
-         free(sw);
-         return NULL;
-      }
-
-      atexit(display_finalize);
-      has_initialized = true;
+   if (r != RESULT_OK)
+   {
+	   display_close_layer(&sw->surface);
+      display_finalize();
+      free(sw);
+      return NULL;
    }
 
    sw->vp.x           = 0;
@@ -109,17 +107,10 @@ static void *switch_init(const video_info_t *video,
    video_driver_set_size(&sw->vp.width, &sw->vp.height);
 
    sw->vsync = video->vsync;
-
    sw->rgb32 = video->rgb32;
-   
+
    *input = NULL;
    *input_data = NULL;
-
-   for(x = 0; x < 1280; x++)
-   {
-      for(y = 0; y < 720; y++)
-         image[(y*1280)+x] = 0xFF000000;
-   }
 
    return sw;
 }
@@ -127,8 +118,8 @@ static void *switch_init(const video_info_t *video,
 static void switch_wait_vsync(switch_video_t *sw)
 {
 	uint32_t handle_idx;
-	svcWaitSynchronization(&handle_idx, &vsync_h, 1, 33333333);
-	svcResetSignal(vsync_h);
+	svcWaitSynchronization(&handle_idx, &sw->vsync_h, 1, 33333333);
+	svcResetSignal(sw->vsync_h);
 }
 
 static bool switch_frame(void *data, const void *frame,
@@ -159,36 +150,43 @@ static bool switch_frame(void *data, const void *frame,
 
    begin                  = svcGetSystemTick();
 
-   for(x = 0; x < width; x++)
+   // clear image to black
+   for(x = 0; x < 1280; x++)
    {
-      for(y = 0; y < height; y++)
+      for(y = 0; y < 720; y++)
       {
-	 unsigned subx, suby;
-         uint32_t pixel = 0;
-
-         if (sw->rgb32)
-         {
-            const uint32_t *frame_pixels = frame;
-            pixel = frame_pixels[(y*pitch/sizeof(uint32_t)) + x];
-         }
-	 else
-	 {
-            const uint16_t *frame_pixels = frame;
-            uint32_t spixel = frame_pixels[(y*pitch/sizeof(uint16_t)) + x];
-            uint8_t r       = (spixel >> 11) & 31;
-            uint8_t g       = (spixel >> 5) & 63;
-            uint8_t b       = (spixel >> 0) & 31;
-            r               = (r * 256) / 32;
-            g               = (g * 256) / 64;
-            b               = (b * 256) / 32;
-            pixel           = (r << 0) | (g << 8) | (b << 16) | (0xFF << 24);
-         }
-
-         for (subx = 0; subx < xsf; subx++)
-            for (suby = 0; suby < ysf; suby++)
-               image[(((y*sf)+suby+centery)*1280) 
-                  + ((x*sf)+subx+centerx)] = pixel;
+         sw->image[y*1280+x] = 0xFF000000;
       }
+   }
+
+   if(width > 0 && height > 0) {
+	   if(sw->last_width != width ||
+	      sw->last_height != height)
+		   {
+			   scaler_ctx_gen_reset(&sw->scaler);
+			   
+			   sw->scaler.in_width = width;
+			   sw->scaler.in_height = height;
+			   sw->scaler.in_stride = pitch;
+			   sw->scaler.in_fmt = sw->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
+			   
+			   sw->scaler.out_width = tgtw;
+			   sw->scaler.out_height = tgth;
+			   sw->scaler.out_stride = 1280 * sizeof(uint32_t);
+			   sw->scaler.out_fmt = SCALER_FMT_ARGB8888;
+			   
+			   sw->scaler.scaler_type = SCALER_TYPE_POINT;
+			   
+			   if(!scaler_ctx_gen_filter(&sw->scaler)) {
+				   RARCH_ERR("failed to generate scaler for main image\n");
+				   return false;
+			   }
+
+			   sw->last_width = width;
+			   sw->last_height = height;
+		   }
+	   
+	   scaler_ctx_scale(&sw->scaler, sw->image + (centery * 1280) + centerx, frame);
    }
 
 #if defined(HAVE_MENU)
@@ -202,7 +200,9 @@ static bool switch_frame(void *data, const void *frame,
 			if (sw->menu_texture.fullscreen)
          {
 #endif
-				scaler_ctx_scale(&sw->menu_texture.scaler, image, sw->menu_texture.pixels);
+	         scaler_ctx_scale(&sw->menu_texture.scaler, sw->image +
+	                          ((720-sw->menu_texture.tgth)/2)*1280 +
+	                          ((1280-sw->menu_texture.tgtw)/2), sw->menu_texture.pixels);
 #if 0
          }
          else
@@ -212,6 +212,21 @@ static bool switch_frame(void *data, const void *frame,
 		}
 	}
 #endif
+
+   for(x = 0; x < 1280; x++)
+	{
+		for(y = 0; y < 720; y++)
+		{
+			// swizzle components
+			uint32_t *pixel = &sw->image[(y*1280) + x];
+			uint32_t src = *pixel;
+			uint8_t a = (src & 0xFF000000) >> 24;
+			uint8_t r = (src & 0x00FF0000) >> 16;
+			uint8_t g = (src & 0x0000FF00) >> 8;
+			uint8_t b = (src & 0x000000FF) >> 0;
+			*pixel = (a << 24) | (b << 16) | (g << 8) | (r << 0);
+		}
+   }
    
    done_copying = svcGetSystemTick();
 
@@ -232,14 +247,14 @@ static bool switch_frame(void *data, const void *frame,
 	   
 	   post_vsync = svcGetSystemTick();
 	   
-	   r = surface_dequeue_buffer(&surface, &out_buffer);
+	   r = surface_dequeue_buffer(&sw->surface, &out_buffer);
    } while(r != RESULT_OK);
 
    pre_swizzle  = svcGetSystemTick();
-   gfx_slow_swizzling_blit(out_buffer, image, 1280, 720, 0, 0);
+   gfx_slow_swizzling_blit(out_buffer, sw->image, 1280, 720, 0, 0);
    post_swizzle = svcGetSystemTick();
 
-   r = surface_queue_buffer(&surface);
+   r = surface_queue_buffer(&sw->surface);
 
    if (r != RESULT_OK)
       return false;
@@ -288,6 +303,9 @@ static bool switch_has_windowed(void *data)
 static void switch_free(void *data)
 {
 	switch_video_t *sw = data;
+	svcCloseHandle(sw->vsync_h);
+	display_close_layer(&sw->surface);
+	display_finalize();
 	free(sw);
 }
 
@@ -343,8 +361,17 @@ static void switch_set_texture_frame(
          return;
       }
 
+      int xsf                = 1280 / width;
+      int ysf                = 720  / height;
+      int sf                 = xsf;
+      
+      if (ysf < sf)
+	      sf = ysf;
+         
       sw->menu_texture.width = width;
       sw->menu_texture.height = height;
+      sw->menu_texture.tgtw = width * sf;
+      sw->menu_texture.tgth = height * sf;
 
       struct scaler_ctx *sctx = &sw->menu_texture.scaler;
       scaler_ctx_gen_reset(sctx);
@@ -354,8 +381,8 @@ static void switch_set_texture_frame(
       sctx->in_stride = width * 4;
       sctx->in_fmt = SCALER_FMT_ARGB8888;
 
-      sctx->out_width = 1280;
-      sctx->out_height = 720;
+      sctx->out_width = sw->menu_texture.tgtw;
+      sctx->out_height = sw->menu_texture.tgth;
       sctx->out_stride = 1280 * 4;
       sctx->out_fmt = SCALER_FMT_ARGB8888;
 
