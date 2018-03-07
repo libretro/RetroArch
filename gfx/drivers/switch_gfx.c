@@ -220,17 +220,18 @@ static bool switch_frame(void *data, const void *frame,
    if (msg && strlen(msg) > 0)
       RARCH_LOG("message: %s\n", msg);
 
-   do {
-	   if (sw->vsync) /* vsync seems to sometimes return before the buffer has actually been dequeued? */
-		   switch_wait_vsync(sw);
-	   
-	   r = surface_dequeue_buffer(&sw->surface, &out_buffer);
-   } while(r != RESULT_OK);
-
+   r = surface_dequeue_buffer(&sw->surface, &out_buffer);
+   if (sw->vsync)
+	   switch_wait_vsync(sw);
+   svcSleepThread(10000);
+   if(r != RESULT_OK) {
+	   return true; // just skip the frame
+   }
+   
    gfx_slow_swizzling_blit(out_buffer, sw->image, 1280, 720, 0, 0);
    
    r = surface_queue_buffer(&sw->surface);
-
+   
    if (r != RESULT_OK)
       return false;
 
