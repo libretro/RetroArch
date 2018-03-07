@@ -1846,21 +1846,31 @@ static bool materialui_load_image(void *userdata, void *data, enum menu_image_ty
 /* Compute the scroll value depending on the highlighted entry */
 static float materialui_get_scroll(materialui_handle_t *mui)
 {
-   unsigned width, height, half = 0;
-   size_t selection             = menu_navigation_get_selection();
+   unsigned i, width, height = 0;
+   float half, sum = 0;
+   size_t selection   = menu_navigation_get_selection();
+   file_list_t *list  = menu_entries_get_selection_buf_ptr(0);
 
    if (!mui)
       return 0;
 
    video_driver_get_size(&width, &height);
 
-   if (mui->line_height)
-      half = (height / mui->line_height) / 3;
+   half = height / 2;
 
-   if (selection < half)
+   for (i = 0; i < selection; i++)
+   {
+      materialui_node_t *node   = (materialui_node_t*)
+            file_list_get_userdata_at_offset(list, i);
+
+      if (node)
+      sum += node->line_height;
+   }
+
+   if (sum < half)
       return 0;
 
-   return ((selection + 2 - half) * mui->line_height);
+   return sum - half;
 }
 
 /* The navigation pointer has been updated (for example by pressing up or down
