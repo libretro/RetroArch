@@ -131,8 +131,6 @@ static bool switch_frame(void *data, const void *frame,
 	
    unsigned x, y;
    result_t r;
-   uint64_t begin, done_copying, post_vsync, pre_swizzle, post_swizzle,
-            copy_ms, swizzle_ms, vsync_ms;
    int tgtw, tgth, centerx, centery;
    uint32_t *out_buffer   = NULL;
    switch_video_t *sw     = data;
@@ -148,12 +146,10 @@ static bool switch_frame(void *data, const void *frame,
    centerx                = (1280-tgtw)/2;
    centery                = (720-tgth)/2;
 
-   begin                  = svcGetSystemTick();
-
    // clear image to black
-   for(x = 0; x < 1280; x++)
+   for(y = 0; y < 720; y++)
    {
-      for(y = 0; y < 720; y++)
+      for(x = 0; x < 1280; x++)
       {
          sw->image[y*1280+x] = 0xFF000000;
       }
@@ -173,7 +169,7 @@ static bool switch_frame(void *data, const void *frame,
 			   sw->scaler.out_width = tgtw;
 			   sw->scaler.out_height = tgth;
 			   sw->scaler.out_stride = 1280 * sizeof(uint32_t);
-			   sw->scaler.out_fmt = SCALER_FMT_ARGB8888;
+			   sw->scaler.out_fmt = SCALER_FMT_ABGR8888;
 			   
 			   sw->scaler.scaler_type = SCALER_TYPE_POINT;
 			   
@@ -185,7 +181,7 @@ static bool switch_frame(void *data, const void *frame,
 			   sw->last_width = width;
 			   sw->last_height = height;
 		   }
-	   
+
 	   scaler_ctx_scale(&sw->scaler, sw->image + (centery * 1280) + centerx, frame);
    }
 
@@ -213,23 +209,6 @@ static bool switch_frame(void *data, const void *frame,
 	}
 #endif
 
-   for(x = 0; x < 1280; x++)
-	{
-		for(y = 0; y < 720; y++)
-		{
-			// swizzle components
-			uint32_t *pixel = &sw->image[(y*1280) + x];
-			uint32_t src = *pixel;
-			uint8_t a = (src & 0xFF000000) >> 24;
-			uint8_t r = (src & 0x00FF0000) >> 16;
-			uint8_t g = (src & 0x0000FF00) >> 8;
-			uint8_t b = (src & 0x000000FF) >> 0;
-			*pixel = (a << 24) | (b << 16) | (g << 8) | (r << 0);
-		}
-   }
-   
-   done_copying = svcGetSystemTick();
-
 #if 0
    if (frame_count > 6000)
    {
@@ -245,25 +224,15 @@ static bool switch_frame(void *data, const void *frame,
 	   if (sw->vsync) /* vsync seems to sometimes return before the buffer has actually been dequeued? */
 		   switch_wait_vsync(sw);
 	   
-	   post_vsync = svcGetSystemTick();
-	   
 	   r = surface_dequeue_buffer(&sw->surface, &out_buffer);
    } while(r != RESULT_OK);
 
-   pre_swizzle  = svcGetSystemTick();
    gfx_slow_swizzling_blit(out_buffer, sw->image, 1280, 720, 0, 0);
-   post_swizzle = svcGetSystemTick();
-
+   
    r = surface_queue_buffer(&sw->surface);
 
    if (r != RESULT_OK)
       return false;
-
-   copy_ms    = (done_copying - begin) / 19200;
-   swizzle_ms = (post_swizzle - pre_swizzle) / 19200;
-   vsync_ms   = (post_vsync - done_copying) / 19200;
-
-   RARCH_LOG("frame %d benchmark: copy %ld ms, swizzle %ld ms, vsync %ld ms\n", frame_count, copy_ms, swizzle_ms, vsync_ms);
 
    last_frame = svcGetSystemTick();
    return true;
@@ -354,7 +323,7 @@ static void switch_set_texture_frame(
       if (sw->menu_texture.pixels)
          free(sw->menu_texture.pixels);
 
-      sw->menu_texture.pixels = malloc(width * height * 4);
+      sw->menu_texture.pixels = malloc(width * height * (rgb32 ? 4 : 2));
       if (!sw->menu_texture.pixels)
       {
          RARCH_ERR("failed to allocate buffer for menu texture\n");
@@ -378,13 +347,13 @@ static void switch_set_texture_frame(
 
       sctx->in_width = width;
       sctx->in_height = height;
-      sctx->in_stride = width * 4;
-      sctx->in_fmt = SCALER_FMT_ARGB8888;
+      sctx->in_stride = width * (rgb32 ? 4 : 2);
+      sctx->in_fmt = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
 
       sctx->out_width = sw->menu_texture.tgtw;
       sctx->out_height = sw->menu_texture.tgth;
       sctx->out_stride = 1280 * 4;
-      sctx->out_fmt = SCALER_FMT_ARGB8888;
+      sctx->out_fmt = SCALER_FMT_ABGR8888;
 
       sctx->scaler_type = SCALER_TYPE_POINT;
 
@@ -395,12 +364,7 @@ static void switch_set_texture_frame(
       }
    }
 
-   if (rgb32)
-      memcpy(sw->menu_texture.pixels, frame, width * height * 4);
-   else
-      conv_rgb565_argb8888(sw->menu_texture.pixels, frame,
-            width, height,
-            width * sizeof(uint32_t), width * sizeof(uint16_t));
+   memcpy(sw->menu_texture.pixels, frame, width * height * (rgb32 ? 4 : 2));
 }
 
 static void switch_set_texture_enable(void *data, bool enable, bool full_screen)
