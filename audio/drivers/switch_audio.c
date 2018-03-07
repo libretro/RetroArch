@@ -18,6 +18,7 @@
 #include <stdint.h>
 
 #include<libtransistor/nx.h>
+#include<libtransistor/alloc_pages.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -26,12 +27,6 @@ static const int sample_rate           = 48000;
 static const int max_num_samples       = sample_rate;
 static const int num_channels          = 2;
 static const size_t sample_buffer_size = ((max_num_samples * num_channels * sizeof(uint16_t)) + 0xfff) & ~0xfff;
-
-/* don't think this can be in mapped memory, since samples get DMA'd out of it */
-static uint16_t __attribute__((aligned(0x1000))) sample_buffer_1[sample_buffer_size/sizeof(uint16_t)];
-static uint16_t __attribute__((aligned(0x1000))) sample_buffer_2[sample_buffer_size/sizeof(uint16_t)];
-static uint16_t __attribute__((aligned(0x1000))) sample_buffer_3[sample_buffer_size/sizeof(uint16_t)];
-static uint16_t *sample_buffers[3] = {sample_buffer_1, sample_buffer_2, sample_buffer_3};
 
 typedef struct
 {
@@ -254,11 +249,14 @@ static void *switch_audio_init(const char *device,
    for(i = 0; i < 3; i++)
    {
       swa->buffers[i].ptr         = &swa->buffers[i].sample_data;
-      swa->buffers[i].sample_data = sample_buffers[i];
+      swa->buffers[i].sample_data = alloc_pages(sample_buffer_size, sample_buffer_size, NULL);
       swa->buffers[i].buffer_size = sample_buffer_size;
       swa->buffers[i].data_size   = sample_buffer_size;
       swa->buffers[i].unknown     = 0;
 
+      if(swa->buffers[i].sample_data == NULL)
+	      goto fail_audio_output;
+      
       if (audio_ipc_output_append_buffer(&swa->output, &swa->buffers[i]) != RESULT_OK)
          goto fail_audio_output;
    }
