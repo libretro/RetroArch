@@ -213,7 +213,7 @@ int getaddrinfo_retro(const char *node, const char *service,
 
       in_addr->sin_family = host->h_addrtype;
 
-#if defined(AF_INET6) && !defined(__CELLOS_LV2__)
+#if defined(AF_INET6) && !defined(__CELLOS_LV2__) || defined(VITA)
       /* TODO/FIXME - In case we ever want to support IPv6 */
       in_addr->sin_addr.s_addr = inet_addr(host->h_addr_list[0]);
 #else
