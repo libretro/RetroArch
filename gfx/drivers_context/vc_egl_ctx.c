@@ -359,7 +359,7 @@ static bool gfx_ctx_vc_set_video_mode(void *data,
    return true;
 }
 
-static bool gfx_ctx_api gfx_ctx_vc_get_api(void *data)
+static enum gfx_ctx_api gfx_ctx_vc_get_api(void *data)
 {
    return vc_api;
 }
