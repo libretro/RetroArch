@@ -719,11 +719,11 @@ static char buildbot_server_url[] = "";
 #elif defined(WIIU)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/";
 #elif defined(__CELLOS_LV2__) && defined(DEX_BUILD)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/playstation/ps3/latest/dex-ps3/";
+static char buildbot_server_url[] = "https://xbins.org/libretro/nightly/playstation/ps3/latest/dex-ps3/";
 #elif defined(__CELLOS_LV2__) && defined(CEX_BUILD)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/playstation/ps3/latest/cex-ps3/";
+static char buildbot_server_url[] = "https://xbins.org/libretro/nightly/playstation/ps3/latest/cex-ps3/";
 #elif defined(__CELLOS_LV2__) && defined(ODE_BUILD)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/playstation/ps3/latest/ode-ps3/";
+static char buildbot_server_url[] = "https://xbins.org/libretro/nightly/playstation/ps3/latest/ode-ps3/";
 #else
 static char buildbot_server_url[] = "";
 #endif
