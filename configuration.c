@@ -67,6 +67,7 @@ struct config_bool_setting
    bool def_enable;
    bool def;
    bool handle;
+   enum rarch_override_setting override;
 };
 
 struct config_int_setting
@@ -76,6 +77,7 @@ struct config_int_setting
    bool def_enable;
    int def;
    bool handle;
+   enum rarch_override_setting override;
 };
 
 struct config_uint_setting
@@ -85,6 +87,7 @@ struct config_uint_setting
    bool def_enable;
    unsigned def;
    bool handle;
+   enum rarch_override_setting override;
 };
 
 struct config_float_setting
@@ -94,6 +97,7 @@ struct config_float_setting
    bool def_enable;
    float def;
    bool handle;
+   enum rarch_override_setting override;
 };
 
 struct config_array_setting
@@ -103,6 +107,7 @@ struct config_array_setting
    bool def_enable;
    const char *def;
    bool handle;
+   enum rarch_override_setting override;
 };
 
 struct config_path_setting
@@ -534,6 +539,9 @@ static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
 
 #define SETTING_ARRAY(key, configval, default_enable, default_setting, handle_setting) \
    GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_array_setting, handle_setting)
+
+#define SETTING_OVERRIDE(override_setting) \
+   tmp[count-1].override = override_setting
 
 struct defaults g_defaults;
 static settings_t *configuration_settings = NULL;
@@ -1181,6 +1189,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("netplay_allow_slaves",          &settings->bools.netplay_allow_slaves, true, netplay_allow_slaves, false);
    SETTING_BOOL("netplay_require_slaves",        &settings->bools.netplay_require_slaves, true, netplay_require_slaves, false);
    SETTING_BOOL("netplay_stateless_mode",        &settings->bools.netplay_stateless_mode, true, netplay_stateless_mode, false);
+   SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE);
    SETTING_BOOL("netplay_use_mitm_server",       &settings->bools.netplay_use_mitm_server, true, netplay_use_mitm_server, false);
    SETTING_BOOL("netplay_request_device_p1",     &settings->bools.netplay_request_devices[0], true, false, false);
    SETTING_BOOL("netplay_request_device_p2",     &settings->bools.netplay_request_devices[1], true, false, false);
@@ -1486,6 +1495,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("aspect_ratio_index",           &settings->uints.video_aspect_ratio_idx, true, aspect_ratio_idx, false);
 #ifdef HAVE_NETWORKING
    SETTING_UINT("netplay_ip_port",              &settings->uints.netplay_port,         true, RARCH_DEFAULT_PORT, false);
+   SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT);
    SETTING_UINT("netplay_input_latency_frames_min",&settings->uints.netplay_input_latency_frames_min, true, 0, false);
    SETTING_UINT("netplay_input_latency_frames_range",&settings->uints.netplay_input_latency_frames_range, true, 0, false);
    SETTING_UINT("netplay_share_digital",        &settings->uints.netplay_share_digital, true, netplay_share_digital, false);
@@ -1509,11 +1519,12 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 static struct config_int_setting *populate_settings_int(settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_int_setting  *tmp    = (struct config_int_setting*)malloc((*size + 1) * sizeof(struct config_int_setting));
+   struct config_int_setting  *tmp    = (struct config_int_setting*)calloc((*size + 1), sizeof(struct config_int_setting));
 
    SETTING_INT("state_slot",                   &settings->ints.state_slot, false, 0 /* TODO */, false);
 #ifdef HAVE_NETWORKING
    SETTING_INT("netplay_check_frames",         &settings->ints.netplay_check_frames, true, netplay_check_frames, false);
+   SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
 #endif
 #ifdef HAVE_WASAPI
    SETTING_INT("audio_wasapi_sh_buffer_length", &settings->ints.audio_wasapi_sh_buffer_length, true, wasapi_sh_buffer_length, false);
@@ -1727,8 +1738,7 @@ static void config_set_defaults(void)
    {
       settings->uints.input_joypad_map[i] = i;
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_NONE;
-      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
-         input_config_set_device(i, RETRO_DEVICE_JOYPAD);
+      input_config_set_device(i, RETRO_DEVICE_JOYPAD);
       settings->uints.input_mouse_index[i] = 0;
    }
 
@@ -1736,14 +1746,11 @@ static void config_set_defaults(void)
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-      dir_clear(RARCH_DIR_SAVEFILE);
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
-      dir_clear(RARCH_DIR_SAVESTATE);
+   dir_clear(RARCH_DIR_SAVEFILE);
+   dir_clear(RARCH_DIR_SAVESTATE);
 
    *settings->paths.path_libretro_info = '\0';
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL))
-      *settings->paths.directory_libretro = '\0';
+   *settings->paths.directory_libretro = '\0';
    *settings->paths.directory_cursor = '\0';
    *settings->paths.directory_resampler = '\0';
    *settings->paths.directory_screenshot = '\0';
@@ -1764,12 +1771,9 @@ static void config_set_defaults(void)
    *settings->paths.directory_video_filter = '\0';
    *settings->paths.directory_audio_filter = '\0';
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL))
-      rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL))
-      rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL))
-      rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
 
    {
       global_t *global =  global_get_ptr();
@@ -1912,12 +1916,10 @@ static void config_set_defaults(void)
             g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
             sizeof(settings->paths.directory_autoconfig));
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
-         !string_is_empty(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]))
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]))
       dir_set(RARCH_DIR_SAVESTATE, g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
-         !string_is_empty(g_defaults.dirs[DEFAULT_DIR_SRAM]))
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SRAM]))
       dir_set(RARCH_DIR_SAVEFILE, g_defaults.dirs[DEFAULT_DIR_SRAM]);
 
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SYSTEM]))
@@ -2365,9 +2367,6 @@ static bool config_load_file(const char *path, bool set_defaults,
    unsigned msg_color                              = 0;
    config_file_t *conf                             = NULL;
    char *override_username                         = NULL;
-#ifdef HAVE_NETWORKING
-   char *override_netplay_ip_address               = NULL;
-#endif
    const char *path_core                           = NULL;
    const char *path_config                         = NULL;
    const char *shader_ext                          = NULL;
@@ -2445,11 +2444,6 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
       override_username = strdup(settings->paths.username);
 
-#ifdef HAVE_NETWORKING
-   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL))
-      override_netplay_ip_address = strdup(settings->paths.netplay_server);
-#endif
-
    /* Boolean settings */
 
    for (i = 0; i < (unsigned)bool_settings_size; i++)
@@ -2472,15 +2466,12 @@ static bool config_load_file(const char *path, bool set_defaults,
          settings->bools.network_remote_enable_user[i] = tmp_bool;
    }
 #endif
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
+   if (config_get_bool(conf, "log_verbosity", &tmp_bool))
    {
-      if (config_get_bool(conf, "log_verbosity", &tmp_bool))
-      {
-         if (tmp_bool)
-            verbosity_enable();
-         else
-            verbosity_disable();
-      }
+      if (tmp_bool)
+         verbosity_enable();
+      else
+         verbosity_disable();
    }
    {
       char tmp[64];
@@ -2513,14 +2504,6 @@ static bool config_load_file(const char *path, bool set_defaults,
          *uint_settings[i].ptr = tmp;
    }
 
-#ifdef HAVE_NETWORKING
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL))
-      CONFIG_GET_BOOL_BASE(conf, settings, bools.netplay_stateless_mode, "netplay_stateless_mode");
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL))
-      CONFIG_GET_INT_BASE(conf, settings, ints.netplay_check_frames, "netplay_check_frames");
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL))
-      CONFIG_GET_INT_BASE(conf, settings, uints.netplay_port, "netplay_ip_port");
-#endif
    for (i = 0; i < MAX_USERS; i++)
    {
       char buf[64];
@@ -2536,11 +2519,8 @@ static bool config_load_file(const char *path, bool set_defaults,
       snprintf(buf, sizeof(buf), "input_player%u_mouse_index", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], buf);
 
-      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
-      {
-         snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
-         CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], buf);
-      }
+      snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], buf);
    }
 
    /* LED map for use by the led driver */
@@ -2606,11 +2586,8 @@ static bool config_load_file(const char *path, bool set_defaults,
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL))
-   {
-      if (config_get_path(conf, "libretro_directory", tmp_str, path_size))
-            strlcpy(settings->paths.directory_libretro, tmp_str, sizeof(settings->paths.directory_libretro));
-   }
+   if (config_get_path(conf, "libretro_directory", tmp_str, path_size))
+      strlcpy(settings->paths.directory_libretro, tmp_str, sizeof(settings->paths.directory_libretro));
 
 #ifndef HAVE_DYNAMIC
    if (config_get_path(conf, "libretro_path", tmp_str, path_size))
@@ -2630,16 +2607,6 @@ static bool config_load_file(const char *path, bool set_defaults,
             sizeof(settings->paths.username));
       free(override_username);
    }
-
-#ifdef HAVE_NETWORKING
-   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL))
-   {
-      strlcpy(settings->paths.netplay_server,
-            override_netplay_ip_address,
-            sizeof(settings->paths.netplay_server));
-      free(override_netplay_ip_address);
-   }
-#endif
 
    if (settings->uints.video_hard_sync_frames > 3)
       settings->uints.video_hard_sync_frames = 3;
@@ -3864,9 +3831,11 @@ bool config_save_file(const char *path)
    if (array_settings && (array_settings_size > 0))
    {
       for (i = 0; i < (unsigned)array_settings_size; i++)
-         config_set_string(conf,
-               array_settings[i].ident,
-               array_settings[i].ptr);
+         if (!array_settings[i].override ||
+             !retroarch_override_setting_is_set(array_settings[i].override, NULL))
+            config_set_string(conf,
+                  array_settings[i].ident,
+                  array_settings[i].ptr);
 
       free(array_settings);
    }
@@ -3875,9 +3844,11 @@ bool config_save_file(const char *path)
    if (float_settings && (float_settings_size > 0))
    {
       for (i = 0; i < (unsigned)float_settings_size; i++)
-         config_set_float(conf,
-               float_settings[i].ident,
-               *float_settings[i].ptr);
+         if (!float_settings[i].override ||
+             !retroarch_override_setting_is_set(float_settings[i].override, NULL))
+            config_set_float(conf,
+                  float_settings[i].ident,
+                  *float_settings[i].ptr);
 
       free(float_settings);
    }
@@ -3886,9 +3857,11 @@ bool config_save_file(const char *path)
    if (int_settings && (int_settings_size > 0))
    {
       for (i = 0; i < (unsigned)int_settings_size; i++)
-         config_set_int(conf,
-               int_settings[i].ident,
-               *int_settings[i].ptr);
+         if (!int_settings[i].override ||
+             !retroarch_override_setting_is_set(int_settings[i].override, NULL))
+            config_set_int(conf,
+                  int_settings[i].ident,
+                  *int_settings[i].ptr);
 
       free(int_settings);
    }
@@ -3896,9 +3869,11 @@ bool config_save_file(const char *path)
    if (uint_settings && (uint_settings_size > 0))
    {
       for (i = 0; i < (unsigned)uint_settings_size; i++)
-         config_set_int(conf,
-               uint_settings[i].ident,
-               *uint_settings[i].ptr);
+         if (!uint_settings[i].override ||
+             !retroarch_override_setting_is_set(uint_settings[i].override, NULL))
+            config_set_int(conf,
+                  uint_settings[i].ident,
+                  *uint_settings[i].ptr);
 
       free(uint_settings);
    }
@@ -3925,8 +3900,10 @@ bool config_save_file(const char *path)
    if (bool_settings && (bool_settings_size > 0))
    {
       for (i = 0; i < (unsigned)bool_settings_size; i++)
-         config_set_bool(conf, bool_settings[i].ident,
-               *bool_settings[i].ptr);
+         if (!bool_settings[i].override ||
+             !retroarch_override_setting_is_set(bool_settings[i].override, NULL))
+            config_set_bool(conf, bool_settings[i].ident,
+                  *bool_settings[i].ptr);
 
       free(bool_settings);
    }
@@ -3943,6 +3920,7 @@ bool config_save_file(const char *path)
    }
 #endif
 
+   /* Verbosity isn't in bool_settings since it needs to be loaded differently */
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
    {
       config_set_bool(conf, "log_verbosity",
