@@ -1746,8 +1746,10 @@ static void config_set_defaults(void)
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
-   dir_clear(RARCH_DIR_SAVEFILE);
-   dir_clear(RARCH_DIR_SAVESTATE);
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
+      dir_clear(RARCH_DIR_SAVEFILE);
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
+      dir_clear(RARCH_DIR_SAVESTATE);
 
    *settings->paths.path_libretro_info = '\0';
    *settings->paths.directory_libretro = '\0';
