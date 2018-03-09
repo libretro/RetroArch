@@ -282,7 +282,7 @@ bool menu_shader_manager_save_preset(
 
       default_preset[0] = '\0';
 
-      if (video_shader_is_supported(type))
+      if (video_shader_is_supported((enum rarch_shader_type)type))
       {
          const char *config_path     = path_get(RARCH_PATH_CONFIG);
          /* In a multi-config setting, we can't have
