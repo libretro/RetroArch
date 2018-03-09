@@ -1,4 +1,12 @@
 MSG_HASH(
+	MSG_DEVICE_CONFIGURED_IN_PORT,
+	"configurado en puerto"
+	)
+MSG_HASH(
+	MSG_FAILED_TO_SET_DISK,
+	"Fallo al establecer disco"
+	)
+MSG_HASH(
 	MSG_COMPILER,
 	"Compilador"
 	)
@@ -1666,7 +1674,8 @@ MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
 	"Anunciar juego en red públicamente"
 	)
-MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
 	"Pedir dispositivo %u"
 	)
 MSG_HASH(
@@ -1891,7 +1900,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
-	"Overlay Preset"
+	"Preset de Overlay"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
@@ -2871,11 +2880,11 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
-	"Video Filter"
+	"Filtro de video"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
-	"Flicker filter"
+	"Filtro de parpadeo"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
@@ -2971,7 +2980,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
-	"Video Shader"
+	"Shader de video"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
@@ -2994,6 +3003,10 @@ MSG_HASH(
 	"Guardar preset para el núcleo"
 	)
 MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
+	"Guardar preset de directorio de contenido"
+	)
+MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
 	"Guardar preset para el juego"
 	)
@@ -3011,7 +3024,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-	"Vertical Sync (Vsync) Swap Interval"
+	"Intervalo de intercambio de Vsync"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
@@ -3027,11 +3040,11 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-	"Custom Aspect Ratio Height"
+	"Altura de relación de aspecto personalizada"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-	"Custom Aspect Ratio Width"
+	"Ancho de relación de aspecto personalizada"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
@@ -3099,7 +3112,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
-	"Custom"
+	"Personalizado"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI,
@@ -3583,7 +3596,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MSG_CUSTOM_TIMING_GIVEN,
-	"Custom timing given"
+	"Timing personalizado provisto"
 	)
 MSG_HASH(
 	MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
@@ -5302,6 +5315,10 @@ MSG_HASH(
 	"Guardar la configuración actual de shaders para este núcleo"
 	)
 MSG_HASH(
+	MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+	"Guardar la configuración actual de shaders para todos los archivos en el directorio de contenido actual."
+	)
+MSG_HASH(
 	MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
 	"Guardar la configuración actual de shaders para este contenido"
 	)
@@ -5787,7 +5804,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-	 "Calidad del muestreo de audio"
+	"Calidad del muestreo de audio"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
@@ -5801,7 +5818,11 @@ MSG_HASH(
 	MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
 	"Auto-aplica los cambios hechos a los archivos shader del disco"
 	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+	"Mostrar Decoraciones de Ventanas"
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-      "Display Statistics")
+      "Mostrar Estadísticas")
 MSG_HASH(MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
-      "Show onscreen technical statistics.")
+      "Mostrar estadísticas técnicas en pantalla.")
