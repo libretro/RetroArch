@@ -893,7 +893,7 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Continue a pressionar para ativar a função de avanço rápido. Se soltar o botão \n"
                "irá desativar a função de avanço-rápido.");
          break;
-      case MENU_ENUM_LABEL_SLOWMOTION:
+      case MENU_ENUM_LABEL_SLOWMOTION_HOLD:
          snprintf(s, len,
                "Continue a pressionar para manter o modo de câmera lenta.");
          break;

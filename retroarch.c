@@ -2915,8 +2915,33 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
+   
    {
-      runloop_slowmotion = BIT256_GET(current_input, RARCH_SLOWMOTION);
+      static bool old_slowmotion_button_state      = false;
+      static bool old_slowmotion_hold_button_state = false;
+      bool new_slowmotion_button_state             = BIT256_GET(
+            current_input, RARCH_SLOWMOTION_KEY);
+      bool new_slowmotion_hold_button_state        = BIT256_GET(
+            current_input, RARCH_SLOWMOTION_HOLD_KEY);
+
+      if (new_slowmotion_button_state && !old_slowmotion_button_state)
+         {
+            if (runloop_slowmotion) {
+                  runloop_slowmotion = false;
+            }
+            else {
+                  runloop_slowmotion = true;
+            }
+         }
+      else if (old_slowmotion_hold_button_state != new_slowmotion_hold_button_state)
+      {
+         if (new_slowmotion_hold_button_state) {
+            runloop_slowmotion = true;
+         }
+         else {
+            runloop_slowmotion = false;
+         }
+      }
 
       if (runloop_slowmotion)
       {
@@ -2933,6 +2958,9 @@ static enum runloop_state runloop_check_state(
             runloop_msg_queue_push(
                   msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false);
       }
+
+      old_slowmotion_button_state                  = new_slowmotion_button_state;
+      old_slowmotion_hold_button_state             = new_slowmotion_hold_button_state;
    }
 
    /* Check movie record toggle */

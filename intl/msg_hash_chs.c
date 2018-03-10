@@ -53,6 +53,10 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "放开按键来取消快进。"
                   );
             break;
+         case RARCH_SLOWMOTION_HOLD_KEY:
+            snprintf(s, len,
+                  "按住并以慢动作运行。");
+            break;
          case RARCH_PAUSE_TOGGLE:
             snprintf(s, len,
                   "在暂停和不暂停状态间切换。");
@@ -90,10 +94,6 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          case RARCH_OSK:
             snprintf(s, len,
                   "显示/隐藏屏显键盘。");
-            break;
-         case RARCH_SLOWMOTION:
-            snprintf(s, len,
-                  "按住并以慢动作运行。");
             break;
          case RARCH_ENABLE_HOTKEY:
             snprintf(s, len,
@@ -1760,7 +1760,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Hold for fast-forward. Releasing button \n"
                "disables fast-forward.");
          break;
-      case MENU_ENUM_LABEL_SLOWMOTION:
+      case MENU_ENUM_LABEL_SLOWMOTION_HOLD:
          snprintf(s, len,
                "Hold for slowmotion.");
          break;

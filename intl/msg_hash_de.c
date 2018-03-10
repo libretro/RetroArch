@@ -48,6 +48,10 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Beim Loslassen wird der schnelle Vorlauf beendet."
                   );
             break;
+         case RARCH_SLOWMOTION_HOLD_KEY:
+            snprintf(s, len,
+                  "Taste gedrückt halten, um die Zeitlupe einzuschalten.");
+            break;
          case RARCH_PAUSE_TOGGLE:
             snprintf(s, len,
                   "Inhalt pausieren und wieder fortsetzen.");
@@ -89,10 +93,6 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          case RARCH_NETPLAY_GAME_WATCH:
                 snprintf(s, len,
                   "Im Netplay zwischen Spiel- und Beobachter-Modus wechseln.");
-            break;
-         case RARCH_SLOWMOTION:
-            snprintf(s, len,
-                  "Taste gedrückt halten, um die Zeitlupe einzuschalten.");
             break;
          case RARCH_ENABLE_HOTKEY:
             snprintf(s, len,
@@ -1904,7 +1904,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Zum Vorspulen gedrückt halten. Wird die Taste \n"
                "losgelassen, wird der schnelle Vorlauf beendet.");
          break;
-      case MENU_ENUM_LABEL_SLOWMOTION:
+      case MENU_ENUM_LABEL_SLOWMOTION_HOLD:
          snprintf(s, len,
                "Gedrückt halten für Zeitlupe.");
          break;

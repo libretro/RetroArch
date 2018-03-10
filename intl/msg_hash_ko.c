@@ -53,6 +53,10 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len)
                                  "버튼을 놓으면 빨기감기 중지."
                 );
                 break;
+            case RARCH_SLOWMOTION_HOLD_KEY:
+                snprintf(s, len,
+                         "슬로우모션 대기.");
+                break;
             case RARCH_PAUSE_TOGGLE:
                 snprintf(s, len,
                          "일시정지 상태와 해제 상태의 전환.");
@@ -94,10 +98,6 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len)
             case RARCH_NETPLAY_GAME_WATCH:
                 snprintf(s, len,
                          "넷플레이 플레이/관전 모드 전환.");
-                break;
-            case RARCH_SLOWMOTION:
-                snprintf(s, len,
-                         "슬로우모션 대기.");
                 break;
             case RARCH_ENABLE_HOTKEY:
                 snprintf(s, len,
@@ -1868,7 +1868,7 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Hold for fast-forward. Releasing button \n"
                              "disables fast-forward.");
             break;
-        case MENU_ENUM_LABEL_SLOWMOTION:
+        case MENU_ENUM_LABEL_SLOWMOTION_HOLD:
             snprintf(s, len,
                      "Hold for slowmotion.");
             break;
