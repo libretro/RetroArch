@@ -1109,7 +1109,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "rápidamente. Suéltalo para desactivar \n"
                "esta función.");
          break;
-      case MENU_ENUM_LABEL_SLOWMOTION:
+      case MENU_ENUM_LABEL_SLOWMOTION_HOLD:
          snprintf(s, len,
                "Mantén pulsado este botón para \n"
                "ir a cámara lenta.");

@@ -54,6 +54,10 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                                  "Soltar o botão desativa o Avanço Rápido."
                 );
                 break;
+            case RARCH_SLOWMOTION_HOLD_KEY:
+                snprintf(s, len,
+                         "Manter pressionado para Câmera Lenta.");
+                break;
             case RARCH_PAUSE_TOGGLE:
                 snprintf(s, len,
                          "Alternar estado pausado e não-pausado.");
@@ -95,10 +99,6 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
             case RARCH_NETPLAY_GAME_WATCH:
                 snprintf(s, len,
                          "Alternar modo jogador/espectador do Netplay.");
-                break;
-            case RARCH_SLOWMOTION:
-                snprintf(s, len,
-                         "Manter pressionado para Câmera Lenta.");
                 break;
             case RARCH_ENABLE_HOTKEY:
                 snprintf(s, len,
@@ -1970,7 +1970,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                      "Manter pressionado para Avanço Rápido \n"
                              "Soltar o botão desativa o Avanço Rápido.");
             break;
-        case MENU_ENUM_LABEL_SLOWMOTION:
+        case MENU_ENUM_LABEL_SLOWMOTION_HOLD:
             snprintf(s, len,
                      "Manter pressionado para Câmera Lenta.");
             break;

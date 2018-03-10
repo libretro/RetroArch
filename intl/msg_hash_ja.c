@@ -54,6 +54,10 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "離すと普通のスピードで戻ります。"
                   );
             break;
+         case RARCH_SLOWMOTION_HOLD_KEY:
+            snprintf(s, len,
+                  "Hold for slowmotion.");
+            break;
          case RARCH_PAUSE_TOGGLE:
             snprintf(s, len,
                   "Toggle between paused and non-paused state.");
@@ -91,10 +95,6 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          case RARCH_OSK:
             snprintf(s, len,
                   "Toggles onscreen keyboard.");
-            break;
-         case RARCH_SLOWMOTION:
-            snprintf(s, len,
-                  "Hold for slowmotion.");
             break;
          case RARCH_ENABLE_HOTKEY:
             snprintf(s, len,
@@ -1789,7 +1789,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Hold for fast-forward. Releasing button \n"
                "disables fast-forward.");
          break;
-      case MENU_ENUM_LABEL_SLOWMOTION:
+      case MENU_ENUM_LABEL_SLOWMOTION_HOLD:
          snprintf(s, len,
                "Hold for slowmotion.");
          break;

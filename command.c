@@ -140,6 +140,8 @@ static const struct cmd_action_map action_map[] = {
 static const struct cmd_map map[] = {
    { "FAST_FORWARD",           RARCH_FAST_FORWARD_KEY },
    { "FAST_FORWARD_HOLD",      RARCH_FAST_FORWARD_HOLD_KEY },
+   { "SLOWMOTION",             RARCH_SLOWMOTION_KEY },
+   { "SLOWMOTION_HOLD",        RARCH_SLOWMOTION_HOLD_KEY },
    { "LOAD_STATE",             RARCH_LOAD_STATE_KEY },
    { "SAVE_STATE",             RARCH_SAVE_STATE_KEY },
    { "FULLSCREEN_TOGGLE",      RARCH_FULLSCREEN_TOGGLE_KEY },
@@ -160,7 +162,6 @@ static const struct cmd_map map[] = {
    { "MUTE",                   RARCH_MUTE },
    { "OSK",                    RARCH_OSK },
    { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
-   { "SLOWMOTION",             RARCH_SLOWMOTION },
    { "VOLUME_UP",              RARCH_VOLUME_UP },
    { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
    { "OVERLAY_NEXT",           RARCH_OVERLAY_NEXT },

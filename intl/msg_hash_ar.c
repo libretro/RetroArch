@@ -62,6 +62,14 @@ int menu_hash_get_help_ar_enum(enum msg_hash_enums msg, char *s, size_t len)
                    "Releasing button disables fast-forward."
                    );
              break;
+          case RARCH_SLOWMOTION_KEY:
+             snprintf(s, len,
+                   "Toggles slowmotion.");
+             break;
+          case RARCH_SLOWMOTION_HOLD_KEY:
+             snprintf(s, len,
+                   "Hold for slowmotion.");
+             break;
           case RARCH_PAUSE_TOGGLE:
              snprintf(s, len,
                    "Toggle between paused and non-paused state.");
@@ -103,10 +111,6 @@ int menu_hash_get_help_ar_enum(enum msg_hash_enums msg, char *s, size_t len)
           case RARCH_NETPLAY_GAME_WATCH:
              snprintf(s, len,
                    "Netplay toggle play/spectate mode.");
-             break;
-          case RARCH_SLOWMOTION:
-             snprintf(s, len,
-                   "Hold for slowmotion.");
              break;
           case RARCH_ENABLE_HOTKEY:
              snprintf(s, len,
@@ -1912,7 +1916,7 @@ int menu_hash_get_help_ar_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Hold for fast-forward. Releasing button \n"
                              "disables fast-forward.");
             break;
-        case MENU_ENUM_LABEL_SLOWMOTION:
+        case MENU_ENUM_LABEL_SLOWMOTION_HOLD:
             snprintf(s, len,
                      "Hold for slowmotion.");
             break;
