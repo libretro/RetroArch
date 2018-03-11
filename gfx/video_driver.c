@@ -2356,14 +2356,20 @@ void video_driver_frame(const void *data, unsigned width,
          (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555) &&
          (data != RETRO_HW_FRAME_BUFFER_VALID))
    {
-      if (video_pixel_frame_scale(
-               video_driver_scaler_ptr->scaler,
-               video_driver_scaler_ptr->scaler_out,
-               data, width, height, pitch))
-      {
-         data                = video_driver_scaler_ptr->scaler_out;
-         pitch               = video_driver_scaler_ptr->scaler->out_stride;
-      }
+      struct scaler_ctx *scaler = video_driver_scaler_ptr->scaler;
+      void *output              = video_driver_scaler_ptr->scaler_out;
+
+      scaler->in_width          = width;
+      scaler->in_height         = height;
+      scaler->out_width         = width;
+      scaler->out_height        = height;
+      scaler->in_stride         = (int)pitch;
+      scaler->out_stride        = width * sizeof(uint16_t);
+
+      scaler_ctx_scale_direct(scaler, output, data);
+
+      data                      = output;
+      pitch                     = scaler->out_stride;
    }
 
 
@@ -2403,14 +2409,16 @@ void video_driver_frame(const void *data, unsigned width,
                      " ||  Frames: %" PRIu64,
                      (uint64_t)video_driver_frame_count);
             }
-            snprintf(video_driver_window_title, sizeof(video_driver_window_title),
+            snprintf(video_driver_window_title,
+                  sizeof(video_driver_window_title),
                "%s%s%s", title, video_info.fps_text,
                video_info.framecount_show ? frames_text : "");
          }
          else
          {
             if (!string_is_equal(video_driver_window_title, title))
-               strlcpy(video_driver_window_title, title, sizeof(video_driver_window_title));
+               strlcpy(video_driver_window_title,
+                     title, sizeof(video_driver_window_title));
          }
 
          curr_time = new_time;
@@ -2468,7 +2476,8 @@ void video_driver_frame(const void *data, unsigned width,
           || video_driver_record_gpu_buffer
          ) && recording_data
       )
-      recording_dump_frame(data, width, height, pitch, video_info.runloop_is_idle);
+      recording_dump_frame(data, width, height,
+            pitch, video_info.runloop_is_idle);
 
    if (data && video_driver_state_filter &&
          video_driver_frame_filter(data, &video_info, width, height, pitch,

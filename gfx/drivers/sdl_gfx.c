@@ -360,6 +360,8 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
          width,
          height,
          pitch);
+   scaler_ctx_scale_direct(&vid->scaler, vid->screen->pixels,
+         frame);
 
 #ifdef HAVE_MENU
    menu_driver_frame(video_info);
@@ -485,6 +487,8 @@ static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32,
          height,
          width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t))
          );
+   scaler_ctx_scale_direct(&vid->menu.scaler, vid->menu.frame->pixels,
+         frame);
 
    SDL_SetAlpha(vid->menu.frame, SDL_SRCALPHA, 255.0 * alpha);
 }
