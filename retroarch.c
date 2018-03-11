@@ -586,14 +586,15 @@ static void retroarch_print_help(const char *arg0)
 #define BSV_MOVIE_ARG "P:R:M:"
 
 /**
- * retroarch_parse_input:
+ * retroarch_parse_input_and_config:
  * @argc                 : Count of (commandline) arguments.
  * @argv                 : (Commandline) arguments.
  *
- * Parses (commandline) arguments passed to program.
+ * Parses (commandline) arguments passed to program and loads the config file,
+ * with command line options overriding the config file.
  *
  **/
-static void retroarch_parse_input(int argc, char *argv[])
+static void retroarch_parse_input_and_config(int argc, char *argv[])
 {
    const char *optstring = NULL;
    bool explicit_menu    = false;
@@ -700,6 +701,8 @@ static void retroarch_parse_input(int argc, char *argv[])
    }
 #endif
 
+   /* First pass: Read the config file path and any directory overrides, so
+    * they're in place when we load the config */
    for (;;)
    {
       int c = getopt_long(argc, argv, optstring, opts, NULL);
@@ -717,6 +720,43 @@ static void retroarch_parse_input(int argc, char *argv[])
             retroarch_print_help(argv[0]);
             exit(0);
 
+         case 'c':
+            RARCH_LOG("Set config file to : %s\n", optarg);
+            path_set(RARCH_PATH_CONFIG, optarg);
+            break;
+
+         case 's':
+            strlcpy(global->name.savefile, optarg,
+                  sizeof(global->name.savefile));
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
+            break;
+
+         case 'S':
+            strlcpy(global->name.savestate, optarg,
+                  sizeof(global->name.savestate));
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
+            break;
+
+         /* All other arguments are handled in the second pass */
+      }
+   }
+
+   /* Load the config file now that we know what it is */
+   config_load();
+
+   /* Second pass: All other arguments override the config file */
+   optind = 1;
+   for (;;)
+   {
+      int c = getopt_long(argc, argv, optstring, opts, NULL);
+
+      if (c == -1)
+         break;
+
+      switch (c)
+      {
          case 'd':
             {
                unsigned new_port;
@@ -765,22 +805,8 @@ static void retroarch_parse_input(int argc, char *argv[])
             }
             break;
 
-         case 's':
-            strlcpy(global->name.savefile, optarg,
-                  sizeof(global->name.savefile));
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
-            break;
-
          case 'f':
             rarch_force_fullscreen = true;
-            break;
-
-         case 'S':
-            strlcpy(global->name.savestate, optarg,
-                  sizeof(global->name.savestate));
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
             break;
 
          case 'v':
@@ -806,11 +832,6 @@ static void retroarch_parse_input(int argc, char *argv[])
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
             }
-            break;
-
-         case 'c':
-            RARCH_LOG("Set config file to : %s\n", optarg);
-            path_set(RARCH_PATH_CONFIG, optarg);
             break;
 
          case 'r':
@@ -1047,6 +1068,12 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 #endif
 
+         case 'c':
+         case 'h':
+         case 's':
+         case 'S':
+            break; /* Handled in the first pass */
+
          case '?':
             retroarch_print_help(argv[0]);
             retroarch_fail(1, "retroarch_parse_input()");
@@ -1241,7 +1268,8 @@ bool retroarch_main_init(int argc, char *argv[])
    rarch_error_on_init = true;
 
    retro_main_log_file_init(NULL);
-   retroarch_parse_input(argc, argv);
+
+   retroarch_parse_input_and_config(argc, argv);
 
    if (verbosity_is_enabled())
    {
@@ -1261,7 +1289,6 @@ bool retroarch_main_init(int argc, char *argv[])
    }
 
    retroarch_validate_cpu_features();
-   config_load();
 
    rarch_ctl(RARCH_CTL_TASK_INIT, NULL);
 
