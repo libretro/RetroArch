@@ -34,13 +34,15 @@
 RETRO_BEGIN_DECLS
 
 #define scaler_ctx_scale_direct(ctx, output, input) \
-   if (ctx->unscaled) \
+{ \
+   if (ctx && ctx->unscaled && ctx->direct_pixconv) \
       /* Just perform straight pixel conversion. */ \
       ctx->direct_pixconv(output, input, \
-            ctx->out_width, ctx->out_height, \
+            ctx->out_width,  ctx->out_height, \
             ctx->out_stride, ctx->in_stride); \
    else \
-      scaler_ctx_scale(ctx, output, input)
+      scaler_ctx_scale(ctx, output, input); \
+}
 
 static INLINE void video_frame_convert_rgb16_to_rgb32(
       struct scaler_ctx *scaler,
