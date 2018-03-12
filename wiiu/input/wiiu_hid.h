@@ -48,6 +48,7 @@ static void wiiu_handle_attach_events(wiiu_hid_t *hid, wiiu_attach_event *list);
 static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event);
 static void wiiu_hid_detach(wiiu_hid_t *hid, wiiu_attach_event *event);
 static void synchronized_add_to_adapters_list(wiiu_adapter_t *adapter);
+static wiiu_adapter_t *synchronized_remove_from_adapters_list(uint32_t handle);
 static void synchronized_add_event(wiiu_attach_event *event);
 static void wiiu_start_read_loop(wiiu_adapter_t *adapter);
 static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,

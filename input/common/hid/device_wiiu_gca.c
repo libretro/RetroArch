@@ -28,12 +28,14 @@ static uint8_t activation_packet[] = { 0x13 };
 
 typedef struct wiiu_gca_instance {
   hid_driver_instance_t *driver;
+  bool online;
   uint8_t device_state[37];
   joypad_connection_t *pads[4];
 } wiiu_gca_instance_t;
 
 static void update_pad_state(wiiu_gca_instance_t *instance);
 static joypad_connection_t *register_pad(wiiu_gca_instance_t *instance);
+static void unregister_pad(wiiu_gca_instance_t *instance, int slot);
 
 extern pad_connection_interface_t wiiu_gca_pad_connection;
 
@@ -45,21 +47,29 @@ static void *wiiu_gca_init(hid_driver_instance_t *driver)
 
   driver->hid_driver->send_control(driver->hid_data, activation_packet, sizeof(activation_packet));
   driver->hid_driver->read(driver->hid_data, instance->device_state, sizeof(instance->device_state));
+  instance->online = true;
 
   return instance;
 }
 
 static void wiiu_gca_free(void *data) {
-  wiiu_gca_instance_t *instance = (wiiu_gca_instance_t *)data;
-  if(instance) {
-    free(instance);
+   wiiu_gca_instance_t *instance = (wiiu_gca_instance_t *)data;
+   int i;
+
+   if(instance) {
+      instance->online = false;
+
+      for(i = 0; i < 4; i++)
+        unregister_pad(instance, i);
+
+      free(instance);
   }
 }
 
 static void wiiu_gca_handle_packet(void *data, uint8_t *buffer, size_t size)
 {
   wiiu_gca_instance_t *instance = (wiiu_gca_instance_t *)data;
-  if(!instance)
+  if(!instance || !instance->online)
     return;
 
   if(size > sizeof(instance->device_state))
@@ -71,58 +81,70 @@ static void wiiu_gca_handle_packet(void *data, uint8_t *buffer, size_t size)
 
 static void update_pad_state(wiiu_gca_instance_t *instance)
 {
-  int i, pad;
+   int i, pad;
+   if(!instance || !instance->online)
+      return;
 
-  /* process each pad */
-  for(i = 1; i < 37; i += 9)
-  {
-    pad = i / 9;
-    switch(instance->device_state[i])
-    {
-       case GCA_PORT_INITIALIZING:
-       case GCA_PORT_EMPTY:
-          if(instance->pads[pad] != NULL)
-          {
-            /* TODO: free pad */
-            instance->pads[pad] = NULL;
-          }
-          break;
-       case GCA_PORT_CONNECTED:
-         if(instance->pads[pad] == NULL)
-         {
-           instance->pads[pad] = register_pad(instance);
-         }
-    }
-  }
+   /* process each pad */
+   for(i = 1; i < 37; i += 9)
+   {
+      pad = i / 9;
+      switch(instance->device_state[i])
+      {
+         case GCA_PORT_INITIALIZING:
+         case GCA_PORT_EMPTY:
+            if(instance->pads[pad] != NULL)
+               unregister_pad(instance, pad);
+            break;
+         case GCA_PORT_CONNECTED:
+            if(instance->pads[pad] == NULL)
+               instance->pads[pad] = register_pad(instance);
+      }
+   }
 }
 
 static joypad_connection_t *register_pad(wiiu_gca_instance_t *instance) {
-  int slot;
-  joypad_connection_t *result;
+   int slot;
+   joypad_connection_t *result;
 
-  slot = pad_connection_find_vacant_pad(instance->driver->pad_connection_list);
-  if(slot < 0)
-    return NULL;
+   if(!instance || !instance->online)
+      return NULL;
 
-  result = &(instance->driver->pad_connection_list[slot]);
-  result->iface = &wiiu_gca_pad_connection;
-  result->data = result->iface->init(instance, slot, instance->driver->hid_driver);
-  result->connected = true;
-  input_pad_connect(slot, instance->driver->pad_driver);
+   slot = pad_connection_find_vacant_pad(instance->driver->pad_connection_list);
+   if(slot < 0)
+      return NULL;
 
-  return result;
+   result = &(instance->driver->pad_connection_list[slot]);
+   result->iface = &wiiu_gca_pad_connection;
+   result->data = result->iface->init(instance, slot, instance->driver->hid_driver);
+   result->connected = true;
+   input_pad_connect(slot, instance->driver->pad_driver);
+
+   return result;
+}
+
+static void unregister_pad(wiiu_gca_instance_t *instance, int slot)
+{
+   if(!instance || slot < 0 || slot >= 4 || instance->pads[slot] == NULL)
+      return;
+
+   joypad_connection_t *pad = instance->pads[slot];
+   instance->pads[slot] = NULL;
+   pad->iface->deinit(pad->data);
+   pad->data = NULL;
+   pad->connected = false;
 }
 
 static bool wiiu_gca_detect(uint16_t vendor_id, uint16_t product_id) {
-  return vendor_id == VID_NINTENDO && product_id == PID_NINTENDO_GCA;
+   return vendor_id == VID_NINTENDO && product_id == PID_NINTENDO_GCA;
 }
 
 hid_device_t wiiu_gca_hid_device = {
-  wiiu_gca_init,
-  wiiu_gca_free,
-  wiiu_gca_handle_packet,
-  wiiu_gca_detect,
-  "Wii U Gamecube Adapter"
+   wiiu_gca_init,
+   wiiu_gca_free,
+   wiiu_gca_handle_packet,
+   wiiu_gca_detect,
+   "Wii U Gamecube Adapter"
 };
 
 pad_connection_interface_t wiiu_gca_pad_connection = {

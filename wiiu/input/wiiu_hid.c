@@ -329,6 +329,29 @@ static wiiu_attach_event *synchronized_get_events_list(void)
    return list;
 }
 
+static wiiu_adapter_t *synchronized_remove_from_adapters_list(uint32_t handle)
+{
+   OSFastMutex_Lock(&(adapters.lock));
+   wiiu_adapter_t *iterator, *prev = NULL;
+
+   for(iterator = adapters.list; iterator != NULL; iterator = iterator->next)
+   {
+      if(iterator->handle == handle)
+      {
+         /* we're at the start of the list, so just re-assign head */
+         if(prev == NULL)
+           adapters.list = iterator->next;
+         else
+           prev->next = iterator->next;
+         break;
+      }
+      prev = iterator;
+   }
+   OSFastMutex_Unlock(&(adapters.lock));
+
+   return iterator;
+}
+
 static void synchronized_add_to_adapters_list(wiiu_adapter_t *adapter)
 {
    OSFastMutex_Lock(&(adapters.lock));
@@ -368,6 +391,13 @@ error:
 
 static void wiiu_hid_detach(wiiu_hid_t *hid, wiiu_attach_event *event)
 {
+   wiiu_adapter_t *adapter = synchronized_remove_from_adapters_list(event->handle);
+
+   if(adapter) {
+      adapter->driver->free(adapter->driver_handle);
+      adapter->driver_handle = NULL;
+      delete_adapter(adapter);
+   }
 }
 
 
@@ -474,6 +504,13 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
   {
     RARCH_LOG("Shutting down read loop for device: %s\n",
        adapter->driver->name);
+    adapter->state = ADAPTER_STATE_DONE;
+    return;
+  }
+
+  if(error)
+  {
+    RARCH_ERR("Read failed with error 0x%08x\n", error);
     adapter->state = ADAPTER_STATE_DONE;
     return;
   }
