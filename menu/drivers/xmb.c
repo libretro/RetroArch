@@ -401,6 +401,13 @@ float gradient_light[16] = {
    1.0, 1.0, 1.0, 1.00,
 };
 
+float gradient_morning_blue[16] = {
+   221/255.0, 241/255.0, 254/255.0, 1.00,
+   135/255.0, 206/255.0, 250/255.0, 1.00,
+   1.0, 1.0, 1.0, 1.00,
+   170/255.0, 200/255.0, 252/255.0, 1.00,
+};
+
 static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
       unsigned height, size_t list_size, unsigned current,
       unsigned *first, unsigned *last);
@@ -541,6 +548,8 @@ static float *xmb_gradient_ident(video_frame_info_t *video_info)
          return &gradient_dark[0];
       case XMB_THEME_LIGHT:
          return &gradient_light[0];
+      case XMB_THEME_MORNING_BLUE:
+         return &gradient_morning_blue[0];
       case XMB_THEME_LEGACY_RED:
       default:
          break;
@@ -901,7 +910,7 @@ static void xmb_render_messagebox_internal(
    float line_height        = 0;
    unsigned width           = video_info->width;
    unsigned height          = video_info->height;
-   struct string_list *list = !string_is_empty(message) 
+   struct string_list *list = !string_is_empty(message)
       ? string_split(message, "\n") : NULL;
 
    if (!list || !xmb || !xmb->font)
@@ -3019,9 +3028,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       /* Resize thumbnail if its height cross the bottom of the screen */
       if(xmb->margins_screen_top + xmb->icon_size + xmb->thumbnail_height * scale_mod[4] >= 1040)
       {
-         thumb_width = xmb->thumbnail_width * 
+         thumb_width = xmb->thumbnail_width *
             ((1040 - xmb->margins_screen_top - xmb->icon_size) / (xmb->thumbnail_height * scale_mod[4]));
-         thumb_height = xmb->thumbnail_height * 
+         thumb_height = xmb->thumbnail_height *
             ((1040 - xmb->margins_screen_top - xmb->icon_size) / (xmb->thumbnail_height * scale_mod[4]));
       }
       else
@@ -4505,7 +4514,7 @@ static int xmb_list_push(void *data, void *userdata,
                            snprintf(s, sizeof(s),
                                  "Load %s %s",
                                  subsystem->desc,
-                                 i == content_get_subsystem() 
+                                 i == content_get_subsystem()
                                  ? "\u2605" : " ");
                            menu_entries_append_enum(info->list,
                                  s,
@@ -4518,7 +4527,7 @@ static int xmb_list_push(void *data, void *userdata,
                            snprintf(s, sizeof(s),
                                  "Start %s %s",
                                  subsystem->desc,
-                                 i == content_get_subsystem() 
+                                 i == content_get_subsystem()
                                  ? "\u2605" : " ");
                            menu_entries_append_enum(info->list,
                                  s,
@@ -4532,7 +4541,7 @@ static int xmb_list_push(void *data, void *userdata,
                         snprintf(s, sizeof(s),
                               "Load %s %s",
                               subsystem->desc,
-                              i == content_get_subsystem() 
+                              i == content_get_subsystem()
                               ? "\u2605" : " ");
                         menu_entries_append_enum(info->list,
                               s,
