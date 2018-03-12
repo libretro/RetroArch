@@ -61,20 +61,20 @@ bool hid_init(hid_driver_instance_t *instance,
    if(!instance || !hid_driver || !pad_driver || slots > MAX_USERS)
       return false;
 
-   instance->hid_data = hid_driver->init(instance);
-   if(!instance->hid_data)
+   instance->os_driver_data = hid_driver->init(instance);
+   if(!instance->os_driver_data)
       return false;
 
-   instance->pad_connection_list = pad_connection_init(slots);
-   if(!instance->pad_connection_list)
+   instance->pad_list = pad_connection_init(slots);
+   if(!instance->pad_list)
    {
-      hid_driver->free(instance->hid_data);
-      instance->hid_data = NULL;
+      hid_driver->free(instance->os_driver_data);
+      instance->os_driver_data = NULL;
       return false;
    }
 
    instance->max_slot = slots;
-   instance->hid_driver = hid_driver;
+   instance->os_driver = hid_driver;
    instance->pad_driver = pad_driver;
 
    return true;
@@ -90,11 +90,11 @@ void hid_deinit(hid_driver_instance_t *instance)
    if(!instance)
       return;
 
-   pad_connection_destroy(instance->pad_connection_list);
+   pad_connection_destroy(instance->pad_list);
 
-   if(instance->hid_driver && instance->hid_data)
+   if(instance->os_driver && instance->os_driver_data)
    {
-      instance->hid_driver->free(instance->hid_data);
+      instance->os_driver->free(instance->os_driver_data);
    }
 
    memset(instance, 0, sizeof(hid_driver_instance_t));

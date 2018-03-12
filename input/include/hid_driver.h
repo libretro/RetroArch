@@ -53,10 +53,10 @@ struct hid_driver
 };
 
 struct hid_driver_instance {
-   hid_driver_t *hid_driver;
-   void *hid_data;
+   hid_driver_t *os_driver;
+   void *os_driver_data;
    input_device_driver_t *pad_driver;
-   joypad_connection_t *pad_connection_list;
+   joypad_connection_t *pad_list;
    unsigned max_slot;
 };
 

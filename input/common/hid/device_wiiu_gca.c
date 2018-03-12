@@ -45,8 +45,8 @@ static void *wiiu_gca_init(hid_driver_instance_t *driver)
   memset(instance, 0, sizeof(wiiu_gca_instance_t));
   instance->driver = driver;
 
-  driver->hid_driver->send_control(driver->hid_data, activation_packet, sizeof(activation_packet));
-  driver->hid_driver->read(driver->hid_data, instance->device_state, sizeof(instance->device_state));
+  driver->os_driver->send_control(driver->os_driver_data, activation_packet, sizeof(activation_packet));
+  driver->os_driver->read(driver->os_driver_data, instance->device_state, sizeof(instance->device_state));
   instance->online = true;
 
   return instance;
@@ -110,13 +110,13 @@ static joypad_connection_t *register_pad(wiiu_gca_instance_t *instance) {
    if(!instance || !instance->online)
       return NULL;
 
-   slot = pad_connection_find_vacant_pad(instance->driver->pad_connection_list);
+   slot = pad_connection_find_vacant_pad(instance->driver->pad_list);
    if(slot < 0)
       return NULL;
 
-   result = &(instance->driver->pad_connection_list[slot]);
+   result = &(instance->driver->pad_list[slot]);
    result->iface = &wiiu_gca_pad_connection;
-   result->data = result->iface->init(instance, slot, instance->driver->hid_driver);
+   result->data = result->iface->init(instance, slot, instance->driver->os_driver);
    result->connected = true;
    input_pad_connect(slot, instance->driver->pad_driver);
 
