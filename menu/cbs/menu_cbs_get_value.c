@@ -474,7 +474,7 @@ static void menu_action_setting_disp_set_label_shader_preset_parameter(
 {
    struct video_shader *shader          = menu_shader_get();
    struct video_shader_parameter *param = shader ?
-      &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0] 
+      &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0]
       : NULL;
 
    *s = '\0';
@@ -1023,6 +1023,12 @@ static void menu_action_setting_disp_set_label_xmb_menu_color_theme(
          strlcpy(s,
                msg_hash_to_str(
                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT),
+               len);
+         break;
+      case XMB_THEME_MORNING_BLUE:
+         strlcpy(s,
+               msg_hash_to_str(
+                 MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MORNING_BLUE),
                len);
          break;
    }
