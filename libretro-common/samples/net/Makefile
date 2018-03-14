@@ -31,6 +31,7 @@ HTTP_TEST_C = \
 				  $(LIBRETRO_COMM_DIR)/net/net_compat.c \
 				  $(LIBRETRO_COMM_DIR)/net/net_socket.c \
 				  $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+				  $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 				  $(LIBRETRO_COMM_DIR)/string/stdstring.c \
 				  net_http_test.c
 
@@ -41,7 +42,7 @@ NET_IFINFO_C = \
 					net_ifinfo_test.c
 
 ifeq ($(platform), win)
-CFLAGS += -lwsock2_w32
+CFLAGS += -liphlpapi -lws2_32 
 endif
 
 NET_IFINFO_OBJS := $(NET_IFINFO_C:.c=.o)
