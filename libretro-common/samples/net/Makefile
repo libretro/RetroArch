@@ -4,6 +4,21 @@ LIBRETRO_COMM_DIR := ../..
 
 INCFLAGS = -I$(LIBRETRO_COMM_DIR)/include
 
+ifeq ($(platform),)
+platform = unix
+ifeq ($(shell uname -a),)
+   platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+   platform = osx
+	arch = intel
+ifeq ($(shell uname -p),powerpc)
+	arch = ppc
+endif
+else ifneq ($(findstring MINGW,$(shell uname -a)),)
+   platform = win
+endif
+endif
+
 ifeq ($(DEBUG),1)
 CFLAGS += -O0 -g
 else
@@ -24,6 +39,10 @@ HTTP_TEST_OBJS := $(HTTP_TEST_C:.c=.o)
 NET_IFINFO_C = \
 					$(LIBRETRO_COMM_DIR)/net/net_ifinfo.c \
 					net_ifinfo_test.c
+
+ifeq ($(platform), win)
+CFLAGS += -lwsock2_w32
+endif
 
 NET_IFINFO_OBJS := $(NET_IFINFO_C:.c=.o)
 
