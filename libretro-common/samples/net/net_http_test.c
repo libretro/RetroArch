@@ -37,7 +37,7 @@ int main(void)
    if (!network_init())
       return -1;
 
-   http1 = net_http_new("http://buildbot.libretro.com/nightly/win-x86/latest/mednafen_psx_libretro.dll.zip");
+   http1 = net_http_new("http://buildbot.libretro.com/nightly/windows/x86_64/latest/mednafen_psx_libretro.dll.zip");
 
    while (!net_http_update(http1, &pos, &tot))
       printf("%.9lu / %.9lu        \r",pos,tot);
