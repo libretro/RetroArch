@@ -1007,10 +1007,6 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
             vid->height,
             vid->pitch,
             shrunk);
-      scaler_ctx_scale_direct(
-            &handle->video.scaler,
-            handle->video.conv_frame->data[0],
-            vid->data);
    }
 }
 

@@ -237,7 +237,6 @@ static void gl1_renderchain_copy_frame(
             width,
             height,
             pitch);
-      scaler_ctx_scale_direct(&gl->scaler, &gl->conv_buffer, frame); 
       data_buf = gl->conv_buffer;
    }
    else

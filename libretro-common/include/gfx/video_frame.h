@@ -33,18 +33,15 @@
 
 RETRO_BEGIN_DECLS
 
-static INLINE void scaler_ctx_scale_direct(
-      struct scaler_ctx *scaler,
-      void *output,
-      const void *input)
-{
-   /* Just perform straight pixel conversion if possible. */
-   if (scaler && scaler->unscaled && scaler->direct_pixconv)
-      scaler->direct_pixconv(output, input,
-            scaler->out_width,  scaler->out_height,
-            scaler->out_stride, scaler->in_stride);
-   else
-      scaler_ctx_scale(scaler, output, input);
+#define scaler_ctx_scale_direct(ctx, output, input) \
+{ \
+   if (ctx && ctx->unscaled && ctx->direct_pixconv) \
+      /* Just perform straight pixel conversion. */ \
+      ctx->direct_pixconv(output, input, \
+            ctx->out_width,  ctx->out_height, \
+            ctx->out_stride, ctx->in_stride); \
+   else \
+      scaler_ctx_scale(ctx, output, input); \
 }
 
 static INLINE void video_frame_convert_rgb16_to_rgb32(
@@ -68,6 +65,8 @@ static INLINE void video_frame_convert_rgb16_to_rgb32(
 
    scaler->in_stride  = in_pitch;
    scaler->out_stride = width * sizeof(uint32_t);
+
+   scaler_ctx_scale_direct(scaler, output, input);
 }
 
 static INLINE void video_frame_scale(
@@ -89,10 +88,10 @@ static INLINE void video_frame_scale(
          || pitch  != (unsigned)scaler->in_stride
       )
    {
-      scaler->in_fmt     = format;
-      scaler->in_width   = width;
-      scaler->in_height  = height;
-      scaler->in_stride  = pitch;
+      scaler->in_fmt    = format;
+      scaler->in_width  = width;
+      scaler->in_height = height;
+      scaler->in_stride = pitch;
 
       scaler->out_width  = scaler_width;
       scaler->out_height = scaler_height;
@@ -100,6 +99,8 @@ static INLINE void video_frame_scale(
 
       scaler_ctx_gen_filter(scaler);
    }
+
+   scaler_ctx_scale_direct(scaler, output, input);
 }
 
 static INLINE void video_frame_record_scale(
@@ -132,6 +133,8 @@ static INLINE void video_frame_record_scale(
 
       scaler_ctx_gen_filter(scaler);
    }
+
+   scaler_ctx_scale_direct(scaler, output, input);
 }
 
 static INLINE void video_frame_convert_argb8888_to_abgr8888(
@@ -153,6 +156,8 @@ static INLINE void video_frame_convert_argb8888_to_abgr8888(
 
    scaler->in_stride  = in_pitch;
    scaler->out_stride = width * sizeof(uint32_t);
+
+   scaler_ctx_scale_direct(scaler, output, input);
 }
 
 static INLINE void video_frame_convert_to_bgr24(
@@ -171,6 +176,8 @@ static INLINE void video_frame_convert_to_bgr24(
 
    scaler->in_stride   = in_pitch;
    scaler->out_stride  = width * 3;
+
+   scaler_ctx_scale_direct(scaler, output, input);
 }
 
 static INLINE void video_frame_convert_rgba_to_bgr(
@@ -188,6 +195,24 @@ static INLINE void video_frame_convert_rgba_to_bgr(
       dst[1] = src[1];
       dst[2] = src[0];
    }
+}
+
+static INLINE bool video_pixel_frame_scale(
+      struct scaler_ctx *scaler,
+      void *output, const void *data,
+      unsigned width, unsigned height,
+      size_t pitch)
+{
+   scaler->in_width      = width;
+   scaler->in_height     = height;
+   scaler->out_width     = width;
+   scaler->out_height    = height;
+   scaler->in_stride     = (int)pitch;
+   scaler->out_stride    = width * sizeof(uint16_t);
+
+   scaler_ctx_scale_direct(scaler, output, data);
+
+   return true;
 }
 
 RETRO_END_DECLS

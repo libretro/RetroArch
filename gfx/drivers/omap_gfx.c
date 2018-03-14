@@ -1102,13 +1102,11 @@ static bool omap_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return true;
 }
 
-static void omap_gfx_set_texture_frame(void *data,
-      const void *frame, bool rgb32,
+static void omap_gfx_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
    omap_video_t          *vid = (omap_video_t*)data;
-   enum scaler_pix_fmt format = rgb32 ? 
-      SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
+   enum scaler_pix_fmt format = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
 
    video_frame_scale(
          &vid->menu.scaler,
@@ -1121,8 +1119,6 @@ static void omap_gfx_set_texture_frame(void *data,
          width,
          height,
          width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
-   scaler_ctx_scale_direct(&vid->menu.scaler, vid->menu.frame,
-         frame);
 }
 
 static void omap_gfx_set_texture_enable(void *data, bool state, bool full_screen)

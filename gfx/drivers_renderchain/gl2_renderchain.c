@@ -1340,7 +1340,6 @@ static void gl2_renderchain_copy_frame(
                &gl->scaler,
                gl->conv_buffer,
                frame, width, height, pitch);
-         scaler_ctx_scale_direct(&gl->scaler, gl->conv_buffer, frame);
          glTexSubImage2D(GL_TEXTURE_2D,
                0, 0, 0, width, height, gl->texture_type,
                gl->texture_fmt, gl->conv_buffer);
@@ -1401,7 +1400,6 @@ static void gl2_renderchain_copy_frame(
                width,
                height,
                pitch);
-         scaler_ctx_scale_direct(&gl->scaler, &gl->conv_buffer, frame); 
          data_buf = gl->conv_buffer;
       }
       else
