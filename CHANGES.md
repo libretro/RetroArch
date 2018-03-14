@@ -1,10 +1,12 @@
 # 1.7.2 (future)
+- CHEEVOS: Support Atari 2600, Virtual Boy, Neo Geo (Arcade).
 - MENU: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
 - SHADERS/SLANG: Slang shaders should work again on Android version and MSVC versions (basically all the Griffin-based versions).
 - SHADERS: If GL context is GLES2/3/Core context, Cg shaders are unavailable. Applies to shader list too.
 - SHADERS: Hide cg/glsl shaders from being able to be selected if D3D8/9/10/11/Vulkan video drivers are selected.
 - SHADERS: Hide slang shaders from being able to be selected if D3D8/9/OpenGL video drivers are selected.
 - SHADERS: Prevent crashes from occurring if we have the GL video driver in use and we try to skip to a slang shader through next/previous hotkeys
+- VITA: Bugfix for 'PS Vita takes many time to start to accept input' issue.
 
 # 1.7.1
 - 3DS: Now correctly reports amount of CPU cores.
