@@ -212,11 +212,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
-      "Achievement List"
+      "Achievements"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
-      "Achievement List (Hardcore)"
+      "Achievements (Hardcore)"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
@@ -1904,7 +1904,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
       "Enable or disable in-game leaderboards. Has no effect if Hardcore Mode is disabled.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
-      "Enable or disable badge display in Achievement List.")
+      "Enable or disable badge display in the Achievement List.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
       "Enable or disable OSD verbosity for achievements.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
