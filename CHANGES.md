@@ -1,5 +1,6 @@
 # 1.7.2 (future)
 - CHEEVOS: Support Atari 2600, Virtual Boy, Neo Geo (Arcade).
+- CHEEVOS: Add option to automatically take a screenshot when an achievement is triggered.
 - MENU: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
 - SHADERS/SLANG: Slang shaders should work again on Android version and MSVC versions (basically all the Griffin-based versions).
 - SHADERS: If GL context is GLES2/3/Core context, Cg shaders are unavailable. Applies to shader list too.
