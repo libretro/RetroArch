@@ -413,7 +413,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-/* FIXME? Translate 'Achievements Hardcore Mode' */
+/* FIXME? Translate 'Hardcore Mode' */
       "专家模式"
       )
 MSG_HASH(
