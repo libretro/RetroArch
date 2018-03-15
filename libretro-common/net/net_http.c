@@ -97,7 +97,7 @@ void urlencode_lut_init()
 
    for (i = 0; i < 256; i++)
    {
-      urlencode_lut[i] = isalnum(i) || i == '*' || i == '-' || i == '.' || i == '_' ? i : (i == ' ') ? '+' : 0;
+      urlencode_lut[i] = isalnum(i) || i == '*' || i == '-' || i == '.' || i == '_' || i == '/' ? i : 0;
    }
 }
 

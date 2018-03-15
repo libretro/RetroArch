@@ -320,9 +320,32 @@ void* task_push_http_transfer(const char *url, bool mute,
       retro_task_callback_t cb, void *user_data)
 {
    struct http_connection_t *conn;
+   char *tmp;
+   char url_domain[PATH_MAX_LENGTH];
+   char url_path[PATH_MAX_LENGTH];
+   char url_encoded[PATH_MAX_LENGTH];
 
-   conn = net_http_connection_new(url, "GET", NULL);
+   int count = 0;
+   strlcpy (url_path, url, sizeof(url_path));
+   tmp = url_path;
 
+   while (count < 3 && tmp[0] != '\0')
+   {
+      tmp = strchr(tmp, '/');
+      count ++;
+      tmp++;
+   }
+
+   strlcpy(url_domain, url, tmp - url_path);
+   strlcpy(url_path, tmp, sizeof(url_path));
+
+   tmp = NULL;
+   net_http_urlencode_full (&tmp, url_path);
+   snprintf(url_encoded, sizeof(url_encoded), "%s/%s", url_domain, tmp);
+
+   conn = net_http_connection_new(url_encoded, "GET", NULL);
+
+   free (tmp);
    return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
 }
 
