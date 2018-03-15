@@ -922,7 +922,13 @@ static void vulkan_free(void *data)
 
    if (vk->context && vk->context->device)
    {
+#ifdef HAVE_THREADS
+      slock_lock(vk->context->queue_lock);
+#endif
       vkQueueWaitIdle(vk->context->queue);
+#ifdef HAVE_THREADS
+      slock_unlock(vk->context->queue_lock);
+#endif
       vulkan_deinit_resources(vk);
 
       /* No need to init this since textures are create on-demand. */
@@ -1225,7 +1231,13 @@ static void vulkan_check_swapchain(vk_t *vk)
 {
    if (vk->context->invalid_swapchain)
    {
+#ifdef HAVE_THREADS
+      slock_lock(vk->context->queue_lock);
+#endif
       vkQueueWaitIdle(vk->context->queue);
+#ifdef HAVE_THREADS
+      slock_unlock(vk->context->queue_lock);
+#endif
 
       vulkan_deinit_resources(vk);
       vulkan_init_resources(vk);
@@ -2254,7 +2266,13 @@ static void vulkan_unload_texture(void *data, uintptr_t handle)
 
    /* TODO: We really want to defer this deletion instead,
     * but this will do for now. */
+#ifdef HAVE_THREADS
+   slock_lock(vk->context->queue_lock);
+#endif
    vkQueueWaitIdle(vk->context->queue);
+#ifdef HAVE_THREADS
+   slock_unlock(vk->context->queue_lock);
+#endif
    vulkan_destroy_texture(
          vk->context->device, texture);
    free(texture);
@@ -2351,7 +2369,13 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       if (!is_idle)
          video_driver_cached_frame();
 
+#ifdef HAVE_THREADS
+      slock_lock(vk->context->queue_lock);
+#endif
       vkQueueWaitIdle(vk->context->queue);
+#ifdef HAVE_THREADS
+      slock_unlock(vk->context->queue_lock);
+#endif
 
       if (!staging->mapped)
          vulkan_map_persistent_texture(
