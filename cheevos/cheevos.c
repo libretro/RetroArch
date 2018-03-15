@@ -48,6 +48,7 @@
 #include "cond.h"
 
 #include "../file_path_special.h"
+#include "../paths.h"
 #include "../command.h"
 #include "../dynamic.h"
 #include "../configuration.h"
@@ -1962,6 +1963,22 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
             cheevos_make_unlock_url(cheevo, url, sizeof(url));
             task_push_http_transfer(url, true, NULL,
                   cheevos_unlocked, cheevo);
+
+            if(settings->bools.cheevos_auto_screenshot)
+            {
+               char shotname[256];
+
+               snprintf(shotname, sizeof(shotname), "%s/%s-cheevo-%u",
+                  settings->paths.directory_screenshot,
+                  path_basename(path_get(RARCH_PATH_BASENAME)),
+                  cheevo->id);
+               shotname[sizeof(shotname) - 1] = '\0';
+
+               if(take_screenshot(shotname, true, video_driver_cached_frame_has_valid_framebuffer()))
+                  RARCH_LOG("[CHEEVOS]: got a screenshot for cheevo %u\n", cheevo->id);
+               else
+                  RARCH_LOG("[CHEEVOS]: failed to get screenshot for cheevo %u\n", cheevo->id);
+            }
          }
 
          cheevo->last = valid;

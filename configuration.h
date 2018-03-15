@@ -195,6 +195,7 @@ typedef struct settings
       bool cheevos_leaderboards_enable;
       bool cheevos_badges_enable;
       bool cheevos_verbose_enable;
+      bool cheevos_auto_screenshot;
 
       /* Camera */
       bool camera_allow;

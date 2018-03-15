@@ -503,6 +503,10 @@ MSG_HASH(
       "Achievements Verbose Mode"
       )
 MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
+      "Achievements Automatic Screenshot"
+      )
+MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
       "Close Content"
       )
@@ -1907,6 +1911,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
       "Enable or disable badge display in Achievement List.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
       "Enable or disable OSD verbosity for achievements.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
+      "Automatically take a screenshot when an achievement is triggered.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
       "Change drivers used by the system.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
