@@ -432,7 +432,7 @@ protected:
 	virtual void emit_array_copy(const std::string &lhs, uint32_t rhs_id);
 
 	bool buffer_is_packing_standard(const SPIRType &type, BufferPackingStandard packing, uint32_t start_offset = 0,
-	                                uint32_t end_offset = std::numeric_limits<uint32_t>::max());
+	                                uint32_t end_offset = UINT32_MAX);
 	uint32_t type_to_packed_base_size(const SPIRType &type, BufferPackingStandard packing);
 	uint32_t type_to_packed_alignment(const SPIRType &type, uint64_t flags, BufferPackingStandard packing);
 	uint32_t type_to_packed_array_stride(const SPIRType &type, uint64_t flags, BufferPackingStandard packing);
