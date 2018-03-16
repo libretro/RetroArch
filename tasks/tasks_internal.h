@@ -102,6 +102,9 @@ typedef struct
 void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
+void *task_push_http_transfer_raw(const char *url, bool mute, const char *type,
+      retro_task_callback_t cb, void *userdata);
+
 void *task_push_http_post_transfer(const char *url, const char *post_data, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 

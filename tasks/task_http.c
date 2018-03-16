@@ -349,6 +349,17 @@ void* task_push_http_transfer(const char *url, bool mute,
    return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
 }
 
+void* task_push_http_transfer_raw(const char *url, bool mute,
+      const char *type,
+      retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t *conn;
+
+   conn = net_http_connection_new(url, "GET", NULL);
+
+   return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
+}
+
 void* task_push_http_post_transfer(const char *url,
       const char *post_data, bool mute,
       const char *type, retro_task_callback_t cb, void *user_data)
