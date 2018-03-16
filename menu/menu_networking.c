@@ -186,7 +186,7 @@ void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
 #ifdef HAVE_NETWORKING
    char subdir_path[PATH_MAX_LENGTH];
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
-   menu_file_transfer_t *state       = (menu_file_transfer_t*)user_data;
+   file_transfer_t *state       = (file_transfer_t*)user_data;
 
    subdir_path[0] = '\0';
 
@@ -228,7 +228,7 @@ void cb_net_generic(void *task_data, void *user_data, const char *err)
 #ifdef HAVE_NETWORKING
    bool refresh                = false;
    http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
-   menu_file_transfer_t *state = (menu_file_transfer_t*)user_data;
+   file_transfer_t *state = (file_transfer_t*)user_data;
 
    if (core_buf)
       free(core_buf);
@@ -263,7 +263,7 @@ finish:
    if (!err && !strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
    {
       char *parent_dir                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      menu_file_transfer_t *transf     = NULL;
+      file_transfer_t *transf     = NULL;
 
       parent_dir[0] = '\0';
 
@@ -273,7 +273,7 @@ finish:
             file_path_str(FILE_PATH_INDEX_DIRS_URL),
             PATH_MAX_LENGTH * sizeof(char));
 
-      transf           = (menu_file_transfer_t*)malloc(sizeof(*transf));
+      transf           = (file_transfer_t*)malloc(sizeof(*transf));
 
       transf->enum_idx = MSG_UNKNOWN;
       strlcpy(transf->path, parent_dir, sizeof(transf->path));

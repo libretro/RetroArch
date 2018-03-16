@@ -127,12 +127,6 @@ enum
    ACTION_OK_DL_CONTENT_SETTINGS
 };
 
-typedef struct
-{
-   enum msg_hash_enums enum_idx;
-   char path[PATH_MAX_LENGTH];
-} menu_file_transfer_t;
-
 /* FIXME - Externs, refactor */
 extern size_t hack_shader_pass;
 extern unsigned rpl_entry_selection_ptr;

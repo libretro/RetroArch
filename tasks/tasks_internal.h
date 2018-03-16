@@ -92,6 +92,12 @@ typedef struct nbio_handle
    transfer_cb_t  cb;
 } nbio_handle_t;
 
+typedef struct
+{
+   enum msg_hash_enums enum_idx;
+   char path[PATH_MAX_LENGTH];
+} file_transfer_t;
+
 #ifdef HAVE_NETWORKING
 typedef struct
 {
@@ -100,9 +106,6 @@ typedef struct
 } http_transfer_data_t;
 
 void *task_push_http_transfer(const char *url, bool mute, const char *type,
-      retro_task_callback_t cb, void *userdata);
-
-void *task_push_http_transfer_raw(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
 void *task_push_http_post_transfer(const char *url, const char *post_data, bool mute, const char *type,

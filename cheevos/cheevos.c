@@ -1906,7 +1906,7 @@ static void cheevos_unlocked(void *task_data, void *user_data,
       RARCH_ERR("[CHEEVOS]: error awarding achievement %u, retrying...\n", cheevo->id);
 
       cheevos_make_unlock_url(cheevo, url, sizeof(url));
-      task_push_http_transfer_raw(url, true, NULL, cheevos_unlocked, cheevo);
+      task_push_http_transfer(url, true, NULL, cheevos_unlocked, cheevo);
    }
 }
 
@@ -1961,7 +1961,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
             runloop_msg_queue_push(cheevo->description, 0, 3 * 60, false);
 
             cheevos_make_unlock_url(cheevo, url, sizeof(url));
-            task_push_http_transfer_raw(url, true, NULL,
+            task_push_http_transfer(url, true, NULL,
                   cheevos_unlocked, cheevo);
 
             if(settings->bools.cheevos_auto_screenshot)
@@ -2176,7 +2176,7 @@ static void cheevos_test_leaderboards(void)
                char formatted_value[16];
 
                cheevos_make_lboard_url(lboard, url, sizeof(url));
-               task_push_http_transfer_raw(url, true, NULL,
+               task_push_http_transfer(url, true, NULL,
                      cheevos_lboard_submit, lboard);
                RARCH_LOG("[CHEEVOS]: submit lboard %s\n", lboard->title);
 

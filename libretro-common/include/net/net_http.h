@@ -68,7 +68,11 @@ uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error);
 /* Cleans up all memory. */
 void net_http_delete(struct http_t *state);
 
-void net_http_urlencode_full(char **dest, const char *source);
+/* URL Encode a string */
+void net_http_urlencode(char **dest, const char *source);
+
+/* Re-encode a full URL */
+void net_http_urlencode_full(char *dest, const char *source, size_t size);
 
 RETRO_END_DECLS
 

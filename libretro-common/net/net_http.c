@@ -33,6 +33,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <retro_common_api.h>
+#include <retro_miscellaneous.h>
 
 enum
 {
@@ -101,8 +102,9 @@ void urlencode_lut_init()
    }
 }
 
-/* caller is responsible for deleting the destination buffer */
-void net_http_urlencode_full(char **dest, const char *source)
+/* URL Encode a string
+   caller is responsible for deleting the destination buffer */
+void net_http_urlencode(char **dest, const char *source)
 {
    char *enc  = NULL;
    /* Assume every character will be encoded, so we need 3 times the space. */
@@ -127,6 +129,34 @@ void net_http_urlencode_full(char **dest, const char *source)
    }
 
    (*dest)[len - 1] = '\0';
+}
+
+/* Re-encode a full URL */
+void net_http_urlencode_full(char *dest, const char *source, size_t size)
+{
+   char *tmp;
+   char url_domain[PATH_MAX_LENGTH];
+   char url_path[PATH_MAX_LENGTH];
+   char url_encoded[PATH_MAX_LENGTH];
+
+   int count = 0;
+   strlcpy (url_path, source, sizeof(url_path));
+   tmp = url_path;
+
+   while (count < 3 && tmp[0] != '\0')
+   {
+      tmp = strchr(tmp, '/');
+      count ++;
+      tmp++;
+   }
+
+   strlcpy(url_domain, source, tmp - url_path);
+   strlcpy(url_path, tmp, sizeof(url_path));
+
+   tmp = NULL;
+   net_http_urlencode(&tmp, url_path);
+   snprintf(dest, size, "%s/%s", url_domain, tmp);
+   free (tmp);
 }
 
 static int net_http_new_socket(struct http_connection_t *conn)

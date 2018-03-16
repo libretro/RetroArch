@@ -767,13 +767,13 @@ static void netplay_announce(void)
 
    netplay_get_architecture(frontend_architecture, sizeof(frontend_architecture));
 
-   net_http_urlencode_full(&username, settings->paths.username);
-   net_http_urlencode_full(&corename, system->info.library_name);
-   net_http_urlencode_full(&gamename,
+   net_http_urlencode(&username, settings->paths.username);
+   net_http_urlencode(&corename, system->info.library_name);
+   net_http_urlencode(&gamename,
       !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ?
       path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
-   net_http_urlencode_full(&coreversion, system->info.library_version);
-   net_http_urlencode_full(&frontend_ident, frontend_architecture);
+   net_http_urlencode(&coreversion, system->info.library_version);
+   net_http_urlencode(&frontend_ident, frontend_architecture);
 
    buf[0] = '\0';
 
