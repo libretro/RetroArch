@@ -62,20 +62,25 @@ static int shader_action_parameter_left(unsigned type, const char *label, bool w
 {
    video_shader_ctx_t shader_info;
    struct video_shader *shader          = menu_shader_get();
-   struct video_shader_parameter *param = NULL;
+   struct video_shader_parameter *param_menu = NULL;
+   struct video_shader_parameter *param_prev = NULL;
+
+   int ret = 0;
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   param = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-   if (!param)
+   param_prev = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
+   if (!param_prev)
       return menu_cbs_exit();
-   generic_shader_action_parameter_left(param, type, label, wraparound);
+   ret = generic_shader_action_parameter_left(param_prev, type, label, wraparound);
 
-   param = shader ? &shader->parameters[type - 
+   param_menu = shader ? &shader->parameters[type - 
       MENU_SETTINGS_SHADER_PARAMETER_0] : NULL;
-   if (!param)
+   if (!param_menu)
       return menu_cbs_exit();
-   return generic_shader_action_parameter_left(param, type, label, wraparound);
+   param_menu->current = param_prev->current;
+
+   return ret;
 }
 
 static int action_left_cheat(unsigned type, const char *label,
