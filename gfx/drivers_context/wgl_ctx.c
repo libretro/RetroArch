@@ -628,9 +628,11 @@ static void gfx_ctx_wgl_input_driver(void *data,
    }
 #endif
 
+#ifdef HAVE_DINPUT
    dinput_wgl  = input_dinput.init(joypad_name);
    *input      = dinput_wgl ? &input_dinput : NULL;
    *input_data = dinput_wgl;
+#endif
 }
 
 static bool gfx_ctx_wgl_has_focus(void *data)
