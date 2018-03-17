@@ -35,10 +35,8 @@
 
 #define MAX_PADS 5
 
-static unsigned char keyboardChannel = 0x00;
-static KBDModifier keyboardModifier  = 0x00;
-static unsigned char keyboardCode    = 0x00;
-static KEYState keyboardState[256]   = { KBD_WIIU_NULL };
+static uint8_t keyboardChannel = 0x00;
+static bool keyboardState[RETROK_LAST] = { 0 };
 
 typedef struct wiiu_input
 {
@@ -62,14 +60,13 @@ void kb_key_callback(KBDKeyEvent *key)
    unsigned code       = 0;
    bool pressed        = false;
 
-   keyboardModifier    = key->modifier;
-   keyboardCode        = key->scancode;
-
    if (key->state > 0)
       pressed = true;
 
    code                = input_keymaps_translate_keysym_to_rk(key->scancode);
-   keyboardState[code] = key->state;
+   if (code < RETROK_LAST)
+      keyboardState[code] = pressed;
+
 
    if (key->modifier & KBD_WIIU_SHIFT)
       mod |= RETROKMOD_SHIFT;
@@ -134,7 +131,7 @@ static bool wiiu_key_pressed(int key)
    if (key >= RETROK_LAST)
       return false;
 
-   if ((keyboardState[key] > 0) && (keyboardChannel > 0))
+   if (keyboardState[key] && (keyboardChannel > 0))
       ret = true;
 
    return ret;
