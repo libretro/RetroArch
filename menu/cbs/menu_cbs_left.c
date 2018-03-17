@@ -70,14 +70,13 @@ static int shader_action_parameter_left(unsigned type, const char *label, bool w
    video_shader_driver_get_current_shader(&shader_info);
 
    param_prev = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-   if (!param_prev)
+   param_menu = shader ? &shader->parameters[type - 
+      MENU_SETTINGS_SHADER_PARAMETER_0] : NULL;
+
+   if (!param_prev || !param_menu)
       return menu_cbs_exit();
    ret = generic_shader_action_parameter_left(param_prev, type, label, wraparound);
 
-   param_menu = shader ? &shader->parameters[type - 
-      MENU_SETTINGS_SHADER_PARAMETER_0] : NULL;
-   if (!param_menu)
-      return menu_cbs_exit();
    param_menu->current = param_prev->current;
 
    return ret;
