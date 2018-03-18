@@ -1439,10 +1439,13 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       command_playlist_update_write(tmp_playlist,
             selection_ptr,
+            NULL,
+            NULL,
+            new_core_path,
             core_info.inf->display_name,
             NULL,
-            new_core_path);
-   }
+            NULL);
+   }    
    else
       strlcpy(new_core_path, core_path, sizeof(new_core_path));
 
@@ -1512,9 +1515,13 @@ static int action_ok_playlist_entry(const char *path,
 
       command_playlist_update_write(NULL,
             selection_ptr,
+            NULL,
+            NULL,
+            new_core_path,
             core_info.inf->display_name,
             NULL,
-            new_core_path);
+            NULL);
+                 
    }
    else if (!string_is_empty(core_path))
       strlcpy(new_core_path, core_path, sizeof(new_core_path));
@@ -1611,9 +1618,13 @@ static int action_ok_playlist_entry_start_content(const char *path,
       command_playlist_update_write(
             tmp_playlist,
             selection_ptr,
+            NULL,
+            NULL,
+            new_core_path,
             core_info.inf->display_name,
             NULL,
-            new_core_path);
+            NULL);
+         
    }
 
    playlist_info.data = playlist;
@@ -1758,9 +1769,13 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
                menu_input_dialog_get_kb_idx(),
                NULL,
                label,
+               NULL,
+               NULL,
+               NULL,
                NULL);
    }
 
+  
    menu_input_dialog_end();
 }
 
@@ -2157,9 +2172,16 @@ static int action_ok_core_deferred_set(const char *path,
    core_display_name[0] = '\0';
 
    core_info_get_name(path, core_display_name, sizeof(core_display_name));
-   command_playlist_update_write(NULL,
+   command_playlist_update_write(
+         NULL,
          rdb_entry_start_game_selection_ptr,
-         core_display_name, NULL, path);
+         path,
+         label,
+         NULL,
+         core_display_name,
+         NULL,
+         NULL);
+
 
    menu_entries_pop_stack(&selection, 0, 1);
    menu_navigation_set_selection(selection);
@@ -2832,6 +2854,26 @@ default_action_ok_cmd_func(action_ok_screenshot,         CMD_EVENT_TAKE_SCREENSH
 default_action_ok_cmd_func(action_ok_disk_cycle_tray_status, CMD_EVENT_DISK_EJECT_TOGGLE        )
 default_action_ok_cmd_func(action_ok_shader_apply_changes, CMD_EVENT_SHADERS_APPLY_CHANGES        )
 
+
+static int action_ok_reset_core_association(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *tmp_path     = NULL;
+   playlist_t *tmp_playlist = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+
+   if (!tmp_playlist)
+      return 0;
+
+   playlist_get_index(tmp_playlist,
+         rpl_entry_selection_ptr, &tmp_path, NULL, NULL, NULL, NULL, NULL);
+
+   if (!command_event(CMD_EVENT_RESET_CORE_ASSOCIATION, (void *)rpl_entry_selection_ptr))
+      return menu_cbs_exit();
+   return 0;        
+}
+      
 static int action_ok_add_to_favorites(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2854,12 +2896,13 @@ static int action_ok_add_to_favorites_playlist(const char *path,
 
    playlist_get_index(tmp_playlist,
          rpl_entry_selection_ptr, &tmp_path, NULL, NULL, NULL, NULL, NULL);
-
+/*
    if (!command_event(CMD_EVENT_ADD_TO_FAVORITES, (void*)tmp_path))
       return menu_cbs_exit();
    return 0;
+*/   
+   return action_ok_reset_core_association(path, label, type, idx, entry_idx);
 }
-
 
 static int action_ok_delete_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
