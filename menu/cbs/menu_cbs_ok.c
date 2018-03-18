@@ -51,6 +51,8 @@
 #include "../../lakka.h"
 #include "../../wifi/wifi_driver.h"
 
+#include <net/net_http.h>
+
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
 #include "../../network/netplay/netplay_discovery.h"
@@ -2370,7 +2372,7 @@ static int generic_action_ok_network(const char *path,
    char url_path[PATH_MAX_LENGTH];
    settings_t *settings           = config_get_ptr();
    unsigned type_id2              = 0;
-   menu_file_transfer_t *transf   = NULL;
+   file_transfer_t *transf   = NULL;
    const char *url_label          = NULL;
    retro_task_callback_t callback = NULL;
    bool refresh                   = true;
@@ -2442,7 +2444,7 @@ static int generic_action_ok_network(const char *path,
 
    generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
 
-   transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
+   transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
    strlcpy(transf->path, url_path, sizeof(transf->path));
 
    task_push_http_transfer(url_path, suppress_msg, url_label, callback, transf);
@@ -2466,7 +2468,7 @@ default_action_ok_list(action_ok_lakka_list, MENU_ENUM_LABEL_CB_LAKKA_LIST)
 static void cb_generic_dir_download(void *task_data,
       void *user_data, const char *err)
 {
-   menu_file_transfer_t     *transf      = (menu_file_transfer_t*)user_data;
+   file_transfer_t     *transf      = (file_transfer_t*)user_data;
 
    if (transf)
    {
@@ -2477,7 +2479,7 @@ static void cb_generic_dir_download(void *task_data,
    }
 }
 
-/* expects http_transfer_t*, menu_file_transfer_t* */
+/* expects http_transfer_t*, file_transfer_t* */
 static void cb_generic_download(void *task_data,
       void *user_data, const char *err)
 {
@@ -2486,7 +2488,7 @@ static void cb_generic_download(void *task_data,
    bool extract                          = true;
 #endif
    const char             *dir_path      = NULL;
-   menu_file_transfer_t     *transf      = (menu_file_transfer_t*)user_data;
+   file_transfer_t     *transf      = (file_transfer_t*)user_data;
    settings_t              *settings     = config_get_ptr();
    http_transfer_data_t        *data     = (http_transfer_data_t*)task_data;
 
@@ -2651,13 +2653,14 @@ static int action_ok_download_generic(const char *path,
 {
 #ifdef HAVE_NETWORKING
    char s[PATH_MAX_LENGTH];
+   char s2[PATH_MAX_LENGTH];
    char s3[PATH_MAX_LENGTH];
-   menu_file_transfer_t *transf = NULL;
+   file_transfer_t *transf = NULL;
    settings_t *settings         = config_get_ptr();
    bool suppress_msg            = false;
    retro_task_callback_t cb     = cb_generic_download;
 
-   s[0] = s3[0] = '\0';
+   s[0] = s2[0] = s3[0] = '\0';
 
    fill_pathname_join(s,
          settings->paths.network_buildbot_assets_url,
@@ -2721,11 +2724,13 @@ static int action_ok_download_generic(const char *path,
          break;
    }
 
-   fill_pathname_join(s3, s, path, sizeof(s3));
+   fill_pathname_join(s2, s, path, sizeof(s2));
 
-   transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
+   transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
    transf->enum_idx = enum_idx;
    strlcpy(transf->path, path, sizeof(transf->path));
+
+   net_http_urlencode_full(s3, s2, sizeof(s));
 
    task_push_http_transfer(s3, suppress_msg, msg_hash_to_str(enum_idx), cb, transf);
 #endif
