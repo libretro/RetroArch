@@ -2090,7 +2090,7 @@ MSG_HASH(MSG_DISK_EJECTED,
 MSG_HASH(MSG_DOWNLOADING,
       "Downloading")
 MSG_HASH(MSG_INDEX_FILE,
-      "Index File")
+      "index")
 MSG_HASH(MSG_DOWNLOAD_FAILED,
       "Download failed")
 MSG_HASH(MSG_ERROR,
