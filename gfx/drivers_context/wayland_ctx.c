@@ -545,7 +545,7 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 #ifdef HAVE_VULKAN
          vulkan_context_destroy(&wl->vk, wl->surface);
 
-         if (wl->input.fd >= 0)
+         if (wl->input.dpy != NULL && wl->input.fd >= 0)
             close(wl->input.fd);
 #endif
          break;
