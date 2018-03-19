@@ -455,6 +455,7 @@ static bool gfx_ctx_x_set_resize(void *data,
             if (!vulkan_create_swapchain(&x->vk, width, height, x->g_interval))
             {
                RARCH_ERR("[X/Vulkan]: Failed to update swapchain.\n");
+               x->vk.swapchain = VK_NULL_HANDLE;
                return false;
             }
 
@@ -469,7 +470,7 @@ static bool gfx_ctx_x_set_resize(void *data,
       default:
          break;
    }
-   return false;
+   return true;
 }
 
 static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
