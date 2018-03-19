@@ -240,7 +240,8 @@ static void vulkan_raster_font_render_message(
       return;
    }
 
-   line_height = scale / font->font_driver->get_line_height(font->font_data);
+   line_height = (float) font->font_driver->get_line_height(font->font_data) *
+                     scale / font->vk->vp.height;
 
    for (;;)
    {
