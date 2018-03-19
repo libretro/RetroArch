@@ -1575,7 +1575,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    {
       materialui_draw_tab_begin(mui,
             video_info,
-            width, height, &footer_bg_color[0], &grey_bg[0]);
+            width, height, 
+            footer_bg_color ? &footer_bg_color[0] : NULL,
+            &grey_bg[0]);
 
       for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
          materialui_draw_tab(mui, video_info,
