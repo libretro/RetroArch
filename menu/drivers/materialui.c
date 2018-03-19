@@ -1222,13 +1222,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       0.13, 0.13, 0.13, 0.90,
    };
 
-   float shadow_bg[16]=  {
-      0.00, 0.00, 0.00, 0.00,
-      0.00, 0.00, 0.00, 0.00,
-      0.00, 0.00, 0.00, 0.20,
-      0.00, 0.00, 0.00, 0.20,
-   };
-
    /* https://material.google.com/style/color.html#color-color-palette */
    /* Hex values converted to RGB normalized decimals, alpha set to 1 */
    float blue_500[16]              = {0};
@@ -1582,22 +1575,35 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
          materialui_draw_tab(mui, video_info,
                i, width, height,
-               &passive_tab_icon_color[0], &active_tab_marker_color[0]);
+               &passive_tab_icon_color[0],
+               active_tab_marker_color ? &active_tab_marker_color[0] : NULL
+               );
 
       materialui_draw_tab_end(mui,
             video_info,
-            width, height, header_height, &active_tab_marker_color[0]);
+            width, height, header_height,
+            active_tab_marker_color ? &active_tab_marker_color[0] : NULL
+            );
    }
 
-   menu_display_draw_quad(
-         video_info,
-         0,
-         header_height,
-         width,
-         mui->shadow_height,
-         width,
-         height,
-         &shadow_bg[0]);
+   {
+      float shadow_bg[16]=  {
+         0.00, 0.00, 0.00, 0.00,
+         0.00, 0.00, 0.00, 0.00,
+         0.00, 0.00, 0.00, 0.20,
+         0.00, 0.00, 0.00, 0.20,
+      };
+
+      menu_display_draw_quad(
+            video_info,
+            0,
+            header_height,
+            width,
+            mui->shadow_height,
+            width,
+            height,
+            &shadow_bg[0]);
+   }
 
    title_margin = mui->margin;
 
