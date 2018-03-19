@@ -1037,7 +1037,7 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
 
    for (aux = mem;; aux++)
    {
-      if(*aux == '"' || *aux == ':')
+      if (*aux == '"' || *aux == ':')
          break;
       expr->count += *aux == '_';
    }
@@ -1094,13 +1094,13 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
       }
       else
       {
-         if(aux[1] == 'h' || aux[1] == 'H')
+         if (aux[1] == 'h' || aux[1] == 'H')
             expr->terms[i].multiplier = (double)strtol(aux + 2, &end, 16);
          else
             expr->terms[i].multiplier = strtod(aux + 1, &end);
          aux = end;
 
-         if(*aux == '$')
+         if (*aux == '$')
          {
             aux++;
             expr->terms[i].compare_next = true;
@@ -1964,7 +1964,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
             task_push_http_transfer(url, true, NULL,
                   cheevos_unlocked, cheevo);
 
-            if(settings->bools.cheevos_auto_screenshot)
+            if (settings && settings->bools.cheevos_auto_screenshot)
             {
                char shotname[256];
 
@@ -1974,7 +1974,8 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
                   cheevo->id);
                shotname[sizeof(shotname) - 1] = '\0';
 
-               if(take_screenshot(shotname, true, video_driver_cached_frame_has_valid_framebuffer()))
+               if (take_screenshot(shotname, true,
+                        video_driver_cached_frame_has_valid_framebuffer()))
                   RARCH_LOG("[CHEEVOS]: got a screenshot for cheevo %u\n", cheevo->id);
                else
                   RARCH_LOG("[CHEEVOS]: failed to get screenshot for cheevo %u\n", cheevo->id);
@@ -3163,7 +3164,7 @@ found:
             mode = CHEEVOS_ACTIVE_HARDCORE;
 
          for (; cheevo < end; cheevo++)
-            if(cheevo->active & mode)
+            if (cheevo->active & mode)
                number_of_unlocked--;
 
          snprintf(msg, sizeof(msg),

@@ -1155,25 +1155,31 @@ static int generic_action_ok(const char *path,
             struct video_shader *shader           = menu_shader_get();
             struct video_shader_pass *shader_pass = shader ? &shader->pass[(unsigned)hack_shader_pass] : NULL;
             flush_char                            = msg_hash_to_str((enum msg_hash_enums)flush_id);
-            strlcpy(
-                  shader_pass->source.path,
-                  action_path,
-                  sizeof(shader_pass->source.path));
-            video_shader_resolve_parameters(NULL, menu_shader_get());
+
+            if (shader_pass)
+            {
+               strlcpy(
+                     shader_pass->source.path,
+                     action_path,
+                     sizeof(shader_pass->source.path));
+               video_shader_resolve_parameters(NULL, shader);
+            }
          }
          break;
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
          {
             global_t *global = global_get_ptr();
-            flush_char = msg_hash_to_str(flush_id);
-            strlcpy(global->record.config, action_path,
-                  sizeof(global->record.config));
+            flush_char       = msg_hash_to_str(flush_id);
+
+            if (global)
+               strlcpy(global->record.config, action_path,
+                     sizeof(global->record.config));
          }
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
          {
             config_file_t *conf = config_file_new(action_path);
-            flush_char = msg_hash_to_str(flush_id);
+            flush_char          = msg_hash_to_str(flush_id);
 
             if (conf)
                input_remapping_load_file(conf, action_path);

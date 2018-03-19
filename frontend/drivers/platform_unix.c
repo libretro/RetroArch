@@ -729,7 +729,7 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
       {
          char *endptr = NULL;
 
-         if (*endptr == ' ')
+         if (endptr && *endptr == ' ')
             remaining = (int)strtol(val, &endptr, 10);
       }
    }
@@ -741,7 +741,7 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
       char      *endptr = NULL;
 
       if (string_is_equal(key, "design capacity"))
-         if (*endptr == ' ')
+         if (endptr && *endptr == ' ')
             maximum = (int)strtol(val, &endptr, 10);
    }
 

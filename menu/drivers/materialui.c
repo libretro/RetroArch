@@ -837,14 +837,6 @@ static void materialui_render_label_value(
       const char *value, float *label_color,
       uint32_t sublabel_color)
 {
-   /* This will be used instead of label_color if texture_switch is 'off' icon */
-   float pure_white[16]=  {
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-   };
-
    menu_entry_t entry;
    menu_animation_ctx_ticker_t ticker;
    char label_str[255];
@@ -999,6 +991,16 @@ static void materialui_render_label_value(
       );
 
    if (texture_switch)
+   {
+      /* This will be used instead of label_color if 
+       * texture_switch is 'off' icon */
+      float pure_white[16]=  {
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+      };
+
       materialui_draw_icon(video_info,
             mui->icon_size,
             (uintptr_t)texture_switch,
@@ -1009,7 +1011,8 @@ static void materialui_render_label_value(
             0,
             1,
             switch_is_on ? &label_color[0] :  &pure_white[0]
-      );
+            );
+   }
 
    menu_entry_free(&entry);
 }
@@ -1176,36 +1179,35 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    char title[255];
    char title_buf[255];
    char title_msg[255];
+
    float black_bg[16]   = {
       0, 0, 0, 0.75,
       0, 0, 0, 0.75,
       0, 0, 0, 0.75,
       0, 0, 0, 0.75,
    };
-   float pure_white[16] = {
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-   };
+
    float white_bg[16] = {
       0.98, 0.98, 0.98, 1.00,
       0.98, 0.98, 0.98, 1.00,
       0.98, 0.98, 0.98, 1.00,
       0.98, 0.98, 0.98, 1.00,
    };
+
    float white_transp_bg[16] = {
       0.98, 0.98, 0.98, 0.90,
       0.98, 0.98, 0.98, 0.90,
       0.98, 0.98, 0.98, 0.90,
       0.98, 0.98, 0.98, 0.90,
    };
+
    float grey_bg[16] = {
       0.78, 0.78, 0.78, 0.90,
       0.78, 0.78, 0.78, 0.90,
       0.78, 0.78, 0.78, 0.90,
       0.78, 0.78, 0.78, 0.90,
    };
+
    /* TODO/FIXME  convert this over to new hex format */
    float greyish_blue[16] = {
       0.22, 0.28, 0.31, 1.00,
@@ -1227,10 +1229,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       0.00, 0.00, 0.00, 0.20,
    };
 
-   uint32_t black_opaque_54        = 0x0000008a;
-   uint32_t black_opaque_87        = 0x000000de;
-   uint32_t white_opaque_70        = 0xffffffb3;
-
    /* https://material.google.com/style/color.html#color-color-palette */
    /* Hex values converted to RGB normalized decimals, alpha set to 1 */
    float blue_500[16]              = {0};
@@ -1249,19 +1247,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    float footer_bg_color_real[16]  = {0};
    float header_bg_color_real[16]  = {0};
 
-   file_list_t *list               = NULL;
-   materialui_node_t *node         = NULL;
-   unsigned width                  = video_info->width;
-   unsigned height                 = video_info->height;
-   unsigned ticker_limit           = 0;
-   unsigned i                      = 0;
-   unsigned header_height          = 0;
-   size_t selection                = 0;
-   size_t title_margin             = 0;
-   materialui_handle_t *mui        = (materialui_handle_t*)data;
-   bool background_rendered        = false;
-   bool libretro_running           = video_info->libretro_running;
-
    /* Default is blue theme */
    float *header_bg_color          = NULL;
    float *highlighted_entry_color  = NULL;
@@ -1270,14 +1255,36 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    float *active_tab_marker_color  = NULL;
    float *passive_tab_icon_color   = grey_bg;
 
+   file_list_t *list               = NULL;
+   materialui_node_t *node         = NULL;
+
+   unsigned width                  = video_info->width;
+   unsigned height                 = video_info->height;
+   unsigned ticker_limit           = 0;
+   unsigned i                      = 0;
+   unsigned header_height          = 0;
    uint32_t sublabel_color         = 0x888888ff;
    uint32_t font_normal_color      = 0;
    uint32_t font_hover_color       = 0;
    uint32_t font_header_color      = 0;
-   size_t usable_width             = width - (mui->margin * 2);
+
+   uint32_t black_opaque_54        = 0x0000008a;
+   uint32_t black_opaque_87        = 0x000000de;
+   uint32_t white_opaque_70        = 0xffffffb3;
+
+   size_t usable_width             = 0;
+   size_t selection                = 0;
+   size_t title_margin             = 0;
+
+   bool background_rendered        = false;
+   bool libretro_running           = video_info->libretro_running;
+
+   materialui_handle_t *mui        = (materialui_handle_t*)data;
 
    if (!mui)
       return;
+
+   usable_width                    = width - (mui->margin * 2);
 
    mui->frame_count++;
 
@@ -1449,7 +1456,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       draw.matrix_data        = NULL;
       draw.texture            = menu_display_white_texture;
       draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-      draw.color              = &body_bg_color[0];
+      draw.color              = body_bg_color ? &body_bg_color[0] : NULL;
       draw.vertex             = NULL;
       draw.tex_coord          = NULL;
       draw.vertex_count       = 4;
@@ -1520,7 +1527,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             node->line_height,
             width,
             height,
-            &highlighted_entry_color[0]
+            highlighted_entry_color ? &highlighted_entry_color[0] : NULL
             );
 
    font_driver_bind_block(mui->font, &mui->raster_block);
@@ -1534,7 +1541,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             height,
             font_normal_color,
             font_hover_color,
-            &active_tab_marker_color[0],
+            active_tab_marker_color ? &active_tab_marker_color[0] : NULL,
             sublabel_color
             );
 
@@ -1542,7 +1549,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          video_info);
    font_driver_bind_block(mui->font, NULL);
 
-   font_driver_flush(video_info->width, video_info->height, mui->font2,
+   font_driver_flush(video_info->width,
+         video_info->height,
+         mui->font2,
          video_info);
    font_driver_bind_block(mui->font2, NULL);
 
@@ -1557,7 +1566,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          header_height,
          width,
          height,
-         &header_bg_color[0]);
+         header_bg_color ? &header_bg_color[0] : NULL);
 
    mui->tabs_height = 0;
 
@@ -1592,18 +1601,25 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
    {
+      float pure_white[16] = {
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+      };
+
       title_margin = mui->icon_size;
       materialui_draw_icon(video_info,
-         mui->icon_size,
-         mui->textures.list[MUI_TEXTURE_BACK],
-         0,
-         0,
-         width,
-         height,
-         0,
-         1,
-         &pure_white[0]
-      );
+            mui->icon_size,
+            mui->textures.list[MUI_TEXTURE_BACK],
+            0,
+            0,
+            width,
+            height,
+            0,
+            1,
+            &pure_white[0]
+            );
    }
 
    ticker_limit    = usable_width / mui->glyph_width;

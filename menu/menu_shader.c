@@ -141,19 +141,19 @@ bool menu_shader_manager_init(void)
       }
    }
 
-   if (!string_is_empty(new_path))
+   if (
+         !string_is_empty(new_path) && conf &&
+         video_shader_read_conf_cgp(conf, menu_driver_shader)
+      )
    {
-      if (conf)
-      {
-         if (video_shader_read_conf_cgp(conf, menu_driver_shader))
-         {
-            video_shader_resolve_relative(menu_driver_shader, new_path);
-            video_shader_resolve_parameters(conf, menu_driver_shader);
-         }
-         config_file_free(conf);
-      }
-      free(new_path);
+      video_shader_resolve_relative(menu_driver_shader, new_path);
+      video_shader_resolve_parameters(conf, menu_driver_shader);
    }
+
+   if (new_path)
+      free(new_path);
+   if (conf)
+      config_file_free(conf);
 
    return true;
 }
