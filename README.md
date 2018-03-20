@@ -4,7 +4,7 @@
 # RetroArch
 
 RetroArch is the reference frontend for the libretro API.
-Popular examples of implementations for this API includes videogame system emulators and game engines, but also
+Popular examples of implementations for this API includes videogame system emulators and game engines as well as
 more generalized 3D programs.
 These programs are instantiated as dynamic libraries. We refer to these as "libretro cores".
 
@@ -18,7 +18,7 @@ These programs are instantiated as dynamic libraries. We refer to these as "libr
 
 [libretro](http://libretro.com) is an API that exposes generic audio/video/input callbacks.
 A frontend for libretro (such as RetroArch) handles video output, audio output, input and application lifecycle.
-A libretro core written in portable C or C++ can run seamlessly on many platforms with very little/no porting effort.
+A libretro core written in portable C or C++ can run seamlessly on many platforms with very little to no porting effort.
 
 While RetroArch is the reference frontend for libretro, several other projects have used the libretro
 interface to include support for emulators and/or game engines. libretro is completely open and free for anyone to use.
@@ -49,7 +49,7 @@ More developer-centric stuff is found [here](https://github.com/libretro/libretr
 
 ## Philosophy
 
-RetroArch attempts to be small and lean,
+RetroArch attempts to be small and lean
 while still having all the useful core features expected from an emulator.
 It is designed to be very portable and features a gamepad-centric UI.
 It also has a full-featured command-line interface.
@@ -121,7 +121,7 @@ RetroArch needs at least one of these audio driver libraries:
    - DirectSound (Win32, Xbox 1)
    - CoreAudio (OSX, iOS)
 
-To run properly, RetroArch requires a libretro implementation present, however, as it's typically loaded
+To run properly, RetroArch requires a libretro implementation present; however, as it's typically loaded
 dynamically, it's not required at build time.
 
 ## Dependencies (Console ports, mobile)
@@ -131,12 +131,12 @@ anything other than what the respective SDKs provide.
 
 ## Configuring
 
-The default configuration is defined in config.def.h.
+The default configuration is defined in `config.def.h`.
 It is not recommended to change this unless you know what you're doing.
 These can later be tweaked by using a config file.
-A sample configuration file is installed to /etc/retroarch.cfg. This is the system-wide config file.
+A sample configuration file is installed to `/etc/retroarch.cfg`. This is the system-wide config file.
 
-RetroArch will on startup create a config file in $XDG\_CONFIG\_HOME/retroarch/retroarch.cfg if doesn't exist.
+RetroArch will on startup create a config file in `$XDG\_CONFIG\_HOME/retroarch/retroarch.cfg` if it does not exist.
 Users only need to configure a certain option if the desired value deviates from the value defined in config.def.h.
 
 To configure joypads, use the built-in menu or the `retroarch-joyconfig` command-line tool.
