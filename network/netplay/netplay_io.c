@@ -681,7 +681,7 @@ static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
          netplay->connected_slaves &= ~(1 << client_num);
          netplay->client_devices[client_num] = 0;
          for (i = 0; i < MAX_INPUT_DEVICES; i++)
-            netplay->device_clients[client_num] &= ~(1 << client_num);
+            netplay->device_clients[i] &= ~(1 << client_num);
 
          /* Tell someone */
          payload[0] = htonl(netplay->read_frame_count[client_num]);
