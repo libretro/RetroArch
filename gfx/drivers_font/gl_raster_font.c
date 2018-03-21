@@ -508,6 +508,99 @@ static void gl_raster_font_render_msg(
    }
 }
 
+static void gl_raster_font_render_msg_pos(
+      video_frame_info_t *video_info,
+      void *data, const char *msg,
+      const void *userdata, float x, float y)
+{
+   GLfloat color[4];
+   int drop_x, drop_y;
+   GLfloat scale, drop_mod, drop_alpha;
+   enum text_alignment text_align   = TEXT_ALIGN_LEFT;
+   bool full_screen                 = false ;
+   gl_raster_t                *font = (gl_raster_t*)data;
+   unsigned width                   = video_info->width;
+   unsigned height                  = video_info->height;
+   const struct font_params *params = (const struct font_params*)userdata;
+
+   if (!font || string_is_empty(msg))
+      return;
+
+   if (params)
+   {
+      scale       = params->scale;
+      full_screen = params->full_screen;
+      text_align  = params->text_align;
+      drop_x      = params->drop_x;
+      drop_y      = params->drop_y;
+      drop_mod    = params->drop_mod;
+      drop_alpha  = params->drop_alpha;
+
+      color[0]    = FONT_COLOR_GET_RED(params->color) / 255.0f;
+      color[1]    = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
+      color[2]    = FONT_COLOR_GET_BLUE(params->color) / 255.0f;
+      color[3]    = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
+
+      /* If alpha is 0.0f, turn it into default 1.0f */
+      if (color[3] <= 0.0f)
+         color[3] = 1.0f;
+   }
+   else
+   {
+      scale                = 1.0f;
+      full_screen          = true;
+      text_align           = TEXT_ALIGN_LEFT;
+
+      color[0]             = video_info->font_msg_color_r;
+      color[1]             = video_info->font_msg_color_g;
+      color[2]             = video_info->font_msg_color_b;
+      color[3]             = 1.0f;
+
+      drop_x               = -2;
+      drop_y               = -2;
+      drop_mod             = 0.3f;
+      drop_alpha           = 1.0f;
+   }
+
+   if (font->block)
+      font->block->fullscreen = full_screen;
+   else
+      gl_raster_font_setup_viewport(width, height, font, full_screen);
+
+   if (!string_is_empty(msg) && font->gl
+         && font->font_data  && font->font_driver)
+   {
+      if (drop_x || drop_y)
+      {
+         GLfloat color_dark[4];
+
+         color_dark[0] = color[0] * drop_mod;
+         color_dark[1] = color[1] * drop_mod;
+         color_dark[2] = color[2] * drop_mod;
+         color_dark[3] = color[3] * drop_alpha;
+
+         if (font->gl)
+            gl_raster_font_render_message(font, msg, scale, color_dark,
+                  x + scale * drop_x / font->gl->vp.width, y +
+                  scale * drop_y / font->gl->vp.height, text_align,
+                  video_info);
+      }
+
+      if (font->gl)
+         gl_raster_font_render_message(font, msg, scale, color,
+               x, y, text_align, video_info);
+   }
+
+   if (!font->block && font->gl)
+   {
+      /* restore viewport */
+      glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
+
+      glDisable(GL_BLEND);
+      video_driver_set_viewport(width, height, false, true);
+   }
+}
+
 static const struct font_glyph *gl_raster_font_get_glyph(
       void *data, uint32_t code)
 {
@@ -560,5 +653,6 @@ font_renderer_t gl_raster_font = {
    gl_raster_font_get_glyph,
    gl_raster_font_bind_block,
    gl_raster_font_flush_block,
-   gl_get_message_width
+   gl_get_message_width,
+   gl_raster_font_render_msg_pos
 };

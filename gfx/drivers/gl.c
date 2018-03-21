@@ -1144,6 +1144,21 @@ static bool gl_frame(void *data, const void *frame,
       if (gl->menu_texture)
          gl_draw_texture(gl, video_info);
    }
+   else
+   {
+      char stats[4096];
+      struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+      snprintf(stats, sizeof(stats), 
+         "Frontend Statistics:\n -Frame rate: %6.2f\n -Frame time: %6.2f\n -Frame count: %" PRIu64"\n -Viewport: %d x %d x %3.2f\n"
+         "Core Geometry:\n -Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n", 
+         video_info->frame_rate, video_info->frame_time, video_info->frame_count, video_info->width, video_info->height, video_info->refresh_rate,
+         av_info->geometry.base_width,  av_info->geometry.base_height, av_info->geometry.aspect_ratio, av_info->timing.fps, av_info->timing.sample_rate);
+      font_driver_render_msg_pos(video_info, NULL, stats, NULL, 0.005f, 0.985f);
+
+      snprintf(stats, sizeof(stats), "anon: does retroarch netplay have in-game chat?\nradius: I don't know \u2605");
+      font_driver_render_msg_pos(video_info, NULL, stats, NULL, 0.005f, 0.35f);
+   }
+
 #endif
 
    if (!string_is_empty(msg))
