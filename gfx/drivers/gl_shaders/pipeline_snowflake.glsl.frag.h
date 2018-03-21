@@ -24,7 +24,7 @@ static const char* stock_fragment_xmb_snowflake = GLSL(
    float snow(vec3 pos, vec2 uv, float o)
    {
       vec2 d = (pos.xy - uv);
-      float a = atan(d.y,d.x) + sin(atime*1.0 + o) * 10.0;
+      float a = atan(d.y,d.x) + sin(time*1.0 + o) * 10.0;
 
       float dist = d.x*d.x + d.y*d.y;
 
