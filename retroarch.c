@@ -725,6 +725,10 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
             path_set(RARCH_PATH_CONFIG, optarg);
             break;
 
+         case RA_OPT_APPENDCONFIG:
+            path_set(RARCH_PATH_CONFIG_APPEND, optarg);
+            break;
+
          case 's':
             strlcpy(global->name.savefile, optarg,
                   sizeof(global->name.savefile));
@@ -1022,10 +1026,6 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
             }
             break;
 
-         case RA_OPT_APPENDCONFIG:
-            path_set(RARCH_PATH_CONFIG_APPEND, optarg);
-            break;
-
          case RA_OPT_SIZE:
             if (sscanf(optarg, "%ux%u",
                      recording_driver_get_width(),
@@ -1070,6 +1070,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
          case 'c':
          case 'h':
+         case RA_OPT_APPENDCONFIG:
          case 's':
          case 'S':
             break; /* Handled in the first pass */
