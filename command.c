@@ -1700,9 +1700,12 @@ void command_playlist_push_write(
 void command_playlist_update_write(
       void *data,
       size_t idx,
-      const char *core_display_name,
+      const char *path,
       const char *label,
-      const char *path)
+      const char *core_path,
+      const char *core_display_name,
+      const char *crc32,
+      const char *db_name)    
 {
    playlist_t *plist    = (playlist_t*)data;
    playlist_t *playlist = NULL;
@@ -1719,12 +1722,12 @@ void command_playlist_update_write(
    playlist_update(
          playlist,
          idx,
-         label,
-         NULL,
          path,
+         label,
+         core_path,
          core_display_name,
-         NULL,
-         NULL);
+         crc32,
+         db_name);
 
    playlist_write_file(playlist);
 }
@@ -2326,7 +2329,30 @@ TODO: Add a setting for these tweaks */
                );
          runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true);
          break;
+
       }
+      case CMD_EVENT_RESET_CORE_ASSOCIATION:
+      {
+         const char *core_name          = NULL;
+         const char *core_path          = NULL;
+
+         core_name = "DETECT";
+         core_path = "DETECT";
+
+         command_playlist_update_write(
+            NULL,
+            (size_t)data,
+            NULL,
+            NULL,
+            core_path,
+            core_name,
+            NULL,
+            NULL);
+
+         runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true);
+         break;
+
+      }      
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
             return false;

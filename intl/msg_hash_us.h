@@ -1373,6 +1373,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
       "Add to Favorites")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
       "Add to Favorites")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
+      "Reset Core Association")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN,
       "Run")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
@@ -2009,6 +2011,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
       "Learn more about how the program works.")
 MSG_HASH(MSG_ADDED_TO_FAVORITES,
       "Added to favorites")
+MSG_HASH(MSG_RESET_CORE_ASSOCIATION,
+      "Playlist entry core association has been reset.")      
 MSG_HASH(MSG_APPENDED_DISK,
       "Appended disk")
 MSG_HASH(MSG_APPLICATION_DIR,
