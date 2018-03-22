@@ -243,8 +243,7 @@ static bool command_read_ram(const char *arg)
 {
    cheevos_var_t var;
    unsigned i;
-   unsigned nbytes;
-   char reply[256];
+   char reply[256]      = {0};
    const uint8_t * data = NULL;
    char *reply_at       = NULL;
 
@@ -278,7 +277,6 @@ static bool command_read_ram(const char *arg)
 
 static bool command_write_ram(const char *arg)
 {
-   int i;
    cheevos_var_t var;
    unsigned nbytes   = 0;
    uint8_t *data     = NULL;

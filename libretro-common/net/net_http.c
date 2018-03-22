@@ -135,11 +135,11 @@ void net_http_urlencode(char **dest, const char *source)
 void net_http_urlencode_full(char *dest,
       const char *source, size_t size)
 {
-   char *tmp;
-   char url_domain[PATH_MAX_LENGTH];
-   char url_path[PATH_MAX_LENGTH];
-   char url_encoded[PATH_MAX_LENGTH];
-   int count = 0;
+   char *tmp                         = NULL;
+   char url_domain[PATH_MAX_LENGTH]  = {0};
+   char url_path[PATH_MAX_LENGTH]    = {0};
+   char url_encoded[PATH_MAX_LENGTH] = {0};
+   int count                         = 0;
 
    strlcpy (url_path, source, sizeof(url_path));
    tmp = url_path;
