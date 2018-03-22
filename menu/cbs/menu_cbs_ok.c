@@ -2871,9 +2871,9 @@ static int action_ok_reset_core_association(const char *path,
 
    if (!command_event(CMD_EVENT_RESET_CORE_ASSOCIATION, (void *)rpl_entry_selection_ptr))
       return menu_cbs_exit();
-   return 0;        
+   return 0;
 }
-      
+
 static int action_ok_add_to_favorites(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2896,12 +2896,11 @@ static int action_ok_add_to_favorites_playlist(const char *path,
 
    playlist_get_index(tmp_playlist,
          rpl_entry_selection_ptr, &tmp_path, NULL, NULL, NULL, NULL, NULL);
-/*
+
    if (!command_event(CMD_EVENT_ADD_TO_FAVORITES, (void*)tmp_path))
       return menu_cbs_exit();
    return 0;
-*/   
-   return action_ok_reset_core_association(path, label, type, idx, entry_idx);
+
 }
 
 static int action_ok_delete_entry(const char *path,
@@ -3964,6 +3963,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
             BIND_ACTION_OK(cbs, action_ok_add_to_favorites_playlist);
+            break;
+         case MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION:
+            BIND_ACTION_OK(cbs, action_ok_reset_core_association);
             break;
          case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
             BIND_ACTION_OK(cbs, action_ok_add_to_favorites);
