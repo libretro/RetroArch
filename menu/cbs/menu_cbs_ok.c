@@ -1443,7 +1443,8 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
 
-      command_playlist_update_write(tmp_playlist,
+      command_playlist_update_write(
+            tmp_playlist,
             selection_ptr,
             NULL,
             NULL,
@@ -2169,25 +2170,24 @@ static int action_ok_path_scan_directory(const char *path,
 }
 #endif
 
-static int action_ok_core_deferred_set(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
+static int action_ok_core_deferred_set(const char *new_core_path,
+      const char *content_label, unsigned type, size_t idx, size_t entry_idx)
 {
    char core_display_name[PATH_MAX_LENGTH];
    size_t selection                        = menu_navigation_get_selection();
 
    core_display_name[0] = '\0';
 
-   core_info_get_name(path, core_display_name, sizeof(core_display_name));
+   core_info_get_name(new_core_path, core_display_name, sizeof(core_display_name));
    command_playlist_update_write(
          NULL,
          rdb_entry_start_game_selection_ptr,
-         path,
-         label,
          NULL,
+         content_label,
+         new_core_path,
          core_display_name,
          NULL,
          NULL);
-
 
    menu_entries_pop_stack(&selection, 0, 1);
    menu_navigation_set_selection(selection);
