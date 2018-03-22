@@ -132,26 +132,31 @@ void net_http_urlencode(char **dest, const char *source)
 }
 
 /* Re-encode a full URL */
-void net_http_urlencode_full(char *dest, const char *source, size_t size)
+void net_http_urlencode_full(char *dest,
+      const char *source, size_t size)
 {
    char *tmp;
    char url_domain[PATH_MAX_LENGTH];
    char url_path[PATH_MAX_LENGTH];
    char url_encoded[PATH_MAX_LENGTH];
-
    int count = 0;
+
    strlcpy (url_path, source, sizeof(url_path));
    tmp = url_path;
 
    while (count < 3 && tmp[0] != '\0')
    {
       tmp = strchr(tmp, '/');
-      count ++;
+      count++;
       tmp++;
    }
 
    strlcpy(url_domain, source, tmp - url_path);
-   strlcpy(url_path, tmp, sizeof(url_path));
+
+   strlcpy(url_path,
+         source + strlen(url_domain) + 1,
+         strlen(tmp) + 1
+         );
 
    tmp = NULL;
    net_http_urlencode(&tmp, url_path);
