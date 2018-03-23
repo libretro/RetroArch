@@ -728,6 +728,9 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
 
+   if (audio_suspended)
+      return frames;
+
    audio_driver_flush(data, frames << 1);
 
    return frames;
