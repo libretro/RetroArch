@@ -841,7 +841,7 @@ TIntermTyped* TIntermediate::fold(TIntermAggregate* aggrNode)
             newConstArray[2] = childConstUnions[0][0] * childConstUnions[1][1] - childConstUnions[0][1] * childConstUnions[1][0];
             break;
         case EOpFaceForward:
-            // If dot(Nref, I) < 0 return N, otherwise return –N:  Arguments are (N, I, Nref).
+            // If dot(Nref, I) < 0 return N, otherwise return -N:  Arguments are (N, I, Nref).
             dot = childConstUnions[1].dot(childConstUnions[2]);
             for (int comp = 0; comp < numComps; ++comp) {
                 if (dot < 0.0)
