@@ -1113,6 +1113,7 @@ struct retro_led_interface
     retro_set_led_state_t set_led_state;
 };
 
+#define RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE (47 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 #define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE (41 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* const struct retro_hw_render_interface ** --

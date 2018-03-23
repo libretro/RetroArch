@@ -1692,6 +1692,25 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             ledintf->set_led_state = led_driver_set_led;
       }
       break;
+
+      case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE:
+      {
+         int result = 0;
+         if (!audio_driver_is_suspended() && audio_driver_is_active())
+         {
+            result |= 2;
+         }
+         if (video_driver_is_active() && !video_driver_is_stub_frame())
+         {
+            result |= 1;
+         }
+         if (data != NULL)
+         {
+            int* result_p = (int*)data;
+            *result_p = result;
+         }
+      }
+      break;
       
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
