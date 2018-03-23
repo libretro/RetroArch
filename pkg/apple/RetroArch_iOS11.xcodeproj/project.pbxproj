@@ -223,7 +223,7 @@
 				TargetAttributes = {
 					9204BE091D319EF300BD49DB = {
 						DevelopmentTeam = UK699V5ZS8;
-						DevelopmentTeamName = "Yoshinobu Sugawara";
+						DevelopmentTeamName = "RetroArch";
 					};
 				};
 			};
@@ -373,6 +373,7 @@
 					"-DHAVE_MFI",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
+					"-DHAVE_KEYMAPPER",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -459,6 +460,7 @@
 					"-DHAVE_MFI",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
+					"-DHAVE_KEYMAPPER",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -511,6 +513,7 @@
 					"-DHAVE_MFI",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
+					"-DHAVE_KEYMAPPER",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = "$(TARGET_NAME)";
