@@ -120,6 +120,10 @@ typedef struct font_renderer
          video_frame_info_t *video_info);
 
    int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
+   void (*render_msg_pos)(
+      video_frame_info_t *video_info,
+      void *data, const char *msg,
+      const void *params, float x, float y);
 } font_renderer_t;
 
 typedef struct font_renderer_driver
@@ -153,6 +157,9 @@ int font_renderer_create_default(const void **driver,
 
 void font_driver_render_msg(video_frame_info_t *video_info,
       void *font_data, const char *msg, const void *params);
+
+void font_driver_render_msg_pos(video_frame_info_t *video_info,
+      void *font_data, const char *msg, const void *params, float x, float y);
 
 void font_driver_bind_block(void *font_data, void *block);
 
