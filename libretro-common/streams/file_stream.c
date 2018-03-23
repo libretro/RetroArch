@@ -111,9 +111,9 @@ bool filestream_exists(const char *path)
    return true;
 }
 
-int64_t filestream_get_size(RFILE *stream)
+ssize_t filestream_get_size(RFILE *stream)
 {
-   int64_t output;
+   ssize_t output;
 
    if (filestream_size_cb != NULL)
       output = filestream_size_cb(stream->hfile);

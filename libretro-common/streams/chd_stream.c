@@ -423,3 +423,8 @@ int chdstream_seek(chdstream_t *stream, ssize_t offset, int whence)
    stream->offset = new_offset;
    return 0;
 }
+
+ssize_t chdstream_get_size(chdstream_t *stream)
+{
+  return stream->track_end;
+}

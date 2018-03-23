@@ -47,7 +47,7 @@ typedef struct RFILE RFILE;
 
 void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 
-int64_t filestream_get_size(RFILE *stream);
+ssize_t filestream_get_size(RFILE *stream);
 
 /**
  * filestream_open:

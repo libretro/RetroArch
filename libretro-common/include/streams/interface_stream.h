@@ -90,7 +90,7 @@ void intfstream_putc(intfstream_internal_t *intf, int c);
 
 int intfstream_close(intfstream_internal_t *intf);
 
-int64_t intfstream_get_size(intfstream_internal_t *intf);
+ssize_t intfstream_get_size(intfstream_internal_t *intf);
 
 int intfstream_flush(intfstream_internal_t *intf);
 

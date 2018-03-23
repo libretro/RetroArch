@@ -55,6 +55,8 @@ void chdstream_rewind(chdstream_t *stream);
 
 int chdstream_seek(chdstream_t *stream, ssize_t offset, int whence);
 
+ssize_t chdstream_get_size(chdstream_t *stream);
+
 RETRO_END_DECLS
 
 #endif
