@@ -793,7 +793,7 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay);
 netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    bool stateless_mode, int check_frames,
    const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
-   uint64_t quirks);
+   uint64_t quirks, int* err);
 
 /**
  * netplay_free

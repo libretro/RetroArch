@@ -1318,6 +1318,8 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
    settings_t *settings          = config_get_ptr();
    uint64_t serialization_quirks = 0;
    uint64_t quirks               = 0;
+   char msg[256];
+   int err = 0;
 
    if (!netplay_enabled)
       return false;
@@ -1344,21 +1346,6 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
    if (serialization_quirks & NETPLAY_QUIRK_MAP_PLATFORM_DEPENDENT)
       quirks |= NETPLAY_QUIRK_PLATFORM_DEPENDENT;
 
-   if (netplay_is_client)
-   {
-      RARCH_LOG("[netplay] %s\n", msg_hash_to_str(MSG_CONNECTING_TO_NETPLAY_HOST));
-   }
-   else
-   {
-      RARCH_LOG("[netplay] %s\n", msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
-      runloop_msg_queue_push(
-         msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
-         0, 180, false);
-
-      if (settings->bools.netplay_public_announce)
-         netplay_announce();
-   }
-
    netplay_data = (netplay_t*)netplay_new(
          netplay_is_client ? direct_host : NULL,
          netplay_is_client ? (!netplay_client_deferred ? server
@@ -1370,19 +1357,35 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          &cbs,
          settings->bools.netplay_nat_traversal,
          settings->paths.username,
-         quirks);
+         quirks, &err);
 
    if (netplay_data)
    {
       if (netplay_data->is_server && !settings->bools.netplay_start_as_spectator)
          netplay_toggle_play_spectate(netplay_data);
+
+      if (netplay_is_client)
+      {
+         RARCH_LOG("[netplay] %s\n", msg_hash_to_str(MSG_CONNECTING_TO_NETPLAY_HOST));
+      }
+      else
+      {
+         RARCH_LOG("[netplay] %s\n", msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
+         runloop_msg_queue_push(
+            msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
+            0, 180, false);
+
+         if (settings->bools.netplay_public_announce)
+            netplay_announce();
+      }
       return true;
    }
 
    RARCH_WARN("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
+   snprintf (msg, sizeof(msg), "%s (err: %d)", msg_hash_to_str(MSG_NETPLAY_FAILED), err);
 
    runloop_msg_queue_push(
-         msg_hash_to_str(MSG_NETPLAY_FAILED),
+         msg,
          0, 180, false);
    return false;
 }

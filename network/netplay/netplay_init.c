@@ -418,7 +418,7 @@ static bool netplay_init_buffers(netplay_t *netplay)
 netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    bool stateless_mode, int check_frames,
    const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
-   uint64_t quirks)
+   uint64_t quirks, int* err)
 {
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
@@ -457,12 +457,14 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
 
    if (!init_socket(netplay, direct_host, server, port))
    {
+      *err = 1;
       free(netplay);
       return NULL;
    }
 
    if (!netplay_init_buffers(netplay))
    {
+      *err = 2;
       free(netplay);
       return NULL;
    }
@@ -516,6 +518,7 @@ error:
       socket_close(netplay->connections[0].fd);
 
    free(netplay);
+   *err = 3;
    return NULL;
 }
 
