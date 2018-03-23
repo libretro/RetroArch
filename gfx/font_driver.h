@@ -26,30 +26,6 @@
 
 RETRO_BEGIN_DECLS
 
-enum font_driver_render_api
-{
-   FONT_DRIVER_RENDER_DONT_CARE,
-   FONT_DRIVER_RENDER_OPENGL_API,
-   FONT_DRIVER_RENDER_D3D8_API,
-   FONT_DRIVER_RENDER_D3D9_API,
-   FONT_DRIVER_RENDER_D3D11_API,
-   FONT_DRIVER_RENDER_D3D12_API,
-   FONT_DRIVER_RENDER_VITA2D,
-   FONT_DRIVER_RENDER_CTR,
-   FONT_DRIVER_RENDER_WIIU,
-   FONT_DRIVER_RENDER_VULKAN_API,
-   FONT_DRIVER_RENDER_CACA,
-   FONT_DRIVER_RENDER_GDI,
-   FONT_DRIVER_RENDER_VGA
-};
-
-enum text_alignment
-{
-   TEXT_ALIGN_LEFT = 0,
-   TEXT_ALIGN_RIGHT,
-   TEXT_ALIGN_CENTER
-};
-
 /* All coordinates and offsets are top-left oriented.
  *
  * This is a texture-atlas approach which allows text to
@@ -111,7 +87,7 @@ typedef struct font_renderer
    void (*render_msg)(
          video_frame_info_t *video_info,
          void *data, const char *msg,
-         const void *params);
+         const struct font_params *params);
    const char *ident;
 
    const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
@@ -152,7 +128,7 @@ int font_renderer_create_default(const void **driver,
       void **handle, const char *font_path, unsigned font_size);
 
 void font_driver_render_msg(video_frame_info_t *video_info,
-      void *font_data, const char *msg, const void *params);
+      void *font_data, const char *msg, const struct font_params *params);
 
 void font_driver_bind_block(void *font_data, void *block);
 

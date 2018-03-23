@@ -92,6 +92,7 @@ typedef struct settings
       bool video_shared_context;
       bool video_force_srgb_disable;
       bool video_fps_show;
+      bool video_statistics_show;
       bool video_framecount_show;
       bool video_msg_bgcolor_enable;
 

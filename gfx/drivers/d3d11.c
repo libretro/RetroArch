@@ -1268,6 +1268,20 @@ static bool d3d11_gfx_frame(
       D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
       menu_driver_frame(video_info);
    }
+   else if (video_info->statistics_show)
+   {
+      struct font_params *osd_params = video_info ? 
+         (struct font_params*)&video_info->osd_stat_params : NULL;
+
+      if (osd_params)
+      {
+         D3D11SetViewports(context, 1, &d3d11->viewport);
+         D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+         D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
+         font_driver_render_msg(video_info, NULL, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params);
+      }
+   }
 
 #ifdef HAVE_OVERLAY
    if (d3d11->overlays.enabled)

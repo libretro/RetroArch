@@ -82,45 +82,42 @@ static const struct font_glyph *gdi_font_get_glyph(
 static void gdi_render_msg(
       video_frame_info_t *video_info,
       void *data, const char *msg,
-      const void *userdata)
+      const struct font_params *params)
 {
    float x, y, scale;
-   gdi_raster_t *font = (gdi_raster_t*)data;
    unsigned newX, newY, len;
    unsigned align;
-   const struct font_params *params = (const struct font_params*)userdata;
-   unsigned width                   = video_info->width;
-   unsigned height                  = video_info->height;
    unsigned red;
    unsigned green;
    unsigned blue;
+   gdi_raster_t *font               = (gdi_raster_t*)data;
+   unsigned width                   = video_info->width;
+   unsigned height                  = video_info->height;
 
-   if (!font || string_is_empty(msg))
+   if (!font || string_is_empty(msg) || !font->gdi)
       return;
 
    if (params)
    {
-      x = params->x;
-      y = params->y;
-      scale = params->scale;
-      align = params->text_align;
-      red = FONT_COLOR_GET_RED(params->color);
-      green = FONT_COLOR_GET_GREEN(params->color);
-      blue = FONT_COLOR_GET_BLUE(params->color);
+      x       = params->x;
+      y       = params->y;
+      scale   = params->scale;
+      align   = params->text_align;
+
+      red     = FONT_COLOR_GET_RED(params->color);
+      green   = FONT_COLOR_GET_GREEN(params->color);
+      blue    = FONT_COLOR_GET_BLUE(params->color);
    }
    else
    {
-      x = video_info->font_msg_pos_x;
-      y = video_info->font_msg_pos_y;
-      scale = 1.0f;
-      align = TEXT_ALIGN_LEFT;
-      red = video_info->font_msg_color_r * 255.0f;
-      green = video_info->font_msg_color_g * 255.0f;
-      blue = video_info->font_msg_color_b * 255.0f;
+      x       = video_info->font_msg_pos_x;
+      y       = video_info->font_msg_pos_y;
+      scale   = 1.0f;
+      align   = TEXT_ALIGN_LEFT;
+      red     = video_info->font_msg_color_r * 255.0f;
+      green   = video_info->font_msg_color_g * 255.0f;
+      blue    = video_info->font_msg_color_b * 255.0f;
    }
-
-   if (!font->gdi)
-      return;
 
    len  = utf8len(msg);
 

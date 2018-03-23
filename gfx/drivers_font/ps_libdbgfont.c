@@ -67,20 +67,18 @@ static void libdbg_font_free_font(void *data, bool is_threaded)
 static void libdbg_font_render_msg(
       video_frame_info_t *video_info,
       void *data, const char *msg,
-      const void *userdata)
+      const struct font_params *params)
 {
    float x, y, scale;
    unsigned color;
-   const struct font_params *params = (const struct font_params*)userdata;
-
-   (void)data;
 
    if (params)
    {
-      x     = params->x;
-      y     = params->y;
-      scale = params->scale;
-      color = params->color;
+      x                    = params->x;
+      y                    = params->y;
+      scale                = params->scale;
+
+      color                = params->color;
    }
    else
    {

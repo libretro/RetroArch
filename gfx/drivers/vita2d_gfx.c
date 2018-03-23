@@ -250,6 +250,17 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          }
       }
    }
+   else if (video_info->statistics_show)
+   {
+      struct font_params *osd_params = video_info ? 
+         (struct font_params*)&video_info->osd_stat_params : NULL;
+
+      if (osd_params)
+      {
+         font_driver_render_msg(video_info, NULL, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params);
+      }
+   }
 
    if(!string_is_empty(msg))
       font_driver_render_msg(video_info, NULL, msg, NULL);

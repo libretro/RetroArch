@@ -5801,3 +5801,7 @@ MSG_HASH(
 	MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
 	"Auto-aplica los cambios hechos a los archivos shader del disco"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+      "Display Statistics")
+MSG_HASH(MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
+      "Show onscreen technical statistics.")

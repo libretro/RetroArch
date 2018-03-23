@@ -80,11 +80,10 @@ static void xfonts_free_font(void *data, bool is_threaded)
 static void xfonts_render_msg(
       video_frame_info_t *video_info,
       void *data, const char *msg,
-      const void *userdata)
+      const struct font_params *params)
 {
    wchar_t str[PATH_MAX_LENGTH];
    float x, y;
-   const struct font_params *params = (const struct font_params*)userdata;
    xfonts_t *xfonts                 = (xfonts_t*)data;
 
    if (params)
@@ -98,7 +97,8 @@ static void xfonts_render_msg(
       y = video_info->font_msg_pos_y;
    }
 
-   d3d8_device_get_backbuffer(xfonts->d3d->dev, -1, 0, D3DBACKBUFFER_TYPE_MONO, &xfonts->surf);
+   d3d8_device_get_backbuffer(xfonts->d3d->dev,
+         -1, 0, D3DBACKBUFFER_TYPE_MONO, &xfonts->surf);
 
    mbstowcs(str, msg, sizeof(str) / sizeof(wchar_t));
 

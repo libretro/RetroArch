@@ -777,18 +777,24 @@ static char* font_driver_reshape_msg(const char* msg)
 void font_driver_render_msg(
       video_frame_info_t *video_info,
       void *font_data,
-      const char *msg, const void *params)
+      const char *msg,
+      const struct font_params *params)
 {
-   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
+   font_data_t *font = (font_data_t*)(font_data 
+         ? font_data : video_font_driver);
 
    if (msg && *msg && font && font->renderer && font->renderer->render_msg)
    {
 #ifdef HAVE_LANGEXTRA
-      char* new_msg = font_driver_reshape_msg(msg);
-      font->renderer->render_msg(video_info, font->renderer_data, new_msg, params);
-      free(new_msg);
+      char *new_msg = font_driver_reshape_msg(msg);
 #else
-      font->renderer->render_msg(video_info, font->renderer_data, msg, params);
+      char *new_msg = msg;
+#endif
+
+      font->renderer->render_msg(video_info,
+            font->renderer_data, new_msg, params);
+#ifdef HAVE_LANGEXTRA
+      free(new_msg);
 #endif
    }
 }

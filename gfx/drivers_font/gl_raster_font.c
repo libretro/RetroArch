@@ -244,7 +244,8 @@ static int gl_get_message_width(void *data, const char *msg,
    return delta_x * scale;
 }
 
-static void gl_raster_font_draw_vertices(gl_raster_t *font, const video_coords_t *coords,
+static void gl_raster_font_draw_vertices(gl_raster_t *font,
+      const video_coords_t *coords,
       video_frame_info_t *video_info)
 {
    video_shader_ctx_coords_t coords_data;
@@ -414,7 +415,7 @@ static void gl_raster_font_setup_viewport(unsigned width, unsigned height,
 static void gl_raster_font_render_msg(
       video_frame_info_t *video_info,
       void *data, const char *msg,
-      const void *userdata)
+      const struct font_params *params)
 {
    GLfloat color[4];
    int drop_x, drop_y;
@@ -424,7 +425,6 @@ static void gl_raster_font_render_msg(
    gl_raster_t                *font = (gl_raster_t*)data;
    unsigned width                   = video_info->width;
    unsigned height                  = video_info->height;
-   const struct font_params *params = (const struct font_params*)userdata;
 
    if (!font || string_is_empty(msg))
       return;
@@ -441,9 +441,9 @@ static void gl_raster_font_render_msg(
       drop_mod    = params->drop_mod;
       drop_alpha  = params->drop_alpha;
 
-      color[0]    = FONT_COLOR_GET_RED(params->color) / 255.0f;
+      color[0]    = FONT_COLOR_GET_RED(params->color)   / 255.0f;
       color[1]    = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
-      color[2]    = FONT_COLOR_GET_BLUE(params->color) / 255.0f;
+      color[2]    = FONT_COLOR_GET_BLUE(params->color)  / 255.0f;
       color[3]    = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
 
       /* If alpha is 0.0f, turn it into default 1.0f */

@@ -264,15 +264,15 @@ static void vita2d_font_render_message(
 static void vita2d_font_render_msg(
       video_frame_info_t *video_info,
       void *data, const char *msg,
-      const void *userdata)
+      const struct font_params *params)
 {
    float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y;
    unsigned max_glyphs;
    enum text_alignment text_align;
-   unsigned color, color_dark, r, g, b, alpha, r_dark, g_dark, b_dark, alpha_dark;
+   unsigned color, color_dark, r, g, b,
+            alpha, r_dark, g_dark, b_dark, alpha_dark;
    vita_font_t                *font = (vita_font_t *)data;
-   const struct font_params *params = (const struct font_params*)userdata;
    unsigned width                   = video_info->width;
    unsigned height                  = video_info->height;
 

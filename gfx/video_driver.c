@@ -1321,9 +1321,13 @@ bool video_monitor_fps_statistics(double *refresh_rate,
       accum_var         += diff * diff;
    }
 
-   *deviation     = sqrt((double)accum_var / (samples - 1)) / avg;
-   *refresh_rate  = 1000000.0 / avg;
-   *sample_points = samples;
+   *deviation        = sqrt((double)accum_var / (samples - 1)) / avg;
+
+   if (refresh_rate)
+      *refresh_rate  = 1000000.0 / avg;
+
+   if (sample_points)
+      *sample_points = samples;
 
    return true;
 }
@@ -2381,8 +2385,8 @@ void video_driver_frame(const void *data, unsigned width,
       unsigned write_index                         =
          video_driver_frame_time_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
-      video_driver_frame_time_samples[write_index] = new_time - fps_time;
       frame_time                                   = new_time - fps_time;
+      video_driver_frame_time_samples[write_index] = frame_time;
       fps_time                                     = new_time;
 
       if (video_driver_frame_count == 1)
@@ -2501,6 +2505,51 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
    }
 
+   if (video_info.statistics_show)
+   {
+      double stddev                          = 0.0;
+      struct retro_system_av_info *av_info   = &video_driver_av_info;
+      bool measure_frame_time                = video_monitor_fps_statistics(NULL, &stddev, NULL);
+      unsigned red                           = 255;
+      unsigned green                         = 255;
+      unsigned blue                          = 255;
+      unsigned alpha                         = 255;
+
+      video_info.osd_stat_params.x           = 0.010f;
+      video_info.osd_stat_params.y           = 0.950f;
+      video_info.osd_stat_params.scale       = 1.0f;
+      video_info.osd_stat_params.full_screen = true;
+      video_info.osd_stat_params.drop_x      = -2;
+      video_info.osd_stat_params.drop_y      = -2;
+      video_info.osd_stat_params.drop_mod    = 0.3f;
+      video_info.osd_stat_params.drop_alpha  = 1.0f;
+      video_info.osd_stat_params.color       = COLOR_ABGR(red, green, blue, alpha);
+
+      snprintf(video_info.stat_text,
+            sizeof(video_info.stat_text), 
+            "Frontend Statistics:\n -Frame rate: %6.2f\n -Frame time: %6.2f\n -Frame time deviation: %6.2f\n"
+            " -Frame count: %" PRIu64"\n -Viewport: %d x %d x %3.2f\n"
+            "Core Geometry:\n -Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n", 
+            video_info.frame_rate,
+            video_info.frame_time,
+            100.0 * stddev,
+            video_info.frame_count,
+            video_info.width,
+            video_info.height,
+            video_info.refresh_rate,
+            av_info->geometry.base_width,
+            av_info->geometry.base_height,
+            av_info->geometry.aspect_ratio,
+            av_info->timing.fps,
+            av_info->timing.sample_rate);
+
+      /* TODO/FIXME - add OSD chat text here */
+#if 0
+      snprintf(video_info.chat_text, sizeof(video_info.chat_text),
+            "anon: does retroarch netplay have in-game chat?\nradius: I don't know \u2605");
+#endif
+   }
+
    video_driver_active = current_video->frame(
          video_driver_data, data, width, height,
          video_driver_frame_count,
@@ -2608,6 +2657,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->hard_sync             = settings->bools.video_hard_sync;
    video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;
    video_info->fps_show              = settings->bools.video_fps_show;
+   video_info->statistics_show       = settings->bools.video_statistics_show;
    video_info->framecount_show       = settings->bools.video_framecount_show;
    video_info->scale_integer         = settings->bools.video_scale_integer;
    video_info->aspect_ratio_idx      = settings->uints.video_aspect_ratio_idx;

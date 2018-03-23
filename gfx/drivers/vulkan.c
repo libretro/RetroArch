@@ -1841,6 +1841,17 @@ static bool vulkan_frame(void *data, const void *frame,
             vulkan_draw_quad(vk, &quad);
          }
       }
+      else if (video_info->statistics_show)
+      {
+         struct font_params *osd_params = video_info ? 
+            (struct font_params*)&video_info->osd_stat_params : NULL;
+
+         if (osd_params)
+         {
+            font_driver_render_msg(video_info, NULL, video_info->stat_text,
+                  (const struct font_params*)&video_info->osd_stat_params);
+         }
+      }
 #endif
 
       if (msg)

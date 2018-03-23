@@ -692,8 +692,10 @@ static void sdl2_poke_texture_enable(void *data,
 {
    sdl2_video_t *vid   = (sdl2_video_t*)data;
 
-   if (vid)
-      vid->menu.active = enable;
+   if (!vid)
+      return;
+
+   vid->menu.active = enable;
 }
 
 static void sdl2_poke_set_osd_msg(void *data,

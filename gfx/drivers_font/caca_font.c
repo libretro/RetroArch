@@ -75,29 +75,28 @@ static const struct font_glyph *caca_font_get_glyph(
 
 static void caca_render_msg(video_frame_info_t *video_info,
       void *data, const char *msg,
-      const void *userdata)
+      const struct font_params *params)
 {
    float x, y, scale;
    unsigned width, height;
    unsigned newX, newY;
    unsigned align;
    caca_raster_t              *font = (caca_raster_t*)data;
-   const struct font_params *params = (const struct font_params*)userdata;
 
    if (!font || string_is_empty(msg))
       return;
 
    if (params)
    {
-      x = params->x;
-      y = params->y;
+      x     = params->x;
+      y     = params->y;
       scale = params->scale;
       align = params->text_align;
    }
    else
    {
-      x = video_info->font_msg_pos_x;
-      y = video_info->font_msg_pos_y;
+      x     = video_info->font_msg_pos_x;
+      y     = video_info->font_msg_pos_y;
       scale = 1.0f;
       align = TEXT_ALIGN_LEFT;
    }

@@ -329,7 +329,7 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
 static void vulkan_raster_font_render_msg(
       video_frame_info_t *video_info,
       void *data, const char *msg,
-      const void *userdata)
+      const struct font_params *params)
 {
    float color[4], color_dark[4];
    int drop_x, drop_y;
@@ -341,7 +341,6 @@ static void vulkan_raster_font_render_msg(
    vulkan_raster_t *font            = (vulkan_raster_t*)data;
    unsigned width                   = video_info->width;
    unsigned height                  = video_info->height;
-   const struct font_params *params = (const struct font_params*)userdata;
 
    if (!font || !msg || !*msg)
       return;

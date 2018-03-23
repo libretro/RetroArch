@@ -129,14 +129,13 @@ static int d3dfonts_w32_get_message_width(void* data, const char* msg,
 
 
 static void d3dfonts_w32_render_msg(video_frame_info_t *video_info,
-      void *data, const char *msg, const void *userdata)
+      void *data, const char *msg, const struct font_params *params)
 {
    unsigned format;
    unsigned a, r, g, b;
    RECT rect, rect_shifted;
    RECT *p_rect_shifted             = NULL;
    RECT *p_rect                     = NULL;
-   const struct font_params *params = (const struct font_params*)userdata;
    d3dfonts_t *d3dfonts             = (d3dfonts_t*)data;
    unsigned width                   = video_info->width;
    unsigned height                  = video_info->height;
@@ -154,7 +153,6 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info,
 
    if(params)
    {
-
       a = FONT_COLOR_GET_ALPHA(params->color);
       r = FONT_COLOR_GET_RED(params->color);
       g = FONT_COLOR_GET_GREEN(params->color);

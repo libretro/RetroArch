@@ -78,6 +78,34 @@ enum rarch_display_type
    RARCH_DISPLAY_OSX
 };
 
+enum font_driver_render_api
+{
+   FONT_DRIVER_RENDER_DONT_CARE,
+   FONT_DRIVER_RENDER_OPENGL_API,
+   FONT_DRIVER_RENDER_D3D8_API,
+   FONT_DRIVER_RENDER_D3D9_API,
+   FONT_DRIVER_RENDER_D3D11_API,
+   FONT_DRIVER_RENDER_D3D12_API,
+   FONT_DRIVER_RENDER_VITA2D,
+   FONT_DRIVER_RENDER_CTR,
+   FONT_DRIVER_RENDER_WIIU,
+   FONT_DRIVER_RENDER_VULKAN_API,
+   FONT_DRIVER_RENDER_CACA,
+   FONT_DRIVER_RENDER_GDI,
+   FONT_DRIVER_RENDER_VGA
+};
+
+enum text_alignment
+{
+   TEXT_ALIGN_LEFT = 0,
+   TEXT_ALIGN_RIGHT,
+   TEXT_ALIGN_CENTER
+};
+
+#ifndef COLOR_ABGR
+#define COLOR_ABGR(r, g, b, a) (((unsigned)(a) << 24) | ((b) << 16) | ((g) << 8) | ((r) << 0))
+#endif
+
 #define LAST_ASPECT_RATIO ASPECT_RATIO_CUSTOM
 
 /* ABGR color format defines */

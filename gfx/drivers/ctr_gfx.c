@@ -737,6 +737,7 @@ static bool ctr_frame(void* data, const void* frame,
       GPU_SetTexEnv(2, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
    }
 
+#ifdef HAVE_MENU
    if (ctr->menu_texture_enable)
    {
       if(ctr->menu_texture_frame_enable)
@@ -770,6 +771,18 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->msg_rendering_enabled = false;
 
    }
+   else if (video_info->statistics_show)
+   {
+      struct font_params *osd_params = video_info ? 
+         (struct font_params*)&video_info->osd_stat_params : NULL;
+
+      if (osd_params)
+      {
+         font_driver_render_msg(video_info, NULL, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params);
+      }
+   }
+#endif
 
    if (msg)
       font_driver_render_msg(video_info, NULL, msg, NULL);

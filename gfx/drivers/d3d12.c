@@ -1454,7 +1454,21 @@ static bool d3d12_gfx_frame(
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
       menu_driver_frame(video_info);
    }
+   else if (video_info->statistics_show)
+   {
+      struct font_params *osd_params = video_info ? 
+         (struct font_params*)&video_info->osd_stat_params : NULL;
 
+      if (osd_params)
+      {
+         D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe_blend);
+         D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
+         D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
+         D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
+         font_driver_render_msg(video_info, NULL, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params);
+      }
+   }
 #ifdef HAVE_OVERLAY
    if (d3d12->overlays.enabled)
    {

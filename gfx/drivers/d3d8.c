@@ -1624,6 +1624,17 @@ static bool d3d8_frame(void *data, const void *frame,
       d3d8_set_viewports(d3d->dev, &screen_vp);
       menu_driver_frame(video_info);
    }
+   else if (video_info->statistics_show)
+   {
+      struct font_params *osd_params = video_info ? 
+         (struct font_params*)&video_info->osd_stat_params : NULL;
+
+      if (osd_params)
+      {
+         font_driver_render_msg(video_info, NULL, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params);
+      }
+   }
 #endif
 
 #ifdef HAVE_OVERLAY

@@ -369,7 +369,8 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
       SDL_BlitSurface(vid->menu.frame, NULL, vid->screen, NULL);
 
    if (msg)
-      sdl_render_msg(vid, vid->screen, msg, vid->screen->w, vid->screen->h, vid->screen->format);
+      sdl_render_msg(vid, vid->screen,
+            msg, vid->screen->w, vid->screen->h, vid->screen->format);
 
    if (SDL_MUSTLOCK(vid->screen))
       SDL_UnlockSurface(vid->screen);
