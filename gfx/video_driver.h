@@ -450,6 +450,11 @@ typedef struct video_frame_info
    float xmb_alpha_factor;
 
    char fps_text[128];
+
+   uint64_t frame_count;
+   float frame_time;
+   float frame_rate;
+
    void (*cb_update_window_title)(void*, void *);
    void (*cb_swap_buffers)(void*, void *);
    bool (*cb_get_metrics)(void *data, enum display_metric_types type,

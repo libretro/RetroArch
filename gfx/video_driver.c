@@ -2341,7 +2341,7 @@ void video_driver_frame(const void *data, unsigned width,
    video_frame_info_t video_info;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
-   static float last_fps;
+   static float last_fps, frame_time;
    unsigned output_width                             = 0;
    unsigned output_height                            = 0;
    unsigned output_pitch                             = 0;
@@ -2382,6 +2382,7 @@ void video_driver_frame(const void *data, unsigned width,
          video_driver_frame_time_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
       video_driver_frame_time_samples[write_index] = new_time - fps_time;
+      frame_time                                   = new_time - fps_time;
       fps_time                                     = new_time;
 
       if (video_driver_frame_count == 1)
@@ -2390,10 +2391,10 @@ void video_driver_frame(const void *data, unsigned width,
       if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
       {
          char frames_text[64];
+         last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
 
          if (video_info.fps_show)
          {
-            last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
             snprintf(video_info.fps_text, sizeof(video_info.fps_text),
                   "||  FPS: %6.1f ", last_fps);
             if (video_info.framecount_show)
@@ -2455,6 +2456,10 @@ void video_driver_frame(const void *data, unsigned width,
 
       video_driver_window_title_update = true;
    }
+
+   video_info.frame_rate = last_fps;
+   video_info.frame_time = frame_time / 1000.0f;
+   video_info.frame_count = (uint64_t) video_driver_frame_count;
 
    /* Slightly messy code,
     * but we really need to do processing before blocking on VSync
