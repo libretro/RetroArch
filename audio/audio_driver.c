@@ -561,9 +561,6 @@ void audio_driver_set_nonblocking_state(bool enable)
  **/
 static void audio_driver_flush(const int16_t *data, size_t samples)
 {
-   if (audio_suspended)
-      return;
-
    struct resampler_data src_data;
    bool is_perfcnt_enable                               = false;
    bool is_paused                                       = false;
@@ -586,8 +583,8 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
          &is_perfcnt_enable);
 
-   if (            is_paused                || 
-		   !audio_driver_active     || 
+   if (            is_paused                ||
+		   !audio_driver_active     ||
 		   !audio_driver_input_data ||
 		   !audio_driver_output_samples_buf)
       return;
