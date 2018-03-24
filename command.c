@@ -2338,10 +2338,11 @@ TODO: Add a setting for these tweaks */
 
          core_name = "DETECT";
          core_path = "DETECT";
+         size_t *playlist_index = (size_t *)data;
 
          command_playlist_update_write(
             NULL,
-            (size_t)data,
+            *playlist_index,
             NULL,
             NULL,
             core_path,
