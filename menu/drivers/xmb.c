@@ -3028,14 +3028,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 #endif
 
       /* Limit thumbnail height to screen height + margin. */
-      if( xmb->margins_screen_top + xmb->icon_size + xmb->thumbnail_height *
-         scale_mod[4] >= 1040 * (height / 1080) )
+      if( xmb->margins_screen_top + xmb->icon_size + xmb->thumbnail_height * scale_mod[4] >= 
+         (float)(height * 0.96) )
       {
          thumb_width = xmb->thumbnail_width *
-            ((1040 * (height / 1080) - xmb->margins_screen_top - xmb->icon_size) /
+            (((float)(height * 0.96) - xmb->margins_screen_top - xmb->icon_size) /
                (xmb->thumbnail_height * scale_mod[4]));
          thumb_height = xmb->thumbnail_height *
-            ((1040 * (height / 1080) - xmb->margins_screen_top - xmb->icon_size) /
+            (((float)(height * 0.96) - xmb->margins_screen_top - xmb->icon_size) /
                (xmb->thumbnail_height * scale_mod[4]));
       }
       else
