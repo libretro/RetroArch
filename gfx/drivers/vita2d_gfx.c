@@ -252,8 +252,8 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    }
    else if (video_info->statistics_show)
    {
-      struct font_params *osd_params = video_info ? 
-         (struct font_params*)&video_info->osd_stat_params : NULL;
+      struct font_params *osd_params = (struct font_params*)
+         &video_info->osd_stat_params;
 
       if (osd_params)
       {
