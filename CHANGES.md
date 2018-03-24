@@ -6,6 +6,7 @@
 - CHEEVOS: Add option to automatically take a screenshot when an achievement is triggered.
 - LIBRETRO: Addition - Functions to enable and disable audio and video, and an environment function to query status of audio and video enables.
 - MENU: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
+- MENU/XMB: Fixed left/right tab regression.
 - IOS: Fixed crash when opening downloaded roms from Safari or using the "Open in.." functionality. Added the compiler flag to support keyboard remapping to controls.
 - IOS: Fixed buffer overlap that caused a crash while trying to download GLSL shaders from the buildbot.
 - PS3: fix URLS
