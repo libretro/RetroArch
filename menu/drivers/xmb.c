@@ -3027,13 +3027,16 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
 #endif
 
-      /* Resize thumbnail if its height cross the bottom of the screen */
-      if(xmb->margins_screen_top + xmb->icon_size + xmb->thumbnail_height * scale_mod[4] >= 1040)
+      /* Limit thumbnail height to screen height + margin. */
+      if( xmb->margins_screen_top + xmb->icon_size + xmb->thumbnail_height *
+         scale_mod[4] >= 1040 * (height / 1080) )
       {
          thumb_width = xmb->thumbnail_width *
-            ((1040 - xmb->margins_screen_top - xmb->icon_size) / (xmb->thumbnail_height * scale_mod[4]));
+            ((1040 * (height / 1080) - xmb->margins_screen_top - xmb->icon_size) /
+               (xmb->thumbnail_height * scale_mod[4]));
          thumb_height = xmb->thumbnail_height *
-            ((1040 - xmb->margins_screen_top - xmb->icon_size) / (xmb->thumbnail_height * scale_mod[4]));
+            ((1040 * (height / 1080) - xmb->margins_screen_top - xmb->icon_size) /
+               (xmb->thumbnail_height * scale_mod[4]));
       }
       else
       {
