@@ -2333,12 +2333,9 @@ TODO: Add a setting for these tweaks */
       }
       case CMD_EVENT_RESET_CORE_ASSOCIATION:
       {
-         const char *core_name          = NULL;
-         const char *core_path          = NULL;
-
-         core_name = "DETECT";
-         core_path = "DETECT";
-         size_t *playlist_index = (size_t *)data;
+         const char *core_name          = "DETECT";
+         const char *core_path          = "DETECT";
+         size_t *playlist_index         = (size_t*)data;
 
          command_playlist_update_write(
             NULL,
