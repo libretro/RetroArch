@@ -2875,7 +2875,7 @@ static int action_ok_reset_core_association(const char *path,
    playlist_get_index(tmp_playlist,
          rpl_entry_selection_ptr, &tmp_path, NULL, NULL, NULL, NULL, NULL);
 
-   if (!command_event(CMD_EVENT_RESET_CORE_ASSOCIATION, (void *)rpl_entry_selection_ptr))
+   if (!command_event(CMD_EVENT_RESET_CORE_ASSOCIATION, (void *)&rpl_entry_selection_ptr))
       return menu_cbs_exit();
    return 0;
 }
