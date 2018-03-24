@@ -15,7 +15,7 @@
 
 #define CINTERFACE
 
-#include <stdbool.h>
+#include <boolean.h>
 
 #include "d3d12_common.h"
 #include "dxgi_common.h"

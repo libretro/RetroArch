@@ -1028,7 +1028,7 @@ static INLINE HRESULT D3D10CreateTexture2DShaderResourceView(
 #endif
    /* internal */
 
-#include <stdbool.h>
+#include <boolean.h>
 
 #include <retro_math.h>
 #include <gfx/math/matrix_4x4.h>

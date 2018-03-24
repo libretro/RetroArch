@@ -2417,7 +2417,7 @@ D3D11UnmapBuffer(D3D11DeviceContext device_context, D3D11Buffer buffer, UINT sub
    /* internal */
 
 #include <assert.h>
-#include <stdbool.h>
+#include <boolean.h>
 #include <retro_math.h>
 #include <gfx/math/matrix_4x4.h>
 #include "../video_driver.h"

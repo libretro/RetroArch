@@ -16,7 +16,7 @@
 #define CINTERFACE
 
 #include <assert.h>
-#include <stdbool.h>
+#include <boolean.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
