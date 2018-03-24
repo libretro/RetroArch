@@ -1,7 +1,13 @@
 # 1.7.2 (future)
+- ANDROID/OPENSL: Prevent crashes when setting audio latency too low (buffer count can never be lower than 2 now).
+- COMMON: Add way to reset core association for playlist entry.
+- COMMON: Add OSD statistics for video/audio/core.
 - CHEEVOS: Support Atari 2600, Virtual Boy, Neo Geo (Arcade).
 - CHEEVOS: Add option to automatically take a screenshot when an achievement is triggered.
+- LIBRETRO: Addition - Functions to enable and disable audio and video, and an environment function to query status of audio and video enables.
 - MENU: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
+- IOS: Fixed crash when opening downloaded roms from Safari or using the "Open in.." functionality. Added the compiler flag to support keyboard remapping to controls.
+- IOS: Fixed buffer overlap that caused a crash while trying to download GLSL shaders from the buildbot.
 - PS3: fix URLS
 - SHADERS/SLANG: Slang shaders should work again on Android version and MSVC versions (basically all the Griffin-based versions).
 - SHADERS: If GL context is GLES2/3/Core context, Cg shaders are unavailable. Applies to shader list too.
@@ -10,7 +16,12 @@
 - SHADERS: Prevent crashes from occurring if we have the GL video driver in use and we try to skip to a slang shader through next/previous hotkeys
 - SHADERS: Fix shader parameter increase / decrease functions
 - SUBSYSTEM: handle savestates properly (cart1 + cart2.state0)
+- VULKAN/X11: Fix X11 Vulkan bug from Wayland driver.
+- VULKAN: Fix multi-line text spacing in menus with Vulkan driver.
+- WINDOWS XP: Add Cheevos support.
+- WINDOWS/MSVC 2005: Add Cheevos support.
 - VITA: Bugfix for 'PS Vita takes many time to start to accept input' issue.
+- WIIU: Fix OOB read/write in keyboard driver.
 
 # 1.7.1
 - 3DS: Now correctly reports amount of CPU cores.
