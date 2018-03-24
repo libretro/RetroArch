@@ -885,14 +885,11 @@ static bool task_load_content(content_ctx_info_t *content_info,
    if (is_inited || contentless)
    {
       char *tmp                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      struct retro_system_info *info = NULL;
       rarch_system_info_t *sys_info  = runloop_get_system_info();
       const char *path_content       = path_get(RARCH_PATH_CONTENT);
+      struct retro_system_info *info = sys_info ? &sys_info->info : NULL;
 
       tmp[0] = '\0';
-
-      if (sys_info)
-         info = &sys_info->info;
 
       if (!string_is_empty(path_content))
          strlcpy(tmp, path_content, PATH_MAX_LENGTH * sizeof(char));
