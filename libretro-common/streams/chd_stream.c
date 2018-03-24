@@ -23,7 +23,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+
+#include <boolean.h>
 
 #include <streams/chd_stream.h>
 #include <retro_endianness.h>
