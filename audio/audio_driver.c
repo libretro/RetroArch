@@ -213,7 +213,7 @@ bool compute_audio_buffer_statistics(audio_statistics_t *stats)
    if (!stats || samples < 3)
       return false;
 
-   stats->samples                = samples;
+   stats->samples                = audio_driver_free_samples_count;
 
 #ifdef WARPUP
    /* uint64 to double not implemented, fair chance 
