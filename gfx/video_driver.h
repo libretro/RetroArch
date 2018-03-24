@@ -451,7 +451,7 @@ typedef struct video_frame_info
    float xmb_alpha_factor;
 
    char fps_text[128];
-   char stat_text[256];
+   char stat_text[512];
    char chat_text[256];
 
    uint64_t frame_count;

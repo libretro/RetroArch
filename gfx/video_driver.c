@@ -2537,9 +2537,9 @@ void video_driver_frame(const void *data, unsigned width,
 
       snprintf(video_info.stat_text,
             sizeof(video_info.stat_text), 
-            "Frontend Statistics:\n -Frame rate: %6.2f\n -Frame time: %6.2f\n -Frame time deviation: %6.2f\n"
+            "Video Statistics:\n -Frame rate: %6.2f\n -Frame time: %6.2f\n -Frame time deviation: %6.2f\n"
             " -Frame count: %" PRIu64"\n -Viewport: %d x %d x %3.2f\n"
-            "Core Geometry:\n -Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n", 
+            "Core Geometry:\n -Size: %u x %u\n -Max Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n", 
             video_info.frame_rate,
             video_info.frame_time,
             100.0 * stddev,
@@ -2549,6 +2549,8 @@ void video_driver_frame(const void *data, unsigned width,
             video_info.refresh_rate,
             av_info->geometry.base_width,
             av_info->geometry.base_height,
+            av_info->geometry.max_width,
+            av_info->geometry.max_height,
             av_info->geometry.aspect_ratio,
             av_info->timing.fps,
             av_info->timing.sample_rate);
