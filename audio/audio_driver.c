@@ -146,10 +146,8 @@ static size_t audio_driver_rewind_size                   = 0;
 static int16_t *audio_driver_rewind_buf                  = NULL;
 static int16_t *audio_driver_output_samples_conv_buf     = NULL;
 
-#ifdef DEBUG
 static unsigned audio_driver_free_samples_buf[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
 static uint64_t audio_driver_free_samples_count          = 0;
-#endif
 
 static size_t audio_driver_buffer_size                   = 0;
 static size_t audio_driver_data_ptr                      = 0;
@@ -195,18 +193,15 @@ enum resampler_quality audio_driver_get_resampler_quality(void)
    return (enum resampler_quality)settings->uints.audio_resampler_quality;
 }
 
-#ifdef DEBUG
 /**
  * compute_audio_buffer_statistics:
  *
  * Computes audio buffer statistics.
  *
  **/
-static void compute_audio_buffer_statistics(void)
+bool compute_audio_buffer_statistics(audio_statistics_t *stats)
 {
    unsigned i, low_water_size, high_water_size, avg, stddev;
-   float avg_filled              = 0.0f;
-   float deviation               = 0.0f;
    uint64_t accum                = 0;
    uint64_t accum_var            = 0;
    unsigned low_water_count      = 0;
@@ -215,9 +210,21 @@ static void compute_audio_buffer_statistics(void)
          (unsigned)audio_driver_free_samples_count,
          AUDIO_BUFFER_FREE_SAMPLES_COUNT);
 
-   if (samples < 3)
-      return;
+   if (samples < 3 || !stats)
+      return false;
 
+   stats->average_buffer_saturation = 0.0;
+   stats->std_deviation_percentage  = 0.0f;
+#ifdef WARPUP
+   /* uint64 to double not implemented, fair chance 
+    * signed int64 to double doesn't exist either */
+   /* https://forums.libretro.com/t/unsupported-platform-help/13903/ */
+   (void)stddev;
+#elif defined(_MSC_VER) && _MSC_VER <= 1200
+   /* FIXME: error C2520: conversion from unsigned __int64 
+    * to double not implemented, use signed __int64 */
+   (void)stddev;
+#else
    for (i = 1; i < samples; i++)
       accum += audio_driver_free_samples_buf[i];
 
@@ -225,24 +232,17 @@ static void compute_audio_buffer_statistics(void)
 
    for (i = 1; i < samples; i++)
    {
-      int diff = avg - audio_driver_free_samples_buf[i];
-      accum_var += diff * diff;
+      int diff     = avg - audio_driver_free_samples_buf[i];
+      accum_var   += diff * diff;
    }
 
-#ifdef WARPUP
-   /* uint64 to double not implemented, fair chance signed int64 to double doesn't exist either */
-   /* https://forums.libretro.com/t/unsupported-platform-help/13903/ */
-   (void)stddev; (void)avg_filled; (void)deviation;
-#elif defined(_MSC_VER) && _MSC_VER <= 1200
-   /* FIXME: error C2520: conversion from unsigned __int64 to double not implemented, use signed __int64 */
-   (void)stddev; (void)avg_filled; (void)deviation;
-#else
-   stddev          = (unsigned)sqrt((double)accum_var / (samples - 2));
-   avg_filled      = 1.0f - (float)avg / audio_driver_buffer_size;
-   deviation       = (float)stddev / audio_driver_buffer_size;
+   stddev                                = (unsigned)
+      sqrt((double)accum_var / (samples - 2));
 
-   RARCH_LOG("[Audio]: Average audio buffer saturation: %.2f %%, standard deviation (percentage points): %.2f %%.\n",
-         avg_filled * 100.0, deviation * 100.0);
+   stats->average_buffer_saturation      = (1.0f - (float)avg 
+         / audio_driver_buffer_size) * 100.0;
+   stats->std_deviation_percentage       = ((float)stddev 
+         / audio_driver_buffer_size)  * 100.0;
 #endif
 
    low_water_size  = (unsigned)(audio_driver_buffer_size * 3 / 4);
@@ -256,11 +256,29 @@ static void compute_audio_buffer_statistics(void)
          high_water_count++;
    }
 
-   RARCH_LOG("[Audio]: Amount of time spent close to underrun: %.2f %%. Close to blocking: %.2f %%.\n",
-         (100.0 * low_water_count) / (samples - 1),
-         (100.0 * high_water_count) / (samples - 1));
+   stats->close_to_underrun      = (100.0 * low_water_count)  / (samples - 1);
+   stats->close_to_blocking      = (100.0 * high_water_count) / (samples - 1);
+
+   return true;
 }
+
+static void report_audio_buffer_statistics(void)
+{
+   audio_statistics_t audio_stats;
+   if (!compute_audio_buffer_statistics(&audio_stats))
+      return;
+
+#ifdef DEBUG
+   RARCH_LOG("[Audio]: Average audio buffer saturation: %.2f %%,"
+         " standard deviation (percentage points): %.2f %%.\n"
+         "[Audio]: Amount of time spent close to underrun: %.2f %%."
+         " Close to blocking: %.2f %%.\n",
+         audio_stats.average_buffer_saturation,
+         audio_stats.std_deviation_percentage,
+         audio_stats.close_to_underrun,
+         audio_stats.close_to_blocking);
 #endif
+}
 
 /**
  * audio_driver_find_handle:
@@ -345,9 +363,7 @@ static bool audio_driver_deinit_internal(void)
 
    command_event(CMD_EVENT_DSP_FILTER_DEINIT, NULL);
 
-#ifdef DEBUG
-   compute_audio_buffer_statistics();
-#endif
+   report_audio_buffer_statistics();
 
    return true;
 }
