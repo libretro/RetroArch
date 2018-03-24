@@ -213,6 +213,8 @@ bool compute_audio_buffer_statistics(audio_statistics_t *stats)
    if (!stats || samples < 3)
       return false;
 
+   stats->samples                = samples;
+
 #ifdef WARPUP
    /* uint64 to double not implemented, fair chance 
     * signed int64 to double doesn't exist either */

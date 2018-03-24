@@ -2543,7 +2543,7 @@ void video_driver_frame(const void *data, unsigned width,
             sizeof(video_info.stat_text), 
             "Video Statistics:\n -Frame rate: %6.2f fps\n -Frame time: %6.2f ms\n -Frame time deviation: %.3f %%\n"
             " -Frame count: %" PRIu64"\n -Viewport: %d x %d x %3.2f\n"
-            "Audio Statistics:\n -Average buffer saturation: %.2f %%\n -Standard deviation: %.2f %%\n -Time spent close to underrun: %.2f %%\n -Time spent close to blocking: %.2f %%\n"
+            "Audio Statistics:\n -Average buffer saturation: %.2f %%\n -Standard deviation: %.2f %%\n -Time spent close to underrun: %.2f %%\n -Time spent close to blocking: %.2f %%\n -Sample count: %d\n"
             "Core Geometry:\n -Size: %u x %u\n -Max Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n", 
             video_info.frame_rate,
             video_info.frame_time,
@@ -2556,6 +2556,7 @@ void video_driver_frame(const void *data, unsigned width,
             audio_stats.std_deviation_percentage,
             audio_stats.close_to_underrun,
             audio_stats.close_to_blocking,
+            audio_stats.samples,
             av_info->geometry.base_width,
             av_info->geometry.base_height,
             av_info->geometry.max_width,

@@ -52,6 +52,7 @@ typedef struct audio_statistics
    float std_deviation_percentage;
    float close_to_underrun;
    float close_to_blocking;
+   unsigned samples;
 } audio_statistics_t;
 
 typedef struct audio_driver
