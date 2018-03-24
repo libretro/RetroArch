@@ -133,6 +133,9 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    sl->buf_count    = (latency * 4 * rate + 500) / 1000;
    sl->buf_count    = (sl->buf_count + sl->buf_size / 2) / sl->buf_size;
 
+   if (sl->buf_count < 2)
+      sl->buf_count = 2;
+
    sl->buffer       = (uint8_t**)calloc(sizeof(uint8_t*), sl->buf_count);
    if (!sl->buffer)
       goto error;
