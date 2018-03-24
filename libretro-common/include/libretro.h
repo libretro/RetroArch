@@ -1113,6 +1113,15 @@ struct retro_led_interface
     retro_set_led_state_t set_led_state;
 };
 
+#define RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE (47 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* int * --
+                                            * Queries the frontend if audio and video are enabled or not.
+                                            * If not enabled, the frontend will discard the audio or video,
+                                            * so the core may decide to skip producing audio or video.
+                                            * Bit 0 (value 1) is set if Video is enabled,
+                                            * Bit 1 (value 2) is set if Audio is enabled.
+                                            * Other bits are reserved for future use.
+                                            */
 
 #define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE (41 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* const struct retro_hw_render_interface ** --

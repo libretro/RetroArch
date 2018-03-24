@@ -183,6 +183,8 @@ static void *audio_driver_resampler_data                 = NULL;
 static const audio_driver_t *current_audio               = NULL;
 static void *audio_driver_context_audio_data             = NULL;
 
+static bool audio_suspended                              = false;
+
 enum resampler_quality audio_driver_get_resampler_quality(void)
 {
    settings_t *settings = config_get_ptr();
@@ -581,8 +583,8 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
          &is_perfcnt_enable);
 
-   if (            is_paused                || 
-		   !audio_driver_active     || 
+   if (            is_paused                ||
+		   !audio_driver_active     ||
 		   !audio_driver_input_data ||
 		   !audio_driver_output_samples_buf)
       return;
@@ -696,6 +698,9 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
  **/
 void audio_driver_sample(int16_t left, int16_t right)
 {
+   if (audio_suspended)
+      return;
+
    audio_driver_output_samples_conv_buf[audio_driver_data_ptr++] = left;
    audio_driver_output_samples_conv_buf[audio_driver_data_ptr++] = right;
 
@@ -722,6 +727,9 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
 {
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
+
+   if (audio_suspended)
+      return frames;
 
    audio_driver_flush(data, frames << 1);
 
@@ -1286,9 +1294,29 @@ bool audio_driver_owns_driver(void)
    return audio_driver_data_own;
 }
 
+void audio_driver_suspend(void)
+{
+   audio_suspended = true;
+}
+
+bool audio_driver_is_suspended(void)
+{
+   return audio_suspended;
+}
+
+void audio_driver_resume(void)
+{
+   audio_suspended = false;
+}
+
 void audio_driver_set_active(void)
 {
    audio_driver_active = true;
+}
+
+bool audio_driver_is_active(void)
+{
+   return audio_driver_active;
 }
 
 void audio_driver_destroy(void)
