@@ -210,11 +210,9 @@ bool compute_audio_buffer_statistics(audio_statistics_t *stats)
          (unsigned)audio_driver_free_samples_count,
          AUDIO_BUFFER_FREE_SAMPLES_COUNT);
 
-   if (samples < 3 || !stats)
+   if (!stats || samples < 3)
       return false;
 
-   stats->average_buffer_saturation = 0.0;
-   stats->std_deviation_percentage  = 0.0f;
 #ifdef WARPUP
    /* uint64 to double not implemented, fair chance 
     * signed int64 to double doesn't exist either */
@@ -264,7 +262,7 @@ bool compute_audio_buffer_statistics(audio_statistics_t *stats)
 
 static void report_audio_buffer_statistics(void)
 {
-   audio_statistics_t audio_stats;
+   audio_statistics_t audio_stats = {0.0f};
    if (!compute_audio_buffer_statistics(&audio_stats))
       return;
 
@@ -532,9 +530,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
 
-#ifdef DEBUG
    audio_driver_free_samples_count = 0;
-#endif
 
    audio_mixer_init(settings->uints.audio_out_rate);
 
@@ -644,13 +640,11 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
       int      delta_mid   = avail - half_size;
       double   direction   = (double)delta_mid / half_size;
       double   adjust      = 1.0 + audio_driver_rate_control_delta * direction;
-#ifdef DEBUG
       unsigned write_idx   = audio_driver_free_samples_count++ &
          (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
 
       audio_driver_free_samples_buf
          [write_idx]               = avail;
-#endif
       audio_source_ratio_current   =
          audio_source_ratio_original * adjust;
 

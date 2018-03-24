@@ -31,6 +31,7 @@
 #include <gfx/video_frame.h>
 #include <formats/image.h>
 
+#include "../audio/audio_driver.h"
 #include "../menu/menu_shader.h"
 
 #ifdef HAVE_CONFIG_H
@@ -2517,6 +2518,7 @@ void video_driver_frame(const void *data, unsigned width,
 
    if (video_info.statistics_show)
    {
+      audio_statistics_t audio_stats         = {0.0f};
       double stddev                          = 0.0;
       struct retro_system_av_info *av_info   = &video_driver_av_info;
       bool measure_frame_time                = video_monitor_fps_statistics(NULL, &stddev, NULL);
@@ -2535,10 +2537,13 @@ void video_driver_frame(const void *data, unsigned width,
       video_info.osd_stat_params.drop_alpha  = 1.0f;
       video_info.osd_stat_params.color       = COLOR_ABGR(red, green, blue, alpha);
 
+      compute_audio_buffer_statistics(&audio_stats);
+
       snprintf(video_info.stat_text,
             sizeof(video_info.stat_text), 
             "Video Statistics:\n -Frame rate: %6.2f\n -Frame time: %6.2f\n -Frame time deviation: %6.2f\n"
             " -Frame count: %" PRIu64"\n -Viewport: %d x %d x %3.2f\n"
+            "Audio Statistics:\n -Average buffer saturation: %.2f %%\n -Standard deviation: %.2f %%\n -Time spent close to underrun: %.2f %%\n -Time spent close to blocking: %.2f %%\n"
             "Core Geometry:\n -Size: %u x %u\n -Max Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n", 
             video_info.frame_rate,
             video_info.frame_time,
@@ -2547,6 +2552,10 @@ void video_driver_frame(const void *data, unsigned width,
             video_info.width,
             video_info.height,
             video_info.refresh_rate,
+            audio_stats.average_buffer_saturation,
+            audio_stats.std_deviation_percentage,
+            audio_stats.close_to_underrun,
+            audio_stats.close_to_blocking,
             av_info->geometry.base_width,
             av_info->geometry.base_height,
             av_info->geometry.max_width,
