@@ -200,6 +200,9 @@ error:
 static bool sl_stop(void *data)
 {
    sl_t      *sl = (sl_t*)data;
+
+   opensl_callback((SLAndroidSimpleBufferQueueItf) 0, data);
+
    sl->is_paused = (SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_STOPPED)
          == SL_RESULT_SUCCESS) ? true : false;
 
