@@ -1786,7 +1786,7 @@ void content_add_subsystem(const char* path)
 }
 
 /* Get the current subsystem rom id */
-int content_get_subsystem_rom_id()
+int content_get_subsystem_rom_id(void)
 {
    return pending_subsystem_rom_id;
 }
