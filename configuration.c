@@ -1905,8 +1905,11 @@ static void config_set_defaults(void)
             g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
             sizeof(settings->paths.directory_menu_config));
 #if TARGET_OS_IPHONE
-      path_set(RARCH_PATH_CONFIG,
-            settings->paths.directory_menu_config);
+       char *config_file_path                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+       size_t config_file_path_size                       = PATH_MAX_LENGTH * sizeof(char);
+       fill_pathname_join(config_file_path, settings->paths.directory_menu_config, file_path_str(FILE_PATH_MAIN_CONFIG), config_file_path_size);
+       path_set(RARCH_PATH_CONFIG,
+                config_file_path);
 #endif
    }
 
