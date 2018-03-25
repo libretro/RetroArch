@@ -24,12 +24,6 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct menu_content_ctx_playlist_info
-{
-   void *data;
-   unsigned idx;
-} menu_content_ctx_playlist_info_t;
-
 typedef struct menu_content_ctx_defer_info
 {
    void *data;

@@ -752,20 +752,14 @@ end:
  *
  * Initializes core and loads content based on playlist entry.
  **/
-static bool menu_content_playlist_load(menu_content_ctx_playlist_info_t *info)
+static bool menu_content_playlist_load(playlist_t *playlist, size_t idx)
 {
    const char *path     = NULL;
-   playlist_t *playlist = (playlist_t*)info->data;
-
-   if (!playlist)
-      return false;
 
    playlist_get_index(playlist,
-         info->idx, &path, NULL, NULL, NULL, NULL, NULL);
+         idx, &path, NULL, NULL, NULL, NULL, NULL);
 
-   if (string_is_empty(path))
-      return false;
-
+   if (!string_is_empty(path))
    {
       unsigned i;
       bool valid_path     = false;
@@ -790,11 +784,11 @@ static bool menu_content_playlist_load(menu_content_ctx_playlist_info_t *info)
       free(path_tolower);
       free(path_check);
 
-      if (!valid_path)
-         return false;
+      if (valid_path)
+         return true;
    }
 
-   return true;
+   return false;
 }
 
 /**
@@ -1380,7 +1374,6 @@ static int action_ok_file_load(const char *path,
 static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_content_ctx_playlist_info_t playlist_info;
    char new_core_path[PATH_MAX_LENGTH];
    size_t selection_ptr                = 0;
    bool playlist_initialized           = false;
@@ -1459,10 +1452,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    else
       strlcpy(new_core_path, core_path, sizeof(new_core_path));
 
-   playlist_info.data = playlist;
-   playlist_info.idx  = (unsigned)selection_ptr;
-
-   if (!menu_content_playlist_load(&playlist_info))
+   if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
    {
       runloop_msg_queue_push(
             "File could not be loaded from playlist.\n",
@@ -1471,7 +1461,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    }
 
    playlist_get_index(playlist,
-         playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
+         selection_ptr, &path, NULL, NULL, NULL, NULL, NULL);
 
    return default_action_ok_load_content_from_playlist_from_menu(
          new_core_path, path, entry_label);
@@ -1480,7 +1470,6 @@ static int action_ok_playlist_entry_collection(const char *path,
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_content_ctx_playlist_info_t playlist_info;
    char new_core_path[PATH_MAX_LENGTH];
    size_t selection_ptr                = 0;
    playlist_t *playlist                = g_defaults.content_history;
@@ -1536,10 +1525,7 @@ static int action_ok_playlist_entry(const char *path,
    else if (!string_is_empty(core_path))
       strlcpy(new_core_path, core_path, sizeof(new_core_path));
 
-   playlist_info.data = playlist;
-   playlist_info.idx  = (unsigned)selection_ptr;
-
-   if (!menu_content_playlist_load(&playlist_info))
+   if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
    {
       runloop_msg_queue_push(
             "File could not be loaded from playlist.\n",
@@ -1548,7 +1534,7 @@ static int action_ok_playlist_entry(const char *path,
    }
 
    playlist_get_index(playlist,
-         playlist_info.idx, &path, NULL, NULL, NULL,
+         selection_ptr, &path, NULL, NULL, NULL,
          NULL, NULL);
 
    return default_action_ok_load_content_from_playlist_from_menu(
@@ -1558,7 +1544,6 @@ static int action_ok_playlist_entry(const char *path,
 static int action_ok_playlist_entry_start_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_content_ctx_playlist_info_t playlist_info;
    size_t selection_ptr                = 0;
    bool playlist_initialized           = false;
    playlist_t *playlist                = NULL;
@@ -1637,17 +1622,14 @@ static int action_ok_playlist_entry_start_content(const char *path,
          
    }
 
-   playlist_info.data = playlist;
-   playlist_info.idx  = (unsigned)selection_ptr;
-
-   if (!menu_content_playlist_load(&playlist_info))
+   if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
    {
       runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
       return menu_cbs_exit();
    }
 
    playlist_get_index(playlist,
-         playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
+         selection_ptr, &path, NULL, NULL, NULL, NULL, NULL);
 
    return default_action_ok_load_content_from_playlist_from_menu(core_path, path, entry_label);
 }
