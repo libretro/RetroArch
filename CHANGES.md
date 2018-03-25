@@ -9,6 +9,7 @@
 - MENU/XMB: Fixed left/right tab regression.
 - MENU/XMB: Fix scaling of tall images that were cut on bottom previously.
 - MENU/XMB: Menu scale factor setting now changes texts length, image scaling and margins.
+- MENU/XMB: Mouse cursor scales correctly now.
 - MENU/MaterialUI: Fix wrong calculation of an entry height causing long playlists to end up outside of screen range. This also could cause crashes on low DPI screens.
 - IOS: Fixed crash when opening downloaded roms from Safari or using the "Open in.." functionality. Added the compiler flag to support keyboard remapping to controls.
 - IOS: Fixed buffer overlap that caused a crash while trying to download GLSL shaders from the buildbot.
