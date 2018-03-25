@@ -1676,7 +1676,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             if (!match_found)
                continue;
 
-            rdb_entry_start_game_selection_ptr = j;
+            menu->rdb_entry_start_game_selection_ptr = j;
          }
       }
 
@@ -2745,7 +2745,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
       menu_displaylist_info_t *info)
 {
    bool content_loaded             = false;
-   unsigned idx                    = rpl_entry_selection_ptr;
+   unsigned idx                    = 0;
    menu_handle_t *menu             = NULL;
    const char *label               = NULL;
    const char *entry_path          = NULL;
@@ -2758,6 +2758,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
+
+   idx                             = menu->rpl_entry_selection_ptr;
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 

@@ -127,10 +127,6 @@ enum
    ACTION_OK_DL_CONTENT_SETTINGS
 };
 
-/* FIXME - Externs, refactor */
-extern size_t hack_shader_pass;
-extern unsigned rpl_entry_selection_ptr;
-
 /* Function callbacks */
 
 int action_refresh_default(file_list_t *list, file_list_t *menu_list);

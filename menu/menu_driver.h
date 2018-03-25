@@ -354,6 +354,9 @@ typedef struct menu_display_ctx_driver
 
 typedef struct
 {
+   unsigned rpl_entry_selection_ptr;
+   unsigned rdb_entry_start_game_selection_ptr;
+   size_t                     hack_shader_pass;
    uint64_t state;
 
    char menu_state_msg[1024];
@@ -364,9 +367,9 @@ typedef struct
    char deferred_path[PATH_MAX_LENGTH];
    char scratch_buf[PATH_MAX_LENGTH];
    char scratch2_buf[PATH_MAX_LENGTH];
-
-   /* path to the currently loaded database playlist file. */
    char db_playlist_file[PATH_MAX_LENGTH];
+   char filebrowser_label[PATH_MAX_LENGTH];
+   char detect_content_path[PATH_MAX_LENGTH];
 } menu_handle_t;
 
 typedef struct menu_display_ctx_draw
