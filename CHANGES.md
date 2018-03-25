@@ -5,6 +5,7 @@
 - CHEEVOS: Support Atari 2600, Virtual Boy, Neo Geo (Arcade).
 - CHEEVOS: Add option to automatically take a screenshot when an achievement is triggered.
 - LIBRETRO: Addition - Functions to enable and disable audio and video, and an environment function to query status of audio and video enables.
+- LOCALIZATION: Update Italian translation.
 - MENU: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
 - MENU/XMB: Fixed left/right tab regression.
 - MENU/XMB: Fix scaling of tall images that were cut on bottom previously.
