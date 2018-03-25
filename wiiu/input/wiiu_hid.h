@@ -24,8 +24,10 @@
 #define DEVICE_USED   1
 
 #define ADAPTER_STATE_NEW     0
-#define ADAPTER_STATE_READING 1
-#define ADAPTER_STATE_DONE    2
+#define ADAPTER_STATE_READY   1
+#define ADAPTER_STATE_READING 2
+#define ADAPTER_STATE_DONE    3
+
 
 static void *alloc_zeroed(size_t alignment, size_t size);
 static OSThread *new_thread(void);
@@ -47,6 +49,7 @@ static wiiu_attach_event *synchronized_get_events_list(void);
 static void wiiu_handle_attach_events(wiiu_hid_t *hid, wiiu_attach_event *list);
 static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event);
 static void wiiu_hid_detach(wiiu_hid_t *hid, wiiu_attach_event *event);
+static void synchronized_process_adapters(wiiu_hid_t *hid);
 static void synchronized_add_to_adapters_list(wiiu_adapter_t *adapter);
 static wiiu_adapter_t *synchronized_remove_from_adapters_list(uint32_t handle);
 static void synchronized_add_event(wiiu_attach_event *event);

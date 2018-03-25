@@ -20,9 +20,10 @@
 #include "../../input_driver.h"
 #include "../../connect/joypad_connection.h"
 #include "../../include/hid_driver.h"
+#include "../../../verbosity.h"
 
 typedef struct hid_device {
-  void *(*init)(hid_driver_instance_t *driver);
+  void *(*init)(void *handle);
   void (*free)(void *data);
   void (*handle_packet)(void *data, uint8_t *buffer, size_t size);
   bool (*detect)(uint16_t vid, uint16_t pid);

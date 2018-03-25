@@ -108,10 +108,8 @@ static int16_t hidpad_axis(unsigned pad, uint32_t axis)
 
 static void hidpad_poll(void)
 {
-#if 0
    if (ready)
-      hid_driver->poll(hid_data);
-#endif
+      hid_instance.os_driver->poll(hid_instance.os_driver_data);
 }
 
 static const char *hidpad_name(unsigned pad)

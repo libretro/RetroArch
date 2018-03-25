@@ -21,7 +21,7 @@ struct ds3_instance {
   void *handle;
 };
 
-static void *ds3_init(hid_driver_instance_t *hid_driver)
+static void *ds3_init(void *handle)
 {
   return NULL;
 }

@@ -134,7 +134,11 @@ static void wiiu_hid_free(const void *data)
 
 static void wiiu_hid_poll(void *data)
 {
-   (void)data;
+   wiiu_hid_t *hid = (wiiu_hid_t *)data;
+   if(hid == NULL)
+      return;
+
+   synchronized_process_adapters(hid);
 }
 
 static void wiiu_hid_send_control(void *data, uint8_t *buf, size_t size)
@@ -310,6 +314,46 @@ static void log_device(HIDDevice *device)
 }
 
 
+static uint8_t try_init_driver(wiiu_adapter_t *adapter)
+{
+   adapter->driver_handle = adapter->driver->init(adapter);
+   if(adapter->driver_handle == NULL) {
+     RARCH_ERR("[hid]: Failed to initialize driver: %s\n",
+        adapter->driver->name);
+     return ADAPTER_STATE_DONE;
+   }
+
+   return ADAPTER_STATE_READY;
+}
+
+static void synchronized_process_adapters(wiiu_hid_t *hid)
+{
+   wiiu_adapter_t *adapter = NULL;
+
+   OSFastMutex_Lock(&(adapters.lock));
+   for(adapter = adapters.list; adapter != NULL; adapter = adapter->next)
+   {
+     switch(adapter->state)
+     {
+       case ADAPTER_STATE_DONE:
+          break;
+       case ADAPTER_STATE_NEW:
+          adapter->state = try_init_driver(adapter);
+          break;
+       case ADAPTER_STATE_READY:
+       case ADAPTER_STATE_READING:
+#if 0
+          adapter->driver->poll();
+#endif
+          break;
+       default:
+          RARCH_ERR("[hid]: Invalid adapter state: %d\n", adapter->state);
+          break;
+     }
+   }
+   OSFastMutex_Unlock(&(adapters.lock));
+}
+
 static void synchronized_add_event(wiiu_attach_event *event)
 {
    OSFastMutex_Lock(&(events.lock));
@@ -413,12 +457,7 @@ static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event)
 
    adapter->hid    = hid;
    adapter->driver = event->driver;
-
-   adapter->driver_handle = adapter->driver->init(hid->driver);
-   if(adapter->driver_handle == NULL) {
-      RARCH_ERR("[hid]: Failed to initialize driver: %s\n",
-        adapter->driver->name);
-   }
+   adapter->state  = ADAPTER_STATE_NEW;
 
    RARCH_LOG("[hid]: adding to adapter list\n");
    synchronized_add_to_adapters_list(adapter);
@@ -434,13 +473,11 @@ error:
 
 void wiiu_start_read_loop(wiiu_adapter_t *adapter)
 {
-  adapter->state = ADAPTER_STATE_READING;
-#if 0
-  RARCH_LOG("HIDRead(0x%08x, 0x%08x, %d, 0x%08x, 0x%08x)\n",
-	adapter->handle, adapter->rx_buffer, adapter->rx_size,
-        wiiu_hid_read_loop_callback, adapter);
-#endif
-  HIDRead(adapter->handle, adapter->rx_buffer, adapter->rx_size, wiiu_hid_read_loop_callback, adapter);
+  HIDRead(adapter->handle,
+          adapter->rx_buffer,
+          adapter->rx_size,
+          wiiu_hid_read_loop_callback,
+          adapter);
 }
 
 /**
@@ -493,32 +530,42 @@ static void log_buffer(uint8_t *data, uint32_t len)
 static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
               uint8_t *buffer, uint32_t buffer_size, void *userdata)
 {
-  wiiu_adapter_t *adapter = (wiiu_adapter_t *)userdata;
-  if(!adapter)
-  {
-    RARCH_ERR("read_loop_callback: bad userdata\n");
-    return;
-  }
+   wiiu_adapter_t *adapter = (wiiu_adapter_t *)userdata;
+   if(!adapter)
+   {
+      RARCH_ERR("read_loop_callback: bad userdata\n");
+      return;
+   }
 
-  if(adapter->hid->polling_thread_quit)
-  {
-    RARCH_LOG("Shutting down read loop for device: %s\n",
+   if(adapter->hid->polling_thread_quit)
+   {
+      RARCH_LOG("Shutting down read loop for device: %s\n",
        adapter->driver->name);
-    adapter->state = ADAPTER_STATE_DONE;
-    return;
-  }
+      adapter->state = ADAPTER_STATE_DONE;
+   }
 
-  if(error)
-  {
-    RARCH_ERR("Read failed with error 0x%08x\n", error);
-    adapter->state = ADAPTER_STATE_DONE;
-    return;
-  }
+   if(adapter->state == ADAPTER_STATE_READY ||
+      adapter->state == ADAPTER_STATE_READING) {
 
-  adapter->driver->handle_packet(adapter->driver_handle, buffer, buffer_size);
+      adapter->state = ADAPTER_STATE_READING;
 
-  adapter->state = ADAPTER_STATE_READING;
-  HIDRead(adapter->handle, adapter->rx_buffer, adapter->rx_size,
+      if(error)
+      {
+         int16_t r1 =  (error & 0x0000FFFF);
+         int16_t r2 = ((error & 0xFFFF0000) >> 16);
+         RARCH_ERR("[hid]: read failed: %08x (%d:%d)\n", error, r2, r1);
+      } else {
+#if 0
+         adapter->driver->handle_packet(adapter->driver_handle, buffer, buffer_size);
+#endif
+      }
+   }
+
+   /* this can also get set if something goes wrong in initialization */
+   if(adapter->state == ADAPTER_STATE_DONE)
+      return;
+
+   HIDRead(adapter->handle, adapter->rx_buffer, adapter->rx_size,
       wiiu_hid_read_loop_callback, adapter);
 }
 

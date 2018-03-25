@@ -21,7 +21,7 @@ struct ds4_instance {
   void *handle;
 };
 
-static void *ds4_init(hid_driver_instance_t *hid_driver)
+static void *ds4_init(void *handle)
 {
   return NULL;
 }

@@ -27,7 +27,7 @@ static uint8_t activation_packet[] = { 0x13 };
 #define GCA_PORT_CONNECTED    0x14
 
 typedef struct wiiu_gca_instance {
-  hid_driver_instance_t *driver;
+  void *handle;
   bool online;
   uint8_t device_state[37];
   joypad_connection_t *pads[4];
@@ -39,17 +39,29 @@ static void unregister_pad(wiiu_gca_instance_t *instance, int slot);
 
 extern pad_connection_interface_t wiiu_gca_pad_connection;
 
-static void *wiiu_gca_init(hid_driver_instance_t *driver)
+static void *wiiu_gca_init(void *handle)
 {
+  RARCH_LOG("[gca]: allocating driver instance...\n");
   wiiu_gca_instance_t *instance = calloc(1, sizeof(wiiu_gca_instance_t));
+  if(instance == NULL) goto error;
+  RARCH_LOG("[gca]: zeroing memory...\n");
   memset(instance, 0, sizeof(wiiu_gca_instance_t));
-  instance->driver = driver;
+  instance->handle = handle;
 
-  driver->os_driver->send_control(driver->os_driver_data, activation_packet, sizeof(activation_packet));
-  driver->os_driver->read(driver->os_driver_data, instance->device_state, sizeof(instance->device_state));
+  RARCH_LOG("[gca]: sending activation packet to device...\n");
+  hid_instance.os_driver->send_control(handle, activation_packet, sizeof(activation_packet));
+  RARCH_LOG("[gca]: reading initial state packet...\n");
+  hid_instance.os_driver->read(handle, instance->device_state, sizeof(instance->device_state));
   instance->online = true;
 
+  RARCH_LOG("[gca]: init done\n");
   return instance;
+
+  error:
+    RARCH_ERR("[gca]: init failed\n");
+    if(instance)
+       free(instance);
+    return NULL;
 }
 
 static void wiiu_gca_free(void *data) {
@@ -110,15 +122,15 @@ static joypad_connection_t *register_pad(wiiu_gca_instance_t *instance) {
    if(!instance || !instance->online)
       return NULL;
 
-   slot = pad_connection_find_vacant_pad(instance->driver->pad_list);
+   slot = pad_connection_find_vacant_pad(hid_instance.pad_list);
    if(slot < 0)
       return NULL;
 
-   result = &(instance->driver->pad_list[slot]);
+   result = &(hid_instance.pad_list[slot]);
    result->iface = &wiiu_gca_pad_connection;
-   result->data = result->iface->init(instance, slot, instance->driver->os_driver);
+   result->data = result->iface->init(instance, slot, hid_instance.os_driver);
    result->connected = true;
-   input_pad_connect(slot, instance->driver->pad_driver);
+   input_pad_connect(slot, hid_instance.pad_driver);
 
    return result;
 }
