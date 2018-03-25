@@ -356,9 +356,11 @@ typedef struct
 {
    unsigned rpl_entry_selection_ptr;
    unsigned rdb_entry_start_game_selection_ptr;
+   size_t                     core_len;
    size_t                     hack_shader_pass;
    uint64_t state;
 
+   char *core_buf;
    char menu_state_msg[1024];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
@@ -600,9 +602,6 @@ const char *menu_driver_find_ident(int index);
  * separated by '|'.
  **/
 const char* config_get_menu_driver_options(void);
-
-/* HACK */
-extern unsigned int rdb_entry_start_game_selection_ptr;
 
 const char *menu_driver_ident(void);
 

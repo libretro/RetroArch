@@ -30,6 +30,7 @@
 #include <net/net_http_parse.h>
 #endif
 
+#include "menu_driver.h"
 #include "menu_networking.h"
 #include "menu_cbs.h"
 #include "menu_entries.h"
@@ -39,9 +40,6 @@
 #include "../file_path_special.h"
 #include "../msg_hash.h"
 #include "../tasks/tasks_internal.h"
-
-char *core_buf                   = NULL;
-size_t core_len                  = 0;
 
 void print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
@@ -226,28 +224,32 @@ finish:
 void cb_net_generic(void *task_data, void *user_data, const char *err)
 {
 #ifdef HAVE_NETWORKING
-   bool refresh                = false;
-   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
-   file_transfer_t *state = (file_transfer_t*)user_data;
+   bool refresh                   = false;
+   http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
+   file_transfer_t *state         = (file_transfer_t*)user_data;
+   menu_handle_t            *menu = NULL;
 
-   if (core_buf)
-      free(core_buf);
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      goto finish;
 
-   core_buf = NULL;
-   core_len = 0;
+   if (menu->core_buf)
+      free(menu->core_buf);
+
+   menu->core_buf = NULL;
+   menu->core_len = 0;
 
    if (!data || err)
       goto finish;
 
-   core_buf = (char*)malloc((data->len+1) * sizeof(char));
+   menu->core_buf = (char*)malloc((data->len+1) * sizeof(char));
 
-   if (!core_buf)
+   if (!menu->core_buf)
       goto finish;
 
    if (!string_is_empty(data->data))
-      memcpy(core_buf, data->data, data->len * sizeof(char));
-   core_buf[data->len] = '\0';
-   core_len      = data->len;
+      memcpy(menu->core_buf, data->data, data->len * sizeof(char));
+   menu->core_buf[data->len] = '\0';
+   menu->core_len            = data->len;
 
 finish:
    refresh = true;
