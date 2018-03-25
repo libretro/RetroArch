@@ -498,7 +498,7 @@ static void gdi_set_osd_msg(void *data,
       const char *msg,
       const void *params, void *font)
 {
-   font_driver_render_msg(video_info, font, msg, params);
+   font_driver_render_msg(video_info, font, msg, (const struct font_params *)params);
 }
 
 static void gdi_get_video_output_size(void *data,

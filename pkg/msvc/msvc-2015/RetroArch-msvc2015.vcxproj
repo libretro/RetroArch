@@ -233,6 +233,7 @@
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\gfx\include\dxsdk;$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
+      <AdditionalOptions>/bigobj</AdditionalOptions>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
