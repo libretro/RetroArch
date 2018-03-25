@@ -3358,10 +3358,9 @@ found:
          * Output CHEEVOS_VAR_GAMEID the Retro Achievements game ID, or 0 if not found
          *************************************************************************/
    CORO_SUB(FILENAME_MD5)
-   {
-      char base_noext[PATH_MAX_LENGTH];
       if (!string_is_empty(coro->path))
       {
+         char base_noext[PATH_MAX_LENGTH];
          fill_pathname_base_noext(base_noext, coro->path, sizeof(base_noext));
 
          MD5_Init(&coro->md5);
@@ -3370,7 +3369,7 @@ found:
 
          CORO_GOTO(GET_GAMEID);
       }
-   }
+      CORO_RET();
 
       /**************************************************************************
        * Info    Evaluates the CHEEVOS_VAR_MD5 hash
