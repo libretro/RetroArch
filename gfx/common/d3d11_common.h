@@ -2420,6 +2420,7 @@ D3D11UnmapBuffer(D3D11DeviceContext device_context, D3D11Buffer buffer, UINT sub
 #include <boolean.h>
 #include <retro_math.h>
 #include <gfx/math/matrix_4x4.h>
+#include <libretro_d3d.h>
 #include "../video_driver.h"
 #include "../drivers_shader/slang_process.h"
 
@@ -2518,7 +2519,13 @@ typedef struct
    bool                  init_history;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
 
-   struct
+	struct
+   {
+      bool enable;
+      struct retro_hw_render_interface_d3d11 iface;
+   } hw;
+
+	struct
    {
       d3d11_shader_t shader;
       d3d11_shader_t shader_font;

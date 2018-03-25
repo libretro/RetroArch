@@ -885,6 +885,23 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
          break;
 #endif
 
+	case RETRO_HW_CONTEXT_DIRECT3D:
+		switch(major)
+		{
+#ifdef HAVE_D3D9
+		case 9:
+#endif
+#ifdef HAVE_D3D11
+		case 11:
+#endif
+			RARCH_LOG("Requesting D3D%i context.\n", major);
+			break;
+		default:
+			goto unknown;
+		}
+		break;
+
+unknown:
       default:
          RARCH_LOG("Requesting unknown context.\n");
          return false;
@@ -912,6 +929,10 @@ static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
          if (!string_is_equal(video_ident, "gl"))
             return false;
          break;
+		case RETRO_HW_CONTEXT_DIRECT3D:
+			if (!(string_is_equal(video_ident, "d3d11") && major == 11))
+				return false;
+		break;
       default:
          break;
    }
