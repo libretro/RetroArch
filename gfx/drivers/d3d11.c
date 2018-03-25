@@ -900,6 +900,19 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          d3d11_gfx_set_shader(d3d11, RARCH_SHADER_SLANG, settings->paths.path_shader);
    }
 
+   if (video_driver_get_hw_context()->context_type == RETRO_HW_CONTEXT_DIRECT3D &&
+       video_driver_get_hw_context()->version_major == 11)
+   {
+      d3d11->hw.enable                  = true;
+      d3d11->hw.iface.interface_type    = RETRO_HW_RENDER_INTERFACE_D3D11;
+      d3d11->hw.iface.interface_version = RETRO_HW_RENDER_INTERFACE_D3D11_VERSION;
+      d3d11->hw.iface.handle            = d3d11;
+      d3d11->hw.iface.device            = d3d11->device;
+      d3d11->hw.iface.context           = d3d11->context;
+      d3d11->hw.iface.featureLevel      = d3d11->supportedFeatureLevel;
+      d3d11->hw.iface.D3DCompile        = D3DCompile;
+   }
+
    return d3d11;
 
 error:
@@ -1076,6 +1089,12 @@ static bool d3d11_gfx_frame(
 
    D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
+   if (d3d11->hw.enable)
+   {
+      D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
+      D3D11SetState(context, d3d11->state);
+   }
+
    if (frame && width && height)
    {
       if (d3d11->shader_preset)
@@ -1125,8 +1144,9 @@ static bool d3d11_gfx_frame(
       if (d3d11->resize_render_targets)
          d3d11_init_render_targets(d3d11, width, height);
 
-      d3d11_update_texture(
-            context, width, height, pitch, d3d11->format, frame, &d3d11->frame.texture[0]);
+      if (frame != RETRO_HW_FRAME_BUFFER_VALID)
+         d3d11_update_texture(
+               context, width, height, pitch, d3d11->format, frame, &d3d11->frame.texture[0]);
    }
 
    D3D11SetVertexBuffer(context, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
@@ -1203,7 +1223,11 @@ static bool d3d11_gfx_frame(
                texture_sem++;
             }
 
-            D3D11SetPShaderResources(context, 0, SLANG_NUM_BINDINGS, textures);
+            if (d3d11->hw.enable && (i == 0))
+               D3D11SetPShaderResources(context, 1, SLANG_NUM_BINDINGS - 1, textures + 1);
+            else
+               D3D11SetPShaderResources(context, 0, SLANG_NUM_BINDINGS, textures);
+
             D3D11SetPShaderSamplers(context, 0, SLANG_NUM_BINDINGS, samplers);
          }
 
@@ -1230,7 +1254,8 @@ static bool d3d11_gfx_frame(
    if (texture)
    {
       d3d11_set_shader(context, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
-      D3D11SetPShaderResources(context, 0, 1, &texture->view);
+      if (!d3d11->hw.enable || d3d11->shader_preset)
+         D3D11SetPShaderResources(context, 0, 1, &texture->view);
       D3D11SetPShaderSamplers(
             context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
       D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->frame.ubo);
@@ -1507,6 +1532,14 @@ static void d3d11_gfx_unload_texture(void* data, uintptr_t handle)
    free(texture);
 }
 
+static bool
+d3d11_get_hw_render_interface(void* data, const struct retro_hw_render_interface** iface)
+{
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+   *iface               = (const struct retro_hw_render_interface*)&d3d11->hw.iface;
+   return d3d11->hw.enable;
+}
+
 static const video_poke_interface_t d3d11_poke_interface = {
    NULL, /* set_coords */
    NULL, /* set_mvp */
@@ -1528,7 +1561,7 @@ static const video_poke_interface_t d3d11_poke_interface = {
    NULL, /* grab_mouse_toggle */
    d3d11_gfx_get_current_shader,
    NULL, /* get_current_software_framebuffer */
-   NULL, /* get_hw_render_interface */
+   d3d11_get_hw_render_interface,
 };
 
 static void d3d11_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

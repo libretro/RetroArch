@@ -1088,8 +1088,12 @@ struct retro_vfs_interface_info
 
 enum retro_hw_render_interface_type
 {
-   RETRO_HW_RENDER_INTERFACE_VULKAN = 0,
-   RETRO_HW_RENDER_INTERFACE_DUMMY = INT_MAX
+	RETRO_HW_RENDER_INTERFACE_VULKAN = 0,
+	RETRO_HW_RENDER_INTERFACE_D3D9   = 1,
+	RETRO_HW_RENDER_INTERFACE_D3D10  = 2,
+	RETRO_HW_RENDER_INTERFACE_D3D11  = 3,
+	RETRO_HW_RENDER_INTERFACE_D3D12  = 4,
+   RETRO_HW_RENDER_INTERFACE_DUMMY  = INT_MAX
 };
 
 /* Base struct. All retro_hw_render_interface_* types
@@ -1103,7 +1107,7 @@ struct retro_hw_render_interface
 
 #define RETRO_ENVIRONMENT_GET_LED_INTERFACE (46 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_led_interface * --
-                                            * Gets an interface which is used by a libretro core to set 
+                                            * Gets an interface which is used by a libretro core to set
                                             * state of LEDs.
                                             */
 
@@ -1850,6 +1854,10 @@ enum retro_hw_context_type
 
    /* Vulkan, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE. */
    RETRO_HW_CONTEXT_VULKAN           = 6,
+
+   /* Direct3D, set version_major to select the type of interface
+    * returned by RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
+   RETRO_HW_CONTEXT_DIRECT3D         = 7,
 
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
 };
