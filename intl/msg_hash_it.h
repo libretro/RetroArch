@@ -680,27 +680,27 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
       "Analogico Destro Y+ (giù)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
-      "Gun Trigger")
+      "Trigger della Pistola")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
-      "Gun Reload")
+      "Ricarica della pistola")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
-      "Gun Aux A")
+      "Pistola Aux A")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
-      "Gun Aux B")
+      "Pistola Aux B")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
-      "Gun Aux C")
+      "Pistola Aux C")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
-      "Gun Start")
+      "Pistola Start")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
-      "Gun Select")
+      "Pistola Select")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
-      "Gun D-pad Up")
+      "Pistola D-pad su")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
-      "Gun D-pad Down")
+      "Pistola D-pad giu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
-      "Gun D-pad Left")
+      "Pistola D-pad Sinistra")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
-      "Gun D-pad Right")
+      "Pistola D-pad Destro")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "Abilita Autoconfigurazione")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
@@ -1074,7 +1074,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
       "Rete Gamepad")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
-      "Porta di rete remota di Base")
+      "Porta della rete remota di Base")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
       "Rete")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO,
@@ -1814,7 +1814,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
       "Shader Preset")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-      "Abilita o disabilita achievements. Per maggiori informazioni, visitare il sito http://retroachievements.org")
+      "Abilita o disabilita achievements. Per maggiori informazioni, visitate il sito http://retroachievements.org")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
       "Abilita o disabilita gli achievements non ufficiali e/o funzionalità beta per scopi di test.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -2112,7 +2112,7 @@ MSG_HASH(MSG_FOUND_SHADER,
 MSG_HASH(MSG_FRAMES,
       "Frames")
 MSG_HASH(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-      "Per-Game Options: game-specific core options found at")
+      "Opzioni di gioco: opzioni di base specifiche per il gioco trovate in")
 MSG_HASH(MSG_GOT_INVALID_DISK_INDEX,
       "Indice del disco non valida.")
 MSG_HASH(MSG_GRAB_MOUSE_STATE,
@@ -2363,7 +2363,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   "Amount of seconds to wait until proceeding to the next bind."
+   "Quantità di secondi da attendere fino al prossimo bind."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
@@ -2439,7 +2439,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
-   "Content History Path"
+   "Storia dei percorsi e dei contenuti"
    )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
@@ -3296,6 +3296,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
       "Abbassare questo valore per favorire prestazioni/bassa latenza rispetto alla qualità audio, aumentare se si desidera una migliore qualità audio a scapito delle prestazioni/minore latenza.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-      "Display Statistics")
+      "Mostra statistiche")
 MSG_HASH(MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
-      "Show onscreen technical statistics.")
+      "Mostra statistiche tecniche su schermo.")
