@@ -536,20 +536,19 @@ void menu_display_unset_framebuffer_dirty_flag(void)
  * RGUI or XMB use this. */
 float menu_display_get_dpi(void)
 {
-   gfx_ctx_metrics_t metrics;
    settings_t *settings = config_get_ptr();
-   float            dpi = menu_dpi_override_value;
+   float            dpi;
+   unsigned width, height;
+
+   video_driver_get_size(&width, &height);
 
    if (!settings)
       return true;
 
-   metrics.type  = DISPLAY_METRIC_DPI;
-   metrics.value = &dpi;
+   dpi = sqrt((width * width) + (height * height)) / 6.5;
 
    if (settings->bools.menu_dpi_override_enable)
       return settings->uints.menu_dpi_override_value;
-   else if (!video_context_driver_get_metrics(&metrics) || !dpi)
-      return menu_dpi_override_value;
 
    return dpi;
 }
