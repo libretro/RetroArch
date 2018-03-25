@@ -9,6 +9,7 @@
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Polish translation.
 - MENU: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
+- MENU/XMB: Add Left Thumbnails (additional to the right).
 - MENU/XMB: Fixed left/right tab regression.
 - MENU/XMB: Fix scaling of tall images that were cut on bottom previously.
 - MENU/XMB: Menu scale factor setting now changes texts length, image scaling and margins.
