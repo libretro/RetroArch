@@ -120,7 +120,7 @@
 #define video_driver_context_unlock()  ((void)0)
 #endif
 
-bool CRT_Switching_active;  //ben
+bool crt_switching_active;  
 
 typedef struct video_pixel_scaler
 {
@@ -1423,7 +1423,7 @@ void video_driver_monitor_adjust_system_rates(void)
    if (!info || info->fps <= 0.0)
       return;
 
-  if (CRT_Switching_active  == true){
+  if (crt_switching_active  == true){
 	timing_skew = fabs(1.0f - info->fps / ben_core_hz);
   }else {
 	  timing_skew = fabs(1.0f - info->fps / video_refresh_rate);
@@ -1437,10 +1437,7 @@ void video_driver_monitor_adjust_system_rates(void)
          video_refresh_rate,
          (float)info->fps);
 	
-	
-  // if (info->fps <= video_refresh_rate)  // create options to choose between these!!!!
-   //   return;
-  if (CRT_Switching_active  == true){
+  if (crt_switching_active  == true){
 	if (info->fps <= ben_core_hz)
 		return;
   } else {
@@ -1574,7 +1571,7 @@ static void video_driver_lock_new(void)
 void video_driver_destroy(void)
 {
    video_display_server_destroy();
-   video_restore();					//ben
+   video_restore();					
    video_driver_cb_has_focus      = null_driver_has_focus;
    video_driver_use_rgba          = false;
    video_driver_data_own          = false;
@@ -2599,20 +2596,20 @@ void video_driver_frame(const void *data, unsigned width,
       runloop_msg_queue_push(video_info.fps_text, 2, 1, true);
   
   	/* trigger set resolution*/
-	if (video_info.CRT_Switch_Resolution == true){
-		CRT_Switching_active = true;
-		if (video_info.CRT_Switch_Resolution_super == 2560){
+	if (video_info.crt_switch_resolution == true){
+		crt_switching_active = true;
+		if (video_info.crt_switch_resolution_super == 2560){
 			width = 2560;
 		}
-		if (video_info.CRT_Switch_Resolution_super == 3840){
+		if (video_info.crt_switch_resolution_super == 3840){
 			width = 3840;
 		}
-		if (video_info.CRT_Switch_Resolution_super == 1920){
+		if (video_info.crt_switch_resolution_super == 1920){
 			width = 1920;
 		}
-		switch_res_core(width, height, ben_core_hz);// ben_core_hz);
-	} else if (video_info.CRT_Switch_Resolution == false){
-		CRT_Switching_active = false;
+		switch_res_core(width, height, ben_core_hz);
+	} else if (video_info.crt_switch_resolution == false){
+		crt_switching_active = false;
 	}
 	
 	/* trigger set resolution*/
@@ -2713,8 +2710,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    settings                          = config_get_ptr();
    custom_vp                         = &settings->video_viewport_custom;
    video_info->refresh_rate          = settings->floats.video_refresh_rate;
-   video_info->CRT_Switch_Resolution = settings->bools.CRT_Switch_Resolution;	//ben
-   video_info->CRT_Switch_Resolution_super = settings->uints.CRT_Switch_Resolution_super;	//ben
+   video_info->crt_switch_resolution = settings->bools.crt_switch_resolution;	
+   video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;	
    video_info->black_frame_insertion = settings->bools.video_black_frame_insertion;
    video_info->hard_sync             = settings->bools.video_hard_sync;
    video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;

@@ -1,3 +1,21 @@
+/* CRT SwitchRes Core 
+ * Copyright (C) 2018 Ben Templeman.
+ *
+ * RetroArch - A frontend for libretro.
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include <stddef.h>
 #include <string.h>
 #include <windows.h>
@@ -11,17 +29,17 @@ int first_run;
 float fly_aspect;
 
 void switch_res_core(int width, int height, float hz){
-	// ben_core_hz float passed from with in void video_driver_monitor_adjust_system_rates(void) 
+	/* ben_core_hz float passed from with in void video_driver_monitor_adjust_system_rates(void) */
 		ben_core_width = width;		
 		ben_core_height = height;
 		ben_core_hz = hz;
 		check_first_run();
 		
-		if (ben_tmp_height != ben_core_height || ben_core_width != ben_tmp_width){ // detect resolution change and switch
+		if (ben_tmp_height != ben_core_height || ben_core_width != ben_tmp_width){ /* detect resolution change and switch */
 			screen_setup_aspect(width,height);
 		}
 		
-		if (video_driver_get_aspect_ratio() != fly_aspect){	//check aspect is correct else change
+		if (video_driver_get_aspect_ratio() != fly_aspect){	/* check aspect is correct else change */
 				video_driver_set_aspect_ratio_value((float)fly_aspect);
 				ben_poke_video();
 		}
@@ -29,7 +47,7 @@ void switch_res_core(int width, int height, float hz){
 
 }
 
-void check_first_run(){		// ruin of first boot to get current display resolution  
+void check_first_run(){		/* ruin of first boot to get current display resolution */
 	if (first_run != 1){
 		orig_height = GetSystemMetrics(SM_CYSCREEN);
 		orig_width = GetSystemMetrics(SM_CXSCREEN);
@@ -37,39 +55,39 @@ void check_first_run(){		// ruin of first boot to get current display resolution
 	first_run = 1;
 }
 
-void screen_setup_aspect(int width, int height){ // create correct aspect to fit video if resolution does not exist
+void screen_setup_aspect(int width, int height){ /* create correct aspect to fit video if resolution does not exist */
 	switch_crt_hz();
 	/* get original resolution of core */	
 	if (width >= 1900){
-		if (height == 4){						//detect menu only
+		if (height == 4){						/* detect menu only */
 			height = 480;
 			aspect_ratio_switch(width,height);
 		}
-		if (height < 191 && height != 144){				// for low res games to be dran at res but on a 200 eight
+		if (height < 191 && height != 144){				
 			aspect_ratio_switch(width,height);
 			height = 200;
 		}	
 		if (height > 191){
 			aspect_ratio_switch(width,height);
 		}
-		if (height == 144 && set_ben_core_hz == 50){				/// for GBA doubling
+		if (height == 144 && set_ben_core_hz == 50){				
 			height = 288;
 			aspect_ratio_switch(width,height);
 		}
-		if (height > 200 && height < 224){				/// for mame
+		if (height > 200 && height < 224){				
 			aspect_ratio_switch(width,height);
 			ben_core_height = 224;
 		}
-		if (height > 224 && height < 240){				/// for mame
+		if (height > 224 && height < 240){				
 			aspect_ratio_switch(width,height);
 			ben_core_height = 240;
 		}
 	
-		if (height > 240 && height < 255 ){								/// for mame
+		if (height > 240 && height < 255 ){								
 			aspect_ratio_switch(width,height);
 			ben_core_height = 254;
 		}
-		if (height == 528 && set_ben_core_hz == 60){								/// for mame
+		if (height == 528 && set_ben_core_hz == 60){								
 			aspect_ratio_switch(width,height);
 			ben_core_height = 480;
 		}
@@ -96,12 +114,12 @@ void switch_res_crt(int width, int height){
 	
 }
 
-void aspect_ratio_switch(int width,int height){  // send aspect float to videeo_driver
+void aspect_ratio_switch(int width,int height){  /* send aspect float to videeo_driver */
 		fly_aspect = (float)width/height;
 		video_driver_set_aspect_ratio_value((float)fly_aspect);
 }
 
-void switch_crt_hz(){  // set hz float an int for windows switching
+void switch_crt_hz(){  /* set hz float an int for windows switching */
 	
 	if (ben_core_hz != ben_tmp_core_hz){
 		if (ben_core_hz < 53 ){
@@ -120,7 +138,7 @@ void switch_crt_hz(){  // set hz float an int for windows switching
 	
 }
 
-void switch_res(int width, int height, int f_restore){  // windows function to swith resolutions
+void switch_res(int width, int height, int f_restore){  /* windows function to swith resolutions */
 	
 	DEVMODE curDevmode;
 	DEVMODE devmode;
@@ -137,7 +155,7 @@ void switch_res(int width, int height, int f_restore){  // windows function to s
 	EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
 	
 	if (width == curDevmode.dmPelsWidth){
-		width  = 0;							// used to stop superresolution bug
+		width  = 0;							/* used to stop superresolution bug */
 	}
 
 	if (width == 0) {
@@ -155,7 +173,7 @@ void switch_res(int width, int height, int f_restore){  // windows function to s
 
 	for (iModeNum = 0; ; iModeNum++) {
 		if (EnumDisplaySettings(NULL, iModeNum, &devmode)) {
-			// See if this setting has the right width.
+		
 			if (devmode.dmPelsWidth != width) {
 				continue;
 			}
@@ -164,17 +182,17 @@ void switch_res(int width, int height, int f_restore){  // windows function to s
 				continue;
 			}
 
-			// See if this setting has the right depth.
+	
 			if (devmode.dmBitsPerPel != depth) {
 				continue;
 			}
 
-			// See if this setting has the right frequency.
+	
 			if (devmode.dmDisplayFrequency != freq) {
 				continue;
 			}
 
-			// This new setting satisfies all the criteria. Try it.
+
 			devmode.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
 			LONG res = ChangeDisplaySettings(&devmode, CDS_TEST);
 
@@ -186,21 +204,21 @@ void switch_res(int width, int height, int f_restore){  // windows function to s
 					return;
 
 				case DISP_CHANGE_NOTUPDATED:
-				//	printf("Settings changed, but not permanently.\n");
+			
 					return;
 
 				default:
-				//	printf("Something odd happened.\n");
+			
 					break;
 				}
 				break;
 
 			case DISP_CHANGE_RESTART:
-				//printf("The computer needs to be restarted to switch to these settings\n");
+		
 				break;
 
 			default:
-				//printf("Something odd happened.\n");
+			
 				break;
 			}
 		}
@@ -209,7 +227,7 @@ void switch_res(int width, int height, int f_restore){  // windows function to s
 		}
 	}
 
-//	printf("Couldn't change settings.\n");
+
 
 }
 
