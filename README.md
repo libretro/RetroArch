@@ -145,7 +145,7 @@ To configure joypads, use the built-in menu or the `retroarch-joyconfig` command
 
 Instructions for compiling and installing RetroArch can be found in the [Libretro/RetroArch Documentation Center](https://docs.libretro.com/).
 
-## CRT SwitchRes
+## CRT 15Khz Resolution Switching
 
 CRT Switch res will turn on, on the fly. However, you will need to restart retroarch to disable it. With CRT SwitchRes enable Retroarch will start in 2560 @ 480.  
 
