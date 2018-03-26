@@ -127,6 +127,7 @@ ifneq ($(findstring Linux,$(OS)),)
    OBJ += input/drivers/linuxraw_input.o \
           input/common/linux_common.o \
           input/drivers_joypad/linuxraw_joypad.o
+		  gfx/video_crt_linux.o
 	HAVE_UNIX = 1
 endif
 
@@ -204,6 +205,7 @@ OBJ += frontend/frontend.o \
        gfx/video_coord_array.o \
        gfx/video_display_server.o \
        gfx/video_driver.o \
+	   gfx/video_crt_switch.o \
        camera/camera_driver.o \
        wifi/wifi_driver.o \
        location/location_driver.o \
@@ -982,7 +984,7 @@ endif
 
 ifneq ($(findstring Win32,$(OS)),)
    OBJ += input/drivers/winraw_input.o \
-		  gfx/video_crt_switch.o 
+		  gfx/video_crt_win.o
 endif
 
 # Companion UI
