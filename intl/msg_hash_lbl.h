@@ -1086,9 +1086,9 @@ MSG_HASH(MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE,
       "video_allow_rotate")
 MSG_HASH(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION, 
-	  "CRT Switch Resolution") // ben
+	  "crt_switch_resolution") 
 MSG_HASH(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER, 
-	  "CRT_Switch_Resolution_super") // ben
+	  "crt_switch_resolution_super") 
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,
       "video_aspect_ratio")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_AUTO,
