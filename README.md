@@ -147,7 +147,7 @@ Instructions for compiling and installing RetroArch can be found in the [Libretr
 
 ## CRT SwitchRes
 
-CRT Switch res will turn on, on the fly. However, you will need to restart retroarch to disable it.
+CRT Switch res will turn on, on the fly. However, you will need to restart retroarch to disable it. With CRT SwitchRes enable Retroarch will start in 2560 @ 480.  
 
 Before enabling the CRT SwitchRes options pleasae make sure you have installed CRTEmudriver and installed some modelines. The minimun modelins for all games to switch correctly are:
 
