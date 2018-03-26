@@ -25,8 +25,6 @@
 #include <string/stdstring.h>
 #include <retro_math.h>
 
-#include <gfx/video_crt_switch.h>
-
 #include <retro_assert.h>
 #include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
@@ -54,6 +52,7 @@
 #include "video_thread_wrapper.h"
 #include "video_driver.h"
 #include "video_display_server.h"
+#include "video_crt_switch.h"
 
 #include "../frontend/frontend_driver.h"
 #include "../record/record_driver.h"
