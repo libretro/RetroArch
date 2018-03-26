@@ -39,6 +39,11 @@
 #include "../drivers_shader/slang_process.h"
 #endif
 
+static D3D11Device           cached_device;
+static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
+static D3D11DeviceContext    cached_context;
+
+
 #ifdef HAVE_OVERLAY
 static void d3d11_free_overlays(d3d11_video_t* d3d11)
 {
@@ -548,8 +553,17 @@ static void d3d11_gfx_free(void* data)
 
    font_driver_free_osd();
 
-   Release(d3d11->context);
-   Release(d3d11->device);
+	if (video_driver_is_video_cache_context())
+	{
+		cached_device = d3d11->device;
+		cached_context = d3d11->context;
+		cached_supportedFeatureLevel = d3d11->supportedFeatureLevel;
+	}
+	else
+	{
+		Release(d3d11->context);
+		Release(d3d11->device);
+	}
 
    win32_monitor_from_window();
    win32_destroy_window();
@@ -618,11 +632,32 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 #ifdef DEBUG
       flags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
+		if(cached_device && cached_context)
+		{
+			IDXGIFactory* dxgiFactory = NULL;
+			IDXGIDevice* dxgiDevice = NULL;
+			IDXGIAdapter* adapter = NULL;
 
-      D3D11CreateDeviceAndSwapChain(
-            NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags, &requested_feature_level, 1,
-            D3D11_SDK_VERSION, &desc, (IDXGISwapChain**)&d3d11->swapChain, &d3d11->device,
-            &d3d11->supportedFeatureLevel, &d3d11->context);
+			d3d11->device = cached_device;
+			d3d11->context = cached_context;
+			d3d11->supportedFeatureLevel = cached_supportedFeatureLevel;
+
+			d3d11->device->lpVtbl->QueryInterface(d3d11->device, uuidof(IDXGIDevice), (void**)&dxgiDevice);
+			dxgiDevice->lpVtbl->GetAdapter(dxgiDevice, &adapter);
+			adapter->lpVtbl->GetParent(adapter, uuidof(IDXGIFactory1), (void**)&dxgiFactory);
+			dxgiFactory->lpVtbl->CreateSwapChain(dxgiFactory, (IUnknown*)d3d11->device, &desc, (IDXGISwapChain**)&d3d11->swapChain);
+
+			dxgiFactory->lpVtbl->Release(dxgiFactory);
+			adapter->lpVtbl->Release(adapter);
+			dxgiDevice->lpVtbl->Release(dxgiDevice);
+		}
+		else
+		{
+			D3D11CreateDeviceAndSwapChain(
+					NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags, &requested_feature_level, 1,
+					D3D11_SDK_VERSION, &desc, (IDXGISwapChain**)&d3d11->swapChain, &d3d11->device,
+					&d3d11->supportedFeatureLevel, &d3d11->context);
+		}
    }
 
    {
