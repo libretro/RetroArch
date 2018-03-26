@@ -154,7 +154,7 @@ Before enabling the CRT SwitchRes options pleasae make sure you have installed C
 - 2560 x 192 @ 60.000000
 - 2560 x 200 @ 60.000000
 - 2560 x 240 @ 60.000000
- -2560 x 224 @ 60.000000
+- 2560 x 224 @ 60.000000
 - 2560 x 237 @ 60.000000
 - 2560 x 256 @ 50.000000
 - 2560 x 254 @ 55.000000
@@ -186,7 +186,7 @@ The default super resolution is 2560. It is displayed just under the CRT switch 
 
 ## Native Resolutions
 
-On the if any other number is used for super resolutions the native it activeted. if native is what you want then you will need a whol;e new set of modelines:
+On the if any other number is used for super resolutions the native it activeted. if native is what you want then you will need a whole new set of modelines:
 
 - 512 x 240 @ 50.006977 SNESpal
 - 512 x 224 @ 50.006977 SNESpal
