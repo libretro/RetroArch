@@ -25,6 +25,8 @@
 #include <string/stdstring.h>
 #include <retro_math.h>
 
+#include <gfx/video_crt_switch.h>
+
 #include <retro_assert.h>
 #include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
@@ -117,6 +119,8 @@
 #define video_driver_context_lock()    ((void)0)
 #define video_driver_context_unlock()  ((void)0)
 #endif
+
+bool CRT_Switching_active;  //ben
 
 typedef struct video_pixel_scaler
 {
@@ -1414,13 +1418,16 @@ void video_driver_monitor_adjust_system_rates(void)
    const struct retro_system_timing *info = (const struct retro_system_timing*)&video_driver_av_info.timing;
 
    rarch_ctl(RARCH_CTL_UNSET_NONBLOCK_FORCED, NULL);
-
+	ben_core_hz = info->fps;
 
    if (!info || info->fps <= 0.0)
       return;
 
-   timing_skew = fabs(1.0f - info->fps / video_refresh_rate);
-
+  if (CRT_Switching_active  == true){
+	timing_skew = fabs(1.0f - info->fps / ben_core_hz);
+  }else {
+	  timing_skew = fabs(1.0f - info->fps / video_refresh_rate);
+  }
    /* We don't want to adjust pitch too much. If we have extreme cases,
     * just don't readjust at all. */
    if (timing_skew <= settings->floats.audio_max_timing_skew)
@@ -1429,10 +1436,17 @@ void video_driver_monitor_adjust_system_rates(void)
    RARCH_LOG("[Video]: Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
          video_refresh_rate,
          (float)info->fps);
-
-   if (info->fps <= video_refresh_rate)
-      return;
-
+	
+	
+  // if (info->fps <= video_refresh_rate)  // create options to choose between these!!!!
+   //   return;
+  if (CRT_Switching_active  == true){
+	if (info->fps <= ben_core_hz)
+		return;
+  } else {
+	if (info->fps <= video_refresh_rate)
+		return;
+  }
    /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
    rarch_ctl(RARCH_CTL_SET_NONBLOCK_FORCED, NULL);
    RARCH_LOG("[Video]: Game FPS > Monitor FPS. Cannot rely on VSync.\n");
@@ -1560,6 +1574,7 @@ static void video_driver_lock_new(void)
 void video_driver_destroy(void)
 {
    video_display_server_destroy();
+   video_restore();					//ben
    video_driver_cb_has_focus      = null_driver_has_focus;
    video_driver_use_rgba          = false;
    video_driver_data_own          = false;
@@ -2582,6 +2597,30 @@ void video_driver_frame(const void *data, unsigned width,
    /* Display the FPS, with a higher priority. */
    if (video_info.fps_show)
       runloop_msg_queue_push(video_info.fps_text, 2, 1, true);
+  
+  	/* trigger set resolution*/
+	if (video_info.CRT_Switch_Resolution == true){
+		CRT_Switching_active = true;
+		if (video_info.CRT_Switch_Resolution_super == 2560){
+			width = 2560;
+		}
+		if (video_info.CRT_Switch_Resolution_super == 3840){
+			width = 3840;
+		}
+		if (video_info.CRT_Switch_Resolution_super == 1920){
+			width = 1920;
+		}
+		switch_res_core(width, height, ben_core_hz);// ben_core_hz);
+	} else if (video_info.CRT_Switch_Resolution == false){
+		CRT_Switching_active = false;
+	}
+	
+	/* trigger set resolution*/
+
+}
+
+void ben_poke_video(){
+	 video_driver_poke->apply_state_changes(video_driver_data);
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)
@@ -2674,8 +2713,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    settings                          = config_get_ptr();
    custom_vp                         = &settings->video_viewport_custom;
    video_info->refresh_rate          = settings->floats.video_refresh_rate;
-   video_info->black_frame_insertion =
-      settings->bools.video_black_frame_insertion;
+   video_info->CRT_Switch_Resolution = settings->bools.CRT_Switch_Resolution;	//ben
+   video_info->CRT_Switch_Resolution_super = settings->uints.CRT_Switch_Resolution_super;	//ben
+   video_info->black_frame_insertion = settings->bools.video_black_frame_insertion;
    video_info->hard_sync             = settings->bools.video_hard_sync;
    video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;
    video_info->fps_show              = settings->bools.video_fps_show;
