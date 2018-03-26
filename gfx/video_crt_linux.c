@@ -22,6 +22,14 @@
 
 #include "video_crt_switch.h"
 
+void check_first_run()
+{		/* ruin of first boot to get current display resolution */
+	if (first_run != 1)
+	{
+	
+	}
+	first_run = 1;
+}
 
 void switch_res(int width, int height, int f_restore)
 {  /* Place holder for Linux function to swith resolutions */
