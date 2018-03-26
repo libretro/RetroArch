@@ -95,6 +95,7 @@ typedef struct settings
       bool video_statistics_show;
       bool video_framecount_show;
       bool video_msg_bgcolor_enable;
+	  bool CRT_Switch_Resolution;  //ben
 
       /* Audio */
       bool audio_enable;
@@ -333,6 +334,7 @@ typedef struct settings
       unsigned video_window_x;
       unsigned video_window_y;
       unsigned video_window_opacity;
+	  unsigned CRT_Switch_Resolution_super;  //ben
       unsigned video_monitor_index;
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;
