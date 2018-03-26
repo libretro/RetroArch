@@ -71,6 +71,11 @@ RETRO_BEGIN_DECLS
 
 #define MAX_VARIABLES 64
 
+// Added for resolution wswitching 
+void ben_poke_video();
+//Added for resolution wswitching 
+
+
 enum
 {
    TEXTURES = 8,
@@ -402,6 +407,7 @@ typedef struct video_frame_info
    bool black_frame_insertion;
    bool hard_sync;
    bool fps_show;
+   bool CRT_Switch_Resolution; //ben
    bool statistics_show;
    bool framecount_show;
    bool scale_integer;
@@ -427,6 +433,7 @@ typedef struct video_frame_info
    unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;
    unsigned monitor_index;
+   unsigned CRT_Switch_Resolution_super; //ben
    unsigned width;
    unsigned height;
    unsigned xmb_theme;
