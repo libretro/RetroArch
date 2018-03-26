@@ -22,6 +22,8 @@
 
 #include "video_crt_switch.h"
 
+static int first_run;
+
 void check_first_run()
 {		/* ruin of first boot to get current display resolution */
 	if (first_run != 1)
