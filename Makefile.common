@@ -981,7 +981,8 @@ ifeq ($(HAVE_PARPORT), 1)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
-   OBJ += input/drivers/winraw_input.o
+   OBJ += input/drivers/winraw_input.o \
+		  gfx/video_crt_switch.o 
 endif
 
 # Companion UI
