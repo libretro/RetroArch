@@ -29,5 +29,4 @@ void screen_setup_aspect(int width, int height);
 void switch_res_crt(int width, int height);
 void aspect_ratio_switch(int width,int height);
 void switch_crt_hz();
-void switch_res(int width, int height, int f_restore);
 void video_restore();

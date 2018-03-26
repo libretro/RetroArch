@@ -18,5 +18,5 @@
 */
 
 void check_first_run();
-void switch_res(int width, int height, int f_restore);
+void switch_res(int width, int height, int f_restore, int ra_hz);
 void video_restore();

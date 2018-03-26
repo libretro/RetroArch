@@ -35,9 +35,8 @@ void check_first_run()
 	first_run = 1;
 }
 
-void switch_res(int width, int height, int f_restore)
+void switch_res(int width, int height, int f_restore,int  ra_hz)
 {  /* windows function to swith resolutions */
-	
 	DEVMODE curDevmode;
 	DEVMODE devmode;
 	DWORD flags = 0;
@@ -46,7 +45,7 @@ void switch_res(int width, int height, int f_restore)
 	int freq;
 	if (f_restore == 0)
 	{
-		freq = ra_set_core_hz;
+		freq = ra_hz;
 	} 
 	else 
 	{
@@ -146,5 +145,5 @@ void switch_res(int width, int height, int f_restore)
 
 void video_restore()
 {
-	switch_res(orig_width, orig_height,1);
+	switch_res(orig_width, orig_height,0,60);
 }
