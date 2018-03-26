@@ -93,7 +93,6 @@ static void *wiiu_hid_init(hid_driver_instance_t *driver)
    if (!hid->polling_thread)
       goto error;
 
-   RARCH_LOG("[hid]: Registering HIDClient\n");
    HIDAddClient(client, wiiu_attach_callback);
    hid->client = client;
 
@@ -216,13 +215,7 @@ static int32_t wiiu_hid_read(void *data, void *buffer, size_t size)
   if(size > adapter->rx_size)
     return -1;
 
-#if 1
-  int32_t result = HIDRead(adapter->handle, buffer, size, NULL, NULL);
-  log_buffer(buffer, size);
-  return result;
-#else
   return HIDRead(adapter->handle, buffer, size, NULL, NULL);
-#endif
 }
 
 
@@ -409,11 +402,10 @@ static int32_t wiiu_attach_callback(HIDClient *client,
 {
    wiiu_attach_event *event = NULL;
 
-   log_device(device);
-
    switch(attach)
    {
       case HID_DEVICE_ATTACH:
+         log_device(device);
       case HID_DEVICE_DETACH:
          if (device)
             event = new_attach_event(device);
@@ -459,10 +451,7 @@ static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event)
    adapter->driver = event->driver;
    adapter->state  = ADAPTER_STATE_NEW;
 
-   RARCH_LOG("[hid]: adding to adapter list\n");
    synchronized_add_to_adapters_list(adapter);
-
-   RARCH_LOG("[hid]: starting read loop\n");
    wiiu_start_read_loop(adapter);
 
    return;
