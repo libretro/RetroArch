@@ -767,6 +767,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/widgets/menu_input_dialog.o \
 			 menu/widgets/menu_input_bind_dialog.o \
           menu/widgets/menu_entry.o \
+			 menu/widgets/menu_list.o \
 			 menu/widgets/menu_osk.o \
           menu/menu_cbs.o \
           menu/cbs/menu_cbs_ok.o \
@@ -981,7 +982,8 @@ ifeq ($(HAVE_PARPORT), 1)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
-   OBJ += input/drivers/winraw_input.o
+   OBJ += input/drivers/winraw_input.o \
+		  gfx/video_crt_switch.o 
 endif
 
 # Companion UI
@@ -1248,21 +1250,18 @@ endif
 
    ifeq ($(HAVE_HLSL), 1)
       OBJ  += gfx/drivers_renderchain/d3d9_hlsl_renderchain.o \
-				  gfx/drivers_shader/shader_hlsl.o
+	      gfx/drivers_shader/shader_hlsl.o
    endif
 endif
 
 ifeq ($(HAVE_D3D10), 1)
-   OBJ += gfx/drivers/d3d10.o \
-			 gfx/common/d3d10_common.o
+   OBJ += gfx/drivers/d3d10.o gfx/common/d3d10_common.o
    DEFINES += -DHAVE_D3D10
 endif
 
 ifeq ($(HAVE_D3D11), 1)
-   OBJ += gfx/drivers/d3d11.o \
-			 gfx/common/d3d11_common.o \
-			 gfx/drivers_font/d3d11_font.o \
-			 menu/drivers_display/menu_display_d3d11.o
+   OBJ += gfx/drivers/d3d11.o gfx/common/d3d11_common.o \
+      gfx/drivers_font/d3d11_font.o menu/drivers_display/menu_display_d3d11.o
    DEFINES += -DHAVE_D3D11
    HAVE_SLANG       = 1
    HAVE_GLSLANG     = 1
@@ -1270,10 +1269,8 @@ ifeq ($(HAVE_D3D11), 1)
 endif
 
 ifeq ($(HAVE_D3D12), 1)
-   OBJ += gfx/drivers/d3d12.o \
-			 gfx/common/d3d12_common.o \
-			 gfx/drivers_font/d3d12_font.o \
-			 menu/drivers_display/menu_display_d3d12.o
+   OBJ += gfx/drivers/d3d12.o gfx/common/d3d12_common.o \
+      gfx/drivers_font/d3d12_font.o menu/drivers_display/menu_display_d3d12.o
    DEFINES += -DHAVE_D3D12
    HAVE_SLANG       = 1
    HAVE_GLSLANG     = 1
@@ -1282,8 +1279,8 @@ endif
 
 ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
    INCLUDE_DIRS += -isystemgfx/include/dxsdk
-   OBJ += gfx/common/d3dcompiler_common.o \
-			 gfx/common/dxgi_common.o
+   OBJ += gfx/common/d3dcompiler_common.o
+   OBJ += gfx/common/dxgi_common.o
    CFLAGS += -Wno-unknown-pragmas
 endif
 
@@ -1305,27 +1302,23 @@ endif
 
 ifeq ($(HAVE_D3D8), 1)
 	DEFINES += -DHAVE_D3D8
-	OBJ += gfx/drivers/d3d8.o
-	OBJ += gfx/common/d3d8_common.o
-
-ifeq ($(HAVE_MENU_COMMON), 1)
-	OBJ += menu/drivers_display/menu_display_d3d8.o
-endif
+	OBJ += gfx/drivers/d3d9.o
 endif
 
 ifeq ($(HAVE_D3D9), 1)
 	DEFINES += -DHAVE_D3D9
 	OBJ += gfx/drivers/d3d9.o
-	OBJ += gfx/common/d3d9_common.o
-
-ifeq ($(HAVE_MENU_COMMON), 1)
-	OBJ += menu/drivers_display/menu_display_d3d9.o
-endif
 endif
 
 ifeq ($(HAVE_D3D_COMMON), 1)
 	DEFINES += -DHAVE_D3D
-	OBJ     += gfx/common/d3d_common.o
+	OBJ     += \
+          gfx/common/d3d_common.o \
+          gfx/drivers_context/d3d_ctx.o
+
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_d3d.o
+   endif
 endif
 
 ifeq ($(HAVE_SLANG),1)
