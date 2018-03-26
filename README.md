@@ -144,3 +144,115 @@ To configure joypads, use the built-in menu or the `retroarch-joyconfig` command
 ## Compiling and installing
 
 Instructions for compiling and installing RetroArch can be found in the [Libretro/RetroArch Documentation Center](https://docs.libretro.com/).
+
+## CRT SwitchRes
+
+CRT Switch res will turn on, on the fly. However, you will need to restart retroarch to disable it.
+
+Before enabling the CRT SwitchRes options pleasae make sure you have installed CRTEmudriver and installed some modelines. The minimun modelins for all games to switch correctly are:
+
+- 2560 x 192 @ 60.000000
+- 2560 x 200 @ 60.000000
+- 2560 x 240 @ 60.000000
+ -2560 x 224 @ 60.000000
+- 2560 x 237 @ 60.000000
+- 2560 x 256 @ 50.000000
+- 2560 x 254 @ 55.000000
+- 2560 x 448 @ 60.000000
+- 2560 x 480 @ 60.000000
+
+Install these modelines replacing 2560 with your desired super resuloution. The above resolutions are NTSC only so if you would be playing any PAL content please add pal modelines:
+
+- 2560 x 192 @ 50.000000
+- 2560 x 200 @ 50.000000
+- 2560 x 240 @ 50.000000
+- 2560 x 224 @ 50.000000
+- 2560 x 288 @ 50.000000
+- 2560 x 237 @ 50.000000
+- 2560 x 254 @ 55.000000
+- 2560 x 448 @ 50.000000
+- 2560 x 480 @ 50.000000
+
+Some games will require heigher PAL resolutions which should also be installed:
+
+- 2560 x 512 @ 50.000000
+- 2560 x 576 @ 50.000000
+
+Idealy install all these modelines and everything will work great.
+
+## Super Resolutions
+
+The default super resolution is 2560. It is displayed just under the CRT switch option, which can be found in video settings. This can be changed within the retroarch.cfg. The only compatible resolutions are 1920, 2560 and 3840. Any other resolutions will be ignored and native swithing will be activated.
+
+## Native Resolutions
+
+On the if any other number is used for super resolutions the native it activeted. if native is what you want then you will need a whol;e new set of modelines:
+
+- 512 x 240 @ 50.006977 SNESpal
+- 512 x 224 @ 50.006977 SNESpal
+- 512 x 448 @ 50.006977 SNESpal
+- 512 x 240 @ 60.098812 SNESntsc
+- 512 x 224 @ 60.098812 SNESntsc
+- 512 x 448 @ 60.098812 SNESntsc
+- 256 x 240 @ 50.006977 SNESpal
+- 256 x 448 @ 50.006977 SNESpal
+- 256 x 240 @ 60.098812 SNESntsc
+- 256 x 448 @ 60.098812 SNESntsc
+- 320 x 240 @ 59.922745 MDntsc
+- 320 x 448 @ 59.922745 MDntp
+- 320 x 480 @ 59.922745 MDntsc
+- 256 x 192 @ 59.922745 MDntsc
+- 320 x 224 @ 59.922745 MDntsc
+- 256 x 224 @ 59.922745 MDntsc
+- 320 x 288 @ 49.701458 MDpal
+- 320 x 576 @ 49.701458 MDpal
+- 256 x 192 @ 49.701458 MDpal
+- 320 x 224 @ 49.701458 MDpal
+- 320 x 240 @ 49.701458 MDpal
+- 320 x 448 @ 49.701458 MDpal
+- 320 x 480 @ 49.701458 MDpal
+- 256 x 224 @ 49.701458 MDpal
+- 256 x 288 @ 49.701458 MSYSpal
+- 256 x 240 @ 60.098812 NESntsc
+- 256 x 240 @ 50.006977 NESpal
+
+- 640 x 480 @ 60.130001 N64ntsc
+- 640 x 237 @ 60.130001 N64ntsc
+- 640 x 240 @ 60.130001 N64ntsc
+- 640 x 480 @ 50.000000 N64pal
+- 640 x 576 @ 50.000000 n64pal
+- 640 x 288 @ 50.000000 n64pal
+
+- 256 x 252 @ 49.759998 PSXpal
+- 384 x 252 @ 49.759998 PSXpal
+- 640 x 540 @ 49.759998 PSXpal
+- 320 x 252 @ 49.759998 PSXpal
+- 640 x 252 @ 49.759998 PSXpal
+
+- 384 x 240 @ 59.941002 PSXntsc
+- 256 x 480 @ 59.941002 PSXntsc
+
+- 352 x 240 @ 59.820000 Saturn/SGFX_NTSCp
+- 704 x 240 @ 59.820000 SaturnNTSCp
+- 352 x 480 @ 59.820000 SaturnNTSCi
+- 704 x 480 @ 59.820000 SaturnNTSCi
+- 352 x 288 @ 49.701458 SaturnPALp
+- 704 x 288 @ 49.701458 SaturnPALp
+- 352 x 576 @ 49.701458 SaturnPALi
+- 704 x 576 @ 49.701458 SaturnPALi
+
+- 240 x 160 @ 59.730000 GBA
+- 320 x 200 @ 60.000000 Doom
+
+// Arcade
+
+- 400 x 254 @ 54.706841 MK
+- 384 x 224 @ 59.637405 CPS1
+
+These modelines are more acurate giving exact hz. However, some games may have unwanted results. This is due to mid-scanline resolution chages on the orgiginal hardware. For the best results super resolutions are the way to go.
+
+## CRT SwitchRes & Mame
+
+Some arecade resolutions can be alot different. There is rosolution detection to ensure mame games will be diplayed in the closest available resolution but drawn at their native resolution within this resolution. Meaning that the mame game will look just like the original hardware.
+
+Mame roms that run in a vertical aspect like DoDonPachi need to be roted within mame before rolution swithing and aspect correction will work. Do this before enableing CRT switchRes so that Retroarch will run in your desktop resolution. Once you have roted any games that may need it switch CRT SwitchRes on.
