@@ -24,15 +24,13 @@
 #include <gfx/video_driver.h>
 
 #include "video_crt_switch.h"
+#include "video_crt_win.h"
 
-static int ra_set_core_hz;
 static float ra_tmp_core_hz;
 static int ra_core_width;
 static int ra_core_height;
 static int ra_tmp_width;
 static int ra_tmp_height;
-static int orig_width;			
-static int orig_height;
 static int first_run;
 static float fly_aspect;
 
@@ -54,7 +52,6 @@ void switch_res_core(int width, int height, float hz)
 			video_driver_set_aspect_ratio_value((float)fly_aspect);
 			crt_poke_video();
 	}
-	
 }
 
 void check_first_run()
@@ -168,116 +165,4 @@ void switch_crt_hz()
 	
 }
 
-void switch_res(int width, int height, int f_restore)
-{  /* windows function to swith resolutions */
-	
-	DEVMODE curDevmode;
-	DEVMODE devmode;
-	DWORD flags = 0;
-	int     iModeNum;
-	int depth = 0;
-	int freq;
-	if (f_restore == 0)
-	{
-		freq = ra_set_core_hz;
-	} 
-	else 
-	{
-		freq = 0;
-	}
-	
-	EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
-	
-	if (width == curDevmode.dmPelsWidth)
-	{
-		width  = 0;							/* used to stop superresolution bug */
-	}
 
-	if (width == 0) 
-	{
-		width = curDevmode.dmPelsWidth;
-	}
-	if (height == 0) 
-	{
-		height = curDevmode.dmPelsHeight;
-	}
-	if (depth == 0) 
-	{
-		depth = curDevmode.dmBitsPerPel;
-	}
-	if (freq == 0) 
-	{
-		freq = curDevmode.dmDisplayFrequency;
-	}
-
-	for (iModeNum = 0; ; iModeNum++) 
-	{
-		if (EnumDisplaySettings(NULL, iModeNum, &devmode)) 
-		{
-		
-			if (devmode.dmPelsWidth != width) 
-			{
-				continue;
-			}
-
-			if (devmode.dmPelsHeight != height) 
-			{
-				continue;
-			}
-
-	
-			if (devmode.dmBitsPerPel != depth) 
-			{
-				continue;
-			}
-
-	
-			if (devmode.dmDisplayFrequency != freq) 
-			{
-				continue;
-			}
-
-
-			devmode.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
-			LONG res = ChangeDisplaySettings(&devmode, CDS_TEST);
-
-			switch (res) 
-			{
-			case DISP_CHANGE_SUCCESSFUL:
-				res = ChangeDisplaySettings(&devmode, flags);
-				switch (res) 
-				{
-				case DISP_CHANGE_SUCCESSFUL:
-					return;
-
-				case DISP_CHANGE_NOTUPDATED:
-			
-					return;
-
-				default:
-			
-					break;
-				}
-				break;
-
-			case DISP_CHANGE_RESTART:
-		
-				break;
-
-			default:
-			
-				break;
-			}
-		}
-		else 
-		{
-			break;
-		}
-	}
-
-}
-
-void video_restore()
-{
-	switch_res(orig_width, orig_height,1);
-}
