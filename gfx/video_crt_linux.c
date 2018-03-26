@@ -33,7 +33,7 @@ void check_first_run()
 	first_run = 1;
 }
 
-void switch_res(int width, int height, int f_restore)
+void switch_res(int width, int height, int f_restore, int ra_hz)
 {  /* Place holder for Linux function to swith resolutions */
 	
 	
