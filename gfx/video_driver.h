@@ -72,7 +72,7 @@ RETRO_BEGIN_DECLS
 #define MAX_VARIABLES 64
 
 /* Added for resolution wswitching */
-void ben_poke_video();
+void crt_poke_video();
 
 /* Added for resolution wswitching */ 
 

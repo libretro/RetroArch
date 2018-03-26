@@ -17,16 +17,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
 */
 
-static int ben_core_width;
-static int ben_core_height;
-static int ben_tmp_width;
-static int ben_tmp_height;
-static int orig_width;			
-static int orig_height;
-static float ben_core_hz;
-static int set_ben_core_hz;
-static float ben_tmp_core_hz;
 
+static float ra_core_hz; /* Shared with video_driver.c */
 
 void switch_res_core(int width, int height, float hz);
 void check_first_run();

@@ -1418,13 +1418,13 @@ void video_driver_monitor_adjust_system_rates(void)
    const struct retro_system_timing *info = (const struct retro_system_timing*)&video_driver_av_info.timing;
 
    rarch_ctl(RARCH_CTL_UNSET_NONBLOCK_FORCED, NULL);
-	ben_core_hz = info->fps;
+	ra_core_hz = info->fps;
 
    if (!info || info->fps <= 0.0)
       return;
 
   if (crt_switching_active  == true){
-	timing_skew = fabs(1.0f - info->fps / ben_core_hz);
+	timing_skew = fabs(1.0f - info->fps / ra_core_hz);
   }else {
 	  timing_skew = fabs(1.0f - info->fps / video_refresh_rate);
   }
@@ -1438,7 +1438,7 @@ void video_driver_monitor_adjust_system_rates(void)
          (float)info->fps);
 	
   if (crt_switching_active  == true){
-	if (info->fps <= ben_core_hz)
+	if (info->fps <= ra_core_hz)
 		return;
   } else {
 	if (info->fps <= video_refresh_rate)
@@ -2607,7 +2607,7 @@ void video_driver_frame(const void *data, unsigned width,
 		if (video_info.crt_switch_resolution_super == 1920){
 			width = 1920;
 		}
-		switch_res_core(width, height, ben_core_hz);
+		switch_res_core(width, height, ra_core_hz);
 	} else if (video_info.crt_switch_resolution == false){
 		crt_switching_active = false;
 	}
@@ -2616,7 +2616,7 @@ void video_driver_frame(const void *data, unsigned width,
 
 }
 
-void ben_poke_video(){
+void crt_poke_video(){
 	 video_driver_poke->apply_state_changes(video_driver_data);
 }
 
