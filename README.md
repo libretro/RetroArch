@@ -178,7 +178,7 @@ Some games will require heigher PAL resolutions which should also be installed:
 - 2560 x 512 @ 50.000000
 - 2560 x 576 @ 50.000000
 
-Idealy install all these modelines and everything will work great.
+Ideally install all these modelines and everything will work great.
 
 ## Super Resolutions
 
@@ -186,7 +186,7 @@ The default super resolution is 2560. It is displayed just under the CRT switch 
 
 ## Native Resolutions
 
-On the if any other number is used for super resolutions the native it activeted. if native is what you want then you will need a whole new set of modelines:
+If native reolutions are activeted you will need a whole new set of modelines:
 
 - 512 x 240 @ 50.006977 SNESpal
 - 512 x 224 @ 50.006977 SNESpal
