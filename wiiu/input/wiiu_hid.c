@@ -555,9 +555,7 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
          int16_t r2 = ((error & 0xFFFF0000) >> 16);
          RARCH_ERR("[hid]: read failed: %08x (%d:%d)\n", error, r2, r1);
       } else {
-#if 0
          adapter->driver->handle_packet(adapter->driver_handle, buffer, buffer_size);
-#endif
       }
    }
 
