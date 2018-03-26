@@ -18,7 +18,6 @@
 */
 #include <stddef.h>
 #include <string.h>
-#include <windows.h>
 #include <stdlib.h>
 
 #include <gfx/video_driver.h>
@@ -31,7 +30,6 @@ static int ra_core_width;
 static int ra_core_height;
 static int ra_tmp_width;
 static int ra_tmp_height;
-static int first_run;
 static float fly_aspect;
 
 void switch_res_core(int width, int height, float hz)
@@ -54,15 +52,6 @@ void switch_res_core(int width, int height, float hz)
 	}
 }
 
-void check_first_run()
-{		/* ruin of first boot to get current display resolution */
-	if (first_run != 1)
-	{
-		orig_height = GetSystemMetrics(SM_CYSCREEN);
-		orig_width = GetSystemMetrics(SM_CXSCREEN);
-	}
-	first_run = 1;
-}
 
 void screen_setup_aspect(int width, int height)
 { /* create correct aspect to fit video if resolution does not exist */

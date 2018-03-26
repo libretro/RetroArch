@@ -23,6 +23,17 @@
 
 #include "video_crt_switch.h"
 
+static int first_run;
+
+void check_first_run()
+{		/* ruin of first boot to get current display resolution */
+	if (first_run != 1)
+	{
+		orig_height = GetSystemMetrics(SM_CYSCREEN);
+		orig_width = GetSystemMetrics(SM_CXSCREEN);
+	}
+	first_run = 1;
+}
 
 void switch_res(int width, int height, int f_restore)
 {  /* windows function to swith resolutions */

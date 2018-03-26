@@ -16,6 +16,6 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
 */
-
+void check_first_run();
 void switch_res(int width, int height, int f_restore);
 void video_restore();
