@@ -251,8 +251,8 @@ If native reolutions are activeted you will need a whole new set of modelines:
 
 These modelines are more acurate giving exact hz. However, some games may have unwanted results. This is due to mid-scanline resolution chages on the orgiginal hardware. For the best results super resolutions are the way to go.
 
-## CRT SwitchRes & Mame
+## CRT resolution switching & Mame
 
-Some arecade resolutions can be alot different. There is rosolution detection to ensure mame games will be diplayed in the closest available resolution but drawn at their native resolution within this resolution. Meaning that the mame game will look just like the original hardware.
+Some arecade resolutions can be alot different. There is resolution detection to ensure mame games will be diplayed in the closest available resolution but drawn at their native resolution within this resolution. Meaning that the mame game will look just like the original hardware.
 
 Mame roms that run in a vertical aspect like DoDonPachi need to be roted within mame before rolution swithing and aspect correction will work. Do this before enableing CRT switchRes so that Retroarch will run in your desktop resolution. Once you have roted any games that may need it switch CRT SwitchRes on.
