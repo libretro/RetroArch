@@ -95,7 +95,7 @@ typedef struct settings
       bool video_statistics_show;
       bool video_framecount_show;
       bool video_msg_bgcolor_enable;
-	  bool crt_switch_resolution;  //ben
+	  bool crt_switch_resolution;  
 
       /* Audio */
       bool audio_enable;
