@@ -114,10 +114,6 @@ void switch_res_crt(int width, int height){
 		
 	if ( height > 100)
 	{
-	
-			FILE *ben_res = fopen("ra_res_hz.txt", "a");
-			fprintf (ben_res, "%s%d%s%d%s%d%s%lf\n","SuperRes @ 2560 ",width," x ", height," @ ", ra_set_core_hz," Apsect ", fly_aspect);
-			fclose(ben_res);
 			
 	switch_res(width, height,0,ra_set_core_hz);
 	crt_poke_video();
