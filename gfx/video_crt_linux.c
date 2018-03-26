@@ -16,18 +16,21 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
 */
+#include <stddef.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include "video_crt_switch.h"
 
 
-static float ra_core_hz; /* Shared with video_driver.c */
-static int ra_set_core_hz;
-static int orig_width;			
-static int orig_height;
+void switch_res(int width, int height, int f_restore)
+{  /* Place holder for Linux function to swith resolutions */
+	
+	
 
-void switch_res_core(int width, int height, float hz);
-void check_first_run();
-void screen_setup_aspect(int width, int height);
-void switch_res_crt(int width, int height);
-void aspect_ratio_switch(int width,int height);
-void switch_crt_hz();
-void switch_res(int width, int height, int f_restore);
-void video_restore();
+}
+
+void video_restore()
+{
+	
+}
