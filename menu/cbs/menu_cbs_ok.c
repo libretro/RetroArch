@@ -1457,6 +1457,8 @@ static int action_ok_playlist_entry_collection(const char *path,
       runloop_msg_queue_push(
             "File could not be loaded from playlist.\n",
             1, 100, true);
+      if (playlist_initialized)
+         playlist_free(tmp_playlist);
       return menu_cbs_exit();
    }
 
@@ -1625,13 +1627,18 @@ static int action_ok_playlist_entry_start_content(const char *path,
    if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
    {
       runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
-      return menu_cbs_exit();
+      goto error;
    }
 
    playlist_get_index(playlist,
          selection_ptr, &path, NULL, NULL, NULL, NULL, NULL);
 
    return default_action_ok_load_content_from_playlist_from_menu(core_path, path, entry_label);
+
+error:
+   if (playlist_initialized)
+      playlist_free(tmp_playlist);
+   return menu_cbs_exit();
 }
 
 static int action_ok_lookup_setting(const char *path,
