@@ -903,6 +903,7 @@ static void gfx_ctx_drm_set_flags(void *data, uint32_t flags)
 const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_init,
    gfx_ctx_drm_destroy,
+   gfx_ctx_drm_get_api,
    gfx_ctx_drm_bind_api,
    gfx_ctx_drm_swap_interval,
    gfx_ctx_drm_set_video_mode,
