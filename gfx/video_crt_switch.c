@@ -57,10 +57,14 @@ void screen_setup_aspect(int width, int height)
 { /* create correct aspect to fit video if resolution does not exist */
 	switch_crt_hz();
 	/* get original resolution of core */	
-	if (width >= 1900)
-	{
+	
+	
 		if (height == 4)
-		{						/* detect menu only */
+		{			
+			if (width < 1920)
+			{
+				width = 640;
+			}/* detect menu only */
 			height = 480;
 			aspect_ratio_switch(width,height);
 		}
@@ -106,7 +110,7 @@ void screen_setup_aspect(int width, int height)
 			height = 254;
 		}
 		
-	}
+
 	switch_res_crt(width, height);
 }
 
