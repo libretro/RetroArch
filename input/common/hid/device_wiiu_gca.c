@@ -169,12 +169,19 @@ static joypad_connection_t *register_pad(wiiu_gca_instance_t *instance, int port
    joypad_connection_t *result;
 
    if(!instance || !instance->online)
+   {
+      RARCH_ERR("[gca]: bad instance\n");
       return NULL;
+   }
 
    slot = pad_connection_find_vacant_pad(hid_instance.pad_list);
    if(slot < 0)
+   {
+      RARCH_ERR("[gca]: failed to find a free slot\n");
       return NULL;
+   }
 
+   RARCH_LOG("[gca]: registering pad in port %d to slot %d\n", port+1, slot);
    result = &(hid_instance.pad_list[slot]);
    result->iface = &wiiu_gca_pad_connection;
    result->data = result->iface->init(instance, slot, hid_instance.os_driver);
@@ -237,7 +244,10 @@ static void wiiu_gca_pad_deinit(void *data)
   if(pad)
   {
     if(pad->name)
+    {
       free(pad->name);
+      pad->name = NULL;
+    }
 
     free(pad);
   }

@@ -430,8 +430,7 @@ static void wiiu_hid_detach(wiiu_hid_t *hid, wiiu_attach_event *event)
    wiiu_adapter_t *adapter = synchronized_remove_from_adapters_list(event->handle);
 
    if(adapter) {
-      adapter->driver->free(adapter->driver_handle);
-      adapter->driver_handle = NULL;
+      RARCH_LOG("[hid]: freeing detached pad\n");
       delete_adapter(adapter);
    }
 }
@@ -580,8 +579,10 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
        * while we are holding the lock. */
       if(incomplete == 0)
       {
+         RARCH_LOG("All in-flight reads complete.\n");
          while(adapters.list != NULL)
          {
+            RARCH_LOG("[hid]: shutting down adapter..\n");
             adapter = adapters.list;
             adapters.list = adapter->next;
             delete_adapter(adapter);
@@ -599,7 +600,6 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
       }
    }while(incomplete);
 
-   RARCH_LOG("All in-flight reads complete.\n");
 }
 
 static void wiiu_handle_attach_events(wiiu_hid_t *hid, wiiu_attach_event *list)
@@ -725,6 +725,7 @@ static void delete_adapter(wiiu_adapter_t *adapter)
       adapter->driver_handle = NULL;
       adapter->driver = NULL;
    }
+
    free(adapter);
 }
 
