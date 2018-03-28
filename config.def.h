@@ -601,11 +601,7 @@ static const unsigned default_content_history_size = 100;
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;
 
-#ifdef RARCH_MOBILE
 static const bool menu_dpi_override_enable = false;
-#else
-static const bool menu_dpi_override_enable = true;
-#endif
 
 #ifdef RARCH_MOBILE
 static const unsigned menu_dpi_override_value = 72;
