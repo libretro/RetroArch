@@ -2,7 +2,7 @@
 - ANDROID/OPENSL: Prevent crashes when setting audio latency too low (buffer count can never be lower than 2 now).
 - COMMON: Add way to reset core association for playlist entry.
 - COMMON: Add OSD statistics for video/audio/core.
-- CHEEVOS: Support Atari 2600, Virtual Boy, Neo Geo (Arcade).
+- CHEEVOS: Support Atari 2600, Virtual Boy, and Arcade (only Neo Geo, CPS-1, CPS-2 and CPS-3 and only with fbalpha core).
 - CHEEVOS: Add option to automatically take a screenshot when an achievement is triggered.
 - D3D11: Experimental hardware renderer. Allows for libretro cores to use D3D11 for hardware rendering.
 - LIBRETRO: Addition - Functions to enable and disable audio and video, and an environment function to query status of audio and video enables.
