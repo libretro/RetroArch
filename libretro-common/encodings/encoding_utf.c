@@ -366,6 +366,45 @@ char* utf8_to_local_string_alloc(const char *str)
 }
 
 /* Returned pointer MUST be freed by the caller if non-NULL. */
+char* utf8_to_local_string_alloc_expand_environment_strings(const char *str)
+{
+   /* Windows only for now, otherwise just returns utf8_to_local_string_alloc */
+#ifdef _WIN32
+   char *result;
+   char *result2;
+   DWORD requiredSize;
+   int bufferSize;
+
+   result = utf8_to_local_string_alloc(str);
+   if (result == NULL)
+   {
+      return NULL;
+   }
+   /* if the path contains %, try expanding the environment strings */
+   if (strchr(result, '%'))
+   {
+      requiredSize = ExpandEnvironmentStringsA(result, NULL, 0);
+      if (requiredSize == 0)
+      {
+         return result;
+      }
+      bufferSize = (int)(requiredSize + 1);
+      result2 = (char*)malloc(bufferSize * sizeof(char));
+      ExpandEnvironmentStringsA(result, result2, bufferSize);
+      free(result);
+      return result2;
+   }
+   else
+   {
+      return result;
+   }
+#else
+   return utf8_to_local_string_alloc(str);
+#endif
+}
+
+
+/* Returned pointer MUST be freed by the caller if non-NULL. */
 char* local_to_utf8_string_alloc(const char *str)
 {
    return mb_to_mb_string_alloc(str, CODEPAGE_LOCAL, CODEPAGE_UTF8);

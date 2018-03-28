@@ -141,7 +141,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
    (void)file_info;
 
 #if defined(LEGACY_WIN32)
-   path_local = utf8_to_local_string_alloc(path);
+   path_local = utf8_to_local_string_alloc_expand_environment_strings(path);
    file_info  = GetFileAttributes(path_local);
 
    _stat(path_local, &buf);
