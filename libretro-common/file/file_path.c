@@ -793,7 +793,7 @@ bool path_is_absolute(const char *path)
  **/
 void path_resolve_realpath(char *buf, size_t size)
 {
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
    char tmp[PATH_MAX_LENGTH];
 
    tmp[0] = '\0';
@@ -971,7 +971,7 @@ void fill_short_pathname_representation_noext(char* out_rep,
 void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size)
 {
-#if !defined(RARCH_CONSOLE)
+#if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
    if (*in_path == '~')
    {
       const char *home = getenv("HOME");
@@ -1020,7 +1020,7 @@ void fill_pathname_expand_special(char *out_path,
 void fill_pathname_abbreviate_special(char *out_path,
       const char *in_path, size_t size)
 {
-#if !defined(RARCH_CONSOLE)
+#if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
    unsigned i;
    const char *candidates[3];
    const char *notations[3];
