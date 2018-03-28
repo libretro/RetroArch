@@ -372,6 +372,44 @@ char* local_to_utf8_string_alloc(const char *str)
 }
 
 /* Returned pointer MUST be freed by the caller if non-NULL. */
+wchar_t* utf8_to_utf16_string_alloc_expand_environment_strings(const char *str)
+{
+   /* Windows only for now, otherwise just returns utf8_to_utf16_string_alloc */
+#ifdef _WIN32
+   wchar_t *result;
+   wchar_t *result2;
+   DWORD requiredSize;
+   int bufferSize;
+
+   result = utf8_to_utf16_string_alloc(str);
+   if (result == NULL)
+   {
+      return NULL;
+   }
+   /* if the path contains %, try expanding the environment strings */
+   if (wcschr(result, L'%'))
+   {
+      requiredSize = ExpandEnvironmentStringsW(result, NULL, 0);
+      if (requiredSize == 0)
+      {
+         return result;
+      }
+      bufferSize = (int)(requiredSize + 1);
+      result2 = (wchar_t*)malloc(bufferSize * sizeof(wchar_t));
+      ExpandEnvironmentStringsW(result, result2, bufferSize);
+      free(result);
+      return result2;
+   }
+   else
+   {
+      return result;
+   }
+#else
+   return utf8_to_utf16_string_alloc(str);
+#endif
+}
+
+/* Returned pointer MUST be freed by the caller if non-NULL. */
 wchar_t* utf8_to_utf16_string_alloc(const char *str)
 {
 #ifdef _WIN32

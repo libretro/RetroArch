@@ -65,7 +65,7 @@ static void *nbio_stdio_open(const char * filename, unsigned mode)
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
    FILE* f                     = fopen(filename, stdio_modes[mode]);
 #else
-   wchar_t *filename_wide      = utf8_to_utf16_string_alloc(filename);
+   wchar_t *filename_wide      = utf8_to_utf16_string_alloc_expand_environment_strings(filename);
    FILE* f                     = _wfopen(filename_wide, stdio_modes[mode]);
 
    if (filename_wide)

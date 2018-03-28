@@ -458,7 +458,9 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
       ":\\states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-      ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+	   ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CACHE],
+	   "%temp%/retroarch_temp/", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)

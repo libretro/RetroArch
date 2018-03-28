@@ -78,7 +78,7 @@ dylib_t dylib_load(const char *path)
 #ifdef LEGACY_WIN32
    dylib_t lib  = LoadLibrary(path);
 #else
-   wchar_t *pathW = utf8_to_utf16_string_alloc(path);
+   wchar_t *pathW = utf8_to_utf16_string_alloc_expand_environment_strings(path);
    dylib_t lib  = LoadLibraryW(pathW);
 
    free(pathW);

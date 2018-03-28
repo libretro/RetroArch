@@ -68,7 +68,7 @@ static void *nbio_mmap_win32_open(const char * filename, unsigned mode)
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
    HANDLE file                       = CreateFile(filename, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
 #else
-   wchar_t *filename_wide            = utf8_to_utf16_string_alloc(filename);
+   wchar_t *filename_wide            = utf8_to_utf16_string_alloc_expand_environment_strings(filename);
    HANDLE file                       = CreateFileW(filename_wide, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
 
    if (filename_wide)

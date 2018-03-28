@@ -149,7 +149,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
    if (path_local)
      free(path_local);
 #else
-   path_wide = utf8_to_utf16_string_alloc(path);
+   path_wide = utf8_to_utf16_string_alloc_expand_environment_strings(path);
    file_info = GetFileAttributesW(path_wide);
 
    _wstat(path_wide, &buf);
@@ -286,7 +286,7 @@ bool path_mkdir(const char *dir)
 #ifdef LEGACY_WIN32
       int ret = _mkdir(dir);
 #else
-      wchar_t *dirW = utf8_to_utf16_string_alloc(dir);
+      wchar_t *dirW = utf8_to_utf16_string_alloc_expand_environment_strings(dir);
       int ret = -1;
 
       if (dirW)

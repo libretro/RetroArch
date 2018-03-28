@@ -131,7 +131,7 @@ struct RDIR *retro_opendir(const char *name)
    if (path_local)
       free(path_local);
 #else
-   path_wide       = utf8_to_utf16_string_alloc(path_buf);
+   path_wide       = utf8_to_utf16_string_alloc_expand_environment_strings(path_buf);
    rdir->directory = FindFirstFileW(path_wide, &rdir->entry);
 
    if (path_wide)
