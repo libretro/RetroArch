@@ -31,10 +31,10 @@
 #include "../../libretro-common/include/retro_timers.h"
 #include "../../configuration.h"
 
-static dylib_t vulkan_library;
-static VkInstance cached_instance;
-static VkDevice cached_device;
-static retro_vulkan_destroy_device_t cached_destroy_device;
+static dylib_t                       vulkan_library;
+static VkInstance                    cached_instance_vk;
+static VkDevice                      cached_device_vk;
+static retro_vulkan_destroy_device_t cached_destroy_device_vk;
 
 #ifdef VULKAN_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
@@ -1437,7 +1437,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       iface = NULL;
    }
 
-   if (!cached_device && iface && iface->create_device)
+   if (!cached_device_vk && iface && iface->create_device)
    {
       struct retro_vulkan_context context = { 0 };
       const VkPhysicalDeviceFeatures features = { 0 };
@@ -1478,10 +1478,10 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
    }
 
-   if (cached_device && cached_destroy_device)
+   if (cached_device_vk && cached_destroy_device_vk)
    {
-      vk->context.destroy_device = cached_destroy_device;
-      cached_destroy_device = NULL;
+      vk->context.destroy_device = cached_destroy_device_vk;
+      cached_destroy_device_vk   = NULL;
    }
 
    if (!vulkan_context_init_gpu(vk))
@@ -1565,10 +1565,10 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       device_info.ppEnabledLayerNames     = device_layers;
 #endif
 
-      if (cached_device)
+      if (cached_device_vk)
       {
-         vk->context.device = cached_device;
-         cached_device      = NULL;
+         vk->context.device = cached_device_vk;
+         cached_device_vk   = NULL;
 
          video_driver_set_video_cache_context_ack();
          RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
@@ -1736,10 +1736,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       }
    }
 
-   if (cached_instance)
+   if (cached_instance_vk)
    {
-      vk->context.instance           = cached_instance;
-      cached_instance                = NULL;
+      vk->context.instance           = cached_instance_vk;
+      cached_instance_vk             = NULL;
       res                            = VK_SUCCESS;
    }
    else
@@ -2239,9 +2239,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
    if (video_driver_is_video_cache_context())
    {
-      cached_device         = vk->context.device;
-      cached_instance       = vk->context.instance;
-      cached_destroy_device = vk->context.destroy_device;
+      cached_device_vk         = vk->context.device;
+      cached_instance_vk       = vk->context.instance;
+      cached_destroy_device_vk = vk->context.destroy_device;
    }
    else
    {
@@ -2253,6 +2253,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
             vk->context.destroy_device();
 
          vkDestroyInstance(vk->context.instance, NULL);
+
          if (vulkan_library)
          {
             dylib_close(vulkan_library);
