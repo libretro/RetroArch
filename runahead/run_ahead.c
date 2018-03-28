@@ -36,9 +36,6 @@ static void runahead_resume_video(void);
 void run_ahead(int runAheadCount, bool useSecondary);
 void runahead_destroy(void);
 
-static void runahead_destroy(void);
-static bool runahead_create(void);
-
 static size_t runahead_save_state_size = -1;
 
 /* Save State List for Run Ahead */
