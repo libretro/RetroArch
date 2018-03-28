@@ -39,7 +39,7 @@
 #include "../drivers_shader/slang_process.h"
 #endif
 
-static D3D11Device           cached_device;
+static D3D11Device           cached_device_d3d11;
 static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
 static D3D11DeviceContext    cached_context;
 
@@ -555,7 +555,7 @@ static void d3d11_gfx_free(void* data)
 
 	if (video_driver_is_video_cache_context())
 	{
-		cached_device = d3d11->device;
+      cached_device_d3d11 = d3d11->device;
 		cached_context = d3d11->context;
 		cached_supportedFeatureLevel = d3d11->supportedFeatureLevel;
 	}
@@ -632,13 +632,13 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 #ifdef DEBUG
       flags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
-		if(cached_device && cached_context)
+		if(cached_device_d3d11 && cached_context)
 		{
 			IDXGIFactory* dxgiFactory = NULL;
 			IDXGIDevice* dxgiDevice = NULL;
 			IDXGIAdapter* adapter = NULL;
 
-			d3d11->device = cached_device;
+			d3d11->device = cached_device_d3d11;
 			d3d11->context = cached_context;
 			d3d11->supportedFeatureLevel = cached_supportedFeatureLevel;
 
