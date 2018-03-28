@@ -743,6 +743,11 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                   RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
             break;
 
+         /* Must handle '?' otherwise you get an infinite loop */
+         case '?':
+            retroarch_print_help(argv[0]);
+            retroarch_fail(1, "retroarch_parse_input()");
+            break;
          /* All other arguments are handled in the second pass */
       }
    }
