@@ -328,16 +328,12 @@ static void synchronized_process_adapters(wiiu_hid_t *hid)
    {
      switch(adapter->state)
      {
-       case ADAPTER_STATE_DONE:
-          break;
        case ADAPTER_STATE_NEW:
           adapter->state = try_init_driver(adapter);
           break;
        case ADAPTER_STATE_READY:
        case ADAPTER_STATE_READING:
-#if 0
-          adapter->driver->poll();
-#endif
+       case ADAPTER_STATE_DONE:
           break;
        default:
           RARCH_ERR("[hid]: Invalid adapter state: %d\n", adapter->state);

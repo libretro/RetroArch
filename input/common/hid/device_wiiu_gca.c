@@ -40,14 +40,12 @@ typedef struct gca_pad_data
    uint8_t data[9];      // pad data
    uint32_t slot;        // slot this pad occupies
    uint32_t buttons;     // digital button state
-   char *name;           // name of the pad
 } gca_pad_t;
 
 
 static void update_pad_state(wiiu_gca_instance_t *instance);
 static joypad_connection_t *register_pad(wiiu_gca_instance_t *instance, int port);
 static void unregister_pad(wiiu_gca_instance_t *instance, int port);
-static void set_pad_name_for_port(gca_pad_t *pad, int port);
 
 extern pad_connection_interface_t wiiu_gca_pad_connection;
 
@@ -91,10 +89,17 @@ static void wiiu_gca_handle_packet(void *data, uint8_t *buffer, size_t size)
 {
    wiiu_gca_instance_t *instance = (wiiu_gca_instance_t *)data;
    if(!instance || !instance->online)
+   {
+      RARCH_WARN("[gca]: instance null or not ready yet.\n");
       return;
+   }
 
    if(size > sizeof(instance->device_state))
+   {
+      RARCH_WARN("[gca]: packet size %d is too big for buffer of size %d\n",
+         size, sizeof(instance->device_state));
       return;
+   }
 
    memcpy(instance->device_state, buffer, size);
    update_pad_state(instance);
@@ -141,29 +146,6 @@ static void update_pad_state(wiiu_gca_instance_t *instance)
    }
 }
 
-/**
- * This is kind of cheating because it's taking advantage of the fact that
- * we know what the pad handle data format is. It'd be nice if the pad
- * interface had a set_name function so this wouldn't be required.
- */
-static void set_pad_name_for_port(gca_pad_t *pad, int port)
-{
-   char buf[45];
-
-   if(port >= 4)
-      return;
-
-   snprintf(buf, 32, "Nintendo Gamecube Controller [GCA Port %d]", port);
-   if(pad->name)
-   {
-      free(pad->name);
-      pad->name = NULL;
-   }
-
-   pad->name = strdup(buf);
-}
-
-
 static joypad_connection_t *register_pad(wiiu_gca_instance_t *instance, int port) {
    int slot;
    joypad_connection_t *result;
@@ -185,7 +167,6 @@ static joypad_connection_t *register_pad(wiiu_gca_instance_t *instance, int port
    result = &(hid_instance.pad_list[slot]);
    result->iface = &wiiu_gca_pad_connection;
    result->data = result->iface->init(instance, slot, hid_instance.os_driver);
-   set_pad_name_for_port(result->data, port);
    result->connected = true;
    input_pad_connect(slot, hid_instance.pad_driver);
 
@@ -243,12 +224,6 @@ static void wiiu_gca_pad_deinit(void *data)
 
   if(pad)
   {
-    if(pad->name)
-    {
-      free(pad->name);
-      pad->name = NULL;
-    }
-
     free(pad);
   }
 }
@@ -338,7 +313,7 @@ const char *wiiu_gca_get_name(void *data)
 {
   gca_pad_t *pad = (gca_pad_t *)data;
 
-  return pad->name;
+  return "GameCube Controller";
 }
 
 pad_connection_interface_t wiiu_gca_pad_connection = {

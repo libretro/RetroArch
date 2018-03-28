@@ -29,29 +29,31 @@ static const char *hidpad_name(unsigned pad);
 
 static bool ready = false;
 
-static unsigned to_slot(unsigned pad)
-{
-   return pad - (WIIU_WIIMOTE_CHANNELS+1);
-}
-
 static bool init_hid_driver(void)
 {
-   unsigned connections_size        = MAX_USERS - (WIIU_WIIMOTE_CHANNELS+1);
-
    memset(&hid_instance, 0, sizeof(hid_instance));
 
-   return hid_init(&hid_instance, &wiiu_hid, &hidpad_driver, connections_size);
+   return hid_init(&hid_instance, &wiiu_hid, &hidpad_driver, MAX_USERS);
 }
 
 static bool hidpad_init(void *data)
 {
    (void *)data;
+   int i;
 
    if(!init_hid_driver())
    {
       RARCH_ERR("Failed to initialize HID driver.\n");
       return false;
    }
+
+/*   hid_instance.pad_list[0].connected = true; */
+
+   for(i = 0; i < (WIIU_WIIMOTE_CHANNELS+1); i++)
+   {
+      hid_instance.pad_list[i].connected = true;
+   }
+
 
    hidpad_poll();
    ready = true;
@@ -77,7 +79,7 @@ static bool hidpad_button(unsigned pad, uint16_t button)
       return false;
 
 #if 0
-   return hid_driver->button(hid_data, to_slot(pad), button);
+   return hid_driver->button(hid_data, pad, button);
 #else
    return false;
 #endif
@@ -89,7 +91,7 @@ static void hidpad_get_buttons(unsigned pad, retro_bits_t *state)
     BIT256_CLEAR_ALL_PTR(state);
 
 #if 0
-  hid_driver->get_buttons(hid_data, to_slot(pad), state);
+  hid_driver->get_buttons(hid_data, pad, state);
 #endif
   BIT256_CLEAR_ALL_PTR(state);
 }
@@ -100,7 +102,7 @@ static int16_t hidpad_axis(unsigned pad, uint32_t axis)
    return 0;
 
 #if 0
-   return hid_driver->axis(hid_data, to_slot(pad), axis);
+   return hid_driver->axis(hid_data, pad, axis);
 #else
    return 0;
 #endif
@@ -120,7 +122,7 @@ static const char *hidpad_name(unsigned pad)
 #if 1
    return PAD_NAME_HID;
 #else
-   return hid_driver->name(hid_data, to_slot(pad));
+   return hid_driver->name(hid_data, pad);
 #endif
 }
 
