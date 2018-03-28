@@ -47,6 +47,7 @@
 
 #define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
+#define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] |= 0 << ((key) % 32)
 
 struct input_mapper
 {
@@ -82,9 +83,10 @@ void input_mapper_free(input_mapper_t *handle)
 
 void input_mapper_poll(input_mapper_t *handle)
 {
-   int i;
+   int i, j;
    settings_t *settings = config_get_ptr();
    unsigned device      = settings->uints.input_libretro_device[handle->port];
+bool key_event[RARCH_CUSTOM_BIND_LIST_END];
 #ifdef HAVE_MENU
    bool menu_is_alive   = menu_driver_is_alive();
 #endif
@@ -100,23 +102,33 @@ void input_mapper_poll(input_mapper_t *handle)
 #endif
 
    memset(handle->keys, 0, sizeof(handle->keys));
-
-   for (i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+   i = 0;
+   for (i = 0; i < 8; i++)
    {
-      if (i < RETROK_LAST)
+      for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
       {
-         if (input_state(handle->port, RETRO_DEVICE_JOYPAD, 0, i))
+         if (j < RETROK_LAST)
          {
-            MAPPER_SET_KEY (handle,
-                  settings->uints.input_keymapper_ids[i]);
-            input_keyboard_event(true,
-                  settings->uints.input_keymapper_ids[i],
-                  0, 0, RETRO_DEVICE_KEYBOARD);
+            if (input_state(i, RETRO_DEVICE_JOYPAD, 0, j) && settings->uints.input_keymapper_multi_ids[i][j] != RETROK_UNKNOWN)
+            {
+               MAPPER_SET_KEY (handle,
+                  settings->uints.input_keymapper_multi_ids[i][j]);
+               input_keyboard_event(true,
+                     settings->uints.input_keymapper_multi_ids[i][j],
+                     0, 0, RETRO_DEVICE_KEYBOARD);
+               key_event[j] = true;
+            }
+            else
+            {
+               if (key_event[j] == false && 
+                  settings->uints.input_keymapper_multi_ids[i][j] != RETROK_UNKNOWN)
+               {
+                  input_keyboard_event(false,
+                        settings->uints.input_keymapper_multi_ids[i][j],
+                        0, 0, RETRO_DEVICE_KEYBOARD);
+               }
+            }
          }
-         else
-            input_keyboard_event(false,
-                  settings->uints.input_keymapper_ids[i],
-                  0, 0, RETRO_DEVICE_KEYBOARD);
       }
    }
 }

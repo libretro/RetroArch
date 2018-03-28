@@ -631,15 +631,22 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    char *s2, size_t len2)
 {
    char desc[PATH_MAX_LENGTH];
-   unsigned key_id;
+   unsigned key_id, id;
    unsigned remap_id;
+   unsigned offset = 0;
+
    settings_t *settings = config_get_ptr();
 
    if (!settings)
       return;
 
+   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - (MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
+
+   id = (type / (offset + 1)) - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
    remap_id =
-      settings->uints.input_keymapper_ids[type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN];
+      settings->uints.input_keymapper_multi_ids[offset][id];
+
+   RARCH_LOG("o: %d, type: %d, remap_id: %d\n", offset, type, remap_id);
 
    for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
    {

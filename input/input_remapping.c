@@ -98,6 +98,10 @@ bool input_remapping_load_file(void *data, const char *path)
             else
                settings->uints.input_keymapper_ids[j] = RETROK_UNKNOWN;
          }
+         if (config_get_int(conf, keymapper_ident[j], &key_remap))
+            settings->uints.input_keymapper_multi_ids[i][j] = key_remap;
+         else
+            settings->uints.input_keymapper_multi_ids[i][j] = RETROK_UNKNOWN;
 
 
       }
@@ -205,6 +209,7 @@ bool input_remapping_save_file(const char *path)
             if (settings->uints.keymapper_port == i &&
                 settings->uints.input_keymapper_ids[j] != RETROK_UNKNOWN)
                config_set_int(conf, keymapper_ident[j], settings->uints.input_keymapper_ids[j]);
+
          }
          else
          {

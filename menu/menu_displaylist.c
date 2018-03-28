@@ -3280,6 +3280,7 @@ static int menu_displaylist_parse_options_remappings(
 
       if (device == RETRO_DEVICE_KEYBOARD)
       {
+         for (int i = 0; i < 8; i++)
          for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
          {
             unsigned user           = settings->uints.keymapper_port + 1;
@@ -3288,9 +3289,9 @@ static int menu_displaylist_parse_options_remappings(
             const struct retro_keybind *auto_bind = NULL;
             const struct retro_keybind *keybind   = NULL;
 
-            keybind   = &input_config_binds[settings->uints.keymapper_port][retro_id];
+            keybind   = &input_config_binds[i][retro_id];
             auto_bind = (const struct retro_keybind*)
-               input_config_get_bind_auto(settings->uints.keymapper_port, retro_id);
+               input_config_get_bind_auto(i, retro_id);
 
             input_config_get_bind_string(descriptor,
                keybind, auto_bind, sizeof(descriptor));
@@ -3298,14 +3299,14 @@ static int menu_displaylist_parse_options_remappings(
             if(!strstr(descriptor, "Auto"))
             {
                const struct retro_keybind *keyptr =
-                  &input_config_binds[settings->uints.keymapper_port][retro_id];
+                  &input_config_binds[i][retro_id];
 
                strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
             }
 
             menu_entries_append_enum(info->list, descriptor, "",
                   MSG_UNKNOWN,
-                  MENU_SETTINGS_INPUT_DESC_KBD_BEGIN  +  retro_id, 0, 0);
+                  (MENU_SETTINGS_INPUT_DESC_KBD_BEGIN  +  retro_id) * (i + 1), 0, 0);
          }
       }
    }
