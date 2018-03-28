@@ -1445,6 +1445,12 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHUTDOWN,
       "Shutdown")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
       "Slow-Motion Ratio")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
+      "Run-Ahead to Reduce Latency")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
+      "Number of Frames to Run Ahead")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
+      "Runahead Use Second Instance")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
       "Sort Saves In Folders")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
@@ -2719,6 +2725,18 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
       "When in slow motion, content will slow down by the factor specified/set."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
+      "Run core logic one or more frames ahead then load the state back to reduce perceived input lag."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+      "The number of frames to run ahead. Causes gameplay issues such as jitter if you exceed the number of lag frames internal to the game."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
+      "Use a second instance of the RetroArch core to run ahead. Prevents audio problems due to loading state."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_ENABLE,

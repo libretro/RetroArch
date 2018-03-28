@@ -589,6 +589,12 @@ static const float slowmotion_ratio = 3.0;
 /* Maximum fast forward ratio. */
 static const float fastforward_ratio = 0.0;
 
+/* Run core logic one or more frames ahead then load the state back to reduce perceived input lag. */
+static const unsigned run_ahead_frames = 1;
+
+/* When using the Run Ahead feature, use a secondary instance of the core. */
+static const bool run_ahead_secondary_instance = true;
+
 /* Enable stdin/network command interface. */
 static const bool network_cmd_enable = false;
 static const uint16_t network_cmd_port = 55355;
