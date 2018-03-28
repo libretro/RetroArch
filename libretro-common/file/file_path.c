@@ -1107,7 +1107,7 @@ void path_basedir_wrapper(char *path)
       snprintf(path, 3, ".%s", path_default_slash());
 }
 
-#if !defined(RARCH_CONSOLE)
+#if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
 void fill_pathname_application_path(char *s, size_t len)
 {
    size_t i;
