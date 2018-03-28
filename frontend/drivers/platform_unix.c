@@ -2372,8 +2372,15 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
          {
             unsigned j;
 
-            /* A successful close does not guarantee that the data has been successfully saved to disk, as the kernel defers writes. It is not common for a file system to flush the buffers when the stream is closed.
-             * So we manually fsync() here to flush the data to disk, to make sure that the new data is immediately available when the file is re-read.
+            /* A successful close does not guarantee that the 
+             * data has been successfully saved to disk, 
+             * as the kernel defers writes. It is 
+             * not common for a file system to flush 
+             * the buffers when the stream is closed.
+             *
+             * So we manually fsync() here to flush the data 
+             * to disk, to make sure that the new data is 
+             * immediately available when the file is re-read.
              */
             for (j = 0; j < inotify_data->wd_list->count; j++)
             {
@@ -2381,7 +2388,7 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
                {
                   /* found the right file, now sync it */
                   const char *path = inotify_data->path_list->elems[j].data;
-                  FILE *fp = fopen_utf8(path, "rb");
+                  FILE         *fp = (FILE*)fopen_utf8(path, "rb");
 
                   RARCH_LOG("file change detected: %s\n", path);
 

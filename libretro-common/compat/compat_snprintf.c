@@ -25,7 +25,6 @@
 
 #include <retro_common.h>
 
-#include <stdio.h>
 #include <stdarg.h>
 
 #if _MSC_VER < 1800

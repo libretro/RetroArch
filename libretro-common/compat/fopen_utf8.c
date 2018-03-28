@@ -1,5 +1,6 @@
 #include <compat/fopen_utf8.h>
 #include <encodings/utf.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
@@ -11,7 +12,7 @@
 #ifdef _WIN32
 #undef fopen
 
-FILE* fopen_utf8(const char * filename, const char * mode)
+void *fopen_utf8(const char * filename, const char * mode)
 {
 #if defined(_XBOX)
    return fopen(filename, mode);
