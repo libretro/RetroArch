@@ -3108,6 +3108,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    menu_display_rotate_z(&rotate_draw, video_info);
    menu_display_blend_begin(video_info);
 
+   /* Do not draw the right thumbnail if there is no space available */
+
+   const int min_thumb_size = 50;
+
+   if (((xmb->margins_screen_top + xmb->icon_size + min_thumb_size) <= height) &&
+      ((xmb->margins_screen_left * scale_mod[5] + xmb->icon_spacing_horizontal +
+        xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4 + min_thumb_size) <= width))
+   {
    if (xmb->savestate_thumbnail)
       xmb_draw_thumbnail(video_info,
             xmb, &coord_white[0], width, height,
@@ -3168,7 +3176,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->thumbnail);
 
    }
+   }
 
+   /* Do not draw the left thumbnail if there is no space available */
+
+   if ((xmb->margins_screen_top + xmb->icon_size * (!(xmb->depth == 1)? 2.1 : 1) + min_thumb_size) <= window_height)
+   {
    /* Left Thumbnail */
 
    if (xmb->left_thumbnail
@@ -3204,7 +3217,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       left_thumb_width, left_thumb_height,
       xmb->left_thumbnail);
    }
-
+   }
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
 
