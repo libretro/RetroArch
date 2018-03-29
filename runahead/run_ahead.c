@@ -83,9 +83,9 @@ static void runahead_save_state_list_rotate(void)
    void *firstElement;
    firstElement = runahead_save_state_list->data[0];
    for (i = 1; i < runahead_save_state_list->size; i++)
-      runahead_save_state_list->data[i - 1] = 
-         runahead_save_state_list->data[i - 1];
-   runahead_save_state_list->data[runahead_save_state_list->size - 1] = 
+      runahead_save_state_list->data[i - 1] =
+         runahead_save_state_list->data[i];
+   runahead_save_state_list->data[runahead_save_state_list->size - 1] =
       firstElement;
 }
 #endif
@@ -268,7 +268,7 @@ void run_ahead(int runAheadCount, bool useSecondary)
          if (!runahead_save_state())
             return;
 
-         /* Could not create a secondary core. 
+         /* Could not create a secondary core.
           * RunAhead wll only use the main core now. */
          if (!runahead_load_state_secondary())
             return;
@@ -281,7 +281,7 @@ void run_ahead(int runAheadCount, bool useSecondary)
             runahead_resume_audio();
             runahead_resume_video();
 
-            /* Could not create a secondary core. RunAhead 
+            /* Could not create a secondary core. RunAhead
              * will only use the main core now. */
             if (!okay)
                return;
@@ -291,7 +291,7 @@ void run_ahead(int runAheadCount, bool useSecondary)
       okay = runahead_run_secondary();
       runahead_resume_audio();
 
-      /* Could not create a secondary core. RunAhead 
+      /* Could not create a secondary core. RunAhead
        * will only use the main core now. */
       if (!okay)
          return;
@@ -331,7 +331,7 @@ static bool runahead_create(void)
 
 static bool runahead_save_state(void)
 {
-   retro_ctx_serialize_info_t *serialize_info = 
+   retro_ctx_serialize_info_t *serialize_info =
       (retro_ctx_serialize_info_t*)runahead_save_state_list->data[0];
    bool okay = core_serialize(serialize_info);
 
@@ -355,7 +355,7 @@ static bool runahead_load_state(void)
 
 static bool runahead_load_state_secondary(void)
 {
-   retro_ctx_serialize_info_t *serialize_info = 
+   retro_ctx_serialize_info_t *serialize_info =
       (retro_ctx_serialize_info_t*)runahead_save_state_list->data[0];
    bool okay = secondary_core_deserialize(serialize_info->data_const, serialize_info->size);
 
