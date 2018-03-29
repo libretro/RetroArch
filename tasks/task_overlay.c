@@ -327,10 +327,14 @@ static bool task_overlay_resolve_targets(struct overlay *ol,
    unsigned i;
    struct overlay *current = (struct overlay*)&ol[idx];
 
+   if (!current)
+      return false;
+
    for (i = 0; i < current->size; i++)
    {
-      ssize_t next_idx  = 0;
-      const char *next = current->descs[i].next_index_name;
+      struct overlay_desc *desc = (struct overlay_desc*)&current->descs[i];
+      const char *next          = desc ? desc->next_index_name : NULL;
+      ssize_t         next_idx  = (idx + 1) & size;
 
       if (!string_is_empty(next))
       {
@@ -343,10 +347,8 @@ static bool task_overlay_resolve_targets(struct overlay *ol,
             return false;
          }
       }
-      else
-         next_idx = (idx + 1) & size;
 
-      current->descs[i].next_index = (unsigned)next_idx;
+      desc->next_index = (unsigned)next_idx;
    }
 
    return true;
