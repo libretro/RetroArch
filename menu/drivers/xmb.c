@@ -3127,20 +3127,36 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 #endif
 
       /* Limit thumbnail height to screen height + margin. */
+
+      thumb_width = xmb->thumbnail_width;
+      thumb_height = xmb->thumbnail_height;
+      float window_width                  = video_info->width;
+      float window_height                 = video_info->height;
+      const float around_thumb_margin     = 0.96;
+
       if( xmb->margins_screen_top + xmb->icon_size + xmb->thumbnail_height * scale_mod[4] >=
-         (float)(height * 0.96) )
+         (window_height * around_thumb_margin) )
       {
-         thumb_width = xmb->thumbnail_width *
-            (((float)(height * 0.96) - xmb->margins_screen_top - xmb->icon_size) /
-               (xmb->thumbnail_height * scale_mod[4]));
-         thumb_height = xmb->thumbnail_height *
-            (((float)(height * 0.96) - xmb->margins_screen_top - xmb->icon_size) /
-               (xmb->thumbnail_height * scale_mod[4]));
+         thumb_width = thumb_width *
+            (((window_height * around_thumb_margin) - xmb->margins_screen_top - xmb->icon_size) /
+               (thumb_height * scale_mod[4]));
+         thumb_height = thumb_height *
+            (((window_height * around_thumb_margin) - xmb->margins_screen_top - xmb->icon_size) /
+               (thumb_height * scale_mod[4]));
       }
-      else
+
+      /* Limit thumbnail width */
+
+      if ( xmb->margins_screen_left * scale_mod[5] + xmb->icon_spacing_horizontal +
+           xmb->icon_spacing_horizontal*4 - xmb->icon_size / 4 + thumb_width * scale_mod[4]  >=
+           (window_width * around_thumb_margin) )
       {
-         thumb_width = xmb->thumbnail_width;
-         thumb_height = xmb->thumbnail_height;
+         thumb_height = thumb_height *
+            (((window_width * around_thumb_margin) - xmb->margins_screen_left * scale_mod[5] - xmb->icon_spacing_horizontal -
+            xmb->icon_spacing_horizontal * 4 + xmb->icon_size / 4) / (thumb_width * scale_mod[4]));
+         thumb_width  = thumb_width  *
+            (((window_width * around_thumb_margin) - xmb->margins_screen_left * scale_mod[5] - xmb->icon_spacing_horizontal -
+            xmb->icon_spacing_horizontal * 4 + xmb->icon_size / 4) / (thumb_width * scale_mod[4]));
       }
 
       xmb_draw_thumbnail(video_info,
