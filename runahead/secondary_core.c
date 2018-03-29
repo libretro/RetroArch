@@ -73,21 +73,16 @@ char* get_temp_directory_alloc(void)
 {
 #ifdef _WIN32
 #ifdef LEGACY_WIN32
-   DWORD pathLength;
-   char *path;
+   DWORD pathLength = GetTempPath(0, NULL) + 1;
+   char *path       = (char*)malloc(pathLength * sizeof(char));
 
-   pathLength = GetTempPath(0, NULL) + 1;
-   path = (char*)malloc(pathLength * sizeof(char));
    path[pathLength - 1] = 0;
    GetTempPath(pathLength, path);
    return path;
 #else
-   DWORD pathLength;
-   wchar_t *wideStr;
    char *path;
-
-   pathLength = GetTempPathW(0, NULL) + 1;
-   wideStr = (wchar_t*)malloc(pathLength * sizeof(wchar_t));
+   DWORD pathLength = GetTempPathW(0, NULL) + 1;
+   wchar_t *wideStr = (wchar_t*)malloc(pathLength * sizeof(wchar_t));
    wideStr[pathLength - 1] = 0;
    GetTempPathW(pathLength, wideStr);
 
@@ -96,8 +91,7 @@ char* get_temp_directory_alloc(void)
    return path;
 #endif
 #else
-   char *path;
-   path = strcpy_alloc_force(getenv("TMPDIR");
+   char *path = strcpy_alloc_force(getenv("TMPDIR");
    return path;
 #endif
 }
@@ -177,9 +171,9 @@ void* read_file_data_alloc(const char *fileName, int *size)
 
    fseek(f, 0, SEEK_END);
 #ifdef _WIN32
-   fileSizeLong = _ftelli64(f);
+   fileSizeLong         = _ftelli64(f);
 #else
-   fileSizeLong = ftello64(f);
+   fileSizeLong         = ftello64(f);
 #endif
    fseek(f, 0, SEEK_SET);
 
