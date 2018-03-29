@@ -7,26 +7,13 @@
 #include "dirty_input.h"
 #include "mylist.h"
 #include "secondary_core.h"
+#include "run_ahead.h"
 
 #include "../core.h"
 #include "../dynamic.h"
 #include "../audio/audio_driver.h"
 #include "../gfx/video_driver.h"
 
-static void *runahead_save_state_alloc(void);
-static void runahead_save_state_free(void *state);
-static void runahead_save_state_list_init(size_t saveStateSize);
-static void runahead_save_state_list_destroy(void);
-static void runahead_save_state_list_rotate(void);
-
-static void add_hooks(void);
-static void remove_hooks(void);
-static void deinit_hook(void);
-static void unload_hook(void);
-
-static void runahead_clear_variables(void);
-static void runahead_check_for_gui(void);
-static void runahead_error(void);
 static bool runahead_create(void);
 static bool runahead_save_state(void);
 static bool runahead_load_state(void);
@@ -36,8 +23,6 @@ static void runahead_suspend_audio(void);
 static void runahead_resume_audio(void);
 static void runahead_suspend_video(void);
 static void runahead_resume_video(void);
-void run_ahead(int runAheadCount, bool useSecondary);
-void runahead_destroy(void);
 
 static size_t runahead_save_state_size = -1;
 
@@ -46,9 +31,14 @@ static MyList *runahead_save_state_list;
 
 static void *runahead_save_state_alloc(void)
 {
-   retro_ctx_serialize_info_t *savestate;
-   savestate = (retro_ctx_serialize_info_t*)malloc(sizeof(retro_ctx_serialize_info_t));
+   retro_ctx_serialize_info_t *savestate = (retro_ctx_serialize_info_t*)
+      malloc(sizeof(retro_ctx_serialize_info_t));
+
+   if (!savestate)
+      return NULL;
+
    savestate->size = runahead_save_state_size;
+
    if (runahead_save_state_size > 0 && runahead_save_state_size != -1)
    {
       savestate->data = malloc(runahead_save_state_size);
@@ -56,10 +46,11 @@ static void *runahead_save_state_alloc(void)
    }
    else
    {
-      savestate->data = NULL;
+      savestate->data       = NULL;
       savestate->data_const = NULL;
-      savestate->size = 0;
+      savestate->size       = 0;
    }
+
    return savestate;
 }
 
@@ -84,6 +75,7 @@ static void runahead_save_state_list_destroy(void)
    mylist_destroy(&runahead_save_state_list);
 }
 
+#if 0
 static void runahead_save_state_list_rotate(void)
 {
    int i;
@@ -91,11 +83,12 @@ static void runahead_save_state_list_rotate(void)
    void *firstElement;
    firstElement = runahead_save_state_list->data[0];
    for (i = 1; i < runahead_save_state_list->size; i++)
-   {
-      runahead_save_state_list->data[i - 1] = runahead_save_state_list->data[i - 1];
-   }
-   runahead_save_state_list->data[runahead_save_state_list->size - 1] = firstElement;
+      runahead_save_state_list->data[i - 1] = 
+         runahead_save_state_list->data[i - 1];
+   runahead_save_state_list->data[runahead_save_state_list->size - 1] = 
+      firstElement;
 }
+#endif
 
 /* Hooks - Hooks to cleanup, and add dirty input hooks */
 
@@ -106,8 +99,40 @@ typedef struct retro_core_t _retro_core_t;
 extern _retro_core_t current_core;
 extern struct retro_callbacks retro_ctx;
 
-static void deinit_hook(void);
-static void unload_hook(void);
+static void remove_hooks(void)
+{
+   if (originalRetroDeinit)
+   {
+      current_core.retro_deinit = originalRetroDeinit;
+      originalRetroDeinit       = NULL;
+   }
+
+   if (originalRetroUnload)
+   {
+      current_core.retro_unload_game = originalRetroUnload;
+      originalRetroUnload            = NULL;
+   }
+   remove_input_state_hook();
+}
+
+static void unload_hook(void)
+{
+   remove_hooks();
+   runahead_destroy();
+   secondary_core_destroy();
+   if (current_core.retro_unload_game)
+      current_core.retro_unload_game();
+}
+
+
+static void deinit_hook(void)
+{
+   remove_hooks();
+   runahead_destroy();
+   secondary_core_destroy();
+   if (current_core.retro_deinit)
+      current_core.retro_deinit();
+}
 
 static void add_hooks(void)
 {
@@ -126,43 +151,6 @@ static void add_hooks(void)
    add_input_state_hook();
 }
 
-static void remove_hooks(void)
-{
-   if (originalRetroDeinit)
-   {
-      current_core.retro_deinit = originalRetroDeinit;
-      originalRetroDeinit = NULL;
-   }
-
-   if (originalRetroUnload)
-   {
-      current_core.retro_unload_game = originalRetroUnload;
-      originalRetroUnload = NULL;
-   }
-   remove_input_state_hook();
-}
-
-static void deinit_hook(void)
-{
-   remove_hooks();
-   runahead_destroy();
-   secondary_core_destroy();
-   if (current_core.retro_deinit)
-   {
-      current_core.retro_deinit();
-   }
-}
-
-static void unload_hook(void)
-{
-   remove_hooks();
-   runahead_destroy();
-   secondary_core_destroy();
-   if (current_core.retro_unload_game)
-   {
-      current_core.retro_unload_game();
-   }
-}
 
 /* Runahead Code */
 

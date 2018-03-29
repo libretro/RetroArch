@@ -7,6 +7,7 @@
 RETRO_BEGIN_DECLS
 
 void runahead_destroy(void);
+
 void run_ahead(int runAheadCount, bool useSecondary);
 
 RETRO_END_DECLS
