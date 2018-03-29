@@ -24,6 +24,7 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
+#include "../../configuration.h"
 
 #include "../common/egl_common.h"
 #include "../common/gl_common.h"
@@ -341,6 +342,16 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          CWBorderPixel | CWColormap | CWEventMask |
          (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
+
+   if (fullscreen && config_get_ptr()->bools.video_disable_composition)
+   {
+      uint32_t value = 1;
+      Atom cardinal = XInternAtom(g_x11_dpy, "CARDINAL", False);
+      Atom net_wm_bypass_compositor = XInternAtom(g_x11_dpy, "_NET_WM_BYPASS_COMPOSITOR", False);
+
+      RARCH_LOG("[X/EGL]: Requesting compositor bypass.\n");
+      XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
+   }
 
    if (!egl_create_context(&xegl->egl, (attr != egl_attribs) ? egl_attribs : NULL))
    {

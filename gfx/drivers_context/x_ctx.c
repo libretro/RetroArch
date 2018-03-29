@@ -726,6 +726,15 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    XChangeProperty(g_x11_dpy, g_x11_win, net_wm_icon, cardinal, 32, PropModeReplace, (const unsigned char*)retroarch_icon_data, sizeof(retroarch_icon_data) / sizeof(*retroarch_icon_data));
 
+   if (fullscreen && settings->bools.video_disable_composition)
+   {
+      uint32_t value = 1;
+      Atom net_wm_bypass_compositor = XInternAtom(g_x11_dpy, "_NET_WM_BYPASS_COMPOSITOR", False);
+
+      RARCH_LOG("[GLX]: Requesting compositor bypass.\n");
+      XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
+   }
+
    if (opacity < (unsigned)-1)
    {
       Atom net_wm_opacity = XInternAtom(g_x11_dpy, "_NET_WM_WINDOW_OPACITY", False);
