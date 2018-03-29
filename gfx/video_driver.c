@@ -2521,11 +2521,12 @@ void video_driver_frame(const void *data, unsigned width,
       audio_statistics_t audio_stats         = {0.0f};
       double stddev                          = 0.0;
       struct retro_system_av_info *av_info   = &video_driver_av_info;
-      bool measure_frame_time                = video_monitor_fps_statistics(NULL, &stddev, NULL);
       unsigned red                           = 255;
       unsigned green                         = 255;
       unsigned blue                          = 255;
       unsigned alpha                         = 255;
+
+      video_monitor_fps_statistics(NULL, &stddev, NULL);
 
       video_info.osd_stat_params.x           = 0.010f;
       video_info.osd_stat_params.y           = 0.950f;

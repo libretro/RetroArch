@@ -40,10 +40,6 @@ static char* copy_core_to_temp_file(void);
 static bool write_file_with_random_name(char **tempDllPath,
       const char *retroarchTempPath, const void* data, ssize_t dataSize);
 
-static void* InputListElementConstructor(void);
-
-static void secondary_core_clear(void);
-
 static bool secondary_core_create(void);
 
 bool secondary_core_run_no_input_polling(void);
@@ -180,13 +176,6 @@ bool write_file_with_random_name(char **tempDllPath,
 
    FREE(ext);
    return true;
-}
-
-void secondary_core_clear(void)
-{
-   secondary_library_path = NULL;
-   secondary_module       = NULL;
-   memset(&secondary_core, 0, sizeof(struct retro_core_t));
 }
 
 bool secondary_core_create(void)
