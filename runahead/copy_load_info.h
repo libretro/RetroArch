@@ -1,10 +1,11 @@
 #ifndef __COPY_LOAD_INFO_H__
 #define __COPY_LOAD_INFO_H__
 
-#include "retro_common_api.h"
-#include "libretro.h"
-#include "core.h"
-#include "boolean.h"
+#include <retro_common_api.h>
+#include <libretro.h>
+#include <boolean.h>
+
+#include "../core.h"
 
 RETRO_BEGIN_DECLS
 

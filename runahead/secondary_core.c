@@ -10,17 +10,19 @@
 #endif
 #endif
 
+#include <boolean.h>
+#include <encodings/utf.h>
+#include <compat/fopen_utf8.h>
+#include <compat/unlink_utf8.h>
+#include <dynamic/dylib.h>
+#include <dynamic.h>
+#include <file/file_path.h>
+
 #include "mem_util.h"
-#include "boolean.h"
-#include "encodings/utf.h"
-#include "compat/fopen_utf8.h"
-#include "compat/unlink_utf8.h"
-#include "dynamic/dylib.h"
-#include "dynamic.h"
-#include "core.h"
-#include "file/file_path.h"
-#include "paths.h"
-#include "content.h"
+
+#include "../core.h"
+#include "../paths.h"
+#include "../content.h"
 
 static int port_map[16];
 
@@ -37,18 +39,32 @@ extern enum rarch_core_type last_core_type;
 extern struct retro_callbacks retro_ctx;
 
 static char* get_temp_directory_alloc(void);
+
 static char* copy_core_to_temp_file(void);
+
 static void* read_file_data_alloc(const char *fileName, int *size);
+
 static bool write_file_data(const char *fileName, const void *data, int dataSize);
-static bool write_file_with_random_name(char **tempDllPath, const char *retroarchTempPath, const void* data, int dataSize);
+
+static bool write_file_with_random_name(char **tempDllPath,
+      const char *retroarchTempPath, const void* data, int dataSize);
+
 static void* InputListElementConstructor(void);
+
 static void secondary_core_clear(void);
+
 static bool secondary_core_create(void);
+
 bool secondary_core_run_no_input_polling(void);
+
 bool secondary_core_deserialize(const void *buffer, int size);
+
 void secondary_core_destroy(void);
+
 void set_last_core_type(enum rarch_core_type type);
+
 void remember_controller_port_device(long port, long device);
+
 void clear_controller_port_map(void);
 
 static void free_file(FILE **file_p);
@@ -88,28 +104,21 @@ char* get_temp_directory_alloc(void)
 
 char* copy_core_to_temp_file(void)
 {
-   bool okay;
-   const char *corePath = NULL;  /* ptr to static buffer, do not need to free this */
-   const char *coreBaseName = NULL;  /* ptr to static buffer, do not need to free this */
-   char *tempDirectory = NULL;
-   char *retroarchTempPath = NULL;
-   char *tempDllPath = NULL;
-   void *dllFileData = NULL;
-   int dllFileSize = 0;
-
-   corePath = path_get(RARCH_PATH_CORE);
-   coreBaseName = path_basename(corePath);
+   bool okay                = false;
+   char *tempDirectory      = NULL;
+   char *retroarchTempPath  = NULL;
+   char *tempDllPath        = NULL;
+   void *dllFileData        = NULL;
+   int dllFileSize          = 0;
+   const char *corePath     = path_get(RARCH_PATH_CORE);
+   const char *coreBaseName = path_basename(corePath);
 
    if (strlen(coreBaseName) == 0)
-   {
       goto failed;
-   }
 
    tempDirectory = get_temp_directory_alloc();
-   if (tempDirectory == NULL)
-   {
+   if (!tempDirectory)
       goto failed;
-   }
 
    strcat_alloc(&retroarchTempPath, tempDirectory);
    strcat_alloc(&retroarchTempPath, path_default_slash());
@@ -117,27 +126,25 @@ char* copy_core_to_temp_file(void)
    strcat_alloc(&retroarchTempPath, path_default_slash());
 
    okay = path_mkdir(retroarchTempPath);
+
    if (!okay)
-   {
       goto failed;
-   }
 
    dllFileData = read_file_data_alloc(corePath, &dllFileSize);
-   if (dllFileData == NULL)
-   {
+
+   if (!dllFileData)
       goto failed;
-   }
+
    strcat_alloc(&tempDllPath, retroarchTempPath);
    strcat_alloc(&tempDllPath, coreBaseName);
    okay = write_file_data(tempDllPath, dllFileData, dllFileSize);
+
    if (!okay)
    {
       /* try other file names */
       okay = write_file_with_random_name(&tempDllPath, retroarchTempPath, dllFileData, dllFileSize);
       if (!okay)
-      {
          goto failed;
-      }
    }
 success:
    free_str(&tempDirectory);
@@ -155,20 +162,19 @@ failed:
 
 void* read_file_data_alloc(const char *fileName, int *size)
 {
-   void *data = NULL;
-   FILE *f = NULL;
-   int fileSize = 0;
-   size_t bytesRead = 0;
+   void *data           = NULL;
+   int fileSize         = 0;
+   size_t bytesRead     = 0;
 #ifdef _WIN32
    int64_t fileSizeLong = 0;
 #else
    off64_t fileSizeLong = 0;
 #endif
-   f = (FILE*)fopen_utf8(fileName, "rb");
-   if (f == NULL)
-   {
+   FILE              *f = (FILE*)fopen_utf8(fileName, "rb");
+
+   if (!f)
       goto failed;
-   }
+
    fseek(f, 0, SEEK_END);
 #ifdef _WIN32
    fileSizeLong = _ftelli64(f);
@@ -176,46 +182,48 @@ void* read_file_data_alloc(const char *fileName, int *size)
    fileSizeLong = ftello64(f);
 #endif
    fseek(f, 0, SEEK_SET);
+
    /* 256MB file size limit for DLL files */
    if (fileSizeLong < 0 || fileSizeLong > 256 * 1024 * 1024)
-   {
       goto failed;
-   }
+
    fileSize = (int)fileSizeLong;
-   data = malloc(fileSize);
-   if (data == NULL)
-   {
+   data     = malloc(fileSize);
+
+   if (!data)
       goto failed;
-   }
+
    bytesRead = fread(data, 1, fileSize, f);
+
    if ((int)bytesRead != (int)fileSize)
-   {
       goto failed;
-   }
+
 success:
    free_file(&f);
-   if (size != NULL) *size = fileSize;
+   if (size)
+      *size = fileSize;
    return data;
 failed:
    free_ptr(&data);
    free_file(&f);
-   if (size != NULL) *size = 0;
+   if (size)
+      *size = 0;
    return NULL;
 }
 
 bool write_file_data(const char *fileName, const void *data, int dataSize)
 {
-   bool okay = false;
-   FILE *f = NULL;
+   bool           okay = false;
    size_t bytesWritten = 0;
+   FILE             *f = (FILE*)fopen_utf8(fileName, "wb");
 
-   f = (FILE*)fopen_utf8(fileName, "wb");
-   if (f == NULL) goto failed;
-   bytesWritten = fwrite(data, 1, dataSize, f);
-   if (bytesWritten != dataSize)
-   {
+   if (!f)
       goto failed;
-   }
+   bytesWritten = fwrite(data, 1, dataSize, f);
+
+   if (bytesWritten != dataSize)
+      goto failed;
+
 success:
    free_file(&f);
    return true;
@@ -224,21 +232,20 @@ failed:
    return false;
 }
 
-bool write_file_with_random_name(char **tempDllPath, const char *retroarchTempPath, const void* data, int dataSize)
+bool write_file_with_random_name(char **tempDllPath,
+      const char *retroarchTempPath, const void* data, int dataSize)
 {
-   int extLen;
-   char *ext = NULL;
-   bool okay = false;
-   const int maxAttempts = 30;
-   const char *prefix = "tmp";
-   char numberBuf[32];
-   time_t timeValue = time(NULL);
-   unsigned int numberValue = (unsigned int)timeValue;
-   int number = 0;
    int i;
+   char numberBuf[32];
+   bool okay                = false;
+   const int maxAttempts    = 30;
+   const char *prefix       = "tmp";
+   time_t timeValue         = time(NULL);
+   unsigned int numberValue = (unsigned int)timeValue;
+   int number               = 0;
+   char *ext                = strcpy_alloc_force(path_get_extension(*tempDllPath));
+   int extLen               = strlen(ext);
 
-   ext = strcpy_alloc_force(path_get_extension(*tempDllPath));
-   extLen = strlen(ext);
    if (extLen > 0)
    {
       strcat_alloc(&ext, ".");
@@ -246,7 +253,6 @@ bool write_file_with_random_name(char **tempDllPath, const char *retroarchTempPa
       ext[0] = '.';
       extLen++;
    }
-
 
    /* try up to 30 'random' filenames before giving up */
    for (i = 0; i < 30; i++)
@@ -261,9 +267,7 @@ bool write_file_with_random_name(char **tempDllPath, const char *retroarchTempPa
       strcat_alloc(tempDllPath, ext);
       okay = write_file_data(*tempDllPath, data, dataSize);
       if (okay)
-      {
          break;
-      }
    }
 success:
    free_str(&ext);
@@ -276,7 +280,7 @@ failed:
 void secondary_core_clear(void)
 {
    secondary_library_path = NULL;
-   secondary_module = NULL;
+   secondary_module       = NULL;
    memset(&secondary_core, 0, sizeof(struct retro_core_t));
 }
 
@@ -285,17 +289,17 @@ bool secondary_core_create(void)
    long port, device;
    bool contentless, is_inited;
 
-   if (last_core_type != CORE_TYPE_PLAIN || load_content_info == NULL || load_content_info->special != NULL)
-   {
+   if (  last_core_type != CORE_TYPE_PLAIN || 
+         !load_content_info                ||
+         load_content_info->special)
       return false;
-   }
 
    free_str(&secondary_library_path);
    secondary_library_path = copy_core_to_temp_file();
-   if (secondary_library_path == NULL)
-   {
+
+   if (!secondary_library_path)
       return false;
-   }
+
    /* Load Core */
    if (init_libretro_sym_custom(CORE_TYPE_PLAIN, &secondary_core, secondary_library_path, &secondary_module))
    {
@@ -315,12 +319,13 @@ bool secondary_core_create(void)
       secondary_core.inited = is_inited;
 
       /* Load Content */
-      if (load_content_info == NULL || load_content_info->special != NULL)
+      if (!load_content_info || load_content_info->special)
       {
          /* disabled due to crashes */
          return false;
 #if 0
-         secondary_core.game_loaded = secondary_core.retro_load_game_special(loadContentInfo.special->id, loadContentInfo.info, loadContentInfo.content->size);
+         secondary_core.game_loaded = secondary_core.retro_load_game_special(
+               loadContentInfo.special->id, loadContentInfo.info, loadContentInfo.content->size);
          if (!secondary_core.game_loaded)
          {
             secondary_core_destroy();
@@ -328,7 +333,7 @@ bool secondary_core_create(void)
          }
 #endif
       }
-      else if (load_content_info->content->size > 0 && load_content_info->content->elems[0].data != NULL)
+      else if (load_content_info->content->size > 0 && load_content_info->content->elems[0].data)
       {
          secondary_core.game_loaded = secondary_core.retro_load_game(load_content_info->info);
          if (!secondary_core.game_loaded)
@@ -360,29 +365,23 @@ bool secondary_core_create(void)
       {
          device = port_map[port];
          if (device >= 0)
-         {
             secondary_core.retro_set_controller_port_device(port, device);
-         }
       }
       clear_controller_port_map();
    }
    else
-   {
       return false;
-   }
+
    return true;
 }
 
 bool secondary_core_run_no_input_polling(void)
 {
-   bool okay;
-   if (secondary_module == NULL)
+   if (!secondary_module)
    {
-      okay = secondary_core_create();
+      bool okay = secondary_core_create();
       if (!okay)
-      {
          return false;
-      }
    }
    secondary_core.retro_run();
    return true;
@@ -390,10 +389,9 @@ bool secondary_core_run_no_input_polling(void)
 
 bool secondary_core_deserialize(const void *buffer, int size)
 {
-   bool okay;
-   if (secondary_module == NULL)
+   if (!secondary_module)
    {
-      okay = secondary_core_create();
+      bool okay = secondary_core_create();
       if (!okay)
       {
          secondary_core_destroy();
@@ -405,18 +403,14 @@ bool secondary_core_deserialize(const void *buffer, int size)
 
 void secondary_core_destroy(void)
 {
-   if (secondary_module != NULL)
+   if (secondary_module)
    {
       /* unload game from core */
-      if (secondary_core.retro_unload_game != NULL)
-      {
+      if (secondary_core.retro_unload_game)
          secondary_core.retro_unload_game();
-      }
       /* deinit */
-      if (secondary_core.retro_deinit != NULL)
-      {
+      if (secondary_core.retro_deinit)
          secondary_core.retro_deinit();
-      }
       memset(&secondary_core, 0, sizeof(struct retro_core_t));
 
       dylib_close(secondary_module);
@@ -429,44 +423,34 @@ void secondary_core_destroy(void)
 void remember_controller_port_device(long port, long device)
 {
    if (port >= 0 && port < 16)
-   {
       port_map[port] = device;
-   }
-   if (secondary_module != NULL && secondary_core.retro_set_controller_port_device != NULL)
-   {
+   if (secondary_module && secondary_core.retro_set_controller_port_device)
       secondary_core.retro_set_controller_port_device(port, device);
-   }
 }
 
 void clear_controller_port_map(void)
 {
-   int port;
+   unsigned port;
    for (port = 0; port < 16; port++)
-   {
       port_map[port] = -1;
-   }
 }
 
 static void free_file(FILE **file_p)
 {
-   bool result;
-   if (file_p == NULL)
-   {
+   bool result = false;
+   if (!file_p || !*file_p)
       return;
-   }
-   if (*file_p == NULL)
-   {
-      return;
-   }
-   result = fclose(*file_p) != 0;
+   result  = fclose(*file_p) != 0;
    *file_p = NULL;
    return;
 }
 
 
 #else
-#include "boolean.h"
-#include "core.h"
+#include <boolean.h>
+
+#include "../core.h"
+
 bool secondary_core_run_no_input_polling(void)
 {
    return false;

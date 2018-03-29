@@ -1,8 +1,8 @@
 #ifndef __MYLIST_H__
 #define __MYLIST_H__
 
-#include "retro_common_api.h"
-#include "boolean.h"
+#include <retro_common_api.h>
+#include <boolean.h>
 
 RETRO_BEGIN_DECLS
 

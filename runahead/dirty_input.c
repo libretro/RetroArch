@@ -1,7 +1,9 @@
-#include "core.h"
-#include "boolean.h"
+#include <boolean.h>
+
+#include "../core.h"
+#include "../dynamic.h"
+
 #include "mylist.h"
-#include "dynamic.h"
 #include "mem_util.h"
 
 bool input_is_dirty;
@@ -30,9 +32,9 @@ static bool unserialze_hook(const void *buf, size_t size);
 
 static void* InputListElementConstructor(void)
 {
-   void *ptr;
    const int size = sizeof(InputListElement);
-   ptr = malloc_zero(size);
+   void      *ptr = malloc_zero(size);
+
    return ptr;
 }
 
@@ -41,21 +43,21 @@ static void input_state_destory(void)
    mylist_destroy(&inputStateList);
 }
 
-static void input_state_setlast(unsigned port, unsigned device, unsigned index, unsigned id, int16_t value)
+static void input_state_setlast(unsigned port, unsigned device,
+      unsigned index, unsigned id, int16_t value)
 {
    int i;
    InputListElement *element;
 
-   if (inputStateList == NULL)
-   {
+   if (!inputStateList)
       mylist_create(&inputStateList, 16, InputListElementConstructor, free);
-   }
 
    /* find list item */
    for (i = 0; i < inputStateList->size; i++)
    {
       element = (InputListElement*)inputStateList->data[i];
-      if (element->port == port && element->device == device && element->index == index)
+      if (     element->port == port 
+            && element->device == device && element->index == index)
       {
          element->state[id] = value;
          return;
@@ -71,19 +73,17 @@ static void input_state_setlast(unsigned port, unsigned device, unsigned index, 
 static int16_t input_state_getlast(unsigned port, unsigned device, unsigned index, unsigned id)
 {
    int i;
-   InputListElement *element;
-   if (inputStateList == NULL)
-   {
+   InputListElement *element = NULL;
+
+   if (!inputStateList)
       return 0;
-   }
+
    /* find list item */
    for (i = 0; i < inputStateList->size; i++)
    {
       element = (InputListElement*)inputStateList->data[i];
       if (element->port == port && element->device == device && element->index == index)
-      {
          return element->state[id];
-      }
    }
    return 0;
 }
@@ -95,9 +95,7 @@ static int16_t input_state_with_logging(unsigned port, unsigned device, unsigned
       int16_t result = input_state_callback_original(port, device, index, id);
       int16_t lastInput = input_state_getlast(port, device, index, id);
       if (result != lastInput)
-      {
          input_is_dirty = true;
-      }
       input_state_setlast(port, device, index, id, result);
       return result;
    }
@@ -108,18 +106,14 @@ static void reset_hook(void)
 {
    input_is_dirty = true;
    if (retro_reset_callback_original)
-   {
       retro_reset_callback_original();
-   }
 }
 
 static bool unserialze_hook(const void *buf, size_t size)
 {
    input_is_dirty = true;
    if (retro_unserialize_callback_original)
-   {
       return retro_unserialize_callback_original(buf, size);
-   }
    return false;
 }
 

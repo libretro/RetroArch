@@ -1,12 +1,12 @@
 #ifndef __MEM_UTIL__
 #define __MEM_UTIL__
 
-#include "retro_common_api.h"
-#include "boolean.h"
-
 #include <malloc.h>
 #include <stddef.h>
 #include <string.h>
+
+#include <retro_common_api.h>
+#include <boolean.h>
 
 #define FREE(xxxx) if ((xxxx) != NULL) { free((void*)(xxxx)); } (xxxx) = NULL
 
