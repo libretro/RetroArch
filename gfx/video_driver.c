@@ -119,7 +119,9 @@
 #define video_driver_context_unlock()  ((void)0)
 #endif
 
-bool crt_switching_active;  
+static bool crt_switching_active;  
+static float video_driver_core_hz;
+
 
 typedef struct video_pixel_scaler
 {
@@ -1417,13 +1419,13 @@ void video_driver_monitor_adjust_system_rates(void)
    const struct retro_system_timing *info = (const struct retro_system_timing*)&video_driver_av_info.timing;
 
    rarch_ctl(RARCH_CTL_UNSET_NONBLOCK_FORCED, NULL);
-	ra_core_hz = info->fps;
+	video_driver_core_hz = info->fps;
 
    if (!info || info->fps <= 0.0)
       return;
 
   if (crt_switching_active  == true){
-	timing_skew = fabs(1.0f - info->fps / ra_core_hz);
+	timing_skew = fabs(1.0f - info->fps / video_driver_core_hz);
   }else {
 	  timing_skew = fabs(1.0f - info->fps / video_refresh_rate);
   }
@@ -1437,7 +1439,7 @@ void video_driver_monitor_adjust_system_rates(void)
          (float)info->fps);
 	
   if (crt_switching_active  == true){
-	if (info->fps <= ra_core_hz)
+	if (info->fps <= video_driver_core_hz)
 		return;
   } else {
 	if (info->fps <= video_refresh_rate)
@@ -2597,6 +2599,7 @@ void video_driver_frame(const void *data, unsigned width,
   	/* trigger set resolution*/
 	if (video_info.crt_switch_resolution == true){
 		crt_switching_active = true;
+
 		if (video_info.crt_switch_resolution_super == 2560){
 			width = 2560;
 		}
@@ -2606,7 +2609,7 @@ void video_driver_frame(const void *data, unsigned width,
 		if (video_info.crt_switch_resolution_super == 1920){
 			width = 1920;
 		}
-		switch_res_core(width, height, ra_core_hz);
+		switch_res_core(width, height, video_driver_core_hz);
 	} else if (video_info.crt_switch_resolution == false){
 		crt_switching_active = false;
 	}
