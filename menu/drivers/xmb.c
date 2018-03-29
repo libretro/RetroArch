@@ -3037,6 +3037,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
+   float window_width                      = video_info->width;
+   float window_height                     = video_info->height;
 
    if (!xmb)
       return;
@@ -3138,8 +3140,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
       thumb_width = xmb->thumbnail_width;
       thumb_height = xmb->thumbnail_height;
-      float window_width                  = video_info->width;
-      float window_height                 = video_info->height;
       const float around_thumb_margin     = 0.96;
 
       if( xmb->margins_screen_top + xmb->icon_size + xmb->thumbnail_height * scale_mod[4] >=
