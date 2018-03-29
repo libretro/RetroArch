@@ -2,21 +2,6 @@
 
 #include "mem_util.h"
 
-void *malloc_zero(size_t size)
-{
-   void *ptr = malloc(size);
-   memset(ptr, 0, size);
-   return ptr;
-}
-
-void free_ptr(void **data_p)
-{
-   if (!data_p || !*data_p)
-      return;
-   free(*data_p);
-   *data_p = NULL;
-}
-
 void *memcpy_alloc(const void *src, size_t size)
 {
    void *result = malloc(size);
@@ -44,7 +29,7 @@ char *strcpy_alloc_force(const char *sourceStr)
 {
    char *result = strcpy_alloc(sourceStr);
    if (!result)
-      result = (char*)malloc_zero(1);
+      result = (char*)calloc(1, 1);
    return result;
 }
 

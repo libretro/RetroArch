@@ -25,7 +25,7 @@ static struct retro_game_info* clone_retro_game_info(const
    struct retro_game_info *dest;
    if (src == NULL)
       return NULL;
-   dest       = (struct retro_game_info*)malloc_zero(
+   dest       = (struct retro_game_info*)calloc(1,
          sizeof(struct retro_game_info));
    dest->path = strcpy_alloc(src->path);
    dest->data = memcpy_alloc(src->data, src->size);
@@ -55,10 +55,10 @@ static struct string_list* clone_string_list(const struct string_list *src)
    if (!src)
       return NULL;
 
-   dest         = (struct string_list*)malloc_zero(sizeof(struct string_list));
+   dest         = (struct string_list*)calloc(1, sizeof(struct string_list));
    dest->size   = src->size;
    dest->cap    = src->cap;
-   dest->elems  = (struct string_list_elem*)malloc_zero(sizeof(struct string_list_elem) * dest->size);
+   dest->elems  = (struct string_list_elem*)calloc(dest->size, sizeof(struct string_list_elem));
 
    for (i = 0; i < src->size; i++)
    {
@@ -117,7 +117,7 @@ static void clone_retro_subsystem_rom_info(struct
    dest->desc             = strcpy_alloc(src->desc);
    dest->valid_extensions = strcpy_alloc(src->valid_extensions);
 
-   memory                 = (struct retro_subsystem_memory_info*)malloc_zero(
+   memory                 = (struct retro_subsystem_memory_info*)calloc(1, 
          dest->num_memory * sizeof(struct retro_subsystem_memory_info));
 
    dest->memory           = memory;
@@ -152,14 +152,14 @@ static retro_subsystem_info* clone_retro_subsystem_info(struct
 
    if (src == NULL)
       return NULL;
-   dest           = (struct retro_subsystem_info*)malloc_zero(
+   dest           = (struct retro_subsystem_info*)calloc(1,
          sizeof(struct retro_subsystem_info));
    dest->desc     = strcpy_alloc(src->desc);
    dest->ident    = strcpy_alloc(src->ident);
    dest->num_roms = src->num_roms;
    dest->id       = src->id;
    roms           = (struct retro_subsystem_rom_info*)
-      malloc_zero(src->num_roms * sizeof(struct retro_subsystem_rom_info));
+      calloc(src->num_roms, sizeof(struct retro_subsystem_rom_info));
    dest->roms     = roms;
 
    for (i = 0; i < src->num_roms; i++)
@@ -194,7 +194,7 @@ static struct retro_ctx_load_content_info
    if (src == NULL || src->special != NULL)
       return NULL;   /* refuse to deal with the Special field */
 
-   dest          = (struct retro_ctx_load_content_info*)malloc_zero(
+   dest          = (struct retro_ctx_load_content_info*)calloc(1,
          sizeof(struct retro_ctx_load_content_info));
    dest->info    = clone_retro_game_info(src->info);
    dest->content = clone_string_list(src->content);
