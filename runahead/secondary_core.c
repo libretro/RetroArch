@@ -147,10 +147,9 @@ failed:
 bool write_file_with_random_name(char **tempDllPath,
       const char *retroarchTempPath, const void* data, ssize_t dataSize)
 {
-   int i;
+   unsigned i;
    char numberBuf[32];
    bool okay                = false;
-   const int maxAttempts    = 30;
    const char *prefix       = "tmp";
    time_t timeValue         = time(NULL);
    unsigned int numberValue = (unsigned int)timeValue;
