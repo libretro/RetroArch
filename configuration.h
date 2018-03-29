@@ -334,7 +334,7 @@ typedef struct settings
       unsigned video_window_x;
       unsigned video_window_y;
       unsigned video_window_opacity;
-	  unsigned crt_switch_resolution_super;  //ben
+	  unsigned crt_switch_resolution_super;  
       unsigned video_monitor_index;
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;
