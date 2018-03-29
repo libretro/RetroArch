@@ -12,7 +12,6 @@
 RETRO_BEGIN_DECLS
 
 void *malloc_zero(size_t size);
-void free_str(char **str_p);
 void free_ptr(void **data_p);
 char *strcpy_alloc(const char *sourceStr);
 char *strcpy_alloc_force(const char *sourceStr);

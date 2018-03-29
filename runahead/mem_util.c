@@ -9,11 +9,6 @@ void *malloc_zero(size_t size)
    return ptr;
 }
 
-void free_str(char **str_p)
-{
-   free_ptr((void**)str_p);
-}
-
 void free_ptr(void **data_p)
 {
    if (!data_p || !*data_p)
