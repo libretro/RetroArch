@@ -1670,7 +1670,7 @@ static void d3d12_gfx_set_osd_msg(
    if (d3d12)
    {
       if (d3d12->sprites.enabled)
-         font_driver_render_msg(video_info, font, msg, (const font_params*)params);
+         font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
       else
          printf("OSD msg: %s\n", msg);
    }
