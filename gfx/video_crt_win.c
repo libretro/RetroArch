@@ -24,6 +24,8 @@
 #include "video_crt_switch.h"
 
 static int first_run;
+static int orig_width;			
+static int orig_height;
 
 void check_first_run()
 {		/* ruin of first boot to get current display resolution */
@@ -147,3 +149,5 @@ void video_restore()
 {
 	switch_res(orig_width, orig_height,0,60);
 }
+
+

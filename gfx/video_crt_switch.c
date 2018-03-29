@@ -24,6 +24,7 @@
 
 #include "video_crt_switch.h"
 #include "video_crt_win.h"
+#include "video_crt_linux.h"
 
 static float ra_tmp_core_hz;
 static int ra_core_width;
@@ -31,6 +32,8 @@ static int ra_core_height;
 static int ra_tmp_width;
 static int ra_tmp_height;
 static float fly_aspect;
+static float ra_core_hz;
+static int ra_set_core_hz;
 
 void switch_res_core(int width, int height, float hz)
 {
@@ -139,6 +142,7 @@ void switch_crt_hz()
 	
 	if (ra_core_hz != ra_tmp_core_hz)
 	{
+	
 		if (ra_core_hz < 53 )
 		{
 			ra_set_core_hz = 50;	
@@ -152,7 +156,7 @@ void switch_crt_hz()
 		{	
 			ra_set_core_hz = 60;	
 		}	
-		video_monitor_set_refresh_rate(ra_core_hz);
+		video_monitor_set_refresh_rate(ra_set_core_hz);
 		ra_tmp_core_hz = ra_core_hz;
 	}
 	

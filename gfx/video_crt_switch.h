@@ -17,12 +17,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-static float ra_core_hz; /* Shared with video_driver.c */
-static int ra_set_core_hz;
-static int orig_width;			
-static int orig_height;
-
 void switch_res_core(int width, int height, float hz);
 void check_first_run();
 void screen_setup_aspect(int width, int height);
