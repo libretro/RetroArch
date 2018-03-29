@@ -1474,6 +1474,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("dpi_override_value",           &settings->uints.menu_dpi_override_value, true, menu_dpi_override_value, false);
    SETTING_UINT("menu_thumbnails",              &settings->uints.menu_thumbnails, true, menu_thumbnails_default, false);
 #ifdef HAVE_XMB
+   SETTING_UINT("menu_left_thumbnails",         &settings->uints.menu_left_thumbnails, true, menu_left_thumbnails_default, false);
    SETTING_UINT("xmb_alpha_factor",             &settings->uints.menu_xmb_alpha_factor, true, xmb_alpha_factor, false);
    SETTING_UINT("xmb_scale_factor",             &settings->uints.menu_xmb_scale_factor, true, xmb_scale_factor, false);
    SETTING_UINT("xmb_theme",                    &settings->uints.menu_xmb_theme, true, xmb_icon_theme, false);
@@ -2930,7 +2931,7 @@ bool config_load_override(void)
    config_file_t *new_conf                = NULL;
    bool should_append                     = false;
    rarch_system_info_t *system            = runloop_get_system_info();
-   const char *core_name                  = system ? 
+   const char *core_name                  = system ?
       system->info.library_name : NULL;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
 
@@ -3018,7 +3019,7 @@ bool config_load_override(void)
    if (!should_append)
       goto error;
 
-   /* Re-load the configuration with any overrides 
+   /* Re-load the configuration with any overrides
     * that might have been found */
    buf[0] = '\0';
 
@@ -3103,7 +3104,7 @@ bool config_unload_override(void)
 bool config_load_remap(void)
 {
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
-   char *remap_directory                  = NULL; 
+   char *remap_directory                  = NULL;
    char *core_path                        = NULL;
    char *game_path                        = NULL;
    config_file_t *new_conf                = NULL;
@@ -3123,12 +3124,12 @@ bool config_load_remap(void)
    /* path to the directory containing retroarch.cfg (prefix)    */
    remap_directory                        = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
-   /* final path for core-specific configuration (prefix+suffix) */    
+   /* final path for core-specific configuration (prefix+suffix) */
    core_path                              = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
    /* final path for game-specific configuration (prefix+suffix) */
    game_path                              = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));          
+      malloc(PATH_MAX_LENGTH * sizeof(char));
    remap_directory[0] = core_path[0] = game_path[0] = '\0';
 
    strlcpy(remap_directory,
@@ -3230,7 +3231,7 @@ bool config_load_shader_preset(void)
    char *parent_path                      = NULL;
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = runloop_get_system_info();
-   const char *core_name                  = system 
+   const char *core_name                  = system
       ? system->info.library_name : NULL;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
 
@@ -4181,28 +4182,28 @@ bool config_save_overrides(int override_type)
          char cfg[64];
 
          cfg[0] = '\0';
-         if (settings->uints.input_device[i] 
+         if (settings->uints.input_device[i]
                != overrides->uints.input_device[i])
          {
             snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
             config_set_int(conf, cfg, overrides->uints.input_device[i]);
          }
 
-         if (settings->uints.input_joypad_map[i] 
+         if (settings->uints.input_joypad_map[i]
                != overrides->uints.input_joypad_map[i])
          {
             snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
             config_set_int(conf, cfg, overrides->uints.input_joypad_map[i]);
          }
 
-         if (settings->uints.input_libretro_device[i] 
+         if (settings->uints.input_libretro_device[i]
                != overrides->uints.input_libretro_device[i])
          {
             snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
             config_set_int(conf, cfg, overrides->uints.input_libretro_device[i]);
          }
 
-         if (settings->uints.input_analog_dpad_mode[i] 
+         if (settings->uints.input_analog_dpad_mode[i]
                != overrides->uints.input_analog_dpad_mode[i])
          {
             snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);

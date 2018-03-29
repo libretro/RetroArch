@@ -104,14 +104,22 @@ int action_switch_thumbnail(const char *path,
    if (!settings)
       return -1;
 
-   settings->uints.menu_thumbnails++;
-
-   if (settings->uints.menu_thumbnails > 3)
-      settings->uints.menu_thumbnails = 0;
-
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
-
+   if (settings->uints.menu_thumbnails == 0)
+   {
+      settings->uints.menu_left_thumbnails++;
+      if (settings->uints.menu_left_thumbnails > 3)
+         settings->uints.menu_left_thumbnails = 1;
+      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
+      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+   }
+   else
+   {
+      settings->uints.menu_thumbnails++;
+      if (settings->uints.menu_thumbnails > 3)
+         settings->uints.menu_thumbnails = 1;
+      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
+      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+   }
    return 0;
 }
 

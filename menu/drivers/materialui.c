@@ -992,7 +992,7 @@ static void materialui_render_label_value(
 
    if (texture_switch)
    {
-      /* This will be used instead of label_color if 
+      /* This will be used instead of label_color if
        * texture_switch is 'off' icon */
       float pure_white[16]=  {
          1.00, 1.00, 1.00, 1.00,
@@ -1568,7 +1568,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    {
       materialui_draw_tab_begin(mui,
             video_info,
-            width, height, 
+            width, height,
             footer_bg_color ? &footer_bg_color[0] : NULL,
             &grey_bg[0]);
 
@@ -1860,6 +1860,7 @@ static bool materialui_load_image(void *userdata, void *data, enum menu_image_ty
          menu_display_allocate_white_texture();
          break;
       case MENU_IMAGE_THUMBNAIL:
+      case MENU_IMAGE_LEFT_THUMBNAIL:
       case MENU_IMAGE_SAVESTATE_THUMBNAIL:
          break;
    }

@@ -61,6 +61,7 @@ enum menu_image_type
    MENU_IMAGE_NONE = 0,
    MENU_IMAGE_WALLPAPER,
    MENU_IMAGE_THUMBNAIL,
+   MENU_IMAGE_LEFT_THUMBNAIL,
    MENU_IMAGE_SAVESTATE_THUMBNAIL
 };
 
@@ -491,7 +492,7 @@ typedef struct menu_ctx_driver
    int (*pointer_tap)(void *data, unsigned x, unsigned y, unsigned ptr,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
-   void (*update_thumbnail_path)(void *data, unsigned i);
+   void (*update_thumbnail_path)(void *data, unsigned i, char pos);
    void (*update_thumbnail_image)(void *data);
    void (*set_thumbnail_system)(void *data, char* s, size_t len);
    void (*set_thumbnail_content)(void *data, char* s, size_t len);
@@ -505,12 +506,6 @@ typedef struct menu_ctx_driver
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
 } menu_ctx_driver_t;
-
-typedef struct menu_ctx_load_image
-{
-   void *data;
-   enum menu_image_type type;
-} menu_ctx_load_image_t;
 
 typedef struct menu_ctx_displaylist
 {
@@ -629,8 +624,6 @@ void menu_driver_navigation_set(bool scroll);
 
 void menu_driver_populate_entries(menu_displaylist_info_t *info);
 
-bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info);
-
 bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list);
 
 bool menu_driver_init(bool video_is_threaded);
@@ -719,6 +712,9 @@ void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err);
 
 void menu_display_handle_thumbnail_upload(void *task_data,
+      void *user_data, const char *err);
+
+void menu_display_handle_left_thumbnail_upload(void *task_data,
       void *user_data, const char *err);
 
 void menu_display_handle_savestate_thumbnail_upload(void *task_data,

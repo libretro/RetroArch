@@ -225,6 +225,7 @@ default_sublabel_macro(action_bind_sublabel_stdin_cmd_enable,              MENU_
 default_sublabel_macro(action_bind_sublabel_mouse_enable,                  MENU_ENUM_SUBLABEL_MOUSE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_pointer_enable,                MENU_ENUM_SUBLABEL_POINTER_ENABLE)
 default_sublabel_macro(action_bind_sublabel_thumbnails,                    MENU_ENUM_SUBLABEL_THUMBNAILS)
+default_sublabel_macro(action_bind_sublabel_left_thumbnails,               MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_timedate_enable,               MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_battery_level_enable,          MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE)
 default_sublabel_macro(action_bind_sublabel_navigation_wraparound,         MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND)
@@ -416,8 +417,8 @@ static int action_bind_sublabel_subsystem_add(
 
    if (subsystem && content_get_subsystem_rom_id() < subsystem->num_roms)
       snprintf(s, len, " Current Content: %s",
-	  content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD 
-	  ? subsystem->roms[content_get_subsystem_rom_id()].desc 
+	  content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD
+	  ? subsystem->roms[content_get_subsystem_rom_id()].desc
 	  : subsystem->roms[0].desc);
 
    return 0;
@@ -961,6 +962,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_THUMBNAILS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails);
+            break;
+         case MENU_ENUM_LABEL_LEFT_THUMBNAILS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
             break;
          case MENU_ENUM_LABEL_MOUSE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_mouse_enable);
