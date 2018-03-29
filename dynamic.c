@@ -914,18 +914,20 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
 
 	case RETRO_HW_CONTEXT_DIRECT3D:
 		switch(major)
-		{
+      {
 #ifdef HAVE_D3D9
-		case 9:
+         case 9:
+            RARCH_LOG("Requesting D3D9 context.\n");
+            break;
 #endif
 #ifdef HAVE_D3D11
-		case 11:
+         case 11:
+            RARCH_LOG("Requesting D3D11 context.\n");
+            break;
 #endif
-			RARCH_LOG("Requesting D3D%i context.\n", major);
-			break;
-		default:
-			goto unknown;
-		}
+         default:
+            goto unknown;
+      }
 		break;
 
 unknown:
