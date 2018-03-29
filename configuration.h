@@ -223,6 +223,8 @@ typedef struct settings
       bool playlist_entry_remove;
       bool playlist_entry_rename;
       bool rewind_enable;
+      bool run_ahead_enabled;
+      bool run_ahead_secondary_instance;
       bool pause_nonactive;
       bool block_sram_overwrite;
       bool savestate_auto_index;
@@ -380,6 +382,8 @@ typedef struct settings
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
 
       unsigned led_map[MAX_LEDS];
+
+      unsigned run_ahead_frames;
    } uints;
 
    struct

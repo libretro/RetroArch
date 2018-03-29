@@ -44,6 +44,9 @@
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
 
+#include "runahead/copy_load_info.h"
+#include "runahead/secondary_core.h"
+
 struct                     retro_callbacks retro_ctx;
 struct                     retro_core_t current_core;
 
@@ -262,6 +265,9 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
 {
    if (!pad)
       return false;
+
+   remember_controller_port_device(pad->port, pad->device);
+
    current_core.retro_set_controller_port_device(pad->port, pad->device);
    return true;
 }
@@ -277,6 +283,8 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
 
 bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
+   set_load_content_info(load_info);
+
    bool contentless = false;
    bool is_inited   = false;
 
@@ -421,6 +429,12 @@ bool core_run(void)
    netplay_driver_ctl(RARCH_NETPLAY_CTL_POST_FRAME, NULL);
 #endif
 
+   return true;
+}
+
+bool core_run_no_input_polling(void)
+{
+   current_core.retro_run();
    return true;
 }
 

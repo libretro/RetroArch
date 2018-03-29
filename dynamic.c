@@ -66,9 +66,11 @@
 #include "msg_hash.h"
 #include "verbosity.h"
 
+#include "runahead/secondary_core.h"
+
 #ifdef HAVE_DYNAMIC
 #define SYMBOL(x) do { \
-   function_t func = dylib_proc(lib_handle, #x); \
+   function_t func = dylib_proc(lib_handle_local, #x); \
    memcpy(&current_core->x, &func, sizeof(func)); \
    if (current_core->x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "init_libretro_sym()"); } \
 } while (0)
@@ -383,14 +385,32 @@ bool libretro_get_system_info(const char *path,
  * Setup libretro callback symbols. Returns true on success,
  * or false if symbols could not be loaded.
  **/
-static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current_core)
+bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, dylib_t *lib_handle_p)
 {
+   /* the library handle for use with the SYMBOL macro */
+   dylib_t lib_handle_local;
    switch (type)
    {
       case CORE_TYPE_PLAIN:
 #ifdef HAVE_DYNAMIC
-         if (!load_dynamic_core())
-            return false;
+
+         if (lib_path == NULL || lib_handle_p == NULL)
+         {
+            if (!load_dynamic_core())
+               return false;
+            lib_handle_local = lib_handle;
+         }
+         else
+         {
+            /* for a secondary core, we already have a primary library loaded, so we can skip some checks and just load the library */
+            retro_assert(lib_path != NULL && lib_handle_p != NULL);
+            lib_handle_local = dylib_load(lib_path);
+            if (lib_handle_local == NULL)
+            {
+               return false;
+            }
+            *lib_handle_p = lib_handle_local;
+         }
 #endif
 
          SYMBOL(retro_init);
@@ -615,6 +635,11 @@ static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current
    return true;
 }
 
+static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current_core)
+{
+   return init_libretro_sym_custom(type, current_core, NULL, NULL);
+}
+
 /**
  * init_libretro_sym:
  * @type                        : Type of core to be loaded.
@@ -634,6 +659,8 @@ bool init_libretro_sym(enum rarch_core_type type, struct retro_core_t *current_c
    if (!load_symbols(type, current_core))
       return false;
 
+   /* remember last core type created, so creating a secondary core will know what core type to use */
+   set_last_core_type(type);
    return true;
 }
 

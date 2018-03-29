@@ -56,6 +56,9 @@ COMPATIBILITY
 
 #include "../libretro-common/compat/compat_fnmatch.c"
 #include "../libretro-common/compat/fopen_utf8.c"
+#if defined(HAVE_DYNAMIC) && HAVE_DYNAMIC
+#include "../libretro-common/compat/unlink_utf8.c"
+#endif
 #include "../libretro-common/memmap/memalign.c"
 
 /*============================================================
@@ -1251,6 +1254,13 @@ MENU
 #if defined(HAVE_NETWORKING)
 #include "../libretro-common/net/net_http_parse.c"
 #endif
+
+#include "../runahead/mem_util.c"
+#include "../runahead/secondary_core.c"
+#include "../runahead/run_ahead.c"
+#include "../runahead/copy_load_info.c"
+#include "../runahead/dirty_input.c"
+#include "../runahead/mylist.c"
 
 /*============================================================
 DEPENDENCIES
