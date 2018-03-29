@@ -95,7 +95,7 @@ char* copy_core_to_temp_file(void)
    char *retroarchTempPath  = NULL;
    char *tempDllPath        = NULL;
    void *dllFileData        = NULL;
-   ssize_t dllFileSize          = 0;
+   ssize_t dllFileSize      = 0;
    const char *corePath     = path_get(RARCH_PATH_CORE);
    const char *coreBaseName = path_basename(corePath);
 
@@ -116,12 +116,12 @@ char* copy_core_to_temp_file(void)
    if (!okay)
       goto failed;
 
-   if (!file_stream_read_file(corePath, &dllFileData, &dllFileSize))
+   if (!filestream_read_file(corePath, &dllFileData, &dllFileSize))
       goto failed;
 
    strcat_alloc(&tempDllPath, retroarchTempPath);
    strcat_alloc(&tempDllPath, coreBaseName);
-   okay = file_stream_write_file(tempDllPath, dllFileData, dllFileSize);
+   okay = filestream_write_file(tempDllPath, dllFileData, dllFileSize);
 
    if (!okay)
    {
@@ -177,7 +177,7 @@ bool write_file_with_random_name(char **tempDllPath,
       strcat_alloc(tempDllPath, prefix);
       strcat_alloc(tempDllPath, numberBuf);
       strcat_alloc(tempDllPath, ext);
-      okay = write_file_stream(*tempDllPath, data, dataSize);
+      okay = filestream_write(*tempDllPath, data, dataSize);
       if (okay)
          break;
    }
