@@ -297,7 +297,6 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          vi->visual, AllocNone);
    swa.event_mask = StructureNotifyMask | KeyPressMask |
       ButtonPressMask | ButtonReleaseMask | KeyReleaseMask;
-   swa.override_redirect = fullscreen ? True : False;
 
    if (fullscreen && !video_info->windowed_fullscreen)
    {
@@ -309,6 +308,8 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       else
          RARCH_ERR("[X/EGL]: Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
+
+   swa.override_redirect = (!x11_has_net_wm_fullscreen(g_x11_dpy) && true_full) ? True : False;
 
    if (video_info->monitor_index)
       g_x11_screen = video_info->monitor_index - 1;
@@ -340,7 +341,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          x_off, y_off, width, height, 0,
          vi->depth, InputOutput, vi->visual,
          CWBorderPixel | CWColormap | CWEventMask |
-         (true_full ? CWOverrideRedirect : 0), &swa);
+         CWOverrideRedirect, &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
    if (fullscreen && config_get_ptr()->bools.video_disable_composition)
@@ -372,6 +373,8 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    {
       RARCH_LOG("[X/EGL]: Using true fullscreen.\n");
       XMapRaised(g_x11_dpy, g_x11_win);
+      if (swa.override_redirect == False)
+         x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
    }
    else if (fullscreen)
    {
@@ -385,7 +388,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
        * x_off and y_off usually get ignored in XCreateWindow().
        */
       x11_move_window(g_x11_dpy, g_x11_win, x_off, y_off, width, height);
-      x11_windowed_fullscreen(g_x11_dpy, g_x11_win);
+      x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
    }
    else
    {
