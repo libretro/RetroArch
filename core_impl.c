@@ -44,8 +44,10 @@
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
 
+#ifdef HAVE_RUNAHEAD
 #include "runahead/copy_load_info.h"
 #include "runahead/secondary_core.h"
+#endif
 
 struct                     retro_callbacks retro_ctx;
 struct                     retro_core_t current_core;
@@ -266,7 +268,9 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
    if (!pad)
       return false;
 
+#ifdef HAVE_RUNAHEAD
    remember_controller_port_device(pad->port, pad->device);
+#endif
 
    current_core.retro_set_controller_port_device(pad->port, pad->device);
    return true;
@@ -286,7 +290,9 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    bool contentless = false;
    bool is_inited   = false;
 
+#ifdef HAVE_RUNAHEAD
    set_load_content_info(load_info);
+#endif
 
    content_get_status(&contentless, &is_inited);
 

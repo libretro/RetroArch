@@ -11,6 +11,7 @@ HAVE_MATERIALUI=auto       # MaterialUI menu
 HAVE_XMB=auto              # XMB menu
 HAVE_ZARCH=no              # Zarch menu
 HAVE_NUKLEAR=no            # Nuklear menu
+HAVE_RUNAHEAD=yes          # Runahead support
 HAVE_OVERLAY=yes           # Overlay support
 HAVE_DYNAMIC=yes           # Dynamic loading of libretro library
 HAVE_SDL=auto              # SDL support

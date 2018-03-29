@@ -118,7 +118,9 @@
 
 #include "command.h"
 
+#ifdef HAVE_RUNAHEAD
 #include "runahead/run_ahead.h"
+#endif
 
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
 
@@ -3250,10 +3252,12 @@ int runloop_iterate(unsigned *sleep_ms)
    if ((settings->uints.video_frame_delay > 0) && !input_nonblock_state)
       retro_sleep(settings->uints.video_frame_delay);
 
+#ifdef HAVE_RUNAHEAD
    /* Run Ahead Feature replaces the call to core_run in this loop */
    if (settings->bools.run_ahead_enabled && settings->uints.run_ahead_frames > 0)
       run_ahead(settings->uints.run_ahead_frames, settings->bools.run_ahead_secondary_instance);
    else
+#endif
       core_run();
 
 #ifdef HAVE_CHEEVOS

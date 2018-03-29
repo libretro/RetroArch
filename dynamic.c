@@ -66,7 +66,9 @@
 #include "msg_hash.h"
 #include "verbosity.h"
 
+#ifdef HAVE_RUNAHEAD
 #include "runahead/secondary_core.h"
+#endif
 
 #ifdef HAVE_DYNAMIC
 #define SYMBOL(x) do { \
@@ -393,24 +395,28 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
    {
       case CORE_TYPE_PLAIN:
 #ifdef HAVE_DYNAMIC
-
-         if (lib_path == NULL || lib_handle_p == NULL)
+#ifdef HAVE_RUNAHEAD
+         if (!lib_path || !lib_handle_p)
+#endif
          {
             if (!load_dynamic_core())
                return false;
             lib_handle_local = lib_handle;
          }
+#ifdef HAVE_RUNAHEAD
          else
          {
-            /* for a secondary core, we already have a primary library loaded, so we can skip some checks and just load the library */
+            /* for a secondary core, we already have a 
+             * primary library loaded, so we can skip 
+             * some checks and just load the library */
             retro_assert(lib_path != NULL && lib_handle_p != NULL);
             lib_handle_local = dylib_load(lib_path);
-            if (lib_handle_local == NULL)
-            {
+
+            if (!lib_handle_local)
                return false;
-            }
             *lib_handle_p = lib_handle_local;
          }
+#endif
 #endif
 
          SYMBOL(retro_init);
@@ -659,8 +665,11 @@ bool init_libretro_sym(enum rarch_core_type type, struct retro_core_t *current_c
    if (!load_symbols(type, current_core))
       return false;
 
-   /* remember last core type created, so creating a secondary core will know what core type to use */
+#ifdef HAVE_RUNAHEAD
+   /* remember last core type created, so creating a 
+    * secondary core will know what core type to use. */
    set_last_core_type(type);
+#endif
    return true;
 }
 
