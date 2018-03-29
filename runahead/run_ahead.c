@@ -37,18 +37,15 @@ static void *runahead_save_state_alloc(void)
    if (!savestate)
       return NULL;
 
-   savestate->size = runahead_save_state_size;
+   savestate->data          = NULL;
+   savestate->data_const    = NULL;
+   savestate->size          = 0;
 
    if (runahead_save_state_size > 0 && runahead_save_state_size != -1)
    {
-      savestate->data = malloc(runahead_save_state_size);
+      savestate->data       = malloc(runahead_save_state_size);
       savestate->data_const = savestate->data;
-   }
-   else
-   {
-      savestate->data       = NULL;
-      savestate->data_const = NULL;
-      savestate->size       = 0;
+      savestate->size       = runahead_save_state_size;
    }
 
    return savestate;
@@ -216,8 +213,9 @@ void run_ahead(int runAheadCount, bool useSecondary)
       /* TODO: multiple savestates for higher performance when not using secondary core */
       for (frameNumber = 0; frameNumber <= runAheadCount; frameNumber++)
       {
-         lastFrame = frameNumber == runAheadCount;
+         lastFrame      = frameNumber == runAheadCount;
          suspendedFrame = !lastFrame;
+
          if (suspendedFrame)
          {
             runahead_suspend_audio();
@@ -341,7 +339,8 @@ static bool runahead_save_state(void)
 
 static bool runahead_load_state(void)
 {
-   retro_ctx_serialize_info_t *serialize_info = (retro_ctx_serialize_info_t*)runahead_save_state_list->data[0];
+   retro_ctx_serialize_info_t *serialize_info = (retro_ctx_serialize_info_t*)
+      runahead_save_state_list->data[0];
    bool lastDirty = input_is_dirty;
    bool okay      = core_unserialize(serialize_info);
    input_is_dirty = lastDirty;
