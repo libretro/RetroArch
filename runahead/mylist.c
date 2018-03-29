@@ -91,7 +91,7 @@ void mylist_create(MyList **list_p, int initialCapacity,
 
    if (initialCapacity > 0)
    {
-      list->data      = (void**)malloc_zero(initialCapacity * sizeof(void*));
+      list->data      = (void**)calloc(initialCapacity, sizeof(void*));
       list->capacity  = initialCapacity;
    }
    else

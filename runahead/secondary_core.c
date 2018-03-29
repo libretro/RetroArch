@@ -128,16 +128,16 @@ char* copy_core_to_temp_file(void)
          goto failed;
    }
 
-   free_ptr((void**)&tempDirectory);
-   free_ptr((void**)&retroarchTempPath);
-   free_ptr(&dllFileData);
+   FREE(tempDirectory);
+   FREE(retroarchTempPath);
+   FREE(dllFileData);
    return tempDllPath;
 
 failed:
-   free_ptr((void**)&tempDirectory);
-   free_ptr((void**)&retroarchTempPath);
-   free_ptr((void**)&tempDllPath);
-   free_ptr((void**)&dllFileData);
+   FREE(tempDirectory);
+   FREE(retroarchTempPath);
+   FREE(tempDllPath);
+   FREE(dllFileData);
    return NULL;
 }
 
@@ -168,7 +168,7 @@ bool write_file_with_random_name(char **tempDllPath,
       numberValue = numberValue * 214013 + 2531011;
       number = (numberValue >> 14) % 100000;
       sprintf(numberBuf, "%05d", number);
-      free_ptr((void**)tempDllPath);
+      FREE(*tempDllPath);
       strcat_alloc(tempDllPath, retroarchTempPath);
       strcat_alloc(tempDllPath, prefix);
       strcat_alloc(tempDllPath, numberBuf);
@@ -178,7 +178,7 @@ bool write_file_with_random_name(char **tempDllPath,
          break;
    }
 
-   free_ptr((void**)&ext);
+   FREE(ext);
    return true;
 }
 
@@ -199,7 +199,7 @@ bool secondary_core_create(void)
          load_content_info->special)
       return false;
 
-   free_ptr((void**)&secondary_library_path);
+   FREE(secondary_library_path);
    secondary_library_path = copy_core_to_temp_file();
 
    if (!secondary_library_path)
@@ -321,7 +321,7 @@ void secondary_core_destroy(void)
       dylib_close(secondary_module);
       secondary_module = NULL;
       filestream_delete(secondary_library_path);
-      free_ptr((void**)&secondary_library_path);
+      FREE(secondary_library_path);
    }
 }
 
@@ -339,6 +339,7 @@ void clear_controller_port_map(void)
    for (port = 0; port < 16; port++)
       port_map[port] = -1;
 }
+
 #else
 #include <boolean.h>
 

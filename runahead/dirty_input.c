@@ -34,7 +34,7 @@ static bool unserialze_hook(const void *buf, size_t size);
 static void* InputListElementConstructor(void)
 {
    const int size = sizeof(InputListElement);
-   void      *ptr = malloc_zero(size);
+   void      *ptr = calloc(1, size);
 
    return ptr;
 }
