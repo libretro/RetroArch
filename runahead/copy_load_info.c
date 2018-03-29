@@ -1,5 +1,5 @@
+#include <stdlib.h>
 #include <string.h>
-#include <malloc.h>
 
 #include <libretro.h>
 #include <lists/string_list.h>

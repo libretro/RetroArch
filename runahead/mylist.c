@@ -1,6 +1,7 @@
-#include "mylist.h"
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
+
+#include "mylist.h"
 #include "mem_util.h"
 
 void mylist_resize(MyList *list, int newSize, bool runConstructor)
