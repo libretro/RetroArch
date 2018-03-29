@@ -177,7 +177,7 @@ bool write_file_with_random_name(char **tempDllPath,
       strcat_alloc(tempDllPath, prefix);
       strcat_alloc(tempDllPath, numberBuf);
       strcat_alloc(tempDllPath, ext);
-      okay = filestream_write(*tempDllPath, data, dataSize);
+      okay = filestream_write_file(*tempDllPath, data, dataSize);
       if (okay)
          break;
    }
