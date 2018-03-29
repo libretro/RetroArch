@@ -372,18 +372,18 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
    cs_root_params[CS_ROOT_ID_TEXTURE_T].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
    cs_root_params[CS_ROOT_ID_TEXTURE_T].DescriptorTable.NumDescriptorRanges = countof(srv_tbl);
    cs_root_params[CS_ROOT_ID_TEXTURE_T].DescriptorTable.pDescriptorRanges   = srv_tbl;
-   cs_root_params[CS_ROOT_ID_TEXTURE_T].ShaderVisibility                    = 0;
+   cs_root_params[CS_ROOT_ID_TEXTURE_T].ShaderVisibility                    = D3D12_SHADER_VISIBILITY_ALL;
 
    cs_root_params[CS_ROOT_ID_UAV_T].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
    cs_root_params[CS_ROOT_ID_UAV_T].DescriptorTable.NumDescriptorRanges = countof(uav_tbl);
    cs_root_params[CS_ROOT_ID_UAV_T].DescriptorTable.pDescriptorRanges   = uav_tbl;
-   cs_root_params[CS_ROOT_ID_UAV_T].ShaderVisibility                    = 0;
+   cs_root_params[CS_ROOT_ID_UAV_T].ShaderVisibility                    = D3D12_SHADER_VISIBILITY_ALL;
 
    cs_root_params[CS_ROOT_ID_CONSTANTS].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
    cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.Num32BitValues = 3;
    cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.RegisterSpace  = 0;
    cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.ShaderRegister = 0;
-   cs_root_params[CS_ROOT_ID_CONSTANTS].ShaderVisibility         = 0;
+   cs_root_params[CS_ROOT_ID_CONSTANTS].ShaderVisibility         = D3D12_SHADER_VISIBILITY_ALL;
 
    static_sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
    static_sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;

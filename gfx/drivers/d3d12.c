@@ -1298,19 +1298,20 @@ static bool d3d12_gfx_frame(
             while (texture_sem->stage_mask)
             {
                {
-                  D3D12_CPU_DESCRIPTOR_HANDLE handle = {
+                  D3D12_CPU_DESCRIPTOR_HANDLE handle   = {
                      d3d12->pass[i].textures.ptr - d3d12->desc.srv_heap.gpu.ptr +
-                     d3d12->desc.srv_heap.cpu.ptr +
-                     texture_sem->binding * d3d12->desc.srv_heap.stride
+                        d3d12->desc.srv_heap.cpu.ptr +
+                        texture_sem->binding * d3d12->desc.srv_heap.stride
                   };
-                  d3d12_texture_t*                tex  = texture_sem->texture_data;
+                  d3d12_texture_t*                tex  = (d3d12_texture_t*)texture_sem->texture_data;
                   D3D12_SHADER_RESOURCE_VIEW_DESC desc = { tex->desc.Format };
 
-                  desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-                  desc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
-                  desc.Texture2D.MipLevels     = tex->desc.MipLevels;
+                  desc.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+                  desc.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURE2D;
+                  desc.Texture2D.MipLevels             = tex->desc.MipLevels;
 
-                  D3D12CreateShaderResourceView(d3d12->device, tex->handle, &desc, handle);
+                  D3D12CreateShaderResourceView(d3d12->device,
+                        tex->handle, &desc, handle);
                }
 
                {
@@ -1669,7 +1670,7 @@ static void d3d12_gfx_set_osd_msg(
    if (d3d12)
    {
       if (d3d12->sprites.enabled)
-         font_driver_render_msg(video_info, font, msg, params);
+         font_driver_render_msg(video_info, font, msg, (const font_params*)params);
       else
          printf("OSD msg: %s\n", msg);
    }
