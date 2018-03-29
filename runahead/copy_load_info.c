@@ -36,8 +36,8 @@ static struct retro_game_info* clone_retro_game_info(const
 
 static void free_string_list(struct string_list *dest)
 {
-   int i;
-   if (dest == NULL)
+   unsigned i;
+   if (!dest)
       return;
    for (i = 0; i < dest->size; i++)
    {
@@ -49,10 +49,10 @@ static void free_string_list(struct string_list *dest)
 
 static struct string_list* clone_string_list(const struct string_list *src)
 {
-   int i;
+   unsigned i;
    struct string_list *dest = NULL;
 
-   if (src == NULL)
+   if (!src)
       return NULL;
 
    dest         = (struct string_list*)malloc_zero(sizeof(struct string_list));

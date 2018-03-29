@@ -273,7 +273,7 @@ void run_ahead(int runAheadCount, bool useSecondary)
          if (!runahead_load_state_secondary())
             return;
 
-         for (frame_count = 0; frame_count < runAheadCount - 1; frame_count++)
+         for (frame_count = 0; frame_count < (unsigned)(runAheadCount - 1); frame_count++)
          {
             runahead_suspend_video();
             runahead_suspend_audio();

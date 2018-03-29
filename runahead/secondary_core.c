@@ -130,7 +130,7 @@ char* copy_core_to_temp_file(void)
       if (!okay)
          goto failed;
    }
-success:
+
    free_str(&tempDirectory);
    free_str(&retroarchTempPath);
    free_ptr(&dllFileData);
@@ -181,12 +181,9 @@ bool write_file_with_random_name(char **tempDllPath,
       if (okay)
          break;
    }
-success:
+
    free_str(&ext);
    return true;
-failed:
-   free_str(&ext);
-   return false;
 }
 
 void secondary_core_clear(void)
