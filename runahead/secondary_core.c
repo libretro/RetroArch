@@ -339,18 +339,6 @@ void clear_controller_port_map(void)
    for (port = 0; port < 16; port++)
       port_map[port] = -1;
 }
-
-static void free_file(FILE **file_p)
-{
-   bool result = false;
-   if (!file_p || !*file_p)
-      return;
-   result  = fclose(*file_p) != 0;
-   *file_p = NULL;
-   return;
-}
-
-
 #else
 #include <boolean.h>
 
