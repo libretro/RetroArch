@@ -61,6 +61,12 @@
 
 #define PARTICLES_COUNT            100
 
+typedef struct menu_ctx_load_image
+{
+   void *data;
+   enum menu_image_type type;
+} menu_ctx_load_image_t;
+
 /* Menu drivers */
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_XUI)
@@ -1058,6 +1064,14 @@ bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw)
    return true;
 }
 
+static bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info)
+{
+   if (menu_driver_ctx && menu_driver_ctx->load_image)
+      return menu_driver_ctx->load_image(menu_userdata,
+            load_image_info->data, load_image_info->type);
+   return false;
+}
+
 void menu_display_handle_thumbnail_upload(void *task_data,
       void *user_data, const char *err)
 {
@@ -1802,14 +1816,6 @@ void menu_driver_populate_entries(menu_displaylist_info_t *info)
       menu_driver_ctx->populate_entries(
             menu_userdata, info->path,
             info->label, info->type);
-}
-
-bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info)
-{
-   if (menu_driver_ctx && menu_driver_ctx->load_image)
-      return menu_driver_ctx->load_image(menu_userdata,
-            load_image_info->data, load_image_info->type);
-   return false;
 }
 
 bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list)

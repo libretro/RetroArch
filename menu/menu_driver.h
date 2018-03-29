@@ -507,12 +507,6 @@ typedef struct menu_ctx_driver
          menu_entry_t *entry, unsigned action);
 } menu_ctx_driver_t;
 
-typedef struct menu_ctx_load_image
-{
-   void *data;
-   enum menu_image_type type;
-} menu_ctx_load_image_t;
-
 typedef struct menu_ctx_displaylist
 {
    menu_displaylist_info_t *info;
@@ -629,8 +623,6 @@ bool menu_driver_list_clear(void *data);
 void menu_driver_navigation_set(bool scroll);
 
 void menu_driver_populate_entries(menu_displaylist_info_t *info);
-
-bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info);
 
 bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list);
 
