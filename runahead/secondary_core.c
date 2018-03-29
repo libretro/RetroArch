@@ -15,12 +15,12 @@
 #include <compat/fopen_utf8.h>
 #include <compat/unlink_utf8.h>
 #include <dynamic/dylib.h>
-#include <dynamic.h>
 #include <file/file_path.h>
 
 #include "mem_util.h"
 
 #include "../core.h"
+#include "../dynamic.h"
 #include "../paths.h"
 #include "../content.h"
 

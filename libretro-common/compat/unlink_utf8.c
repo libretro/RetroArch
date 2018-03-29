@@ -18,7 +18,7 @@
 bool unlink_utf8(const char * filename)
 {
 #if defined(LEGACY_WIN32)
-	bool result = DeleteFileA(filename_w);
+	bool result = DeleteFileA(filename);
 #else
 	wchar_t * filename_w = utf8_to_utf16_string_alloc(filename);
 	bool result = DeleteFileW(filename_w);

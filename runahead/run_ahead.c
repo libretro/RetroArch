@@ -1,14 +1,17 @@
-#include "core.h"
-#include "dynamic.h"
-#include "audio/audio_driver.h"
-#include "gfx/video_driver.h"
-#include "boolean.h"
 #include <stddef.h>
 #include <malloc.h>
 #include <string.h>
+
+#include <boolean.h>
+
 #include "dirty_input.h"
 #include "mylist.h"
 #include "secondary_core.h"
+
+#include "../core.h"
+#include "../dynamic.h"
+#include "../audio/audio_driver.h"
+#include "../gfx/video_driver.h"
 
 static void *runahead_save_state_alloc(void);
 static void runahead_save_state_free(void *state);

@@ -283,10 +283,10 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
 
 bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
-   set_load_content_info(load_info);
-
    bool contentless = false;
    bool is_inited   = false;
+
+   set_load_content_info(load_info);
 
    content_get_status(&contentless, &is_inited);
 
