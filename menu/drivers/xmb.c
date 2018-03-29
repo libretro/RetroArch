@@ -3037,6 +3037,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
+   float window_width                      = video_info->width;
+   float window_height                     = video_info->height;
 
    if (!xmb)
       return;
@@ -3108,6 +3110,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    menu_display_rotate_z(&rotate_draw, video_info);
    menu_display_blend_begin(video_info);
 
+   /* Do not draw the right thumbnail if there is no space available */
+
+   const int min_thumb_size = 50;
+
+   if (((xmb->margins_screen_top + xmb->icon_size + min_thumb_size) <= height) &&
+      ((xmb->margins_screen_left * scale_mod[5] + xmb->icon_spacing_horizontal +
+        xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4 + min_thumb_size) <= width))
+   {
    if (xmb->savestate_thumbnail)
       xmb_draw_thumbnail(video_info,
             xmb, &coord_white[0], width, height,
@@ -3127,20 +3137,34 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 #endif
 
       /* Limit thumbnail height to screen height + margin. */
+
+      thumb_width = xmb->thumbnail_width;
+      thumb_height = xmb->thumbnail_height;
+      const float around_thumb_margin     = 0.96;
+
       if( xmb->margins_screen_top + xmb->icon_size + xmb->thumbnail_height * scale_mod[4] >=
-         (float)(height * 0.96) )
+         (window_height * around_thumb_margin) )
       {
-         thumb_width = xmb->thumbnail_width *
-            (((float)(height * 0.96) - xmb->margins_screen_top - xmb->icon_size) /
-               (xmb->thumbnail_height * scale_mod[4]));
-         thumb_height = xmb->thumbnail_height *
-            (((float)(height * 0.96) - xmb->margins_screen_top - xmb->icon_size) /
-               (xmb->thumbnail_height * scale_mod[4]));
+         thumb_width = thumb_width *
+            (((window_height * around_thumb_margin) - xmb->margins_screen_top - xmb->icon_size) /
+               (thumb_height * scale_mod[4]));
+         thumb_height = thumb_height *
+            (((window_height * around_thumb_margin) - xmb->margins_screen_top - xmb->icon_size) /
+               (thumb_height * scale_mod[4]));
       }
-      else
+
+      /* Limit thumbnail width */
+
+      if ( xmb->margins_screen_left * scale_mod[5] + xmb->icon_spacing_horizontal +
+           xmb->icon_spacing_horizontal*4 - xmb->icon_size / 4 + thumb_width * scale_mod[4]  >=
+           (window_width * around_thumb_margin) )
       {
-         thumb_width = xmb->thumbnail_width;
-         thumb_height = xmb->thumbnail_height;
+         thumb_height = thumb_height *
+            (((window_width * around_thumb_margin) - xmb->margins_screen_left * scale_mod[5] - xmb->icon_spacing_horizontal -
+            xmb->icon_spacing_horizontal * 4 + xmb->icon_size / 4) / (thumb_width * scale_mod[4]));
+         thumb_width  = thumb_width  *
+            (((window_width * around_thumb_margin) - xmb->margins_screen_left * scale_mod[5] - xmb->icon_spacing_horizontal -
+            xmb->icon_spacing_horizontal * 4 + xmb->icon_size / 4) / (thumb_width * scale_mod[4]));
       }
 
       xmb_draw_thumbnail(video_info,
@@ -3152,7 +3176,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->thumbnail);
 
    }
+   }
 
+   /* Do not draw the left thumbnail if there is no space available */
+
+   if ((xmb->margins_screen_top + xmb->icon_size * (!(xmb->depth == 1)? 2.1 : 1) + min_thumb_size) <= window_height)
+   {
    /* Left Thumbnail */
 
    if (xmb->left_thumbnail
@@ -3188,7 +3217,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       left_thumb_width, left_thumb_height,
       xmb->left_thumbnail);
    }
-
+   }
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
 
