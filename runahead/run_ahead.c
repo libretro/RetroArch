@@ -92,7 +92,7 @@ static void runahead_save_state_list_rotate(void)
    firstElement = runahead_save_state_list->data[0];
    for (i = 1; i < runahead_save_state_list->size; i++)
    {
-      runahead_save_state_list->data[i - 1] = runahead_save_state_list->data[i - 1];
+      runahead_save_state_list->data[i - 1] = runahead_save_state_list->data[i];
    }
    runahead_save_state_list->data[runahead_save_state_list->size - 1] = firstElement;
 }

@@ -11,10 +11,9 @@
 
 #include <boolean.h>
 #include <encodings/utf.h>
-#include <compat/fopen_utf8.h>
-#include <compat/unlink_utf8.h>
 #include <dynamic/dylib.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 
 #include "mem_util.h"
 
@@ -41,12 +40,8 @@ static char* get_temp_directory_alloc(void);
 
 static char* copy_core_to_temp_file(void);
 
-static void* read_file_data_alloc(const char *fileName, int *size);
-
-static bool write_file_data(const char *fileName, const void *data, int dataSize);
-
 static bool write_file_with_random_name(char **tempDllPath,
-      const char *retroarchTempPath, const void* data, int dataSize);
+      const char *retroarchTempPath, const void* data, ssize_t dataSize);
 
 static void* InputListElementConstructor(void);
 
@@ -65,8 +60,6 @@ void set_last_core_type(enum rarch_core_type type);
 void remember_controller_port_device(long port, long device);
 
 void clear_controller_port_map(void);
-
-static void free_file(FILE **file_p);
 
 char* get_temp_directory_alloc(void)
 {
@@ -102,7 +95,7 @@ char* copy_core_to_temp_file(void)
    char *retroarchTempPath  = NULL;
    char *tempDllPath        = NULL;
    void *dllFileData        = NULL;
-   int dllFileSize          = 0;
+   ssize_t dllFileSize          = 0;
    const char *corePath     = path_get(RARCH_PATH_CORE);
    const char *coreBaseName = path_basename(corePath);
 
@@ -123,14 +116,12 @@ char* copy_core_to_temp_file(void)
    if (!okay)
       goto failed;
 
-   dllFileData = read_file_data_alloc(corePath, &dllFileSize);
-
-   if (!dllFileData)
+   if (!file_stream_read_file(corePath, &dllFileData, &dllFileSize))
       goto failed;
 
    strcat_alloc(&tempDllPath, retroarchTempPath);
    strcat_alloc(&tempDllPath, coreBaseName);
-   okay = write_file_data(tempDllPath, dllFileData, dllFileSize);
+   okay = file_stream_write_file(tempDllPath, dllFileData, dllFileSize);
 
    if (!okay)
    {
@@ -153,80 +144,8 @@ failed:
    return NULL;
 }
 
-void* read_file_data_alloc(const char *fileName, int *size)
-{
-   void *data           = NULL;
-   int fileSize         = 0;
-   size_t bytesRead     = 0;
-#ifdef _WIN32
-   int64_t fileSizeLong = 0;
-#else
-   off64_t fileSizeLong = 0;
-#endif
-   FILE              *f = (FILE*)fopen_utf8(fileName, "rb");
-
-   if (!f)
-      goto failed;
-
-   fseek(f, 0, SEEK_END);
-#ifdef _WIN32
-   fileSizeLong         = _ftelli64(f);
-#else
-   fileSizeLong         = ftello64(f);
-#endif
-   fseek(f, 0, SEEK_SET);
-
-   /* 256MB file size limit for DLL files */
-   if (fileSizeLong < 0 || fileSizeLong > 256 * 1024 * 1024)
-      goto failed;
-
-   fileSize = (int)fileSizeLong;
-   data     = malloc(fileSize);
-
-   if (!data)
-      goto failed;
-
-   bytesRead = fread(data, 1, fileSize, f);
-
-   if ((int)bytesRead != (int)fileSize)
-      goto failed;
-
-success:
-   free_file(&f);
-   if (size)
-      *size = fileSize;
-   return data;
-failed:
-   free_ptr(&data);
-   free_file(&f);
-   if (size)
-      *size = 0;
-   return NULL;
-}
-
-bool write_file_data(const char *fileName, const void *data, int dataSize)
-{
-   bool           okay = false;
-   size_t bytesWritten = 0;
-   FILE             *f = (FILE*)fopen_utf8(fileName, "wb");
-
-   if (!f)
-      goto failed;
-   bytesWritten = fwrite(data, 1, dataSize, f);
-
-   if (bytesWritten != dataSize)
-      goto failed;
-
-success:
-   free_file(&f);
-   return true;
-failed:
-   free_file(&f);
-   return false;
-}
-
 bool write_file_with_random_name(char **tempDllPath,
-      const char *retroarchTempPath, const void* data, int dataSize)
+      const char *retroarchTempPath, const void* data, ssize_t dataSize)
 {
    int i;
    char numberBuf[32];
@@ -258,7 +177,7 @@ bool write_file_with_random_name(char **tempDllPath,
       strcat_alloc(tempDllPath, prefix);
       strcat_alloc(tempDllPath, numberBuf);
       strcat_alloc(tempDllPath, ext);
-      okay = write_file_data(*tempDllPath, data, dataSize);
+      okay = write_file_stream(*tempDllPath, data, dataSize);
       if (okay)
          break;
    }
@@ -408,7 +327,7 @@ void secondary_core_destroy(void)
 
       dylib_close(secondary_module);
       secondary_module = NULL;
-      unlink_utf8(secondary_library_path);
+      filestream_delete(secondary_library_path);
       free_str(&secondary_library_path);
    }
 }
