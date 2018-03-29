@@ -1,4 +1,4 @@
-#if defined(HAVE_DYNAMIC) && HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 
 #include <string.h>
 #include <time.h>
