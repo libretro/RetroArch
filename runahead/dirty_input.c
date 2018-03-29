@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include <boolean.h>
 
 #include "../core.h"

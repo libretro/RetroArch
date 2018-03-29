@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "mem_util.h"
 
 void *malloc_zero(size_t size)

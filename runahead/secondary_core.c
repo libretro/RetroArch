@@ -1,7 +1,6 @@
 #if defined(HAVE_DYNAMIC) && HAVE_DYNAMIC
 
 #include <string.h>
-#include <malloc.h>
 #include <time.h>
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)

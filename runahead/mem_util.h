@@ -1,7 +1,6 @@
 #ifndef __MEM_UTIL__
 #define __MEM_UTIL__
 
-#include <malloc.h>
 #include <stddef.h>
 #include <string.h>
 
