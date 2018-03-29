@@ -1134,6 +1134,47 @@ static void menu_action_setting_disp_set_label_thumbnails(
    }
 }
 
+static void menu_action_setting_disp_set_label_left_thumbnails(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings        = config_get_ptr();
+
+   if (!settings)
+      return;
+
+   strlcpy(s2, path, len2);
+   *w = 19;
+
+   switch (settings->uints.menu_left_thumbnails)
+   {
+      case 0:
+         strlcpy(s, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OFF), len);
+         break;
+      case 1:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS), len);
+         break;
+      case 2:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS), len);
+         break;
+      case 3:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS), len);
+         break;
+   }
+}
+
 static void menu_action_setting_disp_set_label_menu_toggle_gamepad_combo(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1911,6 +1952,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_THUMBNAILS:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_thumbnails);
+            break;
+         case MENU_ENUM_LABEL_LEFT_THUMBNAILS:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_left_thumbnails);
             break;
          case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
             BIND_ACTION_GET_VALUE(cbs,

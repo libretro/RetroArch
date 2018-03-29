@@ -350,6 +350,7 @@ typedef struct settings
       unsigned video_msg_bgcolor_blue;
 
       unsigned menu_thumbnails;
+      unsigned menu_left_thumbnails;
       unsigned menu_dpi_override_value;
       unsigned menu_entry_normal_color;
       unsigned menu_entry_hover_color;

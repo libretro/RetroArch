@@ -629,7 +629,7 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
    coords.vertex        = new_vertex;
    coords.tex_coord     = new_tex_coord;
    coords.lut_tex_coord = new_tex_coord;
-   coords.color         = (const float*)draw->color;   
+   coords.color         = (const float*)draw->color;
 
    draw->coords         = &coords;
    draw->scale_factor   = 1.0f;
@@ -1023,9 +1023,9 @@ void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw,
    math_matrix_4x4 *b = NULL;
 
    if (
-         !draw                       || 
-         !menu_disp                  || 
-         !menu_disp->get_default_mvp || 
+         !draw                       ||
+         !menu_disp                  ||
+         !menu_disp->get_default_mvp ||
          menu_disp->handles_transform
       )
       return;
@@ -1066,6 +1066,22 @@ void menu_display_handle_thumbnail_upload(void *task_data,
 
    load_image_info.data = img;
    load_image_info.type = MENU_IMAGE_THUMBNAIL;
+
+   menu_driver_load_image(&load_image_info);
+
+   image_texture_free(img);
+   free(img);
+   free(user_data);
+}
+
+void menu_display_handle_left_thumbnail_upload(void *task_data,
+      void *user_data, const char *err)
+{
+   menu_ctx_load_image_t load_image_info;
+   struct texture_image *img = (struct texture_image*)task_data;
+
+   load_image_info.data = img;
+   load_image_info.type = MENU_IMAGE_LEFT_THUMBNAIL;
 
    menu_driver_load_image(&load_image_info);
 
@@ -2183,7 +2199,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             if (!menu_driver_ctx || !menu_driver_ctx->update_thumbnail_path)
                return false;
-            menu_driver_ctx->update_thumbnail_path(menu_userdata, (unsigned)selection);
+            menu_driver_ctx->update_thumbnail_path(menu_userdata, (unsigned)selection, 'L');
+            menu_driver_ctx->update_thumbnail_path(menu_userdata, (unsigned)selection, 'R');
          }
          break;
       case RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE:
