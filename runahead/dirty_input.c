@@ -19,8 +19,7 @@ typedef struct InputListElement_t
    int16_t state[36];
 } InputListElement;
 
-typedef struct retro_core_t _retro_core_t;
-extern _retro_core_t current_core;
+extern struct retro_core_t current_core;
 extern struct retro_callbacks retro_ctx;
 
 typedef bool(*LoadStateFunction)(const void*, size_t);

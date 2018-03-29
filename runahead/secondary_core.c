@@ -24,12 +24,9 @@
 
 static int port_map[16];
 
-typedef struct retro_core_t _retro_core_t;
-typedef struct retro_callbacks retro_callbacks_t;
-
 static char *secondary_library_path;
 static dylib_t secondary_module;
-static _retro_core_t secondary_core;
+static struct retro_core_t secondary_core;
 static struct retro_callbacks secondary_callbacks;
 
 extern retro_ctx_load_content_info_t *load_content_info;

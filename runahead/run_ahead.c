@@ -173,7 +173,6 @@ static void runahead_clear_variables(void)
 static void runahead_check_for_gui(void)
 {
    /* Hack: If we were in the GUI, force a resync. */
-   bool is_dirty             = false;
    bool is_alive, is_focused = false;
    uint64_t frame_count      = 0;
 
