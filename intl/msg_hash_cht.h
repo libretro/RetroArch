@@ -2399,7 +2399,7 @@ MSG_HASH(MSG_NETPLAY_LAN_SCANNING,
 MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
       "當窗口失去焦點時暫停遊戲。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
-      "Enable or disable composition (Windows only).")
+      "Enable or disable composition.")
 MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
       "為遊戲、圖片、音樂和視訊啟用/禁用歷史記錄。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,

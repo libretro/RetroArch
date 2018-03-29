@@ -562,6 +562,16 @@ static void *xv_init(const video_info_t *video,
    XFree(visualinfo);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
+   if (video->fullscreen && settings->bools.video_disable_composition)
+   {
+      uint32_t value = 1;
+      Atom cardinal = XInternAtom(g_x11_dpy, "CARDINAL", False);
+      Atom net_wm_bypass_compositor = XInternAtom(g_x11_dpy, "_NET_WM_BYPASS_COMPOSITOR", False);
+
+      RARCH_LOG("[XVideo]: Requesting compositor bypass.\n");
+      XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
+   }
+
    XMapWindow(g_x11_dpy, g_x11_win);
 
    video_driver_get_window_title(title, sizeof(title));
