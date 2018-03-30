@@ -644,7 +644,7 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
 
    id = (type / (offset + 1)) - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
    remap_id =
-      settings->uints.input_keymapper_multi_ids[offset][id];
+      settings->uints.input_keymapper_ids[offset][id];
 
    RARCH_LOG("o: %d, type: %d, remap_id: %d\n", offset, type, remap_id);
 

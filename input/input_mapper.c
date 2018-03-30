@@ -109,22 +109,22 @@ void input_mapper_poll(input_mapper_t *handle)
       {
          if (j < RETROK_LAST)
          {
-            if (input_state(i, RETRO_DEVICE_JOYPAD, 0, j) && settings->uints.input_keymapper_multi_ids[i][j] != RETROK_UNKNOWN)
+            if (input_state(i, RETRO_DEVICE_JOYPAD, 0, j) && settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
             {
                MAPPER_SET_KEY (handle,
-                  settings->uints.input_keymapper_multi_ids[i][j]);
+                  settings->uints.input_keymapper_ids[i][j]);
                input_keyboard_event(true,
-                     settings->uints.input_keymapper_multi_ids[i][j],
+                     settings->uints.input_keymapper_ids[i][j],
                      0, 0, RETRO_DEVICE_KEYBOARD);
                key_event[j] = true;
             }
             else
             {
                if (key_event[j] == false && 
-                  settings->uints.input_keymapper_multi_ids[i][j] != RETROK_UNKNOWN)
+                  settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
                {
                   input_keyboard_event(false,
-                        settings->uints.input_keymapper_multi_ids[i][j],
+                        settings->uints.input_keymapper_ids[i][j],
                         0, 0, RETRO_DEVICE_KEYBOARD);
                }
             }

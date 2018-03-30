@@ -378,7 +378,7 @@ typedef struct settings
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
 
-      unsigned input_keymapper_multi_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+      unsigned input_keymapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
 
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
 
