@@ -1,6 +1,7 @@
 # 1.7.2 (future)
 - ANDROID/OPENSL: Prevent crashes when setting audio latency too low (buffer count can never be lower than 2 now).
 - COMMON: Add way to reset core association for playlist entry.
+- COMMON: Fix invalid long command line options causing infinite loop on Windows
 - COMMON: Add OSD statistics for video/audio/core.
 - CHEEVOS: Support Atari 2600, Virtual Boy, and Arcade (only Neo Geo, CPS-1, CPS-2 and CPS-3 and only with fbalpha core).
 - CHEEVOS: Add option to automatically take a screenshot when an achievement is triggered.
