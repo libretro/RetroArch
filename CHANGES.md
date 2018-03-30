@@ -3,6 +3,7 @@
 - COMMON: Add way to reset core association for playlist entry.
 - COMMON: Fix invalid long command line options causing infinite loop on Windows
 - COMMON: Add OSD statistics for video/audio/core.
+- COMMON: Added runahead system; allows you to drive down latency even further.
 - CHEEVOS: Support Atari 2600, Virtual Boy, and Arcade (only Neo Geo, CPS-1, CPS-2 and CPS-3 and only with fbalpha core).
 - CHEEVOS: Add option to automatically take a screenshot when an achievement is triggered.
 - D3D11: Experimental hardware renderer. Allows for libretro cores to use D3D11 for hardware rendering.
