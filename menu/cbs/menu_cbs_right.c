@@ -117,7 +117,7 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
    id = (type / (offset + 1)) - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
 
    remap_id =
-      settings->uints.input_keymapper_multi_ids[offset][id];
+      settings->uints.input_keymapper_ids[offset][id];
 
    for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
    {
@@ -130,7 +130,7 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
    else
       key_id = 0;
 
-   settings->uints.input_keymapper_multi_ids[offset][id] = key_descriptors[key_id].key;
+   settings->uints.input_keymapper_ids[offset][id] = key_descriptors[key_id].key;
 
    return 0;
 }
