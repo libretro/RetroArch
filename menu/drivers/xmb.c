@@ -3040,6 +3040,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
    float window_width                      = video_info->width;
    float window_height                     = video_info->height;
+   const float around_thumb_margin         = 0.96;
 
    if (!xmb)
       return;
@@ -3073,6 +3074,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    selection = menu_navigation_get_selection();
 
    strlcpy(title_truncated, xmb->title_name, sizeof(title_truncated));
+
    if (selection > 1)
    {
       /* skip 25 utf8 multi-byte chars */
@@ -3117,64 +3119,62 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       ((xmb->margins_screen_left * scale_mod[5] + xmb->icon_spacing_horizontal +
         xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4 + min_thumb_size) <= width))
    {
-   if (xmb->savestate_thumbnail)
-      xmb_draw_thumbnail(video_info,
-            xmb, &coord_white[0], width, height,
-            xmb->margins_screen_left * scale_mod[5]
-            + xmb->icon_spacing_horizontal +
-            xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4,
-            xmb->margins_screen_top + xmb->icon_size + xmb->savestate_thumbnail_height * scale_mod[4],
-            xmb->savestate_thumbnail_width, xmb->savestate_thumbnail_height * scale_mod[4],
-            xmb->savestate_thumbnail);
-   else if (xmb->thumbnail
-      && !string_is_equal(xmb_thumbnails_ident('R'),
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-   {
-#ifdef XMB_DEBUG
-      RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n", xmb->thumbnail_width, xmb->thumbnail_height);
-      RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
-#endif
-
-      /* Limit thumbnail height to screen height + margin. */
-
-      thumb_width = xmb->thumbnail_width;
-      thumb_height = xmb->thumbnail_height;
-      const float around_thumb_margin     = 0.96;
-
-      if( xmb->margins_screen_top + xmb->icon_size + xmb->thumbnail_height * scale_mod[4] >=
-         (window_height * around_thumb_margin) )
+      if (xmb->savestate_thumbnail)
+         xmb_draw_thumbnail(video_info,
+               xmb, &coord_white[0], width, height,
+               xmb->margins_screen_left * scale_mod[5]
+               + xmb->icon_spacing_horizontal +
+               xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4,
+               xmb->margins_screen_top + xmb->icon_size + xmb->savestate_thumbnail_height * scale_mod[4],
+               xmb->savestate_thumbnail_width, xmb->savestate_thumbnail_height * scale_mod[4],
+               xmb->savestate_thumbnail);
+      else if (xmb->thumbnail
+         && !string_is_equal(xmb_thumbnails_ident('R'),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
       {
-         thumb_width = thumb_width *
-            (((window_height * around_thumb_margin) - xmb->margins_screen_top - xmb->icon_size) /
-               (thumb_height * scale_mod[4]));
-         thumb_height = thumb_height *
-            (((window_height * around_thumb_margin) - xmb->margins_screen_top - xmb->icon_size) /
-               (thumb_height * scale_mod[4]));
+   #ifdef XMB_DEBUG
+         RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n", xmb->thumbnail_width, xmb->thumbnail_height);
+         RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
+   #endif
+
+         /* Limit thumbnail height to screen height + margin. */
+
+         thumb_width = xmb->thumbnail_width;
+         thumb_height = xmb->thumbnail_height;
+
+         if (xmb->margins_screen_top + xmb->icon_size + xmb->thumbnail_height * scale_mod[4] >=
+            (window_height * around_thumb_margin))
+         {
+            thumb_width = thumb_width *
+               (((window_height * around_thumb_margin) - xmb->margins_screen_top - xmb->icon_size) /
+                  (thumb_height * scale_mod[4]));
+            thumb_height = thumb_height *
+               (((window_height * around_thumb_margin) - xmb->margins_screen_top - xmb->icon_size) /
+                  (thumb_height * scale_mod[4]));
+         }
+
+         /* Limit thumbnail width */
+
+         if (xmb->margins_screen_left * scale_mod[5] + xmb->icon_spacing_horizontal +
+              xmb->icon_spacing_horizontal*4 - xmb->icon_size / 4 + thumb_width * scale_mod[4]  >=
+              (window_width * around_thumb_margin))
+         {
+            thumb_height = thumb_height *
+               (((window_width * around_thumb_margin) - xmb->margins_screen_left * scale_mod[5] - xmb->icon_spacing_horizontal -
+               xmb->icon_spacing_horizontal * 4 + xmb->icon_size / 4) / (thumb_width * scale_mod[4]));
+            thumb_width  = thumb_width  *
+               (((window_width * around_thumb_margin) - xmb->margins_screen_left * scale_mod[5] - xmb->icon_spacing_horizontal -
+               xmb->icon_spacing_horizontal * 4 + xmb->icon_size / 4) / (thumb_width * scale_mod[4]));
+         }
+
+         xmb_draw_thumbnail(video_info,
+               xmb, &coord_white[0], width, height,
+               xmb->margins_screen_left * scale_mod[5] + xmb->icon_spacing_horizontal +
+                     xmb->icon_spacing_horizontal*4 - xmb->icon_size / 4,
+               xmb->margins_screen_top + xmb->icon_size + thumb_height * scale_mod[4],
+               thumb_width * scale_mod[4], thumb_height * scale_mod[4],
+               xmb->thumbnail);
       }
-
-      /* Limit thumbnail width */
-
-      if ( xmb->margins_screen_left * scale_mod[5] + xmb->icon_spacing_horizontal +
-           xmb->icon_spacing_horizontal*4 - xmb->icon_size / 4 + thumb_width * scale_mod[4]  >=
-           (window_width * around_thumb_margin) )
-      {
-         thumb_height = thumb_height *
-            (((window_width * around_thumb_margin) - xmb->margins_screen_left * scale_mod[5] - xmb->icon_spacing_horizontal -
-            xmb->icon_spacing_horizontal * 4 + xmb->icon_size / 4) / (thumb_width * scale_mod[4]));
-         thumb_width  = thumb_width  *
-            (((window_width * around_thumb_margin) - xmb->margins_screen_left * scale_mod[5] - xmb->icon_spacing_horizontal -
-            xmb->icon_spacing_horizontal * 4 + xmb->icon_size / 4) / (thumb_width * scale_mod[4]));
-      }
-
-      xmb_draw_thumbnail(video_info,
-            xmb, &coord_white[0], width, height,
-            xmb->margins_screen_left * scale_mod[5] + xmb->icon_spacing_horizontal +
-                  xmb->icon_spacing_horizontal*4 - xmb->icon_size / 4,
-            xmb->margins_screen_top + xmb->icon_size + thumb_height * scale_mod[4],
-            thumb_width * scale_mod[4], thumb_height * scale_mod[4],
-            xmb->thumbnail);
-
-   }
    }
 
    /* Do not draw the left thumbnail if there is no space available */
