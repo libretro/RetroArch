@@ -137,6 +137,9 @@ void d3d11_update_texture(
    D3D11_MAPPED_SUBRESOURCE mapped_texture;
    D3D11_BOX                frame_box = { 0, 0, 0, width, height, 1 };
 
+   if (!texture || !texture->staging)
+      return;
+
    D3D11MapTexture2D(ctx, texture->staging, 0, D3D11_MAP_WRITE, 0, &mapped_texture);
 
    dxgi_copy(

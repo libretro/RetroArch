@@ -733,6 +733,9 @@ void d3d12_update_texture(
    uint8_t*    dst;
    D3D12_RANGE read_range = { 0, 0 };
 
+   if (!texture || !texture->upload_buffer)
+      return;
+
    D3D12Map(texture->upload_buffer, 0, &read_range, (void**)&dst);
 
    dxgi_copy(
