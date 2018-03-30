@@ -193,6 +193,37 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #endif
 }
 
+void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
+{
+   int i, offset;
+   int padding = size % 16;
+   uint8_t buf[16];
+
+   RARCH_LOG("== %d-byte buffer ==================\n", size);
+   for(i = 0, offset = 0; i < size; i++)
+   {
+      buf[offset] = data[i];
+      offset++;
+
+      if(offset == 16)
+      {
+         offset = 0;
+         RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
+            buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
+            buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+      }
+   }
+   if(padding)
+   {
+      for(i = padding; i < 16; i++)
+         buf[i] = 0xff;
+      RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
+         buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
+         buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+   }
+   RARCH_LOG("==================================\n");
+}
+
 void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;

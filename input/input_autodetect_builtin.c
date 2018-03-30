@@ -228,6 +228,20 @@ DECL_AXIS(r_y_minus, +3)
 
 #ifdef WIIU
 
+#define WIIUINPUT_GAMECUBE_DEFAULT_BINDS \
+DECL_BTN_EX(b,      0, "B") \
+DECL_BTN_EX(y,      1, "Y") \
+DECL_BTN_EX(select, 2, "Z") \
+DECL_BTN_EX(start,  3, "Start/Pause") \
+DECL_BTN_EX(up,     4, "D-Pad Up") \
+DECL_BTN_EX(down,   5, "D-Pad Down") \
+DECL_BTN_EX(left,   6, "D-Pad Left") \
+DECL_BTN_EX(right,  7, "D-Pad Right") \
+DECL_BTN_EX(a,      8, "A") \
+DECL_BTN_EX(x,      9, "X") \
+DECL_BTN_EX(l,     10, "L") \
+DECL_BTN_EX(r,     11, "R")
+
 #define WIIUINPUT_GAMEPAD_DEFAULT_BINDS \
 DECL_BTN_EX(menu_toggle,  1, "Home") \
 DECL_BTN_EX(select,       2, "-") \

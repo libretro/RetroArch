@@ -19,8 +19,6 @@
 static wiiu_event_list events;
 static wiiu_adapter_list adapters;
 
-static void log_buffer(uint8_t *data, uint32_t len);
-
 static bool wiiu_hid_joypad_query(void *data, unsigned slot)
 {
    wiiu_hid_t *hid = (wiiu_hid_t *)data;
@@ -30,51 +28,66 @@ static bool wiiu_hid_joypad_query(void *data, unsigned slot)
    return slot < hid->driver->max_slot;
 }
 
-static const char *wiiu_hid_joypad_name(void *data, unsigned slot)
+static joypad_connection_t *get_pad(wiiu_hid_t *hid, unsigned slot)
 {
-   if (!wiiu_hid_joypad_query(data, slot))
+   if(!wiiu_hid_joypad_query(hid, slot))
       return NULL;
 
-   wiiu_hid_t *hid = (wiiu_hid_t *)data;
+   joypad_connection_t *result = &(hid->driver->pad_list[slot]);
+   if(!result || !result->connected || !result->iface || !result->data)
+      return NULL;
 
-   return hid->driver->pad_list[slot].iface->get_name(data);
+   return result;
 }
 
-static void wiiu_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
+static const char *wiiu_hid_joypad_name(void *data, unsigned slot)
 {
-   (void)data;
-   (void)port;
+   joypad_connection_t *pad = get_pad((wiiu_hid_t *)data, slot);
 
-   BIT256_CLEAR_ALL_PTR(state);
+   if(!pad)
+      return NULL;
+
+   return pad->iface->get_name(pad->data);
 }
 
-static bool wiiu_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
+static void wiiu_hid_joypad_get_buttons(void *data, unsigned slot, retro_bits_t *state)
 {
-   (void)data;
-   (void)port;
-   (void)joykey;
+   joypad_connection_t *pad = get_pad((wiiu_hid_t *)data, slot);
 
-   return false;
+   if(pad)
+      pad->iface->get_buttons(pad->data, state);
 }
 
-static bool wiiu_hid_joypad_rumble(void *data, unsigned pad,
+static bool wiiu_hid_joypad_button(void *data, unsigned slot, uint16_t joykey)
+{
+   joypad_connection_t *pad = get_pad((wiiu_hid_t *)data, slot);
+
+   if(!pad)
+      return false;
+
+   return pad->iface->button(pad->data, joykey);
+}
+
+static bool wiiu_hid_joypad_rumble(void *data, unsigned slot,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   (void)data;
-   (void)pad;
-   (void)effect;
-   (void)strength;
+   joypad_connection_t *pad = get_pad((wiiu_hid_t *)data, slot);
 
+   if(!pad)
+      return false;
+
+   pad->iface->set_rumble(pad->data, effect, strength);
    return false;
 }
 
-static int16_t wiiu_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
+static int16_t wiiu_hid_joypad_axis(void *data, unsigned slot, uint32_t joyaxis)
 {
-   (void)data;
-   (void)port;
-   (void)joyaxis;
+   joypad_connection_t *pad = get_pad((wiiu_hid_t *)data, slot);
 
-   return 0;
+   if(!pad)
+      return 0;
+
+   return pad->iface->get_axis(pad->data, joyaxis);
 }
 
 static void *wiiu_hid_init(hid_driver_instance_t *driver)
@@ -462,53 +475,6 @@ void wiiu_start_read_loop(wiiu_adapter_t *adapter)
           adapter->rx_size,
           wiiu_hid_read_loop_callback,
           adapter);
-}
-
-/**
- * Takes a buffer and formats it for the log file, 16 bytes per line.
- *
- * When the end of the buffer is reached, it is padded out with 0xff. So e.g.
- * a 5-byte buffer might look like:
- *
- * 5 bytes read fro HIDRead:
- * 0102030405ffffff  ffffffffffffffff
- * ==================================
- */
-static void log_buffer(uint8_t *data, uint32_t len)
-{
-   int i, o;
-   int padding = len % 16;
-   uint8_t buf[16];
-
-   (uint8_t *)data;
-   (uint32_t)len;
-
-   RARCH_LOG("%d bytes read from HIDRead:\n", len);
-
-   for(i = 0, o = 0; i < len; i++)
-   {
-      buf[o] = data[i];
-      o++;
-      if(o == 16)
-      {
-         o = 0;
-         RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
-               buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
-               buf[8], buf[9], buf[10], buf[11], buf[12],  buf[13], buf[14], buf[15]);
-      }
-   }
-
-   if(padding)
-   {
-      for(i = padding; i < 16; i++)
-         buf[i] = 0xff;
-
-      RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
-            buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
-            buf[8], buf[9], buf[10], buf[11], buf[12],  buf[13], buf[14], buf[15]);
-   }
-   RARCH_LOG("==================================\n");
-
 }
 
 static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,

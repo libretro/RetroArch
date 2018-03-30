@@ -101,6 +101,8 @@ static void wiiu_gca_handle_packet(void *data, uint8_t *buffer, size_t size)
       return;
    }
 
+   //RARCH_LOG_BUFFER(buffer, size);
+
    memcpy(instance->device_state, buffer, size);
    update_pad_state(instance);
 }
@@ -239,6 +241,29 @@ static void wiiu_gca_get_buttons(void *data, retro_bits_t *state)
    }
 }
 
+static void log_bitmask(uint32_t bits)
+{
+  char buf[33];
+  int i;
+
+  for(i = 0; i < 32; i++)
+  {
+    buf[i] = (bits & (1 << i)) ? '1' : '0';
+  }
+  buf[32] = '\0';
+
+  RARCH_LOG("pressed_keys: %s\n", buf);
+}
+
+/**
+ * The USB packet provides a 9-byte data packet for each pad.
+ *
+ * byte 0: connection status (0x14 = connected, 0x04 = disconnected)
+ * bytes 1-2: digital buttons
+ * bytes 3-4: left analog stick x/y
+ * bytes 5-6: right analog stick x/y
+ * bytes 7-8: L/R analog state (note that these have digital buttons too)
+ */
 static void wiiu_gca_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
    gca_pad_t *pad = (gca_pad_t *)data;
@@ -263,9 +288,13 @@ static void wiiu_gca_packet_handler(void *data, uint8_t *packet, uint16_t size)
    if(!pad || !packet || size > sizeof(pad->data))
       return;
 
+/*   RARCH_LOG_BUFFER(packet, size); */
+
    memcpy(pad->data, packet, size);
    pad->buttons = 0;
-   pressed_keys = pad->data[3] | (pad->data[4] << 8);
+   pressed_keys = pad->data[1] | (pad->data[2] << 8);
+
+   log_bitmask(pressed_keys);
 
    for(i = 0; i < 12; i++)
    {
@@ -289,7 +318,7 @@ static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
    if(!pad || axis >= 4)
       return 0;
 
-   val = pad->data[5+axis];
+   val = pad->data[3+axis];
 
    switch(axis)
    {
@@ -309,11 +338,21 @@ static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
    return val;
 }
 
-const char *wiiu_gca_get_name(void *data)
+static const char *wiiu_gca_get_name(void *data)
 {
   gca_pad_t *pad = (gca_pad_t *)data;
 
   return "GameCube Controller";
+}
+
+static bool wiiu_gca_button(void *data, uint16_t joykey)
+{
+  gca_pad_t *pad = (gca_pad_t *)data;
+
+  if(!pad)
+    return false;
+
+  return (pad->buttons & joykey);
 }
 
 pad_connection_interface_t wiiu_gca_pad_connection = {
@@ -323,5 +362,6 @@ pad_connection_interface_t wiiu_gca_pad_connection = {
    wiiu_gca_set_rumble,
    wiiu_gca_get_buttons,
    wiiu_gca_get_axis,
-   wiiu_gca_get_name
+   wiiu_gca_get_name,
+   wiiu_gca_button
 };

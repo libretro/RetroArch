@@ -52,6 +52,19 @@ struct hid_driver
    int32_t (*read)(void *handle, void *buf, size_t size);
 };
 
+#define HID_GET_BUTTONS(pad, state) hid_instance.os_driver->get_buttons( \
+   hid_instance.os_driver_data, pad, state)
+#define HID_BUTTON(pad, key) hid_instance.os_driver->button( \
+   hid_instance.os_driver_data, pad, key)
+#define HID_AXIS(pad, axis) hid_instance.os_driver->axis( \
+   hid_instance.os_driver_data, pad, axis)
+#define HID_PAD_NAME(pad) hid_instance.os_driver->name( \
+   hid_instance.os_driver_data, pad)
+#define HID_POLL() hid_instance.os_driver->poll( \
+   hid_instance.os_driver_data)
+
+
+
 struct hid_driver_instance {
    hid_driver_t *os_driver;
    void *os_driver_data;

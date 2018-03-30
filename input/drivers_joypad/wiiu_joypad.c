@@ -40,9 +40,10 @@ static input_device_driver_t *get_driver_for_pad(unsigned pad)
 {
   if(wpad_driver.query_pad(pad))
     return &wpad_driver;
+/*
   if(kpad_driver.query_pad(pad))
     return &kpad_driver;
-
+*/
 #ifdef WIIU_HID
   return &hidpad_driver;
 #else
@@ -84,11 +85,7 @@ static bool wiiu_joypad_init(void* data)
 
 static bool wiiu_joypad_query_pad(unsigned pad)
 {
-#ifdef WIIU_HID
   return ready && pad < MAX_USERS;
-#else
-  return ready && pad < 5;
-#endif
 }
 
 static void wiiu_joypad_destroy(void)
@@ -138,7 +135,7 @@ static void wiiu_joypad_poll(void)
 static const char* wiiu_joypad_name(unsigned pad)
 {
   if(!wiiu_joypad_query_pad(pad))
-    return "N/A";
+    return "Snuffleupagus";
 
   return pad_drivers[pad]->name(pad);
 }

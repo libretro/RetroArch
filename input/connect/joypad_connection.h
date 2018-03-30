@@ -61,6 +61,7 @@ typedef struct pad_connection_interface
    void			(*get_buttons)(void *data, retro_bits_t *state);
    int16_t  	(*get_axis)(void *data, unsigned axis);
    const char*	(*get_name)(void *data);
+   bool         (*button)(void *data, uint16_t joykey);
 } pad_connection_interface_t;
 
 typedef struct joypad_connection joypad_connection_t;

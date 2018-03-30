@@ -86,7 +86,7 @@ void logger_send_v(const char *__format, va_list args);
    logger_send_v(fmt, vp); \
 } while (0)
 
-#else
+#else /* IS_SALAMANDER */
 
 #define RARCH_LOG(...) do { \
    logger_send("" __VA_ARGS__); \
@@ -123,11 +123,14 @@ void logger_send_v(const char *__format, va_list args);
    logger_send("[OUTPUT] " tag); \
    logger_send_v(fmt, vp); \
 } while (0)
-
 #endif
-#else
+
+#define RARCH_LOG_BUFFER(...) do { } while(0)
+
+#else /* HAVE_LOGGER */
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap);
 void RARCH_LOG(const char *fmt, ...);
+void RARCH_LOG_BUFFER(uint8_t *buffer, size_t size);
 void RARCH_LOG_OUTPUT(const char *msg, ...);
 void RARCH_WARN(const char *fmt, ...);
 void RARCH_ERR(const char *fmt, ...);
@@ -135,7 +138,7 @@ void RARCH_ERR(const char *fmt, ...);
 #define RARCH_LOG_OUTPUT_V RARCH_LOG_V
 #define RARCH_WARN_V RARCH_LOG_V
 #define RARCH_ERR_V RARCH_LOG_V
-#endif
+#endif /* HAVE_LOGGER */
 
 RETRO_END_DECLS
 

@@ -47,13 +47,13 @@ static bool hidpad_init(void *data)
       return false;
    }
 
-/*   hid_instance.pad_list[0].connected = true; */
-
+   hid_instance.pad_list[0].connected = true;
+/*
    for(i = 0; i < (WIIU_WIIMOTE_CHANNELS+1); i++)
    {
       hid_instance.pad_list[i].connected = true;
    }
-
+*/
 
    hidpad_poll();
    ready = true;
@@ -63,7 +63,7 @@ static bool hidpad_init(void *data)
 
 static bool hidpad_query_pad(unsigned pad)
 {
-   return ready && (pad > WIIU_WIIMOTE_CHANNELS && pad < MAX_USERS);
+   return ready && pad < MAX_USERS;
 }
 
 static void hidpad_destroy(void)
@@ -78,11 +78,7 @@ static bool hidpad_button(unsigned pad, uint16_t button)
    if (!hidpad_query_pad(pad))
       return false;
 
-#if 0
-   return hid_driver->button(hid_data, pad, button);
-#else
-   return false;
-#endif
+   return HID_BUTTON(pad, button);
 }
 
 static void hidpad_get_buttons(unsigned pad, retro_bits_t *state)
@@ -90,10 +86,7 @@ static void hidpad_get_buttons(unsigned pad, retro_bits_t *state)
   if (!hidpad_query_pad(pad))
     BIT256_CLEAR_ALL_PTR(state);
 
-#if 0
-  hid_driver->get_buttons(hid_data, pad, state);
-#endif
-  BIT256_CLEAR_ALL_PTR(state);
+  HID_GET_BUTTONS(pad, state);
 }
 
 static int16_t hidpad_axis(unsigned pad, uint32_t axis)
@@ -101,17 +94,13 @@ static int16_t hidpad_axis(unsigned pad, uint32_t axis)
    if (!hidpad_query_pad(pad));
    return 0;
 
-#if 0
-   return hid_driver->axis(hid_data, pad, axis);
-#else
-   return 0;
-#endif
+   return HID_AXIS(pad, axis);
 }
 
 static void hidpad_poll(void)
 {
    if (ready)
-      hid_instance.os_driver->poll(hid_instance.os_driver_data);
+      HID_POLL();
 }
 
 static const char *hidpad_name(unsigned pad)
@@ -119,11 +108,7 @@ static const char *hidpad_name(unsigned pad)
    if (!hidpad_query_pad(pad))
       return "N/A";
 
-#if 1
-   return PAD_NAME_HID;
-#else
-   return hid_driver->name(hid_data, pad);
-#endif
+   return HID_PAD_NAME(pad);
 }
 
 input_device_driver_t hidpad_driver =
