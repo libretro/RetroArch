@@ -10,11 +10,13 @@
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Polish translation.
 - MENU: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
-- MENU/XMB: Add Left Thumbnails (additional to the right).
+- MENU/XMB: Left/right thumbnails are now automatically scaled according to layout.
+- MENU/XMB: Add Left Thumbnails (additional to the right). 
 - MENU/XMB: Fixed left/right tab regression.
 - MENU/XMB: Fix scaling of tall images that were cut on bottom previously.
 - MENU/XMB: Menu scale factor setting now changes texts length, image scaling and margins.
 - MENU/XMB: Mouse cursor scales correctly now.
+- MENU/MaterialUI: Automatic DPI Scaling should be much improved now, now scales as expected at 1440p and 4K resolutions.
 - MENU/MaterialUI: Fix wrong calculation of an entry height causing long playlists to end up outside of screen range. This also could cause crashes on low DPI screens.
 - IOS: Fixed crash when opening downloaded roms from Safari or using the "Open in.." functionality. Added the compiler flag to support keyboard remapping to controls.
 - IOS: Fixed buffer overlap that caused a crash while trying to download GLSL shaders from the buildbot.
