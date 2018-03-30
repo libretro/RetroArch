@@ -903,6 +903,7 @@ static int iohidmanager_hid_manager_set_device_matching(
 		free(devList);
 		devList = ptr;
 	}
+	free(device_array);
 
    return 0;
 }
