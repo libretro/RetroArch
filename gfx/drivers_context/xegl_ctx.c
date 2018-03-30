@@ -273,6 +273,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    XSetWindowAttributes swa = {0};
    XVisualInfo *vi          = NULL;
    xegl_ctx_data_t *xegl    = (xegl_ctx_data_t*)data;
+   settings_t *settings     = config_get_ptr();
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
 
@@ -344,10 +345,10 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          CWOverrideRedirect, &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
-   if (fullscreen && config_get_ptr()->bools.video_disable_composition)
+   if (fullscreen && settings && settings->bools.video_disable_composition)
    {
-      uint32_t value = 1;
-      Atom cardinal = XInternAtom(g_x11_dpy, "CARDINAL", False);
+      uint32_t value                = 1;
+      Atom cardinal                 = XInternAtom(g_x11_dpy, "CARDINAL", False);
       Atom net_wm_bypass_compositor = XInternAtom(g_x11_dpy, "_NET_WM_BYPASS_COMPOSITOR", False);
 
       RARCH_LOG("[X/EGL]: Requesting compositor bypass.\n");

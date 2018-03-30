@@ -424,9 +424,10 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 		WPARAM wparam, LPARAM lparam)
 {
-   unsigned keycode;
-   uint16_t mod     = 0;
-   bool keydown     = true;
+   unsigned keycode      = 0;
+   uint16_t mod          = 0;
+   bool keydown          = true;
+   settings_t *settings  = NULL;
 
    if (GetKeyState(VK_SHIFT)   & 0x80)
       mod |= RETROKMOD_SHIFT;
@@ -460,7 +461,8 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
             keydown = false;
 
 #if _WIN32_WINNT >= 0x0501 /* XP */
-         if (string_is_equal(config_get_ptr()->arrays.input_driver, "raw"))
+         settings  = config_get_ptr();
+         if (settings && string_is_equal(settings->arrays.input_driver, "raw"))
             keycode = input_keymaps_translate_keysym_to_rk((unsigned)(wparam));
          else
 #endif
