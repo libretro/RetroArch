@@ -5,6 +5,7 @@
 - CHEEVOS: Support Atari 2600, Virtual Boy, and Arcade (only Neo Geo, CPS-1, CPS-2 and CPS-3 and only with fbalpha core).
 - CHEEVOS: Add option to automatically take a screenshot when an achievement is triggered.
 - D3D11: Experimental hardware renderer. Allows for libretro cores to use D3D11 for hardware rendering.
+- D3D11/D3D12: Fix crashes with completely black or white thumbnail textures in XMB.
 - LIBRETRO: Addition - Functions to enable and disable audio and video, and an environment function to query status of audio and video enables.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Polish translation.
