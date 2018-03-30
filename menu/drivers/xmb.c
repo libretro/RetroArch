@@ -3519,7 +3519,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    new_header_height             = 128.0 * scale_factor;
 
 
-   xmb->thumbnail_width          = 460.0 * scale_factor;
+   xmb->thumbnail_width          = 512.0 * scale_factor;
    xmb->left_thumbnail_width     = 430.0 * scale_factor;
    xmb->savestate_thumbnail_width= 460.0 * scale_factor;
    xmb->cursor_size              = 64.0 * scale_factor;
