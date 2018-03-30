@@ -185,7 +185,7 @@ static int dir_list_read(const char *dir,
       bool is_dir                     = false;
       int ret                         = 0;
       const char *name                = retro_dirent_get_name(entry);
-      const char *file_ext            = path_get_extension(name);
+      const char *file_ext            = "";
 
       file_path[0] = '\0';
 
@@ -198,9 +198,13 @@ static int dir_list_read(const char *dir,
             continue;
       }
 
+      if(!is_dir){  
+         file_ext = path_get_extension(name);
+      }
+
       if(is_dir && recursive)
       {
-         if(strstr(name, ".") || strstr(name, ".."))
+         if(strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
             continue;
 
          dir_list_read(file_path, list, ext_list, include_dirs,
