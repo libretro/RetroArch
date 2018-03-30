@@ -31,6 +31,8 @@
 - WINDOWS XP: Add Cheevos support.
 - WINDOWS/MSVC 2005: Add Cheevos support.
 - VITA: Bugfix for 'PS Vita takes many time to start to accept input' issue.
+- X11: Allow compositor disabling on X11 fullscreen through _NET_WM_BYPASS_COMPOSITOR
+- X11: Prioritize _NET_WM_STATE_FULLSCREEN in true fullscreen mode
 - WIIU: Fix OOB read/write in keyboard driver.
 
 # 1.7.1
