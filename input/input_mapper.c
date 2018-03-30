@@ -86,7 +86,7 @@ void input_mapper_poll(input_mapper_t *handle)
    int i, j;
    settings_t *settings = config_get_ptr();
    unsigned device      = settings->uints.input_libretro_device[handle->port];
-bool key_event[RARCH_CUSTOM_BIND_LIST_END];
+   bool key_event[RARCH_CUSTOM_BIND_LIST_END];
 #ifdef HAVE_MENU
    bool menu_is_alive   = menu_driver_is_alive();
 #endif
