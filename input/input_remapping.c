@@ -86,18 +86,6 @@ bool input_remapping_load_file(void *data, const char *path)
 
          key_remap = -1;
 
-         if (settings->uints.keymapper_port == i)
-         {
-            if (config_get_int(conf, keymapper_ident[j], &key_remap))
-            {
-               settings->uints.input_keymapper_ids[j] = key_remap;
-#if 0
-               RARCH_LOG ("%s: %u\n", keymapper_ident[j], settings->uints.input_keymapper_ids[j]);
-#endif
-            }
-            else
-               settings->uints.input_keymapper_ids[j] = RETROK_UNKNOWN;
-         }
          if (config_get_int(conf, keymapper_ident[j], &key_remap))
             settings->uints.input_keymapper_multi_ids[i][j] = key_remap;
          else
@@ -206,10 +194,6 @@ bool input_remapping_save_file(const char *path)
             else
                config_unset(conf,key_ident[j]);
 
-            if (settings->uints.keymapper_port == i &&
-                settings->uints.input_keymapper_ids[j] != RETROK_UNKNOWN)
-               config_set_int(conf, keymapper_ident[j], settings->uints.input_keymapper_ids[j]);
-
          }
          else
          {
@@ -278,7 +262,7 @@ void input_remapping_set_defaults(bool deinit)
          const struct  retro_keybind *keybind  = &input_config_binds[i][j];
          if (keybind)
             settings->uints.input_remap_ids[i][j] = keybind->id;
-         settings->uints.input_keymapper_ids[j] = RETROK_UNKNOWN;
+         settings->uints.input_keymapper_multi_ids[i][j] = RETROK_UNKNOWN;
 
       }
       for (j = 0; j < 4; j++)
