@@ -29,7 +29,7 @@
 - VULKAN/X11: Fix X11 Vulkan bug from Wayland driver.
 - VULKAN: Fix multi-line text spacing in menus with Vulkan driver.
 - WINDOWS XP: Add Cheevos support.
-- WINDOWS/MSVC 2005: Add Cheevos support.
+- WINDOWS/MSVC 2003/2005/2010/2013/2015/2017: Add Cheevos support.
 - VITA: Bugfix for 'PS Vita takes many time to start to accept input' issue.
 - X11: Allow compositor disabling on X11 fullscreen through _NET_WM_BYPASS_COMPOSITOR
 - X11: Prioritize _NET_WM_STATE_FULLSCREEN in true fullscreen mode
