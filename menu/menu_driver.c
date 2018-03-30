@@ -551,7 +551,9 @@ float menu_display_get_dpi(void)
    if (!settings)
       return true;
 
-   dpi = sqrt((width * width) + (height * height)) / 6.5;
+   /* Generic dpi calculation formula,
+    * the divider is the screen diagonal in inches */
+   dpi = sqrt((width * width) + (height * height)) / 5;
 
    if (settings->bools.menu_dpi_override_enable)
       return settings->uints.menu_dpi_override_value;
