@@ -101,8 +101,6 @@ static void wiiu_gca_handle_packet(void *data, uint8_t *buffer, size_t size)
       return;
    }
 
-   //RARCH_LOG_BUFFER(buffer, size);
-
    memcpy(instance->device_state, buffer, size);
    update_pad_state(instance);
 }
@@ -165,7 +163,6 @@ static joypad_connection_t *register_pad(wiiu_gca_instance_t *instance, int port
       return NULL;
    }
 
-   RARCH_LOG("[gca]: registering pad in port %d to slot %d\n", port+1, slot);
    result = &(hid_instance.pad_list[slot]);
    result->iface = &wiiu_gca_pad_connection;
    result->data = result->iface->init(instance, slot, hid_instance.os_driver);
@@ -184,6 +181,7 @@ static void unregister_pad(wiiu_gca_instance_t *instance, int slot)
    instance->pads[slot] = NULL;
    pad->iface->deinit(pad->data);
    pad->data = NULL;
+   pad->iface = NULL;
    pad->connected = false;
 }
 
@@ -241,20 +239,6 @@ static void wiiu_gca_get_buttons(void *data, retro_bits_t *state)
    }
 }
 
-static void log_bitmask(uint32_t bits)
-{
-  char buf[33];
-  int i;
-
-  for(i = 0; i < 32; i++)
-  {
-    buf[i] = (bits & (1 << i)) ? '1' : '0';
-  }
-  buf[32] = '\0';
-
-  RARCH_LOG("pressed_keys: %s\n", buf);
-}
-
 /**
  * The USB packet provides a 9-byte data packet for each pad.
  *
@@ -269,38 +253,11 @@ static void wiiu_gca_packet_handler(void *data, uint8_t *packet, uint16_t size)
    gca_pad_t *pad = (gca_pad_t *)data;
    uint32_t i, pressed_keys;
 
-   static const uint32_t button_mapping[12] =
-   {
-      RETRO_DEVICE_ID_JOYPAD_A,
-      RETRO_DEVICE_ID_JOYPAD_B,
-      RETRO_DEVICE_ID_JOYPAD_X,
-      RETRO_DEVICE_ID_JOYPAD_Y,
-      RETRO_DEVICE_ID_JOYPAD_LEFT,
-      RETRO_DEVICE_ID_JOYPAD_RIGHT,
-      RETRO_DEVICE_ID_JOYPAD_DOWN,
-      RETRO_DEVICE_ID_JOYPAD_UP,
-      RETRO_DEVICE_ID_JOYPAD_START,
-      RETRO_DEVICE_ID_JOYPAD_SELECT,
-      RETRO_DEVICE_ID_JOYPAD_R,
-      RETRO_DEVICE_ID_JOYPAD_L,
-   };
-
    if(!pad || !packet || size > sizeof(pad->data))
       return;
 
-/*   RARCH_LOG_BUFFER(packet, size); */
-
    memcpy(pad->data, packet, size);
-   pad->buttons = 0;
-   pressed_keys = pad->data[1] | (pad->data[2] << 8);
-
-   log_bitmask(pressed_keys);
-
-   for(i = 0; i < 12; i++)
-   {
-      pad->buttons |= (pressed_keys & (1 << i)) ?
-        (1 << button_mapping[i]) : 0;
-   }
+   pad->buttons = pad->data[1] | (pad->data[2] << 8);
 }
 
 static void wiiu_gca_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength)
@@ -344,6 +301,14 @@ static const char *wiiu_gca_get_name(void *data)
 
   return "GameCube Controller";
 }
+
+/**
+ * Button bitmask values:
+ * 0x0001 - A   0x0010 - left    0x0100 - Start/Pause
+ * 0x0002 - B   0x0020 - right   0x0200 - Z
+ * 0x0004 - X   0x0040 - down    0x0400 - R
+ * 0x0008 - Y   0x0080 - up      0x0800 - L
+ */
 
 static bool wiiu_gca_button(void *data, uint16_t joykey)
 {

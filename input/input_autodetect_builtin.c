@@ -229,18 +229,26 @@ DECL_AXIS(r_y_minus, +3)
 #ifdef WIIU
 
 #define WIIUINPUT_GAMECUBE_DEFAULT_BINDS \
-DECL_BTN_EX(b,      0, "B") \
-DECL_BTN_EX(y,      1, "Y") \
-DECL_BTN_EX(select, 2, "Z") \
-DECL_BTN_EX(start,  3, "Start/Pause") \
-DECL_BTN_EX(up,     4, "D-Pad Up") \
-DECL_BTN_EX(down,   5, "D-Pad Down") \
-DECL_BTN_EX(left,   6, "D-Pad Left") \
-DECL_BTN_EX(right,  7, "D-Pad Right") \
-DECL_BTN_EX(a,      8, "A") \
-DECL_BTN_EX(x,      9, "X") \
-DECL_BTN_EX(l,     10, "L") \
-DECL_BTN_EX(r,     11, "R")
+DECL_BTN_EX(a,      0x0001, "A") \
+DECL_BTN_EX(b,      0x0002, "B") \
+DECL_BTN_EX(x,      0x0004, "X") \
+DECL_BTN_EX(y,      0x0008, "Y") \
+DECL_BTN_EX(select, 0x0200, "Z") \
+DECL_BTN_EX(start,  0x0100, "Start/Pause") \
+DECL_BTN_EX(l,      0x0800, "L Trigger") \
+DECL_BTN_EX(r,      0x0400, "R Trigger") \
+DECL_BTN_EX(left,   0x0010, "D-Pad Left") \
+DECL_BTN_EX(right,  0x0020, "D-Pad Right") \
+DECL_BTN_EX(down,   0x0040, "D-Pad Down") \
+DECL_BTN_EX(up,     0x0080, "D-Pad Up") \
+DECL_AXIS_EX(l_x_plus,  +1, "Analog right") \
+DECL_AXIS_EX(l_x_minus, -1, "Analog left") \
+DECL_AXIS_EX(l_y_plus,  +0, "Analog up") \
+DECL_AXIS_EX(l_y_minus, -0, "Analog down") \
+DECL_AXIS_EX(r_x_plus,  +3, "C-stick right") \
+DECL_AXIS_EX(r_x_minus, -3, "C-stick left") \
+DECL_AXIS_EX(r_y_plus,  +2, "C-stick up") \
+DECL_AXIS_EX(r_y_minus, -2, "C-stick down")
 
 #define WIIUINPUT_GAMEPAD_DEFAULT_BINDS \
 DECL_BTN_EX(menu_toggle,  1, "Home") \
@@ -626,7 +634,7 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE(PAD_NAME_NUNCHUK, "wiiu", WIIUINPUT_NUNCHUK_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE(PAD_NAME_CLASSIC, "wiiu", WIIUINPUT_CLASSIC_CONTROLLER_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE(PAD_NAME_HID, "wiiu", WIIUINPUT_GAMEPAD_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("GameCube Controller", "wiiu", WIIUINPUT_GAMEPAD_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("GameCube Controller", "wiiu", WIIUINPUT_GAMECUBE_DEFAULT_BINDS),
 #endif
 #ifdef __CELLOS_LV2__
    DECL_AUTOCONF_DEVICE("SixAxis Controller", "ps3", PS3INPUT_DEFAULT_BINDS),
