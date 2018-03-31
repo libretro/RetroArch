@@ -14,4 +14,5 @@
       "*.in": "c",
       "*.rh": "c"
    },
+   "C_Cpp.dimInactiveRegions": false,
 }

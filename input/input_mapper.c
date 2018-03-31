@@ -103,13 +103,14 @@ void input_mapper_poll(input_mapper_t *handle)
 
    memset(handle->keys, 0, sizeof(handle->keys));
    i = 0;
-   for (i = 0; i < 8; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
       {
          if (j < RETROK_LAST)
          {
-            if (input_state(i, RETRO_DEVICE_JOYPAD, 0, j) && settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
+            if (input_state(i, RETRO_DEVICE_JOYPAD, 0, j) && 
+               settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
             {
                MAPPER_SET_KEY (handle,
                   settings->uints.input_keymapper_ids[i][j]);

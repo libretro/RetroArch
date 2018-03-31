@@ -640,15 +640,16 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    if (!settings)
       return;
 
-   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - (MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
+   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      (MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
 
    id = (type / (offset + 1)) - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
    remap_id =
       settings->uints.input_keymapper_ids[offset][id];
 
-   RARCH_LOG("o: %d, type: %d, remap_id: %d\n", offset, type, remap_id);
-
-   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
+   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
    {
       if(remap_id == key_descriptors[key_id].key)
          break;
