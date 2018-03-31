@@ -39,6 +39,7 @@
 
 #include "../../retroarch.h"
 #include "../../content.h"
+#include "../../configuration.h"
 
 #define default_sublabel_macro(func_name, lbl) \
   static int (func_name)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
@@ -425,7 +426,27 @@ static int action_bind_sublabel_subsystem_add(
    return 0;
 }
 
+static int action_bind_sublabel_remap_sublabel(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   char desc[PATH_MAX_LENGTH];
+   unsigned offset;
+   settings_t *settings = config_get_ptr();
 
+   if (!settings)
+      return 0;
+
+   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - (MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
+   snprintf(s, len, "User #%d: %s", offset + 1,
+      input_config_get_device_display_name(offset) ? 
+      input_config_get_device_display_name(offset) : 
+      (input_config_get_device_name(offset) ? 
+      input_config_get_device_name(offset) : "N/A"));
+   return 0;
+}
 
 #ifdef HAVE_NETWORKING
 static int action_bind_sublabel_netplay_room(
@@ -484,6 +505,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       return -1;
 
    BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_generic);
+
+#ifdef HAVE_KEYMAPPER
+   if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+      && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_sublabel);
+   }
+#endif
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
