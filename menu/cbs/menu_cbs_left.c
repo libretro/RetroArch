@@ -46,7 +46,7 @@
    } while(0)
 #endif
 
-extern struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END];
+extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
 static int generic_shader_action_parameter_left(
       struct video_shader_parameter *param,
