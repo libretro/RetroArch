@@ -1144,6 +1144,7 @@ struct retro_led_interface
                                             * Fast Savestates:
                                             * * Guaranteed to be created by the same binary that will load them.
                                             * * Will not be written to or read from the disk.
+                                            * * Suggest that the core assumes loading state will succeed.
                                             * * Suggest that the core updates its memory buffers in-place if possible.
                                             * * Suggest that the core skips clearing memory.
                                             * * Suggest that the core skips resetting the system.
