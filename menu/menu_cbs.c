@@ -32,7 +32,7 @@ static void menu_cbs_init_log(const char *entry_label, const char *bind_label, c
 #endif
 }
 
-struct key_desc key_descriptors[136] =
+struct key_desc key_descriptors[RARCH_MAX_KEYS] =
 {
    {RETROK_FIRST,         "Unmapped"},
    {RETROK_BACKSPACE,     "Backspace"},
