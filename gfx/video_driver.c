@@ -1424,9 +1424,12 @@ void video_driver_monitor_adjust_system_rates(void)
    if (!info || info->fps <= 0.0)
       return;
 
-  if (crt_switching_active  == true){
-	timing_skew = fabs(1.0f - info->fps / video_driver_core_hz);
-  }else {
+  if (crt_switching_active  == true)
+  {
+	  timing_skew = fabs(1.0f - info->fps / video_driver_core_hz);
+  }
+  else 
+  {
 	  timing_skew = fabs(1.0f - info->fps / video_refresh_rate);
   }
    /* We don't want to adjust pitch too much. If we have extreme cases,
@@ -1441,7 +1444,9 @@ void video_driver_monitor_adjust_system_rates(void)
   if (crt_switching_active  == true){
 	if (info->fps <= video_driver_core_hz)
 		return;
-  } else {
+  } 
+  else 
+  {
 	if (info->fps <= video_refresh_rate)
 		return;
   }
@@ -1572,7 +1577,7 @@ static void video_driver_lock_new(void)
 void video_driver_destroy(void)
 {
    video_display_server_destroy();
-   video_restore();					
+   crt_video_restore();					
    video_driver_cb_has_focus      = null_driver_has_focus;
    video_driver_use_rgba          = false;
    video_driver_data_own          = false;
@@ -2609,7 +2614,7 @@ void video_driver_frame(const void *data, unsigned width,
 		if (video_info.crt_switch_resolution_super == 1920){
 			width = 1920;
 		}
-		switch_res_core(width, height, video_driver_core_hz);
+		crt_switch_res_core(width, height, video_driver_core_hz);
 	} else if (video_info.crt_switch_resolution == false){
 		crt_switching_active = false;
 	}
