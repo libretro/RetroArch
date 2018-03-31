@@ -96,8 +96,7 @@ static void runahead_save_state_list_rotate(void)
 static function_t originalRetroDeinit = NULL;
 static function_t originalRetroUnload = NULL;
 
-typedef struct retro_core_t _retro_core_t;
-extern _retro_core_t current_core;
+extern struct retro_core_t current_core;
 extern struct retro_callbacks retro_ctx;
 
 static void remove_hooks(void)
