@@ -126,8 +126,7 @@ ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    OBJ += input/drivers/linuxraw_input.o \
           input/common/linux_common.o \
-          input/drivers_joypad/linuxraw_joypad.o \
-		  gfx/video_crt_linux.o
+          input/drivers_joypad/linuxraw_joypad.o
 	HAVE_UNIX = 1
 endif
 
@@ -983,8 +982,7 @@ ifeq ($(HAVE_PARPORT), 1)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
-   OBJ += input/drivers/winraw_input.o \
-		  gfx/video_crt_win.o
+   OBJ += input/drivers/winraw_input.o
 endif
 
 # Companion UI
