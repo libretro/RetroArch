@@ -54,7 +54,7 @@
    cbs->action_get_value_ident = #name;
 #endif
 
-extern struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END];
+extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
 static void menu_action_setting_disp_set_label_cheat_num_passes(
       file_list_t* list,
