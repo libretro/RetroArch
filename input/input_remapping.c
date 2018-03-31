@@ -263,7 +263,6 @@ void input_remapping_set_defaults(bool deinit)
          if (keybind)
             settings->uints.input_remap_ids[i][j] = keybind->id;
          settings->uints.input_keymapper_ids[i][j] = RETROK_UNKNOWN;
-
       }
       for (j = 0; j < 4; j++)
          settings->uints.input_remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = j;
