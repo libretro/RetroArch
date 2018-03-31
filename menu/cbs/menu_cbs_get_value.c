@@ -547,72 +547,60 @@ static void menu_action_setting_disp_set_label_input_desc(
       const char *path,
       char *s2, size_t len2)
 {
-   char descriptor[255];
+   rarch_system_info_t *system = NULL;
+   const char* descriptor = NULL;
    const struct retro_keybind *auto_bind = NULL;
    const struct retro_keybind *keybind   = NULL;
    settings_t *settings                  = config_get_ptr();
    unsigned inp_desc_index_offset        =
       type - MENU_SETTINGS_INPUT_DESC_BEGIN;
    unsigned inp_desc_user                = inp_desc_index_offset /
-      (RARCH_FIRST_CUSTOM_BIND + 4);
+      (RARCH_FIRST_CUSTOM_BIND + 8);
    unsigned inp_desc_button_index_offset = inp_desc_index_offset -
-      (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
+      (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 8));
    unsigned remap_id                     = 0;
 
-   if (!settings)
+   system = runloop_get_system_info();
+
+   if (!system)
       return;
 
-   descriptor[0] = '\0';
+   descriptor = system->input_desc_btn[inp_desc_user][inp_desc_button_index_offset];
 
-   remap_id = settings->uints.input_remap_ids
-      [inp_desc_user][inp_desc_button_index_offset];
-
-   keybind   = &input_config_binds[inp_desc_user][remap_id];
-   auto_bind = (const struct retro_keybind*)
-      input_config_get_bind_auto(inp_desc_user, remap_id);
-
-   input_config_get_bind_string(descriptor,
-      keybind, auto_bind, sizeof(descriptor));
-
-   if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
-   {
-      if(strstr(descriptor, "Auto") && !strstr(descriptor,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
-         strlcpy(s,
-            descriptor,
-            len);
-      else
-      {
-         const struct retro_keybind *keyptr = &input_config_binds[inp_desc_user]
-               [remap_id];
-
-         strlcpy(s, msg_hash_to_str(keyptr->enum_idx), len);
-      }
-   }
-
-
-
+   if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND + 8)
+      strlcpy(s, descriptor ? descriptor : "---", len);
    else
    {
-      const char *str = NULL;
       switch (remap_id)
       {
          case 0:
-            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X);
+            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS);
             break;
          case 1:
-            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y);
+            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS);
             break;
          case 2:
-            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X);
+            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS);
             break;
          case 3:
-            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y);
+            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS);
+            break;
+         case 4:
+            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS);
+            break;
+         case 5:
+            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS);
+            break;
+         case 6:
+            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS);
+            break;
+         case 7:
+            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS);
             break;
       }
 
-      if (!string_is_empty(str))
-         strlcpy(s, str, len);
+      if (!string_is_empty(descriptor))
+         strlcpy(s, descriptor, len);
    }
 
    *w = 19;
@@ -654,8 +642,14 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
       if(remap_id == key_descriptors[key_id].key)
          break;
    }
-   snprintf(desc, sizeof(desc), "Keyboard %s", key_descriptors[key_id].desc);
-   strlcpy(s, desc, len);
+
+   if (key_descriptors[key_id].key != RETROK_FIRST)
+   {
+      snprintf(desc, sizeof(desc), "Keyboard %s", key_descriptors[key_id].desc);
+      strlcpy(s, desc, len);
+   }
+   else
+      strlcpy(s, "---", len);
 
    *w = 19;
    strlcpy(s2, path, len2);
