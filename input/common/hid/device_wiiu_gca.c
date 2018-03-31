@@ -44,7 +44,6 @@ typedef struct gca_pad_data
 
 
 static void update_pad_state(wiiu_gca_instance_t *instance);
-static joypad_connection_t *register_pad(wiiu_gca_instance_t *instance, int port);
 static void unregister_pad(wiiu_gca_instance_t *instance, int port);
 
 extern pad_connection_interface_t wiiu_gca_pad_connection;
@@ -131,7 +130,7 @@ static void update_pad_state(wiiu_gca_instance_t *instance)
             if(pad == NULL)
             {
                RARCH_LOG("[gca]: Gamepad at port %d connected.\n", port+1);
-               instance->pads[port] = register_pad(instance, port);
+               instance->pads[port] = hid_pad_register(instance, &wiiu_gca_pad_connection);
                pad = instance->pads[port];
                if(pad == NULL)
                {
@@ -146,6 +145,7 @@ static void update_pad_state(wiiu_gca_instance_t *instance)
    }
 }
 
+/*
 static joypad_connection_t *register_pad(wiiu_gca_instance_t *instance, int port) {
    int slot;
    joypad_connection_t *result;
@@ -171,6 +171,7 @@ static joypad_connection_t *register_pad(wiiu_gca_instance_t *instance, int port
 
    return result;
 }
+*/
 
 static void unregister_pad(wiiu_gca_instance_t *instance, int slot)
 {

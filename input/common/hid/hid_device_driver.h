@@ -36,8 +36,7 @@ extern hid_device_t ds4_hid_device;
 extern hid_driver_instance_t hid_instance;
 
 hid_device_t *hid_device_driver_lookup(uint16_t vendor_id, uint16_t product_id);
-
-void hid_pad_connect(hid_driver_instance_t *instance, int pad);
+joypad_connection_t *hid_pad_register(void *pad_handle, pad_connection_interface_t *iface);
 bool hid_init(hid_driver_instance_t *instance, hid_driver_t *hid_driver, input_device_driver_t *pad_driver, unsigned slots);
 void hid_deinit(hid_driver_instance_t *instance);
 

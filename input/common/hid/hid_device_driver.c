@@ -36,12 +36,25 @@ hid_device_t *hid_device_driver_lookup(uint16_t vendor_id, uint16_t product_id) 
   return NULL;
 }
 
-void hid_pad_connect(hid_driver_instance_t *instance, int pad)
+joypad_connection_t *hid_pad_register(void *pad_handle, pad_connection_interface_t *iface)
 {
-   if(!instance || !instance->pad_driver)
-      return;
+   int slot;
+   joypad_connection_t *result;
 
-   input_pad_connect(pad, instance->pad_driver);
+   if(!pad_handle)
+      return NULL;
+
+   slot = pad_connection_find_vacant_pad(hid_instance.pad_list);
+   if(slot < 0)
+      return NULL;
+
+   result = &(hid_instance.pad_list[slot]);
+   result->iface = iface;
+   result->data = iface->init(pad_handle, slot, hid_instance.os_driver);
+   result->connected = true;
+   input_pad_connect(slot, hid_instance.pad_driver);
+
+   return result;
 }
 
 /**
