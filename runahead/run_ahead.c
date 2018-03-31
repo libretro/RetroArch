@@ -354,7 +354,9 @@ static bool runahead_load_state(void)
    bool lastDirty = input_is_dirty;
    bool okay;
    set_fast_savestate();
-   okay = core_unserialize(serialize_info);
+   /* calling core_unserialize has side effects with netplay (it triggers transmitting your save state)
+      call retro_unserialize directly from the core instead */
+   okay = current_core.retro_unserialize(serialize_info->data_const, serialize_info->size);
    unset_fast_savestate();
    input_is_dirty = lastDirty;
 
