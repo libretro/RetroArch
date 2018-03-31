@@ -129,7 +129,7 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
          break;
    }
 
-   if (key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
+   if (key_id < RARCH_MAX_KEYS + MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
       key_id++;
    else
       key_id = 0;
