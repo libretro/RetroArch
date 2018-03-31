@@ -10,6 +10,9 @@ void runahead_destroy(void);
 
 void run_ahead(int runAheadCount, bool useSecondary);
 
+bool want_fast_savestate(void);
+bool get_hard_disable_audio(void);
+
 RETRO_END_DECLS
 
 #endif
