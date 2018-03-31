@@ -3276,7 +3276,7 @@ static int menu_displaylist_parse_options_remappings(
       settings_t *settings = config_get_ptr();
       unsigned device;
 
-      for (int i = 0; i < 8; i++)
+      for (int i = 0; i < MAX_USERS; i++)
       {
          device = settings->uints.input_libretro_device[i];
          device &= RETRO_DEVICE_MASK;

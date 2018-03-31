@@ -194,11 +194,16 @@ bool input_remapping_save_file(const char *path)
             else
                config_unset(conf,key_ident[j]);
 
+            if (settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
+               config_set_int(conf, keymapper_ident[j], 
+                  settings->uints.input_keymapper_ids[i][j]);
+
          }
          else
          {
             if(settings->uints.input_remap_ids[i][j] != j - RARCH_FIRST_CUSTOM_BIND)
-               config_set_int(conf, key_ident[j], settings->uints.input_remap_ids[i][j]);
+               config_set_int(conf, key_ident[j], 
+                  settings->uints.input_remap_ids[i][j]);
             else
                config_unset(conf,key_ident[j]);
          }

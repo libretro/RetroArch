@@ -439,7 +439,10 @@ static int action_bind_sublabel_remap_sublabel(
    if (!settings)
       return 0;
 
-   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - (MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
+   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      (MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
+
    snprintf(s, len, "User #%d: %s", offset + 1,
       input_config_get_device_display_name(offset) ? 
       input_config_get_device_display_name(offset) : 
