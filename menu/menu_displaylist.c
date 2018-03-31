@@ -3274,39 +3274,42 @@ static int menu_displaylist_parse_options_remappings(
    if (system)
    {
       settings_t *settings = config_get_ptr();
+      unsigned device;
 
-      unsigned device = settings->uints.input_libretro_device[settings->uints.keymapper_port];
-      device &= RETRO_DEVICE_MASK;
-
-      if (device == RETRO_DEVICE_KEYBOARD)
+      for (int i = 0; i < 8; i++)
       {
-         for (int i = 0; i < 8; i++)
-         for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+         device = settings->uints.input_libretro_device[i];
+         device &= RETRO_DEVICE_MASK;
+
+         if (device == RETRO_DEVICE_KEYBOARD)
          {
-            unsigned user           = settings->uints.keymapper_port + 1;
-            unsigned desc_offset    = retro_id;
-            char descriptor[255];
-            const struct retro_keybind *auto_bind = NULL;
-            const struct retro_keybind *keybind   = NULL;
-
-            keybind   = &input_config_binds[i][retro_id];
-            auto_bind = (const struct retro_keybind*)
-               input_config_get_bind_auto(i, retro_id);
-
-            input_config_get_bind_string(descriptor,
-               keybind, auto_bind, sizeof(descriptor));
-
-            if(!strstr(descriptor, "Auto"))
+            for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
             {
-               const struct retro_keybind *keyptr =
-                  &input_config_binds[i][retro_id];
+               unsigned user           = settings->uints.keymapper_port + 1;
+               unsigned desc_offset    = retro_id;
+               char descriptor[255];
+               const struct retro_keybind *auto_bind = NULL;
+               const struct retro_keybind *keybind   = NULL;
 
-               strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
+               keybind   = &input_config_binds[i][retro_id];
+               auto_bind = (const struct retro_keybind*)
+                  input_config_get_bind_auto(i, retro_id);
+
+               input_config_get_bind_string(descriptor,
+                  keybind, auto_bind, sizeof(descriptor));
+
+               if(!strstr(descriptor, "Auto"))
+               {
+                  const struct retro_keybind *keyptr =
+                     &input_config_binds[i][retro_id];
+
+                  strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
+               }
+
+               menu_entries_append_enum(info->list, descriptor, "",
+                     MSG_UNKNOWN,
+                     (MENU_SETTINGS_INPUT_DESC_KBD_BEGIN  +  retro_id) * (i + 1), 0, 0);
             }
-
-            menu_entries_append_enum(info->list, descriptor, "",
-                  MSG_UNKNOWN,
-                  (MENU_SETTINGS_INPUT_DESC_KBD_BEGIN  +  retro_id) * (i + 1), 0, 0);
          }
       }
    }
