@@ -292,6 +292,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 
 #ifdef HAVE_RUNAHEAD
    set_load_content_info(load_info);
+   clear_controller_port_map();
 #endif
 
    content_get_status(&contentless, &is_inited);
