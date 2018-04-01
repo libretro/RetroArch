@@ -142,9 +142,7 @@ static bool env_hook(unsigned cmd, void *data)
    {
       bool *bool_p = (bool*)data;
       if (*bool_p == true)
-      {
          secondary_core_set_variable_update();
-      }
    }
    return result;
 }
