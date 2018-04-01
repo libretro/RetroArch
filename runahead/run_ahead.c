@@ -112,6 +112,7 @@ static void remove_hooks(void)
       current_core.retro_unload_game = originalRetroUnload;
       originalRetroUnload            = NULL;
    }
+   current_core.retro_set_environment(rarch_environment_cb);
    remove_input_state_hook();
 }
 
@@ -134,6 +135,20 @@ static void deinit_hook(void)
       current_core.retro_deinit();
 }
 
+static bool env_hook(unsigned cmd, void *data)
+{
+   bool result = rarch_environment_cb(cmd, data);
+   if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE && result)
+   {
+      bool *bool_p = (bool*)data;
+      if (*bool_p == true)
+      {
+         secondary_core_set_variable_update();
+      }
+   }
+   return result;
+}
+
 static void add_hooks(void)
 {
    if (!originalRetroDeinit)
@@ -147,7 +162,7 @@ static void add_hooks(void)
       originalRetroUnload = current_core.retro_unload_game;
       current_core.retro_unload_game = unload_hook;
    }
-
+   current_core.retro_set_environment(env_hook);
    add_input_state_hook();
 }
 
