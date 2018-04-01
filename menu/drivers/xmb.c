@@ -3025,30 +3025,31 @@ static void xmb_draw_dark_layer(
 
 static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
-   size_t selection;
-   size_t percent_width = 0;
    math_matrix_4x4 mymat;
    unsigned i;
-   float thumb_width, thumb_height, left_thumb_width, left_thumb_height, thumb_max_width;
    menu_display_ctx_rotate_draw_t rotate_draw;
    char msg[1024];
    char title_msg[255];
    char title_truncated[255];
+   size_t selection                        = 0;
+   size_t percent_width                    = 0;
    const int min_thumb_size                = 50;
-   settings_t *settings                    = config_get_ptr();
-   unsigned width                          = video_info->width;
-   unsigned height                         = video_info->height;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
-   xmb_handle_t *xmb                       = (xmb_handle_t*)data;
-   float window_width                      = video_info->width;
-   float window_height                     = video_info->height;
+   unsigned width                          = video_info->width;
+   unsigned height                         = video_info->height;
    const float under_thumb_margin          = 0.96;
-   float scale_factor = (settings->uints.menu_xmb_scale_factor * window_width) / (1920.0 * 100);
-   float pseudo_font_length  = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4; 
+   float scale_factor                      = 0.0f;
+   float pseudo_font_length                = 0.0f;
+   xmb_handle_t *xmb                       = (xmb_handle_t*)data;
+   settings_t *settings                    = config_get_ptr();
 
    if (!xmb)
       return;
+
+   scale_factor                            = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
+   pseudo_font_length                      = xmb->icon_spacing_horizontal 
+      * 4 - xmb->icon_size / 4; 
 
    xmb->frame_count++;
 
@@ -3056,10 +3057,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    title_msg[0]       = '\0';
    title_truncated[0] = '\0';
 
-   font_driver_bind_block(xmb->font, &xmb->raster_block);
+   font_driver_bind_block(xmb->font,  &xmb->raster_block);
    font_driver_bind_block(xmb->font2, &xmb->raster_block2);
 
-   xmb->raster_block.carr.coords.vertices = 0;
+   xmb->raster_block.carr.coords.vertices  = 0;
    xmb->raster_block2.carr.coords.vertices = 0;
 
    menu_display_set_alpha(coord_black, MIN(
@@ -3078,12 +3079,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    selection = menu_navigation_get_selection();
 
-   strlcpy(title_truncated, xmb->title_name, sizeof(title_truncated));
+   strlcpy(title_truncated,
+         xmb->title_name, sizeof(title_truncated));
 
    if (selection > 1)
    {
       /* skip 25 utf8 multi-byte chars */
-      char* end = title_truncated;
+      char *end = title_truncated;
 
       for(i = 0; i < 25 && *end; i++)
       {
@@ -3120,8 +3122,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Do not draw the right thumbnail if there is no space available */
 
-   if (((xmb->margins_screen_top + xmb->icon_size + min_thumb_size) <= height) &&
-      ((xmb->margins_screen_left * scale_mod[5] + xmb->icon_spacing_horizontal +
+   if (((xmb->margins_screen_top + 
+               xmb->icon_size + min_thumb_size) <= height) &&
+      ((xmb->margins_screen_left * scale_mod[5] + 
+        xmb->icon_spacing_horizontal +
         pseudo_font_length + min_thumb_size) <= width))
    {
       if (xmb->savestate_thumbnail)
@@ -3129,22 +3133,28 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                xmb, &coord_white[0], width, height,
                xmb->margins_screen_left * scale_mod[5]
                + xmb->icon_spacing_horizontal + pseudo_font_length,
-               xmb->margins_screen_top + xmb->icon_size + xmb->savestate_thumbnail_height * scale_mod[4],
-               xmb->savestate_thumbnail_width * scale_mod[4], xmb->savestate_thumbnail_height * scale_mod[4],
+               xmb->margins_screen_top + xmb->icon_size 
+               + xmb->savestate_thumbnail_height * scale_mod[4],
+               xmb->savestate_thumbnail_width * scale_mod[4],
+               xmb->savestate_thumbnail_height * scale_mod[4],
                xmb->savestate_thumbnail);
       else if (xmb->thumbnail
          && !string_is_equal(xmb_thumbnails_ident('R'),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
       {
-   #ifdef XMB_DEBUG
-         RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n", xmb->thumbnail_width, xmb->thumbnail_height);
-         RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
-   #endif
 
          /* Limit thumbnail width */
-
-         thumb_max_width = window_width - (xmb->icon_size / 6) - (xmb->margins_screen_left * scale_mod[5]) - 
+         float thumb_width     = 0.0f;
+         float thumb_height    = 0.0f;
+         float thumb_max_width = (float)width - (xmb->icon_size / 6) 
+            - (xmb->margins_screen_left * scale_mod[5]) - 
             xmb->icon_spacing_horizontal - pseudo_font_length;
+
+#ifdef XMB_DEBUG
+         RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n",
+               xmb->thumbnail_width, xmb->thumbnail_height);
+         RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
+#endif
 
          if (xmb->thumbnail_width * scale_mod[4] > thumb_max_width)
          {
@@ -3155,27 +3165,29 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          }
          else
          {
-            thumb_width = xmb->thumbnail_width * scale_mod[4];
+            thumb_width  = xmb->thumbnail_width * scale_mod[4];
             thumb_height = xmb->thumbnail_height * scale_mod[4];
          }
 
          /* Limit thumbnail height to screen height + margin. */
 
          if (xmb->margins_screen_top + xmb->icon_size + thumb_height >=
-            (window_height * under_thumb_margin))
+               ((float)height * under_thumb_margin))
          {
             thumb_width = thumb_width *
-               (((window_height * under_thumb_margin) - xmb->margins_screen_top - xmb->icon_size) /
-                  thumb_height);
+               ((((float)height * under_thumb_margin) - 
+                 xmb->margins_screen_top - xmb->icon_size) /
+                thumb_height);
             thumb_height = thumb_height *
-               (((window_height * under_thumb_margin) - xmb->margins_screen_top - xmb->icon_size) /
-                  thumb_height);
+               ((((float)height * under_thumb_margin) - 
+                 xmb->margins_screen_top - xmb->icon_size) /
+                thumb_height);
          }
 
          xmb_draw_thumbnail(video_info,
                xmb, &coord_white[0], width, height,
-               window_width - (xmb->icon_size / 6) - thumb_max_width +
-                  ((thumb_max_width - thumb_width) / 2),
+               (float)width - (xmb->icon_size / 6) - thumb_max_width +
+               ((thumb_max_width - thumb_width) / 2),
                xmb->margins_screen_top + xmb->icon_size + thumb_height,
                thumb_width, thumb_height,
                xmb->thumbnail);
@@ -3184,8 +3196,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Do not draw the left thumbnail if there is no space available */
 
-   if ((xmb->margins_screen_top + xmb->icon_size * (!(xmb->depth == 1)? 2.1 : 1) + min_thumb_size)
-         <= window_height)
+   if ((xmb->margins_screen_top + xmb->icon_size * 
+            (!(xmb->depth == 1)? 2.1 : 1) + min_thumb_size)
+         <= (float)height)
    {
       /* Left Thumbnail */
 
@@ -3193,17 +3206,24 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             && !string_is_equal(xmb_thumbnails_ident('L'),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
       {
+         float left_thumb_width  = 0.0f;
+         float left_thumb_height = 0.0f;
+
          /* Limit left thumbnail height to screen height + margin. */
-         if (xmb->margins_screen_top + xmb->icon_size * (!(xmb->depth == 1)? 2.1 : 1) +
-               xmb->left_thumbnail_height >= (window_height - (96.0 * scale_factor)))
+         if (xmb->margins_screen_top + xmb->icon_size * 
+               (!(xmb->depth == 1)? 2.1 : 1) +
+               xmb->left_thumbnail_height >= 
+               ((float)height - (96.0 * scale_factor)))
          {
             left_thumb_width = xmb->left_thumbnail_width *
-               (((window_height - (96.0 * scale_factor)) - xmb->margins_screen_top -
+               ((((float)height - (96.0 * scale_factor)) 
+                 - xmb->margins_screen_top -
                  (xmb->icon_size * (!(xmb->depth == 1)? 2.1 : 1))) /
                 xmb->left_thumbnail_height);
 
             left_thumb_height = xmb->left_thumbnail_height *
-               (((window_height - (96.0 * scale_factor)) - xmb->margins_screen_top -
+               ((((float)height - (96.0 * scale_factor)) 
+                 - xmb->margins_screen_top -
                  (xmb->icon_size * (!(xmb->depth == 1)? 2.1 : 1))) /
                 xmb->left_thumbnail_height);
          }
@@ -3215,13 +3235,15 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          xmb_draw_thumbnail(video_info,
                xmb, &coord_white[0], width, height,
-               (xmb->icon_size / 6) + ((xmb->left_thumbnail_width - left_thumb_width) / 2),
+               (xmb->icon_size / 6) + 
+               ((xmb->left_thumbnail_width - left_thumb_width) / 2),
                xmb->margins_screen_top + xmb->icon_size * 
                   (!(xmb->depth == 1)? 2.1 : 1) + left_thumb_height,
                left_thumb_width, left_thumb_height,
                xmb->left_thumbnail);
       }
    }
+
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
 
@@ -3268,7 +3290,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          snprintf(msg, sizeof(msg), "%d%%", percent);
 
-         percent_width = (unsigned)font_driver_get_message_width(xmb->font, msg, (unsigned)strlen(msg), 1);
+         percent_width = (unsigned)
+            font_driver_get_message_width(
+                  xmb->font, msg, (unsigned)strlen(msg), 1);
 
          xmb_draw_text(video_info, xmb, msg,
                width - xmb->margins_title_left - x_pos,
@@ -3323,7 +3347,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Arrow image */
-   menu_display_set_alpha(coord_white, MIN(xmb->textures_arrow_alpha, xmb->alpha));
+   menu_display_set_alpha(coord_white,
+         MIN(xmb->textures_arrow_alpha, xmb->alpha));
 
    if (coord_white[3] != 0)
       xmb_draw_icon(video_info,
@@ -3331,7 +3356,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             &mymat,
             xmb->textures.list[XMB_TEXTURE_ARROW],
             xmb->x + xmb->margins_screen_left +
-            xmb->icon_spacing_horizontal - xmb->icon_size / 2.0 + xmb->icon_size,
+            xmb->icon_spacing_horizontal - 
+            xmb->icon_size / 2.0 + xmb->icon_size,
             xmb->margins_screen_top +
             xmb->icon_size / 2.0 + xmb->icon_spacing_vertical
             * xmb->active_item_factor,
@@ -3363,8 +3389,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          uintptr_t texture        = node->icon;
          float x                  = xmb->x + xmb->categories_x_pos +
                                     xmb->margins_screen_left +
-                                    xmb->icon_spacing_horizontal * (i + 1) - xmb->icon_size / 2.0;
-         float y                  = xmb->margins_screen_top + xmb->icon_size / 2.0;
+                                    xmb->icon_spacing_horizontal 
+                                    * (i + 1) - xmb->icon_size / 2.0;
+         float y                  = xmb->margins_screen_top 
+            + xmb->icon_size / 2.0;
          float rotation           = 0;
          float scale_factor       = node->zoom;
 
@@ -3403,7 +3431,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->selection_buf_old,
             xmb->selection_ptr_old,
             (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
-            ? xmb->categories_selection_ptr : xmb->categories_selection_ptr_old,
+            ? xmb->categories_selection_ptr : 
+            xmb->categories_selection_ptr_old,
             &item_color[0],
             width,
             height);
@@ -3551,9 +3580,9 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    settings_t *settings          = config_get_ptr();
    float scale_factor            =
       ((settings->uints.menu_xmb_scale_factor * width) / (1920.0 * 100)) * 1.5;
-
 #ifdef _3DS
-   scale_factor = settings->uints.menu_xmb_scale_factor / 400.0;
+   scale_factor                  = 
+      settings->uints.menu_xmb_scale_factor / 400.0;
 #endif
 
    xmb->above_subitem_offset     =  1.5;
@@ -3634,8 +3663,8 @@ static void xmb_layout(xmb_handle_t *xmb)
 
    for (i = 0; i < end; i++)
    {
-      float ia = xmb->items_passive_alpha;
-      float iz = xmb->items_passive_zoom;
+      float ia         = xmb->items_passive_alpha;
+      float iz         = xmb->items_passive_zoom;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(
             selection_buf, i);
 
