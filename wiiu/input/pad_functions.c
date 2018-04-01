@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wiiu/pad_driver.h>
+#include "wiiu_input.h"
 
 enum wiiu_pad_axes {
   AXIS_LEFT_ANALOG_X,

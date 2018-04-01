@@ -76,7 +76,7 @@ bool hid_init(hid_driver_instance_t *instance,
       return false;
 
    RARCH_LOG("[hid]: initializing HID subsystem driver...\n");
-   instance->os_driver_data = hid_driver->init(instance);
+   instance->os_driver_data = hid_driver->init();
    if(!instance->os_driver_data)
       return false;
 
@@ -121,40 +121,4 @@ void hid_deinit(hid_driver_instance_t *instance)
 
    RARCH_LOG("[hid]: wiping instance data...\n");
    memset(instance, 0, sizeof(hid_driver_instance_t));
-}
-
-static void hid_device_log_buffer(uint8_t *data, uint32_t len)
-{
-#if 0
-  int i, offset;
-  int padding = len % 0x0F;
-  uint8_t buf[16];
-
-  RARCH_LOG("%d bytes read:\n", len);
-
-  for(i = 0, offset = 0; i < len; i++)
-  {
-    buf[offset] = data[i];
-    offset++;
-    if(offset == 16)
-    {
-      offset = 0;
-      RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x %02x%02x%02x%02x%02x%02x%02x%02x\n",
-        buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
-        buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
-    }
-  }
-
-  if(padding)
-  {
-    for(i = padding; i < 16; i++)
-      buf[i] = 0xff;
-
-    RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x %02x%02x%02x%02x%02x%02x%02x%02x\n",
-        buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
-        buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
-  }
-
-  RARCH_LOG("=================================\n");
-  #endif
 }

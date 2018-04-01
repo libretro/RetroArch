@@ -14,9 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wiiu/pad_driver.h>
-#include "../../input/include/hid_driver.h"
-#include "../../input/common/hid/hid_device_driver.h"
+#include "wiiu_input.h"
+#include "wiiu_hid.h"
 
 static bool hidpad_init(void *data);
 static bool hidpad_query_pad(unsigned pad);

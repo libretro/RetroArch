@@ -17,8 +17,9 @@
 #ifndef __WIIU_HID__H
 #define __WIIU_HID__H
 
-#include <wiiu/pad_driver.h>
-#include "../../input/include/hid_driver.h"
+#include "wiiu_hid_types.h"
+
+#include "wiiu_input.h"
 
 #define DEVICE_UNUSED 0
 #define DEVICE_USED   1
@@ -28,6 +29,70 @@
 #define ADAPTER_STATE_READING 2
 #define ADAPTER_STATE_DONE    3
 
+struct wiiu_hid {
+   /* used to register for HID notifications */
+   HIDClient *client;
+   /* thread state data for the HID input polling thread */
+   OSThread *polling_thread;
+   /* stack space for polling thread */
+   void *polling_thread_stack;
+   /* watch variable for telling the polling thread to terminate */
+   volatile bool polling_thread_quit;
+};
+
+/**
+ * Each HID device attached to the WiiU gets its own adapter, which
+ * connects the HID subsystem with the HID device driver.
+ */
+struct wiiu_adapter {
+   wiiu_adapter_t *next;
+   hid_device_t *driver;
+   void *driver_handle;
+   wiiu_hid_t *hid;
+   uint8_t state;
+   uint8_t *rx_buffer;
+   int32_t rx_size;
+   uint8_t *tx_buffer;
+   int32_t tx_size;
+   uint32_t handle;
+   uint8_t interface_index;
+};
+
+/**
+ * When a HID device is connected, the OS generates an attach
+ * event; the attach event handler translate them into these
+ * structures.
+ */
+struct wiiu_attach {
+   wiiu_attach_event *next;
+   hid_device_t *driver;
+   uint32_t type;
+   uint32_t handle;
+   uint16_t vendor_id;
+   uint16_t product_id;
+   uint8_t interface_index;
+   uint8_t is_keyboard;
+   uint8_t is_mouse;
+   uint16_t max_packet_size_rx;
+   uint16_t max_packet_size_tx;
+};
+
+struct _wiiu_event_list {
+   OSFastMutex lock;
+   wiiu_attach_event *list;
+};
+
+struct _wiiu_adapter_list {
+   OSFastMutex lock;
+   wiiu_adapter_t *list;
+};
+
+extern wiiu_pad_functions_t pad_functions;
+extern input_device_driver_t wiiu_joypad;
+extern input_device_driver_t wpad_driver;
+extern input_device_driver_t kpad_driver;
+extern input_device_driver_t hidpad_driver;
+extern hid_driver_t wiiu_hid;
 
 static void *alloc_zeroed(size_t alignment, size_t size);
 static OSThread *new_thread(void);

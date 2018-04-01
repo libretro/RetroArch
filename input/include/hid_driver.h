@@ -35,7 +35,7 @@
 
 struct hid_driver
 {
-   void *(*init)(hid_driver_instance_t *);
+   void *(*init)(void);
    bool (*query_pad)(void *handle, unsigned pad);
    void (*free)(const void *handle);
    bool (*button)(void *handle, unsigned pad, uint16_t button);
@@ -62,6 +62,8 @@ struct hid_driver
    hid_instance.os_driver_data, pad)
 #define HID_POLL() hid_instance.os_driver->poll( \
    hid_instance.os_driver_data)
+#define HID_MAX_SLOT() hid_instance.max_slot
+#define HID_PAD_CONNECTION_PTR(slot) &(hid_instance.pad_list[(slot)])
 
 
 

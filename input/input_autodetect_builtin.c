@@ -29,7 +29,7 @@
 #endif
 
 #ifdef WIIU
-#include <wiiu/pad_driver.h>
+#include <wiiu/pad_strings.h>
 #endif
 
 #define DECL_BTN(btn, bind) "input_" #btn "_btn = " #bind "\n"

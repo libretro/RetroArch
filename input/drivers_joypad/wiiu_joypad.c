@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wiiu/pad_driver.h>
+#include "../../wiiu/input/wiiu_input.h"
 
 #include "wiiu_dbg.h"
 
@@ -40,10 +40,10 @@ static input_device_driver_t *get_driver_for_pad(unsigned pad)
 {
   if(wpad_driver.query_pad(pad))
     return &wpad_driver;
-/*
+
   if(kpad_driver.query_pad(pad))
     return &kpad_driver;
-*/
+
 #ifdef WIIU_HID
   return &hidpad_driver;
 #else
@@ -135,7 +135,7 @@ static void wiiu_joypad_poll(void)
 static const char* wiiu_joypad_name(unsigned pad)
 {
   if(!wiiu_joypad_query_pad(pad))
-    return "Snuffleupagus";
+    return "N/A";
 
   return pad_drivers[pad]->name(pad);
 }

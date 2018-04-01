@@ -21,7 +21,9 @@
  * - For HID controllers, see hid_driver.c
  */
 
-#include <wiiu/pad_driver.h>
+#include "wiiu_input.h"
+
+#define PANIC_BUTTON_MASK (VPAD_BUTTON_R | VPAD_BUTTON_L | VPAD_BUTTON_STICK_R | VPAD_BUTTON_STICK_L)
 
 static bool     ready        = false;
 static uint64_t button_state = 0;

@@ -22,10 +22,10 @@ static wiiu_adapter_list adapters;
 static bool wiiu_hid_joypad_query(void *data, unsigned slot)
 {
    wiiu_hid_t *hid = (wiiu_hid_t *)data;
-   if (!hid || !hid->driver)
+   if (!hid)
       return false;
 
-   return slot < hid->driver->max_slot;
+   return slot < HID_MAX_SLOT();
 }
 
 static joypad_connection_t *get_pad(wiiu_hid_t *hid, unsigned slot)
@@ -33,7 +33,7 @@ static joypad_connection_t *get_pad(wiiu_hid_t *hid, unsigned slot)
    if(!wiiu_hid_joypad_query(hid, slot))
       return NULL;
 
-   joypad_connection_t *result = &(hid->driver->pad_list[slot]);
+   joypad_connection_t *result = HID_PAD_CONNECTION_PTR(slot);
    if(!result || !result->connected || !result->iface || !result->data)
       return NULL;
 
@@ -90,7 +90,7 @@ static int16_t wiiu_hid_joypad_axis(void *data, unsigned slot, uint32_t joyaxis)
    return pad->iface->get_axis(pad->data, joyaxis);
 }
 
-static void *wiiu_hid_init(hid_driver_instance_t *driver)
+static void *wiiu_hid_init(void)
 {
    RARCH_LOG("[hid]: initializing HID subsystem\n");
    wiiu_hid_t *hid = new_hid();
@@ -98,8 +98,6 @@ static void *wiiu_hid_init(hid_driver_instance_t *driver)
 
    if (!hid || !client)
       goto error;
-
-   hid->driver = driver;
 
    wiiu_hid_init_lists();
    start_polling_thread(hid);

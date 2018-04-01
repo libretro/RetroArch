@@ -574,15 +574,15 @@ static void wiiusb_hid_free(const void *data)
    free(hid);
 }
 
-static void *wiiusb_hid_init(joypad_connection_t *connections)
+static void *wiiusb_hid_init(void)
 {
+   joypad_connection_t *connections = NULL;
    wiiusb_hid_t                *hid = (wiiusb_hid_t*)calloc(1, sizeof(*hid));
 
    if (!hid)
       goto error;
 
-   if(connections == NULL)
-      connections = pad_connection_init(MAX_USERS);
+   connections = pad_connection_init(MAX_USERS);
 
    if (!connections)
       goto error;
