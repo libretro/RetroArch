@@ -691,7 +691,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          RARCH_ERR("[GLX]: Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 
-   swa.override_redirect = (true_full) ? True : False;
+   swa.override_redirect = true_full ? True : False;
 
    if (video_info->monitor_index)
       g_x11_screen = video_info->monitor_index - 1;
