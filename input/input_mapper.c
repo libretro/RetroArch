@@ -81,6 +81,13 @@ void input_mapper_free(input_mapper_t *handle)
    free (handle);
 }
 
+bool flag = false;
+
+bool input_mapper_button_pressed(input_mapper_t *handle, int id)
+{
+   return (handle->buttons >> id) & 1U;
+}
+
 void input_mapper_poll(input_mapper_t *handle)
 {
    int i, j;
@@ -93,9 +100,6 @@ void input_mapper_poll(input_mapper_t *handle)
 
    device              &= RETRO_DEVICE_MASK;
 
-   /* for now we only handle keyboard inputs */
-   if (device != RETRO_DEVICE_KEYBOARD)
-      return;
 #ifdef HAVE_MENU
    if (menu_is_alive)
       return;
@@ -103,31 +107,56 @@ void input_mapper_poll(input_mapper_t *handle)
 
    memset(handle->keys, 0, sizeof(handle->keys));
    i = 0;
-   for (i = 0; i < MAX_USERS; i++)
+   if (device == RETRO_DEVICE_KEYBOARD)
    {
-      for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
+      for (i = 0; i < MAX_USERS; i++)
       {
-         if (j < RETROK_LAST)
+         for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
          {
-            if (input_state(i, RETRO_DEVICE_JOYPAD, 0, j) && 
-               settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
+            if (j < RETROK_LAST)
             {
-               MAPPER_SET_KEY (handle,
-                  settings->uints.input_keymapper_ids[i][j]);
-               input_keyboard_event(true,
-                     settings->uints.input_keymapper_ids[i][j],
-                     0, 0, RETRO_DEVICE_KEYBOARD);
-               key_event[j] = true;
-            }
-            else
-            {
-               if (key_event[j] == false && 
+               if (input_state(i, RETRO_DEVICE_JOYPAD, 0, j) && 
                   settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
                {
-                  input_keyboard_event(false,
+                  MAPPER_SET_KEY (handle,
+                     settings->uints.input_keymapper_ids[i][j]);
+                  input_keyboard_event(true,
                         settings->uints.input_keymapper_ids[i][j],
                         0, 0, RETRO_DEVICE_KEYBOARD);
+                  key_event[j] = true;
                }
+               else
+               {
+                  if (key_event[j] == false && 
+                     settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
+                  {
+                     input_keyboard_event(false,
+                           settings->uints.input_keymapper_ids[i][j],
+                           0, 0, RETRO_DEVICE_KEYBOARD);
+                  }
+               }
+            }
+         }
+      }
+   }
+   if (device == RETRO_DEVICE_JOYPAD)
+   {
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
+         {
+            if(input_state(i, RETRO_DEVICE_JOYPAD, i, j))
+            {
+               if (j != settings->uints.input_remap_ids[i][j])
+               {
+                  RARCH_LOG("remapped button pressed: old:%d new: %d\n", j, settings->uints.input_remap_ids[i][j]);
+                  handle->buttons |= 1 << settings->uints.input_remap_ids[i][j];
+               }
+            }
+            if(!input_state(i, RETRO_DEVICE_JOYPAD, i, j))
+            {
+               if (j != settings->uints.input_remap_ids[i][j])
+                  handle->buttons &= ~(1 << settings->uints.input_remap_ids[i][j]);
             }
          }
       }
@@ -140,24 +169,23 @@ void input_mapper_state(
       unsigned port,
       unsigned device,
       unsigned idx,
-      unsigned id)
+      unsigned id,
+      bool clear)
 {
    if (!handle)
       return;
 
    switch (device)
    {
+      case RETRO_DEVICE_JOYPAD:
+         /* we should get the new buttons here via input_remapper_button_pressed but it doesn't work because the old state is still there
+            so both actions trigger */
+         if (input_mapper_button_pressed(handle, id))
+            *ret = 1;
+         break;
       case RETRO_DEVICE_KEYBOARD:
          if (id < RETROK_LAST)
          {
-            /*
-               RARCH_LOG("State: UDLR %u %u %u %u\n",
-               MAPPER_GET_KEY(handle, RETROK_UP),
-               MAPPER_GET_KEY(handle, RETROK_DOWN),
-               MAPPER_GET_KEY(handle, RETROK_LEFT),
-               MAPPER_GET_KEY(handle, RETROK_RIGHT)
-               );*/
-
             if (MAPPER_GET_KEY(handle, id))
                *ret |= 1;
          }
@@ -165,4 +193,5 @@ void input_mapper_state(
       default:
          break;
    }
+   return;
 }

@@ -37,7 +37,7 @@ void input_mapper_free(input_mapper_t *handle);
 
 void input_mapper_poll(input_mapper_t *handle);
 
-bool input_mapper_key_pressed(int key);
+bool input_mapper_key_pressed(input_mapper_t *handle, int key);
 
 void input_mapper_state(
       input_mapper_t *handle,
@@ -45,7 +45,8 @@ void input_mapper_state(
       unsigned port,
       unsigned device,
       unsigned idx,
-      unsigned id);
+      unsigned id,
+      bool clear);
 
 RETRO_END_DECLS
 

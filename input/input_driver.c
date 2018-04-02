@@ -634,7 +634,8 @@ void input_poll(void)
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   int16_t res                     = 0;
+   int16_t res = 0;
+   bool clear  = false;
 
    device &= RETRO_DEVICE_MASK;
 
@@ -657,8 +658,11 @@ int16_t input_state(unsigned port, unsigned device,
          switch (device)
          {
             case RETRO_DEVICE_JOYPAD:
-               if (id < RARCH_FIRST_CUSTOM_BIND)
-                  id = settings->uints.input_remap_ids[port][id];
+               if (id != settings->uints.input_remap_ids[port][id])
+               {
+                  clear = true;
+               }
+
                break;
             case RETRO_DEVICE_ANALOG:
                if (idx < 2 && id < 2)
@@ -676,11 +680,9 @@ int16_t input_state(unsigned port, unsigned device,
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
       {
          bool bind_valid = libretro_input_binds[port] && libretro_input_binds[port][id].valid;
-
+         rarch_joypad_info_t joypad_info;
          if (bind_valid || device == RETRO_DEVICE_KEYBOARD)
          {
-            rarch_joypad_info_t joypad_info;
-
             joypad_info.axis_threshold = input_driver_axis_threshold;
             joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
             joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
@@ -690,6 +692,12 @@ int16_t input_state(unsigned port, unsigned device,
          }
       }
 
+#ifdef HAVE_KEYMAPPER
+      if (input_driver_mapper)
+         input_mapper_state(input_driver_mapper,
+               &res, port, device, idx, id, clear);
+#endif
+
 #ifdef HAVE_OVERLAY
       if (overlay_ptr)
          input_state_overlay(overlay_ptr, &res, port, device, idx, id);
@@ -698,12 +706,6 @@ int16_t input_state(unsigned port, unsigned device,
 #ifdef HAVE_NETWORKGAMEPAD
       if (input_driver_remote)
          input_remote_state(&res, port, device, idx, id);
-#endif
-
-#ifdef HAVE_KEYMAPPER
-      if (input_driver_mapper)
-         input_mapper_state(input_driver_mapper,
-               &res, port, device, idx, id);
 #endif
 
       /* Don't allow turbo for D-pad. */
