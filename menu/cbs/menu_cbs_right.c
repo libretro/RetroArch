@@ -107,7 +107,6 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
 {
    unsigned key_id, id, offset;
    unsigned remap_id;
-   char desc[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
 
    if (!settings)
@@ -129,6 +128,8 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
          break;
    }
 
+   RARCH_LOG("o:%u t:%u i:%u r:%u\n", offset, type, id, remap_id);
+
    if (key_id < RARCH_MAX_KEYS + MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
       key_id++;
    else
@@ -140,26 +141,28 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
 }
 #endif
 
+/* fix-me: incomplete, lacks error checking */
 int action_right_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
-unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-unsigned inp_desc_user         = inp_desc_index_offset / (RARCH_FIRST_CUSTOM_BIND + 4);
-unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
-settings_t *settings = config_get_ptr();
 
-if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
-{
-   if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND - 1)
-      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
-}
-else
-{
-   if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < 4 - 1)
-      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
-}
+   unsigned key_id, id, offset;
+   unsigned remap_id = 0;
+   settings_t *settings = config_get_ptr();
 
-return 0;
+   if (!settings)
+      return 0;
+
+   offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+
+   id = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * offset;
+
+   if (settings->uints.input_remap_ids[offset][id] < RARCH_FIRST_CUSTOM_BIND)
+      settings->uints.input_remap_ids[offset][id]++;
+
+   RARCH_LOG("o:%u t:%u i:%u r:%u\n", offset, type, id, remap_id);
+
+   return 0;
 }
 
 static int action_right_scroll(unsigned type, const char *label,

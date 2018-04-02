@@ -552,56 +552,29 @@ static void menu_action_setting_disp_set_label_input_desc(
    const struct retro_keybind *auto_bind = NULL;
    const struct retro_keybind *keybind   = NULL;
    settings_t *settings                  = config_get_ptr();
-   unsigned inp_desc_index_offset        =
-      type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user                = inp_desc_index_offset /
-      (RARCH_FIRST_CUSTOM_BIND + 8);
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset -
-      (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 8));
-   unsigned remap_id                     = 0;
+
+   unsigned key_id, id, offset;
+   unsigned remap_id = 0;
+
+   if (!settings)
+      return 0;
+
+   offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+
+   id = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * offset;
+
+   remap_id =
+      settings->uints.input_remap_ids[offset][id];
 
    system = runloop_get_system_info();
 
    if (!system)
       return;
 
-   descriptor = system->input_desc_btn[inp_desc_user][inp_desc_button_index_offset];
+   descriptor = system->input_desc_btn[offset][remap_id];
 
-   if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND + 8)
-      strlcpy(s, descriptor ? descriptor : "---", len);
-   else
-   {
-      switch (remap_id)
-      {
-         case 0:
-            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS);
-            break;
-         case 1:
-            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS);
-            break;
-         case 2:
-            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS);
-            break;
-         case 3:
-            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS);
-            break;
-         case 4:
-            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS);
-            break;
-         case 5:
-            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS);
-            break;
-         case 6:
-            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS);
-            break;
-         case 7:
-            descriptor = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS);
-            break;
-      }
-
-      if (!string_is_empty(descriptor))
-         strlcpy(s, descriptor, len);
-   }
+   if (!string_is_empty(descriptor))
+      strlcpy(s, descriptor, len);
 
    *w = 19;
    strlcpy(s2, path, len2);
