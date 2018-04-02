@@ -22,6 +22,8 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#include "input_types.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -36,13 +38,9 @@
 
 #include "../msg_hash.h"
 #include "include/hid_types.h"
+#include "include/gamepad.h"
 
 RETRO_BEGIN_DECLS
-
-typedef struct rarch_joypad_driver input_device_driver_t;
-
-/* Keyboard line reader. Handles textual input in a direct fashion. */
-typedef struct input_keyboard_line input_keyboard_line_t;
 
 enum input_device_type
 {
@@ -120,14 +118,14 @@ struct retro_keybind
    char     *joyaxis_label;
 };
 
-typedef struct rarch_joypad_info
+struct rarch_joypad_info
 {
    uint16_t joy_idx;
    const struct retro_keybind *auto_binds;
    float axis_threshold;
-} rarch_joypad_info_t;
+};
 
-typedef struct input_driver
+struct input_driver
 {
    /* Inits input driver.
     */
@@ -163,7 +161,7 @@ typedef struct input_driver
    const input_device_driver_t *(*get_sec_joypad_driver)(void *data);
    bool (*keyboard_mapping_is_blocked)(void *data);
    void (*keyboard_mapping_set_block)(void *data, bool value);
-} input_driver_t;
+};
 
 struct rarch_joypad_driver
 {
@@ -657,11 +655,11 @@ typedef void (*input_keyboard_line_complete_t)(void *userdata,
 
 typedef bool (*input_keyboard_press_t)(void *userdata, unsigned code);
 
-typedef struct input_keyboard_ctx_wait
+struct input_keyboard_ctx_wait
 {
    void *userdata;
    input_keyboard_press_t cb;
-} input_keyboard_ctx_wait_t;
+};
 
 /**
  * input_keyboard_event:
@@ -788,6 +786,9 @@ void input_config_set_vid(unsigned port, uint16_t vid);
 uint16_t input_config_get_vid(unsigned port);
 
 void input_config_reset(void);
+
+void set_connection_listener(pad_connection_listener_t *listener);
+void fire_connection_listener(unsigned port, input_device_driver_t *driver);
 
 extern input_device_driver_t dinput_joypad;
 extern input_device_driver_t linuxraw_joypad;

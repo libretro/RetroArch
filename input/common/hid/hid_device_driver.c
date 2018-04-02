@@ -57,6 +57,24 @@ joypad_connection_t *hid_pad_register(void *pad_handle, pad_connection_interface
    return result;
 }
 
+static bool init_pad_list(hid_driver_instance_t *instance, unsigned slots)
+{
+   if(!instance || slots > MAX_USERS)
+      return false;
+
+   if(instance->pad_list)
+      return true;
+
+   RARCH_LOG("[hid]: initializing pad list...\n");
+   instance->pad_list = pad_connection_init(slots);
+   if(!instance->pad_list)
+      return false;
+
+   instance->max_slot = slots;
+
+   return true;
+}
+
 /**
  * Fill in instance with data from initialized hid subsystem.
  *
@@ -80,16 +98,13 @@ bool hid_init(hid_driver_instance_t *instance,
    if(!instance->os_driver_data)
       return false;
 
-   RARCH_LOG("[hid]: initializing pad list...\n");
-   instance->pad_list = pad_connection_init(slots);
-   if(!instance->pad_list)
+   if(!init_pad_list(instance, slots))
    {
       hid_driver->free(instance->os_driver_data);
       instance->os_driver_data = NULL;
       return false;
    }
 
-   instance->max_slot = slots;
    instance->os_driver = hid_driver;
    instance->pad_driver = pad_driver;
 

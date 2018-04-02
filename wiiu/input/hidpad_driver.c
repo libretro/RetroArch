@@ -30,8 +30,6 @@ static bool ready = false;
 
 static bool init_hid_driver(void)
 {
-   memset(&hid_instance, 0, sizeof(hid_instance));
-
    return hid_init(&hid_instance, &wiiu_hid, &hidpad_driver, MAX_USERS);
 }
 
@@ -45,14 +43,6 @@ static bool hidpad_init(void *data)
       RARCH_ERR("Failed to initialize HID driver.\n");
       return false;
    }
-
-   hid_instance.pad_list[0].connected = true;
-/*
-   for(i = 0; i < (WIIU_WIIMOTE_CHANNELS+1); i++)
-   {
-      hid_instance.pad_list[i].connected = true;
-   }
-*/
 
    hidpad_poll();
    ready = true;

@@ -186,7 +186,12 @@ static void wpad_poll(void)
 
 static bool wpad_init(void *data)
 {
-   input_pad_connect(PAD_GAMEPAD, &wpad_driver);
+   int slot = pad_connection_find_vacant_pad(hid_instance.pad_list);
+   if(slot < 0)
+      return false;
+
+   hid_instance.pad_list[slot].connected = true;
+   input_pad_connect(slot, &wpad_driver);
    wpad_poll();
    ready = true;
 
@@ -195,7 +200,7 @@ static bool wpad_init(void *data)
 
 static bool wpad_query_pad(unsigned pad)
 {
-   return ready && pad == PAD_GAMEPAD;
+   return ready && pad < MAX_USERS;
 }
 
 static void wpad_destroy(void)

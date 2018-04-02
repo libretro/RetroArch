@@ -19,6 +19,8 @@
 #include "wiiu_dbg.h"
 
 static input_device_driver_t *pad_drivers[MAX_USERS];
+extern pad_connection_listener_t wiiu_pad_connection_listener;
+
 
 static bool ready = false;
 
@@ -31,61 +33,30 @@ static int16_t wiiu_joypad_axis(unsigned pad, uint32_t axis);
 static void wiiu_joypad_poll(void);
 static const char *wiiu_joypad_name(unsigned pad);
 
-/**
- * Translates a pad to its appropriate driver.
- * Note that this is a helper for build_pad_map and shouldn't be
- * used directly.
- */
-static input_device_driver_t *get_driver_for_pad(unsigned pad)
-{
-  if(wpad_driver.query_pad(pad))
-    return &wpad_driver;
-
-  if(kpad_driver.query_pad(pad))
-    return &kpad_driver;
-
-#ifdef WIIU_HID
-  return &hidpad_driver;
-#else
-  return NULL;
-#endif
-}
-
-/**
- * Populates the pad_driver array. We do this once at init time so
- * that lookups at runtime are constant time.
- */
-static void build_pad_map(void)
-{
-  unsigned i;
-
-  for(i = 0; i < MAX_USERS; i++)
-  {
-    pad_drivers[i] = get_driver_for_pad(i);
-  }
-}
-
 static bool wiiu_joypad_init(void* data)
 {
-  /* the sub-drivers have to init first, otherwise
-   * build_pad_map will fail (because all lookups will return false). */
-  wpad_driver.init(data);
-  kpad_driver.init(data);
+   set_connection_listener(&wiiu_pad_connection_listener);
+   hid_instance.pad_list = pad_connection_init(MAX_USERS);
+   hid_instance.max_slot = MAX_USERS;
+
+   wpad_driver.init(data);
+   kpad_driver.init(data);
 #ifdef WIIU_HID
-  hidpad_driver.init(data);
+   hidpad_driver.init(data);
 #endif
 
-  build_pad_map();
+   ready = true;
+   (void)data;
 
-  ready = true;
-  (void)data;
-
-  return true;
+   return true;
 }
 
 static bool wiiu_joypad_query_pad(unsigned pad)
 {
-  return ready && pad < MAX_USERS;
+   return ready &&
+         pad < MAX_USERS &&
+         pad_drivers[pad] != NULL &&
+         pad_drivers[pad]->query_pad(pad);
 }
 
 static void wiiu_joypad_destroy(void)
@@ -134,10 +105,17 @@ static void wiiu_joypad_poll(void)
 
 static const char* wiiu_joypad_name(unsigned pad)
 {
-  if(!wiiu_joypad_query_pad(pad))
-    return "N/A";
+   if(!wiiu_joypad_query_pad(pad))
+      return "N/A";
 
-  return pad_drivers[pad]->name(pad);
+   return pad_drivers[pad]->name(pad);
+}
+
+static void wiiu_joypad_connection_listener(unsigned pad,
+               input_device_driver_t *driver)
+{
+   if(pad < MAX_USERS)
+      pad_drivers[pad] = driver;
 }
 
 input_device_driver_t wiiu_joypad =
@@ -152,4 +130,9 @@ input_device_driver_t wiiu_joypad =
   NULL,
   wiiu_joypad_name,
   "wiiu",
+};
+
+pad_connection_listener_t wiiu_pad_connection_listener =
+{
+   wiiu_joypad_connection_listener
 };

@@ -58,8 +58,8 @@ struct hid_driver
    hid_instance.os_driver_data, pad, key)
 #define HID_AXIS(pad, axis) hid_instance.os_driver->axis( \
    hid_instance.os_driver_data, pad, axis)
-#define HID_PAD_NAME(pad) hid_instance.os_driver->name( \
-   hid_instance.os_driver_data, pad)
+#define HID_PAD_NAME(pad) \
+   hid_instance.os_driver->name(hid_instance.os_driver_data, pad)
 #define HID_POLL() hid_instance.os_driver->poll( \
    hid_instance.os_driver_data)
 #define HID_MAX_SLOT() hid_instance.max_slot
