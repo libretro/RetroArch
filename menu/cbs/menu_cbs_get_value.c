@@ -557,7 +557,7 @@ static void menu_action_setting_disp_set_label_input_desc(
    unsigned remap_id = 0;
 
    if (!settings)
-      return 0;
+      return;
 
    offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
 

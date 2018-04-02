@@ -579,6 +579,8 @@ void input_poll(void)
    if (input_driver_block_libretro_input)
       return;
 
+
+
    for (i = 0; i < max_users; i++)
    {
       if (libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
@@ -603,6 +605,11 @@ void input_poll(void)
             input_driver_axis_threshold);
 #endif
 
+#ifdef HAVE_KEYMAPPER
+   if (input_driver_mapper)
+      input_mapper_poll(input_driver_mapper);
+#endif
+
 #ifdef HAVE_COMMAND
    if (input_driver_command)
       command_poll(input_driver_command);
@@ -611,11 +618,6 @@ void input_poll(void)
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_driver_remote)
       input_remote_poll(input_driver_remote, max_users);
-#endif
-
-#ifdef HAVE_KEYMAPPER
-   if (input_driver_mapper)
-      input_mapper_poll(input_driver_mapper);
 #endif
 }
 
@@ -659,9 +661,7 @@ int16_t input_state(unsigned port, unsigned device,
          {
             case RETRO_DEVICE_JOYPAD:
                if (id != settings->uints.input_remap_ids[port][id])
-               {
                   clear = true;
-               }
 
                break;
             case RETRO_DEVICE_ANALOG:
@@ -687,8 +687,11 @@ int16_t input_state(unsigned port, unsigned device,
             joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
             joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
-            res = current_input->input_state(
-                  current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
+            if (!clear)
+               res = current_input->input_state(
+                     current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
+            else
+               res = 0;
          }
       }
 

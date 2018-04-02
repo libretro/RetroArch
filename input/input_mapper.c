@@ -58,7 +58,7 @@ struct input_mapper
    /* the whole keyboard state */
    uint32_t keys[RETROK_LAST / 32 + 1];
    /* This is a bitmask of (1 << key_bind_id). */
-   uint64_t buttons;
+   retro_bits_t buttons;
 };
 
 input_mapper_t *input_mapper_new(uint16_t port)
@@ -85,7 +85,7 @@ bool flag = false;
 
 bool input_mapper_button_pressed(input_mapper_t *handle, int id)
 {
-   return (handle->buttons >> id) & 1U;
+   return BIT256_GET(handle->buttons, id);
 }
 
 void input_mapper_poll(input_mapper_t *handle)
@@ -141,23 +141,17 @@ void input_mapper_poll(input_mapper_t *handle)
    }
    if (device == RETRO_DEVICE_JOYPAD)
    {
+      retro_bits_t current_input;
+      input_keys_pressed(settings, &current_input);
+      BIT256_CLEAR_ALL(handle->buttons);
       for (i = 0; i < MAX_USERS; i++)
       {
          for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
          {
-            if(input_state(i, RETRO_DEVICE_JOYPAD, i, j))
-            {
-               if (j != settings->uints.input_remap_ids[i][j])
-               {
-                  RARCH_LOG("remapped button pressed: old:%d new: %d\n", j, settings->uints.input_remap_ids[i][j]);
-                  handle->buttons |= 1 << settings->uints.input_remap_ids[i][j];
-               }
-            }
-            if(!input_state(i, RETRO_DEVICE_JOYPAD, i, j))
-            {
-               if (j != settings->uints.input_remap_ids[i][j])
-                  handle->buttons &= ~(1 << settings->uints.input_remap_ids[i][j]);
-            }
+            int aux = BIT256_GET(current_input, j);
+            int remap = settings->uints.input_remap_ids[i][j];
+            if (aux == 1 && j != remap)
+               BIT256_SET(handle->buttons, remap);
          }
       }
    }
