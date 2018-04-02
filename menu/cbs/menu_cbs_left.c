@@ -90,19 +90,24 @@ static int action_left_cheat(unsigned type, const char *label,
          wraparound);
 }
 
+/* fix-me: incomplete, lacks error checking */
 static int action_left_input_desc(unsigned type, const char *label,
-      bool wraparound)
+   bool wraparound)
 {
-   unsigned inp_desc_index_offset        = type -
-      MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user                = inp_desc_index_offset /
-      (RARCH_FIRST_CUSTOM_BIND + 4);
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset
-      - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
-   settings_t *settings                  = config_get_ptr();
 
-   if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] > 0)
-      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]--;
+   unsigned key_id, id, offset;
+   unsigned remap_id = 0;
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return 0;
+
+   offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+
+   id = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * offset;
+
+   if (settings->uints.input_remap_ids[offset][id] > 0)
+      settings->uints.input_remap_ids[offset][id]--;
 
    return 0;
 }
