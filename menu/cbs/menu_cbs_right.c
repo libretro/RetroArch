@@ -146,21 +146,17 @@ int action_right_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
 
-   unsigned key_id, id, offset;
-   unsigned remap_id = 0;
+   unsigned btn_idx, user_idx;
    settings_t *settings = config_get_ptr();
 
    if (!settings)
       return 0;
 
-   offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
-   id = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * offset;
-
-   if (settings->uints.input_remap_ids[offset][id] < RARCH_FIRST_CUSTOM_BIND)
-      settings->uints.input_remap_ids[offset][id]++;
-
-   RARCH_LOG("o:%u t:%u i:%u r:%u\n", offset, type, id, remap_id);
+   if (settings->uints.input_remap_ids[user_idx][btn_idx] < RARCH_FIRST_CUSTOM_BIND)
+      settings->uints.input_remap_ids[user_idx][btn_idx]++;
 
    return 0;
 }
