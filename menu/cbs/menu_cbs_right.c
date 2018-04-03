@@ -155,6 +155,11 @@ int action_right_input_desc(unsigned type, const char *label,
    user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
    btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
+#if 1
+   for (int i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+      RARCH_LOG("[remap-debug]: user %d button %d new id %d\n", user_idx, i, settings->uints.input_remap_ids[user_idx][i]);
+#endif
+
    if (settings->uints.input_remap_ids[user_idx][btn_idx] < RARCH_FIRST_CUSTOM_BIND)
       settings->uints.input_remap_ids[user_idx][btn_idx]++;
 
