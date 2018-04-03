@@ -705,6 +705,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       }
       free(wm_name);
    }
+   if (!x11_has_net_wm_fullscreen(g_x11_dpy) && true_full)
+      swa.override_redirect = True;
 
    if (video_info->monitor_index)
       g_x11_screen = video_info->monitor_index - 1;

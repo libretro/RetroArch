@@ -685,6 +685,47 @@ void x11_event_queue_check(XEvent *event)
    XIfEvent(g_x11_dpy, event, x11_wait_notify, NULL);
 }
 
+static bool x11_check_atom_supported(Display *dpy, Atom atom)
+{
+   Atom XA_NET_SUPPORTED = XInternAtom(dpy, "_NET_SUPPORTED", True);
+   Atom type;
+   int format;
+   unsigned long nitems;
+   unsigned long bytes_after;
+   Atom *prop;
+   int i;
+
+   if (XA_NET_SUPPORTED == None)
+      return false;
+
+   XGetWindowProperty(dpy, DefaultRootWindow(dpy), XA_NET_SUPPORTED, 0, UINT_MAX, False, XA_ATOM, &type, &format,&nitems, &bytes_after, (unsigned char **) &prop);
+
+   if (!prop || type != XA_ATOM)
+   {
+      return false;
+   }
+
+   for (i = 0; i < nitems; i++)
+   {
+      if (prop[i] == atom)
+      {
+         XFree(prop);
+         return true;
+      }
+   }
+
+   XFree(prop);
+
+   return false;
+}
+
+bool x11_has_net_wm_fullscreen(Display *dpy)
+{
+   XA_NET_WM_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+
+   return x11_check_atom_supported(dpy, XA_NET_WM_STATE_FULLSCREEN);
+}
+
 char *x11_get_wm_name(Display *dpy)
 {
    Atom XA_NET_SUPPORTING_WM_CHECK = XInternAtom(g_x11_dpy, "_NET_SUPPORTING_WM_CHECK", False);
