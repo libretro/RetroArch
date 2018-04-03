@@ -637,7 +637,10 @@ int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    int16_t res = 0;
-   bool clear  = false;
+
+   /* used to reset input state of a button when the gamepad mapper
+      is in action for that button*/
+   bool reset_state  = false;
 
    device &= RETRO_DEVICE_MASK;
 
@@ -661,7 +664,7 @@ int16_t input_state(unsigned port, unsigned device,
          {
             case RETRO_DEVICE_JOYPAD:
                if (id != settings->uints.input_remap_ids[port][id])
-                  clear = true;
+                  reset_state = true;
 
                break;
             case RETRO_DEVICE_ANALOG:
@@ -681,7 +684,7 @@ int16_t input_state(unsigned port, unsigned device,
             joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
             joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
-            if (!clear)
+            if (!reset_state)
                res = current_input->input_state(
                      current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
             else
