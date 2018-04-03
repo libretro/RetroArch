@@ -45,8 +45,7 @@ void input_mapper_state(
       unsigned port,
       unsigned device,
       unsigned idx,
-      unsigned id,
-      bool clear);
+      unsigned id);
 
 RETRO_END_DECLS
 
