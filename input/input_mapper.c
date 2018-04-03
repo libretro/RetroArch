@@ -47,7 +47,6 @@
 
 #define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
-#define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] |= 0 << ((key) % 32)
 
 struct input_mapper
 {
@@ -214,8 +213,7 @@ void input_mapper_state(
       unsigned port,
       unsigned device,
       unsigned idx,
-      unsigned id,
-      bool clear)
+      unsigned id)
 {
    if (!handle)
       return;
@@ -223,8 +221,6 @@ void input_mapper_state(
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         /* we should get the new buttons here via input_remapper_button_pressed but it doesn't work because the old state is still there
-            so both actions trigger */
          if (input_mapper_button_pressed(handle, id))
             *ret = 1;
          break;
