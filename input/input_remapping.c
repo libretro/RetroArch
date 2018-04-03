@@ -68,7 +68,7 @@ bool input_remapping_load_file(void *data, const char *path)
       s1[0] = '\0';
       s2[0] = '\0';
 
-      snprintf(s1, sizeof(s1), "input_player%u", i + 1);
+      snprintf(s1, sizeof(s1), "input_player%u_btn", i + 1);
       snprintf(s2, sizeof(s2), "input_player%u_key", i + 1);
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 4; j++)
@@ -179,7 +179,7 @@ bool input_remapping_save_file(const char *path)
       s1[0] = '\0';
       s2[0] = '\0';
 
-      snprintf(s1, sizeof(s1), "input_player%u", i + 1);
+      snprintf(s1, sizeof(s1), "input_player%u_btn", i + 1);
       snprintf(s2, sizeof(s2), "input_player%u_key", i + 1);
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 4; j++)
