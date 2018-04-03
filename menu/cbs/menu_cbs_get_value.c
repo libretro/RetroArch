@@ -573,6 +573,9 @@ static void menu_action_setting_disp_set_label_input_desc(
 
    if (!string_is_empty(descriptor))
       strlcpy(s, descriptor, len);
+   else
+      strlcpy(s, "---", len);
+
 
    *w = 19;
    strlcpy(s2, path, len2);
