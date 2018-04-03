@@ -547,11 +547,9 @@ static void menu_action_setting_disp_set_label_input_desc(
       const char *path,
       char *s2, size_t len2)
 {
-   rarch_system_info_t *system           = NULL;
+   rarch_system_info_t *system           = runloop_get_system_info();
    settings_t *settings                  = config_get_ptr();
    const char* descriptor                = NULL;
-   const struct retro_keybind *auto_bind = NULL;
-   const struct retro_keybind *keybind   = NULL;
 
    unsigned btn_idx, user_idx, remap_idx;
 
@@ -563,8 +561,6 @@ static void menu_action_setting_disp_set_label_input_desc(
 
    remap_idx =
       settings->uints.input_remap_ids[user_idx][btn_idx];
-
-   system = runloop_get_system_info();
 
    if (!system)
       return;

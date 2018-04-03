@@ -145,23 +145,32 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
 int action_right_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
+   rarch_system_info_t *system           = runloop_get_system_info();
+   settings_t *settings                  = config_get_ptr();
+   unsigned btn_idx, user_idx, remap_idx;
 
-   unsigned btn_idx, user_idx;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings)
+   if (!settings || !system)
       return 0;
 
    user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
    btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
-#if 1
-   for (int i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-      RARCH_LOG("[remap-debug]: user %d button %d new id %d\n", user_idx, i, settings->uints.input_remap_ids[user_idx][i]);
-#endif
-
    if (settings->uints.input_remap_ids[user_idx][btn_idx] < RARCH_FIRST_CUSTOM_BIND)
       settings->uints.input_remap_ids[user_idx][btn_idx]++;
+   else
+      settings->uints.input_remap_ids[user_idx][btn_idx] = 0;
+
+   /* skip the not used button (unless they are at the end by calling the right desc function recursively */
+   remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
+   if (string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_FIRST_CUSTOM_BIND)
+      action_right_input_desc(type, label, wraparound);
+
+#if 0
+   int i = 0;
+   RARCH_LOG("[remap-debug] new descriptor for %d: %s\n", remap_idx, system->input_desc_btn[user_idx][remap_idx]);
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+      RARCH_LOG("[remap-debug]: user %d button %d new id %d\n", user_idx, i, settings->uints.input_remap_ids[user_idx][i]);
+#endif
 
    return 0;
 }
