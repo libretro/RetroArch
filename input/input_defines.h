@@ -35,6 +35,8 @@ RETRO_BEGIN_DECLS
 #define RARCH_FIRST_MISC_CUSTOM_BIND   RARCH_LIGHTGUN_BIND_LIST_END
 #define RARCH_FIRST_META_KEY           RARCH_CUSTOM_BIND_LIST_END
 
+#define RARCH_UNMAPPED                 1024
+
 /* RetroArch specific bind IDs. */
 enum
 {

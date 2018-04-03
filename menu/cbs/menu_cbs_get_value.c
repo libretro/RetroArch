@@ -562,6 +562,9 @@ static void menu_action_setting_disp_set_label_input_desc(
    remap_idx =
       settings->uints.input_remap_ids[user_idx][btn_idx];
 
+   if (remap_idx == RARCH_UNMAPPED)
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
+
    if (!system)
       return;
 
