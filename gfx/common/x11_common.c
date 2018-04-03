@@ -685,3 +685,65 @@ void x11_event_queue_check(XEvent *event)
    XIfEvent(g_x11_dpy, event, x11_wait_notify, NULL);
 }
 
+char *x11_get_wm_name(Display *dpy)
+{
+   Atom XA_NET_SUPPORTING_WM_CHECK = XInternAtom(g_x11_dpy, "_NET_SUPPORTING_WM_CHECK", False);
+   Atom XA_NET_WM_NAME             = XInternAtom(g_x11_dpy, "_NET_WM_NAME", False);
+   Atom XA_UTF8_STRING             = XInternAtom(g_x11_dpy, "UTF8_STRING", False);
+   int status;
+   Atom type;
+   int  format;
+   unsigned long nitems;
+   unsigned long bytes_after;
+   unsigned char *propdata;
+   char *title;
+   Window window;
+
+   if (!XA_NET_SUPPORTING_WM_CHECK || !XA_NET_WM_NAME)
+      return NULL;
+
+   status = XGetWindowProperty(dpy,
+                               DefaultRootWindow(dpy),
+                               XA_NET_SUPPORTING_WM_CHECK,
+                               0,
+                               1,
+                               False,
+                               XA_WINDOW,
+                               &type,
+                               &format,
+                               &nitems,
+                               &bytes_after,
+                               &propdata);
+
+   if (status == Success && propdata)
+      window = ((Window *) propdata)[0];
+   else
+      return NULL;
+
+   XFree(propdata);
+
+   status = XGetWindowProperty(dpy,
+                               window,
+                               XA_NET_WM_NAME,
+                               0,
+                               8192,
+                               False,
+                               XA_UTF8_STRING,
+                               &type,
+                               &format,
+                               &nitems,
+                               &bytes_after,
+                               &propdata);
+
+   if (status == Success && propdata)
+   {
+      title = strdup((char *) propdata);
+   }
+   else
+      return NULL;
+
+   XFree(propdata);
+
+   return title;
+}
+
