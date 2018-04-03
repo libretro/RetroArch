@@ -553,25 +553,24 @@ static void menu_action_setting_disp_set_label_input_desc(
    const struct retro_keybind *keybind   = NULL;
    settings_t *settings                  = config_get_ptr();
 
-   unsigned key_id, id, offset;
+   unsigned btn_idx, user_idx;
    unsigned remap_id = 0;
 
    if (!settings)
       return;
 
-   offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-
-   id = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * offset;
+   user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
    remap_id =
-      settings->uints.input_remap_ids[offset][id];
+      settings->uints.input_remap_ids[user_idx][btn_idx];
 
    system = runloop_get_system_info();
 
    if (!system)
       return;
 
-   descriptor = system->input_desc_btn[offset][remap_id];
+   descriptor = system->input_desc_btn[user_idx][remap_id];
 
    if (!string_is_empty(descriptor))
       strlcpy(s, descriptor, len);
