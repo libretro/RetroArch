@@ -547,14 +547,13 @@ static void menu_action_setting_disp_set_label_input_desc(
       const char *path,
       char *s2, size_t len2)
 {
-   rarch_system_info_t *system = NULL;
-   const char* descriptor = NULL;
+   rarch_system_info_t *system           = NULL;
+   settings_t *settings                  = config_get_ptr();
+   const char* descriptor                = NULL;
    const struct retro_keybind *auto_bind = NULL;
    const struct retro_keybind *keybind   = NULL;
-   settings_t *settings                  = config_get_ptr();
 
-   unsigned btn_idx, user_idx;
-   unsigned remap_id = 0;
+   unsigned btn_idx, user_idx, remap_idx;
 
    if (!settings)
       return;
@@ -562,7 +561,7 @@ static void menu_action_setting_disp_set_label_input_desc(
    user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
    btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
-   remap_id =
+   remap_idx =
       settings->uints.input_remap_ids[user_idx][btn_idx];
 
    system = runloop_get_system_info();
@@ -570,7 +569,7 @@ static void menu_action_setting_disp_set_label_input_desc(
    if (!system)
       return;
 
-   descriptor = system->input_desc_btn[user_idx][remap_id];
+   descriptor = system->input_desc_btn[user_idx][remap_idx];
 
    if (!string_is_empty(descriptor))
       strlcpy(s, descriptor, len);
