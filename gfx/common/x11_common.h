@@ -75,5 +75,9 @@ void x11_install_quit_atom(void);
 
 void x11_event_queue_check(XEvent *event);
 
+char *x11_get_wm_name(Display *dpy);
+
+bool x11_has_net_wm_fullscreen(Display *dpy);
+
 #endif
 

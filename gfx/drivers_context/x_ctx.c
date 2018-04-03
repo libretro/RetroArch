@@ -632,6 +632,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    int y_off                 = 0;
    XVisualInfo *vi           = NULL;
    XSetWindowAttributes swa  = {0};
+   char *wm_name             = NULL;
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
    gfx_ctx_x_data_t *x       = (gfx_ctx_x_data_t*)data;
    Atom net_wm_icon = XInternAtom(g_x11_dpy, "_NET_WM_ICON", False);
@@ -679,6 +680,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    swa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask |
       LeaveWindowMask | EnterWindowMask |
       ButtonReleaseMask | ButtonPressMask;
+   swa.override_redirect = False;
 
    if (fullscreen && !windowed_full)
    {
@@ -691,7 +693,20 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          RARCH_ERR("[GLX]: Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 
-   swa.override_redirect = true_full ? True : False;
+   wm_name = x11_get_wm_name(g_x11_dpy);
+   if (wm_name)
+   {
+      RARCH_LOG("[GLX]: Window manager is %s.\n", wm_name);
+
+      if (true_full && strcasestr(wm_name, "xfwm"))
+      {
+         RARCH_LOG("[GLX]: Using override-redirect workaround.\n");
+         swa.override_redirect = True;
+      }
+      free(wm_name);
+   }
+   if (!x11_has_net_wm_fullscreen(g_x11_dpy) && true_full)
+      swa.override_redirect = True;
 
    if (video_info->monitor_index)
       g_x11_screen = video_info->monitor_index - 1;
@@ -722,7 +737,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    g_x11_win = XCreateWindow(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
          x_off, y_off, width, height, 0,
          vi->depth, InputOutput, vi->visual,
-         CWBorderPixel | CWColormap | CWEventMask,
+         CWBorderPixel | CWColormap | CWEventMask | CWOverrideRedirect,
          &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
@@ -781,7 +796,6 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       RARCH_LOG("[GLX]: Using true fullscreen.\n");
       XMapRaised(g_x11_dpy, g_x11_win);
       x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
-      XChangeWindowAttributes(g_x11_dpy, g_x11_win, CWOverrideRedirect, &swa);
    }
    else if (fullscreen)
    {
