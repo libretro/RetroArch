@@ -93,10 +93,11 @@ static int action_left_cheat(unsigned type, const char *label,
 static int action_left_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
-   unsigned btn_idx, user_idx;
-   settings_t *settings = config_get_ptr();
+   rarch_system_info_t *system           = runloop_get_system_info();
+   settings_t *settings                  = config_get_ptr();
+   unsigned btn_idx, user_idx, remap_idx;
 
-   if (!settings)
+   if (!settings || !system)
       return 0;
 
    user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
@@ -104,6 +105,13 @@ static int action_left_input_desc(unsigned type, const char *label,
 
    if (settings->uints.input_remap_ids[user_idx][btn_idx] > 0)
       settings->uints.input_remap_ids[user_idx][btn_idx]--;
+   else
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_FIRST_CUSTOM_BIND;
+
+   /* skip the not used button (unless they are at the end by calling the right desc function recursively */
+   remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
+   if (string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_FIRST_CUSTOM_BIND)
+      action_left_input_desc(type, label, wraparound);
 
    return 0;
 }
