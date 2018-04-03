@@ -22,33 +22,158 @@
 typedef struct ds3_instance {
    void *handle;
    joypad_connection_t *pad;
+   int slot;
+   bool led_set;
+   uint32_t buttons;
+   uint16_t motors[2];
+   uint8_t data[64];
 } ds3_instance_t;
 
 static uint8_t activation_packet[] = {
+#if defined(IOS)
+  0x53, 0xF4,
+#elif defined(HAVE_WIIUSB_HID)
+  0x02,
+#endif
   0x42, 0x0c, 0x00, 0x00
 };
 
+#if defined(WIIU)
+#define PACKET_OFFSET 2
+#elif defined(HAVE_WIIUSB_HID)
+#define PACKET_OFFSET 1
+#else
+#define PACKET_OFFSET 0
+#endif
+
+#define LED_OFFSET 11
+#define MOTOR1_OFFSET 4
+#define MOTOR2_OFFSET 6
+
+static uint8_t control_packet[] = {
+   0x52, 0x01,
+   0x00, 0xff, 0x00, 0xff, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00,
+   0xff, 0x27, 0x10, 0x00, 0x32,
+   0xff, 0x27, 0x10, 0x00, 0x32,
+   0xff, 0x27, 0x10, 0x00, 0x32,
+   0xff, 0x27, 0x10, 0x00, 0x32,
+   0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00
+};
+
+static int control_packet_size = sizeof(control_packet);
+
 extern pad_connection_interface_t ds3_pad_connection;
+
+static void print_error(const char *fmt, int32_t errcode)
+{
+  int16_t err1, err2;
+
+  err1 = errcode & 0x0000ffff;
+  err2 = ((errcode & 0xffff0000) >> 16);
+
+  RARCH_ERR(fmt, err1, err2);
+}
+
+static uint32_t send_activation_packet(ds3_instance_t *instance)
+{
+   uint32_t result;
+#if defined(WIIU)
+   result = HID_SET_REPORT(instance->handle,
+                  HID_REPORT_FEATURE,
+                  DS3_ACTIVATION_REPORT_ID,
+                  activation_packet,
+                  sizeof(activation_packet));
+#else
+   HID_SEND_CONTROL(instance->handle,
+                    activation_packet, sizeof(activation_packet));
+#endif
+   if(result)
+      print_error("[ds3]: activation packet failed (%d:%d)\n", result);
+   return result;
+}
+
+static uint32_t set_protocol(ds3_instance_t *instance, int protocol)
+{
+   uint32_t result = 0;
+#if defined(WIIU)
+   result = HID_SET_PROTOCOL(1);
+   if(result)
+      print_error("[ds3]: set protocol failed (%d:%d)\n", result);
+
+#endif
+   return result;
+}
+
+static uint32_t send_control_packet(ds3_instance_t *instance)
+{
+   uint8_t packet_buffer[control_packet_size];
+   uint32_t result = 0;
+   memcpy(packet_buffer, control_packet, control_packet_size);
+
+   packet_buffer[LED_OFFSET] = 0;
+   if(instance->pad) {
+      packet_buffer[LED_OFFSET] = 1 << ((instance->slot % 4) + 1);
+   }
+   packet_buffer[MOTOR1_OFFSET] = instance->motors[1] >> 8;
+   packet_buffer[MOTOR2_OFFSET] = instance->motors[0] >> 8;
+
+#if defined(HAVE_WIIUSB_HID)
+   packet_buffer[1] = 0x03;
+#endif
+
+#if defined(WIIU)
+   result = HID_SET_REPORT(instance->handle,
+                  HID_REPORT_OUTPUT,
+                  DS3_RUMBLE_REPORT_ID,
+                  packet_buffer+PACKET_OFFSET,
+                  control_packet_size-PACKET_OFFSET);
+   if(result)
+      print_error("[ds3]: send control packet failed: (%d:%d)\n", result);
+#else
+   HID_SEND_CONTROL(instance->handle,
+                    packet_buffer+PACKET_OFFSET,
+                    control_packet_size-PACKET_OFFSET);
+#endif /* WIIU */
+   return result;
+}
 
 static void *ds3_init(void *handle)
 {
    ds3_instance_t *instance;
-
+   int errors = 0;
+   RARCH_LOG("[ds3]: init\n");
    instance = (ds3_instance_t *)calloc(1, sizeof(ds3_instance_t));
    if(!instance)
      goto error;
 
    instance->handle = handle;
 
-/* TODO: do whatever is needed so that the read loop doesn't bomb out */
+   RARCH_LOG("[ds3]: sending activation packet\n");
+   if(send_activation_packet(instance))
+      errors++;
+   RARCH_LOG("[ds3]: setting protocol\n");
+   if(set_protocol(instance, 1))
+      errors++;
+   RARCH_LOG("[ds3]: sending control packet\n");
+   if(send_control_packet(instance))
+      errors++;
+
+   if(errors)
+      goto error;
 
    instance->pad = hid_pad_register(instance, &ds3_pad_connection);
    if(!instance->pad)
       goto error;
 
+   RARCH_LOG("[ds3]: init complete.\n");
    return instance;
 
    error:
+      RARCH_ERR("[ds3]: init failed.\n");
       if(instance)
          free(instance);
       return NULL;
@@ -62,9 +187,14 @@ static void ds3_free(void *data)
       free(instance);
 }
 
-static void ds3_handle_packet(void *data, uint8_t *buffer, size_t size)
+static void ds3_handle_packet(void *data, uint8_t *packet, size_t size)
 {
    ds3_instance_t *instance = (ds3_instance_t *)data;
+
+   if(!instance || !instance->pad)
+      return;
+
+   instance->pad->iface->packet_handler(data, packet, size);
 }
 
 static bool ds3_detect(uint16_t vendor_id, uint16_t product_id)
@@ -86,6 +216,9 @@ hid_device_t ds3_hid_device = {
 
 static void *ds3_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
+   ds3_instance_t *pad = (ds3_instance_t *)data;
+   pad->slot = slot;
+
    return data;
 }
 
@@ -97,11 +230,38 @@ static void ds3_pad_deinit(void *data)
 static void ds3_get_buttons(void *data, retro_bits_t *state)
 {
    ds3_instance_t *pad = (ds3_instance_t *)data;
+
+   if(pad)
+   {
+      BITS_COPY16_PTR(state, pad->buttons);
+
+      if(pad->buttons & 0x10000)
+         BIT256_SET_PTR(state, RARCH_MENU_TOGGLE);
+   } else {
+      BIT256_CLEAR_ALL_PTR(state);
+   }
 }
 
 static void ds3_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
-   ds3_instance_t *pad = (ds3_instance_t *)data;
+   ds3_instance_t *instance = (ds3_instance_t *)data;
+   RARCH_LOG_BUFFER(packet, size);
+
+   if(!instance->led_set)
+   {
+      send_activation_packet(instance);
+      instance->led_set = true;
+   }
+
+   if(size > control_packet_size)
+   {
+      RARCH_ERR("[ds3]: Expecting packet to be %d but was %d\n",
+         control_packet_size, size);
+      return;
+   }
+
+   memcpy(instance->data, packet, size);
+   instance->buttons = 0;
 }
 
 static void ds3_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength)

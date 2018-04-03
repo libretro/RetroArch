@@ -60,6 +60,12 @@ struct hid_driver
    hid_instance.os_driver_data, pad, axis)
 #define HID_PAD_NAME(pad) \
    hid_instance.os_driver->name(hid_instance.os_driver_data, pad)
+#define HID_SET_PROTOCOL(protocol) \
+   hid_instance.os_driver->set_protocol(hid_instance.os_driver_data, protocol)
+#define HID_SET_REPORT(pad, rpttype, rptid, data, len) \
+   hid_instance.os_driver->set_report(pad, rpttype, rptid, data, len)
+#define HID_SEND_CONTROL(pad, data, len) \
+   hid_instance.os_driver->send_control(pad, data, len)
 #define HID_POLL() hid_instance.os_driver->poll( \
    hid_instance.os_driver_data)
 #define HID_MAX_SLOT() hid_instance.max_slot

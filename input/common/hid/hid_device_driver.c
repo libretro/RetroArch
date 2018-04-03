@@ -46,7 +46,10 @@ joypad_connection_t *hid_pad_register(void *pad_handle, pad_connection_interface
 
    slot = pad_connection_find_vacant_pad(hid_instance.pad_list);
    if(slot < 0)
+   {
+      RARCH_ERR("[hid]: failed to find a vacant pad.\n");
       return NULL;
+   }
 
    result = &(hid_instance.pad_list[slot]);
    result->iface = iface;

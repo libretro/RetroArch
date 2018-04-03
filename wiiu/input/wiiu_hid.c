@@ -458,7 +458,6 @@ static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event)
    adapter->state  = ADAPTER_STATE_NEW;
 
    synchronized_add_to_adapters_list(adapter);
-   wiiu_start_read_loop(adapter);
 
    return;
 
@@ -580,6 +579,21 @@ static void wiiu_handle_attach_events(wiiu_hid_t *hid, wiiu_attach_event *list)
    }
 }
 
+static void wiiu_handle_ready_adapters(wiiu_hid_t *hid)
+{
+   wiiu_adapter_t *it;
+   OSFastMutex_Lock(&(adapters.lock));
+
+   for(it = adapters.list; it != NULL; it = it->next)
+   {
+      if(it->state == ADAPTER_STATE_READY)
+        wiiu_start_read_loop(it);
+   }
+
+   OSFastMutex_Unlock(&(adapters.lock));
+
+}
+
 static int wiiu_hid_polling_thread(int argc, const char **argv)
 {
    wiiu_hid_t *hid = (wiiu_hid_t *)argv;
@@ -590,6 +604,7 @@ static int wiiu_hid_polling_thread(int argc, const char **argv)
    while(!hid->polling_thread_quit)
    {
       wiiu_handle_attach_events(hid, synchronized_get_events_list());
+      wiiu_handle_ready_adapters(hid);
       usleep(10000);
       i += 10000;
       if(i >= (1000 * 1000 * 3))
