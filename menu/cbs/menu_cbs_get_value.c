@@ -569,7 +569,8 @@ static void menu_action_setting_disp_set_label_input_desc(
    if (!system)
       return;
 
-   descriptor = system->input_desc_btn[user_idx][remap_idx];
+   if (btn_idx < RARCH_FIRST_CUSTOM_BIND)
+      descriptor = system->input_desc_btn[user_idx][remap_idx];
 
    if (!string_is_empty(descriptor))
       strlcpy(s, descriptor, len);
