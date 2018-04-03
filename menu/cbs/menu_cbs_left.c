@@ -103,14 +103,22 @@ static int action_left_input_desc(unsigned type, const char *label,
    user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
    btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
+   if (settings->uints.input_remap_ids[user_idx][btn_idx] == RARCH_UNMAPPED)
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_CUSTOM_BIND_LIST_END - 1;
+
    if (settings->uints.input_remap_ids[user_idx][btn_idx] > 0)
       settings->uints.input_remap_ids[user_idx][btn_idx]--;
+   else if (settings->uints.input_remap_ids[user_idx][btn_idx] == 0)
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
    else
-      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_FIRST_CUSTOM_BIND;
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_CUSTOM_BIND_LIST_END - 1;
 
-   /* skip the not used button (unless they are at the end by calling the right desc function recursively */
    remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
-   if (string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_FIRST_CUSTOM_BIND)
+
+   /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
+      also skip all the axes until analog remapping is implemented */
+   if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) || 
+       (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END))
       action_left_input_desc(type, label, wraparound);
 
    return 0;

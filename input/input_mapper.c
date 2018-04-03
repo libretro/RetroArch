@@ -92,7 +92,10 @@ void input_mapper_poll(input_mapper_t *handle)
 {
    int i, j;
    settings_t *settings = config_get_ptr();
+   retro_bits_t current_input;
    unsigned device      = settings->uints.input_libretro_device[handle->port];
+   unsigned current_button_value;
+   unsigned remap_button;
    bool key_event[RARCH_CUSTOM_BIND_LIST_END];
 #ifdef HAVE_MENU
    bool menu_is_alive   = menu_driver_is_alive();
@@ -141,18 +144,66 @@ void input_mapper_poll(input_mapper_t *handle)
    }
    if (device == RETRO_DEVICE_JOYPAD)
    {
-      retro_bits_t current_input;
       input_keys_pressed(settings, &current_input);
       BIT256_CLEAR_ALL(handle->buttons);
       for (i = 0; i < MAX_USERS; i++)
       {
-         for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
+         /* this loop iterates on all users and all buttons, and checks if a pressed button
+            is assigned to any other button than the default one, then it sets the bit on the
+            mapper input bitmap, later on the original input is cleared in input_state */
+
+         for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
          {
-            int aux = BIT256_GET(current_input, j);
-            int remap = settings->uints.input_remap_ids[i][j];
-            if (aux == 1 && j != remap)
-               BIT256_SET(handle->buttons, remap);
+            current_button_value = BIT256_GET(current_input, j);
+            remap_button = settings->uints.input_remap_ids[i][j];
+            if (current_button_value == 1 && j != remap_button &&
+                remap_button != RARCH_UNMAPPED)
+               BIT256_SET(handle->buttons, remap_button);
          }
+#if 0
+         /* --CURRENTLY NOT IMPLEMENTED--
+            this loop should iterate on all users and all analog stick axes and if the axes are
+            moved and is assigned to a button it should set the bit on the mapper input bitmap.
+            Once implemented we should make sure to clear the original analog 
+            stick input in input_state in input_driver.c */
+
+         for (j = RARCH_FIRST_CUSTOM_BIND; j < RARCH_CUSTOM_BIND_LIST_END; j++)
+         {
+
+         }
+#endif
+      }
+   }
+   if (device == RETRO_DEVICE_ANALOG)
+   {
+      input_keys_pressed(settings, &current_input);
+      BIT256_CLEAR_ALL(handle->buttons);
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         /* this loop iterates on all users and all buttons, and checks if a pressed button
+            is assigned to any other button than the default one, then it sets the bit on the
+            mapper input bitmap, later on the original input is cleared in input_state */
+
+         for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
+         {
+            current_button_value = BIT256_GET(current_input, j);
+            remap_button = settings->uints.input_remap_ids[i][j];
+            if (current_button_value == 1 && j != remap_button &&
+                remap_button != RARCH_UNMAPPED)
+               BIT256_SET(handle->buttons, remap_button);
+         }
+#if 0
+         /* --CURRENTLY NOT IMPLEMENTED--
+            this loop should iterate on all users and all analog stick axes and if the axes are
+            moved and is assigned to a button or another stick, it should set the bit on the
+            mapper input bitmap. Once implemented we should make sure to clear the original analog 
+            stick input in input_state in input_driver.c */
+
+         for (j = RARCH_FIRST_CUSTOM_BIND; j < RARCH_CUSTOM_BIND_LIST_END; j++)
+         {
+
+         }
+#endif
       }
    }
 }
