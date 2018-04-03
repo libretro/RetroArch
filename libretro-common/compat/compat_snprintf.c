@@ -25,6 +25,7 @@
 
 #include <retro_common.h>
 
+#include <stdio.h> /* added for _vsnprintf_s and _vscprintf on VS2015 and VS2017 */
 #include <stdarg.h>
 
 #if _MSC_VER < 1800
