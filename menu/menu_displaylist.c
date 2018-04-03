@@ -3249,7 +3249,8 @@ static int menu_displaylist_parse_options_remappings(
 
          if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
          {
-            for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 8; retro_id++)
+            /* change to RARCH_FIRST_CUSTOM_BIND + 8 once analog remapping is implemented */
+            for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
             {
                char desc_label[64];
                unsigned user           = p + 1;
