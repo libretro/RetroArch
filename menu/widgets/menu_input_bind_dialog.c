@@ -587,6 +587,9 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
 #if 0
 
+	  /*keep resetting bind during the hold period, or we'll potentially bind joystick and mouse, etc.*/
+	  binds.buffer = *( binds.output );
+
       if ( menu_input_key_bind_poll_find_hold( &binds, &binds.buffer ) )
       {
          /*inhibit timeout*/
