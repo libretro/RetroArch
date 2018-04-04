@@ -3119,7 +3119,7 @@ static enum runloop_state runloop_check_state(
       {
          /* rarch_timer_tick */
          timer.current = cpu_features_get_time_usec();
-         timer.timeout = (timer.timeout_end - timer.current) / 1000;
+         timer.timeout_us = (timer.timeout_end - timer.current);
 
          if (!timer.timer_end && rarch_timer_has_expired(&timer))
          {
