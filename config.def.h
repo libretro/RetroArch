@@ -650,6 +650,8 @@ static const unsigned input_poll_type_behavior = 2;
 
 static const unsigned input_bind_timeout = 5;
 
+static const unsigned input_bind_hold = 2;
+
 static const unsigned menu_thumbnails_default = 3;
 
 static const unsigned menu_left_thumbnails_default = 0;

@@ -314,6 +314,7 @@ typedef struct settings
       unsigned input_turbo_duty_cycle;
 
       unsigned input_bind_timeout;
+      unsigned input_bind_hold;
 
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;

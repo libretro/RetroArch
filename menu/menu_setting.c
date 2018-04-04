@@ -4589,6 +4589,20 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
+                  &settings->uints.input_bind_hold,
+                  MENU_ENUM_LABEL_INPUT_BIND_HOLD,
+                  MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
+                  input_bind_hold,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 1, 0, 1, true, false);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_UINT(
+                  list, list_info,
                   &settings->uints.input_turbo_period,
                   MENU_ENUM_LABEL_INPUT_TURBO_PERIOD,
                   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,

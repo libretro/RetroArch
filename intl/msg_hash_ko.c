@@ -588,6 +588,11 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Amount of seconds to wait until proceeding \n"
                              "to the next bind.");
             break;
+        case MENU_ENUM_LABEL_INPUT_BIND_HOLD:
+            snprintf(s, len,
+               "Input bind hold time (in seconds). \n"
+               "Amount of seconds to hold an input to bind it.");
+            break;
         case MENU_ENUM_LABEL_OVERLAY_SCALE:
             snprintf(s, len,
                      "Overlay scale.");
@@ -858,7 +863,7 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len)
                   strlcpy(s,
                         "Windowed SINC implementation.", len);
                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
-                  strlcpy(s, 
+                  strlcpy(s,
                         "Convoluted Cosine implementation.", len);
                else if (string_is_empty(s))
                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);

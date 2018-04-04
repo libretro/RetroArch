@@ -769,6 +769,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
       "Bind Default All")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
       "Bind Timeout")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
+      "Bind Hold")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
       "Hide Unbound Core Input Descriptors")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
@@ -2020,7 +2022,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
 MSG_HASH(MSG_ADDED_TO_FAVORITES,
       "Added to favorites")
 MSG_HASH(MSG_RESET_CORE_ASSOCIATION,
-      "Playlist entry core association has been reset.")      
+      "Playlist entry core association has been reset.")
 MSG_HASH(MSG_APPENDED_DISK,
       "Appended disk")
 MSG_HASH(MSG_APPLICATION_DIR,
@@ -2470,6 +2472,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "Amount of seconds to wait until proceeding to the next bind."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
+   "Amount of seconds to hold an input to bind it."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,

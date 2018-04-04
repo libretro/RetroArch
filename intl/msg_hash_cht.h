@@ -2286,6 +2286,10 @@ MSG_HASH(
    "Amount of seconds to wait until proceeding to the next bind."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
+   "Amount of seconds to hold an input to bind it."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
    "Describes the period of which turbo-enabled buttons toggle. Numbers are described in frames."
    )
