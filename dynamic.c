@@ -68,6 +68,7 @@
 
 #ifdef HAVE_RUNAHEAD
 #include "runahead/secondary_core.h"
+#include "runahead/run_ahead.h"
 #endif
 
 #ifdef HAVE_DYNAMIC
@@ -1763,6 +1764,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             result |= 1;
          }
+#ifdef HAVE_RUNAHEAD
+         if (want_fast_savestate())
+         {
+            result |= 4;
+         }
+         if (get_hard_disable_audio())
+         {
+            result |= 8;
+         }
+#endif
          if (data != NULL)
          {
             int* result_p = (int*)data;

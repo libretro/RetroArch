@@ -107,47 +107,6 @@ void x11_show_mouse(Display *dpy, Window win, bool state)
       x11_hide_mouse(dpy, win);
 }
 
-static bool x11_check_atom_supported(Display *dpy, Atom atom)
-{
-   Atom XA_NET_SUPPORTED = XInternAtom(dpy, "_NET_SUPPORTED", True);
-   Atom type;
-   int format;
-   unsigned long nitems;
-   unsigned long bytes_after;
-   Atom *prop;
-   int i;
-
-   if (XA_NET_SUPPORTED == None)
-      return false;
-
-   XGetWindowProperty(dpy, DefaultRootWindow(dpy), XA_NET_SUPPORTED, 0, UINT_MAX, False, XA_ATOM, &type, &format,&nitems, &bytes_after, (unsigned char **) &prop);
-
-   if (!prop || type != XA_ATOM)
-   {
-      return false;
-   }
-
-   for (i = 0; i < nitems; i++)
-   {
-      if (prop[i] == atom)
-      {
-         XFree(prop);
-         return true;
-      }
-   }
-
-   XFree(prop);
-
-   return false;
-}
-
-bool x11_has_net_wm_fullscreen(Display *dpy)
-{
-   XA_NET_WM_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
-
-   return x11_check_atom_supported(dpy, XA_NET_WM_STATE_FULLSCREEN);
-}
-
 void x11_set_net_wm_fullscreen(Display *dpy, Window win)
 {
    XEvent xev                 = {0};
@@ -724,5 +683,108 @@ static Bool x11_wait_notify(Display *d, XEvent *e, char *arg)
 void x11_event_queue_check(XEvent *event)
 {
    XIfEvent(g_x11_dpy, event, x11_wait_notify, NULL);
+}
+
+static bool x11_check_atom_supported(Display *dpy, Atom atom)
+{
+   Atom XA_NET_SUPPORTED = XInternAtom(dpy, "_NET_SUPPORTED", True);
+   Atom type;
+   int format;
+   unsigned long nitems;
+   unsigned long bytes_after;
+   Atom *prop;
+   int i;
+
+   if (XA_NET_SUPPORTED == None)
+      return false;
+
+   XGetWindowProperty(dpy, DefaultRootWindow(dpy), XA_NET_SUPPORTED, 0, UINT_MAX, False, XA_ATOM, &type, &format,&nitems, &bytes_after, (unsigned char **) &prop);
+
+   if (!prop || type != XA_ATOM)
+   {
+      return false;
+   }
+
+   for (i = 0; i < nitems; i++)
+   {
+      if (prop[i] == atom)
+      {
+         XFree(prop);
+         return true;
+      }
+   }
+
+   XFree(prop);
+
+   return false;
+}
+
+bool x11_has_net_wm_fullscreen(Display *dpy)
+{
+   XA_NET_WM_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+
+   return x11_check_atom_supported(dpy, XA_NET_WM_STATE_FULLSCREEN);
+}
+
+char *x11_get_wm_name(Display *dpy)
+{
+   Atom XA_NET_SUPPORTING_WM_CHECK = XInternAtom(g_x11_dpy, "_NET_SUPPORTING_WM_CHECK", False);
+   Atom XA_NET_WM_NAME             = XInternAtom(g_x11_dpy, "_NET_WM_NAME", False);
+   Atom XA_UTF8_STRING             = XInternAtom(g_x11_dpy, "UTF8_STRING", False);
+   int status;
+   Atom type;
+   int  format;
+   unsigned long nitems;
+   unsigned long bytes_after;
+   unsigned char *propdata;
+   char *title;
+   Window window;
+
+   if (!XA_NET_SUPPORTING_WM_CHECK || !XA_NET_WM_NAME)
+      return NULL;
+
+   status = XGetWindowProperty(dpy,
+                               DefaultRootWindow(dpy),
+                               XA_NET_SUPPORTING_WM_CHECK,
+                               0,
+                               1,
+                               False,
+                               XA_WINDOW,
+                               &type,
+                               &format,
+                               &nitems,
+                               &bytes_after,
+                               &propdata);
+
+   if (status == Success && propdata)
+      window = ((Window *) propdata)[0];
+   else
+      return NULL;
+
+   XFree(propdata);
+
+   status = XGetWindowProperty(dpy,
+                               window,
+                               XA_NET_WM_NAME,
+                               0,
+                               8192,
+                               False,
+                               XA_UTF8_STRING,
+                               &type,
+                               &format,
+                               &nitems,
+                               &bytes_after,
+                               &propdata);
+
+   if (status == Success && propdata)
+   {
+      title = strdup((char *) propdata);
+   }
+   else
+      return NULL;
+
+   XFree(propdata);
+
+   return title;
 }
 

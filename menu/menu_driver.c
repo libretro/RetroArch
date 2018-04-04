@@ -542,16 +542,23 @@ void menu_display_unset_framebuffer_dirty_flag(void)
  * RGUI or XMB use this. */
 float menu_display_get_dpi(void)
 {
-   settings_t *settings = config_get_ptr();
-   float            dpi;
    unsigned width, height;
+   settings_t *settings = config_get_ptr();
+   float            dpi   = 0.0f;
+   float diagonal         = 6.5f;
 
    video_driver_get_size(&width, &height);
 
    if (!settings)
       return true;
 
-   dpi = sqrt((width * width) + (height * height)) / 6.5;
+#ifdef RARCH_MOBILE
+   diagonal                = 5.0f;
+#endif
+
+   /* Generic dpi calculation formula,
+    * the divider is the screen diagonal in inches */
+   dpi = sqrt((width * width) + (height * height)) / diagonal;
 
    if (settings->bools.menu_dpi_override_enable)
       return settings->uints.menu_dpi_override_value;

@@ -23,6 +23,10 @@ static void runahead_suspend_audio(void);
 static void runahead_resume_audio(void);
 static void runahead_suspend_video(void);
 static void runahead_resume_video(void);
+static void set_fast_savestate(void);
+static void unset_fast_savestate(void);
+static void set_hard_disable_audio(void);
+static void unset_hard_disable_audio(void);
 
 static size_t runahead_save_state_size = -1;
 
@@ -92,8 +96,7 @@ static void runahead_save_state_list_rotate(void)
 static function_t originalRetroDeinit = NULL;
 static function_t originalRetroUnload = NULL;
 
-typedef struct retro_core_t _retro_core_t;
-extern _retro_core_t current_core;
+extern struct retro_core_t current_core;
 extern struct retro_callbacks retro_ctx;
 
 static void remove_hooks(void)
@@ -109,6 +112,7 @@ static void remove_hooks(void)
       current_core.retro_unload_game = originalRetroUnload;
       originalRetroUnload            = NULL;
    }
+   current_core.retro_set_environment(rarch_environment_cb);
    remove_input_state_hook();
 }
 
@@ -131,6 +135,18 @@ static void deinit_hook(void)
       current_core.retro_deinit();
 }
 
+static bool env_hook(unsigned cmd, void *data)
+{
+   bool result = rarch_environment_cb(cmd, data);
+   if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE && result)
+   {
+      bool *bool_p = (bool*)data;
+      if (*bool_p == true)
+         secondary_core_set_variable_update();
+   }
+   return result;
+}
+
 static void add_hooks(void)
 {
    if (!originalRetroDeinit)
@@ -144,7 +160,7 @@ static void add_hooks(void)
       originalRetroUnload = current_core.retro_unload_game;
       current_core.retro_unload_game = unload_hook;
    }
-
+   current_core.retro_set_environment(env_hook);
    add_input_state_hook();
 }
 
@@ -274,7 +290,9 @@ void run_ahead(int runAheadCount, bool useSecondary)
          {
             runahead_suspend_video();
             runahead_suspend_audio();
+            set_hard_disable_audio();
             okay = runahead_run_secondary();
+            unset_hard_disable_audio();
             runahead_resume_audio();
             runahead_resume_video();
 
@@ -285,7 +303,9 @@ void run_ahead(int runAheadCount, bool useSecondary)
          }
       }
       runahead_suspend_audio();
+      set_hard_disable_audio();
       okay = runahead_run_secondary();
+      unset_hard_disable_audio();
       runahead_resume_audio();
 
       /* Could not create a secondary core. RunAhead
@@ -330,8 +350,10 @@ static bool runahead_save_state(void)
 {
    retro_ctx_serialize_info_t *serialize_info =
       (retro_ctx_serialize_info_t*)runahead_save_state_list->data[0];
-   bool okay = core_serialize(serialize_info);
-
+   bool okay;
+   set_fast_savestate();
+   okay = core_serialize(serialize_info);
+   unset_fast_savestate();
    if (!okay)
       runahead_error();
    return okay;
@@ -342,7 +364,12 @@ static bool runahead_load_state(void)
    retro_ctx_serialize_info_t *serialize_info = (retro_ctx_serialize_info_t*)
       runahead_save_state_list->data[0];
    bool lastDirty = input_is_dirty;
-   bool okay      = core_unserialize(serialize_info);
+   bool okay;
+   set_fast_savestate();
+   /* calling core_unserialize has side effects with netplay (it triggers transmitting your save state)
+      call retro_unserialize directly from the core instead */
+   okay = current_core.retro_unserialize(serialize_info->data_const, serialize_info->size);
+   unset_fast_savestate();
    input_is_dirty = lastDirty;
 
    if (!okay)
@@ -355,7 +382,10 @@ static bool runahead_load_state_secondary(void)
 {
    retro_ctx_serialize_info_t *serialize_info =
       (retro_ctx_serialize_info_t*)runahead_save_state_list->data[0];
-   bool okay = secondary_core_deserialize(serialize_info->data_const, serialize_info->size);
+   bool okay;
+   set_fast_savestate();
+   okay = secondary_core_deserialize(serialize_info->data_const, serialize_info->size);
+   unset_fast_savestate();
 
    if (!okay)
       runahead_secondary_core_available = false;
@@ -399,4 +429,38 @@ void runahead_destroy(void)
    runahead_save_state_list_destroy();
    remove_hooks();
    runahead_clear_variables();
+}
+
+static bool request_fast_savestate;
+static bool hard_disable_audio;
+
+
+bool want_fast_savestate(void)
+{
+   return request_fast_savestate;
+}
+
+static void set_fast_savestate(void)
+{
+   request_fast_savestate = true;
+}
+
+static void unset_fast_savestate(void)
+{
+   request_fast_savestate = false;
+}
+
+bool get_hard_disable_audio(void)
+{
+   return hard_disable_audio;
+}
+
+static void set_hard_disable_audio(void)
+{
+   hard_disable_audio = true;
+}
+
+static void unset_hard_disable_audio(void)
+{
+   hard_disable_audio = false;
 }

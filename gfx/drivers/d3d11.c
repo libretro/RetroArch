@@ -574,9 +574,9 @@ static void*
 d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
    unsigned       i;
-   WNDCLASSEX     wndclass = { 0 };
    MONITORINFOEX  current_mon;
    HMONITOR       hm_to_use;
+   WNDCLASSEX     wndclass = { 0 };
    settings_t*    settings = config_get_ptr();
    d3d11_video_t* d3d11    = (d3d11_video_t*)calloc(1, sizeof(*d3d11));
 
@@ -1446,11 +1446,14 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 static void d3d11_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32, unsigned width, unsigned height, float alpha)
 {
-   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
-   DXGI_FORMAT    format =
-         rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
+   d3d11_video_t* d3d11    = (d3d11_video_t*)data;
+   settings_t*    settings = config_get_ptr();
+   DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : 
+      (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
-   if (d3d11->menu.texture.desc.Width != width || d3d11->menu.texture.desc.Height != height)
+   if (
+         d3d11->menu.texture.desc.Width  != width || 
+         d3d11->menu.texture.desc.Height != height)
    {
       d3d11->menu.texture.desc.Format = format;
       d3d11->menu.texture.desc.Width  = width;
@@ -1458,11 +1461,12 @@ static void d3d11_set_menu_texture_frame(
       d3d11_init_texture(d3d11->device, &d3d11->menu.texture);
    }
 
-   d3d11_update_texture(d3d11->context, width, height, 0, format, frame, &d3d11->menu.texture);
+   d3d11_update_texture(d3d11->context, width, height, 0,
+         format, frame, &d3d11->menu.texture);
    d3d11->menu.texture.sampler = d3d11->samplers
-                                       [config_get_ptr()->bools.menu_linear_filter
-                                              ? RARCH_FILTER_LINEAR
-                                              : RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
+      [settings->bools.menu_linear_filter
+      ? RARCH_FILTER_LINEAR
+         : RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
 }
 
 static void d3d11_set_menu_texture_enable(void* data, bool state, bool full_screen)

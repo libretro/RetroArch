@@ -3282,12 +3282,15 @@ static int menu_displaylist_parse_options_remappings(
       {
          for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
          {
+            unsigned user           = settings->uints.keymapper_port + 1;
+            unsigned desc_offset    = retro_id;
             char descriptor[255];
-            const struct retro_keybind *keybind   = &input_config_binds[settings->uints.keymapper_port][retro_id];
-            const struct retro_keybind *auto_bind = (const struct retro_keybind*)
-               input_config_get_bind_auto(settings->uints.keymapper_port, retro_id);
+            const struct retro_keybind *auto_bind = NULL;
+            const struct retro_keybind *keybind   = NULL;
 
-            descriptor[0]                         = '\0';
+            keybind   = &input_config_binds[settings->uints.keymapper_port][retro_id];
+            auto_bind = (const struct retro_keybind*)
+               input_config_get_bind_auto(settings->uints.keymapper_port, retro_id);
 
             input_config_get_bind_string(descriptor,
                keybind, auto_bind, sizeof(descriptor));

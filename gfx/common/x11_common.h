@@ -29,7 +29,6 @@ extern Colormap g_x11_cmap;
 extern unsigned g_x11_screen;
 
 void x11_show_mouse(Display *dpy, Window win, bool state);
-bool x11_has_net_wm_fullscreen(Display *dpy);
 void x11_set_net_wm_fullscreen(Display *dpy, Window win);
 void x11_suspend_screensaver(Window win, bool enable);
 bool x11_enter_fullscreen(video_frame_info_t *video_info,
@@ -75,6 +74,10 @@ void x11_colormap_destroy(void);
 void x11_install_quit_atom(void);
 
 void x11_event_queue_check(XEvent *event);
+
+char *x11_get_wm_name(Display *dpy);
+
+bool x11_has_net_wm_fullscreen(Display *dpy);
 
 #endif
 

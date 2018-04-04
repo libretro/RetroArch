@@ -14,6 +14,7 @@ void secondary_core_destroy(void);
 void set_last_core_type(enum rarch_core_type type);
 void remember_controller_port_device(long port, long device);
 void clear_controller_port_map(void);
+void secondary_core_set_variable_update(void);
 
 RETRO_END_DECLS
 

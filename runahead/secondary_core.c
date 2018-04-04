@@ -22,6 +22,8 @@
 #include "../paths.h"
 #include "../content.h"
 
+#include "secondary_core.h"
+
 static int port_map[16];
 
 static char *secondary_library_path;
@@ -45,6 +47,8 @@ static bool secondary_core_create(void);
 bool secondary_core_run_no_input_polling(void);
 
 bool secondary_core_deserialize(const void *buffer, int size);
+
+static bool rarch_environment_secondary_core_hook(unsigned cmd, void *data);
 
 void secondary_core_destroy(void);
 
@@ -205,7 +209,8 @@ bool secondary_core_create(void)
       secondary_core.retro_set_audio_sample_batch(secondary_callbacks.sample_batch_cb);
       secondary_core.retro_set_input_state(secondary_callbacks.state_cb);
       secondary_core.retro_set_input_poll(secondary_callbacks.poll_cb);
-      secondary_core.retro_set_environment(rarch_environment_cb);
+      secondary_core.retro_set_environment(rarch_environment_secondary_core_hook);
+      secondary_core_set_variable_update();
 
       secondary_core.retro_init();
 
@@ -267,6 +272,26 @@ bool secondary_core_create(void)
       return false;
 
    return true;
+}
+
+static bool has_variable_update;
+
+static bool rarch_environment_secondary_core_hook(unsigned cmd, void *data)
+{
+   bool result = rarch_environment_cb(cmd, data);
+   if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE && has_variable_update)
+   {
+      bool *bool_p = (bool*)data;
+      *bool_p = true;
+      has_variable_update = false;
+      return true;
+   }
+   return result;
+}
+
+void secondary_core_set_variable_update(void)
+{
+   has_variable_update = true;
 }
 
 bool secondary_core_run_no_input_polling(void)
@@ -350,5 +375,10 @@ void remember_controller_port_device(long port, long device)
 {
    /* do nothing */
 }
+void secondary_core_set_variable_update(void)
+{
+   /* do nothing */
+}
+
 #endif
 

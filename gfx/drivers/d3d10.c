@@ -499,22 +499,29 @@ static bool d3d10_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 static void d3d10_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32, unsigned width, unsigned height, float alpha)
 {
-   d3d10_video_t* d3d10  = (d3d10_video_t*)data;
-   int            pitch  = width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
-   DXGI_FORMAT    format = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
+   d3d10_video_t* d3d10     = (d3d10_video_t*)data;
+   settings_t*     settings = config_get_ptr();
+   int            pitch     = width * (rgb32 ? sizeof(uint32_t) 
+         : sizeof(uint16_t));
+   DXGI_FORMAT    format    = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM 
+      : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
-   if (d3d10->menu.texture.desc.Width != width || d3d10->menu.texture.desc.Height != height)
+   if (  d3d10->menu.texture.desc.Width  != width || 
+         d3d10->menu.texture.desc.Height != height)
    {
-      d3d10->menu.texture.desc.Format = d3d10_get_closest_match_texture2D(d3d10->device, format);
+      d3d10->menu.texture.desc.Format = d3d10_get_closest_match_texture2D(
+            d3d10->device, format);
       d3d10->menu.texture.desc.Width  = width;
       d3d10->menu.texture.desc.Height = height;
       d3d10_init_texture(d3d10->device, &d3d10->menu.texture);
    }
 
-   d3d10_update_texture(width, height, pitch, format, frame, &d3d10->menu.texture);
-   d3d10->menu.sampler = config_get_ptr()->bools.menu_linear_filter ? d3d10->sampler_linear
-      : d3d10->sampler_nearest;
+   d3d10_update_texture(width, height, pitch, format,
+         frame, &d3d10->menu.texture);
+   d3d10->menu.sampler = settings->bools.menu_linear_filter 
+      ? d3d10->sampler_linear : d3d10->sampler_nearest;
 }
+
 static void d3d10_set_menu_texture_enable(void* data, bool state, bool full_screen)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
