@@ -618,6 +618,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              "Quantos segundos aguardar até prosseguir \n"
                              "para o próximo vínculo.");
             break;
+        case MENU_ENUM_LABEL_INPUT_BIND_HOLD:
+            snprintf(s, len,
+               "Input bind hold time (in seconds). \n"
+               "Amount of seconds to hold an input to bind it.");
+            break;
         case MENU_ENUM_LABEL_OVERLAY_SCALE:
             snprintf(s, len,
                      "Escala da Transparência.");
