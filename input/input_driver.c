@@ -1140,16 +1140,15 @@ void input_get_state_for_port(void *data, unsigned port, retro_bits_t* p_new_sta
    joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
    joypad_info.axis_threshold                   = input_driver_axis_threshold;
 
-   input_driver_block_libretro_input            = false;
-   input_driver_block_hotkey                    = false;
-
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
       bool bit_pressed = false;
 
-      if (binds[i].valid && current_input->input_state(current_input_data,
-               joypad_info, &binds, port, RETRO_DEVICE_JOYPAD, 0, i))
+      if (input_driver_input_state(joypad_info, &binds, port, RETRO_DEVICE_JOYPAD, 0, i) == 1)
+      {
+         RARCH_LOG("button pressed port: %d id: %d\n", port, i);
          bit_pressed = true;
+      }
 
       if (bit_pressed)
          BIT256_SET_PTR(p_new_state, i);
