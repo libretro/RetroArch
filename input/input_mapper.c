@@ -104,11 +104,10 @@ void input_mapper_poll(input_mapper_t *handle)
 
    memset(handle->keys, 0, sizeof(handle->keys));
 
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < max_users; i++)
    {
       device = settings->uints.input_libretro_device[i];
       device &= RETRO_DEVICE_MASK;
-
       if (device == RETRO_DEVICE_KEYBOARD)
       {
          for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)

@@ -1132,8 +1132,6 @@ void input_get_state_for_port(void *data, unsigned port, retro_bits_t* p_new_sta
    unsigned i;
    rarch_joypad_info_t joypad_info;
    settings_t              *settings            = (settings_t*)data;
-   const struct retro_keybind *binds            = input_config_binds[port];
-
    BIT256_CLEAR_ALL_PTR(p_new_state);
 
    joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
@@ -1144,11 +1142,8 @@ void input_get_state_for_port(void *data, unsigned port, retro_bits_t* p_new_sta
    {
       bool bit_pressed = false;
 
-      if (input_driver_input_state(joypad_info, &binds, port, RETRO_DEVICE_JOYPAD, 0, i) == 1)
-      {
-         RARCH_LOG("button pressed port: %d id: %d\n", port, i);
+      if (input_driver_input_state(joypad_info, libretro_input_binds, port, RETRO_DEVICE_JOYPAD, 0, i) != 0)
          bit_pressed = true;
-      }
 
       if (bit_pressed)
          BIT256_SET_PTR(p_new_state, i);
