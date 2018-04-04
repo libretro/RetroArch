@@ -144,7 +144,7 @@ void input_mapper_poll(input_mapper_t *handle)
             is assigned to any other button than the default one, then it sets the bit on the
             mapper input bitmap, later on the original input is cleared in input_state */
          BIT256_CLEAR_ALL(handle->buttons[i]);
-         input_get_state_for_port(settings, 0, &current_input);
+         input_get_state_for_port(settings, i, &current_input);
 
          for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
          {
