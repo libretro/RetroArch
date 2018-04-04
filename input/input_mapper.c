@@ -50,14 +50,12 @@
 
 struct input_mapper
 {
-   /* The controller port that will be polled*/
-   uint8_t port;
    /* Left X, Left Y, Right X, Right Y */
    int16_t analog[4];
    /* the whole keyboard state */
    uint32_t keys[RETROK_LAST / 32 + 1];
    /* This is a bitmask of (1 << key_bind_id). */
-   retro_bits_t buttons;
+   retro_bits_t buttons[MAX_USERS];
 };
 
 input_mapper_t *input_mapper_new(uint16_t port)
@@ -67,8 +65,6 @@ input_mapper_t *input_mapper_new(uint16_t port)
 
    if (!handle)
       return NULL;
-
-   handle->port = port;
 
    return handle;
 }
@@ -82,9 +78,9 @@ void input_mapper_free(input_mapper_t *handle)
 
 bool flag = false;
 
-bool input_mapper_button_pressed(input_mapper_t *handle, int id)
+bool input_mapper_button_pressed(input_mapper_t *handle, unsigned port, unsigned id)
 {
-   return BIT256_GET(handle->buttons, id);
+   return BIT256_GET(handle->buttons[port], id);
 }
 
 void input_mapper_poll(input_mapper_t *handle)
@@ -92,7 +88,8 @@ void input_mapper_poll(input_mapper_t *handle)
    int i, j;
    settings_t *settings = config_get_ptr();
    retro_bits_t current_input;
-   unsigned device      = settings->uints.input_libretro_device[handle->port];
+   unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   unsigned device      = 0;
    unsigned current_button_value;
    unsigned remap_button;
    bool key_event[RARCH_CUSTOM_BIND_LIST_END];
@@ -100,24 +97,25 @@ void input_mapper_poll(input_mapper_t *handle)
    bool menu_is_alive   = menu_driver_is_alive();
 #endif
 
-   device              &= RETRO_DEVICE_MASK;
-
 #ifdef HAVE_MENU
    if (menu_is_alive)
       return;
 #endif
 
    memset(handle->keys, 0, sizeof(handle->keys));
-   i = 0;
-   if (device == RETRO_DEVICE_KEYBOARD)
+
+   for (i = 0; i < 2; i++)
    {
-      for (i = 0; i < MAX_USERS; i++)
+      device = settings->uints.input_libretro_device[i];
+      device &= RETRO_DEVICE_MASK;
+
+      if (device == RETRO_DEVICE_KEYBOARD)
       {
          for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
          {
             if (j < RETROK_LAST)
             {
-               if (input_state(i, RETRO_DEVICE_JOYPAD, 0, j) && 
+               if (input_state(i, RETRO_DEVICE_JOYPAD, 0, j) &&
                   settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
                {
                   MAPPER_SET_KEY (handle,
@@ -129,7 +127,7 @@ void input_mapper_poll(input_mapper_t *handle)
                }
                else
                {
-                  if (key_event[j] == false && 
+                  if (key_event[j] == false &&
                      settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
                   {
                      input_keyboard_event(false,
@@ -140,71 +138,37 @@ void input_mapper_poll(input_mapper_t *handle)
             }
          }
       }
-   }
-   if (device == RETRO_DEVICE_JOYPAD)
-   {
-      input_keys_pressed(settings, &current_input);
-      BIT256_CLEAR_ALL(handle->buttons);
-      for (i = 0; i < MAX_USERS; i++)
+      if (device == RETRO_DEVICE_JOYPAD)
       {
          /* this loop iterates on all users and all buttons, and checks if a pressed button
             is assigned to any other button than the default one, then it sets the bit on the
             mapper input bitmap, later on the original input is cleared in input_state */
+         BIT256_CLEAR_ALL(handle->buttons[i]);
+         input_get_state_for_port(settings, i, &current_input);
 
          for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
          {
             current_button_value = BIT256_GET(current_input, j);
             remap_button = settings->uints.input_remap_ids[i][j];
             if (current_button_value == 1 && j != remap_button &&
-                remap_button != RARCH_UNMAPPED)
-               BIT256_SET(handle->buttons, remap_button);
+               remap_button != RARCH_UNMAPPED)
+               BIT256_SET(handle->buttons[i], remap_button);
          }
 #if 0
          /* --CURRENTLY NOT IMPLEMENTED--
             this loop should iterate on all users and all analog stick axes and if the axes are
             moved and is assigned to a button it should set the bit on the mapper input bitmap.
-            Once implemented we should make sure to clear the original analog 
+            Once implemented we should make sure to clear the original analog
             stick input in input_state in input_driver.c */
 
          for (j = RARCH_FIRST_CUSTOM_BIND; j < RARCH_CUSTOM_BIND_LIST_END; j++)
-         {
-
-         }
+         { }
 #endif
       }
    }
-   if (device == RETRO_DEVICE_ANALOG)
-   {
-      input_keys_pressed(settings, &current_input);
-      BIT256_CLEAR_ALL(handle->buttons);
-      for (i = 0; i < MAX_USERS; i++)
-      {
-         /* this loop iterates on all users and all buttons, and checks if a pressed button
-            is assigned to any other button than the default one, then it sets the bit on the
-            mapper input bitmap, later on the original input is cleared in input_state */
 
-         for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
-         {
-            current_button_value = BIT256_GET(current_input, j);
-            remap_button = settings->uints.input_remap_ids[i][j];
-            if (current_button_value == 1 && j != remap_button &&
-                remap_button != RARCH_UNMAPPED)
-               BIT256_SET(handle->buttons, remap_button);
-         }
-#if 0
-         /* --CURRENTLY NOT IMPLEMENTED--
-            this loop should iterate on all users and all analog stick axes and if the axes are
-            moved and is assigned to a button or another stick, it should set the bit on the
-            mapper input bitmap. Once implemented we should make sure to clear the original analog 
-            stick input in input_state in input_driver.c */
 
-         for (j = RARCH_FIRST_CUSTOM_BIND; j < RARCH_CUSTOM_BIND_LIST_END; j++)
-         {
 
-         }
-#endif
-      }
-   }
 }
 
 void input_mapper_state(
@@ -221,7 +185,7 @@ void input_mapper_state(
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (input_mapper_button_pressed(handle, id))
+         if (input_mapper_button_pressed(handle, port, id))
             *ret = 1;
          break;
       case RETRO_DEVICE_KEYBOARD:

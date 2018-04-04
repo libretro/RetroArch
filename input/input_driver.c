@@ -1127,6 +1127,35 @@ void input_keys_pressed(void *data, retro_bits_t* p_new_state)
    }
 }
 
+void input_get_state_for_port(void *data, unsigned port, retro_bits_t* p_new_state)
+{
+   unsigned i;
+   rarch_joypad_info_t joypad_info;
+   settings_t              *settings            = (settings_t*)data;
+   const struct retro_keybind *binds            = input_config_binds[port];
+
+   BIT256_CLEAR_ALL_PTR(p_new_state);
+
+   joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
+   joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
+   joypad_info.axis_threshold                   = input_driver_axis_threshold;
+
+   input_driver_block_libretro_input            = false;
+   input_driver_block_hotkey                    = false;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      bool bit_pressed = false;
+
+      if (binds[i].valid && current_input->input_state(current_input_data,
+               joypad_info, &binds, port, RETRO_DEVICE_JOYPAD, 0, i))
+         bit_pressed = true;
+
+      if (bit_pressed)
+         BIT256_SET_PTR(p_new_state, i);
+   }
+}
+
 void *input_driver_get_data(void)
 {
    return current_input_data;
