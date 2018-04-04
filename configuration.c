@@ -1331,6 +1331,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 #endif
 #ifdef HAVE_XMB
    SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, xmb_shadows_enable, false);
+   SETTING_BOOL("xmb_vertical_thumbnails",       &settings->bools.menu_xmb_vertical_thumbnails, true, xmb_vertical_thumbnails, false);
 #endif
 #endif
 #ifdef HAVE_CHEEVOS
