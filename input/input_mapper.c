@@ -110,27 +110,29 @@ void input_mapper_poll(input_mapper_t *handle)
       /* keyboard to gamepad remapping */
       if (device == RETRO_DEVICE_KEYBOARD)
       {
+         input_get_state_for_port(settings, i, &current_input);
          for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
          {
-            if (j < RETROK_LAST)
             {
-               if (input_state(i, RETRO_DEVICE_JOYPAD, 0, j) &&
-                  settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
+               current_button_value = BIT256_GET(current_input, j);
+               remap_button = settings->uints.input_keymapper_ids[i][j];
+               if (current_button_value == 1 && j != remap_button &&
+                  remap_button != RETROK_UNKNOWN)
                {
                   MAPPER_SET_KEY (handle,
-                     settings->uints.input_keymapper_ids[i][j]);
+                     remap_button);
                   input_keyboard_event(true,
-                        settings->uints.input_keymapper_ids[i][j],
+                        remap_button,
                         0, 0, RETRO_DEVICE_KEYBOARD);
                   key_event[j] = true;
                }
                else
                {
                   if (key_event[j] == false &&
-                     settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
+                     remap_button != RETROK_UNKNOWN)
                   {
                      input_keyboard_event(false,
-                           settings->uints.input_keymapper_ids[i][j],
+                           remap_button,
                            0, 0, RETRO_DEVICE_KEYBOARD);
                   }
                }
