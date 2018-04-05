@@ -58,7 +58,7 @@ struct input_mapper
    retro_bits_t buttons[MAX_USERS];
 };
 
-input_mapper_t *input_mapper_new(uint16_t port)
+input_mapper_t *input_mapper_new(void)
 {
    input_mapper_t* handle = (input_mapper_t*)
       calloc(1, sizeof(*handle));
@@ -75,8 +75,6 @@ void input_mapper_free(input_mapper_t *handle)
       return;
    free (handle);
 }
-
-bool flag = false;
 
 bool input_mapper_button_pressed(input_mapper_t *handle, unsigned port, unsigned id)
 {
@@ -108,6 +106,8 @@ void input_mapper_poll(input_mapper_t *handle)
    {
       device = settings->uints.input_libretro_device[i];
       device &= RETRO_DEVICE_MASK;
+
+      /* keyboard to gamepad remapping */
       if (device == RETRO_DEVICE_KEYBOARD)
       {
          for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
@@ -137,7 +137,9 @@ void input_mapper_poll(input_mapper_t *handle)
             }
          }
       }
-      if (device == RETRO_DEVICE_JOYPAD)
+
+      /* gamepad remapping */
+      if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
       {
          /* this loop iterates on all users and all buttons, and checks if a pressed button
             is assigned to any other button than the default one, then it sets the bit on the
@@ -165,9 +167,6 @@ void input_mapper_poll(input_mapper_t *handle)
 #endif
       }
    }
-
-
-
 }
 
 void input_mapper_state(

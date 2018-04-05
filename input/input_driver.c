@@ -34,9 +34,7 @@
 #include "input_remote.h"
 #endif
 
-#ifdef HAVE_KEYMAPPER
 #include "input_mapper.h"
-#endif
 
 #include "input_driver.h"
 #include "input_keymaps.h"
@@ -377,9 +375,7 @@ static command_t *input_driver_command            = NULL;
 #ifdef HAVE_NETWORKGAMEPAD
 static input_remote_t *input_driver_remote        = NULL;
 #endif
-#ifdef HAVE_KEYMAPPER
 static input_mapper_t *input_driver_mapper        = NULL;
-#endif
 static const input_driver_t *current_input        = NULL;
 static void *current_input_data                   = NULL;
 static bool input_driver_block_hotkey             = false;
@@ -605,10 +601,8 @@ void input_poll(void)
             input_driver_axis_threshold);
 #endif
 
-#ifdef HAVE_KEYMAPPER
-   if (input_driver_mapper)
+   if (settings->bools.input_remap_binds_enable && input_driver_mapper)
       input_mapper_poll(input_driver_mapper);
-#endif
 
 #ifdef HAVE_COMMAND
    if (input_driver_command)
@@ -692,11 +686,9 @@ int16_t input_state(unsigned port, unsigned device,
          }
       }
 
-#ifdef HAVE_KEYMAPPER
-      if (input_driver_mapper)
+      if (settings->bools.input_remap_binds_enable && input_driver_mapper)
          input_mapper_state(input_driver_mapper,
                &res, port, device, idx, id);
-#endif
 
 #ifdef HAVE_OVERLAY
       if (overlay_ptr)
@@ -1368,11 +1360,9 @@ void input_driver_deinit_remote(void)
 
 void input_driver_deinit_mapper(void)
 {
-#ifdef HAVE_KEYMAPPER
    if (input_driver_mapper)
       input_mapper_free(input_driver_mapper);
    input_driver_mapper = NULL;
-#endif
 }
 
 bool input_driver_init_remote(void)
@@ -1397,20 +1387,17 @@ bool input_driver_init_remote(void)
 
 bool input_driver_init_mapper(void)
 {
-#ifdef HAVE_KEYMAPPER
    settings_t *settings = config_get_ptr();
 
-   if (!settings->bools.keymapper_enable)
+   if (!settings->bools.input_remap_binds_enable)
       return false;
 
-   input_driver_mapper = input_mapper_new(
-         settings->uints.keymapper_port);
+   input_driver_mapper = input_mapper_new();
 
    if (input_driver_mapper)
       return true;
 
    RARCH_ERR("Failed to initialize input mapper.\n");
-#endif
    return false;
 }
 

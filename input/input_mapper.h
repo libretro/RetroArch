@@ -31,7 +31,7 @@ RETRO_BEGIN_DECLS
 
 typedef struct input_mapper input_mapper_t;
 
-input_mapper_t *input_mapper_new(uint16_t port);
+input_mapper_t *input_mapper_new(void);
 
 void input_mapper_free(input_mapper_t *handle);
 

@@ -533,13 +533,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 
    BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_generic);
 
-#ifdef HAVE_KEYMAPPER
    if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
       && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_kbd_sublabel);
    }
-#endif
 
    if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
       && type <= MENU_SETTINGS_INPUT_DESC_END)

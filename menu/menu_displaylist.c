@@ -3282,7 +3282,6 @@ static int menu_displaylist_parse_options_remappings(
          }
       }
    }
-   #ifdef HAVE_KEYMAPPER
    if (system)
    {
       settings_t *settings = config_get_ptr();
@@ -3325,7 +3324,6 @@ static int menu_displaylist_parse_options_remappings(
          }
       }
    }
-   #endif
 
    return 0;
 }

@@ -581,7 +581,6 @@ static void menu_action_setting_disp_set_label_input_desc(
    strlcpy(s2, path, len2);
 }
 
-#ifdef HAVE_KEYMAPPER
 static void menu_action_setting_disp_set_label_input_desc_kbd(
    file_list_t* list,
    unsigned *w, unsigned type, unsigned i,
@@ -627,7 +626,6 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    *w = 19;
    strlcpy(s2, path, len2);
 }
-#endif
 
 static void menu_action_setting_disp_set_label_cheat(
       file_list_t* list,
@@ -2076,14 +2074,12 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       BIND_ACTION_GET_VALUE(cbs,
          menu_action_setting_disp_set_label_libretro_perf_counters);
    }
-#ifdef HAVE_KEYMAPPER
    else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
       && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
       BIND_ACTION_GET_VALUE(cbs,
          menu_action_setting_disp_set_label_input_desc_kbd);
    }
-#endif
    else
    {
       switch (type)
