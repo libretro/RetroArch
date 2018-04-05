@@ -4187,7 +4187,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
       "Desabilitar o Modo Quiosque"
    )
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-      "Desabilita o Modo Quiosque . É necessária uma reinicialização para que a mudança tenha total efeito."
+      "Desabilita o Modo Quiosque. É necessária uma reinicialização para que a mudança tenha total efeito."
    )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
       "Habilitar o Modo Quiosque"
@@ -4210,11 +4210,11 @@ MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
       "Senha incorreta.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
-      "Notificação Cor Vermelha")
+      "Notificação em Cor Vermelha")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
-      "Notificação Cor Verde")
+      "Notificação em Cor Verde")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
-      "Notificação Cor Azul")
+      "Notificação em Cor Azul")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
       "Mostrar contagem de quadros na tela FPS")
 MSG_HASH(MSG_CONFIG_OVERRIDE_LOADED,
