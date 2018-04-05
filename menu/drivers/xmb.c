@@ -999,7 +999,9 @@ static void xmb_update_thumbnail_path(void *data, unsigned i, char pos)
       xmb_node_t *node = (xmb_node_t*)
          file_list_get_userdata_at_offset(selection_buf, i);
 
-      if (!string_is_empty(node->fullpath))
+      if (!string_is_empty(node->fullpath) && 
+         (pos == 'R' || (pos == 'L' && string_is_equal(xmb_thumbnails_ident('R'),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))))
       {
          if (!string_is_empty(entry.path))
             fill_pathname_join(
@@ -1037,8 +1039,8 @@ static void xmb_update_thumbnail_path(void *data, unsigned i, char pos)
          }
          else
          {
-                  xmb->left_thumbnail              = 0;
-                  goto end;
+            xmb->left_thumbnail              = 0;
+            goto end;
          }
       }
    }
