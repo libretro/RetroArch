@@ -202,13 +202,6 @@ bool secondary_core_create(void)
    if (init_libretro_sym_custom(CORE_TYPE_PLAIN, &secondary_core, secondary_library_path, &secondary_module))
    {
       secondary_core.symbols_inited = true;
-
-      core_set_default_callbacks(&secondary_callbacks);
-      secondary_core.retro_set_video_refresh(secondary_callbacks.frame_cb);
-      secondary_core.retro_set_audio_sample(secondary_callbacks.sample_cb);
-      secondary_core.retro_set_audio_sample_batch(secondary_callbacks.sample_batch_cb);
-      secondary_core.retro_set_input_state(secondary_callbacks.state_cb);
-      secondary_core.retro_set_input_poll(secondary_callbacks.poll_cb);
       secondary_core.retro_set_environment(rarch_environment_secondary_core_hook);
       secondary_core_set_variable_update();
 
@@ -267,6 +260,13 @@ bool secondary_core_create(void)
             secondary_core.retro_set_controller_port_device(port, device);
       }
       clear_controller_port_map();
+
+      core_set_default_callbacks(&secondary_callbacks);
+      secondary_core.retro_set_video_refresh(secondary_callbacks.frame_cb);
+      secondary_core.retro_set_audio_sample(secondary_callbacks.sample_cb);
+      secondary_core.retro_set_audio_sample_batch(secondary_callbacks.sample_batch_cb);
+      secondary_core.retro_set_input_state(secondary_callbacks.state_cb);
+      secondary_core.retro_set_input_poll(secondary_callbacks.poll_cb);
    }
    else
       return false;
