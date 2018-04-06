@@ -181,14 +181,17 @@ static int32_t wiiu_hid_set_report(void *data, uint8_t report_type,
                uint8_t report_id, void *report_data, uint32_t report_length)
 {
    wiiu_adapter_t *adapter = (wiiu_adapter_t *)data;
-   if (!adapter)
+   if (!adapter || report_length > adapter->tx_size)
       return -1;
+
+   memset(adapter->tx_buffer, 0, adapter->tx_size);
+   memcpy(adapter->tx_buffer, report_data, report_length);
 
    return HIDSetReport(adapter->handle,
          report_type,
          report_id,
-         report_data,
-         report_length,
+         adapter->tx_buffer,
+         adapter->tx_size,
          NULL, NULL);
 }
 
@@ -333,10 +336,14 @@ static uint8_t try_init_driver(wiiu_adapter_t *adapter)
 static void synchronized_process_adapters(wiiu_hid_t *hid)
 {
    wiiu_adapter_t *adapter = NULL;
+   wiiu_adapter_t *prev = NULL, *adapter_next = NULL;
+   bool keep_prev = false;
 
    OSFastMutex_Lock(&(adapters.lock));
-   for(adapter = adapters.list; adapter != NULL; adapter = adapter->next)
+   for(adapter = adapters.list; adapter != NULL; adapter = adapter_next)
    {
+     adapter_next = adapter->next;
+
      switch(adapter->state)
      {
        case ADAPTER_STATE_NEW:
@@ -346,10 +353,24 @@ static void synchronized_process_adapters(wiiu_hid_t *hid)
        case ADAPTER_STATE_READING:
        case ADAPTER_STATE_DONE:
           break;
+       case ADAPTER_STATE_GC:
+          /* remove from the list */
+          if(prev == NULL)
+             adapters.list = adapter->next;
+          else
+             prev->next = adapter->next;
+
+          /* adapter is no longer valid after this point */
+          delete_adapter(adapter);
+          /* signal not to update prev ptr since adapter is now invalid */
+          keep_prev = true;
+          break;
        default:
           RARCH_ERR("[hid]: Invalid adapter state: %d\n", adapter->state);
           break;
      }
+     prev = keep_prev ? prev : adapter;
+     keep_prev = false;
    }
    OSFastMutex_Unlock(&(adapters.lock));
 }
@@ -373,23 +394,15 @@ static wiiu_attach_event *synchronized_get_events_list(void)
    return list;
 }
 
-static wiiu_adapter_t *synchronized_remove_from_adapters_list(uint32_t handle)
+static wiiu_adapter_t *synchronized_lookup_adapter(uint32_t handle)
 {
    OSFastMutex_Lock(&(adapters.lock));
-   wiiu_adapter_t *iterator, *prev = NULL;
+   wiiu_adapter_t *iterator;
 
    for(iterator = adapters.list; iterator != NULL; iterator = iterator->next)
    {
       if(iterator->handle == handle)
-      {
-         /* we're at the start of the list, so just re-assign head */
-         if(prev == NULL)
-           adapters.list = iterator->next;
-         else
-           prev->next = iterator->next;
          break;
-      }
-      prev = iterator;
    }
    OSFastMutex_Unlock(&(adapters.lock));
 
@@ -434,12 +447,13 @@ error:
 
 static void wiiu_hid_detach(wiiu_hid_t *hid, wiiu_attach_event *event)
 {
-   wiiu_adapter_t *adapter = synchronized_remove_from_adapters_list(event->handle);
+   wiiu_adapter_t *adapter = synchronized_lookup_adapter(event->handle);
 
-   if(adapter) {
-      RARCH_LOG("[hid]: freeing detached pad\n");
-      delete_adapter(adapter);
-   }
+   /* this will signal the read loop to stop for this adapter
+    * the read loop method will update this to ADAPTER_STATE_GC
+    * so the adapter poll method can clean it up. */
+   if(adapter)
+      adapter->state = ADAPTER_STATE_DONE;
 }
 
 
@@ -495,20 +509,21 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
       adapter->state == ADAPTER_STATE_READING) {
 
       adapter->state = ADAPTER_STATE_READING;
-
-      if(error)
-      {
-         int16_t r1 =  (error & 0x0000FFFF);
-         int16_t r2 = ((error & 0xFFFF0000) >> 16);
-         RARCH_ERR("[hid]: read failed: %08x (%d:%d)\n", error, r2, r1);
-      } else {
-         adapter->driver->handle_packet(adapter->driver_handle, buffer, buffer_size);
+      /* "error" usually is something benign like "device not ready", at
+       * least from my own experiments. Just ignore the error and retry
+       * the read. */
+      if(error == 0) {
+         adapter->driver->handle_packet(adapter->driver_handle,
+            buffer, buffer_size);
       }
    }
 
    /* this can also get set if something goes wrong in initialization */
    if(adapter->state == ADAPTER_STATE_DONE)
+   {
+      adapter->state = ADAPTER_STATE_GC;
       return;
+   }
 
    HIDRead(adapter->handle, adapter->rx_buffer, adapter->rx_size,
       wiiu_hid_read_loop_callback, adapter);
@@ -597,7 +612,6 @@ static void wiiu_handle_ready_adapters(wiiu_hid_t *hid)
 static int wiiu_hid_polling_thread(int argc, const char **argv)
 {
    wiiu_hid_t *hid = (wiiu_hid_t *)argv;
-   int i           = 0;
 
    RARCH_LOG("[hid]: polling thread is starting\n");
 
@@ -606,9 +620,6 @@ static int wiiu_hid_polling_thread(int argc, const char **argv)
       wiiu_handle_attach_events(hid, synchronized_get_events_list());
       wiiu_handle_ready_adapters(hid);
       usleep(10000);
-      i += 10000;
-      if(i >= (1000 * 1000 * 3))
-         i = 0;
    }
 
    RARCH_LOG("[hid]: polling thread is stopping\n");
@@ -713,7 +724,6 @@ static wiiu_attach_event *new_attach_event(HIDDevice *device)
         device->vid, device->pid);
       return NULL;
    }
-   RARCH_LOG("[hid]: Found HID device driver: %s\n", driver->name);
    wiiu_attach_event *event = alloc_zeroed(4, sizeof(wiiu_attach_event));
    if(!event)
       return NULL;

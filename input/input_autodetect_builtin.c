@@ -250,6 +250,25 @@ DECL_AXIS_EX(r_x_minus, -3, "C-stick left") \
 DECL_AXIS_EX(r_y_plus,  +2, "C-stick up") \
 DECL_AXIS_EX(r_y_minus, -2, "C-stick down")
 
+#define WIIUINPUT_DS3_DEFAULT_BINDS \
+DECL_BTN_EX(menu_toggle, 16, "Playstation") \
+DECL_BTN_EX(select, 2, "Select") \
+DECL_BTN_EX(start,  3, "Start") \
+DECL_BTN_EX(a, 8, "Circle") \
+DECL_BTN_EX(y, 1, "Triangle") \
+DECL_BTN_EX(b, 0, "Cross") \
+DECL_BTN_EX(x, 9, "Square") \
+DECL_BTN_EX(r, 11, "R1") \
+DECL_BTN_EX(l, 10, "L1") \
+DECL_BTN_EX(r2, 13, "R2") \
+DECL_BTN_EX(l2, 12, "L2") \
+DECL_BTN_EX(up, 4, "D-Pad Up") \
+DECL_BTN_EX(down, 5, "D-Pad Down") \
+DECL_BTN_EX(left, 6, "D-Pad left") \
+DECL_BTN_EX(right, 7, "D-Pad Right") \
+DECL_BTN_EX(r3, 15, "R3") \
+DECL_BTN_EX(l3, 14, "L3")
+
 #define WIIUINPUT_GAMEPAD_DEFAULT_BINDS \
 DECL_BTN_EX(menu_toggle,  1, "Home") \
 DECL_BTN_EX(select,       2, "-") \
@@ -635,7 +654,7 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE(PAD_NAME_CLASSIC, "wiiu", WIIUINPUT_CLASSIC_CONTROLLER_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE(PAD_NAME_HID, "wiiu", WIIUINPUT_GAMEPAD_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("GameCube Controller", "wiiu", WIIUINPUT_GAMECUBE_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("Sony DualShock 3", "wiiu", PS3INPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Sony DualShock 3", "wiiu", WIIUINPUT_DS3_DEFAULT_BINDS),
 #endif
 #ifdef __CELLOS_LV2__
    DECL_AUTOCONF_DEVICE("SixAxis Controller", "ps3", PS3INPUT_DEFAULT_BINDS),

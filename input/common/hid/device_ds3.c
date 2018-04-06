@@ -78,9 +78,11 @@ static void print_error(const char *fmt, int32_t errcode)
   RARCH_ERR(fmt, err1, err2);
 }
 
-static uint32_t send_activation_packet(ds3_instance_t *instance)
+static void update_pad_state(ds3_instance_t *instance);
+
+static int32_t send_activation_packet(ds3_instance_t *instance)
 {
-   uint32_t result;
+   int32_t result;
 #if defined(WIIU)
    result = HID_SET_REPORT(instance->handle,
                   HID_REPORT_FEATURE,
@@ -91,8 +93,9 @@ static uint32_t send_activation_packet(ds3_instance_t *instance)
    HID_SEND_CONTROL(instance->handle,
                     activation_packet, sizeof(activation_packet));
 #endif
-   if(result)
+   if(result < 0)
       print_error("[ds3]: activation packet failed (%d:%d)\n", result);
+
    return result;
 }
 
@@ -100,18 +103,18 @@ static uint32_t set_protocol(ds3_instance_t *instance, int protocol)
 {
    uint32_t result = 0;
 #if defined(WIIU)
-   result = HID_SET_PROTOCOL(1);
+   result = HID_SET_PROTOCOL(instance->handle, 1);
    if(result)
       print_error("[ds3]: set protocol failed (%d:%d)\n", result);
-
 #endif
+
    return result;
 }
 
-static uint32_t send_control_packet(ds3_instance_t *instance)
+static int32_t send_control_packet(ds3_instance_t *instance)
 {
    uint8_t packet_buffer[control_packet_size];
-   uint32_t result = 0;
+   int32_t result = 0;
    memcpy(packet_buffer, control_packet, control_packet_size);
 
    packet_buffer[LED_OFFSET] = 0;
@@ -131,7 +134,7 @@ static uint32_t send_control_packet(ds3_instance_t *instance)
                   DS3_RUMBLE_REPORT_ID,
                   packet_buffer+PACKET_OFFSET,
                   control_packet_size-PACKET_OFFSET);
-   if(result)
+   if(result < 0)
       print_error("[ds3]: send control packet failed: (%d:%d)\n", result);
 #else
    HID_SEND_CONTROL(instance->handle,
@@ -152,14 +155,18 @@ static void *ds3_init(void *handle)
 
    instance->handle = handle;
 
-   RARCH_LOG("[ds3]: sending activation packet\n");
-   if(send_activation_packet(instance))
-      errors++;
+/* maybe not necessary? */
+/*
    RARCH_LOG("[ds3]: setting protocol\n");
    if(set_protocol(instance, 1))
       errors++;
+*/
    RARCH_LOG("[ds3]: sending control packet\n");
-   if(send_control_packet(instance))
+   if(send_control_packet(instance) < 0)
+      errors++;
+
+   RARCH_LOG("[ds3]: sending activation packet\n");
+   if(send_activation_packet(instance) < 0)
       errors++;
 
    if(errors)
@@ -245,11 +252,10 @@ static void ds3_get_buttons(void *data, retro_bits_t *state)
 static void ds3_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
    ds3_instance_t *instance = (ds3_instance_t *)data;
-   RARCH_LOG_BUFFER(packet, size);
 
-   if(!instance->led_set)
+   if(instance->pad && !instance->led_set)
    {
-      send_activation_packet(instance);
+      send_control_packet(instance);
       instance->led_set = true;
    }
 
@@ -261,7 +267,41 @@ static void ds3_packet_handler(void *data, uint8_t *packet, uint16_t size)
    }
 
    memcpy(instance->data, packet, size);
+   update_pad_state(instance);
+}
+
+static void update_pad_state(ds3_instance_t *instance)
+{
+   uint32_t i, pressed_keys;
+
+   static const uint32_t button_mapping[17] =
+   {
+      RETRO_DEVICE_ID_JOYPAD_SELECT,
+      RETRO_DEVICE_ID_JOYPAD_L3,
+      RETRO_DEVICE_ID_JOYPAD_R3,
+      RETRO_DEVICE_ID_JOYPAD_START,
+      RETRO_DEVICE_ID_JOYPAD_UP,
+      RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_LEFT,
+      RETRO_DEVICE_ID_JOYPAD_L2,
+      RETRO_DEVICE_ID_JOYPAD_R2,
+      RETRO_DEVICE_ID_JOYPAD_L,
+      RETRO_DEVICE_ID_JOYPAD_R,
+      RETRO_DEVICE_ID_JOYPAD_X,
+      RETRO_DEVICE_ID_JOYPAD_A,
+      RETRO_DEVICE_ID_JOYPAD_B,
+      RETRO_DEVICE_ID_JOYPAD_Y,
+      16 /* PS button */
+   };
+
    instance->buttons = 0;
+
+   pressed_keys = instance->data[2]|(instance->data[3] << 8)|((instance->data[4] & 0x01) << 16);
+
+   for(i = 0; i < 17; i++)
+     instance->buttons |= (pressed_keys & (1 << i)) ?
+        (1 << button_mapping[i]) : 0;
 }
 
 static void ds3_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength)
@@ -272,7 +312,14 @@ static void ds3_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t
 static int16_t ds3_get_axis(void *data, unsigned axis)
 {
    ds3_instance_t *pad = (ds3_instance_t *)data;
-   return 0;
+   int16_t val;
+
+   if(!pad || axis >= 4)
+      return 0;
+
+   val = (pad->data[6+axis] << 8) - 0x8000;
+//   val = (pad->data[7+axis] << 8) - 0x8000;
+   return (val > 0x1000 || val < -0x1000) ? 0 : val;
 }
 
 static const char *ds3_get_name(void *data)
@@ -284,7 +331,10 @@ static const char *ds3_get_name(void *data)
 static bool ds3_button(void *data, uint16_t joykey)
 {
    ds3_instance_t *pad = (ds3_instance_t *)data;
-   return false;
+   if(!pad || joykey > 31)
+      return false;
+
+   return pad->buttons & (1 << joykey);
 }
 
 pad_connection_interface_t ds3_pad_connection = {

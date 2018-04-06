@@ -24,10 +24,16 @@
 #define DEVICE_UNUSED 0
 #define DEVICE_USED   1
 
+/* Adapter has been detected and needs to be initialized */
 #define ADAPTER_STATE_NEW     0
+/* Adapter has been initialized successfully */
 #define ADAPTER_STATE_READY   1
+/* The read loop has been started */
 #define ADAPTER_STATE_READING 2
+/* The read loop is shutting down */
 #define ADAPTER_STATE_DONE    3
+/* The read loop has fully stopped and the adapter can be freed */
+#define ADAPTER_STATE_GC      4
 
 struct wiiu_hid {
    /* used to register for HID notifications */
