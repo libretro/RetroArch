@@ -3135,9 +3135,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       xmb->savestate_thumbnail);
    }
 
-   menu_display_blend_end(video_info);
-   menu_display_blend_begin(video_info);
-
    /* Right thumbnail big size */
    if (!settings->bools.menu_xmb_vertical_thumbnails || 
       (settings->bools.menu_xmb_vertical_thumbnails && !xmb->left_thumbnail))
@@ -3206,9 +3203,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          }
       }
    }
-
-   menu_display_blend_end(video_info);
-   menu_display_blend_begin(video_info);
 
    /* Left thumbnail in the left margin */
    /* Do not draw the left thumbnail if there is no space available */
@@ -3283,9 +3277,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
-   menu_display_blend_end(video_info);
-   menu_display_blend_begin(video_info);
-
    /* No Right Thumbnail, draw only the left one big size */
    if (settings->bools.menu_xmb_vertical_thumbnails && !xmb->thumbnail)
    {
@@ -3353,9 +3344,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          }
       }
    }
-
-   menu_display_blend_end(video_info);
-   menu_display_blend_begin(video_info);
 
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
@@ -3482,7 +3470,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             &coord_white[0],
             xmb->shadow_offset);
 
-   menu_display_blend_end(video_info);
    menu_display_blend_begin(video_info);
 
    /* Horizontal tab icons */
@@ -3535,14 +3522,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
-   menu_display_blend_end(video_info);
-   menu_display_blend_begin(video_info);
-
    /* Right side 2 thumbnails on top of each other */
    /* here to be displayed above the horizontal icons */
-   /* Do not draw the right thumbnail if there is no space available */
    if (xmb->left_thumbnail && xmb->thumbnail &&  settings->bools.menu_xmb_vertical_thumbnails)
    {
+      /* Do not draw the right thumbnail if there is no space available */
       if (((xmb->margins_screen_top +
          xmb->icon_size + min_thumb_size) <= height) &&
          ((xmb->margins_screen_left * scale_mod[5] +
@@ -3672,7 +3656,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    menu_display_blend_end(video_info);
-   menu_display_blend_begin(video_info);
 
    /* Vertical icons */
    if (xmb)
@@ -3700,8 +3683,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             &item_color[0],
             width,
             height);
-
-   menu_display_blend_end(video_info);
 
    font_driver_flush(video_info->width, video_info->height, xmb->font,
          video_info);
