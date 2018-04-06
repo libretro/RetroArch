@@ -2500,6 +2500,7 @@ static int xmb_draw_item(
    unsigned ticker_limit             = 35 * scale_mod[0];
    xmb_node_t *   node               = (xmb_node_t*)
       file_list_get_userdata_at_offset(list, i);
+   settings_t *settings              = config_get_ptr();
 
    if (!node)
       goto iterate;
@@ -2591,7 +2592,12 @@ static int xmb_draw_item(
             (!string_is_equal
              (thumb_ident,
               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
-             && xmb->thumbnail)
+             && xmb->thumbnail) ||
+             (!string_is_equal
+             (left_thumb_ident,
+              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
+             && xmb->left_thumbnail
+             && settings->bools.menu_xmb_vertical_thumbnails)
          )
          ticker_limit = 40 * scale_mod[1];
       else
