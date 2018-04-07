@@ -367,22 +367,28 @@ static bool runahead_save_state(void)
    okay = core_serialize(serialize_info);
    unset_fast_savestate();
    if (!okay)
+   {
       runahead_error();
-   return okay;
+      return false;
+   }
+   return true;
 }
 
 static bool runahead_load_state(void)
 {
+   bool okay                                  = false;
    retro_ctx_serialize_info_t *serialize_info = (retro_ctx_serialize_info_t*)
       runahead_save_state_list->data[0];
-   bool lastDirty = input_is_dirty;
-   bool okay;
+   bool last_dirty                            = input_is_dirty;
+
    set_fast_savestate();
-   /* calling core_unserialize has side effects with netplay (it triggers transmitting your save state)
+   /* calling core_unserialize has side effects with 
+    * netplay (it triggers transmitting your save state)
       call retro_unserialize directly from the core instead */
-   okay = current_core.retro_unserialize(serialize_info->data_const, serialize_info->size);
+   okay = current_core.retro_unserialize(
+         serialize_info->data_const, serialize_info->size);
    unset_fast_savestate();
-   input_is_dirty = lastDirty;
+   input_is_dirty = last_dirty;
 
    if (!okay)
       runahead_error();
@@ -392,25 +398,32 @@ static bool runahead_load_state(void)
 
 static bool runahead_load_state_secondary(void)
 {
+   bool okay                                  = false;
    retro_ctx_serialize_info_t *serialize_info =
       (retro_ctx_serialize_info_t*)runahead_save_state_list->data[0];
-   bool okay;
+
    set_fast_savestate();
-   okay = secondary_core_deserialize(serialize_info->data_const, serialize_info->size);
+   okay = secondary_core_deserialize(
+         serialize_info->data_const, serialize_info->size);
    unset_fast_savestate();
 
    if (!okay)
+   {
       runahead_secondary_core_available = false;
+      return false;
+   }
 
-   return okay;
+   return true;
 }
 
 static bool runahead_run_secondary(void)
 {
-   bool okay = secondary_core_run_no_input_polling();
-   if (!okay)
+   if (!secondary_core_run_no_input_polling())
+   {
       runahead_secondary_core_available = false;
-   return okay;
+      return false;
+   }
+   return true;
 }
 
 static void runahead_suspend_audio(void)
