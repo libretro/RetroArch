@@ -22,18 +22,29 @@ static void free_retro_game_info(struct retro_game_info *dest)
 static struct retro_game_info* clone_retro_game_info(const 
       struct retro_game_info *src)
 {
+   void *data                   = NULL;
    struct retro_game_info *dest = NULL;
+
    if (!src)
       return NULL;
+
    dest       = (struct retro_game_info*)calloc(1,
          sizeof(struct retro_game_info));
    if (!dest)
       return NULL;
 
-   dest->path = strcpy_alloc(src->path);
-   dest->data = memcpy_alloc(src->data, src->size);
-   dest->size = src->size;
-   dest->meta = strcpy_alloc(src->meta);
+   dest->data    = NULL;
+   dest->path    = strcpy_alloc(src->path);
+
+   data          = malloc(src->size);
+
+   if (data)
+   {
+      memcpy(data, src->data, src->size);
+      dest->data = data;
+   }
+   dest->size    = src->size;
+   dest->meta    = strcpy_alloc(src->meta);
 
    return dest;
 }
