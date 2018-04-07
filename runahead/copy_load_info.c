@@ -62,26 +62,41 @@ static void free_string_list(struct string_list *dest)
    FREE(dest->elems);
 }
 
-static struct string_list* clone_string_list(const struct string_list *src)
+static struct string_list *clone_string_list(const struct string_list *src)
 {
    unsigned i;
-   struct string_list *dest = NULL;
+   struct string_list_elem *elems = NULL;
+   struct string_list *dest       = NULL;
 
    if (!src)
       return NULL;
 
-   dest         = (struct string_list*)
+   dest            = (struct string_list*)
       calloc(1, sizeof(struct string_list));
-   dest->size   = src->size;
-   dest->cap    = src->cap;
-   dest->elems  = (struct string_list_elem*)
+
+   if (!dest)
+      return NULL;
+
+   dest->size      = src->size;
+   dest->cap       = src->cap;
+
+   elems           = (struct string_list_elem*)
       calloc(dest->size, sizeof(struct string_list_elem));
+
+   if (!elems)
+   {
+      free(dest);
+      return NULL;
+   }
+
+   dest->elems     = elems;
 
    for (i = 0; i < src->size; i++)
    {
       dest->elems[i].data = strcpy_alloc(src->elems[i].data);
       dest->elems[i].attr = src->elems[i].attr;
    }
+
    return dest;
 }
 
