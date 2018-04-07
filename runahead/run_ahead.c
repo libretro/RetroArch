@@ -28,6 +28,7 @@ static void unset_fast_savestate(void);
 static void set_hard_disable_audio(void);
 static void unset_hard_disable_audio(void);
 
+/* TODO/FIXME - shouldn't this be signed size_t? */
 static size_t runahead_save_state_size = -1;
 
 /* Save State List for Run Ahead */
@@ -197,19 +198,18 @@ static void runahead_check_for_gui(void)
    runahead_last_frame_count = frame_count;
 }
 
-void run_ahead(int runAheadCount, bool useSecondary)
+void run_ahead(int runahead_count, bool useSecondary)
 {
-   int frameNumber;
-   bool okay;
-   bool lastFrame;
-   bool suspendedFrame;
+   int frame_number        = 0;
+   bool last_frame         = false;
+   bool suspended_frame    = false;
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-   const bool haveDynamic = true;
+   const bool have_dynamic = true;
 #else
-   const bool haveDynamic = false;
+   const bool have_dynamic = false;
 #endif
 
-   if (runAheadCount <= 0 || !runahead_available)
+   if (runahead_count <= 0 || !runahead_available)
    {
       core_run();
       runahead_force_input_dirty = true;
@@ -220,7 +220,8 @@ void run_ahead(int runAheadCount, bool useSecondary)
    {
       if (!runahead_create())
       {
-         /* RunAhead has been disabled because the core does not support savestates. */
+         /* RunAhead has been disabled because the core 
+          * does not support savestates. */
          core_run();
          runahead_force_input_dirty = true;
          return;
@@ -229,41 +230,44 @@ void run_ahead(int runAheadCount, bool useSecondary)
 
    runahead_check_for_gui();
 
-   if (!useSecondary || !haveDynamic || !runahead_secondary_core_available)
+   if (!useSecondary || !have_dynamic || !runahead_secondary_core_available)
    {
-      /* TODO: multiple savestates for higher performance when not using secondary core */
-      for (frameNumber = 0; frameNumber <= runAheadCount; frameNumber++)
+      /* TODO: multiple savestates for higher performance 
+       * when not using secondary core */
+      for (frame_number = 0; frame_number <= runahead_count; frame_number++)
       {
-         lastFrame      = frameNumber == runAheadCount;
-         suspendedFrame = !lastFrame;
+         last_frame      = frame_number == runahead_count;
+         suspended_frame = !last_frame;
 
-         if (suspendedFrame)
+         if (suspended_frame)
          {
             runahead_suspend_audio();
             runahead_suspend_video();
          }
 
-         if (frameNumber == 0)
+         if (frame_number == 0)
             core_run();
          else
             core_run_no_input_polling();
 
-         if (suspendedFrame)
+         if (suspended_frame)
          {
             runahead_resume_video();
             runahead_resume_audio();
          }
 
-         if (frameNumber == 0)
+         if (frame_number == 0)
          {
-            /* RunAhead has been disabled due to save state failure */
+            /* RunAhead has been disabled due 
+             * to save state failure */
             if (!runahead_save_state())
                return;
          }
 
-         if (lastFrame)
+         if (last_frame)
          {
-            /* RunAhead has been disabled due to load state failure */
+            /* RunAhead has been disabled due 
+             * to load state failure */
             if (!runahead_load_state())
                return;
          }
@@ -272,6 +276,8 @@ void run_ahead(int runAheadCount, bool useSecondary)
    else
    {
 #if HAVE_DYNAMIC
+      bool okay = false;
+
       /* run main core with video suspended */
       runahead_suspend_video();
       core_run();
@@ -291,7 +297,8 @@ void run_ahead(int runAheadCount, bool useSecondary)
          if (!runahead_load_state_secondary())
             return;
 
-         for (frame_count = 0; frame_count < (unsigned)(runAheadCount - 1); frame_count++)
+         for (frame_count = 0; frame_count < 
+               (unsigned)(runahead_count - 1); frame_count++)
          {
             runahead_suspend_video();
             runahead_suspend_audio();
@@ -353,9 +360,9 @@ static bool runahead_create(void)
 
 static bool runahead_save_state(void)
 {
+   bool okay                                  = false;
    retro_ctx_serialize_info_t *serialize_info =
       (retro_ctx_serialize_info_t*)runahead_save_state_list->data[0];
-   bool okay;
    set_fast_savestate();
    okay = core_serialize(serialize_info);
    unset_fast_savestate();

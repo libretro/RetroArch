@@ -87,7 +87,6 @@ char* get_temp_directory_alloc(void)
 
 char* copy_core_to_temp_file(void)
 {
-   bool okay                = false;
    char *tempDirectory      = NULL;
    char *retroarchTempPath  = NULL;
    char *tempDllPath        = NULL;
@@ -146,7 +145,6 @@ bool write_file_with_random_name(char **tempDllPath,
 {
    unsigned i;
    char numberBuf[32];
-   bool okay                = false;
    const char *prefix       = "tmp";
    time_t timeValue         = time(NULL);
    unsigned int numberValue = (unsigned int)timeValue;
@@ -298,8 +296,7 @@ bool secondary_core_run_no_input_polling(void)
 {
    if (!secondary_module)
    {
-      bool okay = secondary_core_create();
-      if (!okay)
+      if (!secondary_core_create())
          return false;
    }
    secondary_core.retro_run();
@@ -310,8 +307,7 @@ bool secondary_core_deserialize(const void *buffer, int size)
 {
    if (!secondary_module)
    {
-      bool okay = secondary_core_create();
-      if (!okay)
+      if (!secondary_core_create())
       {
          secondary_core_destroy();
          return false;
