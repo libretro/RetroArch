@@ -379,6 +379,9 @@ void secondary_core_set_variable_update(void)
 {
    /* do nothing */
 }
-
+void clear_controller_port_map(void)
+{
+   /* do nothing */
+}
 #endif
 
