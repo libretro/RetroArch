@@ -203,7 +203,7 @@ void run_ahead(int runAheadCount, bool useSecondary)
    bool okay;
    bool lastFrame;
    bool suspendedFrame;
-#if defined(HAVE_DYNAMIC) && HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    const bool haveDynamic = true;
 #else
    const bool haveDynamic = false;
