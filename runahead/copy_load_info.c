@@ -12,7 +12,7 @@ enum rarch_core_type last_core_type;
 
 static void free_retro_game_info(struct retro_game_info *dest)
 {
-   if (dest == NULL)
+   if (!dest)
       return;
    FREE(dest->path);
    FREE(dest->data);
@@ -22,15 +22,19 @@ static void free_retro_game_info(struct retro_game_info *dest)
 static struct retro_game_info* clone_retro_game_info(const 
       struct retro_game_info *src)
 {
-   struct retro_game_info *dest;
-   if (src == NULL)
+   struct retro_game_info *dest = NULL;
+   if (!src)
       return NULL;
    dest       = (struct retro_game_info*)calloc(1,
          sizeof(struct retro_game_info));
+   if (!dest)
+      return NULL;
+
    dest->path = strcpy_alloc(src->path);
    dest->data = memcpy_alloc(src->data, src->size);
    dest->size = src->size;
    dest->meta = strcpy_alloc(src->meta);
+
    return dest;
 }
 
@@ -55,10 +59,12 @@ static struct string_list* clone_string_list(const struct string_list *src)
    if (!src)
       return NULL;
 
-   dest         = (struct string_list*)calloc(1, sizeof(struct string_list));
+   dest         = (struct string_list*)
+      calloc(1, sizeof(struct string_list));
    dest->size   = src->size;
    dest->cap    = src->cap;
-   dest->elems  = (struct string_list_elem*)calloc(dest->size, sizeof(struct string_list_elem));
+   dest->elems  = (struct string_list_elem*)
+      calloc(dest->size, sizeof(struct string_list_elem));
 
    for (i = 0; i < src->size; i++)
    {
@@ -74,7 +80,8 @@ static struct string_list* clone_string_list(const struct string_list *src)
 static void free_retro_subsystem_memory_info(struct 
       retro_subsystem_memory_info *dest)
 {
-   if (dest == NULL) return;
+   if (!dest)
+      return;
    FREE(dest->extension);
 }
 
@@ -90,7 +97,7 @@ static void free_retro_subsystem_rom_info(struct
       retro_subsystem_rom_info *dest)
 {
    int i;
-   if (dest == NULL)
+   if (!dest)
       return;
 
    FREE(dest->desc);
@@ -130,7 +137,7 @@ static void free_retro_subsystem_info(struct retro_subsystem_info *dest)
 {
    int i;
 
-   if (dest == NULL)
+   if (!dest)
       return;
 
    FREE(dest->desc);
@@ -150,7 +157,7 @@ static retro_subsystem_info* clone_retro_subsystem_info(struct
    retro_subsystem_info *dest     = NULL;
    retro_subsystem_rom_info *roms = NULL;
 
-   if (src == NULL)
+   if (!src)
       return NULL;
    dest           = (struct retro_subsystem_info*)calloc(1,
          sizeof(struct retro_subsystem_info));
@@ -172,7 +179,7 @@ static retro_subsystem_info* clone_retro_subsystem_info(struct
 static void free_retro_ctx_load_content_info(struct 
       retro_ctx_load_content_info *dest)
 {
-   if (dest == NULL)
+   if (!dest)
       return;
 
    free_retro_game_info(dest->info);
@@ -190,8 +197,8 @@ static struct retro_ctx_load_content_info
 *clone_retro_ctx_load_content_info(
       const struct retro_ctx_load_content_info *src)
 {
-   struct retro_ctx_load_content_info *dest;
-   if (src == NULL || src->special != NULL)
+   struct retro_ctx_load_content_info *dest = NULL;
+   if (!src || src->special != NULL)
       return NULL;   /* refuse to deal with the Special field */
 
    dest          = (struct retro_ctx_load_content_info*)calloc(1,

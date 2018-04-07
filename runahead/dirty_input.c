@@ -8,8 +8,8 @@
 #include "mylist.h"
 #include "mem_util.h"
 
-bool input_is_dirty;
-static MyList *inputStateList;
+bool input_is_dirty             = false;
+static MyList *input_state_list = NULL;
 
 typedef struct InputListElement_t
 {
@@ -41,22 +41,23 @@ static void* InputListElementConstructor(void)
 
 static void input_state_destory(void)
 {
-   mylist_destroy(&inputStateList);
+   mylist_destroy(&input_state_list);
 }
 
-static void input_state_setlast(unsigned port, unsigned device,
+static void input_state_set_last(unsigned port, unsigned device,
       unsigned index, unsigned id, int16_t value)
 {
-   int i;
-   InputListElement *element;
+   unsigned i;
+   InputListElement *element = NULL;
 
-   if (!inputStateList)
-      mylist_create(&inputStateList, 16, InputListElementConstructor, free);
+   if (!input_state_list)
+      mylist_create(&input_state_list, 16,
+            InputListElementConstructor, free);
 
    /* find list item */
-   for (i = 0; i < inputStateList->size; i++)
+   for (i = 0; i < input_state_list->size; i++)
    {
-      element = (InputListElement*)inputStateList->data[i];
+      element = (InputListElement*)input_state_list->data[i];
       if (     element->port == port 
             && element->device == device && element->index == index)
       {
@@ -64,40 +65,49 @@ static void input_state_setlast(unsigned port, unsigned device,
          return;
       }
    }
-   element = (InputListElement*)mylist_add_element(inputStateList);
-   element->port = port;
-   element->device = device;
-   element->index = index;
+
+   element            = (InputListElement*)
+      mylist_add_element(input_state_list);
+   element->port      = port;
+   element->device    = device;
+   element->index     = index;
    element->state[id] = value;
 }
 
-static int16_t input_state_getlast(unsigned port, unsigned device, unsigned index, unsigned id)
+static int16_t input_state_get_last(unsigned port,
+      unsigned device, unsigned index, unsigned id)
 {
-   int i;
-   InputListElement *element = NULL;
+   unsigned i;
 
-   if (!inputStateList)
+   if (!input_state_list)
       return 0;
 
    /* find list item */
-   for (i = 0; i < inputStateList->size; i++)
+   for (i = 0; i < input_state_list->size; i++)
    {
-      element = (InputListElement*)inputStateList->data[i];
-      if (element->port == port && element->device == device && element->index == index)
+      InputListElement *element = 
+         (InputListElement*)input_state_list->data[i];
+
+      if (  (element->port   == port)   && 
+            (element->device == device) &&
+            (element->index  == index)
+         )
          return element->state[id];
    }
    return 0;
 }
 
-static int16_t input_state_with_logging(unsigned port, unsigned device, unsigned index, unsigned id)
+static int16_t input_state_with_logging(unsigned port,
+      unsigned device, unsigned index, unsigned id)
 {
-   if (input_state_callback_original != NULL)
+   if (input_state_callback_original)
    {
-      int16_t result = input_state_callback_original(port, device, index, id);
-      int16_t lastInput = input_state_getlast(port, device, index, id);
-      if (result != lastInput)
+      int16_t result     = input_state_callback_original(
+            port, device, index, id);
+      int16_t last_input = input_state_get_last(port, device, index, id);
+      if (result != last_input)
          input_is_dirty = true;
-      input_state_setlast(port, device, index, id, result);
+      input_state_set_last(port, device, index, id, result);
       return result;
    }
    return 0;
@@ -120,41 +130,45 @@ static bool unserialze_hook(const void *buf, size_t size)
 
 void add_input_state_hook(void)
 {
-   if (input_state_callback_original == NULL)
+   if (!input_state_callback_original)
    {
       input_state_callback_original = retro_ctx.state_cb;
-      retro_ctx.state_cb = input_state_with_logging;
+      retro_ctx.state_cb            = input_state_with_logging;
       current_core.retro_set_input_state(retro_ctx.state_cb);
    }
-   if (retro_reset_callback_original == NULL)
+
+   if (!retro_reset_callback_original)
    {
       retro_reset_callback_original = current_core.retro_reset;
-      current_core.retro_reset = reset_hook;
+      current_core.retro_reset      = reset_hook;
    }
-   if (retro_unserialize_callback_original == NULL)
+
+   if (!retro_unserialize_callback_original)
    {
       retro_unserialize_callback_original = current_core.retro_unserialize;
-      current_core.retro_unserialize = unserialze_hook;
+      current_core.retro_unserialize      = unserialze_hook;
    }
 }
 
 void remove_input_state_hook(void)
 {
-   if (input_state_callback_original != NULL)
+   if (input_state_callback_original)
    {
-      retro_ctx.state_cb = input_state_callback_original;
+      retro_ctx.state_cb            = input_state_callback_original;
       current_core.retro_set_input_state(retro_ctx.state_cb);
       input_state_callback_original = NULL;
       input_state_destory();
    }
-   if (retro_reset_callback_original != NULL)
+
+   if (retro_reset_callback_original)
    {
-      current_core.retro_reset = retro_reset_callback_original;
+      current_core.retro_reset      = retro_reset_callback_original;
       retro_reset_callback_original = NULL;
    }
-   if (retro_unserialize_callback_original != NULL)
+
+   if (retro_unserialize_callback_original)
    {
-      current_core.retro_unserialize = retro_unserialize_callback_original;
+      current_core.retro_unserialize      = retro_unserialize_callback_original;
       retro_unserialize_callback_original = NULL;
    }
 }
