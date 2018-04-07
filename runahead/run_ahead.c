@@ -203,6 +203,11 @@ void run_ahead(int runAheadCount, bool useSecondary)
    bool okay;
    bool lastFrame;
    bool suspendedFrame;
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   const bool haveDynamic = true;
+#else
+   const bool haveDynamic = false;
+#endif
 
    if (runAheadCount <= 0 || !runahead_available)
    {
@@ -224,7 +229,7 @@ void run_ahead(int runAheadCount, bool useSecondary)
 
    runahead_check_for_gui();
 
-   if (!useSecondary || !HAVE_DYNAMIC || !runahead_secondary_core_available)
+   if (!useSecondary || !haveDynamic || !runahead_secondary_core_available)
    {
       /* TODO: multiple savestates for higher performance when not using secondary core */
       for (frameNumber = 0; frameNumber <= runAheadCount; frameNumber++)
