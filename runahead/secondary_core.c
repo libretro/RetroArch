@@ -107,9 +107,7 @@ char* copy_core_to_temp_file(void)
    strcat_alloc(&retroarchTempPath, "retroarch_temp");
    strcat_alloc(&retroarchTempPath, path_default_slash());
 
-   okay = path_mkdir(retroarchTempPath);
-
-   if (!okay)
+   if (!path_mkdir(retroarchTempPath))
       goto failed;
 
    if (!filestream_read_file(corePath, &dllFileData, &dllFileSize))
@@ -117,13 +115,11 @@ char* copy_core_to_temp_file(void)
 
    strcat_alloc(&tempDllPath, retroarchTempPath);
    strcat_alloc(&tempDllPath, coreBaseName);
-   okay = filestream_write_file(tempDllPath, dllFileData, dllFileSize);
 
-   if (!okay)
+   if (!filestream_write_file(tempDllPath, dllFileData, dllFileSize))
    {
       /* try other file names */
-      okay = write_file_with_random_name(&tempDllPath, retroarchTempPath, dllFileData, dllFileSize);
-      if (!okay)
+      if (!write_file_with_random_name(&tempDllPath, retroarchTempPath, dllFileData, dllFileSize))
          goto failed;
    }
 
@@ -144,35 +140,36 @@ bool write_file_with_random_name(char **tempDllPath,
       const char *retroarchTempPath, const void* data, ssize_t dataSize)
 {
    unsigned i;
-   char numberBuf[32];
+   char number_buf[32];
    const char *prefix       = "tmp";
-   time_t timeValue         = time(NULL);
-   unsigned int numberValue = (unsigned int)timeValue;
+   time_t time_value        = time(NULL);
+   unsigned int number_value= (unsigned int)time_value;
    int number               = 0;
    char *ext                = strcpy_alloc_force(path_get_extension(*tempDllPath));
-   int extLen               = strlen(ext);
+   int ext_len              = strlen(ext);
 
-   if (extLen > 0)
+   if (ext_len > 0)
    {
       strcat_alloc(&ext, ".");
-      memmove(ext + 1, ext, extLen);
+      memmove(ext + 1, ext, ext_len);
       ext[0] = '.';
-      extLen++;
+      ext_len++;
    }
 
-   /* try up to 30 'random' filenames before giving up */
+   /* Try up to 30 'random' filenames before giving up */
    for (i = 0; i < 30; i++)
    {
-      numberValue = numberValue * 214013 + 2531011;
-      number = (numberValue >> 14) % 100000;
-      sprintf(numberBuf, "%05d", number);
+      number_value = number_value * 214013 + 2531011;
+      number       = (number_value >> 14) % 100000;
+
+      snprintf(number_buf, sizeof(number_buf), "%05d", number);
+
       FREE(*tempDllPath);
       strcat_alloc(tempDllPath, retroarchTempPath);
       strcat_alloc(tempDllPath, prefix);
-      strcat_alloc(tempDllPath, numberBuf);
+      strcat_alloc(tempDllPath, number_buf);
       strcat_alloc(tempDllPath, ext);
-      okay = filestream_write_file(*tempDllPath, data, dataSize);
-      if (okay)
+      if (filestream_write_file(*tempDllPath, data, dataSize))
          break;
    }
 
