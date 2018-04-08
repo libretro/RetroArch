@@ -153,6 +153,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    unsigned i;
    char tmp[PATH_MAX_LENGTH];
    core_info_t *core_info    = NULL;
+   settings_t *settings      = config_get_ptr();
 
    tmp[0] = '\0';
 
@@ -336,11 +337,12 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       }
    }
 
-  menu_entries_append_enum(info->list,
-        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
-        msg_hash_to_str(MENU_ENUM_LABEL_CORE_DELETE),
-        MENU_ENUM_LABEL_CORE_DELETE,
-        MENU_SETTING_ACTION_CORE_DELETE, 0, 0);
+  if (settings->bools.menu_show_core_updater)
+     menu_entries_append_enum(info->list,
+           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
+           msg_hash_to_str(MENU_ENUM_LABEL_CORE_DELETE),
+           MENU_ENUM_LABEL_CORE_DELETE,
+           MENU_SETTING_ACTION_CORE_DELETE, 0, 0);
 
    return 0;
 }
