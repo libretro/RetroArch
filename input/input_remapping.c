@@ -298,7 +298,6 @@ void input_remapping_set_defaults(bool deinit)
       }
       for (j = RARCH_FIRST_CUSTOM_BIND; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
       {
-         RARCH_LOG("******************User: %d Val: %d\n", i, j );
          settings->uints.input_remap_ids[i][j] = j;
       }
 
