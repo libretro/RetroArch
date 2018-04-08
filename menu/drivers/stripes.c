@@ -602,60 +602,6 @@ static void stripes_draw_icon(
    menu_display_draw(&draw, video_info);
 }
 
-static void stripes_draw_thumbnail(
-      video_frame_info_t *video_info,
-      stripes_handle_t *stripes, float *color,
-      unsigned width, unsigned height,
-      float x, float y,
-      float w, float h, uintptr_t texture)
-{
-   menu_display_ctx_rotate_draw_t rotate_draw;
-   menu_display_ctx_draw_t draw;
-   struct video_coords coords;
-   math_matrix_4x4 mymat;
-
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0;
-   rotate_draw.scale_x      = 1;
-   rotate_draw.scale_y      = 1;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
-
-   menu_display_rotate_z(&rotate_draw, video_info);
-
-   coords.vertices          = 4;
-   coords.vertex            = NULL;
-   coords.tex_coord         = NULL;
-   coords.lut_tex_coord     = NULL;
-
-   draw.width               = w;
-   draw.height              = h;
-   draw.coords              = &coords;
-   draw.matrix_data         = &mymat;
-   draw.texture             = texture;
-   draw.prim_type           = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id         = 0;
-
-   if (video_info->xmb_shadows_enable)
-   {
-      menu_display_set_alpha(stripes_coord_shadow, color[3] * 0.35f);
-
-      coords.color          = stripes_coord_shadow;
-      draw.x                = x + stripes->shadow_offset;
-      draw.y                = height - y - stripes->shadow_offset;
-
-      menu_display_draw(&draw, video_info);
-   }
-
-   coords.color             = (const float*)color;
-   draw.x                   = x;
-   draw.y                   = height - y;
-
-   menu_display_set_alpha(color, 1.0f);
-
-   menu_display_draw(&draw, video_info);
-}
-
 static void stripes_draw_text(
       video_frame_info_t *video_info,
       stripes_handle_t *stripes,
@@ -1210,76 +1156,6 @@ static void stripes_selection_pointer_changed(
 
       iy      = stripes_item_y(stripes, i, selection);
       real_iy = iy + stripes->margins_screen_top;
-
-      if (i == selection)
-      {
-         unsigned     depth      = (unsigned)stripes_list_get_size(stripes, MENU_LIST_PLAIN);
-         unsigned stripes_system_tab = stripes_get_system_tab(stripes, (unsigned)stripes->categories_selection_ptr);
-         unsigned entry_type     = menu_entry_get_type_new(&entry);
-
-         ia             = stripes->items_active_alpha;
-         iz             = stripes->items_active_zoom;
-         if (!string_is_equal(thumb_ident,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)) || !string_is_equal(lft_thumb_ident,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-         {
-            if ((stripes_system_tab > STRIPES_SYSTEM_TAB_SETTINGS && depth == 1) ||
-                (stripes_system_tab < STRIPES_SYSTEM_TAB_SETTINGS && depth == 4))
-            {
-               if (!string_is_empty(entry.path))
-                  stripes_set_thumbnail_content(stripes, entry.path, 0 /* will be ignored */);
-               if (!string_is_equal(thumb_ident,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-               {
-                  stripes_update_thumbnail_path(stripes, i, 'R');
-                  stripes_update_thumbnail_image(stripes);
-               }
-               if (!string_is_equal(lft_thumb_ident,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-               {
-                  stripes_update_thumbnail_path(stripes, i, 'L');
-                  stripes_update_thumbnail_image(stripes);
-               }
-            }
-            else if (((entry_type == FILE_TYPE_IMAGE || entry_type == FILE_TYPE_IMAGEVIEWER ||
-                        entry_type == FILE_TYPE_RDB || entry_type == FILE_TYPE_RDB_ENTRY)
-               && stripes_system_tab <= STRIPES_SYSTEM_TAB_SETTINGS))
-            {
-               if (!string_is_empty(entry.path))
-                  stripes_set_thumbnail_content(stripes, entry.path, 0 /* will be ignored */);
-               if (!string_is_equal(thumb_ident,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-               {
-                  stripes_update_thumbnail_path(stripes, i, 'R');
-                  stripes_update_thumbnail_image(stripes);
-               }
-               else if (!string_is_equal(lft_thumb_ident,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-               {
-                  stripes_update_thumbnail_path(stripes, i, 'L');
-                  stripes_update_thumbnail_image(stripes);
-               }
-            }
-            else if (filebrowser_get_type() != FILEBROWSER_NONE)
-            {
-               stripes_reset_thumbnail_content(stripes);
-               if (!string_is_equal(thumb_ident,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-               {
-                  stripes_update_thumbnail_path(stripes, i, 'R');
-                  stripes_update_thumbnail_image(stripes);
-               }
-               else if (!string_is_equal(lft_thumb_ident,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-               {
-                  stripes_update_thumbnail_path(stripes, i, 'L');
-                  stripes_update_thumbnail_image(stripes);
-               }
-            }
-         }
-         stripes_update_savestate_thumbnail_path(stripes, i);
-         stripes_update_savestate_thumbnail_image(stripes);
-      }
 
       if (     (!allow_animations)
             || (real_iy < -threshold
