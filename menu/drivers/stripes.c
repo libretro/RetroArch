@@ -2733,59 +2733,37 @@ static void stripes_draw_bg(
       stripes_handle_t *stripes,
       video_frame_info_t *video_info,
       unsigned width,
-      unsigned height,
-      float alpha,
-      uintptr_t texture_id,
-      float *stripes_coord_black,
-      float *stripes_coord_white)
+      unsigned height)
 {
    menu_display_ctx_draw_t draw;
+   struct video_coords coords;
 
-   bool running              = video_info->libretro_running;
+   float rgb[3];
+   HSLToRGB(0.0,0.5,0.5, &rgb[0]) ;
+   float color[16] = {
+      rgb[0], rgb[1], rgb[2], 1,
+      rgb[0], rgb[1], rgb[2], 1,
+      rgb[0], rgb[1], rgb[2], 1,
+      rgb[0], rgb[1], rgb[2], 1,
+   };
 
-   draw.x                    = 0;
-   draw.y                    = 0;
-   draw.texture              = texture_id;
-   draw.width                = width;
-   draw.height               = height;
-   draw.color                = &stripes_coord_black[0];
-   draw.vertex               = NULL;
-   draw.tex_coord            = NULL;
-   draw.vertex_count         = 4;
-   draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id          = 0;
-   draw.pipeline.active      = stripes_shader_pipeline_active(video_info);
+   coords.vertices      = 4;
+   coords.vertex        = NULL;
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = &color[0];
+
+   draw.x           = 0;
+   draw.y           = 0;
+   draw.width       = width;
+   draw.height      = height;
+   draw.coords      = &coords;
+   draw.matrix_data = NULL;
+   draw.texture     = menu_display_white_texture;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id = 0;
 
    menu_display_blend_begin(video_info);
-   menu_display_set_viewport(video_info->width, video_info->height);
-
-   {
-      uintptr_t texture           = draw.texture;
-
-      draw.color = &stripes_coord_white[0];
-
-      if (running)
-         menu_display_set_alpha(draw.color, stripes_coord_black[3]);
-      else
-         menu_display_set_alpha(draw.color, stripes_coord_white[3]);
-
-      {
-         float override_opacity = video_info->menu_wallpaper_opacity;
-         bool add_opacity       = false;
-
-         draw.texture           = texture;
-         menu_display_set_alpha(draw.color, stripes_coord_white[3]);
-
-         if (draw.texture)
-            draw.color = &stripes_coord_white[0];
-
-         if (running || video_info->xmb_color_theme == XMB_THEME_WALLPAPER)
-            add_opacity = true;
-
-         menu_display_draw_bg(&draw, video_info, add_opacity, override_opacity);
-      }
-   }
-
    menu_display_draw(&draw, video_info);
    menu_display_blend_end(video_info);
 }
@@ -2876,11 +2854,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
          stripes,
          video_info,
          width,
-         height,
-         stripes->alpha,
-         stripes->textures.bg,
-         stripes_coord_black,
-         stripes_coord_white);
+         height);
 
    selection = menu_navigation_get_selection();
 
