@@ -1899,6 +1899,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
       "Show Image Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
       "Show Music Tab")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_MAIN_MENU,
+      "Show Main Menu Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
       "Show Settings Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
@@ -2022,7 +2024,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
 MSG_HASH(MSG_ADDED_TO_FAVORITES,
       "Added to favorites")
 MSG_HASH(MSG_RESET_CORE_ASSOCIATION,
-      "Playlist entry core association has been reset.")      
+      "Playlist entry core association has been reset.")
 MSG_HASH(MSG_APPENDED_DISK,
       "Appended disk")
 MSG_HASH(MSG_APPLICATION_DIR,
@@ -3112,6 +3114,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
       "Show the video tab inside the main menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
       "Show the netplay tab inside the main menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_MAIN_MENU,
+      "Show the main menu tab.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
       "Show the settings tab inside the main menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
