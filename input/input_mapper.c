@@ -158,15 +158,21 @@ void input_mapper_poll(input_mapper_t *handle)
             current_button_value = BIT256_GET(current_input, j);
             remap_button = settings->uints.input_remap_ids[i][j];
             if (current_button_value == 1 && j != remap_button &&
-               remap_button != RARCH_UNMAPPED)
+               remap_button != RARCH_UNMAPPED && remap_button < RARCH_FIRST_CUSTOM_BIND)
                BIT256_SET(handle->buttons[i], remap_button);
+            else if (current_button_value == 1 && j != remap_button &&
+               remap_button != RARCH_UNMAPPED && remap_button >= RARCH_FIRST_CUSTOM_BIND)
+            {
+                  int invert = 1;
+
+                  if (remap_button % 2 != 0)
+                     invert = -1;
+
+                  handle->analog_value[i][remap_button - RARCH_FIRST_CUSTOM_BIND] = 32767 * invert;
+                  /* RARCH_LOG("axis %d(%d) remapped to axis %d val %d\n", j, k, 
+                     remap_button - RARCH_FIRST_CUSTOM_BIND, current_axis_value); */
+            }
          }
-#if 1
-         /* --CURRENTLY NOT IMPLEMENTED--
-            this loop should iterate on all users and all analog stick axes and if the axes are
-            moved and is assigned to a button it should set the bit on the mapper input bitmap.
-            Once implemented we should make sure to clear the original analog
-            stick input in input_state in input_driver.c */
 
          for (j = 0; j < 8; j++)
          {
@@ -180,25 +186,23 @@ void input_mapper_poll(input_mapper_t *handle)
                if (remap_axis < RARCH_FIRST_CUSTOM_BIND)
                {
                   BIT256_SET(handle->buttons[i], remap_axis);
-                  /* RARCH_LOG("axis %d remapped to button %d val %d\n", j, remap_axis, current_axis_value); */
+                  /* RARCH_LOG("axis %d remapped to button %d val %d\n", j, 
+                     remap_axis, current_axis_value); */
                }
                else
                {
                   int invert = 1;
-                  /*if ((k == 16 && remap_axis == 17) || (k == 17 && remap_axis == 16) ||
-                      (k == 18 && remap_axis == 19) || (k == 19 && remap_axis == 18) ||
-                      (k == 20 && remap_axis == 21) || (k == 21 && remap_axis == 20) ||
-                      (k == 22 && remap_axis == 23) || (k == 23 && remap_axis == 22))*/
+
                   if ((k % 2 == 0 && remap_axis % 2 != 0) || (k % 2 != 0 && remap_axis % 2 == 0))
                      invert = -1;
 
                   handle->analog_value[i][remap_axis - RARCH_FIRST_CUSTOM_BIND] = current_axis_value * invert;
-                  /* RARCH_LOG("axis %d(%d) remapped to axis %d val %d\n", j, k, remap_axis - RARCH_FIRST_CUSTOM_BIND, current_axis_value); */
+                  /* RARCH_LOG("axis %d(%d) remapped to axis %d val %d\n", j, k, 
+                     remap_axis - RARCH_FIRST_CUSTOM_BIND, current_axis_value); */
                }
             }
 
          }
-#endif
       }
    }
 }
@@ -234,7 +238,7 @@ void input_mapper_state(
 
                   if(handle->analog_value[port][0] || handle->analog_value[port][1])
                   {
-                     *ret = val;
+                     *ret |= val;
                   }
                }
                if (id == 1)
@@ -246,7 +250,7 @@ void input_mapper_state(
 
                   if(handle->analog_value[port][2] || handle->analog_value[port][3])
                   {
-                     *ret = val;
+                     *ret |= val;
                   }
                }
             }
@@ -261,7 +265,7 @@ void input_mapper_state(
 
                   if(handle->analog_value[port][4] || handle->analog_value[port][5])
                   {
-                     *ret = val;
+                     *ret |= val;
                   }
                }
                if (id == 1)
@@ -273,7 +277,7 @@ void input_mapper_state(
 
                   if(handle->analog_value[port][6] || handle->analog_value[port][7])
                   {
-                     *ret = val;
+                     *ret |= val;
                   }
                }
             }

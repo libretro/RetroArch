@@ -58,6 +58,8 @@ bool input_remapping_load_file(void *data, const char *path)
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
       char stk_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
 
+      bool ret = false;
+
       char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][128] = {
          "b", "y", "select", "start",
          "up", "down", "left", "right",
@@ -85,11 +87,12 @@ bool input_remapping_load_file(void *data, const char *path)
                key_strings[j], '_', sizeof(btn_ident[j]));
 
          if (config_get_int(conf, btn_ident[j], &btn_remap)
-               && (btn_remap < RARCH_FIRST_CUSTOM_BIND && btn_remap != -1))
+               && btn_remap != -1)
             settings->uints.input_remap_ids[i][j] = btn_remap;
          else if (config_get_int(conf, btn_ident[j], &btn_remap)
-               && (btn_remap == -1))
+               && btn_remap == -1)
             settings->uints.input_remap_ids[i][j] = RARCH_UNMAPPED;
+         /* else do nothing, important */
 
          int key_remap = -1;
 
@@ -112,11 +115,15 @@ bool input_remapping_load_file(void *data, const char *path)
                s3,
                key_strings[j]);
 
-         if (config_get_int(conf, stk_ident[j],
-                  &stk_remap))
-            settings->uints.input_remap_ids[i][j] =
-               stk_remap;
-         RARCH_LOG("stk_ident: %s:%d\n", stk_ident[j], settings->uints.input_remap_ids[i][j]);
+         RARCH_LOG("pre_ident: %s:%d\n", stk_ident[j], settings->uints.input_remap_ids[i][j]);
+
+         if (config_get_int(conf, stk_ident[j], &stk_remap) && stk_remap != -1)
+            settings->uints.input_remap_ids[i][j] = stk_remap;
+         else if (config_get_int(conf, stk_ident[j], &stk_remap) && stk_remap == -1)
+            settings->uints.input_remap_ids[i][j] = RARCH_UNMAPPED;
+         /* else do nothing, important */
+
+         /*RARCH_LOG("stk_ident: %s:%d\n", stk_ident[j], settings->uints.input_remap_ids[i][j]);*/
       }
 
       snprintf(s1, sizeof(s1), "input_player%u_analog_dpad_mode", i + 1);
@@ -191,7 +198,7 @@ bool input_remapping_save_file(const char *path)
       snprintf(s2, sizeof(s2), "input_player%u_key", i + 1);
       snprintf(s3, sizeof(s1), "input_player%u_stk", i + 1);
 
-      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 4; j++)
+      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
       {
          fill_pathname_join_delim(btn_ident[j], s1,
             key_strings[j], '_', sizeof(btn_ident[j]));
@@ -201,9 +208,11 @@ bool input_remapping_save_file(const char *path)
          /* only save values that have been modified */
          if(j < RARCH_FIRST_CUSTOM_BIND)
          {
-            if(settings->uints.input_remap_ids[i][j] != j && settings->uints.input_remap_ids[i][j] != RARCH_UNMAPPED)
+            if(settings->uints.input_remap_ids[i][j] != j && 
+               settings->uints.input_remap_ids[i][j] != RARCH_UNMAPPED)
                config_set_int(conf, btn_ident[j], settings->uints.input_remap_ids[i][j]);
-            else if (settings->uints.input_remap_ids[i][j] != j && settings->uints.input_remap_ids[i][j] == RARCH_UNMAPPED)
+            else if (settings->uints.input_remap_ids[i][j] != j && 
+                     settings->uints.input_remap_ids[i][j] == RARCH_UNMAPPED)
                config_set_int(conf, btn_ident[j], -1);
             else
                config_unset(conf,btn_ident[j]);
@@ -217,9 +226,14 @@ bool input_remapping_save_file(const char *path)
          {
             fill_pathname_join_delim(stk_ident[j], s3,
                key_strings[j], '_', sizeof(stk_ident[j]));
-            if(settings->uints.input_remap_ids[i][j] != j - RARCH_FIRST_CUSTOM_BIND)
+            if(settings->uints.input_remap_ids[i][j] != j && 
+               settings->uints.input_remap_ids[i][j] != RARCH_UNMAPPED)
                config_set_int(conf, stk_ident[j], 
                   settings->uints.input_remap_ids[i][j]);
+            else if(settings->uints.input_remap_ids[i][j] != j && 
+               settings->uints.input_remap_ids[i][j] == RARCH_UNMAPPED)
+               config_set_int(conf, stk_ident[j], 
+                  -1);
             else
                config_unset(conf,btn_ident[j]);
          }
@@ -286,7 +300,10 @@ void input_remapping_set_defaults(bool deinit)
          settings->uints.input_keymapper_ids[i][j] = RETROK_UNKNOWN;
       }
       for (j = RARCH_FIRST_CUSTOM_BIND; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
+      {
+         RARCH_LOG("******************User: %d Val: %d\n", i, j );
          settings->uints.input_remap_ids[i][j] = j;
+      }
 
       if (old_analog_dpad_mode[i])
          settings->uints.input_analog_dpad_mode[i] = old_analog_dpad_mode[i];
