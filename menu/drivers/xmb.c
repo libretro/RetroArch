@@ -3960,42 +3960,6 @@ static void xmb_ribbon_set_vertex(float *ribbon_verts,
    ribbon_verts[idx++] = ((float)row) / (XMB_RIBBON_ROWS-1) * 2.0f - 1.0f;
 }
 
-static void xmb_init_ribbon(xmb_handle_t * xmb)
-{
-   video_coords_t coords;
-   unsigned r, c, col;
-   unsigned i                = 0;
-   video_coord_array_t *ca   = menu_display_get_coords_array();
-   unsigned   vertices_total = XMB_RIBBON_VERTICES;
-   float *dummy              = (float*)calloc(4 * vertices_total, sizeof(float));
-   float *ribbon_verts       = (float*)calloc(2 * vertices_total, sizeof(float));
-
-   /* Set up vertices */
-   for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
-   {
-      for (c = 0; c < XMB_RIBBON_COLS; c++)
-      {
-         col = r % 2 ? XMB_RIBBON_COLS - c - 1 : c;
-         xmb_ribbon_set_vertex(ribbon_verts, i,     r,     col);
-         xmb_ribbon_set_vertex(ribbon_verts, i + 2, r + 1, col);
-         i  += 4;
-      }
-   }
-
-   coords.color         = dummy;
-   coords.vertex        = ribbon_verts;
-   coords.tex_coord     = dummy;
-   coords.lut_tex_coord = dummy;
-   coords.vertices      = vertices_total;
-
-   video_coord_array_append(ca, &coords, coords.vertices);
-
-   free(dummy);
-   free(ribbon_verts);
-}
-
-
-
 static void *xmb_init(void **userdata, bool video_is_threaded)
 {
    unsigned width, height;
@@ -4103,8 +4067,6 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    if (xmb->horizontal_list)
       xmb_init_horizontal_list(xmb);
-
-   xmb_init_ribbon(xmb);
 
    return menu;
 
