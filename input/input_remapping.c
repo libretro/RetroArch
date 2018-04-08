@@ -80,6 +80,7 @@ bool input_remapping_load_file(void *data, const char *path)
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {
          int btn_remap = -1;
+         int key_remap = -1;
 
          fill_pathname_join_delim(btn_ident[j], s1,
                key_strings[j], '_', sizeof(btn_ident[j]));
@@ -93,8 +94,6 @@ bool input_remapping_load_file(void *data, const char *path)
                && btn_remap == -1)
             settings->uints.input_remap_ids[i][j] = RARCH_UNMAPPED;
          /* else do nothing, important */
-
-         int key_remap = -1;
 
          if (config_get_int(conf, key_ident[j], &key_remap))
             settings->uints.input_keymapper_ids[i][j] = key_remap;

@@ -413,9 +413,9 @@ static int action_bind_sublabel_subsystem_add(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   rarch_system_info_t *system = runloop_get_system_info();
-   const struct retro_subsystem_info* subsystem = NULL;
-   subsystem = system->subsystem.data + (type - MENU_SETTINGS_SUBSYSTEM_ADD);
+   rarch_system_info_t *system                  = runloop_get_system_info();
+   const struct retro_subsystem_info *subsystem = system ?
+	   system->subsystem.data + (type - MENU_SETTINGS_SUBSYSTEM_ADD) : NULL;
 
    if (subsystem && content_get_subsystem_rom_id() < subsystem->num_roms)
       snprintf(s, len, " Current Content: %s",
@@ -432,7 +432,6 @@ static int action_bind_sublabel_remap_kbd_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   char desc[PATH_MAX_LENGTH];
    unsigned offset;
    settings_t *settings = config_get_ptr();
 
@@ -458,7 +457,6 @@ static int action_bind_sublabel_remap_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   char desc[PATH_MAX_LENGTH];
    unsigned offset;
    settings_t *settings = config_get_ptr();
 

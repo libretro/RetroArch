@@ -56,7 +56,7 @@ static void input_state_set_last(unsigned port, unsigned device,
             InputListElementConstructor, free);
 
    /* find list item */
-   for (i = 0; i < input_state_list->size; i++)
+   for (i = 0; i < (unsigned)input_state_list->size; i++)
    {
       element = (InputListElement*)input_state_list->data[i];
       if (     element->port == port 
@@ -84,7 +84,7 @@ static int16_t input_state_get_last(unsigned port,
       return 0;
 
    /* find list item */
-   for (i = 0; i < input_state_list->size; i++)
+   for (i = 0; i < (unsigned)input_state_list->size; i++)
    {
       InputListElement *element = 
          (InputListElement*)input_state_list->data[i];

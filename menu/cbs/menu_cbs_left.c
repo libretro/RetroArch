@@ -127,9 +127,8 @@ static int action_left_input_desc(unsigned type, const char *label,
 static int action_left_input_desc_kbd(unsigned type, const char *label,
    bool wraparound)
 {
-   char desc[PATH_MAX_LENGTH];
-   unsigned key_id, id, offset;
    unsigned remap_id;
+   unsigned key_id, id, offset;
    settings_t *settings = config_get_ptr();
 
    if (!settings)
