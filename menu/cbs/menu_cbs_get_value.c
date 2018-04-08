@@ -550,6 +550,7 @@ static void menu_action_setting_disp_set_label_input_desc(
    rarch_system_info_t *system           = runloop_get_system_info();
    settings_t *settings                  = config_get_ptr();
    const char* descriptor                = NULL;
+   char buf[256];
 
    unsigned btn_idx, user_idx, remap_idx;
 
@@ -561,18 +562,27 @@ static void menu_action_setting_disp_set_label_input_desc(
 
    remap_idx =
       settings->uints.input_remap_ids[user_idx][btn_idx];
-
+/*
    if (remap_idx == RARCH_UNMAPPED)
       settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
-
+*/
    if (!system)
       return;
 
-   if (btn_idx < RARCH_FIRST_CUSTOM_BIND)
-      descriptor = system->input_desc_btn[user_idx][remap_idx];
+   descriptor = system->input_desc_btn[user_idx][remap_idx];
 
-   if (!string_is_empty(descriptor))
+   if (!string_is_empty(descriptor) && remap_idx < RARCH_FIRST_CUSTOM_BIND)
       strlcpy(s, descriptor, len);
+   else if (!string_is_empty(descriptor) && remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx % 2 == 0)
+   {
+      snprintf(buf, sizeof(buf), "%s %c", descriptor, '+');
+      strlcpy(s, buf, len);
+   }
+   else if (!string_is_empty(descriptor) && remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx % 2 != 0)
+   {
+      snprintf(buf, sizeof(buf), "%s %c", descriptor, '-');
+      strlcpy(s, buf, len);
+   }
    else
       strlcpy(s, "---", len);
 

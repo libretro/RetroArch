@@ -164,8 +164,8 @@ int action_right_input_desc(unsigned type, const char *label,
 
    /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
       also skip all the axes until analog remapping is implemented */
-   if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) || 
-       (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END))
+   if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*|| 
+       (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
       action_right_input_desc(type, label, wraparound);
 
 #if 0
