@@ -115,7 +115,7 @@ bool input_remapping_load_file(void *data, const char *path)
                s3,
                key_strings[j]);
 
-         RARCH_LOG("pre_ident: %s:%d\n", stk_ident[j], settings->uints.input_remap_ids[i][j]);
+         /* RARCH_LOG("pre_ident: %s:%d\n", stk_ident[j], settings->uints.input_remap_ids[i][j]); */
 
          if (config_get_int(conf, stk_ident[j], &stk_remap) && stk_remap != -1)
             settings->uints.input_remap_ids[i][j] = stk_remap;

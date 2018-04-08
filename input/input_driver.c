@@ -2576,7 +2576,7 @@ static void input_config_get_bind_string_joykey(
    {
       if (bind->joykey_label &&
             !string_is_empty(bind->joykey_label) && label_show)
-         snprintf(buf, size, "%s %s ", prefix, bind->joykey_label);
+         snprintf(buf, size, "%s %s (hat)", prefix, bind->joykey_label);
       else
       {
          const char *dir = "?";
