@@ -3565,31 +3565,31 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    menu_display_blend_end(video_info);
 
    /* Vertical icons */
-   if (stripes)
-      stripes_draw_items(
-            video_info,
-            stripes,
-            stripes->selection_buf_old,
-            stripes->selection_ptr_old,
-            (stripes_list_get_size(stripes, MENU_LIST_PLAIN) > 1)
-            ? stripes->categories_selection_ptr : 
-            stripes->categories_selection_ptr_old,
-            &stripes_item_color[0],
-            width,
-            height);
+//    if (stripes)
+//       stripes_draw_items(
+//             video_info,
+//             stripes,
+//             stripes->selection_buf_old,
+//             stripes->selection_ptr_old,
+//             (stripes_list_get_size(stripes, MENU_LIST_PLAIN) > 1)
+//             ? stripes->categories_selection_ptr : 
+//             stripes->categories_selection_ptr_old,
+//             &stripes_item_color[0],
+//             width,
+//             height);
 
-   selection_buf = menu_entries_get_selection_buf_ptr(0);
+//    selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   if (stripes)
-      stripes_draw_items(
-            video_info,
-            stripes,
-            selection_buf,
-            selection,
-            stripes->categories_selection_ptr,
-            &stripes_item_color[0],
-            width,
-            height);
+//    if (stripes)
+//       stripes_draw_items(
+//             video_info,
+//             stripes,
+//             selection_buf,
+//             selection,
+//             stripes->categories_selection_ptr,
+//             &stripes_item_color[0],
+//             width,
+//             height);
 
    font_driver_flush(video_info->width, video_info->height, stripes->font,
          video_info);
