@@ -91,14 +91,6 @@ else
 
 ifeq ($(HAVE_RUNAHEAD),1)
 	DEFINES += -DHAVE_RUNAHEAD
-ifneq ($(GRIFFIN_BUILD), 1)
-	OBJ += runahead/copy_load_info.o
-	OBJ += runahead/dirty_input.o
-	OBJ += runahead/mem_util.o
-	OBJ += runahead/mylist.o
-	OBJ += runahead/run_ahead.o
-	OBJ += runahead/secondary_core.o
-endif
 endif
 
    OBJ += wiiu/system/missing_libc_functions.o
