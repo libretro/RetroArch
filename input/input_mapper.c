@@ -83,21 +83,16 @@ bool input_mapper_button_pressed(input_mapper_t *handle, unsigned port, unsigned
 
 void input_mapper_poll(input_mapper_t *handle)
 {
-   int i, j, k;
-   settings_t *settings = config_get_ptr();
+   int i, j;
    input_bits_t current_input;
+   settings_t *settings = config_get_ptr();
    unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    unsigned device      = 0;
-   unsigned current_button_value;
    int16_t current_axis_value;
-   unsigned remap_button, remap_axis;
    bool key_event[RARCH_CUSTOM_BIND_LIST_END];
-#ifdef HAVE_MENU
-   bool menu_is_alive   = menu_driver_is_alive();
-#endif
 
 #ifdef HAVE_MENU
-   if (menu_is_alive)
+   if (menu_driver_is_alive())
       return;
 #endif
 
@@ -105,7 +100,7 @@ void input_mapper_poll(input_mapper_t *handle)
 
    for (i = 0; i < max_users; i++)
    {
-      device = settings->uints.input_libretro_device[i];
+      device  = settings->uints.input_libretro_device[i];
       device &= RETRO_DEVICE_MASK;
 
       /* keyboard to gamepad remapping */
@@ -114,28 +109,27 @@ void input_mapper_poll(input_mapper_t *handle)
          input_get_state_for_port(settings, i, &current_input);
          for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
          {
-            {
-               current_button_value = BIT256_GET(current_input, j);
-               remap_button = settings->uints.input_keymapper_ids[i][j];
-               if (current_button_value == 1 && j != remap_button &&
+            unsigned current_button_value = BIT256_GET(current_input, j);
+            unsigned remap_button         = settings->uints.input_keymapper_ids[i][j];
+
+            if (current_button_value == 1 && j != remap_button &&
                   remap_button != RETROK_UNKNOWN)
-               {
-                  MAPPER_SET_KEY (handle,
+            {
+               MAPPER_SET_KEY (handle,
                      remap_button);
-                  input_keyboard_event(true,
+               input_keyboard_event(true,
+                     remap_button,
+                     0, 0, RETRO_DEVICE_KEYBOARD);
+               key_event[j] = true;
+            }
+            else
+            {
+               if (key_event[j] == false &&
+                     remap_button != RETROK_UNKNOWN)
+               {
+                  input_keyboard_event(false,
                         remap_button,
                         0, 0, RETRO_DEVICE_KEYBOARD);
-                  key_event[j] = true;
-               }
-               else
-               {
-                  if (key_event[j] == false &&
-                     remap_button != RETROK_UNKNOWN)
-                  {
-                     input_keyboard_event(false,
-                           remap_button,
-                           0, 0, RETRO_DEVICE_KEYBOARD);
-                  }
                }
             }
          }
@@ -155,8 +149,9 @@ void input_mapper_poll(input_mapper_t *handle)
 
          for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
          {
-            current_button_value = BIT256_GET(current_input, j);
-            remap_button = settings->uints.input_remap_ids[i][j];
+            unsigned current_button_value = BIT256_GET(current_input, j);
+            unsigned remap_button         = settings->uints.input_remap_ids[i][j];
+
             if (current_button_value == 1 && j != remap_button &&
                remap_button != RARCH_UNMAPPED && remap_button < RARCH_FIRST_CUSTOM_BIND)
                BIT256_SET(handle->buttons[i], remap_button);
@@ -176,10 +171,10 @@ void input_mapper_poll(input_mapper_t *handle)
 
          for (j = 0; j < 8; j++)
          {
-            k = j + RARCH_FIRST_CUSTOM_BIND;
-
+            unsigned remap_axis;
+            unsigned k         = j + RARCH_FIRST_CUSTOM_BIND;
             current_axis_value = current_input.analogs[j];
-            remap_axis = settings->uints.input_remap_ids[i][k];
+            remap_axis         = settings->uints.input_remap_ids[i][k];
 
             if (current_axis_value != 0 && k != remap_axis && remap_axis != RARCH_UNMAPPED)
             {
@@ -225,62 +220,19 @@ void input_mapper_state(
             *ret = 1;
          break;
       case RETRO_DEVICE_ANALOG:
+         if (idx < 2 && id < 2)
          {
-            int val = 0;
-            if (idx == 0)
-            {
-               if (id == 0)
-               {
-                  if (handle->analog_value[port][0])
-                     val = handle->analog_value[port][0];
-                  else if (handle->analog_value[port][1])
-                     val = handle->analog_value[port][1];
+            int         val = 0;
+            unsigned offset = 0 + (idx * 4) + (id * 2);
 
-                  if(handle->analog_value[port][0] || handle->analog_value[port][1])
-                  {
-                     *ret |= val;
-                  }
-               }
-               if (id == 1)
-               {
-                  if (handle->analog_value[port][2])
-                     val = handle->analog_value[port][2];
-                  else if (handle->analog_value[port][3])
-                     val = handle->analog_value[port][3];
+            if (handle->analog_value[port][offset])
+               val = handle->analog_value[port][offset];
+            else if (handle->analog_value[port][offset+1])
+               val = handle->analog_value[port][offset+1];
 
-                  if(handle->analog_value[port][2] || handle->analog_value[port][3])
-                  {
-                     *ret |= val;
-                  }
-               }
-            }
-            if (idx == 1)
-            {
-               if (id == 0)
-               {
-                  if (handle->analog_value[port][4])
-                     val = handle->analog_value[port][4];
-                  else if (handle->analog_value[port][5])
-                     val = handle->analog_value[port][5];
-
-                  if(handle->analog_value[port][4] || handle->analog_value[port][5])
-                  {
-                     *ret |= val;
-                  }
-               }
-               if (id == 1)
-               {
-                  if (handle->analog_value[port][6])
-                     val = handle->analog_value[port][6];
-                  else if (handle->analog_value[port][7])
-                     val = handle->analog_value[port][7];
-
-                  if(handle->analog_value[port][6] || handle->analog_value[port][7])
-                  {
-                     *ret |= val;
-                  }
-               }
-            }
+            if (  handle->analog_value[port][offset] || 
+                  handle->analog_value[port][offset+1])
+               *ret |= val;
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
