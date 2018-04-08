@@ -1128,7 +1128,6 @@ void input_keys_pressed(void *data, input_bits_t *p_new_state)
 void input_get_state_for_port(void *data, unsigned port, input_bits_t *p_new_state)
 {
    unsigned i, j;
-   int16_t val;
    rarch_joypad_info_t joypad_info;
    settings_t              *settings            = (settings_t*)data;
    BIT256_CLEAR_ALL_PTR(p_new_state);
@@ -1148,34 +1147,20 @@ void input_get_state_for_port(void *data, unsigned port, input_bits_t *p_new_sta
          BIT256_SET_PTR(p_new_state, i);
    }
 
-   /* left-stick x */
-   val = input_joypad_analog(input_driver_get_joypad_driver(), joypad_info, port, 0, 0, libretro_input_binds[port]);
-   if (val >= 0)
-      p_new_state->analogs[0] = val;
-   else
-      p_new_state->analogs[1] = val;
+   for (i = 0; i < 2; i++)
+   {
+      for (j = 0; j < 2; j++)
+      {
+         unsigned offset = 0 + (i * 4) + (j * 2);
+         int16_t     val = input_joypad_analog(input_driver_get_joypad_driver(),
+               joypad_info, port, i, j, libretro_input_binds[port]);
 
-   /* left-stick y */
-   val = input_joypad_analog(input_driver_get_joypad_driver(), joypad_info, port, 0, 1, libretro_input_binds[port]);
-   if (val >= 0)
-      p_new_state->analogs[2] = val;
-   else
-      p_new_state->analogs[3] = val;
-
-   /* right-stick x */
-   val = input_joypad_analog(input_driver_get_joypad_driver(), joypad_info, port, 1, 0, libretro_input_binds[port]);
-   if (val >= 0)
-      p_new_state->analogs[4] = val;
-   else
-      p_new_state->analogs[5] = val;
-
-   /* right-stick y */
-   val = input_joypad_analog(input_driver_get_joypad_driver(), joypad_info, port, 1, 1, libretro_input_binds[port]);
-   if (val >= 0)
-      p_new_state->analogs[6] = val;
-   else
-      p_new_state->analogs[7] = val;
-
+         if (val >= 0)
+            p_new_state->analogs[offset] = val;
+         else
+            p_new_state->analogs[offset+1] = val;
+      }
+   }
 }
 
 void *input_driver_get_data(void)
