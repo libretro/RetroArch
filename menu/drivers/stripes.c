@@ -3077,24 +3077,24 @@ static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
    stripes->categories_active_zoom   = 1.0;
    stripes->categories_passive_zoom  = 0.5;
 
-   stripes->categories_angle         = 400;
+   stripes->categories_angle         = 400 * scale_factor;
 
    stripes->categories_active_y      = height / 2;
-   stripes->categories_before_y      = 64;
-   stripes->categories_after_y       = height - 64;
+   stripes->categories_before_y      = 64 * scale_factor;
+   stripes->categories_after_y       = height - 64 * scale_factor;
 
    stripes->categories_active_x      = stripes->categories_angle / 2;
-   stripes->categories_before_x      = stripes->categories_angle - 22;
-   stripes->categories_after_x       = 22;
+   stripes->categories_before_x      = stripes->categories_angle - 22 * scale_factor;
+   stripes->categories_after_x       = 22 * scale_factor;
 
-   stripes->categories_passive_width = 128;
-   stripes->categories_active_width  = 1200;
+   stripes->categories_passive_width = 128 * scale_factor;
+   stripes->categories_active_width  = 1200 * scale_factor;
 
    stripes->items_active_zoom        = 1.0;
    stripes->items_passive_zoom       = 0.5;
 
    stripes->categories_active_alpha  = 1.0;
-   stripes->categories_passive_alpha = 0.85;
+   stripes->categories_passive_alpha = 1.0;
    stripes->items_active_alpha       = 1.0;
    stripes->items_passive_alpha      = 0.85;
 
