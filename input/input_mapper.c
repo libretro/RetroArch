@@ -51,7 +51,8 @@
 struct input_mapper
 {
    /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[MAX_USERS][8];
+   int16_t analog_value[MAX_USERS][8];
+   int     new_axis[MAX_USERS][8];
    /* the whole keyboard state */
    uint32_t keys[RETROK_LAST / 32 + 1];
    /* This is a bitmask of (1 << key_bind_id). */
@@ -148,6 +149,7 @@ void input_mapper_poll(input_mapper_t *handle)
             is assigned to any other button than the default one, then it sets the bit on the
             mapper input bitmap, later on the original input is cleared in input_state */
          BIT256_CLEAR_ALL(handle->buttons[i]);
+
          input_get_state_for_port(settings, i, &current_input);
 
          for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
@@ -167,17 +169,23 @@ void input_mapper_poll(input_mapper_t *handle)
 
          for (j = 0; j < 8; j++)
          {
-            handle->analog[i][j] = 0;
-
             k = j + RARCH_FIRST_CUSTOM_BIND;
             current_axis_value = current_input.analogs[j];
             remap_axis = settings->uints.input_remap_ids[i][k];
+
             if (current_axis_value != 0 && k != remap_axis && remap_axis != RARCH_UNMAPPED)
             {
                if (remap_axis < RARCH_FIRST_CUSTOM_BIND)
+               {
                   BIT256_SET(handle->buttons[i], remap_axis);
+                  //RARCH_LOG("axis %d remapped to button %d val %d\n", j, remap_axis, current_axis_value);
+               }
                else
-                  handle->analog[i][remap_axis - RARCH_FIRST_CUSTOM_BIND] = current_axis_value;
+               {
+                  handle->analog_value[i][remap_axis - RARCH_FIRST_CUSTOM_BIND] = current_axis_value;
+                  handle->new_axis[i][remap_axis - RARCH_FIRST_CUSTOM_BIND] = remap_axis;
+                  RARCH_LOG("axis %d(%d) remapped to axis %d val %d\n", j, k, remap_axis - RARCH_FIRST_CUSTOM_BIND, current_axis_value);
+               }
             }
 
          }
@@ -204,8 +212,6 @@ void input_mapper_state(
             *ret = 1;
          break;
       case RETRO_DEVICE_ANALOG:
-         if (handle->analog[port][idx == 0 ? id : id / 2] != 0)
-         *ret = handle->analog[port][idx == 0 ? id : id / 2];
          break;
       case RETRO_DEVICE_KEYBOARD:
          if (id < RETROK_LAST)

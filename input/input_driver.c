@@ -663,6 +663,30 @@ int16_t input_state(unsigned port, unsigned device,
                break;
             case RETRO_DEVICE_ANALOG:
                if (idx < 2 && id < 2)
+               {
+                  if (idx == 0)
+                  {
+                     if (id == 0 && settings->uints.input_remap_ids[port][16] != 16)
+                        reset_state = true;
+                     if (id == 0 && settings->uints.input_remap_ids[port][17] != 17)
+                        reset_state = true;
+                     if (id == 1 && settings->uints.input_remap_ids[port][18] != 18)
+                        reset_state = true;
+                     if (id == 1 && settings->uints.input_remap_ids[port][19] != 19)
+                        reset_state = true;
+                  }
+                  if (idx == 1)
+                  {
+                     if (id == 0 && settings->uints.input_remap_ids[port][16] != 20)
+                        reset_state = true;
+                     if (id == 0 && settings->uints.input_remap_ids[port][17] != 21)
+                        reset_state = true;
+                     if (id == 1 && settings->uints.input_remap_ids[port][18] != 22)
+                        reset_state = true;
+                     if (id == 1 && settings->uints.input_remap_ids[port][19] != 23)
+                        reset_state = true;
+                  }
+               }
                break;
          }
       }
