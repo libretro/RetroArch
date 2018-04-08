@@ -105,19 +105,16 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                   if (bank_mask & 1)
                   {
                      /* Light up the button if pressed */
-                     if (input_state(port, RETRO_DEVICE_JOYPAD, 0, id))
+                     if (!input_state(port, RETRO_DEVICE_JOYPAD, 0, id))
                      {
-                        all_buttons_pressed = true;
-                        desc->updated       = true;
-                     }
-                     else
-                     {
-                        /*we need ALL of the inputs to be active*/
-                        desc->updated       = false;
-
-                        /*abort*/
+                        /* We need ALL of the inputs to be active,
+                         * abort. */
+                        desc->updated    = false;
                         return false;
                      }
+
+                     all_buttons_pressed = true;
+                     desc->updated       = true;
                   }
 
                   bank_mask >>= 1;
