@@ -1364,7 +1364,8 @@ static const char *btstack_hid_joypad_name(void *data, unsigned pad)
    return NULL;
 }
 
-static void btstack_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
+static void btstack_hid_joypad_get_buttons(void *data, unsigned port,
+      input_bits_t *state)
 {
   btstack_hid_t        *hid   = (btstack_hid_t*)data;
   if (hid)
@@ -1373,9 +1374,10 @@ static void btstack_hid_joypad_get_buttons(void *data, unsigned port, retro_bits
     BIT256_CLEAR_ALL_PTR(state);
 }
 
-static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
+static bool btstack_hid_joypad_button(void *data,
+      unsigned port, uint16_t joykey)
 {
-  retro_bits_t buttons;
+  input_bits_t buttons;
   btstack_hid_joypad_get_buttons(data, port, &buttons);
 
   /* Check hat. */

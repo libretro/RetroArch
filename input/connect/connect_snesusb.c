@@ -60,7 +60,7 @@ static void hidpad_snesusb_deinit(void *data)
       free(device);
 }
 
-static void hidpad_snesusb_get_buttons(void *data, retro_bits_t *state)
+static void hidpad_snesusb_get_buttons(void *data, input_bits_t *state)
 {
 	struct hidpad_snesusb_data *device = (struct hidpad_snesusb_data*)data;
 	if (device)

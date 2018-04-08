@@ -38,6 +38,12 @@
 
 RETRO_BEGIN_DECLS
 
+typedef struct
+{
+   uint32_t data[8];
+   uint16_t analogs[8];
+} input_bits_t;
+
 typedef struct rarch_joypad_driver input_device_driver_t;
 
 typedef struct hid_driver hid_driver_t;
@@ -172,7 +178,7 @@ struct rarch_joypad_driver
    bool (*query_pad)(unsigned);
    void (*destroy)(void);
    bool (*button)(unsigned, uint16_t);
-   void (*get_buttons)(unsigned, retro_bits_t *);
+   void (*get_buttons)(unsigned, input_bits_t *);
    int16_t (*axis)(unsigned, uint32_t);
    void (*poll)(void);
    bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);
@@ -187,7 +193,7 @@ struct hid_driver
    bool (*query_pad)(void *, unsigned);
    void (*free)(const void *);
    bool (*button)(void *, unsigned, uint16_t);
-   void (*get_buttons)(void *, unsigned, retro_bits_t *);
+   void (*get_buttons)(void *, unsigned, input_bits_t *);
    int16_t (*axis)(void *, unsigned, uint32_t);
    void (*poll)(void *);
    bool (*set_rumble)(void *, unsigned, enum retro_rumble_effect, uint16_t);
@@ -335,15 +341,15 @@ void input_poll(void);
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-void input_keys_pressed(void *data, retro_bits_t* new_state);
+void input_keys_pressed(void *data, input_bits_t* new_state);
 
 #ifdef HAVE_MENU
-void input_menu_keys_pressed(void *data, retro_bits_t* new_state);
+void input_menu_keys_pressed(void *data, input_bits_t* new_state);
 #endif
 
 void *input_driver_get_data(void);
 
-void input_get_state_for_port(void *data, unsigned port, retro_bits_t* p_new_state);
+void input_get_state_for_port(void *data, unsigned port, input_bits_t *p_new_state);
 
 const input_driver_t *input_get_ptr(void);
 

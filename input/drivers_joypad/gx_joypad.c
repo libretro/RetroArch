@@ -162,7 +162,7 @@ static bool gx_joypad_button(unsigned port, uint16_t key)
    return (pad_state[port] & (UINT64_C(1) << key));
 }
 
-static void gx_joypad_get_buttons(unsigned port, retro_bits_t *state)
+static void gx_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
 	if (port < MAX_PADS)
    {

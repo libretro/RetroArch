@@ -672,7 +672,7 @@ static int16_t hidpad_wii_get_axis(void *data, unsigned axis)
    return 0;
 }
 
-static void hidpad_wii_get_buttons(void *data, retro_bits_t *state)
+static void hidpad_wii_get_buttons(void *data, input_bits_t *state)
 {
 	struct connect_wii_wiimote_t* device = (struct connect_wii_wiimote_t*)data;
 	if ( device )

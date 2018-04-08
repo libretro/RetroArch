@@ -26,7 +26,7 @@ static bool wiiu_joypad_init(void *data);
 static bool wiiu_joypad_query_pad(unsigned pad);
 static void wiiu_joypad_destroy(void);
 static bool wiiu_joypad_button(unsigned pad, uint16_t button);
-static void wiiu_joypad_get_buttons(unsigned pad, retro_bits_t *state);
+static void wiiu_joypad_get_buttons(unsigned pad, input_bits_t *state);
 static int16_t wiiu_joypad_axis(unsigned pad, uint32_t axis);
 static void wiiu_joypad_poll(void);
 static const char *wiiu_joypad_name(unsigned pad);
@@ -110,7 +110,7 @@ static bool wiiu_joypad_button(unsigned pad, uint16_t key)
   return pad_drivers[pad]->button(pad, key);
 }
 
-static void wiiu_joypad_get_buttons(unsigned pad, retro_bits_t *state)
+static void wiiu_joypad_get_buttons(unsigned pad, input_bits_t *state)
 {
   if(!wiiu_joypad_query_pad(pad))
     return;

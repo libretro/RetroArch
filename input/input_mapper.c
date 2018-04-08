@@ -55,7 +55,7 @@ struct input_mapper
    /* the whole keyboard state */
    uint32_t keys[RETROK_LAST / 32 + 1];
    /* This is a bitmask of (1 << key_bind_id). */
-   retro_bits_t buttons[MAX_USERS];
+   input_bits_t buttons[MAX_USERS];
 };
 
 input_mapper_t *input_mapper_new(void)
@@ -85,7 +85,7 @@ void input_mapper_poll(input_mapper_t *handle)
 {
    int i, j, k;
    settings_t *settings = config_get_ptr();
-   retro_bits_t current_input;
+   input_bits_t current_input;
    unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    unsigned device      = 0;
    unsigned current_button_value;

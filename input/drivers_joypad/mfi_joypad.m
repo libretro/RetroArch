@@ -221,7 +221,8 @@ static bool apple_gamecontroller_joypad_button(unsigned port, uint16_t joykey)
    return false;
 }
 
-static void apple_gamecontroller_joypad_get_buttons(unsigned port, retro_bits_t *state)
+static void apple_gamecontroller_joypad_get_buttons(unsigned port,
+      input_bits_t *state)
 {
 	BITS_COPY16_PTR(state, mfi_buttons[port]);
 }

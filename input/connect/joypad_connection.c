@@ -228,7 +228,8 @@ void pad_connection_packet(joypad_connection_t *joyconn, uint32_t pad,
       joyconn->iface->packet_handler(joyconn->data, data, length);
 }
 
-void pad_connection_get_buttons(joypad_connection_t *joyconn, unsigned pad, retro_bits_t* state)
+void pad_connection_get_buttons(joypad_connection_t *joyconn,
+      unsigned pad, input_bits_t *state)
 {
 	if (joyconn && joyconn->iface)
 		joyconn->iface->get_buttons(joyconn->data, state);

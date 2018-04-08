@@ -20,7 +20,7 @@ static bool hidpad_init(void *data);
 static bool hidpad_query_pad(unsigned pad);
 static void hidpad_destroy(void);
 static bool hidpad_button(unsigned pad, uint16_t button);
-static void hidpad_get_buttons(unsigned pad, retro_bits_t *state);
+static void hidpad_get_buttons(unsigned pad, input_bits_t *state);
 static int16_t hidpad_axis(unsigned pad, uint32_t axis);
 static void hidpad_poll(void);
 static const char *hidpad_name(unsigned pad);
@@ -116,7 +116,7 @@ static bool hidpad_button(unsigned pad, uint16_t button)
 #endif
 }
 
-static void hidpad_get_buttons(unsigned pad, retro_bits_t *state)
+static void hidpad_get_buttons(unsigned pad, input_bits_t *state)
 {
   if (!hidpad_query_pad(pad))
     BIT256_CLEAR_ALL_PTR(state);

@@ -209,7 +209,7 @@ static bool wpad_button(unsigned pad, uint16_t button_bit)
    return button_state & (UINT64_C(1) << button_bit);
 }
 
-static void wpad_get_buttons(unsigned pad, retro_bits_t *state)
+static void wpad_get_buttons(unsigned pad, input_bits_t *state)
 {
    if (!wpad_query_pad(pad))
       BIT256_CLEAR_ALL_PTR(state);

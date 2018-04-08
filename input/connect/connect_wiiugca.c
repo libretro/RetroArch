@@ -68,7 +68,7 @@ static void hidpad_wiiugca_deinit(void *data)
       free(device);
 }
 
-static void hidpad_wiiugca_get_buttons(void *data, retro_bits_t *state)
+static void hidpad_wiiugca_get_buttons(void *data, input_bits_t *state)
 {
   struct hidpad_wiiugca_data *device = (struct hidpad_wiiugca_data*)data;
   if (device)

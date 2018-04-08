@@ -177,7 +177,7 @@ struct overlay_desc
    unsigned retro_key_idx;
 
    /* This is a bit mask of all input binds to set with this overlay control */
-   retro_bits_t button_mask;
+   input_bits_t button_mask;
 
    char next_index_name[64];
 

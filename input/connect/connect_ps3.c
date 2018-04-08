@@ -134,7 +134,7 @@ static void hidpad_ps3_deinit(void *data)
       free(device);
 }
 
-static void hidpad_ps3_get_buttons(void *data, retro_bits_t *state)
+static void hidpad_ps3_get_buttons(void *data, input_bits_t *state)
 {
 	struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
 	if ( device )

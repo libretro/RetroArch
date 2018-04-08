@@ -823,7 +823,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 }
 
 static INLINE bool input_keys_pressed_iterate(unsigned i,
-      retro_bits_t* p_new_state)
+      input_bits_t* p_new_state)
 {
    if ((i >= RARCH_FIRST_META_KEY) &&
          BIT64_GET(lifecycle_state, i)
@@ -868,7 +868,7 @@ static INLINE bool input_keys_pressed_iterate(unsigned i,
  *
  * Returns: Input sample containing a mask of all pressed keys.
  */
-void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
+void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
 {
    unsigned i, port;
    rarch_joypad_info_t joypad_info;
@@ -1073,7 +1073,7 @@ int16_t input_driver_input_state(
  *
  * Returns: Input sample containing a mask of all pressed keys.
  */
-void input_keys_pressed(void *data, retro_bits_t* p_new_state)
+void input_keys_pressed(void *data, input_bits_t *p_new_state)
 {
    unsigned i;
    rarch_joypad_info_t joypad_info;
@@ -1143,7 +1143,7 @@ void input_keys_pressed(void *data, retro_bits_t* p_new_state)
    }
 }
 
-void input_get_state_for_port(void *data, unsigned port, retro_bits_t* p_new_state)
+void input_get_state_for_port(void *data, unsigned port, input_bits_t *p_new_state)
 {
    unsigned i, j;
    int16_t val;

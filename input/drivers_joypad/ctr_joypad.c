@@ -70,7 +70,7 @@ static bool ctr_joypad_button(unsigned port_num, uint16_t key)
    return (pad_state & (1 << key));
 }
 
-static void ctr_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
+static void ctr_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
 	if ( port_num < MAX_PADS )
    {

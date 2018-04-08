@@ -443,7 +443,8 @@ static const char *libusb_hid_joypad_name(void *data, unsigned pad)
    return NULL;
 }
 
-static void libusb_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
+static void libusb_hid_joypad_get_buttons(void *data, unsigned port,
+      input_bits_t *state)
 {
    libusb_hid_t        *hid   = (libusb_hid_t*)data;
    if (hid)
@@ -458,7 +459,7 @@ static void libusb_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_
 static bool libusb_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
-   retro_bits_t buttons;
+   input_bits_t buttons;
    libusb_hid_joypad_get_buttons(data, port, &buttons);
 
    /* Check hat. */

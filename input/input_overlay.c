@@ -46,7 +46,7 @@ typedef struct input_overlay_state
    int16_t analog[4];
    uint32_t keys[RETROK_LAST / 32 + 1];
    /* This is a bitmask of (1 << key_bind_id). */
-   retro_bits_t buttons;
+   input_bits_t buttons;
 } input_overlay_state_t;
 
 struct input_overlay

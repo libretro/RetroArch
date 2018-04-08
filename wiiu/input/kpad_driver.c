@@ -26,7 +26,7 @@ static bool kpad_init(void *data);
 static bool kpad_query_pad(unsigned pad);
 static void kpad_destroy(void);
 static bool kpad_button(unsigned pad, uint16_t button);
-static void kpad_get_buttons(unsigned pad, retro_bits_t *state);
+static void kpad_get_buttons(unsigned pad, input_bits_t *state);
 static int16_t kpad_axis(unsigned pad, uint32_t axis);
 static void kpad_poll(void);
 static const char *kpad_name(unsigned pad);
@@ -92,7 +92,7 @@ static bool kpad_button(unsigned pad, uint16_t button_bit)
       & (UINT64_C(1) << button_bit);
 }
 
-static void kpad_get_buttons(unsigned pad, retro_bits_t *state)
+static void kpad_get_buttons(unsigned pad, input_bits_t *state)
 {
    if (!kpad_query_pad(pad))
       BIT256_CLEAR_ALL_PTR(state);
