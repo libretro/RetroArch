@@ -234,9 +234,13 @@ typedef struct stripes_handle
    float margins_slice;
    float textures_arrow_alpha;
    float categories_x_pos;
+   float categories_angle;
    float categories_active_y;
    float categories_before_y;
    float categories_after_y;
+   float categories_active_x;
+   float categories_before_x;
+   float categories_after_x;
    float categories_passive_alpha;
    float categories_passive_zoom;
    float categories_active_zoom;
@@ -1705,6 +1709,7 @@ static void stripes_list_switch_horizontal_list(stripes_handle_t *stripes)
       menu_animation_ctx_entry_t entry;
       float ia                    = stripes->categories_passive_alpha;
       float iz                    = stripes->categories_passive_zoom;
+      float ix                    = stripes->categories_before_x;
       float iy                    = stripes->categories_before_y;
       stripes_node_t *node            = stripes_get_node(stripes, j);
 
@@ -1715,14 +1720,17 @@ static void stripes_list_switch_horizontal_list(stripes_handle_t *stripes)
       {
          ia = stripes->categories_active_alpha;
          iz = stripes->categories_active_zoom;
+         ix = stripes->categories_active_x;
          iy = stripes->categories_active_y;
       }
       else if (j < stripes->categories_active_idx)
       {
+         ix = stripes->categories_before_x;
          iy = stripes->categories_before_y;
       }
       else if (j > stripes->categories_active_idx)
       {
+         ix = stripes->categories_after_x;
          iy = stripes->categories_after_y;
       }
 
@@ -3104,9 +3112,15 @@ static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
    stripes->categories_active_zoom   = 1.0;
    stripes->categories_passive_zoom  = 0.5;
 
+   stripes->categories_angle         = 400;
+
    stripes->categories_active_y      = height / 2;
    stripes->categories_before_y      = 64;
    stripes->categories_after_y       = height - 64;
+
+   stripes->categories_active_x      = stripes->categories_angle / 2;
+   stripes->categories_before_x      = stripes->categories_angle - 22;
+   stripes->categories_after_x       = 22;
 
    stripes->items_active_zoom        = 1.0;
    stripes->items_passive_zoom       = 0.5;
