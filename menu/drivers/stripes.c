@@ -2824,45 +2824,6 @@ static void stripes_draw_bg(
    menu_display_blend_begin(video_info);
    menu_display_set_viewport(video_info->width, video_info->height);
 
-#ifdef HAVE_SHADERPIPELINE
-   if (video_info->menu_shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
-         &&
-         (video_info->xmb_color_theme != XMB_THEME_WALLPAPER))
-   {
-      draw.color = &stripes_coord_white[0];
-
-      if (running)
-         menu_display_set_alpha(draw.color, stripes_coord_black[3]);
-      else
-         menu_display_set_alpha(draw.color, stripes_coord_white[3]);
-
-      draw.pipeline.id = VIDEO_SHADER_MENU_2;
-
-      switch (video_info->menu_shader_pipeline)
-      {
-         case XMB_SHADER_PIPELINE_RIBBON:
-            draw.pipeline.id  = VIDEO_SHADER_MENU;
-            break;
-         case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
-            draw.pipeline.id  = VIDEO_SHADER_MENU_3;
-            break;
-         case XMB_SHADER_PIPELINE_SNOW:
-            draw.pipeline.id  = VIDEO_SHADER_MENU_4;
-            break;
-         case XMB_SHADER_PIPELINE_BOKEH:
-            draw.pipeline.id  = VIDEO_SHADER_MENU_5;
-            break;
-         case XMB_SHADER_PIPELINE_SNOWFLAKE:
-            draw.pipeline.id  = VIDEO_SHADER_MENU_6;
-            break;
-         default:
-            break;
-      }
-
-      menu_display_draw_pipeline(&draw, video_info);
-   }
-   else
-#endif
    {
       uintptr_t texture           = draw.texture;
 
