@@ -58,6 +58,11 @@ struct input_mapper
    input_bits_t buttons[MAX_USERS];
 };
 
+static bool input_mapper_button_pressed(input_mapper_t *handle, unsigned port, unsigned id)
+{
+   return BIT256_GET(handle->buttons[port], id);
+}
+
 input_mapper_t *input_mapper_new(void)
 {
    input_mapper_t* handle = (input_mapper_t*)
@@ -76,19 +81,12 @@ void input_mapper_free(input_mapper_t *handle)
    free (handle);
 }
 
-bool input_mapper_button_pressed(input_mapper_t *handle, unsigned port, unsigned id)
-{
-   return BIT256_GET(handle->buttons[port], id);
-}
-
 void input_mapper_poll(input_mapper_t *handle)
 {
    int i, j;
    input_bits_t current_input;
    settings_t *settings = config_get_ptr();
    unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-   unsigned device      = 0;
-   int16_t current_axis_value;
    bool key_event[RARCH_CUSTOM_BIND_LIST_END];
 
 #ifdef HAVE_MENU
@@ -100,104 +98,135 @@ void input_mapper_poll(input_mapper_t *handle)
 
    for (i = 0; i < max_users; i++)
    {
-      device  = settings->uints.input_libretro_device[i];
-      device &= RETRO_DEVICE_MASK;
+      unsigned device  = settings->uints.input_libretro_device[i];
+      device          &= RETRO_DEVICE_MASK;
 
-      /* keyboard to gamepad remapping */
-      if (device == RETRO_DEVICE_KEYBOARD)
+      switch (device)
       {
-         input_get_state_for_port(settings, i, &current_input);
-         for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
-         {
-            unsigned current_button_value = BIT256_GET(current_input, j);
-            unsigned remap_button         = settings->uints.input_keymapper_ids[i][j];
+            /* keyboard to gamepad remapping */
+         case RETRO_DEVICE_KEYBOARD:
+            input_get_state_for_port(settings, i, &current_input);
+            for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
+            {
+               unsigned current_button_value = BIT256_GET(current_input, j);
+               unsigned remap_button         = 
+                  settings->uints.input_keymapper_ids[i][j];
 
-            if (current_button_value == 1 && j != remap_button &&
-                  remap_button != RETROK_UNKNOWN)
-            {
-               MAPPER_SET_KEY (handle,
-                     remap_button);
-               input_keyboard_event(true,
-                     remap_button,
-                     0, 0, RETRO_DEVICE_KEYBOARD);
-               key_event[j] = true;
-            }
-            else
-            {
-               if (key_event[j] == false &&
-                     remap_button != RETROK_UNKNOWN)
+               if (
+                     (current_button_value == 1) && 
+                     (j != remap_button)         &&
+                     (remap_button != RETROK_UNKNOWN)
+                  )
                {
-                  input_keyboard_event(false,
+                  MAPPER_SET_KEY (handle,
+                        remap_button);
+                  input_keyboard_event(true,
                         remap_button,
                         0, 0, RETRO_DEVICE_KEYBOARD);
+                  key_event[j] = true;
+               }
+               else
+               {
+                  if (  (key_event[j] == false) &&
+                        (remap_button != RETROK_UNKNOWN)
+                     )
+                  {
+                     input_keyboard_event(false,
+                           remap_button,
+                           0, 0, RETRO_DEVICE_KEYBOARD);
+                  }
                }
             }
-         }
-      }
+            break;
 
-      /* gamepad remapping */
-      if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
-      {
-         /* this loop iterates on all users and all buttons, and checks if a pressed button
-            is assigned to any other button than the default one, then it sets the bit on the
-            mapper input bitmap, later on the original input is cleared in input_state */
-         BIT256_CLEAR_ALL(handle->buttons[i]);
-         for (j = 0; j < 8; j++)
-            handle->analog_value[i][j] = 0;
+            /* gamepad remapping */
+         case RETRO_DEVICE_JOYPAD:
+         case RETRO_DEVICE_ANALOG:
+            /* this loop iterates on all users and all buttons, 
+             * and checks if a pressed button is assigned to any 
+             * other button than the default one, then it sets 
+             * the bit on the mapper input bitmap, later on the 
+             * original input is cleared in input_state */
+            BIT256_CLEAR_ALL(handle->buttons[i]);
 
-         input_get_state_for_port(settings, i, &current_input);
+            for (j = 0; j < 8; j++)
+               handle->analog_value[i][j] = 0;
 
-         for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
-         {
-            unsigned current_button_value = BIT256_GET(current_input, j);
-            unsigned remap_button         = settings->uints.input_remap_ids[i][j];
+            input_get_state_for_port(settings, i, &current_input);
 
-            if (current_button_value == 1 && j != remap_button &&
-               remap_button != RARCH_UNMAPPED && remap_button < RARCH_FIRST_CUSTOM_BIND)
-               BIT256_SET(handle->buttons[i], remap_button);
-            else if (current_button_value == 1 && j != remap_button &&
-               remap_button != RARCH_UNMAPPED && remap_button >= RARCH_FIRST_CUSTOM_BIND)
+            for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
             {
+               unsigned current_button_value = BIT256_GET(current_input, j);
+               unsigned remap_button         = 
+                  settings->uints.input_remap_ids[i][j];
+
+               if (
+                     (current_button_value == 1)      && 
+                     (j != remap_button)              &&
+                     (remap_button != RARCH_UNMAPPED) &&
+                     (remap_button < RARCH_FIRST_CUSTOM_BIND)
+                  )
+                  BIT256_SET(handle->buttons[i], remap_button);
+               else if (
+                     (current_button_value == 1)      && 
+                     (j != remap_button)              &&
+                     (remap_button != RARCH_UNMAPPED) &&
+                     (remap_button >= RARCH_FIRST_CUSTOM_BIND)
+                     )
+               {
                   int invert = 1;
 
                   if (remap_button % 2 != 0)
                      invert = -1;
 
-                  handle->analog_value[i][remap_button - RARCH_FIRST_CUSTOM_BIND] = 32767 * invert;
-                  /* RARCH_LOG("axis %d(%d) remapped to axis %d val %d\n", j, k, 
-                     remap_button - RARCH_FIRST_CUSTOM_BIND, current_axis_value); */
+                  handle->analog_value[i][
+                     remap_button - RARCH_FIRST_CUSTOM_BIND] = 
+                        32767 * invert;
+               }
             }
-         }
 
-         for (j = 0; j < 8; j++)
-         {
-            unsigned remap_axis;
-            unsigned k         = j + RARCH_FIRST_CUSTOM_BIND;
-            current_axis_value = current_input.analogs[j];
-            remap_axis         = settings->uints.input_remap_ids[i][k];
-
-            if (current_axis_value != 0 && k != remap_axis && remap_axis != RARCH_UNMAPPED)
+            for (j = 0; j < 8; j++)
             {
-               if (remap_axis < RARCH_FIRST_CUSTOM_BIND)
-               {
-                  BIT256_SET(handle->buttons[i], remap_axis);
-                  /* RARCH_LOG("axis %d remapped to button %d val %d\n", j, 
-                     remap_axis, current_axis_value); */
-               }
-               else
-               {
-                  int invert = 1;
+               unsigned k                 = j + RARCH_FIRST_CUSTOM_BIND;
+               int16_t current_axis_value = current_input.analogs[j];
+               unsigned remap_axis        = 
+                  settings->uints.input_remap_ids[i][k];
 
-                  if ((k % 2 == 0 && remap_axis % 2 != 0) || (k % 2 != 0 && remap_axis % 2 == 0))
-                     invert = -1;
+               if (
+                     (current_axis_value != 0) && 
+                     (k != remap_axis)         &&
+                     (remap_axis != RARCH_UNMAPPED)
+                  )
+               {
+                  if (remap_axis < RARCH_FIRST_CUSTOM_BIND)
+                  {
+                     BIT256_SET(handle->buttons[i], remap_axis);
+                  }
+                  else
+                  {
+                     int invert = 1;
 
-                  handle->analog_value[i][remap_axis - RARCH_FIRST_CUSTOM_BIND] = current_axis_value * invert;
-                  /* RARCH_LOG("axis %d(%d) remapped to axis %d val %d\n", j, k, 
-                     remap_axis - RARCH_FIRST_CUSTOM_BIND, current_axis_value); */
+                     if (  (k % 2 == 0 && remap_axis % 2 != 0) || 
+                           (k % 2 != 0 && remap_axis % 2 == 0)
+                        )
+                        invert = -1;
+
+                     handle->analog_value[i][
+                        remap_axis - RARCH_FIRST_CUSTOM_BIND] = 
+                           current_axis_value * invert;
+#if 0
+                     RARCH_LOG("axis %d(%d) remapped to axis %d val %d\n",
+                           j, k, 
+                           remap_axis - RARCH_FIRST_CUSTOM_BIND,
+                           current_axis_value);
+#endif
+                  }
                }
+
             }
-
-         }
+            break;
+         default:
+            break;
       }
    }
 }
@@ -217,30 +246,29 @@ void input_mapper_state(
    {
       case RETRO_DEVICE_JOYPAD:
          if (input_mapper_button_pressed(handle, port, id))
-            *ret = 1;
+            *ret            = 1;
          break;
       case RETRO_DEVICE_ANALOG:
          if (idx < 2 && id < 2)
          {
             int         val = 0;
             unsigned offset = 0 + (idx * 4) + (id * 2);
+            int        val1 = handle->analog_value[port][offset];
+            int        val2 = handle->analog_value[port][offset+1];
 
-            if (handle->analog_value[port][offset])
-               val = handle->analog_value[port][offset];
-            else if (handle->analog_value[port][offset+1])
-               val = handle->analog_value[port][offset+1];
+            if (val1)
+               val          = val1;
+            else if (val2)
+               val          = val2;
 
-            if (  handle->analog_value[port][offset] || 
-                  handle->analog_value[port][offset+1])
-               *ret |= val;
+            if (val1 || val2)
+               *ret        |= val;
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
          if (id < RETROK_LAST)
-         {
             if (MAPPER_GET_KEY(handle, id))
                *ret |= 1;
-         }
          break;
       default:
          break;
