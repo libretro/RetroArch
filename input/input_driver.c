@@ -972,7 +972,10 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
          }
       }
 
-      if (bit_pressed || input_keys_pressed_iterate(i, p_new_state))
+      if (!bit_pressed)
+         bit_pressed = input_keys_pressed_iterate(i, p_new_state);
+
+      if (bit_pressed)
       {
          BIT256_SET_PTR(p_new_state, i);
       }
@@ -1117,8 +1120,10 @@ void input_keys_pressed(void *data, input_bits_t *p_new_state)
                0, RETRO_DEVICE_JOYPAD, 0, i)
          )
          bit_pressed = true;
+      else if (input_keys_pressed_iterate(i, p_new_state))
+         bit_pressed = true;
 
-      if (bit_pressed || input_keys_pressed_iterate(i, p_new_state))
+      if (bit_pressed)
       {
          BIT256_SET_PTR(p_new_state, i);
       }
