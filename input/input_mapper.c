@@ -106,6 +106,7 @@ void input_mapper_poll(input_mapper_t *handle)
       {
             /* keyboard to gamepad remapping */
          case RETRO_DEVICE_KEYBOARD:
+            BIT256_CLEAR_ALL_PTR(&current_input);
             input_get_state_for_port(settings, i, &current_input);
             for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
             {
@@ -147,6 +148,7 @@ void input_mapper_poll(input_mapper_t *handle)
              * the bit on the mapper input bitmap, later on the 
              * original input is cleared in input_state */
             BIT256_CLEAR_ALL(handle->buttons[i]);
+            BIT256_CLEAR_ALL_PTR(&current_input);
 
             for (j = 0; j < 8; j++)
                handle->analog_value[i][j] = 0;

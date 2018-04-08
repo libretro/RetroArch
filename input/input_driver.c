@@ -1133,8 +1133,6 @@ void input_get_state_for_port(void *data, unsigned port, input_bits_t *p_new_sta
    settings_t              *settings            = (settings_t*)data;
    const input_device_driver_t *joypad_driver   = input_driver_get_joypad_driver();
 
-   BIT256_CLEAR_ALL_PTR(p_new_state);
-
    joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
    joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
    joypad_info.axis_threshold                   = input_driver_axis_threshold;
@@ -1159,7 +1157,7 @@ void input_get_state_for_port(void *data, unsigned port, input_bits_t *p_new_sta
                joypad_info, port, i, j, libretro_input_binds[port]);
 
          if (val >= 0)
-            p_new_state->analogs[offset] = val;
+            p_new_state->analogs[offset]   = val;
          else
             p_new_state->analogs[offset+1] = val;
       }
