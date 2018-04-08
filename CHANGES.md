@@ -1,5 +1,6 @@
 # 1.7.2 (future)
 - ANDROID/OPENSL: Prevent crashes when setting audio latency too low (buffer count can never be lower than 2 now).
+- COMMON: Hide the 'Core delete' option if the 'Core updater' is also hidden.
 - COMMON: Add way to reset core association for playlist entry.
 - COMMON: Fix invalid long command line options causing infinite loop on Windows
 - COMMON: Add OSD statistics for video/audio/core.
