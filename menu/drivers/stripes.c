@@ -87,6 +87,7 @@ typedef struct
    float zoom;
    float x;
    float y;
+   float width;
    uintptr_t icon;
    uintptr_t content_icon;
    char *fullpath;
@@ -243,8 +244,10 @@ typedef struct stripes_handle
    float categories_after_x;
    float categories_passive_alpha;
    float categories_passive_zoom;
+   float categories_passive_width;
    float categories_active_zoom;
    float categories_active_alpha;
+   float categories_active_width;
 
    uint64_t frame_count;
 
@@ -1709,6 +1712,7 @@ static void stripes_list_switch_horizontal_list(stripes_handle_t *stripes)
       menu_animation_ctx_entry_t entry;
       float ia                    = stripes->categories_passive_alpha;
       float iz                    = stripes->categories_passive_zoom;
+      float iw                    = stripes->categories_passive_width;
       float ix                    = stripes->categories_before_x;
       float iy                    = stripes->categories_before_y;
       stripes_node_t *node            = stripes_get_node(stripes, j);
@@ -1720,6 +1724,7 @@ static void stripes_list_switch_horizontal_list(stripes_handle_t *stripes)
       {
          ia = stripes->categories_active_alpha;
          iz = stripes->categories_active_zoom;
+         iw = stripes->categories_active_width;
          ix = stripes->categories_active_x;
          iy = stripes->categories_active_y;
       }
@@ -1753,6 +1758,11 @@ static void stripes_list_switch_horizontal_list(stripes_handle_t *stripes)
       entry.subject      = &node->y;
 
       menu_animation_push(&entry);
+
+      entry.target_value = iw;
+      entry.subject      = &node->width;
+
+      menu_animation_push(&entry);
    }
 }
 
@@ -1772,7 +1782,7 @@ static void stripes_list_switch(stripes_handle_t *stripes)
    stripes_list_switch_horizontal_list(stripes);
 
    anim_entry.duration     = STRIPES_DELAY;
-   anim_entry.target_value = stripes->icon_spacing_horizontal 
+   anim_entry.target_value = stripes->categories_passive_width 
       * -(float)stripes->categories_selection_ptr;
    anim_entry.subject      = &stripes->categories_x_pos;
    anim_entry.easing_enum  = EASING_OUT_QUAD;
@@ -1952,7 +1962,7 @@ static void stripes_context_reset_horizontal_list(
       stripes_list_get_size(stripes, MENU_LIST_HORIZONTAL);
 
    stripes->categories_x_pos           = 
-      stripes->icon_spacing_horizontal *
+      stripes->categories_passive_width *
       -(float)stripes->categories_selection_ptr;
 
    depth                           = (stripes->depth > 1) ? 2 : 1;
@@ -2919,6 +2929,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    const float under_thumb_margin          = 0.96;
    float scale_factor                      = 0.0f;
    float pseudo_font_length                = 0.0f;
+   float stack_width                       = 285;
    stripes_handle_t *stripes                       = (stripes_handle_t*)data;
    settings_t *settings                    = config_get_ptr();
 
@@ -2982,12 +2993,9 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
          menu_display_ctx_rotate_draw_t rotate_draw;
          math_matrix_4x4 mymat;
          uintptr_t texture        = node->icon;
-         float x                  = stripes->x + stripes->categories_x_pos +
-                                    stripes->margins_screen_left +
-                                    stripes->icon_spacing_horizontal 
-                                    * (i + 1) - stripes->icon_size / 2.0;
-         float y                  = node->y 
-            + stripes->icon_size / 2.0;
+         float x                  = stack_width + stripes->categories_x_pos + node->x + node->width / 2.0
+                                    - stripes->icon_size / 2.0;
+         float y                  = node->y + stripes->icon_size / 2.0;
          float rotation           = 0;
          float scale_factor       = node->zoom;
 
@@ -3014,6 +3022,8 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
                &stripes_item_color[0],
                stripes->shadow_offset);
       }
+
+      stack_width += node->width;
    }
 
    menu_display_blend_end(video_info);
@@ -3121,6 +3131,9 @@ static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
    stripes->categories_active_x      = stripes->categories_angle / 2;
    stripes->categories_before_x      = stripes->categories_angle - 22;
    stripes->categories_after_x       = 22;
+
+   stripes->categories_passive_width = 128;
+   stripes->categories_active_width  = 1200;
 
    stripes->items_active_zoom        = 1.0;
    stripes->items_passive_zoom       = 0.5;
