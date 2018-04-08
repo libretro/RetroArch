@@ -51,7 +51,7 @@
 struct input_mapper
 {
    /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4];
+   int16_t analog[MAX_USERS][8];
    /* the whole keyboard state */
    uint32_t keys[RETROK_LAST / 32 + 1];
    /* This is a bitmask of (1 << key_bind_id). */
@@ -83,13 +83,14 @@ bool input_mapper_button_pressed(input_mapper_t *handle, unsigned port, unsigned
 
 void input_mapper_poll(input_mapper_t *handle)
 {
-   int i, j;
+   int i, j, k;
    settings_t *settings = config_get_ptr();
    retro_bits_t current_input;
    unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    unsigned device      = 0;
    unsigned current_button_value;
-   unsigned remap_button;
+   int16_t current_axis_value;
+   unsigned remap_button, remap_axis;
    bool key_event[RARCH_CUSTOM_BIND_LIST_END];
 #ifdef HAVE_MENU
    bool menu_is_alive   = menu_driver_is_alive();
@@ -157,15 +158,29 @@ void input_mapper_poll(input_mapper_t *handle)
                remap_button != RARCH_UNMAPPED)
                BIT256_SET(handle->buttons[i], remap_button);
          }
-#if 0
+#if 1
          /* --CURRENTLY NOT IMPLEMENTED--
             this loop should iterate on all users and all analog stick axes and if the axes are
             moved and is assigned to a button it should set the bit on the mapper input bitmap.
             Once implemented we should make sure to clear the original analog
             stick input in input_state in input_driver.c */
 
-         for (j = RARCH_FIRST_CUSTOM_BIND; j < RARCH_CUSTOM_BIND_LIST_END; j++)
-         { }
+         for (j = 0; j < 8; j++)
+         {
+            handle->analog[i][j] = 0;
+
+            k = j + RARCH_FIRST_CUSTOM_BIND;
+            current_axis_value = current_input.analogs[j];
+            remap_axis = settings->uints.input_remap_ids[i][k];
+            if (current_axis_value != 0 && k != remap_axis && remap_axis != RARCH_UNMAPPED)
+            {
+               if (remap_axis < RARCH_FIRST_CUSTOM_BIND)
+                  BIT256_SET(handle->buttons[i], remap_axis);
+               else
+                  handle->analog[i][remap_axis - RARCH_FIRST_CUSTOM_BIND] = current_axis_value;
+            }
+
+         }
 #endif
       }
    }
@@ -187,6 +202,10 @@ void input_mapper_state(
       case RETRO_DEVICE_JOYPAD:
          if (input_mapper_button_pressed(handle, port, id))
             *ret = 1;
+         break;
+      case RETRO_DEVICE_ANALOG:
+         if (handle->analog[port][idx == 0 ? id : id / 2] != 0)
+         *ret = handle->analog[port][idx == 0 ? id : id / 2];
          break;
       case RETRO_DEVICE_KEYBOARD:
          if (id < RETROK_LAST)

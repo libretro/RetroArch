@@ -153,6 +153,8 @@ static INLINE bool bits_any_set(uint32_t* ptr, uint32_t count)
 typedef struct
 {
    uint32_t data[8];
+   uint16_t analogs[8];
 } retro_bits_t;
+
 
 #endif
