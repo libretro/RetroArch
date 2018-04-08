@@ -315,85 +315,6 @@ static float stripes_item_color[] = {
    1, 1, 1, 1
 };
 
-
-float stripes_stripes_gradient_dark_purple[16] = {
-    20/255.0,  13/255.0,  20/255.0, 1.0,
-    20/255.0,  13/255.0,  20/255.0, 1.0,
-    92/255.0,  44/255.0,  92/255.0, 1.0,
-   148/255.0,  90/255.0, 148/255.0, 1.0,
-};
-
-float stripes_gradient_midnight_blue[16] = {
-   44/255.0, 62/255.0, 80/255.0, 1.0,
-   44/255.0, 62/255.0, 80/255.0, 1.0,
-   44/255.0, 62/255.0, 80/255.0, 1.0,
-   44/255.0, 62/255.0, 80/255.0, 1.0,
-};
-
-float stripes_gradient_golden[16] = {
-   174/255.0, 123/255.0,  44/255.0, 1.0,
-   205/255.0, 174/255.0,  84/255.0, 1.0,
-   58/255.0,   43/255.0,  24/255.0, 1.0,
-   58/255.0,   43/255.0,  24/255.0, 1.0,
-};
-
-float stripes_gradient_legacy_red[16] = {
-   171/255.0,  70/255.0,  59/255.0, 1.0,
-   171/255.0,  70/255.0,  59/255.0, 1.0,
-   190/255.0,  80/255.0,  69/255.0, 1.0,
-   190/255.0,  80/255.0,  69/255.0, 1.0,
-};
-
-float stripes_gradient_electric_blue[16] = {
-     1/255.0,   2/255.0,  67/255.0, 1.0,
-     1/255.0,  73/255.0, 183/255.0, 1.0,
-     1/255.0,  93/255.0, 194/255.0, 1.0,
-     3/255.0, 162/255.0, 254/255.0, 1.0,
-};
-
-float stripes_gradient_apple_green[16] = {
-   102/255.0, 134/255.0,  58/255.0, 1.0,
-   122/255.0, 131/255.0,  52/255.0, 1.0,
-    82/255.0, 101/255.0,  35/255.0, 1.0,
-    63/255.0,  95/255.0,  30/255.0, 1.0,
-};
-
-float stripes_gradient_undersea[16] = {
-    23/255.0,  18/255.0,  41/255.0, 1.0,
-    30/255.0,  72/255.0, 114/255.0, 1.0,
-    52/255.0,  88/255.0, 110/255.0, 1.0,
-    69/255.0, 125/255.0, 140/255.0, 1.0,
-
-};
-
-float stripes_gradient_volcanic_red[16] = {
-   1.0, 0.0, 0.1, 1.00,
-   1.0, 0.1, 0.0, 1.00,
-   0.1, 0.0, 0.1, 1.00,
-   0.1, 0.0, 0.1, 1.00,
-};
-
-float stripes_gradient_dark[16] = {
-   0.1, 0.1, 0.1, 1.00,
-   0.1, 0.1, 0.1, 1.00,
-   0.0, 0.0, 0.0, 1.00,
-   0.0, 0.0, 0.0, 1.00,
-};
-
-float stripes_gradient_light[16] = {
-   1.0, 1.0, 1.0, 1.00,
-   1.0, 1.0, 1.0, 1.00,
-   1.0, 1.0, 1.0, 1.00,
-   1.0, 1.0, 1.0, 1.00,
-};
-
-float stripes_gradient_morning_blue[16] = {
-   221/255.0, 241/255.0, 254/255.0, 1.00,
-   135/255.0, 206/255.0, 250/255.0, 1.00,
-   1.0, 1.0, 1.0, 1.00,
-   170/255.0, 200/255.0, 252/255.0, 1.00,
-};
-
 static void stripes_calculate_visible_range(const stripes_handle_t *stripes,
       unsigned height, size_t list_size, unsigned current,
       unsigned *first, unsigned *last);
@@ -516,38 +437,6 @@ static const char *stripes_thumbnails_ident(char pos)
    }
 
    return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
-}
-
-static float *stripes_gradient_ident(video_frame_info_t *video_info)
-{
-   switch (video_info->xmb_color_theme)
-   {
-      case XMB_THEME_DARK_PURPLE:
-         return &stripes_stripes_gradient_dark_purple[0];
-      case XMB_THEME_MIDNIGHT_BLUE:
-         return &stripes_gradient_midnight_blue[0];
-      case XMB_THEME_GOLDEN:
-         return &stripes_gradient_golden[0];
-      case XMB_THEME_ELECTRIC_BLUE:
-         return &stripes_gradient_electric_blue[0];
-      case XMB_THEME_APPLE_GREEN:
-         return &stripes_gradient_apple_green[0];
-      case XMB_THEME_UNDERSEA:
-         return &stripes_gradient_undersea[0];
-      case XMB_THEME_VOLCANIC_RED:
-         return &stripes_gradient_volcanic_red[0];
-      case XMB_THEME_DARK:
-         return &stripes_gradient_dark[0];
-      case XMB_THEME_LIGHT:
-         return &stripes_gradient_light[0];
-      case XMB_THEME_MORNING_BLUE:
-         return &stripes_gradient_morning_blue[0];
-      case XMB_THEME_LEGACY_RED:
-      default:
-         break;
-   }
-
-   return &stripes_gradient_legacy_red[0];
 }
 
 static size_t stripes_list_get_selection(void *data)
@@ -2922,14 +2811,12 @@ static void stripes_draw_bg(
          &&
          (video_info->xmb_color_theme != XMB_THEME_WALLPAPER))
    {
-      draw.color = stripes_gradient_ident(video_info);
+      draw.color = &stripes_coord_white[0];
 
       if (running)
          menu_display_set_alpha(draw.color, stripes_coord_black[3]);
       else
          menu_display_set_alpha(draw.color, stripes_coord_white[3]);
-
-      menu_display_draw_gradient(&draw, video_info);
 
       draw.pipeline.id = VIDEO_SHADER_MENU_2;
 
@@ -2961,16 +2848,12 @@ static void stripes_draw_bg(
    {
       uintptr_t texture           = draw.texture;
 
-      if (video_info->xmb_color_theme != XMB_THEME_WALLPAPER)
-         draw.color = stripes_gradient_ident(video_info);
+      draw.color = &stripes_coord_white[0];
 
       if (running)
          menu_display_set_alpha(draw.color, stripes_coord_black[3]);
       else
          menu_display_set_alpha(draw.color, stripes_coord_white[3]);
-
-      if (video_info->xmb_color_theme != XMB_THEME_WALLPAPER)
-         menu_display_draw_gradient(&draw, video_info);
 
       {
          float override_opacity = video_info->menu_wallpaper_opacity;
