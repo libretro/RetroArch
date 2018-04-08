@@ -48,7 +48,7 @@
    } while(0)
 #endif
 
-extern struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END];
+extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
 static int generic_shader_action_parameter_right(struct video_shader_parameter *param,
       unsigned type, const char *label, bool wraparound)
@@ -101,58 +101,81 @@ int action_right_cheat(unsigned type, const char *label,
          wraparound);
 }
 
-#ifdef HAVE_KEYMAPPER
 int action_right_input_desc_kbd(unsigned type, const char *label,
       bool wraparound)
 {
-   unsigned key_id;
+   unsigned key_id, id, offset;
    unsigned remap_id;
-   char desc[PATH_MAX_LENGTH];
-   unsigned offset      = type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
    settings_t *settings = config_get_ptr();
 
    if (!settings)
       return 0;
 
-   remap_id = settings->uints.input_keymapper_ids[offset];
+   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      (MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
 
-   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
+   id = (type / (offset + 1)) - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+
+   remap_id =
+      settings->uints.input_keymapper_ids[offset][id];
+
+   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
    {
       if(remap_id == key_descriptors[key_id].key)
          break;
    }
 
-   if (key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
+   RARCH_LOG("o:%u t:%u i:%u r:%u\n", offset, type, id, remap_id);
+
+   if (key_id < RARCH_MAX_KEYS + MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
       key_id++;
    else
       key_id = 0;
 
-   settings->uints.input_keymapper_ids[offset] = key_descriptors[key_id].key;
+   settings->uints.input_keymapper_ids[offset][id] = key_descriptors[key_id].key;
 
    return 0;
 }
-#endif
 
+/* fix-me: incomplete, lacks error checking */
 int action_right_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
-unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-unsigned inp_desc_user         = inp_desc_index_offset / (RARCH_FIRST_CUSTOM_BIND + 4);
-unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
-settings_t *settings = config_get_ptr();
+   rarch_system_info_t *system           = runloop_get_system_info();
+   settings_t *settings                  = config_get_ptr();
+   unsigned btn_idx, user_idx, remap_idx;
 
-if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
-{
-   if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND - 1)
-      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
-}
-else
-{
-   if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < 4 - 1)
-      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
-}
+   if (!settings || !system)
+      return 0;
 
-return 0;
+   user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+
+   if (settings->uints.input_remap_ids[user_idx][btn_idx] < RARCH_CUSTOM_BIND_LIST_END - 1)
+      settings->uints.input_remap_ids[user_idx][btn_idx]++;
+   else if (settings->uints.input_remap_ids[user_idx][btn_idx] == RARCH_CUSTOM_BIND_LIST_END - 1)
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
+   else
+      settings->uints.input_remap_ids[user_idx][btn_idx] = 0;
+
+   remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
+
+   /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
+      also skip all the axes until analog remapping is implemented */
+   if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*|| 
+       (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
+      action_right_input_desc(type, label, wraparound);
+
+#if 0
+   int i = 0;
+   //RARCH_LOG("[remap-debug] new descriptor for %d: %s\n", remap_idx, system->input_desc_btn[user_idx][remap_idx]);
+   for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
+      RARCH_LOG("[remap-debug]: user %d button %d new id %d\n", user_idx, i, settings->uints.input_remap_ids[user_idx][i]);
+#endif
+
+   return 0;
 }
 
 static int action_right_scroll(unsigned type, const char *label,
@@ -478,13 +501,11 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_RIGHT(cbs, action_right_input_desc);
    }
-#ifdef HAVE_KEYMAPPER
    else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
       && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
       BIND_ACTION_RIGHT(cbs, action_right_input_desc_kbd);
    }
-#endif
    else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
    {
       BIND_ACTION_RIGHT(cbs, playlist_association_right);

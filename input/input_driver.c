@@ -34,9 +34,7 @@
 #include "input_remote.h"
 #endif
 
-#ifdef HAVE_KEYMAPPER
 #include "input_mapper.h"
-#endif
 
 #include "input_driver.h"
 #include "input_keymaps.h"
@@ -377,9 +375,7 @@ static command_t *input_driver_command            = NULL;
 #ifdef HAVE_NETWORKGAMEPAD
 static input_remote_t *input_driver_remote        = NULL;
 #endif
-#ifdef HAVE_KEYMAPPER
 static input_mapper_t *input_driver_mapper        = NULL;
-#endif
 static const input_driver_t *current_input        = NULL;
 static void *current_input_data                   = NULL;
 static bool input_driver_block_hotkey             = false;
@@ -579,6 +575,8 @@ void input_poll(void)
    if (input_driver_block_libretro_input)
       return;
 
+
+
    for (i = 0; i < max_users; i++)
    {
       if (libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
@@ -603,6 +601,9 @@ void input_poll(void)
             input_driver_axis_threshold);
 #endif
 
+   if (settings->bools.input_remap_binds_enable && input_driver_mapper)
+      input_mapper_poll(input_driver_mapper);
+
 #ifdef HAVE_COMMAND
    if (input_driver_command)
       command_poll(input_driver_command);
@@ -611,11 +612,6 @@ void input_poll(void)
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_driver_remote)
       input_remote_poll(input_driver_remote, max_users);
-#endif
-
-#ifdef HAVE_KEYMAPPER
-   if (input_driver_mapper)
-      input_mapper_poll(input_driver_mapper);
 #endif
 }
 
@@ -634,7 +630,11 @@ void input_poll(void)
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   int16_t res                     = 0;
+   int16_t res = 0;
+
+   /* used to reset input state of a button when the gamepad mapper
+      is in action for that button*/
+   bool reset_state  = false;
 
    device &= RETRO_DEVICE_MASK;
 
@@ -657,17 +657,35 @@ int16_t input_state(unsigned port, unsigned device,
          switch (device)
          {
             case RETRO_DEVICE_JOYPAD:
-               if (id < RARCH_FIRST_CUSTOM_BIND)
-                  id = settings->uints.input_remap_ids[port][id];
+               if (id != settings->uints.input_remap_ids[port][id])
+                  reset_state = true;
+
                break;
             case RETRO_DEVICE_ANALOG:
                if (idx < 2 && id < 2)
                {
-                  unsigned new_id = RARCH_FIRST_CUSTOM_BIND + (idx * 2 + id);
-
-                  new_id = settings->uints.input_remap_ids[port][new_id];
-                  idx   = (new_id & 2) >> 1;
-                  id    = new_id & 1;
+                  if (idx == 0)
+                  {
+                     if (id == 0 && settings->uints.input_remap_ids[port][16] != 16)
+                        reset_state = true;
+                     if (id == 0 && settings->uints.input_remap_ids[port][17] != 17)
+                        reset_state = true;
+                     if (id == 1 && settings->uints.input_remap_ids[port][18] != 18)
+                        reset_state = true;
+                     if (id == 1 && settings->uints.input_remap_ids[port][19] != 19)
+                        reset_state = true;
+                  }
+                  if (idx == 1)
+                  {
+                     if (id == 0 && settings->uints.input_remap_ids[port][20] != 20)
+                        reset_state = true;
+                     if (id == 0 && settings->uints.input_remap_ids[port][21] != 21)
+                        reset_state = true;
+                     if (id == 1 && settings->uints.input_remap_ids[port][22] != 22)
+                        reset_state = true;
+                     if (id == 1 && settings->uints.input_remap_ids[port][23] != 23)
+                        reset_state = true;
+                  }
                }
                break;
          }
@@ -680,15 +698,21 @@ int16_t input_state(unsigned port, unsigned device,
          if (bind_valid || device == RETRO_DEVICE_KEYBOARD)
          {
             rarch_joypad_info_t joypad_info;
-
             joypad_info.axis_threshold = input_driver_axis_threshold;
             joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
             joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
-            res = current_input->input_state(
-                  current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
+            if (!reset_state)
+               res = current_input->input_state(
+                     current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
+            else
+               res = 0;
          }
       }
+
+      if (settings->bools.input_remap_binds_enable && input_driver_mapper)
+         input_mapper_state(input_driver_mapper,
+               &res, port, device, idx, id);
 
 #ifdef HAVE_OVERLAY
       if (overlay_ptr)
@@ -698,12 +722,6 @@ int16_t input_state(unsigned port, unsigned device,
 #ifdef HAVE_NETWORKGAMEPAD
       if (input_driver_remote)
          input_remote_state(&res, port, device, idx, id);
-#endif
-
-#ifdef HAVE_KEYMAPPER
-      if (input_driver_mapper)
-         input_mapper_state(input_driver_mapper,
-               &res, port, device, idx, id);
 #endif
 
       /* Don't allow turbo for D-pad. */
@@ -1125,6 +1143,59 @@ void input_keys_pressed(void *data, retro_bits_t* p_new_state)
    }
 }
 
+void input_get_state_for_port(void *data, unsigned port, retro_bits_t* p_new_state)
+{
+   unsigned i, j;
+   int16_t val;
+   rarch_joypad_info_t joypad_info;
+   settings_t              *settings            = (settings_t*)data;
+   BIT256_CLEAR_ALL_PTR(p_new_state);
+
+   joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
+   joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
+   joypad_info.axis_threshold                   = input_driver_axis_threshold;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      bool bit_pressed = false;
+
+      if (input_driver_input_state(joypad_info, libretro_input_binds, port, RETRO_DEVICE_JOYPAD, 0, i) != 0)
+         bit_pressed = true;
+
+      if (bit_pressed)
+         BIT256_SET_PTR(p_new_state, i);
+   }
+
+   /* left-stick x */
+   val = input_joypad_analog(input_driver_get_joypad_driver(), joypad_info, port, 0, 0, libretro_input_binds[port]);
+   if (val >= 0)
+      p_new_state->analogs[0] = val;
+   else
+      p_new_state->analogs[1] = val;
+
+   /* left-stick y */
+   val = input_joypad_analog(input_driver_get_joypad_driver(), joypad_info, port, 0, 1, libretro_input_binds[port]);
+   if (val >= 0)
+      p_new_state->analogs[2] = val;
+   else
+      p_new_state->analogs[3] = val;
+
+   /* right-stick x */
+   val = input_joypad_analog(input_driver_get_joypad_driver(), joypad_info, port, 1, 0, libretro_input_binds[port]);
+   if (val >= 0)
+      p_new_state->analogs[4] = val;
+   else
+      p_new_state->analogs[5] = val;
+
+   /* right-stick y */
+   val = input_joypad_analog(input_driver_get_joypad_driver(), joypad_info, port, 1, 1, libretro_input_binds[port]);
+   if (val >= 0)
+      p_new_state->analogs[6] = val;
+   else
+      p_new_state->analogs[7] = val;
+
+}
+
 void *input_driver_get_data(void)
 {
    return current_input_data;
@@ -1343,11 +1414,9 @@ void input_driver_deinit_remote(void)
 
 void input_driver_deinit_mapper(void)
 {
-#ifdef HAVE_KEYMAPPER
    if (input_driver_mapper)
       input_mapper_free(input_driver_mapper);
    input_driver_mapper = NULL;
-#endif
 }
 
 bool input_driver_init_remote(void)
@@ -1372,20 +1441,17 @@ bool input_driver_init_remote(void)
 
 bool input_driver_init_mapper(void)
 {
-#ifdef HAVE_KEYMAPPER
    settings_t *settings = config_get_ptr();
 
-   if (!settings->bools.keymapper_enable)
+   if (!settings->bools.input_remap_binds_enable)
       return false;
 
-   input_driver_mapper = input_mapper_new(
-         settings->uints.keymapper_port);
+   input_driver_mapper = input_mapper_new();
 
    if (input_driver_mapper)
       return true;
 
    RARCH_ERR("Failed to initialize input mapper.\n");
-#endif
    return false;
 }
 

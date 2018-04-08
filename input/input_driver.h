@@ -343,6 +343,8 @@ void input_menu_keys_pressed(void *data, retro_bits_t* new_state);
 
 void *input_driver_get_data(void);
 
+void input_get_state_for_port(void *data, unsigned port, retro_bits_t* p_new_state);
+
 const input_driver_t *input_get_ptr(void);
 
 void *input_get_data(void);
