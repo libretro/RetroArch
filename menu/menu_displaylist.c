@@ -3271,7 +3271,8 @@ static int menu_displaylist_parse_options_remappings(
                   const struct retro_keybind *keyptr =
                      &input_config_binds[p][retro_id];
 
-                  strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
+                  snprintf(desc_label, sizeof(desc_label), "%s %s", msg_hash_to_str(keyptr->enum_idx), descriptor);
+                  strlcpy(descriptor, desc_label, sizeof(descriptor));
                }
 
                menu_entries_append_enum(info->list, descriptor, "",
