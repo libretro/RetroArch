@@ -7,6 +7,7 @@
 
 #include "mylist.h"
 #include "mem_util.h"
+#include "dirty_input.h"
 
 bool input_is_dirty             = false;
 static MyList *input_state_list = NULL;

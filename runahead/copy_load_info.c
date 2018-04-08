@@ -6,6 +6,7 @@
 
 #include "../core.h"
 #include "mem_util.h"
+#include "copy_load_info.h"
 
 retro_ctx_load_content_info_t *load_content_info;
 enum rarch_core_type last_core_type;
