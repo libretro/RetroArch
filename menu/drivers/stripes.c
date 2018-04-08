@@ -234,6 +234,9 @@ typedef struct stripes_handle
    float margins_slice;
    float textures_arrow_alpha;
    float categories_x_pos;
+   float categories_active_y;
+   float categories_before_y;
+   float categories_after_y;
    float categories_passive_alpha;
    float categories_passive_zoom;
    float categories_active_zoom;
@@ -1702,6 +1705,7 @@ static void stripes_list_switch_horizontal_list(stripes_handle_t *stripes)
       menu_animation_ctx_entry_t entry;
       float ia                    = stripes->categories_passive_alpha;
       float iz                    = stripes->categories_passive_zoom;
+      float iy                    = stripes->categories_before_y;
       stripes_node_t *node            = stripes_get_node(stripes, j);
 
       if (!node)
@@ -1711,6 +1715,15 @@ static void stripes_list_switch_horizontal_list(stripes_handle_t *stripes)
       {
          ia = stripes->categories_active_alpha;
          iz = stripes->categories_active_zoom;
+         iy = stripes->categories_active_y;
+      }
+      else if (j < stripes->categories_active_idx)
+      {
+         iy = stripes->categories_before_y;
+      }
+      else if (j > stripes->categories_active_idx)
+      {
+         iy = stripes->categories_after_y;
       }
 
       entry.duration     = STRIPES_DELAY;
@@ -1725,6 +1738,11 @@ static void stripes_list_switch_horizontal_list(stripes_handle_t *stripes)
 
       entry.target_value = iz;
       entry.subject      = &node->zoom;
+
+      menu_animation_push(&entry);
+
+      entry.target_value = iy;
+      entry.subject      = &node->y;
 
       menu_animation_push(&entry);
    }
@@ -3381,7 +3399,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
                                     stripes->margins_screen_left +
                                     stripes->icon_spacing_horizontal 
                                     * (i + 1) - stripes->icon_size / 2.0;
-         float y                  = stripes->margins_screen_top 
+         float y                  = node->y 
             + stripes->icon_size / 2.0;
          float rotation           = 0;
          float scale_factor       = node->zoom;
@@ -3624,7 +3642,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
-static void stripes_layout_ps3(stripes_handle_t *stripes, int width)
+static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
 {
    unsigned new_font_size, new_header_height;
    settings_t *settings          = config_get_ptr();
@@ -3639,6 +3657,11 @@ static void stripes_layout_ps3(stripes_handle_t *stripes, int width)
 
    stripes->categories_active_zoom   = 1.0;
    stripes->categories_passive_zoom  = 0.5;
+
+   stripes->categories_active_y      = height / 2;
+   stripes->categories_before_y      = 64;
+   stripes->categories_after_y       = height - 64;
+
    stripes->items_active_zoom        = 1.0;
    stripes->items_passive_zoom       = 0.5;
 
@@ -3777,7 +3800,7 @@ static void stripes_layout(stripes_handle_t *stripes)
 
    /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
    if (width > 320 && height > 240)
-      stripes_layout_ps3(stripes, width);
+      stripes_layout_ps3(stripes, width, height);
    else
       stripes_layout_psp(stripes, width);
 
