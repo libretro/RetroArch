@@ -249,31 +249,31 @@ void input_mapper_state(
                      *ret = val;
                   }
                }
-               if (idx == 1)
+            }
+            if (idx == 1)
+            {
+               if (id == 0)
                {
-                  if (id == 0)
-                  {
-                     if (handle->analog_value[port][4])
-                        val = handle->analog_value[port][4];
-                     else if (handle->analog_value[port][5])
-                        val = handle->analog_value[port][5];
+                  if (handle->analog_value[port][4])
+                     val = handle->analog_value[port][4];
+                  else if (handle->analog_value[port][5])
+                     val = handle->analog_value[port][5];
 
-                     if(handle->analog_value[port][4] || handle->analog_value[port][5])
-                     {
-                        *ret = val;
-                     }
+                  if(handle->analog_value[port][4] || handle->analog_value[port][5])
+                  {
+                     *ret = val;
                   }
-                  if (id == 1)
-                  {
-                     if (handle->analog_value[port][6])
-                        val = handle->analog_value[port][6];
-                     else if (handle->analog_value[port][7])
-                        val = handle->analog_value[port][7];
+               }
+               if (id == 1)
+               {
+                  if (handle->analog_value[port][6])
+                     val = handle->analog_value[port][6];
+                  else if (handle->analog_value[port][7])
+                     val = handle->analog_value[port][7];
 
-                     if(handle->analog_value[port][6] || handle->analog_value[port][7])
-                     {
-                        *ret = val;
-                     }
+                  if(handle->analog_value[port][6] || handle->analog_value[port][7])
+                  {
+                     *ret = val;
                   }
                }
             }
