@@ -37,6 +37,42 @@ MSG_HASH(MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
 MSG_HASH(MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
 	 "Você se juntou como jogador %u"
 	)
+MSG_HASH(
+      MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
+      "Você se juntou aos dispositivos de entrada %.*s"
+      )
+MSG_HASH(
+      MSG_NETPLAY_PLAYER_S_LEFT,
+      "O jogador %.*s deixou o jogo"
+      )
+MSG_HASH(
+      MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
+      "%.*s se juntou como jogador %u"
+      )
+MSG_HASH(
+      MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
+      "%.*s juntou-se a dispositivos de entrada %.*s"
+      )
+MSG_HASH(
+      MSG_NETPLAY_NOT_RETROARCH,
+      "Uma tentativa de conexão com o netplay falhou porque o par não está executando o RetroArch ou está executando uma versão antiga do RetroArch."
+      )
+MSG_HASH(
+      MSG_NETPLAY_OUT_OF_DATE,
+      "O par netplay está executando uma versão antiga do RetroArch. Não pode conectar."
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_VERSIONS,
+      "ATENÇÃO: Um par de Netplay está executando uma versão diferente do RetroArch. Se ocorrerem problemas, use a mesma versão."
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_CORES,
+      "Um par de netplay está executando um núcleo diferente. Não pode conectar."
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
+      "ATENÇÃO: Um par de Netplay está executando uma versão diferente do núcleo. Se ocorrerem problemas, use a mesma versão."
+      )
 MSG_HASH(MSG_NETPLAY_ENDIAN_DEPENDENT,
 	 "Este núcleo não suporta Netplay inter-arquitetura entre estes sistemas"
 	)
@@ -345,8 +381,21 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
 	 "Desbloqueada"
 	)
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
-	 "Fechar Conteúdo"
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE,
+      "Hardcore"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
+      "Conquistas Modo Verboso"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
+      "Captura de Conquistas Automática"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
+      "Fechar Conteúdo"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONFIG,
 	 "Configuração"
@@ -1959,8 +2008,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
 	 "Paralelismo de tarefas"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-	 "Miniaturas"
-	)
+      "Miniaturas")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+      "Miniaturas à esquerda")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
 	 "Miniaturas"
 	)
@@ -2778,6 +2828,46 @@ MSG_HASH(MSG_FAILED_TO_UNDO_LOAD_STATE,
 MSG_HASH(MSG_FAILED_TO_UNDO_SAVE_STATE,
 	 "Falha em desfazer o salvamento de Estado de Jogo."
 	)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+      "Mostrar miniaturas de estados salvos dentro do menu."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
+      "Salvar automaticamente o Save RAM não-volátil em um intervalo regular. Isso está desabilitado por padrão, a menos que seja definido de outra forma. O intervalo é medido em segundos. Um valor de 0 desativa o salvamento automático."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+      "Se ativado, substitui os vínculos de entrada com as associações remapeadas definidas para o núcleo atual."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+      "Ativa a detecção automática de entrada. Tentará autoconfigurar joypads, estilo Plug-and-Play."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+      "Troca de botões para OK/Cancelar. Desabilitado é o estilo de botão japonês, habilitada é oestilo ocidental."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+      "Se desabilitado, o conteúdo continuará sendo executado em segundo plano quando o menu do RetroArch for alternado."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+      "Driver de vídeo para usar."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+      "Driver de áudio para usar."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+      "Driver de entrada para usar. Dependendo do driver de vídeo, pode forçar um driver de entrada diferente."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+      "Driver do Joypad para usar."
+      )
 MSG_HASH(MSG_FAILED_TO_UNMUTE_AUDIO,
 	 "Falha em desativar o áudio mudo."
 	)
@@ -3566,7 +3656,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_POINTER_ENABLE,
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_THUMBNAILS,
 	 "Tipo de miniatura a ser exibida."
-	)
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
+      "Tipo de miniatura para exibir à esquerda."
+      )
 MSG_HASH(MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
 	 "Exibir data e/ou hora atuais dentro do menu."
 	)
