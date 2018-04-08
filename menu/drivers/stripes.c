@@ -3049,7 +3049,7 @@ static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
    stripes->under_item_offset        =   5.0;
 
    stripes->categories_active_zoom   = 1.0;
-   stripes->categories_passive_zoom  = 0.5;
+   stripes->categories_passive_zoom  = 0.25;
 
    stripes->categories_angle         = 400 * scale_factor;
 
@@ -3102,7 +3102,7 @@ static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
 
    stripes->margins_slice            = 16;
 
-   stripes->icon_size                = 128.0 * scale_factor;
+   stripes->icon_size                = 256.0 * scale_factor;
    stripes->font_size                = new_font_size;
 
 #ifdef STRIPES_DEBUG
