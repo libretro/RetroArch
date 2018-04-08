@@ -1267,7 +1267,7 @@ DEPENDENCIES
 #ifdef WANT_ZLIB
 #include "../deps/libz/adler32.c"
 #include "../deps/libz/compress.c"
-#include "../deps/libz/crc32.c"
+#include "../deps/libz/libz-crc32.c"
 #include "../deps/libz/deflate.c"
 #include "../deps/libz/gzclose.c"
 #include "../deps/libz/gzlib.c"
