@@ -1635,6 +1635,11 @@ static void stripes_list_switch_horizontal_list(stripes_handle_t *stripes)
 
       menu_animation_push(&entry);
 
+      entry.target_value = ix;
+      entry.subject      = &node->x;
+
+      menu_animation_push(&entry);
+
       entry.target_value = iw;
       entry.subject      = &node->width;
 
@@ -2853,6 +2858,43 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    menu_display_rotate_z(&rotate_draw, video_info);
    menu_display_blend_begin(video_info);
 
+   float mycolor[16]=  {
+      0.50, 1.00, 1.00, 1.00,
+      0.00, 0.50, 1.00, 1.00,
+      0.50, 1.00, 1.00, 1.00,
+      0.00, 0.50, 1.00, 1.00,
+   };
+
+   /* Horizontal stripes */
+   for (i = 0; i <= stripes_list_get_size(stripes, MENU_LIST_HORIZONTAL)
+      + stripes->system_tab_end; i++)
+   {
+      stripes_node_t *node = stripes_get_node(stripes, i);
+
+      if (!node)
+         continue;
+
+      menu_display_draw_polygon(
+            video_info,
+            stripes->categories_x_pos + stack_width,
+            0,
+            stripes->categories_x_pos + stack_width + node->width,
+            0,
+            stripes->categories_x_pos + stack_width + stripes->categories_angle,
+            video_info->height,
+            stripes->categories_x_pos + stack_width + stripes->categories_angle + node->width,
+            video_info->height,
+
+            video_info->width, video_info->height,
+            &mycolor[0]);
+
+      menu_display_blend_begin(video_info);
+
+      stack_width += node->width;
+   }
+
+   stack_width = 285;
+
    /* Horizontal tab icons */
    for (i = 0; i <= stripes_list_get_size(stripes, MENU_LIST_HORIZONTAL)
       + stripes->system_tab_end; i++)
@@ -2869,7 +2911,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
          menu_display_ctx_rotate_draw_t rotate_draw;
          math_matrix_4x4 mymat;
          uintptr_t texture        = node->icon;
-         float x                  = stack_width + stripes->categories_x_pos + node->x + node->width / 2.0
+         float x                  = stripes->categories_x_pos + stack_width + node->x + node->width / 2.0
                                     - stripes->icon_size / 2.0;
          float y                  = node->y + stripes->icon_size / 2.0;
          float rotation           = 0;
