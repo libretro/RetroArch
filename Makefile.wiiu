@@ -6,6 +6,7 @@ DEBUG                      = 0
 GRIFFIN_BUILD              = 0
 SALAMANDER_BUILD           = 0
 WHOLE_ARCHIVE_LINK         = 0
+HAVE_RUNAHEAD              = 1
 WIIU_HID                   = 0
 WIIU_LOG_RPX               = 0
 BUILD_DIR                  = objs/wiiu
@@ -83,11 +84,20 @@ ifeq ($(SALAMANDER_BUILD),1)
 else
    DEFINES += -DRARCH_INTERNAL
    DEFINES += -DHAVE_KEYMAPPER
-   DEFINES += -DHAVE_RUNAHEAD
    DEFINES += -DHAVE_UPDATE_ASSETS
    DEFINES += -DHAVE_FILTERS_BUILTIN
    DEFINES += -DHAVE_SLANG
    DEFINES += -DHAVE_SHADERPIPELINE
+
+ifeq ($(HAVE_RUNAHEAD),1)
+	DEFINES += -DHAVE_RUNAHEAD
+	OBJ += runahead/copy_load_info.o
+	OBJ += runahead/dirty_input.o
+	OBJ += runahead/mem_util.o
+	OBJ += runahead/mylist.o
+	OBJ += runahead/run_ahead.o
+	OBJ += runahead/secondary_core.o
+endif
 
    OBJ += wiiu/system/missing_libc_functions.o
    OBJ += wiiu/shader_utils.o
