@@ -677,13 +677,13 @@ int16_t input_state(unsigned port, unsigned device,
                   }
                   if (idx == 1)
                   {
-                     if (id == 0 && settings->uints.input_remap_ids[port][16] != 20)
+                     if (id == 0 && settings->uints.input_remap_ids[port][20] != 20)
                         reset_state = true;
-                     if (id == 0 && settings->uints.input_remap_ids[port][17] != 21)
+                     if (id == 0 && settings->uints.input_remap_ids[port][21] != 21)
                         reset_state = true;
-                     if (id == 1 && settings->uints.input_remap_ids[port][18] != 22)
+                     if (id == 1 && settings->uints.input_remap_ids[port][22] != 22)
                         reset_state = true;
-                     if (id == 1 && settings->uints.input_remap_ids[port][19] != 23)
+                     if (id == 1 && settings->uints.input_remap_ids[port][23] != 23)
                         reset_state = true;
                   }
                }
