@@ -325,6 +325,42 @@ static float stripes_item_color[] = {
    1, 1, 1, 1
 };
 
+static float HueToRGB(float v1, float v2, float vH)
+{
+   if (vH < 0)
+      vH += 1;
+
+   if (vH > 1)
+      vH -= 1;
+
+   if ((6 * vH) < 1)
+      return (v1 + (v2 - v1) * 6 * vH);
+
+   if ((2 * vH) < 1)
+      return v2;
+
+   if ((3 * vH) < 2)
+      return (v1 + (v2 - v1) * ((2.0f / 3) - vH) * 6);
+
+   return v1;
+}
+
+static void HSLToRGB(float H, float S, float L, float *rgb) {
+   if (S == 0)
+      rgb[0] = rgb[1] = rgb[2] = L;
+   else
+   {
+      float v1, v2;
+
+      v2 = (L < 0.5) ? (L * (1 + S)) : ((L + S) - (L * S));
+      v1 = 2 * L - v2;
+
+      rgb[0] = HueToRGB(v1, v2, H + (1.0f / 3));
+      rgb[1] = HueToRGB(v1, v2, H);
+      rgb[2] = HueToRGB(v1, v2, H - (1.0f / 3));
+   }
+}
+
 static void stripes_calculate_visible_range(const stripes_handle_t *stripes,
       unsigned height, size_t list_size, unsigned current,
       unsigned *first, unsigned *last);
@@ -2858,13 +2894,6 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    menu_display_rotate_z(&rotate_draw, video_info);
    menu_display_blend_begin(video_info);
 
-   float mycolor[16]=  {
-      0.50, 1.00, 1.00, 1.00,
-      0.00, 0.50, 1.00, 1.00,
-      0.50, 1.00, 1.00, 1.00,
-      0.00, 0.50, 1.00, 1.00,
-   };
-
    /* Horizontal stripes */
    for (i = 0; i <= stripes_list_get_size(stripes, MENU_LIST_HORIZONTAL)
       + stripes->system_tab_end; i++)
@@ -2873,6 +2902,15 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
 
       if (!node)
          continue;
+
+      float rgb[3];
+      HSLToRGB(0.05*(float)i,0.5,0.5, &rgb[0]) ;
+      float color[16] = {
+         rgb[0], rgb[1], rgb[2], 1,
+         rgb[0], rgb[1], rgb[2], 1,
+         rgb[0], rgb[1], rgb[2], 1,
+         rgb[0], rgb[1], rgb[2], 1,
+      };
 
       menu_display_draw_polygon(
             video_info,
@@ -2884,9 +2922,8 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
             video_info->height,
             stripes->categories_x_pos + stack_width + stripes->categories_angle + node->width,
             video_info->height,
-
             video_info->width, video_info->height,
-            &mycolor[0]);
+            &color[0]);
 
       menu_display_blend_begin(video_info);
 
