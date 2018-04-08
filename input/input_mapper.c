@@ -125,6 +125,8 @@ void input_mapper_poll(input_mapper_t *handle)
                            0, 0, RETRO_DEVICE_KEYBOARD);
                      key_event[j] = true;
                   }
+                  /* key_event tracks if a key is pressed for ANY PLAYER, so we must check 
+                     if the key was used by any player before releasing */
                   else if (!key_event[j])
                   {
                      input_keyboard_event(false,
