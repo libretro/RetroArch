@@ -108,28 +108,24 @@ void input_mapper_poll(input_mapper_t *handle)
             input_get_state_for_port(settings, i, &current_input);
             for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
             {
-               unsigned current_button_value = BIT256_GET(current_input, j);
                unsigned remap_button         = 
                   settings->uints.input_keymapper_ids[i][j];
+               bool remap_valid              = remap_button != RETROK_UNKNOWN;
 
-               if (
-                     (current_button_value == 1) && 
-                     (j != remap_button)         &&
-                     (remap_button != RETROK_UNKNOWN)
-                  )
+               if (remap_valid)
                {
-                  MAPPER_SET_KEY (handle,
-                        remap_button);
-                  input_keyboard_event(true,
-                        remap_button,
-                        0, 0, RETRO_DEVICE_KEYBOARD);
-                  key_event[j] = true;
-               }
-               else
-               {
-                  if (  (key_event[j] == false) &&
-                        (remap_button != RETROK_UNKNOWN)
-                     )
+                  unsigned current_button_value = BIT256_GET(current_input, j);
+
+                  if ((current_button_value == 1) && (j != remap_button))
+                  {
+                     MAPPER_SET_KEY (handle,
+                           remap_button);
+                     input_keyboard_event(true,
+                           remap_button,
+                           0, 0, RETRO_DEVICE_KEYBOARD);
+                     key_event[j] = true;
+                  }
+                  else if (!key_event[j])
                   {
                      input_keyboard_event(false,
                            remap_button,
@@ -159,29 +155,26 @@ void input_mapper_poll(input_mapper_t *handle)
                unsigned current_button_value = BIT256_GET(current_input, j);
                unsigned remap_button         = 
                   settings->uints.input_remap_ids[i][j];
+               bool remap_valid              = (current_button_value == 1) &&
+                  (j != remap_button) && (remap_button != RARCH_UNMAPPED);
 
-               if (
-                     (current_button_value == 1)      && 
-                     (j != remap_button)              &&
-                     (remap_button != RARCH_UNMAPPED) &&
-                     (remap_button < RARCH_FIRST_CUSTOM_BIND)
-                  )
-                  BIT256_SET(handle->buttons[i], remap_button);
-               else if (
-                     (current_button_value == 1)      && 
-                     (j != remap_button)              &&
-                     (remap_button != RARCH_UNMAPPED) &&
-                     (remap_button >= RARCH_FIRST_CUSTOM_BIND)
-                     )
+               if (remap_valid)
                {
-                  int invert = 1;
+                  if (remap_button < RARCH_FIRST_CUSTOM_BIND)
+                  {
+                     BIT256_SET(handle->buttons[i], remap_button);
+                  }
+                  else if (remap_button >= RARCH_FIRST_CUSTOM_BIND)
+                  {
+                     int invert = 1;
 
-                  if (remap_button % 2 != 0)
-                     invert = -1;
+                     if (remap_button % 2 != 0)
+                        invert = -1;
 
-                  handle->analog_value[i][
-                     remap_button - RARCH_FIRST_CUSTOM_BIND] = 
-                        32767 * invert;
+                     handle->analog_value[i][
+                        remap_button - RARCH_FIRST_CUSTOM_BIND] = 
+                           32767 * invert;
+                  }
                }
             }
 
