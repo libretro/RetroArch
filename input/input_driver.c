@@ -1065,11 +1065,6 @@ void input_keys_pressed(void *data, input_bits_t *p_new_state)
    const struct retro_keybind *binds_auto       = &input_autoconf_binds[0][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *binds_norm       = &binds[RARCH_ENABLE_HOTKEY];
 
-   const struct retro_keybind *focus_binds_auto = &input_autoconf_binds[0][RARCH_GAME_FOCUS_TOGGLE];
-   const struct retro_keybind *focus_normal     = &binds[RARCH_GAME_FOCUS_TOGGLE];
-   const struct retro_keybind *enable_hotkey    = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
-   bool game_focus_toggle_valid                 = false;
-
    joypad_info.joy_idx                          = settings->uints.input_joypad_map[0];
    joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
    joypad_info.axis_threshold                   = input_driver_axis_threshold;
@@ -1083,7 +1078,10 @@ void input_keys_pressed(void *data, input_bits_t *p_new_state)
 
    if (check_input_driver_block_hotkey(binds_norm, binds_auto))
    {
-      if (     enable_hotkey->valid
+      const struct retro_keybind *enable_hotkey    = 
+         &input_config_binds[0][RARCH_ENABLE_HOTKEY];
+
+      if (     enable_hotkey && enable_hotkey->valid
             && current_input->input_state(
                current_input_data, joypad_info, &binds, 0,
                RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
@@ -1092,16 +1090,22 @@ void input_keys_pressed(void *data, input_bits_t *p_new_state)
          input_driver_block_hotkey         = true;
    }
 
-   game_focus_toggle_valid                      = binds[RARCH_GAME_FOCUS_TOGGLE].valid;
-
-   /* Allows rarch_focus_toggle hotkey to still work
-    * even though every hotkey is blocked */
-   if (check_input_driver_block_hotkey(
-            focus_normal, focus_binds_auto) && game_focus_toggle_valid)
+   if (binds[RARCH_GAME_FOCUS_TOGGLE].valid)
    {
-      if (current_input->input_state(current_input_data, joypad_info, &binds, 0,
-               RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
-         input_driver_block_hotkey = false;
+      const struct retro_keybind *focus_binds_auto = 
+         &input_autoconf_binds[0][RARCH_GAME_FOCUS_TOGGLE];
+      const struct retro_keybind *focus_normal     = 
+         &binds[RARCH_GAME_FOCUS_TOGGLE];
+
+      /* Allows rarch_focus_toggle hotkey to still work
+       * even though every hotkey is blocked */
+      if (check_input_driver_block_hotkey(
+               focus_normal, focus_binds_auto))
+      {
+         if (current_input->input_state(current_input_data, joypad_info, &binds, 0,
+                  RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
+            input_driver_block_hotkey = false;
+      }
    }
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
@@ -1141,7 +1145,8 @@ void input_get_state_for_port(void *data, unsigned port, input_bits_t *p_new_sta
    {
       bool bit_pressed = false;
 
-      if (input_driver_input_state(joypad_info, libretro_input_binds, port, RETRO_DEVICE_JOYPAD, 0, i) != 0)
+      if (input_driver_input_state(joypad_info, libretro_input_binds,
+               port, RETRO_DEVICE_JOYPAD, 0, i) != 0)
          bit_pressed = true;
 
       if (bit_pressed)
