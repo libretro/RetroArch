@@ -477,6 +477,7 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
    if [ "$HAVE_RGUI" = 'no' ]; then
       HAVE_MATERIALUI=no
       HAVE_XMB=no
+      HAVE_STRIPES=no
       HAVE_ZARCH=no
       die : 'Notice: RGUI not available, MaterialUI, XMB and ZARCH will also be disabled.'
    elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
@@ -489,6 +490,7 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
       else
          HAVE_MATERIALUI=no
          HAVE_XMB=no
+         HAVE_STRIPES=no
          HAVE_ZARCH=no
          die : 'Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled.'
       fi

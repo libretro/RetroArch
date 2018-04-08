@@ -724,11 +724,16 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
    ifeq ($(HAVE_XMB),)
       HAVE_XMB = 1
    endif
+   
+   ifeq ($(HAVE_STRIPES),)
+      HAVE_STRIPES = 1
+   endif
 else
    HAVE_ZARCH ?= 0
    HAVE_MATERIALUI  ?= 0
    #HAVE_NUKLEAR ?= 0
    HAVE_XMB   ?= 0
+   HAVE_STRIPES ?= 0
 endif
 
 ifeq ($(HAVE_RGUI), 1)
@@ -757,6 +762,12 @@ endif
 ifeq ($(HAVE_XMB), 1)
    OBJ += menu/drivers/xmb.o
    DEFINES += -DHAVE_XMB
+   HAVE_MENU_COMMON = 1
+endif
+
+ifeq ($(HAVE_STRIPES), 1)
+   OBJ += menu/drivers/stripes.o
+   DEFINES += -DHAVE_STRIPES
    HAVE_MENU_COMMON = 1
 endif
 

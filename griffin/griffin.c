@@ -1220,6 +1220,10 @@ MENU
 #include "../menu/drivers/xmb.c"
 #endif
 
+#ifdef HAVE_STRIPES
+#include "../menu/drivers/stripes.c"
+#endif
+
 #ifdef HAVE_MATERIALUI
 #include "../menu/drivers/materialui.c"
 #endif
