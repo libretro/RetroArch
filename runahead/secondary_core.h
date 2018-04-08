@@ -1,8 +1,10 @@
 #ifndef __SECONDARY_CORE_H__
 #define __SECONDARY_CORE_H__
 
-#include <retro_common_api.h>
+#include <stddef.h>
 #include <boolean.h>
+
+#include <retro_common_api.h>
 
 #include "../core_type.h"
 
