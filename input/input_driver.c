@@ -866,8 +866,6 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
    joypad_info.joy_idx                          = 0;
    joypad_info.auto_binds                       = NULL;
 
-   BIT256_CLEAR_ALL_PTR(p_new_state);
-
    input_driver_block_libretro_input            = false;
    input_driver_block_hotkey                    = false;
 
@@ -1071,8 +1069,6 @@ void input_keys_pressed(void *data, input_bits_t *p_new_state)
    const struct retro_keybind *focus_normal     = &binds[RARCH_GAME_FOCUS_TOGGLE];
    const struct retro_keybind *enable_hotkey    = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
    bool game_focus_toggle_valid                 = false;
-
-   BIT256_CLEAR_ALL_PTR(p_new_state);
 
    joypad_info.joy_idx                          = settings->uints.input_joypad_map[0];
    joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
