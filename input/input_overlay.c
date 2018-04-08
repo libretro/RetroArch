@@ -113,7 +113,6 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                      else
                      {
                         /*we need ALL of the inputs to be active*/
-                        all_buttons_pressed = false;
                         desc->updated       = false;
 
                         /*abort*/

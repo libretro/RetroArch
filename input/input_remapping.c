@@ -58,8 +58,6 @@ bool input_remapping_load_file(void *data, const char *path)
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
       char stk_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
 
-      bool ret = false;
-
       char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][128] = {
          "b", "y", "select", "start",
          "up", "down", "left", "right",

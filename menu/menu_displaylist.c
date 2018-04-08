@@ -3255,8 +3255,6 @@ static int menu_displaylist_parse_options_remappings(
             for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 8; retro_id++)
             {
                char desc_label[64];
-               unsigned user           = p + 1;
-               unsigned desc_offset    = retro_id;
                char descriptor[255];
                const struct retro_keybind *auto_bind = NULL;
                const struct retro_keybind *keybind   = NULL;
@@ -3299,8 +3297,6 @@ static int menu_displaylist_parse_options_remappings(
          {
             for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
             {
-               unsigned user           = settings->uints.keymapper_port + 1;
-               unsigned desc_offset    = retro_id;
                char descriptor[255];
                const struct retro_keybind *auto_bind = NULL;
                const struct retro_keybind *keybind   = NULL;
