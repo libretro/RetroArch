@@ -32,7 +32,6 @@
 #include "../content.h"
 #include "../core_type.h"
 #include "../msg_hash.h"
-#include "../frontend/frontend_driver.h"
 
 RETRO_BEGIN_DECLS
 
