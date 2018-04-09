@@ -1012,6 +1012,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video.rgb32         = video_driver_state_filter ?
       video_driver_state_out_rgb32 :
       (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+   video.parent        = 0;
 
    /* Reset video frame count */
    video_driver_frame_count = 0;
