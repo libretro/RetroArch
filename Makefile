@@ -46,7 +46,7 @@ endif
 include Makefile.common
 
 ifeq ($(shell $(CC) -v 2>&1 | grep -c "clang"),1)
-   DEFINES +=  -Wno-invalid-source-encoding
+   DEFINES +=  -Wno-invalid-source-encoding -Wno-incompatible-ms-struct
 endif
 
 ifeq ($(shell $(CC) -v 2>&1 | grep -c "tcc"),1)
