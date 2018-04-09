@@ -34,7 +34,9 @@
 #include "../list_special.h"
 #include "../msg_hash.h"
 #include "../playlist.h"
+#ifdef RARCH_INTERNAL
 #include "../retroarch.h"
+#endif
 #include "../verbosity.h"
 #include "../core_info.h"
 
@@ -144,12 +146,13 @@ static int task_database_iterate_start(database_info_handle_t *db,
          name);
 
    if (!string_is_empty(msg))
+   {
+#ifdef RARCH_INTERNAL
       runloop_msg_queue_push(msg, 1, 180, true);
-
-#if 0
-   RARCH_LOG("msg: %s\n", msg);
+#else
+      RARCH_LOG("msg: %s\n", msg);
 #endif
-
+   }
 
    db->status = DATABASE_STATUS_ITERATE;
 
@@ -1191,14 +1194,16 @@ static void task_database_handler(retro_task_t *task)
          }
          else
          {
+            const char *msg = NULL;
             if (db->is_directory)
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_SCANNING_OF_DIRECTORY_FINISHED),
-                     0, 180, true);
+               msg = msg_hash_to_str(MSG_SCANNING_OF_DIRECTORY_FINISHED);
             else
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_SCANNING_OF_FILE_FINISHED),
-                     0, 180, true);
+               msg = msg_hash_to_str(MSG_SCANNING_OF_FILE_FINISHED);
+#ifdef RARCH_INTERNAL
+            runloop_msg_queue_push(msg, 0, 180, true);
+#else
+            RARCH_LOG("msg: %s\n", msg);
+#endif
             goto task_finished;
          }
          break;
