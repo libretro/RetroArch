@@ -36,7 +36,6 @@
 
 #include "tasks_internal.h"
 
-#include "../driver.h"
 #include "../list_special.h"
 #include "../msg_hash.h"
 #include "../verbosity.h"
@@ -427,20 +426,20 @@ static bool update_cand(ssize_t *cand_index, ssize_t *last_index,
                         size_t *largest, char *last_file, size_t *offset,
                         size_t *size, char *track_path, size_t max_len)
 {
-  if (*cand_index != -1)
-  {
-    if ((unsigned)(*last_index - *cand_index) > *largest)
-	{
-      *largest = *last_index - *cand_index;
-      strlcpy(track_path, last_file, max_len);
-      *offset = *cand_index;
-      *size = *largest;
+   if (*cand_index != -1)
+   {
+      if ((unsigned)(*last_index - *cand_index) > *largest)
+      {
+         *largest    = *last_index - *cand_index;
+         strlcpy(track_path, last_file, max_len);
+         *offset     = *cand_index;
+         *size       = *largest;
+         *cand_index = -1;
+         return true;
+      }
       *cand_index = -1;
-      return true;
-    }
-    *cand_index = -1;
-  }
-  return false;
+   }
+   return false;
 }
 
 int cue_find_track(const char *cue_path, bool first,
@@ -488,17 +487,16 @@ int cue_find_track(const char *cue_path, bool first,
       if (string_is_equal(tmp_token, "FILE"))
       {
          /* Set last index to last EOF */
-         if (file_size != -1) {
+         if (file_size != -1)
             last_index = file_size;
-         }
 
          /* We're changing files since the candidate, update it */
          if (update_cand(&cand_index, &last_index, &largest, last_file, offset,
-                         size, track_path, max_len)) {
+                         size, track_path, max_len))
+         {
             rv = 0;
-            if (first) {
+            if (first)
                goto clean;
-            }
          }
 
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
@@ -515,7 +513,9 @@ int cue_find_track(const char *cue_path, bool first,
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
          is_data = !string_is_equal(tmp_token, "AUDIO");
          ++track;
-      } else if (string_is_equal(tmp_token, "INDEX")) {
+      }
+      else if (string_is_equal(tmp_token, "INDEX"))
+      {
          int m, s, f;
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
@@ -531,32 +531,30 @@ int cue_find_track(const char *cue_path, bool first,
          /* If we've changed tracks since the candidate, update it */
          if (cand_track != -1 && track != cand_track &&
              update_cand(&cand_index, &last_index, &largest, last_file, offset,
-                         size, track_path, max_len)) {
+                         size, track_path, max_len))
+         {
             rv = 0;
-            if (first) {
+            if (first)
                goto clean;
-            }
          }
 
-         if (!is_data) {
+         if (!is_data)
             continue;
-         }
 
-         if (cand_index == -1) {
+         if (cand_index == -1)
+         {
             cand_index = last_index;
             cand_track = track;
          }
       }
    }
 
-   if (file_size != -1) {
+   if (file_size != -1)
       last_index = file_size;
-   }
 
    if (update_cand(&cand_index, &last_index, &largest, last_file, offset,
-                   size, track_path, max_len)) {
+                   size, track_path, max_len))
       rv = 0;
-   }
 
 clean:
    free(cue_dir);
