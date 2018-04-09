@@ -447,7 +447,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-bool win32_shader_dlg_init(void)
+static bool win32_shader_dlg_init(void)
 {
    static bool inited = false;
    int pos_y;
