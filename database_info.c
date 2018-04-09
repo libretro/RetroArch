@@ -21,12 +21,13 @@
 #include <compat/strl.h>
 #include <retro_endianness.h>
 #include <file/file_path.h>
+#include <lists/string_list.h>
 #include <string/stdstring.h>
 
 #include "libretro-db/libretrodb.h"
 
-#include "list_special.h"
 #include "database_info.h"
+#include "list_special.h"
 #include "verbosity.h"
 
 int database_info_build_query_enum(char *s, size_t len,
