@@ -62,29 +62,40 @@ static void menu_list_free_list(file_list_t *list)
 
 static void menu_list_free(menu_list_t *menu_list)
 {
-   unsigned i;
    if (!menu_list)
       return;
 
-   for (i = 0; i < menu_list->menu_stack_size; i++)
+   if (menu_list->menu_stack)
    {
-      if (!menu_list->menu_stack[i])
-         continue;
+      unsigned i;
 
-      menu_list_free_list(menu_list->menu_stack[i]);
-      menu_list->menu_stack[i]    = NULL;
+      for (i = 0; i < menu_list->menu_stack_size; i++)
+      {
+         if (!menu_list->menu_stack[i])
+            continue;
+
+         menu_list_free_list(menu_list->menu_stack[i]);
+         menu_list->menu_stack[i]    = NULL;
+      }
+
+      free(menu_list->menu_stack);
    }
-   for (i = 0; i < menu_list->selection_buf_size; i++)
+
+   if (menu_list->selection_buf)
    {
-      if (!menu_list->selection_buf[i])
-         continue;
+      unsigned i;
 
-      menu_list_free_list(menu_list->selection_buf[i]);
-      menu_list->selection_buf[i] = NULL;
+      for (i = 0; i < menu_list->selection_buf_size; i++)
+      {
+         if (!menu_list->selection_buf[i])
+            continue;
+
+         menu_list_free_list(menu_list->selection_buf[i]);
+         menu_list->selection_buf[i] = NULL;
+      }
+
+      free(menu_list->selection_buf);
    }
-
-   free(menu_list->menu_stack);
-   free(menu_list->selection_buf);
 
    free(menu_list);
 }
