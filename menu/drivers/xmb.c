@@ -3265,11 +3265,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                  (xmb->icon_size * (!(xmb->depth == 1)? 2.1 : 1))) /
                 left_thumb_height);
          }
-         else
-         {
-            left_thumb_width = left_thumb_width;
-            left_thumb_height = left_thumb_height;
-         }
 
          xmb_draw_thumbnail(video_info,
                xmb, &coord_white[0], width, height,
