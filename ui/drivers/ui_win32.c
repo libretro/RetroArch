@@ -74,6 +74,7 @@ typedef struct ui_companion_win32
    void *empty;
 } ui_companion_win32_t;
 
+#ifdef HAVE_SHADERPIPELINE
 enum shader_param_ctrl_type
 {
    SHADER_PARAM_CTRL_NONE = 0,
@@ -221,6 +222,7 @@ static void shader_dlg_params_clear(void)
       control->type = SHADER_PARAM_CTRL_NONE;
    }
 }
+#endif
 
 void shader_dlg_params_reload(void)
 {
@@ -329,6 +331,7 @@ void shader_dlg_params_reload(void)
 #endif
 }
 
+#ifdef HAVE_SHADERPIPELINE
 static void shader_dlg_update_on_top_state(void)
 {
    bool on_top = SendMessage(g_shader_dlg.on_top_checkbox.hwnd,
@@ -339,7 +342,7 @@ static void shader_dlg_update_on_top_state(void)
          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
 
-void shader_dlg_show(HWND parent_hwnd)
+static void shader_dlg_show(HWND parent_hwnd)
 {
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
@@ -364,6 +367,7 @@ void shader_dlg_show(HWND parent_hwnd)
 
    window->set_focused(&g_shader_dlg.window);
 }
+#endif
 
 #if 0
 static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
@@ -687,11 +691,11 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
       case ID_M_FULL_SCREEN:
          cmd = CMD_EVENT_FULLSCREEN_TOGGLE;
          break;
-#ifndef _XBOX
       case ID_M_SHADER_PARAMETERS:
+#if !defined(_XBOX) && defined(HAVE_SHADERPIPELINE)
          shader_dlg_show(owner);
-         break;
 #endif
+         break;
       case ID_M_MOUSE_GRAB:
          cmd = CMD_EVENT_GRAB_MOUSE_TOGGLE;
          break;
