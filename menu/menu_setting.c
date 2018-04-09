@@ -5507,6 +5507,21 @@ static bool setting_append_list(
          {
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.menu_show_main_menu,
+                  MENU_ENUM_LABEL_MENU_SHOW_MAIN_MENU,
+                  MENU_ENUM_LABEL_VALUE_MENU_SHOW_MAIN_MENU,
+                  menu_show_main_menu,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.menu_content_show_settings,
                   MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS,
                   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
@@ -5756,7 +5771,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-            
+
             CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_xmb_vertical_thumbnails,

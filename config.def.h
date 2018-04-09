@@ -263,6 +263,7 @@ static bool quick_menu_show_information          = true;
 
 static bool kiosk_mode_enable            = false;
 
+static bool menu_show_main_menu          = true;
 static bool menu_show_online_updater     = true;
 static bool menu_show_load_core          = true;
 static bool menu_show_load_content       = true;
