@@ -667,7 +667,7 @@ static void audio_mixer_mix_ogg(float* buffer, size_t num_frames,
    int i;
    struct resampler_data info;
    float temp_buffer[AUDIO_MIXER_TEMP_OGG_BUFFER];
-   unsigned buf_free                = num_frames * 2;
+   unsigned buf_free                = (unsigned)(num_frames * 2);
    unsigned temp_samples            = 0;
    float* pcm                       = NULL;
 
@@ -740,7 +740,7 @@ static void audio_mixer_mix_mod(float* buffer, size_t num_frames,
    float samplef                    = 0.0f;
    int samplei                      = 0;
    unsigned temp_samples            = 0;
-   unsigned buf_free                = num_frames * 2;
+   unsigned buf_free                = (unsigned)(num_frames * 2);
    int* pcm                         = NULL;
 
    if (voice->types.mod.position == voice->types.mod.samples)

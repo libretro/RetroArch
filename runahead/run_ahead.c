@@ -404,7 +404,7 @@ static bool runahead_load_state_secondary(void)
 
    set_fast_savestate();
    okay = secondary_core_deserialize(
-         serialize_info->data_const, serialize_info->size);
+         serialize_info->data_const, (int)serialize_info->size);
    unset_fast_savestate();
 
    if (!okay)

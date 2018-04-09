@@ -1486,9 +1486,9 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const void *mat_data)
 
 #define gl_glsl_set_coord_array(attribs, coord1, coord2, coords, size, multiplier) \
    unsigned y; \
-   attribs[attribs_size].loc            = coord1; \
-   attribs[attribs_size].size           = multiplier; \
-   attribs[attribs_size].offset         = size * sizeof(GLfloat); \
+   attribs[attribs_size].loc            = (GLint)coord1; \
+   attribs[attribs_size].size           = (GLsizei)multiplier; \
+   attribs[attribs_size].offset         = (GLsizei)(size * sizeof(GLfloat)); \
    for (y = 0; y < (multiplier * coords->vertices); y++) \
       buffer[y + size]  = coord2[y]; \
    size                += multiplier * coords->vertices; \

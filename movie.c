@@ -290,7 +290,7 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
    {
       /* If we're at the beginning... */
       handle->frame_ptr = 0;
-      intfstream_seek(handle->file, handle->min_file_pos, SEEK_SET);
+      intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
    }
    else
    {
@@ -303,7 +303,7 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
       handle->frame_ptr = (handle->frame_ptr -
             (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
       intfstream_seek(handle->file,
-            handle->frame_pos[handle->frame_ptr], SEEK_SET);
+            (int)handle->frame_pos[handle->frame_ptr], SEEK_SET);
    }
 
    if (intfstream_tell(handle->file) <= (long)handle->min_file_pos)
@@ -327,7 +327,7 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
          intfstream_write(handle->file, handle->state, handle->state_size);
       }
       else
-         intfstream_seek(handle->file, handle->min_file_pos, SEEK_SET);
+         intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
    }
 }
 

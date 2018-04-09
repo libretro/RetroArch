@@ -747,7 +747,7 @@ static void gl_render_osd_background(
    float *verts            = (float*)malloc(2 * vertices_total * sizeof(float));
    settings_t *settings    = config_get_ptr();
    int msg_width           =
-      font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
+      font_driver_get_message_width(NULL, msg, (unsigned)strlen(msg), 1.0f);
 
    /* shader driver expects vertex coords as 0..1 */
    float x                 = video_info->font_msg_pos_x;

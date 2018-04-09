@@ -468,7 +468,7 @@ static void xmb_free_node(xmb_node_t *node)
  */
 static void xmb_free_list_nodes(file_list_t *list, bool actiondata)
 {
-   unsigned i, size = file_list_get_size(list);
+   unsigned i, size = (unsigned)file_list_get_size(list);
 
    for (i = 0; i < size; ++i)
    {
@@ -935,7 +935,7 @@ static void xmb_render_messagebox_internal(
       {
          longest       = len;
          longest_width = font_driver_get_message_width(
-               xmb->font, msg, strlen(msg), 1);
+               xmb->font, msg, (unsigned)strlen(msg), 1);
       }
    }
 
@@ -1633,17 +1633,16 @@ static void xmb_push_animations(xmb_node_t *node,
 static void xmb_list_switch_old(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
-   unsigned i, first, last, height;
-   size_t end = file_list_get_size(list);
-   float ix   = -xmb->icon_spacing_horizontal * dir;
-   float ia   = 0;
-
-   first = 0;
-   last  = end > 0 ? end - 1 : 0;
+   unsigned i, height;
+   size_t end          = file_list_get_size(list);
+   float ix            = -xmb->icon_spacing_horizontal * dir;
+   float ia            = 0;
+   unsigned first      = 0;
+   unsigned last       = (unsigned)(end > 0 ? end - 1 : 0);
 
    video_driver_get_size(NULL, &height);
    xmb_calculate_visible_range(xmb, height, end,
-         current, &first, &last);
+         (unsigned)current, &first, &last);
 
    for (i = 0; i < end; i++)
    {
@@ -1714,10 +1713,10 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
    end = file_list_get_size(list);
 
    first = 0;
-   last  = end > 0 ? end - 1 : 0;
+   last  = (unsigned)(end > 0 ? end - 1 : 0);
 
    video_driver_get_size(NULL, &height);
-   xmb_calculate_visible_range(xmb, height, end, current, &first, &last);
+   xmb_calculate_visible_range(xmb, height, end, (unsigned)current, &first, &last);
 
    for (i = 0; i < end; i++)
    {
@@ -2445,7 +2444,7 @@ static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
    float    base_y = xmb->margins_screen_top;
 
    *first = 0;
-   *last  = list_size ? list_size - 1 : 0;
+   *last  = (unsigned)(list_size ? list_size - 1 : 0);
 
    if (current)
    {
@@ -2782,10 +2781,10 @@ static void xmb_draw_items(
       i = 0;
    }
 
-   first = i;
-   last  = end - 1;
+   first = (unsigned)i;
+   last  = (unsigned)(end - 1);
 
-   xmb_calculate_visible_range(xmb, height, end, current, &first, &last);
+   xmb_calculate_visible_range(xmb, height, end, (unsigned)current, &first, &last);
 
    menu_display_blend_begin(video_info);
 
@@ -2834,18 +2833,18 @@ static void xmb_render(void *data, bool is_idle)
 
    if (pointer_enable || mouse_enable)
    {
+      unsigned height;
       size_t selection  = menu_navigation_get_selection();
       int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
       int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS)
          + (xmb->cursor_size/2);
       unsigned first = 0, last = end;
-      unsigned height;
 
       video_driver_get_size(NULL, &height);
 
       if (height)
          xmb_calculate_visible_range(xmb, height,
-               end, selection, &first, &last);
+               end, (unsigned)selection, &first, &last);
 
       for (i = first; i <= last; i++)
       {
@@ -4645,7 +4644,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
       xmb->selection_ptr_old = selection;
 
       xmb_calculate_visible_range(xmb, height, selection_buf->size,
-            xmb->selection_ptr_old, &first, &last);
+            (unsigned)xmb->selection_ptr_old, &first, &last);
 
       xmb_list_deep_copy(selection_buf, xmb->selection_buf_old, first, last);
 

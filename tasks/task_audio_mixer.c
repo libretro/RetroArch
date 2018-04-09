@@ -73,7 +73,7 @@ static int cb_nbio_audio_mixer_load(void *data, size_t len)
 
    image->buffer                   = buffer;
    image->buffer->buf              = ptr;
-   image->buffer->bufsize          = len;
+   image->buffer->bufsize          = (unsigned)len;
    image->copy_data_over           = true;
    nbio->is_finished               = true;
 

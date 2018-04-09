@@ -947,12 +947,14 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
           * clients ahead of us stall */
          for (i = 0; i < netplay->connections_size; i++)
          {
-            struct netplay_connection *connection = &netplay->connections[i];
             uint32_t client_num;
+            struct netplay_connection *connection = &netplay->connections[i];
+             
             if (!connection->active ||
                 connection->mode != NETPLAY_CONNECTION_PLAYING)
                continue;
-            client_num = i + 1;
+             
+            client_num = (uint32_t)(i + 1);
 
             /* Are they ahead? */
             if (netplay->self_frame_count + 3 < netplay->read_frame_count[client_num])

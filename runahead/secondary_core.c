@@ -146,7 +146,7 @@ bool write_file_with_random_name(char **tempDllPath,
    unsigned int number_value= (unsigned int)time_value;
    int number               = 0;
    char *ext                = strcpy_alloc_force(path_get_extension(*tempDllPath));
-   int ext_len              = strlen(ext);
+   int ext_len              = (int)strlen(ext);
 
    if (ext_len > 0)
    {
@@ -259,7 +259,7 @@ bool secondary_core_create(void)
       {
          device = port_map[port];
          if (device >= 0)
-            secondary_core.retro_set_controller_port_device(port, device);
+            secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
       }
       clear_controller_port_map();
    }
@@ -335,9 +335,9 @@ void secondary_core_destroy(void)
 void remember_controller_port_device(long port, long device)
 {
    if (port >= 0 && port < 16)
-      port_map[port] = device;
+      port_map[port] = (int)device;
    if (secondary_module && secondary_core.retro_set_controller_port_device)
-      secondary_core.retro_set_controller_port_device(port, device);
+      secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
 }
 
 void clear_controller_port_map(void)

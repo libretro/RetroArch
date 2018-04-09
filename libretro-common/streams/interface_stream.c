@@ -435,7 +435,7 @@ intfstream_t *intfstream_open_memory(void *data,
 
    info.type            = INTFSTREAM_MEMORY;
    info.memory.buf.data = (uint8_t*)data;
-   info.memory.buf.size = size;
+   info.memory.buf.size = (unsigned)size;
    info.memory.writable = false;
 
    fd                   = (intfstream_t*)intfstream_init(&info);

@@ -320,14 +320,14 @@ int filestream_putc(RFILE *stream, int c)
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
 {
    static char buffer[8 * 1024];
-   int num_chars = vsprintf(buffer, format, args);
+   int64_t num_chars = vsprintf(buffer, format, args);
 
    if (num_chars < 0)
       return -1;
    else if (num_chars == 0)
       return 0;
 
-   return filestream_write(stream, buffer, num_chars);
+   return (int)filestream_write(stream, buffer, num_chars);
 }
 
 int filestream_printf(RFILE *stream, const char* format, ...)

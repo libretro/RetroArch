@@ -225,7 +225,7 @@ static bool intfstream_file_get_serial(const char *name,
 
    if (offset != 0 || size < (size_t) file_size)
    {
-      if (intfstream_seek(fd, offset, SEEK_SET) == -1)
+      if (intfstream_seek(fd, (int)offset, SEEK_SET) == -1)
          goto error;
 
       data = (uint8_t*)malloc(size);
@@ -377,7 +377,7 @@ static bool intfstream_file_get_crc(const char *name,
 
    if (offset != 0 || size < (size_t) file_size)
    {
-      if (intfstream_seek(fd, offset, SEEK_SET) == -1)
+      if (intfstream_seek(fd, (int)offset, SEEK_SET) == -1)
          goto error;
 
       data = (uint8_t*)malloc(size);

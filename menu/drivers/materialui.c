@@ -631,7 +631,7 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
       {
          longest = len;
          longest_width = font_driver_get_message_width(
-               mui->font, msg, strlen(msg), 1);
+               mui->font, msg, (unsigned)strlen(msg), 1);
       }
    }
 
@@ -1630,7 +1630,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             );
    }
 
-   ticker_limit    = usable_width / mui->glyph_width;
+   ticker_limit    = (unsigned)(usable_width / mui->glyph_width);
 
    ticker.s        = title_buf;
    ticker.len      = ticker_limit;
