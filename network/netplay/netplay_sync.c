@@ -352,8 +352,8 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
    {
       unsigned dtype = netplay->config_devices[device]&RETRO_DEVICE_MASK;
       uint32_t dsize = netplay_expected_input_size(netplay, 1 << device);
-      clients = netplay->device_clients[device];
-      client_count = 0;
+      clients        = netplay->device_clients[device];
+      client_count   = 0;
 
       /* Make sure all real clients are accounted for */
       for (simstate = simframe->real_input[device]; simstate; simstate = simstate->next)
