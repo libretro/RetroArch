@@ -564,11 +564,50 @@ end:
    free(path);
 }
 
+static enum msg_file_type extension_to_file_type(const char *ext)
+{
+   if (
+         string_is_equal(ext, "7z")  ||
+         string_is_equal(ext, "7Z")  ||
+         string_is_equal(ext, "zip") ||
+         string_is_equal(ext, "ZIP") ||
+         string_is_equal(ext, "apk") ||
+         string_is_equal(ext, "apk")
+      )
+      return FILE_TYPE_COMPRESSED;
+   if (
+         string_is_equal(ext, "cue")  ||
+         string_is_equal(ext, "CUE")
+      )
+      return FILE_TYPE_CUE;
+   if (
+         string_is_equal(ext, "gdi")  ||
+         string_is_equal(ext, "GDI")
+      )
+      return FILE_TYPE_GDI;
+   if (
+         string_is_equal(ext, "iso")  ||
+         string_is_equal(ext, "ISO")
+      )
+      return FILE_TYPE_ISO;
+   if (
+         string_is_equal(ext, "chd")  ||
+         string_is_equal(ext, "CHD")
+      )
+      return FILE_TYPE_CHD;
+   if (
+         string_is_equal(ext, "lutro")  ||
+         string_is_equal(ext, "LUTRO")
+      )
+      return FILE_TYPE_LUTRO;
+   return FILE_TYPE_NONE;
+}
+
 static int task_database_iterate_playlist(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
-   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(name))))
+   switch (extension_to_file_type(path_get_extension(name)))
    {
       case FILE_TYPE_COMPRESSED:
 #ifdef HAVE_COMPRESSION
