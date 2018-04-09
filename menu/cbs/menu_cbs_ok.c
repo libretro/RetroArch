@@ -26,13 +26,21 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+#include "../../config.def.keybinds.h"
+#include "../../wifi/wifi_driver.h"
+#include "../../driver.h"
+
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 #include "../widgets/menu_dialog.h"
+#include "../widgets/menu_entry.h"
 #include "../widgets/menu_filebrowser.h"
 #include "../widgets/menu_input_dialog.h"
+#include "../widgets/menu_input_bind_dialog.h"
+#include "../menu_input.h"
 #include "../menu_networking.h"
 #include "../menu_content.h"
 #include "../menu_shader.h"
@@ -120,6 +128,99 @@ static char *lakka_get_project(void)
    info_label         = msg_hash_to_str(a); \
    info.enum_idx      = a; \
    dl_type            = b;
+
+int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound)
+{
+   double video_refresh_rate = 0.0;
+   double deviation          = 0.0;
+   unsigned sample_points    = 0;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   if (video_monitor_fps_statistics(&video_refresh_rate,
+            &deviation, &sample_points))
+   {
+      float video_refresh_rate_float = (float)video_refresh_rate;
+      driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &video_refresh_rate_float);
+      /* Incase refresh rate update forced non-block video. */
+      command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
+   }
+
+   if (setting_generic_action_ok_default(setting, wraparound) != 0)
+      return -1;
+
+   return 0;
+}
+
+int setting_action_ok_bind_all(void *data, bool wraparound)
+{
+   (void)wraparound;
+   if (!menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_ALL, data))
+      return -1;
+   return 0;
+}
+
+int setting_action_ok_bind_all_save_autoconfig(void *data,
+      bool wraparound)
+{
+   unsigned index_offset;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   const char *name          = NULL;
+
+   (void)wraparound;
+
+   if (!setting)
+      return -1;
+
+   index_offset = setting->index_offset;
+   name         = input_config_get_device_name(index_offset);
+
+   if(!string_is_empty(name) && config_save_autoconf_profile(name, index_offset))
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true);
+   else
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true);
+
+
+   return 0;
+}
+
+int setting_action_ok_bind_defaults(void *data, bool wraparound)
+{
+   unsigned i;
+   menu_input_ctx_bind_limits_t lim;
+   struct retro_keybind *target          = NULL;
+   const struct retro_keybind *def_binds = NULL;
+   rarch_setting_t *setting              = (rarch_setting_t*)data;
+
+   (void)wraparound;
+
+   if (!setting)
+      return -1;
+
+   target    =  &input_config_binds[setting->index_offset][0];
+   def_binds =  (setting->index_offset) ?
+      retro_keybinds_rest : retro_keybinds_1;
+
+   lim.min   = MENU_SETTINGS_BIND_BEGIN;
+   lim.max   = MENU_SETTINGS_BIND_LAST;
+
+   menu_input_key_bind_set_min_max(&lim);
+
+   for (i = MENU_SETTINGS_BIND_BEGIN;
+         i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+   {
+      target->key     = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+      target->joykey  = NO_BTN;
+      target->joyaxis = AXIS_NONE;
+      target->mbutton = NO_BTN;
+   }
+
+   return 0;
+}
 
 static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
 {
