@@ -4867,7 +4867,7 @@ static int xmb_list_push(void *data, void *userdata,
 {
    menu_displaylist_ctx_parse_entry_t entry;
    int ret                = -1;
-   int i                  = 0;
+   unsigned i             = 0;
    core_info_list_t *list = NULL;
    menu_handle_t *menu    = (menu_handle_t*)data;
 
@@ -4970,7 +4970,7 @@ static int xmb_list_push(void *data, void *userdata,
 
                if (subsystem)
                {
-                  for (i = 0; i < system->subsystem.size; i++, subsystem++)
+                  for (i = 0; i < (unsigned)system->subsystem.size; i++, subsystem++)
                   {
                      char s[PATH_MAX_LENGTH];
                      if (content_get_subsystem() == i)
