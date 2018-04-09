@@ -32,6 +32,7 @@
 #include "config.def.h"
 #include "core_info.h"
 #include "configuration.h"
+#include "file_path_special.h"
 #include "list_special.h"
 
 static const char *core_info_tmp_path               = NULL;
