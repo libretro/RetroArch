@@ -856,8 +856,6 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
    rarch_joypad_info_t joypad_info;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    settings_t     *settings                     = (settings_t*)data;
-   const struct retro_keybind *binds_norm       = NULL;
-   const struct retro_keybind *binds_auto       = NULL;
    uint8_t max_users                            = (uint8_t)input_driver_max_users;
    uint8_t port_max                             =
       settings->bools.input_all_users_control_menu
@@ -883,8 +881,8 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
 
    for (port = 0; port < port_max; port++)
    {
-      binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
-      binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
+      const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
+      const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
 
       if (check_input_driver_block_hotkey(binds_norm, binds_auto))
       {
