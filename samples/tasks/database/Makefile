@@ -72,10 +72,16 @@ SOURCES_C := \
 	$(CORE_DIR)/file_path_str.c \
 	$(CORE_DIR)/playlist.c \
 	$(CORE_DIR)/verbosity.c \
+	$(CORE_DIR)/libretro-db/bintree.c \
+	$(CORE_DIR)/libretro-db/libretrodb.c \
+	$(CORE_DIR)/libretro-db/query.c \
+	$(CORE_DIR)/libretro-db/rmsgpack.c \
+	$(CORE_DIR)/libretro-db/rmsgpack_dom.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
 	$(LIBRETRO_COMM_DIR)/file/config_file.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/retro_dirent.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
