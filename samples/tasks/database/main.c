@@ -7,12 +7,27 @@
 #include "../../../core_info.h"
 #include "../../../tasks/tasks_internal.h"
 
+static bool loop_active = true;
+
+static void main_msg_queue_push(const char *msg,
+      unsigned prio, unsigned duration,
+      bool flush)
+{
+   fprintf(stderr, "MSGQ: %s\n", msg);
+}
+
 /* 
  * return codes -
  * graceful exit: 1
  * normal   exit: 0
  * error    exit: -1
  */
+
+static void main_db_cb(void *task_data, void *user_data, const char *err)
+{
+   fprintf(stderr, "DB CB: %s\n", err);
+   loop_active = false;
+}
 
 int main(int argc, char *argv[])
 {
@@ -35,14 +50,23 @@ int main(int argc, char *argv[])
    input_dir     = argv[4];
    playlist_dir  = argv[5];
 
-   task_queue_init(false /* threaded enable */, NULL);
+   fprintf(stderr, "RDB database dir: %s\n", db_dir);
+   fprintf(stderr, "Core         dir: %s\n", core_dir);
+   fprintf(stderr, "Core info    dir: %s\n", core_info_dir);
+   fprintf(stderr, "Input        dir: %s\n", input_dir);
+   fprintf(stderr, "Playlist     dir: %s\n", playlist_dir);
+
+   task_queue_init(false /* threaded enable */, main_msg_queue_push);
 
    core_info_init_list(core_info_dir, core_dir, exts, true);
 
-   task_push_dbscan(playlist_dir, db_dir, input_dir, false,
-         true, NULL /* bind callback here later */);
+   task_push_dbscan(playlist_dir, db_dir, input_dir, true,
+         true, main_db_cb);
 
-   task_queue_check();
+   while (loop_active)
+      task_queue_check();
+
+   fprintf(stderr, "Exit loop\n");
 
    core_info_deinit_list();
    task_queue_deinit();

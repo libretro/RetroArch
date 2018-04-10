@@ -150,7 +150,7 @@ static int task_database_iterate_start(database_info_handle_t *db,
 #ifdef RARCH_INTERNAL
       runloop_msg_queue_push(msg, 1, 180, true);
 #else
-      RARCH_LOG("msg: %s\n", msg);
+      fprintf(stderr, "msg: %s\n", msg);
 #endif
    }
 
@@ -741,8 +741,8 @@ static int database_info_list_iterate_new(database_state_handle_t *db_state,
 {
    const char *new_database = database_info_get_current_name(db_state);
 
-#if 0
-   RARCH_LOG("Check database [%d/%d] : %s\n", (unsigned)db_state->list_index,
+#ifndef RARCH_INTERNAL
+   fprintf(stderr, "Check database [%d/%d] : %s\n", (unsigned)db_state->list_index,
          (unsigned)db_state->list->size, new_database);
 #endif
    if (db_state->info)
@@ -808,6 +808,7 @@ static int database_info_list_iterate_found_match(
        (hash = strchr(entry_path_str, '#')))
        *hash = '\0';
 
+#if defined(RARCH_INTERNAL)
 #if 0
    RARCH_LOG("Found match in database !\n");
 
@@ -818,6 +819,17 @@ static int database_info_list_iterate_found_match(
    RARCH_LOG("Playlist not NULL: %d\n", playlist != NULL);
    RARCH_LOG("ZIP entry: %s\n", archive_name);
    RARCH_LOG("entry path str: %s\n", entry_path_str);
+#endif
+#else
+   fprintf(stderr, "Found match in database !\n");
+
+   fprintf(stderr, "Path: %s\n", db_path);
+   fprintf(stderr, "CRC : %s\n", db_crc);
+   fprintf(stderr, "Playlist Path: %s\n", db_playlist_path);
+   fprintf(stderr, "Entry Path: %s\n", entry_path);
+   fprintf(stderr, "Playlist not NULL: %d\n", playlist != NULL);
+   fprintf(stderr, "ZIP entry: %s\n", archive_name);
+   fprintf(stderr, "entry path str: %s\n", entry_path_str);
 #endif
 
    if(!playlist_entry_exists(playlist, entry_path_str, db_crc))
@@ -1243,7 +1255,7 @@ static void task_database_handler(retro_task_t *task)
 #ifdef RARCH_INTERNAL
             runloop_msg_queue_push(msg, 0, 180, true);
 #else
-            RARCH_LOG("msg: %s\n", msg);
+            fprintf(stderr, "msg: %s\n", msg);
 #endif
             goto task_finished;
          }
