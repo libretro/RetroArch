@@ -36,8 +36,10 @@ int main(int argc, char *argv[])
    const char *core_dir      = NULL;
    const char *input_dir     = NULL;
    const char *playlist_dir  = NULL;
-#ifdef _WIN32
+#if defined(_WIN32)
    const char *exts          = "dll";
+#elif defined(__MACH__)
+   const char *exts          = "dylib";
 #else
    const char *exts          = "so";
 #endif
