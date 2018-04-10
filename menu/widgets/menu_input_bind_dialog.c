@@ -81,12 +81,12 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
 }
 
 static int menu_input_key_bind_set_mode_common(
+      menu_handle_t *menu,
       enum menu_input_binds_ctl_state state,
       rarch_setting_t  *setting)
 {
    menu_displaylist_info_t info;
    unsigned bind_type            = 0;
-   menu_handle_t *menu           = NULL;
    struct retro_keybind *keybind = NULL;
    unsigned         index_offset = setting->index_offset;
    file_list_t *menu_stack       = menu_entries_get_menu_stack_ptr(0);
@@ -116,8 +116,6 @@ static int menu_input_key_bind_set_mode_common(
          info.label               = strdup(
                msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND));
 
-         menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
          if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info, menu))
             menu_displaylist_process(&info);
          menu_displaylist_info_free(&info);
@@ -133,8 +131,6 @@ static int menu_input_key_bind_set_mode_common(
          info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND_ALL;
          info.label               = strdup(
                msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND_ALL));
-
-         menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
 
          if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info, menu))
             menu_displaylist_process(&info);
@@ -263,7 +259,7 @@ bool menu_input_key_bind_set_mode(
       return false;
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return false;
-   if (menu_input_key_bind_set_mode_common(state, setting) == -1)
+   if (menu_input_key_bind_set_mode_common(menu, state, setting) == -1)
       return false;
 
    index_offset      = setting->index_offset;
