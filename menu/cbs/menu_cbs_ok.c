@@ -983,7 +983,9 @@ static void content_add_to_playlist(const char *path)
    task_push_dbscan(
          settings->paths.directory_playlist,
          settings->paths.path_content_database,
-         path, false, handle_dbscan_finished);
+         path, false,
+         settings->bools.show_hidden_files,
+         handle_dbscan_finished);
 #endif
 }
 

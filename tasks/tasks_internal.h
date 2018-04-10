@@ -133,7 +133,8 @@ bool task_push_dbscan(
       const char *playlist_directory,
       const char *content_database,
       const char *fullpath,
-      bool directory, retro_task_callback_t cb);
+      bool directory, bool show_hidden_files,
+      retro_task_callback_t cb);
 #endif
 
 #ifdef HAVE_OVERLAY

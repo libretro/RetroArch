@@ -31,7 +31,6 @@
 #include "../database_info.h"
 
 #include "../file_path_special.h"
-#include "../list_special.h"
 #include "../msg_hash.h"
 #include "../playlist.h"
 #ifdef RARCH_INTERNAL
@@ -61,6 +60,7 @@ typedef struct db_handle
 {
    bool is_directory;
    bool scan_started;
+   bool show_hidden_files;
    unsigned status;
    char *playlist_directory;
    char *content_database_path;
@@ -1142,7 +1142,7 @@ static void task_database_handler(retro_task_t *task)
       if (!string_is_empty(db->fullpath))
       {
          if (db->is_directory)
-            db->handle = database_info_dir_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
+            db->handle = database_info_dir_init(db->fullpath, DATABASE_TYPE_ITERATE, task, db->show_hidden_files);
          else
             db->handle = database_info_file_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
       }
@@ -1165,9 +1165,11 @@ static void task_database_handler(retro_task_t *task)
          if (dbstate && !dbstate->list)
          {
             if (!string_is_empty(db->content_database_path))
-               dbstate->list        = dir_list_new_special(
+               dbstate->list        = dir_list_new(
                      db->content_database_path,
-                     DIR_LIST_DATABASES, NULL);
+                     "rdb", false,
+                     db->show_hidden_files,
+                     false, false);
 
             /* If the scan path matches a database path exactly then
              * save time by only processing that database. */
@@ -1287,7 +1289,9 @@ bool task_push_dbscan(
       const char *playlist_directory,
       const char *content_database,
       const char *fullpath,
-      bool directory, retro_task_callback_t cb)
+      bool directory, 
+      bool show_hidden_files,
+      retro_task_callback_t cb)
 {
    retro_task_t *t      = (retro_task_t*)calloc(1, sizeof(*t));
    db_handle_t *db      = (db_handle_t*)calloc(1, sizeof(db_handle_t));
@@ -1300,6 +1304,7 @@ bool task_push_dbscan(
    t->callback               = cb;
    t->title                  = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
 
+   db->show_hidden_files     = show_hidden_files;
    db->is_directory          = directory;
    db->playlist_directory    = NULL;
    db->fullpath              = strdup(fullpath);

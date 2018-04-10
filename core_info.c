@@ -751,7 +751,8 @@ void core_info_get_name(const char *path, char *s, size_t len,
    size_t i;
    const char       *path_basedir   = !string_is_empty(path_info) ?
       path_info : dir_cores;
-   struct string_list *contents     = dir_list_new_special(dir_cores, DIR_LIST_CORES, NULL);
+   struct string_list *contents     = dir_list_new_special(
+         dir_cores, DIR_LIST_CORES, NULL);
 
    if (!contents)
       return;
