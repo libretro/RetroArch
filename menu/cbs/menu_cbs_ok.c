@@ -2268,12 +2268,18 @@ static int action_ok_path_scan_directory(const char *path,
 static int action_ok_core_deferred_set(const char *new_core_path,
       const char *content_label, unsigned type, size_t idx, size_t entry_idx)
 {
+   char ext_name[255];
    char core_display_name[PATH_MAX_LENGTH];
    settings_t *settings                    = config_get_ptr();
    menu_handle_t            *menu          = NULL;
    size_t selection                        = menu_navigation_get_selection();
 
+   ext_name[0]                             = '\0';
+
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+
+   if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
       return menu_cbs_exit();
 
    core_display_name[0] = '\0';
@@ -2281,7 +2287,9 @@ static int action_ok_core_deferred_set(const char *new_core_path,
    core_info_get_name(new_core_path,
          core_display_name, sizeof(core_display_name),
          settings->paths.path_libretro_info,
-         settings->paths.directory_libretro);
+         settings->paths.directory_libretro,
+         ext_name,
+         settings->bools.show_hidden_files);
    command_playlist_update_write(
          NULL,
          menu->rdb_entry_start_game_selection_ptr,

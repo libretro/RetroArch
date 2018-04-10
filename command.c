@@ -2202,12 +2202,20 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_CORE_INFO_INIT:
          {
+            char ext_name[255];
+            ext_name[0]               = '\0';
             settings_t *settings      = config_get_ptr();
             command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
 
+            if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+               return false;
+
             if (!string_is_empty(settings->paths.directory_libretro))
                core_info_init_list(settings->paths.path_libretro_info,
-                     settings->paths.directory_libretro);
+                     settings->paths.directory_libretro,
+                     ext_name,
+                     settings->bools.show_hidden_files
+                     );
          }
          break;
       case CMD_EVENT_CORE_DEINIT:

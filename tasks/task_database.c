@@ -28,6 +28,7 @@
 #include <streams/interface_stream.h>
 #include "tasks_internal.h"
 
+#include "../core_info.h"
 #include "../database_info.h"
 
 #include "../file_path_special.h"
@@ -37,7 +38,6 @@
 #include "../retroarch.h"
 #endif
 #include "../verbosity.h"
-#include "../core_info.h"
 
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE                99999
