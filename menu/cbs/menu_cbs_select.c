@@ -32,11 +32,12 @@
 
 #ifndef BIND_ACTION_SELECT
 #define BIND_ACTION_SELECT(cbs, name) \
-   cbs->action_select = name; \
+   cbs->action_select       = name; \
    cbs->action_select_ident = #name;
 #endif
 
-static int action_select_default(const char *path, const char *label, unsigned type,
+static int action_select_default(void *data,
+      const char *path, const char *label, unsigned type,
       size_t idx)
 {
    menu_entry_t entry;
@@ -44,6 +45,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
    enum menu_action action    = MENU_ACTION_NOOP;
    menu_file_list_cbs_t *cbs  = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   menu_handle_t *menu        = (menu_handle_t*)data;
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, idx, NULL, false);
@@ -95,13 +97,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
    }
 
    if (action != MENU_ACTION_NOOP)
-   {
-      menu_handle_t *menu = NULL;
-
-      menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
       ret = menu_entry_action(&entry, menu, (unsigned)idx, action);
-   }
 
    menu_entry_free(&entry);
 
@@ -110,88 +106,76 @@ static int action_select_default(const char *path, const char *label, unsigned t
    return ret;
 }
 
-static int action_select_path_use_directory(const char *path,
+static int action_select_path_use_directory(
+      void *data,
+      const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = NULL;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-   return action_ok_path_use_directory(menu,
+   return action_ok_path_use_directory((menu_handle_t*)data,
          path, label, type, idx, 0 /* unused */);
 }
 
-static int action_select_driver_setting(const char *path,
+static int action_select_driver_setting(void *data,
+      const char *path,
       const char *label, unsigned type,
       size_t idx)
 {
-   menu_handle_t *menu = NULL;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-   return bind_right_generic(menu, type, label, true);
+   return bind_right_generic((menu_handle_t*)data, type, label, true);
 }
 
-static int action_select_core_setting(const char *path,
+static int action_select_core_setting(void *data,
+      const char *path,
       const char *label, unsigned type,
       size_t idx)
 {
-   menu_handle_t *menu = NULL;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-   return core_setting_right(menu, type, label, true);
+   return core_setting_right((menu_handle_t*)data, type, label, true);
 }
 
-static int shader_action_parameter_select(const char *path,
+static int shader_action_parameter_select(void *data,
+      const char *path,
       const char *label, unsigned type,
       size_t idx)
 {
-   menu_handle_t *menu = NULL;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-   return shader_action_parameter_right(menu, type, label, true);
+   return shader_action_parameter_right((menu_handle_t*)data, type, label, true);
 }
 
-static int shader_action_parameter_preset_select(const char *path,
+static int shader_action_parameter_preset_select(
+      void *data, const char *path,
       const char *label, unsigned type,
       size_t idx)
 {
-   menu_handle_t *menu = NULL;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-   return shader_action_parameter_right(menu, type, label, true);
+   return shader_action_parameter_right(
+         (menu_handle_t*)data, type, label, true);
 }
 
-static int action_select_cheat(const char *path,
+static int action_select_cheat(void *data,
+      const char *path,
       const char *label, unsigned type,
       size_t idx)
 {
-   menu_handle_t *menu = NULL;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-   return action_right_cheat(menu, type, label, true);
+   return action_right_cheat((menu_handle_t*)data, type, label, true);
 }
 
-static int action_select_input_desc(const char *path,
+static int action_select_input_desc(void *data,
+      const char *path,
       const char *label, unsigned type,
       size_t idx)
 {
-   menu_handle_t *menu = NULL;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-   return action_right_input_desc(menu, type, label, true);
+   return action_right_input_desc((menu_handle_t*)data, type, label, true);
 }
 
-static int action_select_input_desc_kbd(const char *path,
+static int action_select_input_desc_kbd(void *data,
+      const char *path,
       const char *label, unsigned type,
    size_t idx)
 {
-   menu_handle_t *menu = NULL;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-   return action_right_input_desc_kbd(menu, type, label, true);
+   return action_right_input_desc_kbd((menu_handle_t*)data, type, label, true);
 }
 
 #ifdef HAVE_NETWORKING
-static int action_select_netplay_connect_room(const char *path,
+static int action_select_netplay_connect_room(
+      void *data,
+      const char *path,
       const char *label, unsigned type,
       size_t idx)
 {

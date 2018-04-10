@@ -312,7 +312,7 @@ static int action_right_shader_filter_default(void *data,
    rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SMOOTH);
    if (!setting)
       return menu_cbs_exit();
-   return menu_action_handle_setting(setting,
+   return menu_action_handle_setting(data, setting,
          setting_get_type(setting), MENU_ACTION_RIGHT,
          wraparound);
 }
@@ -493,7 +493,8 @@ int bind_right_generic(void *data,
       unsigned type, const char *label,
        bool wraparound)
 {
-   return menu_setting_set(type, label, MENU_ACTION_RIGHT, wraparound);
+   return menu_setting_set(data,
+         type, label, MENU_ACTION_RIGHT, wraparound);
 }
 
 static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,

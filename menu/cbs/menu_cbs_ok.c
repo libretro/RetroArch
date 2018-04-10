@@ -1761,7 +1761,7 @@ static int action_ok_lookup_setting(void *data,
       const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return menu_setting_set(type, label, MENU_ACTION_OK, false);
+   return menu_setting_set(data, type, label, MENU_ACTION_OK, false);
 }
 
 static int action_ok_audio_add_to_mixer(void *data,

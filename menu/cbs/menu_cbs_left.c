@@ -553,7 +553,7 @@ static int action_left_shader_filter_default(void *data,
          MENU_ENUM_LABEL_VIDEO_SMOOTH);
    if (!setting)
       return menu_cbs_exit();
-   return menu_action_handle_setting(setting,
+   return menu_action_handle_setting(data, setting,
          setting_get_type(setting), MENU_ACTION_LEFT, wraparound);
 }
 
@@ -743,7 +743,8 @@ static int bind_left_generic(void *data,
       unsigned type, const char *label,
       bool wraparound)
 {
-   return menu_setting_set(type, label, MENU_ACTION_LEFT, wraparound);
+   return menu_setting_set(data,
+         type, label, MENU_ACTION_LEFT, wraparound);
 }
 
 static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,

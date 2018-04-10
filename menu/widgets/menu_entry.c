@@ -462,7 +462,7 @@ int menu_entry_action(menu_entry_t *entry,
          break;
       case MENU_ACTION_START:
          if (cbs && cbs->action_start)
-            ret = cbs->action_start(entry->type, entry->label);
+            ret = cbs->action_start(data, entry->type, entry->label);
          break;
       case MENU_ACTION_LEFT:
          if (cbs && cbs->action_left)
@@ -474,11 +474,11 @@ int menu_entry_action(menu_entry_t *entry,
          break;
       case MENU_ACTION_INFO:
          if (cbs && cbs->action_info)
-            ret = cbs->action_info(entry->type, entry->label);
+            ret = cbs->action_info(data, entry->type, entry->label);
          break;
       case MENU_ACTION_SELECT:
          if (cbs && cbs->action_select)
-            ret = cbs->action_select(entry->path,
+            ret = cbs->action_select(data, entry->path,
                   entry->label, entry->type, i);
          break;
       case MENU_ACTION_SEARCH:

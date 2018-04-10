@@ -45,17 +45,19 @@
 
 #ifndef BIND_ACTION_START
 #define BIND_ACTION_START(cbs, name) \
-   cbs->action_start = name; \
+   cbs->action_start       = name; \
    cbs->action_start_ident = #name;
 #endif
 
-static int action_start_remap_file_load(unsigned type, const char *label)
+static int action_start_remap_file_load(void *data,
+      unsigned type, const char *label)
 {
    input_remapping_set_defaults(true);
    return 0;
 }
 
-static int action_start_video_filter_file_load(unsigned type, const char *label)
+static int action_start_video_filter_file_load(void *data,
+      unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
 
@@ -79,7 +81,8 @@ static int generic_action_start_performance_counters(struct retro_perf_counter *
    return 0;
 }
 
-static int action_start_performance_counters_core(unsigned type, const char *label)
+static int action_start_performance_counters_core(void *data,
+      unsigned type, const char *label)
 {
    struct retro_perf_counter **counters = retro_get_perf_counter_libretro();
    unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
@@ -87,7 +90,8 @@ static int action_start_performance_counters_core(unsigned type, const char *lab
    return generic_action_start_performance_counters(counters, offset, type, label);
 }
 
-static int action_start_performance_counters_frontend(unsigned type,
+static int action_start_performance_counters_frontend(
+      void *data, unsigned type,
       const char *label)
 {
    struct retro_perf_counter **counters = retro_get_perf_counter_rarch();
@@ -95,7 +99,8 @@ static int action_start_performance_counters_frontend(unsigned type,
    return generic_action_start_performance_counters(counters, offset, type, label);
 }
 
-static int action_start_input_desc(unsigned type, const char *label)
+static int action_start_input_desc(void *data,
+      unsigned type, const char *label)
 {
    settings_t           *settings = config_get_ptr();
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
@@ -118,11 +123,12 @@ static int action_start_input_desc(unsigned type, const char *label)
 }
 
 static int action_start_shader_action_parameter(
+      void *data,
       unsigned type, const char *label)
 {
    video_shader_ctx_t shader_info;
    struct video_shader_parameter *param = NULL;
-   unsigned parameter = type - MENU_SETTINGS_SHADER_PARAMETER_0;
+   unsigned                   parameter = type - MENU_SETTINGS_SHADER_PARAMETER_0;
 
    video_shader_driver_get_current_shader(&shader_info);
 
@@ -137,11 +143,12 @@ static int action_start_shader_action_parameter(
    return menu_shader_manager_clear_parameter(parameter);
 }
 
-static int action_start_shader_pass(unsigned type, const char *label)
+static int action_start_shader_pass(void *data,
+      unsigned type, const char *label)
 {
-   menu_handle_t *menu       = NULL;
+   menu_handle_t *menu       = (menu_handle_t*)data;
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return menu_cbs_exit();
 
    menu->hack_shader_pass    = type - MENU_SETTINGS_SHADER_PASS_0;
@@ -152,7 +159,8 @@ static int action_start_shader_pass(unsigned type, const char *label)
 }
 
 
-static int action_start_shader_scale_pass(unsigned type, const char *label)
+static int action_start_shader_scale_pass(void *data,
+      unsigned type, const char *label)
 {
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
 
@@ -161,32 +169,39 @@ static int action_start_shader_scale_pass(unsigned type, const char *label)
    return 0;
 }
 
-static int action_start_shader_filter_pass(unsigned type, const char *label)
+static int action_start_shader_filter_pass(void *data,
+      unsigned type, const char *label)
 {
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
    return menu_shader_manager_clear_pass_filter(pass);
 }
 
-static int action_start_netplay_mitm_server(unsigned type, const char *label)
+static int action_start_netplay_mitm_server(void *data,
+      unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
-   strlcpy(settings->arrays.netplay_mitm_server, netplay_mitm_server, sizeof(settings->arrays.netplay_mitm_server));
+   strlcpy(settings->arrays.netplay_mitm_server,
+         netplay_mitm_server,
+         sizeof(settings->arrays.netplay_mitm_server));
    return 0;
 }
 
-static int action_start_shader_watch_for_changes(unsigned type, const char *label)
+static int action_start_shader_watch_for_changes(void *data,
+      unsigned type, const char *label)
 {
    settings_t *settings = config_get_ptr();
    settings->bools.video_shader_watch_files = video_shader_watch_files;
    return 0;
 }
 
-static int action_start_shader_num_passes(unsigned type, const char *label)
+static int action_start_shader_num_passes(void *data,
+      unsigned type, const char *label)
 {
    return menu_shader_manager_clear_num_passes();
 }
 
-static int action_start_cheat_num_passes(unsigned type, const char *label)
+static int action_start_cheat_num_passes(void *data,
+      unsigned type, const char *label)
 {
    if (cheat_manager_get_size())
    {
@@ -198,7 +213,8 @@ static int action_start_cheat_num_passes(unsigned type, const char *label)
    return 0;
 }
 
-static int action_start_core_setting(unsigned type,
+static int action_start_core_setting(void *data,
+      unsigned type,
       const char *label)
 {
    unsigned idx                = type - MENU_SETTINGS_CORE_OPTION_START;
@@ -210,7 +226,8 @@ static int action_start_core_setting(unsigned type,
    return 0;
 }
 
-static int action_start_playlist_association(unsigned type, const char *label)
+static int action_start_playlist_association(void *data,
+      unsigned type, const char *label)
 {
    int found;
    char new_playlist_cores[PATH_MAX_LENGTH];
@@ -245,7 +262,8 @@ static int action_start_playlist_association(unsigned type, const char *label)
    return 0;
 }
 
-static int action_start_video_resolution(unsigned type, const char *label)
+static int action_start_video_resolution(void *data,
+      unsigned type, const char *label)
 {
    unsigned width = 0, height = 0;
    global_t *global = global_get_ptr();
@@ -268,9 +286,9 @@ static int action_start_video_resolution(unsigned type, const char *label)
    return 0;
 }
 
-static int action_start_lookup_setting(unsigned type, const char *label)
+static int action_start_lookup_setting(void *data, unsigned type, const char *label)
 {
-   return menu_setting_set(type, label, MENU_ACTION_START, false);
+   return menu_setting_set(data, type, label, MENU_ACTION_START, false);
 }
 
 static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
