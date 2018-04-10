@@ -2838,11 +2838,13 @@ static enum runloop_state runloop_check_state(
 
       if (new_button_state && !old_button_state)
       {
-         if (input_nonblock_state) {
+         if (input_nonblock_state)
+         {
             input_driver_unset_nonblock_state();
             runloop_fastmotion = false;
          }
-         else {
+         else
+         {
             input_driver_set_nonblock_state();
             runloop_fastmotion = true;
          }
@@ -2850,11 +2852,13 @@ static enum runloop_state runloop_check_state(
       }
       else if (old_hold_button_state != new_hold_button_state)
       {
-         if (new_hold_button_state) {
+         if (new_hold_button_state)
+         {
             input_driver_set_nonblock_state();
             runloop_fastmotion = true;
          }
-         else {
+         else
+         {
             input_driver_unset_nonblock_state();
             runloop_fastmotion = false;
          }
@@ -2967,21 +2971,17 @@ static enum runloop_state runloop_check_state(
 
       if (new_slowmotion_button_state && !old_slowmotion_button_state)
          {
-            if (runloop_slowmotion) {
+            if (runloop_slowmotion)
                   runloop_slowmotion = false;
-            }
-            else {
+            else
                   runloop_slowmotion = true;
-            }
          }
       else if (old_slowmotion_hold_button_state != new_slowmotion_hold_button_state)
       {
-         if (new_slowmotion_hold_button_state) {
+         if (new_slowmotion_hold_button_state)
             runloop_slowmotion = true;
-         }
-         else {
+         else
             runloop_slowmotion = false;
-         }
       }
 
       if (runloop_slowmotion)
