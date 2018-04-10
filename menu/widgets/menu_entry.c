@@ -466,11 +466,11 @@ int menu_entry_action(menu_entry_t *entry,
          break;
       case MENU_ACTION_LEFT:
          if (cbs && cbs->action_left)
-            ret = cbs->action_left(entry->type, entry->label, false);
+            ret = cbs->action_left(data, entry->type, entry->label, false);
          break;
       case MENU_ACTION_RIGHT:
          if (cbs && cbs->action_right)
-            ret = cbs->action_right(entry->type, entry->label, false);
+            ret = cbs->action_right(data, entry->type, entry->label, false);
          break;
       case MENU_ACTION_INFO:
          if (cbs && cbs->action_info)
@@ -504,7 +504,7 @@ int menu_entry_action(menu_entry_t *entry,
          bool refresh               = false;
          file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
 
-         cbs->action_refresh(selection_buf, menu_stack);
+         cbs->action_refresh(data, selection_buf, menu_stack);
          menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
       }
    }

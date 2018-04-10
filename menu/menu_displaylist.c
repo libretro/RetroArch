@@ -3904,7 +3904,7 @@ static bool menu_displaylist_push_internal(
    return false;
 }
 
-bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
+bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry, void *data)
 {
    menu_displaylist_info_t info;
    menu_file_list_cbs_t *cbs      = NULL;
@@ -3913,11 +3913,9 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    unsigned type                  = 0;
    bool ret                       = false;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
-   menu_handle_t *menu            = NULL;
+   menu_handle_t *menu            = (menu_handle_t*)data;
 
-   if (!entry)
-      return false;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!entry || !menu)
       return false;
 
    menu_displaylist_info_init(&info);

@@ -129,9 +129,11 @@ enum
 
 /* Function callbacks */
 
-int action_refresh_default(file_list_t *list, file_list_t *menu_list);
+int action_refresh_default(void *data, 
+      file_list_t *list, file_list_t *menu_list);
 
-int shader_action_parameter_right(unsigned type, const char *label, bool wraparound);
+int shader_action_parameter_right(void *data,
+      unsigned type, const char *label, bool wraparound);
 
 int generic_action_ok_displaylist_push(void *data,
       const char *path, const char *new_path,
@@ -154,16 +156,16 @@ int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
       bool wraparound);
 
 
-int core_setting_right(unsigned type, const char *label,
+int core_setting_right(void *data, unsigned type, const char *label,
       bool wraparound);
 
-int action_right_input_desc(unsigned type, const char *label,
+int action_right_input_desc(void *data, unsigned type, const char *label,
       bool wraparound);
 
-int action_right_input_desc_kbd(unsigned type, const char *label,
+int action_right_input_desc_kbd(void *data, unsigned type, const char *label,
       bool wraparound);
 
-int action_right_cheat(unsigned type, const char *label,
+int action_right_cheat(void *data, unsigned type, const char *label,
       bool wraparound);
 
 int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound);
@@ -264,8 +266,9 @@ int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx);
 #endif
 
-int bind_right_generic(unsigned type, const char *label,
-       bool wraparound);
+int bind_right_generic(void *data,
+      unsigned type, const char *label,
+      bool wraparound);
 
 /* This sets up all the callback functions for a menu entry.
  *

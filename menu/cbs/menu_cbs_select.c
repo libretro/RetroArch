@@ -120,47 +120,74 @@ static int action_select_path_use_directory(const char *path,
          path, label, type, idx, 0 /* unused */);
 }
 
-static int action_select_driver_setting(const char *path, const char *label, unsigned type,
+static int action_select_driver_setting(const char *path,
+      const char *label, unsigned type,
       size_t idx)
 {
-   return bind_right_generic(type, label, true);
+   menu_handle_t *menu = NULL;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+   return bind_right_generic(menu, type, label, true);
 }
 
-static int action_select_core_setting(const char *path, const char *label, unsigned type,
+static int action_select_core_setting(const char *path,
+      const char *label, unsigned type,
       size_t idx)
 {
-   return core_setting_right(type, label, true);
+   menu_handle_t *menu = NULL;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+   return core_setting_right(menu, type, label, true);
 }
 
-static int shader_action_parameter_select(const char *path, const char *label, unsigned type,
+static int shader_action_parameter_select(const char *path,
+      const char *label, unsigned type,
       size_t idx)
 {
-   return shader_action_parameter_right(type, label, true);
+   menu_handle_t *menu = NULL;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+   return shader_action_parameter_right(menu, type, label, true);
 }
 
-static int shader_action_parameter_preset_select(const char *path, const char *label, unsigned type,
+static int shader_action_parameter_preset_select(const char *path,
+      const char *label, unsigned type,
       size_t idx)
 {
-   return shader_action_parameter_right(type, label, true);
+   menu_handle_t *menu = NULL;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+   return shader_action_parameter_right(menu, type, label, true);
 }
 
-static int action_select_cheat(const char *path, const char *label, unsigned type,
+static int action_select_cheat(const char *path,
+      const char *label, unsigned type,
       size_t idx)
 {
-   return action_right_cheat(type, label, true);
+   menu_handle_t *menu = NULL;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+   return action_right_cheat(menu, type, label, true);
 }
 
-static int action_select_input_desc(const char *path, const char *label, unsigned type,
+static int action_select_input_desc(const char *path,
+      const char *label, unsigned type,
       size_t idx)
 {
-   return action_right_input_desc(type, label, true);
+   menu_handle_t *menu = NULL;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+   return action_right_input_desc(menu, type, label, true);
 }
 
 static int action_select_input_desc_kbd(const char *path,
       const char *label, unsigned type,
    size_t idx)
 {
-   return action_right_input_desc_kbd(type, label, true);
+   menu_handle_t *menu = NULL;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+   return action_right_input_desc_kbd(menu, type, label, true);
 }
 
 #ifdef HAVE_NETWORKING

@@ -218,7 +218,7 @@ typedef struct menu_displaylist_ctx_entry
 
 bool menu_displaylist_process(menu_displaylist_info_t *info);
 
-bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry);
+bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry, void *data);
 
 void menu_displaylist_info_free(menu_displaylist_info_t *info);
 
