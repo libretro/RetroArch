@@ -27,7 +27,6 @@
 #include "config.h"
 #endif
 
-#include "retroarch.h"
 #include "verbosity.h"
 
 #include "config.def.h"
@@ -515,7 +514,8 @@ static core_info_t *core_info_find_internal(
 static bool core_info_list_update_missing_firmware_internal(
       core_info_list_t *core_info_list,
       const char *core,
-      const char *systemdir)
+      const char *systemdir,
+      bool *set_missing_bios)
 {
    size_t i;
    core_info_t      *info = NULL;
@@ -532,7 +532,6 @@ static bool core_info_list_update_missing_firmware_internal(
 
    path                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    path[0]                = '\0';
-   rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
 
    for (i = 0; i < info->firmware_count; i++)
    {
@@ -544,7 +543,7 @@ static bool core_info_list_update_missing_firmware_internal(
       info->firmware[i].missing = !filestream_exists(path);
       if (info->firmware[i].missing && !info->firmware[i].optional)
       {
-         rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+         *set_missing_bios = true;
          RARCH_WARN("Firmware missing: %s\n", info->firmware[i].path);
       }
    }
@@ -648,13 +647,15 @@ bool core_info_get_list(core_info_list_t **core)
    return true;
 }
 
-bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info)
+bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
+      bool *set_missing_bios)
 {
    if (!info)
       return false;
    return core_info_list_update_missing_firmware_internal(
          core_info_curr_list,
-         info->path, info->directory.system);
+         info->path, info->directory.system,
+         set_missing_bios);
 }
 
 bool core_info_load(core_info_ctx_find_t *info)

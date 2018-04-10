@@ -285,12 +285,21 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    if (core_info->firmware_count > 0)
    {
       core_info_ctx_firmware_t firmware_info;
+      bool update_missing_firmware   = false;
+      bool set_missing_firmware      = false;
       settings_t *settings           = config_get_ptr();
 
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->paths.directory_system;
 
-      if (core_info_list_update_missing_firmware(&firmware_info))
+      rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+
+      update_missing_firmware        = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
+
+      if (set_missing_firmware)
+         rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+
+      if (update_missing_firmware)
       {
          fill_pathname_noext(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE),

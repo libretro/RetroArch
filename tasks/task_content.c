@@ -1009,6 +1009,7 @@ static bool firmware_update_status(
       content_information_ctx_t *content_ctx)
 {
    core_info_ctx_firmware_t firmware_info;
+   bool set_missing_firmware  = false;
    core_info_t *core_info     = NULL;
    size_t s_size              = PATH_MAX_LENGTH * sizeof(char);
    char *s                    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -1032,7 +1033,13 @@ static bool firmware_update_status(
    RARCH_LOG("Updating firmware status for: %s on %s\n",
          core_info->path,
          firmware_info.directory.system);
-   core_info_list_update_missing_firmware(&firmware_info);
+
+   rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+
+   core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
+
+   if (set_missing_firmware)
+      rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
 
    if(
          content_ctx->bios_is_missing &&

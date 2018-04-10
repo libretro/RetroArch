@@ -113,7 +113,8 @@ bool core_info_init_list(const char *path_info, const char *dir_cores);
 
 bool core_info_get_list(core_info_list_t **core);
 
-bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info);
+bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
+      bool *set_missing_bios);
 
 bool core_info_find(core_info_ctx_find_t *info, const char *name);
 
