@@ -99,16 +99,16 @@ void menu_input_dialog_hide_kb(void)
    menu_input_dialog_keyboard_display = false;
 }
 
-bool menu_input_dialog_start_search(void)
+bool menu_input_dialog_start_search(void *data)
 {
-   menu_handle_t      *menu = NULL;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (!menu_driver_ctl(
-            RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return false;
 
    menu_input_dialog_display_kb();
-   strlcpy(menu_input_dialog_keyboard_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
+   strlcpy(menu_input_dialog_keyboard_label,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(menu_input_dialog_keyboard_label));
 
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
