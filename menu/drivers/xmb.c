@@ -1029,19 +1029,22 @@ static void xmb_update_thumbnail_path(void *data, unsigned i, char pos)
 
       if (string_is_equal(core_name, "imageviewer"))
       {
-         if (pos == 'R' || (pos == 'L' && string_is_equal(xmb_thumbnails_ident('R'),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
+         if (
+               (pos == 'R') || 
+               (
+                pos == 'L' && 
+                string_is_equal(xmb_thumbnails_ident('R'),
+                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
+               )
+            )
          {
             if (!string_is_empty(entry.label))
                strlcpy(new_path, entry.label,
                      sizeof(new_path));
-            goto end;
          }
          else
-         {
             xmb->left_thumbnail              = 0;
-            goto end;
-         }
+         goto end;
       }
    }
 
