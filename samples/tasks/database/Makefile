@@ -70,6 +70,8 @@ SOURCES_C := \
 	$(CORE_DIR)/database_info.c \
 	$(CORE_DIR)/core_info.c \
 	$(CORE_DIR)/file_path_str.c \
+	$(CORE_DIR)/msg_hash.c \
+	$(CORE_DIR)/intl/msg_hash_us.c \
 	$(CORE_DIR)/playlist.c \
 	$(CORE_DIR)/verbosity.c \
 	$(CORE_DIR)/libretro-db/bintree.c \
@@ -81,6 +83,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/file/config_file.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/retro_dirent.c \
+	$(LIBRETRO_COMM_DIR)/hash/rhash.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
