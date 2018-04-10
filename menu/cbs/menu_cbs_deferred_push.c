@@ -38,7 +38,7 @@
 
 #ifndef BIND_ACTION_DEFERRED_PUSH
 #define BIND_ACTION_DEFERRED_PUSH(cbs, name) \
-   cbs->action_deferred_push = name; \
+   cbs->action_deferred_push       = name; \
    cbs->action_deferred_push_ident = #name;
 #endif
 
@@ -50,7 +50,8 @@ enum
    PUSH_DETECT_CORE_LIST
 };
 
-static int deferred_push_dlist(menu_displaylist_info_t *info, enum menu_displaylist_ctl_state state)
+static int deferred_push_dlist(menu_displaylist_info_t *info,
+      void *data, enum menu_displaylist_ctl_state state)
 {
    if (!menu_displaylist_ctl(state, info))
       return menu_cbs_exit();
@@ -59,7 +60,7 @@ static int deferred_push_dlist(menu_displaylist_info_t *info, enum menu_displayl
 }
 
 static int deferred_push_database_manager_list_deferred(
-      menu_displaylist_info_t *info)
+      menu_displaylist_info_t *info, void *data)
 {
    if (!string_is_empty(info->path_b))
       free(info->path_b);
@@ -69,13 +70,13 @@ static int deferred_push_database_manager_list_deferred(
    info->path_b    = strdup(info->path);
    info->path_c    = NULL;
 
-   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+   return deferred_push_dlist(info, data, DISPLAYLIST_DATABASE_QUERY);
 }
 
 #define generic_deferred_push(name, type) \
-static int (name)(menu_displaylist_info_t *info) \
+static int (name)(menu_displaylist_info_t *info, void *data) \
 { \
-   return deferred_push_dlist(info, type); \
+   return deferred_push_dlist(info, data, type); \
 }
 
 generic_deferred_push(deferred_push_video_shader_preset_parameters, DISPLAYLIST_SHADER_PARAMETERS_PRESET)
@@ -175,7 +176,7 @@ generic_deferred_push(deferred_push_lakka_list,                     DISPLAYLIST_
 #endif
 
 static int deferred_push_cursor_manager_list_deferred(
-      menu_displaylist_info_t *info)
+      menu_displaylist_info_t *info, void *data)
 {
    char rdb_path[PATH_MAX_LENGTH];
    int ret                        = -1;
@@ -214,7 +215,8 @@ static int deferred_push_cursor_manager_list_deferred(
    info->path_c    = strdup(query);
    info->path      = strdup(rdb_path);
 
-   ret             = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+   ret             = deferred_push_dlist(info, data,
+         DISPLAYLIST_DATABASE_QUERY);
 
 end:
    if (conf)
@@ -227,7 +229,8 @@ end:
 
 #ifdef HAVE_LIBRETRODB
 static int deferred_push_cursor_manager_list_generic(
-      menu_displaylist_info_t *info, enum database_query_type type)
+      menu_displaylist_info_t *info, void *data,
+      enum database_query_type type)
 {
    char query[PATH_MAX_LENGTH];
    int ret                       = -1;
@@ -239,7 +242,8 @@ static int deferred_push_cursor_manager_list_generic(
 
    query[0] = '\0';
 
-   database_info_build_query_enum(query, sizeof(query), type, str_list->elems[0].data);
+   database_info_build_query_enum(query,
+         sizeof(query), type, str_list->elems[0].data);
 
    if (string_is_empty(query))
       goto end;
@@ -255,7 +259,8 @@ static int deferred_push_cursor_manager_list_generic(
    info->path_b = strdup(str_list->elems[0].data);
    info->path_c = strdup(query);
 
-   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+   ret = deferred_push_dlist(info, data,
+         DISPLAYLIST_DATABASE_QUERY);
 
 end:
    string_list_free(str_list);
@@ -263,9 +268,9 @@ end:
 }
 
 #define generic_deferred_cursor_manager(name, type) \
-static int (name)(menu_displaylist_info_t *info) \
+static int (name)(menu_displaylist_info_t *info, void *data) \
 { \
-   return deferred_push_cursor_manager_list_generic(info, type); \
+   return deferred_push_cursor_manager_list_generic(info, data, type); \
 }
 
 generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users, DATABASE_QUERY_ENTRY_MAX_USERS)
@@ -289,7 +294,7 @@ generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query
 
 #if 0
 static int deferred_push_cursor_manager_list_deferred_query_subsearch(
-      menu_displaylist_info_t *info)
+      menu_displaylist_info_t *info, void *data)
 {
    int ret                       = -1;
 #ifdef HAVE_LIBRETRODB
@@ -314,7 +319,8 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
    info->path_b = strdup(str_list->elems[0].data);
    info->path_c = strdup(query);
 
-   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+   ret = deferred_push_dlist(info, data,
+         DISPLAYLIST_DATABASE_QUERY);
 
 end:
    string_list_free(str_list);
@@ -324,16 +330,17 @@ end:
 #endif
 
 static int general_push(menu_displaylist_info_t *info,
+      void *data,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
    settings_t                  *settings = config_get_ptr();
    char                      *newstring2 = NULL;
    core_info_list_t           *list      = NULL;
-   menu_handle_t                  *menu  = NULL;
+   menu_handle_t                  *menu  = (menu_handle_t*)data;
    rarch_system_info_t           *system = runloop_get_system_info();
    struct retro_system_info *system_menu = &system->info;
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!data)
       return menu_cbs_exit();
 
    core_info_get_list(&list);
@@ -562,20 +569,20 @@ static int general_push(menu_displaylist_info_t *info,
    }
    free(newstring2);
 
-   return deferred_push_dlist(info, state);
+   return deferred_push_dlist(info, data, state);
 }
 
 #define generic_deferred_push_general(name, a, b) \
-static int (name)(menu_displaylist_info_t *info) \
+static int (name)(menu_displaylist_info_t *info, void *data) \
 { \
-   return general_push(info, a, b); \
+   return general_push(info, data, a, b); \
 }
 
 #define generic_deferred_push_clear_general(name, a, b) \
-static int (name)(menu_displaylist_info_t *info) \
+static int (name)(menu_displaylist_info_t *info, void *data) \
 { \
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list); \
-   return general_push(info, a, b); \
+   return general_push(info, data, a, b); \
 }
 
 generic_deferred_push_general(deferred_push_detect_core_list, PUSH_DETECT_CORE_LIST, DISPLAYLIST_CORES_DETECTED)

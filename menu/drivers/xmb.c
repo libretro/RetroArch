@@ -4829,7 +4829,8 @@ static void xmb_toggle(void *userdata, bool menu_on)
    xmb_toggle_horizontal_list(xmb);
 }
 
-static int deferred_push_content_actions(menu_displaylist_info_t *info)
+static int deferred_push_content_actions(menu_displaylist_info_t *info,
+      void *data)
 {
    if (!menu_displaylist_ctl(
          DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info))

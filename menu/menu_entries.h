@@ -102,7 +102,7 @@ typedef struct menu_file_list_cbs
    rarch_setting_t *setting;
 
    int (*action_iterate)(const char *label, unsigned action);
-   int (*action_deferred_push)(menu_displaylist_info_t *info);
+   int (*action_deferred_push)(menu_displaylist_info_t *info, void *data);
    int (*action_select)(const char *path, const char *label, unsigned type,
          size_t idx);
    int (*action_get_title)(const char *path, const char *label,
