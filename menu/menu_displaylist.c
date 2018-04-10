@@ -1573,7 +1573,7 @@ static enum msg_file_type extension_to_file_hash_type(const char *ext)
       return FILE_TYPE_CRC;
    else if (string_is_equal(ext, "md5"))
       return FILE_TYPE_MD5;
-   return FILE_TYPE_UNKNOWN;
+   return FILE_TYPE_NONE;
 }
 
 static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
