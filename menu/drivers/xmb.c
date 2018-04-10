@@ -1019,7 +1019,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i, char pos)
       goto end;
    }
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+   playlist = playlist_get_cached();
 
    if (playlist)
    {

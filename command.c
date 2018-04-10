@@ -1708,14 +1708,8 @@ void command_playlist_update_write(
       const char *db_name)    
 {
    playlist_t *plist    = (playlist_t*)data;
-   playlist_t *playlist = NULL;
+   playlist_t *playlist = plist ? plist : playlist_get_cached();
 
-   if (plist)
-      playlist          = plist;
-#ifdef HAVE_MENU
-   else
-      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
-#endif
    if (!playlist)
       return;
 

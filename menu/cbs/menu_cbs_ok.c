@@ -1491,9 +1491,8 @@ static int action_ok_playlist_entry_collection(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   new_core_path[0] = '\0';
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+   new_core_path[0]                    = '\0';
+   tmp_playlist                        = playlist_get_cached();
 
    if (!tmp_playlist)
    {
@@ -1540,17 +1539,18 @@ static int action_ok_playlist_entry_collection(const char *path,
          return ret;
       }
 
-      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+      tmp_playlist = playlist_get_cached();
 
-      command_playlist_update_write(
-            tmp_playlist,
-            selection_ptr,
-            NULL,
-            NULL,
-            new_core_path,
-            core_info.inf->display_name,
-            NULL,
-            NULL);
+      if (tmp_playlist)
+         command_playlist_update_write(
+               tmp_playlist,
+               selection_ptr,
+               NULL,
+               NULL,
+               new_core_path,
+               core_info.inf->display_name,
+               NULL,
+               NULL);
    }    
    else
       strlcpy(new_core_path, core_path, sizeof(new_core_path));
@@ -1656,13 +1656,11 @@ static int action_ok_playlist_entry_start_content(const char *path,
    const char *entry_label             = NULL;
    const char *core_path               = NULL;
    const char *core_name               = NULL;
-   playlist_t *tmp_playlist            = NULL;
    menu_handle_t *menu                 = NULL;
+   playlist_t *tmp_playlist            = playlist_get_cached();
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
 
    if (!tmp_playlist)
    {
@@ -1713,18 +1711,18 @@ static int action_ok_playlist_entry_start_content(const char *path,
          return ret;
       }
 
-      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+      tmp_playlist = playlist_get_cached();
 
-      command_playlist_update_write(
-            tmp_playlist,
-            selection_ptr,
-            NULL,
-            NULL,
-            new_core_path,
-            core_info.inf->display_name,
-            NULL,
-            NULL);
-         
+      if (tmp_playlist)
+         command_playlist_update_write(
+               tmp_playlist,
+               selection_ptr,
+               NULL,
+               NULL,
+               new_core_path,
+               core_info.inf->display_name,
+               NULL,
+               NULL);
    }
 
    if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
@@ -1754,8 +1752,7 @@ static int action_ok_audio_add_to_mixer(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *entry_path              = NULL;
-   playlist_t *tmp_playlist            = NULL;
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+   playlist_t *tmp_playlist            = playlist_get_cached();
 
    if (!tmp_playlist)
       return -1;
@@ -2986,16 +2983,13 @@ static int action_ok_reset_core_association(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *tmp_path                = NULL;
-   playlist_t *tmp_playlist            = NULL;
    menu_handle_t *menu                 = NULL;
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+   playlist_t *tmp_playlist            = playlist_get_cached();
 
    if (!tmp_playlist)
       return 0;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
 
    playlist_get_index(tmp_playlist,
          menu->rpl_entry_selection_ptr,
@@ -3020,16 +3014,13 @@ static int action_ok_add_to_favorites_playlist(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *tmp_path                = NULL;
-   playlist_t *tmp_playlist            = NULL;
    menu_handle_t *menu                 = NULL;
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+   playlist_t *tmp_playlist            = playlist_get_cached();
 
    if (!tmp_playlist)
       return 0;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
 
    playlist_get_index(tmp_playlist,
          menu->rpl_entry_selection_ptr, &tmp_path,
@@ -3045,7 +3036,6 @@ static int action_ok_delete_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t new_selection_ptr;
-   playlist_t *playlist      = NULL;
    char *conf_path           = NULL;
    char *def_conf_path       = NULL;
    char *def_conf_music_path = NULL;
@@ -3056,11 +3046,10 @@ static int action_ok_delete_entry(const char *path,
    char *def_conf_img_path   = NULL;
 #endif
    menu_handle_t *menu       = NULL;
+   playlist_t *playlist      = playlist_get_cached();
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
    conf_path                 = playlist_get_conf_path(playlist);
    def_conf_path             = playlist_get_conf_path(g_defaults.content_history);

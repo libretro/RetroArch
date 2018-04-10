@@ -2486,13 +2486,16 @@ static int menu_displaylist_parse_settings_enum(void *data,
 static void menu_displaylist_set_new_playlist(
       menu_handle_t *menu, const char *path)
 {
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT,
-         (void*)path);
-   strlcpy(
-         menu->db_playlist_file,
-         path,
-         sizeof(menu->db_playlist_file));
+   menu->db_playlist_file[0] = '\0';
+
+   if (playlist_get_cached())
+      playlist_free_cached();
+
+   if (playlist_init_cached(path, COLLECTION_SIZE))
+      strlcpy(
+            menu->db_playlist_file,
+            path,
+            sizeof(menu->db_playlist_file));
 }
 
 
@@ -2545,12 +2548,15 @@ static int menu_displaylist_parse_horizontal_list(
       menu_displaylist_set_new_playlist(menu, path_playlist);
    }
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+   playlist = playlist_get_cached();
 
-   playlist_qsort(playlist);
-
-   menu_displaylist_parse_playlist(info,
-         playlist, msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION), is_historylist);
+   if (playlist)
+   {
+      playlist_qsort(playlist);
+      menu_displaylist_parse_playlist(info,
+            playlist,
+            msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION), is_historylist);
+   }
 
    return 0;
 }
@@ -2774,7 +2780,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    const char *core_path           = NULL;
    const char *core_name           = NULL;
    const char *db_name             = NULL;
-   playlist_t *playlist            = NULL;
+   playlist_t *playlist            = playlist_get_cached();
    settings_t *settings            = config_get_ptr();
    const char *fullpath            = path_get(RARCH_PATH_CONTENT);
 
@@ -2783,10 +2789,9 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
    idx                             = menu->rpl_entry_selection_ptr;
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
-
-   playlist_get_index(playlist, idx,
-         &entry_path, &label, &core_path, &core_name, NULL, &db_name);
+   if (playlist)
+      playlist_get_index(playlist, idx,
+            &entry_path, &label, &core_path, &core_name, NULL, &db_name);
 
    content_loaded = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
          && string_is_equal(menu->deferred_path, fullpath);
@@ -2815,14 +2820,16 @@ static int menu_displaylist_parse_horizontal_content_actions(
             msg_hash_to_str(MENU_ENUM_LABEL_RUN),
             MENU_ENUM_LABEL_RUN, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
-      if (settings->bools.playlist_entry_rename && !settings->bools.kiosk_mode_enable)
+      if (settings->bools.playlist_entry_rename && 
+            !settings->bools.kiosk_mode_enable)
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY),
                msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY),
                MENU_ENUM_LABEL_RENAME_ENTRY,
                FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
-      if (settings->bools.playlist_entry_remove && !settings->bools.kiosk_mode_enable)
+      if (settings->bools.playlist_entry_remove && 
+            !settings->bools.kiosk_mode_enable)
          menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY),
             msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
@@ -3983,9 +3990,8 @@ static void menu_displaylist_parse_playlist_generic(
 
    menu_displaylist_set_new_playlist(menu, playlist_path);
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
-
-   path_playlist = strdup(playlist_name);
+   playlist             = playlist_get_cached();
+   path_playlist        = strdup(playlist_name);
 
    *ret = menu_displaylist_parse_playlist(info,
          playlist, path_playlist, true);
@@ -4414,12 +4420,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION),
                   sizeof(path_playlist));
 
-            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+            playlist = playlist_get_cached();
 
-            playlist_qsort(playlist);
+            if (playlist)
+            {
+               playlist_qsort(playlist);
 
-            ret = menu_displaylist_parse_playlist(info,
-                  playlist, path_playlist, false);
+               ret = menu_displaylist_parse_playlist(info,
+                     playlist, path_playlist, false);
+            }
 
             if (ret == 0)
             {
