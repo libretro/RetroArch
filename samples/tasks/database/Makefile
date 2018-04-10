@@ -65,6 +65,7 @@ flags   += -std=c99
 INCFLAGS  := -I$(LIBRETRO_COMM_DIR)/include
 
 SOURCES_C := \
+	$(CORE_DIR)/samples/tasks/database/main.c \
 	$(CORE_DIR)/tasks/task_database.c \
 	$(CORE_DIR)/tasks/task_database_cue.c \
 	$(CORE_DIR)/database_info.c \
@@ -99,9 +100,10 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-#SOURCES_C += $(CORE_DIR)/msg_hash.c
+DEFINES    = -DHAVE_LIBRETRODB
 
-DEFINES    = 
+CFLAGS    += $(DEFINES)
+CXXFLAGS  += $(DEFINES)
 
 OBJECTS    = $(SOURCES_C:.c=.o)
 
