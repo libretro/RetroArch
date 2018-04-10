@@ -572,7 +572,7 @@ static enum msg_file_type extension_to_file_type(const char *ext)
          string_is_equal(ext, "zip") ||
          string_is_equal(ext, "ZIP") ||
          string_is_equal(ext, "apk") ||
-         string_is_equal(ext, "apk")
+         string_is_equal(ext, "APK")
       )
       return FILE_TYPE_COMPRESSED;
    if (
