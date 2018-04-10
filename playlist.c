@@ -52,6 +52,7 @@ struct content_playlist
    char *conf_path;
    struct playlist_entry *entries;
 };
+static playlist_t *playlist_cached = NULL;
 
 typedef int (playlist_sort_fun_t)(
       const struct playlist_entry *a,
@@ -551,6 +552,29 @@ static bool playlist_read_file(
 end:
    intfstream_close(file);
    free(file);
+   return true;
+}
+
+void playlist_free_cached(void)
+{
+   playlist_free(playlist_cached);
+   playlist_cached = NULL;
+}
+
+playlist_t *playlist_get_cached(void)
+{
+   if (playlist_cached)
+      return playlist_cached;
+   return NULL;
+}
+
+bool playlist_init_cached(const char *path, size_t size)
+{
+   playlist_t *playlist = playlist_init(path, size);
+   if (!playlist)
+      return false;
+
+   playlist_cached      = playlist;
    return true;
 }
 

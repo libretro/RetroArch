@@ -182,9 +182,6 @@ static bool menu_driver_pending_shutdown        = false;
 /* Are we binding a button inside the menu? */
 static bool menu_driver_is_binding              = false;
 
-/* The currently active playlist that we are using inside the menu */
-static playlist_t *menu_driver_playlist         = NULL;
-
 static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata                      = NULL;
@@ -1881,9 +1878,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_pending_shutdown = true;
          break;
       case RARCH_MENU_CTL_PLAYLIST_FREE:
-         if (menu_driver_playlist)
-            playlist_free(menu_driver_playlist);
-         menu_driver_playlist = NULL;
+         playlist_free_cached();
          break;
       case RARCH_MENU_CTL_FIND_DRIVER:
          {
@@ -1930,8 +1925,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             const char *path = (const char*)data;
             if (string_is_empty(path))
                return false;
-            menu_driver_playlist  = playlist_init(path,
-                  COLLECTION_SIZE);
+            playlist_init_cached(path, COLLECTION_SIZE);
          }
          break;
       case RARCH_MENU_CTL_PLAYLIST_GET:
@@ -1939,7 +1933,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             playlist_t **playlist = (playlist_t**)data;
             if (!playlist)
                return false;
-            *playlist = menu_driver_playlist;
+            *playlist = playlist_get_cached();
          }
          break;
       case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
