@@ -36,7 +36,11 @@ int main(int argc, char *argv[])
    const char *core_dir      = NULL;
    const char *input_dir     = NULL;
    const char *playlist_dir  = NULL;
+#ifdef _WIN32
    const char *exts          = "dll";
+#else
+   const char *exts          = "so";
+#endif
 
    if (argc < 6)
    {
