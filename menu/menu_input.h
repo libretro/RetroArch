@@ -108,7 +108,8 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
-void menu_input_post_iterate(int *ret, unsigned action);
+void menu_input_post_iterate(void *data,
+      int *ret, unsigned action);
 
 int16_t menu_input_pointer_state(enum menu_input_pointer_state state);
 

@@ -254,7 +254,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    }
 
    if (BIT64_GET(menu->state, MENU_STATE_POST_ITERATE))
-      menu_input_post_iterate(&ret, action);
+      menu_input_post_iterate(menu, &ret, action);
 
 end:
    if (ret)

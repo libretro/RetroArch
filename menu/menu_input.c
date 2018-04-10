@@ -210,6 +210,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 }
 
 static int menu_input_mouse_frame(
+      menu_handle_t *menu,
       menu_file_list_cbs_t *cbs, menu_entry_t *entry,
       unsigned action)
 {
@@ -287,10 +288,6 @@ static int menu_input_mouse_frame(
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_BUTTON_R))
    {
       size_t selection    = menu_navigation_get_selection();
-      menu_handle_t *menu = NULL;
-
-      menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
       menu_entry_action(entry, menu,
             (unsigned)selection,
             MENU_ACTION_CANCEL);
@@ -415,6 +412,7 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
 }
 
 static int menu_input_pointer_post_iterate(
+      menu_handle_t *menu,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
@@ -528,10 +526,6 @@ static int menu_input_pointer_post_iterate(
                if (menu_input->pointer.counter > 32)
                {
                   size_t selection    = menu_navigation_get_selection();
-                  menu_handle_t *menu = NULL;
-
-                  menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
                   if (cbs && cbs->action_start)
                      return menu_entry_action(entry, menu,
                            (unsigned)selection,
@@ -564,11 +558,7 @@ static int menu_input_pointer_post_iterate(
    {
       if (!pointer_oldback)
       {
-         menu_handle_t *menu = NULL;
          pointer_oldback     = true;
-
-         menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
          menu_entry_action(entry, menu,
                (unsigned)menu_navigation_get_selection(),
                MENU_ACTION_CANCEL);
@@ -580,7 +570,7 @@ static int menu_input_pointer_post_iterate(
    return ret;
 }
 
-void menu_input_post_iterate(int *ret, unsigned action)
+void menu_input_post_iterate(void *data, int *ret, unsigned action)
 {
    menu_entry_t entry;
    settings_t *settings       = config_get_ptr();
@@ -592,11 +582,10 @@ void menu_input_post_iterate(int *ret, unsigned action)
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, selection, NULL, false);
 
-   *ret = menu_input_mouse_frame(cbs, &entry, action);
+   *ret = menu_input_mouse_frame(data, cbs, &entry, action);
 
    if (settings->bools.menu_pointer_enable)
-      *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
+      *ret |= menu_input_pointer_post_iterate(data, cbs, &entry, action);
 
    menu_entry_free(&entry);
 }
-
