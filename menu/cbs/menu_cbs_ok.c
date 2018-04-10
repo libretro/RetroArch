@@ -834,7 +834,7 @@ int generic_action_ok_displaylist_push(
    if (info_path)
       info.path  = strdup(info_path);
 
-   if (menu_displaylist_ctl(dl_type, &info))
+   if (menu_displaylist_ctl(dl_type, &info, menu))
    {
       if (menu_displaylist_process(&info))
       {

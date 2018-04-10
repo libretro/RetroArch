@@ -224,7 +224,8 @@ void menu_displaylist_info_free(menu_displaylist_info_t *info);
 
 void menu_displaylist_info_init(menu_displaylist_info_t *info);
 
-bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
+bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data,
+      void *userdata);
 #ifdef HAVE_NETWORKING
 void netplay_refresh_rooms_menu(file_list_t *list);
 #endif

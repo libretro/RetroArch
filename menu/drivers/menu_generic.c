@@ -282,7 +282,7 @@ bool generic_menu_init_list(void *data)
 
    info.list  = selection_buf;
 
-   if (menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info))
+   if (menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info, data))
       menu_displaylist_process(&info);
 
    menu_displaylist_info_free(&info);
