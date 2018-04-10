@@ -1565,6 +1565,17 @@ error:
    return -1;
 }
 
+static enum msg_file_type extension_to_file_hash_type(const char *ext)
+{
+   if (string_is_equal(ext, "sha1"))
+      return FILE_TYPE_SHA1;
+   else if (string_is_equal(ext, "crc"))
+      return FILE_TYPE_CRC;
+   else if (string_is_equal(ext, "md5"))
+      return FILE_TYPE_MD5;
+   return FILE_TYPE_UNKNOWN;
+}
+
 static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 {
    unsigned i, j, k;
@@ -1653,7 +1664,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
                   const char *elem0 = tmp_str_list->elems[0].data;
                   const char *elem1 = tmp_str_list->elems[1].data;
 
-                  switch (msg_hash_to_file_type(msg_hash_calculate(elem1)))
+                  switch (extension_to_file_hash_type(elem1))
                   {
                      case FILE_TYPE_CRC:
                         if (string_is_equal(crc_str, elem0))
