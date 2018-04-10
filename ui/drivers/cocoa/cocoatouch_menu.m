@@ -817,11 +817,14 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)menuBack
 {
 #ifdef HAVE_MENU
-   menu_entry_t entry = {0};
-   size_t selection   = menu_navigation_get_selection();
+   menu_handle_t *menu = NULL;
+   menu_entry_t entry  = {0};
+   size_t selection    = menu_navigation_get_selection();
+
+   menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
 
    menu_entry_get(&entry, 0, selection, NULL, false);
-   menu_entry_action(&entry, (unsigned int)selection, MENU_ACTION_CANCEL);
+   menu_entry_action(&entry, menu, (unsigned int)selection, MENU_ACTION_CANCEL);
 #endif
 }
 
