@@ -448,9 +448,15 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          break;
 
       case MENU_ACTION_OK:
-         if (cbs && cbs->action_ok)
-            ret = cbs->action_ok(entry->path,
-                  entry->label, entry->type, i, entry->entry_idx);
+         {
+            menu_handle_t *menu = NULL;
+
+            menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
+
+            if (cbs && cbs->action_ok)
+               ret = cbs->action_ok(menu, entry->path,
+                     entry->label, entry->type, i, entry->entry_idx);
+         }
          break;
       case MENU_ACTION_START:
          if (cbs && cbs->action_start)

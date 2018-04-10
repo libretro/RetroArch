@@ -1706,7 +1706,8 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
       menu_entries_flush_stack(NULL, MENU_SETTINGS);
       menu_display_set_msg_force(true);
 
-      generic_action_ok_displaylist_push("", NULL,
+      generic_action_ok_displaylist_push(menu_driver_data,
+            "", NULL,
             "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
 
       if (menu_driver_pending_quit)

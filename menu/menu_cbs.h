@@ -133,21 +133,26 @@ int action_refresh_default(file_list_t *list, file_list_t *menu_list);
 
 int shader_action_parameter_right(unsigned type, const char *label, bool wraparound);
 
-int generic_action_ok_displaylist_push(const char *path, const char *new_path,
+int generic_action_ok_displaylist_push(void *data,
+      const char *path, const char *new_path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type);
+
+int action_ok_push_generic_list(void *data,
+      const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+
+int action_ok_path_use_directory(void *data,
+      const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+
+int action_ok_directory_push(void *data,
+      const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
       bool wraparound);
 
-int action_ok_push_generic_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx);
-
-int action_ok_path_use_directory(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx);
-
-int action_ok_directory_push(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 int core_setting_right(unsigned type, const char *label,
       bool wraparound);
