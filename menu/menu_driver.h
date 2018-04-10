@@ -486,7 +486,8 @@ typedef struct menu_ctx_driver
    bool  (*load_image)(void *userdata, void *data, enum menu_image_type type);
    const char *ident;
    int (*environ_cb)(enum menu_environ_cb type, void *data, void *userdata);
-   int (*pointer_tap)(void *data, unsigned x, unsigned y, unsigned ptr,
+   int (*pointer_tap)(void *data, void *userdata,
+         unsigned x, unsigned y, unsigned ptr,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
    void (*update_thumbnail_path)(void *data, unsigned i, char pos);
@@ -496,10 +497,12 @@ typedef struct menu_ctx_driver
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
    void (*update_savestate_thumbnail_image)(void *data);
-   int (*pointer_down)(void *data, unsigned x, unsigned y, unsigned ptr,
+   int (*pointer_down)(void *data, void *userdata,
+         unsigned x, unsigned y, unsigned ptr,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
-   int (*pointer_up)(void *data, unsigned x, unsigned y, unsigned ptr,
+   int (*pointer_up)(void *data, void *userdata,
+         unsigned x, unsigned y, unsigned ptr,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
 } menu_ctx_driver_t;

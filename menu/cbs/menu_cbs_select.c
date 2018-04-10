@@ -95,7 +95,13 @@ static int action_select_default(const char *path, const char *label, unsigned t
    }
 
    if (action != MENU_ACTION_NOOP)
-       ret = menu_entry_action(&entry, (unsigned)idx, action);
+   {
+      menu_handle_t *menu = NULL;
+
+      menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
+
+      ret = menu_entry_action(&entry, menu, (unsigned)idx, action);
+   }
 
    menu_entry_free(&entry);
 

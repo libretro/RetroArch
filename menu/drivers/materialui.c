@@ -2268,7 +2268,8 @@ static size_t materialui_list_get_selection(void *data)
 
 /* The pointer or the mouse is pressed down. We use this callback to
 highlight the entry that has been pressed */
-static int materialui_pointer_down(void *userdata,
+static int materialui_pointer_down(void *data,
+      void *userdata,
       unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
@@ -2276,22 +2277,16 @@ static int materialui_pointer_down(void *userdata,
    unsigned width, height;
    unsigned header_height;
    size_t entries_end         = menu_entries_get_size();
-   materialui_handle_t *mui          = (materialui_handle_t*)userdata;
+   materialui_handle_t *mui   = (materialui_handle_t*)userdata;
 
    if (!mui)
       return 0;
 
-   header_height = menu_display_get_header_height();
+   header_height              = menu_display_get_header_height();
    video_driver_get_size(&width, &height);
 
-   if (y < header_height)
-   {
-
-   }
-   else if (y > height - mui->tabs_height)
-   {
-
-   }
+   if (y < header_height) { }
+   else if (y > height - mui->tabs_height) { }
    else if (ptr <= (entries_end - 1))
    {
       size_t ii;
@@ -2318,7 +2313,8 @@ static int materialui_pointer_down(void *userdata,
 If we clicked on the header, we perform a cancel action.
 If we clicked on the tabs, we switch to a new list.
 If we clicked on a menu entry, we call the entry action callback. */
-static int materialui_pointer_up(void *userdata,
+static int materialui_pointer_up(void *data,
+      void *userdata,
       unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
@@ -2326,7 +2322,7 @@ static int materialui_pointer_up(void *userdata,
    unsigned width, height;
    unsigned header_height, i;
    size_t entries_end         = menu_entries_get_size();
-   materialui_handle_t *mui          = (materialui_handle_t*)userdata;
+   materialui_handle_t *mui   = (materialui_handle_t*)userdata;
 
    if (!mui)
       return 0;
@@ -2337,7 +2333,7 @@ static int materialui_pointer_up(void *userdata,
    if (y < header_height)
    {
       size_t selection = menu_navigation_get_selection();
-      return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+      return menu_entry_action(entry, data, (unsigned)selection, MENU_ACTION_CANCEL);
    }
    else if (y > height - mui->tabs_height)
    {
@@ -2376,7 +2372,8 @@ static int materialui_pointer_up(void *userdata,
          )
          {
             if (ptr == ii && cbs && cbs->action_select)
-               return menu_entry_action(entry, (unsigned)ii, MENU_ACTION_SELECT);
+               return menu_entry_action(entry, data,
+                     (unsigned)ii, MENU_ACTION_SELECT);
          }
       }
    }

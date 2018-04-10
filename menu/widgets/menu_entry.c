@@ -254,12 +254,15 @@ void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 
 void menu_entry_reset(uint32_t i)
 {
+   menu_handle_t *menu = NULL;
    menu_entry_t entry;
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   menu_entry_action(&entry, i, MENU_ACTION_START);
+   menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
+
+   menu_entry_action(&entry, menu, i, MENU_ACTION_START);
 }
 
 void menu_entry_get_value(menu_entry_t *entry, char *s, size_t len)
@@ -408,16 +411,21 @@ bool menu_entry_is_currently_selected(unsigned id)
 int menu_entry_select(uint32_t i)
 {
    menu_entry_t     entry;
+   menu_handle_t *menu    = NULL;
 
    menu_navigation_set_selection(i);
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, false);
 
-   return menu_entry_action(&entry, i, MENU_ACTION_SELECT);
+   menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
+
+   return menu_entry_action(&entry, menu, i, MENU_ACTION_SELECT);
 }
 
-int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
+int menu_entry_action(menu_entry_t *entry,
+      void *data,
+      unsigned i, enum menu_action action)
 {
    int ret                    = 0;
    file_list_t *selection_buf =
@@ -448,15 +456,9 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          break;
 
       case MENU_ACTION_OK:
-         {
-            menu_handle_t *menu = NULL;
-
-            menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
-            if (cbs && cbs->action_ok)
-               ret = cbs->action_ok(menu, entry->path,
-                     entry->label, entry->type, i, entry->entry_idx);
-         }
+         if (cbs && cbs->action_ok)
+            ret = cbs->action_ok(data, entry->path,
+                  entry->label, entry->type, i, entry->entry_idx);
          break;
       case MENU_ACTION_START:
          if (cbs && cbs->action_start)
