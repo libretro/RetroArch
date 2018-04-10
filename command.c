@@ -2203,8 +2203,10 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_CORE_INFO_INIT:
          {
             char ext_name[255];
-            ext_name[0]               = '\0';
             settings_t *settings      = config_get_ptr();
+
+            ext_name[0]               = '\0';
+
             command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
 
             if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
