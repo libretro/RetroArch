@@ -2267,6 +2267,7 @@ static int action_ok_core_deferred_set(const char *new_core_path,
       const char *content_label, unsigned type, size_t idx, size_t entry_idx)
 {
    char core_display_name[PATH_MAX_LENGTH];
+   settings_t *settings                    = config_get_ptr();
    menu_handle_t            *menu          = NULL;
    size_t selection                        = menu_navigation_get_selection();
 
@@ -2276,7 +2277,9 @@ static int action_ok_core_deferred_set(const char *new_core_path,
    core_display_name[0] = '\0';
 
    core_info_get_name(new_core_path,
-         core_display_name, sizeof(core_display_name));
+         core_display_name, sizeof(core_display_name),
+         settings->paths.path_libretro_info,
+         settings->paths.directory_libretro);
    command_playlist_update_write(
          NULL,
          menu->rdb_entry_start_game_selection_ptr,

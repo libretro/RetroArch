@@ -17,6 +17,7 @@
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <file/config_file.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <file/archive_file.h>
@@ -31,7 +32,6 @@
 
 #include "config.def.h"
 #include "core_info.h"
-#include "configuration.h"
 #include "file_path_special.h"
 #include "list_special.h"
 
@@ -224,20 +224,17 @@ static bool core_info_list_iterate(
    return true;
 }
 
-static core_info_list_t *core_info_list_new(const char *path)
+static core_info_list_t *core_info_list_new(const char *path, const char *libretro_info_dir)
 {
    size_t i;
    core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
+   const char       *path_basedir   = libretro_info_dir;
    struct string_list *contents     = dir_list_new_special(
                                       path, DIR_LIST_CORES, NULL);
-   settings_t             *settings = config_get_ptr();
-   const char       *path_basedir   = !string_is_empty(settings->paths.path_libretro_info) ?
-      settings->paths.path_libretro_info : settings->paths.directory_libretro;
 
    if (!contents)
       return NULL;
-
 
    core_info_list = (core_info_list_t*)calloc(1, sizeof(*core_info_list));
    if (!core_info_list)
@@ -635,14 +632,10 @@ void core_info_deinit_list(void)
    core_info_curr_list = NULL;
 }
 
-bool core_info_init_list(void)
+bool core_info_init_list(const char *path_info, const char *dir_cores)
 {
-   settings_t *settings = config_get_ptr();
-
-   if (settings)
-      core_info_curr_list = core_info_list_new(settings->paths.directory_libretro);
-
-   if (!core_info_curr_list)
+   if (!(core_info_curr_list = core_info_list_new(dir_cores,
+               !string_is_empty(path_info) ? path_info : dir_cores)))
       return false;
    return true;
 }
@@ -751,15 +744,13 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    *num_infos = supported;
 }
 
-void core_info_get_name(const char *path, char *s, size_t len)
+void core_info_get_name(const char *path, char *s, size_t len,
+      const char *path_info, const char *dir_cores)
 {
    size_t i;
-   settings_t             *settings = config_get_ptr();
-   struct string_list *contents     = dir_list_new_special(
-         settings->paths.directory_libretro,
-         DIR_LIST_CORES, NULL);
-   const char       *path_basedir   = !string_is_empty(settings->paths.path_libretro_info) ?
-      settings->paths.path_libretro_info : settings->paths.directory_libretro;
+   const char       *path_basedir   = !string_is_empty(path_info) ?
+      path_info : dir_cores;
+   struct string_list *contents     = dir_list_new_special(dir_cores, DIR_LIST_CORES, NULL);
 
    if (!contents)
       return;
@@ -786,7 +777,7 @@ void core_info_get_name(const char *path, char *s, size_t len)
          continue;
       }
 
-      conf = config_file_new(info_path);
+      conf                            = config_file_new(info_path);
 
       if (!conf)
       {

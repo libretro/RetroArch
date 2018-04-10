@@ -2206,7 +2206,8 @@ TODO: Add a setting for these tweaks */
             command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
 
             if (!string_is_empty(settings->paths.directory_libretro))
-               core_info_init_list();
+               core_info_init_list(settings->paths.path_libretro_info,
+                     settings->paths.directory_libretro);
          }
          break;
       case CMD_EVENT_CORE_DEINIT:
