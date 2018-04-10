@@ -60,17 +60,21 @@ error:
 }
 
 #ifdef HAVE_CHEEVOS
-int  generic_action_ok_help(const char *path,
+int  generic_action_ok_help(void *data,
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       enum msg_hash_enums id, enum menu_dialog_type id2);
 
 static int action_info_cheevos(unsigned type, const char *label)
 {
+   menu_handle_t *menu    = NULL;
    unsigned new_id        = type - MENU_SETTINGS_CHEEVOS_START;
 
    menu_dialog_set_current_id(new_id);
 
-   return generic_action_ok_help(NULL, label, new_id, 0, 0,
+   menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
+
+   return generic_action_ok_help(menu, NULL, label, new_id, 0, 0,
       MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,
       MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION);
 }
