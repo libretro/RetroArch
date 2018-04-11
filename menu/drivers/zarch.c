@@ -1084,7 +1084,7 @@ static bool zarch_load_image(void *userdata,
                &zui->textures.bg);
          break;
       case MENU_IMAGE_THUMBNAIL:
-         break;
+      case MENU_IMAGE_LEFT_THUMBNAIL:
       case MENU_IMAGE_SAVESTATE_THUMBNAIL:
          /* TODO/FIXME -implement */
          break;
