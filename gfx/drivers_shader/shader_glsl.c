@@ -28,6 +28,8 @@
 #include "../../config.h"
 #endif
 
+#include "../../configuration.h"
+
 #ifdef HAVE_OPENGL
 #include <gfx/gl_capabilities.h>
 #include "../common/gl_common.h"
