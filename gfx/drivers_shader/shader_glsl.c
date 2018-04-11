@@ -28,6 +28,8 @@
 #include "../../config.h"
 #endif
 
+#include "../../configuration.h"
+
 #ifdef HAVE_OPENGL
 #include <gfx/gl_capabilities.h>
 #include "../common/gl_common.h"
@@ -799,6 +801,7 @@ static void *gl_glsl_init(void *data, const char *path)
    char *error_string         = NULL;
 #endif
    config_file_t *conf        = NULL;
+   settings_t *settings       = config_get_ptr();
    const char *stock_vertex   = NULL;
    const char *stock_fragment = NULL;
    glsl_shader_data_t   *glsl = (glsl_shader_data_t*)
@@ -1015,103 +1018,106 @@ static void *gl_glsl_init(void *data, const char *path)
       glsl->uniforms[VIDEO_SHADER_STOCK_BLEND] = glsl->uniforms[0];
    }
 
+   if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+   {
 #ifdef HAVE_SHADERPIPELINE
 #ifdef HAVE_OPENGLES
-   if (gl_query_extension("GL_OES_standard_derivatives"))
-   {
-      shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
-      shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb : stock_fragment_xmb;
-   }
-   else
-   {
-      shader_prog_info.vertex   = stock_vertex_xmb_ribbon_simple_legacy;
-      shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
-   }
+      if (gl_query_extension("GL_OES_standard_derivatives"))
+      {
+         shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
+         shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb : stock_fragment_xmb;
+      }
+      else
+      {
+         shader_prog_info.vertex = stock_vertex_xmb_ribbon_simple_legacy;
+         shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
+      }
 #else
-      shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
+      shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
       shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb : stock_fragment_xmb;
 #endif
-   shader_prog_info.is_file  = false;
+      shader_prog_info.is_file = false;
 
-   gl_glsl_compile_program(
+      gl_glsl_compile_program(
          glsl,
          VIDEO_SHADER_MENU,
          &glsl->prg[VIDEO_SHADER_MENU],
          &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU].id,
+      gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU].id,
          &glsl->uniforms[VIDEO_SHADER_MENU]);
 
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_simple_modern : stock_vertex_xmb_ribbon_simple_legacy;
-   shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
+      shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_simple_modern : stock_vertex_xmb_ribbon_simple_legacy;
+      shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
 
-   gl_glsl_compile_program(
+      gl_glsl_compile_program(
          glsl,
          VIDEO_SHADER_MENU_2,
          &glsl->prg[VIDEO_SHADER_MENU_2],
          &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_2].id,
+      gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_2].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_2]);
 
 #if defined(HAVE_OPENGLES)
-   shader_prog_info.vertex   = stock_vertex_xmb_snow_modern;
+      shader_prog_info.vertex = stock_vertex_xmb_snow_modern;
 #else
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
+      shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
 #endif
-   shader_prog_info.fragment = stock_fragment_xmb_simple_snow;
+      shader_prog_info.fragment = stock_fragment_xmb_simple_snow;
 
-   gl_glsl_compile_program(
+      gl_glsl_compile_program(
          glsl,
          VIDEO_SHADER_MENU_3,
          &glsl->prg[VIDEO_SHADER_MENU_3],
          &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_3].id,
+      gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_3].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_3]);
 
 #if defined(HAVE_OPENGLES)
-   shader_prog_info.vertex   = stock_vertex_xmb_snow_modern;
+      shader_prog_info.vertex = stock_vertex_xmb_snow_modern;
 #else
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
+      shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
 #endif
-   shader_prog_info.fragment = stock_fragment_xmb_snow;
+      shader_prog_info.fragment = stock_fragment_xmb_snow;
 
-   gl_glsl_compile_program(
+      gl_glsl_compile_program(
          glsl,
          VIDEO_SHADER_MENU_4,
          &glsl->prg[VIDEO_SHADER_MENU_4],
          &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_4].id,
+      gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_4].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_4]);
 
 #if defined(HAVE_OPENGLES)
-   shader_prog_info.vertex   = stock_vertex_xmb_snow_modern;
+      shader_prog_info.vertex = stock_vertex_xmb_snow_modern;
 #else
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
+      shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
 #endif
-   shader_prog_info.fragment = stock_fragment_xmb_bokeh;
+      shader_prog_info.fragment = stock_fragment_xmb_bokeh;
 
-   gl_glsl_compile_program(
+      gl_glsl_compile_program(
          glsl,
          VIDEO_SHADER_MENU_5,
          &glsl->prg[VIDEO_SHADER_MENU_5],
          &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_5].id,
+      gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_5].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_5]);
 
 #if defined(HAVE_OPENGLES)
-   shader_prog_info.vertex   = stock_vertex_xmb_snow_modern;
+      shader_prog_info.vertex = stock_vertex_xmb_snow_modern;
 #else
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
+      shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
 #endif
-   shader_prog_info.fragment = stock_fragment_xmb_snowflake;
+      shader_prog_info.fragment = stock_fragment_xmb_snowflake;
 
-   gl_glsl_compile_program(
+      gl_glsl_compile_program(
          glsl,
          VIDEO_SHADER_MENU_6,
          &glsl->prg[VIDEO_SHADER_MENU_6],
          &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_6].id,
+      gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_6].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_6]);
 #endif
+   }
 
    gl_glsl_reset_attrib(glsl);
 
