@@ -3930,11 +3930,8 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    unsigned type                  = 0;
    bool ret                       = false;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
-   menu_handle_t *menu            = NULL;
 
    if (!entry)
-      return false;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return false;
 
    menu_displaylist_info_init(&info);
@@ -3964,8 +3961,10 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    cbs = menu_entries_get_last_stack_actiondata();
 
    if (cbs && cbs->action_deferred_push)
-      if (cbs->action_deferred_push(&info, menu) != 0)
+   {
+      if (cbs->action_deferred_push(&info) != 0)
          goto error;
+   }
 
    ret = true;
 
