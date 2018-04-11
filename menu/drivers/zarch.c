@@ -531,11 +531,7 @@ static int zarch_zui_render_lay_root_recent(
                   tabbed->tabline_size + j * ZUI_ITEM_SIZE_PX,
                   rich_label, i, entry_value, gamepad_index == (signed)i))
          {
-            menu_handle_t *menu = (menu_handle_t*)NULL;
-
-            menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
-            if (menu_entry_action(&entry, menu, i, MENU_ACTION_OK))
+            if (menu_entry_action(&entry, i, MENU_ACTION_OK))
             {
                menu_entry_free(&entry);
                if (!string_is_empty(rich_label))
@@ -1088,7 +1084,7 @@ static bool zarch_load_image(void *userdata,
                &zui->textures.bg);
          break;
       case MENU_IMAGE_THUMBNAIL:
-      case MENU_IMAGE_LEFT_THUMBNAIL:
+         break;
       case MENU_IMAGE_SAVESTATE_THUMBNAIL:
          /* TODO/FIXME -implement */
          break;
@@ -1097,10 +1093,10 @@ static bool zarch_load_image(void *userdata,
    return true;
 }
 
-static void zarch_context_reset(void *data, void *userdata, bool is_threaded)
+static void zarch_context_reset(void *data, bool is_threaded)
 {
    settings_t *settings  = config_get_ptr();
-   zui_t          *zui   = (zui_t*)userdata;
+   zui_t          *zui   = (zui_t*)data;
 
    if (!zui || !settings)
       return;
@@ -1122,7 +1118,6 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 {
    int ret;
    menu_entry_t entry;
-   menu_handle_t *menu  = (menu_handle_t*)data;
    zui_t *zui           = (zui_t*)userdata;
    size_t selection     = menu_navigation_get_selection();
 
@@ -1134,7 +1129,7 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 
    zui->action       = action;
 
-   ret = menu_entry_action(data, &entry, selection, action);
+   ret = menu_entry_action(&entry, selection, action);
    menu_entry_free(&entry);
    if (ret)
       return -1;
@@ -1161,11 +1156,11 @@ static bool zarch_menu_init_list(void *data)
 
    info.list  = selection_buf;
 
-   if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, &info, data))
+   if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, &info))
    {
-      bool ret       = false;
+      bool ret = false;
       info.need_push = true;
-      ret            = menu_displaylist_process(&info);
+      ret = menu_displaylist_process(&info);
       menu_displaylist_info_free(&info);
       return ret;
    }
