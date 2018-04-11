@@ -2354,8 +2354,7 @@ static int materialui_pointer_up(void *data,
             materialui_preswitch_tabs(mui, action);
 
             if (cbs && cbs->action_content_list_switch)
-               return cbs->action_content_list_switch(data,
-                     selection_buf, menu_stack,
+               return cbs->action_content_list_switch(selection_buf, menu_stack,
                      "", "", 0);
          }
       }

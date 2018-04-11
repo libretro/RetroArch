@@ -309,8 +309,7 @@ static int generic_shader_action_parameter_left(
    return 0;
 }
 
-static int shader_action_parameter_left(void *data,
-      unsigned type, const char *label, bool wraparound)
+static int shader_action_parameter_left(unsigned type, const char *label, bool wraparound)
 {
    video_shader_ctx_t shader_info;
    struct video_shader *shader          = menu_shader_get();
@@ -334,8 +333,7 @@ static int shader_action_parameter_left(void *data,
    return ret;
 }
 
-static int action_left_cheat(void *data,
-      unsigned type, const char *label,
+static int action_left_cheat(unsigned type, const char *label,
       bool wraparound)
 {
    size_t idx             = type - MENU_SETTINGS_CHEAT_BEGIN;
@@ -343,9 +341,8 @@ static int action_left_cheat(void *data,
          wraparound);
 }
 
-static int action_left_input_desc(void *data,
-      unsigned type, const char *label,
-      bool wraparound)
+static int action_left_input_desc(unsigned type, const char *label,
+   bool wraparound)
 {
    rarch_system_info_t *system           = runloop_get_system_info();
    settings_t *settings                  = config_get_ptr();
@@ -373,14 +370,13 @@ static int action_left_input_desc(void *data,
       also skip all the axes until analog remapping is implemented */
    if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*|| 
        (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
-      action_left_input_desc(data,type, label, wraparound);
+      action_left_input_desc(type, label, wraparound);
 
    return 0;
 }
 
-static int action_left_input_desc_kbd(void *data,
-      unsigned type, const char *label,
-      bool wraparound)
+static int action_left_input_desc_kbd(unsigned type, const char *label,
+   bool wraparound)
 {
    unsigned remap_id;
    unsigned key_id, id, offset;
@@ -415,8 +411,7 @@ static int action_left_input_desc_kbd(void *data,
    return 0;
 }
 
-static int action_left_scroll(void *data,
-      unsigned type, const char *label,
+static int action_left_scroll(unsigned type, const char *label,
       bool wraparound)
 {
    size_t scroll_accel   = 0;
@@ -444,15 +439,14 @@ static int action_left_scroll(void *data,
    return 0;
 }
 
-static int action_left_mainmenu(void *data,
-      unsigned type, const char *label,
+static int action_left_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
    menu_ctx_list_t list_info;
    unsigned        push_list = 0;
-   menu_handle_t       *menu  = (menu_handle_t*)data;
+   menu_handle_t       *menu  = NULL;
 
-   if (!menu)
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
    menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
@@ -491,12 +485,12 @@ static int action_left_mainmenu(void *data,
             menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
 
             if (cbs && cbs->action_content_list_switch)
-               return cbs->action_content_list_switch(menu,
+               return cbs->action_content_list_switch(
                      selection_buf, menu_stack, "", "", 0);
          }
          break;
       case 2:
-         action_left_scroll(data, 0, "", false);
+         action_left_scroll(0, "", false);
          break;
       case 0:
       default:
@@ -506,8 +500,7 @@ static int action_left_mainmenu(void *data,
    return 0;
 }
 
-static int action_left_shader_scale_pass(void *data,
-      unsigned type, const char *label,
+static int action_left_shader_scale_pass(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned current_scale, delta;
@@ -529,8 +522,7 @@ static int action_left_shader_scale_pass(void *data,
    return 0;
 }
 
-static int action_left_shader_filter_pass(void *data,
-      unsigned type, const char *label,
+static int action_left_shader_filter_pass(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned delta = 2;
@@ -545,8 +537,7 @@ static int action_left_shader_filter_pass(void *data,
    return 0;
 }
 
-static int action_left_shader_filter_default(void *data,
-      unsigned type, const char *label,
+static int action_left_shader_filter_default(unsigned type, const char *label,
       bool wraparound)
 {
    rarch_setting_t *setting = menu_setting_find_enum(
@@ -557,8 +548,7 @@ static int action_left_shader_filter_default(void *data,
          setting_get_type(setting), MENU_ACTION_LEFT, wraparound);
 }
 
-static int action_left_cheat_num_passes(void *data,
-      unsigned type, const char *label,
+static int action_left_cheat_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
    bool refresh      = false;
@@ -573,8 +563,7 @@ static int action_left_cheat_num_passes(void *data,
    return 0;
 }
 
-static int action_left_shader_num_passes(void *data,
-      unsigned type, const char *label,
+static int action_left_shader_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
    bool refresh      = false;
@@ -594,8 +583,7 @@ static int action_left_shader_num_passes(void *data,
    return 0;
 }
 
-static int action_left_netplay_mitm_server(void *data,
-      unsigned type, const char *label,
+static int action_left_netplay_mitm_server(unsigned type, const char *label,
       bool wraparound)
 {
    settings_t *settings = config_get_ptr();
@@ -612,17 +600,13 @@ static int action_left_netplay_mitm_server(void *data,
          if (i - 1 >= 0)
          {
             found = true;
-            strlcpy(settings->arrays.netplay_mitm_server,
-                  netplay_mitm_server_list[i - 1].name,
-                  sizeof(settings->arrays.netplay_mitm_server));
+            strlcpy(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[i - 1].name, sizeof(settings->arrays.netplay_mitm_server));
             break;
          }
          else if (wraparound)
          {
             found = true;
-            strlcpy(settings->arrays.netplay_mitm_server,
-                  netplay_mitm_server_list[list_len - 1].name,
-                  sizeof(settings->arrays.netplay_mitm_server));
+            strlcpy(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[list_len - 1].name, sizeof(settings->arrays.netplay_mitm_server));
             break;
          }
       }
@@ -631,16 +615,13 @@ static int action_left_netplay_mitm_server(void *data,
    if (!found)
    {
       /* current entry was invalid, go back to the end */
-      strlcpy(settings->arrays.netplay_mitm_server,
-            netplay_mitm_server_list[list_len - 1].name,
-            sizeof(settings->arrays.netplay_mitm_server));
+      strlcpy(settings->arrays.netplay_mitm_server, netplay_mitm_server_list[list_len - 1].name, sizeof(settings->arrays.netplay_mitm_server));
    }
 
    return 0;
 }
 
-static int action_left_shader_watch_for_changes(void *data,
-      unsigned type, const char *label,
+static int action_left_shader_watch_for_changes(unsigned type, const char *label,
       bool wraparound)
 {
    settings_t *settings = config_get_ptr();
@@ -648,16 +629,14 @@ static int action_left_shader_watch_for_changes(void *data,
    return 0;
 }
 
-static int action_left_video_resolution(void *data,
-      unsigned type, const char *label,
+static int action_left_video_resolution(unsigned type, const char *label,
       bool wraparound)
 {
    video_driver_get_prev_video_out();
    return 0;
 }
 
-static int playlist_association_left(void *data,
-      unsigned type, const char *label,
+static int playlist_association_left(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned i;
@@ -720,8 +699,7 @@ static int playlist_association_left(void *data,
    return 0;
 }
 
-static int core_setting_left(void *data,
-      unsigned type, const char *label,
+static int core_setting_left(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
@@ -731,16 +709,14 @@ static int core_setting_left(void *data,
    return 0;
 }
 
-static int disk_options_disk_idx_left(void *data,
-      unsigned type, const char *label,
+static int disk_options_disk_idx_left(unsigned type, const char *label,
       bool wraparound)
 {
    command_event(CMD_EVENT_DISK_PREV, NULL);
    return 0;
 }
 
-static int bind_left_generic(void *data,
-      unsigned type, const char *label,
+static int bind_left_generic(unsigned type, const char *label,
       bool wraparound)
 {
    return menu_setting_set(type, label, MENU_ACTION_LEFT, wraparound);

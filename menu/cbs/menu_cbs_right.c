@@ -43,7 +43,7 @@
 #ifndef BIND_ACTION_RIGHT
 #define BIND_ACTION_RIGHT(cbs, name) \
    do { \
-      cbs->action_right       = name; \
+      cbs->action_right = name; \
       cbs->action_right_ident = #name; \
    } while(0)
 #endif
@@ -61,8 +61,7 @@ static int generic_shader_action_parameter_right(struct video_shader_parameter *
    return 0;
 }
 
-int shader_action_parameter_right(void *data,
-      unsigned type, const char *label, bool wraparound)
+int shader_action_parameter_right(unsigned type, const char *label, bool wraparound)
 {
    video_shader_ctx_t shader_info;
    struct video_shader *shader          = menu_shader_get();
@@ -94,8 +93,7 @@ int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
    return 0;
 }
 
-int action_right_cheat(void *data,
-      unsigned type, const char *label,
+int action_right_cheat(unsigned type, const char *label,
       bool wraparound)
 {
    size_t idx             = type - MENU_SETTINGS_CHEAT_BEGIN;
@@ -103,8 +101,7 @@ int action_right_cheat(void *data,
          wraparound);
 }
 
-int action_right_input_desc_kbd(void *data,
-      unsigned type, const char *label,
+int action_right_input_desc_kbd(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned key_id, id, offset;
@@ -143,8 +140,7 @@ int action_right_input_desc_kbd(void *data,
 }
 
 /* fix-me: incomplete, lacks error checking */
-int action_right_input_desc(void *data,
-      unsigned type, const char *label,
+int action_right_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
    rarch_system_info_t *system           = runloop_get_system_info();
@@ -170,7 +166,7 @@ int action_right_input_desc(void *data,
       also skip all the axes until analog remapping is implemented */
    if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*|| 
        (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
-      action_right_input_desc(data, type, label, wraparound);
+      action_right_input_desc(type, label, wraparound);
 
 #if 0
    int i = 0;
@@ -182,8 +178,7 @@ int action_right_input_desc(void *data,
    return 0;
 }
 
-static int action_right_scroll(void *data,
-      unsigned type, const char *label,
+static int action_right_scroll(unsigned type, const char *label,
       bool wraparound)
 {
    size_t scroll_accel   = 0;
@@ -212,7 +207,7 @@ static int action_right_scroll(void *data,
    return 0;
 }
 
-static int action_right_goto_tab(menu_handle_t *menu)
+static int action_right_goto_tab(void)
 {
    menu_ctx_list_t list_info;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
@@ -227,14 +222,13 @@ static int action_right_goto_tab(menu_handle_t *menu)
    menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
 
    if (cbs && cbs->action_content_list_switch)
-      return cbs->action_content_list_switch(menu, selection_buf, menu_stack,
+      return cbs->action_content_list_switch(selection_buf, menu_stack,
             "", "", 0);
 
    return 0;
 }
 
-static int action_right_mainmenu(void *data,
-      unsigned type, const char *label,
+static int action_right_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
    menu_ctx_list_t list_info;
@@ -259,16 +253,15 @@ static int action_right_mainmenu(void *data,
 
       if ((list_info.selection != (list_horiz_info.size + list_tabs_info.size))
          || settings->bools.menu_navigation_wraparound_enable)
-         return action_right_goto_tab((menu_handle_t*)data);
+         return action_right_goto_tab();
    }
    else
-      action_right_scroll(data, 0, "", false);
+      action_right_scroll(0, "", false);
 
    return 0;
 }
 
-static int action_right_shader_scale_pass(void *data,
-      unsigned type, const char *label,
+static int action_right_shader_scale_pass(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned current_scale, delta;
@@ -289,8 +282,7 @@ static int action_right_shader_scale_pass(void *data,
    return 0;
 }
 
-static int action_right_shader_filter_pass(void *data,
-      unsigned type, const char *label,
+static int action_right_shader_filter_pass(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
@@ -305,8 +297,7 @@ static int action_right_shader_filter_pass(void *data,
    return 0;
 }
 
-static int action_right_shader_filter_default(void *data,
-      unsigned type, const char *label,
+static int action_right_shader_filter_default(unsigned type, const char *label,
       bool wraparound)
 {
    rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SMOOTH);
@@ -317,13 +308,13 @@ static int action_right_shader_filter_default(void *data,
          wraparound);
 }
 
-static int action_right_cheat_num_passes(void *data,
-      unsigned type, const char *label,
+static int action_right_cheat_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
    bool refresh      = false;
-   unsigned new_size = cheat_manager_get_size() + 1;
+   unsigned new_size = 0;
 
+   new_size = cheat_manager_get_size() + 1;
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    cheat_manager_realloc(new_size);
@@ -331,8 +322,7 @@ static int action_right_cheat_num_passes(void *data,
    return 0;
 }
 
-static int action_right_shader_num_passes(void *data,
-      unsigned type, const char *label,
+static int action_right_shader_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
    bool refresh                = false;
@@ -352,8 +342,7 @@ static int action_right_shader_num_passes(void *data,
    return 0;
 }
 
-static int action_right_netplay_mitm_server(void *data,
-      unsigned type, const char *label,
+static int action_right_netplay_mitm_server(unsigned type, const char *label,
       bool wraparound)
 {
    settings_t *settings = config_get_ptr();
@@ -391,26 +380,22 @@ static int action_right_netplay_mitm_server(void *data,
    return 0;
 }
 
-static int action_right_shader_watch_for_changes(void *data,
-      unsigned type, const char *label,
+static int action_right_shader_watch_for_changes(unsigned type, const char *label,
       bool wraparound)
 {
    settings_t *settings = config_get_ptr();
-   settings->bools.video_shader_watch_files = 
-      !settings->bools.video_shader_watch_files;
+   settings->bools.video_shader_watch_files = !settings->bools.video_shader_watch_files;
    return 0;
 }
 
-static int action_right_video_resolution(void *data,
-      unsigned type, const char *label,
+static int action_right_video_resolution(unsigned type, const char *label,
       bool wraparound)
 {
    video_driver_get_next_video_out();
    return 0;
 }
 
-static int playlist_association_right(void *data,
-      unsigned type, const char *label,
+static int playlist_association_right(unsigned type, const char *label,
       bool wraparound)
 {
    char core_path[PATH_MAX_LENGTH];
@@ -469,8 +454,7 @@ static int playlist_association_right(void *data,
    return 0;
 }
 
-int core_setting_right(void *data,
-      unsigned type, const char *label,
+int core_setting_right(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
@@ -480,8 +464,7 @@ int core_setting_right(void *data,
    return 0;
 }
 
-static int disk_options_disk_idx_right(void *data,
-      unsigned type, const char *label,
+static int disk_options_disk_idx_right(unsigned type, const char *label,
       bool wraparound)
 {
    command_event(CMD_EVENT_DISK_NEXT, NULL);
@@ -489,8 +472,7 @@ static int disk_options_disk_idx_right(void *data,
    return 0;
 }
 
-int bind_right_generic(void *data,
-      unsigned type, const char *label,
+int bind_right_generic(unsigned type, const char *label,
        bool wraparound)
 {
    return menu_setting_set(type, label, MENU_ACTION_RIGHT, wraparound);

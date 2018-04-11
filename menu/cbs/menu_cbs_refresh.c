@@ -22,18 +22,16 @@
    cbs->action_refresh_ident = #name;
 #endif
 
-int action_refresh_default(void *data,
-      file_list_t *list, file_list_t *menu_list)
+int action_refresh_default(file_list_t *list, file_list_t *menu_list)
 {
    menu_displaylist_ctx_entry_t entry;
-   menu_handle_t *menu                = (menu_handle_t*)data;
    if (!menu_list)
       return -1;
 
    entry.list  = list;
    entry.stack = menu_list;
 
-   if (!menu_displaylist_push(&entry, menu))
+   if (!menu_displaylist_push(&entry))
       return -1;
    return 0;
 }
