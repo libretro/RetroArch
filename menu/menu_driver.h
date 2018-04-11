@@ -443,7 +443,7 @@ typedef struct menu_ctx_driver
     * just toggled fullscreen, the GL driver did a teardown/setup -
     * we now need to rebuild all of our textures and state for the
     * menu driver. */
-   void  (*context_reset)(void *data, void *userdata, bool video_is_threaded);
+   void  (*context_reset)(void *data, bool video_is_threaded);
    /* This will be invoked when we are running a hardware context
     * and the context in question wants to tear itself down. All
     * textures and related state on the menu driver will also

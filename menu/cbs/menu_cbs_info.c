@@ -33,7 +33,6 @@
 static int action_info_default(unsigned type, const char *label)
 {
    menu_displaylist_info_t info;
-   menu_handle_t *menu          = NULL;
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    size_t selection             = menu_navigation_get_selection();
 
@@ -45,9 +44,7 @@ static int action_info_default(unsigned type, const char *label)
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_INFO_SCREEN));
 
-   menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
-   if (!menu_displaylist_ctl(DISPLAYLIST_HELP, &info, menu))
+   if (!menu_displaylist_ctl(DISPLAYLIST_HELP, &info))
       goto error;
 
    if (!menu_displaylist_process(&info))

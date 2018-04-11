@@ -1585,8 +1585,7 @@ static enum msg_file_type extension_to_file_hash_type(const char *ext)
    return FILE_TYPE_NONE;
 }
 
-static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info,
-      menu_handle_t *menu)
+static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 {
    unsigned i, j, k;
    char path_playlist[PATH_MAX_LENGTH];
@@ -1594,9 +1593,13 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info,
    char query[PATH_MAX_LENGTH];
    playlist_t *playlist                = NULL;
    database_info_list_t *db_info       = NULL;
+   menu_handle_t *menu                 = NULL;
    settings_t *settings                = config_get_ptr();
 
    path_playlist[0] = path_base[0] = query[0] = '\0';
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      goto error;
 
    database_info_build_query_enum(query, sizeof(query),
          DATABASE_QUERY_ENTRY, info->path_b);
@@ -2497,13 +2500,13 @@ static void menu_displaylist_set_new_playlist(
 
 
 static int menu_displaylist_parse_horizontal_list(
-      menu_displaylist_info_t *info,
-      menu_handle_t *menu)
+      menu_displaylist_info_t *info)
 {
    menu_ctx_list_t list_info;
    menu_ctx_list_t list_horiz_info;
    bool is_historylist                 = false;
    playlist_t *playlist                = NULL;
+   menu_handle_t        *menu          = NULL;
    struct item_file *item              = NULL;
    settings_t      *settings           = config_get_ptr();
 
@@ -2518,6 +2521,9 @@ static int menu_displaylist_parse_horizontal_list(
    menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_ENTRY,      &list_horiz_info);
 
    item = (struct item_file*)list_horiz_info.entry;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return -1;
 
    if (!item)
       return -1;
@@ -2556,9 +2562,13 @@ static int menu_displaylist_parse_horizontal_list(
 }
 
 static int menu_displaylist_parse_load_content_settings(
-      menu_displaylist_info_t *info, menu_handle_t *menu)
+      menu_displaylist_info_t *info)
 {
+   menu_handle_t *menu    = NULL;
    settings_t *settings   = config_get_ptr();
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return -1;
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
@@ -2760,18 +2770,24 @@ static int menu_displaylist_parse_load_content_settings(
 }
 
 static int menu_displaylist_parse_horizontal_content_actions(
-      menu_displaylist_info_t *info, menu_handle_t *menu)
+      menu_displaylist_info_t *info)
 {
    bool content_loaded             = false;
+   unsigned idx                    = 0;
+   menu_handle_t *menu             = NULL;
    const char *label               = NULL;
    const char *entry_path          = NULL;
    const char *core_path           = NULL;
    const char *core_name           = NULL;
    const char *db_name             = NULL;
+   playlist_t *playlist            = playlist_get_cached();
    settings_t *settings            = config_get_ptr();
    const char *fullpath            = path_get(RARCH_PATH_CONTENT);
-   unsigned idx                    = menu->rpl_entry_selection_ptr;
-   playlist_t *playlist            = playlist_get_cached();
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return -1;
+
+   idx                             = menu->rpl_entry_selection_ptr;
 
    if (playlist)
       playlist_get_index(playlist, idx,
@@ -2781,7 +2797,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
          && string_is_equal(menu->deferred_path, fullpath);
 
    if (content_loaded)
-      menu_displaylist_parse_load_content_settings(info, menu);
+      menu_displaylist_parse_load_content_settings(info);
    else
    {
       const char *ext = NULL;
@@ -3186,11 +3202,15 @@ static int menu_displaylist_parse_options_cheats(
 }
 
 static int menu_displaylist_parse_options_remappings(
-      menu_displaylist_info_t *info, menu_handle_t *menu)
+      menu_displaylist_info_t *info)
 {
    unsigned p, retro_id;
    rarch_system_info_t *system = NULL;
+   menu_handle_t       *menu   = NULL;
    unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return -1;
 
    for (p = 0; p < max_users; p++)
    {
@@ -3759,24 +3779,21 @@ static void menu_displaylist_parse_playlist_associations(
 static bool menu_displaylist_push_internal(
       const char *label,
       menu_displaylist_ctx_entry_t *entry,
-      menu_displaylist_info_t *info,
-      void *data)
+      menu_displaylist_info_t *info)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
    {
-      if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info, menu))
+      if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
          return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)))
    {
-      if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info, menu))
+      if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info))
          return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB)))
    {
-      if (menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info, menu))
+      if (menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info))
          return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
@@ -3795,7 +3812,7 @@ static bool menu_displaylist_push_internal(
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
 
       menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-      menu_displaylist_ctl(DISPLAYLIST_MUSIC_HISTORY, info, menu);
+      menu_displaylist_ctl(DISPLAYLIST_MUSIC_HISTORY, info);
       return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)))
@@ -3814,7 +3831,7 @@ static bool menu_displaylist_push_internal(
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
 
       menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-      menu_displaylist_ctl(DISPLAYLIST_VIDEO_HISTORY, info, menu);
+      menu_displaylist_ctl(DISPLAYLIST_VIDEO_HISTORY, info);
       return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)))
@@ -3844,7 +3861,7 @@ static bool menu_displaylist_push_internal(
       else
          info->need_push_no_playlist_entries = true;
 #endif
-      menu_displaylist_ctl(DISPLAYLIST_IMAGES_HISTORY, info, menu);
+      menu_displaylist_ctl(DISPLAYLIST_IMAGES_HISTORY, info);
       return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
@@ -3881,23 +3898,23 @@ static bool menu_displaylist_push_internal(
          info->path = strdup(settings->paths.directory_playlist);
 
          if (menu_displaylist_ctl(
-                  DISPLAYLIST_DATABASE_PLAYLISTS, info, menu))
+                  DISPLAYLIST_DATABASE_PLAYLISTS, info))
             return true;
       }
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
    {
-      if (menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info, menu))
+      if (menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info))
          return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)))
    {
-      if (menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info, menu))
+      if (menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info))
          return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
    {
-      if (menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info, menu))
+      if (menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info))
          return true;
    }
 
@@ -3938,7 +3955,7 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    if (!info.list)
       goto error;
 
-   if (menu_displaylist_push_internal(label, entry, &info, menu))
+   if (menu_displaylist_push_internal(label, entry, &info))
    {
       ret = menu_displaylist_process(&info);
       goto end;
@@ -4166,20 +4183,19 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info)
    info->setting                  = NULL;
 }
 
-bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data,
-      void *userdata)
+bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 {
    size_t i;
    menu_ctx_displaylist_t disp_list;
    int ret                       = 0;
    core_info_list_t *list        = NULL;
+   menu_handle_t       *menu     = NULL;
    bool load_content             = true;
    bool use_filebrowser          = false;
    menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
-   menu_handle_t       *menu     = (menu_handle_t*)userdata;
    settings_t      *settings     = config_get_ptr();
 
-   if (!menu)
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return false;
 
    core_info_get_list(&list);
@@ -4257,7 +4273,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data,
          }
 
 #ifdef HAVE_LIBRETRODB
-         ret = menu_displaylist_parse_database_entry(info, menu);
+         ret = menu_displaylist_parse_database_entry(info);
 #else
          ret = 0;
 #endif
@@ -4375,13 +4391,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data,
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          if (string_is_equal(info->path, file_path_str(FILE_PATH_CONTENT_HISTORY)))
          {
-            if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info, menu))
+            if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
                return menu_displaylist_process(info);
             return false;
          }
          else if (string_is_equal(info->path, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
          {
-            if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info, menu))
+            if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info))
                return menu_displaylist_process(info);
             return false;
          }
@@ -6143,7 +6159,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data,
          break;
       case DISPLAYLIST_HORIZONTAL:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_horizontal_list(info, menu);
+         ret = menu_displaylist_parse_horizontal_list(info);
 
          info->need_sort    = true;
          info->need_refresh = true;
@@ -6151,13 +6167,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data,
          break;
       case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_horizontal_content_actions(info, menu);
+         ret = menu_displaylist_parse_horizontal_content_actions(info);
          info->need_refresh = true;
          info->need_push    = true;
          break;
       case DISPLAYLIST_CONTENT_SETTINGS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_load_content_settings(info, menu);
+         ret = menu_displaylist_parse_load_content_settings(info);
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -6292,7 +6308,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data,
          break;
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_options_remappings(info, menu);
+         ret = menu_displaylist_parse_options_remappings(info);
 
          info->need_push    = true;
          break;

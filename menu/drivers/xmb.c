@@ -1973,7 +1973,7 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
    }
 }
 
-static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
+static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 {
    menu_displaylist_info_t info;
    settings_t *settings         = config_get_ptr();
@@ -1992,8 +1992,7 @@ static void xmb_init_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
 
    if (!string_is_empty(info.path))
    {
-      if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL,
-               &info, menu))
+      if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
       {
          size_t i;
          for (i = 0; i < xmb->horizontal_list->size; i++)
@@ -2032,7 +2031,6 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb)
 }
 
 static void xmb_context_reset_horizontal_list(
-      menu_handle_t *menu,
       xmb_handle_t *xmb)
 {
    unsigned i;
@@ -2136,7 +2134,7 @@ static void xmb_context_reset_horizontal_list(
    xmb_toggle_horizontal_list(xmb);
 }
 
-static void xmb_refresh_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
+static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 {
    xmb_context_destroy_horizontal_list(xmb);
    if (xmb->horizontal_list)
@@ -2152,9 +2150,9 @@ static void xmb_refresh_horizontal_list(menu_handle_t *menu, xmb_handle_t *xmb)
       calloc(1, sizeof(file_list_t));
 
    if (xmb->horizontal_list)
-      xmb_init_horizontal_list(menu, xmb);
+      xmb_init_horizontal_list(xmb);
 
-   xmb_context_reset_horizontal_list(menu, xmb);
+   xmb_context_reset_horizontal_list(xmb);
 }
 
 static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
@@ -2177,7 +2175,7 @@ static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
          if (!xmb)
             return -1;
 
-         xmb_refresh_horizontal_list((menu_handle_t*)data, xmb);
+         xmb_refresh_horizontal_list(xmb);
          break;
       default:
          return -1;
@@ -4101,7 +4099,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->horizontal_list         = (file_list_t*)calloc(1, sizeof(file_list_t));
 
    if (xmb->horizontal_list)
-      xmb_init_horizontal_list(menu, xmb);
+      xmb_init_horizontal_list(xmb);
 
    xmb_init_ribbon(xmb);
 
@@ -4435,10 +4433,9 @@ static void xmb_context_reset_background(const char *iconpath)
       free(path);
 }
 
-static void xmb_context_reset(void *data, void *userdata, bool is_threaded)
+static void xmb_context_reset(void *data, bool is_threaded)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-   xmb_handle_t *xmb   = (xmb_handle_t*)userdata;
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
 
    if (xmb)
    {
@@ -4469,7 +4466,7 @@ static void xmb_context_reset(void *data, void *userdata, bool is_threaded)
             is_threaded);
       xmb_context_reset_textures(xmb, iconpath);
       xmb_context_reset_background(iconpath);
-      xmb_context_reset_horizontal_list(menu, xmb);
+      xmb_context_reset_horizontal_list(xmb);
 
       if (!string_is_equal(xmb_thumbnails_ident('R'),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
@@ -4836,7 +4833,7 @@ static int deferred_push_content_actions(menu_displaylist_info_t *info,
       void *data)
 {
    if (!menu_displaylist_ctl(
-         DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info, data))
+         DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info))
       return -1;
    menu_displaylist_process(info);
    menu_displaylist_info_free(info);
@@ -4946,13 +4943,13 @@ static int xmb_list_push(void *data, void *userdata,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
             if (system->load_no_content)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
 #ifndef HAVE_DYNAMIC
@@ -4962,7 +4959,7 @@ static int xmb_list_push(void *data, void *userdata,
                if (settings->bools.menu_show_load_core)
                {
                   entry.enum_idx   = MENU_ENUM_LABEL_CORE_LIST;
-                  menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+                  menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
                }
             }
 
@@ -4971,7 +4968,7 @@ static int xmb_list_push(void *data, void *userdata,
                const struct retro_subsystem_info* subsystem = NULL;
 
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
                subsystem           = system->subsystem.data;
 
@@ -5027,68 +5024,68 @@ static int xmb_list_push(void *data, void *userdata,
             }
 
             entry.enum_idx      = MENU_ENUM_LABEL_ADD_CONTENT_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #if defined(HAVE_NETWORKING)
             {
                settings_t *settings      = config_get_ptr();
                if (settings->bools.menu_show_online_updater && !settings->bools.kiosk_mode_enable)
                {
                   entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
-                  menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+                  menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
                }
             }
 #endif
             if (!settings->bools.menu_content_show_settings && !string_is_empty(settings->paths.menu_content_show_settings_password))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
             if (settings->bools.kiosk_mode_enable && !string_is_empty(settings->paths.kiosk_mode_password))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
             if (settings->bools.menu_show_information)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
 #ifndef HAVE_DYNAMIC
             entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
 
             if (settings->bools.menu_show_configurations && !settings->bools.kiosk_mode_enable)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
             if (settings->bools.menu_show_help)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
 #if !defined(IOS)
             if (settings->bools.menu_show_quit_retroarch)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 #endif
 
             if (settings->bools.menu_show_reboot)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_REBOOT;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
             entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry, menu);
+            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             info->need_push    = true;
             ret = 0;
          }
@@ -5120,7 +5117,7 @@ static bool xmb_menu_init_list(void *data)
 
    info.list  = selection_buf;
 
-   if (!menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info, data))
+   if (!menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info))
       goto error;
 
    info.need_push = true;

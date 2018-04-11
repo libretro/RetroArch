@@ -53,7 +53,7 @@ enum
 static int deferred_push_dlist(menu_displaylist_info_t *info,
       void *data, enum menu_displaylist_ctl_state state)
 {
-   if (!menu_displaylist_ctl(state, info, data))
+   if (!menu_displaylist_ctl(state, info))
       return menu_cbs_exit();
    menu_displaylist_process(info);
    return 0;

@@ -667,7 +667,6 @@ int menu_action_handle_setting(rarch_setting_t *setting,
          if (action == MENU_ACTION_OK)
          {
             menu_displaylist_info_t  info;
-            menu_handle_t *menu           = NULL;
             file_list_t       *menu_stack = menu_entries_get_menu_stack_ptr(0);
             const char      *name         = setting->name;
             size_t selection              = menu_navigation_get_selection();
@@ -680,9 +679,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             info.directory_ptr            = selection;
             info.list                     = menu_stack;
 
-            menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
-            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info, menu))
+            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
                menu_displaylist_process(&info);
 
             menu_displaylist_info_free(&info);
@@ -1375,7 +1372,6 @@ void general_write_handler(void *data)
          if (*setting->value.target.boolean)
          {
             menu_displaylist_info_t info;
-            menu_handle_t *menu          = NULL;
             file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
 
             menu_displaylist_info_init(&info);
@@ -1385,9 +1381,7 @@ void general_write_handler(void *data)
                   msg_hash_to_str(MENU_ENUM_LABEL_HELP));
             info.list                    = menu_stack;
 
-            menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
-            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info, menu))
+            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
                menu_displaylist_process(&info);
             menu_displaylist_info_free(&info);
             setting_set_with_string_representation(setting, "false");

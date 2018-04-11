@@ -1798,8 +1798,7 @@ static bool menu_driver_context_reset(bool video_is_threaded)
 {
    if (!menu_driver_ctx || !menu_driver_ctx->context_reset)
       return false;
-   menu_driver_ctx->context_reset(menu_driver_data,
-         menu_userdata, video_is_threaded);
+   menu_driver_ctx->context_reset(menu_userdata, video_is_threaded);
    return true;
 }
 
