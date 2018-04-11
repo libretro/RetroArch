@@ -2020,7 +2020,7 @@ static int (funcname)(void *data, const char *path, const char *label, unsigned 
    line.type          = type; \
    line.idx           = (_idx); \
    line.cb            = _cb; \
-   if (!menu_input_dialog_start(&line)) \
+   if (!menu_input_dialog_start(&line, data)) \
       return -1; \
    return 0; \
 }
@@ -3986,7 +3986,7 @@ static int action_ok_netplay_enable_client(void *data,
    line.idx           = 0;
    line.cb            = action_ok_netplay_enable_client_hostname_cb;
 
-   if (menu_input_dialog_start(&line))
+   if (menu_input_dialog_start(&line, data))
       return 0;
 #endif
    return -1;

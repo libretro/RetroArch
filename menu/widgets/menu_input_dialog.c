@@ -119,12 +119,13 @@ bool menu_input_dialog_start_search(void *data)
    return true;
 }
 
-bool menu_input_dialog_start(menu_input_ctx_line_t *line)
+bool menu_input_dialog_start(menu_input_ctx_line_t *line,
+      void *data)
 {
-   menu_handle_t    *menu      = NULL;
+   menu_handle_t    *menu      = (menu_handle_t*)data;
    if (!line)
       return false;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (!menu)
       return false;
 
    menu_input_dialog_display_kb();
@@ -135,7 +136,8 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
             sizeof(menu_input_dialog_keyboard_label));
    if (line->label_setting)
       strlcpy(menu_input_dialog_keyboard_label_setting,
-            line->label_setting, sizeof(menu_input_dialog_keyboard_label_setting));
+            line->label_setting,
+            sizeof(menu_input_dialog_keyboard_label_setting));
 
    menu_input_dialog_keyboard_type   = line->type;
    menu_input_dialog_keyboard_idx    = line->idx;

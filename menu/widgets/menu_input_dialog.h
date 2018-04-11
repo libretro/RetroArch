@@ -55,7 +55,8 @@ void menu_input_dialog_display_kb(void);
 
 bool menu_input_dialog_get_display_kb(void);
 
-bool menu_input_dialog_start(menu_input_ctx_line_t *line);
+bool menu_input_dialog_start(menu_input_ctx_line_t *line,
+      void *data);
 
 void menu_input_dialog_end(void);
 

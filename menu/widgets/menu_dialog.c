@@ -252,7 +252,7 @@ void menu_dialog_push_pending(bool push, enum menu_dialog_type type)
    menu_dialog_active = true;
 }
 
-void menu_dialog_push(void)
+void menu_dialog_push(void *data)
 {
    menu_displaylist_info_t info;
    const char *label            = NULL;
@@ -271,9 +271,7 @@ void menu_dialog_push(void)
    if (label)
       info.label             = strdup(label);
 
-   menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
-   menu_displaylist_ctl(DISPLAYLIST_HELP, &info, menu);
+   menu_displaylist_ctl(DISPLAYLIST_HELP, &info, data);
 }
 
 void menu_dialog_set_current_id(unsigned id)
@@ -289,18 +287,6 @@ void menu_dialog_reset(void)
    menu_dialog_current_msg  = MSG_UNKNOWN;
 
    menu_display_toggle_set_reason(MENU_TOGGLE_REASON_NONE);
-}
-
-void menu_dialog_show_message(
-      enum menu_dialog_type type, enum msg_hash_enums msg)
-{
-   menu_dialog_current_msg = msg;
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_IS_TOGGLE, NULL))
-      menu_display_toggle_set_reason(MENU_TOGGLE_REASON_MESSAGE);
-
-   menu_dialog_push_pending(true, type);
-   menu_dialog_push();
 }
 
 bool menu_dialog_is_active(void)

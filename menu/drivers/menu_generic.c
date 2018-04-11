@@ -238,7 +238,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
 
             /* Have to defer it so we let settings refresh. */
-            menu_dialog_push();
+            menu_dialog_push(menu);
          }
          break;
    }
