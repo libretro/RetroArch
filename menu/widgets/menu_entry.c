@@ -482,7 +482,7 @@ int menu_entry_action(menu_entry_t *entry,
                   entry->label, entry->type, i);
          break;
       case MENU_ACTION_SEARCH:
-         menu_input_dialog_start_search(data);
+         menu_input_dialog_start_search();
          break;
 
       case MENU_ACTION_SCAN:
