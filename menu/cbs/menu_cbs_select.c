@@ -107,11 +107,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
 static int action_select_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = NULL;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-   return action_ok_path_use_directory(menu,
-         path, label, type, idx, 0 /* unused */);
+   return action_ok_path_use_directory(path, label, type, idx, 0 /* unused */);
 }
 
 static int action_select_driver_setting(const char *path, const char *label, unsigned type,
