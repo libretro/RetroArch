@@ -2878,12 +2878,12 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
          continue;
 
       float rgb[3];
-      HSLToRGB(0.05*(float)i,0.5,0.5, &rgb[0]) ;
+      HSLToRGB(0.07*(float)i,0.5,0.5, &rgb[0]) ;
       float color[16] = {
-         rgb[0], rgb[1], rgb[2], 1,
-         rgb[0], rgb[1], rgb[2], 1,
-         rgb[0], rgb[1], rgb[2], 1,
-         rgb[0], rgb[1], rgb[2], 1,
+         rgb[0], rgb[1], rgb[2], 0.55,
+         rgb[0], rgb[1], rgb[2], 0.55,
+         rgb[0], rgb[1], rgb[2], 0.55,
+         rgb[0], rgb[1], rgb[2], 0.55,
       };
 
       menu_display_draw_polygon(
