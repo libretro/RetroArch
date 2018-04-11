@@ -229,7 +229,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
             menu_entry_init(&entry);
             menu_entry_get(&entry, 0, selection, NULL, false);
-            ret = menu_entry_action(&entry, menu,
+            ret = menu_entry_action(&entry,
                   (unsigned)selection, (enum menu_action)action);
             menu_entry_free(&entry);
             if (ret)

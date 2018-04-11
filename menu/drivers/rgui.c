@@ -868,7 +868,6 @@ static int rgui_environ(enum menu_environ_cb type,
 }
 
 static int rgui_pointer_tap(void *data,
-      void *userdata,
       unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
@@ -878,16 +877,14 @@ static int rgui_pointer_tap(void *data,
    if (y < header_height)
    {
       size_t selection = menu_navigation_get_selection();
-      return menu_entry_action(entry, data,
-            (unsigned)selection, MENU_ACTION_CANCEL);
+      return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
    }
    else if (ptr <= (menu_entries_get_size() - 1))
    {
       size_t selection         = menu_navigation_get_selection();
 
       if (ptr == selection && cbs && cbs->action_select)
-         return menu_entry_action(entry, data,
-               (unsigned)selection, MENU_ACTION_SELECT);
+         return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
 
       menu_navigation_set_selection(ptr);
       menu_driver_navigation_set(false);

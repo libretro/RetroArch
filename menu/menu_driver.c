@@ -2119,8 +2119,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                point->retcode = 0;
                return false;
             }
-            point->retcode = menu_driver_ctx->pointer_tap(menu_driver_data,
-                  menu_userdata,
+            point->retcode = menu_driver_ctx->pointer_tap(menu_userdata,
                   point->x, point->y, point->ptr,
                   point->cbs, point->entry, point->action);
          }
@@ -2133,9 +2132,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                point->retcode = 0;
                return false;
             }
-            point->retcode = menu_driver_ctx->pointer_down(
-                  menu_driver_data,
-                  menu_userdata,
+            point->retcode = menu_driver_ctx->pointer_down(menu_userdata,
                   point->x, point->y, point->ptr,
                   point->cbs, point->entry, point->action);
          }
@@ -2148,9 +2145,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                point->retcode = 0;
                return false;
             }
-            point->retcode = menu_driver_ctx->pointer_up(
-                  menu_driver_data,
-                  menu_userdata,
+            point->retcode = menu_driver_ctx->pointer_up(menu_userdata,
                   point->x, point->y, point->ptr,
                   point->cbs, point->entry, point->action);
          }

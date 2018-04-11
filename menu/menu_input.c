@@ -286,14 +286,8 @@ static int menu_input_mouse_frame(
 
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_BUTTON_R))
    {
-      size_t selection    = menu_navigation_get_selection();
-      menu_handle_t *menu = NULL;
-
-      menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
-      menu_entry_action(entry, menu,
-            (unsigned)selection,
-            MENU_ACTION_CANCEL);
+      size_t selection = menu_navigation_get_selection();
+      menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
    }
 
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_WHEEL_DOWN))
@@ -527,15 +521,9 @@ static int menu_input_pointer_post_iterate(
             {
                if (menu_input->pointer.counter > 32)
                {
-                  size_t selection    = menu_navigation_get_selection();
-                  menu_handle_t *menu = NULL;
-
-                  menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
+                  size_t selection = menu_navigation_get_selection();
                   if (cbs && cbs->action_start)
-                     return menu_entry_action(entry, menu,
-                           (unsigned)selection,
-                           MENU_ACTION_START);
+                     return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
 
                }
                else
@@ -564,14 +552,8 @@ static int menu_input_pointer_post_iterate(
    {
       if (!pointer_oldback)
       {
-         menu_handle_t *menu = NULL;
-         pointer_oldback     = true;
-
-         menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
-         menu_entry_action(entry, menu,
-               (unsigned)menu_navigation_get_selection(),
-               MENU_ACTION_CANCEL);
+         pointer_oldback = true;
+         menu_entry_action(entry, (unsigned)menu_navigation_get_selection(), MENU_ACTION_CANCEL);
       }
    }
 
