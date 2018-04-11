@@ -103,8 +103,7 @@ typedef struct menu_file_list_cbs
 
    int (*action_iterate)(const char *label, unsigned action);
    int (*action_deferred_push)(menu_displaylist_info_t *info, void *data);
-   int (*action_select)(void *data,
-         const char *path, const char *label, unsigned type,
+   int (*action_select)(const char *path, const char *label, unsigned type,
          size_t idx);
    int (*action_get_title)(const char *path, const char *label,
          unsigned type, char *s, size_t len);
@@ -115,8 +114,8 @@ typedef struct menu_file_list_cbs
          size_t idx);
    int (*action_scan)(const char *path, const char *label, unsigned type,
          size_t idx);
-   int (*action_start)(void *data, unsigned type,  const char *label);
-   int (*action_info)(void *data, unsigned type,  const char *label);
+   int (*action_start)(unsigned type,  const char *label);
+   int (*action_info)(unsigned type,  const char *label);
    int (*action_content_list_switch)(void *data,
          void *data2, void *userdata, const char
          *path, const char *label, unsigned type);

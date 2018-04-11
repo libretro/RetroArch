@@ -76,8 +76,7 @@ int menu_setting_generic(rarch_setting_t *setting, bool wraparound);
 
 int menu_setting_set_flags(rarch_setting_t *setting);
 
-int menu_setting_set(void *data,
-      unsigned type, const char *label,
+int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound);
 
 /**
@@ -121,12 +120,10 @@ void menu_setting_get_label(void *data, char *s,
       size_t len, unsigned *w, unsigned type,
       const char *menu_label, const char *label, unsigned idx);
 
-int menu_action_handle_setting(void *data,
-      rarch_setting_t *setting,
+int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound);
 
-enum setting_type menu_setting_get_browser_selection_type(
-      rarch_setting_t *setting);
+enum setting_type menu_setting_get_browser_selection_type(rarch_setting_t *setting);
 
 void *setting_get_ptr(rarch_setting_t *setting);
 

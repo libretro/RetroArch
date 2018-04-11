@@ -655,8 +655,7 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
    return -1;
 }
 
-int menu_action_handle_setting(void *data,
-      rarch_setting_t *setting,
+int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound)
 {
    if (!setting)
@@ -668,6 +667,7 @@ int menu_action_handle_setting(void *data,
          if (action == MENU_ACTION_OK)
          {
             menu_displaylist_info_t  info;
+            menu_handle_t *menu           = NULL;
             file_list_t       *menu_stack = menu_entries_get_menu_stack_ptr(0);
             const char      *name         = setting->name;
             size_t selection              = menu_navigation_get_selection();
@@ -680,8 +680,9 @@ int menu_action_handle_setting(void *data,
             info.directory_ptr            = selection;
             info.list                     = menu_stack;
 
-            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC,
-                     &info, (menu_handle_t*)data))
+            menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
+
+            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info, menu))
                menu_displaylist_process(&info);
 
             menu_displaylist_info_free(&info);
@@ -813,8 +814,7 @@ int menu_setting_set_flags(rarch_setting_t *setting)
    return 0;
 }
 
-int menu_setting_set(void *data,
-      unsigned type, const char *label,
+int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
    int ret                    = 0;
@@ -826,8 +826,7 @@ int menu_setting_set(void *data,
    if (!cbs)
       return 0;
 
-   ret = menu_action_handle_setting(data,
-         cbs->setting,
+   ret = menu_action_handle_setting(cbs->setting,
          type, action, wraparound);
 
    if (ret == -1)

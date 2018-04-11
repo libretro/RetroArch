@@ -30,10 +30,10 @@
 #include "../../network/netplay/netplay_discovery.h"
 #endif
 
-static int action_info_default(void *data, unsigned type, const char *label)
+static int action_info_default(unsigned type, const char *label)
 {
    menu_displaylist_info_t info;
-   menu_handle_t *menu          = (menu_handle_t*)data;
+   menu_handle_t *menu          = NULL;
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    size_t selection             = menu_navigation_get_selection();
 
@@ -44,6 +44,8 @@ static int action_info_default(void *data, unsigned type, const char *label)
    info.enum_idx                = MENU_ENUM_LABEL_INFO_SCREEN;
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_INFO_SCREEN));
+
+   menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
 
    if (!menu_displaylist_ctl(DISPLAYLIST_HELP, &info, menu))
       goto error;
@@ -66,13 +68,14 @@ int  generic_action_ok_help(void *data,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       enum msg_hash_enums id, enum menu_dialog_type id2);
 
-static int action_info_cheevos(void *data,
-      unsigned type, const char *label)
+static int action_info_cheevos(unsigned type, const char *label)
 {
-   menu_handle_t *menu    = (menu_handle_t*)data;
+   menu_handle_t *menu    = NULL;
    unsigned new_id        = type - MENU_SETTINGS_CHEEVOS_START;
 
    menu_dialog_set_current_id(new_id);
+
+   menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
 
    return generic_action_ok_help(menu, NULL, label, new_id, 0, 0,
       MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,
