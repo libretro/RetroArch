@@ -59,9 +59,12 @@ void menu_dialog_unset_pending_push(void);
 
 bool menu_dialog_is_push_pending(void);
 
-void menu_dialog_push(void *data);
+void menu_dialog_push(void);
 
 void menu_dialog_reset(void);
+
+void menu_dialog_show_message(
+      enum menu_dialog_type type, enum msg_hash_enums msg);
 
 bool menu_dialog_is_active(void);
 

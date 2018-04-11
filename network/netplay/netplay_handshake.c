@@ -37,7 +37,6 @@
 #include "../../version.h"
 
 #ifdef HAVE_MENU
-#include "../../menu/menu_driver.h"
 #include "../../menu/widgets/menu_input_dialog.h"
 #endif
 
@@ -416,8 +415,6 @@ bool netplay_handshake_init(netplay_t *netplay,
    {
 #ifdef HAVE_MENU
       menu_input_ctx_line_t line;
-      menu_handle_t *menu        = NULL;
-
       rarch_menu_running();
 #endif
 
@@ -428,10 +425,7 @@ bool netplay_handshake_init(netplay_t *netplay,
       line.label         = msg_hash_to_str(MSG_NETPLAY_ENTER_PASSWORD);
       line.label_setting = "no_setting";
       line.cb            = handshake_password;
-
-      menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
-      if (menu && !menu_input_dialog_start(&line, menu))
+      if (!menu_input_dialog_start(&line))
          return false;
 #endif
    }

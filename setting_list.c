@@ -2004,7 +2004,6 @@ static void menu_input_st_hex_cb(void *userdata, const char *str)
 static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
 {
    menu_input_ctx_line_t line;
-   menu_handle_t *menu               = NULL;
    input_keyboard_line_complete_t cb = NULL;
    rarch_setting_t      *setting     = (rarch_setting_t*)data;
 
@@ -2035,9 +2034,7 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
    line.idx           = 0;
    line.cb            = cb;
 
-   menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-
-   if (!menu || !menu_input_dialog_start(&line, menu))
+   if (!menu_input_dialog_start(&line))
       return -1;
 
    return 0;
