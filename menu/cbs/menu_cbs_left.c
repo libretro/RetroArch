@@ -394,8 +394,7 @@ static int action_left_input_desc_kbd(unsigned type, const char *label,
    remap_id =
       settings->uints.input_keymapper_ids[offset][id];
 
-   for (key_id = 0; key_id < RARCH_MAX_KEYS +
-      MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
+   for (key_id = 0; key_id < RARCH_MAX_KEYS - 1; key_id++)
    {
       if(remap_id == key_descriptors[key_id].key)
          break;
