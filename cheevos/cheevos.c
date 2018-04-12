@@ -1334,10 +1334,8 @@ static int cheevos_new_lboard(cheevos_readud_t *ud)
 
    if (!ldb || !ud)
       return -1;
-   lboard                        = ldb + ud->lboard_count++;
 
-   if (!lboard)
-      return -1;
+   lboard                        = ldb + ud->lboard_count++;
 
    lboard->id                    = (unsigned)strtol(ud->id.string, NULL, 10);
    lboard->format                = cheevos_parse_format(&ud->format);

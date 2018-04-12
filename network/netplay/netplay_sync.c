@@ -292,7 +292,8 @@ static void merge_analog_part(netplay_t *netplay,
    }
 
    if (share_mode == NETPLAY_SHARE_ANALOG_AVERAGE)
-      value /= client_count;
+      if (client_count > 0) /* Prevent potential divide by zero */
+         value /= client_count;
 
    resstate->data[word] |= ((uint32_t) (uint16_t) value) << bit;
 }
