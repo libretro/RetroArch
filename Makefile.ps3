@@ -2,7 +2,7 @@ include version.all
 
 #which compiler to build  with - GCC or SNC
 #set to GCC for debug builds for use with debugger
-CELL_BUILD_TOOLS	= SNC
+CELL_BUILD_TOOLS	= GCC
 CELL_GPU_TYPE	   	= RSX
 CELL_PSGL_VERSION	= ultra-opt
 
