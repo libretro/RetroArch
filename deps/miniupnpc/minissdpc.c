@@ -145,7 +145,7 @@ getDevicesFromMiniSSDPD(const char * devtype, const char * socketpath, int * err
 			if(n<=0) break; \
 			bufferindex = 0; \
 		} \
-		lcopy = MIN(l, (n - bufferindex)); \
+		lcopy = (unsigned int)MIN(l, (n - bufferindex)); \
 		memcpy(p, buffer + bufferindex, lcopy); \
 		l -= lcopy; \
 		p += lcopy; \

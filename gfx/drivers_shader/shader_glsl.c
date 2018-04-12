@@ -493,8 +493,8 @@ static void gl_glsl_strip_parameter_pragmas(char *source)
 static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
       const char *path)
 {
-   int64_t len;
-   int nitems = pass ? filestream_read_file(path,
+   int64_t len    = 0;
+   int64_t nitems = pass ? filestream_read_file(path,
          (void**)&pass->source.string.vertex, &len) : 0;
 
    if (nitems <= 0 || len <= 0)
