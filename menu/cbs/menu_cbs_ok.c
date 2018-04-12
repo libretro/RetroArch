@@ -1650,30 +1650,18 @@ static int action_ok_playlist_entry_start_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t selection_ptr                = 0;
-   bool playlist_initialized           = false;
-   playlist_t *playlist                = NULL;
    const char *entry_path              = NULL;
    const char *entry_label             = NULL;
    const char *core_path               = NULL;
    const char *core_name               = NULL;
    menu_handle_t *menu                 = NULL;
-   playlist_t *tmp_playlist            = playlist_get_cached();
+   playlist_t *playlist                = playlist_get_cached();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (  !playlist ||
+         !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   if (!tmp_playlist)
-   {
-      tmp_playlist = playlist_init(
-            menu->db_playlist_file, COLLECTION_SIZE);
-
-      if (!tmp_playlist)
-         return menu_cbs_exit();
-      playlist_initialized = true;
-   }
-
-   playlist      = tmp_playlist;
-   selection_ptr = menu->rdb_entry_start_game_selection_ptr;
+   selection_ptr                       = menu->rdb_entry_start_game_selection_ptr;
 
    playlist_get_index(playlist, selection_ptr,
          &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
@@ -1700,32 +1688,26 @@ static int action_ok_playlist_entry_start_content(const char *path,
       if (!core_info_find(&core_info, new_core_path))
          found_associated_core = false;
 
+      /* TODO: figure out if this should refer to 
+       * the inner or outer entry_path. */
+      /* TODO: make sure there's only one entry_path 
+       * in this function. */
       if (!found_associated_core)
-      {
-         /* TODO: figure out if this should refer to the inner or outer entry_path */
-         /* TODO: make sure there's only one entry_path in this function */
-         int ret = action_ok_file_load_with_detect_core(entry_path,
+         return action_ok_file_load_with_detect_core(entry_path,
                label, type, selection_ptr, entry_idx);
-         if (playlist_initialized)
-            playlist_free(tmp_playlist);
-         return ret;
-      }
 
-      tmp_playlist = playlist_get_cached();
-
-      if (tmp_playlist)
-         command_playlist_update_write(
-               tmp_playlist,
-               selection_ptr,
-               NULL,
-               NULL,
-               new_core_path,
-               core_info.inf->display_name,
-               NULL,
-               NULL);
+      command_playlist_update_write(
+            playlist,
+            selection_ptr,
+            NULL,
+            NULL,
+            new_core_path,
+            core_info.inf->display_name,
+            NULL,
+            NULL);
    }
 
-   if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
+   if (!menu_content_playlist_load(playlist, selection_ptr))
    {
       runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
       goto error;
@@ -1737,8 +1719,6 @@ static int action_ok_playlist_entry_start_content(const char *path,
    return default_action_ok_load_content_from_playlist_from_menu(core_path, path, entry_label);
 
 error:
-   if (playlist_initialized)
-      playlist_free(tmp_playlist);
    return menu_cbs_exit();
 }
 
