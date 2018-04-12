@@ -1,4 +1,4 @@
-﻿MSG_HASH(MSG_COMPILER,
+MSG_HASH(MSG_COMPILER,
 	 "Compilador"
 	)
 MSG_HASH(MSG_UNKNOWN_COMPILER,
@@ -372,6 +372,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
 	 "Testar Conquistas Não Oficiais"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
+     "Modo Detalhado das Conquistas"
+    )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
 	 "Conquistas Desbloqueadas:"
 	)
@@ -1651,7 +1654,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
 	 "Autocarregar Estado de Jogo"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-	 "Autosalvar Estado de Jogo"
+	 "Salvar Automaticamente Estado de Jogo"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
 	 "Arquivo de Estado de Jogo"
@@ -1735,8 +1738,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHUTDOWN,
 	 "Desligar"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
-	 "Taxa de Câmera Lenta"
-	)
+	 "Taxa de Câmera Lenta")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
+      "Adiantar para Reduzir a Latência")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
+      "Número de Quadros para Adiantar")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
+      "Adiantar Usa Segunda Instância")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
 	 "Classificar Arquivos de Jogo-Salvo em Pastas"
 	)
@@ -2589,7 +2597,7 @@ MSG_HASH(MSG_AUTOSAVE_FAILED,
 	 "Não foi possível inicializar o autossalvamento."
 	)
 MSG_HASH(MSG_AUTO_SAVE_STATE_TO,
-	 "Autosalvar Estado de Jogo em"
+	 "Salvar Automaticamente Estado de Jogo em"
 	)
 MSG_HASH(MSG_BLOCKING_SRAM_OVERWRITE,
 	 "Bloqueando Sobrescrita da SRAM"
@@ -3530,6 +3538,36 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
 	 "Autocarrega o último Estado de Jogo autosalvo na inicialização do RetroArch."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+	 "Exibe miniaturas dos Estados de Jogo salvos dentro do menu."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
+	 "Salva automaticamente a SRAM não volátil em um intervalo regular. Isto é desativado por padrão a menos que seja definido de outra forma. O intervalo é medido em segundos. O valor 0 desativa o salvamento automático."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+	 "Se habilitado, substitui os vínculos de entrada com os vínculos remapeados definidos pelo núcleo atual."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+	 "Habilita a detecção automática de entrada. Isto tentará configurar automaticamente Joypads no estilo 'Plug-and-Play'."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+	 "Inverte os botões para OK/Cancelar. Desabilitado é o estilo japonês, habilitado é o estilo ocidental."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+	 "Se desabilitado, o conteúdo continuará rodando em segundo plano quando o menu do RetroArch é alternado."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+	 "Driver de vídeo a ser utilizado."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+	 "Driver de áudio a ser utilizado."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+	 "Driver de entrada a ser utilizado. Dependendo do driver de vídeo, pode forçar um driver de entrada diferente."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+	 "Driver de Joypad a ser utilizado."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
 	 "Driver de reamostragem de áudio a ser utilizado."
