@@ -109,11 +109,11 @@ struct RDIR *retro_opendir(const char *name)
    struct RDIR *rdir  = (struct RDIR*)calloc(1, sizeof(*rdir));
 
    if (!rdir||!name)
+   {
+      if (rdir)
+         free(rdir);
       return NULL;
-
-   /* Handle empty string as current dir */
-   if (*name==0)
-      name=".";
+   }
 
 #if defined(_WIN32)
    (void)path_wide;
