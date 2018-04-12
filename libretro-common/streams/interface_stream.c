@@ -43,7 +43,7 @@ struct intfstream_internal
       struct
       {
          uint8_t *data;
-         unsigned size;
+         uint64_t size;
       } buf;
       memstream_t *fp;
       bool writable;
@@ -299,7 +299,7 @@ int64_t intfstream_write(intfstream_internal_t *intf,
 }
 
 char *intfstream_gets(intfstream_internal_t *intf,
-      char *buffer, size_t len)
+      char *buffer, uint64_t len)
 {
    if (!intf)
       return NULL;
@@ -307,9 +307,11 @@ char *intfstream_gets(intfstream_internal_t *intf,
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         return filestream_gets(intf->file.fp, buffer, len);
+         return filestream_gets(intf->file.fp,
+               buffer, (size_t)len);
       case INTFSTREAM_MEMORY:
-         return memstream_gets(intf->memory.fp, buffer, len);
+         return memstream_gets(intf->memory.fp,
+               buffer, (size_t)len);
       case INTFSTREAM_CHD:
 #ifdef HAVE_CHD
          return chdstream_gets(intf->chd.fp, buffer, len);
@@ -428,14 +430,14 @@ error:
 }
 
 intfstream_t *intfstream_open_memory(void *data,
-      unsigned mode, unsigned hints, size_t size)
+      unsigned mode, unsigned hints, uint64_t size)
 {
    intfstream_info_t info;
    intfstream_t *fd     = NULL;
 
    info.type            = INTFSTREAM_MEMORY;
    info.memory.buf.data = (uint8_t*)data;
-   info.memory.buf.size = (unsigned)size;
+   info.memory.buf.size = size;
    info.memory.writable = false;
 
    fd                   = (intfstream_t*)intfstream_init(&info);

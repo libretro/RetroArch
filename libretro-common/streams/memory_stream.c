@@ -103,7 +103,7 @@ uint64_t memstream_read(memstream_t *stream, void *data, uint64_t bytes)
    if (bytes > avail)
       bytes = avail;
 
-   memcpy(data, stream->buf + stream->ptr, bytes);
+   memcpy(data, stream->buf + stream->ptr, (size_t)bytes);
    stream->ptr += bytes;
    memstream_update_pos(stream);
    return bytes;
@@ -120,7 +120,7 @@ uint64_t memstream_write(memstream_t *stream, const void *data, uint64_t bytes)
    if (bytes > avail)
       bytes = avail;
 
-   memcpy(stream->buf + stream->ptr, data, bytes);
+   memcpy(stream->buf + stream->ptr, data, (size_t)bytes);
    stream->ptr += bytes;
    memstream_update_pos(stream);
    return bytes;

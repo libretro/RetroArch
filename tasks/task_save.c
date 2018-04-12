@@ -1370,7 +1370,7 @@ bool content_load_ram_file(unsigned slot)
                (unsigned)mem_info.size);
          rc = mem_info.size;
       }
-      memcpy(mem_info.data, buf, rc);
+      memcpy(mem_info.data, buf, (size_t)rc);
    }
 
    if (buf)

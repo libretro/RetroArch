@@ -359,7 +359,7 @@ static bool load_content_into_memory(
                   (uint8_t**)&ret_buf,
                   (void*)length);
 
-         content_rom_crc = encoding_crc32(0, ret_buf, *length);
+         content_rom_crc = encoding_crc32(0, ret_buf, (size_t)*length);
 
          RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
       }

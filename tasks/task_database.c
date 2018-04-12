@@ -231,7 +231,7 @@ static bool intfstream_file_get_serial(const char *name,
       if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
          goto error;
 
-      data = (uint8_t*)malloc(size);
+      data = (uint8_t*)malloc((size_t)size);
 
       if (intfstream_read(fd, data, size) != (int64_t) size)
       {
@@ -345,7 +345,7 @@ static int intfstream_get_crc(intfstream_t *fd, uint32_t *crc)
    uint8_t buffer[4096];
 
    while ((read = intfstream_read(fd, buffer, sizeof(buffer))) > 0)
-      acc = encoding_crc32(acc, buffer, read);
+      acc = encoding_crc32(acc, buffer, (size_t)read);
 
    if (read < 0)
       return 0;
@@ -435,11 +435,11 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
       return 0;
    }
 
-   RARCH_LOG("CUE '%s' primary track: %s\n (%lu, %lu)\n", name, track_path, (unsigned long) offset, (unsigned long) size);
+   RARCH_LOG("CUE '%s' primary track: %s\n (%lu, %lu)\n",name, track_path, (unsigned long) offset, (unsigned long) size);
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
-   rv = intfstream_file_get_crc(track_path, offset, size, crc);
+   rv = intfstream_file_get_crc(track_path, offset, (size_t)size, crc);
    if (rv == 1)
    {
       RARCH_LOG("CUE '%s' crc: %x\n", name, *crc);

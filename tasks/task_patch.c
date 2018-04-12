@@ -93,8 +93,8 @@ struct ups_data
    unsigned target_checksum;
 };
 
-typedef enum patch_error (*patch_func_t)(const uint8_t*, size_t,
-      const uint8_t*, size_t, uint8_t*, size_t*);
+typedef enum patch_error (*patch_func_t)(const uint8_t*, uint64_t,
+      const uint8_t*, uint64_t, uint8_t*, uint64_t*);
 
 static uint8_t bps_read(struct bps_data *bps)
 {
@@ -128,9 +128,9 @@ static void bps_write(struct bps_data *bps, uint8_t data)
 }
 
 static enum patch_error bps_apply_patch(
-      const uint8_t *modify_data, size_t modify_length,
-      const uint8_t *source_data, size_t source_length,
-      uint8_t *target_data, size_t *target_length)
+      const uint8_t *modify_data, uint64_t modify_length,
+      const uint8_t *source_data, uint64_t source_length,
+      uint8_t *target_data, uint64_t *target_length)
 {
    size_t i;
    uint32_t checksum;
@@ -309,9 +309,9 @@ static uint64_t ups_decode(struct ups_data *data)
 }
 
 static enum patch_error ups_apply_patch(
-      const uint8_t *patchdata, size_t patchlength,
-      const uint8_t *sourcedata, size_t sourcelength,
-      uint8_t *targetdata, size_t *targetlength)
+      const uint8_t *patchdata, uint64_t patchlength,
+      const uint8_t *sourcedata, uint64_t sourcelength,
+      uint8_t *targetdata, uint64_t *targetlength)
 {
    size_t i;
    struct ups_data data;
@@ -417,9 +417,9 @@ static enum patch_error ups_apply_patch(
 }
 
 static enum patch_error ips_apply_patch(
-      const uint8_t *patchdata, size_t patchlen,
-      const uint8_t *sourcedata, size_t sourcelength,
-      uint8_t *targetdata, size_t *targetlength)
+      const uint8_t *patchdata, uint64_t patchlen,
+      const uint8_t *sourcedata, uint64_t sourcelength,
+      uint8_t *targetdata, uint64_t *targetlength)
 {
    uint32_t offset = 5;
 
@@ -431,7 +431,7 @@ static enum patch_error ips_apply_patch(
          patchdata[4] != 'H')
       return PATCH_PATCH_INVALID;
 
-   memcpy(targetdata, sourcedata, sourcelength);
+   memcpy(targetdata, sourcedata, (size_t)sourcelength);
 
    *targetlength = sourcelength;
 
@@ -501,13 +501,13 @@ static enum patch_error ips_apply_patch(
 
 static bool apply_patch_content(uint8_t **buf,
       ssize_t *size, const char *patch_desc, const char *patch_path,
-      patch_func_t func, void *patch_data, ssize_t patch_size)
+      patch_func_t func, void *patch_data, int64_t patch_size)
 {
    enum patch_error err     = PATCH_UNKNOWN;
    ssize_t ret_size         = *size;
    uint8_t *ret_buf         = *buf;
-   size_t target_size       = ret_size * 4; /* Just to be sure. */
-   uint8_t *patched_content = (uint8_t*)malloc(target_size);
+   uint64_t target_size     = ret_size * 4; /* Just to be sure. */
+   uint8_t *patched_content = (uint8_t*)malloc((size_t)target_size);
 
    RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n",
          patch_desc, patch_path);

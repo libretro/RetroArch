@@ -431,7 +431,7 @@ static bool update_cand(int64_t *cand_index, int64_t *last_index,
       if ((uint64_t)(*last_index - *cand_index) > *largest)
       {
          *largest    = *last_index - *cand_index;
-         strlcpy(track_path, last_file, max_len);
+         strlcpy(track_path, last_file, (size_t)max_len);
          *offset     = *cand_index;
          *size       = *largest;
          *cand_index = -1;
@@ -576,7 +576,8 @@ error:
    return -errno;
 }
 
-bool cue_next_file(intfstream_t *fd, const char *cue_path, char *path, size_t max_len)
+bool cue_next_file(intfstream_t *fd,
+      const char *cue_path, char *path, uint64_t max_len)
 {
    bool rv                    = false;
    char *tmp_token            = (char*)malloc(MAX_TOKEN_LEN);
@@ -592,7 +593,7 @@ bool cue_next_file(intfstream_t *fd, const char *cue_path, char *path, size_t ma
       if (string_is_equal(tmp_token, "FILE"))
       {
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
-         fill_pathname_join(path, cue_dir, tmp_token, max_len);
+         fill_pathname_join(path, cue_dir, tmp_token, (size_t)max_len);
          rv = true;
          break;
       }
@@ -694,9 +695,11 @@ int gdi_find_track(const char *gdi_path, bool first,
 
          if ((uint64_t)file_size > largest)
          {
-            strlcpy(track_path, last_file, max_len);
-            rv = 0;
+            strlcpy(track_path, last_file, (size_t)max_len);
+
+            rv      = 0;
             largest = file_size;
+
             if (first)
             {
                free(gdi_dir);
@@ -767,7 +770,7 @@ bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
 
       fill_pathname_basedir(gdi_dir, gdi_path, PATH_MAX_LENGTH);
 
-      fill_pathname_join(path, gdi_dir, tmp_token, max_len);
+      fill_pathname_join(path, gdi_dir, tmp_token, (size_t)max_len);
       rv = true;
 
       /* Disc offset */

@@ -75,7 +75,7 @@ int64_t intfstream_write(intfstream_internal_t *intf,
       const void *s, uint64_t len);
 
 char *intfstream_gets(intfstream_internal_t *intf,
-      char *buffer, size_t len);
+      char *buffer, uint64_t len);
 
 int intfstream_getc(intfstream_internal_t *intf);
 
@@ -98,7 +98,7 @@ intfstream_t* intfstream_open_file(const char *path,
       unsigned mode, unsigned hints);
 
 intfstream_t *intfstream_open_memory(void *data,
-      unsigned mode, unsigned hints, size_t size);
+      unsigned mode, unsigned hints, uint64_t size);
 
 intfstream_t *intfstream_open_chd_track(const char *path,
       unsigned mode, unsigned hints, int32_t track);

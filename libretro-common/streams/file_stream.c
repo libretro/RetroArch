@@ -393,7 +393,7 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
    if (content_buf_size < 0)
       goto error;
 
-   content_buf      = malloc((uint64_t)(content_buf_size + 1));
+   content_buf      = malloc((size_t)(content_buf_size + 1));
 
    if (!content_buf)
       goto error;
