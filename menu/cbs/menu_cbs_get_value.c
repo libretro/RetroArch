@@ -618,7 +618,7 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    remap_id =
       settings->uints.input_keymapper_ids[offset][id];
 
-   for (key_id = 0; key_id < RARCH_MAX_KEYS; key_id++)
+   for (key_id = 0; key_id < RARCH_MAX_KEYS - 1; key_id++)
    {
       if(remap_id == key_descriptors[key_id].key)
          break;
