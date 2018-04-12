@@ -77,6 +77,7 @@ static bool shader_null_compile_program(
 
 const shader_backend_t shader_null_backend = {
    shader_null_init,
+   NULL,
    shader_null_deinit,
    NULL,
    shader_null_set_uniform_parameter,

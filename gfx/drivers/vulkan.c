@@ -201,8 +201,7 @@ static void vulkan_init_pipeline_layout(
          &layout_info, NULL, &vk->pipelines.layout);
 }
 
-static void vulkan_init_pipelines(
-      vk_t *vk)
+static void vulkan_init_pipelines(vk_t *vk)
 {
    static const uint32_t alpha_blend_vert[] =
 #include "vulkan_shaders/alpha_blend.vert.inc"
@@ -834,7 +833,11 @@ static bool vulkan_init_filter_chain(vk_t *vk)
 
 static void vulkan_init_resources(vk_t *vk)
 {
+   if (!vk)
+      return;
+
    vk->num_swapchain_images = vk->context->num_swapchain_images;
+
    vulkan_init_framebuffers(vk);
    vulkan_init_pipelines(vk);
    vulkan_init_descriptor_pool(vk);
