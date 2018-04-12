@@ -57,7 +57,7 @@ struct intfstream_internal
 #endif
 };
 
-ssize_t intfstream_get_size(intfstream_internal_t *intf)
+int64_t intfstream_get_size(intfstream_internal_t *intf)
 {
    if (!intf)
       return 0;
@@ -219,7 +219,7 @@ error:
    return NULL;
 }
 
-int intfstream_seek(intfstream_internal_t *intf, int offset, int whence)
+int64_t intfstream_seek(intfstream_internal_t *intf, int64_t offset, int whence)
 {
    if (!intf)
       return -1;
@@ -241,14 +241,14 @@ int intfstream_seek(intfstream_internal_t *intf, int offset, int whence)
                   seek_position = RETRO_VFS_SEEK_POSITION_END;
                   break;
             }
-            return (int)filestream_seek(intf->file.fp, (int)offset,
+            return (int64_t)filestream_seek(intf->file.fp, (int64_t)offset,
                   seek_position);
          }
       case INTFSTREAM_MEMORY:
-         return (int)memstream_seek(intf->memory.fp, offset, whence);
+         return (int64_t)memstream_seek(intf->memory.fp, offset, whence);
       case INTFSTREAM_CHD:
 #ifdef HAVE_CHD
-         return (int)chdstream_seek(intf->chd.fp, offset, whence);
+         return (int64_t)chdstream_seek(intf->chd.fp, offset, whence);
 #else
          break;
 #endif
@@ -257,7 +257,7 @@ int intfstream_seek(intfstream_internal_t *intf, int offset, int whence)
    return -1;
 }
 
-ssize_t intfstream_read(intfstream_internal_t *intf, void *s, size_t len)
+int64_t intfstream_read(intfstream_internal_t *intf, void *s, uint64_t len)
 {
    if (!intf)
       return 0;
@@ -279,8 +279,8 @@ ssize_t intfstream_read(intfstream_internal_t *intf, void *s, size_t len)
    return -1;
 }
 
-ssize_t intfstream_write(intfstream_internal_t *intf,
-      const void *s, size_t len)
+int64_t intfstream_write(intfstream_internal_t *intf,
+      const void *s, uint64_t len)
 {
    if (!intf)
       return 0;
@@ -343,7 +343,7 @@ int intfstream_getc(intfstream_internal_t *intf)
    return -1;
 }
 
-int intfstream_tell(intfstream_internal_t *intf)
+int64_t intfstream_tell(intfstream_internal_t *intf)
 {
    if (!intf)
       return -1;
@@ -351,12 +351,12 @@ int intfstream_tell(intfstream_internal_t *intf)
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         return (int)filestream_tell(intf->file.fp);
+         return (int64_t)filestream_tell(intf->file.fp);
       case INTFSTREAM_MEMORY:
-         return (int)memstream_pos(intf->memory.fp);
+         return (int64_t)memstream_pos(intf->memory.fp);
       case INTFSTREAM_CHD:
 #ifdef HAVE_CHD
-         return (int)chdstream_tell(intf->chd.fp);
+         return (int64_t)chdstream_tell(intf->chd.fp);
 #else
          break;
 #endif

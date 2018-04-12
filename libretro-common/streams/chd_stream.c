@@ -386,7 +386,7 @@ char *chdstream_gets(chdstream_t *stream, char *buffer, size_t len)
    return buffer;
 }
 
-size_t chdstream_tell(chdstream_t *stream)
+uint64_t chdstream_tell(chdstream_t *stream)
 {
    return stream->offset;
 }
@@ -396,9 +396,9 @@ void chdstream_rewind(chdstream_t *stream)
    stream->offset = 0;
 }
 
-int chdstream_seek(chdstream_t *stream, ssize_t offset, int whence)
+int64_t chdstream_seek(chdstream_t *stream, int64_t offset, int whence)
 {
-   ssize_t new_offset;
+   int64_t new_offset;
 
    switch (whence)
    {

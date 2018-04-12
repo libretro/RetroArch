@@ -64,15 +64,15 @@ static struct magic_entry MAGIC_NUMBERS[] = {
    { 0,        NULL,     NULL}
 };
 
-static ssize_t get_token(intfstream_t *fd, char *token, size_t max_len)
+static int64_t get_token(intfstream_t *fd, char *token, uint64_t max_len)
 {
    char *c       = token;
-   ssize_t len   = 0;
+   int64_t len   = 0;
    int in_string = 0;
 
    while (1)
    {
-      int rv = (int)intfstream_read(fd, c, 1);
+      int64_t rv = (int64_t)intfstream_read(fd, c, 1);
       if (rv == 0)
          return 0;
 
@@ -116,7 +116,7 @@ static ssize_t get_token(intfstream_t *fd, char *token, size_t max_len)
 
       len++;
       c++;
-      if (len == (ssize_t)max_len)
+      if (len == (int64_t)max_len)
       {
          *c = '\0';
          return len;
@@ -362,7 +362,7 @@ int detect_system(intfstream_t *fd, const char **system_name)
    int rv;
    char magic[MAGIC_LEN];
    int i;
-   ssize_t read;
+   int64_t read;
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS));
    for (i = 0; MAGIC_NUMBERS[i].system_name != NULL; i++)
@@ -409,9 +409,9 @@ clean:
    return rv;
 }
 
-static ssize_t intfstream_get_file_size(const char *path)
+static int64_t intfstream_get_file_size(const char *path)
 {
-   ssize_t rv;
+   int64_t rv;
    intfstream_t *fd = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!fd)
@@ -422,13 +422,13 @@ static ssize_t intfstream_get_file_size(const char *path)
    return rv;
 }
 
-static bool update_cand(ssize_t *cand_index, ssize_t *last_index,
-                        size_t *largest, char *last_file, size_t *offset,
-                        size_t *size, char *track_path, size_t max_len)
+static bool update_cand(int64_t *cand_index, int64_t *last_index,
+                        uint64_t *largest, char *last_file, uint64_t *offset,
+                        uint64_t *size, char *track_path, uint64_t max_len)
 {
    if (*cand_index != -1)
    {
-      if ((unsigned)(*last_index - *cand_index) > *largest)
+      if ((uint64_t)(*last_index - *cand_index) > *largest)
       {
          *largest    = *last_index - *cand_index;
          strlcpy(track_path, last_file, max_len);
@@ -443,19 +443,19 @@ static bool update_cand(ssize_t *cand_index, ssize_t *last_index,
 }
 
 int cue_find_track(const char *cue_path, bool first,
-      size_t *offset, size_t *size, char *track_path, size_t max_len)
+      uint64_t *offset, uint64_t *size, char *track_path, uint64_t max_len)
 {
    int rv;
    intfstream_info_t info;
    char *tmp_token            = (char*)malloc(MAX_TOKEN_LEN);
    char *last_file            = (char*)malloc(PATH_MAX_LENGTH + 1);
    intfstream_t *fd           = NULL;
-   ssize_t last_index         = -1;
-   ssize_t cand_index         = -1;
+   int64_t last_index         = -1;
+   int64_t cand_index         = -1;
    int32_t cand_track         = -1;
    int32_t track              = 0;
-   size_t largest             = 0;
-   ssize_t volatile file_size = -1;
+   uint64_t largest             = 0;
+   int64_t volatile file_size = -1;
    bool is_data               = false;
    char *cue_dir              = (char*)malloc(PATH_MAX_LENGTH);
    cue_dir[0]                 = '\0';
@@ -604,16 +604,16 @@ bool cue_next_file(intfstream_t *fd, const char *cue_path, char *path, size_t ma
 }
 
 int gdi_find_track(const char *gdi_path, bool first,
-      char *track_path, size_t max_len)
+      char *track_path, uint64_t max_len)
 {
    int rv;
    intfstream_info_t info;
    char *tmp_token   = (char*)malloc(MAX_TOKEN_LEN);
    intfstream_t *fd  = NULL;
-   size_t largest    = 0;
+   uint64_t largest  = 0;
    int size          = -1;
    int mode          = -1;
-   ssize_t file_size = -1;
+   int64_t file_size = -1;
 
    info.type         = INTFSTREAM_FILE;
 
@@ -692,7 +692,7 @@ int gdi_find_track(const char *gdi_path, bool first,
             goto error;
          }
 
-         if ((unsigned)file_size > largest)
+         if ((uint64_t)file_size > largest)
          {
             strlcpy(track_path, last_file, max_len);
             rv = 0;
@@ -733,11 +733,11 @@ error:
 }
 
 bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
-      char *path, size_t max_len)
+      char *path, uint64_t max_len)
 {
    bool rv         = false;
    char *tmp_token = (char*)malloc(MAX_TOKEN_LEN);
-   ssize_t offset  = -1;
+   int64_t offset  = -1;
 
    tmp_token[0]    = '\0';
 

@@ -91,7 +91,7 @@ char* copy_core_to_temp_file(void)
    char *retroarchTempPath  = NULL;
    char *tempDllPath        = NULL;
    void *dllFileData        = NULL;
-   ssize_t dllFileSize      = 0;
+   int64_t dllFileSize      = 0;
    const char *corePath     = path_get(RARCH_PATH_CORE);
    const char *coreBaseName = path_basename(corePath);
 

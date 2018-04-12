@@ -70,17 +70,17 @@ typedef struct db_handle
 } db_handle_t;
 
 int cue_find_track(const char *cue_path, bool first,
-      size_t *offset, size_t *size,
-      char *track_path, size_t max_len);
+      uint64_t *offset, uint64_t *size,
+      char *track_path, uint64_t max_len);
 
 bool cue_next_file(intfstream_t *fd, const char *cue_path,
-      char *path, size_t max_len);
+      char *path, uint64_t max_len);
 
 int gdi_find_track(const char *gdi_path, bool first,
-      char *track_path, size_t max_len);
+      char *track_path, uint64_t max_len);
 
 bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
-      char *path, size_t max_len);
+      char *path, uint64_t max_len);
 
 int detect_system(intfstream_t *fd, const char** system_name);
 
@@ -204,11 +204,11 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial)
 }
 
 static bool intfstream_file_get_serial(const char *name,
-      size_t offset, size_t size, char *serial)
+      uint64_t offset, uint64_t size, char *serial)
 {
    int rv;
    uint8_t *data     = NULL;
-   ssize_t file_size = -1;
+   int64_t file_size = -1;
    intfstream_t *fd  = intfstream_open_file(name,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
@@ -226,14 +226,14 @@ static bool intfstream_file_get_serial(const char *name,
    if (file_size < 0)
       goto error;
 
-   if (offset != 0 || size < (size_t) file_size)
+   if (offset != 0 || size < (uint64_t) file_size)
    {
-      if (intfstream_seek(fd, (int)offset, SEEK_SET) == -1)
+      if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
          goto error;
 
       data = (uint8_t*)malloc(size);
 
-      if (intfstream_read(fd, data, size) != (ssize_t) size)
+      if (intfstream_read(fd, data, size) != (int64_t) size)
       {
          free(data);
          goto error;
@@ -268,8 +268,8 @@ static int task_database_cue_get_serial(const char *name, char* serial)
    char *track_path                 = (char*)malloc(PATH_MAX_LENGTH
          * sizeof(char));
    int ret                          = 0;
-   size_t offset                    = 0;
-   size_t size                      = 0;
+   uint64_t offset                  = 0;
+   uint64_t size                    = 0;
    int rv                           = 0;
 
    track_path[0]                    = '\0';
@@ -340,7 +340,7 @@ static int task_database_chd_get_serial(const char *name, char* serial)
 
 static int intfstream_get_crc(intfstream_t *fd, uint32_t *crc)
 {
-   ssize_t read = 0;
+   int64_t read = 0;
    uint32_t acc = 0;
    uint8_t buffer[4096];
 
@@ -356,13 +356,13 @@ static int intfstream_get_crc(intfstream_t *fd, uint32_t *crc)
 }
 
 static bool intfstream_file_get_crc(const char *name,
-      size_t offset, size_t size, uint32_t *crc)
+      uint64_t offset, size_t size, uint32_t *crc)
 {
    int rv;
    intfstream_t *fd  = intfstream_open_file(name,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    uint8_t *data     = NULL;
-   ssize_t file_size = -1;
+   int64_t file_size = -1;
 
    if (!fd)
       return 0;
@@ -378,14 +378,14 @@ static bool intfstream_file_get_crc(const char *name,
    if (file_size < 0)
       goto error;
 
-   if (offset != 0 || size < (size_t) file_size)
+   if (offset != 0 || size < (uint64_t) file_size)
    {
-      if (intfstream_seek(fd, (int)offset, SEEK_SET) == -1)
+      if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
          goto error;
 
       data = (uint8_t*)malloc(size);
 
-      if (intfstream_read(fd, data, size) != (ssize_t) size)
+      if (intfstream_read(fd, data, size) != (int64_t) size)
          goto error;
 
       intfstream_close(fd);
@@ -417,8 +417,8 @@ error:
 static int task_database_cue_get_crc(const char *name, uint32_t *crc)
 {
    char *track_path = (char *)malloc(PATH_MAX_LENGTH);
-   size_t offset    = 0;
-   size_t size      = 0;
+   uint64_t offset  = 0;
+   uint64_t size    = 0;
    int rv           = 0;
 
    track_path[0]    = '\0';

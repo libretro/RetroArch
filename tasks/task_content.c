@@ -151,7 +151,7 @@ static char pending_subsystem_extensions[PATH_MAX_LENGTH];
 static char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
 
 
-static int content_file_read(const char *path, void **buf, ssize_t *length)
+static int64_t content_file_read(const char *path, void **buf, int64_t *length)
 {
 #ifdef HAVE_COMPRESSION
    if (path_contains_compressed_file(path))
@@ -324,7 +324,7 @@ end:
 static bool load_content_into_memory(
       content_information_ctx_t *content_ctx,
       unsigned i, const char *path, void **buf,
-      ssize_t *length)
+      int64_t *length)
 {
    uint8_t *ret_buf          = NULL;
 
@@ -383,7 +383,7 @@ static bool load_content_from_compressed_archive(
       char **error_string)
 {
    union string_list_elem_attr attributes;
-   ssize_t new_path_len              = 0;
+   int64_t new_path_len              = 0;
    size_t path_size                  = PATH_MAX_LENGTH * sizeof(char);
    char *new_basedir                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *new_path                    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -582,7 +582,7 @@ static bool content_file_load(
       {
          /* Load the content into memory. */
 
-         ssize_t len = 0;
+         int64_t len = 0;
 
          if (!load_content_into_memory(
                   content_ctx,

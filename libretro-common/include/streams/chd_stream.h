@@ -49,11 +49,11 @@ int chdstream_getc(chdstream_t *stream);
 
 char *chdstream_gets(chdstream_t *stream, char *buffer, size_t len);
 
-size_t chdstream_tell(chdstream_t *stream);
+uint64_t chdstream_tell(chdstream_t *stream);
 
 void chdstream_rewind(chdstream_t *stream);
 
-int chdstream_seek(chdstream_t *stream, ssize_t offset, int whence);
+int64_t chdstream_seek(chdstream_t *stream, int64_t offset, int whence);
 
 ssize_t chdstream_get_size(chdstream_t *stream);
 

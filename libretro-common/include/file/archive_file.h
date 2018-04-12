@@ -187,7 +187,7 @@ bool file_archive_perform_mode(const char *name, const char *valid_exts,
 
 int file_archive_compressed_read(
       const char* path, void **buf,
-      const char* optional_filename, ssize_t *length);
+      const char* optional_filename, int64_t *length);
 
 const struct file_archive_file_backend* file_archive_get_zlib_file_backend(void);
 const struct file_archive_file_backend* file_archive_get_7z_file_backend(void);
