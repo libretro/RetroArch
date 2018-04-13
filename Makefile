@@ -133,7 +133,7 @@ RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
 ifneq ($(X86),)
    CFLAGS += -m32
-   CXXLAGS += -m32
+   CXXFLAGS += -m32
    LDFLAGS += -m32
 endif
 
