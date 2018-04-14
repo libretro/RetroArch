@@ -229,7 +229,7 @@ static void wiiu_gca_pad_deinit(void *data)
   }
 }
 
-static void wiiu_gca_get_buttons(void *data, retro_bits_t *state)
+static void wiiu_gca_get_buttons(void *data, input_bits_t *state)
 {
    gca_pad_t *pad = (gca_pad_t *)data;
    if(pad)

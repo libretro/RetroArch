@@ -39,7 +39,7 @@ struct hid_driver
    bool (*query_pad)(void *handle, unsigned pad);
    void (*free)(const void *handle);
    bool (*button)(void *handle, unsigned pad, uint16_t button);
-   void (*get_buttons)(void *handle, unsigned pad, retro_bits_t *state);
+   void (*get_buttons)(void *handle, unsigned pad, input_bits_t *state);
    int16_t (*axis)(void *handle, unsigned pad, uint32_t axis);
    void (*poll)(void *handle);
    bool (*set_rumble)(void *handle, unsigned pad, enum retro_rumble_effect effect, uint16_t);

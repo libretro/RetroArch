@@ -103,7 +103,7 @@ static void ds4_pad_deinit(void *data)
 {
 }
 
-static void ds4_get_buttons(void *data, retro_bits_t *state)
+static void ds4_get_buttons(void *data, input_bits_t *state)
 {
    ds4_instance_t *instance = (ds4_instance_t *)data;
    if(!instance)

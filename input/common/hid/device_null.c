@@ -140,10 +140,10 @@ static void null_pad_deinit(void *data)
 }
 
 /**
- * Translate the button data from the pad into the retro_bits_t format
+ * Translate the button data from the pad into the input_bits_t format
  * that RetroArch can use.
  */
-static void null_get_buttons(void *data, retro_bits_t *state)
+static void null_get_buttons(void *data, input_bits_t *state)
 {
    null_instance_t *instance = (null_instance_t *)data;
    if(!instance)

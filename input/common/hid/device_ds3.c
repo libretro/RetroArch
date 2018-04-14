@@ -236,7 +236,7 @@ static void ds3_pad_deinit(void *data)
    ds3_instance_t *pad = (ds3_instance_t *)data;
 }
 
-static void ds3_get_buttons(void *data, retro_bits_t *state)
+static void ds3_get_buttons(void *data, input_bits_t *state)
 {
    ds3_instance_t *pad = (ds3_instance_t *)data;
 
