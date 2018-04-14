@@ -494,6 +494,7 @@ static dat_converter_list_t* dat_converter_parser(
    dat_converter_map_t map;
    dat_converter_list_item_t* current = lexer_list->values;
    bool skip                          = true;
+   bool warning_displayed             = false;
 
    map.key                            = NULL;
    map.type                           = DAT_CONVERTER_LIST_MAP;
@@ -531,13 +532,16 @@ static dat_converter_list_t* dat_converter_parser(
                   // If the key is not found, report, and mark it to be skipped.
                   if (!map.key)
                   {
-                     printf("Missing match key '");
-                     while (match_key->next)
-                     {
-                        printf("%s.", match_key->value);
-                        match_key = match_key->next;
+                     if (warning_displayed == false) {
+                        printf("  - Missing match key '");
+                        while (match_key->next)
+                        {
+                           printf("%s.", match_key->value);
+                           match_key = match_key->next;
+                        }
+                        printf("%s' on line %d\n", match_key->value, current->token.line_no);
+                        warning_displayed = true;
                      }
-                     printf("%s' on line %d\n", match_key->value, current->token.line_no);
                      skip = true;
                   }
                }
