@@ -199,6 +199,7 @@ OBJ += frontend/frontend.o \
        audio/audio_driver.o \
        $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
        input/input_driver.o \
+		 input/input_mapper.o \
        led/led_driver.o \
        led/drivers/led_null.o \
        gfx/video_coord_array.o \
@@ -1604,8 +1605,6 @@ ifeq ($(HAVE_NETWORKING), 1)
          cheevos/badges.o \
          $(LIBRETRO_COMM_DIR)/utils/md5.o
    endif
-
-   OBJ += input/input_mapper.o
 
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
       OBJ += input/input_remote.o \
