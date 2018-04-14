@@ -153,14 +153,16 @@ static void *ds3_init(void *handle)
    if(!instance)
      goto error;
 
+   memset(instance, 0, sizeof(ds3_instance_t));
    instance->handle = handle;
 
-/* maybe not necessary? */
-/*
    RARCH_LOG("[ds3]: setting protocol\n");
+/*
    if(set_protocol(instance, 1))
       errors++;
 */
+   set_protocol(instance, 1);
+
    RARCH_LOG("[ds3]: sending control packet\n");
    if(send_control_packet(instance) < 0)
       errors++;

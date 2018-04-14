@@ -21,7 +21,7 @@ hid_driver_instance_t hid_instance = {0};
 hid_device_t *hid_device_list[] = {
   &wiiu_gca_hid_device,
   &ds3_hid_device,
-  &ds4_hid_device,
+/*  &ds4_hid_device, */
   NULL /* must be last entry in list */
 };
 

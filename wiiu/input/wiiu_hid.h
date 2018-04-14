@@ -62,6 +62,7 @@ struct wiiu_adapter {
    int32_t tx_size;
    uint32_t handle;
    uint8_t interface_index;
+   bool connected;
 };
 
 /**
