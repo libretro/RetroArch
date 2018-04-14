@@ -532,7 +532,8 @@ static dat_converter_list_t* dat_converter_parser(
                   // If the key is not found, report, and mark it to be skipped.
                   if (!map.key)
                   {
-                     if (warning_displayed == false) {
+                     if (warning_displayed == false)
+                     {
                         printf("  - Missing match key '");
                         while (match_key->next)
                         {
