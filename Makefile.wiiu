@@ -32,6 +32,7 @@ OBJ += wiiu/input/wpad_driver.o
 OBJ += wiiu/input/kpad_driver.o
 OBJ += wiiu/input/pad_functions.o
 OBJ += wiiu/system/memory.o
+OBJ += wiiu/system/atomic.o
 OBJ += wiiu/system/exception_handler.o
 OBJ += wiiu/fs/sd_fat_devoptab.o
 OBJ += wiiu/fs/fs_utils.o
@@ -60,7 +61,8 @@ ifeq ($(WIIU_HID),1)
           input/common/hid/hid_device_driver.o \
           input/common/hid/device_wiiu_gca.o \
           input/common/hid/device_ds3.o \
-          input/common/hid/device_ds4.o
+          input/common/hid/device_ds4.o \
+          input/common/hid/device_null.o
 endif
 
 ifeq ($(SALAMANDER_BUILD),1)
