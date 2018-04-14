@@ -693,10 +693,10 @@ static INLINE unsigned font_get_replacement(const char* src, const char* start)
 static char* font_driver_reshape_msg(const char* msg)
 {
    /* worst case transformations are 2 bytes to 4 bytes */
-   char*       buffer  = (char*)malloc((strlen(msg) * 2) + 1);
-   const char* src     = msg;
-   char*       dst     = buffer;
-   bool        reverse = false;
+   unsigned char*       buffer  = (unsigned char*)malloc((strlen(msg) * 2) + 1);
+   const unsigned char* src     = (const unsigned char*)msg;
+   unsigned char*       dst     = (unsigned char*)buffer;
+   bool                 reverse = false;
 
    while (*src || reverse)
    {
@@ -708,7 +708,7 @@ static char* font_driver_reshape_msg(const char* msg)
 
          if (IS_RTL(src) || IS_DIR_NEUTRAL(src))
          {
-            unsigned replacement = font_get_replacement(src, msg);
+            unsigned replacement = font_get_replacement((const char*)src, msg);
             if (replacement)
             {
                if (replacement < 0x80)
@@ -770,7 +770,7 @@ static char* font_driver_reshape_msg(const char* msg)
 
    *dst = '\0';
 
-   return buffer;
+   return (char*)buffer;
 }
 #endif
 

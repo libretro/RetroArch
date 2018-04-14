@@ -126,7 +126,8 @@ database_info_list_t *database_info_list_new(const char *rdb_path,
 void database_info_list_free(database_info_list_t *list);
 
 database_info_handle_t *database_info_dir_init(const char *dir,
-      enum database_type type, retro_task_t *task);
+      enum database_type type, retro_task_t *task,
+      bool show_hidden_files);
 
 database_info_handle_t *database_info_file_init(const char *path,
       enum database_type type, retro_task_t *task);

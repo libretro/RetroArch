@@ -111,7 +111,7 @@ void audio_mix_free_chunk(audio_chunk_t *chunk)
 audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 {
    int sample_size;
-   ssize_t len          = 0;
+   int64_t len          = 0;
    void *buf            = NULL;
    audio_chunk_t *chunk = (audio_chunk_t*)calloc(1, sizeof(*chunk));
 

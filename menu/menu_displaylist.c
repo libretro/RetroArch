@@ -153,6 +153,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    unsigned i;
    char tmp[PATH_MAX_LENGTH];
    core_info_t *core_info    = NULL;
+   settings_t *settings      = config_get_ptr();
 
    tmp[0] = '\0';
 
@@ -284,12 +285,21 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    if (core_info->firmware_count > 0)
    {
       core_info_ctx_firmware_t firmware_info;
+      bool update_missing_firmware   = false;
+      bool set_missing_firmware      = false;
       settings_t *settings           = config_get_ptr();
 
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->paths.directory_system;
 
-      if (core_info_list_update_missing_firmware(&firmware_info))
+      rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+
+      update_missing_firmware        = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
+
+      if (set_missing_firmware)
+         rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+
+      if (update_missing_firmware)
       {
          fill_pathname_noext(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE),
@@ -336,11 +346,12 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       }
    }
 
-  menu_entries_append_enum(info->list,
-        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
-        msg_hash_to_str(MENU_ENUM_LABEL_CORE_DELETE),
-        MENU_ENUM_LABEL_CORE_DELETE,
-        MENU_SETTING_ACTION_CORE_DELETE, 0, 0);
+  if (settings->bools.menu_show_core_updater)
+     menu_entries_append_enum(info->list,
+           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
+           msg_hash_to_str(MENU_ENUM_LABEL_CORE_DELETE),
+           MENU_ENUM_LABEL_CORE_DELETE,
+           MENU_SETTING_ACTION_CORE_DELETE, 0, 0);
 
    return 0;
 }
@@ -1563,6 +1574,17 @@ error:
    return -1;
 }
 
+static enum msg_file_type extension_to_file_hash_type(const char *ext)
+{
+   if (string_is_equal(ext, "sha1"))
+      return FILE_TYPE_SHA1;
+   else if (string_is_equal(ext, "crc"))
+      return FILE_TYPE_CRC;
+   else if (string_is_equal(ext, "md5"))
+      return FILE_TYPE_MD5;
+   return FILE_TYPE_NONE;
+}
+
 static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 {
    unsigned i, j, k;
@@ -1651,7 +1673,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
                   const char *elem0 = tmp_str_list->elems[0].data;
                   const char *elem1 = tmp_str_list->elems[1].data;
 
-                  switch (msg_hash_to_file_type(msg_hash_calculate(elem1)))
+                  switch (extension_to_file_hash_type(elem1))
                   {
                      case FILE_TYPE_CRC:
                         if (string_is_equal(crc_str, elem0))
@@ -2464,13 +2486,16 @@ static int menu_displaylist_parse_settings_enum(void *data,
 static void menu_displaylist_set_new_playlist(
       menu_handle_t *menu, const char *path)
 {
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT,
-         (void*)path);
-   strlcpy(
-         menu->db_playlist_file,
-         path,
-         sizeof(menu->db_playlist_file));
+   menu->db_playlist_file[0] = '\0';
+
+   if (playlist_get_cached())
+      playlist_free_cached();
+
+   if (playlist_init_cached(path, COLLECTION_SIZE))
+      strlcpy(
+            menu->db_playlist_file,
+            path,
+            sizeof(menu->db_playlist_file));
 }
 
 
@@ -2523,12 +2548,15 @@ static int menu_displaylist_parse_horizontal_list(
       menu_displaylist_set_new_playlist(menu, path_playlist);
    }
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+   playlist = playlist_get_cached();
 
-   playlist_qsort(playlist);
-
-   menu_displaylist_parse_playlist(info,
-         playlist, msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION), is_historylist);
+   if (playlist)
+   {
+      playlist_qsort(playlist);
+      menu_displaylist_parse_playlist(info,
+            playlist,
+            msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION), is_historylist);
+   }
 
    return 0;
 }
@@ -2752,7 +2780,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    const char *core_path           = NULL;
    const char *core_name           = NULL;
    const char *db_name             = NULL;
-   playlist_t *playlist            = NULL;
+   playlist_t *playlist            = playlist_get_cached();
    settings_t *settings            = config_get_ptr();
    const char *fullpath            = path_get(RARCH_PATH_CONTENT);
 
@@ -2761,10 +2789,9 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
    idx                             = menu->rpl_entry_selection_ptr;
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
-
-   playlist_get_index(playlist, idx,
-         &entry_path, &label, &core_path, &core_name, NULL, &db_name);
+   if (playlist)
+      playlist_get_index(playlist, idx,
+            &entry_path, &label, &core_path, &core_name, NULL, &db_name);
 
    content_loaded = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
          && string_is_equal(menu->deferred_path, fullpath);
@@ -2793,14 +2820,16 @@ static int menu_displaylist_parse_horizontal_content_actions(
             msg_hash_to_str(MENU_ENUM_LABEL_RUN),
             MENU_ENUM_LABEL_RUN, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
-      if (settings->bools.playlist_entry_rename && !settings->bools.kiosk_mode_enable)
+      if (settings->bools.playlist_entry_rename && 
+            !settings->bools.kiosk_mode_enable)
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY),
                msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY),
                MENU_ENUM_LABEL_RENAME_ENTRY,
                FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
-      if (settings->bools.playlist_entry_remove && !settings->bools.kiosk_mode_enable)
+      if (settings->bools.playlist_entry_remove && 
+            !settings->bools.kiosk_mode_enable)
          menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY),
             msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
@@ -3240,76 +3269,87 @@ static int menu_displaylist_parse_options_remappings(
 
    if (system)
    {
+      settings_t *settings = config_get_ptr();
+      unsigned device;
       for (p = 0; p < max_users; p++)
       {
-         for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 4; retro_id++)
+         device = settings->uints.input_libretro_device[p];
+         device &= RETRO_DEVICE_MASK;
+
+         if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
          {
-            char desc_label[64];
-            unsigned user           = p + 1;
-            unsigned desc_offset    = retro_id;
-            const char *description = NULL;
+            /* change to RARCH_FIRST_CUSTOM_BIND + 8 once analog remapping is implemented */
+            for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 8; retro_id++)
+            {
+               char desc_label[64];
+               char descriptor[255];
+               const struct retro_keybind *auto_bind = NULL;
+               const struct retro_keybind *keybind   = NULL;
 
-            desc_label[0]           = '\0';
+               keybind   = &input_config_binds[p][retro_id];
+               auto_bind = (const struct retro_keybind*)
+                  input_config_get_bind_auto(p, retro_id);
 
-            if (desc_offset >= RARCH_FIRST_CUSTOM_BIND)
-               desc_offset = RARCH_FIRST_CUSTOM_BIND
-                  + (desc_offset - RARCH_FIRST_CUSTOM_BIND) * 2;
+               input_config_get_bind_string(descriptor,
+                  keybind, auto_bind, sizeof(descriptor));
 
-            description = system->input_desc_btn[p][desc_offset];
+               if(!strstr(descriptor, "Auto"))
+               {
+                  const struct retro_keybind *keyptr =
+                     &input_config_binds[p][retro_id];
 
-            if (!description)
-               continue;
+                  snprintf(desc_label, sizeof(desc_label), "%s %s", msg_hash_to_str(keyptr->enum_idx), descriptor);
+                  strlcpy(descriptor, desc_label, sizeof(descriptor));
+               }
 
-            snprintf(desc_label, sizeof(desc_label),
-                  "%s %u %s : ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
-                  user, description);
-            menu_entries_append_enum(info->list, desc_label, "",
-                  MSG_UNKNOWN,
-                  MENU_SETTINGS_INPUT_DESC_BEGIN +
-                  (p * (RARCH_FIRST_CUSTOM_BIND + 4)) +  retro_id, 0, 0);
+               menu_entries_append_enum(info->list, descriptor, "",
+                     MSG_UNKNOWN,
+                     MENU_SETTINGS_INPUT_DESC_BEGIN +
+                     (p * (RARCH_FIRST_CUSTOM_BIND + 8)) +  retro_id, 0, 0);
+            }
          }
       }
    }
-   #ifdef HAVE_KEYMAPPER
    if (system)
    {
       settings_t *settings = config_get_ptr();
+      unsigned device;
 
-      unsigned device = settings->uints.input_libretro_device[settings->uints.keymapper_port];
-      device &= RETRO_DEVICE_MASK;
-
-      if (device == RETRO_DEVICE_KEYBOARD)
+      for (p = 0; p < MAX_USERS; p++)
       {
-         for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+         device = settings->uints.input_libretro_device[p];
+         device &= RETRO_DEVICE_MASK;
+
+         if (device == RETRO_DEVICE_KEYBOARD)
          {
-            unsigned user           = settings->uints.keymapper_port + 1;
-            unsigned desc_offset    = retro_id;
-            char descriptor[255];
-            const struct retro_keybind *auto_bind = NULL;
-            const struct retro_keybind *keybind   = NULL;
-
-            keybind   = &input_config_binds[settings->uints.keymapper_port][retro_id];
-            auto_bind = (const struct retro_keybind*)
-               input_config_get_bind_auto(settings->uints.keymapper_port, retro_id);
-
-            input_config_get_bind_string(descriptor,
-               keybind, auto_bind, sizeof(descriptor));
-
-            if(!strstr(descriptor, "Auto"))
+            for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
             {
-               const struct retro_keybind *keyptr =
-                  &input_config_binds[settings->uints.keymapper_port][retro_id];
+               char descriptor[255];
+               const struct retro_keybind *auto_bind = NULL;
+               const struct retro_keybind *keybind   = NULL;
 
-               strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
+               keybind   = &input_config_binds[p][retro_id];
+               auto_bind = (const struct retro_keybind*)
+                  input_config_get_bind_auto(p, retro_id);
+
+               input_config_get_bind_string(descriptor,
+                  keybind, auto_bind, sizeof(descriptor));
+
+               if(!strstr(descriptor, "Auto"))
+               {
+                  const struct retro_keybind *keyptr =
+                     &input_config_binds[p][retro_id];
+
+                  strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
+               }
+
+               menu_entries_append_enum(info->list, descriptor, "",
+                     MSG_UNKNOWN,
+                     (MENU_SETTINGS_INPUT_DESC_KBD_BEGIN  +  retro_id) * (p + 1), 0, 0);
             }
-
-            menu_entries_append_enum(info->list, descriptor, "",
-                  MSG_UNKNOWN,
-                  MENU_SETTINGS_INPUT_DESC_KBD_BEGIN  +  retro_id, 0, 0);
          }
       }
    }
-   #endif
 
    return 0;
 }
@@ -3950,9 +3990,8 @@ static void menu_displaylist_parse_playlist_generic(
 
    menu_displaylist_set_new_playlist(menu, playlist_path);
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
-
-   path_playlist = strdup(playlist_name);
+   playlist             = playlist_get_cached();
+   path_playlist        = strdup(playlist_name);
 
    *ret = menu_displaylist_parse_playlist(info,
          playlist, path_playlist, true);
@@ -4381,12 +4420,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION),
                   sizeof(path_playlist));
 
-            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+            playlist = playlist_get_cached();
 
-            playlist_qsort(playlist);
+            if (playlist)
+            {
+               playlist_qsort(playlist);
 
-            ret = menu_displaylist_parse_playlist(info,
-                  playlist, path_playlist, false);
+               ret = menu_displaylist_parse_playlist(info,
+                     playlist, path_playlist, false);
+            }
 
             if (ret == 0)
             {
@@ -5347,6 +5389,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_LEFT_THUMBNAILS,
                PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS,
+               PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
          info->need_push    = true;

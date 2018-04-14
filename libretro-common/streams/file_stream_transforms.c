@@ -93,7 +93,7 @@ int rfseek(RFILE* stream, long offset, int origin)
          break;
    }
 
-   return filestream_seek(stream, offset, seek_position);
+   return (int)filestream_seek(stream, (ssize_t)offset, seek_position);
 }
 
 size_t rfread(void* buffer,

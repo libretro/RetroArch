@@ -631,7 +631,7 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
       {
          longest = len;
          longest_width = font_driver_get_message_width(
-               mui->font, msg, strlen(msg), 1);
+               mui->font, msg, (unsigned)strlen(msg), 1);
       }
    }
 
@@ -1630,7 +1630,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             );
    }
 
-   ticker_limit    = usable_width / mui->glyph_width;
+   ticker_limit    = (unsigned)(usable_width / mui->glyph_width);
 
    ticker.s        = title_buf;
    ticker.len      = ticker_limit;
@@ -1778,6 +1778,7 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
 
 static void *materialui_init(void **userdata, bool video_is_threaded)
 {
+   float scale_factor = menu_display_get_dpi();
    materialui_handle_t   *mui = NULL;
    menu_handle_t *menu = (menu_handle_t*)
       calloc(1, sizeof(*menu));
@@ -1794,7 +1795,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
       goto error;
 
    *userdata         = mui;
-   mui->cursor_size  = 64.0;
+   mui->cursor_size  = scale_factor / 3;
    mui->need_compute = false;
 
    return menu;

@@ -139,7 +139,7 @@ void menu_event_kb_set(bool down, enum retro_key key)
  * entire button state either but do a separate event per button
  * state.
  */
-unsigned menu_event(retro_bits_t* p_input, retro_bits_t* p_trigger_input)
+unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
 {
    menu_animation_ctx_delta_t delta;
    float delta_time;

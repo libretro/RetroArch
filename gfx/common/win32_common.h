@@ -62,8 +62,6 @@ void create_gdi_context(HWND hwnd, bool *quit);
 
 bool gdi_has_menu_frame(void);
 
-bool win32_shader_dlg_init(void);
-void shader_dlg_show(HWND parent_hwnd);
 void shader_dlg_params_reload(void);
 #endif
 

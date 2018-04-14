@@ -1708,14 +1708,8 @@ void command_playlist_update_write(
       const char *db_name)    
 {
    playlist_t *plist    = (playlist_t*)data;
-   playlist_t *playlist = NULL;
+   playlist_t *playlist = plist ? plist : playlist_get_cached();
 
-   if (plist)
-      playlist          = plist;
-#ifdef HAVE_MENU
-   else
-      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
-#endif
    if (!playlist)
       return;
 
@@ -2202,11 +2196,22 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_CORE_INFO_INIT:
          {
+            char ext_name[255];
             settings_t *settings      = config_get_ptr();
+
+            ext_name[0]               = '\0';
+
             command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
 
+            if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+               return false;
+
             if (!string_is_empty(settings->paths.directory_libretro))
-               core_info_init_list();
+               core_info_init_list(settings->paths.path_libretro_info,
+                     settings->paths.directory_libretro,
+                     ext_name,
+                     settings->bools.show_hidden_files
+                     );
          }
          break;
       case CMD_EVENT_CORE_DEINIT:

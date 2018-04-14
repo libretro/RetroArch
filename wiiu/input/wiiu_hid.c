@@ -51,7 +51,7 @@ static const char *wiiu_hid_joypad_name(void *data, unsigned slot)
    return pad->iface->get_name(pad->data);
 }
 
-static void wiiu_hid_joypad_get_buttons(void *data, unsigned slot, retro_bits_t *state)
+static void wiiu_hid_joypad_get_buttons(void *data, unsigned slot, input_bits_t *state)
 {
    joypad_connection_t *pad = get_pad((wiiu_hid_t *)data, slot);
 

@@ -148,6 +148,7 @@ typedef struct settings
       bool menu_show_reboot;
       bool menu_materialui_icons_enable;
       bool menu_xmb_shadows_enable;
+      bool menu_xmb_vertical_thumbnails;
       bool menu_content_show_settings;
       bool menu_content_show_favorites;
       bool menu_content_show_images;
@@ -378,7 +379,7 @@ typedef struct settings
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
 
-      unsigned input_keymapper_ids[RARCH_CUSTOM_BIND_LIST_END];
+      unsigned input_keymapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
 
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
 

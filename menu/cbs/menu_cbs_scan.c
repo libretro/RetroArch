@@ -64,7 +64,9 @@ int action_scan_file(const char *path,
    task_push_dbscan(
          settings->paths.directory_playlist,
          settings->paths.path_content_database,
-         fullpath, false, handle_dbscan_finished);
+         fullpath, false,
+         settings->bools.show_hidden_files,
+         handle_dbscan_finished);
 
    return 0;
 }
@@ -90,7 +92,9 @@ int action_scan_directory(const char *path,
    task_push_dbscan(
          settings->paths.directory_playlist,
          settings->paths.path_content_database,
-         fullpath, true, handle_dbscan_finished);
+         fullpath, true,
+         settings->bools.show_hidden_files,
+         handle_dbscan_finished);
 
    return 0;
 }

@@ -87,12 +87,11 @@ char* get_temp_directory_alloc(void)
 
 char* copy_core_to_temp_file(void)
 {
-   bool okay                = false;
    char *tempDirectory      = NULL;
    char *retroarchTempPath  = NULL;
    char *tempDllPath        = NULL;
    void *dllFileData        = NULL;
-   ssize_t dllFileSize      = 0;
+   int64_t dllFileSize      = 0;
    const char *corePath     = path_get(RARCH_PATH_CORE);
    const char *coreBaseName = path_basename(corePath);
 
@@ -108,9 +107,7 @@ char* copy_core_to_temp_file(void)
    strcat_alloc(&retroarchTempPath, "retroarch_temp");
    strcat_alloc(&retroarchTempPath, path_default_slash());
 
-   okay = path_mkdir(retroarchTempPath);
-
-   if (!okay)
+   if (!path_mkdir(retroarchTempPath))
       goto failed;
 
    if (!filestream_read_file(corePath, &dllFileData, &dllFileSize))
@@ -118,13 +115,11 @@ char* copy_core_to_temp_file(void)
 
    strcat_alloc(&tempDllPath, retroarchTempPath);
    strcat_alloc(&tempDllPath, coreBaseName);
-   okay = filestream_write_file(tempDllPath, dllFileData, dllFileSize);
 
-   if (!okay)
+   if (!filestream_write_file(tempDllPath, dllFileData, dllFileSize))
    {
       /* try other file names */
-      okay = write_file_with_random_name(&tempDllPath, retroarchTempPath, dllFileData, dllFileSize);
-      if (!okay)
+      if (!write_file_with_random_name(&tempDllPath, retroarchTempPath, dllFileData, dllFileSize))
          goto failed;
    }
 
@@ -145,36 +140,36 @@ bool write_file_with_random_name(char **tempDllPath,
       const char *retroarchTempPath, const void* data, ssize_t dataSize)
 {
    unsigned i;
-   char numberBuf[32];
-   bool okay                = false;
+   char number_buf[32];
    const char *prefix       = "tmp";
-   time_t timeValue         = time(NULL);
-   unsigned int numberValue = (unsigned int)timeValue;
+   time_t time_value        = time(NULL);
+   unsigned int number_value= (unsigned int)time_value;
    int number               = 0;
    char *ext                = strcpy_alloc_force(path_get_extension(*tempDllPath));
-   int extLen               = strlen(ext);
+   int ext_len              = (int)strlen(ext);
 
-   if (extLen > 0)
+   if (ext_len > 0)
    {
       strcat_alloc(&ext, ".");
-      memmove(ext + 1, ext, extLen);
+      memmove(ext + 1, ext, ext_len);
       ext[0] = '.';
-      extLen++;
+      ext_len++;
    }
 
-   /* try up to 30 'random' filenames before giving up */
+   /* Try up to 30 'random' filenames before giving up */
    for (i = 0; i < 30; i++)
    {
-      numberValue = numberValue * 214013 + 2531011;
-      number = (numberValue >> 14) % 100000;
-      sprintf(numberBuf, "%05d", number);
+      number_value = number_value * 214013 + 2531011;
+      number       = (number_value >> 14) % 100000;
+
+      snprintf(number_buf, sizeof(number_buf), "%05d", number);
+
       FREE(*tempDllPath);
       strcat_alloc(tempDllPath, retroarchTempPath);
       strcat_alloc(tempDllPath, prefix);
-      strcat_alloc(tempDllPath, numberBuf);
+      strcat_alloc(tempDllPath, number_buf);
       strcat_alloc(tempDllPath, ext);
-      okay = filestream_write_file(*tempDllPath, data, dataSize);
-      if (okay)
+      if (filestream_write_file(*tempDllPath, data, dataSize))
          break;
    }
 
@@ -202,13 +197,6 @@ bool secondary_core_create(void)
    if (init_libretro_sym_custom(CORE_TYPE_PLAIN, &secondary_core, secondary_library_path, &secondary_module))
    {
       secondary_core.symbols_inited = true;
-
-      core_set_default_callbacks(&secondary_callbacks);
-      secondary_core.retro_set_video_refresh(secondary_callbacks.frame_cb);
-      secondary_core.retro_set_audio_sample(secondary_callbacks.sample_cb);
-      secondary_core.retro_set_audio_sample_batch(secondary_callbacks.sample_batch_cb);
-      secondary_core.retro_set_input_state(secondary_callbacks.state_cb);
-      secondary_core.retro_set_input_poll(secondary_callbacks.poll_cb);
       secondary_core.retro_set_environment(rarch_environment_secondary_core_hook);
       secondary_core_set_variable_update();
 
@@ -260,11 +248,18 @@ bool secondary_core_create(void)
          return false;
       }
 
+      core_set_default_callbacks(&secondary_callbacks);
+      secondary_core.retro_set_video_refresh(secondary_callbacks.frame_cb);
+      secondary_core.retro_set_audio_sample(secondary_callbacks.sample_cb);
+      secondary_core.retro_set_audio_sample_batch(secondary_callbacks.sample_batch_cb);
+      secondary_core.retro_set_input_state(secondary_callbacks.state_cb);
+      secondary_core.retro_set_input_poll(secondary_callbacks.poll_cb);
+
       for (port = 0; port < 16; port++)
       {
          device = port_map[port];
          if (device >= 0)
-            secondary_core.retro_set_controller_port_device(port, device);
+            secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
       }
       clear_controller_port_map();
    }
@@ -298,8 +293,7 @@ bool secondary_core_run_no_input_polling(void)
 {
    if (!secondary_module)
    {
-      bool okay = secondary_core_create();
-      if (!okay)
+      if (!secondary_core_create())
          return false;
    }
    secondary_core.retro_run();
@@ -310,8 +304,7 @@ bool secondary_core_deserialize(const void *buffer, int size)
 {
    if (!secondary_module)
    {
-      bool okay = secondary_core_create();
-      if (!okay)
+      if (!secondary_core_create())
       {
          secondary_core_destroy();
          return false;
@@ -342,9 +335,9 @@ void secondary_core_destroy(void)
 void remember_controller_port_device(long port, long device)
 {
    if (port >= 0 && port < 16)
-      port_map[port] = device;
+      port_map[port] = (int)device;
    if (secondary_module && secondary_core.retro_set_controller_port_device)
-      secondary_core.retro_set_controller_port_device(port, device);
+      secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
 }
 
 void clear_controller_port_map(void)
@@ -379,6 +372,9 @@ void secondary_core_set_variable_update(void)
 {
    /* do nothing */
 }
-
+void clear_controller_port_map(void)
+{
+   /* do nothing */
+}
 #endif
 

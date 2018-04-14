@@ -1334,12 +1334,10 @@ static int cheevos_new_lboard(cheevos_readud_t *ud)
 
    if (!ldb || !ud)
       return -1;
+
    lboard                        = ldb + ud->lboard_count++;
 
-   if (!lboard)
-      return -1;
-
-   lboard->id                    = strtol(ud->id.string, NULL, 10);
+   lboard->id                    = (unsigned)strtol(ud->id.string, NULL, 10);
    lboard->format                = cheevos_parse_format(&ud->format);
    lboard->title                 = cheevos_dupstr(&ud->title);
    lboard->description           = cheevos_dupstr(&ud->desc);
@@ -3468,7 +3466,7 @@ found:
          if ((void*)coro->json)
             free((void*)coro->json);
          RARCH_LOG("[CHEEVOS]: got game id %s.\n", gameid);
-         coro->gameid = strtol(gameid, NULL, 10);
+         coro->gameid = (unsigned)strtol(gameid, NULL, 10);
          CORO_RET();
       }
 
@@ -3733,7 +3731,7 @@ found:
                   coro->json[length] = 0;
                }
 
-               coro->k = length;
+               coro->k = (unsigned)length;
                net_http_delete(coro->http);
                net_http_connection_free(coro->conn);
                CORO_RET();

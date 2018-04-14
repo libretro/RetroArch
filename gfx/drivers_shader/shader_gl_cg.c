@@ -1053,10 +1053,50 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
    }
 }
 
+static void gl_cg_init_menu_shaders(void *data)
+{
+   struct shader_program_info shader_prog_info;
+   cg_shader_data_t *cg = (cg_shader_data_t*)data;
+
+   if (!cg)
+      return;
+
+#ifdef HAVE_SHADERPIPELINE
+   shader_prog_info.combined = stock_xmb_ribbon_simple;
+   shader_prog_info.is_file  = false;
+
+   gl_cg_compile_program(
+         cg,
+         VIDEO_SHADER_MENU,
+         &cg->prg[VIDEO_SHADER_MENU],
+         &shader_prog_info);
+   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU);
+
+   shader_prog_info.combined = stock_xmb_ribbon_simple;
+   shader_prog_info.is_file  = false;
+
+   gl_cg_compile_program(
+         cg,
+         VIDEO_SHADER_MENU_2,
+         &cg->prg[VIDEO_SHADER_MENU_2],
+         &shader_prog_info);
+   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_2);
+
+   shader_prog_info.combined = stock_xmb_snow;
+   shader_prog_info.is_file  = false;
+
+   gl_cg_compile_program(
+         cg,
+         VIDEO_SHADER_MENU_3,
+         &cg->prg[VIDEO_SHADER_MENU_3],
+         &shader_prog_info);
+   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_3);
+#endif
+}
+
 static void *gl_cg_init(void *data, const char *path)
 {
    unsigned i;
-   struct shader_program_info shader_prog_info;
    cg_shader_data_t *cg = (cg_shader_data_t*)
       calloc(1, sizeof(cg_shader_data_t));
 
@@ -1129,37 +1169,6 @@ static void *gl_cg_init(void *data, const char *path)
 
    gl_cg_set_shaders(cg->prg[1].fprg, cg->prg[1].vprg);
 
-#ifdef HAVE_SHADERPIPELINE
-   shader_prog_info.combined = stock_xmb_ribbon_simple;
-   shader_prog_info.is_file  = false;
-
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU,
-         &cg->prg[VIDEO_SHADER_MENU],
-         &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU);
-
-   shader_prog_info.combined = stock_xmb_ribbon_simple;
-   shader_prog_info.is_file  = false;
-
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU_2,
-         &cg->prg[VIDEO_SHADER_MENU_2],
-         &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_2);
-
-   shader_prog_info.combined = stock_xmb_snow;
-   shader_prog_info.is_file  = false;
-
-   gl_cg_compile_program(
-         cg,
-         VIDEO_SHADER_MENU_3,
-         &cg->prg[VIDEO_SHADER_MENU_3],
-         &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_3);
-#endif
 
    gl_cg_reset_attrib(cg);
 
@@ -1271,6 +1280,7 @@ static struct video_shader *gl_cg_get_current_shader(void *data)
 
 const shader_backend_t gl_cg_backend = {
    gl_cg_init,
+   gl_cg_init_menu_shaders,
    gl_cg_deinit,
    gl_cg_set_params,
    gl_cg_set_uniform_parameter,

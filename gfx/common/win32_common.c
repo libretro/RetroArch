@@ -948,8 +948,9 @@ bool win32_suppress_screensaver(void *data, bool enable)
 #ifndef _XBOX
    if(enable)
    {
-      int major, minor;
       char tmp[PATH_MAX_LENGTH];
+      int major                             = 0;
+      int minor                             = 0;
       const frontend_ctx_driver_t *frontend = frontend_get_ptr();
 
       if (!frontend)

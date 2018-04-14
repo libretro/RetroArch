@@ -202,12 +202,15 @@ static int deferred_push_cursor_manager_list_deferred(
 
    if (!string_is_empty(info->path_b))
       free(info->path_b);
+
    if (!string_is_empty(info->path_c))
       free(info->path_c);
+
+   info->path_b    = strdup(info->path);
+
    if (!string_is_empty(info->path))
       free(info->path);
 
-   info->path_b    = strdup(info->path);
    info->path_c    = strdup(query);
    info->path      = strdup(rdb_path);
 

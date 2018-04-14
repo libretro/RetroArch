@@ -142,7 +142,7 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
    }
    else
    {
-      uint32_t client_num = connection - netplay->connections + 1;
+      uint32_t client_num = (uint32_t)(connection - netplay->connections + 1);
 
       /* Mark the player for removal */
       if (connection->mode == NETPLAY_CONNECTION_PLAYING ||
@@ -177,22 +177,23 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
  */
 void netplay_delayed_state_change(netplay_t *netplay)
 {
-   struct netplay_connection *connection;
-   size_t i;
+   unsigned i;
 
    for (i = 0; i < netplay->connections_size; i++)
    {
-      uint32_t client_num = i+1;
-      connection = &netplay->connections[i];
+      uint32_t client_num                   = (uint32_t)(i + 1);
+      struct netplay_connection *connection = &netplay->connections[i];
+       
       if ((connection->active || connection->mode == NETPLAY_CONNECTION_DELAYED_DISCONNECT) &&
           connection->delay_frame &&
           connection->delay_frame <= netplay->self_frame_count)
       {
          /* Something was delayed! Prepare the MODE command */
          uint32_t payload[15] = {0};
-         payload[0] = htonl(connection->delay_frame);
-         payload[1] = htonl(client_num);
-         payload[2] = htonl(0);
+         payload[0]           = htonl(connection->delay_frame);
+         payload[1]           = htonl(client_num);
+         payload[2]           = htonl(0);
+          
          memcpy(payload + 3, netplay->device_share_modes, sizeof(netplay->device_share_modes));
          strncpy((char *) (payload + 7), connection->nick, NETPLAY_NICK_LEN);
 
@@ -294,7 +295,7 @@ bool netplay_send_cur_input(netplay_t *netplay,
 
    if (netplay->is_server)
    {
-      to_client = connection - netplay->connections + 1;
+      to_client = (uint32_t)(connection - netplay->connections + 1);
 
       /* Send the other players' input data (FIXME: This involves an
        * unacceptable amount of recalculating) */
@@ -302,6 +303,7 @@ bool netplay_send_cur_input(netplay_t *netplay,
       {
          if (from_client == to_client)
             continue;
+          
          if ((netplay->connected_players & (1<<from_client)))
          {
             if (dframe->have_real[from_client])
@@ -957,7 +959,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   RARCH_ERR("Netplay input from non-participating player.\n");
                   return netplay_cmd_nak(netplay, connection);
                }
-               client_num = connection - netplay->connections + 1;
+               client_num = (uint32_t)(connection - netplay->connections + 1);
             }
 
             if (client_num > MAX_CLIENTS)
@@ -1129,7 +1131,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             return netplay_cmd_nak(netplay, connection);
          }
 
-         client_num = connection - netplay->connections + 1;
+         client_num = (uint32_t)(connection - netplay->connections + 1);
 
          handle_play_spectate(netplay, client_num, connection, cmd, 0, NULL);
          break;
@@ -1180,7 +1182,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             return netplay_cmd_nak(netplay, connection);
          }
 
-         client_num = connection - netplay->connections + 1;
+         client_num = (unsigned)(connection - netplay->connections + 1);
 
          handle_play_spectate(netplay, client_num, connection, cmd, cmd_size, payload);
          break;
@@ -1552,12 +1554,12 @@ static bool netplay_get_cmd(netplay_t *netplay,
             uint32_t frame;
             uint32_t isize;
             uint32_t rd, wn;
-            uint32_t client, client_num;
+            uint32_t client;
             uint32_t load_frame_count;
             size_t load_ptr;
-            struct compression_transcoder *ctrans;
-
-            client_num = connection - netplay->connections + 1;
+            struct compression_transcoder *ctrans = NULL;
+            uint32_t                   client_num = (uint32_t)
+             (connection - netplay->connections + 1);
 
             /* Make sure we're ready for it */
             if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
@@ -1926,8 +1928,8 @@ void netplay_handle_slaves(netplay_t *netplay)
       if (connection->active &&
           connection->mode == NETPLAY_CONNECTION_SLAVE)
       {
-         uint32_t client_num = i + 1;
          uint32_t devices, device;
+         uint32_t client_num = (uint32_t)(i + 1);
 
          /* This is a slave connection. First, should we do anything at all? If
           * we've already "read" this data, then we can just ignore it */

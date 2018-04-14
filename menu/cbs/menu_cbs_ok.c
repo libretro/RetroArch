@@ -26,13 +26,21 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+#include "../../config.def.keybinds.h"
+#include "../../wifi/wifi_driver.h"
+#include "../../driver.h"
+
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 #include "../widgets/menu_dialog.h"
+#include "../widgets/menu_entry.h"
 #include "../widgets/menu_filebrowser.h"
 #include "../widgets/menu_input_dialog.h"
+#include "../widgets/menu_input_bind_dialog.h"
+#include "../menu_input.h"
 #include "../menu_networking.h"
 #include "../menu_content.h"
 #include "../menu_shader.h"
@@ -120,6 +128,99 @@ static char *lakka_get_project(void)
    info_label         = msg_hash_to_str(a); \
    info.enum_idx      = a; \
    dl_type            = b;
+
+int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound)
+{
+   double video_refresh_rate = 0.0;
+   double deviation          = 0.0;
+   unsigned sample_points    = 0;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   if (video_monitor_fps_statistics(&video_refresh_rate,
+            &deviation, &sample_points))
+   {
+      float video_refresh_rate_float = (float)video_refresh_rate;
+      driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &video_refresh_rate_float);
+      /* Incase refresh rate update forced non-block video. */
+      command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
+   }
+
+   if (setting_generic_action_ok_default(setting, wraparound) != 0)
+      return -1;
+
+   return 0;
+}
+
+int setting_action_ok_bind_all(void *data, bool wraparound)
+{
+   (void)wraparound;
+   if (!menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_ALL, data))
+      return -1;
+   return 0;
+}
+
+int setting_action_ok_bind_all_save_autoconfig(void *data,
+      bool wraparound)
+{
+   unsigned index_offset;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   const char *name          = NULL;
+
+   (void)wraparound;
+
+   if (!setting)
+      return -1;
+
+   index_offset = setting->index_offset;
+   name         = input_config_get_device_name(index_offset);
+
+   if(!string_is_empty(name) && config_save_autoconf_profile(name, index_offset))
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true);
+   else
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true);
+
+
+   return 0;
+}
+
+int setting_action_ok_bind_defaults(void *data, bool wraparound)
+{
+   unsigned i;
+   menu_input_ctx_bind_limits_t lim;
+   struct retro_keybind *target          = NULL;
+   const struct retro_keybind *def_binds = NULL;
+   rarch_setting_t *setting              = (rarch_setting_t*)data;
+
+   (void)wraparound;
+
+   if (!setting)
+      return -1;
+
+   target    =  &input_config_binds[setting->index_offset][0];
+   def_binds =  (setting->index_offset) ?
+      retro_keybinds_rest : retro_keybinds_1;
+
+   lim.min   = MENU_SETTINGS_BIND_BEGIN;
+   lim.max   = MENU_SETTINGS_BIND_LAST;
+
+   menu_input_key_bind_set_min_max(&lim);
+
+   for (i = MENU_SETTINGS_BIND_BEGIN;
+         i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+   {
+      target->key     = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+      target->joykey  = NO_BTN;
+      target->joyaxis = AXIS_NONE;
+      target->mbutton = NO_BTN;
+   }
+
+   return 0;
+}
 
 static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
 {
@@ -882,7 +983,9 @@ static void content_add_to_playlist(const char *path)
    task_push_dbscan(
          settings->paths.directory_playlist,
          settings->paths.path_content_database,
-         path, false, handle_dbscan_finished);
+         path, false,
+         settings->bools.show_hidden_files,
+         handle_dbscan_finished);
 #endif
 }
 
@@ -1388,9 +1491,8 @@ static int action_ok_playlist_entry_collection(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   new_core_path[0] = '\0';
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+   new_core_path[0]                    = '\0';
+   tmp_playlist                        = playlist_get_cached();
 
    if (!tmp_playlist)
    {
@@ -1437,17 +1539,18 @@ static int action_ok_playlist_entry_collection(const char *path,
          return ret;
       }
 
-      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+      tmp_playlist = playlist_get_cached();
 
-      command_playlist_update_write(
-            tmp_playlist,
-            selection_ptr,
-            NULL,
-            NULL,
-            new_core_path,
-            core_info.inf->display_name,
-            NULL,
-            NULL);
+      if (tmp_playlist)
+         command_playlist_update_write(
+               tmp_playlist,
+               selection_ptr,
+               NULL,
+               NULL,
+               new_core_path,
+               core_info.inf->display_name,
+               NULL,
+               NULL);
    }    
    else
       strlcpy(new_core_path, core_path, sizeof(new_core_path));
@@ -1547,32 +1650,18 @@ static int action_ok_playlist_entry_start_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t selection_ptr                = 0;
-   bool playlist_initialized           = false;
-   playlist_t *playlist                = NULL;
    const char *entry_path              = NULL;
    const char *entry_label             = NULL;
    const char *core_path               = NULL;
    const char *core_name               = NULL;
-   playlist_t *tmp_playlist            = NULL;
    menu_handle_t *menu                 = NULL;
+   playlist_t *playlist                = playlist_get_cached();
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   if (  !playlist ||
+         !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
-
-   if (!tmp_playlist)
-   {
-      tmp_playlist = playlist_init(
-            menu->db_playlist_file, COLLECTION_SIZE);
-
-      if (!tmp_playlist)
-         return menu_cbs_exit();
-      playlist_initialized = true;
-   }
-
-   playlist      = tmp_playlist;
-   selection_ptr = menu->rdb_entry_start_game_selection_ptr;
+   selection_ptr                       = menu->rdb_entry_start_game_selection_ptr;
 
    playlist_get_index(playlist, selection_ptr,
          &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
@@ -1599,21 +1688,16 @@ static int action_ok_playlist_entry_start_content(const char *path,
       if (!core_info_find(&core_info, new_core_path))
          found_associated_core = false;
 
+      /* TODO: figure out if this should refer to 
+       * the inner or outer entry_path. */
+      /* TODO: make sure there's only one entry_path 
+       * in this function. */
       if (!found_associated_core)
-      {
-         /* TODO: figure out if this should refer to the inner or outer entry_path */
-         /* TODO: make sure there's only one entry_path in this function */
-         int ret = action_ok_file_load_with_detect_core(entry_path,
+         return action_ok_file_load_with_detect_core(entry_path,
                label, type, selection_ptr, entry_idx);
-         if (playlist_initialized)
-            playlist_free(tmp_playlist);
-         return ret;
-      }
-
-      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
 
       command_playlist_update_write(
-            tmp_playlist,
+            playlist,
             selection_ptr,
             NULL,
             NULL,
@@ -1621,10 +1705,9 @@ static int action_ok_playlist_entry_start_content(const char *path,
             core_info.inf->display_name,
             NULL,
             NULL);
-         
    }
 
-   if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
+   if (!menu_content_playlist_load(playlist, selection_ptr))
    {
       runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
       goto error;
@@ -1636,8 +1719,6 @@ static int action_ok_playlist_entry_start_content(const char *path,
    return default_action_ok_load_content_from_playlist_from_menu(core_path, path, entry_label);
 
 error:
-   if (playlist_initialized)
-      playlist_free(tmp_playlist);
    return menu_cbs_exit();
 }
 
@@ -1651,8 +1732,7 @@ static int action_ok_audio_add_to_mixer(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *entry_path              = NULL;
-   playlist_t *tmp_playlist            = NULL;
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+   playlist_t *tmp_playlist            = playlist_get_cached();
 
    if (!tmp_playlist)
       return -1;
@@ -2165,17 +2245,28 @@ static int action_ok_path_scan_directory(const char *path,
 static int action_ok_core_deferred_set(const char *new_core_path,
       const char *content_label, unsigned type, size_t idx, size_t entry_idx)
 {
+   char ext_name[255];
    char core_display_name[PATH_MAX_LENGTH];
+   settings_t *settings                    = config_get_ptr();
    menu_handle_t            *menu          = NULL;
    size_t selection                        = menu_navigation_get_selection();
 
+   ext_name[0]                             = '\0';
+
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+
+   if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
       return menu_cbs_exit();
 
    core_display_name[0] = '\0';
 
    core_info_get_name(new_core_path,
-         core_display_name, sizeof(core_display_name));
+         core_display_name, sizeof(core_display_name),
+         settings->paths.path_libretro_info,
+         settings->paths.directory_libretro,
+         ext_name,
+         settings->bools.show_hidden_files);
    command_playlist_update_write(
          NULL,
          menu->rdb_entry_start_game_selection_ptr,
@@ -2872,16 +2963,13 @@ static int action_ok_reset_core_association(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *tmp_path                = NULL;
-   playlist_t *tmp_playlist            = NULL;
    menu_handle_t *menu                 = NULL;
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+   playlist_t *tmp_playlist            = playlist_get_cached();
 
    if (!tmp_playlist)
       return 0;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
 
    playlist_get_index(tmp_playlist,
          menu->rpl_entry_selection_ptr,
@@ -2906,16 +2994,13 @@ static int action_ok_add_to_favorites_playlist(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *tmp_path                = NULL;
-   playlist_t *tmp_playlist            = NULL;
    menu_handle_t *menu                 = NULL;
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+   playlist_t *tmp_playlist            = playlist_get_cached();
 
    if (!tmp_playlist)
       return 0;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
 
    playlist_get_index(tmp_playlist,
          menu->rpl_entry_selection_ptr, &tmp_path,
@@ -2931,7 +3016,6 @@ static int action_ok_delete_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t new_selection_ptr;
-   playlist_t *playlist      = NULL;
    char *conf_path           = NULL;
    char *def_conf_path       = NULL;
    char *def_conf_music_path = NULL;
@@ -2942,11 +3026,10 @@ static int action_ok_delete_entry(const char *path,
    char *def_conf_img_path   = NULL;
 #endif
    menu_handle_t *menu       = NULL;
+   playlist_t *playlist      = playlist_get_cached();
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
    conf_path                 = playlist_get_conf_path(playlist);
    def_conf_path             = playlist_get_conf_path(g_defaults.content_history);

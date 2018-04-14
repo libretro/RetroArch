@@ -106,8 +106,14 @@ struct RDIR *retro_opendir(const char *name)
    wchar_t *path_wide = NULL;
    unsigned path_len;
 #endif
-   struct RDIR *rdir  = (struct RDIR*)calloc(1, sizeof(*rdir));
+   struct RDIR *rdir;
 
+   /*Reject null or empty string paths*/
+   if (!name||(*name==0))
+      return NULL;
+
+   /*Allocate RDIR struct. Tidied later with retro_closedir*/
+   rdir = (struct RDIR*)calloc(1, sizeof(*rdir));
    if (!rdir)
       return NULL;
 

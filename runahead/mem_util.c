@@ -2,13 +2,6 @@
 
 #include "mem_util.h"
 
-void *memcpy_alloc(const void *src, size_t size)
-{
-   void *result = malloc(size);
-   memcpy(result, src, size);
-   return result;
-}
-
 char *strcpy_alloc(const char *sourceStr)
 {
    size_t   len = 0;

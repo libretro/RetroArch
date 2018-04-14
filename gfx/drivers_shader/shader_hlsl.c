@@ -592,6 +592,7 @@ static struct video_shader *hlsl_get_current_shader(void *data)
 
 const shader_backend_t hlsl_backend = {
    hlsl_init,
+   NULL, /* hlsl_init_menu_shaders */
    hlsl_deinit,
    hlsl_set_params,
    hlsl_set_uniform_parameter,

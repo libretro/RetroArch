@@ -528,12 +528,7 @@ STBRP_DEF void stbrp_pack_rects(stbrp_context *context, stbrp_rect *rects, int n
 
    /* we use the 'was_packed' field internally to allow sorting/unsorting */
    for (i=0; i < num_rects; ++i)
-   {
       rects[i].was_packed = i;
-      #ifndef STBRP_LARGE_RECTS
-      STBRP_ASSERT(rects[i].w <= 0xffff && rects[i].h <= 0xffff);
-      #endif
-   }
 
    /* sort according to heuristic */
    STBRP_SORT(rects, num_rects, sizeof(rects[0]), rect_height_compare);

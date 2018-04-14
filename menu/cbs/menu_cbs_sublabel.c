@@ -39,6 +39,7 @@
 
 #include "../../retroarch.h"
 #include "../../content.h"
+#include "../../configuration.h"
 
 #define default_sublabel_macro(func_name, lbl) \
   static int (func_name)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
@@ -297,6 +298,7 @@ default_sublabel_macro(action_bind_sublabel_disk_options,                       
 default_sublabel_macro(action_bind_sublabel_menu_throttle_framerate,               MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE)
 default_sublabel_macro(action_bind_sublabel_xmb_icon_theme,                        MENU_ENUM_SUBLABEL_XMB_THEME)
 default_sublabel_macro(action_bind_sublabel_xmb_shadows_enable,                    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE)
+default_sublabel_macro(action_bind_sublabel_xmb_vertical_thumbnails,               MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_menu_color_theme,                      MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_menu_wallpaper_opacity,                MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_menu_framebuffer_opacity,              MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY)
@@ -411,9 +413,9 @@ static int action_bind_sublabel_subsystem_add(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   rarch_system_info_t *system = runloop_get_system_info();
-   const struct retro_subsystem_info* subsystem = NULL;
-   subsystem = system->subsystem.data + (type - MENU_SETTINGS_SUBSYSTEM_ADD);
+   rarch_system_info_t *system                  = runloop_get_system_info();
+   const struct retro_subsystem_info *subsystem = system ?
+	   system->subsystem.data + (type - MENU_SETTINGS_SUBSYSTEM_ADD) : NULL;
 
    if (subsystem && content_get_subsystem_rom_id() < subsystem->num_roms)
       snprintf(s, len, " Current Content: %s",
@@ -424,7 +426,52 @@ static int action_bind_sublabel_subsystem_add(
    return 0;
 }
 
+static int action_bind_sublabel_remap_kbd_sublabel(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   unsigned offset;
+   settings_t *settings = config_get_ptr();
 
+   if (!settings)
+      return 0;
+
+   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      (MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
+
+   snprintf(s, len, "User #%d: %s", offset + 1,
+      input_config_get_device_display_name(offset) ? 
+      input_config_get_device_display_name(offset) : 
+      (input_config_get_device_name(offset) ? 
+      input_config_get_device_name(offset) : "N/A"));
+   return 0;
+}
+
+
+static int action_bind_sublabel_remap_sublabel(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   unsigned offset;
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return 0;
+
+   offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+
+   snprintf(s, len, "User #%d: %s", offset + 1,
+      input_config_get_device_display_name(offset) ? 
+      input_config_get_device_display_name(offset) : 
+      (input_config_get_device_name(offset) ? 
+      input_config_get_device_name(offset) : "N/A"));
+   return 0;
+}
 
 #ifdef HAVE_NETWORKING
 static int action_bind_sublabel_netplay_room(
@@ -483,6 +530,18 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       return -1;
 
    BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_generic);
+
+   if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+      && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_kbd_sublabel);
+   }
+
+   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+      && type <= MENU_SETTINGS_INPUT_DESC_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_sublabel);
+   }
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
@@ -764,6 +823,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_shadows_enable);
+            break;
+         case MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_vertical_thumbnails);
             break;
          case MENU_ENUM_LABEL_XMB_THEME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_icon_theme);

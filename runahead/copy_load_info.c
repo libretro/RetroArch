@@ -6,13 +6,14 @@
 
 #include "../core.h"
 #include "mem_util.h"
+#include "copy_load_info.h"
 
 retro_ctx_load_content_info_t *load_content_info;
 enum rarch_core_type last_core_type;
 
 static void free_retro_game_info(struct retro_game_info *dest)
 {
-   if (dest == NULL)
+   if (!dest)
       return;
    FREE(dest->path);
    FREE(dest->data);
@@ -22,15 +23,31 @@ static void free_retro_game_info(struct retro_game_info *dest)
 static struct retro_game_info* clone_retro_game_info(const 
       struct retro_game_info *src)
 {
-   struct retro_game_info *dest;
-   if (src == NULL)
+   void *data                   = NULL;
+   struct retro_game_info *dest = NULL;
+
+   if (!src)
       return NULL;
+
    dest       = (struct retro_game_info*)calloc(1,
          sizeof(struct retro_game_info));
-   dest->path = strcpy_alloc(src->path);
-   dest->data = memcpy_alloc(src->data, src->size);
-   dest->size = src->size;
-   dest->meta = strcpy_alloc(src->meta);
+   if (!dest)
+      return NULL;
+
+   dest->data    = NULL;
+   dest->path    = strcpy_alloc(src->path);
+
+   data          = malloc(src->size);
+
+   if (data)
+   {
+      memcpy(data, src->data, src->size);
+      dest->data = data;
+   }
+
+   dest->size    = src->size;
+   dest->meta    = strcpy_alloc(src->meta);
+
    return dest;
 }
 
@@ -47,24 +64,37 @@ static void free_string_list(struct string_list *dest)
    FREE(dest->elems);
 }
 
-static struct string_list* clone_string_list(const struct string_list *src)
+static struct string_list *string_list_clone(
+      const struct string_list *src)
 {
    unsigned i;
-   struct string_list *dest = NULL;
+   struct string_list_elem *elems = NULL;
+   struct string_list *dest       = (struct string_list*)
+      calloc(1, sizeof(struct string_list));
 
-   if (!src)
+   if (!dest)
       return NULL;
 
-   dest         = (struct string_list*)calloc(1, sizeof(struct string_list));
-   dest->size   = src->size;
-   dest->cap    = src->cap;
-   dest->elems  = (struct string_list_elem*)calloc(dest->size, sizeof(struct string_list_elem));
+   dest->size      = src->size;
+   dest->cap       = src->cap;
+
+   elems           = (struct string_list_elem*)
+      calloc(dest->size, sizeof(struct string_list_elem));
+
+   if (!elems)
+   {
+      free(dest);
+      return NULL;
+   }
+
+   dest->elems     = elems;
 
    for (i = 0; i < src->size; i++)
    {
       dest->elems[i].data = strcpy_alloc(src->elems[i].data);
       dest->elems[i].attr = src->elems[i].attr;
    }
+
    return dest;
 }
 
@@ -74,7 +104,8 @@ static struct string_list* clone_string_list(const struct string_list *src)
 static void free_retro_subsystem_memory_info(struct 
       retro_subsystem_memory_info *dest)
 {
-   if (dest == NULL) return;
+   if (!dest)
+      return;
    FREE(dest->extension);
 }
 
@@ -90,7 +121,7 @@ static void free_retro_subsystem_rom_info(struct
       retro_subsystem_rom_info *dest)
 {
    int i;
-   if (dest == NULL)
+   if (!dest)
       return;
 
    FREE(dest->desc);
@@ -130,7 +161,7 @@ static void free_retro_subsystem_info(struct retro_subsystem_info *dest)
 {
    int i;
 
-   if (dest == NULL)
+   if (!dest)
       return;
 
    FREE(dest->desc);
@@ -150,7 +181,7 @@ static retro_subsystem_info* clone_retro_subsystem_info(struct
    retro_subsystem_info *dest     = NULL;
    retro_subsystem_rom_info *roms = NULL;
 
-   if (src == NULL)
+   if (!src)
       return NULL;
    dest           = (struct retro_subsystem_info*)calloc(1,
          sizeof(struct retro_subsystem_info));
@@ -172,7 +203,7 @@ static retro_subsystem_info* clone_retro_subsystem_info(struct
 static void free_retro_ctx_load_content_info(struct 
       retro_ctx_load_content_info *dest)
 {
-   if (dest == NULL)
+   if (!dest)
       return;
 
    free_retro_game_info(dest->info);
@@ -190,17 +221,24 @@ static struct retro_ctx_load_content_info
 *clone_retro_ctx_load_content_info(
       const struct retro_ctx_load_content_info *src)
 {
-   struct retro_ctx_load_content_info *dest;
-   if (src == NULL || src->special != NULL)
+   struct retro_ctx_load_content_info *dest = NULL;
+   if (!src || src->special != NULL)
       return NULL;   /* refuse to deal with the Special field */
 
-   dest          = (struct retro_ctx_load_content_info*)calloc(1,
-         sizeof(struct retro_ctx_load_content_info));
-   dest->info    = clone_retro_game_info(src->info);
-   dest->content = clone_string_list(src->content);
-   dest->special = NULL;
+   dest          = (struct retro_ctx_load_content_info*)
+      calloc(1, sizeof(*dest));
+
+   if (!dest)
+      return NULL;
+
+   dest->info       = clone_retro_game_info(src->info);
+   dest->content    = NULL;
+   dest->special    = NULL;
+
+   if (src->content)
+      dest->content = string_list_clone(src->content);
 #if 0
-   dest->special = clone_retro_subsystem_info(src->special);
+   dest->special    = clone_retro_subsystem_info(src->special);
 #endif
    return dest;
 }

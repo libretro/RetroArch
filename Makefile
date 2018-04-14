@@ -46,7 +46,7 @@ endif
 include Makefile.common
 
 ifeq ($(shell $(CC) -v 2>&1 | grep -c "clang"),1)
-   DEFINES +=  -Wno-invalid-source-encoding
+   DEFINES +=  -Wno-invalid-source-encoding -Wno-incompatible-ms-struct
 endif
 
 ifeq ($(shell $(CC) -v 2>&1 | grep -c "tcc"),1)
@@ -133,7 +133,7 @@ RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
 ifneq ($(X86),)
    CFLAGS += -m32
-   CXXLAGS += -m32
+   CXXFLAGS += -m32
    LDFLAGS += -m32
 endif
 

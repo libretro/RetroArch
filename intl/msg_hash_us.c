@@ -22,8 +22,10 @@
 #include <string/stdstring.h>
 
 #include "../msg_hash.h"
-#include "../configuration.h"
 #include "../verbosity.h"
+
+#ifdef RARCH_INTERNAL
+#include "../configuration.h"
 
 int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
@@ -2029,6 +2031,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
     return 0;
 }
+#endif
 
 #ifdef HAVE_MENU
 static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)

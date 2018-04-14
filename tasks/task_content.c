@@ -151,7 +151,7 @@ static char pending_subsystem_extensions[PATH_MAX_LENGTH];
 static char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
 
 
-static int content_file_read(const char *path, void **buf, ssize_t *length)
+static int64_t content_file_read(const char *path, void **buf, int64_t *length)
 {
 #ifdef HAVE_COMPRESSION
    if (path_contains_compressed_file(path))
@@ -324,7 +324,7 @@ end:
 static bool load_content_into_memory(
       content_information_ctx_t *content_ctx,
       unsigned i, const char *path, void **buf,
-      ssize_t *length)
+      int64_t *length)
 {
    uint8_t *ret_buf          = NULL;
 
@@ -359,7 +359,7 @@ static bool load_content_into_memory(
                   (uint8_t**)&ret_buf,
                   (void*)length);
 
-         content_rom_crc = encoding_crc32(0, ret_buf, *length);
+         content_rom_crc = encoding_crc32(0, ret_buf, (size_t)*length);
 
          RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
       }
@@ -383,7 +383,7 @@ static bool load_content_from_compressed_archive(
       char **error_string)
 {
    union string_list_elem_attr attributes;
-   ssize_t new_path_len              = 0;
+   int64_t new_path_len              = 0;
    size_t path_size                  = PATH_MAX_LENGTH * sizeof(char);
    char *new_basedir                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *new_path                    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -582,7 +582,7 @@ static bool content_file_load(
       {
          /* Load the content into memory. */
 
-         ssize_t len = 0;
+         int64_t len = 0;
 
          if (!load_content_into_memory(
                   content_ctx,
@@ -1009,6 +1009,7 @@ static bool firmware_update_status(
       content_information_ctx_t *content_ctx)
 {
    core_info_ctx_firmware_t firmware_info;
+   bool set_missing_firmware  = false;
    core_info_t *core_info     = NULL;
    size_t s_size              = PATH_MAX_LENGTH * sizeof(char);
    char *s                    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -1032,7 +1033,13 @@ static bool firmware_update_status(
    RARCH_LOG("Updating firmware status for: %s on %s\n",
          core_info->path,
          firmware_info.directory.system);
-   core_info_list_update_missing_firmware(&firmware_info);
+
+   rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+
+   core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
+
+   if (set_missing_firmware)
+      rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
 
    if(
          content_ctx->bios_is_missing &&
@@ -1820,7 +1827,7 @@ void content_deinit(void)
 
          RARCH_LOG("%s: %s.\n",
                msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
-         if (!filestream_delete(path))
+         if (filestream_delete(path) != 0)
             RARCH_ERR("%s: %s.\n",
                   msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
                   path);

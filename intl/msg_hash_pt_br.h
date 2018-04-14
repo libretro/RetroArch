@@ -1,4 +1,4 @@
-MSG_HASH(MSG_COMPILER,
+﻿MSG_HASH(MSG_COMPILER,
 	 "Compilador"
 	)
 MSG_HASH(MSG_UNKNOWN_COMPILER,
@@ -37,6 +37,42 @@ MSG_HASH(MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
 MSG_HASH(MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
 	 "Você se juntou como jogador %u"
 	)
+MSG_HASH(
+      MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
+      "Você se juntou aos dispositivos de entrada %.*s"
+      )
+MSG_HASH(
+      MSG_NETPLAY_PLAYER_S_LEFT,
+      "O jogador %.*s deixou o jogo"
+      )
+MSG_HASH(
+      MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
+      "%.*s se juntou como jogador %u"
+      )
+MSG_HASH(
+      MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
+      "%.*s juntou-se a dispositivos de entrada %.*s"
+      )
+MSG_HASH(
+      MSG_NETPLAY_NOT_RETROARCH,
+      "Uma tentativa de conexão com o netplay falhou porque o par não está executando o RetroArch ou está executando uma versão antiga do RetroArch."
+      )
+MSG_HASH(
+      MSG_NETPLAY_OUT_OF_DATE,
+      "O par netplay está executando uma versão antiga do RetroArch. Não pode conectar."
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_VERSIONS,
+      "ATENÇÃO: Um par de Netplay está executando uma versão diferente do RetroArch. Se ocorrerem problemas, use a mesma versão."
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_CORES,
+      "Um par de netplay está executando um núcleo diferente. Não pode conectar."
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
+      "ATENÇÃO: Um par de Netplay está executando uma versão diferente do núcleo. Se ocorrerem problemas, use a mesma versão."
+      )
 MSG_HASH(MSG_NETPLAY_ENDIAN_DEPENDENT,
 	 "Este núcleo não suporta Netplay inter-arquitetura entre estes sistemas"
 	)
@@ -316,6 +352,14 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
 	 "Conquistas no Modo Hardcore"
 	)
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
+      "Tabelas de Classificação"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
+      "Insígnias de Conquistas"
+      )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
 	 "Conquistas Bloqueadas:"
 	)
@@ -328,17 +372,27 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
 	 "Testar Conquistas Não Oficiais"
 	)
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-     "Modo Detalhado das Conquistas"
-    )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
 	 "Conquistas Desbloqueadas:"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
 	 "Desbloqueada"
 	)
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
-	 "Fechar Conteúdo"
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE,
+      "Hardcore"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
+      "Conquistas Modo Verboso"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
+      "Captura de Conquistas Automática"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
+      "Fechar Conteúdo"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONFIG,
 	 "Configuração"
@@ -1189,14 +1243,32 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
 	 "Senha do Servidor"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
-	 "Anunciar Netplay Publicamente"
-	)
+	 "Anunciar Netplay Publicamente")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
+      "Solicitar Dispositivo %u")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
 	 "Não Permitir Clientes em Modo Não Escravo"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
-	 "Configurações do Netplay"
-	)
+	 "Configurações do Netplay")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
+      "Compartilhamento de Entrada Analógica")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
+      "Máximo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
+      "Médio")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
+      "Compartilhamento de Entrada Digital")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
+      "Compartilhar")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR,
+      "Agarrar")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
+      "Eleger")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+      "Nenhum")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE,
+      "Sem preferência")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
 	 "Modo Espectador do Netplay"
 	)
@@ -1933,8 +2005,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
 	 "Paralelismo de tarefas"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-	 "Miniaturas"
-	)
+      "Miniaturas")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+      "Miniaturas à esquerda")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
 	 "Miniaturas"
 	)
@@ -2335,11 +2408,15 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
 	 "Habilitar ou desabilitar conquistas não oficiais e/ou recursos beta para fins de teste."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-	 "Habilitar ou desabilitar Estado de Jogo, Trapaças, Voltar Atrás, Avanço Rápido, Pausa e Câmera Lenta para todos os jogos."
-	)
+	 "Habilitar ou desabilitar Estado de Jogo, Trapaças, Voltar Atrás, Avanço Rápido, Pausa e Câmera Lenta para todos os jogos.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
+      "Ativar ou desativar tabelas de classificação no jogo. Não tem efeito se o modo Hardcore estiver desativado.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
+      "Ativar ou desativar a exibição de insígnia na Lista de Conquistas.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-     "Habilitar ou desabilitar detalhes das conquistas na tela."
-	)
+      "Habilitar ou desabilitar detalhes das conquistas na tela.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
+      "Obter automaticamente uma captura de tela quando uma conquista é acionada.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
 	 "Alterar os drivers utilizados pelo sistema."
 	)
@@ -2748,6 +2825,46 @@ MSG_HASH(MSG_FAILED_TO_UNDO_LOAD_STATE,
 MSG_HASH(MSG_FAILED_TO_UNDO_SAVE_STATE,
 	 "Falha em desfazer o salvamento de Estado de Jogo."
 	)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+      "Mostrar miniaturas de estados salvos dentro do menu."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
+      "Salvar automaticamente o Save RAM não-volátil em um intervalo regular. Isso está desabilitado por padrão, a menos que seja definido de outra forma. O intervalo é medido em segundos. Um valor de 0 desativa o salvamento automático."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+      "Se ativado, substitui os vínculos de entrada com as associações remapeadas definidas para o núcleo atual."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+      "Ativa a detecção automática de entrada. Tentará autoconfigurar joypads, estilo Plug-and-Play."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+      "Troca de botões para OK/Cancelar. Desabilitado é o estilo de botão japonês, habilitada é oestilo ocidental."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+      "Se desabilitado, o conteúdo continuará sendo executado em segundo plano quando o menu do RetroArch for alternado."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+      "Driver de vídeo para usar."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+      "Driver de áudio para usar."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+      "Driver de entrada para usar. Dependendo do driver de vídeo, pode forçar um driver de entrada diferente."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+      "Driver do Joypad para usar."
+      )
 MSG_HASH(MSG_FAILED_TO_UNMUTE_AUDIO,
 	 "Falha em desativar o áudio mudo."
 	)
@@ -3414,36 +3531,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
 	 "Autocarrega o último Estado de Jogo autosalvo na inicialização do RetroArch."
 	)
-MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-	 "Exibe miniaturas dos Estados de Jogo salvos dentro do menu."
-	)
-MSG_HASH(MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-	 "Salva automaticamente a SRAM não volátil em um intervalo regular. Isto é desativado por padrão a menos que seja definido de outra forma. O intervalo é medido em segundos. O valor 0 desativa o salvamento automático."
-	)
-MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-	 "Se habilitado, substitui os vínculos de entrada com os vínculos remapeados definidos pelo núcleo atual."
-	)
-MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-	 "Habilita a detecção automática de entrada. Isto tentará configurar automaticamente Joypads no estilo 'Plug-and-Play'."
-	)
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-	 "Inverte os botões para OK/Cancelar. Desabilitado é o estilo japonês, habilitado é o estilo ocidental."
-	)
-MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-	 "Se desabilitado, o conteúdo continuará rodando em segundo plano quando o menu do RetroArch é alternado."
-	)
-MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-	 "Driver de vídeo a ser utilizado."
-	)
-MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-	 "Driver de áudio a ser utilizado."
-	)
-MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-	 "Driver de entrada a ser utilizado. Dependendo do driver de vídeo, pode forçar um driver de entrada diferente."
-	)
-MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-	 "Driver de Joypad a ser utilizado."
-	)
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
 	 "Driver de reamostragem de áudio a ser utilizado."
 	)
@@ -3536,7 +3623,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_POINTER_ENABLE,
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_THUMBNAILS,
 	 "Tipo de miniatura a ser exibida."
-	)
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
+      "Tipo de miniatura para exibir à esquerda."
+      )
 MSG_HASH(MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
 	 "Exibir data e/ou hora atuais dentro do menu."
 	)
@@ -3570,6 +3661,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
 	 "Ordenar os Estados de Jogo em pastas com o nome do núcleo utilizado."
 	)
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
+      "Solicitar jogar com o dispositivo de entrada dado.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
 	 "URL para o diretório de atualização de núcleos no buildbot do Libreto."
 	)
@@ -3907,8 +4000,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
 	 "Utilizar Servidor MITM"
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-	 "Encaminhar conexões do Netplay através de um servidor 'homem no meio' (MITM). Útil se o hospedeiro estiver atrás de um firewall ou tiver problemas de NAT/UPnP."
-	)
+	 "Encaminhar conexões do Netplay através de um servidor 'homem no meio' (MITM). Útil se o hospedeiro estiver atrás de um firewall ou tiver problemas de NAT/UPnP.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
+      "Localização do Servidor de Retransmissão")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
+      "Escolha um servidor de retransmissão específico para usar. Locais geograficamente mais próximos tendem a ter menor latência.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
 	 "Adicionar ao mixer"
 	)
@@ -3940,11 +4036,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
 	 "Exibir a opção 'Atualizador Online'."
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-	 "Visualizações"
-	)
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
-	 "Exibir elementos na tela de menu."
-	)
+      "Visualizações")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+      "Exibir elementos na tela de menu."
+      )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
 	 "Exibir Atualizador de Núcleos"
 	)
@@ -3958,14 +4054,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
      "Remover núcleo"
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_DELETE,
-     "Remover este núcleo do disco."
-	)
-MSG_HASH(MENU_ENUM_SUBLABEL_RENAME_ENTRY,
-     "Renomear o título do item."
-	)
-MSG_HASH(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
-     "Renomear"
-	)
+     "Remover este núcleo do disco.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
      "Opacidade do Framebuffer"
 	)
@@ -4027,8 +4116,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
       "Permita que o usuário renomeie as entradas nas coleções."
    )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
-      "Permitir renomear entradas"
-   )
+      "Permitir renomear entradas"   )
+MSG_HASH(MENU_ENUM_SUBLABEL_RENAME_ENTRY,
+      "Renomear o título da entrada.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
+      "Renomear")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
       "Exibir Carregar Núcleo"
    )
@@ -4141,13 +4233,22 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
       "Exibir Informação"
    )
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
-      "Exibir/ocultar a opção 'Informação'."
-   )
+      "Exibir/ocultar a opção 'Informação'.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+      "Ativar Notificação de Fundo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
+      "Notificação de Fundo em Cor Vermelha")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
+      "Notificação de Fundo em Cor Verde")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
+      "Notificação de Fundo em Cor Azul")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+      "Opacidade da Notificação de Fundo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
       "Desabilitar o Modo Quiosque"
    )
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-      "Desabilita o Modo Quiosque . É necessária uma reinicialização para que a mudança tenha total efeito."
+      "Desabilita o Modo Quiosque. É necessária uma reinicialização para que a mudança tenha total efeito."
    )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
       "Habilitar o Modo Quiosque"
@@ -4168,19 +4269,40 @@ MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
       "Senha correta."
    )
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
-      "Senha incorreta."
-   )
+      "Senha incorreta.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
+      "Notificação em Cor Vermelha")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
+      "Notificação em Cor Verde")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
+      "Notificação em Cor Azul")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
+      "Mostrar contagem de quadros na tela FPS")
+MSG_HASH(MSG_CONFIG_OVERRIDE_LOADED,
+      "Substituição de configuração carregada.")
+MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
+      "Arquivo de remapeamento do jogo carregado.")
+MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
+      "Arquivo de remapeamento principal carregado.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
       "Adicione automaticamente conteúdo à lista de reprodução")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
       "Verifica automaticamente o conteúdo carregado para que eles apareçam dentro das listas de reprodução.")
 MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
       "Verificação do arquivo terminado")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+      "Opacidade da Janela")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
       "Qualidade da Reamostragem do Áudio")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
       "Abaixe esse valor para favorecer o desempenho/baixa latência em relação à qualidade de áudio, aumente se desejar melhor qualidade de áudio à custa do desempenho/baixa latência.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
+      "Ver arquivos de shader para mudanças")
+MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
+      "Aplicar automaticamente as alterações feitas nos arquivos de shader no disco.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+      "Mostrar Decorações da Janela")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-      "Display Statistics")
+      "Exibir estatísticas")
 MSG_HASH(MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
-      "Show onscreen technical statistics.")
+      "Mostrar estatísticas técnicas na tela.")

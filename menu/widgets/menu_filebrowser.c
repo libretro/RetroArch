@@ -66,7 +66,6 @@ void filebrowser_parse(void *data, unsigned type_data)
    unsigned dirs_count                  = 0;
    settings_t *settings                 = config_get_ptr();
    rarch_system_info_t *system          = runloop_get_system_info();
-   const struct retro_subsystem_info* subsystem = NULL;
    menu_displaylist_info_t *info        = (menu_displaylist_info_t*)data;
    enum menu_displaylist_ctl_state type = (enum menu_displaylist_ctl_state)
                                           type_data;
@@ -86,28 +85,30 @@ void filebrowser_parse(void *data, unsigned type_data)
          str_list = file_archive_get_file_list(path, info->exts);
       else
       {
-         subsystem = system->subsystem.data + content_get_subsystem();
-         str_list = file_archive_get_file_list(path, subsystem->roms[content_get_subsystem_rom_id()].valid_extensions);
+         const struct retro_subsystem_info *subsystem = system->subsystem.data + content_get_subsystem();
+
+         if (subsystem)
+            str_list  = file_archive_get_file_list(path, subsystem->roms[content_get_subsystem_rom_id()].valid_extensions);
       }
    }
-   else if (!string_is_empty(path) && filebrowser_types != FILEBROWSER_SELECT_FILE_SUBSYSTEM)
+   else if (!string_is_empty(path))
    {
-      str_list = dir_list_new(path,
-            (filter_ext && info) ? info->exts : NULL,
-            true, settings->bools.show_hidden_files, true, false);
-   }
-   else if (!string_is_empty(path) && filebrowser_types == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
-   {
-      subsystem = system->subsystem.data + content_get_subsystem();
-
-      if (subsystem && content_get_subsystem_rom_id() < subsystem->num_roms)
+      if (filebrowser_types == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
-         str_list = dir_list_new(path,
-            (filter_ext && info) ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
-            true, settings->bools.show_hidden_files, true, false);
-      }
+         const struct retro_subsystem_info *subsystem = 
+            system->subsystem.data + content_get_subsystem();
 
+         if (subsystem && content_get_subsystem_rom_id() < subsystem->num_roms)
+            str_list = dir_list_new(path,
+                  (filter_ext && info) ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
+                  true, settings->bools.show_hidden_files, true, false);
+      }
+      else
+         str_list = dir_list_new(path,
+               (filter_ext && info) ? info->exts : NULL,
+               true, settings->bools.show_hidden_files, true, false);
    }
+
 
    switch (filebrowser_types)
    {

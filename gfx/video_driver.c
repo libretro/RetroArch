@@ -1012,6 +1012,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video.rgb32         = video_driver_state_filter ?
       video_driver_state_out_rgb32 :
       (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+   video.parent        = 0;
 
    /* Reset video frame count */
    video_driver_frame_count = 0;
@@ -3544,7 +3545,8 @@ bool video_shader_driver_init_first(void)
 
 bool video_shader_driver_init(video_shader_ctx_init_t *init)
 {
-   void *tmp = NULL;
+   void            *tmp = NULL;
+   settings_t *settings = config_get_ptr();
 
    if (!init->shader || !init->shader->init)
    {
@@ -3558,6 +3560,10 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
 
    if (!tmp)
       return false;
+
+   if (string_is_equal(settings->arrays.menu_driver, "xmb")
+         && init->shader->init_menu_shaders)
+      init->shader->init_menu_shaders(tmp);
 
    current_shader_data    = tmp;
    current_shader         = (shader_backend_t*)init->shader;

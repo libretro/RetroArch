@@ -44,7 +44,7 @@ bool glslang_read_shader_file(const char *path, vector<string> *output, bool roo
    char tmp[PATH_MAX_LENGTH];
    char                          *ptr = NULL;
    char                          *buf = nullptr;
-   ssize_t                        len = 0;
+   int64_t                        len = 0;
    const char *basename               = path_basename(path);
 
    include_path[0] = tmp[0] = '\0';

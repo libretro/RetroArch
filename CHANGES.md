@@ -1,5 +1,6 @@
 # 1.7.2 (future)
 - ANDROID/OPENSL: Prevent crashes when setting audio latency too low (buffer count can never be lower than 2 now).
+- COMMON: Hide the 'Core delete' option if the 'Core updater' is also hidden.
 - COMMON: Add way to reset core association for playlist entry.
 - COMMON: Fix invalid long command line options causing infinite loop on Windows
 - COMMON: Add OSD statistics for video/audio/core.
@@ -77,9 +78,8 @@
 - LOCALIZATION: Update Spanish translation.
 - NETPLAY: Add menu option to select different MITM (relay) server locations.
 - OSX: Modify HID buttons detection algorithm.
-- QB: Added --datarootdir.
-- QB: Added --bindir and --mandir and deprecated --with-bin_dir and --with-man_dir.
-- QB: Added --docdir.
+- QB: Added --datarootdir, --sysconfdir, --bindir, --docdir and --mandir.
+- QB: Deprecated --global-config-dir, --with-bin_dir and --with-man_dir.
 - SHADERS: Allow saving of shader presets based on the parent directory (Saving one for */foo/bar/mario.sfc* would result in *shaders/presets/corename/bar.ext*). We decided it's safer to still isolate the presets to a single core because different cores may treat video output differently.
 - SHADERS: Don't save the path to the current preset to the main config. This was causing weird behavior, instead it will try to load *currentconfig.ext* and it will save a preset with that name when select *apply shader preset*. The resulting shader will restore properly after restarting and even after core/parent/game specific presets are loaded
 - SOLARIS: Initial port.

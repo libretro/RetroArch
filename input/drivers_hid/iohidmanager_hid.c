@@ -133,7 +133,8 @@ static const char *iohidmanager_hid_joypad_name(void *data, unsigned pad)
    return NULL;
 }
 
-static void iohidmanager_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
+static void iohidmanager_hid_joypad_get_buttons(void *data,
+      unsigned port, input_bits_t *state)
 {
   iohidmanager_hid_t        *hid   = (iohidmanager_hid_t*)data;
   if (hid)
@@ -145,7 +146,7 @@ static void iohidmanager_hid_joypad_get_buttons(void *data, unsigned port, retro
 static bool iohidmanager_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
-  retro_bits_t buttons;
+  input_bits_t buttons;
   iohidmanager_hid_t *hid   = (iohidmanager_hid_t*)data;
   unsigned hat_dir = GET_HAT_DIR(joykey);
 

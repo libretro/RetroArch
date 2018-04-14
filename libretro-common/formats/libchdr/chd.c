@@ -405,9 +405,10 @@ void *lzma_fast_alloc(void *p, size_t size)
 	}
 
 	/* alloc a new one and put it into the list */
-	addr = (uint32_t *)malloc(sizeof(uint8_t) * (size + sizeof(uint32_t)));
-	if (addr==NULL)
+	addr = (uint32_t *)malloc(sizeof(uint32_t) * (size + sizeof(uint32_t)));
+	if (!addr)
 		return NULL;
+    
 	for (scan = 0; scan < MAX_LZMA_ALLOCS; scan++)
 	{
 		if (codec->allocptr[scan] == NULL)

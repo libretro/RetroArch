@@ -168,7 +168,7 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
                NETPLAY_HOST_STR_LEN);
 
             /* And send it off */
-            ret = sendto(lan_ad_client_fd, (const char *) &ad_packet_buffer,
+            ret = (int)sendto(lan_ad_client_fd, (const char *) &ad_packet_buffer,
                sizeof(struct ad_packet), 0, addr->ai_addr, addr->ai_addrlen);
             if (ret < (ssize_t) (2*sizeof(uint32_t)))
                RARCH_WARN("[discovery] Failed to send netplay discovery query (error: %d)\n", errno);
@@ -262,8 +262,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
 
       /* Somebody queried, so check that it's valid */
       addr_size = sizeof(their_addr);
-
-      ret = recvfrom(lan_ad_server_fd, (char*)&ad_packet_buffer,
+      ret       = (int)recvfrom(lan_ad_server_fd, (char*)&ad_packet_buffer,
             sizeof(struct ad_packet), 0, &their_addr, &addr_size);
       if (ret >= (ssize_t) (2 * sizeof(uint32_t)))
       {

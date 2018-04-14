@@ -1347,7 +1347,7 @@ static bool content_get_memory(retro_ctx_memory_info_t *mem_info,
  */
 bool content_load_ram_file(unsigned slot)
 {
-   ssize_t rc;
+   int64_t rc;
    struct ram_type ram;
    retro_ctx_memory_info_t mem_info;
    void *buf        = NULL;
@@ -1370,7 +1370,7 @@ bool content_load_ram_file(unsigned slot)
                (unsigned)mem_info.size);
          rc = mem_info.size;
       }
-      memcpy(mem_info.data, buf, rc);
+      memcpy(mem_info.data, buf, (size_t)rc);
    }
 
    if (buf)

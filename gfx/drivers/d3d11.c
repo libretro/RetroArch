@@ -117,9 +117,10 @@ static void d3d11_overlay_set_alpha(void* data, unsigned index, float mod)
 
 static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_images)
 {
+   D3D11_BUFFER_DESC desc;
+   D3D11_MAPPED_SUBRESOURCE    mapped_vbo;
    int                         i;
    d3d11_sprite_t*             sprites;
-   D3D11_MAPPED_SUBRESOURCE    mapped_vbo;
    d3d11_video_t*              d3d11  = (d3d11_video_t*)data;
    const struct texture_image* images = (const struct texture_image*)image_data;
 
@@ -128,19 +129,19 @@ static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_
 
    d3d11_free_overlays(d3d11);
    d3d11->overlays.count    = num_images;
-   d3d11->overlays.textures = (d3d11_texture_t*)calloc(num_images, sizeof(d3d11_texture_t));
+   d3d11->overlays.textures = (d3d11_texture_t*)calloc(
+         num_images, sizeof(d3d11_texture_t));
 
-   {
-      D3D11_BUFFER_DESC desc = { sizeof(d3d11_sprite_t) * num_images };
-      desc.Usage             = D3D11_USAGE_DYNAMIC;
-
-      desc.BindFlags      = D3D11_BIND_VERTEX_BUFFER;
-      desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-      D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->overlays.vbo);
-   }
+   desc.ByteWidth           = sizeof(d3d11_sprite_t) * num_images;
+   desc.Usage               = D3D11_USAGE_DYNAMIC;
+   desc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
+   desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+   desc.MiscFlags           = 0;
+   desc.StructureByteStride = 0;
+   D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->overlays.vbo);
 
    D3D11MapBuffer(d3d11->context, d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_vbo);
-   sprites = (d3d11_sprite_t*)mapped_vbo.pData;
+   sprites                  = (d3d11_sprite_t*)mapped_vbo.pData;
 
    for (i = 0; i < num_images; i++)
    {
@@ -152,26 +153,27 @@ static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_
       d3d11_init_texture(d3d11->device, &d3d11->overlays.textures[i]);
 
       d3d11_update_texture(
-            d3d11->context, images[i].width, images[i].height, 0, DXGI_FORMAT_B8G8R8A8_UNORM,
+            d3d11->context, images[i].width,
+            images[i].height, 0, DXGI_FORMAT_B8G8R8A8_UNORM,
             images[i].pixels, &d3d11->overlays.textures[i]);
 
-      sprites[i].pos.x = 0.0f;
-      sprites[i].pos.y = 0.0f;
-      sprites[i].pos.w = 1.0f;
-      sprites[i].pos.h = 1.0f;
+      sprites[i].pos.x           = 0.0f;
+      sprites[i].pos.y           = 0.0f;
+      sprites[i].pos.w           = 1.0f;
+      sprites[i].pos.h           = 1.0f;
 
-      sprites[i].coords.u = 0.0f;
-      sprites[i].coords.v = 0.0f;
-      sprites[i].coords.w = 1.0f;
-      sprites[i].coords.h = 1.0f;
+      sprites[i].coords.u        = 0.0f;
+      sprites[i].coords.v        = 0.0f;
+      sprites[i].coords.w        = 1.0f;
+      sprites[i].coords.h        = 1.0f;
 
       sprites[i].params.scaling  = 1;
       sprites[i].params.rotation = 0;
 
-      sprites[i].colors[0] = 0xFFFFFFFF;
-      sprites[i].colors[1] = sprites[i].colors[0];
-      sprites[i].colors[2] = sprites[i].colors[0];
-      sprites[i].colors[3] = sprites[i].colors[0];
+      sprites[i].colors[0]       = 0xFFFFFFFF;
+      sprites[i].colors[1]       = sprites[i].colors[0];
+      sprites[i].colors[2]       = sprites[i].colors[0];
+      sprites[i].colors[3]       = sprites[i].colors[0];
    }
    D3D11UnmapBuffer(d3d11->context, d3d11->overlays.vbo, 0);
 
@@ -752,29 +754,31 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d11_set_filtering(d3d11, 0, video->smooth);
 
    {
+      D3D11_BUFFER_DESC desc;
       d3d11_vertex_t vertices[] = {
          { { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
       };
+      D3D11_SUBRESOURCE_DATA 
+         vertexData             = { vertices };
 
-      {
-         D3D11_BUFFER_DESC desc = { 0 };
-         desc.Usage             = D3D11_USAGE_IMMUTABLE;
-         desc.ByteWidth         = sizeof(vertices);
-         desc.BindFlags         = D3D11_BIND_VERTEX_BUFFER;
+      desc.ByteWidth            = sizeof(vertices);
+      desc.Usage                = D3D11_USAGE_IMMUTABLE;
+      desc.BindFlags            = D3D11_BIND_VERTEX_BUFFER;
+      desc.CPUAccessFlags       = 0;
+      desc.MiscFlags            = 0;
+      desc.StructureByteStride  = 0;
 
-         D3D11_SUBRESOURCE_DATA vertexData = { vertices };
-         D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->frame.vbo);
-         desc.Usage          = D3D11_USAGE_DYNAMIC;
-         desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-         D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu.vbo);
+      D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->frame.vbo);
+      desc.Usage                = D3D11_USAGE_DYNAMIC;
+      desc.CPUAccessFlags       = D3D11_CPU_ACCESS_WRITE;
+      D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu.vbo);
 
-         d3d11->sprites.capacity = 4096;
-         desc.ByteWidth          = sizeof(d3d11_sprite_t) * d3d11->sprites.capacity;
-         D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->sprites.vbo);
-      }
+      d3d11->sprites.capacity  = 4096;
+      desc.ByteWidth           = sizeof(d3d11_sprite_t) * d3d11->sprites.capacity;
+      D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->sprites.vbo);
    }
 
    {

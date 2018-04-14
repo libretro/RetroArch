@@ -35,6 +35,9 @@
 #include "../../core_info.h"
 #include "../../managers/cheat_manager.h"
 #include "../../file_path_special.h"
+#include "../../driver.h"
+#include "../../audio/audio_driver.h"
+#include "../../gfx/video_driver.h"
 #include "../../retroarch.h"
 #include "../../network/netplay/netplay.h"
 
@@ -46,7 +49,255 @@
    } while(0)
 #endif
 
-extern struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END];
+extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
+
+int setting_action_left_analog_dpad_mode(void *data, bool wraparound)
+{
+   unsigned port = 0;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   port = setting->index_offset;
+
+   configuration_set_uint(settings, settings->uints.input_analog_dpad_mode[port],
+      (settings->uints.input_analog_dpad_mode
+       [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST);
+
+   return 0;
+}
+
+int setting_action_left_libretro_device_type(
+      void *data, bool wraparound)
+{
+   retro_ctx_controller_info_t pad;
+   unsigned current_device, current_idx, i, devices[128],
+            types = 0, port = 0;
+   const struct retro_controller_info *desc = NULL;
+   rarch_setting_t *setting    = (rarch_setting_t*)data;
+   rarch_system_info_t *system = NULL;
+
+   if (!setting)
+      return -1;
+
+   port = setting->index_offset;
+
+   devices[types++] = RETRO_DEVICE_NONE;
+   devices[types++] = RETRO_DEVICE_JOYPAD;
+
+   system           = runloop_get_system_info();
+
+   if (system)
+   {
+      /* Only push RETRO_DEVICE_ANALOG as default if we use an
+       * older core which doesn't use SET_CONTROLLER_INFO. */
+      if (!system->ports.size)
+         devices[types++] = RETRO_DEVICE_ANALOG;
+
+      if (port < system->ports.size)
+         desc = &system->ports.data[port];
+   }
+
+   if (desc)
+   {
+      for (i = 0; i < desc->num_types; i++)
+      {
+         unsigned id = desc->types[i].id;
+         if (types < ARRAY_SIZE(devices) &&
+               id != RETRO_DEVICE_NONE &&
+               id != RETRO_DEVICE_JOYPAD)
+            devices[types++] = id;
+      }
+   }
+
+   current_device = input_config_get_device(port);
+   current_idx    = 0;
+   for (i = 0; i < types; i++)
+   {
+      if (current_device != devices[i])
+         continue;
+
+      current_idx = i;
+      break;
+   }
+
+   current_device = devices
+      [(current_idx + types - 1) % types];
+
+   input_config_set_device(port, current_device);
+
+   pad.port   = port;
+   pad.device = current_device;
+
+   core_set_controller_port_device(&pad);
+
+   return 0;
+}
+
+int setting_action_left_bind_device(void *data, bool wraparound)
+{
+   unsigned               *p = NULL;
+   unsigned index_offset     = 0;
+   unsigned max_devices      = input_config_get_device_count();
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting || max_devices == 0)
+      return -1;
+
+   index_offset = setting->index_offset;
+
+   p = &settings->uints.input_joypad_map[index_offset];
+
+   if ((*p) >= max_devices)
+      *p = max_devices - 1;
+   else if ((*p) > 0)
+      (*p)--;
+
+   return 0;
+}
+
+int setting_action_left_mouse_index(void *data, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   settings_t *settings     = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   if (settings->uints.input_mouse_index[setting->index_offset])
+   {
+      --settings->uints.input_mouse_index[setting->index_offset];
+      settings->modified = true;
+   }
+
+   return 0;
+}
+
+int setting_uint_action_left_custom_viewport_width(
+      void *data, bool wraparound)
+{
+   video_viewport_t vp;
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   video_viewport_t            *custom  = video_viewport_get_custom();
+   settings_t                 *settings = config_get_ptr();
+   struct retro_game_geometry     *geom = (struct retro_game_geometry*)
+      &av_info->geometry;
+
+   if (!settings || !av_info)
+      return -1;
+
+   video_driver_get_viewport_info(&vp);
+
+   if (custom->width <= 1)
+      custom->width = 1;
+   else if (settings->bools.video_scale_integer)
+   {
+      if (custom->width > geom->base_width)
+         custom->width -= geom->base_width;
+   }
+   else
+      custom->width -= 1;
+
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom->width / custom->height;
+
+   return 0;
+}
+
+int setting_uint_action_left_custom_viewport_height(
+      void *data, bool wraparound)
+{
+   video_viewport_t vp;
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   video_viewport_t            *custom  = video_viewport_get_custom();
+   settings_t                 *settings = config_get_ptr();
+   struct retro_game_geometry     *geom = (struct retro_game_geometry*)
+      &av_info->geometry;
+
+   if (!settings || !av_info)
+      return -1;
+
+   video_driver_get_viewport_info(&vp);
+
+   if (custom->height <= 1)
+      custom->height = 1;
+   else if (settings->bools.video_scale_integer)
+   {
+      if (custom->height > geom->base_height)
+         custom->height -= geom->base_height;
+   }
+   else
+      custom->height -= 1;
+
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom->width / custom->height;
+
+   return 0;
+}
+
+int setting_string_action_left_audio_device(
+      void *data, bool wraparound)
+{
+#if !defined(RARCH_CONSOLE)
+   int audio_device_index;
+   struct string_list *ptr  = NULL;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!audio_driver_get_devices_list((void**)&ptr))
+      return -1;
+
+   if (!ptr)
+      return -1;
+
+   /* Get index in the string list */
+   audio_device_index = string_list_find_elem(
+         ptr, setting->value.target.string) - 1;
+   audio_device_index--;
+
+   /* Reset index if needed */
+   if (audio_device_index < 0)
+      audio_device_index = (int)(ptr->size - 1);
+
+   strlcpy(setting->value.target.string, ptr->elems[audio_device_index].data, setting->size);
+#endif
+
+   return 0;
+}
+
+int setting_string_action_left_driver(void *data,
+      bool wraparound)
+{
+   driver_ctx_info_t drv;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   drv.label = setting->name;
+   drv.s     = setting->value.target.string;
+   drv.len   = setting->size;
+
+   if (!driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv))
+   {
+      settings_t *settings = config_get_ptr();
+
+      if (settings && settings->bools.menu_navigation_wraparound_enable)
+      {
+         drv.label = setting->name;
+         drv.s     = setting->value.target.string;
+         drv.len   = setting->size;
+         driver_ctl(RARCH_DRIVER_CTL_FIND_LAST, &drv);
+      }
+   }
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   return 0;
+}
 
 static int generic_shader_action_parameter_left(
       struct video_shader_parameter *param,
@@ -91,38 +342,59 @@ static int action_left_cheat(unsigned type, const char *label,
 }
 
 static int action_left_input_desc(unsigned type, const char *label,
-      bool wraparound)
+   bool wraparound)
 {
-   unsigned inp_desc_index_offset        = type -
-      MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user                = inp_desc_index_offset /
-      (RARCH_FIRST_CUSTOM_BIND + 4);
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset
-      - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
+   rarch_system_info_t *system           = runloop_get_system_info();
    settings_t *settings                  = config_get_ptr();
+   unsigned btn_idx, user_idx, remap_idx;
 
-   if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] > 0)
-      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]--;
+   if (!settings || !system)
+      return 0;
+
+   user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+
+   if (settings->uints.input_remap_ids[user_idx][btn_idx] == RARCH_UNMAPPED)
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_CUSTOM_BIND_LIST_END - 1;
+
+   if (settings->uints.input_remap_ids[user_idx][btn_idx] > 0)
+      settings->uints.input_remap_ids[user_idx][btn_idx]--;
+   else if (settings->uints.input_remap_ids[user_idx][btn_idx] == 0)
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
+   else
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_CUSTOM_BIND_LIST_END - 1;
+
+   remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
+
+   /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
+      also skip all the axes until analog remapping is implemented */
+   if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*|| 
+       (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
+      action_left_input_desc(type, label, wraparound);
 
    return 0;
 }
 
-#ifdef HAVE_KEYMAPPER
 static int action_left_input_desc_kbd(unsigned type, const char *label,
    bool wraparound)
 {
-   char desc[PATH_MAX_LENGTH];
-   unsigned key_id;
    unsigned remap_id;
-   unsigned offset      = type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+   unsigned key_id, id, offset;
    settings_t *settings = config_get_ptr();
 
    if (!settings)
       return 0;
 
-   remap_id = settings->uints.input_keymapper_ids[offset];
+   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      (MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
 
-   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
+   id = (type / (offset + 1)) - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+
+   remap_id =
+      settings->uints.input_keymapper_ids[offset][id];
+
+   for (key_id = 0; key_id < RARCH_MAX_KEYS - 1; key_id++)
    {
       if(remap_id == key_descriptors[key_id].key)
          break;
@@ -131,13 +403,12 @@ static int action_left_input_desc_kbd(unsigned type, const char *label,
    if (key_id > 0)
       key_id--;
    else
-      key_id = MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+      key_id = RARCH_MAX_KEYS + MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
 
-   settings->uints.input_keymapper_ids[offset] = key_descriptors[key_id].key;
+   settings->uints.input_keymapper_ids[offset][id] = key_descriptors[key_id].key;
 
    return 0;
 }
-#endif
 
 static int action_left_scroll(unsigned type, const char *label,
       bool wraparound)
@@ -609,13 +880,11 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_LEFT(cbs, action_left_input_desc);
    }
-#ifdef HAVE_KEYMAPPER
    else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
       && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
       BIND_ACTION_LEFT(cbs, action_left_input_desc_kbd);
    }
-#endif
    else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
    {
       BIND_ACTION_LEFT(cbs, playlist_association_left);
