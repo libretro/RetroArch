@@ -1420,10 +1420,11 @@ void video_driver_monitor_adjust_system_rates(void)
    const struct retro_system_timing *info = (const struct retro_system_timing*)&video_driver_av_info.timing;
 
    rarch_ctl(RARCH_CTL_UNSET_NONBLOCK_FORCED, NULL);
-	video_driver_core_hz = info->fps;
 
    if (!info || info->fps <= 0.0)
       return;
+
+	video_driver_core_hz                   = info->fps;
 
   if (video_driver_crt_switching_active)
 	  timing_skew = fabs(1.0f - info->fps / video_driver_core_hz);
