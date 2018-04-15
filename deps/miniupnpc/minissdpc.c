@@ -606,6 +606,7 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 	{
 		if(error)
 			*error = MINISSDPC_SOCKET_ERROR;
+		closesocket(sudp);
 		return NULL;
 	}
 
