@@ -28,13 +28,13 @@
 #include "video_driver.h"
 #include "video_crt_switch.h"
 
-static int ra_core_width     = 0;
-static int ra_core_height    = 0;
-static int ra_tmp_width      = 0;
-static int ra_tmp_height     = 0;
-static int ra_set_core_hz    = 0;
-static int orig_width        = 0;
-static int orig_height       = 0;
+static unsigned ra_core_width     = 0;
+static unsigned ra_core_height    = 0;
+static unsigned ra_tmp_width      = 0;
+static unsigned ra_tmp_height     = 0;
+static unsigned ra_set_core_hz    = 0;
+static unsigned orig_width        = 0;
+static unsigned orig_height       = 0;
 static int first_run         = 0;
 
 static float ra_tmp_core_hz  = 0.0f;
@@ -178,51 +178,51 @@ static void crt_screen_setup_aspect(int width, int height)
       if (width < 1920)
          width = 640;
       height = 480;
-      crt_aspect_ratio_switch(width,height);
+      crt_aspect_ratio_switch(width, height);
    }
 
    if (height < 191 && height != 144)
    {				
-      crt_aspect_ratio_switch(width,height);
+      crt_aspect_ratio_switch(width, height);
       height = 200;
    }	
 
    if (height > 191)
-      crt_aspect_ratio_switch(width,height);
+      crt_aspect_ratio_switch(width, height);
 
    if (height == 144 && ra_set_core_hz == 50)
    {				
       height = 288;
-      crt_aspect_ratio_switch(width,height);
+      crt_aspect_ratio_switch(width, height);
    }
 
    if (height > 200 && height < 224)
    {				
-      crt_aspect_ratio_switch(width,height);
+      crt_aspect_ratio_switch(width, height);
       height = 224;
    }
 
    if (height > 224 && height < 240)
    {				
-      crt_aspect_ratio_switch(width,height);
+      crt_aspect_ratio_switch(width, height);
       height = 240;
    }
 
    if (height > 240 && height < 255)
    {								
-      crt_aspect_ratio_switch(width,height);
+      crt_aspect_ratio_switch(width, height);
       height = 254;
    }
 
    if (height == 528 && ra_set_core_hz == 60)
    {								
-      crt_aspect_ratio_switch(width,height);
+      crt_aspect_ratio_switch(width, height);
       height = 480;
    }
 
    if (height >= 240 && height < 255 && ra_set_core_hz == 55)
    {
-      crt_aspect_ratio_switch(width,height);
+      crt_aspect_ratio_switch(width, height);
       height = 254;
    }
 
@@ -230,7 +230,7 @@ static void crt_screen_setup_aspect(int width, int height)
 }
 
 
-void crt_switch_res_core(int width, int height, float hz)
+void crt_switch_res_core(unsigned width, unsigned height, float hz)
 {
    /* ra_core_hz float passed from within 
     * void video_driver_monitor_adjust_system_rates(void) */
@@ -245,7 +245,7 @@ void crt_switch_res_core(int width, int height, float hz)
          (ra_tmp_height != ra_core_height) || 
          (ra_core_width != ra_tmp_width)
       )
-      crt_screen_setup_aspect(width,height);
+      crt_screen_setup_aspect(width, height);
    
    ra_tmp_height  = ra_core_height;
    ra_tmp_width   = ra_core_width;

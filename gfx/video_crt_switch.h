@@ -27,7 +27,7 @@
 
 RETRO_BEGIN_DECLS
 
-void crt_switch_res_core(int width, int height, float hz);
+void crt_switch_res_core(unsigned width, unsigned height, float hz);
 
 void crt_video_restore(void);
 
