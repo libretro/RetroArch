@@ -38,22 +38,10 @@
 
 #include "../msg_hash.h"
 #include "include/hid_types.h"
+#include "include/hid_driver.h"
 #include "include/gamepad.h"
 
 RETRO_BEGIN_DECLS
-
-typedef struct
-{
-   uint32_t data[8];
-   uint16_t analogs[8];
-} input_bits_t;
-
-typedef struct rarch_joypad_driver input_device_driver_t;
-
-typedef struct hid_driver hid_driver_t;
-
-/* Keyboard line reader. Handles textual input in a direct fashion. */
-typedef struct input_keyboard_line input_keyboard_line_t;
 
 enum input_device_type
 {
@@ -621,6 +609,9 @@ const char *input_joypad_name(const input_device_driver_t *driver,
 bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real);
 
 #ifdef HAVE_HID
+
+#include "include/hid_driver.h"
+
 /**
  * hid_driver_find_handle:
  * @index              : index of driver to get handle to.

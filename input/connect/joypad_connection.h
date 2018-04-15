@@ -64,8 +64,6 @@ typedef struct pad_connection_interface
    bool         (*button)(void *data, uint16_t joykey);
 } pad_connection_interface_t;
 
-typedef struct joypad_connection joypad_connection_t;
-
 extern pad_connection_interface_t pad_connection_wii;
 extern pad_connection_interface_t pad_connection_wiiupro;
 extern pad_connection_interface_t pad_connection_ps3;

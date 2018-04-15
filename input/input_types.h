@@ -22,5 +22,10 @@ typedef struct input_keyboard_line input_keyboard_line_t;
 typedef struct rarch_joypad_info rarch_joypad_info_t;
 typedef struct input_driver input_driver_t;
 typedef struct input_keyboard_ctx_wait input_keyboard_ctx_wait_t;
+typedef struct {
+   uint32_t data[8];
+   uint16_t analogs[8];
+} input_bits_t;
+typedef struct joypad_connection joypad_connection_t;
 
 #endif /* __INPUT_TYPES__H */
