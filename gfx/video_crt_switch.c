@@ -41,36 +41,7 @@ static float ra_tmp_core_hz  = 0.0f;
 static float fly_aspect      = 0.0f;
 static float ra_core_hz      = 0.0f;
 
-void crt_switch_res_core(int width, int height, float hz)
-{
-   /* ra_core_hz float passed from within 
-    * void video_driver_monitor_adjust_system_rates(void) */
-   ra_core_width  = width;		
-   ra_core_height = height;
-   ra_core_hz     = hz;
-
-   crt_check_first_run();
-
-   /* Detect resolution change and switch */
-   if (
-         (ra_tmp_height != ra_core_height) || 
-         (ra_core_width != ra_tmp_width)
-      )
-      crt_screen_setup_aspect(width,height);
-   
-   ra_tmp_height  = ra_core_height;
-   ra_tmp_width   = ra_core_width;
-
-   /* Check if aspect is correct, if notchange */
-   if (video_driver_get_aspect_ratio() != fly_aspect)
-   {
-      video_driver_set_aspect_ratio_value((float)fly_aspect);
-      video_driver_apply_state_changes();
-   }
-}
-
-
-void crt_check_first_run(void)
+static void crt_check_first_run(void)
 {		
    if (first_run != 1)
    {
@@ -84,9 +55,119 @@ void crt_check_first_run(void)
    first_run = 1;
 }
 
-/* Create correct aspect to fit video if resolution does not exist */
+static void crt_switch_res(int width, int height,
+      int f_restore,int  ra_hz)
+{
+   /* Windows function to switch resolutions */
 
-void crt_screen_setup_aspect(int width, int height)
+#if defined(_WIN32)
+   LONG res;
+   DEVMODE curDevmode;
+   DEVMODE devmode;
+
+   int iModeNum;
+   int freq    = 0;
+   DWORD flags = 0;
+   int depth   = 0;
+
+   if (f_restore == 0)
+      freq = ra_hz;
+
+   EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
+
+   /* used to stop superresolution bug */
+   if (width == curDevmode.dmPelsWidth)
+      width  = 0;							
+   if (width == 0) 
+      width = curDevmode.dmPelsWidth;
+   if (height == 0) 
+      height = curDevmode.dmPelsHeight;
+   if (depth == 0) 
+      depth = curDevmode.dmBitsPerPel;
+   if (freq == 0) 
+      freq = curDevmode.dmDisplayFrequency;
+
+   for (iModeNum = 0; ; iModeNum++) 
+   {
+      if (!EnumDisplaySettings(NULL, iModeNum, &devmode)) 
+         break;
+
+      if (devmode.dmPelsWidth != width) 
+         continue;
+
+      if (devmode.dmPelsHeight != height) 
+         continue;
+
+      if (devmode.dmBitsPerPel != depth) 
+         continue;
+
+      if (devmode.dmDisplayFrequency != freq) 
+         continue;
+
+      devmode.dmFields |= 
+         DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
+      res               = 
+         win32_change_display_settings(NULL, &devmode, CDS_TEST);
+
+      switch (res) 
+      {
+         case DISP_CHANGE_SUCCESSFUL:
+            res = win32_change_display_settings(NULL, &devmode, flags);
+            switch (res) 
+            {
+               case DISP_CHANGE_SUCCESSFUL:
+                  return;
+               case DISP_CHANGE_NOTUPDATED:
+                  return;
+               default:
+                  break;
+            }
+            break;
+         case DISP_CHANGE_RESTART:
+            break;
+         default:
+            break;
+      }
+   }
+#elif defined(linux)
+
+#endif   
+}
+
+static void switch_crt_hz(void)
+{
+   if (ra_core_hz == ra_tmp_core_hz)
+      return;
+
+   /* set hz float an int for windows switching */
+   if (ra_core_hz < 53)
+      ra_set_core_hz = 50;	
+   if (ra_core_hz >= 53  &&  ra_core_hz < 57)
+      ra_set_core_hz = 55;	
+   if (ra_core_hz >= 57)
+      ra_set_core_hz = 60;	
+   video_monitor_set_refresh_rate(ra_set_core_hz);
+   ra_tmp_core_hz = ra_core_hz;
+}
+
+static void crt_aspect_ratio_switch(int width, int height)
+{
+   /* send aspect float to videeo_driver */
+   fly_aspect = (float)width / height;
+   video_driver_set_aspect_ratio_value((float)fly_aspect);
+}
+
+static void switch_res_crt(int width, int height)
+{
+   if (height > 100)
+   {
+      crt_switch_res(width, height,0,ra_set_core_hz);
+      video_driver_apply_state_changes();
+   }
+}
+
+/* Create correct aspect to fit video if resolution does not exist */
+static void crt_screen_setup_aspect(int width, int height)
 {
    switch_crt_hz();
 
@@ -148,120 +229,36 @@ void crt_screen_setup_aspect(int width, int height)
    switch_res_crt(width, height);
 }
 
-void switch_res_crt(int width, int height)
+
+void crt_switch_res_core(int width, int height, float hz)
 {
-   if (height > 100)
+   /* ra_core_hz float passed from within 
+    * void video_driver_monitor_adjust_system_rates(void) */
+   ra_core_width  = width;		
+   ra_core_height = height;
+   ra_core_hz     = hz;
+
+   crt_check_first_run();
+
+   /* Detect resolution change and switch */
+   if (
+         (ra_tmp_height != ra_core_height) || 
+         (ra_core_width != ra_tmp_width)
+      )
+      crt_screen_setup_aspect(width,height);
+   
+   ra_tmp_height  = ra_core_height;
+   ra_tmp_width   = ra_core_width;
+
+   /* Check if aspect is correct, if notchange */
+   if (video_driver_get_aspect_ratio() != fly_aspect)
    {
-      crt_switch_res(width, height,0,ra_set_core_hz);
+      video_driver_set_aspect_ratio_value((float)fly_aspect);
       video_driver_apply_state_changes();
    }
 }
 
-void crt_aspect_ratio_switch(int width, int height)
-{
-   /* send aspect float to videeo_driver */
-   fly_aspect = (float)width / height;
-   video_driver_set_aspect_ratio_value((float)fly_aspect);
-}
-
-void switch_crt_hz(void)
-{
-   if (ra_core_hz == ra_tmp_core_hz)
-      return;
-
-   /* set hz float an int for windows switching */
-   if (ra_core_hz < 53)
-      ra_set_core_hz = 50;	
-   if (ra_core_hz >= 53  &&  ra_core_hz < 57)
-      ra_set_core_hz = 55;	
-   if (ra_core_hz >= 57)
-      ra_set_core_hz = 60;	
-   video_monitor_set_refresh_rate(ra_set_core_hz);
-   ra_tmp_core_hz = ra_core_hz;
-}
-
 void crt_video_restore(void)
 {
-   crt_switch_res(orig_width, orig_height,0,60);
-}
-
-
-void crt_switch_res(int width, int height, int f_restore,int  ra_hz)
-{
-   /* Windows function to switch resolutions */
-
-#if defined(_WIN32)
-   LONG res;
-   DEVMODE curDevmode;
-   DEVMODE devmode;
-
-   int iModeNum;
-   int freq;
-   DWORD flags = 0;
-   int depth   = 0;
-
-   if (f_restore == 0)
-      freq = ra_hz;
-   else 
-      freq = 0;
-
-   EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
-
-   /* used to stop superresolution bug */
-   if (width == curDevmode.dmPelsWidth)
-      width  = 0;							
-   if (width == 0) 
-      width = curDevmode.dmPelsWidth;
-   if (height == 0) 
-      height = curDevmode.dmPelsHeight;
-   if (depth == 0) 
-      depth = curDevmode.dmBitsPerPel;
-   if (freq == 0) 
-      freq = curDevmode.dmDisplayFrequency;
-
-   for (iModeNum = 0; ; iModeNum++) 
-   {
-      if (!EnumDisplaySettings(NULL, iModeNum, &devmode)) 
-         break;
-
-      if (devmode.dmPelsWidth != width) 
-         continue;
-
-      if (devmode.dmPelsHeight != height) 
-         continue;
-
-      if (devmode.dmBitsPerPel != depth) 
-         continue;
-
-      if (devmode.dmDisplayFrequency != freq) 
-         continue;
-
-      devmode.dmFields |= 
-         DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
-      res               = 
-         win32_change_display_settings(NULL, &devmode, CDS_TEST);
-
-      switch (res) 
-      {
-         case DISP_CHANGE_SUCCESSFUL:
-            res = win32_change_display_settings(NULL, &devmode, flags);
-            switch (res) 
-            {
-               case DISP_CHANGE_SUCCESSFUL:
-                  return;
-               case DISP_CHANGE_NOTUPDATED:
-                  return;
-               default:
-                  break;
-            }
-            break;
-         case DISP_CHANGE_RESTART:
-            break;
-         default:
-            break;
-      }
-   }
-#elif defined(linux)
-
-#endif   
+   crt_switch_res(orig_width, orig_height, 0, 60);
 }
