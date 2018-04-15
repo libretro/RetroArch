@@ -71,12 +71,6 @@ RETRO_BEGIN_DECLS
 
 #define MAX_VARIABLES 64
 
-/* Added for resolution wswitching */
-void crt_poke_video();
-
-/* Added for resolution wswitching */ 
-
-
 enum
 {
    TEXTURES = 8,
