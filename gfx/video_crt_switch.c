@@ -22,7 +22,6 @@
 
 #if defined(_WIN32)
 #include <windows.h>
-#include "common/win32_common.h"
 #endif
 
 #include "video_driver.h"
