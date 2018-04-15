@@ -1718,6 +1718,7 @@ static const video_poke_interface_t wiiu_poke_interface =
    wiiu_gfx_load_texture,
    wiiu_gfx_unload_texture,
    NULL, /* set_video_mode */
+   NULL, /* get_refresh_rate */
    wiiu_gfx_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

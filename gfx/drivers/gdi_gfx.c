@@ -538,6 +538,7 @@ static const video_poke_interface_t gdi_poke_interface = {
    NULL,
    NULL,
    gdi_set_video_mode,
+   NULL,                        /* get_refresh_rate */
    NULL,
    gdi_get_video_output_size,
    gdi_get_video_output_prev,

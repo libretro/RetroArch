@@ -1135,6 +1135,7 @@ static const video_poke_interface_t omap_gfx_poke_interface = {
    NULL,
    NULL,
    NULL,
+   NULL, /* get_refresh_rate */
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

@@ -2298,6 +2298,7 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_load_texture,
    vulkan_unload_texture,
    vulkan_set_video_mode,
+   NULL, /* get_refresh_rate */
    NULL,
    NULL,
    NULL,

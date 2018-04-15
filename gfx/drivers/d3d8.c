@@ -1867,6 +1867,7 @@ static const video_poke_interface_t d3d_poke_interface = {
    d3d8_unload_texture,
    d3d8_set_video_mode,
    NULL,
+   NULL,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

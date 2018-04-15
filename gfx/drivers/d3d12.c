@@ -1752,6 +1752,7 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_gfx_load_texture,
    d3d12_gfx_unload_texture,
    NULL, /* set_video_mode */
+   NULL, /* get_refresh_rate */
    d3d12_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

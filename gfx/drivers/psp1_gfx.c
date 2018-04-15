@@ -836,6 +836,7 @@ static const video_poke_interface_t psp_poke_interface = {
    NULL,
    NULL,
    NULL,
+   NULL, /* get_refresh_rate */
    psp_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

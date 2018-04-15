@@ -1589,6 +1589,7 @@ static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_gfx_load_texture,
    d3d11_gfx_unload_texture,
    NULL, /* set_video_mode */
+   NULL, /* get_refresh_rate */
    d3d11_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

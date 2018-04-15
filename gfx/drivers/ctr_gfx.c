@@ -1138,6 +1138,7 @@ static const video_poke_interface_t ctr_poke_interface = {
    ctr_load_texture,
    ctr_unload_texture,
    NULL,
+   NULL,
    ctr_set_filtering,
    NULL,                                  /* get_video_output_size */
    NULL,                                  /* get_video_output_prev */

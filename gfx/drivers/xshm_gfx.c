@@ -209,6 +209,7 @@ static video_poke_interface_t xshm_video_poke_interface = {
    NULL,
    NULL,
    NULL,
+   NULL, /* get_refresh_rate */
    xshm_poke_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

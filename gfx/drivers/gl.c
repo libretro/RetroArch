@@ -2601,6 +2601,7 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_load_texture,
    gl_unload_texture,
    gl_set_video_mode,
+   NULL, /* get_refresh_rate */
    NULL,
    gl_get_video_output_size,
    gl_get_video_output_prev,
