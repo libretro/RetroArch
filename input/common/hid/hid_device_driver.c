@@ -60,6 +60,20 @@ joypad_connection_t *hid_pad_register(void *pad_handle, pad_connection_interface
    return result;
 }
 
+void hid_pad_deregister(joypad_connection_t *pad)
+{
+   if(!pad)
+      return;
+
+   if(pad->data) {
+      pad->iface->deinit(pad->data);
+      pad->data = NULL;
+   }
+
+   pad->iface = NULL;
+   pad->connected = false;
+}
+
 static bool init_pad_list(hid_driver_instance_t *instance, unsigned slots)
 {
    if(!instance || slots > MAX_USERS)

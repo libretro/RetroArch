@@ -63,8 +63,10 @@ static void ds4_free(void *data)
 {
    ds4_instance_t *instance = (ds4_instance_t *)data;
 
-   if(instance)
+   if(instance) {
+      hid_pad_deregister(instance->pad);
       free(instance);
+   }
 }
 
 static void ds4_handle_packet(void *data, uint8_t *buffer, size_t size)

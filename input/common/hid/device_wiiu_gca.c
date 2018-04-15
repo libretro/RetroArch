@@ -145,34 +145,6 @@ static void update_pad_state(wiiu_gca_instance_t *instance)
    }
 }
 
-/*
-static joypad_connection_t *register_pad(wiiu_gca_instance_t *instance, int port) {
-   int slot;
-   joypad_connection_t *result;
-
-   if(!instance || !instance->online)
-   {
-      RARCH_ERR("[gca]: bad instance\n");
-      return NULL;
-   }
-
-   slot = pad_connection_find_vacant_pad(hid_instance.pad_list);
-   if(slot < 0)
-   {
-      RARCH_ERR("[gca]: failed to find a free slot\n");
-      return NULL;
-   }
-
-   result = &(hid_instance.pad_list[slot]);
-   result->iface = &wiiu_gca_pad_connection;
-   result->data = result->iface->init(instance, slot, hid_instance.os_driver);
-   result->connected = true;
-   input_pad_connect(slot, hid_instance.pad_driver);
-
-   return result;
-}
-*/
-
 static void unregister_pad(wiiu_gca_instance_t *instance, int slot)
 {
    if(!instance || slot < 0 || slot >= 4 || instance->pads[slot] == NULL)
@@ -180,10 +152,8 @@ static void unregister_pad(wiiu_gca_instance_t *instance, int slot)
 
    joypad_connection_t *pad = instance->pads[slot];
    instance->pads[slot] = NULL;
-   pad->iface->deinit(pad->data);
-   pad->data = NULL;
-   pad->iface = NULL;
-   pad->connected = false;
+
+   hid_pad_deregister(pad);
 }
 
 static bool wiiu_gca_detect(uint16_t vendor_id, uint16_t product_id) {

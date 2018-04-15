@@ -192,8 +192,10 @@ static void ds3_free(void *data)
 {
    ds3_instance_t *instance = (ds3_instance_t *)data;
 
-   if(instance)
+   if(instance) {
+      hid_pad_deregister(instance->pad);
       free(instance);
+   }
 }
 
 static void ds3_handle_packet(void *data, uint8_t *packet, size_t size)

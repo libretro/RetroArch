@@ -79,8 +79,10 @@ static void null_free(void *data)
 {
    null_instance_t *instance = (null_instance_t *)data;
 
-   if(instance)
+   if(instance) {
+      hid_pad_deregister(instance->pad);
       free(instance);
+   }
 }
 
 /**
