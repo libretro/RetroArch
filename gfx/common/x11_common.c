@@ -234,6 +234,23 @@ void x11_suspend_screensaver(Window wnd, bool enable)
     x11_suspend_screensaver_xdg_screensaver(wnd, enable);
 }
 
+float x11_get_refresh_rate(void *data)
+{
+   XWindowAttributes attr;
+   XF86VidModeModeLine modeline;
+   Screen *screen;
+   int screenid;
+   int dotclock;
+
+   XGetWindowAttributes(g_x11_dpy, g_x11_win, &attr);
+   screen = attr.screen;
+   screenid = XScreenNumberOfScreen(screen);
+
+   XF86VidModeGetModeLine(g_x11_dpy, screenid, &dotclock, &modeline);
+
+   return (float) dotclock * 1000.0f / modeline.htotal / modeline.vtotal;
+}
+
 static bool get_video_mode(video_frame_info_t *video_info,
       Display *dpy, unsigned width, unsigned height,
       XF86VidModeModeInfo *mode, XF86VidModeModeInfo *desktop_mode)

@@ -526,6 +526,8 @@ typedef struct gfx_ctx_driver
     * If not initialized yet, it returns current screen size. */
    void (*get_video_size)(void*, unsigned*, unsigned*);
 
+   float (*get_refresh_rate)(void*);
+
    void (*get_video_output_size)(void*, unsigned*, unsigned*);
 
    void (*get_video_output_prev)(void*);
@@ -1275,6 +1277,8 @@ bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info);
 
 bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info);
 
+bool video_context_driver_get_refresh_rate(float *refresh_rate);
+
 bool video_context_driver_get_context_data(void *data);
 
 bool video_context_driver_show_mouse(bool *bool_data);
@@ -1332,6 +1336,8 @@ bool video_shader_driver_compile_program(struct shader_program_info *program_inf
 void video_shader_driver_use(void *data);
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
+
+float video_driver_get_refresh_rate(void);
 
 extern bool (*video_driver_cb_has_focus)(void);
 

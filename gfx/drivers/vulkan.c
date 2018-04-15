@@ -2292,13 +2292,23 @@ static void vulkan_unload_texture(void *data, uintptr_t handle)
    free(texture);
 }
 
+static float vulkan_get_refresh_rate(void *data)
+{
+   float refresh_rate;
+
+   if (video_context_driver_get_refresh_rate(&refresh_rate))
+       return refresh_rate;
+
+   return 0.0f;
+}
+
 static const video_poke_interface_t vulkan_poke_interface = {
    NULL,                   /* set_coords */
    NULL,                   /* set_mvp */
    vulkan_load_texture,
    vulkan_unload_texture,
    vulkan_set_video_mode,
-   NULL, /* get_refresh_rate */
+   vulkan_get_refresh_rate, /* get_refresh_rate */
    NULL,
    NULL,
    NULL,

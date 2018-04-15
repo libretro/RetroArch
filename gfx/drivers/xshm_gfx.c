@@ -189,7 +189,7 @@ static void xshm_poke_texture_enable(void *data,
 static void xshm_poke_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
-      const struct font_params *params, void *font)
+      const void *params, void *font)
 {
 }
 
@@ -203,13 +203,18 @@ static void xshm_grab_mouse_toggle(void *data)
 
 }
 
+static float xshm_poke_get_refresh_rate(void *data)
+{
+   return x11_get_refresh_rate(data);
+}
+
 static video_poke_interface_t xshm_video_poke_interface = {
    NULL,       /* set_coords */
    NULL,       /* set_mvp */
    NULL,
    NULL,
    NULL,
-   NULL, /* get_refresh_rate */
+   xshm_poke_get_refresh_rate,
    xshm_poke_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

@@ -2586,6 +2586,14 @@ static void gl_set_coords(void *handle_data, void *shader_data,
             shader_data, coords);
 }
 
+static float gl_get_refresh_rate(void *data)
+{
+    float refresh_rate;
+    if (video_context_driver_get_refresh_rate(&refresh_rate))
+       return refresh_rate;
+    return 0.0f;
+}
+
 static void gl_set_mvp(void *data, void *shader_data,
       const void *mat_data)
 {
@@ -2601,7 +2609,7 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_load_texture,
    gl_unload_texture,
    gl_set_video_mode,
-   NULL, /* get_refresh_rate */
+   gl_get_refresh_rate,
    NULL,
    gl_get_video_output_size,
    gl_get_video_output_prev,
