@@ -35,28 +35,31 @@ static unsigned ra_tmp_height     = 0;
 static unsigned ra_set_core_hz    = 0;
 static unsigned orig_width        = 0;
 static unsigned orig_height       = 0;
-static int first_run         = 0;
 
-static float ra_tmp_core_hz  = 0.0f;
-static float fly_aspect      = 0.0f;
-static float ra_core_hz      = 0.0f;
+static bool first_run             = true;
+
+static float ra_tmp_core_hz       = 0.0f;
+static float fly_aspect           = 0.0f;
+static float ra_core_hz           = 0.0f;
 
 static void crt_check_first_run(void)
 {		
-   if (first_run != 1)
-   {
-      /* Run of first boot to get current display resolution */
-#if defined(_WIN32)
-      orig_height = GetSystemMetrics(SM_CYSCREEN);
-      orig_width  = GetSystemMetrics(SM_CXSCREEN);
-#endif
-   }
+   if (!first_run)
+      return;
 
-   first_run = 1;
+   /* TODO/FIXME - do we want to set first_run back to true
+    * at some point in time or should it stay like this? */
+
+   /* Run of first boot to get current display resolution */
+#if defined(_WIN32)
+   orig_height = GetSystemMetrics(SM_CYSCREEN);
+   orig_width  = GetSystemMetrics(SM_CXSCREEN);
+#endif
+   first_run = false;
 }
 
-static void crt_switch_res(int width, int height,
-      int f_restore,int  ra_hz)
+static void crt_switch_res(unsigned width, unsigned height,
+      int f_restore, int ra_hz)
 {
    /* Windows function to switch resolutions */
 
@@ -71,7 +74,7 @@ static void crt_switch_res(int width, int height,
    int depth   = 0;
 
    if (f_restore == 0)
-      freq = ra_hz;
+      freq     = ra_hz;
 
    EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
 
@@ -150,24 +153,24 @@ static void switch_crt_hz(void)
    ra_tmp_core_hz = ra_core_hz;
 }
 
-static void crt_aspect_ratio_switch(int width, int height)
+static void crt_aspect_ratio_switch(unsigned width, unsigned height)
 {
    /* send aspect float to videeo_driver */
    fly_aspect = (float)width / height;
    video_driver_set_aspect_ratio_value((float)fly_aspect);
 }
 
-static void switch_res_crt(int width, int height)
+static void switch_res_crt(unsigned width, unsigned height)
 {
    if (height > 100)
    {
-      crt_switch_res(width, height,0,ra_set_core_hz);
+      crt_switch_res(width, height, 0, ra_set_core_hz);
       video_driver_apply_state_changes();
    }
 }
 
 /* Create correct aspect to fit video if resolution does not exist */
-static void crt_screen_setup_aspect(int width, int height)
+static void crt_screen_setup_aspect(unsigned width, unsigned height)
 {
    switch_crt_hz();
 
