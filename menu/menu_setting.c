@@ -2997,6 +2997,34 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+				  
+				  
+			CONFIG_BOOL( 
+                  list, list_info,
+                  &settings->bools.crt_switch_resolution,
+                  MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,
+                  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+                  crt_switch_resolution,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);	
+			
+			CONFIG_UINT(
+				  list, list_info, 
+				  &settings->uints.crt_switch_resolution_super, 
+				  MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER, 
+				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER, 
+				  crt_switch_resolution_super, 
+				  &group_info, 
+				  &subgroup_info, 
+				  parent_group, 
+				  general_write_handler, 
+				  general_read_handler);
 
             CONFIG_BOOL(
                   list, list_info,

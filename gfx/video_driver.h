@@ -71,6 +71,12 @@ RETRO_BEGIN_DECLS
 
 #define MAX_VARIABLES 64
 
+/* Added for resolution wswitching */
+void crt_poke_video();
+
+/* Added for resolution wswitching */ 
+
+
 enum
 {
    TEXTURES = 8,
@@ -403,6 +409,7 @@ typedef struct video_frame_info
    bool black_frame_insertion;
    bool hard_sync;
    bool fps_show;
+   bool crt_switch_resolution; 
    bool statistics_show;
    bool framecount_show;
    bool scale_integer;
@@ -428,6 +435,7 @@ typedef struct video_frame_info
    unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;
    unsigned monitor_index;
+   unsigned crt_switch_resolution_super; 
    unsigned width;
    unsigned height;
    unsigned xmb_theme;

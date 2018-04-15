@@ -67,6 +67,10 @@ static bool bundle_assets_extract_enable = false;
 static bool materialui_icons_enable      = true;
 #endif
 
+static const bool crt_switch_resolution = false; 	
+static const int crt_switch_resolution_super = 2560; 
+
+
 static const bool def_history_list_enable = true;
 static const bool def_playlist_entry_remove = true;
 static const bool def_playlist_entry_rename = true;
