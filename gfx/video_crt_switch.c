@@ -27,6 +27,7 @@
 
 #include "video_driver.h"
 #include "video_crt_switch.h"
+#include "video_display_server.h"
 
 static unsigned ra_core_width     = 0;
 static unsigned ra_core_height    = 0;
@@ -58,85 +59,6 @@ static void crt_check_first_run(void)
    first_run = false;
 }
 
-static void crt_switch_res(unsigned width, unsigned height,
-      int f_restore, int ra_hz)
-{
-   /* Windows function to switch resolutions */
-
-#if defined(_WIN32)
-   LONG res;
-   DEVMODE curDevmode;
-   DEVMODE devmode;
-
-   int iModeNum;
-   int freq    = 0;
-   DWORD flags = 0;
-   int depth   = 0;
-
-   if (f_restore == 0)
-      freq     = ra_hz;
-
-   EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
-
-   /* used to stop superresolution bug */
-   if (width == curDevmode.dmPelsWidth)
-      width  = 0;							
-   if (width == 0) 
-      width = curDevmode.dmPelsWidth;
-   if (height == 0) 
-      height = curDevmode.dmPelsHeight;
-   if (depth == 0) 
-      depth = curDevmode.dmBitsPerPel;
-   if (freq == 0) 
-      freq = curDevmode.dmDisplayFrequency;
-
-   for (iModeNum = 0; ; iModeNum++) 
-   {
-      if (!EnumDisplaySettings(NULL, iModeNum, &devmode)) 
-         break;
-
-      if (devmode.dmPelsWidth != width) 
-         continue;
-
-      if (devmode.dmPelsHeight != height) 
-         continue;
-
-      if (devmode.dmBitsPerPel != depth) 
-         continue;
-
-      if (devmode.dmDisplayFrequency != freq) 
-         continue;
-
-      devmode.dmFields |= 
-         DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
-      res               = 
-         win32_change_display_settings(NULL, &devmode, CDS_TEST);
-
-      switch (res) 
-      {
-         case DISP_CHANGE_SUCCESSFUL:
-            res = win32_change_display_settings(NULL, &devmode, flags);
-            switch (res) 
-            {
-               case DISP_CHANGE_SUCCESSFUL:
-                  return;
-               case DISP_CHANGE_NOTUPDATED:
-                  return;
-               default:
-                  break;
-            }
-            break;
-         case DISP_CHANGE_RESTART:
-            break;
-         default:
-            break;
-      }
-   }
-#elif defined(linux)
-
-#endif   
-}
-
 static void switch_crt_hz(void)
 {
    if (ra_core_hz == ra_tmp_core_hz)
@@ -164,7 +86,8 @@ static void switch_res_crt(unsigned width, unsigned height)
 {
    if (height > 100)
    {
-      crt_switch_res(width, height, 0, ra_set_core_hz);
+      video_display_server_switch_resolution(width, height,
+            0, ra_set_core_hz);
       video_driver_apply_state_changes();
    }
 }
@@ -263,5 +186,6 @@ void crt_switch_res_core(unsigned width, unsigned height, float hz)
 
 void crt_video_restore(void)
 {
-   crt_switch_res(orig_width, orig_height, 0, 60);
+   video_display_server_switch_resolution(orig_width, orig_height,
+         0, 60);
 }
