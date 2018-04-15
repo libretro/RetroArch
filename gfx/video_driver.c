@@ -1414,9 +1414,10 @@ bool video_driver_cached_frame(void)
 
 void video_driver_monitor_adjust_system_rates(void)
 {
-   float timing_skew;
+   float timing_skew                      = 0.0f;
    settings_t *settings                   = config_get_ptr();
    float video_refresh_rate               = settings->floats.video_refresh_rate;
+   float timing_skew_hz                   = video_refresh_rate;
    const struct retro_system_timing *info = (const struct retro_system_timing*)&video_driver_av_info.timing;
 
    rarch_ctl(RARCH_CTL_UNSET_NONBLOCK_FORCED, NULL);
@@ -1424,12 +1425,12 @@ void video_driver_monitor_adjust_system_rates(void)
    if (!info || info->fps <= 0.0)
       return;
 
-	video_driver_core_hz                   = info->fps;
+   video_driver_core_hz                   = info->fps;
 
-  if (video_driver_crt_switching_active)
-	  timing_skew = fabs(1.0f - info->fps / video_driver_core_hz);
-  else 
-	  timing_skew = fabs(1.0f - info->fps / video_refresh_rate);
+   if (video_driver_crt_switching_active)
+      timing_skew_hz                       = video_driver_core_hz;
+   timing_skew                             = fabs(
+         1.0f - info->fps / timing_skew_hz);
 
    /* We don't want to adjust pitch too much. If we have extreme cases,
     * just don't readjust at all. */
@@ -1439,17 +1440,9 @@ void video_driver_monitor_adjust_system_rates(void)
    RARCH_LOG("[Video]: Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
          video_refresh_rate,
          (float)info->fps);
-	
-  if (video_driver_crt_switching_active)
-  {
-     if (info->fps <= video_driver_core_hz)
-        return;
-  } 
-  else 
-  {
-     if (info->fps <= video_refresh_rate)
-        return;
-  }
+
+   if (info->fps <= timing_skew_hz)
+      return;
 
    /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
    rarch_ctl(RARCH_CTL_SET_NONBLOCK_FORCED, NULL);
