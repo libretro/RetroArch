@@ -2954,6 +2954,10 @@ MSG_HASH(
 	"Frecuencia estimada del monitor"
 	)
 MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+	"Set Display-Reported Refresh Rate"
+	)
+MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
 	"Rotación"
 	)
@@ -3440,6 +3444,10 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
 	"Estimado preciso de refresco de la pantalla en Hz"
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+	"The refresh rate as reported by the display driver."
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,

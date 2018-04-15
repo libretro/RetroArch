@@ -1203,6 +1203,13 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "not run at 60Hz, or something close to it, \n"
                              "disable VSync, and leave this at its default.");
             break;
+        case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED:
+            snprintf(s, len,
+                     "Set Polled Refresh Rate\n"
+                             " \n"
+                            "Sets the refresh rate to the actual value\n"
+                            "polled from the display driver.");
+            break;
         case MENU_ENUM_LABEL_VIDEO_ROTATION:
             snprintf(s, len,
                      "Forces a certain rotation \n"

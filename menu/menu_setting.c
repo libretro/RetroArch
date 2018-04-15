@@ -1156,6 +1156,13 @@ static int setting_action_right_mouse_index(void *data, bool wraparound)
 **/
 
 static void
+setting_get_string_representation_st_float_video_refresh_rate_polled(
+      void *data, char *s, size_t len)
+{
+    snprintf(s, len, "%.5f Hz", video_driver_get_refresh_rate());
+}
+
+static void
 setting_get_string_representation_st_float_video_refresh_rate_auto(
       void *data, char *s, size_t len)
 {
@@ -1404,6 +1411,12 @@ void general_write_handler(void *data)
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
+         driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, setting->value.target.fraction);
+
+         /* In case refresh rate update forced non-block video. */
+         rarch_cmd = CMD_EVENT_VIDEO_SET_BLOCKING_STATE;
+         break;
+      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED:
          driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, setting->value.target.fraction);
 
          /* In case refresh rate update forced non-block video. */
@@ -3165,6 +3178,30 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_st_float_video_refresh_rate_auto;
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            {
+               float actual_refresh_rate = video_driver_get_refresh_rate();
+               if (actual_refresh_rate > 0.0)
+               {
+                  CONFIG_FLOAT(
+                     list, list_info,
+                     &settings->floats.video_refresh_rate,
+                     MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+                     actual_refresh_rate,
+                     "%.3f Hz",
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+                  (*list)[list_info->index - 1].action_ok     = &setting_action_ok_video_refresh_rate_polled;
+                  (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_polled;
+                  (*list)[list_info->index - 1].get_string_representation =
+                     &setting_get_string_representation_st_float_video_refresh_rate_polled;
+                  settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               }
+            }
 
             if (string_is_equal(settings->arrays.video_driver, "gl"))
             {

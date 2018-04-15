@@ -132,6 +132,7 @@ default_sublabel_macro(action_bind_sublabel_core_allow_rotate,             MENU_
 default_sublabel_macro(action_bind_sublabel_dummy_on_core_shutdown,        MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN)
 default_sublabel_macro(action_bind_sublabel_dummy_check_missing_firmware,  MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE)
 default_sublabel_macro(action_bind_sublabel_video_refresh_rate,            MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE)
+default_sublabel_macro(action_bind_sublabel_video_refresh_rate_polled,     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED)
 default_sublabel_macro(action_bind_sublabel_audio_enable,                  MENU_ENUM_SUBLABEL_AUDIO_ENABLE)
 default_sublabel_macro(action_bind_sublabel_audio_max_timing_skew,         MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW)
 default_sublabel_macro(action_bind_sublabel_pause_nonactive,               MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE)
@@ -1418,6 +1419,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_refresh_rate_auto);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_refresh_rate_polled);
             break;
          case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_monitor_index);
