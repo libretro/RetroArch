@@ -256,6 +256,19 @@ void win32_monitor_from_window(void)
 #endif
 }
 
+int win32_change_display_settings(const char *str, void *devmode_data,
+      unsigned flags)
+{
+#if _WIN32_WINDOWS >= 0x0410 || _WIN32_WINNT >= 0x0410
+   /* Windows 98 and later codepath */
+   return ChangeDisplaySettingsEx(str, (DEVMODE*)devmode_data,
+         NULL, flags, NULL);
+#else
+   /* Windows 95 / NT codepath */
+   return ChangeDisplaySettings((DEVMODE*)devmode_data, flags);
+#endif
+}
+
 void win32_monitor_get_info(void)
 {
    MONITORINFOEX current_mon;
@@ -265,13 +278,7 @@ void win32_monitor_get_info(void)
 
    GetMonitorInfo(win32_monitor_last, (LPMONITORINFO)&current_mon);
 
-#if _WIN32_WINDOWS >= 0x0410 || _WIN32_WINNT >= 0x0410
-   /* Windows 98 and later codepath */
-   ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
-#else
-   /* Windows 95 / NT codepath */
-   ChangeDisplaySettings(NULL, 0);
-#endif
+   win32_change_display_settings(current_mon.szDevice, NULL, 0);
 }
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
@@ -902,14 +909,8 @@ static bool win32_monitor_set_fullscreen(
    RARCH_LOG("Setting fullscreen to %ux%u @ %uHz on device %s.\n",
          width, height, refresh, dev_name);
 
-#if _WIN32_WINDOWS >= 0x0410 || _WIN32_WINNT >= 0x0410
-   /* Windows 98 and later codepath */
-   return ChangeDisplaySettingsEx(dev_name, &devmode,
-         NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
-#else
-   /* Windows 95 / NT codepath */
-   return ChangeDisplaySettings(&devmode, CDS_FULLSCREEN);
-#endif
+   return win32_change_display_settings(dev_name, &devmode,
+         CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
 #endif
 }
 

@@ -56,6 +56,9 @@ void win32_monitor_get_info(void);
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 
+int win32_change_display_settings(const char *str, void *devmode_data,
+      unsigned flags);
+
 void create_graphics_context(HWND hwnd, bool *quit);
 
 void create_gdi_context(HWND hwnd, bool *quit);

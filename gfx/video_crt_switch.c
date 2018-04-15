@@ -21,7 +21,8 @@
 #include <stdlib.h>
 
 #if defined(_WIN32)
-   #include <windows.h>
+#include <windows.h>
+#include "common/win32_common.h"
 #endif
 
 #include "video_driver.h"
@@ -235,13 +236,15 @@ void crt_switch_res(int width, int height, int f_restore,int  ra_hz)
       if (devmode.dmDisplayFrequency != freq) 
          continue;
 
-      devmode.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
-      res               = ChangeDisplaySettings(&devmode, CDS_TEST);
+      devmode.dmFields |= 
+         DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
+      res               = 
+         win32_change_display_settings(NULL, &devmode, CDS_TEST);
 
       switch (res) 
       {
          case DISP_CHANGE_SUCCESSFUL:
-            res = ChangeDisplaySettings(&devmode, flags);
+            res = win32_change_display_settings(NULL, &devmode, flags);
             switch (res) 
             {
                case DISP_CHANGE_SUCCESSFUL:
