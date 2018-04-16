@@ -83,18 +83,22 @@ extern void *dinput_wgl;
 extern void *dinput;
 #endif
 
-unsigned g_resize_width             = 0;
-unsigned g_resize_height            = 0;
 static bool g_resized               = false;
 bool g_restore_desktop              = false;
 static bool doubleclick_on_titlebar = false;
+static bool g_taskbar_is_created    = false;
 bool g_inited                       = false;
 static bool g_quit                  = false;
+
 static int g_pos_x                  = CW_USEDEFAULT;
 static int g_pos_y                  = CW_USEDEFAULT;
-static void *curD3D                 = NULL;
-static bool g_taskbar_is_created    = false;
+
+unsigned g_resize_width             = 0;
+unsigned g_resize_height            = 0;
 static unsigned g_taskbar_message   = 0;
+static unsigned win32_monitor_count = 0;
+
+static void *curD3D                 = NULL;
 
 ui_window_win32_t main_window;
 
@@ -147,7 +151,6 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 
 static HMONITOR win32_monitor_last;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
-static unsigned win32_monitor_count              = 0;
 
 bool win32_taskbar_is_created(void)
 {
@@ -283,14 +286,14 @@ void win32_monitor_get_info(void)
 
 float win32_get_refresh_rate(void *data)
 {
-   float refresh_rate = 0.0f;
+   float refresh_rate                      = 0.0f;
 #if _WIN32_WINNT >= 0x0601 || _WIN32_WINDOWS >= 0x0601 /* Win 7 */
-   unsigned int NumPathArrayElements;
-   unsigned int NumModeInfoArrayElements;
-   DISPLAYCONFIG_PATH_INFO *PathInfoArray;
-   DISPLAYCONFIG_MODE_INFO *ModeInfoArray;
    DISPLAYCONFIG_TOPOLOGY_ID TopologyID;
-   int result;
+   unsigned int NumPathArrayElements       = 0;
+   unsigned int NumModeInfoArrayElements   = 0;
+   DISPLAYCONFIG_PATH_INFO *PathInfoArray  = NULL;
+   DISPLAYCONFIG_MODE_INFO *ModeInfoArray  = NULL;
+   int result                              = 0;
 
    GetDisplayConfigBufferSizes(QDC_DATABASE_CURRENT,
                                &NumPathArrayElements,
@@ -419,10 +422,10 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
          {
             const core_info_t *info = (const core_info_t*)&core_info[i];
 
-            if(!string_is_equal(info->systemname, current_core->systemname))
+            if (!string_is_equal(info->systemname, current_core->systemname))
                break;
 
-            if(string_is_equal(path_get(RARCH_PATH_CORE), info->path))
+            if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
             {
                /* Our previous core supports the current rom */
                content_ctx_info_t content_info = {0};
@@ -437,29 +440,22 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       }
 
       /* Poll for cores for current rom since none exist. */
-      if(list_size ==1)
+      if (list_size ==1)
       {
          /*pick core that only exists and is bound to work. Ish. */
          const core_info_t *info = (const core_info_t*)&core_info[0];
 
          if (info)
             task_push_load_content_with_new_core_from_companion_ui(
-                  info->path, NULL,
-                  &content_info,
-                  NULL, NULL);
+                  info->path, NULL, &content_info, NULL, NULL);
       }
       else
       {
          /* Pick one core that could be compatible, ew */
-         if(DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),
+         if (DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),
                   hwnd,PickCoreProc,(LPARAM)NULL)==IDOK)
-         {
             task_push_load_content_with_current_core_from_companion_ui(
-                  NULL,
-                  &content_info,
-                  CORE_TYPE_PLAIN,
-                  NULL, NULL);
-         }
+                  NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
       }
    }
 
@@ -470,10 +466,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 		WPARAM wparam, LPARAM lparam)
 {
-   unsigned keycode      = 0;
    uint16_t mod          = 0;
-   bool keydown          = true;
-   settings_t *settings  = NULL;
 
    if (GetKeyState(VK_SHIFT)   & 0x80)
       mod |= RETROKMOD_SHIFT;
@@ -494,7 +487,7 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
        * WM_CHAR and WM_KEYDOWN properly.
        */
       case WM_CHAR:
-         input_keyboard_event(keydown, RETROK_UNKNOWN, wparam, mod,
+         input_keyboard_event(true, RETROK_UNKNOWN, wparam, mod,
                RETRO_DEVICE_KEYBOARD);
          return TRUE;
 
@@ -502,35 +495,35 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       case WM_SYSKEYUP:
       case WM_KEYDOWN:
       case WM_SYSKEYDOWN:
-         /* Key released? */
-         if (message == WM_KEYUP || message == WM_SYSKEYUP)
-            keydown = false;
-
-#if _WIN32_WINNT >= 0x0501 /* XP */
-         settings  = config_get_ptr();
-         if (settings && string_is_equal(settings->arrays.input_driver, "raw"))
-            keycode = input_keymaps_translate_keysym_to_rk((unsigned)(wparam));
-         else
-#endif
-            keycode = input_keymaps_translate_keysym_to_rk((lparam >> 16) & 0xff);
-
-         input_keyboard_event(keydown, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
-
-         if (message == WM_SYSKEYDOWN)
          {
-            switch (wparam)
-            {
-               case VK_F10:
-               case VK_MENU:
-               case VK_RSHIFT:
-                  return 0;
-               default:
-                  break;
-            }
-         }
-         else
-            return 0;
+            unsigned keycode      = 0;
+            bool keydown          = true;
+            unsigned keysym       = (lparam >> 16) & 0xff;
+#if _WIN32_WINNT >= 0x0501 /* XP */
+            settings_t *settings  = config_get_ptr();
+            if (settings && string_is_equal(settings->arrays.input_driver, "raw"))
+               keysym             = (unsigned)wparam;
+#endif
 
+            /* Key released? */
+            if (message == WM_KEYUP || message == WM_SYSKEYUP)
+               keydown            = false;
+
+            keycode = input_keymaps_translate_keysym_to_rk(keysym);
+
+            input_keyboard_event(keydown, keycode,
+                  0, mod, RETRO_DEVICE_KEYBOARD);
+
+            if (message != WM_SYSKEYDOWN)
+               return 0;
+
+            if (
+                  wparam == VK_F10  ||
+                  wparam == VK_MENU ||
+                  wparam == VK_RSHIFT
+               )
+               return 0;
+         }
          break;
    }
 
@@ -590,7 +583,8 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          break;
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
-         if (wparam != SIZE_MAXHIDE && wparam != SIZE_MINIMIZED)
+         if (  wparam != SIZE_MAXHIDE && 
+               wparam != SIZE_MINIMIZED)
          {
             g_resize_width  = LOWORD(lparam);
             g_resize_height = HIWORD(lparam);
@@ -886,9 +880,7 @@ bool win32_window_create(void *data, unsigned style,
 bool win32_get_metrics(void *data,
    enum display_metric_types type, float *value)
 {
-#ifdef _XBOX
-   return false;
-#else
+#ifndef _XBOX
    HDC monitor            = GetDC(NULL);
    int pixels_x           = GetDeviceCaps(monitor, HORZRES);
    int pixels_y           = GetDeviceCaps(monitor, VERTRES);
@@ -901,22 +893,22 @@ bool win32_get_metrics(void *data,
    {
       case DISPLAY_METRIC_MM_WIDTH:
          *value = physical_width;
-         break;
+         return true;
       case DISPLAY_METRIC_MM_HEIGHT:
          *value = physical_height;
-         break;
+         return true;
       case DISPLAY_METRIC_DPI:
          /* 25.4 mm in an inch. */
          *value = 254 * pixels_x / physical_width / 10;
-         break;
+         return true;
       case DISPLAY_METRIC_NONE:
       default:
          *value = 0;
-         return false;
+         break;
    }
-
-   return true;
 #endif
+
+   return false;
 }
 
 void win32_monitor_init(void)
@@ -986,7 +978,7 @@ void win32_check_window(bool *quit, bool *resize,
 bool win32_suppress_screensaver(void *data, bool enable)
 {
 #ifndef _XBOX
-   if(enable)
+   if (enable)
    {
       char tmp[PATH_MAX_LENGTH];
       int major                             = 0;
@@ -1012,16 +1004,20 @@ bool win32_suppress_screensaver(void *data, bool enable)
          PowerSetRequestPtr    powerSetRequest =
             (PowerSetRequestPtr)GetProcAddress(kernel32, "PowerSetRequest");
 
-         if(powerCreateRequest && powerSetRequest)
+         if (powerCreateRequest && powerSetRequest)
          {
             POWER_REQUEST_CONTEXT RequestContext;
             HANDLE Request;
 
-            RequestContext.Version = POWER_REQUEST_CONTEXT_VERSION;
-            RequestContext.Flags = POWER_REQUEST_CONTEXT_SIMPLE_STRING;
-            RequestContext.Reason.SimpleReasonString = (LPWSTR)L"RetroArch running";
+            RequestContext.Version                   = 
+               POWER_REQUEST_CONTEXT_VERSION;
+            RequestContext.Flags                     = 
+               POWER_REQUEST_CONTEXT_SIMPLE_STRING;
+            RequestContext.Reason.SimpleReasonString = (LPWSTR)
+               L"RetroArch running";
 
-            Request = powerCreateRequest(&RequestContext);
+            Request                                  = 
+               powerCreateRequest(&RequestContext);
 
             powerSetRequest( Request, PowerRequestDisplayRequired);
             return true;
@@ -1075,8 +1071,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
          *style          = WS_POPUP | WS_VISIBLE;
 
          if (!win32_monitor_set_fullscreen(*width, *height,
-                  refresh, current_mon->szDevice))
-         {}
+                  refresh, current_mon->szDevice)) { }
 
          /* Display settings might have changed, get new coordinates. */
          GetMonitorInfo(*hm_to_use, (LPMONITORINFO)current_mon);
@@ -1184,11 +1179,9 @@ bool win32_set_video_mode(void *data,
          RARCH_ERR("GetMessage error code %d\n", GetLastError());
          break;
       }
-      else
-      {
-         TranslateMessage(&msg);
-         DispatchMessage(&msg);
-      }
+
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
    }
 
    if (g_quit)
@@ -1280,7 +1273,7 @@ void win32_get_video_output_prev(
          EnumDisplaySettings(NULL, i, &dm) != 0;
          i++)
    {
-      if (     dm.dmPelsWidth == curr_width
+      if (     dm.dmPelsWidth  == curr_width
             && dm.dmPelsHeight == curr_height)
       {
          if (     prev_width  != curr_width
@@ -1327,7 +1320,7 @@ void win32_get_video_output_next(
          break;
       }
 
-      if (     dm.dmPelsWidth == curr_width
+      if (     dm.dmPelsWidth  == curr_width
             && dm.dmPelsHeight == curr_height)
          found = true;
    }
@@ -1337,7 +1330,7 @@ void win32_get_video_output_size(unsigned *width, unsigned *height)
 {
    DEVMODE dm;
    memset(&dm, 0, sizeof(dm));
-   dm.dmSize = sizeof(dm);
+   dm.dmSize  = sizeof(dm);
 
    if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm) != 0)
    {
