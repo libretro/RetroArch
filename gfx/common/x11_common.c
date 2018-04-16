@@ -66,7 +66,7 @@ Display *g_x11_dpy                          = NULL;
 unsigned g_x11_screen                       = 0;
 
 Colormap g_x11_cmap;
-Window   g_x11_win;
+Window   g_x11_win = None;
 
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
@@ -242,7 +242,12 @@ float x11_get_refresh_rate(void *data)
    int screenid;
    int dotclock;
 
-   XGetWindowAttributes(g_x11_dpy, g_x11_win, &attr);
+   if (!g_x11_dpy || g_x11_win == None)
+      return 0.0f;
+
+   if (!XGetWindowAttributes(g_x11_dpy, g_x11_win, &attr))
+      return 0.0f;
+
    screen = attr.screen;
    screenid = XScreenNumberOfScreen(screen);
 
