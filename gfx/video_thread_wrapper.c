@@ -1258,6 +1258,7 @@ static const video_poke_interface_t thread_poke = {
    thread_load_texture,
    thread_unload_texture,
    thread_set_video_mode,
+   NULL,
    thread_set_filtering,
    thread_get_video_output_size,
    thread_get_video_output_prev,

@@ -795,6 +795,7 @@ static const video_poke_interface_t vita_poke_interface = {
    vita_load_texture,
    vita_unload_texture,
    NULL,
+   NULL, /* get_refresh_rate */
    vita_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

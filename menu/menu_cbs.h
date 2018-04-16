@@ -163,6 +163,8 @@ int action_right_cheat(unsigned type, const char *label,
 
 int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound);
 
+int setting_action_ok_video_refresh_rate_polled(void *data, bool wraparound);
+
 int setting_action_ok_bind_all(void *data, bool wraparound);
 
 int setting_action_ok_bind_all_save_autoconfig(void *data,

@@ -128,6 +128,8 @@ bool win32_taskbar_is_created(void);
 
 void win32_set_taskbar_created(bool created);
 
+float win32_get_refresh_rate(void *data);
+
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);

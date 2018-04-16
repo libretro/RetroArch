@@ -154,6 +154,27 @@ int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound)
    return 0;
 }
 
+int setting_action_ok_video_refresh_rate_polled(void *data, bool wraparound)
+{
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   float refresh_rate = 0.0;
+
+   if (!setting)
+     return -1;
+
+   if ((refresh_rate = video_driver_get_refresh_rate()) == 0.0)
+      return -1;
+
+   driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
+   /* Incase refresh rate update forced non-block video. */
+   command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
+
+   if (setting_generic_action_ok_default(setting, wraparound) != 0)
+      return -1;
+
+   return 0;
+}
+
 int setting_action_ok_bind_all(void *data, bool wraparound)
 {
    (void)wraparound;

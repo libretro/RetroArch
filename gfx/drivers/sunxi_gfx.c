@@ -937,6 +937,7 @@ static const video_poke_interface_t sunxi_poke_interface = {
    NULL,
    NULL,
    NULL, /* set_video_mode */
+   NULL, /* get_refresh_rate */
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

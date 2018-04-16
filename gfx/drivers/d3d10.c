@@ -557,6 +557,7 @@ static const video_poke_interface_t d3d10_poke_interface = {
    NULL, /* load_texture */
    NULL, /* unload_texture */
    NULL, /* set_video_mode */
+   win32_get_refresh_rate,
    d3d10_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

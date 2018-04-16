@@ -3189,6 +3189,16 @@ bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
    return false;
 }
 
+bool video_context_driver_get_refresh_rate(float *refresh_rate)
+{
+   if (!current_video_context.get_refresh_rate || !refresh_rate)
+      return false;
+
+   *refresh_rate = current_video_context.get_refresh_rate(video_context_data);
+
+   return true;
+}
+
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp)
 {
    settings_t *settings    = config_get_ptr();
@@ -3683,4 +3693,12 @@ void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
       if (video_driver_poke && video_driver_poke->set_mvp)
          video_driver_poke->set_mvp(mvp->data, current_shader_data, mvp->matrix);
    }
+}
+
+float video_driver_get_refresh_rate(void)
+{
+   if (video_driver_poke && video_driver_poke->get_refresh_rate)
+      return video_driver_poke->get_refresh_rate(video_driver_data);
+
+   return 0.0f;
 }
