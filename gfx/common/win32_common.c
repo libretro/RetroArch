@@ -15,14 +15,21 @@
 
 #if !defined(_XBOX)
 
+#if !defined(_MSC_VER)
+
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0601 /* Windows 7 */
 #endif
 
-#if !defined(_MSC_VER) || _WIN32_WINNT >= 0x0601
-#undef WINVER
-#define WINVER 0x0601
+#ifndef _WIN32_WINDOWS
+#define _WIN32_WINDOWS _WIN32_WINNT
 #endif
+
+#ifndef WINVER
+#define WINVER _WIN32_WINNT
+#endif
+
+#endif /* !defined(_MSC_VER) */
 
 #define IDI_ICON 1
 
