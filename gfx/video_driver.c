@@ -144,6 +144,7 @@ static void               *video_driver_state_buffer     = NULL;
 static unsigned            video_driver_state_scale      = 0;
 static unsigned            video_driver_state_out_bpp    = 0;
 static bool                video_driver_state_out_rgb32      = false;
+static bool                video_driver_crt_switched         = false;
 static bool                video_driver_crt_switching_active = false;
 
 static struct retro_system_av_info video_driver_av_info;
@@ -1571,7 +1572,13 @@ static void video_driver_lock_new(void)
 void video_driver_destroy(void)
 {
    video_display_server_destroy();
-   crt_video_restore();					
+
+   if (video_driver_crt_switched)
+   {
+      crt_video_restore();
+      video_driver_crt_switched   = false;
+   }
+
    video_driver_cb_has_focus      = null_driver_has_focus;
    video_driver_use_rgba          = false;
    video_driver_data_own          = false;
@@ -2599,6 +2606,7 @@ void video_driver_frame(const void *data, unsigned width,
   	/* trigger set resolution*/
 	if (video_info.crt_switch_resolution)
    {
+      video_driver_crt_switched         = true;
       video_driver_crt_switching_active = true;
 
       if (video_info.crt_switch_resolution_super == 2560)
