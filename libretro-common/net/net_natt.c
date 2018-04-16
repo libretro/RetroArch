@@ -1,4 +1,4 @@
-/* Copyright  (C) 2016-2017 The RetroArch team
+/* Copyright  (C) 2016-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_natt.c).
