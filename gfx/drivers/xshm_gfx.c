@@ -203,18 +203,13 @@ static void xshm_grab_mouse_toggle(void *data)
 
 }
 
-static float xshm_poke_get_refresh_rate(void *data)
-{
-   return x11_get_refresh_rate(data);
-}
-
 static video_poke_interface_t xshm_video_poke_interface = {
    NULL,       /* set_coords */
    NULL,       /* set_mvp */
    NULL,
    NULL,
    NULL,
-   xshm_poke_get_refresh_rate,
+   x11_get_refresh_rate,
    xshm_poke_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

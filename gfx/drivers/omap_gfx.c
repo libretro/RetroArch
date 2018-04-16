@@ -1129,13 +1129,23 @@ static void omap_gfx_set_texture_enable(void *data, bool state, bool full_screen
    (void) full_screen;
 }
 
+static float omap_get_refresh_rate(void *data)
+{
+   omap_video_t *vid = (omap_video_t*)data;
+   struct fb_var_screeninfo *s = &vid->omap->current_state->si;
+
+   return 1000000.0f / s->pixclock /
+          (s->xres + s->left_margin + s->right_margin + s->hsync_len) * 1000000.0f /
+          (s->yres + s->upper_margin + s->lower_margin + s->vsync_len);
+}
+
 static const video_poke_interface_t omap_gfx_poke_interface = {
    NULL, /* set_coords */
    NULL, /* set_mvp */
    NULL,
    NULL,
    NULL,
-   NULL, /* get_refresh_rate */
+   omap_get_refresh_rate,
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
