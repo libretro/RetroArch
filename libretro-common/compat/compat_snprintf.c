@@ -24,8 +24,9 @@
 #ifdef _MSC_VER
 
 #include <retro_common.h>
-
+#if _MSC_VER >= 1900
 #include <stdio.h> /* added for _vsnprintf_s and _vscprintf on VS2015 and VS2017 */
+#endif
 #include <stdarg.h>
 
 #if _MSC_VER < 1800
