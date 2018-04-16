@@ -1375,7 +1375,7 @@ static float gfx_ctx_wl_get_refresh_rate(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   return (float) wl->refresh_rate * 1000.0f;
+   return (float) wl->refresh_rate / 1000.0f;
 }
 
 const gfx_ctx_driver_t gfx_ctx_wayland = {
