@@ -281,6 +281,45 @@ void win32_monitor_get_info(void)
    win32_change_display_settings(current_mon.szDevice, NULL, 0);
 }
 
+float win32_get_refresh_rate(void *data)
+{
+   float refresh_rate = 0.0f;
+#if _WIN32_WINNT >= 0x0601 || _WIN32_WINDOWS >= 0x0601 /* Win 7 */
+   unsigned int NumPathArrayElements;
+   unsigned int NumModeInfoArrayElements;
+   DISPLAYCONFIG_PATH_INFO *PathInfoArray;
+   DISPLAYCONFIG_MODE_INFO *ModeInfoArray;
+   DISPLAYCONFIG_TOPOLOGY_ID TopologyID;
+   int result;
+
+   GetDisplayConfigBufferSizes(QDC_DATABASE_CURRENT,
+                               &NumPathArrayElements,
+                                &NumModeInfoArrayElements);
+
+   PathInfoArray = (DISPLAYCONFIG_PATH_INFO *)
+      malloc(sizeof (DISPLAYCONFIG_PATH_INFO) * NumPathArrayElements);
+   ModeInfoArray = (DISPLAYCONFIG_MODE_INFO *)
+      malloc(sizeof (DISPLAYCONFIG_MODE_INFO) * NumModeInfoArrayElements);
+
+   result = QueryDisplayConfig(QDC_DATABASE_CURRENT,
+                               &NumPathArrayElements,
+                               PathInfoArray,
+                               &NumModeInfoArrayElements,
+                               ModeInfoArray,
+                               &TopologyID);
+   if (result == ERROR_SUCCESS && NumPathArrayElements >= 1)
+   {
+      refresh_rate = (float) PathInfoArray[0].targetInfo.refreshRate.Numerator /
+                             PathInfoArray[0].targetInfo.refreshRate.Denominator;
+   }
+
+   free(ModeInfoArray);
+   free(PathInfoArray);
+
+#endif
+   return refresh_rate;
+}
+
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 {
    unsigned i;

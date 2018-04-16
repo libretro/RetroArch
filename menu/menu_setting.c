@@ -1159,7 +1159,7 @@ static void
 setting_get_string_representation_st_float_video_refresh_rate_polled(
       void *data, char *s, size_t len)
 {
-    snprintf(s, len, "%.5f Hz", video_driver_get_refresh_rate());
+    snprintf(s, len, "%.3f Hz", video_driver_get_refresh_rate());
 }
 
 static void
