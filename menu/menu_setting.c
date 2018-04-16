@@ -2253,6 +2253,14 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_LATENCY_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_CORE_SETTINGS,
                MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
                &group_info,

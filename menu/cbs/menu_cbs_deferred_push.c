@@ -155,6 +155,7 @@ generic_deferred_push(deferred_push_directory_settings_list,        DISPLAYLIST_
 generic_deferred_push(deferred_push_privacy_settings_list,          DISPLAYLIST_PRIVACY_SETTINGS_LIST)
 generic_deferred_push(deferred_push_audio_settings_list,            DISPLAYLIST_AUDIO_SETTINGS_LIST)
 generic_deferred_push(deferred_push_input_settings_list,            DISPLAYLIST_INPUT_SETTINGS_LIST)
+generic_deferred_push(deferred_push_latency_settings_list,          DISPLAYLIST_LATENCY_SETTINGS_LIST)
 generic_deferred_push(deferred_push_recording_settings_list,        DISPLAYLIST_RECORDING_SETTINGS_LIST)
 generic_deferred_push(deferred_push_playlist_settings_list,         DISPLAYLIST_PLAYLIST_SETTINGS_LIST)
 generic_deferred_push(deferred_push_input_hotkey_binds_list,        DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST)
@@ -809,6 +810,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
    }
    else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_latency_settings_list);
+   }
+   else if (strstr(label,
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
@@ -1157,6 +1163,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_latency_settings_list);
                break;
             case MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_settings_list);
