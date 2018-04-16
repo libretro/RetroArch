@@ -13,6 +13,22 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if !defined(_XBOX)
+
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0601 /* Windows 7 */
+#endif
+
+#if !defined(_MSC_VER) || _WIN32_WINNT >= 0x0601
+#undef WINVER
+#define WINVER 0x0601
+#endif
+
+#define IDI_ICON 1
+
+#include <windows.h>
+#endif /* !defined(_XBOX) */
+
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 
@@ -33,13 +49,6 @@
 
 #if !defined(_XBOX)
 
-#define IDI_ICON 1
-
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0500 /* _WIN32_WINNT_WIN2K */
-#endif
-
-#include <windows.h>
 #include <commdlg.h>
 #include <dbt.h>
 #include "../../retroarch.h"
@@ -282,45 +291,6 @@ void win32_monitor_get_info(void)
    GetMonitorInfo(win32_monitor_last, (LPMONITORINFO)&current_mon);
 
    win32_change_display_settings(current_mon.szDevice, NULL, 0);
-}
-
-float win32_get_refresh_rate(void *data)
-{
-   float refresh_rate                      = 0.0f;
-#if _WIN32_WINNT >= 0x0601 || _WIN32_WINDOWS >= 0x0601 /* Win 7 */
-   DISPLAYCONFIG_TOPOLOGY_ID TopologyID;
-   unsigned int NumPathArrayElements       = 0;
-   unsigned int NumModeInfoArrayElements   = 0;
-   DISPLAYCONFIG_PATH_INFO *PathInfoArray  = NULL;
-   DISPLAYCONFIG_MODE_INFO *ModeInfoArray  = NULL;
-   int result                              = 0;
-
-   GetDisplayConfigBufferSizes(QDC_DATABASE_CURRENT,
-                               &NumPathArrayElements,
-                                &NumModeInfoArrayElements);
-
-   PathInfoArray = (DISPLAYCONFIG_PATH_INFO *)
-      malloc(sizeof (DISPLAYCONFIG_PATH_INFO) * NumPathArrayElements);
-   ModeInfoArray = (DISPLAYCONFIG_MODE_INFO *)
-      malloc(sizeof (DISPLAYCONFIG_MODE_INFO) * NumModeInfoArrayElements);
-
-   result = QueryDisplayConfig(QDC_DATABASE_CURRENT,
-                               &NumPathArrayElements,
-                               PathInfoArray,
-                               &NumModeInfoArrayElements,
-                               ModeInfoArray,
-                               &TopologyID);
-   if (result == ERROR_SUCCESS && NumPathArrayElements >= 1)
-   {
-      refresh_rate = (float) PathInfoArray[0].targetInfo.refreshRate.Numerator /
-                             PathInfoArray[0].targetInfo.refreshRate.Denominator;
-   }
-
-   free(ModeInfoArray);
-   free(PathInfoArray);
-
-#endif
-   return refresh_rate;
 }
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
@@ -1293,6 +1263,57 @@ void win32_get_video_output_prev(
       *width       = prev_width;
       *height      = prev_height;
    }
+}
+
+float win32_get_refresh_rate(void *data)
+{
+   float refresh_rate                      = 0.0f;
+#if _WIN32_WINNT >= 0x0601 || _WIN32_WINDOWS >= 0x0601 /* Win 7 */
+   OSVERSIONINFO version_info;
+   DISPLAYCONFIG_TOPOLOGY_ID TopologyID;
+   unsigned int NumPathArrayElements       = 0;
+   unsigned int NumModeInfoArrayElements   = 0;
+   DISPLAYCONFIG_PATH_INFO *PathInfoArray  = NULL;
+   DISPLAYCONFIG_MODE_INFO *ModeInfoArray  = NULL;
+   int result                              = 0;
+
+   version_info.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+   if (!GetVersionEx(&version_info))
+      return refresh_rate;
+
+   if (version_info.dwMajorVersion < 6 ||
+       (version_info.dwMajorVersion == 6 && version_info.dwMinorVersion < 1))
+       return refresh_rate;
+
+   result = GetDisplayConfigBufferSizes(QDC_DATABASE_CURRENT,
+                                        &NumPathArrayElements,
+                                        &NumModeInfoArrayElements);
+
+   if (result != ERROR_SUCCESS)
+      return refresh_rate;
+
+   PathInfoArray = (DISPLAYCONFIG_PATH_INFO *)
+      malloc(sizeof(DISPLAYCONFIG_PATH_INFO) * NumPathArrayElements);
+   ModeInfoArray = (DISPLAYCONFIG_MODE_INFO *)
+      malloc(sizeof(DISPLAYCONFIG_MODE_INFO) * NumModeInfoArrayElements);
+
+   result = QueryDisplayConfig(QDC_DATABASE_CURRENT,
+                               &NumPathArrayElements,
+                               PathInfoArray,
+                               &NumModeInfoArrayElements,
+                               ModeInfoArray,
+                               &TopologyID);
+   if (result == ERROR_SUCCESS && NumPathArrayElements >= 1)
+   {
+      refresh_rate = (float) PathInfoArray[0].targetInfo.refreshRate.Numerator /
+                             PathInfoArray[0].targetInfo.refreshRate.Denominator;
+   }
+
+   free(ModeInfoArray);
+   free(PathInfoArray);
+
+#endif
+   return refresh_rate;
 }
 
 void win32_get_video_output_next(

@@ -168,6 +168,18 @@ void drm_setup(int fd)
       RARCH_WARN("[DRM]: Cannot find original CRTC.\n");
 }
 
+float drm_get_refresh_rate(void *data)
+{
+   float refresh_rate = 0.0f;
+
+   if (g_drm_mode)
+   {
+      refresh_rate = g_drm_mode->clock * 1000.0f / g_drm_mode->htotal / g_drm_mode->vtotal;
+   }
+
+   return refresh_rate;
+}
+
 void drm_free(void)
 {
    if (g_drm_encoder)

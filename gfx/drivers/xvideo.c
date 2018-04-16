@@ -933,11 +933,36 @@ static bool xv_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return true;
 }
 
+static video_poke_interface_t xv_video_poke_interface = {
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   x11_get_refresh_rate,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL
+};
+
 static void xv_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
    (void)data;
-   (void)iface;
+   *iface = &xv_video_poke_interface;
 }
 
 static bool xv_set_shader(void *data,
