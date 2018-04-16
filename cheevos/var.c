@@ -191,12 +191,6 @@ void cheevos_var_patch_addr(cheevos_var_t* var, cheevos_console_t console)
          var->value -= 0x2000;
       }
    }
-   else if (console == CHEEVOS_CONSOLE_NEOGEO_POCKET)
-   {
-      if (var->value >= 0x4000 && var->value <= 0x7fff)
-      CHEEVOS_LOG(CHEEVOS_TAG "NGP memory address %X adjusted to %X\n", var->value, var->value - 0x004000);
-      var->value -= 0x4000;
-   }
 
    if (system->mmaps.num_descriptors != 0)
    {
