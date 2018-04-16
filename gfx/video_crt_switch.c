@@ -55,7 +55,8 @@ static void crt_check_first_run(void)
    orig_height = GetSystemMetrics(SM_CYSCREEN);
    orig_width  = GetSystemMetrics(SM_CXSCREEN);
 #endif
-   first_run = false;
+
+   first_run   = false;
 }
 
 static void switch_crt_hz(void)
@@ -185,6 +186,11 @@ void crt_switch_res_core(unsigned width, unsigned height, float hz)
 
 void crt_video_restore(void)
 {
+   if (first_run)
+      return;
+
    video_display_server_switch_resolution(orig_width, orig_height,
          0, 60);
+
+   first_run = true;
 }
