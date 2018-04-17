@@ -144,7 +144,7 @@ static uint32_t content_rom_crc                               = 0;
 static bool pending_subsystem_init                            = false;
 static int  pending_subsystem_rom_num                         = 0;
 static int  pending_subsystem_id                              = 0;
-static int  pending_subsystem_rom_id                          = 0;
+static unsigned  pending_subsystem_rom_id                     = 0;
 
 static char pending_subsystem_ident[255];
 static char pending_subsystem_extensions[PATH_MAX_LENGTH];
@@ -1741,9 +1741,11 @@ void content_get_status(
 /* Clears the pending subsystem rom buffer*/
 void content_clear_subsystem(void)
 {
-   int i;
+   unsigned i;
+
    pending_subsystem_rom_id = 0;
-   pending_subsystem_init = false;
+   pending_subsystem_init   = false;
+
    for (i = 0; i < RARCH_MAX_SUBSYSTEM_ROMS; i++)
    {
       if (pending_subsystem_roms[i])
@@ -1763,15 +1765,17 @@ int content_get_subsystem()
 /* Set the current subsystem*/
 void content_set_subsystem(unsigned idx)
 {
-   rarch_system_info_t *system = runloop_get_system_info();
-   const struct retro_subsystem_info* subsystem = NULL;
+   rarch_system_info_t                  *system = runloop_get_system_info();
+   const struct retro_subsystem_info *subsystem = system ?
+	   system->subsystem.data + pending_subsystem_id : NULL;
 
-   subsystem = system->subsystem.data + pending_subsystem_id;
+   pending_subsystem_id                         = idx;
 
-   pending_subsystem_id = idx;
+   strlcpy(pending_subsystem_ident,
+	   subsystem->ident, sizeof(pending_subsystem_ident));
 
-   strlcpy(pending_subsystem_ident, subsystem->ident, sizeof(pending_subsystem_ident));
-   pending_subsystem_rom_num = subsystem->num_roms;
+   pending_subsystem_rom_num                    = subsystem->num_roms;
+
    RARCH_LOG("[subsystem] settings current subsytem to: %d(%s) roms: %d\n",
       pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_num);
 }
@@ -1790,7 +1794,7 @@ void content_add_subsystem(const char* path)
 }
 
 /* Get the current subsystem rom id */
-int content_get_subsystem_rom_id(void)
+unsigned content_get_subsystem_rom_id(void)
 {
    return pending_subsystem_rom_id;
 }
