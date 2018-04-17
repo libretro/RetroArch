@@ -3278,7 +3278,6 @@ static int menu_displaylist_parse_options_remappings(
 
          if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
          {
-            /* change to RARCH_FIRST_CUSTOM_BIND + 8 once analog remapping is implemented */
             for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 8; retro_id++)
             {
                char desc_label[64];
@@ -3308,19 +3307,7 @@ static int menu_displaylist_parse_options_remappings(
                      (p * (RARCH_FIRST_CUSTOM_BIND + 8)) +  retro_id, 0, 0);
             }
          }
-      }
-   }
-   if (system)
-   {
-      settings_t *settings = config_get_ptr();
-      unsigned device;
-
-      for (p = 0; p < MAX_USERS; p++)
-      {
-         device = settings->uints.input_libretro_device[p];
-         device &= RETRO_DEVICE_MASK;
-
-         if (device == RETRO_DEVICE_KEYBOARD)
+         else if (device == RETRO_DEVICE_KEYBOARD)
          {
             for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
             {
