@@ -19,6 +19,7 @@
 
 #include <string/stdstring.h>
 #include <gfx/scaler/pixconv.h>
+#include <retro_miscellaneous.h>
 #include <file/file_path.h>
 
 #include "../../driver.h"
@@ -609,9 +610,16 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    dxgi_input_driver(settings->arrays.input_joypad_driver, input, input_data);
 
    {
-      UINT                 flags                   = 0;
-      D3D_FEATURE_LEVEL    requested_feature_level = D3D_FEATURE_LEVEL_11_0;
-      DXGI_SWAP_CHAIN_DESC desc                    = { 0 };
+      UINT                 flags              = 0;
+      D3D_FEATURE_LEVEL    
+         requested_feature_levels[]           = 
+      {
+         D3D_FEATURE_LEVEL_11_0,
+         D3D_FEATURE_LEVEL_10_1,
+         D3D_FEATURE_LEVEL_10_0
+      };
+      DXGI_SWAP_CHAIN_DESC desc               = { 0 };
+      UINT number_feature_levels              = ARRAY_SIZE(requested_feature_levels);
 
       desc.BufferCount                        = 1;
       desc.BufferDesc.Width                   = d3d11->vp.full_width;
@@ -636,18 +644,22 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 #endif
 		if(cached_device_d3d11 && cached_context)
 		{
-			IDXGIFactory* dxgiFactory = NULL;
-			IDXGIDevice* dxgiDevice = NULL;
-			IDXGIAdapter* adapter = NULL;
+			IDXGIFactory* dxgiFactory    = NULL;
+			IDXGIDevice* dxgiDevice      = NULL;
+			IDXGIAdapter* adapter        = NULL;
 
-			d3d11->device = cached_device_d3d11;
-			d3d11->context = cached_context;
+			d3d11->device                = cached_device_d3d11;
+			d3d11->context               = cached_context;
 			d3d11->supportedFeatureLevel = cached_supportedFeatureLevel;
 
-			d3d11->device->lpVtbl->QueryInterface(d3d11->device, uuidof(IDXGIDevice), (void**)&dxgiDevice);
+			d3d11->device->lpVtbl->QueryInterface(
+               d3d11->device, uuidof(IDXGIDevice), (void**)&dxgiDevice);
 			dxgiDevice->lpVtbl->GetAdapter(dxgiDevice, &adapter);
-			adapter->lpVtbl->GetParent(adapter, uuidof(IDXGIFactory1), (void**)&dxgiFactory);
-			dxgiFactory->lpVtbl->CreateSwapChain(dxgiFactory, (IUnknown*)d3d11->device, &desc, (IDXGISwapChain**)&d3d11->swapChain);
+			adapter->lpVtbl->GetParent(
+               adapter, uuidof(IDXGIFactory1), (void**)&dxgiFactory);
+			dxgiFactory->lpVtbl->CreateSwapChain(
+               dxgiFactory, (IUnknown*)d3d11->device,
+               &desc, (IDXGISwapChain**)&d3d11->swapChain);
 
 			dxgiFactory->lpVtbl->Release(dxgiFactory);
 			adapter->lpVtbl->Release(adapter);
@@ -655,10 +667,13 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 		}
 		else
 		{
-			D3D11CreateDeviceAndSwapChain(
-					NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags, &requested_feature_level, 1,
-					D3D11_SDK_VERSION, &desc, (IDXGISwapChain**)&d3d11->swapChain, &d3d11->device,
-					&d3d11->supportedFeatureLevel, &d3d11->context);
+			if (FAILED(D3D11CreateDeviceAndSwapChain(
+					NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags,
+               requested_feature_levels, number_feature_levels,
+					D3D11_SDK_VERSION, &desc,
+               (IDXGISwapChain**)&d3d11->swapChain, &d3d11->device,
+					&d3d11->supportedFeatureLevel, &d3d11->context)))
+            goto error;
 		}
    }
 
@@ -677,12 +692,14 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d11->viewport.Height = d3d11->vp.full_height;
    d3d11->resize_viewport = true;
    d3d11->vsync           = video->vsync;
-   d3d11->format          = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
+   d3d11->format          = video->rgb32 ? 
+      DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
 
    d3d11->frame.texture[0].desc.Format = d3d11->format;
    d3d11->frame.texture[0].desc.Usage  = D3D11_USAGE_DEFAULT;
    d3d11->frame.texture[0].desc.Width  = 4;
    d3d11->frame.texture[0].desc.Height = 4;
+
    d3d11_init_texture(d3d11->device, &d3d11->frame.texture[0]);
 
    d3d11->menu.texture.desc.Usage = D3D11_USAGE_DEFAULT;
