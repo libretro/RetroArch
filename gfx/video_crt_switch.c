@@ -20,10 +20,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if defined(_WIN32) && !defined(_XBOX)
-#include <windows.h>
-#endif
-
 #include "video_driver.h"
 #include "video_crt_switch.h"
 #include "video_display_server.h"
@@ -47,14 +43,7 @@ static void crt_check_first_run(void)
    if (!first_run)
       return;
 
-   /* TODO/FIXME - do we want to set first_run back to true
-    * at some point in time or should it stay like this? */
-
-   /* Run of first boot to get current display resolution */
-#if defined(_WIN32) && !defined(_XBOX)
-   orig_height = GetSystemMetrics(SM_CYSCREEN);
-   orig_width  = GetSystemMetrics(SM_CXSCREEN);
-#endif
+   video_display_server_get_current_resolution(&orig_width, &orig_height);
 
    first_run   = false;
 }

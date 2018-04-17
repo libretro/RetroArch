@@ -50,6 +50,7 @@ const video_display_server_t dispserv_null = {
    null_set_window_progress,
    NULL,
    NULL,
+   NULL,
    "null"
 };
 

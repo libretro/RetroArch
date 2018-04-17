@@ -82,6 +82,16 @@ bool video_display_server_set_window_decorations(bool on)
    return false;
 }
 
+bool video_display_server_get_current_resolution(unsigned *width, unsigned *height)
+{
+   if (current_display_server && current_display_server->get_current_resolution)
+   {
+      current_display_server->get_current_resolution(width, height);
+      return true;
+   }
+   return false;
+}
+
 bool video_display_server_switch_resolution(unsigned width, unsigned height,
       int f_restore, int hz)
 {

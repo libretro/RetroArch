@@ -78,6 +78,7 @@ const video_display_server_t dispserv_x11 = {
    x11_set_window_opacity,
    NULL,
    x11_set_window_decorations,
+   NULL, /* get_current_resolution */
    NULL, /* set_resolution */
    "x11"
 };
