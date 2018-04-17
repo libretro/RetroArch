@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
 #endif
 
@@ -51,7 +51,7 @@ static void crt_check_first_run(void)
     * at some point in time or should it stay like this? */
 
    /* Run of first boot to get current display resolution */
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(_XBOX)
    orig_height = GetSystemMetrics(SM_CYSCREEN);
    orig_width  = GetSystemMetrics(SM_CXSCREEN);
 #endif
