@@ -1990,7 +1990,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    info.type_default            = FILE_TYPE_PLAIN;
    info.enum_idx                = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
 
-   if (!string_is_empty(info.path))
+   if (settings->bools.menu_content_show_playlists && !string_is_empty(info.path))
    {
       if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
       {

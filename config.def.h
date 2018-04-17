@@ -297,6 +297,7 @@ static bool content_show_history     = true;
 #ifdef HAVE_LIBRETRODB
 static bool content_show_add     	 = true;
 #endif
+static bool content_show_playlists   = true;
 
 #ifdef HAVE_XMB
 static unsigned xmb_scale_factor = 100;
