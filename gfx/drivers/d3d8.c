@@ -1005,7 +1005,7 @@ static void d3d8_set_nonblock_state(void *data, bool state)
 #ifdef _XBOX
    d3d8_set_render_state(d3d->dev, D3D8_PRESENTATIONINTERVAL,
          interval ?
-         D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+         D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE
          );
 #else
    d3d->needs_restore = true;
@@ -1511,9 +1511,7 @@ static void d3d8_get_overlay_interface(void *data,
 
 static void d3d8_update_title(video_frame_info_t *video_info)
 {
-#ifdef _XBOX
-   const ui_window_t *window      = NULL;
-#else
+#ifndef _XBOX
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
 #endif
 
