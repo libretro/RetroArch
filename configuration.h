@@ -158,6 +158,7 @@ typedef struct settings
       bool menu_content_show_netplay;
       bool menu_content_show_history;
       bool menu_content_show_add;
+      bool menu_content_show_playlists;
       bool menu_unified_controls;
       bool quick_menu_show_take_screenshot;
       bool quick_menu_show_save_load_state;

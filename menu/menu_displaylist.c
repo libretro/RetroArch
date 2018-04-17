@@ -5217,6 +5217,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
 #endif
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLISTS,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_TIMEDATE_ENABLE,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
