@@ -139,6 +139,7 @@ failed:
 bool write_file_with_random_name(char **tempDllPath,
       const char *retroarchTempPath, const void* data, ssize_t dataSize)
 {
+   bool okay = false;
    unsigned i;
    char number_buf[32];
    const char *prefix       = "tmp";
@@ -170,11 +171,14 @@ bool write_file_with_random_name(char **tempDllPath,
       strcat_alloc(tempDllPath, number_buf);
       strcat_alloc(tempDllPath, ext);
       if (filestream_write_file(*tempDllPath, data, dataSize))
+      {
+         okay = true;
          break;
+      }
    }
 
    FREE(ext);
-   return true;
+   return okay;
 }
 
 bool secondary_core_create(void)
