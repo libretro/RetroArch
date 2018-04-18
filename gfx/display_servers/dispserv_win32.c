@@ -143,9 +143,9 @@ static bool win32_set_window_progress(void *data, int progress, bool finished)
 {
    HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
-   bool               ret = false;
 
-   serv->progress = progress;
+   if (serv)
+      serv->progress      = progress;
 
 #ifdef HAS_TASKBAR_EXT
    if (!g_taskbarList || !win32_taskbar_is_created())
@@ -154,37 +154,28 @@ static bool win32_set_window_progress(void *data, int progress, bool finished)
    if (progress == -1)
    {
       if (ITaskbarList3_SetProgressState(
-               g_taskbarList, hwnd, TBPF_INDETERMINATE) == S_OK)
-         ret = true;
-
-      if (!ret)
+               g_taskbarList, hwnd, TBPF_INDETERMINATE) != S_OK)
          return false;
    }
    else if (finished)
    {
       if (ITaskbarList3_SetProgressState(
-               g_taskbarList, hwnd, TBPF_NOPROGRESS) == S_OK)
-         ret = true;
-
-      if (!ret)
+               g_taskbarList, hwnd, TBPF_NOPROGRESS) != S_OK)
          return false;
    }
    else if (progress >= 0)
    {
       if (ITaskbarList3_SetProgressState(
-               g_taskbarList, hwnd, TBPF_NORMAL) == S_OK)
-         ret = true;
-
-      if (!ret)
+               g_taskbarList, hwnd, TBPF_NORMAL) != S_OK)
          return false;
 
       if (ITaskbarList3_SetProgressValue(
-               g_taskbarList, hwnd, progress, 100) == S_OK)
-         ret = true;
+               g_taskbarList, hwnd, progress, 100) != S_OK)
+         return false;
    }
 #endif
 
-   return ret;
+   return true;
 }
 
 static bool win32_set_window_decorations(void *data, bool on)
@@ -217,7 +208,7 @@ static bool win32_display_server_set_resolution(void *data,
       return false;
 
    if (f_restore == 0)
-      freq     = hz;
+      freq                = hz;
 
    EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
 
