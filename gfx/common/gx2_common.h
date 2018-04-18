@@ -2,7 +2,7 @@
 
 #include <wiiu/gx2.h>
 
-#Include "../video_defines.h"
+#include "../video_defines.h"
 #include "../video_shader_parse.h"
 
 #include "../drivers/gx2_shaders/frame.h"
