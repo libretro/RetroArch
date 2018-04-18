@@ -2355,6 +2355,9 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                break;
          }
          return xmb->textures.list[XMB_TEXTURE_FILE];
+      case FILE_TYPE_SHADER:
+      case FILE_TYPE_SHADER_PRESET:
+         return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
       case FILE_TYPE_CARCHIVE:
          return xmb->textures.list[XMB_TEXTURE_ZIP];
       case FILE_TYPE_MUSIC:
@@ -2567,6 +2570,8 @@ static int xmb_draw_item(
       {
          if (
                string_is_equal(entry->value, "...")     ||
+               string_is_equal(entry->value, "(PRESET)")  ||
+               string_is_equal(entry->value, "(SHADER)")  ||
                string_is_equal(entry->value, "(COMP)")  ||
                string_is_equal(entry->value, "(CORE)")  ||
                string_is_equal(entry->value, "(MOVIE)") ||
