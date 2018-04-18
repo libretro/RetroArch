@@ -2,11 +2,13 @@
 
 #include <wiiu/gx2.h>
 
-#include "gfx/drivers/gx2_shaders/frame.h"
-#include "gfx/drivers/gx2_shaders/tex.h"
-#include "gfx/drivers/gx2_shaders/sprite.h"
-#include "gfx/drivers/gx2_shaders/menu_shaders.h"
-#include "gfx/video_shader_parse.h"
+#Include "../video_defines.h"
+#include "../video_shader_parse.h"
+
+#include "../drivers/gx2_shaders/frame.h"
+#include "../drivers/gx2_shaders/tex.h"
+#include "../drivers/gx2_shaders/sprite.h"
+#include "../drivers/gx2_shaders/menu_shaders.h"
 
 #undef _X
 #undef _B
@@ -23,7 +25,6 @@
 #define _1 0x05
 #define GX2_COMP_SEL(c0, c1, c2, c3) (((c0) << 24) | ((c1) << 16) | ((c2) << 8) | (c3))
 
-#define COLOR_ABGR(r, g, b, a) (((u32)(a) << 24) | ((u32)(b) << 16) | ((u32)(g) << 8) | ((u32)(r) << 0))
 #define COLOR_ARGB(r, g, b, a) (((u32)(a) << 24) | ((u32)(r) << 16) | ((u32)(g) << 8) | ((u32)(b) << 0))
 #define COLOR_RGBA(r, g, b, a) (((u32)(r) << 24) | ((u32)(g) << 16) | ((u32)(b) << 8) | ((u32)(a) << 0))
 
