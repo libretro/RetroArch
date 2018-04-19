@@ -221,7 +221,6 @@ bool input_remapping_save_file(const char *path)
             if (settings->uints.input_keymapper_ids[i][j] != RETROK_UNKNOWN)
                config_set_int(conf, key_ident[j], 
                   settings->uints.input_keymapper_ids[i][j]);
-
          }
          else
          {
@@ -237,7 +236,7 @@ bool input_remapping_save_file(const char *path)
                config_set_int(conf, stk_ident[k], 
                   -1);
             else
-               config_unset(conf,btn_ident[j]);
+               config_unset(conf, stk_ident[k]);
          }
       }
       snprintf(s1, sizeof(s1), "input_libretro_device_p%u", i + 1);
