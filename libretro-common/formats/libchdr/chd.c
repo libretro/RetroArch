@@ -38,6 +38,7 @@
 ***************************************************************************/
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1876,7 +1877,7 @@ static UINT32 header_guess_unitbytes(chd_file *chd)
 static chd_error header_read(chd_file *chd, chd_header *header)
 {
 	UINT8 rawheader[CHD_MAX_HEADER_SIZE];
-	UINT32 count;
+	int64_t count;
 
 	/* punt if NULL */
 	if (header == NULL)
