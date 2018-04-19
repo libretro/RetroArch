@@ -23,8 +23,9 @@ static uint8_t activation_packet[] = { 0x13 };
 #endif
 
 #define GCA_PORT_INITIALIZING 0x00
-#define GCA_PORT_EMPTY        0x04
-#define GCA_PORT_CONNECTED    0x14
+#define GCA_PORT_POWERED      0x04
+#define GCA_PORT_CONNECTED    0x10
+
 
 typedef struct wiiu_gca_instance {
   void *handle;
@@ -107,40 +108,41 @@ static void wiiu_gca_handle_packet(void *data, uint8_t *buffer, size_t size)
 static void update_pad_state(wiiu_gca_instance_t *instance)
 {
    int i, port;
+   unsigned char port_connected;
+
    if(!instance || !instance->online)
       return;
 
    joypad_connection_t *pad;
    /* process each pad */
+   //RARCH_LOG_BUFFER(instance->device_state, 37);
    for(i = 1; i < 37; i += 9)
    {
       port = i / 9;
       pad = instance->pads[port];
 
-      switch(instance->device_state[i])
+      port_connected = instance->device_state[i] & GCA_PORT_CONNECTED;
+
+      if(port_connected)
       {
-         case GCA_PORT_INITIALIZING:
-         case GCA_PORT_EMPTY:
-            if(pad != NULL) {
-               RARCH_LOG("[gca]: Gamepad at port %d disconnected.\n", port+1);
-               unregister_pad(instance, port);
-            }
-            break;
-         case GCA_PORT_CONNECTED:
+         if(pad == NULL)
+         {
+            RARCH_LOG("[gca]: Gamepad at port %d connected.\n", port+1);
+            instance->pads[port] = hid_pad_register(instance, &wiiu_gca_pad_connection);
+            pad = instance->pads[port];
             if(pad == NULL)
             {
-               RARCH_LOG("[gca]: Gamepad at port %d connected.\n", port+1);
-               instance->pads[port] = hid_pad_register(instance, &wiiu_gca_pad_connection);
-               pad = instance->pads[port];
-               if(pad == NULL)
-               {
-                 RARCH_ERR("[gca]: Failed to register pad.\n");
-                 break;
-               }
+               RARCH_ERR("[gca]: Failed to register pad.\n");
+               break;
             }
+         }
 
-            pad->iface->packet_handler(pad->data, &instance->device_state[i], 9);
-            break;
+         pad->iface->packet_handler(pad->data, &instance->device_state[i], 9);
+      } else {
+         if(pad != NULL) {
+            RARCH_LOG("[gca]: Gamepad at port %d disconnected.\n", port+1);
+            unregister_pad(instance, port);
+         }
       }
    }
 }
@@ -263,6 +265,7 @@ static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
    if(val > 0x1000 || val < -0x1000)
       return 0;
 
+//   RARCH_LOG("[gca]: reading axis %d: %04x\n", axis, val);
    return val;
 }
 
