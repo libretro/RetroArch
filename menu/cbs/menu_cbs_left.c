@@ -403,7 +403,7 @@ static int action_left_input_desc_kbd(unsigned type, const char *label,
    if (key_id > 0)
       key_id--;
    else
-      key_id = RARCH_MAX_KEYS + MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+      key_id = (RARCH_MAX_KEYS - 1) + MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
 
    settings->uints.input_keymapper_ids[offset][id] = key_descriptors[key_id].key;
 
