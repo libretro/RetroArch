@@ -74,7 +74,7 @@ char *rfgets(char *buffer, int maxCount, RFILE* stream);
 int rfgetc(RFILE* stream);
 
 int64_t rfwrite(void const* buffer,
-   size_t elem_size, size_t elem_count, RFILE* stream)
+   size_t elem_size, size_t elem_count, RFILE* stream);
 
 int rfputc(int character, RFILE * stream);
 
