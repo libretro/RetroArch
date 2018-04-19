@@ -432,7 +432,7 @@ void path_basedir_wrapper(char *path);
 #endif
 
 /**
- * path_default_slash:
+ * path_default_slash and path_default_slash_c:
  *
  * Gets the default slash separator.
  *
@@ -440,8 +440,10 @@ void path_basedir_wrapper(char *path);
  */
 #ifdef _WIN32
 #define path_default_slash() "\\"
+#define path_default_slash_c() '\\'
 #else
 #define path_default_slash() "/"
+#define path_default_slash_c() '/'
 #endif
 
 /**
