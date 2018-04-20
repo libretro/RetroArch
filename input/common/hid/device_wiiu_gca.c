@@ -212,6 +212,38 @@ static void wiiu_gca_get_buttons(void *data, input_bits_t *state)
    }
 }
 
+static void update_buttons(gca_pad_t *pad)
+{
+   uint32_t i, pressed_keys;
+
+   static const uint32_t button_mapping[12] =
+   {
+      RETRO_DEVICE_ID_JOYPAD_A,
+      RETRO_DEVICE_ID_JOYPAD_B,
+      RETRO_DEVICE_ID_JOYPAD_X,
+      RETRO_DEVICE_ID_JOYPAD_Y,
+      RETRO_DEVICE_ID_JOYPAD_LEFT,
+      RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_UP,
+      RETRO_DEVICE_ID_JOYPAD_START,
+      RETRO_DEVICE_ID_JOYPAD_SELECT,
+      RETRO_DEVICE_ID_JOYPAD_R,
+      RETRO_DEVICE_ID_JOYPAD_L,
+   };
+
+   if(!pad)
+      return;
+
+   pressed_keys = pad->data[1] | (pad->data[2] << 8);
+   pad->buttons = 0;
+
+   for(i = 0; i < 12; i++)
+      pad->buttons |= (pressed_keys & (1 << i)) ?
+         (1 << button_mapping[i]) : 0;
+}
+
+
 /**
  * The USB packet provides a 9-byte data packet for each pad.
  *
@@ -230,8 +262,10 @@ static void wiiu_gca_packet_handler(void *data, uint8_t *packet, uint16_t size)
       return;
 
    memcpy(pad->data, packet, size);
-   pad->buttons = pad->data[1] | (pad->data[2] << 8);
+   update_buttons(pad);
 }
+
+
 
 static void wiiu_gca_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength)
 {
@@ -240,8 +274,19 @@ static void wiiu_gca_set_rumble(void *data, enum retro_rumble_effect effect, uin
    (void)strength;
 }
 
+static unsigned decode_axis(unsigned axis)
+{
+  unsigned positive = AXIS_POS_GET(axis);
+  unsigned negative = AXIS_NEG_GET(axis);
+  RARCH_LOG("[gca]: positive: %ud negative: %ud\n", positive, negative);
+
+  return positive >= 4 ? negative : positive;
+}
+
 static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
 {
+   axis = decode_axis(axis);
+   RARCH_LOG("[gca]: decoded axis: %d\n", axis);
    int16_t val;
    gca_pad_t *pad = (gca_pad_t *)data;
 
@@ -265,7 +310,7 @@ static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
    if(val > 0x1000 || val < -0x1000)
       return 0;
 
-//   RARCH_LOG("[gca]: reading axis %d: %04x\n", axis, val);
+   RARCH_LOG("[gca]: reading axis %d: %04x\n", axis, val);
    return val;
 }
 
@@ -288,10 +333,10 @@ static bool wiiu_gca_button(void *data, uint16_t joykey)
 {
   gca_pad_t *pad = (gca_pad_t *)data;
 
-  if(!pad)
+  if(!pad || joykey > 31)
     return false;
 
-  return (pad->buttons & joykey);
+  return pad->buttons & (1 << joykey);
 }
 
 pad_connection_interface_t wiiu_gca_pad_connection = {

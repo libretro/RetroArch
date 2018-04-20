@@ -229,18 +229,18 @@ DECL_AXIS(r_y_minus, +3)
 #ifdef WIIU
 
 #define WIIUINPUT_GAMECUBE_DEFAULT_BINDS \
-DECL_BTN_EX(a,      0x0001, "A") \
-DECL_BTN_EX(b,      0x0002, "B") \
-DECL_BTN_EX(x,      0x0004, "X") \
-DECL_BTN_EX(y,      0x0008, "Y") \
-DECL_BTN_EX(select, 0x0200, "Z") \
-DECL_BTN_EX(start,  0x0100, "Start/Pause") \
-DECL_BTN_EX(l,      0x0800, "L Trigger") \
-DECL_BTN_EX(r,      0x0400, "R Trigger") \
-DECL_BTN_EX(left,   0x0010, "D-Pad Left") \
-DECL_BTN_EX(right,  0x0020, "D-Pad Right") \
-DECL_BTN_EX(down,   0x0040, "D-Pad Down") \
-DECL_BTN_EX(up,     0x0080, "D-Pad Up") \
+DECL_BTN_EX(a,      8, "A") \
+DECL_BTN_EX(b,      0, "B") \
+DECL_BTN_EX(x,      9, "X") \
+DECL_BTN_EX(y,      1, "Y") \
+DECL_BTN_EX(left,   6, "D-Pad Left") \
+DECL_BTN_EX(right,  7, "D-Pad Right") \
+DECL_BTN_EX(down,   5, "D-Pad Down") \
+DECL_BTN_EX(up,     4, "D-Pad Up") \
+DECL_BTN_EX(start,  3, "Start/Pause") \
+DECL_BTN_EX(select, 2, "Z") \
+DECL_BTN_EX(r,      10, "R Trigger") \
+DECL_BTN_EX(l,      11, "L Trigger") \
 DECL_AXIS_EX(l_x_plus,  +1, "Analog right") \
 DECL_AXIS_EX(l_x_minus, -1, "Analog left") \
 DECL_AXIS_EX(l_y_plus,  +0, "Analog up") \

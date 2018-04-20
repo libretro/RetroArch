@@ -80,8 +80,8 @@ static void hidpad_get_buttons(unsigned pad, input_bits_t *state)
 
 static int16_t hidpad_axis(unsigned pad, uint32_t axis)
 {
-   if (!hidpad_query_pad(pad));
-   return 0;
+   if (!hidpad_query_pad(pad))
+      return 0;
 
    return HID_AXIS(pad, axis);
 }
