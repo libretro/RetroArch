@@ -20,6 +20,8 @@
 static wiiu_event_list events;
 static wiiu_adapter_list adapters;
 
+static void report_hid_error(const char *msg, wiiu_adapter_t *adapter, int32_t error);
+
 static bool wiiu_hid_joypad_query(void *data, unsigned slot)
 {
    wiiu_hid_t *hid = (wiiu_hid_t *)data;
@@ -222,15 +224,20 @@ static int32_t wiiu_hid_set_protocol(void *data, uint8_t protocol)
 
 static int32_t wiiu_hid_read(void *data, void *buffer, size_t size)
 {
-  wiiu_adapter_t *adapter = (wiiu_adapter_t *)data;
+   wiiu_adapter_t *adapter = (wiiu_adapter_t *)data;
+   int32_t result;
 
-  if(!adapter)
-    return -1;
+   if(!adapter)
+      return -1;
 
-  if(size > adapter->rx_size)
-    return -1;
+   if(size > adapter->rx_size)
+      return -1;
 
-  return HIDRead(adapter->handle, buffer, size, NULL, NULL);
+   result = HIDRead(adapter->handle, buffer, size, NULL, NULL);
+   if(result < 0)
+      report_hid_error("read failed", adapter, result);
+
+   return result;
 }
 
 
@@ -488,54 +495,68 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
 
    if(error < 0)
    {
-      int16_t hid_error_code = error & 0xffff;
-      switch(hid_error_code)
-      {
-         case -100:
-            RARCH_ERR("[hid]: Invalid RM command (%s)\n", adapter->driver->name);
-            break;
-         case -102:
-            RARCH_ERR("[hid]: Invalid IOCTL command (%s)\n", adapter->driver->name);
-            break;
-         case -103:
-            RARCH_ERR("[hid]: bad vector count (%s)\n", adapter->driver->name);
-            break;
-         case -104:
-            RARCH_ERR("[hid]: invalid memory bank (%s)\n", adapter->driver->name);
-            break;
-         case -105:
-            RARCH_ERR("[hid]: invalid memory alignment (%s)\n", adapter->driver->name);
-            break;
-         case -106:
-            RARCH_ERR("[hid]: invalid data size (%s)\n", adapter->driver->name);
-            break;
-         case -107:
-            RARCH_ERR("[hid]: request cancelled (%s)\n", adapter->driver->name);
-            break;
-         case -108:
-            RARCH_ERR("[hid]: request timed out (%s)\n", adapter->driver->name);
-            break;
-         case -109:
-            RARCH_ERR("[hid]: request aborted (%s)\n", adapter->driver->name);
-            break;
-         case -110:
-            RARCH_ERR("[hid]: client priority error (%s)\n", adapter->driver->name);
-            break;
-         case -111:
-            RARCH_ERR("[hid]: invalid device handle (%s)\n", adapter->driver->name);
-            break;
-      }
+      report_hid_error("async read failed", adapter, error);
    }
 
    if(adapter->state == ADAPTER_STATE_READING) {
       adapter->state = ADAPTER_STATE_READY;
-      /* "error" usually is something benign like "device not ready", at
-       * least from my own experiments. Just ignore the error and retry
-       * the read. */
+
       if(error == 0) {
          adapter->driver->handle_packet(adapter->driver_handle,
             buffer, buffer_size);
       }
+   }
+}
+
+static void report_hid_error(const char *msg, wiiu_adapter_t *adapter, int32_t error)
+{
+   if(error >= 0)
+      return;
+
+   int16_t hid_error_code = error & 0xffff;
+   int16_t error_category = (error >> 16) & 0xffff;
+   const char *device = (adapter && adapter->driver) ? adapter->driver->name : "unknown";
+
+   switch(hid_error_code)
+   {
+      case -100:
+         RARCH_ERR("[hid]: Invalid RM command (%s)\n", device);
+         break;
+      case -102:
+         RARCH_ERR("[hid]: Invalid IOCTL command (%s)\n", device);
+         break;
+      case -103:
+         RARCH_ERR("[hid]: bad vector count (%s)\n", device);
+         break;
+      case -104:
+         RARCH_ERR("[hid]: invalid memory bank (%s)\n", device);
+         break;
+      case -105:
+         RARCH_ERR("[hid]: invalid memory alignment (%s)\n", device);
+         break;
+      case -106:
+         RARCH_ERR("[hid]: invalid data size (%s)\n", device);
+         break;
+      case -107:
+         RARCH_ERR("[hid]: request cancelled (%s)\n", device);
+         break;
+      case -108:
+         RARCH_ERR("[hid]: request timed out (%s)\n", device);
+         break;
+      case -109:
+         RARCH_ERR("[hid]: request aborted (%s)\n", device);
+         break;
+      case -110:
+         RARCH_ERR("[hid]: client priority error (%s)\n", device);
+         break;
+      case -111:
+         RARCH_ERR("[hid]: invalid device handle (%s)\n", device);
+         break;
+#if 0
+      default:
+         RARCH_ERR("[hid]: Unknown error (%d:%d: %s)\n",
+            error_category, hid_error_code, device);
+#endif
    }
 }
 
@@ -603,6 +624,18 @@ static void wiiu_handle_attach_events(wiiu_hid_t *hid, wiiu_attach_event *list)
    }
 }
 
+static void wiiu_poll_adapter(wiiu_adapter_t *adapter)
+{
+   if(!adapter->connected) {
+      adapter->state = ADAPTER_STATE_DONE;
+      return;
+   }
+
+   adapter->state = ADAPTER_STATE_READING;
+   HIDRead(adapter->handle, adapter->rx_buffer, adapter->rx_size,
+      wiiu_hid_read_loop_callback, adapter);
+}
+
 static void wiiu_poll_adapters(wiiu_hid_t *hid)
 {
    wiiu_adapter_t *it;
@@ -611,19 +644,7 @@ static void wiiu_poll_adapters(wiiu_hid_t *hid)
    for(it = adapters.list; it != NULL; it = it->next)
    {
       if(it->state == ADAPTER_STATE_READY)
-      {
-         if(it->connected)
-         {
-            it->state = ADAPTER_STATE_READING;
-            HIDRead(it->handle,
-               it->rx_buffer,
-               it->rx_size,
-               wiiu_hid_read_loop_callback,
-               it);
-         } else {
-            it->state = ADAPTER_STATE_DONE;
-         }
-      }
+         wiiu_poll_adapter(it);
 
       if(it->state == ADAPTER_STATE_DONE)
          it->state = ADAPTER_STATE_GC;
@@ -698,13 +719,9 @@ static void delete_hidclient(HIDClient *client)
 
 static void init_cachealigned_buffer(int32_t min_size, uint8_t **out_buf_ptr, int32_t *actual_size)
 {
-   int cacheblocks = (min_size < 32) ? 1 : min_size / 32;
-   if(min_size > 32 && min_size % 32 != 0)
-      cacheblocks++;
+   *actual_size = (min_size + 0x3f) & ~0x3f;
 
-   *actual_size = 32 * cacheblocks;
-
-   *out_buf_ptr = alloc_zeroed(32, *actual_size);
+   *out_buf_ptr = alloc_zeroed(64, *actual_size);
 }
 
 static wiiu_adapter_t *new_adapter(wiiu_attach_event *event)
