@@ -520,8 +520,10 @@ static void gl2_renderchain_deinit_fbo(void *data,
 
    if (chain)
    {
-      glDeleteTextures(chain->fbo_pass, chain->fbo_texture);
-      gl2_delete_fb(chain->fbo_pass, chain->fbo);
+      if (chain->fbo)
+         gl2_delete_fb(chain->fbo_pass, chain->fbo);
+      if (chain->fbo_texture)
+         glDeleteTextures(chain->fbo_pass, chain->fbo_texture);
 
       memset(chain->fbo_texture, 0, sizeof(chain->fbo_texture));
       memset(chain->fbo,         0, sizeof(chain->fbo));
