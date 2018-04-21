@@ -389,7 +389,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       /* clang-format on */
 
       if (!slang_process(
-                d3d11->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
+                d3d11->shader_preset, i, RARCH_SHADER_HLSL, 40, &semantics_map,
                 &d3d11->pass[i].semantics))
          goto error;
 

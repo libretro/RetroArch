@@ -374,7 +374,7 @@ static bool d3d10_gfx_set_shader(void* data,
       /* clang-format on */
 
       if (!slang_process(
-                d3d10->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
+                d3d10->shader_preset, i, RARCH_SHADER_HLSL, 40, &semantics_map,
                 &d3d10->pass[i].semantics))
          goto error;
 
