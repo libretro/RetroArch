@@ -3194,8 +3194,12 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
 {
    if (!current_video_context.get_refresh_rate || !refresh_rate)
       return false;
+   if (!video_context_data)
+      return false;
 
-   *refresh_rate = current_video_context.get_refresh_rate(video_context_data);
+   if (refresh_rate)
+      *refresh_rate = 
+         current_video_context.get_refresh_rate(video_context_data);
 
    return true;
 }

@@ -2588,10 +2588,10 @@ static void gl_set_coords(void *handle_data, void *shader_data,
 
 static float gl_get_refresh_rate(void *data)
 {
-    float refresh_rate;
-    if (video_context_driver_get_refresh_rate(&refresh_rate))
-       return refresh_rate;
-    return 0.0f;
+   float refresh_rate = 0.0f;
+   if (video_context_driver_get_refresh_rate(&refresh_rate))
+      return refresh_rate;
+   return 0.0f;
 }
 
 static void gl_set_mvp(void *data, void *shader_data,
