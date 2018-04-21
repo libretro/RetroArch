@@ -94,10 +94,12 @@ static bool slang_process_reflection(
       const semantics_map_t* map,
       pass_semantics_t*      out)
 {
+   int semantic;
+   unsigned i;
    unordered_map<string, slang_texture_semantic_map> texture_semantic_map;
    unordered_map<string, slang_texture_semantic_map> texture_semantic_uniform_map;
 
-   for (unsigned i = 0; i <= pass_number; i++)
+   for (i = 0; i <= pass_number; i++)
    {
       if (!*shader_info->pass[i].alias)
          continue;
@@ -125,7 +127,7 @@ static bool slang_process_reflection(
          return false;
    }
 
-   for (unsigned i = 0; i < shader_info->luts; i++)
+   for (i = 0; i < shader_info->luts; i++)
    {
       if (!set_unique_map(
                 texture_semantic_map, shader_info->lut[i].id,
@@ -140,7 +142,7 @@ static bool slang_process_reflection(
 
    unordered_map<string, slang_semantic_map> uniform_semantic_map;
 
-   for (unsigned i = 0; i < shader_info->num_parameters; i++)
+   for (i = 0; i < shader_info->num_parameters; i++)
    {
       if (!set_unique_map(
                 uniform_semantic_map, shader_info->parameters[i].id,
@@ -171,7 +173,7 @@ static bool slang_process_reflection(
    vector<uniform_sem_t> uniforms[SLANG_CBUFFER_MAX];
    vector<texture_sem_t> textures;
 
-   for (int semantic = 0; semantic < SLANG_NUM_BASE_SEMANTICS; semantic++)
+   for (semantic = 0; semantic < SLANG_NUM_BASE_SEMANTICS; semantic++)
    {
       slang_semantic_meta& src = sl_reflection.semantics[semantic];
       if (src.push_constant || src.uniform)
@@ -195,7 +197,7 @@ static bool slang_process_reflection(
       }
    }
 
-   for (int i = 0; i < sl_reflection.semantic_float_parameters.size(); i++)
+   for (i = 0; i < sl_reflection.semantic_float_parameters.size(); i++)
    {
       slang_semantic_meta& src = sl_reflection.semantic_float_parameters[i];
 
@@ -219,9 +221,11 @@ static bool slang_process_reflection(
       }
    }
 
-   for (int semantic = 0; semantic < SLANG_NUM_TEXTURE_SEMANTICS; semantic++)
+   for (semantic = 0; semantic < SLANG_NUM_TEXTURE_SEMANTICS; semantic++)
    {
-      for (int index = 0; index < sl_reflection.semantic_textures[semantic].size(); index++)
+      unsigned index;
+
+      for (index = 0; index < sl_reflection.semantic_textures[semantic].size(); index++)
       {
          slang_texture_semantic_meta& src = sl_reflection.semantic_textures[semantic][index];
 
@@ -289,7 +293,7 @@ static bool slang_process_reflection(
    out->textures = (texture_sem_t*)malloc(textures.size() * sizeof(*textures.data()));
    memcpy(out->textures, textures.data(), textures.size() * sizeof(*textures.data()));
 
-   for (int i = 0; i < SLANG_CBUFFER_MAX; i++)
+   for (i = 0; i < SLANG_CBUFFER_MAX; i++)
    {
       if (uniforms[i].empty())
          continue;
