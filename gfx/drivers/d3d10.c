@@ -100,7 +100,7 @@ static void d3d10_overlay_set_alpha(void* data, unsigned index, float mod)
 static bool d3d10_overlay_load(void* data, const void* image_data, unsigned num_images)
 {
    D3D10_BUFFER_DESC desc;
-   int                         i;
+   unsigned                          i;
    d3d10_sprite_t*             sprites;
    d3d10_video_t*              d3d10  = (d3d10_video_t*)data;
    const struct texture_image* images = (const struct texture_image*)image_data;
