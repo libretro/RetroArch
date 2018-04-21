@@ -22,8 +22,6 @@
 
 #include "../drivers_shader/slang_process.h"
 
-typedef D3D10_MAPPED_TEXTURE3D D3D10_MAPPED_SUBRESOURCE;
-
 typedef const ID3D10SamplerState*       D3D10SamplerStateRef;
 
 typedef ID3D10InputLayout*       D3D10InputLayout;
@@ -1141,11 +1139,6 @@ typedef struct
    D3D10Buffer           ubo;
    d3d10_uniform_t       ubo_values;
    D3D10SamplerState     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
-   D3D10InputLayout      layout;
-   D3D10VertexShader     vs;
-   D3D10PixelShader      ps;
-   D3D10SamplerState     sampler_nearest;
-   D3D10SamplerState     sampler_linear;
    D3D10BlendState       blend_enable;
    D3D10BlendState       blend_disable;
    D3D10BlendState       blend_pipeline;
@@ -1188,7 +1181,6 @@ typedef struct
    {
       d3d10_texture_t   texture;
       D3D10Buffer       vbo;
-      D3D10SamplerState sampler;
       bool              enabled;
       bool              fullscreen;
    } menu;
@@ -1197,7 +1189,6 @@ typedef struct
       d3d10_texture_t texture[GFX_MAX_FRAME_HISTORY + 1];
       D3D10Buffer       vbo;
       D3D10Buffer       ubo;
-      D3D10SamplerState sampler;
       D3D10_VIEWPORT    viewport;
       float4_t          output_size;
       int               rotation;

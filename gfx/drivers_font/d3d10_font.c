@@ -130,7 +130,7 @@ static void d3d10_font_render_line(
       unsigned            text_align)
 {
    unsigned                 i, count;
-   D3D10_MAPPED_SUBRESOURCE mapped_vbo;
+   void*                    mapped_vbo;
    d3d10_sprite_t*          v;
    d3d10_video_t*           d3d10  = (d3d10_video_t*)video_info->userdata;
    unsigned                 width  = video_info->width;
@@ -158,7 +158,7 @@ static void d3d10_font_render_line(
    }
 
    D3D10MapBuffer(d3d10->sprites.vbo, D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&mapped_vbo);
-   v = (d3d10_sprite_t*)mapped_vbo.pData + d3d10->sprites.offset;
+   v = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
 
    for (i = 0; i < msg_len; i++)
    {
@@ -202,7 +202,7 @@ static void d3d10_font_render_line(
       y += glyph->advance_y * scale;
    }
 
-   count = v - ((d3d10_sprite_t*)mapped_vbo.pData + d3d10->sprites.offset);
+   count = v - ((d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset);
    D3D10UnmapBuffer(d3d10->sprites.vbo);
 
    if (!count)

@@ -46,71 +46,60 @@ static void d3d10_free_overlays(d3d10_video_t* d3d10)
 static void
 d3d10_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w, float h)
 {
-   D3D10_MAPPED_SUBRESOURCE mapped_vbo;
-   d3d10_video_t*           d3d10 = (d3d10_video_t*)data;
+	d3d10_sprite_t* sprites = NULL;
+   d3d10_video_t*  d3d10 = (d3d10_video_t*)data;
 
    if (!d3d10)
       return;
 
    D3D10MapBuffer(d3d10->overlays.vbo, 
-         D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&mapped_vbo);
-   {
-      d3d10_sprite_t* sprites = (d3d10_sprite_t*)mapped_vbo.pData;
-      sprites[index].pos.x    = x;
-      sprites[index].pos.y    = y;
-      sprites[index].pos.w    = w;
-      sprites[index].pos.h    = h;
-   }
+         D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&sprites);
+	sprites[index].pos.x    = x;
+	sprites[index].pos.y    = y;
+	sprites[index].pos.w    = w;
+	sprites[index].pos.h    = h;
    D3D10UnmapBuffer(d3d10->overlays.vbo);
 }
 
 static void d3d10_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)
 {
-   D3D10_MAPPED_SUBRESOURCE mapped_vbo;
-   d3d10_video_t*           d3d10 = (d3d10_video_t*)data;
+	d3d10_sprite_t* sprites = NULL;
+   d3d10_video_t*  d3d10 = (d3d10_video_t*)data;
 
    if (!d3d10)
       return;
 
    D3D10MapBuffer(
          d3d10->overlays.vbo, 
-         D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&mapped_vbo);
-   {
-      d3d10_sprite_t* sprites = (d3d10_sprite_t*)mapped_vbo.pData;
-      sprites[index].coords.u = u;
-      sprites[index].coords.v = v;
-      sprites[index].coords.w = w;
-      sprites[index].coords.h = h;
-   }
+         D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&sprites);
+	sprites[index].coords.u = u;
+	sprites[index].coords.v = v;
+	sprites[index].coords.w = w;
+	sprites[index].coords.h = h;
    D3D10UnmapBuffer(d3d10->overlays.vbo);
 }
 
 static void d3d10_overlay_set_alpha(void* data, unsigned index, float mod)
 {
-   D3D10_MAPPED_SUBRESOURCE mapped_vbo;
-   d3d10_video_t*           d3d10 = (d3d10_video_t*)data;
+	d3d10_sprite_t* sprites = NULL;
+   d3d10_video_t*  d3d10 = (d3d10_video_t*)data;
 
    if (!d3d10)
       return;
 
    D3D10MapBuffer(
-         d3d10->overlays.vbo, 
-         D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&mapped_vbo);
-
-   {
-      d3d10_sprite_t* sprites  = (d3d10_sprite_t*)mapped_vbo.pData;
-      sprites[index].colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, mod * 0xFF);
-      sprites[index].colors[1] = sprites[index].colors[0];
-      sprites[index].colors[2] = sprites[index].colors[0];
-      sprites[index].colors[3] = sprites[index].colors[0];
-   }
+         d3d10->overlays.vbo,
+         D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&sprites);
+	sprites[index].colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, mod * 0xFF);
+	sprites[index].colors[1] = sprites[index].colors[0];
+	sprites[index].colors[2] = sprites[index].colors[0];
+	sprites[index].colors[3] = sprites[index].colors[0];
    D3D10UnmapBuffer(d3d10->overlays.vbo);
 }
 
 static bool d3d10_overlay_load(void* data, const void* image_data, unsigned num_images)
 {
    D3D10_BUFFER_DESC desc;
-   D3D10_MAPPED_SUBRESOURCE    mapped_vbo;
    int                         i;
    d3d10_sprite_t*             sprites;
    d3d10_video_t*              d3d10  = (d3d10_video_t*)data;
@@ -135,8 +124,7 @@ static bool d3d10_overlay_load(void* data, const void* image_data, unsigned num_
    D3D10CreateBuffer(d3d10->device, &desc, NULL, &d3d10->overlays.vbo);
 
    D3D10MapBuffer(d3d10->overlays.vbo, 
-         D3D10_MAP_WRITE_DISCARD, 0, (void**)&mapped_vbo);
-   sprites                  = (d3d10_sprite_t*)mapped_vbo.pData;
+         D3D10_MAP_WRITE_DISCARD, 0, (void**)&sprites);
 
    for (i = 0; i < num_images; i++)
    {
@@ -210,31 +198,33 @@ static void d3d10_get_overlay_interface(void* data, const video_overlay_interfac
 
 static void d3d10_set_filtering(void* data, unsigned index, bool smooth)
 {
+   unsigned       i;
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
-   if (smooth)
-      d3d10->frame.sampler = d3d10->sampler_linear;
-   else
-      d3d10->frame.sampler = d3d10->sampler_nearest;
+   for (i = 0; i < RARCH_WRAP_MAX; i++)
+   {
+      if (smooth)
+         d3d10->samplers[RARCH_FILTER_UNSPEC][i] = d3d10->samplers[RARCH_FILTER_LINEAR][i];
+      else
+         d3d10->samplers[RARCH_FILTER_UNSPEC][i] = d3d10->samplers[RARCH_FILTER_NEAREST][i];
+   }
 }
+
 
 static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
 {
-   math_matrix_4x4  rot;
-   math_matrix_4x4* mvp;
-   d3d10_video_t*   d3d10 = (d3d10_video_t*)data;
+	math_matrix_4x4 rot;
+   d3d10_video_t*  d3d10 = (d3d10_video_t*)data;
 
-   if(!d3d10)
+   if (!d3d10)
       return;
 
-   d3d10->frame.rotation = rotation;
+   matrix_4x4_rotate_z(rot, rotation * (M_PI / 2.0f));
+   matrix_4x4_multiply(d3d10->mvp, rot, d3d10->ubo_values.mvp);
 
-
-   matrix_4x4_rotate_z(rot, d3d10->frame.rotation * (M_PI / 2.0f));
-   matrix_4x4_multiply(d3d10->mvp, rot, d3d10->mvp_no_rot);
-
-   D3D10MapBuffer(d3d10->frame.ubo, D3D10_MAP_WRITE_DISCARD, 0, (void**)&mvp);
-   *mvp = d3d10->mvp;
+   void* mapped_ubo;
+   D3D10MapBuffer(d3d10->frame.ubo, D3D10_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+   *(math_matrix_4x4*)mapped_ubo = d3d10->mvp;
    D3D10UnmapBuffer(d3d10->frame.ubo);
 }
 
@@ -244,12 +234,21 @@ static void d3d10_update_viewport(void* data, bool force_full)
 
    video_driver_update_viewport(&d3d10->vp, force_full, d3d10->keep_aspect);
 
-   d3d10->frame.viewport.TopLeftX = (float)d3d10->vp.x;
-   d3d10->frame.viewport.TopLeftY = (float)d3d10->vp.y;
-   d3d10->frame.viewport.Width    = (float)d3d10->vp.width;
-   d3d10->frame.viewport.Height   = (float)d3d10->vp.height;
+   d3d10->frame.viewport.TopLeftX = d3d10->vp.x;
+   d3d10->frame.viewport.TopLeftY = d3d10->vp.y;
+   d3d10->frame.viewport.Width    = d3d10->vp.width;
+   d3d10->frame.viewport.Height   = d3d10->vp.height;
    d3d10->frame.viewport.MaxDepth = 0.0f;
    d3d10->frame.viewport.MaxDepth = 1.0f;
+
+   if (d3d10->shader_preset && (d3d10->frame.output_size.x != d3d10->vp.width ||
+                                d3d10->frame.output_size.y != d3d10->vp.height))
+      d3d10->resize_render_targets = true;
+
+   d3d10->frame.output_size.x = d3d10->vp.width;
+   d3d10->frame.output_size.y = d3d10->vp.height;
+   d3d10->frame.output_size.z = 1.0f / d3d10->vp.width;
+   d3d10->frame.output_size.w = 1.0f / d3d10->vp.height;
 
    d3d10->resize_viewport = false;
 }
@@ -297,72 +296,6 @@ static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
    d3d10->shader_preset         = NULL;
    d3d10->init_history          = false;
    d3d10->resize_render_targets = false;
-}
-
-
-static void d3d10_gfx_free(void* data)
-{
-   unsigned       i;
-   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
-
-   if (!d3d10)
-      return;
-
-#ifdef HAVE_OVERLAY
-   d3d10_free_overlays(d3d10);
-#endif
-
-   d3d10_free_shader_preset(d3d10);
-
-   d3d10_release_texture(&d3d10->frame.texture[0]);
-   Release(d3d10->frame.ubo);
-   Release(d3d10->frame.vbo);
-
-   d3d10_release_texture(&d3d10->menu.texture);
-   Release(d3d10->menu.vbo);
-
-   d3d10_release_shader(&d3d10->sprites.shader);
-   d3d10_release_shader(&d3d10->sprites.shader_font);
-   Release(d3d10->sprites.vbo);
-
-   for (i = 0; i < GFX_MAX_SHADERS; i++)
-      d3d10_release_shader(&d3d10->shaders[i]);
-
-   Release(d3d10->menu_pipeline_vbo);
-   Release(d3d10->blend_pipeline);
-
-   Release(d3d10->ubo);
-
-   Release(d3d10->blend_enable);
-   Release(d3d10->blend_disable);
-
-   for (i = 0; i < RARCH_WRAP_MAX; i++)
-   {
-      Release(d3d10->samplers[RARCH_FILTER_LINEAR][i]);
-      Release(d3d10->samplers[RARCH_FILTER_NEAREST][i]);
-   }
-
-   Release(d3d10->state);
-   Release(d3d10->renderTargetView);
-   Release(d3d10->swapChain);
-
-   font_driver_free_osd();
-
-#if 0
-	if (video_driver_is_video_cache_context())
-	{
-      cached_device_d3d10 = d3d10->device;
-		cached_context = d3d10->context;
-	}
-	else
-#endif
-	{
-		Release(d3d10->device);
-	}
-
-   win32_monitor_from_window();
-   win32_destroy_window();
-   free(d3d10);
 }
 
 static bool d3d10_gfx_set_shader(void* data,
@@ -513,9 +446,6 @@ static bool d3d10_gfx_set_shader(void* data,
          desc.BindFlags           = D3D10_BIND_CONSTANT_BUFFER;
          desc.CPUAccessFlags      = D3D10_CPU_ACCESS_WRITE;
          desc.MiscFlags           = 0;
-#if 0
-         desc.StructureByteStride = 0;
-#endif
 
          if (!desc.ByteWidth)
             continue;
@@ -564,9 +494,75 @@ error:
    return false;
 }
 
+static void d3d10_gfx_free(void* data)
+{
+   unsigned       i;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+
+   if (!d3d10)
+      return;
+
+#ifdef HAVE_OVERLAY
+   d3d10_free_overlays(d3d10);
+#endif
+
+   d3d10_free_shader_preset(d3d10);
+
+   d3d10_release_texture(&d3d10->frame.texture[0]);
+   Release(d3d10->frame.ubo);
+   Release(d3d10->frame.vbo);
+
+   d3d10_release_texture(&d3d10->menu.texture);
+   Release(d3d10->menu.vbo);
+
+   d3d10_release_shader(&d3d10->sprites.shader);
+   d3d10_release_shader(&d3d10->sprites.shader_font);
+   Release(d3d10->sprites.vbo);
+
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
+      d3d10_release_shader(&d3d10->shaders[i]);
+
+   Release(d3d10->menu_pipeline_vbo);
+   Release(d3d10->blend_pipeline);
+
+   Release(d3d10->ubo);
+
+   Release(d3d10->blend_enable);
+   Release(d3d10->blend_disable);
+
+   for (i = 0; i < RARCH_WRAP_MAX; i++)
+   {
+      Release(d3d10->samplers[RARCH_FILTER_LINEAR][i]);
+      Release(d3d10->samplers[RARCH_FILTER_NEAREST][i]);
+   }
+
+   Release(d3d10->state);
+   Release(d3d10->renderTargetView);
+   Release(d3d10->swapChain);
+
+   font_driver_free_osd();
+
+#if 0
+	if (video_driver_is_video_cache_context())
+	{
+      cached_device_d3d10 = d3d10->device;
+		cached_context = d3d10->context;
+	}
+	else
+#endif
+	{
+		Release(d3d10->device);
+	}
+
+   win32_monitor_from_window();
+   win32_destroy_window();
+   free(d3d10);
+}
+
    static void*
 d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
+   unsigned i;
    MONITORINFOEX   current_mon;
    HMONITOR        hm_to_use;
    WNDCLASSEX      wndclass = { 0 };
@@ -591,34 +587,31 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    if (!d3d10->vp.full_height)
       d3d10->vp.full_height = current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
 
-   if (!win32_set_video_mode(d3d10, video->width, video->height, video->fullscreen))
+	if (!win32_set_video_mode(d3d10, d3d10->vp.full_width, d3d10->vp.full_height, video->fullscreen))
    {
       RARCH_ERR("[D3D10]: win32_set_video_mode failed.\n");
       goto error;
    }
-
    dxgi_input_driver(settings->arrays.input_joypad_driver, input, input_data);
 
    {
       UINT                 flags = 0;
       DXGI_SWAP_CHAIN_DESC desc  = {0};
 
-      desc.BufferCount           = 2;
-      desc.BufferDesc.Width      = video->width;
-      desc.BufferDesc.Height     = video->height;
+      desc.BufferCount           = 1;
+      desc.BufferDesc.Width      = d3d10->vp.full_width;
+      desc.BufferDesc.Height     = d3d10->vp.full_height;
       desc.BufferDesc.Format     = DXGI_FORMAT_R8G8B8A8_UNORM;
-#if 0
       desc.BufferDesc.RefreshRate.Numerator   = 60;
       desc.BufferDesc.RefreshRate.Denominator = 1;
-#endif
       desc.BufferUsage           = DXGI_USAGE_RENDER_TARGET_OUTPUT;
       desc.OutputWindow          = main_window.hwnd;
       desc.SampleDesc.Count      = 1;
       desc.SampleDesc.Quality    = 0;
       desc.Windowed              = TRUE;
-      desc.SwapEffect            = DXGI_SWAP_EFFECT_DISCARD;
+		desc.SwapEffect            = DXGI_SWAP_EFFECT_SEQUENTIAL;
 #if 0
-      desc.SwapEffect            = DXGI_SWAP_EFFECT_SEQUENTIAL;
+		desc.SwapEffect            = DXGI_SWAP_EFFECT_DISCARD;
       desc.SwapEffect            = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
       desc.SwapEffect            = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
@@ -641,16 +634,17 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       Release(backBuffer);
    }
 
-   D3D10SetRenderTargets(d3d10->device, 1, &d3d10->renderTargetView, NULL);
-   d3d10->viewport.Width  = video->width;
-   d3d10->viewport.Height = video->height;
+	D3D10SetRenderTargets(d3d10->device, 1, &d3d10->renderTargetView, NULL);
+
+   video_driver_set_size(&d3d10->vp.full_width, &d3d10->vp.full_height);
+   d3d10->viewport.Width  = d3d10->vp.full_width;
+   d3d10->viewport.Height = d3d10->vp.full_height;
    d3d10->resize_viewport = true;
-   d3d10->keep_aspect     = video->force_aspect;
    d3d10->vsync           = video->vsync;
    d3d10->format          = video->rgb32 ? 
       DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
 
-   d3d10->frame.texture[0].desc.Format = d3d10_get_closest_match_texture2D(d3d10->device, d3d10->format);
+   d3d10->frame.texture[0].desc.Format = d3d10->format;
    d3d10->frame.texture[0].desc.Usage  = D3D10_USAGE_DEFAULT;
    d3d10->frame.texture[0].desc.Width  = 4;
    d3d10->frame.texture[0].desc.Height = 4;
@@ -659,7 +653,7 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    d3d10->menu.texture.desc.Usage  = D3D10_USAGE_DEFAULT;
 
-   matrix_4x4_ortho(d3d10->mvp_no_rot, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
+   matrix_4x4_ortho(d3d10->ubo_values.mvp, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
 
    d3d10->ubo_values.OutputSize.width  = d3d10->viewport.Width;
    d3d10->ubo_values.OutputSize.height = d3d10->viewport.Height;
@@ -668,13 +662,13 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       D3D10_SUBRESOURCE_DATA ubo_data;
       D3D10_BUFFER_DESC desc;
 
-      desc.ByteWidth            = sizeof(math_matrix_4x4);
+      desc.ByteWidth            = sizeof(d3d10->ubo_values);
       desc.Usage                = D3D10_USAGE_DYNAMIC;
       desc.BindFlags            = D3D10_BIND_CONSTANT_BUFFER;
       desc.CPUAccessFlags       = D3D10_CPU_ACCESS_WRITE;
       desc.MiscFlags            = 0;
 
-      ubo_data.pSysMem          = &d3d10->mvp_no_rot;
+      ubo_data.pSysMem          = &d3d10->ubo_values.mvp;
       ubo_data.SysMemPitch      = 0;
       ubo_data.SysMemSlicePitch = 0;
 
@@ -685,22 +679,11 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d10_gfx_set_rotation(d3d10, 0);
 
    {
-      unsigned i;
-      unsigned k;
-      D3D10_SAMPLER_DESC desc;
-
-      desc.Filter         = D3D10_FILTER_MIN_MAG_MIP_POINT;
-      desc.AddressU       = D3D10_TEXTURE_ADDRESS_BORDER;
-      desc.AddressV       = D3D10_TEXTURE_ADDRESS_BORDER;
-      desc.AddressW       = D3D10_TEXTURE_ADDRESS_BORDER;
-      desc.MipLODBias     = 0.0f;
-      desc.MaxAnisotropy  = 1;
-      desc.ComparisonFunc = D3D10_COMPARISON_NEVER;
-      desc.MinLOD         = -D3D10_FLOAT32_MAX;
-      desc.MaxLOD         = D3D10_FLOAT32_MAX;
-
-      for (k = 0; k < 4; k++)
-         desc.BorderColor[k] = 0.0f;
+		D3D10_SAMPLER_DESC desc = { D3D10_FILTER_MIN_MAG_MIP_POINT };
+      desc.MaxAnisotropy      = 1;
+      desc.ComparisonFunc     = D3D10_COMPARISON_NEVER;
+      desc.MinLOD             = -D3D10_FLOAT32_MAX;
+      desc.MaxLOD             = D3D10_FLOAT32_MAX;
 
       /* Initialize samplers */
       for (i = 0; i < RARCH_WRAP_MAX; i++)
@@ -882,27 +865,26 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    }
 
    {
-      unsigned k;
-      D3D10_BLEND_DESC blend_desc;
+		D3D10_BLEND_DESC blend_desc = { 0 };
 
-      for (k = 0; k < 8; k++)
-      {
-         blend_desc.BlendEnable[k]           = TRUE;
-         blend_desc.RenderTargetWriteMask[k] = D3D10_COLOR_WRITE_ENABLE_ALL;
-      }
-
-      blend_desc.AlphaToCoverageEnable        = FALSE;
-      blend_desc.SrcBlend                     = D3D10_BLEND_SRC_ALPHA;
-      blend_desc.DestBlend                    = D3D10_BLEND_INV_SRC_ALPHA;
-      blend_desc.BlendOp                      = D3D10_BLEND_OP_ADD;
-      blend_desc.SrcBlendAlpha                = D3D10_BLEND_SRC_ALPHA;
-      blend_desc.DestBlendAlpha               = D3D10_BLEND_INV_SRC_ALPHA;
-      blend_desc.BlendOpAlpha                 = D3D10_BLEND_OP_ADD;
-
+      blend_desc.AlphaToCoverageEnable    = FALSE;
+      blend_desc.BlendEnable[0]           = TRUE;
+      blend_desc.SrcBlend                 = D3D10_BLEND_SRC_ALPHA;
+      blend_desc.DestBlend                = D3D10_BLEND_INV_SRC_ALPHA;
+      blend_desc.BlendOp                  = D3D10_BLEND_OP_ADD;
+      blend_desc.SrcBlendAlpha            = D3D10_BLEND_SRC_ALPHA;
+      blend_desc.DestBlendAlpha           = D3D10_BLEND_INV_SRC_ALPHA;
+      blend_desc.BlendOpAlpha             = D3D10_BLEND_OP_ADD;
+      blend_desc.RenderTargetWriteMask[0] = D3D10_COLOR_WRITE_ENABLE_ALL;
       D3D10CreateBlendState(d3d10->device, &blend_desc, &d3d10->blend_enable);
+
+      blend_desc.SrcBlend  = D3D10_BLEND_ONE;
+      blend_desc.DestBlend = D3D10_BLEND_ONE;
+      D3D10CreateBlendState(d3d10->device, &blend_desc, &d3d10->blend_pipeline);
+
       blend_desc.BlendEnable[0] = FALSE;
       D3D10CreateBlendState(d3d10->device, &blend_desc, &d3d10->blend_disable);
-   }
+   }	
 
    {
       D3D10_RASTERIZER_DESC desc = { (D3D10_FILL_MODE)0 };
@@ -930,8 +912,8 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
        video_driver_get_hw_context()->version_major == 11)
    {
       d3d10->hw.enable                  = true;
-      d3d10->hw.iface.interface_type    = RETRO_HW_RENDER_INTERFACE_D3D11;
-      d3d10->hw.iface.interface_version = RETRO_HW_RENDER_INTERFACE_D3D11_VERSION;
+      d3d10->hw.iface.interface_type    = RETRO_HW_RENDER_INTERFACE_D3D10;
+      d3d10->hw.iface.interface_version = RETRO_HW_RENDER_INTERFACE_D3D10_VERSION;
       d3d10->hw.iface.handle            = d3d10;
       d3d10->hw.iface.device            = d3d10->device;
       d3d10->hw.iface.context           = d3d10->context;
@@ -1221,14 +1203,14 @@ static bool d3d10_gfx_frame(
 
             if (buffer_sem->stage_mask && buffer_sem->uniforms)
             {
-               D3D10_MAPPED_SUBRESOURCE res;
+               void* data;
                uniform_sem_t*           uniform = buffer_sem->uniforms;
 
-               D3D10MapBuffer(buffer, D3D10_MAP_WRITE_DISCARD, 0, (void**)&res);
+               D3D10MapBuffer(buffer, D3D10_MAP_WRITE_DISCARD, 0, (void**)&data);
                while (uniform->size)
                {
                   if (uniform->data)
-                     memcpy((uint8_t*)res.pData + uniform->offset, uniform->data, uniform->size);
+                     memcpy((uint8_t*)data + uniform->offset, uniform->data, uniform->size);
                   uniform++;
                }
                D3D10UnmapBuffer(buffer);
@@ -1392,6 +1374,10 @@ static bool d3d10_gfx_frame(
 static void d3d10_gfx_set_nonblock_state(void* data, bool toggle)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+
+	if (!d3d10)
+      return;
+
    d3d10->vsync         = !toggle;
 }
 
@@ -1451,14 +1437,13 @@ static bool d3d10_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 static void d3d10_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32, unsigned width, unsigned height, float alpha)
 {
-   d3d10_video_t* d3d10     = (d3d10_video_t*)data;
-   settings_t*     settings = config_get_ptr();
-   int            pitch     = width * (rgb32 ? sizeof(uint32_t) 
-         : sizeof(uint16_t));
-   DXGI_FORMAT    format    = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM 
-      : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
+   d3d10_video_t* d3d10    = (d3d10_video_t*)data;
+   settings_t*    settings = config_get_ptr();
+   DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM :
+      (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
-   if (  d3d10->menu.texture.desc.Width  != width || 
+   if (
+         d3d10->menu.texture.desc.Width  != width ||
          d3d10->menu.texture.desc.Height != height)
    {
       d3d10->menu.texture.desc.Format = format;
@@ -1467,18 +1452,19 @@ static void d3d10_set_menu_texture_frame(
       d3d10_init_texture(d3d10->device, &d3d10->menu.texture);
    }
 
-   d3d10_update_texture(d3d10->device,
-         width, height, pitch, format,
-         frame, &d3d10->menu.texture);
+   d3d10_update_texture(d3d10->device, width, height, 0,
+         format, frame, &d3d10->menu.texture);
    d3d10->menu.texture.sampler = d3d10->samplers
       [settings->bools.menu_linear_filter
       ? RARCH_FILTER_LINEAR
          : RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
 }
-
 static void d3d10_set_menu_texture_enable(void* data, bool state, bool full_screen)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+
+	if (!d3d10)
+      return;
 
    d3d10->menu.enabled    = state;
    d3d10->menu.fullscreen = full_screen;
@@ -1609,7 +1595,7 @@ static const video_poke_interface_t d3d10_poke_interface = {
    d3d10_gfx_get_current_shader,
    NULL, /* get_current_software_framebuffer */
 #if 0
-   d3d11_get_hw_render_interface,
+   d3d10_get_hw_render_interface,
 #else
    NULL, /* get_hw_render_interface */
 #endif

@@ -101,12 +101,12 @@ static void menu_display_d3d10_draw(void* data, video_frame_info_t *video_info)
       d3d10->sprites.offset = 0;
 
    {
-      D3D10_MAPPED_SUBRESOURCE mapped_vbo;
-      d3d10_sprite_t*          sprite = NULL;
+      void*           mapped_vbo;
+      d3d10_sprite_t* sprite = NULL;
 
-      D3D10MapBuffer(d3d10->sprites.vbo, D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&mapped_vbo);
+      D3D10MapBuffer(d3d10->sprites.vbo, D3D10_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
 
-      sprite = (d3d10_sprite_t*)mapped_vbo.pData + d3d10->sprites.offset;
+      sprite = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
 
       if (vertex_count == 1)
       {
@@ -231,9 +231,9 @@ static void menu_display_d3d10_draw_pipeline(void* data,
    d3d10->ubo_values.time += 0.01f;
 
    {
-      D3D10_MAPPED_SUBRESOURCE mapped_ubo;
+      void* mapped_ubo;
       D3D10MapBuffer(d3d10->ubo, D3D10_MAP_WRITE_DISCARD, 0, (void**)&mapped_ubo);
-      *(d3d10_uniform_t*)mapped_ubo.pData = d3d10->ubo_values;
+      *(d3d10_uniform_t*)mapped_ubo = d3d10->ubo_values;
       D3D10UnmapBuffer(d3d10->ubo);
    }
 }
