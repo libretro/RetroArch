@@ -142,7 +142,8 @@ void d3d10_update_texture(
       d3d10_texture_t* texture)
 {
    D3D10_MAPPED_TEXTURE2D mapped_texture;
-   D3D10_BOX                frame_box = { 0, 0, 0, width, height, 1 };
+   D3D10_BOX                frame_box = { 0, 0, 0, (UINT)width,
+      (UINT)height, 1 };
 
    if (!texture || !texture->staging)
       return;

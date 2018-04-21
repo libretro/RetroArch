@@ -303,8 +303,9 @@ static bool d3d10_gfx_set_shader(void* data,
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    unsigned         i;
-   d3d10_texture_t* source;
-   d3d10_video_t*   d3d10 = (d3d10_video_t*)data;
+   config_file_t* conf     = NULL;
+   d3d10_texture_t* source = NULL;
+   d3d10_video_t*   d3d10  = (d3d10_video_t*)data;
 
    if (!d3d10)
       return false;
@@ -321,7 +322,7 @@ static bool d3d10_gfx_set_shader(void* data,
       return false;
    }
 
-   config_file_t* conf = config_file_new(path);
+   conf = config_file_new(path);
 
    if (!conf)
       return false;
