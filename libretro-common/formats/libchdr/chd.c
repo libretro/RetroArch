@@ -1706,7 +1706,7 @@ chd_error chd_get_metadata(chd_file *chd, UINT32 searchtag, UINT32 searchindex, 
 {
 	metadata_entry metaentry;
 	chd_error err;
-	int64_t count;
+	UINT32 count;
 
 	/* if we didn't find it, just return */
 	err = metadata_find_entry(chd, searchtag, searchindex, &metaentry);
@@ -2240,7 +2240,7 @@ static chd_error map_read(chd_file *chd)
 	UINT8 raw_map_entries[MAP_STACK_ENTRIES * MAP_ENTRY_SIZE];
 	UINT64 fileoffset, maxoffset = 0;
 	UINT8 cookie[MAP_ENTRY_SIZE];
-	int64_t count;
+	UINT32 count;
 	chd_error err;
 	int i;
 
