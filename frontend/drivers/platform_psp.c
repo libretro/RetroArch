@@ -107,7 +107,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    strlcpy(eboot_path, argv[0], sizeof(eboot_path));
    /* for PSP, use uppercase directories, and no trailing slashes
       otherwise mkdir fails */
-   strlcpy(user_path, "ms0:/PSP/RETROARCH", sizeof(user_path));
+   strlcpy(user_path, "ef0:/PSP/RETROARCH", sizeof(user_path));
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], argv[0], sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 #endif
    RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
