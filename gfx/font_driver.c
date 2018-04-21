@@ -310,6 +310,37 @@ static bool vulkan_font_init_first(
 }
 #endif
 
+#ifdef HAVE_D3D10
+static const font_renderer_t *d3d10_font_backends[] = {
+   &d3d10_font,
+   NULL,
+};
+
+static bool d3d10_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; d3d10_font_backends[i]; i++)
+   {
+      void *data = d3d10_font_backends[i]->init(video_data,
+            font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = d3d10_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 #ifdef HAVE_D3D11
 static const font_renderer_t *d3d11_font_backends[] = {
    &d3d11_font,
@@ -491,6 +522,11 @@ static bool font_init_first(
 #ifdef HAVE_D3D9
       case FONT_DRIVER_RENDER_D3D9_API:
          return d3d9_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
+#ifdef HAVE_D3D10
+      case FONT_DRIVER_RENDER_D3D10_API:
+         return d3d10_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_D3D11

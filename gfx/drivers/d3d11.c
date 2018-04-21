@@ -996,6 +996,7 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
    }
    d3d11->init_history = false;
 }
+
 static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsigned height)
 {
    unsigned i;

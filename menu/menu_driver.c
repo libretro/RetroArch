@@ -236,6 +236,10 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "d3d9"))
             return true;
          break;
+      case MENU_VIDEO_DRIVER_DIRECT3D10:
+         if (string_is_equal(video_driver, "d3d10"))
+            return true;
+         break;
       case MENU_VIDEO_DRIVER_DIRECT3D11:
          if (string_is_equal(video_driver, "d3d11"))
             return true;

@@ -140,11 +140,20 @@ void d3d11_update_texture(
    if (!texture || !texture->staging)
       return;
 
-   D3D11MapTexture2D(ctx, texture->staging, 0, D3D11_MAP_WRITE, 0, &mapped_texture);
+   D3D11MapTexture2D(ctx, texture->staging,
+         0, D3D11_MAP_WRITE, 0, &mapped_texture);
 
+#if 0
+   PERF_START();
+   conv_rgb565_argb8888(mapped_texture.pData, data, width, height,
+         mapped_texture.RowPitch, pitch);
+   PERF_STOP();
+#else
    dxgi_copy(
-         width, height, format, pitch, data, texture->desc.Format, mapped_texture.RowPitch,
+         width, height, format, pitch, data,
+         texture->desc.Format, mapped_texture.RowPitch,
          mapped_texture.pData);
+#endif
 
    D3D11UnmapTexture2D(ctx, texture->staging, 0);
 

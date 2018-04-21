@@ -510,6 +510,10 @@ FONTS
 #include "../gfx/drivers_font/vulkan_raster_font.c"
 #endif
 
+#if defined(HAVE_D3D10)
+#include "../gfx/drivers_font/d3d10_font.c"
+#endif
+
 #if defined(HAVE_D3D11)
 #include "../gfx/drivers_font/d3d11_font.c"
 #endif
@@ -1167,6 +1171,10 @@ MENU
 
 #if defined(HAVE_D3D9)
 #include "../menu/drivers_display/menu_display_d3d9.c"
+#endif
+
+#if defined(HAVE_D3D10)
+#include "../menu/drivers_display/menu_display_d3d10.c"
 #endif
 
 #if defined(HAVE_D3D11)

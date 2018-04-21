@@ -1267,7 +1267,9 @@ endif
 
 ifeq ($(HAVE_D3D10), 1)
    OBJ += gfx/drivers/d3d10.o \
-			 gfx/common/d3d10_common.o
+			 gfx/common/d3d10_common.o \
+			 gfx/drivers_font/d3d10_font.o \
+			 menu/drivers_display/menu_display_d3d10.o
    DEFINES += -DHAVE_D3D10
 endif
 
