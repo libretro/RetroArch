@@ -754,6 +754,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_gl;
 extern menu_display_ctx_driver_t menu_display_ctx_vulkan;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d8;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d9;
+extern menu_display_ctx_driver_t menu_display_ctx_d3d10;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d11;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d12;
 extern menu_display_ctx_driver_t menu_display_ctx_vita2d;

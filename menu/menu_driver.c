@@ -99,6 +99,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_D3D9
    &menu_display_ctx_d3d9,
 #endif
+#ifdef HAVE_D3D10
+   &menu_display_ctx_d3d10,
+#endif
 #ifdef HAVE_D3D11
    &menu_display_ctx_d3d11,
 #endif
