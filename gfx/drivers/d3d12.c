@@ -48,7 +48,7 @@ static void d3d12_gfx_sync(d3d12_video_t* d3d12)
 static void d3d12_free_overlays(d3d12_video_t* d3d12)
 {
    unsigned i;
-   for (i = 0; i < d3d12->overlays.count; i++)
+   for (i = 0; i < (unsigned)d3d12->overlays.count; i++)
       d3d12_release_texture(&d3d12->overlays.textures[i]);
 
    Release(d3d12->overlays.vbo);
@@ -120,7 +120,7 @@ static void d3d12_overlay_set_alpha(void* data, unsigned index, float mod)
 
 static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_images)
 {
-   int                         i;
+   unsigned                    i;
    d3d12_sprite_t*             sprites = NULL;
    D3D12_RANGE                 range   = { 0, 0 };
    d3d12_video_t*              d3d12   = (d3d12_video_t*)data;
@@ -304,7 +304,7 @@ static void d3d12_free_shader_preset(d3d12_video_t* d3d12)
    memset(d3d12->pass, 0, sizeof(d3d12->pass));
 
    /* only free the history textures here */
-   for (i = 1; i <= d3d12->shader_preset->history_size; i++)
+   for (i = 1; i <= (unsigned)d3d12->shader_preset->history_size; i++)
       d3d12_release_texture(&d3d12->frame.texture[i]);
 
    memset(
@@ -993,7 +993,7 @@ static void d3d12_init_history(d3d12_video_t* d3d12, unsigned width, unsigned he
     * and to reduce memory fragmentation */
 
    assert(d3d12->shader_preset);
-   for (i = 0; i < d3d12->shader_preset->history_size + 1; i++)
+   for (i = 0; i < (unsigned)d3d12->shader_preset->history_size + 1; i++)
    {
       d3d12->frame.texture[i].desc.Width     = width;
       d3d12->frame.texture[i].desc.Height    = height;
@@ -1492,7 +1492,7 @@ static bool d3d12_gfx_frame(
             d3d12->queue.cmd, ROOT_ID_SAMPLER_T,
             d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
 
-      for (i = 0; i < d3d12->overlays.count; i++)
+      for (i = 0; i < (unsigned)d3d12->overlays.count; i++)
       {
          if (d3d12->overlays.textures[i].dirty)
             d3d12_upload_texture(d3d12->queue.cmd,

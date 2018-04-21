@@ -273,7 +273,7 @@ static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descri
    int                         i;
    D3D12_CPU_DESCRIPTOR_HANDLE handle = { 0 };
 
-   for (i = heap->start; i < heap->desc.NumDescriptors; i++)
+   for (i = heap->start; i < (int)heap->desc.NumDescriptors; i++)
    {
       if (!heap->map[i])
       {

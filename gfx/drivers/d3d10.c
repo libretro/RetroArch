@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -37,7 +37,7 @@
 static void d3d10_free_overlays(d3d10_video_t* d3d10)
 {
    unsigned i;
-   for (i = 0; i < d3d10->overlays.count; i++)
+   for (i = 0; i < (unsigned)d3d10->overlays.count; i++)
       d3d10_release_texture(&d3d10->overlays.textures[i]);
 
    Release(d3d10->overlays.vbo);
@@ -126,7 +126,7 @@ static bool d3d10_overlay_load(void* data, const void* image_data, unsigned num_
    D3D10MapBuffer(d3d10->overlays.vbo, 
          D3D10_MAP_WRITE_DISCARD, 0, (void**)&sprites);
 
-   for (i = 0; i < num_images; i++)
+   for (i = 0; i < (unsigned)num_images; i++)
    {
 
       d3d10->overlays.textures[i].desc.Width  = images[i].width;
@@ -280,7 +280,7 @@ static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
    memset(d3d10->pass, 0, sizeof(d3d10->pass));
 
    /* only free the history textures here */
-   for (i = 1; i <= d3d10->shader_preset->history_size; i++)
+   for (i = 1; i <= (unsigned)d3d10->shader_preset->history_size; i++)
       d3d10_release_texture(&d3d10->frame.texture[i]);
 
    memset(
@@ -938,7 +938,7 @@ static void d3d10_init_history(d3d10_video_t* d3d10, unsigned width, unsigned he
     * and to reduce memory fragmentation */
 
    assert(d3d10->shader_preset);
-   for (i = 0; i < d3d10->shader_preset->history_size + 1; i++)
+   for (i = 0; i < (unsigned)d3d10->shader_preset->history_size + 1; i++)
    {
       d3d10->frame.texture[i].desc.Width  = width;
       d3d10->frame.texture[i].desc.Height = height;
@@ -1347,7 +1347,7 @@ static bool d3d10_gfx_frame(
       D3D10SetPShaderSamplers(
             context, 0, 1, &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
 
-      for (i = 0; i < d3d10->overlays.count; i++)
+      for (i = 0; i < (unsigned)d3d10->overlays.count; i++)
       {
          D3D10SetPShaderResources(context, 0, 1, &d3d10->overlays.textures[i].view);
          D3D10Draw(d3d10->device, 1, i);

@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -49,7 +49,7 @@ static D3D11DeviceContext    cached_context;
 static void d3d11_free_overlays(d3d11_video_t* d3d11)
 {
    unsigned i;
-   for (i = 0; i < d3d11->overlays.count; i++)
+   for (i = 0; i < (unsigned)d3d11->overlays.count; i++)
       d3d11_release_texture(&d3d11->overlays.textures[i]);
 
    Release(d3d11->overlays.vbo);
@@ -120,7 +120,7 @@ static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_
 {
    D3D11_BUFFER_DESC desc;
    D3D11_MAPPED_SUBRESOURCE    mapped_vbo;
-   int                         i;
+   unsigned                    i;
    d3d11_sprite_t*             sprites;
    d3d11_video_t*              d3d11  = (d3d11_video_t*)data;
    const struct texture_image* images = (const struct texture_image*)image_data;
@@ -296,7 +296,7 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
    memset(d3d11->pass, 0, sizeof(d3d11->pass));
 
    /* only free the history textures here */
-   for (i = 1; i <= d3d11->shader_preset->history_size; i++)
+   for (i = 1; i <= (unsigned)d3d11->shader_preset->history_size; i++)
       d3d11_release_texture(&d3d11->frame.texture[i]);
 
    memset(
@@ -985,7 +985,7 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
     * and to reduce memory fragmentation */
 
    assert(d3d11->shader_preset);
-   for (i = 0; i < d3d11->shader_preset->history_size + 1; i++)
+   for (i = 0; i < (unsigned)d3d11->shader_preset->history_size + 1; i++)
    {
       d3d11->frame.texture[i].desc.Width  = width;
       d3d11->frame.texture[i].desc.Height = height;
@@ -1378,7 +1378,7 @@ static bool d3d11_gfx_frame(
       D3D11SetPShaderSamplers(
             context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
 
-      for (i = 0; i < d3d11->overlays.count; i++)
+      for (i = 0; i < (unsigned)d3d11->overlays.count; i++)
       {
          D3D11SetPShaderResources(context, 0, 1, &d3d11->overlays.textures[i].view);
          D3D11Draw(d3d11->context, 1, i);
