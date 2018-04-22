@@ -1331,8 +1331,8 @@ static void cg_d3d9_renderchain_blit_to_texture(
       unsigned width, unsigned height,
       unsigned pitch)
 {
-   D3DLOCKED_RECT d3dlr;
-   struct Pass *first = (struct Pass*)&chain->passes->data[0];
+   D3DLOCKED_RECT d3dlr = {0, NULL};
+   struct Pass *first   = (struct Pass*)&chain->passes->data[0];
 
    if (
          (first->last_width != width || first->last_height != height)

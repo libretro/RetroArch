@@ -201,7 +201,7 @@ static void hlsl_d3d9_renderchain_blit_to_texture(
       void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-   D3DLOCKED_RECT d3dlr;
+   D3DLOCKED_RECT d3dlr           = { 0, NULL };
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)data;
 
    if (chain->last_width != width || chain->last_height != height)
