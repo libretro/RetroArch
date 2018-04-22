@@ -172,7 +172,7 @@ static void menu_display_d3d8_draw(void *data, video_frame_info_t *video_info)
 #if 1
 	  if ((void*)draw->texture)
       {
-         D3D8SURFACE_DESC desc;
+         D3DSURFACE_DESC desc;
          if (d3d8_texture_get_level_desc((void*)draw->texture, 0, &desc))
          {
             pv[i].u *= desc.Width;

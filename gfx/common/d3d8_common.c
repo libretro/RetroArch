@@ -29,8 +29,6 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
-#include <d3d8.h>
-
 #ifdef HAVE_D3DX
 #ifdef _XBOX
 #include <d3dx8core.h>
