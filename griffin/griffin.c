@@ -1307,11 +1307,11 @@ DEPENDENCIES
 #endif
 
 #ifdef HAVE_CHD
-#include "../libretro-common/formats/libchdr/bitstream.c"
-#include "../libretro-common/formats/libchdr/cdrom.c"
-#include "../libretro-common/formats/libchdr/chd.c"
-#include "../libretro-common/formats/libchdr/flac.c"
-#include "../libretro-common/formats/libchdr/huffman.c"
+#include "../libretro-common/formats/libchdr/libchdr_bitstream.c"
+#include "../libretro-common/formats/libchdr/libchdr_cdrom.c"
+#include "../libretro-common/formats/libchdr/libchdr_chd.c"
+#include "../libretro-common/formats/libchdr/libchdr_flac.c"
+#include "../libretro-common/formats/libchdr/libchdr_huffman.c"
 
 #include "../libretro-common/streams/chd_stream.c"
 #endif
