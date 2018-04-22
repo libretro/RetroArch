@@ -2411,7 +2411,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
 	 "Habilitar ou desabilitar conquistas não oficiais e/ou recursos beta para fins de teste."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-	 "Habilitar ou desabilitar Estado de Jogo, Trapaças, Voltar Atrás, Avanço Rápido, Pausa e Câmera Lenta para todos os jogos.")
+	 "Habilitar ou desabilitar Estado de Jogo, Trapaças, Voltar Atrás, Pausa e Câmera Lenta para todos os jogos.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
       "Ativar ou desativar tabelas de classificação no jogo. Não tem efeito se o modo Hardcore estiver desativado.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
