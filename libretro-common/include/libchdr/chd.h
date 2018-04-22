@@ -47,6 +47,7 @@ extern "C" {
 #endif
 
 #include "coretypes.h"
+#include <streams/file_stream.h>
 
 
 /***************************************************************************
@@ -347,7 +348,7 @@ struct _chd_verify_result
 /* chd_error chd_create_file(core_file *file, UINT64 logicalbytes, UINT32 hunkbytes, UINT32 compression, chd_file *parent); */
 
 /* open an existing CHD file */
-chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **chd);
+chd_error chd_open_file(RFILE *file, int mode, chd_file *parent, chd_file **chd);
 
 chd_error chd_open(const char *filename, int mode, chd_file *parent, chd_file **chd);
 
@@ -358,7 +359,7 @@ chd_error chd_precache(chd_file *chd);
 void chd_close(chd_file *chd);
 
 /* return the associated core_file */
-core_file *chd_core_file(chd_file *chd);
+RFILE *chd_core_file(chd_file *chd);
 
 /* return an error string for the given CHD error */
 const char *chd_error_string(chd_error err);
