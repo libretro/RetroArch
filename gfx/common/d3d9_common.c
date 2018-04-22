@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 /* For Xbox we will just link statically 
  * to Direct3D libraries instead. */
 
@@ -249,15 +251,6 @@ bool d3d9_check_device_type(void *_d3d,
    LPDIRECT3D9 d3d = (LPDIRECT3D9)_d3d;
    if (!d3d)
       return false;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (FAILED(d3d->CheckDeviceType(
-               0,
-               D3DDEVTYPE_HAL,
-               (D3DFORMAT)disp_format,
-               (D3DFORMAT)backbuffer_format,
-               windowed_mode)))
-      return false;
-#else
    if (FAILED(IDirect3D9_CheckDeviceType(d3d,
                0,
                D3DDEVTYPE_HAL,
@@ -265,7 +258,6 @@ bool d3d9_check_device_type(void *_d3d,
                (D3DFORMAT)backbuffer_format,
                windowed_mode)))
       return false;
-#endif
 
    return true;
 }
@@ -280,9 +272,6 @@ bool d3d9_get_adapter_display_mode(
       return false;
 #ifdef _XBOX
    return true;
-#elif defined(__cplusplus) && !defined(CINTERFACE) 
-   if (FAILED(d3d->GetAdapterDisplayMode(idx, (D3DDISPLAYMODE*)display_mode)))
-      return false;
 #else
    if (FAILED(IDirect3D9_GetAdapterDisplayMode(d3d, idx, (D3DDISPLAYMODE*)display_mode)))
       return false;
@@ -294,21 +283,12 @@ bool d3d9_get_adapter_display_mode(
 bool d3d9_swap(void *data, void *_dev)
 {
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-#ifdef _XBOX
-   dev->Present(NULL, NULL, NULL, NULL);
-#else
-   if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
-      return false;
-#endif
-#else
 #ifdef _XBOX
    IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL);
 #else
    if (IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL) 
          == D3DERR_DEVICELOST)
       return false;
-#endif
 #endif
    return true;
 }
@@ -320,11 +300,7 @@ void d3d9_set_transform(void *_dev,
    CONST D3DMATRIX *matrix = (CONST D3DMATRIX*)_matrix;
    /* XBox 360 D3D9 does not support fixed-function pipeline. */
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->SetTransform((D3DTRANSFORMSTATETYPE)state, matrix);
-#else
    IDirect3DDevice9_SetTransform(dev, (D3DTRANSFORMSTATETYPE)state, matrix);
-#endif
 #endif
 }
 
@@ -332,17 +308,12 @@ bool d3d9_texture_get_level_desc(void *_tex,
       unsigned idx, void *_ppsurface_level)
 {
    LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)_tex;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (SUCCEEDED(tex->GetLevelDesc(idx, (D3DSURFACE_DESC*)_ppsurface_level)))
-      return true;
-#else
 #if defined(_XBOX)
    D3DTexture_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level);
    return true;
 #else
    if (SUCCEEDED(IDirect3DTexture9_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level)))
       return true;
-#endif
 #endif
 
    return false;
@@ -354,13 +325,8 @@ bool d3d9_texture_get_surface_level(void *_tex,
    LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)_tex;
    if (!tex)
       return false;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (SUCCEEDED(tex->GetSurfaceLevel(idx, (IDirect3DSurface9**)_ppsurface_level)))
-      return true;
-#else
    if (SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(tex, idx, (IDirect3DSurface9**)_ppsurface_level)))
       return true;
-#endif
 
    return false;
 }
@@ -417,19 +383,11 @@ void *d3d9_texture_new(void *_dev,
       if (want_mipmap)
          usage |= D3DUSAGE_AUTOGENMIPMAP;
 #endif
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-      hr = dev->CreateTexture(
-            width, height, miplevels, usage,
-            (D3DFORMAT)format,
-            (D3DPOOL)pool,
-            (struct IDirect3DTexture9**)&buf, NULL);
-#else
       hr = IDirect3DDevice9_CreateTexture(dev,
             width, height, miplevels, usage,
             (D3DFORMAT)format,
             (D3DPOOL)pool,
             (struct IDirect3DTexture9**)&buf, NULL);
-#endif
    }
 
    if (FAILED(hr))
@@ -443,11 +401,7 @@ void d3d9_texture_free(void *_tex)
    LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)_tex;
    if (!tex)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   tex->Release();
-#else
    IDirect3DTexture9_Release(tex);
-#endif
 }
 
 bool d3d9_surface_lock_rect(void *data, void *data2)
@@ -455,16 +409,11 @@ bool d3d9_surface_lock_rect(void *data, void *data2)
    LPDIRECT3DSURFACE9 surf = (LPDIRECT3DSURFACE9)data;
    if (!surf)
       return false;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (FAILED(surf->LockRect((D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
-      return false;
-#else
 #if defined(_XBOX)
    IDirect3DSurface9_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY);
 #else
    if (FAILED(IDirect3DSurface9_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
       return false;
-#endif
 #endif
 
    return true;
@@ -475,11 +424,7 @@ void d3d9_surface_unlock_rect(void *data)
    LPDIRECT3DSURFACE9 surf = (LPDIRECT3DSURFACE9)data;
    if (!surf)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   surf->UnlockRect();
-#else
    IDirect3DSurface9_UnlockRect(surf);
-#endif
 }
 
 void d3d9_surface_free(void *data)
@@ -487,11 +432,7 @@ void d3d9_surface_free(void *data)
    LPDIRECT3DSURFACE9 surf = (LPDIRECT3DSURFACE9)data;
    if (!surf)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   surf->Release();
-#else
    IDirect3DSurface9_Release(surf);
-#endif
 }
 
 void d3d9_vertex_declaration_free(void *data)
@@ -499,16 +440,7 @@ void d3d9_vertex_declaration_free(void *data)
    if (!data)
       return;
 
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   {
-      LPDIRECT3DVERTEXDECLARATION9 vertex_decl = 
-         (LPDIRECT3DVERTEXDECLARATION9)data;
-      if (vertex_decl)
-         vertex_decl->Release();
-   }
-#else
    IDirect3DVertexDeclaration9_Release((LPDIRECT3DVERTEXDECLARATION9)data);
-#endif
 }
 
 bool d3d9_vertex_declaration_new(void *_dev,
@@ -518,15 +450,9 @@ bool d3d9_vertex_declaration_new(void *_dev,
    const D3DVERTEXELEMENT9   *vertex_elements = (const D3DVERTEXELEMENT9*)vertex_data;
    LPDIRECT3DVERTEXDECLARATION9 **vertex_decl = (LPDIRECT3DVERTEXDECLARATION9**)decl_data;
 
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (SUCCEEDED(dev->CreateVertexDeclaration(vertex_elements,
-               (IDirect3DVertexDeclaration9**)vertex_decl)))
-      return true;
-#else
    if (SUCCEEDED(IDirect3DDevice9_CreateVertexDeclaration(dev,
                vertex_elements, (IDirect3DVertexDeclaration9**)vertex_decl)))
       return true;
-#endif
 
    return false;
 }
@@ -539,28 +465,17 @@ void *d3d9_vertex_buffer_new(void *_dev,
    void              *buf = NULL;
    LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
 
+#ifndef _XBOX
    if (usage == 0)
    {
-#ifndef _XBOX
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-      if (dev->GetSoftwareVertexProcessing())
-         usage = D3DUSAGE_SOFTWAREPROCESSING;
-#else
       if (IDirect3DDevice9_GetSoftwareVertexProcessing(dev))
          usage = D3DUSAGE_SOFTWAREPROCESSING;
-#endif
-#endif         
    }
+#endif         
 
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   hr = dev->CreateVertexBuffer(length, usage, fvf,
-         (D3DPOOL)pool,
-         (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL);
-#else
    hr = IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf,
          (D3DPOOL)pool,
          (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL);
-#endif
 
    if (FAILED(hr))
       return NULL;
@@ -574,11 +489,7 @@ void d3d9_vertex_buffer_unlock(void *vertbuf_ptr)
 
    if (!vertbuf)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   vertbuf->Unlock();
-#else
    IDirect3DVertexBuffer9_Unlock(vertbuf);
-#endif
 }
 
 void *d3d9_vertex_buffer_lock(void *vertbuf_ptr)
@@ -587,11 +498,7 @@ void *d3d9_vertex_buffer_lock(void *vertbuf_ptr)
    LPDIRECT3DVERTEXBUFFER9 vertbuf = (LPDIRECT3DVERTEXBUFFER9)vertbuf_ptr;
    if (!vertbuf)
       return NULL;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   vertbuf->Lock(0, 0, &buf, 0);
-#else
    IDirect3DVertexBuffer9_Lock(vertbuf, 0, 0, &buf, 0);
-#endif
 
    if (!buf)
       return NULL;
@@ -604,11 +511,7 @@ void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
    if (vertex_data)
    {
       LPDIRECT3DVERTEXBUFFER9 buf = (LPDIRECT3DVERTEXBUFFER9)vertex_data;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-      buf->Release();
-#else
       IDirect3DVertexBuffer9_Release(buf);
-#endif
       buf = NULL;
    }
 
@@ -628,13 +531,9 @@ void d3d9_set_stream_source(void *_dev, unsigned stream_no,
    LPDIRECT3DVERTEXBUFFER9 stream_vertbuf = (LPDIRECT3DVERTEXBUFFER9)stream_vertbuf_ptr;
    if (!stream_vertbuf)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->SetStreamSource(stream_no, stream_vertbuf, offset_bytes, stride);
-#else
    IDirect3DDevice9_SetStreamSource(dev, stream_no, stream_vertbuf,
          offset_bytes,
          stride);
-#endif
 }
 
 bool d3d9_device_create_offscreen_plain_surface(
@@ -648,20 +547,12 @@ bool d3d9_device_create_offscreen_plain_surface(
 {
 #ifndef _XBOX
    LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (SUCCEEDED(dev->CreateOffscreenPlainSurface(width, height,
-               (D3DFORMAT)format, (D3DPOOL)pool,
-               (LPDIRECT3DSURFACE9*)surf_data,
-               (HANDLE*)data)))
-      return true;
-#else
    if (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
                width, height,
                (D3DFORMAT)format, (D3DPOOL)pool,
                (LPDIRECT3DSURFACE9*)surf_data,
                (HANDLE*)data)))
       return true;
-#endif
 #endif
 
    return false;
@@ -673,13 +564,8 @@ static void d3d9_set_texture_stage_state(void *_dev,
 #ifndef _XBOX
    /* XBox 360 has no fixed-function pipeline. */
    LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (dev->SetTextureStageState(sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
-      RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
-#else
    if (IDirect3DDevice9_SetTextureStageState(dev, sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
       RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
-#endif
 #endif
 }
 
@@ -687,22 +573,14 @@ void d3d9_set_sampler_address_u(void *_dev,
       unsigned sampler, unsigned value)
 {
    LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, value);
-#else
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSU, value);
-#endif
 }
 
 void d3d9_set_sampler_address_v(void *_dev,
       unsigned sampler, unsigned value)
 {
    LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, value);
-#else
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSV, value);
-#endif
 }
 
 void d3d9_set_sampler_minfilter(void *_dev,
@@ -711,11 +589,7 @@ void d3d9_set_sampler_minfilter(void *_dev,
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    if (!dev)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, value);
-#else
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MINFILTER, value);
-#endif
 }
 
 void d3d9_set_sampler_magfilter(void *_dev,
@@ -724,11 +598,7 @@ void d3d9_set_sampler_magfilter(void *_dev,
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    if (!dev)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, value);
-#else
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MAGFILTER, value);
-#endif
 }
 
 void d3d9_set_sampler_mipfilter(void *_dev,
@@ -746,16 +616,11 @@ bool d3d9_begin_scene(void *_dev)
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    if (!dev)
       return false;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (FAILED(dev->BeginScene()))
-      return false;
-#else
 #if defined(_XBOX)
    IDirect3DDevice9_BeginScene(dev);
 #else
    if (FAILED(IDirect3DDevice9_BeginScene(dev)))
       return false;
-#endif
 #endif
 
    return true;
@@ -766,11 +631,7 @@ void d3d9_end_scene(void *_dev)
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    if (!dev)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->EndScene();
-#else
    IDirect3DDevice9_EndScene(dev);
-#endif
 }
 
 static void d3d9_draw_primitive_internal(void *_dev,
@@ -779,11 +640,7 @@ static void d3d9_draw_primitive_internal(void *_dev,
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    if (!dev)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->DrawPrimitive(type, start, count);
-#else
    IDirect3DDevice9_DrawPrimitive(dev, type, start, count);
-#endif
 }
 
 void d3d9_draw_primitive(void *dev,
@@ -803,12 +660,8 @@ void d3d9_clear(void *_dev,
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    if (!dev)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->Clear(count, (const D3DRECT*)rects, flags, color, z, stencil);
-#else
    IDirect3DDevice9_Clear(dev, count, (const D3DRECT*)rects, flags,
          color, z, stencil);
-#endif
 }
 
 bool d3d9_device_get_render_target_data(void *_dev,
@@ -820,14 +673,9 @@ bool d3d9_device_get_render_target_data(void *_dev,
    LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
    if (!dev)
       return false;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (SUCCEEDED(dev->GetRenderTargetData(src, dst)))
-      return true;
-#else
    if (SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(
                dev, src, dst)))
       return true;
-#endif
 #endif
 
    return false;
@@ -839,15 +687,9 @@ bool d3d9_device_get_render_target(void *_dev,
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    if (!dev)
       return false;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (SUCCEEDED(dev->GetRenderTarget(idx,
-               (LPDIRECT3DSURFACE9*)data)))
-      return true;
-#else
    if (SUCCEEDED(IDirect3DDevice9_GetRenderTarget(dev,
                idx, (LPDIRECT3DSURFACE9*)data)))
       return true;
-#endif
 
    return false;
 }
@@ -861,16 +703,11 @@ bool d3d9_lock_rectangle(void *_tex,
    LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)_tex;
    if (!tex)
       return false;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (FAILED(tex->LockRect(level, lr, rect, flags)))
-      return false;
-#else
 #ifdef _XBOX
    IDirect3DTexture9_LockRect(tex, level, lr, (const RECT*)rect, flags);
 #else
    if (IDirect3DTexture9_LockRect(tex, level, lr, (const RECT*)rect, flags) != D3D_OK)
       return false;
-#endif
 #endif
 
    return true;
@@ -881,11 +718,7 @@ void d3d9_unlock_rectangle(void *_tex)
    LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)_tex;
    if (!tex)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   tex->UnlockRect(0);
-#else
    IDirect3DTexture9_UnlockRect(tex, 0);
-#endif
 }
 
 void d3d9_lock_rectangle_clear(void *tex,
@@ -906,11 +739,7 @@ void d3d9_set_viewports(void *_dev, void *_vp)
    D3DVIEWPORT9      *vp = (D3DVIEWPORT9*)_vp;
    if (!dev)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->SetViewport(vp);
-#else
    IDirect3DDevice9_SetViewport(dev, vp);
-#endif
 }
 
 void d3d9_set_texture(void *_dev, unsigned sampler,
@@ -920,12 +749,8 @@ void d3d9_set_texture(void *_dev, unsigned sampler,
    LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
    if (!dev || !tex)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->SetTexture(sampler, tex);
-#else
    IDirect3DDevice9_SetTexture(dev, sampler,
          (IDirect3DBaseTexture9*)tex);
-#endif
 }
 
 void d3d9_free_vertex_shader(void *_dev, void *data)
@@ -934,11 +759,7 @@ void d3d9_free_vertex_shader(void *_dev, void *data)
    IDirect3DVertexShader9 *vs = (IDirect3DVertexShader9*)data;
    if (!dev || !vs)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   vs->Release();
-#else
    IDirect3DVertexShader9_Release(vs);
-#endif
 }
 
 void d3d9_free_pixel_shader(void *_dev, void *data)
@@ -947,11 +768,7 @@ void d3d9_free_pixel_shader(void *_dev, void *data)
    IDirect3DPixelShader9 *ps  = (IDirect3DPixelShader9*)data;
    if (!dev || !ps)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   ps->Release();
-#else
    IDirect3DPixelShader9_Release(ps);
-#endif
 }
 
 bool d3d9_create_vertex_shader(void *_dev, const DWORD *a, void **b)
@@ -960,14 +777,9 @@ bool d3d9_create_vertex_shader(void *_dev, const DWORD *a, void **b)
    if (!dev)
       return false;
 
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (dev->CreateVertexShader(a, (IDirect3DVertexShader9**)b) == D3D_OK)
-      return true;
-#else
    if (IDirect3DDevice9_CreateVertexShader(dev, a,
             (LPDIRECT3DVERTEXSHADER9*)b) == D3D_OK)
       return true;
-#endif
 
    return false;
 }
@@ -978,14 +790,9 @@ bool d3d9_create_pixel_shader(void *_dev, const DWORD *a, void **b)
    if (!dev)
       return false;
 
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (dev->CreatePixelShader(a, (IDirect3DPixelShader9**)b) == D3D_OK)
-      return true;
-#else
    if (IDirect3DDevice9_CreatePixelShader(dev, a,
             (LPDIRECT3DPIXELSHADER9*)b) == D3D_OK)
       return true;
-#endif
 
    return false;
 }
@@ -996,10 +803,7 @@ bool d3d9_set_pixel_shader(void *_dev, void *data)
    LPDIRECT3DPIXELSHADER9 d3dps = (LPDIRECT3DPIXELSHADER9)data;
    if (!dev || !d3dps)
       return false;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (dev->SetPixelShader(d3dps) == D3D_OK)
-      return true;
-#else
+
 #ifdef _XBOX
    /* Returns void on Xbox */
    IDirect3DDevice9_SetPixelShader(dev, d3dps);
@@ -1007,7 +811,6 @@ bool d3d9_set_pixel_shader(void *_dev, void *data)
 #else
    if (IDirect3DDevice9_SetPixelShader(dev, d3dps) == D3D_OK)
       return true;
-#endif
 #endif
 
    return false;
@@ -1018,16 +821,12 @@ bool d3d9_set_vertex_shader(void *_dev, unsigned index,
 {
    LPDIRECT3DDEVICE9       dev    = (LPDIRECT3DDEVICE9)_dev;
    LPDIRECT3DVERTEXSHADER9 shader = (LPDIRECT3DVERTEXSHADER9)data;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (dev->SetVertexShader(shader) != D3D_OK)
-      return false;
-#else
+
 #ifdef _XBOX
    IDirect3DDevice9_SetVertexShader(dev, shader);
 #else
    if (IDirect3DDevice9_SetVertexShader(dev, shader) != D3D_OK)
       return false;
-#endif
 #endif
 
    return true;
@@ -1038,16 +837,7 @@ bool d3d9_set_vertex_shader_constantf(void *_dev,
       unsigned vector4f_count)
 {
    LPDIRECT3DDEVICE9      dev    = (LPDIRECT3DDEVICE9)_dev;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-#ifdef _XBOX
-   dev->SetVertexShaderConstantF(
-         start_register, constant_data, vector4f_count);
-#else
-   if (dev->SetVertexShaderConstantF(
-            start_register, constant_data, vector4f_count) == D3D_OK)
-      return true;
-#endif
-#else
+
 #ifdef _XBOX
    IDirect3DDevice9_SetVertexShaderConstantF(dev,
          start_register, constant_data, vector4f_count);
@@ -1056,7 +846,6 @@ bool d3d9_set_vertex_shader_constantf(void *_dev,
    if (IDirect3DDevice9_SetVertexShaderConstantF(dev,
             start_register, constant_data, vector4f_count) == D3D_OK)
       return true;
-#endif
 #endif
 
    return false;
@@ -1083,20 +872,15 @@ bool d3d9_get_render_state(void *data, INT32 state, DWORD *value)
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
    if (!dev)
       return false;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (dev->GetRenderState((D3DRENDERSTATETYPE)state, value) == D3D_OK)
-      return true;
-#else
+
 #ifdef _XBOX
    IDirect3DDevice9_GetRenderState(dev, (D3DRENDERSTATETYPE)state, value);
    return true;
 #else
    if (IDirect3DDevice9_GetRenderState(dev, (D3DRENDERSTATETYPE)state, value) == D3D_OK)
       return true;
-#endif
-#endif
-
    return false;
+#endif
 }
 
 void d3d9_set_render_state(void *data, INT32 state, DWORD value)
@@ -1104,11 +888,7 @@ void d3d9_set_render_state(void *data, INT32 state, DWORD value)
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
    if (!dev)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->SetRenderState((D3DRENDERSTATETYPE)state, value);
-#else
    IDirect3DDevice9_SetRenderState(dev, (D3DRENDERSTATETYPE)state, value);
-#endif
 }
 
 void d3d9_enable_blend_func(void *data)
@@ -1128,11 +908,7 @@ void d3d9_device_set_render_target(void *_dev, unsigned idx,
    LPDIRECT3DDEVICE9   dev = (LPDIRECT3DDEVICE9)_dev;
    if (!dev)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->SetRenderTarget(idx, surf);
-#else
    IDirect3DDevice9_SetRenderTarget(dev, idx, surf);
-#endif
 }
 
 void d3d9_enable_alpha_blend_texture_func(void *data)
@@ -1153,11 +929,7 @@ void d3d9_set_vertex_declaration(void *data, void *vertex_data)
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
    if (!dev)
       return;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   dev->SetVertexDeclaration((LPDIRECT3DVERTEXDECLARATION9)vertex_data);
-#else
    IDirect3DDevice9_SetVertexDeclaration(dev, (LPDIRECT3DVERTEXDECLARATION9)vertex_data);
-#endif
 }
 
 static bool d3d9_reset_internal(void *data,
@@ -1167,13 +939,8 @@ static bool d3d9_reset_internal(void *data,
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
    if (!dev)
       return false;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if ((dev->Reset(d3dpp) == D3D_OK))
-      return true;
-#else
    if (IDirect3DDevice9_Reset(dev, d3dpp) == D3D_OK)
       return true;
-#endif
 
    return false;
 }
@@ -1186,11 +953,7 @@ static HRESULT d3d9_test_cooperative_level(void *data)
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
    if (!dev)
       return E_FAIL;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   return dev->TestCooperativeLevel();
-#else
    return IDirect3DDevice9_TestCooperativeLevel(dev);
-#endif
 #endif
 }
 
@@ -1206,16 +969,6 @@ static bool d3d9_create_device_internal(
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
    if (!dev)
       return false;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (SUCCEEDED(d3d->CreateDevice(
-               cur_mon_id,
-               D3DDEVTYPE_HAL,
-               focus_window,
-               behavior_flags,
-               d3dpp,
-               (IDirect3DDevice9**)dev)))
-      return true;
-#else
    if (SUCCEEDED(IDirect3D9_CreateDevice(d3d,
                cur_mon_id,
                D3DDEVTYPE_HAL,
@@ -1224,7 +977,6 @@ static bool d3d9_create_device_internal(
                d3dpp,
                (IDirect3DDevice9**)dev)))
       return true;
-#endif
 
    return false;
 }
@@ -1291,19 +1043,11 @@ bool d3d9_device_get_backbuffer(void *_dev,
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    if (!dev)
       return false;
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-   if (SUCCEEDED(dev->GetBackBuffer( 
-               swapchain_idx, idx, 
-               (D3DBACKBUFFER_TYPE)backbuffer_type,
-               (LPDIRECT3DSURFACE9*)data)))
-      return true;
-#else
    if (SUCCEEDED(IDirect3DDevice9_GetBackBuffer(dev, 
                swapchain_idx, idx, 
                (D3DBACKBUFFER_TYPE)backbuffer_type,
                (LPDIRECT3DSURFACE9*)data)))
       return true;
-#endif
 
    return false;
 }
@@ -1314,22 +1058,10 @@ void d3d9_device_free(void *_dev, void *_pd3d)
    LPDIRECT3D9      pd3d = (LPDIRECT3D9)_pd3d;
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    if (dev)
-   {
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-      dev->Release();
-#else
       IDirect3DDevice9_Release(dev);
-#endif
-   }
 
    if (pd3d)
-   {
-#if defined(__cplusplus) && !defined(CINTERFACE) 
-      pd3d->Release();
-#else
       IDirect3D9_Release(pd3d);
-#endif
-   }
 }
 
 INT32 d3d9_translate_filter(unsigned type)
@@ -1357,17 +1089,10 @@ bool d3d9x_create_font_indirect(void *_dev,
 {
 #ifdef HAVE_D3DX
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
-#ifdef __cplusplus
    if (SUCCEEDED(D3D9CreateFontIndirect(
                dev, (D3DXFONT_DESC*)desc,
                (struct ID3DXFont**)font_data)))
       return true;
-#else
-   if (SUCCEEDED(D3D9CreateFontIndirect(
-               dev, (D3DXFONT_DESC*)desc,
-               (struct ID3DXFont**)font_data)))
-      return true;
-#endif
 #endif
 
    return false;
@@ -1376,19 +1101,11 @@ bool d3d9x_create_font_indirect(void *_dev,
 void d3dxbuffer_release(void *data)
 {
 #ifdef HAVE_D3DX
-#ifdef __cplusplus
-   ID3DXBuffer *p = (ID3DXBuffer*)data;
-#else
    LPD3DXBUFFER p = (LPD3DXBUFFER)data;
-#endif
    if (!p)
       return;
 
-#if defined(__cplusplus) && !defined(CINTERFACE)
-   p->Release();
-#else
    p->lpVtbl->Release(p);
-#endif
 #endif
 }
 
@@ -1426,55 +1143,32 @@ void d3d9x_font_draw_text(void *data, void *sprite_data, void *string_data,
       unsigned count, void *rect_data, unsigned format, unsigned color)
 {
 #ifdef HAVE_D3DX
-#if !defined(__cplusplus) || defined(CINTERFACE)
    ID3DXFont *font = (ID3DXFont*)data;
    if (!font)
       return;
    font->lpVtbl->DrawText(font, (LPD3DXSPRITE)sprite_data,
          (LPCTSTR)string_data, count, (LPRECT)rect_data,
          (DWORD)format, (D3DCOLOR)color);
-#else
-   LPD3DXFONT font = (LPD3DXFONT)data;
-   if (!font)
-      return;
-   font->DrawText((LPD3DXSPRITE)sprite_data,
-         (LPCTSTR)string_data, count, (LPRECT)rect_data,
-         (DWORD)format, (D3DCOLOR)color);
-#endif
 #endif
 }
 
 void d3d9x_font_release(void *data)
 {
 #ifdef HAVE_D3DX
-#if !defined(__cplusplus) || defined(CINTERFACE)
    ID3DXFont *font = (ID3DXFont*)data;
    if (!font)
       return;
    font->lpVtbl->Release(font);
-#else
-   LPD3DXFONT font = (LPD3DXFONT)data;
-   if (!font)
-      return;
-   font->Release();
-#endif
 #endif
 }
 
 void d3d9x_font_get_text_metrics(void *data, void *metrics)
 {
 #ifdef HAVE_D3DX
-#if !defined(__cplusplus) || defined(CINTERFACE)
    ID3DXFont *font = (ID3DXFont*)data;
    if (!font)
       return;
    font->lpVtbl->GetTextMetrics(font, (TEXTMETRICA*)metrics);
-#else
-   LPD3DXFONT font = (LPD3DXFONT)data;
-   if (!font)
-      return;
-   font->GetTextMetricsA((TEXTMETRICA*)metrics);
-#endif
 #endif
 }
 
@@ -1537,16 +1231,10 @@ const void *d3d9x_get_buffer_ptr(void *data)
 {
 #if defined(HAVE_D3DX)
    ID3DXBuffer *listing = (ID3DXBuffer*)data;
-   if (!listing)
-      return NULL;
-#if defined(__cplusplus) && !defined(CINTERFACE)
-   return listing->GetBufferPointer();
-#else
-   return listing->lpVtbl->GetBufferPointer(listing);
+   if (listing)
+      return listing->lpVtbl->GetBufferPointer(listing);
 #endif
-#else
    return NULL;
-#endif
 }
 
 const bool d3d9x_constant_table_set_float(void *p,
@@ -1559,13 +1247,8 @@ const bool d3d9x_constant_table_set_float(void *p,
    LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
    if (!consttbl || !dev || !handle)
       return false;
-#if defined(__cplusplus) && !defined(CINTERFACE)
-   if (consttbl->SetFloat(dev, handle, val) == D3D_OK)
-      return true;
-#else
    if (consttbl->lpVtbl->SetFloat(consttbl, dev, handle, val) == D3D_OK)
       return true;
-#endif
 #endif
    return false;
 }
