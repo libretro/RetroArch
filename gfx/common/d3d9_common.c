@@ -26,7 +26,6 @@
 #include <dynamic/dylib.h>
 #endif
 
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #include "d3d9_common.h"
