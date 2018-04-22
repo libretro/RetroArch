@@ -74,6 +74,8 @@
 #define OLD_MAP_ENTRY_SIZE			8			/* V1-V2 */
 #define METADATA_HEADER_SIZE		16			/* metadata header size */
 
+#define CRCMAP_HASH_SIZE			4095		/* number of CRC hashtable entries */
+
 #define MAP_ENTRY_FLAG_TYPE_MASK	0x0f		/* what type of hunk */
 #define MAP_ENTRY_FLAG_NO_CRC		0x10		/* no CRC is present */
 
@@ -86,21 +88,17 @@
 
 #define NO_MATCH					(~0)
 
+#define MAP_ENTRY_TYPE_INVALID		0x0000		/* invalid type */
+#define MAP_ENTRY_TYPE_COMPRESSED	0x0001		/* standard compression */
+#define MAP_ENTRY_TYPE_UNCOMPRESSED	0x0002		/* uncompressed data */
+#define MAP_ENTRY_TYPE_MINI			0x0003		/* mini: use offset as raw data */
+#define MAP_ENTRY_TYPE_SELF_HUNK	   0x0004		/* same as another hunk in this file */
+#define MAP_ENTRY_TYPE_PARENT_HUNK	0x0005		/* same as a hunk in the parent file */
+#define MAP_ENTRY_TYPE_2ND_COMPRESSED 0x0006    /* compressed with secondary algorithm (usually FLAC CDDA) */
+
 #ifdef WANT_RAW_DATA_SECTOR
 static const uint8_t s_cd_sync_header[12] = { 0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x00 };
 #endif
-
-/* V3-V4 entry types */
-enum
-{
-	V34_MAP_ENTRY_TYPE_INVALID = 0,             /* invalid type */
-	V34_MAP_ENTRY_TYPE_COMPRESSED = 1,          /* standard compression */
-	V34_MAP_ENTRY_TYPE_UNCOMPRESSED = 2,        /* uncompressed data */
-	V34_MAP_ENTRY_TYPE_MINI = 3,                /* mini: use offset as raw data */
-	V34_MAP_ENTRY_TYPE_SELF_HUNK = 4,           /* same as another hunk in this file */
-	V34_MAP_ENTRY_TYPE_PARENT_HUNK = 5,         /* same as a hunk in the parent file */
-	V34_MAP_ENTRY_TYPE_2ND_COMPRESSED = 6       /* compressed with secondary algorithm (usually FLAC CDDA) */
-};
 
 /* V5 compression types */
 enum
@@ -141,6 +139,8 @@ enum
 /***************************************************************************
     MACROS
 ***************************************************************************/
+
+#define SET_ERROR_AND_CLEANUP(err) do { last_error = (err); goto cleanup; } while (0)
 
 #define EARLY_EXIT(x)				do { (void)(x); goto cleanup; } while (0)
 
@@ -1302,7 +1302,7 @@ static INLINE void map_extract_old(const UINT8 *base, map_entry *entry, UINT32 h
 	entry->offset = get_bigendian_uint64(&base[0]);
 	entry->crc = 0;
 	entry->length = entry->offset >> 44;
-	entry->flags = MAP_ENTRY_FLAG_NO_CRC | ((entry->length == hunkbytes) ? V34_MAP_ENTRY_TYPE_UNCOMPRESSED : V34_MAP_ENTRY_TYPE_COMPRESSED);
+	entry->flags = MAP_ENTRY_FLAG_NO_CRC | ((entry->length == hunkbytes) ? MAP_ENTRY_TYPE_UNCOMPRESSED : MAP_ENTRY_TYPE_COMPRESSED);
 #ifdef __MWERKS__
 	entry->offset = entry->offset & 0x00000FFFFFFFFFFFLL;
 #else
@@ -2130,7 +2130,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 		switch (entry->flags & MAP_ENTRY_FLAG_TYPE_MASK)
 		{
 			/* compressed data */
-			case V34_MAP_ENTRY_TYPE_COMPRESSED:
+			case MAP_ENTRY_TYPE_COMPRESSED:
             {
                void *codec;
                UINT8 *bytes = read_compressed(chd, entry->offset,
@@ -2149,21 +2149,21 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 				break;
 
 			/* uncompressed data */
-			case V34_MAP_ENTRY_TYPE_UNCOMPRESSED:
+			case MAP_ENTRY_TYPE_UNCOMPRESSED:
             err = read_uncompressed(chd, entry->offset, chd->header.hunkbytes, dest);
             if (err != CHDERR_NONE)
                return err;
 				break;
 
 			/* mini-compressed data */
-			case V34_MAP_ENTRY_TYPE_MINI:
+			case MAP_ENTRY_TYPE_MINI:
 				put_bigendian_uint64(&dest[0], entry->offset);
 				for (bytes = 8; bytes < chd->header.hunkbytes; bytes++)
 					dest[bytes] = dest[bytes - 8];
 				break;
 
 			/* self-referenced data */
-			case V34_MAP_ENTRY_TYPE_SELF_HUNK:
+			case MAP_ENTRY_TYPE_SELF_HUNK:
 #ifdef NEED_CACHE_HUNK
 				if (chd->cachehunk == entry->offset && dest == chd->cache)
 					break;
@@ -2171,7 +2171,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 				return hunk_read_into_memory(chd, entry->offset, dest);
 
 			/* parent-referenced data */
-			case V34_MAP_ENTRY_TYPE_PARENT_HUNK:
+			case MAP_ENTRY_TYPE_PARENT_HUNK:
 				err = hunk_read_into_memory(chd->parent, entry->offset, dest);
 				if (err != CHDERR_NONE)
 					return err;
@@ -2342,8 +2342,8 @@ static chd_error map_read(chd_file *chd)
 
 		/* track the maximum offset */
 		for (j = 0; j < entries; j++)
-			if ((chd->map[i + j].flags & MAP_ENTRY_FLAG_TYPE_MASK) == V34_MAP_ENTRY_TYPE_COMPRESSED ||
-				(chd->map[i + j].flags & MAP_ENTRY_FLAG_TYPE_MASK) == V34_MAP_ENTRY_TYPE_UNCOMPRESSED)
+			if ((chd->map[i + j].flags & MAP_ENTRY_FLAG_TYPE_MASK) == MAP_ENTRY_TYPE_COMPRESSED ||
+				(chd->map[i + j].flags & MAP_ENTRY_FLAG_TYPE_MASK) == MAP_ENTRY_TYPE_UNCOMPRESSED)
 				maxoffset = MAX(maxoffset, chd->map[i + j].offset + chd->map[i + j].length);
 	}
 
