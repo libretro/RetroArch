@@ -249,17 +249,16 @@ bool d3d9_check_device_type(void *_d3d,
       bool windowed_mode)
 {
    LPDIRECT3D9 d3d = (LPDIRECT3D9)_d3d;
-   if (!d3d)
-      return false;
-   if (FAILED(IDirect3D9_CheckDeviceType(d3d,
+   if (d3d &&
+         SUCCEEDED(IDirect3D9_CheckDeviceType(d3d,
                0,
                D3DDEVTYPE_HAL,
                (D3DFORMAT)disp_format,
                (D3DFORMAT)backbuffer_format,
                windowed_mode)))
-      return false;
+      return true;
 
-   return true;
+   return false;
 }
 
 bool d3d9_get_adapter_display_mode(
@@ -270,9 +269,7 @@ bool d3d9_get_adapter_display_mode(
    LPDIRECT3D9 d3d = (LPDIRECT3D9)_d3d;
    if (!d3d)
       return false;
-#ifdef _XBOX
-   return true;
-#else
+#ifndef _XBOX
    if (FAILED(IDirect3D9_GetAdapterDisplayMode(d3d, idx, (D3DDISPLAYMODE*)display_mode)))
       return false;
 #endif
@@ -310,22 +307,20 @@ bool d3d9_texture_get_level_desc(void *_tex,
    LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)_tex;
 #if defined(_XBOX)
    D3DTexture_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level);
-   return true;
 #else
-   if (SUCCEEDED(IDirect3DTexture9_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level)))
-      return true;
+   if (FAILED(IDirect3DTexture9_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level)))
+      return false;
 #endif
-
-   return false;
+   return true;
 }
 
 bool d3d9_texture_get_surface_level(void *_tex,
       unsigned idx, void **_ppsurface_level)
 {
    LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)_tex;
-   if (!tex)
-      return false;
-   if (SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(tex, idx, (IDirect3DSurface9**)_ppsurface_level)))
+   if (tex && 
+         SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(
+               tex, idx, (IDirect3DSurface9**)_ppsurface_level)))
       return true;
 
    return false;
@@ -361,7 +356,7 @@ void *d3d9_texture_new(void *_dev,
       INT32 color_key, void *src_info_data,
       PALETTEENTRY *palette, bool want_mipmap)
 {
-   HRESULT hr            = S_OK;
+   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    void *buf             = NULL;
 
    if (path)
@@ -377,20 +372,15 @@ void *d3d9_texture_new(void *_dev,
 #endif
    }
 
-   {
-      LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
 #ifndef _XBOX
-      if (want_mipmap)
-         usage |= D3DUSAGE_AUTOGENMIPMAP;
+   if (want_mipmap)
+      usage |= D3DUSAGE_AUTOGENMIPMAP;
 #endif
-      hr = IDirect3DDevice9_CreateTexture(dev,
-            width, height, miplevels, usage,
-            (D3DFORMAT)format,
-            (D3DPOOL)pool,
-            (struct IDirect3DTexture9**)&buf, NULL);
-   }
-
-   if (FAILED(hr))
+   if (FAILED(IDirect3DDevice9_CreateTexture(dev,
+               width, height, miplevels, usage,
+               (D3DFORMAT)format,
+               (D3DPOOL)pool,
+               (struct IDirect3DTexture9**)&buf, NULL)))
       return NULL;
 
    return buf;
@@ -412,7 +402,8 @@ bool d3d9_surface_lock_rect(void *data, void *data2)
 #if defined(_XBOX)
    IDirect3DSurface9_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY);
 #else
-   if (FAILED(IDirect3DSurface9_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
+   if (FAILED(IDirect3DSurface9_LockRect(surf,
+               (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
       return false;
 #endif
 
@@ -461,23 +452,18 @@ void *d3d9_vertex_buffer_new(void *_dev,
       unsigned length, unsigned usage,
       unsigned fvf, INT32 pool, void *handle)
 {
-   HRESULT             hr = S_OK;
    void              *buf = NULL;
    LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
 
 #ifndef _XBOX
    if (usage == 0)
-   {
       if (IDirect3DDevice9_GetSoftwareVertexProcessing(dev))
          usage = D3DUSAGE_SOFTWAREPROCESSING;
-   }
 #endif         
 
-   hr = IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf,
+   if (FAILED(IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf,
          (D3DPOOL)pool,
-         (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL);
-
-   if (FAILED(hr))
+         (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL)))
       return NULL;
 
    return buf;
@@ -671,9 +657,8 @@ bool d3d9_device_get_render_target_data(void *_dev,
    LPDIRECT3DSURFACE9 src = (LPDIRECT3DSURFACE9)_src;
    LPDIRECT3DSURFACE9 dst = (LPDIRECT3DSURFACE9)_dst;
    LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
-   if (!dev)
-      return false;
-   if (SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(
+   if (dev &&
+         SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(
                dev, src, dst)))
       return true;
 #endif
@@ -685,9 +670,8 @@ bool d3d9_device_get_render_target(void *_dev,
       unsigned idx, void **data)
 {
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
-   if (!dev)
-      return false;
-   if (SUCCEEDED(IDirect3DDevice9_GetRenderTarget(dev,
+   if (dev &&
+         SUCCEEDED(IDirect3DDevice9_GetRenderTarget(dev,
                idx, (LPDIRECT3DSURFACE9*)data)))
       return true;
 
@@ -727,7 +711,7 @@ void d3d9_lock_rectangle_clear(void *tex,
 {
    D3DLOCKED_RECT *lr = (D3DLOCKED_RECT*)_lr;
 #if defined(_XBOX)
-   level = 0;
+   level              = 0;
 #endif
    memset(lr->pBits, level, rectangle_height * lr->Pitch);
    d3d9_unlock_rectangle(tex);
@@ -787,10 +771,9 @@ bool d3d9_create_vertex_shader(void *_dev, const DWORD *a, void **b)
 bool d3d9_create_pixel_shader(void *_dev, const DWORD *a, void **b)
 {
    LPDIRECT3DDEVICE9      dev = (LPDIRECT3DDEVICE9)_dev;
-   if (!dev)
-      return false;
 
-   if (IDirect3DDevice9_CreatePixelShader(dev, a,
+   if (dev &&
+         IDirect3DDevice9_CreatePixelShader(dev, a,
             (LPDIRECT3DPIXELSHADER9*)b) == D3D_OK)
       return true;
 
@@ -807,13 +790,11 @@ bool d3d9_set_pixel_shader(void *_dev, void *data)
 #ifdef _XBOX
    /* Returns void on Xbox */
    IDirect3DDevice9_SetPixelShader(dev, d3dps);
-   return true;
 #else
-   if (IDirect3DDevice9_SetPixelShader(dev, d3dps) == D3D_OK)
-      return true;
+   if (IDirect3DDevice9_SetPixelShader(dev, d3dps) != D3D_OK)
+      return false;
 #endif
-
-   return false;
+   return true;
 }
 
 bool d3d9_set_vertex_shader(void *_dev, unsigned index,
@@ -841,14 +822,13 @@ bool d3d9_set_vertex_shader_constantf(void *_dev,
 #ifdef _XBOX
    IDirect3DDevice9_SetVertexShaderConstantF(dev,
          start_register, constant_data, vector4f_count);
-   return true;
 #else
    if (IDirect3DDevice9_SetVertexShaderConstantF(dev,
-            start_register, constant_data, vector4f_count) == D3D_OK)
-      return true;
+            start_register, constant_data, vector4f_count) != D3D_OK)
+      return false;
 #endif
 
-   return false;
+   return true;
 }
 
 void d3d9_texture_blit(unsigned pixel_size,
@@ -875,12 +855,11 @@ bool d3d9_get_render_state(void *data, INT32 state, DWORD *value)
 
 #ifdef _XBOX
    IDirect3DDevice9_GetRenderState(dev, (D3DRENDERSTATETYPE)state, value);
-   return true;
 #else
-   if (IDirect3DDevice9_GetRenderState(dev, (D3DRENDERSTATETYPE)state, value) == D3D_OK)
-      return true;
-   return false;
+   if (IDirect3DDevice9_GetRenderState(dev, (D3DRENDERSTATETYPE)state, value) != D3D_OK)
+      return false;
 #endif
+   return true;
 }
 
 void d3d9_set_render_state(void *data, INT32 state, DWORD value)
@@ -937,9 +916,8 @@ static bool d3d9_reset_internal(void *data,
       )
 {
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
-   if (!dev)
-      return false;
-   if (IDirect3DDevice9_Reset(dev, d3dpp) == D3D_OK)
+   if (dev && 
+         IDirect3DDevice9_Reset(dev, d3dpp) == D3D_OK)
       return true;
 
    return false;
@@ -947,14 +925,12 @@ static bool d3d9_reset_internal(void *data,
 
 static HRESULT d3d9_test_cooperative_level(void *data)
 {
-#ifdef _XBOX
-   return E_FAIL;
-#else
+#ifndef _XBOX
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
-   if (!dev)
-      return E_FAIL;
-   return IDirect3DDevice9_TestCooperativeLevel(dev);
+   if (dev)
+      return IDirect3DDevice9_TestCooperativeLevel(dev);
 #endif
+   return E_FAIL;
 }
 
 static bool d3d9_create_device_internal(
@@ -967,9 +943,8 @@ static bool d3d9_create_device_internal(
 {
    LPDIRECT3D9       d3d = (LPDIRECT3D9)_d3d;
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
-   if (!dev)
-      return false;
-   if (SUCCEEDED(IDirect3D9_CreateDevice(d3d,
+   if (dev &&
+         SUCCEEDED(IDirect3D9_CreateDevice(d3d,
                cur_mon_id,
                D3DDEVTYPE_HAL,
                focus_window,
@@ -1245,9 +1220,9 @@ const bool d3d9x_constant_table_set_float(void *p,
    LPDIRECT3DDEVICE9    dev     = (LPDIRECT3DDEVICE9)a;
    D3DXHANDLE        handle     = (D3DXHANDLE)b;
    LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
-   if (!consttbl || !dev || !handle)
-      return false;
-   if (consttbl->lpVtbl->SetFloat(consttbl, dev, handle, val) == D3D_OK)
+   if (consttbl && dev && handle &&
+         consttbl->lpVtbl->SetFloat(
+            consttbl, dev, handle, val) == D3D_OK)
       return true;
 #endif
    return false;
