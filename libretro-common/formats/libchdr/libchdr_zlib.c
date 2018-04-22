@@ -45,8 +45,6 @@
 #include <libchdr/chd.h>
 #include <libchdr/minmax.h>
 #include <libchdr/cdrom.h>
-#include <libchdr/flac.h>
-#include <libchdr/lzma.h>
 #include <libchdr/huffman.h>
 #include <libchdr/libchdr_zlib.h>
 #include <zlib.h>

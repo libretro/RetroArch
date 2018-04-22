@@ -17,6 +17,7 @@
 
 #include <zlib.h>
 #include "coretypes.h"
+#include "chd.h"
 
 #define MAX_ZLIB_ALLOCS				64
 

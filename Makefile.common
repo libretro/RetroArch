@@ -1495,32 +1495,27 @@ ifeq ($(HAVE_ZLIB), 1)
    endif
 endif
 
-ifeq ($(HAVE_FLAC), 1)
-ifeq ($(HAVE_7ZIP), 1)
-ifeq ($(HAVE_ZLIB), 1)
-	HAVE_CHD = 1
-   DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
+ifeq ($(HAVE_CHD), 1)
    CFLAGS  += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
+	DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
    OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
-              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_huffman.o \
               $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
-endif
-endif
-endif
+	
+   ifeq ($(HAVE_FLAC), 1)
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
+				 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
+   endif
 
-ifeq ($(HAVE_CHD), 1)
-ifeq ($(HAVE_7ZIP), 1)
-  OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
-endif
-endif
+   ifeq ($(HAVE_7ZIP), 1)
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
+   endif
 
-ifeq ($(HAVE_CHD), 1)
-ifeq ($(HAVE_ZLIB), 1)
-  OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
-endif
+   ifeq ($(HAVE_ZLIB), 1)
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
+   endif
 endif
 
 ifeq ($(HAVE_RTGA), 1)

@@ -45,11 +45,16 @@
 #include <libchdr/chd.h>
 #include <libchdr/minmax.h>
 #include <libchdr/cdrom.h>
-#include <libchdr/flac.h>
 #include <libchdr/huffman.h>
+
+#ifdef HAVE_FLAC
+#include <libchdr/flac.h>
+#endif
+
 #ifdef HAVE_7ZIP
 #include <libchdr/lzma.h>
 #endif
+
 #ifdef HAVE_ZLIB
 #include <libchdr/libchdr_zlib.h>
 #endif
@@ -185,18 +190,6 @@ struct _metadata_entry
 	UINT8					flags;			/* flag bits */
 };
 
-/* codec-private data for the CDFL codec */
-typedef struct _cdfl_codec_data cdfl_codec_data;
-struct _cdfl_codec_data {
-	/* internal state */
-	int		swap_endian;
-	flac_decoder	decoder;
-#ifdef WANT_SUBCODE
-	zlib_codec_data		subcode_decompressor;
-#endif
-	uint8_t*	buffer;
-};
-
 /* internal representation of an open CHD file */
 struct _chd_file
 {
@@ -228,7 +221,9 @@ struct _chd_file
 #ifdef HAVE_7ZIP
 	cdlz_codec_data			cdlz_codec_data;		/* cdlz codec data */
 #endif
+#ifdef HAVE_FLAC
 	cdfl_codec_data			cdfl_codec_data;		/* cdfl codec data */
+#endif
 
 #ifdef NEED_CACHE_HUNK
 	UINT32					maxhunk;		/* maximum hunk accessed */
@@ -263,118 +258,6 @@ static chd_error map_read(chd_file *chd);
 /* metadata management */
 static chd_error metadata_find_entry(chd_file *chd, UINT32 metatag, UINT32 metaindex, metadata_entry *metaentry);
 
-
-/* cdfl compression codec */
-static chd_error cdfl_codec_init(void* codec, uint32_t hunkbytes);
-static void cdfl_codec_free(void* codec);
-static chd_error cdfl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen);
-
-/***************************************************************************
- *  CD FLAC DECOMPRESSOR
- ***************************************************************************
- */
-
-/*------------------------------------------------------
- *  cdfl_codec_blocksize - return the optimal block size
- *------------------------------------------------------
- */
-
-static uint32_t cdfl_codec_blocksize(uint32_t bytes)
-{
-	/* determine FLAC block size, which must be 16-65535
-	 * clamp to 2k since that's supposed to be the sweet spot */
-	uint32_t hunkbytes = bytes / 4;
-	while (hunkbytes > 2048)
-		hunkbytes /= 2;
-	return hunkbytes;
-}
-
-chd_error cdfl_codec_init(void *codec, uint32_t hunkbytes)
-{
-#ifdef WANT_SUBCODE
-   chd_error ret;
-#endif
-   uint16_t native_endian = 0;
-	cdfl_codec_data *cdfl = (cdfl_codec_data*)codec;
-
-	/* make sure the CHD's hunk size is an even multiple of the frame size */
-	if (hunkbytes % CD_FRAME_SIZE != 0)
-		return CHDERR_CODEC_ERROR;
-
-	cdfl->buffer = (uint8_t*)malloc(sizeof(uint8_t) * hunkbytes);
-	if (cdfl->buffer == NULL)
-		return CHDERR_OUT_OF_MEMORY;
-
-	/* determine whether we want native or swapped samples */
-	*(uint8_t *)(&native_endian) = 1;
-	cdfl->swap_endian = (native_endian & 1);
-
-#ifdef WANT_SUBCODE
-	/* init zlib inflater */
-	ret = zlib_codec_init(&cdfl->subcode_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
-	if (ret != CHDERR_NONE)
-		return ret;
-#endif
-
-	/* flac decoder init */
-	flac_decoder_init(&cdfl->decoder);
-	if (cdfl->decoder.decoder == NULL)
-		return CHDERR_OUT_OF_MEMORY;
-
-	return CHDERR_NONE;
-}
-
-void cdfl_codec_free(void *codec)
-{
-	cdfl_codec_data *cdfl = (cdfl_codec_data*)codec;
-	flac_decoder_free(&cdfl->decoder);
-#ifdef WANT_SUBCODE
-	zlib_codec_free(&cdfl->subcode_decompressor);
-#endif
-	if (cdfl->buffer)
-		free(cdfl->buffer);
-}
-
-chd_error cdfl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
-{
-	uint32_t framenum;
-   uint8_t *buffer;
-#ifdef WANT_SUBCODE
-   uint32_t offset;
-   chd_error ret;
-#endif
-	cdfl_codec_data *cdfl = (cdfl_codec_data*)codec;
-
-	/* reset and decode */
-	uint32_t frames = destlen / CD_FRAME_SIZE;
-
-	if (!flac_decoder_reset(&cdfl->decoder, 44100, 2, cdfl_codec_blocksize(frames * CD_MAX_SECTOR_DATA), src, complen))
-		return CHDERR_DECOMPRESSION_ERROR;
-	buffer = &cdfl->buffer[0];
-	if (!flac_decoder_decode_interleaved(&cdfl->decoder, (int16_t *)(buffer), frames * CD_MAX_SECTOR_DATA/4, cdfl->swap_endian))
-		return CHDERR_DECOMPRESSION_ERROR;
-
-#ifdef WANT_SUBCODE
-	/* inflate the subcode data */
-	offset = flac_decoder_finish(&cdfl->decoder);
-	ret = zlib_codec_decompress(&cdfl->subcode_decompressor, src + offset, complen - offset, &cdfl->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
-	if (ret != CHDERR_NONE)
-		return ret;
-#else
-	flac_decoder_finish(&cdfl->decoder);
-#endif
-
-	/* reassemble the data */
-	for (framenum = 0; framenum < frames; framenum++)
-	{
-		memcpy(&dest[framenum * CD_FRAME_SIZE], &cdfl->buffer[framenum * CD_MAX_SECTOR_DATA], CD_MAX_SECTOR_DATA);
-#ifdef WANT_SUBCODE
-		memcpy(&dest[framenum * CD_FRAME_SIZE + CD_MAX_SECTOR_DATA], &cdfl->buffer[frames * CD_MAX_SECTOR_DATA + framenum * CD_MAX_SUBCODE_DATA], CD_MAX_SUBCODE_DATA);
-#endif
-	}
-
-	return CHDERR_NONE;
-}
 /***************************************************************************
     CODEC INTERFACES
 ***************************************************************************/
@@ -447,6 +330,7 @@ static const codec_interface codec_interfaces[] =
 	},
 #endif
 
+#ifdef HAVE_FLAC
 	/* V5 CD flac compression */
 	{
 		CHD_CODEC_CD_FLAC,
@@ -457,6 +341,7 @@ static const codec_interface codec_interfaces[] =
 		cdfl_codec_decompress,
 		NULL
 	},
+#endif
 };
 
 /***************************************************************************
@@ -967,12 +852,14 @@ chd_error chd_open_file(RFILE *file, int mode, chd_file *parent, chd_file **chd)
 		if (intfnum == ARRAY_SIZE(codec_interfaces))
 			EARLY_EXIT(err = CHDERR_UNSUPPORTED_FORMAT);
 
+#ifdef HAVE_ZLIB
 		/* initialize the codec */
 		if (newchd->codecintf[0]->init != NULL)
-        {
-			err = (*newchd->codecintf[0]->init)(&newchd->zlib_codec_data, newchd->header.hunkbytes);
-            (void)err;
-        }
+      {
+         err = (*newchd->codecintf[0]->init)(&newchd->zlib_codec_data, newchd->header.hunkbytes);
+         (void)err;
+      }
+#endif
 	}
 	else
 	{
@@ -998,15 +885,21 @@ chd_error chd_open_file(RFILE *file, int mode, chd_file *parent, chd_file **chd)
 						switch (newchd->header.compression[decompnum])
 						{
 							case CHD_CODEC_CD_ZLIB:
+#ifdef HAVE_ZLIB
 								codec = &newchd->cdzl_codec_data;
+#endif
 								break;
 
 							case CHD_CODEC_CD_LZMA:
+#ifdef HAVE_7ZIP
 								codec = &newchd->cdlz_codec_data;
+#endif
 								break;
 
 							case CHD_CODEC_CD_FLAC:
+#ifdef HAVE_FLAC
 								codec = &newchd->cdfl_codec_data;
+#endif
 								break;
 						}
 						if (codec != NULL)
@@ -1122,35 +1015,41 @@ void chd_close(chd_file *chd)
 	/* deinit the codec */
 	if (chd->header.version < 5)
 	{
+#ifdef HAVE_ZLIB
 		if (chd->codecintf[0] != NULL && chd->codecintf[0]->free != NULL)
 			(*chd->codecintf[0]->free)(&chd->zlib_codec_data);
+#endif
 	}
 	else
 	{
 		int i;
 		/* Free the codecs */
 		for (i = 0 ; i < 4 ; i++)
-		{
-			void* codec = NULL;
-			switch (chd->codecintf[i]->compression)
-			{
-				case CHD_CODEC_CD_LZMA:
-					codec = &chd->cdlz_codec_data;
-					break;
+      {
+         void* codec = NULL;
+         switch (chd->codecintf[i]->compression)
+         {
+            case CHD_CODEC_CD_LZMA:
+#ifdef HAVE_7ZIP
+               codec = &chd->cdlz_codec_data;
+#endif
+               break;
 
-				case CHD_CODEC_CD_ZLIB:
-					codec = &chd->cdzl_codec_data;
-					break;
+            case CHD_CODEC_CD_ZLIB:
+#ifdef HAVE_ZLIB
+               codec = &chd->cdzl_codec_data;
+#endif
+               break;
 
-				case CHD_CODEC_CD_FLAC:
-					codec = &chd->cdfl_codec_data;
-					break;
-			}
-			if (codec)
-			{
-				(*chd->codecintf[i]->free)(codec);
-			}
-		}
+            case CHD_CODEC_CD_FLAC:
+#ifdef HAVE_FLAC
+               codec = &chd->cdfl_codec_data;
+#endif
+               break;
+         }
+         if (codec)
+            (*chd->codecintf[i]->free)(codec);
+      }
 
 		/* Free the raw map */
 		if (chd->header.rawmap != NULL)
@@ -1686,6 +1585,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
                if (bytes == NULL)
                   return CHDERR_READ_ERROR;
 
+#ifdef HAVE_ZLIB
                /* now decompress using the codec */
                err   = CHDERR_NONE;
                codec = &chd->zlib_codec_data;
@@ -1693,6 +1593,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
                   err = (*chd->codecintf[0]->decompress)(codec, chd->compressed, entry->length, dest, chd->header.hunkbytes);
                if (err != CHDERR_NONE)
                   return err;
+#endif
             }
 				break;
 
@@ -1774,15 +1675,21 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 				switch (chd->codecintf[rawmap[0]]->compression)
 				{
 					case CHD_CODEC_CD_LZMA:
+#ifdef HAVE_7ZIP
 						codec = &chd->cdlz_codec_data;
+#endif
 						break;
 
 					case CHD_CODEC_CD_ZLIB:
+#ifdef HAVE_ZLIB
 						codec = &chd->cdzl_codec_data;
+#endif
 						break;
 
 					case CHD_CODEC_CD_FLAC:
+#ifdef HAVE_FLAC
 						codec = &chd->cdfl_codec_data;
+#endif
 						break;
 				}
 				if (codec==NULL)

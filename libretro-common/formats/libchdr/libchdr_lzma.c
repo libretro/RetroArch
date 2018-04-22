@@ -1,6 +1,6 @@
 /***************************************************************************
 
-    chd.c
+    libchdr_lzma_codec.c
 
     MAME Compressed Hunks of Data file format
 
@@ -45,7 +45,6 @@
 #include <libchdr/chd.h>
 #include <libchdr/minmax.h>
 #include <libchdr/cdrom.h>
-#include <libchdr/flac.h>
 #include <libchdr/lzma.h>
 #include <libchdr/huffman.h>
 #include <zlib.h>

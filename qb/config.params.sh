@@ -92,6 +92,7 @@ HAVE_NEON=no               # ARM NEON optimizations
 HAVE_SSE=no                # x86 SSE optimizations (SSE, SSE2)
 HAVE_FLOATHARD=no          # Force hard float ABI (for ARM)
 HAVE_FLOATSOFTFP=no        # Force soft float ABI (for ARM)
+HAVE_CHD=yes               # Compile in chd support
 HAVE_7ZIP=yes              # Compile in 7z support
 HAVE_FLAC=auto             # Compile in flac support
 HAVE_BUILTINFLAC=yes       # Bake in flac support

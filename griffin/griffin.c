@@ -1310,7 +1310,20 @@ DEPENDENCIES
 #include "../libretro-common/formats/libchdr/libchdr_bitstream.c"
 #include "../libretro-common/formats/libchdr/libchdr_cdrom.c"
 #include "../libretro-common/formats/libchdr/libchdr_chd.c"
+
+#ifdef HAVE_FLAC
 #include "../libretro-common/formats/libchdr/libchdr_flac.c"
+#include "../libretro-common/formats/libchdr/libchdr_flac_codec.c"
+#endif
+
+#ifdef HAVE_ZLIB
+#include "../libretro-common/formats/libchdr/libchdr_zlib.c"
+#endif
+
+#ifdef HAVE_7ZIP
+#include "../libretro-common/formats/libchdr/libchdr_lzma.c"
+#endif
+
 #include "../libretro-common/formats/libchdr/libchdr_huffman.c"
 
 #include "../libretro-common/streams/chd_stream.c"
