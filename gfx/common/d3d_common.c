@@ -129,3 +129,23 @@ void *d3d_matrix_rotation_z(void *_pout, float angle)
    pout->m[1][0] = -sin(angle);
    return pout;
 }
+
+int32_t d3d_translate_filter(unsigned type)
+{
+   switch (type)
+   {
+      case RARCH_FILTER_UNSPEC:
+         {
+            settings_t *settings = config_get_ptr();
+            if (!settings->bools.video_smooth)
+               break;
+         }
+         /* fall-through */
+      case RARCH_FILTER_LINEAR:
+         return (int32_t)D3DTEXF_LINEAR;
+      case RARCH_FILTER_NEAREST:
+         break;
+   }
+
+   return (int32_t)D3DTEXF_POINT;
+}

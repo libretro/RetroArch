@@ -446,8 +446,6 @@ void d3d8x_font_get_text_metrics(void *data, void *metrics);
 
 void d3d8x_font_release(void *data);
 
-INT32 d3d8_translate_filter(unsigned type);
-
 static INLINE INT32 d3d8_get_rgb565_format(void)
 {
 #ifdef _XBOX

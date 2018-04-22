@@ -26,7 +26,6 @@
 #include <dynamic/dylib.h>
 #endif
 
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_D3DX
@@ -324,26 +323,6 @@ bool d3d8_reset(void *dev, void *d3dpp)
 #endif
 
    return false;
-}
-
-INT32 d3d8_translate_filter(unsigned type)
-{
-   switch (type)
-   {
-      case RARCH_FILTER_UNSPEC:
-         {
-            settings_t *settings = config_get_ptr();
-            if (!settings->bools.video_smooth)
-               break;
-         }
-         /* fall-through */
-      case RARCH_FILTER_LINEAR:
-         return D3DTEXF_LINEAR;
-      case RARCH_FILTER_NEAREST:
-         break;
-   }
-
-   return D3DTEXF_POINT;
 }
 
 bool d3d8x_create_font_indirect(LPDIRECT3DDEVICE8 dev,

@@ -602,8 +602,6 @@ void d3dxbuffer_release(void *data);
 
 void d3d9x_font_release(void *data);
 
-INT32 d3d9_translate_filter(unsigned type);
-
 bool d3d9x_compile_shader(
       const char *src,
       unsigned src_data_len,

@@ -489,26 +489,6 @@ void d3d9_device_free(void *_dev, void *_pd3d)
       IDirect3D9_Release(pd3d);
 }
 
-INT32 d3d9_translate_filter(unsigned type)
-{
-   switch (type)
-   {
-      case RARCH_FILTER_UNSPEC:
-         {
-            settings_t *settings = config_get_ptr();
-            if (!settings->bools.video_smooth)
-               break;
-         }
-         /* fall-through */
-      case RARCH_FILTER_LINEAR:
-         return D3DTEXF_LINEAR;
-      case RARCH_FILTER_NEAREST:
-         break;
-   }
-
-   return D3DTEXF_POINT;
-}
-
 bool d3d9x_create_font_indirect(void *_dev,
       void *desc, void **font_data)
 {

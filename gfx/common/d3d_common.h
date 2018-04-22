@@ -52,6 +52,8 @@ void *d3d_matrix_multiply(void *_pout,
 
 void *d3d_matrix_rotation_z(void *_pout, float angle);
 
+int32_t d3d_translate_filter(unsigned type);
+
 RETRO_END_DECLS
 
 #endif
