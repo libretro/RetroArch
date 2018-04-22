@@ -86,7 +86,8 @@ void *d3d_matrix_identity(void *_pout)
    return pout;
 }
 
-void *d3d_matrix_ortho_off_center_lh(void *_pout, float l, float r, float b, float t, float zn, float zf)
+void *d3d_matrix_ortho_off_center_lh(void *_pout,
+      float l, float r, float b, float t, float zn, float zf)
 {
    D3DMATRIX *pout = (D3DMATRIX*)_pout;
 
@@ -101,7 +102,8 @@ void *d3d_matrix_ortho_off_center_lh(void *_pout, float l, float r, float b, flo
    return pout;
 }
 
-void *d3d_matrix_multiply(void *_pout, const void *_pm1, const void *_pm2)
+void *d3d_matrix_multiply(void *_pout,
+      const void *_pm1, const void *_pm2)
 {
    unsigned i,j;
    D3DMATRIX      *pout = (D3DMATRIX*)_pout;
