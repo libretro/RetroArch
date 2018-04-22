@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <retro_math.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>

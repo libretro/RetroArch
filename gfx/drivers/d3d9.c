@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #ifdef _XBOX
 #include <xtl.h>
 #include <xgraphics.h>
