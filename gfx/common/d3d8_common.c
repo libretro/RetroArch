@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 /* For Xbox we will just link statically 
  * to Direct3D libraries instead. */
 
@@ -179,27 +181,16 @@ bool d3d8_check_device_type(void *_d3d,
       bool windowed_mode)
 {
    LPDIRECT3D8 d3d = (LPDIRECT3D8)_d3d;
-   if (!d3d)
-      return false;
-#ifdef __cplusplus
-   if (FAILED(d3d->CheckDeviceType(
-               0,
-               D3DDEVTYPE_HAL,
-               (D3DFORMAT)disp_format,
-               (D3DFORMAT)backbuffer_format,
-               windowed_mode)))
-      return false;
-#else
-   if (FAILED(IDirect3D8_CheckDeviceType(d3d,
+   if (d3d &&
+         SUCCEEDED(IDirect3D8_CheckDeviceType(d3d,
                0,
                D3DDEVTYPE_HAL,
                disp_format,
                backbuffer_format,
                windowed_mode)))
-      return false;
-#endif
+      return true;
 
-   return true;
+   return false;
 }
 
 bool d3d8_get_adapter_display_mode(
@@ -208,30 +199,20 @@ bool d3d8_get_adapter_display_mode(
       void *display_mode)
 {
    LPDIRECT3D8 d3d = (LPDIRECT3D8)_d3d;
-   if (!d3d)
-      return false;
-#ifdef __cplusplus
-   if (FAILED(d3d->GetAdapterDisplayMode(idx, (D3DDISPLAYMODE*)display_mode)))
-      return false;
-#else
-   if (FAILED(IDirect3D8_GetAdapterDisplayMode(d3d, idx, (D3DDISPLAYMODE*)display_mode)))
-      return false;
-#endif
+   if (d3d &&
+         SUCCEEDED(IDirect3D8_GetAdapterDisplayMode(
+               d3d, idx, (D3DDISPLAYMODE*)display_mode)))
+      return true;
 
-   return true;
+   return false;
 }
 
 bool d3d8_swap(void *data, void *_dev)
 {
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
-#ifdef __cplusplus
-   if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
-      return false;
-#else
    if (IDirect3DDevice8_Present(dev, NULL, NULL, NULL, NULL) 
          == D3DERR_DEVICELOST)
       return false;
-#endif
    return true;
 }
 
@@ -240,24 +221,15 @@ void d3d8_set_transform(void *_dev,
 {
    CONST D3DMATRIX *matrix = (CONST D3DMATRIX*)_matrix;
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
-#ifdef __cplusplus
-   dev->SetTransform((D3DTRANSFORMSTATETYPE)state, matrix);
-#else
    IDirect3DDevice8_SetTransform(dev, (D3DTRANSFORMSTATETYPE)state, matrix);
-#endif
 }
 
 bool d3d8_texture_get_level_desc(void *_tex,
       unsigned idx, void *_ppsurface_level)
 {
    LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)_tex;
-#ifdef __cplusplus
-   if (SUCCEEDED(tex->GetLevelDesc(idx, (D3DSURFACE_DESC*)_ppsurface_level)))
-      return true;
-#else
    if (SUCCEEDED(IDirect3DTexture8_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level)))
       return true;
-#endif
 
    return false;
 }
@@ -266,16 +238,11 @@ bool d3d8_texture_get_surface_level(void *_tex,
       unsigned idx, void **_ppsurface_level)
 {
    LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)_tex;
-   if (!tex)
-      return false;
-#ifdef __cplusplus
-   if (SUCCEEDED(tex->GetSurfaceLevel(idx, (IDirect3DSurface8**)_ppsurface_level)))
+   if (tex &&
+         SUCCEEDED(
+            IDirect3DTexture8_GetSurfaceLevel(
+               tex, idx, (IDirect3DSurface8**)_ppsurface_level)))
       return true;
-#else
-   if (SUCCEEDED(IDirect3DTexture8_GetSurfaceLevel(tex, idx, (IDirect3DSurface8**)_ppsurface_level)))
-      return true;
-#endif
-
    return false;
 }
 
@@ -308,7 +275,7 @@ void *d3d8_texture_new(void *_dev,
       INT32 color_key, void *src_info_data,
       PALETTEENTRY *palette, bool want_mipmap)
 {
-   HRESULT hr            = S_OK;
+   LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
    void *buf             = NULL;
 
    if (path)
@@ -324,20 +291,10 @@ void *d3d8_texture_new(void *_dev,
 #endif
    }
 
-   {
-      LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
-#ifdef __cplusplus
-      hr = dev->CreateTexture(
-            width, height, miplevels, usage,
-            (D3DFORMAT)format, (D3DPOOL)pool, (IDirect3DTexture8**)&buf);
-#else
-      hr = IDirect3DDevice8_CreateTexture(dev,
-            width, height, miplevels, usage,
-            (D3DFORMAT)format, (D3DPOOL)pool, (struct IDirect3DTexture8**)&buf);
-#endif
-   }
-
-   if (FAILED(hr))
+   if (FAILED(IDirect3DDevice8_CreateTexture(dev,
+               width, height, miplevels, usage,
+               (D3DFORMAT)format, (D3DPOOL)pool,
+               (struct IDirect3DTexture8**)&buf)))
       return NULL;
 
    return buf;
@@ -348,27 +305,19 @@ void d3d8_texture_free(void *_tex)
    LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)_tex;
    if (!tex)
       return;
-#ifdef __cplusplus
-   tex->Release();
-#else
    IDirect3DTexture8_Release(tex);
-#endif
 }
 
 bool d3d8_surface_lock_rect(void *data, void *data2)
 {
    LPDIRECT3DSURFACE8 surf = (LPDIRECT3DSURFACE8)data;
-   if (!surf)
-      return false;
-#ifdef __cplusplus
-   if (FAILED(surf->LockRect((D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
-      return false;
-#else
-   if (FAILED(IDirect3DSurface8_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
-      return false;
-#endif
-
-   return true;
+   if (surf &&
+         SUCCEEDED(
+            IDirect3DSurface8_LockRect(
+               surf, (D3DLOCKED_RECT*)data2,
+               NULL, D3DLOCK_READONLY)))
+      return true;
+   return false;
 }
 
 void d3d8_surface_unlock_rect(void *data)
@@ -376,11 +325,7 @@ void d3d8_surface_unlock_rect(void *data)
    LPDIRECT3DSURFACE8 surf = (LPDIRECT3DSURFACE8)data;
    if (!surf)
       return;
-#ifdef __cplusplus
-   surf->UnlockRect();
-#else
    IDirect3DSurface8_UnlockRect(surf);
-#endif
 }
 
 void d3d8_surface_free(void *data)
@@ -388,11 +333,7 @@ void d3d8_surface_free(void *data)
    LPDIRECT3DSURFACE8 surf = (LPDIRECT3DSURFACE8)data;
    if (!surf)
       return;
-#ifdef __cplusplus
-   surf->Release();
-#else
    IDirect3DSurface8_Release(surf);
-#endif
 }
 
 void *d3d8_vertex_buffer_new(void *_dev,
@@ -401,17 +342,10 @@ void *d3d8_vertex_buffer_new(void *_dev,
 {
    void              *buf = NULL;
    LPDIRECT3DDEVICE8 dev  = (LPDIRECT3DDEVICE8)_dev;
-#ifdef __cplusplus
-   HRESULT             hr = dev->CreateVertexBuffer(
-         length, usage, fvf, (D3DPOOL)pool, (IDirect3DVertexBuffer8**)&buf);
-#else
-   HRESULT             hr = IDirect3DDevice8_CreateVertexBuffer(
-         dev, length, usage, fvf,
-         (D3DPOOL)pool,
-         (struct IDirect3DVertexBuffer8**)&buf);
-#endif
-
-   if (FAILED(hr))
+   if (FAILED(IDirect3DDevice8_CreateVertexBuffer(
+               dev, length, usage, fvf,
+               (D3DPOOL)pool,
+               (struct IDirect3DVertexBuffer8**)&buf)))
       return NULL;
 
    return buf;
@@ -423,11 +357,7 @@ void d3d8_vertex_buffer_unlock(void *vertbuf_ptr)
 
    if (!vertbuf)
       return;
-#ifdef __cplusplus
-   vertbuf->Unlock();
-#else
    IDirect3DVertexBuffer8_Unlock(vertbuf);
-#endif
 }
 
 void *d3d8_vertex_buffer_lock(void *vertbuf_ptr)
@@ -438,11 +368,7 @@ void *d3d8_vertex_buffer_lock(void *vertbuf_ptr)
    if (!vertbuf)
       return NULL;
 
-#ifdef __cplusplus
-   vertbuf->Lock(0, 0, (BYTE**)&buf, 0);
-#else
    IDirect3DVertexBuffer8_Lock(vertbuf, 0, 0, (BYTE**)&buf, 0);
-#endif
 
    if (!buf)
       return NULL;
@@ -455,11 +381,7 @@ void d3d8_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
    if (vertex_data)
    {
       LPDIRECT3DVERTEXBUFFER8 buf = (LPDIRECT3DVERTEXBUFFER8)vertex_data;
-#ifdef __cplusplus
-      buf->Release();
-#else
       IDirect3DVertexBuffer8_Release(buf);
-#endif
       buf = NULL;
    }
 }
@@ -472,24 +394,15 @@ void d3d8_set_stream_source(void *_dev, unsigned stream_no,
    LPDIRECT3DVERTEXBUFFER8 stream_vertbuf = (LPDIRECT3DVERTEXBUFFER8)stream_vertbuf_ptr;
    if (!stream_vertbuf)
       return;
-#ifdef __cplusplus
-   dev->SetStreamSource(stream_no, stream_vertbuf, offset_bytes, stride);
-#else
    IDirect3DDevice8_SetStreamSource(dev, stream_no, stream_vertbuf, stride);
-#endif
 }
 
 static void d3d8_set_texture_stage_state(void *_dev,
       unsigned sampler, unsigned type, unsigned value)
 {
    LPDIRECT3DDEVICE8 dev  = (LPDIRECT3DDEVICE8)_dev;
-#ifdef __cplusplus
-   if (dev->SetTextureStageState(sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
-      RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
-#else
    if (IDirect3DDevice8_SetTextureStageState(dev, sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
       RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
-#endif
 }
 
 void d3d8_set_sampler_address_u(void *_dev,
@@ -523,20 +436,11 @@ bool d3d8_begin_scene(void *_dev)
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
    if (!dev)
       return false;
-#ifdef __cplusplus
-#ifdef _XBOX
-   dev->BeginScene();
-#else
-   if (FAILED(dev->BeginScene()))
-      return false;
-#endif
-#else
 #ifdef _XBOX
    IDirect3DDevice8_BeginScene(dev);
 #else
    if (FAILED(IDirect3DDevice8_BeginScene(dev)))
       return false;
-#endif
 #endif
 
    return true;
@@ -547,11 +451,7 @@ void d3d8_end_scene(void *_dev)
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
    if (!dev)
       return;
-#ifdef __cplusplus
-   dev->EndScene();
-#else
    IDirect3DDevice8_EndScene(dev);
-#endif
 }
 
 static void d3d8_draw_primitive_internal(void *_dev,
@@ -560,11 +460,7 @@ static void d3d8_draw_primitive_internal(void *_dev,
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
    if (!dev)
       return;
-#ifdef __cplusplus
-   dev->DrawPrimitive(type, start, count);
-#else
    IDirect3DDevice8_DrawPrimitive(dev, type, start, count);
-#endif
 }
 
 void d3d8_draw_primitive(void *dev,
@@ -584,29 +480,18 @@ void d3d8_clear(void *_dev,
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
    if (!dev)
       return;
-#ifdef __cplusplus
-   dev->Clear(count, (const D3DRECT*)rects, flags, color, z, stencil);
-#else
    IDirect3DDevice8_Clear(dev, count, (const D3DRECT*)rects, flags,
          color, z, stencil);
-#endif
 }
 
 bool d3d8_device_get_render_target(void *_dev,
       unsigned idx, void **data)
 {
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
-   if (!dev)
-      return false;
-#ifdef __cplusplus
-   if (SUCCEEDED(dev->GetRenderTarget(
+   if (dev &&
+         SUCCEEDED(IDirect3DDevice8_GetRenderTarget(dev,
                (LPDIRECT3DSURFACE8*)data)))
       return true;
-#else
-   if (SUCCEEDED(IDirect3DDevice8_GetRenderTarget(dev,
-               (LPDIRECT3DSURFACE8*)data)))
-      return true;
-#endif
 
    return false;
 }
@@ -618,17 +503,10 @@ bool d3d8_lock_rectangle(void *_tex,
 {
    D3DLOCKED_RECT     *lr = (D3DLOCKED_RECT*)_lr;
    LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)_tex;
-   if (!tex)
-      return false;
-#ifdef __cplusplus
-   if (FAILED(tex->LockRect(level, lr, rect, flags)))
-      return false;
-#else
-   if (IDirect3DTexture8_LockRect(tex, level, lr, rect, flags) != D3D_OK)
-      return false;
-#endif
-
-   return true;
+   if (tex &&
+         IDirect3DTexture8_LockRect(tex, level, lr, rect, flags) == D3D_OK)
+      return true;
+   return false;
 }
 
 void d3d8_unlock_rectangle(void *_tex)
@@ -636,11 +514,7 @@ void d3d8_unlock_rectangle(void *_tex)
    LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)_tex;
    if (!tex)
       return;
-#ifdef __cplusplus
-   tex->UnlockRect(0);
-#else
    IDirect3DTexture8_UnlockRect(tex, 0);
-#endif
 }
 
 void d3d8_lock_rectangle_clear(void *tex,
@@ -661,11 +535,7 @@ void d3d8_set_viewports(void *_dev, void *_vp)
    D3DVIEWPORT8      *vp = (D3DVIEWPORT8*)_vp;
    if (!dev)
       return;
-#ifdef __cplusplus
-   dev->SetViewport(vp);
-#else
    IDirect3DDevice8_SetViewport(dev, vp);
-#endif
 }
 
 void d3d8_set_texture(void *_dev, unsigned sampler,
@@ -675,27 +545,16 @@ void d3d8_set_texture(void *_dev, unsigned sampler,
    LPDIRECT3DDEVICE8 dev  = (LPDIRECT3DDEVICE8)_dev;
    if (!dev || !tex)
       return;
-#ifdef __cplusplus
-   dev->SetTexture(sampler, tex);
-#else
    IDirect3DDevice8_SetTexture(dev, sampler,
          (IDirect3DBaseTexture8*)tex);
-#endif
 }
 
 bool d3d8_set_vertex_shader(void *_dev, unsigned index,
       void *data)
 {
    LPDIRECT3DDEVICE8      dev     = (LPDIRECT3DDEVICE8)_dev;
-#ifdef __cplusplus
-   LPDIRECT3DVERTEXSHADER8 shader = (LPDIRECT3DVERTEXSHADER8)data;
-
-   if (dev->SetVertexShader(shader) != D3D_OK)
-      return false;
-#else
    if (IDirect3DDevice8_SetVertexShader(dev, index) != D3D_OK)
       return false;
-#endif
 
    return true;
 }
@@ -719,13 +578,8 @@ void d3d8_texture_blit(unsigned pixel_size,
 bool d3d8_get_render_state(void *data, INT32 state, DWORD *value)
 {
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)data;
-#ifdef __cplusplus
-   if (dev && dev->GetRenderState((D3DRENDERSTATETYPE)state, value) == D3D_OK)
-      return true;
-#else
    if (dev && IDirect3DDevice8_GetRenderState(dev, (D3DRENDERSTATETYPE)state, value) == D3D_OK)
       return true;
-#endif
 
    return false;
 }
@@ -735,11 +589,7 @@ void d3d8_set_render_state(void *data, INT32 state, DWORD value)
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)data;
    if (!dev)
       return;
-#ifdef __cplusplus
-   dev->SetRenderState((D3DRENDERSTATETYPE)state, value);
-#else
    IDirect3DDevice8_SetRenderState(dev, (D3DRENDERSTATETYPE)state, value);
-#endif
 }
 
 void d3d8_enable_blend_func(void *data)
@@ -759,11 +609,7 @@ void d3d8_device_set_render_target(void *_dev, unsigned idx,
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
    if (!dev)
       return;
-#ifdef __cplusplus
-   dev->SetRenderTarget(idx, surf);
-#else
    IDirect3DDevice8_SetRenderTarget(dev, surf, NULL);
-#endif
 }
 
 void d3d8_enable_alpha_blend_texture_func(void *data)
@@ -778,17 +624,8 @@ void d3d8_frame_postprocess(void *data)
 {
 #if defined(_XBOX)
    global_t        *global = global_get_ptr();
-#ifdef __cplusplus
-   LPDIRECT3DDEVICE8   dev = (LPDIRECT3DDEVICE8)data;
-   if (!dev)
-      return;
-
-   dev->SetFlickerFilter(global->console.screen.flicker_filter_index);
-   dev->SetSoftDisplayFilter(global->console.softfilter_enable);
-#else
    D3DDevice_SetFlickerFilter(global->console.screen.flicker_filter_index);
    D3DDevice_SetSoftDisplayFilter(global->console.softfilter_enable);
-#endif
 #endif
 }
 
@@ -802,34 +639,21 @@ static bool d3d8_reset_internal(void *data,
       )
 {
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)data;
-   if (!dev)
-      return false;
-#ifdef __cplusplus
-   if ((dev->Reset(d3dpp) == D3D_OK))
+   if (dev &&
+         IDirect3DDevice8_Reset(dev, d3dpp) == D3D_OK)
       return true;
-#else
-   if (IDirect3DDevice8_Reset(dev, d3dpp) == D3D_OK)
-      return true;
-#endif
 
    return false;
 }
 
 static HRESULT d3d8_test_cooperative_level(void *data)
 {
-#ifdef _XBOX
-   return E_FAIL;
-#else
+#ifndef _XBOX
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)data;
-   if (!dev)
-      return E_FAIL;
-
-#ifdef __cplusplus
-   return dev->TestCooperativeLevel();
-#else
-   return IDirect3DDevice8_TestCooperativeLevel(dev);
+   if (dev)
+      return IDirect3DDevice8_TestCooperativeLevel(dev);
 #endif
-#endif
+   return E_FAIL;
 }
 
 static bool d3d8_create_device_internal(
@@ -842,10 +666,8 @@ static bool d3d8_create_device_internal(
 {
    LPDIRECT3D8       d3d = (LPDIRECT3D8)_d3d;
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)data;
-   if (!dev)
-      return false;
-#ifdef __cplusplus
-   if (SUCCEEDED(d3d->CreateDevice(
+   if (dev &&
+         SUCCEEDED(IDirect3D8_CreateDevice(d3d,
                cur_mon_id,
                D3DDEVTYPE_HAL,
                focus_window,
@@ -853,16 +675,6 @@ static bool d3d8_create_device_internal(
                d3dpp,
                (IDirect3DDevice8**)dev)))
       return true;
-#else
-   if (SUCCEEDED(IDirect3D8_CreateDevice(d3d,
-               cur_mon_id,
-               D3DDEVTYPE_HAL,
-               focus_window,
-               behavior_flags,
-               d3dpp,
-               (IDirect3DDevice8**)dev)))
-      return true;
-#endif
 
    return false;
 }
@@ -927,19 +739,11 @@ bool d3d8_device_get_backbuffer(void *_dev,
       unsigned backbuffer_type, void **data)
 {
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
-   if (!dev)
-      return false;
-#ifdef __cplusplus
-   if (SUCCEEDED(dev->GetBackBuffer(idx,
+   if (dev &&
+         SUCCEEDED(IDirect3DDevice8_GetBackBuffer(dev, idx,
                (D3DBACKBUFFER_TYPE)backbuffer_type,
                (LPDIRECT3DSURFACE8*)data)))
       return true;
-#else
-   if (SUCCEEDED(IDirect3DDevice8_GetBackBuffer(dev, idx,
-               (D3DBACKBUFFER_TYPE)backbuffer_type,
-               (LPDIRECT3DSURFACE8*)data)))
-      return true;
-#endif
 
    return false;
 }
@@ -950,22 +754,10 @@ void d3d8_device_free(void *_dev, void *_pd3d)
    LPDIRECT3D8      pd3d = (LPDIRECT3D8)_pd3d;
    LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
    if (dev)
-   {
-#ifdef __cplusplus
-      dev->Release();
-#else
       IDirect3DDevice8_Release(dev);
-#endif
-   }
 
    if (pd3d)
-   {
-#if defined(__cplusplus)
-      pd3d->Release();
-#else
       IDirect3D8_Release(pd3d);
-#endif
-   }
 }
 
 INT32 d3d8_translate_filter(unsigned type)
@@ -1006,55 +798,31 @@ void d3d8x_font_draw_text(void *data, void *sprite_data, void *string_data,
       unsigned count, void *rect_data, unsigned format, unsigned color)
 {
 #ifdef HAVE_D3DX
-#if !defined(__cplusplus) || defined(CINTERFACE)
    ID3DXFont *font = (ID3DXFont*)data;
-   if (!font)
-      return;
-   font->lpVtbl->DrawText(font, (LPD3DXSPRITE)sprite_data,
-         (LPCTSTR)string_data, count, (LPRECT)rect_data,
-         (DWORD)format, (D3DCOLOR)color);
-#else
-   LPD3DXFONT font = (LPD3DXFONT)data;
-   if (!font)
-      return;
-   font->DrawText((LPD3DXSPRITE)sprite_data,
-         (LPCTSTR)string_data, count, (LPRECT)rect_data,
-         (DWORD)format, (D3DCOLOR)color);
-#endif
+   if (font)
+      font->lpVtbl->DrawText(font, (LPD3DXSPRITE)sprite_data,
+            (LPCTSTR)string_data, count, (LPRECT)rect_data,
+            (DWORD)format, (D3DCOLOR)color);
 #endif
 }
 
 void d3d8x_font_release(void *data)
 {
 #ifdef HAVE_D3DX
-#if !defined(__cplusplus) || defined(CINTERFACE)
    ID3DXFont *font = (ID3DXFont*)data;
    if (!font)
       return;
    font->lpVtbl->Release(font);
-#else
-   LPD3DXFONT font = (LPD3DXFONT)data;
-   if (!font)
-      return;
-   font->Release();
-#endif
 #endif
 }
 
 void d3d8x_font_get_text_metrics(void *data, void *metrics)
 {
 #ifdef HAVE_D3DX
-#if !defined(__cplusplus) || defined(CINTERFACE)
    ID3DXFont *font = (ID3DXFont*)data;
    if (!font)
       return;
    font->lpVtbl->GetTextMetrics(font, (TEXTMETRICA*)metrics);
-#else
-   LPD3DXFONT font = (LPD3DXFONT)data;
-   if (!font)
-      return;
-   font->GetTextMetricsA((TEXTMETRICA*)metrics);
-#endif
 #endif
 }
 
