@@ -50,6 +50,7 @@
 #include <zlib.h>
 #include <LzmaEnc.h>
 #include <LzmaDec.h>
+
 #include <retro_inline.h>
 
 #define TRUE 1
@@ -467,7 +468,7 @@ chd_error lzma_codec_init(void* codec, uint32_t hunkbytes)
 {
 	CLzmaEncProps encoder_props;
    CLzmaEncHandle enc;
-	Byte decoder_props[LZMA_PROPS_SIZE];
+	uint8_t decoder_props[LZMA_PROPS_SIZE];
    lzma_allocator* alloc;
    size_t props_size;
 	lzma_codec_data* lzma_codec = (lzma_codec_data*) codec;
