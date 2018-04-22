@@ -47,9 +47,12 @@
 #include <libchdr/cdrom.h>
 #include <libchdr/flac.h>
 #include <libchdr/huffman.h>
-#include <zlib.h>
-#include <LzmaEnc.h>
-#include <LzmaDec.h>
+#ifdef HAVE_7ZIP
+#include <libchdr/lzma.h>
+#endif
+#ifdef HAVE_ZLIB
+#include <libchdr/libchdr_zlib.h>
+#endif
 
 #include <retro_inline.h>
 #include <streams/file_stream.h>
@@ -82,7 +85,6 @@
 #define CHD_V1_SECTOR_SIZE			512			/* size of a "sector" in the V1 header */
 
 #define COOKIE_VALUE				0xbaadf00d
-#define MAX_ZLIB_ALLOCS				64
 
 #define END_OF_LIST_COOKIE			"EndOfListCookie"
 
@@ -97,7 +99,7 @@
 #define MAP_ENTRY_TYPE_2ND_COMPRESSED 0x0006    /* compressed with secondary algorithm (usually FLAC CDDA) */
 
 #ifdef WANT_RAW_DATA_SECTOR
-static const uint8_t s_cd_sync_header[12] = { 0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x00 };
+const uint8_t s_cd_sync_header[12] = { 0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x00 };
 #endif
 
 /* V5 compression types */
@@ -183,62 +185,6 @@ struct _metadata_entry
 	UINT8					flags;			/* flag bits */
 };
 
-/* codec-private data for the ZLIB codec */
-
-typedef struct _zlib_allocator zlib_allocator;
-struct _zlib_allocator
-{
-	UINT32 *				allocptr[MAX_ZLIB_ALLOCS];
-};
-
-typedef struct _zlib_codec_data zlib_codec_data;
-struct _zlib_codec_data
-{
-	z_stream				inflater;
-	zlib_allocator			allocator;
-};
-
-/* codec-private data for the LZMA codec */
-#define MAX_LZMA_ALLOCS 64
-
-typedef struct _lzma_allocator lzma_allocator;
-struct _lzma_allocator
-{
-	void *(*Alloc)(void *p, size_t size);
- 	void (*Free)(void *p, void *address); /* address can be 0 */
-	void (*FreeSz)(void *p, void *address, size_t size); /* address can be 0 */
-	uint32_t*	allocptr[MAX_LZMA_ALLOCS];
-};
-
-typedef struct _lzma_codec_data lzma_codec_data;
-struct _lzma_codec_data
-{
-	CLzmaDec		decoder;
-	lzma_allocator	allocator;
-};
-
-/* codec-private data for the CDZL codec */
-typedef struct _cdzl_codec_data cdzl_codec_data;
-struct _cdzl_codec_data {
-	/* internal state */
-	zlib_codec_data		base_decompressor;
-#ifdef WANT_SUBCODE
-	zlib_codec_data		subcode_decompressor;
-#endif
-	uint8_t*			buffer;
-};
-
-/* codec-private data for the CDLZ codec */
-typedef struct _cdlz_codec_data cdlz_codec_data;
-struct _cdlz_codec_data {
-	/* internal state */
-	lzma_codec_data		base_decompressor;
-#ifdef WANT_SUBCODE
-	zlib_codec_data		subcode_decompressor;
-#endif
-	uint8_t*			buffer;
-};
-
 /* codec-private data for the CDFL codec */
 typedef struct _cdfl_codec_data cdfl_codec_data;
 struct _cdfl_codec_data {
@@ -275,9 +221,13 @@ struct _chd_file
 	UINT8 *					compressed;		/* pointer to buffer for compressed data */
 	const codec_interface *	codecintf[4];	/* interface to the codec */
 
+#ifdef HAVE_ZLIB
 	zlib_codec_data			zlib_codec_data;		/* zlib codec data */
 	cdzl_codec_data			cdzl_codec_data;		/* cdzl codec data */
+#endif
+#ifdef HAVE_7ZIP
 	cdlz_codec_data			cdlz_codec_data;		/* cdlz codec data */
+#endif
 	cdfl_codec_data			cdfl_codec_data;		/* cdfl codec data */
 
 #ifdef NEED_CACHE_HUNK
@@ -313,417 +263,11 @@ static chd_error map_read(chd_file *chd);
 /* metadata management */
 static chd_error metadata_find_entry(chd_file *chd, UINT32 metatag, UINT32 metaindex, metadata_entry *metaentry);
 
-/* zlib compression codec */
-static chd_error zlib_codec_init(void *codec, uint32_t hunkbytes);
-static void zlib_codec_free(void *codec);
-static chd_error zlib_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen);
-static voidpf zlib_fast_alloc(voidpf opaque, uInt items, uInt size);
-static void zlib_fast_free(voidpf opaque, voidpf address);
-
-/* lzma compression codec */
-static chd_error lzma_codec_init(void *codec, uint32_t hunkbytes);
-static void lzma_codec_free(void *codec);
-static chd_error lzma_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen);
-
-/* cdzl compression codec */
-static chd_error cdzl_codec_init(void* codec, uint32_t hunkbytes);
-static void cdzl_codec_free(void* codec);
-static chd_error cdzl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen);
-
-/* cdlz compression codec */
-static chd_error cdlz_codec_init(void* codec, uint32_t hunkbytes);
-static void cdlz_codec_free(void* codec);
-static chd_error cdlz_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen);
 
 /* cdfl compression codec */
 static chd_error cdfl_codec_init(void* codec, uint32_t hunkbytes);
 static void cdfl_codec_free(void* codec);
 static chd_error cdfl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen);
-
-/***************************************************************************
- *  LZMA ALLOCATOR HELPER
- ***************************************************************************
- */
-
-void *lzma_fast_alloc(void *p, size_t size);
-void lzma_fast_free(void *p, void *address);
-
-/*-------------------------------------------------
- *  lzma_allocator_init
- *-------------------------------------------------
- */
-
-void lzma_allocator_init(void* p)
-{
-	lzma_allocator *codec = (lzma_allocator *)(p);
-
-	/* reset pointer list */
-	memset(codec->allocptr, 0, sizeof(codec->allocptr));
-	codec->Alloc = lzma_fast_alloc;
-	codec->Free = lzma_fast_free;
-}
-
-/*-------------------------------------------------
- *  lzma_allocator_free
- *-------------------------------------------------
- */
-
-void lzma_allocator_free(void* p )
-{
-	lzma_allocator *codec = (lzma_allocator *)(p);
-
-	/* free our memory */
-	int i;
-	for (i = 0 ; i < MAX_LZMA_ALLOCS ; i++)
-	{
-		if (codec->allocptr[i] != NULL)
-			free(codec->allocptr[i]);
-	}
-}
-
-/*-------------------------------------------------
- *  lzma_fast_alloc - fast malloc for lzma, which
- *  allocates and frees memory frequently
- *-------------------------------------------------
- */
-
-void *lzma_fast_alloc(void *p, size_t size)
-{
-	int scan;
-    uint32_t *addr        = NULL;
-	lzma_allocator *codec = (lzma_allocator *)(p);
-
-	/* compute the size, rounding to the nearest 1k */
-	size = (size + 0x3ff) & ~0x3ff;
-
-	/* reuse a hunk if we can */
-	for (scan = 0; scan < MAX_LZMA_ALLOCS; scan++)
-	{
-		uint32_t *ptr = codec->allocptr[scan];
-		if (ptr != NULL && size == *ptr)
-		{
-			/* set the low bit of the size so we don't match next time */
-			*ptr |= 1;
-			return ptr + 1;
-		}
-	}
-
-	/* alloc a new one and put it into the list */
-	addr = (uint32_t *)malloc(sizeof(uint32_t) * (size + sizeof(uint32_t)));
-	if (!addr)
-		return NULL;
-    
-	for (scan = 0; scan < MAX_LZMA_ALLOCS; scan++)
-	{
-		if (codec->allocptr[scan] == NULL)
-		{
-			codec->allocptr[scan] = addr;
-			break;
-		}
-	}
-
-	/* set the low bit of the size so we don't match next time */
-	*addr = size | 1;
-	return addr + 1;
-}
-
-/*-------------------------------------------------
- *  lzma_fast_free - fast free for lzma, which
- *  allocates and frees memory frequently
- *-------------------------------------------------
- */
-
-void lzma_fast_free(void *p, void *address)
-{
-	int scan;
-   uint32_t *ptr;
-   lzma_allocator *codec;
-	if (address == NULL)
-		return;
-
-	codec = (lzma_allocator *)(p);
-
-	/* find the hunk */
-	ptr = (uint32_t *)(address) - 1;
-	for (scan = 0; scan < MAX_LZMA_ALLOCS; scan++)
-	{
-		if (ptr == codec->allocptr[scan])
-		{
-			/* clear the low bit of the size to allow matches */
-			*ptr &= ~1;
-			return;
-		}
-	}
-}
-
-/***************************************************************************
- *  LZMA DECOMPRESSOR
- ***************************************************************************
- */
-
-/*-------------------------------------------------
- *  lzma_codec_init - constructor
- *-------------------------------------------------
- */
-
-chd_error lzma_codec_init(void* codec, uint32_t hunkbytes)
-{
-	CLzmaEncProps encoder_props;
-   CLzmaEncHandle enc;
-	uint8_t decoder_props[LZMA_PROPS_SIZE];
-   lzma_allocator* alloc;
-   size_t props_size;
-	lzma_codec_data* lzma_codec = (lzma_codec_data*) codec;
-
-	/* construct the decoder */
-	LzmaDec_Construct(&lzma_codec->decoder);
-
-	/* FIXME: this code is written in a way that makes it impossible to safely upgrade the LZMA SDK
-	 * This code assumes that the current version of the encoder imposes the same requirements on the
-	 * decoder as the encoder used to produce the file.  This is not necessarily true.  The format
-	 * needs to be changed so the encoder properties are written to the file.
-
-	 * configure the properties like the compressor did */
-	LzmaEncProps_Init(&encoder_props);
-	encoder_props.level = 9;
-	encoder_props.reduceSize = hunkbytes;
-	LzmaEncProps_Normalize(&encoder_props);
-
-	/* convert to decoder properties */
-	alloc = &lzma_codec->allocator;
-	lzma_allocator_init(alloc);
-	enc = LzmaEnc_Create((ISzAlloc*)alloc);
-	if (!enc)
-		return CHDERR_DECOMPRESSION_ERROR;
-	if (LzmaEnc_SetProps(enc, &encoder_props) != SZ_OK)
-	{
-		LzmaEnc_Destroy(enc, (ISzAlloc*)&alloc, (ISzAlloc*)&alloc);
-		return CHDERR_DECOMPRESSION_ERROR;
-	}
-	props_size = sizeof(decoder_props);
-	if (LzmaEnc_WriteProperties(enc, decoder_props, &props_size) != SZ_OK)
-	{
-		LzmaEnc_Destroy(enc, (ISzAlloc*)alloc, (ISzAlloc*)alloc);
-		return CHDERR_DECOMPRESSION_ERROR;
-	}
-	LzmaEnc_Destroy(enc, (ISzAlloc*)alloc, (ISzAlloc*)alloc);
-
-	/* do memory allocations */
-	if (LzmaDec_Allocate(&lzma_codec->decoder, decoder_props, LZMA_PROPS_SIZE, (ISzAlloc*)alloc) != SZ_OK)
-		return CHDERR_DECOMPRESSION_ERROR;
-
-	/* Okay */
-	return CHDERR_NONE;
-}
-
-/*-------------------------------------------------
- *  lzma_codec_free
- *-------------------------------------------------
- */
-
-void lzma_codec_free(void* codec)
-{
-	lzma_codec_data* lzma_codec = (lzma_codec_data*) codec;
-	lzma_allocator* alloc = &lzma_codec->allocator;
-
-	/* free memory */
-	lzma_allocator_free(alloc);
-	LzmaDec_Free(&lzma_codec->decoder, (ISzAlloc*)&lzma_codec->allocator);
-}
-
-/*-------------------------------------------------
- *  decompress - decompress data using the LZMA
- *  codec
- *-------------------------------------------------
- */
-
-chd_error lzma_codec_decompress(void* codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
-{
-	ELzmaStatus status;
-   SRes res;
-   size_t consumedlen, decodedlen;
-	/* initialize */
-	lzma_codec_data* lzma_codec = (lzma_codec_data*) codec;
-	LzmaDec_Init(&lzma_codec->decoder);
-
-	/* decode */
-	consumedlen = complen;
-	decodedlen = destlen;
-	res = LzmaDec_DecodeToBuf(&lzma_codec->decoder, dest, &decodedlen, src, &consumedlen, LZMA_FINISH_END, &status);
-	if ((res != SZ_OK && res != LZMA_STATUS_MAYBE_FINISHED_WITHOUT_MARK) || consumedlen != complen || decodedlen != destlen)
-		return CHDERR_DECOMPRESSION_ERROR;
-	return CHDERR_NONE;
-}
-
-/* cdlz */
-chd_error cdlz_codec_init(void* codec, uint32_t hunkbytes)
-{
-	chd_error ret;
-	cdlz_codec_data* cdlz = (cdlz_codec_data*) codec;
-
-	/* allocate buffer */
-	cdlz->buffer = (uint8_t*)malloc(sizeof(uint8_t) * hunkbytes);
-	if (cdlz->buffer == NULL)
-		return CHDERR_OUT_OF_MEMORY;
-
-	ret = lzma_codec_init(&cdlz->base_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
-	if (ret != CHDERR_NONE)
-		return ret;
-
-#ifdef WANT_SUBCODE
-	ret = zlib_codec_init(&cdlz->subcode_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
-	if (ret != CHDERR_NONE)
-		return ret;
-#endif
-
-	return CHDERR_NONE;
-}
-
-void cdlz_codec_free(void* codec)
-{
-	cdlz_codec_data* cdlz = (cdlz_codec_data*) codec;
-
-	lzma_codec_free(&cdlz->base_decompressor);
-#ifdef WANT_SUBCODE
-	zlib_codec_free(&cdlz->subcode_decompressor);
-#endif
-	if (cdlz->buffer)
-		free(cdlz->buffer);
-}
-
-chd_error cdlz_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
-{
-#ifdef WANT_RAW_DATA_SECTOR
-	uint8_t *sector;
-#endif
-	uint32_t framenum;
-	cdlz_codec_data* cdlz = (cdlz_codec_data*)codec;
-
-	/* determine header bytes */
-	uint32_t frames = destlen / CD_FRAME_SIZE;
-	uint32_t complen_bytes = (destlen < 65536) ? 2 : 3;
-	uint32_t ecc_bytes = (frames + 7) / 8;
-	uint32_t header_bytes = ecc_bytes + complen_bytes;
-
-	/* extract compressed length of base */
-	uint32_t complen_base = (src[ecc_bytes + 0] << 8) | src[ecc_bytes + 1];
-	if (complen_bytes > 2)
-		complen_base = (complen_base << 8) | src[ecc_bytes + 2];
-
-	/* reset and decode */
-	lzma_codec_decompress(&cdlz->base_decompressor, &src[header_bytes], complen_base, &cdlz->buffer[0], frames * CD_MAX_SECTOR_DATA);
-#ifdef WANT_SUBCODE
-	if (header_bytes + complen_base >= complen)
-		return CHDERR_DECOMPRESSION_ERROR;
-	zlib_codec_decompress(&cdlz->subcode_decompressor, &src[header_bytes + complen_base], complen - complen_base - header_bytes, &cdlz->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
-#endif
-
-	/* reassemble the data */
-	for (framenum = 0; framenum < frames; framenum++)
-	{
-		memcpy(&dest[framenum * CD_FRAME_SIZE], &cdlz->buffer[framenum * CD_MAX_SECTOR_DATA], CD_MAX_SECTOR_DATA);
-#ifdef WANT_SUBCODE
-		memcpy(&dest[framenum * CD_FRAME_SIZE + CD_MAX_SECTOR_DATA], &cdlz->buffer[frames * CD_MAX_SECTOR_DATA + framenum * CD_MAX_SUBCODE_DATA], CD_MAX_SUBCODE_DATA);
-#endif
-
-#ifdef WANT_RAW_DATA_SECTOR
-		/* reconstitute the ECC data and sync header */
-		sector = (uint8_t *)&dest[framenum * CD_FRAME_SIZE];
-		if ((src[framenum / 8] & (1 << (framenum % 8))) != 0)
-		{
-			memcpy(sector, s_cd_sync_header, sizeof(s_cd_sync_header));
-			ecc_generate(sector);
-		}
-#endif
-	}
-	return CHDERR_NONE;
-}
-
-/* cdzl */
-
-chd_error cdzl_codec_init(void *codec, uint32_t hunkbytes)
-{
-	chd_error ret;
-	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
-
-	/* make sure the CHD's hunk size is an even multiple of the frame size */
-	if (hunkbytes % CD_FRAME_SIZE != 0)
-		return CHDERR_CODEC_ERROR;
-
-	cdzl->buffer = (uint8_t*)malloc(sizeof(uint8_t) * hunkbytes);
-	if (cdzl->buffer == NULL)
-		return CHDERR_OUT_OF_MEMORY;
-
-	ret = zlib_codec_init(&cdzl->base_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
-	if (ret != CHDERR_NONE)
-		return ret;
-
-#ifdef WANT_SUBCODE
-	ret = zlib_codec_init(&cdzl->subcode_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
-	if (ret != CHDERR_NONE)
-		return ret;
-#endif
-
-	return CHDERR_NONE;
-}
-
-void cdzl_codec_free(void *codec)
-{
-	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
-
-	zlib_codec_free(&cdzl->base_decompressor);
-#ifdef WANT_SUBCODE
-	zlib_codec_free(&cdzl->subcode_decompressor);
-#endif
-	if (cdzl->buffer)
-		free(cdzl->buffer);
-}
-
-chd_error cdzl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
-{
-#ifdef WANT_RAW_DATA_SECTOR
-	uint8_t *sector;
-#endif
-	uint32_t framenum;
-	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
-
-	/* determine header bytes */
-	uint32_t frames = destlen / CD_FRAME_SIZE;
-	uint32_t complen_bytes = (destlen < 65536) ? 2 : 3;
-	uint32_t ecc_bytes = (frames + 7) / 8;
-	uint32_t header_bytes = ecc_bytes + complen_bytes;
-
-	/* extract compressed length of base */
-	uint32_t complen_base = (src[ecc_bytes + 0] << 8) | src[ecc_bytes + 1];
-	if (complen_bytes > 2)
-		complen_base = (complen_base << 8) | src[ecc_bytes + 2];
-
-	/* reset and decode */
-	zlib_codec_decompress(&cdzl->base_decompressor, &src[header_bytes], complen_base, &cdzl->buffer[0], frames * CD_MAX_SECTOR_DATA);
-#ifdef WANT_SUBCODE
-	zlib_codec_decompress(&cdzl->subcode_decompressor, &src[header_bytes + complen_base], complen - complen_base - header_bytes, &cdzl->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
-#endif
-
-	/* reassemble the data */
-	for (framenum = 0; framenum < frames; framenum++)
-	{
-		memcpy(&dest[framenum * CD_FRAME_SIZE], &cdzl->buffer[framenum * CD_MAX_SECTOR_DATA], CD_MAX_SECTOR_DATA);
-#ifdef WANT_SUBCODE
-		memcpy(&dest[framenum * CD_FRAME_SIZE + CD_MAX_SECTOR_DATA], &cdzl->buffer[frames * CD_MAX_SECTOR_DATA + framenum * CD_MAX_SUBCODE_DATA], CD_MAX_SUBCODE_DATA);
-#endif
-
-#ifdef WANT_RAW_DATA_SECTOR
-		/* reconstitute the ECC data and sync header */
-		sector = (uint8_t *)&dest[framenum * CD_FRAME_SIZE];
-		if ((src[framenum / 8] & (1 << (framenum % 8))) != 0)
-		{
-			memcpy(sector, s_cd_sync_header, sizeof(s_cd_sync_header));
-			ecc_generate(sector);
-		}
-#endif
-	}
-	return CHDERR_NONE;
-}
 
 /***************************************************************************
  *  CD FLAC DECOMPRESSOR
@@ -855,6 +399,7 @@ static const codec_interface codec_interfaces[] =
 		NULL
 	},
 
+#ifdef HAVE_ZLIB
 	/* standard zlib compression */
 	{
 		CHDCOMPRESSION_ZLIB,
@@ -887,7 +432,9 @@ static const codec_interface codec_interfaces[] =
 		cdzl_codec_decompress,
 		NULL
 	},
+#endif
 
+#ifdef HAVE_7ZIP
 	/* V5 CD lzma compression */
 	{
 		CHD_CODEC_CD_LZMA,
@@ -898,6 +445,7 @@ static const codec_interface codec_interfaces[] =
 		cdlz_codec_decompress,
 		NULL
 	},
+#endif
 
 	/* V5 CD flac compression */
 	{
@@ -2418,160 +1966,4 @@ static chd_error metadata_find_entry(chd_file *chd, UINT32 metatag, UINT32 metai
 
 	/* if we get here, we didn't find it */
 	return CHDERR_METADATA_NOT_FOUND;
-}
-
-/***************************************************************************
-    ZLIB COMPRESSION CODEC
-***************************************************************************/
-
-/*-------------------------------------------------
-    zlib_codec_init - initialize the ZLIB codec
--------------------------------------------------*/
-
-static chd_error zlib_codec_init(void *codec, uint32_t hunkbytes)
-{
-	int zerr;
-	chd_error err;
-	zlib_codec_data *data = (zlib_codec_data*)codec;
-
-	/* clear the buffers */
-	memset(data, 0, sizeof(zlib_codec_data));
-
-	/* init the inflater first */
-	data->inflater.next_in = (Bytef *)data;	/* bogus, but that's ok */
-	data->inflater.avail_in = 0;
-	data->inflater.zalloc = zlib_fast_alloc;
-	data->inflater.zfree = zlib_fast_free;
-	data->inflater.opaque = &data->allocator;
-	zerr = inflateInit2(&data->inflater, -MAX_WBITS);
-
-	/* convert errors */
-	if (zerr == Z_MEM_ERROR)
-		err = CHDERR_OUT_OF_MEMORY;
-	else if (zerr != Z_OK)
-		err = CHDERR_CODEC_ERROR;
-	else
-		err = CHDERR_NONE;
-
-	return err;
-}
-
-/*-------------------------------------------------
-    zlib_codec_free - free data for the ZLIB
-    codec
--------------------------------------------------*/
-
-static void zlib_codec_free(void *codec)
-{
-	zlib_codec_data *data = (zlib_codec_data *)codec;
-
-	/* deinit the streams */
-	if (data != NULL)
-	{
-		int i;
-      zlib_allocator alloc;
-
-		inflateEnd(&data->inflater);
-
-		/* free our fast memory */
-		alloc = data->allocator;
-		for (i = 0; i < MAX_ZLIB_ALLOCS; i++)
-			if (alloc.allocptr[i])
-				free(alloc.allocptr[i]);
-	}
-}
-
-/*-------------------------------------------------
-    zlib_codec_decompress - decomrpess data using
-    the ZLIB codec
--------------------------------------------------*/
-
-static chd_error zlib_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
-{
-	zlib_codec_data *data = (zlib_codec_data *)codec;
-	int zerr;
-
-	/* reset the decompressor */
-	data->inflater.next_in = (Bytef *)src;
-	data->inflater.avail_in = complen;
-	data->inflater.total_in = 0;
-	data->inflater.next_out = (Bytef *)dest;
-	data->inflater.avail_out = destlen;
-	data->inflater.total_out = 0;
-	zerr = inflateReset(&data->inflater);
-	if (zerr != Z_OK)
-		return CHDERR_DECOMPRESSION_ERROR;
-
-	/* do it */
-	zerr = inflate(&data->inflater, Z_FINISH);
-    (void)zerr;
-	if (data->inflater.total_out != destlen)
-		return CHDERR_DECOMPRESSION_ERROR;
-
-	return CHDERR_NONE;
-}
-
-/*-------------------------------------------------
-    zlib_fast_alloc - fast malloc for ZLIB, which
-    allocates and frees memory frequently
--------------------------------------------------*/
-
-static voidpf zlib_fast_alloc(voidpf opaque, uInt items, uInt size)
-{
-	zlib_allocator *alloc = (zlib_allocator *)opaque;
-	UINT32 *ptr;
-	int i;
-
-	/* compute the size, rounding to the nearest 1k */
-	size = (size * items + 0x3ff) & ~0x3ff;
-
-	/* reuse a hunk if we can */
-	for (i = 0; i < MAX_ZLIB_ALLOCS; i++)
-	{
-		ptr = alloc->allocptr[i];
-		if (ptr && size == *ptr)
-		{
-			/* set the low bit of the size so we don't match next time */
-			*ptr |= 1;
-			return ptr + 1;
-		}
-	}
-
-	/* alloc a new one */
-	ptr = (UINT32 *)malloc(size + sizeof(UINT32));
-	if (!ptr)
-		return NULL;
-
-	/* put it into the list */
-	for (i = 0; i < MAX_ZLIB_ALLOCS; i++)
-		if (!alloc->allocptr[i])
-		{
-			alloc->allocptr[i] = ptr;
-			break;
-		}
-
-	/* set the low bit of the size so we don't match next time */
-	*ptr = size | 1;
-	return ptr + 1;
-}
-
-/*-------------------------------------------------
-    zlib_fast_free - fast free for ZLIB, which
-    allocates and frees memory frequently
--------------------------------------------------*/
-
-static void zlib_fast_free(voidpf opaque, voidpf address)
-{
-	zlib_allocator *alloc = (zlib_allocator *)opaque;
-	UINT32 *ptr = (UINT32 *)address - 1;
-	int i;
-
-	/* find the hunk */
-	for (i = 0; i < MAX_ZLIB_ALLOCS; i++)
-		if (ptr == alloc->allocptr[i])
-		{
-			/* clear the low bit of the size to allow matches */
-			*ptr &= ~1;
-			return;
-		}
 }

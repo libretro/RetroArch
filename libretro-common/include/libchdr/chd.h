@@ -397,6 +397,8 @@ chd_error chd_codec_config(chd_file *chd, int param, void *config);
 /* return a string description of a codec */
 const char *chd_get_codec_name(UINT32 codec);
 
+extern const uint8_t s_cd_sync_header[12];
+
 #ifdef __cplusplus
 }
 #endif
