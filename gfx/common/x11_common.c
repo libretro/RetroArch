@@ -430,7 +430,8 @@ static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
          status = 0;
 
          /* XwcLookupString doesn't seem to work. */
-         num = Xutf8LookupString(ic, &event->xkey, keybuf, ARRAY_SIZE(keybuf), &keysym, &status);
+         num = Xutf8LookupString(ic, &event->xkey, keybuf,
+               ARRAY_SIZE(keybuf), &keysym, &status);
 
          /* libc functions need UTF-8 locale to work properly,
           * which makes mbrtowc a bit impractical.
@@ -439,7 +440,8 @@ static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
          num = utf8_conv_utf32(chars, ARRAY_SIZE(chars), keybuf, num);
 #else
          (void)ic;
-         num = XLookupString(&event->xkey, keybuf, sizeof(keybuf), &keysym, NULL); /* ASCII only. */
+         num = XLookupString(&event->xkey, keybuf,
+               sizeof(keybuf), &keysym, NULL); /* ASCII only. */
          for (i = 0; i < num; i++)
             chars[i] = keybuf[i] & 0x7f;
 #endif
@@ -720,12 +722,12 @@ static bool x11_check_atom_supported(Display *dpy, Atom atom)
    if (XA_NET_SUPPORTED == None)
       return false;
 
-   XGetWindowProperty(dpy, DefaultRootWindow(dpy), XA_NET_SUPPORTED, 0, UINT_MAX, False, XA_ATOM, &type, &format,&nitems, &bytes_after, (unsigned char **) &prop);
+   XGetWindowProperty(dpy, DefaultRootWindow(dpy), XA_NET_SUPPORTED,
+         0, UINT_MAX, False, XA_ATOM, &type, &format,&nitems,
+         &bytes_after, (unsigned char **) &prop);
 
    if (!prop || type != XA_ATOM)
-   {
       return false;
-   }
 
    for (i = 0; i < nitems; i++)
    {
@@ -799,9 +801,7 @@ char *x11_get_wm_name(Display *dpy)
                                &propdata);
 
    if (status == Success && propdata)
-   {
       title = strdup((char *) propdata);
-   }
    else
       return NULL;
 
