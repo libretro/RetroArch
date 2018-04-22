@@ -282,6 +282,7 @@ struct _chd_file
 #ifdef NEED_CACHE_HUNK
 	UINT32					maxhunk;		/* maximum hunk accessed */
 #endif
+   UINT8 *              file_cache; /* cache of underlying file */
 };
 
 /***************************************************************************
@@ -1530,6 +1531,32 @@ cleanup:
 	return err;
 }
 
+chd_error chd_precache(chd_file *chd)
+{
+	ssize_t size, count;
+
+	if (!chd->file_cache)
+	{
+		core_fseek(chd->file, 0, SEEK_END);
+		size = core_ftell(chd->file);
+		if (size <= 0)
+			return CHDERR_INVALID_DATA;
+		chd->file_cache = malloc(size);
+		if (chd->file_cache == NULL)
+			return CHDERR_OUT_OF_MEMORY;
+		core_fseek(chd->file, 0, SEEK_SET);
+		count = core_fread(chd->file, chd->file_cache, size);
+		if (count != size)
+		{
+			free(chd->file_cache);
+			chd->file_cache = NULL;
+			return CHDERR_READ_ERROR;
+		}
+	}
+
+	return CHDERR_NONE;
+}
+
 /*-------------------------------------------------
     chd_close - close a CHD file for access
 -------------------------------------------------*/
@@ -1601,6 +1628,9 @@ void chd_close(chd_file *chd)
 #ifdef NEED_CACHE_HUNK
 	if (PRINTF_MAX_HUNK) printf("Max hunk = %d/%d\n", chd->maxhunk, chd->header.totalhunks);
 #endif
+
+   if (chd->file_cache)
+      free(chd->file_cache);
 
 	/* free our memory */
 	free(chd);
@@ -2037,6 +2067,35 @@ static chd_error hunk_read_into_cache(chd_file *chd, UINT32 hunknum)
 }
 #endif
 
+static UINT8* read_compressed(chd_file *chd, UINT64 offset, size_t size)
+{
+   ssize_t bytes;
+   if (chd->file_cache)
+      return chd->file_cache + offset;
+   core_fseek(chd->file, offset, SEEK_SET);
+   bytes = core_fread(chd->file, chd->compressed, size);
+   if (bytes != size)
+      return NULL;
+   return chd->compressed;
+}
+
+static chd_error read_uncompressed(chd_file *chd, UINT64 offset, size_t size, UINT8 *dest)
+{
+   ssize_t bytes;
+   if (chd->file_cache)
+   {
+      memcpy(dest, chd->file_cache + offset, size);
+      return CHDERR_NONE;
+   }
+   core_fseek(chd->file, offset, SEEK_SET);
+   bytes = core_fread(chd->file, dest, size);
+   if (bytes != size)
+      return CHDERR_READ_ERROR;
+   return CHDERR_NONE;
+}
+
+
+
 /*-------------------------------------------------
     hunk_read_into_memory - read a hunk into
     memory at the given location
@@ -2068,30 +2127,28 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 		{
 			/* compressed data */
 			case V34_MAP_ENTRY_TYPE_COMPRESSED:
+            {
+               void *codec;
+               UINT8 *bytes = read_compressed(chd, entry->offset,
+                     entry->length);
+               if (bytes == NULL)
+                  return CHDERR_READ_ERROR;
 
-				/* read it into the decompression buffer */
-				if (core_fseek(chd->file, entry->offset, SEEK_SET) != 0)
-					return CHDERR_READ_ERROR;
-				bytes = core_fread(chd->file, chd->compressed, entry->length);
-				if (bytes != entry->length)
-					return CHDERR_READ_ERROR;
-
-				/* now decompress using the codec */
-				err   = CHDERR_NONE;
-				codec = &chd->zlib_codec_data;
-				if (chd->codecintf[0]->decompress != NULL)
-					err = (*chd->codecintf[0]->decompress)(codec, chd->compressed, entry->length, dest, chd->header.hunkbytes);
-				if (err != CHDERR_NONE)
-					return err;
+               /* now decompress using the codec */
+               err   = CHDERR_NONE;
+               codec = &chd->zlib_codec_data;
+               if (chd->codecintf[0]->decompress != NULL)
+                  err = (*chd->codecintf[0]->decompress)(codec, chd->compressed, entry->length, dest, chd->header.hunkbytes);
+               if (err != CHDERR_NONE)
+                  return err;
+            }
 				break;
 
 			/* uncompressed data */
 			case V34_MAP_ENTRY_TYPE_UNCOMPRESSED:
-				if (core_fseek(chd->file, entry->offset, SEEK_SET) != 0)
-					return CHDERR_READ_ERROR;
-				bytes = core_fread(chd->file, dest, chd->header.hunkbytes);
-				if (bytes != chd->header.hunkbytes)
-					return CHDERR_READ_ERROR;
+            err = read_uncompressed(chd, entry->offset, chd->header.hunkbytes, dest);
+            if (err != CHDERR_NONE)
+               return err;
 				break;
 
 			/* mini-compressed data */
@@ -2128,6 +2185,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 		uint16_t blockcrc;
 #endif
 		uint8_t *rawmap = &chd->header.rawmap[chd->header.mapentrybytes * hunknum];
+      UINT8 *bytes;
 
 #if 0
 		/* uncompressed case - TODO */
@@ -2158,11 +2216,9 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 			case COMPRESSION_TYPE_1:
 			case COMPRESSION_TYPE_2:
 			case COMPRESSION_TYPE_3:
-				if (core_fseek(chd->file, blockoffs, SEEK_SET) != 0)
-					return CHDERR_READ_ERROR;
-				if(core_fread(chd->file, chd->compressed, blocklen) != blocklen)
-					return CHDERR_READ_ERROR;
-
+            bytes = read_compressed(chd, blockoffs, blocklen);
+            if (bytes == NULL)
+               return CHDERR_READ_ERROR;
 				switch (chd->codecintf[rawmap[0]]->compression)
 				{
 					case CHD_CODEC_CD_LZMA:
@@ -2189,13 +2245,12 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 				return CHDERR_NONE;
 
 			case COMPRESSION_NONE:
-				if (core_fseek(chd->file, blockoffs, SEEK_SET) != 0)
-					return CHDERR_READ_ERROR;
-				if (core_fread(chd->file, dest, chd->header.hunkbytes) != chd->header.hunkbytes)
-					return CHDERR_READ_ERROR;
+            err = read_uncompressed(chd, blockoffs, blocklen, dest);
+            if (err != CHDERR_NONE)
+               return err;
 #ifdef VERIFY_BLOCK_CRC
-				if (crc16(dest, chd->header.hunkbytes) != blockcrc)
-					return CHDERR_DECOMPRESSION_ERROR;
+            if (crc16(dest, chd->header.hunkbytes) != blockcrc)
+               return CHDERR_DECOMPRESSION_ERROR;
 #endif
 				return CHDERR_NONE;
 
