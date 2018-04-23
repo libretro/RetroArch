@@ -324,9 +324,11 @@ static int16_t ds3_get_axis(void *data, unsigned axis)
    if(!pad || axis >= 4)
       return 0;
 
-   val = (pad->data[6+axis] << 8) - 0x8000;
-//   val = (pad->data[7+axis] << 8) - 0x8000;
-   return (val > 0x1000 || val < -0x1000) ? 0 : val;
+   val = pad->data[6+axis];
+   // val = pad->data[7+axis];
+   val = (val - 128) * 256;
+
+   return val;
 }
 
 static const char *ds3_get_name(void *data)

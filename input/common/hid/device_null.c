@@ -174,7 +174,13 @@ static void null_set_rumble(void *data, enum retro_rumble_effect effect, uint16_
 }
 
 /**
- * Read analog sticks. If the pad doesn't have any analog axis, just return 0 here.
+ * Read analog sticks.
+ * If the pad doesn't have any analog axis, just return 0 here.
+ *
+ * The return value must conform to the following characteristics:
+ * - (0, 0) is center
+ * - (-32768,-32768) is top-left
+ * - (32767,32767) is bottom-right
  */
 static int16_t null_get_axis(void *data, unsigned axis)
 {

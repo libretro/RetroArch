@@ -15,6 +15,7 @@
  */
 #include <stdio.h>
 #include "hid_device_driver.h"
+#include "../../../wiiu/input/wiiu_hid.h"
 
 #ifdef WII
 static uint8_t activation_packet[] = { 0x01, 0x13 };
@@ -41,6 +42,7 @@ typedef struct gca_pad_data
    uint8_t data[9];      // pad data
    uint32_t slot;        // slot this pad occupies
    uint32_t buttons;     // digital button state
+   int16_t analog_state[3][2]; // analog state
 } gca_pad_t;
 
 
@@ -244,6 +246,43 @@ static void update_buttons(gca_pad_t *pad)
          (1 << button_mapping[i]) : 0;
 }
 
+#if 0
+const char *axes[] = {
+  "left x",
+  "left y",
+  "right x",
+  "right y"
+};
+#endif
+
+static void update_analog_state(gca_pad_t *pad)
+{
+   int pad_axis;
+   int16_t interpolated;
+   int16_t stage1, stage2;
+   unsigned stick, axis;
+   uint8_t val;
+
+   /* GameCube analog axis are 8-bit unsigned, where 128/128 is center.
+    * So, we subtract 128 to get a signed, 0-based value and then mulitply
+    * by 256 to get the 16-bit range RetroArch expects. */
+   for(pad_axis = 0; pad_axis < 4; pad_axis++)
+   {
+      axis = pad_axis % 2 ? 0 : 1;
+      stick = pad_axis / 2;
+      interpolated = pad->data[3 + pad_axis];
+      /* libretro requires "up" to be negative, so we invert the y axis */
+      interpolated = (axis) ?
+         ((interpolated - 128) * 256) :
+         ((interpolated - 128) * -256);
+
+      pad->analog_state[stick][axis] = interpolated;
+#if 0
+      RARCH_LOG("%s: %d\n", axes[pad_axis], interpolated);
+#endif
+   }
+}
+
 
 /**
  * The USB packet provides a 9-byte data packet for each pad.
@@ -264,6 +303,7 @@ static void wiiu_gca_packet_handler(void *data, uint8_t *packet, uint16_t size)
 
    memcpy(pad->data, packet, size);
    update_buttons(pad);
+   update_analog_state(pad);
 }
 
 
@@ -275,41 +315,18 @@ static void wiiu_gca_set_rumble(void *data, enum retro_rumble_effect effect, uin
    (void)strength;
 }
 
-static unsigned decode_axis(unsigned axis)
-{
-  unsigned positive = AXIS_POS_GET(axis);
-  unsigned negative = AXIS_NEG_GET(axis);
-
-  return positive >= 4 ? negative : positive;
-}
-
 static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
 {
-   axis = decode_axis(axis);
-   int16_t val;
+   axis_data axis_data;
+
    gca_pad_t *pad = (gca_pad_t *)data;
 
-   if(!pad || axis >= 4)
+   pad_functions.read_axis_data(axis, &axis_data);
+
+   if(!pad || axis_data.axis >= 4)
       return 0;
 
-   val = pad->data[3+axis];
-
-   switch(axis)
-   {
-      /* The Y axes are inverted. */
-      case 0: /* left Y */
-      case 2: /* right Y */
-         val = 0x8000 - (val << 8);
-         break;
-      default:
-         val = (val << 8) - 0x8000;
-         break;
-   }
-
-   if(val > 0x1000 || val < -0x1000)
-      return 0;
-
-   return val;
+   return pad_functions.get_axis_value(axis_data.axis, pad->analog_state, axis_data.is_negative);
 }
 
 static const char *wiiu_gca_get_name(void *data)
