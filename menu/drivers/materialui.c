@@ -407,75 +407,6 @@ static void materialui_draw_tab(
          &tab_color[0]);
 }
 
-/* Draw the onscreen keyboard */
-static void materialui_render_keyboard(
-      materialui_handle_t *mui,
-      video_frame_info_t *video_info,
-      char *grid[], unsigned id)
-{
-   int ptr_width, ptr_height;
-   unsigned i;
-   unsigned width    = video_info->width;
-   unsigned height   = video_info->height;
-   float dark[16]    =  {
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-   };
-
-   float white[16]   =  {
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-   };
-
-   menu_display_draw_quad(
-         video_info,
-         0,
-         height/2.0, width, height/2.0,
-         width, height,
-         &dark[0]);
-
-   ptr_width  = width  / 11;
-   ptr_height = height / 10;
-
-   if (ptr_width >= ptr_height)
-      ptr_width = ptr_height;
-
-   for (i = 0; i < 44; i++)
-   {
-      int line_y        = (i / 11)*height/10.0;
-      uintptr_t texture = mui->textures.list[MUI_TEXTURE_KEY];
-
-      if (i == id)
-      {
-         texture = mui->textures.list[MUI_TEXTURE_KEY_HOVER];
-
-         menu_display_blend_begin(video_info);
-
-         menu_display_draw_texture(
-               video_info,
-               width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
-               height/2.0 + ptr_height*1.5 + line_y,
-               ptr_width, ptr_height,
-               width, height,
-               &white[0],
-               texture);
-
-         menu_display_blend_end(video_info);
-      }
-
-      menu_display_draw_text(mui->font, grid[i],
-            width/2.0 - (11*ptr_width)/2.0 + (i % 11) 
-            * ptr_width + ptr_width/2.0,
-            height/2.0 + ptr_height + line_y + mui->font->size / 3,
-            width, height, 0xffffffff, TEXT_ALIGN_CENTER, 1.0f,
-            false, 0);
-   }
-}
-
 /* Returns the OSK key at a given position */
 static int materialui_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height)
@@ -667,7 +598,9 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
    }
 
    if (menu_input_dialog_get_display_kb())
-      materialui_render_keyboard(mui,
+      menu_display_draw_keyboard(
+            mui->textures.list[MUI_TEXTURE_KEY_HOVER],
+            mui->font,
             video_info,
             menu_event_get_osk_grid(), menu_event_get_osk_ptr());
 

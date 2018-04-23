@@ -1331,6 +1331,71 @@ void menu_display_snow(int width, int height)
    }
 }
 
+void menu_display_draw_keyboard(
+      uintptr_t hover_texture,
+      const font_data_t *font,
+      video_frame_info_t *video_info,
+      char *grid[], unsigned id)
+{
+   unsigned i;
+   int ptr_width, ptr_height;
+   unsigned width    = video_info->width;
+   unsigned height   = video_info->height;
+   float dark[16]    =  {
+      0.00, 0.00, 0.00, 0.85,
+      0.00, 0.00, 0.00, 0.85,
+      0.00, 0.00, 0.00, 0.85,
+      0.00, 0.00, 0.00, 0.85,
+   };
+
+   float white[16]=  {
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+   };
+
+   menu_display_draw_quad(
+         video_info,
+         0, height/2.0, width, height/2.0,
+         width, height,
+         &dark[0]);
+
+   ptr_width  = width  / 11;
+   ptr_height = height / 10;
+
+   if (ptr_width >= ptr_height)
+      ptr_width = ptr_height;
+
+   for (i = 0; i < 44; i++)
+   {
+      int line_y = (i / 11) * height / 10.0;
+
+      if (i == id)
+      {
+         menu_display_blend_begin(video_info);
+
+         menu_display_draw_texture(
+               video_info,
+               width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
+               height/2.0 + ptr_height*1.5 + line_y,
+               ptr_width, ptr_height,
+               width, height,
+               &white[0],
+               hover_texture);
+
+         menu_display_blend_end(video_info);
+      }
+
+      menu_display_draw_text(font, grid[i],
+            width/2.0 - (11*ptr_width)/2.0 + (i % 11) 
+            * ptr_width + ptr_width/2.0,
+            height/2.0 + ptr_height + line_y + font->size / 3,
+            width, height, 0xffffffff, TEXT_ALIGN_CENTER, 1.0f,
+            false, 0);
+   }
+}
+
 /* Draw text on top of the screen.
  */
 void menu_display_draw_text(
