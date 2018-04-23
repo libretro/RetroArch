@@ -2482,13 +2482,15 @@ static void materialui_list_insert(void *userdata,
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES))
                   ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES))
                   )
             {
                node->texture_switch2_index = MUI_TEXTURE_ADD_TO_FAVORITES;
                node->texture_switch2_set   = true;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY)))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY)) ||
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION)))
             {
                node->texture_switch2_index = MUI_TEXTURE_RENAME;
                node->texture_switch2_set   = true;
