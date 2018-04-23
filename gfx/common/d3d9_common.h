@@ -245,7 +245,7 @@ static INLINE void d3d9_lock_rectangle_clear(void *tex,
    level              = 0;
 #endif
    memset(lr->pBits, level, rectangle_height * lr->Pitch);
-   d3d9_unlock_rectangle(tex);
+   d3d9_unlock_rectangle((LPDIRECT3DTEXTURE9)tex);
 }
 
 static INLINE void d3d9_set_texture(
@@ -668,7 +668,7 @@ void d3d9x_constant_table_set_matrix(LPDIRECT3DDEVICE9 dev,
 const void *d3d9x_get_buffer_ptr(void *data);
 
 const bool d3d9x_constant_table_set_float(void *p,
-      void *a, const void *b, float val);
+      void *a, void *b, float val);
 
 void *d3d9x_constant_table_get_constant_by_name(void *_tbl,
       void *_handle, void *_name);

@@ -606,8 +606,7 @@ void d3d9x_constant_table_set_matrix(LPDIRECT3DDEVICE9 dev,
 }
 
 const bool d3d9x_constant_table_set_float(void *p,
-      void *a,
-      const void *b, float val)
+      void *a, void *b, float val)
 {
 #if defined(HAVE_D3DX)
    LPDIRECT3DDEVICE9    dev     = (LPDIRECT3DDEVICE9)a;
