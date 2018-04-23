@@ -69,7 +69,7 @@
 
 #endif
 
-#define set_param_2f(param, xy, constanttable) if (param) { ID3DXConstantTable_SetFloatArray(constanttable, d3dr, param, xy, 2); }
+#define set_param_2f(param, xy, constanttable) ID3DXConstantTable_SetFloatArray(constanttable, d3dr, param, xy, 2)
 
 struct shader_program_hlsl_data
 {
@@ -158,65 +158,77 @@ static void hlsl_set_uniform_parameter(
 static void hlsl_set_params(void *dat, void *shader_data)
 {
    float ori_size[2], tex_size[2], out_size[2];
-   video_shader_ctx_params_t      *params = (video_shader_ctx_params_t*)dat;
-   void *data                             = params->data;
-   unsigned width                         = params->width;
-   unsigned height                        = params->height;
-   unsigned tex_width                     = params->tex_width;
-   unsigned tex_height                    = params->tex_height;
-   unsigned out_width                     = params->out_width;
-   unsigned out_height                    = params->out_height;
-   unsigned frame_count                   = params->frame_counter;
-   const void *_info                      = params->info;
-   const void *_prev_info                 = params->prev_info;
-   const void *_feedback_info             = params->feedback_info;
-   const void *_fbo_info                  = params->fbo_info;
-   unsigned fbo_info_cnt                  = params->fbo_info_cnt;
-   float frame_cnt                        = frame_count;
-   const struct video_tex_info *info      = (const struct video_tex_info*)_info;
-   const struct video_tex_info *prev_info = (const struct video_tex_info*)_prev_info;
-   const struct video_tex_info *fbo_info  = (const struct video_tex_info*)_fbo_info;
-   hlsl_shader_data_t *hlsl               = (hlsl_shader_data_t*)shader_data;
-   LPDIRECT3DDEVICE9 d3dr                 = (LPDIRECT3DDEVICE9)hlsl->dev;
+   video_shader_ctx_params_t      *params   = (video_shader_ctx_params_t*)dat;
+   void *data                               = params->data;
+   unsigned width                           = params->width;
+   unsigned height                          = params->height;
+   unsigned tex_width                       = params->tex_width;
+   unsigned tex_height                      = params->tex_height;
+   unsigned out_width                       = params->out_width;
+   unsigned out_height                      = params->out_height;
+   unsigned frame_count                     = params->frame_counter;
+   const void *_info                        = params->info;
+   const void *_prev_info                   = params->prev_info;
+   const void *_feedback_info               = params->feedback_info;
+   const void *_fbo_info                    = params->fbo_info;
+   unsigned fbo_info_cnt                    = params->fbo_info_cnt;
+   float frame_cnt                          = frame_count;
+   const struct video_tex_info *info        = (const struct video_tex_info*)_info;
+   const struct video_tex_info *prev_info   = (const struct video_tex_info*)_prev_info;
+   const struct video_tex_info *fbo_info    = (const struct video_tex_info*)_fbo_info;
+   hlsl_shader_data_t *hlsl                 = (hlsl_shader_data_t*)shader_data;
+   LPDIRECT3DDEVICE9 d3dr                   = (LPDIRECT3DDEVICE9)hlsl->dev;
+   struct shader_program_hlsl_data *program =  NULL;
 
    if (!hlsl || !d3dr)
       return;
 
-   ori_size[0] = (float)width;
-   ori_size[1] = (float)height;
-   tex_size[0] = (float)tex_width;
-   tex_size[1] = (float)tex_height;
-   out_size[0] = (float)out_width;
-   out_size[1] = (float)out_height;
+   program                                  = &hlsl->prg[hlsl->active_idx];
 
-   ID3DXConstantTable_SetDefaults(
-         hlsl->prg[hlsl->active_idx].f_ctable, d3dr);
-   ID3DXConstantTable_SetDefaults(
-         hlsl->prg[hlsl->active_idx].v_ctable, d3dr);
+   if (!program)
+      return;
 
-   set_param_2f(hlsl->prg[hlsl->active_idx].vid_size_f, ori_size, hlsl->prg[hlsl->active_idx].f_ctable);
-   set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_f, tex_size, hlsl->prg[hlsl->active_idx].f_ctable);
-   set_param_2f(hlsl->prg[hlsl->active_idx].out_size_f, out_size, hlsl->prg[hlsl->active_idx].f_ctable);
+   ori_size[0]                              = (float)width;
+   ori_size[1]                              = (float)height;
+   tex_size[0]                              = (float)tex_width;
+   tex_size[1]                              = (float)tex_height;
+   out_size[0]                              = (float)out_width;
+   out_size[1]                              = (float)out_height;
 
-   if (hlsl->prg[hlsl->active_idx].frame_cnt_f)
-      d3d9x_constant_table_set_float(hlsl->prg[hlsl->active_idx].f_ctable,
-            d3dr,hlsl->prg[hlsl->active_idx].frame_cnt_f, frame_cnt);
+   ID3DXConstantTable_SetDefaults(program->f_ctable, d3dr);
+   ID3DXConstantTable_SetDefaults(program->v_ctable, d3dr);
 
-   if (hlsl->prg[hlsl->active_idx].frame_dir_f)
-      d3d9x_constant_table_set_float(hlsl->prg[hlsl->active_idx].f_ctable,
-            d3dr, hlsl->prg[hlsl->active_idx].frame_dir_f, state_manager_frame_is_reversed() ? -1.0 : 1.0);
+   if (program->vid_size_f)
+      set_param_2f(program->vid_size_f, ori_size, program->f_ctable);
+   if (program->tex_size_f)
+      set_param_2f(program->tex_size_f, tex_size, program->f_ctable);
+   if (program->out_size_f)
+      set_param_2f(program->out_size_f, out_size, program->f_ctable);
 
-   set_param_2f(hlsl->prg[hlsl->active_idx].vid_size_v, ori_size, hlsl->prg[hlsl->active_idx].v_ctable);
-   set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_v, tex_size, hlsl->prg[hlsl->active_idx].v_ctable);
-   set_param_2f(hlsl->prg[hlsl->active_idx].out_size_v, out_size, hlsl->prg[hlsl->active_idx].v_ctable);
+   if (program->frame_cnt_f)
+      d3d9x_constant_table_set_float(program->f_ctable,
+            d3dr, program->frame_cnt_f, frame_cnt);
 
-   if (hlsl->prg[hlsl->active_idx].frame_cnt_v)
-      d3d9x_constant_table_set_float(hlsl->prg[hlsl->active_idx].v_ctable,
-            d3dr, hlsl->prg[hlsl->active_idx].frame_cnt_v, frame_cnt);
+   if (program->frame_dir_f)
+      d3d9x_constant_table_set_float(program->f_ctable,
+            d3dr, program->frame_dir_f,
+            state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
-   if (hlsl->prg[hlsl->active_idx].frame_dir_v)
-      d3d9x_constant_table_set_float(hlsl->prg[hlsl->active_idx].v_ctable,
-            d3dr, hlsl->prg[hlsl->active_idx].frame_dir_v, state_manager_frame_is_reversed() ? -1.0 : 1.0);
+   if (program->vid_size_v)
+      set_param_2f(program->vid_size_v, ori_size, program->v_ctable);
+   if (program->tex_size_v)
+      set_param_2f(program->tex_size_v, tex_size, program->v_ctable);
+   if (program->out_size_v)
+      set_param_2f(program->out_size_v, out_size, program->v_ctable);
+
+   if (program->frame_cnt_v)
+      d3d9x_constant_table_set_float(program->v_ctable,
+            d3dr, program->frame_cnt_v, frame_cnt);
+
+   if (program->frame_dir_v)
+      d3d9x_constant_table_set_float(program->v_ctable,
+            d3dr, program->frame_dir_v,
+            state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
