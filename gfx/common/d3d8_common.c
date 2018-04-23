@@ -29,12 +29,8 @@
 #include "../../verbosity.h"
 
 #ifdef HAVE_D3DX
-#ifdef _XBOX
 #include <d3dx8core.h>
 #include <d3dx8tex.h>
-#else
-#include "../include/d3d8/d3dx8tex.h"
-#endif
 #endif
 
 #include "d3d8_common.h"
