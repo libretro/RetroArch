@@ -1687,12 +1687,8 @@ static void gl_begin_debug(gl_t *gl)
 extern gl_renderchain_driver_t gl2_renderchain;
 
 static const gl_renderchain_driver_t *renderchain_gl_drivers[] = {
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-   &gl2_renderchain,
-#endif
-   NULL
+   &gl2_renderchain
 };
-
 
 static bool renderchain_gl_init_first(
       const gl_renderchain_driver_t **renderchain_driver,
@@ -1715,7 +1711,8 @@ static bool renderchain_gl_init_first(
    return false;
 }
 
-static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *gl_init(const video_info_t *video,
+      const input_driver_t **input, void **input_data)
 {
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;

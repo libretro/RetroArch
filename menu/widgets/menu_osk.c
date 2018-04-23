@@ -148,7 +148,7 @@ void menu_event_osk_iterate(void)
    }
 }
 
-const char** menu_event_get_osk_grid(void)
+char** menu_event_get_osk_grid(void)
 {
    return osk_grid;
 }

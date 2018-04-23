@@ -59,7 +59,7 @@ void menu_event_osk_append(int a);
 
 void menu_event_osk_iterate(void);
 
-const char** menu_event_get_osk_grid(void);
+char** menu_event_get_osk_grid(void);
 
 RETRO_END_DECLS
 

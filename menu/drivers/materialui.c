@@ -408,9 +408,10 @@ static void materialui_draw_tab(
 }
 
 /* Draw the onscreen keyboard */
-static void materialui_render_keyboard(materialui_handle_t *mui,
+static void materialui_render_keyboard(
+      materialui_handle_t *mui,
       video_frame_info_t *video_info,
-      const char *grid[], unsigned id)
+      char *grid[], unsigned id)
 {
    int ptr_width, ptr_height;
    unsigned i;
