@@ -1569,7 +1569,6 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 
 	if (chd->header.version < 5)
 	{
-		void* codec;
 		map_entry *entry = &chd->map[hunknum];
 		UINT32 bytes;
 
