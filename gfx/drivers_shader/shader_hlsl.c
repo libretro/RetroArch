@@ -311,21 +311,35 @@ static bool hlsl_load_stock(hlsl_shader_data_t *hlsl)
 
 static void hlsl_set_program_attributes(hlsl_shader_data_t *hlsl, unsigned i)
 {
+   struct shader_program_hlsl_data *program  = NULL;
    if (!hlsl)
       return;
 
-   hlsl->prg[i].vid_size_f  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(hlsl->prg[i].f_ctable, NULL, "$IN.video_size");
-   hlsl->prg[i].tex_size_f  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(hlsl->prg[i].f_ctable, NULL, "$IN.texture_size");
-   hlsl->prg[i].out_size_f  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(hlsl->prg[i].f_ctable, NULL, "$IN.output_size");
-   hlsl->prg[i].frame_cnt_f = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(hlsl->prg[i].f_ctable, NULL, "$IN.frame_count");
-   hlsl->prg[i].frame_dir_f = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(hlsl->prg[i].f_ctable, NULL, "$IN.frame_direction");
-   hlsl->prg[i].vid_size_v  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(hlsl->prg[i].v_ctable, NULL, "$IN.video_size");
-   hlsl->prg[i].tex_size_v  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(hlsl->prg[i].v_ctable, NULL, "$IN.texture_size");
-   hlsl->prg[i].out_size_v  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(hlsl->prg[i].v_ctable, NULL, "$IN.output_size");
-   hlsl->prg[i].frame_cnt_v = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(hlsl->prg[i].v_ctable, NULL, "$IN.frame_count");
-   hlsl->prg[i].frame_dir_v = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(hlsl->prg[i].v_ctable, NULL, "$IN.frame_direction");
-   hlsl->prg[i].mvp         = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(hlsl->prg[i].v_ctable, NULL, "$modelViewProj");
-   d3d_matrix_identity(&hlsl->prg[i].mvp_val);
+   program                                   = &hlsl->prg[i];
+
+   if (!program)
+      return;
+
+   if (program->f_ctable)
+   {
+      hlsl->prg[i].vid_size_f  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->f_ctable, NULL, "$IN.video_size");
+      hlsl->prg[i].tex_size_f  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->f_ctable, NULL, "$IN.texture_size");
+      hlsl->prg[i].out_size_f  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->f_ctable, NULL, "$IN.output_size");
+      hlsl->prg[i].frame_cnt_f = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->f_ctable, NULL, "$IN.frame_count");
+      hlsl->prg[i].frame_dir_f = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->f_ctable, NULL, "$IN.frame_direction");
+   }
+
+   if (program->v_ctable)
+   {
+      hlsl->prg[i].vid_size_v  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->v_ctable, NULL, "$IN.video_size");
+      hlsl->prg[i].tex_size_v  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->v_ctable, NULL, "$IN.texture_size");
+      hlsl->prg[i].out_size_v  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->v_ctable, NULL, "$IN.output_size");
+      hlsl->prg[i].frame_cnt_v = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->v_ctable, NULL, "$IN.frame_count");
+      hlsl->prg[i].frame_dir_v = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->v_ctable, NULL, "$IN.frame_direction");
+      hlsl->prg[i].mvp         = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->v_ctable, NULL, "$modelViewProj");
+   }
+
+   d3d_matrix_identity(&program->mvp_val);
 }
 
 static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
