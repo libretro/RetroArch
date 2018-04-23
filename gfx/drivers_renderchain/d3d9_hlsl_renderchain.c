@@ -30,6 +30,7 @@
 #include "../video_driver.h"
 
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 typedef struct hlsl_d3d9_renderchain
