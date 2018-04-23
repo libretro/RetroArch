@@ -448,8 +448,22 @@ static INLINE void d3d9_surface_free(LPDIRECT3DSURFACE9 surf)
       IDirect3DSurface9_Release(surf);
 }
 
-bool d3d9_device_get_render_target_data(void *dev,
-      void *_src, void *_dst);
+static INLINE bool d3d9_device_get_render_target_data(
+      void *_dev,
+      void *_src, void *_dst)
+{
+#ifndef _XBOX
+   LPDIRECT3DSURFACE9 src = (LPDIRECT3DSURFACE9)_src;
+   LPDIRECT3DSURFACE9 dst = (LPDIRECT3DSURFACE9)_dst;
+   LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
+   if (dev &&
+         SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(
+               dev, src, dst)))
+      return true;
+#endif
+
+   return false;
+}
 
 static INLINE bool d3d9_device_get_render_target(
       LPDIRECT3DDEVICE9 dev,
@@ -490,17 +504,26 @@ static INLINE bool d3d9_get_render_state(
    return true;
 }
 
-void d3d9_device_set_render_target(void *dev, unsigned idx,
-      void *data);
-
-bool d3d9_device_create_offscreen_plain_surface(
-      void *dev,
+static INLINE bool d3d9_device_create_offscreen_plain_surface(
+      void *_dev,
       unsigned width,
       unsigned height,
       unsigned format,
       unsigned pool,
       void **surf_data,
-      void *data);
+      void *data)
+{
+#ifndef _XBOX
+   LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
+   if (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
+               width, height,
+               (D3DFORMAT)format, (D3DPOOL)pool,
+               (LPDIRECT3DSURFACE9*)surf_data,
+               (HANDLE*)data)))
+      return true;
+#endif
+   return false;
+}
 
 static INLINE bool d3d9_surface_lock_rect(LPDIRECT3DSURFACE9 surf,
       D3DLOCKED_RECT *data2)
@@ -564,7 +587,15 @@ static INLINE bool d3d9_device_get_backbuffer(
    return false;
 }
 
-void d3d9_device_free(void *dev, void *pd3d);
+static INLINE void d3d9_device_free(void *_dev, void *_pd3d)
+{
+   LPDIRECT3D9      pd3d = (LPDIRECT3D9)_pd3d;
+   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+   if (dev)
+      IDirect3DDevice9_Release(dev);
+   if (pd3d)
+      IDirect3D9_Release(pd3d);
+}
 
 void *d3d9_create(void);
 

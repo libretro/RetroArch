@@ -249,15 +249,12 @@ static void *d3d9_texture_new_from_file(
       PALETTEENTRY *palette)
 {
    void *buf  = NULL;
-   HRESULT hr = D3D9CreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
-         path, width, height, miplevels, usage, format,
-         (D3DPOOL)pool, filter, mipfilter, color_key,
-         (D3DXIMAGE_INFO*)src_info_data,
-         palette, (struct IDirect3DTexture9**)&buf);
-
-   if (FAILED(hr))
+   if (FAILED(D3D9CreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
+               path, width, height, miplevels, usage, format,
+               (D3DPOOL)pool, filter, mipfilter, color_key,
+               (D3DXIMAGE_INFO*)src_info_data,
+               palette, (struct IDirect3DTexture9**)&buf)))
       return NULL;
-
    return buf;
 }
 #endif
@@ -289,13 +286,13 @@ void *d3d9_texture_new(void *_dev,
    if (want_mipmap)
       usage |= D3DUSAGE_AUTOGENMIPMAP;
 #endif
+
    if (FAILED(IDirect3DDevice9_CreateTexture(dev,
                width, height, miplevels, usage,
                (D3DFORMAT)format,
                (D3DPOOL)pool,
                (struct IDirect3DTexture9**)&buf, NULL)))
       return NULL;
-
    return buf;
 }
 
@@ -312,9 +309,10 @@ void *d3d9_vertex_buffer_new(void *_dev,
          usage = D3DUSAGE_SOFTWAREPROCESSING;
 #endif         
 
-   if (FAILED(IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf,
-         (D3DPOOL)pool,
-         (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL)))
+   if (FAILED(IDirect3DDevice9_CreateVertexBuffer(
+               dev, length, usage, fvf,
+               (D3DPOOL)pool,
+               (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL)))
       return NULL;
 
    return buf;
@@ -337,45 +335,6 @@ void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
       d3d9_vertex_declaration_free(vertex_decl);
       vertex_decl = NULL;
    }
-}
-
-
-bool d3d9_device_create_offscreen_plain_surface(
-      void *_dev,
-      unsigned width,
-      unsigned height,
-      unsigned format,
-      unsigned pool,
-      void **surf_data,
-      void *data)
-{
-#ifndef _XBOX
-   LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
-   if (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
-               width, height,
-               (D3DFORMAT)format, (D3DPOOL)pool,
-               (LPDIRECT3DSURFACE9*)surf_data,
-               (HANDLE*)data)))
-      return true;
-#endif
-
-   return false;
-}
-
-bool d3d9_device_get_render_target_data(void *_dev,
-      void *_src, void *_dst)
-{
-#ifndef _XBOX
-   LPDIRECT3DSURFACE9 src = (LPDIRECT3DSURFACE9)_src;
-   LPDIRECT3DSURFACE9 dst = (LPDIRECT3DSURFACE9)_dst;
-   LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
-   if (dev &&
-         SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(
-               dev, src, dst)))
-      return true;
-#endif
-
-   return false;
 }
 
 static bool d3d9_reset_internal(void *data,
@@ -476,16 +435,6 @@ bool d3d9_reset(void *dev, void *d3dpp)
 #endif
 
    return false;
-}
-
-void d3d9_device_free(void *_dev, void *_pd3d)
-{
-   LPDIRECT3D9      pd3d = (LPDIRECT3D9)_pd3d;
-   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
-   if (dev)
-      IDirect3DDevice9_Release(dev);
-   if (pd3d)
-      IDirect3D9_Release(pd3d);
 }
 
 bool d3d9x_create_font_indirect(void *_dev,
