@@ -49,10 +49,6 @@
 #define ID3DXConstantTable_SetFloatArray(p,a,b,c,d) (p)->SetFloatArray(a,b,c,d)
 #endif
 
-#ifndef ID3DXConstantTable_SetMatrix
-#define ID3DXConstantTable_SetMatrix(p,a,b,c) ((p)->SetMatrix(a,b,c))
-#endif
-
 #else
 
 #ifndef ID3DXConstantTable_SetDefaults
