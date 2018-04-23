@@ -544,6 +544,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
    D3DBlob                            ps_code = NULL;
    D3DBlob                            gs_code = NULL;
    D3DBlob                            cs_code = NULL;
+   settings_t                  *     settings = config_get_ptr();
    D3D12_GRAPHICS_PIPELINE_STATE_DESC desc    = { d3d12->desc.rootSignature };
 
    desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
@@ -643,134 +644,137 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       gs_code = NULL;
    }
 
+   if (string_is_equal(settings->arrays.menu_driver, "xmb"))
    {
-      static const char simple_snow[] =
-#include "d3d_shaders/simple_snow_sm4.hlsl.h"
-            ;
-      static const char snow[] =
-#include "d3d_shaders/snow_sm4.hlsl.h"
-            ;
-      static const char bokeh[] =
-#include "d3d_shaders/bokeh_sm4.hlsl.h"
-            ;
-      static const char snowflake[] =
-#include "d3d_shaders/snowflake_sm4.hlsl.h"
-            ;
-
-      D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
-         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
-           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
-           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-      };
-
-      desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-      desc.InputLayout.pInputElementDescs = inputElementDesc;
-      desc.InputLayout.NumElements        = countof(inputElementDesc);
-
-      if (!d3d_compile(simple_snow, sizeof(simple_snow), NULL, "VSMain", "vs_5_0", &vs_code))
-         goto error;
-      if (!d3d_compile(simple_snow, sizeof(simple_snow), NULL, "PSMain", "ps_5_0", &ps_code))
-         goto error;
-
-      if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_3]))
-         goto error;
-
-      Release(vs_code);
-      Release(ps_code);
-      vs_code = NULL;
-      ps_code = NULL;
-
-      if (!d3d_compile(snow, sizeof(snow), NULL, "VSMain", "vs_5_0", &vs_code))
-         goto error;
-      if (!d3d_compile(snow, sizeof(snow), NULL, "PSMain", "ps_5_0", &ps_code))
-         goto error;
-
-      if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_4]))
-         goto error;
-
-      Release(vs_code);
-      Release(ps_code);
-      vs_code = NULL;
-      ps_code = NULL;
-
-      if (!d3d_compile(bokeh, sizeof(bokeh), NULL, "VSMain", "vs_5_0", &vs_code))
-         goto error;
-      if (!d3d_compile(bokeh, sizeof(bokeh), NULL, "PSMain", "ps_5_0", &ps_code))
-         goto error;
-
-      if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_5]))
-         goto error;
-
-      Release(vs_code);
-      Release(ps_code);
-      vs_code = NULL;
-      ps_code = NULL;
-
-      if (!d3d_compile(snowflake, sizeof(snowflake), NULL, "VSMain", "vs_5_0", &vs_code))
-         goto error;
-      if (!d3d_compile(snowflake, sizeof(snowflake), NULL, "PSMain", "ps_5_0", &ps_code))
-         goto error;
-
-      if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_6]))
-         goto error;
-
-      Release(vs_code);
-      Release(ps_code);
-      vs_code = NULL;
-      ps_code = NULL;
-   }
-
-   {
-      static const char ribbon[] =
+      {
+         static const char ribbon[] =
 #include "d3d_shaders/ribbon_sm4.hlsl.h"
             ;
-      static const char ribbon_simple[] =
+         static const char ribbon_simple[] =
 #include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
             ;
 
-      D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
-         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
-           D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-      };
+         D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
+               D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         };
 
-      desc.BlendState.RenderTarget[0].SrcBlend  = D3D12_BLEND_ONE;
-      desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
-      desc.PrimitiveTopologyType                = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-      desc.InputLayout.pInputElementDescs       = inputElementDesc;
-      desc.InputLayout.NumElements              = countof(inputElementDesc);
+         desc.BlendState.RenderTarget[0].SrcBlend  = D3D12_BLEND_ONE;
+         desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+         desc.PrimitiveTopologyType                = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+         desc.InputLayout.pInputElementDescs       = inputElementDesc;
+         desc.InputLayout.NumElements              = countof(inputElementDesc);
 
-      if (!d3d_compile(ribbon, sizeof(ribbon), NULL, "VSMain", "vs_5_0", &vs_code))
-         goto error;
-      if (!d3d_compile(ribbon, sizeof(ribbon), NULL, "PSMain", "ps_5_0", &ps_code))
-         goto error;
+         if (!d3d_compile(ribbon, sizeof(ribbon), NULL, "VSMain", "vs_5_0", &vs_code))
+            goto error;
+         if (!d3d_compile(ribbon, sizeof(ribbon), NULL, "PSMain", "ps_5_0", &ps_code))
+            goto error;
 
-      if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU]))
-         goto error;
+         if (!d3d12_init_pipeline(
+                  d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU]))
+            goto error;
 
-      Release(vs_code);
-      Release(ps_code);
-      vs_code = NULL;
-      ps_code = NULL;
+         Release(vs_code);
+         Release(ps_code);
+         vs_code = NULL;
+         ps_code = NULL;
 
-      if (!d3d_compile(ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "vs_5_0", &vs_code))
-         goto error;
-      if (!d3d_compile(ribbon_simple, sizeof(ribbon_simple), NULL, "PSMain", "ps_5_0", &ps_code))
-         goto error;
+         if (!d3d_compile(ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "vs_5_0", &vs_code))
+            goto error;
+         if (!d3d_compile(ribbon_simple, sizeof(ribbon_simple), NULL, "PSMain", "ps_5_0", &ps_code))
+            goto error;
 
-      if (!d3d12_init_pipeline(
-                d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_2]))
-         goto error;
+         if (!d3d12_init_pipeline(
+                  d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_2]))
+            goto error;
 
-      Release(vs_code);
-      Release(ps_code);
-      vs_code = NULL;
-      ps_code = NULL;
+         Release(vs_code);
+         Release(ps_code);
+         vs_code = NULL;
+         ps_code = NULL;
+      }
+
+      {
+         static const char simple_snow[] =
+#include "d3d_shaders/simple_snow_sm4.hlsl.h"
+            ;
+         static const char snow[] =
+#include "d3d_shaders/snow_sm4.hlsl.h"
+            ;
+         static const char bokeh[] =
+#include "d3d_shaders/bokeh_sm4.hlsl.h"
+            ;
+         static const char snowflake[] =
+#include "d3d_shaders/snowflake_sm4.hlsl.h"
+            ;
+
+         D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
+               D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
+               D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         };
+
+         desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+         desc.InputLayout.pInputElementDescs = inputElementDesc;
+         desc.InputLayout.NumElements        = countof(inputElementDesc);
+
+         if (!d3d_compile(simple_snow, sizeof(simple_snow), NULL, "VSMain", "vs_5_0", &vs_code))
+            goto error;
+         if (!d3d_compile(simple_snow, sizeof(simple_snow), NULL, "PSMain", "ps_5_0", &ps_code))
+            goto error;
+
+         if (!d3d12_init_pipeline(
+                  d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_3]))
+            goto error;
+
+         Release(vs_code);
+         Release(ps_code);
+         vs_code = NULL;
+         ps_code = NULL;
+
+         if (!d3d_compile(snow, sizeof(snow), NULL, "VSMain", "vs_5_0", &vs_code))
+            goto error;
+         if (!d3d_compile(snow, sizeof(snow), NULL, "PSMain", "ps_5_0", &ps_code))
+            goto error;
+
+         if (!d3d12_init_pipeline(
+                  d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_4]))
+            goto error;
+
+         Release(vs_code);
+         Release(ps_code);
+         vs_code = NULL;
+         ps_code = NULL;
+
+         if (!d3d_compile(bokeh, sizeof(bokeh), NULL, "VSMain", "vs_5_0", &vs_code))
+            goto error;
+         if (!d3d_compile(bokeh, sizeof(bokeh), NULL, "PSMain", "ps_5_0", &ps_code))
+            goto error;
+
+         if (!d3d12_init_pipeline(
+                  d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_5]))
+            goto error;
+
+         Release(vs_code);
+         Release(ps_code);
+         vs_code = NULL;
+         ps_code = NULL;
+
+         if (!d3d_compile(snowflake, sizeof(snowflake), NULL, "VSMain", "vs_5_0", &vs_code))
+            goto error;
+         if (!d3d_compile(snowflake, sizeof(snowflake), NULL, "PSMain", "ps_5_0", &ps_code))
+            goto error;
+
+         if (!d3d12_init_pipeline(
+                  d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_6]))
+            goto error;
+
+         Release(vs_code);
+         Release(ps_code);
+         vs_code = NULL;
+         ps_code = NULL;
+      }
    }
 
    {

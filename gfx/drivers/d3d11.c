@@ -850,68 +850,71 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          goto error;
    }
 
+   if (string_is_equal(settings->arrays.menu_driver, "xmb"))
    {
-      D3D11_INPUT_ELEMENT_DESC desc[] = {
-         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      };
+      {
+         D3D11_INPUT_ELEMENT_DESC desc[] = {
+            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+         };
 
-      static const char ribbon[] =
+         static const char ribbon[] =
 #include "d3d_shaders/ribbon_sm4.hlsl.h"
             ;
-      static const char ribbon_simple[] =
+         static const char ribbon_simple[] =
 #include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
             ;
 
-      if (!d3d11_init_shader(
-                d3d11->device, ribbon, sizeof(ribbon), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU]))
-         goto error;
+         if (!d3d11_init_shader(
+                  d3d11->device, ribbon, sizeof(ribbon), NULL, "VSMain", "PSMain", NULL, desc,
+                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU]))
+            goto error;
 
-      if (!d3d11_init_shader(
-                d3d11->device, ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "PSMain", NULL,
-                desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2]))
-         goto error;
-   }
+         if (!d3d11_init_shader(
+                  d3d11->device, ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "PSMain", NULL,
+                  desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2]))
+            goto error;
+      }
 
-   {
-      D3D11_INPUT_ELEMENT_DESC desc[] = {
-         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
-         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      };
+      {
+         D3D11_INPUT_ELEMENT_DESC desc[] = {
+            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
+               D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
+               D3D11_INPUT_PER_VERTEX_DATA, 0 },
+         };
 
-      static const char simple_snow[] =
+         static const char simple_snow[] =
 #include "d3d_shaders/simple_snow_sm4.hlsl.h"
             ;
-      static const char snow[] =
+         static const char snow[] =
 #include "d3d_shaders/snow_sm4.hlsl.h"
             ;
-      static const char bokeh[] =
+         static const char bokeh[] =
 #include "d3d_shaders/bokeh_sm4.hlsl.h"
             ;
-      static const char snowflake[] =
+         static const char snowflake[] =
 #include "d3d_shaders/snowflake_sm4.hlsl.h"
             ;
 
-      if (!d3d11_init_shader(
-                d3d11->device, simple_snow, sizeof(simple_snow), NULL, "VSMain", "PSMain", NULL,
-                desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3]))
-         goto error;
-      if (!d3d11_init_shader(
-                d3d11->device, snow, sizeof(snow), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_4]))
-         goto error;
+         if (!d3d11_init_shader(
+                  d3d11->device, simple_snow, sizeof(simple_snow), NULL, "VSMain", "PSMain", NULL,
+                  desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3]))
+            goto error;
+         if (!d3d11_init_shader(
+                  d3d11->device, snow, sizeof(snow), NULL, "VSMain", "PSMain", NULL, desc,
+                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_4]))
+            goto error;
 
-      if (!d3d11_init_shader(
-                d3d11->device, bokeh, sizeof(bokeh), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_5]))
-         goto error;
+         if (!d3d11_init_shader(
+                  d3d11->device, bokeh, sizeof(bokeh), NULL, "VSMain", "PSMain", NULL, desc,
+                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_5]))
+            goto error;
 
-      if (!d3d11_init_shader(
-                d3d11->device, snowflake, sizeof(snowflake), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_6]))
-         goto error;
+         if (!d3d11_init_shader(
+                  d3d11->device, snowflake, sizeof(snowflake), NULL, "VSMain", "PSMain", NULL, desc,
+                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_6]))
+            goto error;
+      }
    }
 
    {
