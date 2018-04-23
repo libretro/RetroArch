@@ -407,37 +407,6 @@ static void materialui_draw_tab(
          &tab_color[0]);
 }
 
-/* Returns the OSK key at a given position */
-static int materialui_osk_ptr_at_pos(void *data, int x, int y,
-      unsigned width, unsigned height)
-{
-   unsigned i;
-   int ptr_width, ptr_height;
-   materialui_handle_t *mui = (materialui_handle_t*)data;
-
-   if (!mui)
-      return -1;
-
-   ptr_width  = width / 11;
-   ptr_height = height / 10;
-
-   if (ptr_width >= ptr_height)
-      ptr_width = ptr_height;
-
-   for (i = 0; i < 44; i++)
-   {
-      int line_y    = (i / 11)*height/10.0;
-      int ptr_x     = width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width;
-      int ptr_y     = height/2.0 + ptr_height*1.5 + line_y - ptr_height;
-
-      if (x > ptr_x && x < ptr_x + ptr_width
-       && y > ptr_y && y < ptr_y + ptr_height)
-         return i;
-   }
-
-   return -1;
-}
-
 /* Draw the tabs background */
 static void materialui_draw_tab_begin(
       materialui_handle_t *mui,
@@ -2813,7 +2782,7 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    NULL,
    NULL,
-   materialui_osk_ptr_at_pos,
+   menu_display_osk_ptr_at_pos,
    NULL,
    NULL,
    materialui_pointer_down,

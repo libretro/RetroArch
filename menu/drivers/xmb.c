@@ -800,36 +800,6 @@ static void xmb_messagebox(void *data, const char *message)
    xmb->box_message = strdup(message);
 }
 
-/* Returns the OSK key at a given position */
-static int xmb_osk_ptr_at_pos(void *data, int x, int y, unsigned width, unsigned height)
-{
-   unsigned i;
-   int ptr_width, ptr_height;
-   xmb_handle_t *xmb = (xmb_handle_t*)data;
-
-   if (!xmb)
-      return -1;
-
-   ptr_width  = width  / 11;
-   ptr_height = height / 10;
-
-   if (ptr_width >= ptr_height)
-      ptr_width = ptr_height;
-
-   for (i = 0; i < 44; i++)
-   {
-      int line_y    = (i / 11)*height/10.0;
-      int ptr_x     = width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width;
-      int ptr_y     = height/2.0 + ptr_height*1.5 + line_y - ptr_height;
-
-      if (x > ptr_x && x < ptr_x + ptr_width
-       && y > ptr_y && y < ptr_y + ptr_height)
-         return i;
-   }
-
-   return -1;
-}
-
 static void xmb_render_messagebox_internal(
       video_frame_info_t *video_info,
       xmb_handle_t *xmb, const char *message, float* coord_white)
@@ -5139,7 +5109,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_update_thumbnail_image,
    xmb_set_thumbnail_system,
    xmb_set_thumbnail_content,
-   xmb_osk_ptr_at_pos,
+   menu_display_osk_ptr_at_pos,
    xmb_update_savestate_thumbnail_path,
    xmb_update_savestate_thumbnail_image
 };

@@ -745,11 +745,20 @@ void menu_display_draw_text(
 
 #define menu_display_set_alpha(color, alpha_value) (color[3] = color[7] = color[11] = color[15] = (alpha_value))
 
-font_data_t *menu_display_font(enum application_special_type type, float font_size,
+font_data_t *menu_display_font(
+      enum application_special_type type,
+      float font_size,
       bool video_is_threaded);
 
-void menu_display_reset_textures_list(const char *texture_path, const char *iconpath,
-      uintptr_t *item, enum texture_filter_type filter_type);
+void menu_display_reset_textures_list(
+      const char *texture_path,
+      const char *iconpath,
+      uintptr_t *item,
+      enum texture_filter_type filter_type);
+
+/* Returns the OSK key at a given position */
+int menu_display_osk_ptr_at_pos(void *data, int x, int y,
+      unsigned width, unsigned height);
 
 void menu_driver_destroy(void);
 
