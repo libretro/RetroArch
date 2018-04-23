@@ -802,7 +802,7 @@ static void xmb_messagebox(void *data, const char *message)
 
 static void xmb_render_keyboard(xmb_handle_t *xmb,
       video_frame_info_t *video_info,
-      const char *grid[], unsigned id)
+      char *grid[], unsigned id)
 {
    unsigned i;
    int ptr_width, ptr_height;
