@@ -502,7 +502,7 @@ bool d3d9x_create_font_indirect(void *_dev,
    return false;
 }
 
-void d3dxbuffer_release(void *data)
+void d3d9x_buffer_release(void *data)
 {
 #ifdef HAVE_D3DX
    LPD3DXBUFFER p = (LPD3DXBUFFER)data;

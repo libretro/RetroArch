@@ -451,7 +451,7 @@ static bool xdk360_video_font_create_shaders(xdk360_video_font_t * font, void *d
          (void**)&font->s_FontLocals.m_pFontVertexShader ))
       goto error;
 
-   d3dxbuffer_release(pShaderCode);
+   d3d9x_buffer_release(pShaderCode);
 
    if (!d3dx_compile_shader(font_hlsl_d3d9_program, sizeof(font_hlsl_d3d9_program)-1 ,
             NULL, NULL, "main_fragment", "ps.2.0", 0,&pShaderCode, NULL, NULL ))
@@ -461,13 +461,13 @@ static bool xdk360_video_font_create_shaders(xdk360_video_font_t * font, void *d
          (void**)&font->s_FontLocals.m_pFontPixelShader))
       goto error;
 
-   d3dxbuffer_release(pShaderCode);
+   d3d9x_buffer_release(pShaderCode);
 
    return true;
 
 error:
    if (pShaderCode)
-      d3dxbuffer_release(pShaderCode);
+      d3d9x_buffer_release(pShaderCode);
    d3d9_free_pixel_shader(font->d3d->dev,  font->s_FontLocals.m_pFontPixelShader);
    d3d9_free_vertex_shader(font->d3d->dev, font->s_FontLocals.m_pFontVertexShader);
    d3d9_vertex_declaration_free(font->s_FontLocals.m_pFontVertexDecl);

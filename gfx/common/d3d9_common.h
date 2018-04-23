@@ -598,7 +598,7 @@ void d3d9x_font_draw_text(void *data, void *sprite_data, void *string_data,
 
 void d3d9x_font_get_text_metrics(void *data, void *metrics);
 
-void d3dxbuffer_release(void *data);
+void d3d9x_buffer_release(void *data);
 
 void d3d9x_font_release(void *data);
 

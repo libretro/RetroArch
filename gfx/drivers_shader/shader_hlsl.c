@@ -273,8 +273,8 @@ static bool hlsl_compile_program(
 
    d3d_create_pixel_shader(d3dr, (const DWORD*)d3dx_get_buffer_ptr(code_f),  (void**)&program->fprg);
    d3d_create_vertex_shader(d3dr, (const DWORD*)d3dx_get_buffer_ptr(code_v), (void**)&program->vprg);
-   d3dxbuffer_release((void*)code_f);
-   d3dxbuffer_release((void*)code_v);
+   d3d9x_buffer_release((void*)code_f);
+   d3d9x_buffer_release((void*)code_v);
 
    return true;
 
@@ -284,8 +284,8 @@ error:
       RARCH_ERR("Fragment:\n%s\n", (char*)d3dx_get_buffer_ptr(listing_f));
    if (listing_v)
       RARCH_ERR("Vertex:\n%s\n", (char*)d3dx_get_buffer_ptr(listing_v));
-   d3dxbuffer_release((void*)listing_f);
-   d3dxbuffer_release((void*)listing_v);
+   d3d9x_buffer_release((void*)listing_f);
+   d3d9x_buffer_release((void*)listing_v);
 
    return false;
 }
