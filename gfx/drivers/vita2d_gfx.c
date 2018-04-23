@@ -790,6 +790,7 @@ static bool vita_get_current_sw_framebuffer(void *data,
 }
 
 static const video_poke_interface_t vita_poke_interface = {
+   NULL, /* get_flags */
    NULL,                /* set_coords */
    NULL,                /* set_mvp */
    vita_load_texture,

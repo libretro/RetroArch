@@ -1751,6 +1751,7 @@ static void d3d12_gfx_unload_texture(void* data, uintptr_t handle)
 }
 
 static const video_poke_interface_t d3d12_poke_interface = {
+   NULL, /* get_flags */
    NULL, /* set_coords */
    NULL, /* set_mvp */
    d3d12_gfx_load_texture,

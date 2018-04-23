@@ -694,6 +694,7 @@ struct aspect_ratio_elem
 
 typedef struct video_poke_interface
 {
+   uint32_t (*get_flags)(void *data);
    void (*set_coords)(void *handle_data, void *shader_data,
          const struct video_coords *coords);
    void (*set_mvp)(void *data, void *shader_data,
@@ -1284,6 +1285,8 @@ bool video_context_driver_get_context_data(void *data);
 bool video_context_driver_show_mouse(bool *bool_data);
 
 void video_context_driver_set_data(void *data);
+
+bool video_driver_get_flags(gfx_ctx_flags_t *flags);
 
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 

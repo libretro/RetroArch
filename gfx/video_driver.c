@@ -3280,11 +3280,17 @@ void video_context_driver_set_data(void *data)
    video_context_data = data;
 }
 
+bool video_driver_get_flags(gfx_ctx_flags_t *flags)
+{
+   if (!flags || !video_driver_poke || !video_driver_poke->get_flags)
+      return false;
+   flags->flags = video_driver_poke->get_flags(video_driver_data);
+   return true;
+}
+
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
 {
-   if (!flags)
-      return false;
-   if (!current_video_context.get_flags)
+   if (!flags || !current_video_context.get_flags)
       return false;
 
    if (deferred_video_context_driver_set_flags)

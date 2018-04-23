@@ -1584,6 +1584,7 @@ d3d10_get_hw_render_interface(void* data, const struct retro_hw_render_interface
 #endif
 
 static const video_poke_interface_t d3d10_poke_interface = {
+   NULL, /* get_flags */
    NULL, /* set_coords */
    NULL, /* set_mvp */
    d3d10_gfx_load_texture,

@@ -3579,20 +3579,38 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.video_max_swapchain_images,
-                  MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-                  max_swapchain_images,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+            {
+               gfx_ctx_flags_t flags;
+               bool customizable_swapchain_set = false;
+
+               if (video_driver_get_flags(&flags))
+                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
+                     customizable_swapchain_set = true;
+
+               flags.flags = 0;
+
+               if (video_context_driver_get_flags(&flags))
+                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
+                     customizable_swapchain_set = true;
+
+               if (customizable_swapchain_set)
+               {
+                  CONFIG_UINT(
+                        list, list_info,
+                        &settings->uints.video_max_swapchain_images,
+                        MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+                        MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+                        max_swapchain_images,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group,
+                        general_write_handler,
+                        general_read_handler);
+                  menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
+                  settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+                  settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               }
+            }
 
             if (string_is_equal(settings->arrays.video_driver, "gl"))
             {

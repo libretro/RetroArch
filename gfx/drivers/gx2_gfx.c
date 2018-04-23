@@ -1711,8 +1711,8 @@ static void wiiu_gfx_set_osd_msg(void *data,
 
 }
 
-static const video_poke_interface_t wiiu_poke_interface =
-{
+static const video_poke_interface_t wiiu_poke_interface = {
+   NULL, /* get_flags */
    NULL,                      /* set_coords */
    NULL,                      /* set_mvp */
    wiiu_gfx_load_texture,

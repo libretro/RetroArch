@@ -2302,7 +2302,17 @@ static float vulkan_get_refresh_rate(void *data)
    return 0.0f;
 }
 
+static uint32_t vulkan_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
+
+   return flags;
+}
+
 static const video_poke_interface_t vulkan_poke_interface = {
+   vulkan_get_flags,
    NULL,                   /* set_coords */
    NULL,                   /* set_mvp */
    vulkan_load_texture,

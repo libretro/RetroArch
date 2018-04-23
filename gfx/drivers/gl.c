@@ -2601,6 +2601,7 @@ static void gl_set_mvp(void *data, void *shader_data,
 }
 
 static const video_poke_interface_t gl_poke_interface = {
+   NULL, /* get_flags */
    gl_set_coords,
    gl_set_mvp,
    gl_load_texture,

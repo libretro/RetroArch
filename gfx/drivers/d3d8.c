@@ -1861,7 +1861,8 @@ static void d3d8_set_video_mode(void *data,
 }
 
 static const video_poke_interface_t d3d_poke_interface = {
-   NULL,                            /* set_coords */
+   NULL, /* get_flags */
+   NULL, /* set_coords */
    d3d8_set_mvp,
    d3d8_load_texture,
    d3d8_unload_texture,

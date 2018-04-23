@@ -1887,6 +1887,7 @@ static void d3d9_set_video_mode(void *data,
 }
 
 static const video_poke_interface_t d3d9_poke_interface = {
+   NULL, /* get_flags */
    NULL,                            /* set_coords */
    d3d9_set_mvp,
    d3d9_load_texture,
