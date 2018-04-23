@@ -574,6 +574,19 @@ void *d3d9x_constant_table_get_constant_by_name(void *_tbl,
    return NULL;
 }
 
+void d3d9x_constant_table_set_float_array(LPDIRECT3DDEVICE9 dev,
+      void *p, void *_handle, const void *_pf, unsigned count)
+{
+#if defined(HAVE_D3DX)
+   LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
+   D3DXHANDLE           handle  = (D3DXHANDLE)_handle;
+   CONST FLOAT              *pf = (CONST FLOAT*)_pf;
+   if (consttbl && dev)
+      consttbl->lpVtbl->SetFloatArray(consttbl, dev, handle, pf, 
+            (UINT)count);
+#endif
+}
+
 void d3d9x_constant_table_set_defaults(LPDIRECT3DDEVICE9 dev,
       void *p)
 {

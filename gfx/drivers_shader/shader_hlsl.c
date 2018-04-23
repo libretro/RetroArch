@@ -39,22 +39,6 @@
 #include "../drivers/d3d_shaders/opaque.hlsl.d3d9.h"
 #include "shader_hlsl.h"
 
-#ifdef __cplusplus
-
-#ifndef ID3DXConstantTable_SetFloatArray
-#define ID3DXConstantTable_SetFloatArray(p,a,b,c,d) (p)->SetFloatArray(a,b,c,d)
-#endif
-
-#else
-
-#ifndef ID3DXConstantTable_SetFloatArray
-#define ID3DXConstantTable_SetFloatArray(p,a,b,c,d) (p)->lpVtbl->SetFloatArray(p,a,b,c,d)
-#endif
-
-#endif
-
-#define set_param_2f(param, xy, constanttable) ID3DXConstantTable_SetFloatArray(constanttable, d3dr, param, xy, 2)
-
 struct shader_program_hlsl_data
 {
    LPDIRECT3DVERTEXSHADER9 vprg;
@@ -183,11 +167,11 @@ static void hlsl_set_params(void *dat, void *shader_data)
    d3d9x_constant_table_set_defaults(d3dr, program->v_ctable);
 
    if (program->vid_size_f)
-      set_param_2f(program->vid_size_f, ori_size, program->f_ctable);
+      d3d9x_constant_table_set_float_array(d3dr, program->f_ctable, (void*)program->vid_size_f, ori_size, 2);
    if (program->tex_size_f)
-      set_param_2f(program->tex_size_f, tex_size, program->f_ctable);
+      d3d9x_constant_table_set_float_array(d3dr, program->f_ctable, (void*)program->tex_size_f, tex_size, 2);
    if (program->out_size_f)
-      set_param_2f(program->out_size_f, out_size, program->f_ctable);
+      d3d9x_constant_table_set_float_array(d3dr, program->f_ctable, (void*)program->out_size_f, out_size, 2);
 
    if (program->frame_cnt_f)
       d3d9x_constant_table_set_float(program->f_ctable,
@@ -199,11 +183,11 @@ static void hlsl_set_params(void *dat, void *shader_data)
             state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    if (program->vid_size_v)
-      set_param_2f(program->vid_size_v, ori_size, program->v_ctable);
+      d3d9x_constant_table_set_float_array(d3dr, program->v_ctable, (void*)program->vid_size_v, ori_size, 2);
    if (program->tex_size_v)
-      set_param_2f(program->tex_size_v, tex_size, program->v_ctable);
+      d3d9x_constant_table_set_float_array(d3dr, program->v_ctable, (void*)program->tex_size_v, tex_size, 2);
    if (program->out_size_v)
-      set_param_2f(program->out_size_v, out_size, program->v_ctable);
+      d3d9x_constant_table_set_float_array(d3dr, program->v_ctable, (void*)program->out_size_v, out_size, 2);
 
    if (program->frame_cnt_v)
       d3d9x_constant_table_set_float(program->v_ctable,

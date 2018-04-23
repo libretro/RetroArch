@@ -656,6 +656,9 @@ bool d3d9x_compile_shader_from_file(
       void *pperrormsgs,
       void *ppconstanttable);
 
+void d3d9x_constant_table_set_float_array(LPDIRECT3DDEVICE9 dev,
+      void *p, void *_handle, const void *_pf, unsigned count);
+
 void d3d9x_constant_table_set_defaults(LPDIRECT3DDEVICE9 dev,
       void *p);
 
