@@ -41,19 +41,11 @@
 
 #ifdef __cplusplus
 
-#ifndef ID3DXConstantTable_SetDefaults
-#define ID3DXConstantTable_SetDefaults(p,a) (p)->SetDefaults(a);
-#endif
-
 #ifndef ID3DXConstantTable_SetFloatArray
 #define ID3DXConstantTable_SetFloatArray(p,a,b,c,d) (p)->SetFloatArray(a,b,c,d)
 #endif
 
 #else
-
-#ifndef ID3DXConstantTable_SetDefaults
-#define ID3DXConstantTable_SetDefaults(p,a) (p)->lpVtbl->SetDefaults(p,a)
-#endif
 
 #ifndef ID3DXConstantTable_SetFloatArray
 #define ID3DXConstantTable_SetFloatArray(p,a,b,c,d) (p)->lpVtbl->SetFloatArray(p,a,b,c,d)
@@ -187,8 +179,8 @@ static void hlsl_set_params(void *dat, void *shader_data)
    out_size[0]                              = (float)out_width;
    out_size[1]                              = (float)out_height;
 
-   ID3DXConstantTable_SetDefaults(program->f_ctable, d3dr);
-   ID3DXConstantTable_SetDefaults(program->v_ctable, d3dr);
+   d3d9x_constant_table_set_defaults(d3dr, program->f_ctable);
+   d3d9x_constant_table_set_defaults(d3dr, program->v_ctable);
 
    if (program->vid_size_f)
       set_param_2f(program->vid_size_f, ori_size, program->f_ctable);

@@ -656,6 +656,9 @@ bool d3d9x_compile_shader_from_file(
       void *pperrormsgs,
       void *ppconstanttable);
 
+void d3d9x_constant_table_set_defaults(LPDIRECT3DDEVICE9 dev,
+      void *p);
+
 void d3d9x_constant_table_set_matrix(LPDIRECT3DDEVICE9 dev,
       void *p, void *data, const void *matrix);
 

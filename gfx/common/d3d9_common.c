@@ -574,6 +574,16 @@ void *d3d9x_constant_table_get_constant_by_name(void *_tbl,
    return NULL;
 }
 
+void d3d9x_constant_table_set_defaults(LPDIRECT3DDEVICE9 dev,
+      void *p)
+{
+#if defined(HAVE_D3DX)
+   LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
+   if (consttbl && dev)
+      consttbl->lpVtbl->SetDefaults(consttbl, dev);
+#endif
+}
+
 void d3d9x_constant_table_set_matrix(LPDIRECT3DDEVICE9 dev,
       void *p,
       void *data, const void *_matrix)
