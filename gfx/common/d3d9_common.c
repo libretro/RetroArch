@@ -611,6 +611,20 @@ const void *d3d9x_get_buffer_ptr(void *data)
    return NULL;
 }
 
+void *d3d9x_constant_table_get_constant_by_name(void *_tbl,
+      void *_handle, void *_name)
+{
+#if defined(HAVE_D3DX)
+   D3DXHANDLE        handle     = (D3DXHANDLE)_handle;
+   LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)_tbl;
+   LPCSTR              name     = (LPCSTR)_name;
+   if (consttbl && handle && name)
+      return consttbl->lpVtbl->GetConstantByName(consttbl,
+            handle, name);
+#endif
+   return NULL;
+}
+
 const bool d3d9x_constant_table_set_float(void *p,
       void *a,
       const void *b, float val)
