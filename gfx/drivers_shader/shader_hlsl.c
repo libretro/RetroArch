@@ -605,6 +605,21 @@ static struct video_shader *hlsl_get_current_shader(void *data)
    return NULL;
 }
 
+static enum gfx_wrap_type hlsl_wrap_type(void *data, unsigned idx)
+{
+#if 0
+   /* TODO/FIXME - actual implementation */
+#endif
+   return RARCH_WRAP_BORDER;
+}
+
+static bool hlsl_set_coords(void *handle_data,
+      void *shader_data, const struct video_coords *coords)
+{
+   /* TODO/FIXME - actual implementation */
+   return false;
+}
+
 const shader_backend_t hlsl_backend = {
    hlsl_init,
    NULL, /* hlsl_init_menu_shaders */
@@ -615,9 +630,9 @@ const shader_backend_t hlsl_backend = {
    hlsl_use,
    hlsl_num,
    hlsl_filter_type,
-   NULL,              /* hlsl_wrap_type  */
+   hlsl_wrap_type,
    hlsl_shader_scale,
-   NULL,              /* hlsl_set_coords */
+   hlsl_set_coords,
    hlsl_set_mvp,
    NULL,              /* hlsl_get_prev_textures */
    hlsl_get_feedback_pass,
