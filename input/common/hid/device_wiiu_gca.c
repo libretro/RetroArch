@@ -193,12 +193,13 @@ static void *wiiu_gca_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 
 static void wiiu_gca_pad_deinit(void *data)
 {
-  gca_pad_t *pad = (gca_pad_t *)data;
+   gca_pad_t *pad = (gca_pad_t *)data;
 
-  if(pad)
-  {
-    free(pad);
-  }
+   if(pad)
+   {
+      input_autoconfigure_disconnect(pad->slot, wiiu_gca_pad_connection.get_name(pad));
+      free(pad);
+   }
 }
 
 static void wiiu_gca_get_buttons(void *data, input_bits_t *state)
@@ -278,7 +279,6 @@ static unsigned decode_axis(unsigned axis)
 {
   unsigned positive = AXIS_POS_GET(axis);
   unsigned negative = AXIS_NEG_GET(axis);
-  RARCH_LOG("[gca]: positive: %ud negative: %ud\n", positive, negative);
 
   return positive >= 4 ? negative : positive;
 }
@@ -286,7 +286,6 @@ static unsigned decode_axis(unsigned axis)
 static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
 {
    axis = decode_axis(axis);
-   RARCH_LOG("[gca]: decoded axis: %d\n", axis);
    int16_t val;
    gca_pad_t *pad = (gca_pad_t *)data;
 
@@ -310,7 +309,6 @@ static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
    if(val > 0x1000 || val < -0x1000)
       return 0;
 
-   RARCH_LOG("[gca]: reading axis %d: %04x\n", axis, val);
    return val;
 }
 

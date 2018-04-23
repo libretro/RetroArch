@@ -21,6 +21,7 @@
 #include "../../connect/joypad_connection.h"
 #include "../../include/hid_driver.h"
 #include "../../../verbosity.h"
+#include "../../../tasks/tasks_internal.h"
 
 typedef struct hid_device {
   void *(*init)(void *handle);

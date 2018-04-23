@@ -236,6 +236,9 @@ static void *ds3_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 static void ds3_pad_deinit(void *data)
 {
    ds3_instance_t *pad = (ds3_instance_t *)data;
+   if(pad) {
+      input_autoconfigure_disconnect(pad->slot, ds3_pad_connection.get_name(pad));
+   }
 }
 
 static void ds3_get_buttons(void *data, input_bits_t *state)
