@@ -1035,9 +1035,6 @@ ifeq ($(HAVE_PLAIN_DRM), 1)
    LIBS += -ldrm
 endif
 
-OBJ += \
-		 gfx/drivers_renderchain/null_renderchain.o
-
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \

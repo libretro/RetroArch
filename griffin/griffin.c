@@ -394,7 +394,6 @@ VIDEO DRIVER
 #include "../gfx/drivers/drm_gfx.c"
 #endif
 
-#include "../gfx/drivers_renderchain/null_renderchain.c"
 #include "../gfx/display_servers/dispserv_null.c"
 
 #ifdef HAVE_OPENGL

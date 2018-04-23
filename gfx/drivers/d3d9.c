@@ -138,7 +138,6 @@ static bool d3d9_init_imports(d3d_video_t *d3d)
 
 extern d3d_renderchain_driver_t cg_d3d9_renderchain;
 extern d3d_renderchain_driver_t hlsl_d3d9_renderchain;
-extern d3d_renderchain_driver_t null_d3d_renderchain;
 
 static bool renderchain_d3d_init_first(
       enum gfx_ctx_api api,
@@ -157,7 +156,6 @@ static bool renderchain_d3d_init_first(
 #if defined(_WIN32) && defined(HAVE_HLSL)
                &hlsl_d3d9_renderchain,
 #endif
-               &null_d3d_renderchain,
                NULL
             };
             unsigned i;
