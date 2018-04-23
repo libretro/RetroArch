@@ -524,17 +524,23 @@ static void hlsl_deinit(void *data)
 static void hlsl_use(void *data, void *shader_data,
       unsigned idx, bool set_active)
 {
-   hlsl_shader_data_t *hlsl      = (hlsl_shader_data_t*)shader_data;
-   LPDIRECT3DDEVICE9        d3dr = hlsl ? (LPDIRECT3DDEVICE9)hlsl->dev : NULL;
+   hlsl_shader_data_t            *hlsl      = (hlsl_shader_data_t*)shader_data;
+   LPDIRECT3DDEVICE9                  d3dr  = hlsl ? (LPDIRECT3DDEVICE9)hlsl->dev : NULL;
+   struct shader_program_hlsl_data *program =  NULL;
 
-   if (!hlsl || !hlsl->prg[idx].vprg || !hlsl->prg[idx].fprg)
+   if (!hlsl)
+      return;
+
+   program                                  = &hlsl->prg[idx];
+
+   if (!program || !program->vprg || !program->fprg)
       return;
 
    if (set_active)
-      hlsl->active_idx = idx;
+      hlsl->active_idx           = idx;
 
-   d3d9_set_vertex_shader(d3dr, idx, hlsl->prg[idx].vprg);
-   d3d9_set_pixel_shader(d3dr, hlsl->prg[idx].fprg);
+   d3d9_set_vertex_shader(d3dr, idx, program->vprg);
+   d3d9_set_pixel_shader(d3dr, program->fprg);
 }
 
 static unsigned hlsl_num(void *data)
@@ -563,24 +569,29 @@ static void hlsl_shader_scale(void *data, unsigned idx,
 {
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
    if (hlsl && idx)
-      *scale = hlsl->cg_shader->pass[idx - 1].fbo;
+      *scale                = hlsl->cg_shader->pass[idx - 1].fbo;
    else
-      scale->valid = false;
+      scale->valid          = false;
 }
 
 static bool hlsl_set_mvp(void *data, void *shader_data, const void *mat_data)
 {
-   hlsl_shader_data_t *hlsl        = (hlsl_shader_data_t*)shader_data;
-   LPDIRECT3DDEVICE9 d3dr          = hlsl ? 
+   hlsl_shader_data_t *hlsl                 = (hlsl_shader_data_t*)shader_data;
+   LPDIRECT3DDEVICE9 d3dr                   = hlsl ? 
       (LPDIRECT3DDEVICE9)hlsl->dev : NULL;
-   const math_matrix_4x4 *mat      = (const math_matrix_4x4*)mat_data;
+   const math_matrix_4x4 *mat               = (const math_matrix_4x4*)mat_data;
+   struct shader_program_hlsl_data *program =  NULL;
 
-   if (!hlsl || !hlsl->prg[hlsl->active_idx].mvp)
+   if (!hlsl)
       return false;
 
-   ID3DXConstantTable_SetMatrix(hlsl->prg[hlsl->active_idx].v_ctable, d3dr,
-         hlsl->prg[hlsl->active_idx].mvp,
-         &hlsl->prg[hlsl->active_idx].mvp_val);
+   program                                  = &hlsl->prg[hlsl->active_idx];
+
+   if (!program || !program->mvp)
+      return false;
+
+   ID3DXConstantTable_SetMatrix(program->v_ctable, d3dr,
+         program->mvp, &program->mvp_val);
    return true;
 }
 
