@@ -63,10 +63,6 @@
 #define ID3DXConstantTable_SetFloatArray(p,a,b,c,d) (p)->lpVtbl->SetFloatArray(p,a,b,c,d)
 #endif
 
-#ifndef ID3DXConstantTable_SetMatrix
-#define ID3DXConstantTable_SetMatrix(p,a,b,c) ((p)->lpVtbl->SetMatrix(p,a,b,c))
-#endif
-
 #endif
 
 #define set_param_2f(param, xy, constanttable) ID3DXConstantTable_SetFloatArray(constanttable, d3dr, param, xy, 2)
@@ -604,8 +600,8 @@ static bool hlsl_set_mvp(void *data, void *shader_data, const void *mat_data)
    if (!program || !program->mvp)
       return false;
 
-   ID3DXConstantTable_SetMatrix(program->v_ctable, d3dr,
-         program->mvp, &program->mvp_val);
+   d3d9x_constant_table_set_matrix(d3dr, program->v_ctable, 
+         (void*)program->mvp, &program->mvp_val);
    return true;
 }
 

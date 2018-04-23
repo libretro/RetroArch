@@ -574,6 +574,19 @@ void *d3d9x_constant_table_get_constant_by_name(void *_tbl,
    return NULL;
 }
 
+void d3d9x_constant_table_set_matrix(LPDIRECT3DDEVICE9 dev,
+      void *p,
+      void *data, const void *_matrix)
+{
+#if defined(HAVE_D3DX)
+   LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
+   D3DXHANDLE        handle     = (D3DXHANDLE)data;
+   const D3DXMATRIX  *matrix    = (const D3DXMATRIX*)matrix;
+   if (consttbl && dev && handle)
+      consttbl->lpVtbl->SetMatrix(consttbl, dev, handle, matrix);
+#endif
+}
+
 const bool d3d9x_constant_table_set_float(void *p,
       void *a,
       const void *b, float val)
