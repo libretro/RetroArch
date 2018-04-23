@@ -32,7 +32,7 @@
 
 #include "../../input/input_driver.h"
 
-static const char *osk_grid[45]  = {NULL};
+static char *osk_grid[45]        = {NULL};
 
 static int osk_ptr               = 0;
 static enum osk_type osk_idx     = OSK_LOWERCASE_LATIN;
