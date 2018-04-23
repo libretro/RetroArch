@@ -563,7 +563,7 @@ void *d3d9x_constant_table_get_constant_by_name(void *_tbl,
    LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)_tbl;
    LPCSTR              name     = (LPCSTR)_name;
    if (consttbl && handle && name)
-      return consttbl->lpVtbl->GetConstantByName(consttbl,
+      return (void*)consttbl->lpVtbl->GetConstantByName(consttbl,
             handle, name);
 #endif
    return NULL;
