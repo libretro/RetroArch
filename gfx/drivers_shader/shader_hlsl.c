@@ -234,12 +234,18 @@ static bool hlsl_compile_program(
                strlen(program_info->combined), NULL, NULL,
                "main_fragment", "ps_3_0", 0, &code_f, &listing_f,
                &program->f_ctable ))
+      {
+         RARCH_ERR("Failure building stock fragment shader..\n");
          goto error;
+      }
       if (!d3d9x_compile_shader(program_info->combined,
                strlen(program_info->combined), NULL, NULL,
                "main_vertex", "vs_3_0", 0, &code_v, &listing_v,
                &program->v_ctable ))
+      {
+         RARCH_ERR("Failure building stock vertex shader..\n");
          goto error;
+      }
    }
 
    d3d9_create_pixel_shader(d3dr, (const DWORD*)d3d9x_get_buffer_ptr(code_f),  (void**)&program->fprg);
@@ -471,10 +477,15 @@ static void *hlsl_init(void *data, const char *path)
          goto error;
    }
 
+   RARCH_LOG("Setting up program attributes...\n");
+   RARCH_LOG("Shader passes: %d\n", hlsl->cg_shader->passes);
+
    for(i = 1; i <= hlsl->cg_shader->passes; i++)
       hlsl_set_program_attributes(hlsl, i);
 
+   RARCH_LOG("Setting up vertex shader...\n");
    d3d9_set_vertex_shader(hlsl->dev, 1, hlsl->prg[1].vprg);
+   RARCH_LOG("Setting up pixel shader...\n");
    d3d9_set_pixel_shader(hlsl->dev, hlsl->prg[1].fprg);
 
    return hlsl;

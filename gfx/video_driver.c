@@ -3401,6 +3401,13 @@ static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type t
 #else
          break;
 #endif
+      case RARCH_SHADER_HLSL:
+#ifdef HAVE_HLSL
+         RARCH_LOG("[Shader driver]: Using HLSL shader backend.\n");
+         return &hlsl_backend;
+#else
+         break;
+#endif
       case RARCH_SHADER_NONE:
       default:
          break;
@@ -3614,9 +3621,15 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
 
    if (string_is_equal(settings->arrays.menu_driver, "xmb")
          && init->shader->init_menu_shaders)
+   {
+      RARCH_LOG("Setting up menu pipeline shaders for XMB ... \n");
       init->shader->init_menu_shaders(tmp);
+   }
 
    current_shader_data    = tmp;
+
+   RARCH_LOG("Resetting shader to defaults ... \n");
+
    current_shader         = (shader_backend_t*)init->shader;
    video_shader_driver_reset_to_defaults();
 

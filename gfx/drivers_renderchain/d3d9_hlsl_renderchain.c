@@ -266,7 +266,6 @@ static bool hlsl_d3d9_renderchain_init_shader(void *data,
       void *renderchain_data)
 {
    video_shader_ctx_init_t init;
-   bool ret                       = false;
    d3d_video_t        *d3d        = (d3d_video_t*)data;
    settings_t *settings           = config_get_ptr();
    (void)renderchain_data;
@@ -277,13 +276,11 @@ static bool hlsl_d3d9_renderchain_init_shader(void *data,
    init.shader_type               = RARCH_SHADER_HLSL;
    init.data                      = data;
    init.path                      = retroarch_get_shader_preset();
-   init.shader                    = &hlsl_backend;
+   init.shader                    = NULL;
 
    RARCH_LOG("D3D]: Using HLSL shader backend.\n");
 
-   ret = video_shader_driver_init(&init);
-
-   return ret;
+   return video_shader_driver_init(&init);
 }
 
 static bool hlsl_d3d9_renderchain_init(void *data,
