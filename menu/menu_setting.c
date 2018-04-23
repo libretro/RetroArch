@@ -3608,42 +3608,54 @@ static bool setting_append_list(
                         general_read_handler);
                   menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
                   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-                  settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
                }
             }
 
-            if (string_is_equal(settings->arrays.video_driver, "gl"))
             {
-               CONFIG_BOOL(
-                     list, list_info,
-                     &settings->bools.video_hard_sync,
-                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-                     hard_sync,
-                     MENU_ENUM_LABEL_VALUE_OFF,
-                     MENU_ENUM_LABEL_VALUE_ON,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler,
-                     SD_FLAG_NONE
-                     );
-               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               gfx_ctx_flags_t flags;
+               bool hard_sync_supported = false;
 
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.video_hard_sync_frames,
-                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-                     hard_sync_frames,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               if (video_driver_get_flags(&flags))
+                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_HARD_SYNC))
+                     hard_sync_supported = true;
+
+               flags.flags = 0;
+
+               if (video_context_driver_get_flags(&flags))
+                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_HARD_SYNC))
+                     hard_sync_supported = true;
+
+               if (hard_sync_supported)
+               {
+                  CONFIG_BOOL(
+                        list, list_info,
+                        &settings->bools.video_hard_sync,
+                        MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
+                        MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+                        hard_sync,
+                        MENU_ENUM_LABEL_VALUE_OFF,
+                        MENU_ENUM_LABEL_VALUE_ON,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group,
+                        general_write_handler,
+                        general_read_handler,
+                        SD_FLAG_NONE
+                        );
+
+                  CONFIG_UINT(
+                        list, list_info,
+                        &settings->uints.video_hard_sync_frames,
+                        MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
+                        MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+                        hard_sync_frames,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group,
+                        general_write_handler,
+                        general_read_handler);
+                  menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+               }
             }
 
             CONFIG_UINT(
