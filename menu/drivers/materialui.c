@@ -605,7 +605,7 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
       char *sublabel_str        = NULL;
       unsigned lines            = 0;
       materialui_node_t *node          = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, i);
+         file_list_get_userdata_at_offset(list, i);
 
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, i, NULL, true);
@@ -641,7 +641,7 @@ static void materialui_compute_entries_box(materialui_handle_t* mui, int width)
 }
 
 /* Called on each frame. We use this callback to implement the touch scroll
-with acceleration */
+   with acceleration */
 static void materialui_render(void *data, bool is_idle)
 {
    menu_animation_ctx_delta_t delta;
@@ -686,12 +686,12 @@ static void materialui_render(void *data, bool is_idle)
       for (ii = 0; ii < entries_end; ii++)
       {
          materialui_node_t *node = (materialui_node_t*)
-               file_list_get_userdata_at_offset(list, ii);
+            file_list_get_userdata_at_offset(list, ii);
 
          if (pointer_y > (-mui->scroll_y + header_height + node->y)
-          && pointer_y < (-mui->scroll_y + header_height + node->y + node->line_height)
-         )
-         menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &ii);
+               && pointer_y < (-mui->scroll_y + header_height + node->y + node->line_height)
+            )
+            menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &ii);
       }
 
       menu_input_ctl(MENU_INPUT_CTL_POINTER_ACCEL_READ, &old_accel_val);
@@ -712,12 +712,12 @@ static void materialui_render(void *data, bool is_idle)
       for (ii = 0; ii < entries_end; ii++)
       {
          materialui_node_t *node = (materialui_node_t*)
-               file_list_get_userdata_at_offset(list, ii);
+            file_list_get_userdata_at_offset(list, ii);
 
          if (mouse_y > (-mui->scroll_y + header_height + node->y)
-          && mouse_y < (-mui->scroll_y + header_height + node->y + node->line_height)
-         )
-         menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &ii);
+               && mouse_y < (-mui->scroll_y + header_height + node->y + node->line_height)
+            )
+            menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &ii);
       }
    }
 
@@ -799,7 +799,7 @@ static void materialui_render_label_value(
          do_draw_text = true;
    }
    else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-            (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
+         (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
       {
@@ -896,7 +896,7 @@ static void materialui_render_label_value(
             0,
             1,
             &label_color[0]
-      );
+            );
 
    if (texture_switch)
    {
@@ -959,7 +959,7 @@ static void materialui_render_menu_list(
       char *rich_label           = NULL;
       bool entry_selected        = false;
       materialui_node_t *node    = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, i);
+         file_list_get_userdata_at_offset(list, i);
       size_t selection           = menu_navigation_get_selection();
       int               y        = header_height - mui->scroll_y + sum;
 
@@ -982,21 +982,21 @@ static void materialui_render_menu_list(
       /* Render label, value, and associated icons */
 
       materialui_render_label_value(
-         mui,
-         video_info,
-         node,
-         (int)i,
-         y,
-         width,
-         height,
-         frame_count / 20,
-         font_hover_color,
-         entry_selected,
-         rich_label,
-         entry_value,
-         menu_list_color,
-         sublabel_color
-      );
+            mui,
+            video_info,
+            node,
+            (int)i,
+            y,
+            width,
+            height,
+            frame_count / 20,
+            font_hover_color,
+            entry_selected,
+            rich_label,
+            entry_value,
+            menu_list_color,
+            sublabel_color
+            );
 
       menu_entry_free(&entry);
       free(rich_label);
@@ -1075,7 +1075,7 @@ static void materialui_draw_bg(menu_display_ctx_draw_t *draw,
 }
 
 /* Main function of the menu driver. Takes care of drawing the header, the tabs,
-and the menu list */
+   and the menu list */
 static void materialui_frame(void *data, video_frame_info_t *video_info)
 {
    /* This controls the main background color */
@@ -1236,7 +1236,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_GREEN:
-          hex32_to_rgba_normalized(0x4CAF50, green_500,      1.00);
+         hex32_to_rgba_normalized(0x4CAF50, green_500,      1.00);
          hex32_to_rgba_normalized(0x4CAF50, header_bg_color_real,      1.00);
          hex32_to_rgba_normalized(0xC8E6C9, green_50,       0.90);
          hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
@@ -1575,9 +1575,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    if (mui->font)
       menu_display_draw_text(mui->font, title_buf,
-         title_margin,
-         header_height / 2 + mui->font->size / 3,
-         width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+            title_margin,
+            header_height / 2 + mui->font->size / 3,
+            width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
 
    materialui_draw_scrollbar(mui, video_info, width, height, &grey_bg[0]);
 
@@ -1591,7 +1591,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
 
       materialui_render_messagebox(mui, video_info,
-               msg, &body_bg_color[0], font_hover_color);
+            msg, &body_bg_color[0], font_hover_color);
    }
 
    if (!string_is_empty(mui->box_message))
@@ -1600,7 +1600,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             0, 0, width, height, width, height, &black_bg[0]);
 
       materialui_render_messagebox(mui, video_info,
-               mui->box_message, &body_bg_color[0], font_hover_color);
+            mui->box_message, &body_bg_color[0], font_hover_color);
 
       free(mui->box_message);
       mui->box_message    = NULL;
@@ -1795,10 +1795,10 @@ static float materialui_get_scroll(materialui_handle_t *mui)
    for (i = 0; i < selection; i++)
    {
       materialui_node_t *node   = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, i);
+         file_list_get_userdata_at_offset(list, i);
 
       if (node)
-      sum += node->line_height;
+         sum += node->line_height;
    }
 
    if (sum < half)
@@ -1808,7 +1808,7 @@ static float materialui_get_scroll(materialui_handle_t *mui)
 }
 
 /* The navigation pointer has been updated (for example by pressing up or down
-on the keyboard). We use this function to animate the scroll. */
+   on the keyboard). We use this function to animate the scroll. */
 static void materialui_navigation_set(void *data, bool scroll)
 {
    menu_animation_ctx_entry_t entry;
@@ -1953,7 +1953,7 @@ static void materialui_preswitch_tabs(materialui_handle_t *mui, unsigned action)
 }
 
 /* This callback is not caching anything. We use it to navigate the tabs
-with the keyboard */
+   with the keyboard */
 static void materialui_list_cache(void *data,
       enum menu_list_type type, unsigned action)
 {
@@ -2003,7 +2003,7 @@ static void materialui_list_cache(void *data,
 }
 
 /* A new list has been pushed. We use this callback to customize a few lists for
-this menu driver */
+   this menu driver */
 static int materialui_list_push(void *data, void *userdata,
       menu_displaylist_info_t *info, unsigned type)
 {
@@ -2176,7 +2176,7 @@ static size_t materialui_list_get_selection(void *data)
 }
 
 /* The pointer or the mouse is pressed down. We use this callback to
-highlight the entry that has been pressed */
+   highlight the entry that has been pressed */
 static int materialui_pointer_down(void *userdata,
       unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
@@ -2209,11 +2209,11 @@ static int materialui_pointer_down(void *userdata,
       for (ii = 0; ii < entries_end; ii++)
       {
          materialui_node_t *node = (materialui_node_t*)
-               file_list_get_userdata_at_offset(list, ii);
+            file_list_get_userdata_at_offset(list, ii);
 
          if (y > (-mui->scroll_y + header_height + node->y)
-          && y < (-mui->scroll_y + header_height + node->y + node->line_height)
-         )
+               && y < (-mui->scroll_y + header_height + node->y + node->line_height)
+            )
             menu_navigation_set_selection(ii);
       }
 
@@ -2224,9 +2224,9 @@ static int materialui_pointer_down(void *userdata,
 }
 
 /* The pointer or the left mouse button has been released.
-If we clicked on the header, we perform a cancel action.
-If we clicked on the tabs, we switch to a new list.
-If we clicked on a menu entry, we call the entry action callback. */
+   If we clicked on the header, we perform a cancel action.
+   If we clicked on the tabs, we switch to a new list.
+   If we clicked on a menu entry, we call the entry action callback. */
 static int materialui_pointer_up(void *userdata,
       unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
@@ -2278,11 +2278,11 @@ static int materialui_pointer_up(void *userdata,
       for (ii = 0; ii < entries_end; ii++)
       {
          materialui_node_t *node = (materialui_node_t*)
-               file_list_get_userdata_at_offset(list, ii);
+            file_list_get_userdata_at_offset(list, ii);
 
          if (y > (-mui->scroll_y + header_height + node->y)
-          && y < (-mui->scroll_y + header_height + node->y + node->line_height)
-         )
+               && y < (-mui->scroll_y + header_height + node->y + node->line_height)
+            )
          {
             if (ptr == ii && cbs && cbs->action_select)
                return menu_entry_action(entry, (unsigned)ii, MENU_ACTION_SELECT);
