@@ -828,7 +828,7 @@ static void xmb_render_keyboard(xmb_handle_t *xmb,
          width, height,
          &dark[0]);
 
-   ptr_width  = width / 11;
+   ptr_width  = width  / 11;
    ptr_height = height / 10;
 
    if (ptr_width >= ptr_height)
@@ -857,7 +857,8 @@ static void xmb_render_keyboard(xmb_handle_t *xmb,
       }
 
       menu_display_draw_text(xmb->font, grid[i],
-            width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width + ptr_width/2.0,
+            width/2.0 - (11*ptr_width)/2.0 + (i % 11) 
+            * ptr_width + ptr_width/2.0,
             height/2.0 + ptr_height + line_y + xmb->font->size / 3,
             width, height, 0xffffffff, TEXT_ALIGN_CENTER, 1.0f,
             false, 0);
