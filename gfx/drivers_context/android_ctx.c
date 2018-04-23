@@ -136,6 +136,21 @@ static void *android_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
    switch (android_api)
    {
       case GFX_CTX_OPENGL_API:
+#ifdef HAVE_EGL
+         attribs[1] = EGL_OPENGL_BIT;
+         RARCH_LOG("Android EGL: OpenGL.\n");
+
+         if (!egl_init_context(&and->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
+                  &major, &minor, &n, attribs, NULL))
+         {
+            egl_report_error();
+            goto error;
+         }
+
+         if (!egl_get_native_visual_id(&and->egl, &format))
+            goto error;
+#endif
+         break;
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_EGL
          RARCH_LOG("Android EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
@@ -328,6 +343,11 @@ static bool android_gfx_ctx_set_video_mode(void *data,
       EGL_NONE
    };
 #endif
+#if defined(HAVE_OPENGL) && defined(HAVE_EGL)
+   EGLint context_attributes_gl[] = {
+      EGL_NONE
+   };
+#endif
 
    (void)width;
    (void)height;
@@ -336,6 +356,16 @@ static bool android_gfx_ctx_set_video_mode(void *data,
    switch (android_api)
    {
       case GFX_CTX_OPENGL_API:
+#if defined(HAVE_OPENGL) && defined(HAVE_EGL)
+         if (!egl_create_context(&and->egl, context_attributes_gl))
+         {
+            egl_report_error();
+            return false;
+         }
+
+         if (!egl_create_surface(&and->egl, android_app->window))
+            return false;
+#endif
          break;
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGLES) && defined(HAVE_EGL)
@@ -396,8 +426,13 @@ static bool android_gfx_ctx_bind_api(void *data,
    switch (api)
    {
       case GFX_CTX_OPENGL_API:
+#ifdef HAVE_OPENGL
+         return egl_bind_api(EGL_OPENGL_API);
+#endif
+         break;
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_OPENGLES
+         egl_bind_api(EGL_OPENGL_ES_API);
          version = major * 100 + minor;
          if (version > 300)
             return false;
@@ -406,8 +441,7 @@ static bool android_gfx_ctx_bind_api(void *data,
          else if (version == 300)
             g_es3 = true;
 
-         if (api == GFX_CTX_OPENGL_ES_API)
-            return true;
+         return true;
 #endif
          break;
       case GFX_CTX_VULKAN_API:

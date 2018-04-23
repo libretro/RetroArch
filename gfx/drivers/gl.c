@@ -3419,15 +3419,17 @@ static const gfx_ctx_driver_t *gl2_get_context(gl_t *gl)
    unsigned major                       = hwr->version_major;
    unsigned minor                       = hwr->version_minor;
    bool video_shared_context            = settings->bools.video_shared_context;
+   enum gfx_ctx_api api                 = GFX_CTX_OPENGL_API;
 #ifdef HAVE_OPENGLES
-   enum gfx_ctx_api api                 = GFX_CTX_OPENGL_ES_API;
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3)
    {
+      api                               = GFX_CTX_OPENGL_ES_API;
       major                             = 3;
       minor                             = 0;
    }
-#else
-   enum gfx_ctx_api api                 = GFX_CTX_OPENGL_API;
+   else if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES2 ||
+            hwr->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
+      api                               = GFX_CTX_OPENGL_ES_API;
 #endif
    gl_shared_context_use                = video_shared_context
       && hwr->context_type != RETRO_HW_CONTEXT_NONE;

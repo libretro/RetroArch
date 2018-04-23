@@ -9183,43 +9183,7 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
          return false;
 #endif
 
-#if defined(HAVE_OPENGLES)
-
-#if (defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3))
-      case RETRO_HW_CONTEXT_OPENGLES2:
-      case RETRO_HW_CONTEXT_OPENGLES3:
-         RARCH_LOG("Requesting OpenGLES%u context.\n",
-               type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
-         break;
-
-#if defined(HAVE_OPENGLES3)
-      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-         RARCH_LOG("Requesting OpenGLES%u.%u context.\n",
-               major, minor);
-         break;
-#endif
-
-#endif
-      case RETRO_HW_CONTEXT_OPENGL:
-      case RETRO_HW_CONTEXT_OPENGL_CORE:
-         RARCH_ERR("Requesting OpenGL context, but RetroArch "
-               "is compiled against OpenGLES. Cannot use HW context.\n");
-         return false;
-
-#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
-      case RETRO_HW_CONTEXT_OPENGLES2:
-      case RETRO_HW_CONTEXT_OPENGLES3:
-         RARCH_ERR("Requesting OpenGLES%u context, but RetroArch "
-               "is compiled against OpenGL. Cannot use HW context.\n",
-               type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
-         return false;
-
-      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-         RARCH_ERR("Requesting OpenGLES%u.%u context, but RetroArch "
-               "is compiled against OpenGL. Cannot use HW context.\n",
-               major, minor);
-         return false;
-
+#if defined(HAVE_OPENGL)
       case RETRO_HW_CONTEXT_OPENGL:
          RARCH_LOG("Requesting OpenGL context.\n");
          break;
@@ -9230,6 +9194,24 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
          RARCH_LOG("Requesting core OpenGL context (%u.%u).\n",
                major, minor);
          break;
+
+#if defined(HAVE_OPENGLES2)
+      case RETRO_HW_CONTEXT_OPENGLES2:
+         RARCH_LOG("Requesting OpenGLES2 context.\n");
+         break;
+#endif
+
+#if defined(HAVE_OPENGLES3)
+      case RETRO_HW_CONTEXT_OPENGLES3:
+         RARCH_LOG("Requesting OpenGLES3 context.\n");
+         break;
+
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         RARCH_LOG("Requesting OpenGLES%u.%u context.\n",
+               major, minor);
+         break;
+#endif
+
 #endif
 
 #if defined(HAVE_D3D9) || defined(HAVE_D3D11)
