@@ -3673,22 +3673,40 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #if !defined(RARCH_MOBILE)
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.video_black_frame_insertion,
-                  MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-                  black_frame_insertion,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+            {
+               gfx_ctx_flags_t flags;
+               bool black_frame_insertion_supported = false;
+
+               if (video_driver_get_flags(&flags))
+                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION))
+                     black_frame_insertion_supported = true;
+
+               flags.flags = 0;
+
+               if (video_context_driver_get_flags(&flags))
+                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION))
+                     black_frame_insertion_supported = true;
+
+               if (black_frame_insertion_supported)
+               {
+                  CONFIG_BOOL(
+                        list, list_info,
+                        &settings->bools.video_black_frame_insertion,
+                        MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
+                        MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+                        black_frame_insertion,
+                        MENU_ENUM_LABEL_VALUE_OFF,
+                        MENU_ENUM_LABEL_VALUE_ON,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group,
+                        general_write_handler,
+                        general_read_handler,
+                        SD_FLAG_NONE
+                        );
+                  settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               }
+            }
 #endif
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(

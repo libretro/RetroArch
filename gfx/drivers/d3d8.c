@@ -1860,8 +1860,17 @@ static void d3d8_set_video_mode(void *data,
 #endif
 }
 
+static uint32_t d3d8_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
+
+   return flags;
+}
+
 static const video_poke_interface_t d3d_poke_interface = {
-   NULL, /* get_flags */
+   d3d8_get_flags,
    NULL, /* set_coords */
    d3d8_set_mvp,
    d3d8_load_texture,
