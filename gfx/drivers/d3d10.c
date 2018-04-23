@@ -214,6 +214,7 @@ static void d3d10_set_filtering(void* data, unsigned index, bool smooth)
 static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
 {
 	math_matrix_4x4 rot;
+   void* mapped_ubo      = NULL;
    d3d10_video_t*  d3d10 = (d3d10_video_t*)data;
 
    if (!d3d10)
@@ -222,7 +223,6 @@ static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
    matrix_4x4_rotate_z(rot, rotation * (M_PI / 2.0f));
    matrix_4x4_multiply(d3d10->mvp, rot, d3d10->ubo_values.mvp);
 
-   void* mapped_ubo;
    D3D10MapBuffer(d3d10->frame.ubo, D3D10_MAP_WRITE_DISCARD, 0, &mapped_ubo);
    *(math_matrix_4x4*)mapped_ubo = d3d10->mvp;
    D3D10UnmapBuffer(d3d10->frame.ubo);
@@ -451,7 +451,8 @@ static bool d3d10_gfx_set_shader(void* data,
          if (!desc.ByteWidth)
             continue;
 
-         D3D10CreateBuffer(d3d10->device, &desc, NULL, &d3d10->pass[i].buffers[j]);
+         D3D10CreateBuffer(d3d10->device, &desc,
+               NULL, &d3d10->pass[i].buffers[j]);
       }
    }
 
@@ -474,7 +475,8 @@ static bool d3d10_gfx_set_shader(void* data,
 
       d3d10_update_texture(
             d3d10->device,
-            image.width, image.height, 0, DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
+            image.width, image.height, 0,
+            DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
             &d3d10->luts[i]);
 
       image_texture_free(&image);
@@ -561,7 +563,8 @@ static void d3d10_gfx_free(void* data)
 }
 
    static void*
-d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
+d3d10_gfx_init(const video_info_t* video,
+      const input_driver_t** input, void** input_data)
 {
    unsigned i;
    MONITORINFOEX   current_mon;
@@ -584,11 +587,14 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    d3d10->vp.full_height = video->height;
 
    if (!d3d10->vp.full_width)
-      d3d10->vp.full_width = current_mon.rcMonitor.right - current_mon.rcMonitor.left;
+      d3d10->vp.full_width = 
+         current_mon.rcMonitor.right - current_mon.rcMonitor.left;
    if (!d3d10->vp.full_height)
-      d3d10->vp.full_height = current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+      d3d10->vp.full_height = 
+         current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
 
-	if (!win32_set_video_mode(d3d10, d3d10->vp.full_width, d3d10->vp.full_height, video->fullscreen))
+	if (!win32_set_video_mode(d3d10,
+            d3d10->vp.full_width, d3d10->vp.full_height, video->fullscreen))
    {
       RARCH_ERR("[D3D10]: win32_set_video_mode failed.\n");
       goto error;
@@ -622,7 +628,8 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 #endif
 
       if (FAILED(D3D10CreateDeviceAndSwapChain(
-            NULL, D3D10_DRIVER_TYPE_HARDWARE, NULL, flags, D3D10_SDK_VERSION, &desc,
+            NULL, D3D10_DRIVER_TYPE_HARDWARE,
+            NULL, flags, D3D10_SDK_VERSION, &desc,
             (IDXGISwapChain**)&d3d10->swapChain, &d3d10->device)))
          goto error;
    }
