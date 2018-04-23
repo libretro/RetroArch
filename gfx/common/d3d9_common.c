@@ -31,13 +31,8 @@
 #include "d3d9_common.h"
 
 #ifdef HAVE_D3DX
-#ifdef _XBOX
 #include <d3dx9core.h>
 #include <d3dx9tex.h>
-#else
-#include "../include/d3d9/d3dx9tex.h"
-#endif
-
 #endif
 
 #ifdef _XBOX
