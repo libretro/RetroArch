@@ -175,11 +175,11 @@ static void hlsl_set_params(void *dat, void *shader_data)
 
    if (program->frame_cnt_f)
       d3d9x_constant_table_set_float(program->f_ctable,
-            d3dr, program->frame_cnt_f, frame_cnt);
+            d3dr, (void*)program->frame_cnt_f, frame_cnt);
 
    if (program->frame_dir_f)
       d3d9x_constant_table_set_float(program->f_ctable,
-            d3dr, program->frame_dir_f,
+            d3dr, (void*)program->frame_dir_f,
             state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    if (program->vid_size_v)
@@ -191,11 +191,11 @@ static void hlsl_set_params(void *dat, void *shader_data)
 
    if (program->frame_cnt_v)
       d3d9x_constant_table_set_float(program->v_ctable,
-            d3dr, program->frame_cnt_v, frame_cnt);
+            d3dr, (void*)program->frame_cnt_v, frame_cnt);
 
    if (program->frame_dir_v)
       d3d9x_constant_table_set_float(program->v_ctable,
-            d3dr, program->frame_dir_v,
+            d3dr, (void*)program->frame_dir_v,
             state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
