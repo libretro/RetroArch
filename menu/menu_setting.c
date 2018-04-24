@@ -4656,6 +4656,7 @@ static bool setting_append_list(
             general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 1, 6, 1, true, true);
 
+#ifdef HAVE_DYNAMIC
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.run_ahead_secondary_instance,
@@ -4671,6 +4672,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+#endif
 
          CONFIG_BOOL(
                list, list_info,
@@ -5610,6 +5612,8 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_LAKKA_ADVANCED);
 
+
+#ifdef HAVE_LAKKA
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_show_quit_retroarch,
@@ -5625,7 +5629,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
-#ifdef HAVE_LAKKA
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_show_reboot,
