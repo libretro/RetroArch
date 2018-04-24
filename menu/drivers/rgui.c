@@ -263,12 +263,17 @@ static void rgui_render_background(void)
 
    if (rgui_framebuf_data)
    {
-      rgui_fill_rect(rgui_framebuf_data, fb_pitch, 5, 5, fb_width - 10, 5, rgui_green_filler);
-      rgui_fill_rect(rgui_framebuf_data, fb_pitch, 5, fb_height - 10, fb_width - 10, 5, rgui_green_filler);
+      settings_t *settings       = config_get_ptr();
 
-      rgui_fill_rect(rgui_framebuf_data, fb_pitch, 5, 5, 5, fb_height - 10, rgui_green_filler);
-      rgui_fill_rect(rgui_framebuf_data, fb_pitch, fb_width - 10, 5, 5, fb_height - 10,
-            rgui_green_filler);
+      if (settings->bools.menu_rgui_border_filler_enable)
+      {
+         rgui_fill_rect(rgui_framebuf_data, fb_pitch, 5, 5, fb_width - 10, 5, rgui_green_filler);
+         rgui_fill_rect(rgui_framebuf_data, fb_pitch, 5, fb_height - 10, fb_width - 10, 5, rgui_green_filler);
+
+         rgui_fill_rect(rgui_framebuf_data, fb_pitch, 5, 5, 5, fb_height - 10, rgui_green_filler);
+         rgui_fill_rect(rgui_framebuf_data, fb_pitch, fb_width - 10, 5, 5, fb_height - 10,
+               rgui_green_filler);
+      }
    }
 }
 
@@ -341,17 +346,21 @@ static void rgui_render_messagebox(const char *message)
       rgui_fill_rect(rgui_framebuf_data,
             fb_pitch, x + 5, y + 5, width - 10,
             height - 10, rgui_gray_filler);
-      rgui_fill_rect(rgui_framebuf_data,
-            fb_pitch, x, y, width - 5, 5, rgui_green_filler);
-      rgui_fill_rect(rgui_framebuf_data,
-            fb_pitch, x + width - 5, y, 5,
-            height - 5, rgui_green_filler);
-      rgui_fill_rect(rgui_framebuf_data,
-            fb_pitch, x + 5, y + height - 5,
-            width - 5, 5, rgui_green_filler);
-      rgui_fill_rect(rgui_framebuf_data,
-            fb_pitch, x, y + 5, 5,
-            height - 5, rgui_green_filler);
+
+      if (settings->bools.menu_rgui_border_filler_enable)
+      {
+         rgui_fill_rect(rgui_framebuf_data,
+               fb_pitch, x, y, width - 5, 5, rgui_green_filler);
+         rgui_fill_rect(rgui_framebuf_data,
+               fb_pitch, x + width - 5, y, 5,
+               height - 5, rgui_green_filler);
+         rgui_fill_rect(rgui_framebuf_data,
+               fb_pitch, x + 5, y + height - 5,
+               width - 5, 5, rgui_green_filler);
+         rgui_fill_rect(rgui_framebuf_data,
+               fb_pitch, x, y + 5, 5,
+               height - 5, rgui_green_filler);
+      }
    }
 
    color = NORMAL_COLOR(settings);

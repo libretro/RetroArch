@@ -3309,3 +3309,5 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
       "Mostra statistiche")
 MSG_HASH(MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
       "Mostra statistiche tecniche su schermo.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+      "Enable border filler")

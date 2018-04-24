@@ -1473,3 +1473,5 @@ MSG_HASH(MENU_ENUM_LABEL_INPUT_DRIVER_LINUXRAW,
       "linuxraw")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
       "video_window_show_decorations")
+MSG_HASH(MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+      "menu_rgui_border_filler_enable")
