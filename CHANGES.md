@@ -16,6 +16,7 @@ with D3D11 driver except for there being no hardware rendering right now.
 - D3D11: Experimental hardware renderer. Allows for libretro cores to use D3D11 for hardware rendering. First core to use this is PPSSPP.
 - D3D11: Increase backwards compatibility, shaders compile with Shader Model 4.0 now, added support for more feature levels.
 - D3D10/D3D11/D3D12: Fix crashes with completely black or white thumbnail textures in XMB.
+- GUI: Support disabling window decorations on Windows and Linux.
 - LIBRETRO: Addition - Functions to enable and disable audio and video, and an environment function to query status of audio and video enables.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Polish translation.
