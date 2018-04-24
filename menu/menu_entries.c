@@ -26,6 +26,7 @@
 #include "../core.h"
 #include "../retroarch.h"
 #include "../version.h"
+#include "../configuration.h"
 
 /* Flagged when menu entries need to be refreshed */
 static bool menu_entries_need_refresh              = false;
@@ -421,6 +422,7 @@ int menu_entries_get_core_title(char *s, size_t len)
    const char *core_version       = NULL;
    rarch_system_info_t      *info      = runloop_get_system_info();
    struct retro_system_info    *system = &info->info;
+   settings_t *settings = config_get_ptr();
 
    if (system)
    {
@@ -438,8 +440,10 @@ int menu_entries_get_core_title(char *s, size_t len)
    if (!core_version)
       core_version = "";
 
-   snprintf(s, len, "%s - %s %s", PACKAGE_VERSION,
-         core_name, core_version);
+   const char *video_driver = settings->arrays.video_driver;
+
+   snprintf(s, len, "%s - %s - %s %s", PACKAGE_VERSION,
+         video_driver, core_name, core_version);
 
    return 0;
 }
