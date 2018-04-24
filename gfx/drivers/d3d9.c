@@ -413,8 +413,9 @@ static void d3d9_set_mvp(void *data,
 
 static void d3d9_overlay_render(d3d_video_t *d3d,
       video_frame_info_t *video_info,
-      overlay_t *overlay)
+      overlay_t *overlay, bool force_linear)
 {
+   D3DTEXTUREFILTERTYPE filter_type;
    LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
    struct video_viewport vp;
    void *verts;
@@ -503,12 +504,21 @@ static void d3d9_overlay_render(d3d_video_t *d3d,
       d3d9_set_viewports(d3d->dev, &vp_full);
    }
 
+   filter_type = D3DTEXF_LINEAR;
+
+   if (!force_linear)
+   {
+      settings_t *settings = config_get_ptr();
+      if (!settings->bools.menu_linear_filter)
+         filter_type       = D3DTEXF_POINT;
+   }
+
    /* Render overlay. */
    d3d9_set_texture(d3d->dev, 0, overlay->tex);
    d3d9_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_BORDER);
    d3d9_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_BORDER);
-   d3d9_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_LINEAR);
-   d3d9_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_LINEAR);
+   d3d9_set_sampler_minfilter(d3d->dev, 0, filter_type);
+   d3d9_set_sampler_magfilter(d3d->dev, 0, filter_type);
    d3d9_draw_primitive(d3d->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
    /* Restore previous state. */
@@ -1592,7 +1602,7 @@ static bool d3d9_frame(void *data, const void *frame,
    if (d3d->menu && d3d->menu->enabled)
    {
       d3d9_set_mvp(d3d, NULL, &d3d->mvp);
-      d3d9_overlay_render(d3d, video_info, d3d->menu);
+      d3d9_overlay_render(d3d, video_info, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
       d3d9_set_vertex_declaration(d3d->dev, d3d->menu_display.decl);
@@ -1622,7 +1632,7 @@ static bool d3d9_frame(void *data, const void *frame,
    {
       d3d9_set_mvp(d3d, NULL, &d3d->mvp);
       for (i = 0; i < d3d->overlays_size; i++)
-         d3d9_overlay_render(d3d, video_info, &d3d->overlays[i]);
+         d3d9_overlay_render(d3d, video_info, &d3d->overlays[i], true);
    }
 #endif
 
