@@ -2684,23 +2684,32 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION, 0, 0);
       }
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS),
-            msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS),
-            MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
-            MENU_SETTING_ACTION, 0, 0);
+      if (settings->bools.menu_show_overlays)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS),
+               MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
+               MENU_SETTING_ACTION, 0, 0);
+      }
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS),
-            msg_hash_to_str(MENU_ENUM_LABEL_REWIND_SETTINGS),
-            MENU_ENUM_LABEL_REWIND_SETTINGS,
-            MENU_SETTING_ACTION, 0, 0);
+      if (settings->bools.menu_show_rewind)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_REWIND_SETTINGS),
+               MENU_ENUM_LABEL_REWIND_SETTINGS,
+               MENU_SETTING_ACTION, 0, 0);
+      }
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS),
-            msg_hash_to_str(MENU_ENUM_LABEL_LATENCY_SETTINGS),
-            MENU_ENUM_LABEL_LATENCY_SETTINGS,
-            MENU_SETTING_ACTION, 0, 0);
+      if (settings->bools.menu_show_latency)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_LATENCY_SETTINGS),
+               MENU_ENUM_LABEL_LATENCY_SETTINGS,
+               MENU_SETTING_ACTION, 0, 0);
+      }
 
 #if 0
       menu_entries_append_enum(info->list,
@@ -5272,6 +5281,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
                   PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CONTENT_SHOW_REWIND,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS,
+               PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
                PARSE_ONLY_BOOL, false);

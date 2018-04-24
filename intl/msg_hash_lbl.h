@@ -1479,3 +1479,9 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
       "menu_rgui_border_filler_thickness_enable")
 MSG_HASH(MENU_ENUM_LABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
       "menu_rgui_background_filler_thickness_enable")
+MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_REWIND,
+      "menu_show_rewind_settings")
+MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY,
+      "menu_show_latency_settings")
+MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS,
+      "menu_show_overlay_settings")

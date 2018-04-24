@@ -317,6 +317,9 @@ default_sublabel_macro(action_bind_sublabel_quick_menu_show_options,            
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_controls,              MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_cheats,                MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_shaders,               MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS)
+default_sublabel_macro(action_bind_sublabel_content_show_overlays,               MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS)
+default_sublabel_macro(action_bind_sublabel_content_show_rewind,               MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND)
+default_sublabel_macro(action_bind_sublabel_content_show_latency,               MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_save_core_overrides,   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_save_game_overrides,   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_information,           MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION)
@@ -756,6 +759,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_cheats);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_show_latency);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_SHOW_REWIND:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_show_rewind);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_show_overlays);
             break;
          case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_shaders);
