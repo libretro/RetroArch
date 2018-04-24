@@ -15,13 +15,14 @@
 with D3D11 driver except for there being no hardware rendering right now.
 - D3D11: Experimental hardware renderer. Allows for libretro cores to use D3D11 for hardware rendering. First core to use this is PPSSPP.
 - D3D11: Increase backwards compatibility, shaders compile with Shader Model 4.0 now, added support for more feature levels.
-- D3D11/D3D12: Fix crashes with completely black or white thumbnail textures in XMB.
+- D3D10/D3D11/D3D12: Fix crashes with completely black or white thumbnail textures in XMB.
 - LIBRETRO: Addition - Functions to enable and disable audio and video, and an environment function to query status of audio and video enables.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Polish translation.
-- MENU: Add Rewind/Latency/Overlay settings to Quick Menu
+- MENU: Add Rewind/Latency/Overlay settings to Quick Menu, add options to show/hide them (User Interface -> Views -> Quick Menu)
 - MENU/RGUI: Only show Menu Linear Filter for RGUI and only show it for
 video drivers that implement it (D3D8/9/10/11/12/GL)
+- MENU/RGUI: Add User Interface -> Appearance options.
 - MENU/RGUI: D3D8/D3D9: Hookup Menu Linear Filter
 - MENU/XMB: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
 - MENU/XMB: Left/right thumbnails are now automatically scaled according to layout.
