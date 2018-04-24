@@ -1,0 +1,70 @@
+buildscript {
+  repositories {
+    google()
+    jcenter()
+  }
+
+  dependencies {
+    classpath "com.android.tools.build:gradle:3.4.1"
+  }
+}
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
+    }
+}
+
+apply plugin: 'com.android.application'
+
+android {
+  compileSdkVersion 28
+  buildToolsVersion "28.0.3"
+
+  defaultConfig {
+    externalNativeBuild {
+      ndkBuild {
+        arguments "-j${Runtime.runtime.availableProcessors()}"
+      }
+    }
+  }
+
+  sourceSets {
+    main {
+      manifest.srcFile 'AndroidManifest.xml'
+      assets.srcDirs = ['assets']
+      java.srcDirs = ['src', '../phoenix-common/src']
+      jniLibs.srcDir '../phoenix-common/libs'
+      jni.srcDirs = []
+      res.srcDirs = ['../phoenix-common/res']
+    }
+  }
+
+  externalNativeBuild {
+    ndkBuild {
+      path '../phoenix-common/jni/Android.mk'
+    }
+  }
+
+  signingConfigs {
+    if (project.hasProperty("RELEASE_STORE_FILE")) {
+      release {
+        storeFile file(RELEASE_STORE_FILE)
+        storePassword RELEASE_STORE_PASSWORD
+        keyAlias RELEASE_KEY_ALIAS
+        keyPassword RELEASE_KEY_PASSWORD
+      }
+    }
+  }
+
+  buildTypes {
+    release {
+      signingConfig signingConfigs.release
+    }
+  }
+}
+
+dependencies {
+  implementation 'com.google.android.gms:play-services-location:16.0.0'
+}
