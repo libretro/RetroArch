@@ -20,6 +20,9 @@ with D3D11 driver except for there being no hardware rendering right now.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Polish translation.
 - MENU: Add Rewind/Latency/Overlay settings to Quick Menu
+- MENU/RGUI: Only show Menu Linear Filter for RGUI and only show it for
+video drivers that implement it (D3D8/9/10/11/12/GL)
+- MENU/RGUI: D3D8/D3D9: Hookup Menu Linear Filter
 - MENU/XMB: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
 - MENU/XMB: Left/right thumbnails are now automatically scaled according to layout.
 - MENU/XMB: Add Left Thumbnails (additional to the right). 
