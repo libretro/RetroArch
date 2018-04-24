@@ -18,6 +18,7 @@
 #define __WIIU_INPUT__H
 
 #include "wiiu_hid_types.h"
+#include "../../input/include/gamepad.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -55,11 +56,6 @@
 
 #define WIIU_ANALOG_FACTOR 0x7ff0
 #define WIIU_READ_STICK(stick) ((stick) * WIIU_ANALOG_FACTOR)
-
-struct _axis_data {
-   int32_t axis;
-   bool is_negative;
-};
 
 struct _wiiu_pad_functions {
    int16_t (*get_axis_value)(int32_t axis, int16_t state[3][2], bool is_negative);

@@ -27,5 +27,6 @@ typedef struct {
    uint16_t analogs[8];
 } input_bits_t;
 typedef struct joypad_connection joypad_connection_t;
+typedef struct pad_connection_listener_interface pad_connection_listener_t;
 
 #endif /* __INPUT_TYPES__H */

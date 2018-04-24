@@ -25,6 +25,7 @@ typedef struct ds3_instance {
    int slot;
    bool led_set;
    uint32_t buttons;
+   int16_t analog_state[3][2];
    uint16_t motors[2];
    uint8_t data[64];
 } ds3_instance_t;
@@ -68,17 +69,8 @@ static int control_packet_size = sizeof(control_packet);
 
 extern pad_connection_interface_t ds3_pad_connection;
 
-static void print_error(const char *fmt, int32_t errcode)
-{
-  int16_t err1, err2;
-
-  err1 = errcode & 0x0000ffff;
-  err2 = ((errcode & 0xffff0000) >> 16);
-
-  RARCH_ERR(fmt, err1, err2);
-}
-
 static void update_pad_state(ds3_instance_t *instance);
+static void update_analog_state(ds3_instance_t *instance);
 
 static int32_t send_activation_packet(ds3_instance_t *instance)
 {
@@ -93,8 +85,6 @@ static int32_t send_activation_packet(ds3_instance_t *instance)
    HID_SEND_CONTROL(instance->handle,
                     activation_packet, sizeof(activation_packet));
 #endif
-   if(result < 0)
-      print_error("[ds3]: activation packet failed (%d:%d)\n", result);
 
    return result;
 }
@@ -104,8 +94,6 @@ static uint32_t set_protocol(ds3_instance_t *instance, int protocol)
    uint32_t result = 0;
 #if defined(WIIU)
    result = HID_SET_PROTOCOL(instance->handle, 1);
-   if(result)
-      print_error("[ds3]: set protocol failed (%d:%d)\n", result);
 #endif
 
    return result;
@@ -134,8 +122,6 @@ static int32_t send_control_packet(ds3_instance_t *instance)
                   DS3_RUMBLE_REPORT_ID,
                   packet_buffer+PACKET_OFFSET,
                   control_packet_size-PACKET_OFFSET);
-   if(result < 0)
-      print_error("[ds3]: send control packet failed: (%d:%d)\n", result);
 #else
    HID_SEND_CONTROL(instance->handle,
                     packet_buffer+PACKET_OFFSET,
@@ -157,10 +143,8 @@ static void *ds3_init(void *handle)
    instance->handle = handle;
 
    RARCH_LOG("[ds3]: setting protocol\n");
-/*
-   if(set_protocol(instance, 1))
-      errors++;
-*/
+
+   /* this might fail, but we don't care. */
    set_protocol(instance, 1);
 
    RARCH_LOG("[ds3]: sending control packet\n");
@@ -275,6 +259,22 @@ static void ds3_packet_handler(void *data, uint8_t *packet, uint16_t size)
 
    memcpy(instance->data, packet, size);
    update_pad_state(instance);
+   update_analog_state(instance);
+}
+
+static void update_analog_state(ds3_instance_t *instance)
+{
+   int pad_axis;
+   int16_t interpolated;
+   unsigned stick, axis;
+
+   for(pad_axis = 0; pad_axis < 4; pad_axis++)
+   {
+      axis = pad_axis % 2 ? 0 : 1;
+      stick = pad_axis / 2;
+      interpolated = instance->data[6+pad_axis];
+      instance->analog_state[stick][axis] = (interpolated - 128) * 256;
+   }
 }
 
 static void update_pad_state(ds3_instance_t *instance)
@@ -318,17 +318,15 @@ static void ds3_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t
 
 static int16_t ds3_get_axis(void *data, unsigned axis)
 {
+   axis_data axis_data;
    ds3_instance_t *pad = (ds3_instance_t *)data;
-   int16_t val;
 
-   if(!pad || axis >= 4)
+   gamepad_read_axis_data(axis, &axis_data);
+
+   if(!pad || axis_data.axis >= 4)
       return 0;
 
-   val = pad->data[6+axis];
-   // val = pad->data[7+axis];
-   val = (val - 128) * 256;
-
-   return val;
+   return gamepad_get_axis_value(pad->analog_state, &axis_data);
 }
 
 static const char *ds3_get_name(void *data)

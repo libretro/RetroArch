@@ -75,21 +75,8 @@ void wiiu_pad_set_axis_value(int16_t state[3][2], int16_t left_x, int16_t left_y
   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = touch_y;
 }
 
-
-void wiiu_pad_read_axis_data(uint32_t axis, axis_data *data)
-{
-   data->axis        = AXIS_POS_GET(axis);
-   data->is_negative = false;
-
-   if(data->axis >= AXIS_INVALID)
-   {
-      data->axis = AXIS_NEG_GET(axis);
-      data->is_negative = true;
-   }
-}
-
 wiiu_pad_functions_t pad_functions = {
   wiiu_pad_get_axis_value,
   wiiu_pad_set_axis_value,
-  wiiu_pad_read_axis_data,
+  gamepad_read_axis_data,
 };

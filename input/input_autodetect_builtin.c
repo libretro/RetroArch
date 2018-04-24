@@ -267,7 +267,16 @@ DECL_BTN_EX(down, 5, "D-Pad Down") \
 DECL_BTN_EX(left, 6, "D-Pad left") \
 DECL_BTN_EX(right, 7, "D-Pad Right") \
 DECL_BTN_EX(r3, 15, "R3") \
-DECL_BTN_EX(l3, 14, "L3")
+DECL_BTN_EX(l3, 14, "L3") \
+DECL_AXIS_EX(l_x_plus,  +1, "L Analog right") \
+DECL_AXIS_EX(l_x_minus, -1, "L Analog left") \
+DECL_AXIS_EX(l_y_plus,  +0, "L Analog up") \
+DECL_AXIS_EX(l_y_minus, -0, "L Analog down") \
+DECL_AXIS_EX(r_x_plus,  +3, "R Analog right") \
+DECL_AXIS_EX(r_x_minus, -3, "R Analog left") \
+DECL_AXIS_EX(r_y_plus,  +2, "R Analog up") \
+DECL_AXIS_EX(r_y_minus, -2, "R Analog down")
+
 
 #define WIIUINPUT_GAMEPAD_DEFAULT_BINDS \
 DECL_BTN_EX(menu_toggle,  1, "Home") \

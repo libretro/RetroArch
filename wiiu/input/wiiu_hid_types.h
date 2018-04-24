@@ -22,7 +22,6 @@ typedef struct wiiu_adapter wiiu_adapter_t;
 typedef struct wiiu_attach wiiu_attach_event;
 typedef struct _wiiu_event_list wiiu_event_list;
 typedef struct _wiiu_adapter_list wiiu_adapter_list;
-typedef struct _axis_data axis_data;
 typedef struct _wiiu_pad_functions wiiu_pad_functions_t;
 
 #endif /* __WIIU_HID_TYPES__H */

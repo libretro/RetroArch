@@ -15,7 +15,6 @@
  */
 #include <stdio.h>
 #include "hid_device_driver.h"
-#include "../../../wiiu/input/wiiu_hid.h"
 
 #ifdef WII
 static uint8_t activation_packet[] = { 0x01, 0x13 };
@@ -259,9 +258,7 @@ static void update_analog_state(gca_pad_t *pad)
 {
    int pad_axis;
    int16_t interpolated;
-   int16_t stage1, stage2;
    unsigned stick, axis;
-   uint8_t val;
 
    /* GameCube analog axis are 8-bit unsigned, where 128/128 is center.
     * So, we subtract 128 to get a signed, 0-based value and then mulitply
@@ -321,12 +318,12 @@ static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
 
    gca_pad_t *pad = (gca_pad_t *)data;
 
-   pad_functions.read_axis_data(axis, &axis_data);
+   gamepad_read_axis_data(axis, &axis_data);
 
    if(!pad || axis_data.axis >= 4)
       return 0;
 
-   return pad_functions.get_axis_value(axis_data.axis, pad->analog_state, axis_data.is_negative);
+   return gamepad_get_axis_value(pad->analog_state, &axis_data);
 }
 
 static const char *wiiu_gca_get_name(void *data)
