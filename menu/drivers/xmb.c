@@ -3709,20 +3709,6 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->icon_size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
 
-#ifdef XMB_DEBUG
-   RARCH_LOG("[XMB] margin screen left: %.2f\n",  xmb->margins_screen_left);
-   RARCH_LOG("[XMB] margin screen top:  %.2f\n",  xmb->margins_screen_top);
-   RARCH_LOG("[XMB] margin title left:  %.2f\n",  xmb->margins_title_left);
-   RARCH_LOG("[XMB] margin title top:   %.2f\n",  xmb->margins_title_top);
-   RARCH_LOG("[XMB] margin title bott:  %.2f\n",  xmb->margins_title_bottom);
-   RARCH_LOG("[XMB] margin label left:  %.2f\n",  xmb->margins_label_left);
-   RARCH_LOG("[XMB] margin label top:   %.2f\n",  xmb->margins_label_top);
-   RARCH_LOG("[XMB] margin sett left:   %.2f\n",  xmb->margins_setting_left);
-   RARCH_LOG("[XMB] icon spacing hor:   %.2f\n",  xmb->icon_spacing_horizontal);
-   RARCH_LOG("[XMB] icon spacing ver:   %.2f\n",  xmb->icon_spacing_vertical);
-   RARCH_LOG("[XMB] icon size:          %.2f\n",  xmb->icon_size);
-#endif
-
    menu_display_set_header_height(new_header_height);
 }
 
@@ -3779,6 +3765,26 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->icon_size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
 
+   menu_display_set_header_height(new_header_height);
+}
+
+static void xmb_layout(xmb_handle_t *xmb)
+{
+   unsigned width, height, i, current, end;
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   size_t selection           = menu_navigation_get_selection();
+   bool use_ps3_layout        = false;
+
+   video_driver_get_size(&width, &height);
+
+   use_ps3_layout             = width > 320 && height > 240;
+
+   /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
+   if (use_ps3_layout)
+      xmb_layout_ps3(xmb, width);
+   else
+      xmb_layout_psp(xmb, width);
+
 #ifdef XMB_DEBUG
    RARCH_LOG("[XMB] margin screen left: %.2f\n",  xmb->margins_screen_left);
    RARCH_LOG("[XMB] margin screen top:  %.2f\n",  xmb->margins_screen_top);
@@ -3792,23 +3798,6 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    RARCH_LOG("[XMB] icon spacing ver:   %.2f\n",  xmb->icon_spacing_vertical);
    RARCH_LOG("[XMB] icon size:          %.2f\n",  xmb->icon_size);
 #endif
-
-   menu_display_set_header_height(new_header_height);
-}
-
-static void xmb_layout(xmb_handle_t *xmb)
-{
-   unsigned width, height, i, current, end;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   size_t selection           = menu_navigation_get_selection();
-
-   video_driver_get_size(&width, &height);
-
-   /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
-   if (width > 320 && height > 240)
-      xmb_layout_ps3(xmb, width);
-   else
-      xmb_layout_psp(xmb, width);
 
    current = (unsigned)selection;
    end     = (unsigned)menu_entries_get_size();
