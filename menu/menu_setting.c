@@ -5462,7 +5462,7 @@ static bool setting_append_list(
                   &settings->uints.menu_xmb_layout,
                   MENU_ENUM_LABEL_XMB_LAYOUT,
                   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-                  xmb_layout,
+                  xmb_menu_layout,
                   &group_info,
                   &subgroup_info,
                   parent_group,

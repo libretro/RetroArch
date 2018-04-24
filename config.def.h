@@ -305,7 +305,7 @@ static unsigned xmb_alpha_factor = 75;
 static unsigned menu_font_color_red = 255;
 static unsigned menu_font_color_green = 255;
 static unsigned menu_font_color_blue = 255;
-static unsigned xmb_layout       = 0;
+static unsigned xmb_menu_layout  = 0;
 static unsigned xmb_icon_theme   = XMB_ICON_THEME_MONOCHROME;
 static unsigned xmb_theme        = XMB_THEME_ELECTRIC_BLUE;
 #if defined(HAVE_LAKKA) || defined(__arm__) || defined(__PPC64__) || defined(__ppc64__) || defined(__powerpc64__) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
