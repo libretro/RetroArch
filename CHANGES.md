@@ -1,5 +1,8 @@
-# 1.7.2 (future)
+# 1.7.3 (future)
+
+# 1.7.2
 - ANDROID/OPENSL: Prevent crashes when setting audio latency too low (buffer count can never be lower than 2 now).
+- CRT: Added CRT SwitchRes.
 - COMMON: Hide the 'Core delete' option if the 'Core updater' is also hidden.
 - COMMON: Add way to reset core association for playlist entry.
 - COMMON: Fix invalid long command line options causing infinite loop on Windows
@@ -10,18 +13,26 @@
 - CHEEVOS: Fixed incompatibilities with Neo Geo Pocket achievement sets.
 - D3D10: Added D3D10 driver to release build. Has working shaders (Slang), overlay, and menu display driver support. Should be on par capabilities wise
 with D3D11 driver except for there being no hardware rendering right now.
-- D3D11: Experimental hardware renderer. Allows for libretro cores to use D3D11 for hardware rendering.
+- D3D11: Experimental hardware renderer. Allows for libretro cores to use D3D11 for hardware rendering. First core to use this is PPSSPP.
+- D3D11: Increase backwards compatibility, shaders compile with Shader Model 4.0 now, added support for more feature levels.
 - D3D11/D3D12: Fix crashes with completely black or white thumbnail textures in XMB.
 - LIBRETRO: Addition - Functions to enable and disable audio and video, and an environment function to query status of audio and video enables.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Polish translation.
-- MENU: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
+- MENU: Add Rewind/Latency/Overlay settings to Quick Menu
+- MENU/XMB: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
 - MENU/XMB: Left/right thumbnails are now automatically scaled according to layout.
 - MENU/XMB: Add Left Thumbnails (additional to the right). 
 - MENU/XMB: Fixed left/right tab regression.
 - MENU/XMB: Fix scaling of tall images that were cut on bottom previously.
 - MENU/XMB: Menu scale factor setting now changes texts length, image scaling and margins.
 - MENU/XMB: Mouse cursor scales correctly now.
+- MENU/XMB: Add toggle to show/hide Playlist tabs.
+- MENU/XMB: Add menu layout - can switch between Desktop, Handheld and Auto.
+- MENU/XMB: Don't load menu pipeline shaders unless XMB is selected (D3D10/D3D11/D3D12/GL/Vulkan)
+- MENU/VIDEO: Only show black frame insertion for the video drivers/context drivers
+that support it (so far this includes - D3D8/D3D9, OpenGL, Vulkan)
+- MENU/VIDEO:  Only show max swapchain images if supported by video driver and/or context driver (so far this includes - DRM EGL context driver, VideoCore EGL context driver, Vulkan)
 - MENU/MaterialUI: Automatic DPI Scaling should be much improved now, now scales as expected at 1440p and 4K resolutions.
 - MENU/MaterialUI: Fix wrong calculation of an entry height causing long playlists to end up outside of screen range. This also could cause crashes on low DPI screens.
 - IOS: Fixed crash when opening downloaded roms from Safari or using the "Open in.." functionality. Added the compiler flag to support keyboard remapping to controls.
