@@ -6001,6 +6001,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
                PARSE_ONLY_UINT, false);
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
                PARSE_ONLY_BOOL, false);
@@ -6061,6 +6077,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUDIO_SYNC,
                PARSE_ONLY_BOOL, false);
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_AUDIO_LATENCY,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
                PARSE_ONLY_UINT, false);
@@ -6106,6 +6126,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS,
                PARSE_ONLY_BOOL, false);
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,
                PARSE_ONLY_BOOL, false);
