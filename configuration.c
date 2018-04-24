@@ -1332,6 +1332,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("materialui_icons_enable",       &settings->bools.menu_materialui_icons_enable, true, materialui_icons_enable, false);
 #endif
 #ifdef HAVE_RGUI
+   SETTING_BOOL("rgui_background_filler_thickness_enable",     &settings->bools.menu_rgui_background_filler_thickness_enable, true, true, false);
+   SETTING_BOOL("rgui_border_filler_thickness_enable",     &settings->bools.menu_rgui_border_filler_thickness_enable, true, true, false);
    SETTING_BOOL("rgui_border_filler_enable",     &settings->bools.menu_rgui_border_filler_enable, true, true, false);
 #endif
 #ifdef HAVE_XMB

@@ -148,6 +148,8 @@ typedef struct settings
       bool menu_show_quit_retroarch;
       bool menu_show_reboot;
       bool menu_materialui_icons_enable;
+      bool menu_rgui_background_filler_thickness_enable;
+      bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_vertical_thumbnails;
