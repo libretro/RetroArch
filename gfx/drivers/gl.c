@@ -2608,6 +2608,7 @@ static uint32_t gl_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
 
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
+   BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
 
    return flags;
 }

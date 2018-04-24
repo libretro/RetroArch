@@ -1604,8 +1604,17 @@ d3d11_get_hw_render_interface(void* data, const struct retro_hw_render_interface
    return d3d11->hw.enable;
 }
 
+static uint32_t d3d11_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+
+   return flags;
+}
+
 static const video_poke_interface_t d3d11_poke_interface = {
-   NULL, /* get_flags */
+   d3d11_get_flags,
    NULL, /* set_coords */
    NULL, /* set_mvp */
    d3d11_gfx_load_texture,

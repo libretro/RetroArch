@@ -5166,21 +5166,38 @@ static bool setting_append_list(
                SD_FLAG_ADVANCED
                );
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.menu_linear_filter,
-               MENU_ENUM_LABEL_MENU_LINEAR_FILTER,
-               MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-               true,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_ADVANCED
-               );
+         if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+         {
+            gfx_ctx_flags_t flags;
+            bool setting_set = false;
+
+            if (video_driver_get_flags(&flags))
+               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING))
+                  setting_set = true;
+
+            flags.flags = 0;
+
+            if (video_context_driver_get_flags(&flags))
+               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING))
+                  setting_set = true;
+
+            if (setting_set)
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.menu_linear_filter,
+                     MENU_ENUM_LABEL_MENU_LINEAR_FILTER,
+                     MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
+                     true,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_ADVANCED
+                     );
+         }
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {

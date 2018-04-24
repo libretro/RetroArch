@@ -1750,8 +1750,17 @@ static void d3d12_gfx_unload_texture(void* data, uintptr_t handle)
    free(texture);
 }
 
+static uint32_t d3d12_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+
+   return flags;
+}
+
 static const video_poke_interface_t d3d12_poke_interface = {
-   NULL, /* get_flags */
+   d3d12_get_flags,
    NULL, /* set_coords */
    NULL, /* set_mvp */
    d3d12_gfx_load_texture,
