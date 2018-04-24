@@ -38,6 +38,7 @@ that support it (so far this includes - D3D8/D3D9, OpenGL, Vulkan)
 - IOS: Fixed crash when opening downloaded roms from Safari or using the "Open in.." functionality. Added the compiler flag to support keyboard remapping to controls.
 - IOS: Fixed buffer overlap that caused a crash while trying to download GLSL shaders from the buildbot.
 - PS3: fix URLS
+- SCANNER: Should be able to scan dual-layer Wii disc images now, filestream code now supports files larger than 4GB.
 - SHADERS/SLANG: Slang shaders should work again on Android version and MSVC versions (basically all the Griffin-based versions).
 - SHADERS: If GL context is GLES2/3/Core context, Cg shaders are unavailable. Applies to shader list too.
 - SHADERS: Hide cg/glsl shaders from being able to be selected if D3D8/9/10/11/Vulkan video drivers are selected.

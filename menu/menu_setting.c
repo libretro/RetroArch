@@ -5174,28 +5174,31 @@ static bool setting_append_list(
                SD_FLAG_ADVANCED
                );
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.menu_horizontal_animation,
-               MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION,
-               MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
-               true,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_ADVANCED
-               );
-
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_horizontal_animation,
+                  MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION,
+                  MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED
+                  );
 #ifdef RARCH_MOBILE
-         /* We don't want mobile users being able to switch this off. */
-         (*list)[list_info->index - 1].action_left   = NULL;
-         (*list)[list_info->index - 1].action_right  = NULL;
-         (*list)[list_info->index - 1].action_start  = NULL;
+            /* We don't want mobile users being able to switch this off. */
+            (*list)[list_info->index - 1].action_left   = NULL;
+            (*list)[list_info->index - 1].action_right  = NULL;
+            (*list)[list_info->index - 1].action_start  = NULL;
 #endif
+         }
+
 
          END_SUB_GROUP(list, list_info, parent_group);
 
