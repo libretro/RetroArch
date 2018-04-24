@@ -3863,11 +3863,17 @@ static void xmb_layout(xmb_handle_t *xmb)
          break;
          /* PS3 */
       case 1:
-         xmb_layout_ps3(xmb, width);
+         {
+            xmb->use_ps3_layout        = true;
+            xmb_layout_ps3(xmb, width);
+         }
          break;
          /* PSP */
       case 2:
-         xmb_layout_psp(xmb, width);
+         {
+            xmb->use_ps3_layout        = false;
+            xmb_layout_psp(xmb, width);
+         }
          break;
    }
 
