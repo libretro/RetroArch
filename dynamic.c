@@ -1759,22 +1759,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          int result = 0;
          if (!audio_driver_is_suspended() && audio_driver_is_active())
-         {
             result |= 2;
-         }
          if (video_driver_is_active() && !video_driver_is_stub_frame())
-         {
             result |= 1;
-         }
 #ifdef HAVE_RUNAHEAD
          if (want_fast_savestate())
-         {
             result |= 4;
-         }
          if (get_hard_disable_audio())
-         {
             result |= 8;
-         }
 #endif
          if (data != NULL)
          {
