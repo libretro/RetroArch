@@ -2395,6 +2395,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
 	 "Exibir Aba de Netplay"
 	)
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,
+      "Select a different layout for the XMB interface.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_THEME,
 	 "Tema de Ícones do Menu"
 	)
@@ -3822,6 +3824,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
 	 "Certifica-se de que a taxa de quadros é controlada enquanto estiver dentro do menu."
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+      "Menu Layout")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_THEME,
 	 "Selecionar um tema diferente para os ícones. As alterações terão efeito após reiniciar o programa."
 	)

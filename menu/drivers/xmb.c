@@ -3771,19 +3771,36 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 static void xmb_layout(xmb_handle_t *xmb)
 {
    unsigned width, height, i, current, end;
+   settings_t *settings       = config_get_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
-   bool use_ps3_layout        = false;
 
    video_driver_get_size(&width, &height);
 
-   use_ps3_layout             = width > 320 && height > 240;
+   switch (settings->uints.menu_xmb_layout)
+   {
+      /* Automatic */
+      case 0:
+         {
+            bool use_ps3_layout        = false;
+            use_ps3_layout             = width > 320 && height > 240;
 
-   /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
-   if (use_ps3_layout)
-      xmb_layout_ps3(xmb, width);
-   else
-      xmb_layout_psp(xmb, width);
+            /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
+            if (use_ps3_layout)
+               xmb_layout_ps3(xmb, width);
+            else
+               xmb_layout_psp(xmb, width);
+         }
+         break;
+         /* PS3 */
+      case 1:
+         xmb_layout_ps3(xmb, width);
+         break;
+         /* PSP */
+      case 2:
+         xmb_layout_psp(xmb, width);
+         break;
+   }
 
 #ifdef XMB_DEBUG
    RARCH_LOG("[XMB] margin screen left: %.2f\n",  xmb->margins_screen_left);

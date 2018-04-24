@@ -5459,6 +5459,20 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
+                  &settings->uints.menu_xmb_layout,
+                  MENU_ENUM_LABEL_XMB_LAYOUT,
+                  MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+                  xmb_layout,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
+
+            CONFIG_UINT(
+                  list, list_info,
                   &settings->uints.menu_xmb_theme,
                   MENU_ENUM_LABEL_XMB_THEME,
                   MENU_ENUM_LABEL_VALUE_XMB_THEME,

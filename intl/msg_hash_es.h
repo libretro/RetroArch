@@ -3233,6 +3233,8 @@ MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
 	"Mostrar pestaña juego en red"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+      "Menu Layout")
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_XMB_THEME,
 	"Tema de iconos del menú"
@@ -5125,6 +5127,8 @@ MSG_HASH(
 	MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
 	"Limita los FPS en el menú"
 	)
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,
+      "Select a different layout for the XMB interface.")
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_XMB_THEME,
 	"Seleccionar un tema de iconos diferente. Los cambios tendrán efecto al reiniciar"

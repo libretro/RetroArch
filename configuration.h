@@ -359,6 +359,7 @@ typedef struct settings
       unsigned menu_entry_normal_color;
       unsigned menu_entry_hover_color;
       unsigned menu_title_color;
+      unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
       unsigned menu_xmb_scale_factor;
       unsigned menu_xmb_alpha_factor;

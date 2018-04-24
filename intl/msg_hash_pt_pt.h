@@ -1745,6 +1745,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
       "Mostrar separador de definições")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
       "Mostrar separador de vídeo")
+MSG_HASH(MENU_ENUM_LABEL_XMB_LAYOUT,
+      "Select a different layout for the XMB interface.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_THEME,
       "Ícone do tema do menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
@@ -2852,6 +2854,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
       "Selecione uma imagem de disco para inserir.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Certifique-se de que a taxa de fotogramas atingida enquanto estiver dentro do menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,
+      "Select a different layout for the XMB interface.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_THEME,
       "Selecionar um tema diferente para este ícone. As alterações terão efeito após o reinício do programa.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,

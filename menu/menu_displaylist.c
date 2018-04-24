@@ -5357,6 +5357,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_MENU_FONT_COLOR_BLUE,
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_LAYOUT,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_THEME,
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
