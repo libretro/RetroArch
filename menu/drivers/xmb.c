@@ -183,6 +183,7 @@ enum
 typedef struct xmb_handle
 {
    bool mouse_show;
+   bool use_ps3_layout;
 
    uint8_t system_tab_end;
    uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
@@ -2506,6 +2507,7 @@ static int xmb_draw_item(
    if (string_is_empty(entry->value))
    {
       if (xmb->savestate_thumbnail ||
+            !xmb->use_ps3_layout ||
             (!string_is_equal
              (thumb_ident,
               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
@@ -3059,8 +3061,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Right thumbnail big size */
-   if (!settings->bools.menu_xmb_vertical_thumbnails || 
-         (settings->bools.menu_xmb_vertical_thumbnails && !xmb->left_thumbnail))
+   if (xmb->use_ps3_layout &&
+         (!settings->bools.menu_xmb_vertical_thumbnails || 
+         (settings->bools.menu_xmb_vertical_thumbnails && !xmb->left_thumbnail)))
    {
       /* Do not draw the right thumbnail if there is no space available */
 
@@ -3129,9 +3132,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Left thumbnail in the left margin */
    /* Do not draw the left thumbnail if there is no space available */
-   if (!settings->bools.menu_xmb_vertical_thumbnails &&
+   if (xmb->use_ps3_layout &&
+         !settings->bools.menu_xmb_vertical_thumbnails &&
          (xmb->margins_screen_top + xmb->icon_size *
-          (!(xmb->depth == 1)? 2.1 : 1) + min_thumb_size)
+         (!(xmb->depth == 1)? 2.1 : 1) + min_thumb_size)
          <= (float)height)
    {
       /* Left Thumbnail in the left margin */
@@ -3196,7 +3200,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* No Right Thumbnail, draw only the left one big size */
-   if (settings->bools.menu_xmb_vertical_thumbnails && !xmb->thumbnail)
+   if (xmb->use_ps3_layout &&
+      settings->bools.menu_xmb_vertical_thumbnails && !xmb->thumbnail)
    {
       /* Do not draw the left thumbnail if there is no space available */
 
@@ -3260,6 +3265,68 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   left_thumb_width, left_thumb_height,
                   xmb->left_thumbnail);
          }
+      }
+   }
+
+   /* PSP Layout Only - Left thumbnail in the left margin */
+   /* Do not draw the left thumbnail if there is no space available */
+   if (!xmb->use_ps3_layout &&
+         (xmb->margins_screen_top + xmb->icon_size * 1.5)
+         <= (float)height)
+   {
+      /* Left Thumbnail in the left margin */
+
+      if (xmb->left_thumbnail
+            && !string_is_equal(xmb_thumbnails_ident('L'),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      {
+         /* Limit left thumbnail width */
+
+         float left_thumb_width     = 0.0f;
+         float left_thumb_height    = 0.0f;
+         float thumb_max_width = xmb->icon_size * 2.4;
+
+#ifdef XMB_DEBUG
+         RARCH_LOG("[XMB left thumbnail] width: %.2f, height: %.2f\n",
+               xmb->left_thumbnail_width, xmb->left_thumbnail_height);
+         RARCH_LOG("[XMB left thumbnail] w: %.2f, h: %.2f\n", width, height);
+#endif
+
+         if (xmb->left_thumbnail_width > thumb_max_width)
+         {
+            left_thumb_width  = xmb->left_thumbnail_width *
+               (thumb_max_width / xmb->left_thumbnail_width);
+            left_thumb_height = xmb->left_thumbnail_height *
+               (thumb_max_width / xmb->left_thumbnail_width);
+         }
+         else
+         {
+            left_thumb_width  = xmb->left_thumbnail_width;
+            left_thumb_height = xmb->left_thumbnail_height;
+         }
+
+         /* Limit left thumbnail height to screen height + margin. */
+         if (xmb->margins_screen_top + xmb->icon_size +
+               left_thumb_height >= ((float)height - (xmb->icon_size * 0.5)))
+         {
+            left_thumb_width = left_thumb_width *
+               (((float)height - (xmb->icon_size * 0.5) -
+               xmb->margins_screen_top - xmb->icon_size) /
+               left_thumb_height);
+
+            left_thumb_height = left_thumb_height *
+               (((float)height - (xmb->icon_size * 0.5) -
+               xmb->margins_screen_top - xmb->icon_size) /
+               left_thumb_height);
+         }
+
+         xmb_draw_thumbnail(video_info,
+               xmb, &coord_white[0], width, height, 
+               ((thumb_max_width - left_thumb_width) / 2),
+               xmb->margins_screen_top + (xmb->icon_size * (!(xmb->depth == 1)? 2.2 : 0.75)) +
+               left_thumb_height,
+               left_thumb_width, left_thumb_height,
+               xmb->left_thumbnail);
       }
    }
 
@@ -3442,7 +3509,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Right side 2 thumbnails on top of each other */
    /* here to be displayed above the horizontal icons */
-   if (xmb->left_thumbnail && xmb->thumbnail &&  settings->bools.menu_xmb_vertical_thumbnails)
+   if (xmb->use_ps3_layout &&
+      xmb->left_thumbnail && xmb->thumbnail &&
+      settings->bools.menu_xmb_vertical_thumbnails)
    {
       /* Do not draw the right thumbnail if there is no space available */
       if (((xmb->margins_screen_top +
@@ -3782,11 +3851,11 @@ static void xmb_layout(xmb_handle_t *xmb)
       /* Automatic */
       case 0:
          {
-            bool use_ps3_layout        = false;
-            use_ps3_layout             = width > 320 && height > 240;
+            xmb->use_ps3_layout        = false;
+            xmb->use_ps3_layout        = width > 320 && height > 240;
 
             /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
-            if (use_ps3_layout)
+            if (xmb->use_ps3_layout)
                xmb_layout_ps3(xmb, width);
             else
                xmb_layout_psp(xmb, width);
@@ -3927,7 +3996,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    /* xmb_scale 50 = {2.5, 2.5,   2, 1.7, 2.5,   4, 2.4, 2.5} */
    /* xmb_scale 75 = {  2, 1.6, 1.6, 1.4, 1.5, 2.3, 1.9, 1.3} */
 
-   if (scale_value < 100)
+   if (scale_value < 100 && xmb->use_ps3_layout)
    {
       /* text length & word wrap (base 35 apply to file browser, 1st column) */
       scale_mod[0] = -0.03 * scale_value + 4.083;
