@@ -65,6 +65,8 @@ public final class MainMenuActivity extends PreferenceActivity
 				permissionsNeeded.add("Read External Storage");
 			if (!addPermission(permissionsList, Manifest.permission.WRITE_EXTERNAL_STORAGE))
 				permissionsNeeded.add("Write External Storage");
+			if (!addPermission(permissionsList, Manifest.permission.ACCESS_FINE_LOCATION))
+				permissionsNeeded.add("Access fine location");
 
 			if (permissionsList.size() > 0)
 			{
