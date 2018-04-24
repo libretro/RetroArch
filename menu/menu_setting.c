@@ -2331,6 +2331,7 @@ static bool setting_append_list(
                parent_group);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
+#ifdef HAVE_OVERLAY
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
@@ -2339,6 +2340,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+#endif
 
          CONFIG_ACTION(
                list, list_info,
@@ -6122,6 +6124,7 @@ static bool setting_append_list(
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 #endif
 
+#ifdef HAVE_NETWORKING
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_show_online_updater,
@@ -6137,6 +6140,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+#if !defined(HAVE_LAKKA)
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_show_core_updater,
@@ -6151,6 +6155,8 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+#endif
+#endif
 
          CONFIG_BOOL(
                list, list_info,
