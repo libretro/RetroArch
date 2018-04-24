@@ -2108,7 +2108,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-#ifndef __CELLOS_LV2__
+#if !defined(__CELLOS_LV2__) && !defined(HAVE_DYNAMIC)
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_RESTART_RETROARCH,
@@ -2392,6 +2392,7 @@ static bool setting_append_list(
                parent_group);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
+#ifdef HAVE_CHEEVOS
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,
@@ -2399,6 +2400,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+#endif
 
          CONFIG_ACTION(
                list, list_info,
@@ -2409,6 +2411,7 @@ static bool setting_append_list(
                parent_group);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
+#ifdef HAVE_LAKKA
          if (string_is_not_equal(settings->arrays.wifi_driver, "null"))
          {
             CONFIG_ACTION(
@@ -2419,6 +2422,7 @@ static bool setting_append_list(
                   &subgroup_info,
                   parent_group);
          }
+#endif
 
          CONFIG_ACTION(
                list, list_info,
