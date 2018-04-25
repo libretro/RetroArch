@@ -107,6 +107,8 @@
 #define CHEEVOS_JSON_KEY_LEADERBOARDS 0xf1247d2dU
 #define CHEEVOS_JSON_KEY_MEM          0x0b8807e4U
 #define CHEEVOS_JSON_KEY_FORMAT       0xb341208eU
+#define CHEEVOS_JSON_KEY_SUCCESS      0x110461deU
+#define CHEEVOS_JSON_KEY_ERROR        0x0d2011cfU
 
 typedef struct
 {
@@ -3587,29 +3589,46 @@ found:
 
       {
          char urle_user[64];
-         char urle_pwd[64];
+         char urle_login[64];
          const char *username = coro ? coro->settings->arrays.cheevos_username : NULL;
-         const char *password = coro ? coro->settings->arrays.cheevos_password : NULL;
+         const char *login;
+         bool via_token;
 
-         if (!username || !*username || !password || !*password)
+         if (coro)
+         {
+            if (string_is_empty(coro->settings->arrays.cheevos_password))
+            {
+               via_token = true;
+               login = coro->settings->arrays.cheevos_token;
+            }
+            else
+            {
+               via_token = false;
+               login = coro->settings->arrays.cheevos_password;
+            }
+         }
+         else
+            login = NULL;
+        
+         if (string_is_empty(username) || string_is_empty(login))
          {
             runloop_msg_queue_push(
-                  "Missing Retro Achievements account information.",
+                  "Missing RetroAchievements account information.",
                   0, 5 * 60, false);
             runloop_msg_queue_push(
                   "Please fill in your account information in Settings.",
                   0, 5 * 60, false);
-            RARCH_ERR("[CHEEVOS]: username and/or password not informed.\n");
+            RARCH_ERR("[CHEEVOS]: login info not informed.\n");
             CORO_STOP();
          }
 
          cheevos_url_encode(username, urle_user, sizeof(urle_user));
-         cheevos_url_encode(password, urle_pwd, sizeof(urle_pwd));
+         cheevos_url_encode(login, urle_login, sizeof(urle_login));
 
          snprintf(
                coro->url, sizeof(coro->url),
-               "http://retroachievements.org/dorequest.php?r=login&u=%s&p=%s",
-               urle_user, urle_pwd
+               "http://retroachievements.org/dorequest.php?r=login&u=%s&%c=%s",
+                     urle_user, via_token ? 't' : 'p', urle_login
                );
 
          coro->url[sizeof(coro->url) - 1] = 0;
@@ -3624,32 +3643,66 @@ found:
 
       if (coro->json)
       {
-         int res = cheevos_get_value(
+         char error_response[64];
+         cheevos_get_value(
+               coro->json,
+               CHEEVOS_JSON_KEY_ERROR,
+               error_response,
+               sizeof(error_response)
+         );
+
+         /* No error, continue with login */
+         if (string_is_empty(error_response))
+         {
+            int res = cheevos_get_value(
                coro->json,
                CHEEVOS_JSON_KEY_TOKEN,
                cheevos_locals.token,
                sizeof(cheevos_locals.token));
 
+            if ((void*)coro->json)
+               free((void*)coro->json);
+
+            if (!res)
+            {
+               if (coro->settings->bools.cheevos_verbose_enable)
+               {
+                  char msg[256];
+                  snprintf(msg, sizeof(msg),
+                        "RetroAchievements: Logged in as \"%s\".",
+                        coro->settings->arrays.cheevos_username);
+                  msg[sizeof(msg) - 1] = 0;
+                  runloop_msg_queue_push(msg, 0, 3 * 60, false);
+               }
+            
+               /* Save token to config and clear pass on success */
+               *coro->settings->arrays.cheevos_password = '\0';
+               strncpy(
+                     coro->settings->arrays.cheevos_token, 
+                     cheevos_locals.token, sizeof(cheevos_locals.token)
+               );
+               CORO_RET();
+            }
+         }
+
          if ((void*)coro->json)
             free((void*)coro->json);
-
-         if (!res)
-         {
-            if (coro->settings->bools.cheevos_verbose_enable)
-            {
-               char msg[256];
-               snprintf(msg, sizeof(msg),
-                     "RetroAchievements: logged in as \"%s\".",
-                     coro->settings->arrays.cheevos_username);
-               msg[sizeof(msg) - 1] = 0;
-               runloop_msg_queue_push(msg, 0, 3 * 60, false);
-            }
-            CORO_RET();
-         }
+     
+         /* Site returned error, display it */
+         char error_message[256];
+         snprintf(error_message, sizeof(error_message),
+               "RetroAchievements: %s",
+               error_response);
+         error_message[sizeof(error_message) - 1] = 0;
+         runloop_msg_queue_push(error_message, 0, 5 * 60, false);
+         *coro->settings->arrays.cheevos_token = '\0';
+         
+         CORO_STOP();
       }
-
-      runloop_msg_queue_push("Retro Achievements login error.", 0, 5 * 60, false);
+      
+      runloop_msg_queue_push("RetroAchievements: Error contacting server.", 0, 5 * 60, false);
       RARCH_ERR("[CHEEVOS]: error getting user token.\n");
+      
       CORO_STOP();
 
       /**************************************************************************
