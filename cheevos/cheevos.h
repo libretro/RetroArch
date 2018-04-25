@@ -45,13 +45,10 @@ End of setup
 
 #else
 
-static void STUB_LOG(const char *fmt, ...)
-{
-   (void)fmt;
-}
+void cheevos_log(const char *fmt, ...);
 
-#define CHEEVOS_LOG STUB_LOG
-#define CHEEVOS_ERR STUB_LOG
+#define CHEEVOS_LOG cheevos_log
+#define CHEEVOS_ERR cheevos_log
 
 #endif
 

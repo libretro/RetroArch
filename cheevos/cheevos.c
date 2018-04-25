@@ -301,6 +301,15 @@ int cheats_were_enabled = 0;
 Supporting functions.
 *****************************************************************************/
 
+#ifndef CHEEVOS_VERBOSE
+
+void cheevos_log(const char *fmt, ...)
+{
+   (void)fmt;
+}
+
+#endif
+
 static unsigned size_in_megabytes(unsigned val)
 {
    return (val * 1024 * 1024);
@@ -363,335 +372,6 @@ static void cheevos_log_url(const char* format, const char* url)
 
    CHEEVOS_LOG(format, copy);
 #endif
-}
-#endif
-
-#ifdef CHEEVOS_VERBOSE
-static void cheevos_add_char(char** aux, size_t* left, char k)
-{
-   if (*left >= 1)
-   {
-      **aux = k;
-      (*aux)++;
-      (*left)--;
-   }
-}
-
-static void cheevos_add_string(char** aux, size_t* left, const char* s)
-{
-   size_t len = strlen(s);
-
-   if (*left >= len)
-   {
-      strcpy(*aux, s);
-      *aux += len;
-      *left -= len;
-   }
-}
-
-static void cheevos_add_hex(char** aux, size_t* left, unsigned v)
-{
-   char buffer[32];
-
-   snprintf(buffer, sizeof(buffer), "%06x", v);
-   buffer[sizeof(buffer) - 1] = 0;
-
-   cheevos_add_string(aux, left, buffer);
-}
-
-static void cheevos_add_uint(char** aux, size_t* left, unsigned v)
-{
-   char buffer[32];
-
-   snprintf(buffer, sizeof(buffer), "%u", v);
-   buffer[sizeof(buffer) - 1] = 0;
-
-   cheevos_add_string(aux, left, buffer);
-}
-
-static void cheevos_add_int(char** aux, size_t* left, int v)
-{
-   char buffer[32];
-
-   snprintf(buffer, sizeof(buffer), "%d", v);
-   buffer[sizeof(buffer) - 1] = 0;
-
-   cheevos_add_string(aux, left, buffer);
-}
-
-static void cheevos_log_var(const cheevos_var_t* var)
-{
-   if (!var)
-      return;
-
-   CHEEVOS_LOG("[CHEEVOS]: size: %s\n",
-      var->size == CHEEVOS_VAR_SIZE_BIT_0 ? "bit 0" :
-      var->size == CHEEVOS_VAR_SIZE_BIT_1 ? "bit 1" :
-      var->size == CHEEVOS_VAR_SIZE_BIT_2 ? "bit 2" :
-      var->size == CHEEVOS_VAR_SIZE_BIT_3 ? "bit 3" :
-      var->size == CHEEVOS_VAR_SIZE_BIT_4 ? "bit 4" :
-      var->size == CHEEVOS_VAR_SIZE_BIT_5 ? "bit 5" :
-      var->size == CHEEVOS_VAR_SIZE_BIT_6 ? "bit 6" :
-      var->size == CHEEVOS_VAR_SIZE_BIT_7 ? "bit 7" :
-      var->size == CHEEVOS_VAR_SIZE_NIBBLE_LOWER ? "low nibble" :
-      var->size == CHEEVOS_VAR_SIZE_NIBBLE_UPPER ? "high nibble" :
-      var->size == CHEEVOS_VAR_SIZE_EIGHT_BITS ? "byte" :
-      var->size == CHEEVOS_VAR_SIZE_SIXTEEN_BITS ? "word" :
-      var->size == CHEEVOS_VAR_SIZE_THIRTYTWO_BITS ? "dword" :
-      "?"
-   );
-   CHEEVOS_LOG("[CHEEVOS]: type: %s\n",
-      var->type == CHEEVOS_VAR_TYPE_ADDRESS ? "address" :
-      var->type == CHEEVOS_VAR_TYPE_VALUE_COMP ? "value" :
-      var->type == CHEEVOS_VAR_TYPE_DELTA_MEM ? "delta" :
-      var->type == CHEEVOS_VAR_TYPE_DYNAMIC_VAR ? "dynamic" :
-      "?"
-   );
-   CHEEVOS_LOG("[CHEEVOS]: value: %u\n", var->value);
-}
-
-static void cheevos_log_cond(const cheevos_cond_t* cond)
-{
-   if (!cond)
-      return;
-
-   CHEEVOS_LOG("[CHEEVOS]: condition %p\n", cond);
-   CHEEVOS_LOG("[CHEEVOS]: type:     %s\n",
-      cond->type == CHEEVOS_COND_TYPE_STANDARD   ? "standard" :
-      cond->type == CHEEVOS_COND_TYPE_PAUSE_IF   ? "pause" :
-      cond->type == CHEEVOS_COND_TYPE_RESET_IF   ? "reset" :
-      cond->type == CHEEVOS_COND_TYPE_ADD_SOURCE ? "add source" :
-      cond->type == CHEEVOS_COND_TYPE_SUB_SOURCE ? "sub source" :
-      cond->type == CHEEVOS_COND_TYPE_ADD_HITS   ? "add hits" :
-      "?"
-   );
-   CHEEVOS_LOG("[CHEEVOS]: req_hits: %u\n", cond->req_hits);
-   CHEEVOS_LOG("[CHEEVOS]: source:\n");
-   cheevos_log_var(&cond->source);
-   CHEEVOS_LOG("[CHEEVOS]: op: %s\n",
-      cond->op == CHEEVOS_COND_OP_EQUALS ? "==" :
-      cond->op == CHEEVOS_COND_OP_LESS_THAN ? "<" :
-      cond->op == CHEEVOS_COND_OP_LESS_THAN_OR_EQUAL ? "<=" :
-      cond->op == CHEEVOS_COND_OP_GREATER_THAN ? ">" :
-      cond->op == CHEEVOS_COND_OP_GREATER_THAN_OR_EQUAL ? ">=" :
-      cond->op == CHEEVOS_COND_OP_NOT_EQUAL_TO ? "!=" :
-      "?"
-   );
-   CHEEVOS_LOG("[CHEEVOS]:  target:\n");
-   cheevos_log_var(&cond->target);
-}
-
-static void cheevos_log_cheevo(const cheevo_t* cheevo,
-      const cheevos_field_t* memaddr_ud)
-{
-   if (!cheevo || !memaddr_ud)
-      return;
-
-   CHEEVOS_LOG("[CHEEVOS]:  cheevo %p\n", cheevo);
-   CHEEVOS_LOG("[CHEEVOS]:  id:      %u\n", cheevo->id);
-   CHEEVOS_LOG("[CHEEVOS]:  title:   %s\n", cheevo->title);
-   CHEEVOS_LOG("[CHEEVOS]:  desc:    %s\n", cheevo->description);
-   CHEEVOS_LOG("[CHEEVOS]:  author:  %s\n", cheevo->author);
-   CHEEVOS_LOG("[CHEEVOS]:  badge:   %s\n", cheevo->badge);
-   CHEEVOS_LOG("[CHEEVOS]:  points:  %u\n", cheevo->points);
-   CHEEVOS_LOG("[CHEEVOS]:  sets:    TBD\n");
-   CHEEVOS_LOG("[CHEEVOS]:  memaddr: %.*s\n",
-         (int)memaddr_ud->length, memaddr_ud->string);
-}
-
-static void cheevos_add_var_size(char** aux, size_t* left,
-      const cheevos_var_t* var)
-{
-   if (!var)
-      return;
-
-   switch( var->size )
-   {
-      case CHEEVOS_VAR_SIZE_BIT_0:
-         cheevos_add_char(aux, left, 'M');
-         break;
-      case CHEEVOS_VAR_SIZE_BIT_1:
-         cheevos_add_char(aux, left, 'N');
-         break;
-      case CHEEVOS_VAR_SIZE_BIT_2:
-         cheevos_add_char(aux, left, 'O');
-         break;
-      case CHEEVOS_VAR_SIZE_BIT_3:
-         cheevos_add_char(aux, left, 'P');
-         break;
-      case CHEEVOS_VAR_SIZE_BIT_4:
-         cheevos_add_char(aux, left, 'Q');
-         break;
-      case CHEEVOS_VAR_SIZE_BIT_5:
-         cheevos_add_char(aux, left, 'R');
-         break;
-      case CHEEVOS_VAR_SIZE_BIT_6:
-         cheevos_add_char(aux, left, 'S');
-         break;
-      case CHEEVOS_VAR_SIZE_BIT_7:
-         cheevos_add_char(aux, left, 'T');
-         break;
-      case CHEEVOS_VAR_SIZE_NIBBLE_LOWER:
-         cheevos_add_char(aux, left, 'L');
-         break;
-      case CHEEVOS_VAR_SIZE_NIBBLE_UPPER:
-         cheevos_add_char(aux, left, 'U');
-         break;
-      case CHEEVOS_VAR_SIZE_EIGHT_BITS:
-         cheevos_add_char(aux, left, 'H');
-         break;
-      case CHEEVOS_VAR_SIZE_THIRTYTWO_BITS:
-         cheevos_add_char(aux, left, 'X');
-         break;
-      case CHEEVOS_VAR_SIZE_SIXTEEN_BITS:
-      default:
-         cheevos_add_char(aux, left, ' ');
-         break;
-   }
-}
-
-static void cheevos_add_var(const cheevos_var_t* var, char** memaddr,
-      size_t *left)
-{
-   if (!var)
-      return;
-
-   if (   var->type == CHEEVOS_VAR_TYPE_ADDRESS
-       || var->type == CHEEVOS_VAR_TYPE_DELTA_MEM)
-   {
-      if (var->type == CHEEVOS_VAR_TYPE_DELTA_MEM)
-         cheevos_add_char(memaddr, left, 'd');
-      else if (var->is_bcd)
-         cheevos_add_char(memaddr, left, 'b');
-
-      cheevos_add_string(memaddr, left, "0x");
-      cheevos_add_var_size(memaddr, left, var);
-      cheevos_add_hex(memaddr, left, var->value);
-   }
-   else if (var->type == CHEEVOS_VAR_TYPE_VALUE_COMP)
-   {
-      cheevos_add_uint(memaddr, left, var->value);
-   }
-}
-
-static void cheevos_build_memaddr(const cheevos_condition_t* condition,
-      char* memaddr, size_t left)
-{
-   size_t i, j;
-   const cheevos_cond_t* cond;
-   const cheevos_condset_t *condset;
-   char                        *aux = memaddr;
-
-   left--; /* reserve one char for the null terminator */
-
-   for  (i = 0, condset = condition->condsets; 
-         i < condition->count; i++, condset++)
-   {
-      if (i != 0)
-         cheevos_add_char(&aux, &left, 'S');
-
-      for  (j = 0, cond = condset->conds; 
-            j < condset->count; j++, cond++)
-      {
-         if (j != 0)
-            cheevos_add_char(&aux, &left, '_');
-
-         if (cond->type == CHEEVOS_COND_TYPE_RESET_IF)
-            cheevos_add_string(&aux, &left, "R:");
-         else if (cond->type == CHEEVOS_COND_TYPE_PAUSE_IF)
-            cheevos_add_string(&aux, &left, "P:");
-         else if (cond->type == CHEEVOS_COND_TYPE_ADD_SOURCE)
-            cheevos_add_string(&aux, &left, "A:");
-         else if (cond->type == CHEEVOS_COND_TYPE_SUB_SOURCE)
-            cheevos_add_string(&aux, &left, "B:");
-         else if (cond->type == CHEEVOS_COND_TYPE_ADD_HITS)
-            cheevos_add_string(&aux, &left, "C:");
-
-         cheevos_add_var(&cond->source, &aux, &left);
-
-         switch (cond->op)
-         {
-            case CHEEVOS_COND_OP_EQUALS:
-               cheevos_add_char(&aux, &left, '=');
-               break;
-            case CHEEVOS_COND_OP_GREATER_THAN:
-               cheevos_add_char(&aux, &left, '>');
-               break;
-            case CHEEVOS_COND_OP_GREATER_THAN_OR_EQUAL:
-               cheevos_add_string(&aux, &left, ">=");
-               break;
-            case CHEEVOS_COND_OP_LESS_THAN:
-               cheevos_add_char(&aux, &left, '<');
-               break;
-            case CHEEVOS_COND_OP_LESS_THAN_OR_EQUAL:
-               cheevos_add_string(&aux, &left, "<=");
-               break;
-            case CHEEVOS_COND_OP_NOT_EQUAL_TO:
-               cheevos_add_string(&aux, &left, "!=");
-               break;
-         }
-
-         cheevos_add_var(&cond->target, &aux, &left);
-
-         if (cond->req_hits > 0)
-         {
-            cheevos_add_char(&aux, &left, '.');
-            cheevos_add_uint(&aux, &left, cond->req_hits);
-            cheevos_add_char(&aux, &left, '.');
-         }
-      }
-   }
-
-   *aux = 0;
-}
-
-static void cheevos_post_log_cheevo(const cheevo_t* cheevo)
-{
-   char memaddr[256];
-   if (!cheevo)
-      return;
-   cheevos_build_memaddr(&cheevo->condition, memaddr, sizeof(memaddr));
-   CHEEVOS_LOG("[CHEEVOS]: memaddr (computed): %s\n", memaddr);
-}
-
-static void cheevos_log_lboard(const cheevos_leaderboard_t* lb)
-{
-   unsigned i;
-   char mem[256];
-   char* aux     = NULL;
-   size_t left   = 0;
-
-   if (!lb)
-      return;
-
-   CHEEVOS_LOG("[CHEEVOS]: leaderboard %p\n", lb);
-   CHEEVOS_LOG("[CHEEVOS]:   id:      %u\n",  lb->id);
-   CHEEVOS_LOG("[CHEEVOS]:   title:   %s\n",  lb->title);
-   CHEEVOS_LOG("[CHEEVOS]:   desc:    %s\n",  lb->description);
-
-   cheevos_build_memaddr(&lb->start, mem, sizeof(mem));
-   CHEEVOS_LOG("[CHEEVOS]: start:  %s\n", mem);
-
-   cheevos_build_memaddr(&lb->cancel, mem, sizeof(mem));
-   CHEEVOS_LOG("[CHEEVOS]: cancel: %s\n", mem);
-
-   cheevos_build_memaddr(&lb->submit, mem, sizeof(mem));
-   CHEEVOS_LOG("[CHEEVOS]: submit: %s\n", mem);
-
-   left = sizeof(mem);
-   aux  = mem;
-
-   for (i = 0; i < lb->value.count; i++)
-   {
-      if (i != 0)
-         cheevos_add_char(&aux, &left, '_');
-
-      cheevos_add_var(&lb->value.terms[i].var, &aux, &left);
-      cheevos_add_char(&aux, &left, '*');
-      cheevos_add_int(&aux, &left, lb->value.terms[i].multiplier);
-   }
-
-   CHEEVOS_LOG("[CHEEVOS]: value:  %s\n", mem);
 }
 #endif
 
@@ -1216,16 +896,8 @@ static int cheevos_new_cheevo(cheevos_readud_t *ud)
          !cheevo->badge)
       goto error;
 
-#ifdef CHEEVOS_VERBOSE
-   cheevos_log_cheevo(cheevo, &ud->memaddr);
-#endif
-
    if (cheevos_parse_condition(&cheevo->condition, ud->memaddr.string))
       goto error;
-
-#ifdef CHEEVOS_VERBOSE
-   cheevos_post_log_cheevo(cheevo);
-#endif
 
    return 0;
 
@@ -1347,10 +1019,6 @@ static int cheevos_new_lboard(cheevos_readud_t *ud)
 
    if (cheevos_parse_mem(lboard, ud->memaddr.string))
       goto error;
-
-#ifdef CHEEVOS_VERBOSE
-   cheevos_log_lboard(lboard);
-#endif
 
    return 0;
 

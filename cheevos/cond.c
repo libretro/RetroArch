@@ -168,9 +168,6 @@ void cheevos_cond_parse_in_set(cheevos_cond_t* cond, const char* memaddr, unsign
          if (index == which)
          {
             cheevos_cond_parse(cond, &memaddr);
-#ifdef CHEEVOS_VERBOSE
-            /*cheevos_log_cond(cond);*/
-#endif
             cond++;
          }
          else
