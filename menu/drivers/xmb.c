@@ -4002,7 +4002,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    /* xmb_scale 50 = {2.5, 2.5,   2, 1.7, 2.5,   4, 2.4, 2.5} */
    /* xmb_scale 75 = {  2, 1.6, 1.6, 1.4, 1.5, 2.3, 1.9, 1.3} */
 
-   if (scale_value < 100 && xmb->use_ps3_layout)
+   if (scale_value < 100)
    {
       /* text length & word wrap (base 35 apply to file browser, 1st column) */
       scale_mod[0] = -0.03 * scale_value + 4.083;
