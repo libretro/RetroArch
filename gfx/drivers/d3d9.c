@@ -1911,7 +1911,10 @@ static const video_poke_interface_t d3d9_poke_interface = {
    d3d9_load_texture,
    d3d9_unload_texture,
    d3d9_set_video_mode,
+#ifdef _XBOX
+#else
    win32_get_refresh_rate,
+#endif
    NULL,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

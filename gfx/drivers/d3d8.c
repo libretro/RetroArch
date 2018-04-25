@@ -1884,7 +1884,11 @@ static const video_poke_interface_t d3d_poke_interface = {
    d3d8_load_texture,
    d3d8_unload_texture,
    d3d8_set_video_mode,
+#ifdef _XBOX
+   NULL,
+#else
    win32_get_refresh_rate,
+#endif
    NULL,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
