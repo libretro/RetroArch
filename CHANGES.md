@@ -12,6 +12,7 @@
 - CHEEVOS: Support Atari 2600, Virtual Boy, and Arcade (only Neo Geo, CPS-1, CPS-2 and CPS-3 and only with fbalpha core).
 - CHEEVOS: Add option to automatically take a screenshot when an achievement is triggered.
 - CHEEVOS: Fixed incompatibilities with Neo Geo Pocket achievement sets.
+- CHEEVOS: Store only login token, not password.
 - D3D10: Added D3D10 driver to release build. Has working shaders (Slang), overlay, and menu display driver support. Should be on par capabilities wise
 with D3D11 driver except for there being no hardware rendering right now.
 - D3D11: Experimental hardware renderer. Allows for libretro cores to use D3D11 for hardware rendering. First core to use this is PPSSPP.
