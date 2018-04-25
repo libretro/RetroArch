@@ -3644,6 +3644,8 @@ found:
       if (coro->json)
       {
          char error_response[64];
+         char error_message[256];
+
          cheevos_get_value(
                coro->json,
                CHEEVOS_JSON_KEY_ERROR,
@@ -3689,7 +3691,6 @@ found:
             free((void*)coro->json);
      
          /* Site returned error, display it */
-         char error_message[256];
          snprintf(error_message, sizeof(error_message),
                "RetroAchievements: %s",
                error_response);
