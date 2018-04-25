@@ -30,7 +30,8 @@
 
 RETRO_BEGIN_DECLS
 
-struct natt_status {
+struct natt_status
+{
    /** nfds for select when checking for input */
    int nfds;
 
