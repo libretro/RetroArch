@@ -45,6 +45,13 @@ that support it (so far this includes - D3D8/D3D9, OpenGL, Vulkan)
 - IOS: Fixed crash when opening downloaded roms from Safari or using the "Open in.." functionality. Added the compiler flag to support keyboard remapping to controls.
 - IOS: Fixed buffer overlap that caused a crash while trying to download GLSL shaders from the buildbot.
 - PS3: fix URLS
+- REMAPS: Mapping keyboard keys from more than one gamepad (works with dosbox)
+- REMAPS: Mapping more than one button to the same action
+- REMAPS: Unmapping buttons
+- REMAPS: Unmapping analogs
+- REMAPS: Mapping a button to trigger an analog response (tested with mupen, can run on SM64 with the d-pad now, triggers a full analog tilt)
+- REMAPS: Mapping an analog to another analog (having more than one analog mapped to the same output causes issues)
+- REMAPS: Mapping an analog to produce a button response
 - SCANNER: Should be able to scan dual-layer Wii disc images now, filestream code now supports files larger than 4GB.
 - SHADERS/SLANG: Slang shaders should work again on Android version and MSVC versions (basically all the Griffin-based versions).
 - SHADERS: If GL context is GLES2/3/Core context, Cg shaders are unavailable. Applies to shader list too.
