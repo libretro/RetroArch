@@ -44,7 +44,7 @@
 #define STB_VORBIS_NO_STDIO
 #define STB_VORBIS_NO_CRT
 
-#include <stb_vorbis.h>
+#include <stb/stb_vorbis.h>
 #endif
 
 #ifdef HAVE_IBXM
@@ -412,7 +412,7 @@ static bool audio_mixer_play_ogg(
 {
    stb_vorbis_info info;
    int res                         = 0;
-   float ratio                     = 0.0f;
+   float ratio                     = 1.0f;
    unsigned samples                = 0;
    void *ogg_buffer                = NULL;
    void *resampler_data            = NULL;
@@ -665,8 +665,8 @@ static void audio_mixer_mix_ogg(float* buffer, size_t num_frames,
       float volume)
 {
    int i;
-   struct resampler_data info;
-   float temp_buffer[AUDIO_MIXER_TEMP_OGG_BUFFER];
+   struct resampler_data info = { 0 };
+   float temp_buffer[AUDIO_MIXER_TEMP_OGG_BUFFER] = { 0 };
    unsigned buf_free                = (unsigned)(num_frames * 2);
    unsigned temp_samples            = 0;
    float* pcm                       = NULL;
@@ -704,7 +704,10 @@ again:
       info.output_frames        = 0;
       info.ratio                = voice->types.ogg.ratio;
 
-      voice->types.ogg.resampler->process(voice->types.ogg.resampler_data, &info);
+      if (voice->types.ogg.resampler)
+        voice->types.ogg.resampler->process(voice->types.ogg.resampler_data, &info);
+      else
+        memcpy(voice->types.ogg.buffer, temp_buffer, temp_samples * sizeof(float));
       voice->types.ogg.position = 0;
       voice->types.ogg.samples  = voice->types.ogg.buf_samples;
    }
