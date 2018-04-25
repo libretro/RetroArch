@@ -20,7 +20,7 @@
  * controllers.
  */
 
-#include <wiiu/pad_driver.h>
+#include "wiiu_input.h"
 
 static bool kpad_init(void *data);
 static bool kpad_query_pad(unsigned pad);
@@ -30,6 +30,7 @@ static void kpad_get_buttons(unsigned pad, input_bits_t *state);
 static int16_t kpad_axis(unsigned pad, uint32_t axis);
 static void kpad_poll(void);
 static const char *kpad_name(unsigned pad);
+static void kpad_deregister(unsigned channel);
 
 typedef struct _wiimote_state wiimote_state;
 
@@ -52,17 +53,30 @@ wiimote_state wiimotes[WIIU_WIIMOTE_CHANNELS] = {
   { 0, {{0,0},{0,0},{0,0}}, WIIMOTE_TYPE_NONE },
 };
 
-static unsigned to_wiimote_channel(unsigned pad)
-{
-   if (pad == PAD_GAMEPAD || pad > WIIU_WIIMOTE_CHANNELS)
-      return 0xffffffff;
+static int channel_slot_map[] = { -1, -1, -1, -1 };
 
-   return pad-1;
+static int to_wiimote_channel(unsigned pad)
+{
+   int i;
+
+   for(i = 0; i < WIIU_WIIMOTE_CHANNELS; i++)
+      if(channel_slot_map[i] == pad)
+         return i;
+
+   return -1;
 }
 
-static unsigned to_retro_pad(unsigned channel)
+static int get_slot_for_channel(unsigned channel)
 {
-   return channel+1;
+   int slot = pad_connection_find_vacant_pad(hid_instance.pad_list);
+   if(slot >= 0)
+   {
+      RARCH_LOG("[kpad]: got slot %d\n", slot);
+      channel_slot_map[channel] = slot;
+      hid_instance.pad_list[slot].connected = true;
+   }
+
+   return slot;
 }
 
 static bool kpad_init(void *data)
@@ -75,7 +89,7 @@ static bool kpad_init(void *data)
 
 static bool kpad_query_pad(unsigned pad)
 {
-   return ready && pad <= WIIU_WIIMOTE_CHANNELS && pad > PAD_GAMEPAD;
+   return ready && pad < MAX_USERS;
 }
 
 static void kpad_destroy(void)
@@ -88,27 +102,34 @@ static bool kpad_button(unsigned pad, uint16_t button_bit)
    if (!kpad_query_pad(pad))
       return false;
 
-   return wiimotes[to_wiimote_channel(pad)].button_state 
+   int channel = to_wiimote_channel(pad);
+   if(channel < 0)
+      return false;
+
+   return wiimotes[channel].button_state
       & (UINT64_C(1) << button_bit);
 }
 
 static void kpad_get_buttons(unsigned pad, input_bits_t *state)
 {
-   if (!kpad_query_pad(pad))
+   int channel = to_wiimote_channel(pad);
+
+   if (!kpad_query_pad(pad) || channel < 0)
       BIT256_CLEAR_ALL_PTR(state);
    else
-      BITS_COPY16_PTR(state, wiimotes[to_wiimote_channel(pad)].button_state);
+      BITS_COPY16_PTR(state, wiimotes[channel].button_state);
 }
 
 static int16_t kpad_axis(unsigned pad, uint32_t axis)
 {
+   int channel = to_wiimote_channel(pad);
    axis_data data;
-   if (!kpad_query_pad(pad) || axis == AXIS_NONE)
+   if (!kpad_query_pad(pad) || channel < 0 || axis == AXIS_NONE)
       return 0;
 
    pad_functions.read_axis_data(axis, &data);
    return pad_functions.get_axis_value(data.axis,
-         wiimotes[to_wiimote_channel(pad)].analog_state,
+         wiimotes[channel].analog_state,
          data.is_negative);
 }
 
@@ -116,8 +137,19 @@ static void kpad_register(unsigned channel, uint8_t device_type)
 {
    if (wiimotes[channel].type != device_type)
    {
+      int slot;
+
+      kpad_deregister(channel);
+      slot = get_slot_for_channel(channel);
+
+      if(slot < 0)
+      {
+         RARCH_ERR("Couldn't get a slot for this remote.\n");
+         return;
+      }
+
       wiimotes[channel].type = device_type;
-      pad_functions.connect(to_retro_pad(channel), &kpad_driver);
+      input_pad_connect(slot, &kpad_driver);
    }
 }
 
@@ -161,6 +193,21 @@ static void kpad_poll_one_channel(unsigned channel, KPADData *kpad)
    }
 }
 
+static void kpad_deregister(unsigned channel)
+{
+   int slot = channel_slot_map[channel];
+
+   if(slot >= 0)
+   {
+      input_autoconfigure_disconnect(slot, kpad_driver.name(slot));
+      wiimotes[channel].type = WIIMOTE_TYPE_NONE;
+      hid_instance.pad_list[slot].connected = false;
+      channel_slot_map[channel] = -1;
+   }
+}
+
+static int poll_failures[WIIU_WIIMOTE_CHANNELS] = { 0, 0, 0, 0 };
+
 static void kpad_poll(void)
 {
    unsigned channel;
@@ -172,9 +219,16 @@ static void kpad_poll(void)
       memset(&kpad, 0, sizeof(kpad));
 
       result = KPADRead(channel, &kpad, 1);
+      /* this is a hack to prevent spurious disconnects */
+      /* TODO: use KPADSetConnectCallback and use callbacks to detect */
+      /*       pad disconnects properly. */
       if (result == 0) {
+         poll_failures[channel]++;
+         if(poll_failures[channel] > 5)
+            kpad_deregister(channel);
          continue;
       }
+      poll_failures[channel] = 0;
 
       kpad_poll_one_channel(channel, &kpad);
    }
@@ -182,11 +236,11 @@ static void kpad_poll(void)
 
 static const char *kpad_name(unsigned pad)
 {
-   pad = to_wiimote_channel(pad);
-   if (pad >= WIIU_WIIMOTE_CHANNELS)
+   int channel = to_wiimote_channel(pad);
+   if (channel < 0)
       return "unknown";
 
-   switch(wiimotes[pad].type)
+   switch(wiimotes[channel].type)
    {
       case WIIMOTE_TYPE_PRO:
          return PAD_NAME_WIIU_PRO;

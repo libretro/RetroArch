@@ -58,6 +58,22 @@
 #include "../verbosity.h"
 #include "../tasks/tasks_internal.h"
 #include "../command.h"
+#include "include/gamepad.h"
+
+static pad_connection_listener_t *pad_connection_listener = NULL;
+
+void set_connection_listener(pad_connection_listener_t *listener)
+{
+   pad_connection_listener = listener;
+}
+
+void fire_connection_listener(unsigned port, input_device_driver_t *driver)
+{
+   if(!pad_connection_listener)
+      return;
+
+   pad_connection_listener->connected(port, driver);
+}
 
 static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__
@@ -1817,6 +1833,21 @@ bool input_mouse_button_raw(unsigned port, unsigned id)
    if (res)
       return true;
    return false;
+}
+
+void input_pad_connect(unsigned port, input_device_driver_t *driver)
+{
+   if(port >= MAX_USERS || !driver)
+   {
+      RARCH_ERR("[input]: input_pad_connect: bad parameters\n");
+      return;
+   }
+
+   fire_connection_listener(port, driver);
+
+   if(!input_autoconfigure_connect(driver->name(port), NULL, driver->ident,
+          port, 0, 0))
+      input_config_set_device_name(port, driver->name(port));
 }
 
 /**

@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2014-2017 - Ali Bouhlel
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -14,16 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "wiiu_input.h"
+#include "../include/gamepad.h"
 
-enum wiiu_pad_axes {
-  AXIS_LEFT_ANALOG_X,
-  AXIS_LEFT_ANALOG_Y,
-  AXIS_RIGHT_ANALOG_X,
-  AXIS_RIGHT_ANALOG_Y,
-  AXIS_TOUCH_X,
-  AXIS_TOUCH_Y,
-  AXIS_INVALID
+enum pad_axes {
+   AXIS_LEFT_ANALOG_X,
+   AXIS_LEFT_ANALOG_Y,
+   AXIS_RIGHT_ANALOG_X,
+   AXIS_RIGHT_ANALOG_Y,
+   AXIS_INVALID
 };
 
 static int16_t clamp_axis(int16_t value, bool is_negative)
@@ -36,12 +34,29 @@ static int16_t clamp_axis(int16_t value, bool is_negative)
    return value;
 }
 
-static int16_t wiiu_pad_get_axis_value(int32_t axis,
-      int16_t state[3][2], bool is_negative)
+void gamepad_read_axis_data(uint32_t axis, axis_data *data)
+{
+   if(!data)
+      return;
+
+   data->axis = AXIS_POS_GET(axis);
+   data->is_negative = false;
+
+   if(data->axis >= AXIS_INVALID)
+   {
+      data->axis = AXIS_NEG_GET(axis);
+      data->is_negative = true;
+   }
+}
+
+int16_t gamepad_get_axis_value(int16_t state[3][2], axis_data *data)
 {
    int16_t value = 0;
 
-   switch(axis)
+   if(!data)
+      return 0;
+
+   switch(data->axis)
    {
       case AXIS_LEFT_ANALOG_X:
          value = state[RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X];
@@ -55,28 +70,9 @@ static int16_t wiiu_pad_get_axis_value(int32_t axis,
       case AXIS_RIGHT_ANALOG_Y:
          value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y];
          break;
-      case AXIS_TOUCH_X:
-         return state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X];
-      case AXIS_TOUCH_Y:
-         return state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y];
    }
 
-   return clamp_axis(value, is_negative);
+   return clamp_axis(value, data->is_negative);
 }
 
-void wiiu_pad_set_axis_value(int16_t state[3][2], int16_t left_x, int16_t left_y,
-       int16_t right_x, int16_t right_y, int16_t touch_x, int16_t touch_y)
-{
-  state[RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = left_x;
-  state[RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = left_y;
-  state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = right_x;
-  state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = right_y;
-  state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X] = touch_x;
-  state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = touch_y;
-}
 
-wiiu_pad_functions_t pad_functions = {
-  wiiu_pad_get_axis_value,
-  wiiu_pad_set_axis_value,
-  gamepad_read_axis_data,
-};

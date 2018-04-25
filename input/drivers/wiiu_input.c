@@ -33,7 +33,11 @@
 
 #include "wiiu_dbg.h"
 
+#ifdef WIIU_HID
+#define MAX_PADS 16
+#else
 #define MAX_PADS 5
+#endif
 
 static uint8_t keyboardChannel = 0x00;
 static bool keyboardState[RETROK_LAST] = { 0 };

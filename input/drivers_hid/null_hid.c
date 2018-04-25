@@ -18,6 +18,7 @@
 
 #include "../input_defines.h"
 #include "../input_driver.h"
+#include "../include/hid_driver.h"
 
 typedef struct null_hid
 {

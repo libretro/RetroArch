@@ -21,7 +21,9 @@
  * - For HID controllers, see hid_driver.c
  */
 
-#include <wiiu/pad_driver.h>
+#include "wiiu_input.h"
+
+#define PANIC_BUTTON_MASK (VPAD_BUTTON_R | VPAD_BUTTON_L | VPAD_BUTTON_STICK_R | VPAD_BUTTON_STICK_L)
 
 static bool     ready        = false;
 static uint64_t button_state = 0;
@@ -184,7 +186,12 @@ static void wpad_poll(void)
 
 static bool wpad_init(void *data)
 {
-   pad_functions.connect(PAD_GAMEPAD, &wpad_driver);
+   int slot = pad_connection_find_vacant_pad(hid_instance.pad_list);
+   if(slot < 0)
+      return false;
+
+   hid_instance.pad_list[slot].connected = true;
+   input_pad_connect(slot, &wpad_driver);
    wpad_poll();
    ready = true;
 
@@ -193,7 +200,7 @@ static bool wpad_init(void *data)
 
 static bool wpad_query_pad(unsigned pad)
 {
-   return ready && pad == PAD_GAMEPAD;
+   return ready && pad < MAX_USERS;
 }
 
 static void wpad_destroy(void)
