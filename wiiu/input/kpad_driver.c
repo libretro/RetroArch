@@ -30,6 +30,7 @@ static void kpad_get_buttons(unsigned pad, input_bits_t *state);
 static int16_t kpad_axis(unsigned pad, uint32_t axis);
 static void kpad_poll(void);
 static const char *kpad_name(unsigned pad);
+static void kpad_deregister(unsigned channel);
 
 typedef struct _wiimote_state wiimote_state;
 
@@ -136,7 +137,11 @@ static void kpad_register(unsigned channel, uint8_t device_type)
 {
    if (wiimotes[channel].type != device_type)
    {
-      int slot = get_slot_for_channel(channel);
+      int slot;
+
+      kpad_deregister(channel);
+      slot = get_slot_for_channel(channel);
+
       if(slot < 0)
       {
          RARCH_ERR("Couldn't get a slot for this remote.\n");
@@ -188,6 +193,19 @@ static void kpad_poll_one_channel(unsigned channel, KPADData *kpad)
    }
 }
 
+static void kpad_deregister(unsigned channel)
+{
+   int slot = channel_slot_map[channel];
+
+   if(slot >= 0)
+   {
+      input_autoconfigure_disconnect(slot, kpad_driver.name(slot));
+      wiimotes[channel].type = WIIMOTE_TYPE_NONE;
+      hid_instance.pad_list[slot].connected = false;
+      channel_slot_map[channel] = -1;
+   }
+}
+
 static void kpad_poll(void)
 {
    unsigned channel;
@@ -200,13 +218,7 @@ static void kpad_poll(void)
 
       result = KPADRead(channel, &kpad, 1);
       if (result == 0) {
-         int slot = channel_slot_map[channel];
-
-         if(slot > 0)
-         {
-            hid_instance.pad_list[slot].connected = false;
-            channel_slot_map[channel] = -1;
-         }
+         kpad_deregister(channel);
          continue;
       }
 
