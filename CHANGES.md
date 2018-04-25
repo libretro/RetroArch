@@ -8,6 +8,7 @@
 - COMMON: Fix invalid long command line options causing infinite loop on Windows
 - COMMON: Add OSD statistics for video/audio/core.
 - COMMON: Added runahead system; allows you to drive down latency even further.
+- COMMON: Fix buggy behavior that could happen with ZIP file reading on some platforms as a result of not initializing struct.
 - CHEEVOS: Support Atari 2600, Virtual Boy, and Arcade (only Neo Geo, CPS-1, CPS-2 and CPS-3 and only with fbalpha core).
 - CHEEVOS: Add option to automatically take a screenshot when an achievement is triggered.
 - CHEEVOS: Fixed incompatibilities with Neo Geo Pocket achievement sets.
@@ -57,7 +58,7 @@ that support it (so far this includes - D3D8/D3D9, OpenGL, Vulkan)
 - WINDOWS/MSVC 2003/2005/2010/2013/2015/2017: Add Cheevos support.
 - VITA: Bugfix for 'PS Vita takes many time to start to accept input' issue.
 - X11: Allow compositor disabling on X11 fullscreen through _NET_WM_BYPASS_COMPOSITOR
-- X11: Prioritize _NET_WM_STATE_FULLSCREEN in true fullscreen mode
+- X11: Prioritize _NET_WM_STATE_FULLSCREEN_ in true fullscreen mode
 - WIIU: Fix OOB read/write in keyboard driver.
 
 # 1.7.1
