@@ -206,6 +206,8 @@ static void kpad_deregister(unsigned channel)
    }
 }
 
+static int poll_failures[WIIU_WIIMOTE_CHANNELS] = { 0, 0, 0, 0 };
+
 static void kpad_poll(void)
 {
    unsigned channel;
@@ -217,10 +219,16 @@ static void kpad_poll(void)
       memset(&kpad, 0, sizeof(kpad));
 
       result = KPADRead(channel, &kpad, 1);
+      /* this is a hack to prevent spurious disconnects */
+      /* TODO: use KPADSetConnectCallback and use callbacks to detect */
+      /*       pad disconnects properly. */
       if (result == 0) {
-         kpad_deregister(channel);
+         poll_failures[channel]++;
+         if(poll_failures[channel] > 5)
+            kpad_deregister(channel);
          continue;
       }
+      poll_failures[channel] = 0;
 
       kpad_poll_one_channel(channel, &kpad);
    }
