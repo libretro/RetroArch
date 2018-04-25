@@ -38,6 +38,23 @@ End of setup
 
 #define CHEEVOS_TAG "[CHEEVOS]: "
 
+#ifdef CHEEVOS_VERBOSE
+
+#define CHEEVOS_LOG RARCH_LOG
+#define CHEEVOS_ERR RARCH_ERR
+
+#else
+
+static void STUB_LOG(const char *fmt, ...)
+{
+   (void)fmt;
+}
+
+#define CHEEVOS_LOG STUB_LOG
+#define CHEEVOS_ERR STUB_LOG
+
+#endif
+
 typedef struct cheevos_ctx_desc
 {
    unsigned idx;

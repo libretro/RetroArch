@@ -24,17 +24,6 @@
 #include "../core.h"
 #include "../verbosity.h"
 
-static void STUB_LOG(const char *fmt, ...)
-{
-   (void)fmt;
-}
-
-#ifdef CHEEVOS_VERBOSE
-#define CHEEVOS_LOG RARCH_LOG
-#else
-#define CHEEVOS_LOG STUB_LOG
-#endif
-
 /*****************************************************************************
 Parsing
 *****************************************************************************/
@@ -327,7 +316,7 @@ uint8_t* cheevos_var_get_memory(const cheevos_var_t* var)
                meminfo.id = RETRO_MEMORY_RTC;
                break;
             default:
-               RARCH_ERR(CHEEVOS_TAG "invalid bank id: %s\n", var->bank_id);
+               CHEEVOS_ERR(CHEEVOS_TAG "invalid bank id: %s\n", var->bank_id);
                break;
          }
 
