@@ -22,10 +22,10 @@ static uint8_t activation_packet[] = { 0x01, 0x13 };
 static uint8_t activation_packet[] = { 0x13 };
 #endif
 
-#define GCA_PORT_INITIALIZING 0x00
-#define GCA_PORT_POWERED      0x04
-#define GCA_PORT_CONNECTED    0x10
-
+#define GCA_PORT_INITIALIZING  0x00
+#define GCA_PORT_POWERED       0x04
+#define GCA_PORT_CONNECTED     0x10
+#define GCA_WAVEBIRD_CONNECTED 0x22
 
 typedef struct wiiu_gca_instance {
   void *handle;
@@ -116,15 +116,14 @@ static void update_pad_state(wiiu_gca_instance_t *instance)
 
    joypad_connection_t *pad;
    /* process each pad */
-   //RARCH_LOG_BUFFER(instance->device_state, 37);
    for(i = 1; i < 37; i += 9)
    {
       port = i / 9;
       pad = instance->pads[port];
 
-      port_connected = instance->device_state[i] & GCA_PORT_CONNECTED;
+      port_connected = instance->device_state[i];
 
-      if(port_connected)
+      if(port_connected > GCA_PORT_POWERED)
       {
          if(pad == NULL)
          {
@@ -328,9 +327,9 @@ static int16_t wiiu_gca_get_axis(void *data, unsigned axis)
 
 static const char *wiiu_gca_get_name(void *data)
 {
-  gca_pad_t *pad = (gca_pad_t *)data;
+   gca_pad_t *pad = (gca_pad_t *)data;
 
-  return "GameCube Controller";
+   return "GameCube Controller";
 }
 
 /**
