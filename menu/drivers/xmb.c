@@ -155,7 +155,22 @@ enum
    XMB_TEXTURE_KEY,
    XMB_TEXTURE_KEY_HOVER,
    XMB_TEXTURE_DIALOG_SLICE,
+
+   XMB_TEXTURE_RETROPAD,
+   XMB_TEXTURE_RETROPAD_B,
+   XMB_TEXTURE_RETROPAD_Y,
+   XMB_TEXTURE_RETROPAD_SELECT,
+   XMB_TEXTURE_RETROPAD_START,
+   XMB_TEXTURE_RETROPAD_UP,
+   XMB_TEXTURE_RETROPAD_DOWN,
+   XMB_TEXTURE_RETROPAD_LEFT,
+   XMB_TEXTURE_RETROPAD_RIGHT,
+   XMB_TEXTURE_RETROPAD_A,
+   XMB_TEXTURE_RETROPAD_X,
+   XMB_TEXTURE_RETROPAD_L,
+   XMB_TEXTURE_RETROPAD_R,
    XMB_TEXTURE_LAST
+
 };
 
 enum
@@ -880,6 +895,36 @@ static void xmb_render_messagebox_internal(
             video_info,
             menu_event_get_osk_grid(),
             menu_event_get_osk_ptr());
+
+   math_matrix_4x4 mymat_tmp;
+   menu_display_ctx_rotate_draw_t rotate_draw;
+   uintptr_t texture        = xmb->textures.list[XMB_TEXTURE_RETROPAD];
+   rotate_draw.matrix       = &mymat_tmp;
+   rotate_draw.rotation     = 0;
+   rotate_draw.scale_x      = 1;
+   rotate_draw.scale_y      = 1;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
+
+   menu_display_rotate_z(&rotate_draw, video_info);
+
+   menu_display_blend_begin(video_info);
+
+   xmb_draw_icon(video_info,
+         xmb->icon_size * 2,
+         &mymat_tmp,
+         texture,
+         800,
+         500,
+         video_info->width,
+         video_info->height,
+         1.0,
+         0,
+         1,
+         &item_color[0],
+         xmb->shadow_offset);
+
+   menu_display_blend_end(video_info);
 
 end:
    string_list_free(list);
@@ -4347,6 +4392,18 @@ static const char *xmb_texture_path(unsigned id)
          return "key-hover.png";
       case XMB_TEXTURE_DIALOG_SLICE:
          return "dialog-slice.png";
+      case XMB_TEXTURE_RETROPAD:
+      case XMB_TEXTURE_RETROPAD_B:
+      case XMB_TEXTURE_RETROPAD_Y:
+      case XMB_TEXTURE_RETROPAD_SELECT:
+      case XMB_TEXTURE_RETROPAD_START:
+      case XMB_TEXTURE_RETROPAD_A:
+      case XMB_TEXTURE_RETROPAD_X:
+      case XMB_TEXTURE_RETROPAD_L:
+      case XMB_TEXTURE_RETROPAD_R:
+         return "input/retropad.png";
+
+
 
    }
 
