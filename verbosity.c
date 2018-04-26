@@ -125,7 +125,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
 #else
-   static aslclient asl_client;ß
+   static aslclient asl_client;
    static int asl_initialized = 0;
    if (!asl_initialized)
    {
