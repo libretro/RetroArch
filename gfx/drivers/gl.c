@@ -1687,7 +1687,8 @@ static void gl_begin_debug(gl_t *gl)
 extern gl_renderchain_driver_t gl2_renderchain;
 
 static const gl_renderchain_driver_t *renderchain_gl_drivers[] = {
-   &gl2_renderchain
+   &gl2_renderchain,
+   NULL
 };
 
 static bool renderchain_gl_init_first(
