@@ -96,7 +96,6 @@ HAVE_CHD=yes               # Compile in chd support
 HAVE_7ZIP=yes              # Compile in 7z support
 HAVE_FLAC=auto             # Compile in flac support
 HAVE_BUILTINFLAC=yes       # Bake in flac support
-C89_BUILTINFLAC=no
 HAVE_UPDATE_ASSETS=yes     # Disable downloading assets with online updater
 HAVE_PRESERVE_DYLIB=no     # Enable dlclose() for Valgrind support
 HAVE_PARPORT=auto          # Parallel port joypad support
