@@ -1463,7 +1463,8 @@ ifeq ($(HAVE_BUILTINFLAC),1)
    endif
    OBJ += $(FLACOBJ)
 else ifeq ($(HAVE_FLAC),1)
-   LIBS += $(FLAC_LIBS)
+   DEFINES += -DHAVE_FLAC
+   LIBS    += $(FLAC_LIBS)
 endif
 
 ifeq ($(HAVE_ZLIB), 1)
