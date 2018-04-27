@@ -179,8 +179,7 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
    mali->native_window.width  = vinfo.xres;
    mali->native_window.height = vinfo.yres;
 
-   mali->refresh_rate =
-      ctx->refresh_rate = 1000000.0f / vinfo.pixclock * 1000000.0f /
+   mali->refresh_rate = 1000000.0f / vinfo.pixclock * 1000000.0f /
          (vinfo.yres + vinfo.upper_margin + vinfo.lower_margin + vinfo.vsync_len)
          (vinfo.xres + vinfo.left_margin  + vinfo.right_margin + vinfo.hsync_len);
 
