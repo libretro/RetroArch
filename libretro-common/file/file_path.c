@@ -392,7 +392,7 @@ char *path_remove_extension(char *path)
       return NULL;
    if (*last)
       *last = '\0';
-   return last;
+   return path;
 }
 
 /**
