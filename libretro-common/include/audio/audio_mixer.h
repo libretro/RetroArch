@@ -61,6 +61,7 @@ void audio_mixer_done(void);
 
 audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size);
+audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size);
 

@@ -977,6 +977,9 @@ bool audio_driver_mixer_extension_supported(const char *ext)
    string_list_append(str_list, "s3m", attr);
    string_list_append(str_list, "xm", attr);
 #endif
+#ifdef HAVE_DR_FLAC
+   string_list_append(str_list, "flac", attr);
+#endif
    string_list_append(str_list, "wav", attr);
 
    for (i = 0; i < str_list->size; i++)
@@ -1073,6 +1076,11 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          break;
       case AUDIO_MIXER_TYPE_MOD:
          handle = audio_mixer_load_mod(buf, (int32_t)params->bufsize);
+         break;
+      case AUDIO_MIXER_TYPE_FLAC:
+#ifdef HAVE_DR_FLAC
+         handle = audio_mixer_load_flac(buf, (int32_t)params->bufsize);
+#endif
          break;
       case AUDIO_MIXER_TYPE_NONE:
          free(buf);

@@ -585,7 +585,7 @@ error:
 }
 #endif
 
-#ifdef HAV_DR_FLAC
+#ifdef HAVE_DR_FLAC
 static bool audio_mixer_play_flac(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
