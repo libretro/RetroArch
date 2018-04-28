@@ -3,20 +3,10 @@
 
 #define DR_FLAC_NO_STDIO
 
+#include <stdint.h>
 #include <stddef.h>
 #include <retro_inline.h>
 
-#if defined(_MSC_VER) && _MSC_VER < 1600
-typedef   signed char    drflac_int8;
-typedef unsigned char    drflac_uint8;
-typedef   signed short   drflac_int16;
-typedef unsigned short   drflac_uint16;
-typedef   signed int     drflac_int32;
-typedef unsigned int     drflac_uint32;
-typedef   signed __int64 drflac_int64;
-typedef unsigned __int64 drflac_uint64;
-#else
-#include <stdint.h>
 typedef int8_t           drflac_int8;
 typedef uint8_t          drflac_uint8;
 typedef int16_t          drflac_int16;
@@ -25,7 +15,6 @@ typedef int32_t          drflac_int32;
 typedef uint32_t         drflac_uint32;
 typedef int64_t          drflac_int64;
 typedef uint64_t         drflac_uint64;
-#endif
 typedef drflac_uint8     drflac_bool8;
 typedef drflac_uint32    drflac_bool32;
 #define DRFLAC_TRUE      1
