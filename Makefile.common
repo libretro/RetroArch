@@ -1437,10 +1437,8 @@ endif
 
 ifeq ($(HAVE_BUILTINFLAC),1)
    HAVE_FLAC = 1
-ifneq ($(C89_BUILD), 1)
 	DEFINES += -DHAVE_DR_FLAC -I$(DEPS_DIR)
 	CFLAGS  += -DHAVE_DR_FLAC
-endif
    CFLAGS  += -DHAVE_FLAC -I$(DEPS_DIR)/libFLAC/include
    DEFINES += -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
               -DFLAC_PACKAGE_VERSION="\"retroarch\""
