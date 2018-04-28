@@ -271,6 +271,8 @@ bool audio_driver_deinit(void);
 
 bool audio_driver_init(void);
 
+void audio_driver_menu_sample(void);
+
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
 
 enum resampler_quality audio_driver_get_resampler_quality(void);

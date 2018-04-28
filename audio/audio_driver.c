@@ -722,6 +722,19 @@ void audio_driver_sample(int16_t left, int16_t right)
    audio_driver_data_ptr = 0;
 }
 
+void audio_driver_menu_sample(void)
+{
+#if 0
+   static int16_t samples_buf[4096]       = {0};
+   struct retro_system_av_info   
+      *av_info                            = video_viewport_get_system_av_info();
+   const struct retro_system_timing *info = 
+      (const struct retro_system_timing*)&av_info->timing;
+   unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
+   audio_driver_flush(samples_buf, sample_count);
+#endif
+}
+
 /**
  * audio_driver_sample_batch:
  * @data                 : pointer to audio buffer.
@@ -837,13 +850,13 @@ void audio_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew;
    settings_t                   *settings = config_get_ptr();
-   struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
    float video_refresh_rate               = settings->floats.video_refresh_rate;
    float max_timing_skew                  = settings->floats.audio_max_timing_skew;
-   const struct retro_system_timing *info = av_info ?
-      (const struct retro_system_timing*)&av_info->timing : NULL;
+   struct retro_system_av_info   *av_info = video_viewport_get_system_av_info();
+   const struct retro_system_timing *info = 
+      (const struct retro_system_timing*)&av_info->timing;
 
-   if (!info || info->sample_rate <= 0.0)
+   if (info->sample_rate <= 0.0)
       return;
 
    timing_skew             = fabs(1.0f - info->fps / video_refresh_rate);
@@ -1101,13 +1114,13 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    if (params->state == AUDIO_STREAM_STATE_PLAYING)
    {
       voice = audio_mixer_play(handle, looped, params->volume, stop_cb);
-      audio_set_bool(AUDIO_ACTION_MIXER, true);
+      audio_mixer_active = true;
    }
    else if (params->state == AUDIO_STREAM_STATE_PLAYING_LOOPED)
    {
       looped = true;
       voice  = audio_mixer_play(handle, looped, params->volume, stop_cb);
-      audio_set_bool(AUDIO_ACTION_MIXER, true);
+      audio_mixer_active = true;
    }
 
    audio_mixer_streams[audio_mixer_current_max_idx].buf     = buf;
@@ -1160,7 +1173,7 @@ static void audio_driver_mixer_deinit(void)
 {
    unsigned i;
 
-   audio_set_bool(AUDIO_ACTION_MIXER, false);
+   audio_mixer_active = false;
 
    for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
       audio_driver_mixer_remove_stream(i);
