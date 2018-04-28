@@ -191,7 +191,8 @@ void input_mapper_poll(input_mapper_t *handle)
                   settings->uints.input_remap_ids[i][k];
 
                if (
-                     (abs(current_axis_value) > *input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD)) && 
+                     (abs(current_axis_value) > 
+                     *input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD) * 32767) && 
                      (k != remap_axis)         &&
                      (remap_axis != RARCH_UNMAPPED)
                   )
