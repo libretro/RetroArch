@@ -65,6 +65,9 @@ calling RegisterWindowMessage(L("TaskbarButtonCreated")). That message must
 be received by your application before it calls any ITaskbarList3 method.
 */
 
+static unsigned orig_width          = 0;
+static unsigned orig_height         = 0;
+
 static void* win32_display_server_init(void)
 {
    HRESULT hr;
@@ -98,6 +101,9 @@ static void* win32_display_server_init(void)
 
 static void win32_display_server_destroy(void *data)
 {
+     video_display_server_switch_resolution(orig_width, orig_height,
+         0, 60);
+
    dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
 
 #ifdef HAS_TASKBAR_EXT
@@ -206,7 +212,12 @@ static bool win32_display_server_set_resolution(void *data,
 
    if (!serv)
       return false;
-
+  
+   if (orig_width == 0)
+	   orig_width          = GetSystemMetrics(SM_CXSCREEN);
+   if (orig_height == 0)
+	   orig_height         = GetSystemMetrics(SM_CYSCREEN);
+   
    if (f_restore == 0)
       freq                = hz;
 
@@ -270,14 +281,6 @@ static bool win32_display_server_set_resolution(void *data,
    return true;
 }
 
-void win32_display_server_get_current_resolution(
-      unsigned *width, unsigned *height)
-{
-   if (width)
-      *width   = GetSystemMetrics(SM_CYSCREEN);
-   if (height)
-      *height  = GetSystemMetrics(SM_CXSCREEN);
-}
 
 const video_display_server_t dispserv_win32 = {
    win32_display_server_init,
@@ -285,7 +288,6 @@ const video_display_server_t dispserv_win32 = {
    win32_set_window_opacity,
    win32_set_window_progress,
    win32_set_window_decorations,
-   win32_display_server_get_current_resolution,
    win32_display_server_set_resolution,
    "win32"
 };
