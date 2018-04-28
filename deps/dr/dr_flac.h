@@ -1,6 +1,8 @@
 #ifndef dr_flac_h
 #define dr_flac_h
 
+#define DR_FLAC_NO_STDIO
+
 #include <stddef.h>
 #include <retro_inline.h>
 
