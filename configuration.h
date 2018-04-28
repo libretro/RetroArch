@@ -147,8 +147,15 @@ typedef struct settings
       bool menu_show_help;
       bool menu_show_quit_retroarch;
       bool menu_show_reboot;
+      bool menu_show_latency;
+      bool menu_show_rewind;
+      bool menu_show_overlays;
       bool menu_materialui_icons_enable;
+      bool menu_rgui_background_filler_thickness_enable;
+      bool menu_rgui_border_filler_thickness_enable;
+      bool menu_rgui_border_filler_enable;
       bool menu_xmb_shadows_enable;
+      bool menu_xmb_vertical_thumbnails;
       bool menu_content_show_settings;
       bool menu_content_show_favorites;
       bool menu_content_show_images;
@@ -157,6 +164,7 @@ typedef struct settings
       bool menu_content_show_netplay;
       bool menu_content_show_history;
       bool menu_content_show_add;
+      bool menu_content_show_playlists;
       bool menu_unified_controls;
       bool quick_menu_show_take_screenshot;
       bool quick_menu_show_save_load_state;
@@ -224,6 +232,8 @@ typedef struct settings
       bool playlist_entry_remove;
       bool playlist_entry_rename;
       bool rewind_enable;
+      bool run_ahead_enabled;
+      bool run_ahead_secondary_instance;
       bool pause_nonactive;
       bool block_sram_overwrite;
       bool savestate_auto_index;
@@ -350,10 +360,12 @@ typedef struct settings
       unsigned video_msg_bgcolor_blue;
 
       unsigned menu_thumbnails;
+      unsigned menu_left_thumbnails;
       unsigned menu_dpi_override_value;
       unsigned menu_entry_normal_color;
       unsigned menu_entry_hover_color;
       unsigned menu_title_color;
+      unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
       unsigned menu_xmb_scale_factor;
       unsigned menu_xmb_alpha_factor;
@@ -377,11 +389,13 @@ typedef struct settings
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
 
-      unsigned input_keymapper_ids[RARCH_CUSTOM_BIND_LIST_END];
+      unsigned input_keymapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
 
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
 
       unsigned led_map[MAX_LEDS];
+
+      unsigned run_ahead_frames;
    } uints;
 
    struct
@@ -397,6 +411,7 @@ typedef struct settings
       char menu_driver[32];
       char cheevos_username[32];
       char cheevos_password[32];
+      char cheevos_token[32];
       char video_context_driver[32];
       char audio_driver[32];
       char audio_resampler[32];

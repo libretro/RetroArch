@@ -418,6 +418,7 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_set_swap_interval,
    gfx_ctx_ps3_set_video_mode,
    gfx_ctx_ps3_get_video_size,
+   NULL, /* get_refresh_rate */
    gfx_ctx_ps3_get_video_output_size,
    gfx_ctx_ps3_get_video_output_prev,
    gfx_ctx_ps3_get_video_output_next,

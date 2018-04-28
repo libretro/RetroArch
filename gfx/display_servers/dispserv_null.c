@@ -49,6 +49,8 @@ const video_display_server_t dispserv_null = {
    null_set_window_opacity,
    null_set_window_progress,
    NULL,
+   NULL,
+   NULL,
    "null"
 };
 

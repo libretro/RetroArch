@@ -68,6 +68,7 @@ enum
    ACTION_OK_DL_DRIVER_SETTINGS_LIST,
    ACTION_OK_DL_VIDEO_SETTINGS_LIST,
    ACTION_OK_DL_AUDIO_SETTINGS_LIST,
+   ACTION_OK_DL_LATENCY_SETTINGS_LIST,
    ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST,
    ACTION_OK_DL_SAVING_SETTINGS_LIST,
    ACTION_OK_DL_LOGGING_SETTINGS_LIST,
@@ -160,6 +161,38 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
 
 int action_right_cheat(unsigned type, const char *label,
       bool wraparound);
+
+int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound);
+
+int setting_action_ok_video_refresh_rate_polled(void *data, bool wraparound);
+
+int setting_action_ok_bind_all(void *data, bool wraparound);
+
+int setting_action_ok_bind_all_save_autoconfig(void *data,
+      bool wraparound);
+
+int setting_action_ok_bind_defaults(void *data, bool wraparound);
+
+int setting_action_left_analog_dpad_mode(void *data, bool wraparound);
+
+int setting_action_left_libretro_device_type(
+      void *data, bool wraparound);
+
+int setting_action_left_bind_device(void *data, bool wraparound);
+
+int setting_action_left_mouse_index(void *data, bool wraparound);
+
+int setting_uint_action_left_custom_viewport_width(
+      void *data, bool wraparound);
+
+int setting_uint_action_left_custom_viewport_height(
+      void *data, bool wraparound);
+
+int setting_string_action_left_driver(void *data,
+      bool wraparound);
+
+int setting_string_action_left_audio_device(
+      void *data, bool wraparound);
 
 /* End of function callbacks */
 

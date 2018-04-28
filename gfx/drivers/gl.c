@@ -747,7 +747,7 @@ static void gl_render_osd_background(
    float *verts            = (float*)malloc(2 * vertices_total * sizeof(float));
    settings_t *settings    = config_get_ptr();
    int msg_width           =
-      font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
+      font_driver_get_message_width(NULL, msg, (unsigned)strlen(msg), 1.0f);
 
    /* shader driver expects vertex coords as 0..1 */
    float x                 = video_info->font_msg_pos_x;
@@ -1687,12 +1687,9 @@ static void gl_begin_debug(gl_t *gl)
 extern gl_renderchain_driver_t gl2_renderchain;
 
 static const gl_renderchain_driver_t *renderchain_gl_drivers[] = {
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    &gl2_renderchain,
-#endif
    NULL
 };
-
 
 static bool renderchain_gl_init_first(
       const gl_renderchain_driver_t **renderchain_driver,
@@ -1715,7 +1712,8 @@ static bool renderchain_gl_init_first(
    return false;
 }
 
-static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *gl_init(const video_info_t *video,
+      const input_driver_t **input, void **input_data)
 {
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
@@ -2586,6 +2584,14 @@ static void gl_set_coords(void *handle_data, void *shader_data,
             shader_data, coords);
 }
 
+static float gl_get_refresh_rate(void *data)
+{
+   float refresh_rate = 0.0f;
+   if (video_context_driver_get_refresh_rate(&refresh_rate))
+      return refresh_rate;
+   return 0.0f;
+}
+
 static void gl_set_mvp(void *data, void *shader_data,
       const void *mat_data)
 {
@@ -2595,12 +2601,25 @@ static void gl_set_mvp(void *data, void *shader_data,
             shader_data, mat_data);
 }
 
+static uint32_t gl_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
+   BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
+   BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+
+   return flags;
+}
+
 static const video_poke_interface_t gl_poke_interface = {
+   gl_get_flags,
    gl_set_coords,
    gl_set_mvp,
    gl_load_texture,
    gl_unload_texture,
    gl_set_video_mode,
+   gl_get_refresh_rate,
    NULL,
    gl_get_video_output_size,
    gl_get_video_output_prev,

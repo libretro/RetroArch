@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #ifdef _XBOX
 #include <xtl.h>
 #include <xgraphics.h>
@@ -437,14 +439,14 @@ static void d3d8_set_mvp(void *data,
 
 static void d3d8_overlay_render(d3d_video_t *d3d,
       video_frame_info_t *video_info,
-      overlay_t *overlay)
+      overlay_t *overlay, bool force_linear)
 {
    D3DVIEWPORT8 vp_full;
+   D3DTEXTUREFILTERTYPE filter_type;
    struct video_viewport vp;
    void *verts;
    unsigned i;
    Vertex vert[4];
-
    unsigned width      = video_info->width;
    unsigned height     = video_info->height;
 
@@ -512,12 +514,19 @@ static void d3d8_overlay_render(d3d_video_t *d3d,
       d3d8_set_viewports(d3d->dev, &vp_full);
    }
 
+   if (!force_linear)
+   {
+      settings_t *settings = config_get_ptr();
+      if (!settings->bools.menu_linear_filter)
+         filter_type       = D3DTEXF_POINT;
+   }
+
    /* Render overlay. */
    d3d8_set_texture(d3d->dev, 0, overlay->tex);
    d3d8_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_BORDER);
    d3d8_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_BORDER);
-   d3d8_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_LINEAR);
-   d3d8_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_LINEAR);
+   d3d8_set_sampler_minfilter(d3d->dev, 0, filter_type);
+   d3d8_set_sampler_magfilter(d3d->dev, 0, filter_type);
    d3d8_draw_primitive(d3d->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
    /* Restore previous state. */
@@ -1005,7 +1014,7 @@ static void d3d8_set_nonblock_state(void *data, bool state)
 #ifdef _XBOX
    d3d8_set_render_state(d3d->dev, D3D8_PRESENTATIONINTERVAL,
          interval ?
-         D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+         D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE
          );
 #else
    d3d->needs_restore = true;
@@ -1511,9 +1520,7 @@ static void d3d8_get_overlay_interface(void *data,
 
 static void d3d8_update_title(video_frame_info_t *video_info)
 {
-#ifdef _XBOX
-   const ui_window_t *window      = NULL;
-#else
+#ifndef _XBOX
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
 #endif
 
@@ -1616,7 +1623,7 @@ static bool d3d8_frame(void *data, const void *frame,
    if (d3d->menu && d3d->menu->enabled)
    {
       d3d8_set_mvp(d3d, NULL, &d3d->mvp);
-      d3d8_overlay_render(d3d, video_info, d3d->menu);
+      d3d8_overlay_render(d3d, video_info, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
       d3d8_set_stream_source(d3d->dev, 0, d3d->menu_display.buffer, 0, sizeof(Vertex));
@@ -1642,7 +1649,7 @@ static bool d3d8_frame(void *data, const void *frame,
    {
       d3d8_set_mvp(d3d, NULL, &d3d->mvp);
       for (i = 0; i < d3d->overlays_size; i++)
-         d3d8_overlay_render(d3d, video_info, &d3d->overlays[i]);
+         d3d8_overlay_render(d3d, video_info, &d3d->overlays[i], true);
    }
 #endif
 
@@ -1860,12 +1867,28 @@ static void d3d8_set_video_mode(void *data,
 #endif
 }
 
+static uint32_t d3d8_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
+   BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+
+   return flags;
+}
+
 static const video_poke_interface_t d3d_poke_interface = {
-   NULL,                            /* set_coords */
+   d3d8_get_flags,
+   NULL, /* set_coords */
    d3d8_set_mvp,
    d3d8_load_texture,
    d3d8_unload_texture,
    d3d8_set_video_mode,
+#ifdef _XBOX
+   NULL,
+#else
+   win32_get_refresh_rate,
+#endif
    NULL,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

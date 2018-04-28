@@ -294,7 +294,10 @@ enum huffman_error huffman_import_tree_huffman(struct huffman_decoder* decoder, 
 
 	/* make sure we ended up with the right number */
 	if (curcode != decoder->numcodes)
+   {
+      delete_huffman_decoder(smallhuff);
 		return HUFFERR_INVALID_DATA;
+   }
 
 	/* assign canonical codes for all nodes based on their code lengths */
 	error = huffman_assign_canonical_codes(decoder);

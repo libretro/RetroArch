@@ -147,6 +147,8 @@ ifneq ($(GIT_VERSION),)
 endif
 
 # General object files
+DEFINES += -DHAVE_DR_MP3
+CFLAGS  += -DHAVE_DR_MP3
 
 OBJ += frontend/frontend.o \
        frontend/frontend_driver.o \
@@ -198,7 +200,9 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
        audio/audio_driver.o \
        $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
+       input/common/input_common.o \
        input/input_driver.o \
+		 input/input_mapper.o \
        led/led_driver.o \
        led/drivers/led_null.o \
        gfx/video_coord_array.o \
@@ -259,7 +263,18 @@ OBJ += frontend/frontend.o \
        record/drivers/record_null.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
-       verbosity.o
+       verbosity.o \
+
+ifeq ($(HAVE_RUNAHEAD), 1)
+DEFINES += -DHAVE_RUNAHEAD
+OBJ += runahead/copy_load_info.o \
+       runahead/dirty_input.o \
+       runahead/mem_util.o \
+       runahead/mylist.o \
+       runahead/run_ahead.o \
+       runahead/secondary_core.o
+endif
+
 
 
 ifeq ($(HAVE_CC_RESAMPLER), 1)
@@ -1023,9 +1038,6 @@ ifeq ($(HAVE_PLAIN_DRM), 1)
    LIBS += -ldrm
 endif
 
-OBJ += \
-		 gfx/drivers_renderchain/null_renderchain.o
-
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
@@ -1255,7 +1267,9 @@ endif
 
 ifeq ($(HAVE_D3D10), 1)
    OBJ += gfx/drivers/d3d10.o \
-			 gfx/common/d3d10_common.o
+			 gfx/common/d3d10_common.o \
+			 gfx/drivers_font/d3d10_font.o \
+			 menu/drivers_display/menu_display_d3d10.o
    DEFINES += -DHAVE_D3D10
 endif
 
@@ -1425,6 +1439,8 @@ endif
 
 ifeq ($(HAVE_BUILTINFLAC),1)
    HAVE_FLAC = 1
+	DEFINES += -DHAVE_DR_FLAC -I$(DEPS_DIR)
+	CFLAGS  += -DHAVE_DR_FLAC
    CFLAGS  += -DHAVE_FLAC -I$(DEPS_DIR)/libFLAC/include
    DEFINES += -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
               -DFLAC_PACKAGE_VERSION="\"retroarch\""
@@ -1451,7 +1467,8 @@ ifeq ($(HAVE_BUILTINFLAC),1)
    endif
    OBJ += $(FLACOBJ)
 else ifeq ($(HAVE_FLAC),1)
-   LIBS += $(FLAC_LIBS)
+   DEFINES += -DHAVE_FLAC
+   LIBS    += $(FLAC_LIBS)
 endif
 
 ifeq ($(HAVE_ZLIB), 1)
@@ -1462,7 +1479,7 @@ ifeq ($(HAVE_ZLIB), 1)
    ifeq ($(HAVE_BUILTINZLIB), 1)
       OBJ += $(DEPS_DIR)/libz/adler32.o \
              $(DEPS_DIR)/libz/compress.o \
-             $(DEPS_DIR)/libz/crc32.o \
+             $(DEPS_DIR)/libz/libz-crc32.o \
              $(DEPS_DIR)/libz/deflate.o \
              $(DEPS_DIR)/libz/gzclose.o \
              $(DEPS_DIR)/libz/gzlib.o \
@@ -1481,19 +1498,27 @@ ifeq ($(HAVE_ZLIB), 1)
    endif
 endif
 
-ifeq ($(HAVE_FLAC), 1)
-ifeq ($(HAVE_7ZIP), 1)
-ifeq ($(HAVE_ZLIB), 1)
-   DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
+ifeq ($(HAVE_CHD), 1)
    CFLAGS  += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
-   OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/bitstream.o \
-              $(LIBRETRO_COMM_DIR)/formats/libchdr/cdrom.o \
-              $(LIBRETRO_COMM_DIR)/formats/libchdr/chd.o \
-              $(LIBRETRO_COMM_DIR)/formats/libchdr/flac.o \
-              $(LIBRETRO_COMM_DIR)/formats/libchdr/huffman.o \
+	DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
+   OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
+              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
+              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
+              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_huffman.o \
               $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
-endif
-endif
+	
+   ifeq ($(HAVE_FLAC), 1)
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
+				 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
+   endif
+
+   ifeq ($(HAVE_7ZIP), 1)
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
+   endif
+
+   ifeq ($(HAVE_ZLIB), 1)
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
+   endif
 endif
 
 ifeq ($(HAVE_RTGA), 1)
@@ -1593,10 +1618,6 @@ ifeq ($(HAVE_NETWORKING), 1)
          cheevos/cond.o \
          cheevos/badges.o \
          $(LIBRETRO_COMM_DIR)/utils/md5.o
-   endif
-
-   ifeq ($(HAVE_KEYMAPPER), 1)
-      OBJ += input/input_mapper.o
    endif
 
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)

@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (config_file.c).
@@ -862,7 +862,7 @@ bool config_file_write(config_file_t *conf, const char *path)
    if (!string_is_empty(path))
    {
       void* buf  = NULL;
-      FILE *file = fopen_utf8(path, "wb");
+      FILE *file = (FILE*)fopen_utf8(path, "wb");
       if (!file)
          return false;
 

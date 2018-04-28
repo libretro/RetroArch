@@ -54,7 +54,7 @@
    cbs->action_get_value_ident = #name;
 #endif
 
-extern struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END];
+extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
 static void menu_action_setting_disp_set_label_cheat_num_passes(
       file_list_t* list,
@@ -547,80 +547,50 @@ static void menu_action_setting_disp_set_label_input_desc(
       const char *path,
       char *s2, size_t len2)
 {
-   char descriptor[255];
-   const struct retro_keybind *auto_bind = NULL;
-   const struct retro_keybind *keybind   = NULL;
+   rarch_system_info_t *system           = runloop_get_system_info();
    settings_t *settings                  = config_get_ptr();
-   unsigned inp_desc_index_offset        =
-      type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user                = inp_desc_index_offset /
-      (RARCH_FIRST_CUSTOM_BIND + 4);
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset -
-      (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
-   unsigned remap_id                     = 0;
+   const char* descriptor                = NULL;
+   char buf[256];
+
+   unsigned btn_idx, user_idx, remap_idx;
 
    if (!settings)
       return;
 
-   descriptor[0] = '\0';
+   user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
-   remap_id = settings->uints.input_remap_ids
-      [inp_desc_user][inp_desc_button_index_offset];
+   remap_idx =
+      settings->uints.input_remap_ids[user_idx][btn_idx];
+/*
+   if (remap_idx == RARCH_UNMAPPED)
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
+*/
+   if (!system)
+      return;
 
-   keybind   = &input_config_binds[inp_desc_user][remap_id];
-   auto_bind = (const struct retro_keybind*)
-      input_config_get_bind_auto(inp_desc_user, remap_id);
+   descriptor = system->input_desc_btn[user_idx][remap_idx];
 
-   input_config_get_bind_string(descriptor,
-      keybind, auto_bind, sizeof(descriptor));
-
-   if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
+   if (!string_is_empty(descriptor) && remap_idx < RARCH_FIRST_CUSTOM_BIND)
+      strlcpy(s, descriptor, len);
+   else if (!string_is_empty(descriptor) && remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx % 2 == 0)
    {
-      if(strstr(descriptor, "Auto") && !strstr(descriptor,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
-         strlcpy(s,
-            descriptor,
-            len);
-      else
-      {
-         const struct retro_keybind *keyptr = &input_config_binds[inp_desc_user]
-               [remap_id];
-
-         strlcpy(s, msg_hash_to_str(keyptr->enum_idx), len);
-      }
+      snprintf(buf, sizeof(buf), "%s %c", descriptor, '+');
+      strlcpy(s, buf, len);
    }
-
-
-
+   else if (!string_is_empty(descriptor) && remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx % 2 != 0)
+   {
+      snprintf(buf, sizeof(buf), "%s %c", descriptor, '-');
+      strlcpy(s, buf, len);
+   }
    else
-   {
-      const char *str = NULL;
-      switch (remap_id)
-      {
-         case 0:
-            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X);
-            break;
-         case 1:
-            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y);
-            break;
-         case 2:
-            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X);
-            break;
-         case 3:
-            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y);
-            break;
-      }
+      strlcpy(s, "---", len);
 
-      if (!string_is_empty(str))
-         strlcpy(s, str, len);
-   }
 
    *w = 19;
    strlcpy(s2, path, len2);
-
 }
 
-#ifdef HAVE_KEYMAPPER
 static void menu_action_setting_disp_set_label_input_desc_kbd(
    file_list_t* list,
    unsigned *w, unsigned type, unsigned i,
@@ -631,28 +601,40 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    char *s2, size_t len2)
 {
    char desc[PATH_MAX_LENGTH];
-   unsigned key_id;
+   unsigned key_id, id;
    unsigned remap_id;
+   unsigned offset = 0;
+
    settings_t *settings = config_get_ptr();
 
    if (!settings)
       return;
 
-   remap_id =
-      settings->uints.input_keymapper_ids[type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN];
+   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      (MENU_SETTINGS_INPUT_DESC_KBD_END - 
+      MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
 
-   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
+   id = (type / (offset + 1)) - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+   remap_id =
+      settings->uints.input_keymapper_ids[offset][id];
+
+   for (key_id = 0; key_id < RARCH_MAX_KEYS - 1; key_id++)
    {
       if(remap_id == key_descriptors[key_id].key)
          break;
    }
-   snprintf(desc, sizeof(desc), "Keyboard %s", key_descriptors[key_id].desc);
-   strlcpy(s, desc, len);
+
+   if (key_descriptors[key_id].key != RETROK_FIRST)
+   {
+      snprintf(desc, sizeof(desc), "Keyboard %s", key_descriptors[key_id].desc);
+      strlcpy(s, desc, len);
+   }
+   else
+      strlcpy(s, "---", len);
 
    *w = 19;
    strlcpy(s2, path, len2);
 }
-#endif
 
 static void menu_action_setting_disp_set_label_cheat(
       file_list_t* list,
@@ -940,6 +922,37 @@ static void menu_action_setting_disp_set_label_wifi_is_online(
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE), len);
 }
 
+static void menu_action_setting_disp_set_label_xmb_layout(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings        = config_get_ptr();
+
+   strlcpy(s2, path, len2);
+   *w = 19;
+
+   if (!settings)
+      return;
+
+   switch (settings->uints.menu_xmb_layout)
+   {
+      case 0:
+         strlcpy(s, "Auto", len);
+         break;
+      case 1:
+         strlcpy(s, "Console", len);
+         break;
+      case 2:
+         strlcpy(s, "Handheld", len);
+         break;
+   }
+}
+
 static void menu_action_setting_disp_set_label_xmb_menu_color_theme(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1111,6 +1124,47 @@ static void menu_action_setting_disp_set_label_thumbnails(
    *w = 19;
 
    switch (settings->uints.menu_thumbnails)
+   {
+      case 0:
+         strlcpy(s, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OFF), len);
+         break;
+      case 1:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS), len);
+         break;
+      case 2:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS), len);
+         break;
+      case 3:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS), len);
+         break;
+   }
+}
+
+static void menu_action_setting_disp_set_label_left_thumbnails(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings        = config_get_ptr();
+
+   if (!settings)
+      return;
+
+   strlcpy(s2, path, len2);
+   *w = 19;
+
+   switch (settings->uints.menu_left_thumbnails)
    {
       case 0:
          strlcpy(s, msg_hash_to_str(
@@ -1892,6 +1946,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_poll_type_behavior);
             break;
+         case MENU_ENUM_LABEL_XMB_LAYOUT:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_xmb_layout);
+            break;
          case MENU_ENUM_LABEL_XMB_THEME:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_xmb_theme);
@@ -1911,6 +1969,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_THUMBNAILS:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_thumbnails);
+            break;
+         case MENU_ENUM_LABEL_LEFT_THUMBNAILS:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_left_thumbnails);
             break;
          case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
             BIND_ACTION_GET_VALUE(cbs,
@@ -2056,14 +2118,12 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       BIND_ACTION_GET_VALUE(cbs,
          menu_action_setting_disp_set_label_libretro_perf_counters);
    }
-#ifdef HAVE_KEYMAPPER
    else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
       && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
       BIND_ACTION_GET_VALUE(cbs,
          menu_action_setting_disp_set_label_input_desc_kbd);
    }
-#endif
    else
    {
       switch (type)

@@ -136,11 +136,9 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 			   file_list_get_actiondata_at_offset(selection_buf, selection)
                : NULL;
 
-            if (cbs->enum_idx != MSG_UNKNOWN)
-            {
+            if (cbs && cbs->enum_idx != MSG_UNKNOWN)
                ret = menu_hash_get_help_enum(cbs->enum_idx,
                      menu->menu_state_msg, sizeof(menu->menu_state_msg));
-            }
             else
             {
                unsigned type = 0;

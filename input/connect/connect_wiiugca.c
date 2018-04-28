@@ -21,6 +21,7 @@
 #include <boolean.h>
 #include "joypad_connection.h"
 #include "../input_defines.h"
+#include "../common/hid/hid_device_driver.h"
 
 struct hidpad_wiiugca_data
 {
@@ -68,7 +69,7 @@ static void hidpad_wiiugca_deinit(void *data)
       free(device);
 }
 
-static void hidpad_wiiugca_get_buttons(void *data, retro_bits_t *state)
+static void hidpad_wiiugca_get_buttons(void *data, input_bits_t *state)
 {
   struct hidpad_wiiugca_data *device = (struct hidpad_wiiugca_data*)data;
   if (device)

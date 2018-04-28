@@ -1266,11 +1266,13 @@ static void gx_get_video_output_next(void *data)
 }
 
 static const video_poke_interface_t gx_poke_interface = {
+   NULL, /* get_flags */
    NULL,                      /* set_coords */
    NULL,                      /* set_mvp */
    NULL,
    NULL,
    gx_set_video_mode,
+   NULL, /* get_refresh_rate */
    NULL,
    gx_get_video_output_size,
    gx_get_video_output_prev,

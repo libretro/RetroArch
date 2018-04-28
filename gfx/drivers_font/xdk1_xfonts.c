@@ -22,8 +22,8 @@
 #endif
 
 #include "../drivers/d3d.h"
-#include "../drivers/d3d_common.h"
-#include "../drivers/d3d8_common.h"
+#include "../common/d3d_common.h"
+#include "../common/d3d8_common.h"
 
 #include "../font_driver.h"
 

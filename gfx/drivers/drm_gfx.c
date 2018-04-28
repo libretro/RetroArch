@@ -39,6 +39,7 @@
 #include "../font_driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#include "../common/drm_common.h"
 
 #include "drm_pixformats.h"
 
@@ -683,6 +684,7 @@ static bool init_drm(void)
     * on exit in case we change it. */
    drm.orig_crtc = drmModeGetCrtc(drm.fd, drm.encoder->crtc_id);
    drm.current_mode = &(drm.orig_crtc->mode);
+   g_drm_mode = drm.current_mode;
 
    /* Set mode physical video mode. Not really needed, but clears TTY console. */
    struct modeset_buf buf;
@@ -964,11 +966,13 @@ static void drm_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 }
 
 static const video_poke_interface_t drm_poke_interface = {
+   NULL, /* get_flags */
    NULL, /* set_coords */
    NULL, /* set_mvp    */
    NULL,
    NULL,
    NULL, /* set_video_mode */
+   drm_get_refresh_rate,
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
@@ -1010,6 +1014,8 @@ static void drm_gfx_free(void *data)
    slock_free(_drmvars->pending_mutex);
    slock_free(_drmvars->vsync_cond_mutex);
    scond_free(_drmvars->vsync_condition);
+
+   g_drm_mode = NULL;
 
    free(_drmvars);
 }

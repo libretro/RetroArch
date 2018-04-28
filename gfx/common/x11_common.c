@@ -66,7 +66,7 @@ Display *g_x11_dpy                          = NULL;
 unsigned g_x11_screen                       = 0;
 
 Colormap g_x11_cmap;
-Window   g_x11_win;
+Window   g_x11_win = None;
 
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
@@ -107,7 +107,7 @@ void x11_show_mouse(Display *dpy, Window win, bool state)
       x11_hide_mouse(dpy, win);
 }
 
-void x11_windowed_fullscreen(Display *dpy, Window win)
+void x11_set_net_wm_fullscreen(Display *dpy, Window win)
 {
    XEvent xev                 = {0};
 
@@ -232,6 +232,28 @@ void x11_suspend_screensaver(Window wnd, bool enable)
        return;
 #endif
     x11_suspend_screensaver_xdg_screensaver(wnd, enable);
+}
+
+float x11_get_refresh_rate(void *data)
+{
+   XWindowAttributes attr;
+   XF86VidModeModeLine modeline;
+   Screen *screen;
+   int screenid;
+   int dotclock;
+
+   if (!g_x11_dpy || g_x11_win == None)
+      return 0.0f;
+
+   if (!XGetWindowAttributes(g_x11_dpy, g_x11_win, &attr))
+      return 0.0f;
+
+   screen = attr.screen;
+   screenid = XScreenNumberOfScreen(screen);
+
+   XF86VidModeGetModeLine(g_x11_dpy, screenid, &dotclock, &modeline);
+
+   return (float) dotclock * 1000.0f / modeline.htotal / modeline.vtotal;
 }
 
 static bool get_video_mode(video_frame_info_t *video_info,
@@ -408,7 +430,8 @@ static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
          status = 0;
 
          /* XwcLookupString doesn't seem to work. */
-         num = Xutf8LookupString(ic, &event->xkey, keybuf, ARRAY_SIZE(keybuf), &keysym, &status);
+         num = Xutf8LookupString(ic, &event->xkey, keybuf,
+               ARRAY_SIZE(keybuf), &keysym, &status);
 
          /* libc functions need UTF-8 locale to work properly,
           * which makes mbrtowc a bit impractical.
@@ -417,7 +440,8 @@ static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
          num = utf8_conv_utf32(chars, ARRAY_SIZE(chars), keybuf, num);
 #else
          (void)ic;
-         num = XLookupString(&event->xkey, keybuf, sizeof(keybuf), &keysym, NULL); /* ASCII only. */
+         num = XLookupString(&event->xkey, keybuf,
+               sizeof(keybuf), &keysym, NULL); /* ASCII only. */
          for (i = 0; i < num; i++)
             chars[i] = keybuf[i] & 0x7f;
 #endif
@@ -683,5 +707,106 @@ static Bool x11_wait_notify(Display *d, XEvent *e, char *arg)
 void x11_event_queue_check(XEvent *event)
 {
    XIfEvent(g_x11_dpy, event, x11_wait_notify, NULL);
+}
+
+static bool x11_check_atom_supported(Display *dpy, Atom atom)
+{
+   Atom XA_NET_SUPPORTED = XInternAtom(dpy, "_NET_SUPPORTED", True);
+   Atom type;
+   int format;
+   unsigned long nitems;
+   unsigned long bytes_after;
+   Atom *prop;
+   int i;
+
+   if (XA_NET_SUPPORTED == None)
+      return false;
+
+   XGetWindowProperty(dpy, DefaultRootWindow(dpy), XA_NET_SUPPORTED,
+         0, UINT_MAX, False, XA_ATOM, &type, &format,&nitems,
+         &bytes_after, (unsigned char **) &prop);
+
+   if (!prop || type != XA_ATOM)
+      return false;
+
+   for (i = 0; i < nitems; i++)
+   {
+      if (prop[i] == atom)
+      {
+         XFree(prop);
+         return true;
+      }
+   }
+
+   XFree(prop);
+
+   return false;
+}
+
+bool x11_has_net_wm_fullscreen(Display *dpy)
+{
+   XA_NET_WM_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+
+   return x11_check_atom_supported(dpy, XA_NET_WM_STATE_FULLSCREEN);
+}
+
+char *x11_get_wm_name(Display *dpy)
+{
+   Atom XA_NET_SUPPORTING_WM_CHECK = XInternAtom(g_x11_dpy, "_NET_SUPPORTING_WM_CHECK", False);
+   Atom XA_NET_WM_NAME             = XInternAtom(g_x11_dpy, "_NET_WM_NAME", False);
+   Atom XA_UTF8_STRING             = XInternAtom(g_x11_dpy, "UTF8_STRING", False);
+   int status;
+   Atom type;
+   int  format;
+   unsigned long nitems;
+   unsigned long bytes_after;
+   unsigned char *propdata;
+   char *title;
+   Window window;
+
+   if (!XA_NET_SUPPORTING_WM_CHECK || !XA_NET_WM_NAME)
+      return NULL;
+
+   status = XGetWindowProperty(dpy,
+                               DefaultRootWindow(dpy),
+                               XA_NET_SUPPORTING_WM_CHECK,
+                               0,
+                               1,
+                               False,
+                               XA_WINDOW,
+                               &type,
+                               &format,
+                               &nitems,
+                               &bytes_after,
+                               &propdata);
+
+   if (status == Success && propdata)
+      window = ((Window *) propdata)[0];
+   else
+      return NULL;
+
+   XFree(propdata);
+
+   status = XGetWindowProperty(dpy,
+                               window,
+                               XA_NET_WM_NAME,
+                               0,
+                               8192,
+                               False,
+                               XA_UTF8_STRING,
+                               &type,
+                               &format,
+                               &nitems,
+                               &bytes_after,
+                               &propdata);
+
+   if (status == Success && propdata)
+      title = strdup((char *) propdata);
+   else
+      return NULL;
+
+   XFree(propdata);
+
+   return title;
 }
 

@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #ifdef _XBOX
 #include <xtl.h>
 #include <xgraphics.h>
@@ -136,7 +138,6 @@ static bool d3d9_init_imports(d3d_video_t *d3d)
 
 extern d3d_renderchain_driver_t cg_d3d9_renderchain;
 extern d3d_renderchain_driver_t hlsl_d3d9_renderchain;
-extern d3d_renderchain_driver_t null_d3d_renderchain;
 
 static bool renderchain_d3d_init_first(
       enum gfx_ctx_api api,
@@ -155,7 +156,6 @@ static bool renderchain_d3d_init_first(
 #if defined(_WIN32) && defined(HAVE_HLSL)
                &hlsl_d3d9_renderchain,
 #endif
-               &null_d3d_renderchain,
                NULL
             };
             unsigned i;
@@ -413,8 +413,9 @@ static void d3d9_set_mvp(void *data,
 
 static void d3d9_overlay_render(d3d_video_t *d3d,
       video_frame_info_t *video_info,
-      overlay_t *overlay)
+      overlay_t *overlay, bool force_linear)
 {
+   D3DTEXTUREFILTERTYPE filter_type;
    LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
    struct video_viewport vp;
    void *verts;
@@ -503,12 +504,21 @@ static void d3d9_overlay_render(d3d_video_t *d3d,
       d3d9_set_viewports(d3d->dev, &vp_full);
    }
 
+   filter_type = D3DTEXF_LINEAR;
+
+   if (!force_linear)
+   {
+      settings_t *settings = config_get_ptr();
+      if (!settings->bools.menu_linear_filter)
+         filter_type       = D3DTEXF_POINT;
+   }
+
    /* Render overlay. */
    d3d9_set_texture(d3d->dev, 0, overlay->tex);
    d3d9_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_BORDER);
    d3d9_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_BORDER);
-   d3d9_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_LINEAR);
-   d3d9_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_LINEAR);
+   d3d9_set_sampler_minfilter(d3d->dev, 0, filter_type);
+   d3d9_set_sampler_magfilter(d3d->dev, 0, filter_type);
    d3d9_draw_primitive(d3d->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
    /* Restore previous state. */
@@ -1592,7 +1602,7 @@ static bool d3d9_frame(void *data, const void *frame,
    if (d3d->menu && d3d->menu->enabled)
    {
       d3d9_set_mvp(d3d, NULL, &d3d->mvp);
-      d3d9_overlay_render(d3d, video_info, d3d->menu);
+      d3d9_overlay_render(d3d, video_info, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
       d3d9_set_vertex_declaration(d3d->dev, d3d->menu_display.decl);
@@ -1622,7 +1632,7 @@ static bool d3d9_frame(void *data, const void *frame,
    {
       d3d9_set_mvp(d3d, NULL, &d3d->mvp);
       for (i = 0; i < d3d->overlays_size; i++)
-         d3d9_overlay_render(d3d, video_info, &d3d->overlays[i]);
+         d3d9_overlay_render(d3d, video_info, &d3d->overlays[i], true);
    }
 #endif
 
@@ -1884,12 +1894,27 @@ static void d3d9_set_video_mode(void *data,
 #endif
 }
 
+static uint32_t d3d9_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
+   BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+
+   return flags;
+}
+
 static const video_poke_interface_t d3d9_poke_interface = {
+   d3d9_get_flags,
    NULL,                            /* set_coords */
    d3d9_set_mvp,
    d3d9_load_texture,
    d3d9_unload_texture,
    d3d9_set_video_mode,
+#ifdef _XBOX
+#else
+   win32_get_refresh_rate,
+#endif
    NULL,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

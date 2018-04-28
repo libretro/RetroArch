@@ -91,37 +91,13 @@ static const float initialwidth = 1;
 static const float initialmode = 0;
 static const float freezemode = 0.5f;
 
-#define combtuningL1 1116
-#define combtuningL2 1188
-#define combtuningL3 1277
-#define combtuningL4 1356
-#define combtuningL5 1422
-#define combtuningL6 1491
-#define combtuningL7 1557
-#define combtuningL8 1617
-#define allpasstuningL1 556
-#define allpasstuningL2 441
-#define allpasstuningL3 341
-#define allpasstuningL4 225
-
 struct revmodel
 {
    struct comb combL[numcombs];
    struct allpass allpassL[numallpasses];
 
-   float bufcombL1[combtuningL1];
-   float bufcombL2[combtuningL2];
-   float bufcombL3[combtuningL3];
-   float bufcombL4[combtuningL4];
-   float bufcombL5[combtuningL5];
-   float bufcombL6[combtuningL6];
-   float bufcombL7[combtuningL7];
-   float bufcombL8[combtuningL8];
-
-   float bufallpassL1[allpasstuningL1];
-   float bufallpassL2[allpasstuningL2];
-   float bufallpassL3[allpasstuningL3];
-   float bufallpassL4[allpasstuningL4];
+   float **bufcomb;
+   float **bufallpass;
 
    float gain;
    float roomsize, roomsize1;
@@ -210,21 +186,29 @@ static void revmodel_setmode(struct revmodel *rev, float value)
    revmodel_update(rev);
 }
 
-static void revmodel_init(struct revmodel *rev)
+static void revmodel_init(struct revmodel *rev,int srate)
 {
-   rev->combL[0].buffer      = rev->bufcombL1; rev->combL[0].bufsize = combtuningL1;
-   rev->combL[1].buffer      = rev->bufcombL2; rev->combL[1].bufsize = combtuningL2;
-   rev->combL[2].buffer      = rev->bufcombL3; rev->combL[2].bufsize = combtuningL3;
-   rev->combL[3].buffer      = rev->bufcombL4; rev->combL[3].bufsize = combtuningL4;
-   rev->combL[4].buffer      = rev->bufcombL5; rev->combL[4].bufsize = combtuningL5;
-   rev->combL[5].buffer      = rev->bufcombL6; rev->combL[5].bufsize = combtuningL6;
-   rev->combL[6].buffer      = rev->bufcombL7; rev->combL[6].bufsize = combtuningL7;
-   rev->combL[7].buffer      = rev->bufcombL8; rev->combL[7].bufsize = combtuningL8;
 
-   rev->allpassL[0].buffer   = rev->bufallpassL1; rev->allpassL[0].bufsize = allpasstuningL1;
-   rev->allpassL[1].buffer   = rev->bufallpassL2; rev->allpassL[1].bufsize = allpasstuningL2;
-   rev->allpassL[2].buffer   = rev->bufallpassL3; rev->allpassL[2].bufsize = allpasstuningL3;
-   rev->allpassL[3].buffer   = rev->bufallpassL4; rev->allpassL[3].bufsize = allpasstuningL4;
+  static const int comb_lengths[8] = { 1116,1188,1277,1356,1422,1491,1557,1617 };
+  static const int allpass_lengths[4] = { 225,341,441,556 };
+  double r = srate * (1 / 44100.0);
+  unsigned c;
+
+   rev->bufcomb=malloc(numcombs*sizeof(float*));
+   for (c = 0; c < numcombs; ++c)
+   {
+	   rev->bufcomb[c] = malloc(r*comb_lengths[c]*sizeof(float));
+	   rev->combL[c].buffer  =  rev->bufcomb[c];
+         rev->combL[c].bufsize=r*comb_lengths[c];
+  }
+
+  rev->bufallpass=malloc(numallpasses*sizeof(float*));
+   for (c = 0; c < numallpasses; ++c)
+   {
+	   rev->bufallpass[c] = malloc(r*allpass_lengths[c]*sizeof(float));
+	   rev->allpassL[c].buffer  =  rev->bufallpass[c];
+         rev->allpassL[c].bufsize=r*allpass_lengths[c];
+  }
 
    rev->allpassL[0].feedback = 0.5f;
    rev->allpassL[1].feedback = 0.5f;
@@ -246,6 +230,22 @@ struct reverb_data
 
 static void reverb_free(void *data)
 {
+   struct reverb_data *rev = (struct reverb_data*)data;
+   unsigned i;
+
+   for (i = 0; i < numcombs; i++) {
+   free(rev->left.bufcomb[i]);
+   free(rev->right.bufcomb[i]);
+   }
+   free(rev->left.bufcomb);
+   free(rev->right.bufcomb);
+
+   for (i = 0; i < numallpasses; i++) {
+   free(rev->left.bufallpass[i]);
+   free(rev->right.bufallpass[i]);
+   }
+   free(rev->left.bufallpass);
+   free(rev->right.bufallpass);
    free(data);
 }
 
@@ -284,8 +284,8 @@ static void *reverb_init(const struct dspfilter_info *info,
    config->get_float(userdata, "roomwidth", &roomwidth, 0.56f);
    config->get_float(userdata, "roomsize", &roomsize, 0.56f);
 
-   revmodel_init(&rev->left);
-   revmodel_init(&rev->right);
+   revmodel_init(&rev->left,info->input_rate);
+   revmodel_init(&rev->right,info->input_rate);
 
    revmodel_setdamp(&rev->left, damping);
    revmodel_setdry(&rev->left, drytime);

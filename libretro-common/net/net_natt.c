@@ -1,4 +1,4 @@
-/* Copyright  (C) 2016-2017 The RetroArch team
+/* Copyright  (C) 2016-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_natt.c).
@@ -74,8 +74,9 @@ void natt_init(void)
       descXML = (char *) miniwget(dev->descURL, &descXMLsize, 0, NULL);
       if (descXML)
       {
-         parserootdesc (descXML, descXMLsize, &data);
-         free (descXML); descXML = 0;
+         parserootdesc(descXML, descXMLsize, &data);
+         free (descXML);
+         descXML = 0;
          GetUPNPUrls (&urls, &data, dev->descURL, 0);
       }
       freeUPNPDevlist(devlist);
@@ -112,44 +113,55 @@ static bool natt_open_port(struct natt_status *status,
       return false;
 
    /* figure out the internal info */
-   if (getnameinfo(addr, addrlen, host, PATH_MAX_LENGTH, port_str, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
+   if (getnameinfo(addr, addrlen, host, PATH_MAX_LENGTH,
+            port_str, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
       return false;
+
    proto_str = (proto == SOCKET_PROTOCOL_UDP) ? "UDP" : "TCP";
 
    /* add the port mapping */
-   r = UPNP_AddAnyPortMapping(urls.controlURL, data.first.servicetype, port_str,
-      port_str, host, "retroarch", proto_str, NULL, "3600", ext_port_str);
+   r = UPNP_AddAnyPortMapping(urls.controlURL,
+         data.first.servicetype, port_str,
+         port_str, host, "retroarch",
+         proto_str, NULL, "3600", ext_port_str);
+
    if (r != 0)
    {
       /* try the older AddPortMapping */
       memcpy(ext_port_str, port_str, 6);
-      r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, port_str,
-         port_str, host, "retroarch", proto_str, NULL, "3600");
+      r = UPNP_AddPortMapping(urls.controlURL,
+            data.first.servicetype, port_str,
+            port_str, host, "retroarch",
+            proto_str, NULL, "3600");
    }
    if (r != 0)
       return false;
 
    /* get the external IP */
-   r = UPNP_GetExternalIPAddress(urls.controlURL, data.first.servicetype, ext_host);
+   r = UPNP_GetExternalIPAddress(urls.controlURL,
+         data.first.servicetype, ext_host);
    if (r != 0)
       return false;
 
    /* update the status */
-   if (getaddrinfo_retro(ext_host, ext_port_str, &hints, &ext_addrinfo) != 0)
+   if (getaddrinfo_retro(ext_host,
+            ext_port_str, &hints, &ext_addrinfo) != 0)
       return false;
 
    if (ext_addrinfo->ai_family == AF_INET &&
        ext_addrinfo->ai_addrlen >= sizeof(struct sockaddr_in))
    {
-      status->have_inet4 = true;
-      status->ext_inet4_addr = *((struct sockaddr_in *) ext_addrinfo->ai_addr);
+      status->have_inet4     = true;
+      status->ext_inet4_addr = *((struct sockaddr_in *)
+            ext_addrinfo->ai_addr);
    }
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
    else if (ext_addrinfo->ai_family == AF_INET6 &&
             ext_addrinfo->ai_addrlen >= sizeof(struct sockaddr_in6))
    {
-      status->have_inet6 = true;
-      status->ext_inet6_addr = *((struct sockaddr_in6 *) ext_addrinfo->ai_addr);
+      status->have_inet6     = true;
+      status->ext_inet6_addr = *((struct sockaddr_in6 *)
+            ext_addrinfo->ai_addr);
    }
 #endif
    else
@@ -169,16 +181,17 @@ static bool natt_open_port(struct natt_status *status,
 #endif
 }
 
-bool natt_open_port_any(struct natt_status *status, uint16_t port, enum socket_protocol proto)
+bool natt_open_port_any(struct natt_status *status,
+      uint16_t port, enum socket_protocol proto)
 {
 #if !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU)
-   struct net_ifinfo list;
-   bool ret = false;
    size_t i;
-   struct addrinfo hints = {0}, *addr;
    char port_str[6];
+   struct net_ifinfo list;
+   struct addrinfo hints = {0}, *addr;
+   bool ret              = false;
 
-   sprintf(port_str, "%hu", port);
+   snprintf(port_str, sizeof(port_str), "%hu", port);
 
    /* get our interfaces */
    if (!net_ifinfo_new(&list))
@@ -190,13 +203,15 @@ bool natt_open_port_any(struct natt_status *status, uint16_t port, enum socket_p
       struct net_ifinfo_entry *entry = list.entries + i;
 
       /* ignore localhost */
-      if (string_is_equal(entry->host, "127.0.0.1") || string_is_equal(entry->host, "::1"))
+      if (  string_is_equal(entry->host, "127.0.0.1") || 
+            string_is_equal(entry->host, "::1"))
          continue;
 
       /* make a request for this host */
       if (getaddrinfo_retro(entry->host, port_str, &hints, &addr) == 0)
       {
-         ret = natt_open_port(status, addr->ai_addr, addr->ai_addrlen, proto) || ret;
+         ret = natt_open_port(status, addr->ai_addr,
+               addr->ai_addrlen, proto) || ret;
          freeaddrinfo_retro(addr);
       }
    }
@@ -218,19 +233,24 @@ bool natt_read(struct natt_status *status)
 }
 
 #if 0
-/* If we want to remove redirects in the future, this is a sample of how to do
- * that */
+/* If we want to remove redirects in the future, this is a 
+ * sample of how to do that. */
+
 void upnp_rem_redir (int port)
 {
-   char port_str[16];
    int t;
+   char port_str[16];
+
    printf("TB : upnp_rem_redir (%d)\n", port);
+
    if(urls.controlURL[0] == '\0')
    {
       printf("TB : the init was not done !\n");
       return;
    }
-   sprintf(port_str, "%d", port);
-   UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, port_str, "TCP", NULL);
+
+   snprintf(port_str, sizeof(port_str), "%d", port);
+   UPNP_DeletePortMapping(urls.controlURL,
+         data.first.servicetype, port_str, "TCP", NULL);
 }
 #endif

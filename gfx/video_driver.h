@@ -71,12 +71,6 @@ RETRO_BEGIN_DECLS
 
 #define MAX_VARIABLES 64
 
-/* Added for resolution wswitching */
-void crt_poke_video();
-
-/* Added for resolution wswitching */ 
-
-
 enum
 {
    TEXTURES = 8,
@@ -119,7 +113,10 @@ enum display_flags
    GFX_CTX_FLAGS_NONE = 0,
    GFX_CTX_FLAGS_GL_CORE_CONTEXT,
    GFX_CTX_FLAGS_MULTISAMPLING,
-   GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES
+   GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES,
+   GFX_CTX_FLAGS_HARD_SYNC,
+   GFX_CTX_FLAGS_BLACK_FRAME_INSERTION,
+   GFX_CTX_FLAGS_MENU_FRAME_FILTERING
 };
 
 enum shader_uniform_type
@@ -206,6 +203,7 @@ struct uniform_info
 typedef struct shader_backend
 {
    void *(*init)(void *data, const char *path);
+   void (*init_menu_shaders)(void *data);
    void (*deinit)(void *data);
 
    /* Set shader parameters. */
@@ -531,6 +529,8 @@ typedef struct gfx_ctx_driver
     * If not initialized yet, it returns current screen size. */
    void (*get_video_size)(void*, unsigned*, unsigned*);
 
+   float (*get_refresh_rate)(void*);
+
    void (*get_video_output_size)(void*, unsigned*, unsigned*);
 
    void (*get_video_output_prev)(void*);
@@ -697,6 +697,7 @@ struct aspect_ratio_elem
 
 typedef struct video_poke_interface
 {
+   uint32_t (*get_flags)(void *data);
    void (*set_coords)(void *handle_data, void *shader_data,
          const struct video_coords *coords);
    void (*set_mvp)(void *data, void *shader_data,
@@ -706,6 +707,7 @@ typedef struct video_poke_interface
    void (*unload_texture)(void *data, uintptr_t id);
    void (*set_video_mode)(void *data, unsigned width,
          unsigned height, bool fullscreen);
+   float (*get_refresh_rate)(void *data);
    void (*set_filtering)(void *data, unsigned index, bool smooth);
    void (*get_video_output_size)(void *data,
          unsigned *width, unsigned *height);
@@ -1279,11 +1281,15 @@ bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info);
 
 bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info);
 
+bool video_context_driver_get_refresh_rate(float *refresh_rate);
+
 bool video_context_driver_get_context_data(void *data);
 
 bool video_context_driver_show_mouse(bool *bool_data);
 
 void video_context_driver_set_data(void *data);
+
+bool video_driver_get_flags(gfx_ctx_flags_t *flags);
 
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 
@@ -1336,6 +1342,8 @@ bool video_shader_driver_compile_program(struct shader_program_info *program_inf
 void video_shader_driver_use(void *data);
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
+
+float video_driver_get_refresh_rate(void);
 
 extern bool (*video_driver_cb_has_focus)(void);
 

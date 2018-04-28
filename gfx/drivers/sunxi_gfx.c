@@ -109,6 +109,7 @@ typedef struct
    uint32_t            framebuffer_size;  /* total size of the framebuffer */
    int                 framebuffer_height;/* virtual vertical resolution */
    uint32_t            gfx_layer_size;    /* the size of the primary layer */
+   float               refresh_rate;
 
    /* Layers support */
    int                 gfx_layer_id;
@@ -416,6 +417,9 @@ static sunxi_disp_t *sunxi_disp_init(const char *device)
    ctx->framebuffer_height = ctx->framebuffer_size /
       (ctx->xres * ctx->bits_per_pixel / 8);
    ctx->gfx_layer_size     = ctx->xres * ctx->yres * fb_var.bits_per_pixel / 8;
+   ctx->refresh_rate       = 1000000.0f / fb_var.pixclock * 1000000.0f /
+      (fb_var.yres + fb_var.upper_margin + fb_var.lower_margin + fb_var.vsync_len)
+      (fb_var.xres + fb_var.left_margin  + fb_var.right_margin + fb_var.hsync_len);
 
    if (ctx->framebuffer_size < ctx->gfx_layer_size)
    {
@@ -931,12 +935,21 @@ static void sunxi_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
    }
 }
 
+static float sunxi_get_refresh_rate (void *data)
+{
+   struct sunxi_video *_dispvars = (struct sunxi_video*)data;
+
+   return _dispvars->sunxi_disp->refresh_rate;
+}
+
 static const video_poke_interface_t sunxi_poke_interface = {
+   NULL, /* get_flags */
    NULL, /* set_coords */
    NULL, /* set_mvp */
    NULL,
    NULL,
    NULL, /* set_video_mode */
+   NULL, /* get_refresh_rate */
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

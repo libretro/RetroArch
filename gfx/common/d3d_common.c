@@ -86,7 +86,8 @@ void *d3d_matrix_identity(void *_pout)
    return pout;
 }
 
-void *d3d_matrix_ortho_off_center_lh(void *_pout, float l, float r, float b, float t, float zn, float zf)
+void *d3d_matrix_ortho_off_center_lh(void *_pout,
+      float l, float r, float b, float t, float zn, float zf)
 {
    D3DMATRIX *pout = (D3DMATRIX*)_pout;
 
@@ -101,7 +102,8 @@ void *d3d_matrix_ortho_off_center_lh(void *_pout, float l, float r, float b, flo
    return pout;
 }
 
-void *d3d_matrix_multiply(void *_pout, const void *_pm1, const void *_pm2)
+void *d3d_matrix_multiply(void *_pout,
+      const void *_pm1, const void *_pm2)
 {
    unsigned i,j;
    D3DMATRIX      *pout = (D3DMATRIX*)_pout;
@@ -126,4 +128,24 @@ void *d3d_matrix_rotation_z(void *_pout, float angle)
    pout->m[0][1] = sin(angle);
    pout->m[1][0] = -sin(angle);
    return pout;
+}
+
+int32_t d3d_translate_filter(unsigned type)
+{
+   switch (type)
+   {
+      case RARCH_FILTER_UNSPEC:
+         {
+            settings_t *settings = config_get_ptr();
+            if (!settings->bools.video_smooth)
+               break;
+         }
+         /* fall-through */
+      case RARCH_FILTER_LINEAR:
+         return (int32_t)D3DTEXF_LINEAR;
+      case RARCH_FILTER_NEAREST:
+         break;
+   }
+
+   return (int32_t)D3DTEXF_POINT;
 }

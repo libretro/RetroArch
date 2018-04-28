@@ -12,6 +12,7 @@
 #include <string.h>
 #include <libchdr/flac.h>
 #include <libchdr/minmax.h>
+#include <retro_miscellaneous.h>
 
 /***************************************************************************
  *  FLAC DECODER
@@ -153,7 +154,7 @@ bool flac_decoder::decode(int16_t **samples, uint32_t num_samples, bool swap_end
 {
 	/* make sure we don't have too many channels */
 	int chans = channels();
-	if (chans > ARRAY_LENGTH(m_uncompressed_start))
+	if (chans > ARRAY_SIZE(m_uncompressed_start))
 		return false;
 
 	/* configure the uncompressed buffer */

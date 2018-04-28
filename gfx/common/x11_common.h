@@ -29,7 +29,7 @@ extern Colormap g_x11_cmap;
 extern unsigned g_x11_screen;
 
 void x11_show_mouse(Display *dpy, Window win, bool state);
-void x11_windowed_fullscreen(Display *dpy, Window win);
+void x11_set_net_wm_fullscreen(Display *dpy, Window win);
 void x11_suspend_screensaver(Window win, bool enable);
 bool x11_enter_fullscreen(video_frame_info_t *video_info,
       Display *dpy, unsigned width,
@@ -47,6 +47,8 @@ void x11_destroy_input_context(XIM *xim, XIC *xic);
 
 bool x11_get_metrics(void *data,
       enum display_metric_types type, float *value);
+
+float x11_get_refresh_rate(void *data);
 
 void x11_check_window(void *data, bool *quit,
    bool *resize, unsigned *width, unsigned *height, bool is_shutdown);
@@ -74,6 +76,10 @@ void x11_colormap_destroy(void);
 void x11_install_quit_atom(void);
 
 void x11_event_queue_check(XEvent *event);
+
+char *x11_get_wm_name(Display *dpy);
+
+bool x11_has_net_wm_fullscreen(Display *dpy);
 
 #endif
 

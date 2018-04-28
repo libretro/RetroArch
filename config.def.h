@@ -297,6 +297,7 @@ static bool content_show_history     = true;
 #ifdef HAVE_LIBRETRODB
 static bool content_show_add     	 = true;
 #endif
+static bool content_show_playlists   = true;
 
 #ifdef HAVE_XMB
 static unsigned xmb_scale_factor = 100;
@@ -304,6 +305,7 @@ static unsigned xmb_alpha_factor = 75;
 static unsigned menu_font_color_red = 255;
 static unsigned menu_font_color_green = 255;
 static unsigned menu_font_color_blue = 255;
+static unsigned xmb_menu_layout  = 0;
 static unsigned xmb_icon_theme   = XMB_ICON_THEME_MONOCHROME;
 static unsigned xmb_theme        = XMB_THEME_ELECTRIC_BLUE;
 #if defined(HAVE_LAKKA) || defined(__arm__) || defined(__PPC64__) || defined(__ppc64__) || defined(__powerpc64__) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
@@ -593,6 +595,12 @@ static const float slowmotion_ratio = 3.0;
 /* Maximum fast forward ratio. */
 static const float fastforward_ratio = 0.0;
 
+/* Run core logic one or more frames ahead then load the state back to reduce perceived input lag. */
+static const unsigned run_ahead_frames = 1;
+
+/* When using the Run Ahead feature, use a secondary instance of the core. */
+static const bool run_ahead_secondary_instance = true;
+
 /* Enable stdin/network command interface. */
 static const bool network_cmd_enable = false;
 static const uint16_t network_cmd_port = 55355;
@@ -605,11 +613,7 @@ static const unsigned default_content_history_size = 100;
 /* Show Menu start-up screen on boot. */
 static const bool default_menu_show_start_screen = true;
 
-#ifdef RARCH_MOBILE
 static const bool menu_dpi_override_enable = false;
-#else
-static const bool menu_dpi_override_enable = true;
-#endif
 
 #ifdef RARCH_MOBILE
 static const unsigned menu_dpi_override_value = 72;
@@ -653,6 +657,10 @@ static const unsigned input_poll_type_behavior = 2;
 static const unsigned input_bind_timeout = 5;
 
 static const unsigned menu_thumbnails_default = 3;
+
+static const unsigned menu_left_thumbnails_default = 0;
+
+static const bool xmb_vertical_thumbnails = false;
 
 #ifdef IOS
 static const bool ui_companion_start_on_boot = false;

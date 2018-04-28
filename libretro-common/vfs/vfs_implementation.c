@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
 *
 * ---------------------------------------------------------------------------------------
 * The following license statement only applies to this file (vfs_implementation.c).
@@ -264,7 +264,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
-      FILE   *fp = fopen_utf8(path, mode_str);
+      FILE   *fp = (FILE*)fopen_utf8(path, mode_str);
 
       if (!fp)
          goto error;

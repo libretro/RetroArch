@@ -37,7 +37,7 @@ static bool null_joypad_button(unsigned port_num, uint16_t joykey)
    return false;
 }
 
-static void null_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
+static void null_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
 	BIT256_CLEAR_ALL_PTR(state);
 }

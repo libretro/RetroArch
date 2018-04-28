@@ -61,6 +61,7 @@ enum menu_image_type
    MENU_IMAGE_NONE = 0,
    MENU_IMAGE_WALLPAPER,
    MENU_IMAGE_THUMBNAIL,
+   MENU_IMAGE_LEFT_THUMBNAIL,
    MENU_IMAGE_SAVESTATE_THUMBNAIL
 };
 
@@ -99,9 +100,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_SET_OWN_DRIVER,
    RARCH_MENU_CTL_UNSET_OWN_DRIVER,
    RARCH_MENU_CTL_OWNS_DRIVER,
-   RARCH_MENU_CTL_PLAYLIST_FREE,
-   RARCH_MENU_CTL_PLAYLIST_INIT,
-   RARCH_MENU_CTL_PLAYLIST_GET,
    RARCH_MENU_CTL_FIND_DRIVER,
    RARCH_MENU_CTL_LIST_FREE,
    RARCH_MENU_CTL_LIST_SET_SELECTION,
@@ -205,9 +203,9 @@ enum menu_settings_type
    MENU_SETTINGS_CHEAT_BEGIN,
    MENU_SETTINGS_CHEAT_END = MENU_SETTINGS_CHEAT_BEGIN + (MAX_CHEAT_COUNTERS - 1),
    MENU_SETTINGS_INPUT_DESC_BEGIN,
-   MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + (MAX_USERS * (RARCH_FIRST_CUSTOM_BIND + 4)),
+   MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + ((RARCH_FIRST_CUSTOM_BIND + 8) * MAX_USERS),
    MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
-   MENU_SETTINGS_INPUT_DESC_KBD_END = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN + 135,
+   MENU_SETTINGS_INPUT_DESC_KBD_END = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN + (RARCH_MAX_KEYS * MAX_USERS),
 
    MENU_SETTINGS_SUBSYSTEM_LOAD,
 
@@ -287,6 +285,7 @@ enum menu_display_driver_type
    MENU_VIDEO_DRIVER_VULKAN,
    MENU_VIDEO_DRIVER_DIRECT3D8,
    MENU_VIDEO_DRIVER_DIRECT3D9,
+   MENU_VIDEO_DRIVER_DIRECT3D10,
    MENU_VIDEO_DRIVER_DIRECT3D11,
    MENU_VIDEO_DRIVER_DIRECT3D12,
    MENU_VIDEO_DRIVER_VITA2D,
@@ -491,7 +490,7 @@ typedef struct menu_ctx_driver
    int (*pointer_tap)(void *data, unsigned x, unsigned y, unsigned ptr,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
-   void (*update_thumbnail_path)(void *data, unsigned i);
+   void (*update_thumbnail_path)(void *data, unsigned i, char pos);
    void (*update_thumbnail_image)(void *data);
    void (*set_thumbnail_system)(void *data, char* s, size_t len);
    void (*set_thumbnail_content)(void *data, char* s, size_t len);
@@ -505,12 +504,6 @@ typedef struct menu_ctx_driver
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
 } menu_ctx_driver_t;
-
-typedef struct menu_ctx_load_image
-{
-   void *data;
-   enum menu_image_type type;
-} menu_ctx_load_image_t;
 
 typedef struct menu_ctx_displaylist
 {
@@ -629,8 +622,6 @@ void menu_driver_navigation_set(bool scroll);
 
 void menu_driver_populate_entries(menu_displaylist_info_t *info);
 
-bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info);
-
 bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list);
 
 bool menu_driver_init(bool video_is_threaded);
@@ -684,6 +675,11 @@ void menu_display_clear_color(menu_display_ctx_clearcolor_t *color,
       video_frame_info_t *video_info);
 void menu_display_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info);
+void menu_display_draw_keyboard(
+      uintptr_t hover_texture,
+      const font_data_t *font,
+      video_frame_info_t *video_info,
+      char *grid[], unsigned id);
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info);
@@ -721,6 +717,9 @@ void menu_display_handle_wallpaper_upload(void *task_data,
 void menu_display_handle_thumbnail_upload(void *task_data,
       void *user_data, const char *err);
 
+void menu_display_handle_left_thumbnail_upload(void *task_data,
+      void *user_data, const char *err);
+
 void menu_display_handle_savestate_thumbnail_upload(void *task_data,
       void *user_data, const char *err);
 
@@ -746,11 +745,20 @@ void menu_display_draw_text(
 
 #define menu_display_set_alpha(color, alpha_value) (color[3] = color[7] = color[11] = color[15] = (alpha_value))
 
-font_data_t *menu_display_font(enum application_special_type type, float font_size,
+font_data_t *menu_display_font(
+      enum application_special_type type,
+      float font_size,
       bool video_is_threaded);
 
-void menu_display_reset_textures_list(const char *texture_path, const char *iconpath,
-      uintptr_t *item, enum texture_filter_type filter_type);
+void menu_display_reset_textures_list(
+      const char *texture_path,
+      const char *iconpath,
+      uintptr_t *item,
+      enum texture_filter_type filter_type);
+
+/* Returns the OSK key at a given position */
+int menu_display_osk_ptr_at_pos(void *data, int x, int y,
+      unsigned width, unsigned height);
 
 void menu_driver_destroy(void);
 
@@ -760,6 +768,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_gl;
 extern menu_display_ctx_driver_t menu_display_ctx_vulkan;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d8;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d9;
+extern menu_display_ctx_driver_t menu_display_ctx_d3d10;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d11;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d12;
 extern menu_display_ctx_driver_t menu_display_ctx_vita2d;

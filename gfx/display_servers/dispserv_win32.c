@@ -67,8 +67,8 @@ be received by your application before it calls any ITaskbarList3 method.
 
 static void* win32_display_server_init(void)
 {
-   dispserv_win32_t *dispserv = (dispserv_win32_t*)calloc(1, sizeof(*dispserv));
    HRESULT hr;
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)calloc(1, sizeof(*dispserv));
 
    (void)hr;
 
@@ -77,11 +77,13 @@ static void* win32_display_server_init(void)
 
 #ifdef HAS_TASKBAR_EXT
 #ifdef __cplusplus
-   /* when compiling in C++ mode, GUIDs are references instead of pointers */
-   hr = CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, IID_ITaskbarList3, (void**)&g_taskbarList);
+   /* When compiling in C++ mode, GUIDs are references instead of pointers */
+   hr = CoCreateInstance(CLSID_TaskbarList, NULL,
+         CLSCTX_INPROC_SERVER, IID_ITaskbarList3, (void**)&g_taskbarList);
 #else
-   /* mingw GUIDs are pointers instead of references since we're in C mode */
-   hr = CoCreateInstance(&CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, &IID_ITaskbarList3, (void**)&g_taskbarList);
+   /* Mingw GUIDs are pointers instead of references since we're in C mode */
+   hr = CoCreateInstance(&CLSID_TaskbarList, NULL,
+         CLSCTX_INPROC_SERVER, &IID_ITaskbarList3, (void**)&g_taskbarList);
 #endif
 
    if (!SUCCEEDED(hr))
@@ -115,7 +117,8 @@ static bool win32_set_window_opacity(void *data, unsigned opacity)
    HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
-   serv->opacity          = opacity;
+   if (serv)
+      serv->opacity       = opacity;
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Set window transparency on Windows 2000 and above */
@@ -126,24 +129,23 @@ static bool win32_set_window_opacity(void *data, unsigned opacity)
            GetWindowLongPtr(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
       return SetLayeredWindowAttributes(hwnd, 0, (255 * opacity) / 100, LWA_ALPHA);
    }
-   else
-   {
-      SetWindowLongPtr(hwnd,
-           GWL_EXSTYLE,
-           GetWindowLongPtr(hwnd, GWL_EXSTYLE) & ~WS_EX_LAYERED);
-      return true;
-   }
-#endif
+
+   SetWindowLongPtr(hwnd,
+         GWL_EXSTYLE,
+         GetWindowLongPtr(hwnd, GWL_EXSTYLE) & ~WS_EX_LAYERED);
+   return true;
+#else
    return false;
+#endif
 }
 
 static bool win32_set_window_progress(void *data, int progress, bool finished)
 {
    HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
-   bool               ret = false;
 
-   serv->progress = progress;
+   if (serv)
+      serv->progress      = progress;
 
 #ifdef HAS_TASKBAR_EXT
    if (!g_taskbarList || !win32_taskbar_is_created())
@@ -151,45 +153,130 @@ static bool win32_set_window_progress(void *data, int progress, bool finished)
 
    if (progress == -1)
    {
-      if (ITaskbarList3_SetProgressState(g_taskbarList, hwnd, TBPF_INDETERMINATE) == S_OK)
-         ret = true;
-
-      if (!ret)
+      if (ITaskbarList3_SetProgressState(
+               g_taskbarList, hwnd, TBPF_INDETERMINATE) != S_OK)
          return false;
    }
    else if (finished)
    {
-      if (ITaskbarList3_SetProgressState(g_taskbarList, hwnd, TBPF_NOPROGRESS) == S_OK)
-         ret = true;
-
-      if (!ret)
+      if (ITaskbarList3_SetProgressState(
+               g_taskbarList, hwnd, TBPF_NOPROGRESS) != S_OK)
          return false;
    }
    else if (progress >= 0)
    {
-      if (ITaskbarList3_SetProgressState(g_taskbarList, hwnd, TBPF_NORMAL) == S_OK)
-         ret = true;
-
-      if (!ret)
+      if (ITaskbarList3_SetProgressState(
+               g_taskbarList, hwnd, TBPF_NORMAL) != S_OK)
          return false;
 
-      if (ITaskbarList3_SetProgressValue(g_taskbarList, hwnd, progress, 100) == S_OK)
-         ret = true;
+      if (ITaskbarList3_SetProgressValue(
+               g_taskbarList, hwnd, progress, 100) != S_OK)
+         return false;
    }
 #endif
 
-   return ret;
+   return true;
 }
 
 static bool win32_set_window_decorations(void *data, bool on)
 {
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
-   serv->decorations = on;
+   if (serv)
+      serv->decorations = on;
 
-   /* menu_setting performs a reinit instead to properly apply decoration changes */
+   /* menu_setting performs a reinit instead to properly 
+    * apply decoration changes */
 
    return true;
+}
+
+static bool win32_display_server_set_resolution(void *data,
+      unsigned width, unsigned height, int f_restore, int hz)
+{
+   LONG res;
+   DEVMODE curDevmode;
+   DEVMODE devmode;
+
+   int iModeNum;
+   int freq               = 0;
+   DWORD flags            = 0;
+   int depth              = 0;
+   dispserv_win32_t *serv = (dispserv_win32_t*)data;
+
+   if (!serv)
+      return false;
+
+   if (f_restore == 0)
+      freq                = hz;
+
+   EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
+
+   /* Used to stop super resolution bug */
+   if (width == curDevmode.dmPelsWidth)
+      width  = 0;							
+   if (width == 0) 
+      width = curDevmode.dmPelsWidth;
+   if (height == 0) 
+      height = curDevmode.dmPelsHeight;
+   if (depth == 0) 
+      depth = curDevmode.dmBitsPerPel;
+   if (freq == 0) 
+      freq = curDevmode.dmDisplayFrequency;
+
+   for (iModeNum = 0; ; iModeNum++) 
+   {
+      if (!EnumDisplaySettings(NULL, iModeNum, &devmode)) 
+         break;
+
+      if (devmode.dmPelsWidth != width) 
+         continue;
+
+      if (devmode.dmPelsHeight != height) 
+         continue;
+
+      if (devmode.dmBitsPerPel != depth) 
+         continue;
+
+      if (devmode.dmDisplayFrequency != freq) 
+         continue;
+
+      devmode.dmFields |= 
+         DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
+      res               = 
+         win32_change_display_settings(NULL, &devmode, CDS_TEST);
+
+      switch (res) 
+      {
+         case DISP_CHANGE_SUCCESSFUL:
+            res = win32_change_display_settings(NULL, &devmode, flags);
+            switch (res) 
+            {
+               case DISP_CHANGE_SUCCESSFUL:
+                  return true;
+               case DISP_CHANGE_NOTUPDATED:
+                  return true;
+               default:
+                  break;
+            }
+            break;
+         case DISP_CHANGE_RESTART:
+            break;
+         default:
+            break;
+      }
+   }
+
+   return true;
+}
+
+void win32_display_server_get_current_resolution(
+      unsigned *width, unsigned *height)
+{
+   if (width)
+      *width   = GetSystemMetrics(SM_CYSCREEN);
+   if (height)
+      *height  = GetSystemMetrics(SM_CXSCREEN);
 }
 
 const video_display_server_t dispserv_win32 = {
@@ -198,6 +285,8 @@ const video_display_server_t dispserv_win32 = {
    win32_set_window_opacity,
    win32_set_window_progress,
    win32_set_window_decorations,
+   win32_display_server_get_current_resolution,
+   win32_display_server_set_resolution,
    "win32"
 };
 

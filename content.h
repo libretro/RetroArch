@@ -92,17 +92,16 @@ void content_clear_subsystem(void);
 void content_set_subsystem(unsigned subsystem);
 
 /* Get the current subsystem*/
-int content_get_subsystem();
+int content_get_subsystem(void);
 
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path);
 
 /* Get the current subsystem rom id */
-int content_get_subsystem_rom_id();
+unsigned content_get_subsystem_rom_id(void);
 
 /* Set environment variables before a subsystem load */
-void content_set_subsystem_info();
-
+void content_set_subsystem_info(void);
 
 RETRO_END_DECLS
 

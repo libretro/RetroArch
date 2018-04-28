@@ -178,6 +178,7 @@ else ifeq ($(libogc_platform), 1)
 
    CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 
+   HAVE_RUNAHEAD            := 1
    HAVE_FILTERS_BUILTIN     := 1
    HAVE_THREADS             := 1
    HAVE_RPNG                := 1
@@ -838,6 +839,10 @@ endif
 
 ifeq ($(HAVE_IMAGEVIEWER), 1)
    CFLAGS      += -DHAVE_IMAGEVIEWER
+endif
+
+ifeq ($(HAVE_RUNAHEAD), 1)
+   CFLAGS      += -DHAVE_RUNAHEAD
 endif
 
 ifeq ($(HAVE_7ZIP), 1)

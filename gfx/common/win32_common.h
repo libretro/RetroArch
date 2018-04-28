@@ -56,14 +56,15 @@ void win32_monitor_get_info(void);
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 
+int win32_change_display_settings(const char *str, void *devmode_data,
+      unsigned flags);
+
 void create_graphics_context(HWND hwnd, bool *quit);
 
 void create_gdi_context(HWND hwnd, bool *quit);
 
 bool gdi_has_menu_frame(void);
 
-bool win32_shader_dlg_init(void);
-void shader_dlg_show(HWND parent_hwnd);
 void shader_dlg_params_reload(void);
 #endif
 
@@ -126,6 +127,8 @@ void win32_destroy_window(void);
 bool win32_taskbar_is_created(void);
 
 void win32_set_taskbar_created(bool created);
+
+float win32_get_refresh_rate(void *data);
 
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,

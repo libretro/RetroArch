@@ -73,7 +73,7 @@ static int cb_nbio_audio_mixer_load(void *data, size_t len)
 
    image->buffer                   = buffer;
    image->buffer->buf              = ptr;
-   image->buffer->bufsize          = len;
+   image->buffer->bufsize          = (unsigned)len;
    image->copy_data_over           = true;
    nbio->is_finished               = true;
 
@@ -91,6 +91,50 @@ static void task_audio_mixer_handle_upload_ogg(void *task_data,
 
    params.volume               = 1.0f;
    params.type                 = AUDIO_MIXER_TYPE_OGG;
+   params.state                = AUDIO_STREAM_STATE_PLAYING;
+   params.buf                  = img->buf;
+   params.bufsize              = img->bufsize;
+   params.cb                   = NULL;
+
+   audio_driver_mixer_add_stream(&params);
+
+   free(img);
+   free(user_data);
+}
+
+static void task_audio_mixer_handle_upload_flac(void *task_data,
+      void *user_data, const char *err)
+{
+   audio_mixer_stream_params_t params;
+   nbio_buf_t             *img = (nbio_buf_t*)task_data;
+
+   if (!img)
+      return;
+
+   params.volume               = 1.0f;
+   params.type                 = AUDIO_MIXER_TYPE_FLAC;
+   params.state                = AUDIO_STREAM_STATE_PLAYING;
+   params.buf                  = img->buf;
+   params.bufsize              = img->bufsize;
+   params.cb                   = NULL;
+
+   audio_driver_mixer_add_stream(&params);
+
+   free(img);
+   free(user_data);
+}
+
+static void task_audio_mixer_handle_upload_mp3(void *task_data,
+      void *user_data, const char *err)
+{
+   audio_mixer_stream_params_t params;
+   nbio_buf_t             *img = (nbio_buf_t*)task_data;
+
+   if (!img)
+      return;
+
+   params.volume               = 1.0f;
+   params.type                 = AUDIO_MIXER_TYPE_MP3;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->buf;
    params.bufsize              = img->bufsize;
@@ -215,6 +259,18 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
       image->type     = AUDIO_MIXER_TYPE_OGG;
       nbio->type      = NBIO_TYPE_OGG;
       t->callback     = task_audio_mixer_handle_upload_ogg;
+   }
+   else if (strstr(fullpath, file_path_str(FILE_PATH_MP3_EXTENSION)))
+   {
+      image->type     = AUDIO_MIXER_TYPE_MP3;
+      nbio->type      = NBIO_TYPE_MP3;
+      t->callback     = task_audio_mixer_handle_upload_mp3;
+   }
+   else if (strstr(fullpath, file_path_str(FILE_PATH_FLAC_EXTENSION)))
+   {
+      image->type     = AUDIO_MIXER_TYPE_FLAC;
+      nbio->type      = NBIO_TYPE_FLAC;
+      t->callback     = task_audio_mixer_handle_upload_flac;
    }
    else if (	strstr(fullpath, file_path_str(FILE_PATH_MOD_EXTENSION)) ||
 		strstr(fullpath, file_path_str(FILE_PATH_S3M_EXTENSION)) ||

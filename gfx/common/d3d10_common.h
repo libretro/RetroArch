@@ -20,6 +20,10 @@
 #include "dxgi_common.h"
 #include <d3d10.h>
 
+#include "../drivers_shader/slang_process.h"
+
+typedef const ID3D10SamplerState*       D3D10SamplerStateRef;
+
 typedef ID3D10InputLayout*       D3D10InputLayout;
 typedef ID3D10RasterizerState*   D3D10RasterizerState;
 typedef ID3D10DepthStencilState* D3D10DepthStencilState;
@@ -49,6 +53,7 @@ typedef ID3D10Multithread*        D3D10Multithread;
 typedef ID3D10Debug*              D3D10Debug;
 typedef ID3D10SwitchToRef*        D3D10SwitchToRef;
 typedef ID3D10InfoQueue*          D3D10InfoQueue;
+
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
 static INLINE void D3D10SetResourceEvictionPriority(D3D10Resource resource, UINT eviction_priority)
@@ -236,6 +241,7 @@ static INLINE void D3D10SetVShader(D3D10Device device, D3D10VertexShader vertex_
 {
    device->lpVtbl->VSSetShader(device, vertex_shader);
 }
+
 static INLINE void D3D10DrawIndexed(
       D3D10Device device, UINT index_count, UINT start_index_location, INT base_vertex_location)
 {
@@ -265,6 +271,28 @@ static INLINE void D3D10SetVertexBuffers(
    device->lpVtbl->IASetVertexBuffers(
          device, start_slot, num_buffers, vertex_buffers, strides, offsets);
 }
+
+static INLINE void D3D10SetVertexBuffer(
+      D3D10Device device_context,
+      UINT               slot,
+      D3D10Buffer const  vertex_buffer,
+      UINT               stride,
+      UINT               offset)
+{
+   D3D10SetVertexBuffers(device_context, slot, 1, (D3D10Buffer* const)&vertex_buffer, &stride, &offset);
+}
+static INLINE void D3D10SetVShaderConstantBuffer(
+      D3D10Device device_context, UINT slot, D3D10Buffer const constant_buffer)
+{
+   D3D10SetVShaderConstantBuffers(device_context, slot, 1, (ID3D10Buffer ** const)&constant_buffer);
+}
+
+static INLINE void D3D10SetPShaderConstantBuffer(
+      D3D10Device device_context, UINT slot, D3D10Buffer const constant_buffer)
+{
+   D3D10SetPShaderConstantBuffers(device_context, slot, 1, (ID3D10Buffer** const)&constant_buffer);
+}
+
 static INLINE void
 D3D10SetIndexBuffer(D3D10Device device, D3D10Buffer index_buffer, DXGI_FORMAT format, UINT offset)
 {
@@ -1047,25 +1075,74 @@ typedef struct
    D3D10Texture2D          handle;
    D3D10Texture2D          staging;
    D3D10_TEXTURE2D_DESC    desc;
+   D3D10RenderTargetView   rt_view;
    D3D10ShaderResourceView view;
-   bool                    dirty;
-   bool                    ignore_alpha;
+   D3D10SamplerStateRef    sampler;
+   float4_t                size_data;
 } d3d10_texture_t;
+
+typedef struct
+{
+   struct
+   {
+      float x, y, w, h;
+   } pos;
+   struct
+   {
+      float u, v, w, h;
+   } coords;
+   UINT32 colors[4];
+   struct
+   {
+      float scaling;
+      float rotation;
+   } params;
+} d3d10_sprite_t;
+
+#ifndef ALIGN
+#ifdef _MSC_VER
+#define ALIGN(x) __declspec(align(x))
+#else
+#define ALIGN(x) __attribute__((aligned(x)))
+#endif
+#endif
+
+typedef struct ALIGN(16)
+{
+   math_matrix_4x4 mvp;
+   struct
+   {
+      float width;
+      float height;
+   } OutputSize;
+   float time;
+} d3d10_uniform_t;
+
+static_assert(
+      (!(sizeof(d3d10_uniform_t) & 0xF)), "sizeof(d3d10_uniform_t) must be a multiple of 16");
+
+typedef struct d3d10_shader_t
+{
+   D3D10VertexShader   vs;
+   D3D10PixelShader    ps;
+   D3D10GeometryShader gs;
+   D3D10InputLayout    layout;
+} d3d10_shader_t;
 
 typedef struct
 {
    unsigned              cur_mon_id;
    DXGISwapChain         swapChain;
    D3D10Device           device;
+   D3D10RasterizerState  state;
    D3D10RenderTargetView renderTargetView;
-   D3D10InputLayout      layout;
    D3D10Buffer           ubo;
-   D3D10VertexShader     vs;
-   D3D10PixelShader      ps;
-   D3D10SamplerState     sampler_nearest;
-   D3D10SamplerState     sampler_linear;
+   d3d10_uniform_t       ubo_values;
+   D3D10SamplerState     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
    D3D10BlendState       blend_enable;
    D3D10BlendState       blend_disable;
+   D3D10BlendState       blend_pipeline;
+   D3D10Buffer           menu_pipeline_vbo;
    math_matrix_4x4       mvp, mvp_no_rot;
    struct video_viewport vp;
    D3D10_VIEWPORT        viewport;
@@ -1075,28 +1152,74 @@ typedef struct
    bool                  resize_chain;
    bool                  keep_aspect;
    bool                  resize_viewport;
+   bool                  resize_render_targets;
+   bool                  init_history;
+   d3d10_shader_t        shaders[GFX_MAX_SHADERS];
+
+	struct
+   {
+      d3d10_shader_t shader;
+      d3d10_shader_t shader_font;
+      D3D10Buffer    vbo;
+      int            offset;
+      int            capacity;
+      bool           enabled;
+   } sprites;
+
+#ifdef HAVE_OVERLAY
+   struct
+   {
+      D3D10Buffer      vbo;
+      d3d10_texture_t* textures;
+      bool             enabled;
+      bool             fullscreen;
+      int              count;
+   } overlays;
+#endif
+
    struct
    {
       d3d10_texture_t   texture;
       D3D10Buffer       vbo;
-      D3D10SamplerState sampler;
       bool              enabled;
       bool              fullscreen;
    } menu;
    struct
    {
-      d3d10_texture_t   texture;
+      d3d10_texture_t texture[GFX_MAX_FRAME_HISTORY + 1];
       D3D10Buffer       vbo;
       D3D10Buffer       ubo;
-      D3D10SamplerState sampler;
       D3D10_VIEWPORT    viewport;
+      float4_t          output_size;
       int               rotation;
    } frame;
+
+   struct
+   {
+      d3d10_shader_t             shader;
+      D3D10Buffer                buffers[SLANG_CBUFFER_MAX];
+      d3d10_texture_t            rt;
+      d3d10_texture_t            feedback;
+      D3D10_VIEWPORT             viewport;
+      pass_semantics_t           semantics;
+      uint32_t                   frame_count;
+   } pass[GFX_MAX_SHADERS];
+
+   struct video_shader* shader_preset;
+   d3d10_texture_t      luts[GFX_MAX_TEXTURES];
 } d3d10_video_t;
 
 void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture);
+static INLINE void d3d10_release_texture(d3d10_texture_t* texture)
+{
+   Release(texture->handle);
+   Release(texture->staging);
+   Release(texture->view);
+   Release(texture->rt_view);
+}
 
 void d3d10_update_texture(
+      D3D10Device      ctx,
       int              width,
       int              height,
       int              pitch,
@@ -1107,6 +1230,26 @@ void d3d10_update_texture(
 DXGI_FORMAT d3d10_get_closest_match(
       D3D10Device device, DXGI_FORMAT desired_format, UINT desired_format_support);
 
+bool d3d10_init_shader(
+      D3D10Device                     device,
+      const char*                     src,
+      size_t                          size,
+      const void*                     src_name,
+      LPCSTR                          vs_entry,
+      LPCSTR                          ps_entry,
+      LPCSTR                          gs_entry,
+      const D3D10_INPUT_ELEMENT_DESC* input_element_descs,
+      UINT                            num_elements,
+      d3d10_shader_t*                 out);
+
+static INLINE void d3d10_release_shader(d3d10_shader_t* shader)
+{
+   Release(shader->layout);
+   Release(shader->vs);
+   Release(shader->ps);
+   Release(shader->gs);
+}
+
 static INLINE DXGI_FORMAT
 d3d10_get_closest_match_texture2D(D3D10Device device, DXGI_FORMAT desired_format)
 {
@@ -1114,3 +1257,20 @@ d3d10_get_closest_match_texture2D(D3D10Device device, DXGI_FORMAT desired_format
          device, desired_format,
          D3D10_FORMAT_SUPPORT_TEXTURE2D | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE);
 }
+
+static INLINE void d3d10_set_shader(D3D10Device ctx, d3d10_shader_t* shader)
+{
+   D3D10SetInputLayout(ctx, shader->layout);
+   D3D10SetVShader(ctx, shader->vs);
+   D3D10SetPShader(ctx, shader->ps);
+   D3D10SetGShader(ctx, shader->gs);
+}
+
+#if !defined(__cplusplus) || defined(CINTERFACE)
+static INLINE void
+d3d10_set_texture_and_sampler(D3D10Device ctx, UINT slot, d3d10_texture_t* texture)
+{
+   D3D10SetPShaderResources(ctx, slot, 1, &texture->view);
+   D3D10SetPShaderSamplers(ctx, slot, 1, (D3D10SamplerState*)&texture->sampler);
+}
+#endif

@@ -1,5 +1,6 @@
 #include <3ds.h>
 #include <sys/iosupport.h>
+#include <3ds/services/apt.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>

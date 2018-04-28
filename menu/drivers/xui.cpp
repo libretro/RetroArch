@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -47,6 +49,7 @@
 
 #include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
+#include "../../gfx/common/d3d9_common.h"
 
 #define XUI_CONTROL_NAVIGATE_OK (XUI_CONTROL_NAVIGATE_RIGHT + 1)
 
@@ -236,7 +239,7 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
          D3DX_DEFAULT_NONPOW2,
          1,
          D3DUSAGE_CPU_CACHED_MEMORY,
-         (D3DFORMAT)d3d_get_argb8888_format(),
+         (D3DFORMAT)d3d9_get_argb8888_format(),
          D3DPOOL_DEFAULT,
          D3DX_FILTER_NONE,
          D3DX_FILTER_NONE,

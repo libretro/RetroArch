@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <string.h>
 #include <math.h>
 
@@ -463,9 +465,9 @@ static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,
       index = cgGetParameterResourceIndex(param);
       d3d9_set_texture(chain->dev, index, chain->passes->data[0].tex);
       d3d9_set_sampler_magfilter(chain->dev, index,
-            d3d9_translate_filter(chain->passes->data[0].info.pass->filter));
+            d3d_translate_filter(chain->passes->data[0].info.pass->filter));
       d3d9_set_sampler_minfilter(chain->dev, index,
-            d3d9_translate_filter(chain->passes->data[0].info.pass->filter));
+            d3d_translate_filter(chain->passes->data[0].info.pass->filter));
       d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
       d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       unsigned_vector_list_append(chain->bound_tex, index);
@@ -539,9 +541,9 @@ static void d3d9_cg_renderchain_bind_prev(void *data, const void *pass_data)
          unsigned_vector_list_append(chain->bound_tex, index);
 
          d3d9_set_sampler_magfilter(chain->dev, index,
-               d3d9_translate_filter(chain->passes->data[0].info.pass->filter));
+               d3d_translate_filter(chain->passes->data[0].info.pass->filter));
          d3d9_set_sampler_minfilter(chain->dev, index,
-               d3d9_translate_filter(chain->passes->data[0].info.pass->filter));
+               d3d_translate_filter(chain->passes->data[0].info.pass->filter));
          d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
          d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
@@ -570,9 +572,9 @@ static void d3d9_cg_renderchain_add_lut_internal(void *data,
 
    d3d9_set_texture(chain->dev, index, chain->luts->data[i].tex);
    d3d9_set_sampler_magfilter(chain->dev, index,
-         d3d9_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
+         d3d_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
    d3d9_set_sampler_minfilter(chain->dev, index,
-         d3d9_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
+         d3d_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
    d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
    d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
    unsigned_vector_list_append(chain->bound_tex, index);
@@ -623,9 +625,9 @@ static void d3d9_cg_renderchain_bind_pass(
 
          d3d9_set_texture(chain->dev, index, chain->passes->data[i].tex);
          d3d9_set_sampler_magfilter(chain->dev, index,
-               d3d9_translate_filter(chain->passes->data[i].info.pass->filter));
+               d3d_translate_filter(chain->passes->data[i].info.pass->filter));
          d3d9_set_sampler_minfilter(chain->dev, index,
-               d3d9_translate_filter(chain->passes->data[i].info.pass->filter));
+               d3d_translate_filter(chain->passes->data[i].info.pass->filter));
          d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
          d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
@@ -887,9 +889,9 @@ static bool d3d9_cg_renderchain_create_first_pass(
 
       d3d9_set_texture(chain->dev, 0, chain->prev.tex[i]);
       d3d9_set_sampler_minfilter(chain->dev, 0,
-            d3d9_translate_filter(info->pass->filter));
+            d3d_translate_filter(info->pass->filter));
       d3d9_set_sampler_magfilter(chain->dev, 0,
-            d3d9_translate_filter(info->pass->filter));
+            d3d_translate_filter(info->pass->filter));
       d3d9_set_sampler_address_u(chain->dev, 0, D3DTADDRESS_BORDER);
       d3d9_set_sampler_address_v(chain->dev, 0, D3DTADDRESS_BORDER);
       d3d9_set_texture(chain->dev, 0, NULL);
@@ -1331,8 +1333,8 @@ static void cg_d3d9_renderchain_blit_to_texture(
       unsigned width, unsigned height,
       unsigned pitch)
 {
-   D3DLOCKED_RECT d3dlr;
-   struct Pass *first = (struct Pass*)&chain->passes->data[0];
+   D3DLOCKED_RECT d3dlr = {0, NULL};
+   struct Pass *first   = (struct Pass*)&chain->passes->data[0];
 
    if (
          (first->last_width != width || first->last_height != height)
@@ -1426,9 +1428,9 @@ static void cg_d3d9_renderchain_render_pass(
 
    d3d9_set_texture(chain->dev, 0, pass->tex);
    d3d9_set_sampler_minfilter(chain->dev, 0,
-         d3d9_translate_filter(pass->info.pass->filter));
+         d3d_translate_filter(pass->info.pass->filter));
    d3d9_set_sampler_magfilter(chain->dev, 0,
-         d3d9_translate_filter(pass->info.pass->filter));
+         d3d_translate_filter(pass->info.pass->filter));
 
    d3d9_set_vertex_declaration(chain->dev, pass->vertex_decl);
    for (i = 0; i < 4; i++)

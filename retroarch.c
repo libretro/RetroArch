@@ -118,6 +118,10 @@
 
 #include "command.h"
 
+#ifdef HAVE_RUNAHEAD
+#include "runahead/run_ahead.h"
+#endif
+
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
 
 #define FAIL_CPU(simd_type) do { \
@@ -743,6 +747,11 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                   RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
             break;
 
+         /* Must handle '?' otherwise you get an infinite loop */
+         case '?':
+            retroarch_print_help(argv[0]);
+            retroarch_fail(1, "retroarch_parse_input()");
+            break;
          /* All other arguments are handled in the second pass */
       }
    }
@@ -2372,7 +2381,7 @@ bool runloop_msg_queue_pull(const char **ret)
 
 #ifdef HAVE_MENU
 static bool input_driver_toggle_button_combo(
-      unsigned mode, retro_bits_t* p_input)
+      unsigned mode, input_bits_t* p_input)
 {
    switch (mode)
    {
@@ -2422,9 +2431,9 @@ static enum runloop_state runloop_check_state(
       bool input_nonblock_state,
       unsigned *sleep_ms)
 {
-   retro_bits_t current_input;
+   input_bits_t current_input;
 #ifdef HAVE_MENU
-   static retro_bits_t last_input   = {{0}};
+   static input_bits_t last_input   = {{0}};
 #endif
    static bool old_fs_toggle_pressed= false;
    static bool old_focus            = true;
@@ -2437,7 +2446,11 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
+#endif
 
+   BIT256_CLEAR_ALL_PTR(&current_input);
+
+#ifdef HAVE_MENU
    if (menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb()))
 	   input_menu_keys_pressed(settings, &current_input);
    else
@@ -2590,7 +2603,7 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    if (menu_is_alive)
    {
-      static retro_bits_t old_input = {{0}};
+      static input_bits_t old_input = {{0}};
       menu_ctx_iterate_t iter;
 
       retro_ctx.poll_cb();
@@ -2598,7 +2611,7 @@ static enum runloop_state runloop_check_state(
       {
          enum menu_action action;
          bool focused               = false;
-         retro_bits_t trigger_input = current_input;
+         input_bits_t trigger_input = current_input;
 
          bits_clear_bits(trigger_input.data, old_input.data,
                ARRAY_SIZE(trigger_input.data));
@@ -2825,11 +2838,13 @@ static enum runloop_state runloop_check_state(
 
       if (new_button_state && !old_button_state)
       {
-         if (input_nonblock_state) {
+         if (input_nonblock_state)
+         {
             input_driver_unset_nonblock_state();
             runloop_fastmotion = false;
          }
-         else {
+         else
+         {
             input_driver_set_nonblock_state();
             runloop_fastmotion = true;
          }
@@ -2837,11 +2852,13 @@ static enum runloop_state runloop_check_state(
       }
       else if (old_hold_button_state != new_hold_button_state)
       {
-         if (new_hold_button_state) {
+         if (new_hold_button_state)
+         {
             input_driver_set_nonblock_state();
             runloop_fastmotion = true;
          }
-         else {
+         else
+         {
             input_driver_unset_nonblock_state();
             runloop_fastmotion = false;
          }
@@ -2954,21 +2971,17 @@ static enum runloop_state runloop_check_state(
 
       if (new_slowmotion_button_state && !old_slowmotion_button_state)
          {
-            if (runloop_slowmotion) {
+            if (runloop_slowmotion)
                   runloop_slowmotion = false;
-            }
-            else {
+            else
                   runloop_slowmotion = true;
-            }
          }
       else if (old_slowmotion_hold_button_state != new_slowmotion_hold_button_state)
       {
-         if (new_slowmotion_hold_button_state) {
+         if (new_slowmotion_hold_button_state)
             runloop_slowmotion = true;
-         }
-         else {
+         else
             runloop_slowmotion = false;
-         }
       }
 
       if (runloop_slowmotion)
@@ -3243,7 +3256,13 @@ int runloop_iterate(unsigned *sleep_ms)
    if ((settings->uints.video_frame_delay > 0) && !input_nonblock_state)
       retro_sleep(settings->uints.video_frame_delay);
 
-   core_run();
+#ifdef HAVE_RUNAHEAD
+   /* Run Ahead Feature replaces the call to core_run in this loop */
+   if (settings->bools.run_ahead_enabled && settings->uints.run_ahead_frames > 0)
+      run_ahead(settings->uints.run_ahead_frames, settings->bools.run_ahead_secondary_instance);
+   else
+#endif
+      core_run();
 
 #ifdef HAVE_CHEEVOS
    if (runloop_check_cheevos())

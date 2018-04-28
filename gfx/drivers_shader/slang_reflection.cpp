@@ -83,12 +83,13 @@ static slang_texture_semantic slang_name_to_texture_semantic_array(const string 
    unsigned i = 0;
    while (*names)
    {
-      auto n = *names;
+      auto        n = *names;
       auto semantic = static_cast<slang_texture_semantic>(i);
+
       if (slang_texture_semantic_is_array(semantic))
       {
          size_t baselen = strlen(n);
-         int cmp = strncmp(n, name.c_str(), baselen);
+         int        cmp = strncmp(n, name.c_str(), baselen);
 
          if (cmp == 0)
          {
@@ -190,7 +191,7 @@ static bool set_ubo_texture_offset(slang_reflection *reflection,
       }
    }
 
-   active = true;
+   active        = true;
    active_offset = offset;
    return true;
 }
@@ -279,7 +280,7 @@ static bool validate_type_for_semantic(const SPIRType &type, slang_semantic sem)
          return type.basetype == SPIRType::Float && type.vecsize == 4 && type.columns == 4;
          /* uint */
       case SLANG_SEMANTIC_FRAME_COUNT:
-         return type.basetype == SPIRType::UInt && type.vecsize == 1 && type.columns == 1;
+         return type.basetype == SPIRType::UInt  && type.vecsize == 1 && type.columns == 1;
          /* float */
       case SLANG_SEMANTIC_FLOAT_PARAMETER:
          return type.basetype == SPIRType::Float && type.vecsize == 1 && type.columns == 1;
@@ -303,13 +304,13 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
    auto ranges = compiler.get_active_buffer_ranges(resource.id);
    for (auto &range : ranges)
    {
-      auto &name = compiler.get_member_name(resource.base_type_id, range.index);
-      auto &type = compiler.get_type(compiler.get_type(resource.base_type_id).member_types[range.index]);
+      auto &name             = compiler.get_member_name(resource.base_type_id, range.index);
+      auto &type             = compiler.get_type(compiler.get_type(resource.base_type_id).member_types[range.index]);
 
-      unsigned sem_index = 0;
+      unsigned sem_index     = 0;
       unsigned tex_sem_index = 0;
-      auto sem = slang_uniform_name_to_semantic(*reflection->semantic_map, name, &sem_index);
-      auto tex_sem = slang_uniform_name_to_texture_semantic(*reflection->texture_semantic_uniform_map,
+      auto sem               = slang_uniform_name_to_semantic(*reflection->semantic_map, name, &sem_index);
+      auto tex_sem           = slang_uniform_name_to_texture_semantic(*reflection->texture_semantic_uniform_map,
             name, &tex_sem_index);
 
       if (tex_sem == SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT && tex_sem_index >= reflection->pass_number)
@@ -658,14 +659,15 @@ bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,
    {
       Compiler vertex_compiler(vertex);
       Compiler fragment_compiler(fragment);
-      auto vertex_resources = vertex_compiler.get_shader_resources();
+      auto vertex_resources   = vertex_compiler.get_shader_resources();
       auto fragment_resources = fragment_compiler.get_shader_resources();
 
       if (!slang_reflect(vertex_compiler, fragment_compiler,
                vertex_resources, fragment_resources,
                reflection))
       {
-         RARCH_ERR("[slang]: Failed to reflect SPIR-V. Resource usage is inconsistent with expectations.\n");
+         RARCH_ERR("[slang]: Failed to reflect SPIR-V."
+               " Resource usage is inconsistent with expectations.\n");
          return false;
       }
 

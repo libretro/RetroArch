@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_http.c).
@@ -138,7 +138,6 @@ void net_http_urlencode_full(char *dest,
    char *tmp                         = NULL;
    char url_domain[PATH_MAX_LENGTH]  = {0};
    char url_path[PATH_MAX_LENGTH]    = {0};
-   char url_encoded[PATH_MAX_LENGTH] = {0};
    int count                         = 0;
 
    strlcpy (url_path, source, sizeof(url_path));

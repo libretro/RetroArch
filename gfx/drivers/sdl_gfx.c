@@ -517,11 +517,13 @@ static void sdl_grab_mouse_toggle(void *data)
 }
 
 static const video_poke_interface_t sdl_poke_interface = {
+   NULL, /* get_flags */
    NULL,                /* set_coords */
    NULL,                /* set_mvp */
    NULL,
    NULL,
    NULL,
+   NULL, /* get_refresh_rate */
    sdl_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

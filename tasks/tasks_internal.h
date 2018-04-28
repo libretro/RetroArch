@@ -32,7 +32,6 @@
 #include "../content.h"
 #include "../core_type.h"
 #include "../msg_hash.h"
-#include "../frontend/frontend_driver.h"
 
 RETRO_BEGIN_DECLS
 
@@ -74,6 +73,8 @@ enum nbio_type
    NBIO_TYPE_TGA,
    NBIO_TYPE_BMP,
    NBIO_TYPE_OGG,
+   NBIO_TYPE_FLAC,
+   NBIO_TYPE_MP3,
    NBIO_TYPE_MOD,
    NBIO_TYPE_WAV
 };
@@ -134,7 +135,8 @@ bool task_push_dbscan(
       const char *playlist_directory,
       const char *content_database,
       const char *fullpath,
-      bool directory, retro_task_callback_t cb);
+      bool directory, bool show_hidden_files,
+      retro_task_callback_t cb);
 #endif
 
 #ifdef HAVE_OVERLAY

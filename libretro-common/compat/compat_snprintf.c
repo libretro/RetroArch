@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (compat_snprintf.c).
@@ -24,8 +24,9 @@
 #ifdef _MSC_VER
 
 #include <retro_common.h>
-
-#include <stdio.h>
+#if _MSC_VER >= 1800
+#include <stdio.h> /* added for _vsnprintf_s and _vscprintf on VS2015 and VS2017 */
+#endif
 #include <stdarg.h>
 
 #if _MSC_VER < 1800

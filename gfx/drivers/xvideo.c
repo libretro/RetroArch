@@ -423,7 +423,6 @@ static void *xv_init(const video_info_t *video,
    unsigned i;
    int ret;
    XWindowAttributes target;
-   char buf[128]                          = {0};
    char title[128]                        = {0};
    XSetWindowAttributes attributes        = {0};
    XVisualInfo visualtemplate             = {0};
@@ -562,6 +561,16 @@ static void *xv_init(const video_info_t *video,
    XFree(visualinfo);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
+   if (video->fullscreen && settings->bools.video_disable_composition)
+   {
+      uint32_t value = 1;
+      Atom cardinal = XInternAtom(g_x11_dpy, "CARDINAL", False);
+      Atom net_wm_bypass_compositor = XInternAtom(g_x11_dpy, "_NET_WM_BYPASS_COMPOSITOR", False);
+
+      RARCH_LOG("[XVideo]: Requesting compositor bypass.\n");
+      XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
+   }
+
    XMapWindow(g_x11_dpy, g_x11_win);
 
    video_driver_get_window_title(title, sizeof(title));
@@ -573,7 +582,7 @@ static void *xv_init(const video_info_t *video,
 
    if (video->fullscreen)
    {
-      x11_windowed_fullscreen(g_x11_dpy, g_x11_win);
+      x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
       x11_show_mouse(g_x11_dpy, g_x11_win, false);
    }
 
@@ -924,11 +933,37 @@ static bool xv_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return true;
 }
 
+static video_poke_interface_t xv_video_poke_interface = {
+   NULL, /* get_flags */
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   x11_get_refresh_rate,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL
+};
+
 static void xv_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
    (void)data;
-   (void)iface;
+   *iface = &xv_video_poke_interface;
 }
 
 static bool xv_set_shader(void *data,

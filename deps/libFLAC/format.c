@@ -40,12 +40,12 @@
 
 #include <retro_miscellaneous.h>
 
-#include "FLAC/assert.h"
-#include "FLAC/format.h"
-#include "share/alloc.h"
-#include "share/compat.h"
-#include "private/format.h"
-#include "private/macros.h"
+#include "include/FLAC/assert.h"
+#include "include/FLAC/format.h"
+#include "include/share/alloc.h"
+#include "include/share/compat.h"
+#include "include/private/format.h"
+#include "include/private/macros.h"
 
 /* FLAC_PACKAGE_VERSION should come from configure */
 #if defined(__LIBRETRO__) || defined(RARCH_INTERNAL)
