@@ -147,6 +147,8 @@ ifneq ($(GIT_VERSION),)
 endif
 
 # General object files
+DEFINES += -DHAVE_DR_MP3
+CFLAGS  += -DHAVE_DR_MP3
 
 OBJ += frontend/frontend.o \
        frontend/frontend_driver.o \

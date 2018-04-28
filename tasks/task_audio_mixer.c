@@ -124,6 +124,28 @@ static void task_audio_mixer_handle_upload_flac(void *task_data,
    free(user_data);
 }
 
+static void task_audio_mixer_handle_upload_mp3(void *task_data,
+      void *user_data, const char *err)
+{
+   audio_mixer_stream_params_t params;
+   nbio_buf_t             *img = (nbio_buf_t*)task_data;
+
+   if (!img)
+      return;
+
+   params.volume               = 1.0f;
+   params.type                 = AUDIO_MIXER_TYPE_MP3;
+   params.state                = AUDIO_STREAM_STATE_PLAYING;
+   params.buf                  = img->buf;
+   params.bufsize              = img->bufsize;
+   params.cb                   = NULL;
+
+   audio_driver_mixer_add_stream(&params);
+
+   free(img);
+   free(user_data);
+}
+
 static void task_audio_mixer_handle_upload_mod(void *task_data,
       void *user_data, const char *err)
 {
@@ -237,6 +259,12 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
       image->type     = AUDIO_MIXER_TYPE_OGG;
       nbio->type      = NBIO_TYPE_OGG;
       t->callback     = task_audio_mixer_handle_upload_ogg;
+   }
+   else if (strstr(fullpath, file_path_str(FILE_PATH_MP3_EXTENSION)))
+   {
+      image->type     = AUDIO_MIXER_TYPE_MP3;
+      nbio->type      = NBIO_TYPE_MP3;
+      t->callback     = task_audio_mixer_handle_upload_mp3;
    }
    else if (strstr(fullpath, file_path_str(FILE_PATH_FLAC_EXTENSION)))
    {
