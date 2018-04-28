@@ -38,13 +38,13 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "private/bitmath.h"
-#include "private/bitreader.h"
-#include "private/crc.h"
-#include "private/macros.h"
-#include "FLAC/assert.h"
-#include "share/compat.h"
-#include "share/endswap.h"
+#include "include/private/bitmath.h"
+#include "include/private/bitreader.h"
+#include "include/private/crc.h"
+#include "include/private/macros.h"
+#include "include/FLAC/assert.h"
+#include "include/share/compat.h"
+#include "include/share/endswap.h"
 
 /* Things should be fastest when this matches the machine word size */
 /* WATCHOUT: if you change this you must also change the following #defines down to COUNT_ZERO_MSBS2 below to match */

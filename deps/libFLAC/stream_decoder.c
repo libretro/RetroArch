@@ -42,20 +42,20 @@
 
 #include <retro_miscellaneous.h>
 
-#include "share/compat.h"
-#include "FLAC/assert.h"
-#include "share/alloc.h"
-#include "protected/stream_decoder.h"
-#include "private/bitreader.h"
-#include "private/bitmath.h"
-#include "private/cpu.h"
-#include "private/crc.h"
-#include "private/fixed.h"
-#include "private/format.h"
-#include "private/lpc.h"
-#include "private/md5.h"
-#include "private/memory.h"
-#include "private/macros.h"
+#include "include/share/compat.h"
+#include "include/FLAC/assert.h"
+#include "include/share/alloc.h"
+#include "include/protected/stream_decoder.h"
+#include "include/private/bitreader.h"
+#include "include/private/bitmath.h"
+#include "include/private/cpu.h"
+#include "include/private/crc.h"
+#include "include/private/fixed.h"
+#include "include/private/format.h"
+#include "include/private/lpc.h"
+#include "include/private/md5.h"
+#include "include/private/memory.h"
+#include "include/private/macros.h"
 
 
 /* technically this should be in an "export.c" but this is convenient enough */

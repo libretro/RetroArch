@@ -35,10 +35,10 @@
 
 #include <retro_inline.h>
 
-#include "FLAC/ordinals.h"
-#include "FLAC/assert.h"
+#include "../FLAC/ordinals.h"
+#include "../FLAC/assert.h"
 
-#include "share/compat.h"
+#include "../share/compat.h"
 
 #if defined(_MSC_VER)
 #include <intrin.h> /* for _BitScanReverse* */

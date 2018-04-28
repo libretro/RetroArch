@@ -34,10 +34,11 @@
 #  include <config.h>
 #endif
 
-#include "private/cpu.h"
-#include "share/compat.h"
 #include <stdlib.h>
 #include <string.h>
+
+#include "include/private/cpu.h"
+#include "include/share/compat.h"
 
 #if defined(_MSC_VER)
 #  include <intrin.h> /* for __cpuid() and _xgetbv() */
