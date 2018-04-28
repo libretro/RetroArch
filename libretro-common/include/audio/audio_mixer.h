@@ -42,7 +42,8 @@ enum audio_mixer_type
    AUDIO_MIXER_TYPE_WAV,
    AUDIO_MIXER_TYPE_OGG,
    AUDIO_MIXER_TYPE_MOD,
-   AUDIO_MIXER_TYPE_FLAC
+   AUDIO_MIXER_TYPE_FLAC,
+   AUDIO_MIXER_TYPE_MP3
 };
 
 typedef struct audio_mixer_sound audio_mixer_sound_t;
@@ -61,9 +62,9 @@ void audio_mixer_done(void);
 
 audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size);
-audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size);
+audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, int32_t size);
 
 void audio_mixer_destroy(audio_mixer_sound_t* sound);
 
