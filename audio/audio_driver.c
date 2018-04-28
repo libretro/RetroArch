@@ -524,7 +524,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       {
          audio_driver_buffer_size =
             current_audio->buffer_size(audio_driver_context_audio_data);
-         audio_driver_control = true;
+         audio_driver_control     = true;
       }
       else
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
@@ -576,20 +576,17 @@ void audio_driver_set_nonblocking_state(bool enable)
 static void audio_driver_flush(const int16_t *data, size_t samples)
 {
    struct resampler_data src_data;
-   bool is_perfcnt_enable                               = false;
-   bool is_paused                                       = false;
-   bool is_idle                                         = false;
-   bool is_slowmotion                                   = false;
-   const void *output_data                              = NULL;
-   unsigned output_frames                               = 0;
-   float audio_volume_gain                              = !audio_driver_mute_enable ?
+   bool is_perfcnt_enable            = false;
+   bool is_paused                    = false;
+   bool is_idle                      = false;
+   bool is_slowmotion                = false;
+   const void *output_data           = NULL;
+   unsigned output_frames            = 0;
+   float audio_volume_gain           = !audio_driver_mute_enable ?
       audio_driver_volume_gain : 0.0f;
 
-   src_data.data_in                                     = NULL;
-   src_data.data_out                                    = NULL;
-   src_data.input_frames                                = 0;
-   src_data.output_frames                               = 0;
-   src_data.ratio                                       = 0.0f;
+   src_data.data_out                 = NULL;
+   src_data.output_frames            = 0;
 
    if (recording_data)
       recording_push_audio(data, samples);
@@ -606,8 +603,8 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
    convert_s16_to_float(audio_driver_input_data, data, samples,
          audio_volume_gain);
 
-   src_data.data_in               = audio_driver_input_data;
-   src_data.input_frames          = samples >> 1;
+   src_data.data_in                  = audio_driver_input_data;
+   src_data.input_frames             = samples >> 1;
 
 
    if (audio_driver_dsp)
@@ -662,7 +659,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
 #endif
    }
 
-   src_data.ratio     = audio_source_ratio_current;
+   src_data.ratio           = audio_source_ratio_current;
 
    if (is_slowmotion)
    {
