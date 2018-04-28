@@ -30,7 +30,6 @@ typedef struct video_display_server
    bool (*set_window_opacity)(void *data, unsigned opacity);
    bool (*set_window_progress)(void *data, int progress, bool finished);
    bool (*set_window_decorations)(void *data, bool on);
-   void (*get_current_resolution)(unsigned *width, unsigned *height);
    bool (*switch_resolution)(void *data, unsigned width,
          unsigned height, int f_restore, int hz);
    const char *ident;
@@ -43,9 +42,6 @@ void video_display_server_destroy(void);
 bool video_display_server_set_window_opacity(unsigned opacity);
 
 bool video_display_server_set_window_progress(int progress, bool finished);
-
-bool video_display_server_get_current_resolution(
-      unsigned *width, unsigned *height);
 
 bool video_display_server_set_window_decorations(bool on);
 
