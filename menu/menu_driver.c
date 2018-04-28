@@ -423,7 +423,7 @@ void menu_display_set_font_framebuffer(const uint8_t *buffer)
    menu_display_font_framebuf = buffer;
 }
 
-static bool menu_display_libretro_running(
+bool menu_display_libretro_running(
       bool rarch_is_inited,
       bool rarch_is_dummy_core)
 {

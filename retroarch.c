@@ -2629,11 +2629,16 @@ static enum runloop_state runloop_check_state(
 
          if (focused || !runloop_idle)
          {
+            bool libretro_running = menu_display_libretro_running(
+                  rarch_is_inited, 
+                  (current_core_type == CORE_TYPE_DUMMY));
+
             menu_driver_render(runloop_idle, rarch_is_inited,
                   (current_core_type == CORE_TYPE_DUMMY)
                   )
                ;
-            if (settings->bools.audio_enable_menu)
+            if (settings->bools.audio_enable_menu &&
+                  !libretro_running)
                audio_driver_menu_sample();
          }
 
