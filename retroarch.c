@@ -2633,7 +2633,8 @@ static enum runloop_state runloop_check_state(
                   (current_core_type == CORE_TYPE_DUMMY)
                   )
                ;
-            audio_driver_menu_sample();
+            if (settings->bools.audio_enable_menu)
+               audio_driver_menu_sample();
          }
 
          old_input                 = current_input;

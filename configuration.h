@@ -99,6 +99,7 @@ typedef struct settings
 
       /* Audio */
       bool audio_enable;
+      bool audio_enable_menu;
       bool audio_sync;
       bool audio_rate_control;
       bool audio_wasapi_exclusive_mode;

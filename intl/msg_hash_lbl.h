@@ -1485,3 +1485,5 @@ MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY,
       "menu_show_latency_settings")
 MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS,
       "menu_show_overlay_settings")
+MSG_HASH(MENU_ENUM_LABEL_AUDIO_ENABLE_MENU,
+      "audio_enable_menu")

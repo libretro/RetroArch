@@ -1656,6 +1656,8 @@ static void menu_driver_toggle(bool on)
    settings_t                 *settings       = config_get_ptr();
    bool pause_libretro                        = settings ?
       settings->bools.menu_pause_libretro : false;
+   bool enable_menu_sound                     = settings ?
+      settings->bools.audio_enable_menu : false;
 
    menu_driver_toggled = on;
 
@@ -1683,7 +1685,7 @@ static void menu_driver_toggle(bool on)
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
-      if (pause_libretro)
+      if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
       /* Override keyboard callback to redirect to menu instead.
@@ -1702,7 +1704,7 @@ static void menu_driver_toggle(bool on)
       if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
          driver_set_nonblock_state();
 
-      if (pause_libretro)
+      if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_START, NULL);
 
       /* Restore libretro keyboard callback. */
