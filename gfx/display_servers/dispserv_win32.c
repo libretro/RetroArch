@@ -34,6 +34,7 @@
 #include "../video_display_server.h"
 #include "../common/win32_common.h"
 #include "../../verbosity.h"
+#include "../video_driver.h"
 
 #ifdef __ITaskbarList3_INTERFACE_DEFINED__
 #define HAS_TASKBAR_EXT
@@ -199,7 +200,7 @@ static bool win32_set_window_decorations(void *data, bool on)
 }
 
 static bool win32_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int f_restore, int hz)
+      unsigned width, unsigned height, int f_restore, float hz)
 {
    LONG res;
    DEVMODE curDevmode;
@@ -213,6 +214,17 @@ static bool win32_display_server_set_resolution(void *data,
 
    if (!serv)
       return false;
+  
+  /* set hz float an int for windows switching */
+   if (hz < 53)
+      hz = 50;	
+   if (hz >= 53  &&  hz < 57)
+      hz = 55;	
+   if (hz >= 57)
+      hz = 60;	
+
+   video_monitor_set_refresh_rate(hz);
+   
   
    if (orig_width == 0)
 	   orig_width          = GetSystemMetrics(SM_CXSCREEN);
