@@ -18,6 +18,13 @@
 #include "../video_display_server.h"
 #include "../common/x11_common.h"
 #include "../../configuration.h"
+#include "../video_driver.h"
+
+#include <sys/types.h>
+#include <unistd.h>
+
+static char old_mode[150];
+static char new_mode[150];
 
 typedef struct
 {
@@ -37,6 +44,8 @@ static void* x11_display_server_init(void)
 
 static void x11_display_server_destroy(void *data)
 {
+   
+   system("xrandr -s 1024x576"); 
    dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
 
    if (dispserv)
@@ -72,14 +81,218 @@ static bool x11_set_window_decorations(void *data, bool on)
    return true;
 }
 
+static bool x11_set_resolution(void *data,
+      unsigned width, unsigned height, int f_restore, float hz)
+{
+ int child;
+   int i;
+   char output[150];
+   int hfp;
+   int hsp;
+   int hbp;
+   int vfp;
+   int vsp;
+   int vbp;
+   int hmax;
+   int vmax;
+   float pixel_clock;
+   char xrandr[250];
+   char fbset[150];
+
+   hbp = 0;
+   hfp = 0;
+   vbp = 0;
+   vfp = 0;
+   vsp = 0;
+   pixel_clock = 0;
+   hsp = width*1.10;
+      
+   video_monitor_set_refresh_rate(hz);	  
+	 
+   if (width < 599)
+   {
+      hfp = width+8;
+      hbp = width*1.10;
+   }
+   if (width > 599 && width < 1919)
+   {
+      hfp = width+16;
+      hbp = width*1.10-8;
+   } 
+
+   if (width > 1919 && width < 2559)
+   {
+      hfp = width+32;
+      hbp = width*1.10;
+   } 
+
+   if (width > 2559)
+   {
+      hfp = width+48;
+      hbp = width*1.24;
+   } 
+
+   hmax = hbp;
+   
+   if (height < 241)
+   { 
+      vmax = 261;
+   }
+   if (height < 241 && hz > 56 && hz < 58)
+   { 
+      vmax = 280;
+   }
+    if (height < 241 && hz < 55)
+   { 
+      vmax = 313;
+   }
+   if (height > 250 && height < 260 && hz > 54)
+   { 
+      vmax = 296;
+   }
+   if (height > 250 && height < 260 && hz > 52 && hz < 54)
+   { 
+      vmax = 285;
+   }
+   if (height > 240 && height < 260 && hz < 52)
+   { 
+      vmax = 265;
+   }
+   if (height > 250 && height < 260 && hz < 52)
+   { 
+      vmax = 313;
+   }
+   if (height > 260 && height < 300)
+   { 
+      vmax = 313;
+   }
+
+   if (height > 400 && hz > 56)
+   {
+      vmax = 523;
+   }
+   if (height > 520 && hz < 57)
+   {
+      vmax = 580;
+   }
+
+   if (height > 300 && hz < 56)
+   {
+      vmax = 627;
+   }
+   
+   if (hz < 53)
+   {   
+   vfp = height+((vmax-height)*0.38);
+   }
+   if (hz > 56)
+   {   
+   vfp = height+((vmax-height)*0.15);
+   }
+   if (hz > 53 && hz < 56)
+   {   
+   vfp = height+((vmax-height)*0.35);
+   }
+
+   
+   if ( vfp < 1 )
+   {
+      vfp = height+2;
+        
+   }
+
+   if (height < 300)
+   {
+     vsp = vfp+3; /* for progressive. needs to me 6 for interlaced */
+   } if (height > 300)
+   {
+     vsp = vfp+6; /* for progressive. needs to me 6 for interlaced */
+   }
+   
+   vbp = vmax;
+
+   if (height < 300)
+   {
+	   pixel_clock = (hmax*vmax*hz)/1000000;
+   }
+	
+   if (height > 300)
+   {
+	   pixel_clock = ((hmax*vmax*hz)/1000000)/2;
+   }
+
+
+   if (height < 300)
+   {
+      sprintf(xrandr,"xrandr --newmode \"%dx%d_%0.2f\" %0.2f %d %d %d %d %d %d %d %d -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
+      system(xrandr);
+      FILE *f;
+   
+      f= fopen ("xrandswitch.txt", "a");
+      fprintf(f, "\n%s\n%d\n%d\n%lf", xrandr, hmax, vmax, hz);
+      fclose(f);
+   }
+   if (height > 300)
+   {
+
+      sprintf(xrandr,"xrandr --newmode \"%dx%d_%0.2f\" %0.2f %d %d %d %d %d %d %d %d interlace -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
+      system(xrandr);
+      FILE *f;
+   
+      f= fopen ("xrandswitch.txt", "a");
+      fprintf(f, "\n%s\n%d\n%d\n%lf", xrandr, hmax, vmax, hz);
+      fclose(f);
+   }
+      
+      sprintf(new_mode,"%dx%d_%0.2f", width, height, hz);
+
+      for (i =0; i < 3; i++)
+      {
+         sprintf(output,"xrandr --addmode %s%d %s", "DVI",i ,new_mode);
+         system(output); // ned to run loop for DVI0 - DVI-2 and VGA0 - VGA-2
+         sprintf(output,"xrandr --delmode %s%d %s", "DVI",i ,old_mode);
+         system(output); // ned to run loop for DVI0 - DVI-2 and VGA0 - VGA-2  
+      }
+      for (i =0; i < 3; i++)
+      {
+         sprintf(output,"xrandr --addmode %s-%d %s", "DVI",i ,new_mode);
+         system(output); // ned to run loop for DVI0 - DVI-2 and VGA0 - VGA-2 
+         sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
+         system(output); // ned to run loop for DVI0 - DVI-2 and VGA0 - VGA-2 
+      }
+      for (i =0; i < 3; i++)
+      {
+         sprintf(output,"xrandr --addmode %s%d %s", "VGA",i ,new_mode);
+         system(output); // ned to run loop for DVI0 - DVI-2 and VGA0 - VGA-2 
+         sprintf(output,"xrandr --delmode %s%d %s", "VGA",i ,old_mode);
+         system(output); // ned to run loop for DVI0 - DVI-2 and VGA0 - VGA-2 
+      }
+      for (i =0; i < 3; i++)
+      {
+         sprintf(output,"xrandr --addmode %s-%d %s", "VGA",i ,new_mode);
+         system(output); // ned to run loop for DVI0 - DVI-2 and VGA0 - VGA-2 
+         sprintf(output,"xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
+         system(output); // ned to run loop for DVI0 - DVI-2 and VGA0 - VGA-2 
+      }
+		 
+      sprintf(output,"xrandr -s %s", new_mode);
+      system(output);
+      sprintf(output,"xrandr --rmmode %s", old_mode);
+	  system(output);
+	  system("xdotool windowactivate $(xdotool search --class RetroArch)");	
+      sprintf(old_mode,"%s", new_mode);
+      system("xdotool windowactivate $(xdotool search --class RetroArch)");	
+
+ return true;
+}
+
 const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
    x11_display_server_destroy,
    x11_set_window_opacity,
    NULL,
    x11_set_window_decorations,
-   NULL, /* get_current_resolution */
-   NULL, /* set_resolution */
+   x11_set_resolution, /* set_resolution */
    "x11"
 };
 
