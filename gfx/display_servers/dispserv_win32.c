@@ -215,7 +215,12 @@ static bool win32_display_server_set_resolution(void *data,
    if (!serv)
       return false;
   
-  /* set hz float to an int for windows switching */
+   if (orig_width == 0)
+	   orig_width          = GetSystemMetrics(SM_CXSCREEN);
+   if (orig_height == 0)
+	   orig_height         = GetSystemMetrics(SM_CYSCREEN);
+   
+   /* set hz float to an int for windows switching */
    if (hz < 53)
       hz = 50;	
    if (hz >= 53  &&  hz < 57)
@@ -225,11 +230,6 @@ static bool win32_display_server_set_resolution(void *data,
 
    video_monitor_set_refresh_rate(hz);
    
-  
-   if (orig_width == 0)
-	   orig_width          = GetSystemMetrics(SM_CXSCREEN);
-   if (orig_height == 0)
-	   orig_height         = GetSystemMetrics(SM_CYSCREEN);
    
    if (f_restore == 0)
       freq                = hz;
