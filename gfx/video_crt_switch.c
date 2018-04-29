@@ -48,22 +48,6 @@ static void crt_check_first_run(void)
    first_run   = false;
 }
 
-static void switch_crt_hz(void)
-{
-   if (ra_core_hz == ra_tmp_core_hz)
-      return;
-
-   /* set hz float an int for windows switching */
-   if (ra_core_hz < 53)
-      ra_set_core_hz = 50;	
-   if (ra_core_hz >= 53  &&  ra_core_hz < 57)
-      ra_set_core_hz = 55;	
-   if (ra_core_hz >= 57)
-      ra_set_core_hz = 60;	
-   video_monitor_set_refresh_rate(ra_set_core_hz);
-   ra_tmp_core_hz = ra_core_hz;
-}
-
 static void crt_aspect_ratio_switch(unsigned width, unsigned height)
 {
    /* send aspect float to videeo_driver */
@@ -76,7 +60,7 @@ static void switch_res_crt(unsigned width, unsigned height)
    if (height > 100)
    {
       video_display_server_switch_resolution(width, height,
-            0, ra_set_core_hz);
+            0, ra_core_hz);
       video_driver_apply_state_changes();
    }
 }
@@ -84,7 +68,6 @@ static void switch_res_crt(unsigned width, unsigned height)
 /* Create correct aspect to fit video if resolution does not exist */
 static void crt_screen_setup_aspect(unsigned width, unsigned height)
 {
-   switch_crt_hz();
 
    /* get original resolution of core */	
    if (height == 4)
