@@ -333,6 +333,11 @@ int detect_serial_ascii_game(intfstream_t *fd, char *game_id)
          game_id[15] = '\0';
          numberOfAscii = 0;
 
+         /* When scanning WBFS files, "WBFS" is discovered as the first serial. Ignore it. */
+         if (string_is_equal(game_id, "WBFS")) {
+            continue;
+         }
+
          /* Loop through until we run out of ASCII characters. */
          for (i = 0; i < 15; i++)
          {
