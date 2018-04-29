@@ -1,4 +1,11 @@
 # 1.7.3 (future)
+- AUDIO: Audio mixer supports FLAC/MP3 file types now!
+- COMMON: Fixed bug 'crashing in cores that don't range check retro_set_controller_type'. Some people were having crashes when device is set to RETRO_DEVICE_NONE and the cores don't check the number of ports, in VBAM's case it was overflowing and crashing. QuickNES was crashing too.
+- X11: CRT SwitchRes support for X11/Linux.
+- HID: Merge new HID subsystem.
+- HID: Fix WaveBird support for the Wii U GCA.
+- MENU: Audio mixer now works in the menu without any cores loaded. You have to enable the setting 'Enable menu audio' for this to work.
+- SCANNER: Add Wii Backup File WBFS support.
 
 # 1.7.2
 - ANDROID/OPENSL: Prevent crashes when setting audio latency too low (buffer count can never be lower than 2 now).
