@@ -43,7 +43,7 @@ static void crt_check_first_run(void)
    if (!first_run)
       return;
 
-   video_display_server_get_current_resolution(&orig_width, &orig_height);
+   
 
    first_run   = false;
 }
@@ -178,8 +178,5 @@ void crt_video_restore(void)
    if (first_run)
       return;
 
-   video_display_server_switch_resolution(orig_width, orig_height,
-         0, 60);
-
-   first_run = true;
+    first_run = true;
 }
