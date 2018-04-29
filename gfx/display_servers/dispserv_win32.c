@@ -34,7 +34,7 @@
 #include "../video_display_server.h"
 #include "../common/win32_common.h"
 #include "../../verbosity.h"
-#include "../video_driver.h"
+#include "../video_driver.h" /* needed to set refresh rate in set resolution */
 
 #ifdef __ITaskbarList3_INTERFACE_DEFINED__
 #define HAS_TASKBAR_EXT
@@ -215,7 +215,7 @@ static bool win32_display_server_set_resolution(void *data,
    if (!serv)
       return false;
   
-  /* set hz float an int for windows switching */
+  /* set hz float to an int for windows switching */
    if (hz < 53)
       hz = 50;	
    if (hz >= 53  &&  hz < 57)
