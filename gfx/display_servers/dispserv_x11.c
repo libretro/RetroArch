@@ -45,7 +45,7 @@ static void* x11_display_server_init(void)
 static void x11_display_server_destroy(void *data)
 {
    
-   system("xrandr -s 1024x576"); 
+   system("xrandr -s 704x480"); 
    dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
 
    if (dispserv)
