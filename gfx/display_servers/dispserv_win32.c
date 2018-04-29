@@ -101,7 +101,8 @@ static void* win32_display_server_init(void)
 
 static void win32_display_server_destroy(void *data)
 {
-     video_display_server_switch_resolution(orig_width, orig_height,
+   if (orig_width > 0 && orig_height > 0 )
+      video_display_server_switch_resolution(orig_width, orig_height,
          0, 60);
 
    dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
