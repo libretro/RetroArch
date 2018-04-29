@@ -60,7 +60,7 @@ static void switch_res_crt(unsigned width, unsigned height)
    if (height > 100)
    {
       video_display_server_switch_resolution(width, height,
-            0, ra_set_core_hz);
+            0, ra_core_hz);
       video_driver_apply_state_changes();
    }
 }
