@@ -1767,6 +1767,44 @@ error:
    return menu_cbs_exit();
 }
 
+static int action_ok_mixer_stream_action_play(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN;
+   enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
+
+   switch (state)
+   {
+      case AUDIO_STREAM_STATE_STOPPED:
+         audio_driver_mixer_play_stream(stream_id);
+         break;
+      case AUDIO_STREAM_STATE_PLAYING:
+      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+      case AUDIO_STREAM_STATE_NONE:
+         break;
+   }
+   return 0;
+}
+
+static int action_ok_mixer_stream_action_play_looped(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN;
+   enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
+
+   switch (state)
+   {
+      case AUDIO_STREAM_STATE_STOPPED:
+         audio_driver_mixer_play_stream_looped(stream_id);
+         break;
+      case AUDIO_STREAM_STATE_PLAYING:
+      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+      case AUDIO_STREAM_STATE_NONE:
+         break;
+   }
+   return 0;
+}
+
 static int action_ok_mixer_stream_action_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4631,6 +4669,16 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          type == MENU_SETTINGS_CUSTOM_BIND)
    {
       BIND_ACTION_OK(cbs, action_ok_lookup_setting);
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN
+      && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_END)
+   {
+      BIND_ACTION_OK(cbs, action_ok_mixer_stream_action_play);
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN
+      && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_END)
+   {
+      BIND_ACTION_OK(cbs, action_ok_mixer_stream_action_play_looped);
    }
    else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN
       && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_END)

@@ -1142,6 +1142,39 @@ enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i)
    return audio_mixer_streams[i].state;
 }
 
+static void audio_driver_mixer_play_stream_internal(unsigned i, bool looped)
+{
+   bool set_state              = false;
+
+   if (i >= AUDIO_MIXER_MAX_STREAMS)
+      return;
+
+   switch (audio_mixer_streams[i].state)
+   {
+      case AUDIO_STREAM_STATE_STOPPED:
+         audio_mixer_streams[i].voice = audio_mixer_play(audio_mixer_streams[i].handle, looped, audio_mixer_streams[i].volume, audio_mixer_streams[i].stop_cb);
+         set_state = true;
+         break;
+      case AUDIO_STREAM_STATE_PLAYING:
+      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+      case AUDIO_STREAM_STATE_NONE:
+         break;
+   }
+
+   if (set_state)
+      audio_mixer_streams[i].state   = looped ? AUDIO_STREAM_STATE_PLAYING_LOOPED : AUDIO_STREAM_STATE_PLAYING;
+}
+
+void audio_driver_mixer_play_stream(unsigned i)
+{
+   audio_driver_mixer_play_stream_internal(i, false);
+}
+
+void audio_driver_mixer_play_stream_looped(unsigned i)
+{
+   audio_driver_mixer_play_stream_internal(i, true);
+}
+
 void audio_driver_mixer_stop_stream(unsigned i)
 {
    bool set_state              = false;

@@ -290,6 +290,10 @@ audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i);
 
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
 
+void audio_driver_mixer_play_stream(unsigned i);
+
+void audio_driver_mixer_play_stream_looped(unsigned i);
+
 void audio_driver_mixer_stop_stream(unsigned i);
 
 void audio_driver_mixer_remove_stream(unsigned i);
