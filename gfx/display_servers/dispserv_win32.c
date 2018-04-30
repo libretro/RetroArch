@@ -207,7 +207,7 @@ static bool win32_display_server_set_resolution(void *data,
    DEVMODE devmode;
 
    int iModeNum;
-   int freq               = win_hz;
+   int freq               = int_hz;
    DWORD flags            = 0;
    int depth              = 0;
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
