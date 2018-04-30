@@ -20,7 +20,7 @@
 #include "menu_cbs.h"
 #include "../verbosity.h"
 
-#if 1
+#if 0
 #define DEBUG_LOG
 #endif
 
