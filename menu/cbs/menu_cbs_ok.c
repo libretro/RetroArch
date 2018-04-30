@@ -45,6 +45,7 @@
 #include "../menu_content.h"
 #include "../menu_shader.h"
 
+#include "../../audio/audio_driver.h"
 #include "../../core.h"
 #include "../../configuration.h"
 #include "../../core_info.h"
@@ -247,6 +248,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
 {
    switch (lbl)
    {
+      case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST;
       case ACTION_OK_DL_INPUT_SETTINGS_LIST:
@@ -307,6 +310,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_PRIVACY_SETTINGS_LIST;
       case ACTION_OK_DL_AUDIO_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST;
+      case ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST;
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST;
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
@@ -789,7 +794,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
          info.directory_ptr                       = idx;
-         menu->rdb_entry_start_game_selection_ptr = (unsigned)idx;
+         menu->scratchpad.unsigned_var            = (unsigned)idx;
          info_path                                = 
             settings->paths.directory_libretro;
          info_label                               = msg_hash_to_str(
@@ -798,6 +803,7 @@ int generic_action_ok_displaylist_push(const char *path,
             MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET;
          dl_type                                  = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
       case ACTION_OK_DL_ACCOUNTS_LIST:
       case ACTION_OK_DL_INPUT_SETTINGS_LIST:
       case ACTION_OK_DL_LATENCY_SETTINGS_LIST:
@@ -828,6 +834,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_DIRECTORY_SETTINGS_LIST:
       case ACTION_OK_DL_PRIVACY_SETTINGS_LIST:
       case ACTION_OK_DL_AUDIO_SETTINGS_LIST:
+      case ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
       case ACTION_OK_DL_PLAYLIST_SETTINGS_LIST:
@@ -848,6 +855,20 @@ int generic_action_ok_displaylist_push(const char *path,
                MENU_ENUM_LABEL_CONTENT_SETTINGS,
                0, 0, 0);
          dl_type            = DISPLAYLIST_CONTENT_SETTINGS;
+         break;
+   }
+
+   /* second pass */
+
+   switch (action_type)
+   {
+      case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
+         {
+            unsigned player_no = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN;
+            info.type          = MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN + player_no;
+         }
+         break;
+      default:
          break;
    }
 
@@ -1277,7 +1298,7 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_SHADER_PASS:
          {
             struct video_shader *shader           = menu_shader_get();
-            struct video_shader_pass *shader_pass = shader ? &shader->pass[(unsigned)menu->hack_shader_pass] : NULL;
+            struct video_shader_pass *shader_pass = shader ? &shader->pass[menu->scratchpad.unsigned_var] : NULL;
             flush_char                            = msg_hash_to_str((enum msg_hash_enums)flush_id);
 
             if (shader_pass)
@@ -1685,7 +1706,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
          !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   selection_ptr                       = menu->rdb_entry_start_game_selection_ptr;
+   selection_ptr                       = menu->scratchpad.unsigned_var;
 
    playlist_get_index(playlist, selection_ptr,
          &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
@@ -1744,6 +1765,82 @@ static int action_ok_playlist_entry_start_content(const char *path,
 
 error:
    return menu_cbs_exit();
+}
+
+static int action_ok_mixer_stream_action_play(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN;
+   enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
+
+   switch (state)
+   {
+      case AUDIO_STREAM_STATE_STOPPED:
+         audio_driver_mixer_play_stream(stream_id);
+         break;
+      case AUDIO_STREAM_STATE_PLAYING:
+      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+      case AUDIO_STREAM_STATE_NONE:
+         break;
+   }
+   return 0;
+}
+
+static int action_ok_mixer_stream_action_play_looped(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN;
+   enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
+
+   switch (state)
+   {
+      case AUDIO_STREAM_STATE_STOPPED:
+         audio_driver_mixer_play_stream_looped(stream_id);
+         break;
+      case AUDIO_STREAM_STATE_PLAYING:
+      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+      case AUDIO_STREAM_STATE_NONE:
+         break;
+   }
+   return 0;
+}
+
+static int action_ok_mixer_stream_action_remove(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN;
+   enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
+
+   switch (state)
+   {
+      case AUDIO_STREAM_STATE_PLAYING:
+      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+      case AUDIO_STREAM_STATE_STOPPED:
+         audio_driver_mixer_remove_stream(stream_id);
+         break;
+      case AUDIO_STREAM_STATE_NONE:
+         break;
+   }
+   return 0;
+}
+
+static int action_ok_mixer_stream_action_stop(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN;
+   enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
+
+   switch (state)
+   {
+      case AUDIO_STREAM_STATE_PLAYING:
+      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+         audio_driver_mixer_stop_stream(stream_id);
+         break;
+      case AUDIO_STREAM_STATE_STOPPED:
+      case AUDIO_STREAM_STATE_NONE:
+         break;
+   }
+   return 0;
 }
 
 static int action_ok_lookup_setting(const char *path,
@@ -2293,7 +2390,7 @@ static int action_ok_core_deferred_set(const char *new_core_path,
          settings->bools.show_hidden_files);
    command_playlist_update_write(
          NULL,
-         menu->rdb_entry_start_game_selection_ptr,
+         menu->scratchpad.unsigned_var,
          NULL,
          content_label,
          new_core_path,
@@ -3200,6 +3297,7 @@ default_action_ok_func(action_ok_netplay_sublist, ACTION_OK_DL_NETPLAY)
 default_action_ok_func(action_ok_directory_list, ACTION_OK_DL_DIRECTORY_SETTINGS_LIST)
 default_action_ok_func(action_ok_privacy_list, ACTION_OK_DL_PRIVACY_SETTINGS_LIST)
 default_action_ok_func(action_ok_rdb_entry, ACTION_OK_DL_RDB_ENTRY)
+default_action_ok_func(action_ok_mixer_stream_actions, ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST)
 default_action_ok_func(action_ok_browse_url_list, ACTION_OK_DL_BROWSE_URL_LIST)
 default_action_ok_func(action_ok_core_list, ACTION_OK_DL_CORE_LIST)
 default_action_ok_func(action_ok_cheat_file, ACTION_OK_DL_CHEAT_FILE)
@@ -3221,6 +3319,7 @@ default_action_ok_func(action_ok_push_video_settings_list, ACTION_OK_DL_VIDEO_SE
 default_action_ok_func(action_ok_push_configuration_settings_list, ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_core_settings_list, ACTION_OK_DL_CORE_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_audio_settings_list, ACTION_OK_DL_AUDIO_SETTINGS_LIST)
+default_action_ok_func(action_ok_push_audio_mixer_settings_list, ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_input_settings_list, ACTION_OK_DL_INPUT_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_latency_settings_list, ACTION_OK_DL_LATENCY_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_recording_settings_list, ACTION_OK_DL_RECORDING_SETTINGS_LIST)
@@ -3238,7 +3337,7 @@ static int action_ok_shader_pass(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   menu->hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
+   menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
    return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
          entry_idx, ACTION_OK_DL_SHADER_PASS);
 }
@@ -4222,6 +4321,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AUDIO_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_audio_settings_list);
             break;
+         case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_push_audio_mixer_settings_list);
+            break;
          case MENU_ENUM_LABEL_LATENCY_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_latency_settings_list);
             break;
@@ -4567,6 +4669,31 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          type == MENU_SETTINGS_CUSTOM_BIND)
    {
       BIND_ACTION_OK(cbs, action_ok_lookup_setting);
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN
+      && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_END)
+   {
+      BIND_ACTION_OK(cbs, action_ok_mixer_stream_action_play);
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN
+      && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_END)
+   {
+      BIND_ACTION_OK(cbs, action_ok_mixer_stream_action_play_looped);
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN
+      && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_END)
+   {
+      BIND_ACTION_OK(cbs, action_ok_mixer_stream_action_remove);
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN
+      && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_END)
+   {
+      BIND_ACTION_OK(cbs, action_ok_mixer_stream_action_stop);
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN
+      && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_END)
+   {
+      BIND_ACTION_OK(cbs, action_ok_mixer_stream_actions);
    }
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)

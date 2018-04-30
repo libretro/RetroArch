@@ -596,6 +596,11 @@ static enum msg_file_type extension_to_file_type(const char *ext)
       )
       return FILE_TYPE_CHD;
    if (
+         string_is_equal(ext, "wbfs")  ||
+         string_is_equal(ext, "WBFS")
+      )
+      return FILE_TYPE_WBFS;
+   if (
          string_is_equal(ext, "lutro")  ||
          string_is_equal(ext, "LUTRO")
       )
@@ -642,6 +647,8 @@ static int task_database_iterate_playlist(
             return task_database_gdi_get_crc(name, &db_state->crc);
          }
          break;
+      /* Consider Wii WBFS files similar to ISO files. */
+      case FILE_TYPE_WBFS:
       case FILE_TYPE_ISO:
          db_state->serial[0] = '\0';
          intfstream_file_get_serial(name, 0, SIZE_MAX, db_state->serial);
@@ -1301,7 +1308,7 @@ bool task_push_dbscan(
       const char *playlist_directory,
       const char *content_database,
       const char *fullpath,
-      bool directory, 
+      bool directory,
       bool show_hidden_files,
       retro_task_callback_t cb)
 {

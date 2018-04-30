@@ -188,6 +188,19 @@ enum menu_settings_type
    MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND,
    MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS,
 
+   MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN,
+   MENU_SETTINGS_AUDIO_MIXER_STREAM_END = MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN + 7,
+   MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN,
+   MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_END = MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN + 7,
+
+   MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN,
+   MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_END = MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN + 7,
+   MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN,
+   MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_END = MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN + 7,
+   MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN,
+   MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_END = MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN + 7,
+   MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN,
+   MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_END = MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN + 7,
    MENU_SETTINGS_BIND_BEGIN,
    MENU_SETTINGS_BIND_LAST = MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_Y_MINUS,
    MENU_SETTINGS_BIND_ALL_LAST = MENU_SETTINGS_BIND_BEGIN + RARCH_MENU_TOGGLE,
@@ -354,9 +367,7 @@ typedef struct menu_display_ctx_driver
 typedef struct
 {
    unsigned rpl_entry_selection_ptr;
-   unsigned rdb_entry_start_game_selection_ptr;
    size_t                     core_len;
-   size_t                     hack_shader_pass;
    uint64_t state;
 
    char *core_buf;
@@ -371,6 +382,15 @@ typedef struct
    char db_playlist_file[PATH_MAX_LENGTH];
    char filebrowser_label[PATH_MAX_LENGTH];
    char detect_content_path[PATH_MAX_LENGTH];
+
+   /* This is used for storing intermediary variables
+    * that get used later on during menu actions -
+    * for instance, selecting a shader pass for a shader
+    * slot */
+   struct
+   {
+      unsigned                unsigned_var;
+   } scratchpad;
 } menu_handle_t;
 
 typedef struct menu_display_ctx_draw
@@ -648,6 +668,8 @@ video_coord_array_t *menu_display_get_coords_array(void);
 const uint8_t *menu_display_get_font_framebuffer(void);
 void menu_display_set_font_framebuffer(const uint8_t *buffer);
 bool menu_display_libretro(bool is_idle, bool is_inited, bool is_dummy);
+bool menu_display_libretro_running(bool rarch_is_inited,
+      bool rarch_is_dummy_core);
 
 void menu_display_set_width(unsigned width);
 void menu_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,

@@ -66,8 +66,8 @@ calling RegisterWindowMessage(L("TaskbarButtonCreated")). That message must
 be received by your application before it calls any ITaskbarList3 method.
 */
 
-static unsigned orig_width          = 0;
-static unsigned orig_height         = 0;
+static unsigned win32_orig_width          = 0;
+static unsigned win32_orig_height         = 0;
 
 static void* win32_display_server_init(void)
 {
@@ -102,11 +102,11 @@ static void* win32_display_server_init(void)
 
 static void win32_display_server_destroy(void *data)
 {
-   if (orig_width > 0 && orig_height > 0 )
-      video_display_server_switch_resolution(orig_width, orig_height,
-         0, 60);
-
    dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
+
+   if (win32_orig_width > 0 && win32_orig_height > 0)
+      video_display_server_switch_resolution(win32_orig_width, win32_orig_height,
+         0, 60);
 
 #ifdef HAS_TASKBAR_EXT
    if (g_taskbarList && win32_taskbar_is_created())
@@ -215,10 +215,10 @@ static bool win32_display_server_set_resolution(void *data,
    if (!serv)
       return false;
   
-   if (orig_width == 0)
-	   orig_width          = GetSystemMetrics(SM_CXSCREEN);
-   if (orig_height == 0)
-	   orig_height         = GetSystemMetrics(SM_CYSCREEN);
+   if (win32_orig_width == 0)
+	   win32_orig_width          = GetSystemMetrics(SM_CXSCREEN);
+   if (win32_orig_height == 0)
+	   win32_orig_height         = GetSystemMetrics(SM_CYSCREEN);
    
    /* set hz float to an int for windows switching */
    if (hz < 53)

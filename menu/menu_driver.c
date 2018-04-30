@@ -25,6 +25,10 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
+#ifdef WIIU
+#include <wiiu/os/energy.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -423,7 +427,7 @@ void menu_display_set_font_framebuffer(const uint8_t *buffer)
    menu_display_font_framebuf = buffer;
 }
 
-static bool menu_display_libretro_running(
+bool menu_display_libretro_running(
       bool rarch_is_inited,
       bool rarch_is_dummy_core)
 {
@@ -1656,6 +1660,8 @@ static void menu_driver_toggle(bool on)
    settings_t                 *settings       = config_get_ptr();
    bool pause_libretro                        = settings ?
       settings->bools.menu_pause_libretro : false;
+   bool enable_menu_sound                     = settings ?
+      settings->bools.audio_enable_menu : false;
 
    menu_driver_toggled = on;
 
@@ -1676,6 +1682,12 @@ static void menu_driver_toggle(bool on)
    if (menu_driver_alive)
    {
       bool refresh = false;
+
+#ifdef WIIU
+      /* Enable burn-in protection menu is running */
+      IMEnableDim();
+#endif
+
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
       /* Menu should always run with vsync on. */
@@ -1683,7 +1695,7 @@ static void menu_driver_toggle(bool on)
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
-      if (pause_libretro)
+      if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
       /* Override keyboard callback to redirect to menu instead.
@@ -1699,10 +1711,17 @@ static void menu_driver_toggle(bool on)
    }
    else
    {
+#ifdef WIIU
+      /* Disable burn-in protection while core is running; this is needed
+       * because HID inputs don't count for the purpose of Wii U
+       * power-saving. */
+      IMDisableDim();
+#endif
+
       if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
          driver_set_nonblock_state();
 
-      if (pause_libretro)
+      if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_START, NULL);
 
       /* Restore libretro keyboard callback. */

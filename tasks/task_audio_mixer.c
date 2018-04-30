@@ -89,7 +89,7 @@ static void task_audio_mixer_handle_upload_ogg(void *task_data,
    if (!img)
       return;
 
-   params.volume               = 1.0f;
+   params.volume               = 0.0f;
    params.type                 = AUDIO_MIXER_TYPE_OGG;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->buf;
@@ -111,7 +111,7 @@ static void task_audio_mixer_handle_upload_flac(void *task_data,
    if (!img)
       return;
 
-   params.volume               = 1.0f;
+   params.volume               = 0.0f;
    params.type                 = AUDIO_MIXER_TYPE_FLAC;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->buf;
@@ -133,7 +133,7 @@ static void task_audio_mixer_handle_upload_mp3(void *task_data,
    if (!img)
       return;
 
-   params.volume               = 1.0f;
+   params.volume               = 0.0f;
    params.type                 = AUDIO_MIXER_TYPE_MP3;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->buf;
@@ -155,7 +155,7 @@ static void task_audio_mixer_handle_upload_mod(void *task_data,
    if (!img)
       return;
 
-   params.volume               = 1.0f;
+   params.volume               = 0.0f;
    params.type                 = AUDIO_MIXER_TYPE_MOD;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->buf;
@@ -177,7 +177,7 @@ static void task_audio_mixer_handle_upload_wav(void *task_data,
    if (!img)
       return;
 
-   params.volume               = 1.0f;
+   params.volume               = 0.0f;
    params.type                 = AUDIO_MIXER_TYPE_WAV;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->buf;
