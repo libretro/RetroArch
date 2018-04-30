@@ -2208,6 +2208,7 @@ bool cheevos_unload(void)
    cheevos_locals.unofficial.count   = 0;
 
    cheevos_loaded     = false;
+   cheevos_hardcore_paused = false;
 
    return true;
 }
@@ -2804,6 +2805,7 @@ found:
          cheevos_locals.unofficial.count   = 0;
 
          cheevos_loaded     = false;
+         cheevos_hardcore_paused = false;
          CORO_STOP();
       }
 
@@ -3612,6 +3614,7 @@ bool cheevos_load(const void *data)
    coro_t *coro                       = NULL;
 
    cheevos_loaded = false;
+   cheevos_hardcore_paused = false;
 
    if (!cheevos_locals.core_supports || !data)
       return false;
