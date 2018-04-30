@@ -67,8 +67,8 @@ static bool bundle_assets_extract_enable = false;
 static bool materialui_icons_enable      = true;
 #endif
 
-static const bool crt_switch_resolution = false; 	
-static const int crt_switch_resolution_super = 2560; 
+static const bool crt_switch_resolution = false;
+static const int crt_switch_resolution_super = 2560;
 
 
 static const bool def_history_list_enable = true;
@@ -371,7 +371,7 @@ static unsigned input_backtouch_toggle       = false;
 
 static bool show_physical_inputs             = true;
 
-static bool all_users_control_menu = false;
+static bool all_users_control_menu = true;
 
 #if defined(ANDROID) || defined(_WIN32)
 static bool menu_swap_ok_cancel_buttons = true;
