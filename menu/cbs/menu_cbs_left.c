@@ -333,6 +333,23 @@ static int shader_action_parameter_left(unsigned type, const char *label, bool w
    return ret;
 }
 
+static int audio_mixer_stream_volume_left(unsigned type, const char *label,
+      bool wraparound)
+{
+   unsigned         offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
+   float orig_volume            = 0.0f;
+   
+   if (offset >= AUDIO_MIXER_MAX_STREAMS)
+      return 0;
+
+   orig_volume                  = audio_driver_mixer_get_stream_volume(offset);
+   orig_volume                  = orig_volume - 1.00f;
+
+   audio_driver_mixer_set_stream_volume(offset, orig_volume);
+
+   return 0;
+}
+
 static int action_left_cheat(unsigned type, const char *label,
       bool wraparound)
 {
@@ -864,6 +881,11 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          && type <= MENU_SETTINGS_CHEAT_END)
    {
       BIND_ACTION_LEFT(cbs, action_left_cheat);
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
+         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
+   {
+      BIND_ACTION_LEFT(cbs, audio_mixer_stream_volume_left);
    }
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)

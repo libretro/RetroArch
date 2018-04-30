@@ -296,6 +296,10 @@ void audio_driver_mixer_play_stream_looped(unsigned i);
 
 void audio_driver_mixer_stop_stream(unsigned i);
 
+float audio_driver_mixer_get_stream_volume(unsigned i);
+
+void audio_driver_mixer_set_stream_volume(unsigned i, float vol);
+
 void audio_driver_mixer_remove_stream(unsigned i);
 
 enum resampler_quality audio_driver_get_resampler_quality(void);

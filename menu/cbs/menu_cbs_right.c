@@ -30,6 +30,7 @@
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 
+#include "../../audio/audio_driver.h"
 #include "../../configuration.h"
 #include "../../core.h"
 #include "../../core_info.h"
@@ -203,6 +204,24 @@ static int action_right_scroll(unsigned type, const char *label,
 
    return 0;
 }
+
+static int audio_mixer_stream_volume_right(unsigned type, const char *label,
+      bool wraparound)
+{
+   unsigned         offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
+   float orig_volume            = 0.0f;
+   
+   if (offset >= AUDIO_MIXER_MAX_STREAMS)
+      return 0;
+
+   orig_volume                  = audio_driver_mixer_get_stream_volume(offset);
+   orig_volume                  = orig_volume + 1.00f;
+
+   audio_driver_mixer_set_stream_volume(offset, orig_volume);
+
+   return 0;
+}
+
 
 static int action_right_goto_tab(void)
 {
@@ -482,6 +501,11 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          && type <= MENU_SETTINGS_CHEAT_END)
    {
       BIND_ACTION_RIGHT(cbs, action_right_cheat);
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
+         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
+   {
+      BIND_ACTION_RIGHT(cbs, audio_mixer_stream_volume_right);
    }
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
