@@ -717,12 +717,17 @@ void audio_driver_sample(int16_t left, int16_t right)
 
 void audio_driver_menu_sample(void)
 {
-   static int16_t samples_buf[4096]       = {0};
+   static int16_t samples_buf[1024]       = {0};
    struct retro_system_av_info   
       *av_info                            = video_viewport_get_system_av_info();
    const struct retro_system_timing *info = 
       (const struct retro_system_timing*)&av_info->timing;
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
+   while (sample_count > 1024)
+   {
+      audio_driver_flush(samples_buf, 1024);
+      sample_count -= 1024;
+   }
    audio_driver_flush(samples_buf, sample_count);
 }
 
