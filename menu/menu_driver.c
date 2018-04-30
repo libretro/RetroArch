@@ -25,6 +25,10 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
+#ifdef WIIU
+#include <wiiu/os/energy.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -1678,6 +1682,12 @@ static void menu_driver_toggle(bool on)
    if (menu_driver_alive)
    {
       bool refresh = false;
+
+#ifdef WIIU
+      /* Enable burn-in protection menu is running */
+      IMEnableDim();
+#endif
+
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
       /* Menu should always run with vsync on. */
@@ -1701,6 +1711,13 @@ static void menu_driver_toggle(bool on)
    }
    else
    {
+#ifdef WIIU
+      /* Disable burn-in protection while core is running; this is needed
+       * because HID inputs don't count for the purpose of Wii U
+       * power-saving. */
+      IMDisableDim();
+#endif
+
       if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
          driver_set_nonblock_state();
 
