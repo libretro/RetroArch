@@ -3005,7 +3005,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
       "Iniciar o conteúdo.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-      "Ajustar as definições do navegador de arquivos."
+      "Ajustar as definições do navegador de arquivos.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
       "Habilitar por padrão controles personalizados na inicialização."
