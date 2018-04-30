@@ -2565,6 +2565,8 @@ void MainWindow::onStopClicked()
    menu_navigation_set_selection(0);
    command_event(CMD_EVENT_UNLOAD_CORE, NULL);
    setCurrentCoreLabel();
+   activateWindow();
+   raise();
 }
 
 void MainWindow::setCurrentCoreLabel()
@@ -2662,6 +2664,8 @@ void MainWindow::onUnloadCoreMenuAction()
       return;
 
    action->setEnabled(false);
+   activateWindow();
+   raise();
 }
 
 void MainWindow::onLoadCoreClicked(const QStringList &extensionFilters)
