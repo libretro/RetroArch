@@ -3511,7 +3511,3 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
       "Ativar áudio de menu")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
       "Ativar ou desativar o som do menu.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-      "Configurações do Mixer")
-MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-      "Visualizar e/ou modificar as configurações do mixer de áudio.")
