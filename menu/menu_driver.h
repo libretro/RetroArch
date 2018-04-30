@@ -367,12 +367,7 @@ typedef struct menu_display_ctx_driver
 typedef struct
 {
    unsigned rpl_entry_selection_ptr;
-   unsigned rdb_entry_start_game_selection_ptr;
    size_t                     core_len;
-   struct
-   {
-      unsigned                unsigned_var;
-   } scratchpad;
    uint64_t state;
 
    char *core_buf;
@@ -387,6 +382,15 @@ typedef struct
    char db_playlist_file[PATH_MAX_LENGTH];
    char filebrowser_label[PATH_MAX_LENGTH];
    char detect_content_path[PATH_MAX_LENGTH];
+
+   /* This is used for storing intermediary variables
+    * that get used later on during menu actions -
+    * for instance, selecting a shader pass for a shader
+    * slot */
+   struct
+   {
+      unsigned                unsigned_var;
+   } scratchpad;
 } menu_handle_t;
 
 typedef struct menu_display_ctx_draw

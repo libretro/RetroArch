@@ -1585,7 +1585,8 @@ static enum msg_file_type extension_to_file_hash_type(const char *ext)
    return FILE_TYPE_NONE;
 }
 
-static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
+static int menu_displaylist_parse_database_entry(
+      menu_displaylist_info_t *info)
 {
    unsigned i, j, k;
    char path_playlist[PATH_MAX_LENGTH];
@@ -1698,7 +1699,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             if (!match_found)
                continue;
 
-            menu->rdb_entry_start_game_selection_ptr = j;
+            menu->scratchpad.unsigned_var = j;
          }
       }
 

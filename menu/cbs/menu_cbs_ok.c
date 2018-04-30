@@ -794,7 +794,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
          info.directory_ptr                       = idx;
-         menu->rdb_entry_start_game_selection_ptr = (unsigned)idx;
+         menu->scratchpad.unsigned_var            = (unsigned)idx;
          info_path                                = 
             settings->paths.directory_libretro;
          info_label                               = msg_hash_to_str(
@@ -1706,7 +1706,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
          !menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   selection_ptr                       = menu->rdb_entry_start_game_selection_ptr;
+   selection_ptr                       = menu->scratchpad.unsigned_var;
 
    playlist_get_index(playlist, selection_ptr,
          &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
@@ -2390,7 +2390,7 @@ static int action_ok_core_deferred_set(const char *new_core_path,
          settings->bools.show_hidden_files);
    command_playlist_update_write(
          NULL,
-         menu->rdb_entry_start_game_selection_ptr,
+         menu->scratchpad.unsigned_var,
          NULL,
          content_label,
          new_core_path,
