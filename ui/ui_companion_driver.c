@@ -46,6 +46,7 @@ static void *ui_companion_data = NULL;
 
 #ifdef HAVE_QT
 static void *ui_companion_qt_data = NULL;
+static bool qt_is_inited = false;
 #endif
 
 /**
@@ -107,26 +108,34 @@ void ui_companion_event_command(enum event_command action)
 void ui_companion_driver_deinit(void)
 {
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
+
    if (!ui)
       return;
    if (ui->deinit)
       ui->deinit(ui_companion_data);
 
 #ifdef HAVE_QT
-   ui_companion_qt.deinit(ui_companion_qt_data);
-   ui_companion_qt_data = NULL;
+   if (qt_is_inited)
+   {
+      ui_companion_qt.deinit(ui_companion_qt_data);
+      ui_companion_qt_data = NULL;
+   }
 #endif
    ui_companion_data = NULL;
 }
 
 void ui_companion_driver_init_first(void)
 {
-   settings_t *settings    = config_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    ui_companion = (ui_companion_driver_t*)ui_companion_init_first();
 
 #ifdef HAVE_QT
-   ui_companion_qt_data = ui_companion_qt.init();
+   if (settings->bools.desktop_menu_enable)
+   {
+      ui_companion_qt_data = ui_companion_qt.init();
+      qt_is_inited = true;
+   }
 #endif
 
    if (ui_companion)
@@ -140,7 +149,8 @@ void ui_companion_driver_init_first(void)
             ui_companion->toggle(ui_companion_data, false);
 
 #ifdef HAVE_QT
-         ui_companion_qt.toggle(ui_companion_qt_data, false);
+         if (settings->bools.desktop_menu_enable)
+            ui_companion_qt.toggle(ui_companion_qt_data, false);
 #endif
       }
    }
@@ -148,25 +158,31 @@ void ui_companion_driver_init_first(void)
 
 void ui_companion_driver_toggle(bool force)
 {
+   settings_t *settings = config_get_ptr();
+
    if (ui_companion && ui_companion->toggle)
       ui_companion->toggle(ui_companion_data, false);
 
 #ifdef HAVE_QT
-   if (ui_companion_qt.toggle)
-      ui_companion_qt.toggle(ui_companion_qt_data, force);
+   if (settings->bools.desktop_menu_enable)
+      if (ui_companion_qt.toggle)
+         ui_companion_qt.toggle(ui_companion_qt_data, force);
 #endif
 }
 
 void ui_companion_driver_notify_refresh(void)
 {
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
+   settings_t *settings = config_get_ptr();
+
    if (!ui)
       return;
    if (ui->notify_refresh)
       ui->notify_refresh(ui_companion_data);
 #ifdef HAVE_QT
-   if (ui_companion_qt.notify_refresh)
-      ui_companion_qt.notify_refresh(ui_companion_qt_data);
+   if (settings->bools.desktop_menu_enable)
+      if (ui_companion_qt.notify_refresh)
+         ui_companion_qt.notify_refresh(ui_companion_qt_data);
 #endif
 }
 
@@ -235,11 +251,14 @@ const ui_application_t *ui_companion_driver_get_application_ptr(void)
 void ui_companion_driver_msg_queue_push(const char *msg, unsigned priority, unsigned duration, bool flush)
 {
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
+   settings_t *settings = config_get_ptr();
+
    if (ui && ui->msg_queue_push)
       ui->msg_queue_push(ui_companion_data, msg, priority, duration, flush);
 #ifdef HAVE_QT
-   if (ui_companion_qt.msg_queue_push)
-      ui_companion_qt.msg_queue_push(ui_companion_qt_data, msg, priority, duration, flush);
+   if (settings->bools.desktop_menu_enable)
+      if (ui_companion_qt.msg_queue_push)
+         ui_companion_qt.msg_queue_push(ui_companion_qt_data, msg, priority, duration, flush);
 #endif
 }
 
@@ -261,10 +280,13 @@ const char *ui_companion_driver_get_ident(void)
 
 void ui_companion_driver_log_msg(const char *msg)
 {
+   settings_t *settings = config_get_ptr();
+
    (void)msg;
 
 #ifdef HAVE_QT
-   if (ui_companion_qt_data)
-      ui_companion_qt.log_msg(ui_companion_qt_data, msg);
+   if (settings->bools.desktop_menu_enable)
+      if (ui_companion_qt_data)
+         ui_companion_qt.log_msg(ui_companion_qt_data, msg);
 #endif
 }

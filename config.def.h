@@ -673,6 +673,9 @@ static const bool ui_companion_enable = false;
 /* Currently only used to show the WIMP UI on startup */
 static const bool ui_companion_toggle = false;
 
+/* Only init the WIMP UI for this session if this is enabled */
+static const bool desktop_menu_enable = true;
+
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;
 #elif defined(PSP) || defined(_3DS) || defined(VITA)

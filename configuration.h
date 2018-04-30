@@ -199,6 +199,7 @@ typedef struct settings
       bool ui_companion_start_on_boot;
       bool ui_companion_enable;
       bool ui_companion_toggle;
+      bool desktop_menu_enable;
 
       /* Cheevos */
       bool cheevos_enable;
