@@ -516,7 +516,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_coreInfoPushButton->setFixedSize(m_coreInfoPushButton->sizeHint());
 
    searchResetButton = new QToolButton(m_searchWidget);
-   searchResetButton->setDefaultAction(new QAction("CLR", searchResetButton));
+   searchResetButton->setDefaultAction(new QAction("Clr", searchResetButton));
    searchResetButton->setFixedSize(searchResetButton->sizeHint());
 
    connect(searchResetButton, SIGNAL(clicked()), this, SLOT(onSearchResetClicked()));
@@ -651,7 +651,7 @@ void MainWindow::showWelcomeScreen()
    const QString welcomeText = QStringLiteral(""
       "Welcome to the RetroArch Desktop Menu!<br>\n"
       "<br>\n"
-      "Many settings and actions are currently only available in the familiar Big Picture menu,<br>\n"
+      "Many settings and actions are currently only available in the familiar Big Picture menu, "
       "but this Desktop Menu should be functional for launching content and managing playlists.<br>\n"
       "<br>\n"
       "Some useful hotkeys for interacting with the Big Picture menu include:\n"
@@ -660,7 +660,8 @@ void MainWindow::showWelcomeScreen()
       "<li>F5 - Bring the Desktop Menu back if closed</li>\n"
       "<li>Esc - Exit RetroArch</li></ul>\n"
       "\n"
-      "For more hotkeys and their assignments, see: Settings -> Input -> Input Hotkey Binds<br>\n"
+      "For more hotkeys and their assignments, see:<br>\n"
+      "Settings -> Input -> Input Hotkey Binds<br>\n"
       "<br>\n"
       "Documentation for RetroArch, libretro and cores:<br>\n"
       "<a href=\"https://docs.libretro.com/\">https://docs.libretro.com/</a>");
