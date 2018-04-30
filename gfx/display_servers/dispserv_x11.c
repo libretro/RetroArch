@@ -82,7 +82,7 @@ static bool x11_set_window_decorations(void *data, bool on)
 }
 
 static bool x11_set_resolution(void *data,
-      unsigned width, unsigned height, int f_restore, float hz)
+      unsigned width, unsigned height, int int_hz, float hz)
 {
    int i              = 0;
    int hfp            = 0;
@@ -113,13 +113,13 @@ static bool x11_set_resolution(void *data,
    if (width > 599 && width < 1919)
    {
       hfp = width+16;
-      hbp = width*1.10-8;
+      hbp = width*1.18;
    } 
 
    if (width > 1919 && width < 2559)
    {
       hfp = width+32;
-      hbp = width*1.10;
+      hbp = width*1.20;
    } 
 
    if (width > 2559)
