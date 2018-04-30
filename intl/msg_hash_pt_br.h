@@ -3260,7 +3260,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
       "Adicionar ao mixer")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
-      "Filtrar por núcleo atual"
+      "Filtrar por núcleo atual")
 MSG_HASH(
       MSG_AUDIO_MIXER_VOLUME,
       "Volume global do mixer de áudio"
