@@ -2848,7 +2848,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
             msg_hash_to_str(MENU_ENUM_LABEL_RUN),
             MENU_ENUM_LABEL_RUN, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
-      if (settings->bools.playlist_entry_rename && 
+      if (settings->bools.playlist_entry_rename &&
             !settings->bools.kiosk_mode_enable)
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY),
@@ -2856,7 +2856,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
                MENU_ENUM_LABEL_RENAME_ENTRY,
                FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
-      if (settings->bools.playlist_entry_remove && 
+      if (settings->bools.playlist_entry_remove &&
             !settings->bools.kiosk_mode_enable)
          menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY),
@@ -3413,20 +3413,20 @@ static int menu_displaylist_parse_playlists(
             MENU_ENUM_LABEL_SCAN_FILE,
             MENU_SETTING_ACTION, 0, 0);
 #endif
-	  if (settings->bools.menu_content_show_favorites)
+     if (settings->bools.menu_content_show_favorites)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
             msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
             MENU_ENUM_LABEL_GOTO_FAVORITES,
             MENU_SETTING_ACTION, 0, 0);
-	  if (settings->bools.menu_content_show_images)
+     if (settings->bools.menu_content_show_images)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
             msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
             MENU_ENUM_LABEL_GOTO_IMAGES,
             MENU_SETTING_ACTION, 0, 0);
 
-	  if (settings->bools.menu_content_show_music)
+     if (settings->bools.menu_content_show_music)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
             msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
@@ -3434,7 +3434,7 @@ static int menu_displaylist_parse_playlists(
             MENU_SETTING_ACTION, 0, 0);
 
 #ifdef HAVE_FFMPEG
-	  if (settings->bools.menu_content_show_video)
+     if (settings->bools.menu_content_show_video)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
             msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
@@ -5550,7 +5550,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,
                PARSE_ONLY_BOOL, false);
-
+#ifdef HAVE_QT
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,
+               PARSE_ONLY_BOOL, false);
+#endif
          info->need_refresh = true;
          info->need_push    = true;
          break;
@@ -6433,21 +6437,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   MENU_ENUM_LABEL_FAVORITES,
                   MENU_SETTING_ACTION, 0, 0);
 
-         if (settings->bools.menu_content_show_favorites)
+       if (settings->bools.menu_content_show_favorites)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
                   msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
                   MENU_ENUM_LABEL_GOTO_FAVORITES,
                   MENU_SETTING_ACTION, 0, 0);
 
-         if (settings->bools.menu_content_show_images)
+       if (settings->bools.menu_content_show_images)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
                   msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
                   MENU_ENUM_LABEL_GOTO_IMAGES,
                   MENU_SETTING_ACTION, 0, 0);
 
-         if (settings->bools.menu_content_show_music)
+       if (settings->bools.menu_content_show_music)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
                   msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
@@ -6455,7 +6459,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   MENU_SETTING_ACTION, 0, 0);
 
 #ifdef HAVE_FFMPEG
-         if (settings->bools.menu_content_show_video)
+       if (settings->bools.menu_content_show_video)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
                   msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
@@ -6626,7 +6630,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             if (frontend_driver_has_fork())
 #endif
             {
-               if (settings->bools.menu_show_load_core)
+            if (settings->bools.menu_show_load_core)
                   menu_displaylist_parse_settings_enum(menu, info,
                         MENU_ENUM_LABEL_CORE_LIST, PARSE_ACTION, false);
             }

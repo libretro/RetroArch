@@ -151,6 +151,7 @@ static void core_info_list_free(core_info_list_t *core_info_list)
       free(info->systemname);
       free(info->system_manufacturer);
       free(info->display_name);
+      free(info->display_version);
       free(info->supported_extensions);
       free(info->authors);
       free(info->permissions);
@@ -275,6 +276,13 @@ static core_info_list_t *core_info_list_new(const char *path,
                && !string_is_empty(tmp))
          {
             core_info[i].display_name = strdup(tmp);
+            free(tmp);
+            tmp = NULL;
+         }
+         if (config_get_string(conf, "display_version", &tmp)
+               && !string_is_empty(tmp))
+         {
+            core_info[i].display_version = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }

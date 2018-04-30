@@ -97,7 +97,7 @@ static enum ui_msg_window_response ui_msg_window_win32_warning(ui_msg_window_sta
    return ui_msg_window_win32_response(state, MessageBoxA(NULL, (LPCSTR)state->text, (LPCSTR)state->title, flags));
 }
 
-const ui_msg_window_t ui_msg_window_win32 = {
+ui_msg_window_t ui_msg_window_win32 = {
    ui_msg_window_win32_error,
    ui_msg_window_win32_information,
    ui_msg_window_win32_question,

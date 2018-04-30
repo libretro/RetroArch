@@ -124,7 +124,7 @@ typedef struct Hints
 } Hints;
 
 /* We use long because X11 wants 32-bit pixels for 32-bit systems and 64 for 64... */
-const unsigned long retroarch_icon_data[] = {
+static const unsigned long retroarch_icon_data[] = {
    16, 16,
    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,

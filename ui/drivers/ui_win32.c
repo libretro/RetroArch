@@ -149,7 +149,7 @@ static void shader_dlg_params_refresh(void)
       {
          case SHADER_PARAM_CTRL_CHECKBOX:
             {
-			   bool checked;
+               bool checked;
 
                video_shader_ctx_t shader_info;
                video_shader_driver_get_current_shader(&shader_info);
@@ -769,9 +769,10 @@ static void ui_companion_win32_notify_content_loaded(void *data)
    (void)data;
 }
 
-static void ui_companion_win32_toggle(void *data)
+static void ui_companion_win32_toggle(void *data, bool force)
 {
    (void)data;
+   (void)force;
 }
 
 static void ui_companion_win32_event_command(
@@ -789,7 +790,7 @@ static void ui_companion_win32_notify_list_pushed(void *data,
     (void)menu_list;
 }
 
-const ui_companion_driver_t ui_companion_win32 = {
+ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_init,
    ui_companion_win32_deinit,
    ui_companion_win32_iterate,
@@ -797,6 +798,7 @@ const ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_event_command,
    ui_companion_win32_notify_content_loaded,
    ui_companion_win32_notify_list_pushed,
+   NULL,
    NULL,
    NULL,
    NULL,
