@@ -2313,6 +2313,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_CLOSE];
       case MENU_SETTING_ACTION_RESET:
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
+      case MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS:
+         return xmb->textures.list[XMB_TEXTURE_RESUME];
+      case MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS:
+         return xmb->textures.list[XMB_TEXTURE_RUN];
       case MENU_SETTING_ACTION:
          if (xmb->depth == 3)
             return xmb->textures.list[XMB_TEXTURE_SUBSETTING];

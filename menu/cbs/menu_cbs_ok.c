@@ -67,6 +67,10 @@
 #include "../../network/netplay/netplay_discovery.h"
 #endif
 
+#ifdef HAVE_CHEEVOS
+#include "../cheevos/cheevos.h"
+#endif
+
 enum
 {
    ACTION_OK_LOAD_PRESET = 0,
@@ -2634,6 +2638,14 @@ static int action_ok_save_state(const char *path,
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
+static int action_ok_toggle_hardcode_mode(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   cheevos_hardcore_paused = !cheevos_hardcore_paused;
+   generic_action_ok_command(CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE);
+   return generic_action_ok_command(CMD_EVENT_RESUME);
+}
+
 static int action_ok_undo_load_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4648,6 +4660,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_DELETE:
             BIND_ACTION_OK(cbs, action_ok_core_delete);
+            break;
+         case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE:
+         case MENU_ENUM_LABEL_ACHIEVEMENT_RESUME:
+            BIND_ACTION_OK(cbs, action_ok_toggle_hardcode_mode);
             break;
          default:
             return -1;

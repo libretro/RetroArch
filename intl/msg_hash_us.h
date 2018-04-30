@@ -215,6 +215,14 @@ MSG_HASH(
       "Achievements"
       )
 MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+      "Pause Achievements Hardcore Mode"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
+      "Resume Achievements Hardcore Mode"
+      )
+MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
       "Achievements (Hardcore)"
       )
@@ -3696,3 +3704,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
       "Current core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
       "Clear")
+MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+      "Pause achievements for current session (This action will enable savestates, cheats, rewind, pause, and slow-motion).")
+MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+      "Resume achievements for current session (This action will disable savestates, cheats, rewind, pause, and slow-motion and reset the current game).")

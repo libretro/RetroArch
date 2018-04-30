@@ -287,6 +287,7 @@ static cheevos_locals_t cheevos_locals =
 
 bool cheevos_loaded = false;
 bool cheevos_hardcore_active = false;
+bool cheevos_hardcore_paused = false;
 int cheats_are_enabled = 0;
 int cheats_were_enabled = 0;
 
@@ -1546,7 +1547,7 @@ static void cheevos_make_unlock_url(const cheevo_t *cheevo,
       settings->arrays.cheevos_username,
       cheevos_locals.token,
       cheevo->id,
-      settings->bools.cheevos_hardcore_mode_enable ? 1 : 0
+      settings->bools.cheevos_hardcore_mode_enable && !cheevos_hardcore_paused ? 1 : 0
    );
 
    url[url_size - 1] = 0;
@@ -1589,7 +1590,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
 
    end                  = set->cheevos + set->count;
 
-   if (settings && settings->bools.cheevos_hardcore_mode_enable)
+   if (settings && settings->bools.cheevos_hardcore_mode_enable && !cheevos_hardcore_paused)
       mode = CHEEVOS_ACTIVE_HARDCORE;
 
    for (cheevo = set->cheevos; cheevo < end; cheevo++)
@@ -2219,7 +2220,7 @@ bool cheevos_toggle_hardcore_mode(void)
       return false;
 
    /* reset and deinit rewind to avoid cheat the score */
-   if (settings->bools.cheevos_hardcore_mode_enable)
+   if (settings->bools.cheevos_hardcore_mode_enable && !cheevos_hardcore_paused)
    {
       const char *msg = msg_hash_to_str(
             MSG_CHEEVOS_HARDCORE_MODE_ENABLE);
@@ -2420,7 +2421,8 @@ void cheevos_test(void)
          cheevos_test_cheevo_set(&cheevos_locals.unofficial);
 
       if (settings->bools.cheevos_hardcore_mode_enable &&
-          settings->bools.cheevos_leaderboards_enable)
+          settings->bools.cheevos_leaderboards_enable  &&
+          !cheevos_hardcore_paused)
          cheevos_test_leaderboards();
    }
 }
@@ -2827,7 +2829,7 @@ found:
          const cheevo_t* end          = cheevo + cheevos_locals.core.count;
          int number_of_unlocked       = cheevos_locals.core.count;
 
-         if (coro->settings->bools.cheevos_hardcore_mode_enable)
+         if (coro->settings->bools.cheevos_hardcore_mode_enable && !cheevos_hardcore_paused)
             mode = CHEEVOS_ACTIVE_HARDCORE;
 
          for (; cheevo < end; cheevo++)
