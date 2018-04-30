@@ -3001,9 +3001,7 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
-#ifdef HAVE_CHEEVOS
-   if (!settings->bools.cheevos_enable)
-#endif
+   
    {
       static bool old_slowmotion_button_state      = false;
       static bool old_slowmotion_hold_button_state = false;
