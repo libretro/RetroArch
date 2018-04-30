@@ -2813,11 +2813,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-      "Driver de entrada para usar. Dependendo do driver de vídeo, pode forçar um driver de entrada diferente.."
+      "Driver de entrada para usar. Dependendo do driver de vídeo, pode forçar um driver de entrada diferente."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-      "Driver do Joypad para usar.."
+      "Driver do Joypad para usar."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -3287,7 +3287,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
       "Visualizações")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
-      "Exibir elementos na tela de menu.."
+      "Exibir elementos na tela de menu."
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
       "Exibir Atualizador de Núcleos")
