@@ -145,13 +145,7 @@ void ui_companion_driver_init_first(void)
          if (ui_companion->init)
             ui_companion_data = ui_companion->init();
 
-         if (ui_companion->toggle)
-            ui_companion->toggle(ui_companion_data, false);
-
-#ifdef HAVE_QT
-         if (settings->bools.desktop_menu_enable)
-            ui_companion_qt.toggle(ui_companion_qt_data, false);
-#endif
+         ui_companion_driver_toggle(false);
       }
    }
 }
@@ -280,11 +274,9 @@ const char *ui_companion_driver_get_ident(void)
 
 void ui_companion_driver_log_msg(const char *msg)
 {
+#ifdef HAVE_QT
    settings_t *settings = config_get_ptr();
 
-   (void)msg;
-
-#ifdef HAVE_QT
    if (settings->bools.desktop_menu_enable)
       if (ui_companion_qt_data)
          ui_companion_qt.log_msg(ui_companion_qt_data, msg);
