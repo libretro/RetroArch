@@ -102,11 +102,11 @@ static void* win32_display_server_init(void)
 
 static void win32_display_server_destroy(void *data)
 {
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
+   
    if (win32_orig_width > 0 && win32_orig_height > 0 )
       video_display_server_switch_resolution(win32_orig_width, win32_orig_height,
          60, 60);
-
-   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
 
 #ifdef HAS_TASKBAR_EXT
    if (g_taskbarList && win32_taskbar_is_created())
