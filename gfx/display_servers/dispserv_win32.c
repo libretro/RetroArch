@@ -215,10 +215,10 @@ static bool win32_display_server_set_resolution(void *data,
    if (!serv)
       return false;
   
-   if (orig_width == 0)
-	   orig_width          = GetSystemMetrics(SM_CXSCREEN);
-   if (orig_height == 0)
-	   orig_height         = GetSystemMetrics(SM_CYSCREEN);
+   if (win32_orig_width == 0)
+	   win32_orig_width          = GetSystemMetrics(SM_CXSCREEN);
+   if (win32_orig_height == 0)
+	   win32_orig_height         = GetSystemMetrics(SM_CYSCREEN);
 
    EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
 
