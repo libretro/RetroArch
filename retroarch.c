@@ -2987,7 +2987,8 @@ static enum runloop_state runloop_check_state(
    }
 
 #ifdef HAVE_CHEEVOS
-   if (!settings->bools.cheevos_hardcore_mode_enable)
+   if (!cheevos_loaded || !settings->bools.cheevos_enable
+      || !settings->bools.cheevos_hardcore_mode_enable)
 #endif
    {
       char s[128];
@@ -3002,7 +3003,8 @@ static enum runloop_state runloop_check_state(
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
 #ifdef HAVE_CHEEVOS
-   if (!settings->bools.cheevos_enable)
+   if (!cheevos_loaded || !settings->bools.cheevos_enable
+      || !settings->bools.cheevos_hardcore_mode_enable)
 #endif
    {
       static bool old_slowmotion_button_state      = false;

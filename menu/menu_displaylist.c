@@ -2571,7 +2571,8 @@ static int menu_displaylist_parse_load_content_settings(
 
       if (settings->bools.quick_menu_show_save_load_state
 #ifdef HAVE_CHEEVOS
-          && !(settings->bools.cheevos_hardcore_mode_enable && cheevos_loaded)
+          && !(settings->bools.cheevos_enable 
+          && settings->bools.cheevos_hardcore_mode_enable && cheevos_loaded)
 #endif
          )
       {
@@ -2594,7 +2595,8 @@ static int menu_displaylist_parse_load_content_settings(
       if (settings->bools.quick_menu_show_save_load_state &&
           settings->bools.quick_menu_show_undo_save_load_state
 #ifdef HAVE_CHEEVOS
-          && !(settings->bools.cheevos_hardcore_mode_enable && cheevos_loaded)
+          && !(settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable 
+          && cheevos_loaded)
 #endif
          )
       {
