@@ -153,6 +153,7 @@ bool cheevos_get_support_cheevos(void);
 cheevos_console_t cheevos_get_console(void);
 
 extern bool cheevos_loaded;
+extern bool cheevos_hardcore_active;
 extern int cheats_are_enabled;
 extern int cheats_were_enabled;
 

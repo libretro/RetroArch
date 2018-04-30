@@ -286,6 +286,7 @@ static cheevos_locals_t cheevos_locals =
 };
 
 bool cheevos_loaded = false;
+bool cheevos_hardcore_active = false;
 int cheats_are_enabled = 0;
 int cheats_were_enabled = 0;
 
@@ -890,9 +891,9 @@ static int cheevos_new_cheevo(cheevos_readud_t *ud)
    cheevo->last        = 1;
    cheevo->modified    = 0;
 
-   if (  !cheevo->title       || 
-         !cheevo->description || 
-         !cheevo->author      || 
+   if (  !cheevo->title       ||
+         !cheevo->description ||
+         !cheevo->author      ||
          !cheevo->badge)
       goto error;
 
@@ -1214,7 +1215,7 @@ static int cheevos_parse(const char *json)
       calloc(lboard_count, sizeof(cheevos_leaderboard_t));
    cheevos_locals.lboard_count = lboard_count;
 
-   if (   !cheevos_locals.core.cheevos       || 
+   if (   !cheevos_locals.core.cheevos       ||
           !cheevos_locals.unofficial.cheevos ||
           !cheevos_locals.leaderboards)
    {
@@ -1262,7 +1263,7 @@ static int cheevos_test_condition(cheevos_cond_t *cond)
    if (!cond)
       return 0;
 
-   sval          = cheevos_var_get_value(&cond->source) + 
+   sval          = cheevos_var_get_value(&cond->source) +
                    cheevos_locals.add_buffer;
    tval          = cheevos_var_get_value(&cond->target);
 
@@ -1328,7 +1329,7 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
    /* Read all standard conditions, and process as normal: */
    for (cond = condset->conds; cond < end; cond++)
    {
-      if (  cond->type == CHEEVOS_COND_TYPE_PAUSE_IF || 
+      if (  cond->type == CHEEVOS_COND_TYPE_PAUSE_IF ||
             cond->type == CHEEVOS_COND_TYPE_RESET_IF)
          continue;
 
@@ -1600,7 +1601,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
          if (cheevo->last)
          {
             cheevos_condset_t* condset   = cheevo->condition.condsets;
-            const cheevos_condset_t* end = cheevo->condition.condsets 
+            const cheevos_condset_t* end = cheevo->condition.condsets
                + cheevo->condition.count;
 
             for (; condset < end; condset++)
@@ -1724,7 +1725,7 @@ static int cheevos_expr_value(cheevos_expr_t* expr)
          return 0;
       }
 
-      values[current_value] += 
+      values[current_value] +=
          cheevos_var_get_value(&term->var) * term->multiplier;
 
       if (term->compare_next)
@@ -2023,7 +2024,7 @@ void cheevos_reset_game(void)
 
    if (!cheevo)
       return;
-   
+
    end                 = cheevo + cheevos_locals.core.count;
 
    for (; cheevo < end; cheevo++)
@@ -2223,7 +2224,7 @@ bool cheevos_toggle_hardcore_mode(void)
       const char *msg = msg_hash_to_str(
             MSG_CHEEVOS_HARDCORE_MODE_ENABLE);
 
-      /* send reset core cmd to avoid any user 
+      /* send reset core cmd to avoid any user
        * savestate previusly loaded. */
       command_event(CMD_EVENT_RESET, NULL);
 
@@ -2245,7 +2246,7 @@ bool cheevos_toggle_hardcore_mode(void)
 static void cheevos_patch_addresses(cheevoset_t* set)
 {
    unsigned i;
-   cheevo_t* cheevo = NULL; 
+   cheevo_t* cheevo = NULL;
 
    if (!set)
       return;
@@ -2418,7 +2419,7 @@ void cheevos_test(void)
       if (settings->bools.cheevos_test_unofficial)
          cheevos_test_cheevo_set(&cheevos_locals.unofficial);
 
-      if (settings->bools.cheevos_hardcore_mode_enable && 
+      if (settings->bools.cheevos_hardcore_mode_enable &&
           settings->bools.cheevos_leaderboards_enable)
          cheevos_test_leaderboards();
    }
@@ -2449,14 +2450,14 @@ cheevos_console_t cheevos_get_console(void)
 
 /* Uncomment the following two lines to debug cheevos_iterate, this will
  * disable the coroutine yielding.
- * 
+ *
  * The code is very easy to understand. It's meant to be like BASIC:
  * CORO_GOTO will jump execution to another label, CORO_GOSUB will
  * call another label, and CORO_RET will return from a CORO_GOSUB.
- * 
+ *
  * This coroutine code is inspired in a very old pure C implementation
  * that runs everywhere:
- * 
+ *
  * https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
  */
 /*#undef CORO_YIELD
@@ -2573,6 +2574,8 @@ static int cheevos_iterate(coro_t *coro)
 
    CORO_ENTER();
 
+
+
       cheevos_locals.addrs_patched = false;
 
       coro->settings               = config_get_ptr();
@@ -2603,12 +2606,12 @@ static int cheevos_iterate(coro_t *coro)
             cheevos_locals.meminfo[3].size);
 
       /* Bail out if cheevos are disabled.
-         * But set the above anyways, 
+         * But set the above anyways,
          * command_read_ram needs it. */
       if (!coro->settings->bools.cheevos_enable)
          CORO_STOP();
 
-      /* Load the content into memory, or copy it 
+      /* Load the content into memory, or copy it
          * over to our own buffer */
       if (!coro->data)
       {
@@ -2979,7 +2982,7 @@ found:
 
       /* from FCEU core - check if Trainer included in ROM data */
       MD5_Init(&coro->md5);
-      coro->offset = sizeof(coro->header) + (coro->header.rom_type & 4 
+      coro->offset = sizeof(coro->header) + (coro->header.rom_type & 4
             ? sizeof(coro->header) : 0);
       coro->count  = 0x4000 * coro->bytes;
       CORO_GOSUB(EVAL_MD5);
@@ -3266,7 +3269,9 @@ found:
             else
                login          = coro->settings->arrays.cheevos_password;
          }
-        
+         else
+            login = NULL;
+
          if (string_is_empty(username) || string_is_empty(login))
          {
             runloop_msg_queue_push(
@@ -3333,11 +3338,11 @@ found:
                   msg[sizeof(msg) - 1] = 0;
                   runloop_msg_queue_push(msg, 0, 3 * 60, false);
                }
-            
+
                /* Save token to config and clear pass on success */
                *coro->settings->arrays.cheevos_password = '\0';
                strncpy(
-                     coro->settings->arrays.cheevos_token, 
+                     coro->settings->arrays.cheevos_token,
                      cheevos_locals.token, sizeof(cheevos_locals.token)
                );
                CORO_RET();
@@ -3346,7 +3351,7 @@ found:
 
          if ((void*)coro->json)
             free((void*)coro->json);
-     
+
          /* Site returned error, display it */
          snprintf(error_message, sizeof(error_message),
                "RetroAchievements: %s",
@@ -3354,13 +3359,13 @@ found:
          error_message[sizeof(error_message) - 1] = 0;
          runloop_msg_queue_push(error_message, 0, 5 * 60, false);
          *coro->settings->arrays.cheevos_token = '\0';
-         
+
          CORO_STOP();
       }
-      
+
       runloop_msg_queue_push("RetroAchievements: Error contacting server.", 0, 5 * 60, false);
       CHEEVOS_ERR("[CHEEVOS]: error getting user token.\n");
-      
+
       CORO_STOP();
 
       /**************************************************************************
@@ -3471,7 +3476,7 @@ found:
             coro->url, sizeof(coro->url),
             "http://retroachievements.org/dorequest.php?r=unlocks&u=%s&t=%s&g=%u&h=0",
             coro->settings->arrays.cheevos_username,
-            cheevos_locals.token, coro->gameid 
+            cheevos_locals.token, coro->gameid
             );
 
       coro->url[sizeof(coro->url) - 1] = 0;
@@ -3538,7 +3543,7 @@ found:
             coro->url, sizeof(coro->url),
             "http://retroachievements.org/dorequest.php?r=postactivity&u=%s&t=%s&a=3&m=%u",
             coro->settings->arrays.cheevos_username,
-            cheevos_locals.token, coro->gameid 
+            cheevos_locals.token, coro->gameid
             );
 
       coro->url[sizeof(coro->url) - 1] = 0;
