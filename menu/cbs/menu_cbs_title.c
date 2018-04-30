@@ -76,6 +76,13 @@ static int action_get_title_action_generic(const char *path, const char *label,
    return 0; \
 }
 
+static int action_get_title_mixer_stream_actions(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+{
+   unsigned         offset      = (menu_type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN);
+   snprintf(s, len, "Mixer Stream #%d", offset + 1);
+   return 0;
+}
+
 default_title_macro(action_get_user_accounts_cheevos_list,      MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS)
 default_title_macro(action_get_download_core_content_list,      MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT)
 default_title_macro(action_get_user_accounts_list,              MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST)
@@ -1122,6 +1129,13 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
 
    if (menu_cbs_init_bind_title_compare_type(cbs, type) == 0)
       return 0;
+   
+   if (string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_mixer_stream_actions);
+      return 0;
+   }
 
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
    {
