@@ -197,13 +197,13 @@ static char** waiting_argv;
    SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
    SEL fsselector   = NSSelectorFromString(BOXSTRING("toggleFullScreen:"));
    apple_platform   = self;
-    
+
    if ([self.window respondsToSelector:selector])
    {
        if ([self.window respondsToSelector:fsselector])
           [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
    }
-   
+
    [self.window setAcceptsMouseMovedEvents: YES];
 
    [[CocoaView get] setFrame: [[self.window contentView] bounds]];
@@ -245,7 +245,7 @@ static char** waiting_argv;
        if (ret == -1)
           break;
     }while(1);
-    
+
     main_exit(NULL);
 }
 
@@ -286,7 +286,7 @@ static char** waiting_argv;
 
       if (system)
          core_name = system->library_name;
-		
+
       if (core_name)
       {
          content_ctx_info_t content_info = {0};
@@ -329,10 +329,10 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
         return;
 
     settings_t *settings = config_get_ptr();
-                
+
     rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)state->result);
     ui_companion_event_command(CMD_EVENT_LOAD_CORE);
-                
+
     if (info && info->load_no_content
           && settings->bools.set_supports_no_game_enable)
     {
@@ -354,16 +354,16 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
         return;
     if (!result)
         return;
-    
+
     rarch_system_info_t *info        = runloop_get_system_info();
     struct retro_system_info *system = &info->info;
     const char            *core_name = NULL;
-                
+
     if (system)
         core_name = system->library_name;
-                
+
     path_set(RARCH_PATH_CONTENT, state->result);
-                
+
     if (core_name)
     {
         content_ctx_info_t content_info = {0};
@@ -377,20 +377,20 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
 
 - (IBAction)openCore:(id)sender {
     const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
-    
+
     if (browser)
     {
         ui_browser_window_state_t browser_state;
         settings_t *settings        = config_get_ptr();
-        
+
         browser_state.filters       = strdup("dylib");
         browser_state.filters_title = strdup("Core");
         browser_state.title         = strdup("Load Core");
         browser_state.startdir      = strdup(settings->paths.directory_libretro);
-        
+
         bool result = browser->open(&browser_state);
         open_core_handler(&browser_state, result);
-        
+
         free(browser_state.filters);
         free(browser_state.filters_title);
         free(browser_state.title);
@@ -401,22 +401,22 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
 - (void)openDocument:(id)sender
 {
    const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
-    
+
     if (browser)
     {
         ui_browser_window_state_t browser_state = {{0}};
         settings_t *settings  = config_get_ptr();
         NSString *startdir    = BOXSTRING(settings->paths.directory_menu_content);
-        
+
         if (!startdir.length)
             startdir           = BOXSTRING("/");
-        
+
         browser_state.title = strdup("Load Content");
         browser_state.startdir = strdup([startdir UTF8String]);
-        
+
         bool result = browser->open(&browser_state);
         open_document_handler(&browser_state, result);
-        
+
         free(browser_state.startdir);
         free(browser_state.title);
     }
@@ -440,7 +440,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
 {
    enum event_command cmd;
    unsigned sender_tag = (unsigned)[sender tag];
-   
+
    switch (sender_tag)
    {
       case 1:
@@ -477,7 +477,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
          cmd = CMD_EVENT_NONE;
          break;
    }
-   
+
    if (sender_tag >= 10 && sender_tag <= 19)
    {
       unsigned idx = (sender_tag - (10-1));
@@ -503,7 +503,7 @@ int main(int argc, char *argv[])
            if (!strncmp(argv[1], "-psn", 4))
                argc = 1;
    }
-    
+
    waiting_argc = argc;
    waiting_argv = argv;
 
@@ -520,9 +520,10 @@ static void ui_companion_cocoa_notify_content_loaded(void *data)
     (void)data;
 }
 
-static void ui_companion_cocoa_toggle(void *data)
+static void ui_companion_cocoa_toggle(void *data, bool force)
 {
    (void)data;
+   (void)force;
 }
 
 static int ui_companion_cocoa_iterate(void *data, unsigned action)
@@ -571,7 +572,7 @@ static void *ui_companion_cocoa_get_main_window(void *data)
     return ((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
 }
 
-const ui_companion_driver_t ui_companion_cocoa = {
+ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_init,
    ui_companion_cocoa_deinit,
    ui_companion_cocoa_iterate,
@@ -583,6 +584,7 @@ const ui_companion_driver_t ui_companion_cocoa = {
    NULL,
    NULL,
    ui_companion_cocoa_get_main_window,
+   NULL,
    &ui_browser_window_cocoa,
    &ui_msg_window_cocoa,
    &ui_window_cocoa,

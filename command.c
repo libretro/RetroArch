@@ -169,6 +169,7 @@ static const struct cmd_map map[] = {
    { "DISK_NEXT",              RARCH_DISK_NEXT },
    { "DISK_PREV",              RARCH_DISK_PREV },
    { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
+   { "UI_COMPANION_TOGGLE",    RARCH_UI_COMPANION_TOGGLE },
    { "GAME_FOCUS_TOGGLE",      RARCH_GAME_FOCUS_TOGGLE },
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
    { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
@@ -1705,7 +1706,7 @@ void command_playlist_update_write(
       const char *core_path,
       const char *core_display_name,
       const char *crc32,
-      const char *db_name)    
+      const char *db_name)
 {
    playlist_t *plist    = (playlist_t*)data;
    playlist_t *playlist = plist ? plist : playlist_get_cached();
@@ -1787,10 +1788,11 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 #endif
 
-            libretro_get_system_info(
+            if (!libretro_get_system_info(
                   core_path,
                   system,
-                  &system_info->load_no_content);
+                  &system_info->load_no_content))
+               return false;
             info_find.path = core_path;
 
             if (!core_info_load(&info_find))
@@ -1803,11 +1805,17 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_LOAD_CORE:
-         command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+      {
+         bool success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+
 #ifndef HAVE_DYNAMIC
          command_event(CMD_EVENT_QUIT, NULL);
+#else
+         if (!success)
+            return false;
 #endif
          break;
+      }
       case CMD_EVENT_LOAD_STATE:
          /* Immutable - disallow savestate load when
           * we absolutely cannot change game state. */
@@ -1925,7 +1933,7 @@ bool command_event(enum event_command cmd, void *data)
          cheevos_toggle_hardcore_mode();
 #endif
          break;
-      /* this fallthrough is on purpose, it should do 
+      /* this fallthrough is on purpose, it should do
          a CMD_EVENT_REINIT too */
       case CMD_EVENT_REINIT_FROM_TOGGLE:
          retroarch_unset_forced_fullscreen();
@@ -2010,7 +2018,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_AUTOSAVE_INIT:
          command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 #ifdef HAVE_THREADS
-	 {
+    {
 #ifdef HAVE_NETWORKING
          /* Only enable state manager if netplay is not underway
             TODO: Add a setting for these tweaks */
@@ -2024,7 +2032,7 @@ TODO: Add a setting for these tweaks */
             else
                runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
          }
-	 }
+    }
 #endif
          break;
       case CMD_EVENT_AUTOSAVE_STATE:
@@ -2306,7 +2314,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_RESUME:
          rarch_menu_running_finished();
          if (ui_companion_is_on_foreground())
-            ui_companion_driver_toggle();
+            ui_companion_driver_toggle(false);
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
       {
@@ -2355,7 +2363,7 @@ TODO: Add a setting for these tweaks */
          runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true);
          break;
 
-      }      
+      }
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
             return false;
@@ -2577,7 +2585,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_FULLSCREEN_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();
-            bool new_fullscreen_state = !settings->bools.video_fullscreen 
+            bool new_fullscreen_state = !settings->bools.video_fullscreen
                && !retroarch_is_forced_fullscreen();
             if (!video_driver_has_windowed())
                return false;
@@ -2736,6 +2744,11 @@ TODO: Add a setting for these tweaks */
                video_driver_show_mouse();
          }
          break;
+      case CMD_EVENT_UI_COMPANION_TOGGLE:
+         {
+            ui_companion_driver_toggle(true);
+            break;
+         }
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
             static bool game_focus_state  = false;

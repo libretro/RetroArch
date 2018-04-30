@@ -102,7 +102,6 @@ HAVE_PARPORT=auto          # Parallel port joypad support
 HAVE_IMAGEVIEWER=yes       # Built-in image viewer support.
 HAVE_MMAP=auto             # MMAP support
 HAVE_QT=no                 # Qt companion support
-HAVE_QT_WRAPPER=no         # Qt wrapper support
 HAVE_XSHM=no               # XShm video driver support
 HAVE_CHEEVOS=yes           # Retro Achievements
 HAVE_SHADERPIPELINE=yes    # Additional shader-based pipelines

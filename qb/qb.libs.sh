@@ -226,6 +226,7 @@ create_config_make()
 		[ "$USE_LANG_CXX" = 'yes' ] && printf %s\\n "CXX = $CXX" "CXXFLAGS = $CXXFLAGS"
 
 		printf %s\\n "WINDRES = $WINDRES" \
+			"MOC = $MOC" \
 			"ASFLAGS = $ASFLAGS" \
 			"LDFLAGS = $LDFLAGS" \
 			"INCLUDE_DIRS = $INCLUDE_DIRS" \

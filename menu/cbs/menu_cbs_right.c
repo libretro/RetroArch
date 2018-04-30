@@ -57,8 +57,6 @@ static int generic_shader_action_parameter_right(struct video_shader_parameter *
    param->current += param->step;
    param->current  = MIN(MAX(param->minimum, param->current), param->maximum);
 
-   if (ui_companion_is_on_foreground())
-      ui_companion_driver_notify_refresh();
    return 0;
 }
 
@@ -74,7 +72,7 @@ int shader_action_parameter_right(unsigned type, const char *label, bool wraparo
    video_shader_driver_get_current_shader(&shader_info);
 
    param_prev = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-   param_menu = shader ? &shader->parameters[type - 
+   param_menu = shader ? &shader->parameters[type -
       MENU_SETTINGS_SHADER_PARAMETER_0] : NULL;
 
    if (!param_prev || !param_menu)
@@ -112,8 +110,8 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
    if (!settings)
       return 0;
 
-   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - 
-      (MENU_SETTINGS_INPUT_DESC_KBD_END - 
+   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END -
+      (MENU_SETTINGS_INPUT_DESC_KBD_END -
       MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
 
    id = (type / (offset + 1)) - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
@@ -162,7 +160,7 @@ int action_right_input_desc(unsigned type, const char *label,
 
    /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
       also skip all the axes until analog remapping is implemented */
-   if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*|| 
+   if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*||
        (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
       action_right_input_desc(type, label, wraparound);
 
@@ -230,7 +228,7 @@ static int action_right_goto_tab(void)
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    size_t selection           = menu_navigation_get_selection();
    menu_file_list_cbs_t *cbs  = selection_buf ? (menu_file_list_cbs_t*)
-	   file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
+      file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
 
    list_info.type             = MENU_LIST_HORIZONTAL;
    list_info.action           = MENU_ACTION_RIGHT;

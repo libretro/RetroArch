@@ -26,11 +26,7 @@
 
 #include "ui_companion_driver.h"
 
-
 static const ui_companion_driver_t *ui_companion_drivers[] = {
-#ifdef HAVE_QT_WRAPPER
-   &ui_companion_qt,
-#endif
 #if defined(_WIN32) && !defined(_XBOX)
    &ui_companion_win32,
 #endif
@@ -40,16 +36,17 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
 #ifdef HAVE_COCOATOUCH
    &ui_companion_cocoatouch,
 #endif
-#ifdef HAVE_QT
-   &ui_companion_qt,
-#endif
    &ui_companion_null,
    NULL
 };
 
-static bool main_ui_companion_is_on_foreground;
-static const ui_companion_driver_t *ui_companion;
-static void *ui_companion_data;
+static bool main_ui_companion_is_on_foreground = false;
+static const ui_companion_driver_t *ui_companion = NULL;
+static void *ui_companion_data = NULL;
+
+#ifdef HAVE_QT
+static void *ui_companion_qt_data = NULL;
+#endif
 
 /**
  * ui_companion_find_driver:
@@ -114,6 +111,11 @@ void ui_companion_driver_deinit(void)
       return;
    if (ui->deinit)
       ui->deinit(ui_companion_data);
+
+#ifdef HAVE_QT
+   ui_companion_qt.deinit(ui_companion_qt_data);
+   ui_companion_qt_data = NULL;
+#endif
    ui_companion_data = NULL;
 }
 
@@ -123,17 +125,36 @@ void ui_companion_driver_init_first(void)
 
    ui_companion = (ui_companion_driver_t*)ui_companion_init_first();
 
-   if (ui_companion && ui_companion->toggle)
+#ifdef HAVE_QT
+   ui_companion_qt_data = ui_companion_qt.init();
+#endif
+
+   if (ui_companion)
    {
       if (settings->bools.ui_companion_start_on_boot)
-         ui_companion->toggle(ui_companion_data);
+      {
+         if (ui_companion->init)
+            ui_companion_data = ui_companion->init();
+
+         if (ui_companion->toggle)
+            ui_companion->toggle(ui_companion_data, false);
+
+#ifdef HAVE_QT
+         ui_companion_qt.toggle(ui_companion_qt_data, false);
+#endif
+      }
    }
 }
 
-void ui_companion_driver_toggle(void)
+void ui_companion_driver_toggle(bool force)
 {
    if (ui_companion && ui_companion->toggle)
-      ui_companion->toggle(ui_companion_data);
+      ui_companion->toggle(ui_companion_data, false);
+
+#ifdef HAVE_QT
+   if (ui_companion_qt.toggle)
+      ui_companion_qt.toggle(ui_companion_qt_data, force);
+#endif
 }
 
 void ui_companion_driver_notify_refresh(void)
@@ -143,6 +164,10 @@ void ui_companion_driver_notify_refresh(void)
       return;
    if (ui->notify_refresh)
       ui->notify_refresh(ui_companion_data);
+#ifdef HAVE_QT
+   if (ui_companion_qt.notify_refresh)
+      ui_companion_qt.notify_refresh(ui_companion_qt_data);
+#endif
 }
 
 void ui_companion_driver_notify_list_loaded(file_list_t *list, file_list_t *menu_list)
@@ -192,12 +217,30 @@ const ui_browser_window_t *ui_companion_driver_get_browser_window_ptr(void)
    return ui->browser_window;
 }
 
+#ifdef HAVE_QT
+const ui_application_t *ui_companion_driver_get_qt_application_ptr(void)
+{
+   return ui_companion_qt.application;
+}
+#endif
+
 const ui_application_t *ui_companion_driver_get_application_ptr(void)
 {
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
    if (!ui)
       return NULL;
    return ui->application;
+}
+
+void ui_companion_driver_msg_queue_push(const char *msg, unsigned priority, unsigned duration, bool flush)
+{
+   const ui_companion_driver_t *ui = ui_companion_get_ptr();
+   if (ui && ui->msg_queue_push)
+      ui->msg_queue_push(ui_companion_data, msg, priority, duration, flush);
+#ifdef HAVE_QT
+   if (ui_companion_qt.msg_queue_push)
+      ui_companion_qt.msg_queue_push(ui_companion_qt_data, msg, priority, duration, flush);
+#endif
 }
 
 void *ui_companion_driver_get_main_window(void)
@@ -214,4 +257,14 @@ const char *ui_companion_driver_get_ident(void)
    if (!ui)
       return "null";
    return ui->ident;
+}
+
+void ui_companion_driver_log_msg(const char *msg)
+{
+   (void)msg;
+
+#ifdef HAVE_QT
+   if (ui_companion_qt_data)
+      ui_companion_qt.log_msg(ui_companion_qt_data, msg);
+#endif
 }

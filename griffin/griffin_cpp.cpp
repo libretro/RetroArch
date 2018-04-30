@@ -33,16 +33,13 @@ MENU
 UI
 ============================================================ */
 #if defined(HAVE_QT)
+#define HAVE_MAIN /* also requires defining in frontend.c */
 #include "../ui/drivers/ui_qt.cpp"
 
 #include "../ui/drivers/qt/ui_qt_window.cpp"
 #include "../ui/drivers/qt/ui_qt_browser_window.cpp"
 #include "../ui/drivers/qt/ui_qt_msg_window.cpp"
 #include "../ui/drivers/qt/ui_qt_application.cpp"
-#endif
-
-#if defined(HAVE_QT_WRAPPER)
-#include "../ui/drivers/ui_qt.cpp"
 #endif
 
 /*============================================================

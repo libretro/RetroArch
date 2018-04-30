@@ -25,6 +25,11 @@
 #include "../ui_cocoa.h"
 #include "../../ui_companion_driver.h"
 
+static void* ui_window_cocoa_init(void)
+{
+   return NULL;
+}
+
 static void ui_window_cocoa_destroy(void *data)
 {
     ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
@@ -82,7 +87,8 @@ static bool ui_window_cocoa_focused(void *data)
    return false;
 }
 
-const ui_window_t ui_window_cocoa = {
+ui_window_t ui_window_cocoa = {
+   ui_window_cocoa_init,
    ui_window_cocoa_destroy,
    ui_window_cocoa_set_focused,
    ui_window_cocoa_set_visible,

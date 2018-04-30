@@ -296,17 +296,17 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_BIND(r_y_plus,  RARCH_ANALOG_RIGHT_Y_PLUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS),
       DECLARE_BIND(r_y_minus, RARCH_ANALOG_RIGHT_Y_MINUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS),
 
-	DECLARE_BIND( gun_trigger,			RARCH_LIGHTGUN_TRIGGER,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER ),
-	DECLARE_BIND( gun_offscreen_shot,	RARCH_LIGHTGUN_RELOAD,	        MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD ),
-	DECLARE_BIND( gun_aux_a,			RARCH_LIGHTGUN_AUX_A,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A ),
-	DECLARE_BIND( gun_aux_b,			RARCH_LIGHTGUN_AUX_B,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B ),
-	DECLARE_BIND( gun_aux_c,			RARCH_LIGHTGUN_AUX_C,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C ),
-	DECLARE_BIND( gun_start,			RARCH_LIGHTGUN_START,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START ),
-	DECLARE_BIND( gun_select,			RARCH_LIGHTGUN_SELECT,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT ),
-	DECLARE_BIND( gun_dpad_up,			RARCH_LIGHTGUN_DPAD_UP,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP ),
-	DECLARE_BIND( gun_dpad_down,		RARCH_LIGHTGUN_DPAD_DOWN,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN ),
-	DECLARE_BIND( gun_dpad_left,		RARCH_LIGHTGUN_DPAD_LEFT,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT ),
-	DECLARE_BIND( gun_dpad_right,		RARCH_LIGHTGUN_DPAD_RIGHT,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT ),
+      DECLARE_BIND( gun_trigger,			RARCH_LIGHTGUN_TRIGGER,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER ),
+      DECLARE_BIND( gun_offscreen_shot,	RARCH_LIGHTGUN_RELOAD,	        MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD ),
+      DECLARE_BIND( gun_aux_a,			RARCH_LIGHTGUN_AUX_A,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A ),
+      DECLARE_BIND( gun_aux_b,			RARCH_LIGHTGUN_AUX_B,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B ),
+      DECLARE_BIND( gun_aux_c,			RARCH_LIGHTGUN_AUX_C,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C ),
+      DECLARE_BIND( gun_start,			RARCH_LIGHTGUN_START,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START ),
+      DECLARE_BIND( gun_select,			RARCH_LIGHTGUN_SELECT,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT ),
+      DECLARE_BIND( gun_dpad_up,			RARCH_LIGHTGUN_DPAD_UP,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP ),
+      DECLARE_BIND( gun_dpad_down,		RARCH_LIGHTGUN_DPAD_DOWN,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN ),
+      DECLARE_BIND( gun_dpad_left,		RARCH_LIGHTGUN_DPAD_LEFT,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT ),
+      DECLARE_BIND( gun_dpad_right,		RARCH_LIGHTGUN_DPAD_RIGHT,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT ),
 
       DECLARE_BIND(turbo,     RARCH_TURBO_ENABLE,            MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE),
 
@@ -343,6 +343,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, disk_prev,             RARCH_DISK_PREV,             MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV),
       DECLARE_META_BIND(2, grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE),
       DECLARE_META_BIND(2, game_focus_toggle,     RARCH_GAME_FOCUS_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE),
+      DECLARE_META_BIND(2, desktop_menu_toggle,   RARCH_UI_COMPANION_TOGGLE,   MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE),
 #ifdef HAVE_MENU
       DECLARE_META_BIND(1, menu_toggle,           RARCH_MENU_TOGGLE,           MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE),
 #endif
@@ -1001,9 +1002,10 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
 
    if (!menu_input_dialog_get_display_kb())
    {
-      unsigned ids[14][2];
+      unsigned ids[15][2];
       const struct retro_keybind *quitkey = &input_config_binds[0][RARCH_QUIT_KEY];
       const struct retro_keybind *fskey   = &input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY];
+      const struct retro_keybind *companionkey = &input_config_binds[0][RARCH_UI_COMPANION_TOGGLE];
 
       ids[0][0]  = RETROK_SPACE;
       ids[0][1]  = RETRO_DEVICE_ID_JOYPAD_START;
@@ -1033,6 +1035,8 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
       ids[12][1] = RETRO_DEVICE_ID_JOYPAD_A;
       ids[13][0] = RETROK_DELETE;
       ids[13][1] = RETRO_DEVICE_ID_JOYPAD_Y;
+      ids[14][0] = companionkey->key;
+      ids[14][1] = RARCH_UI_COMPANION_TOGGLE;
 
       if (settings->bools.input_menu_swap_ok_cancel_buttons)
       {
@@ -1040,7 +1044,7 @@ void input_menu_keys_pressed(void *data, input_bits_t *p_new_state)
          ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
       }
 
-      for (i = 0; i < 14; i++)
+      for (i = 0; i < 15; i++)
       {
          if (current_input->input_state(current_input_data,
                   joypad_info, binds, 0,
@@ -1092,7 +1096,7 @@ void input_keys_pressed(void *data, input_bits_t *p_new_state)
 
    if (check_input_driver_block_hotkey(binds_norm, binds_auto))
    {
-      const struct retro_keybind *enable_hotkey    = 
+      const struct retro_keybind *enable_hotkey    =
          &input_config_binds[0][RARCH_ENABLE_HOTKEY];
 
       if (     enable_hotkey && enable_hotkey->valid
@@ -1106,9 +1110,9 @@ void input_keys_pressed(void *data, input_bits_t *p_new_state)
 
    if (binds[RARCH_GAME_FOCUS_TOGGLE].valid)
    {
-      const struct retro_keybind *focus_binds_auto = 
+      const struct retro_keybind *focus_binds_auto =
          &input_autoconf_binds[0][RARCH_GAME_FOCUS_TOGGLE];
-      const struct retro_keybind *focus_normal     = 
+      const struct retro_keybind *focus_normal     =
          &binds[RARCH_GAME_FOCUS_TOGGLE];
 
       /* Allows rarch_focus_toggle hotkey to still work
@@ -1172,7 +1176,7 @@ void input_get_state_for_port(void *data, unsigned port, input_bits_t *p_new_sta
       for (j = 0; j < 2; j++)
       {
          unsigned offset = 0 + (i * 4) + (j * 2);
-         int16_t     val = input_joypad_analog(joypad_driver, 
+         int16_t     val = input_joypad_analog(joypad_driver,
                joypad_info, port, i, j, libretro_input_binds[port]);
 
          if (val >= 0)
@@ -2761,9 +2765,9 @@ unsigned input_config_get_device_count()
    unsigned num_devices;
    for ( num_devices = 0; num_devices < MAX_INPUT_DEVICES; ++num_devices )
    {
-	   const char *device_name = input_config_get_device_name(num_devices);
-	   if ( string_is_empty(device_name) )
-		   break;
+      const char *device_name = input_config_get_device_name(num_devices);
+      if ( string_is_empty(device_name) )
+         break;
    }
    return num_devices;
 }
@@ -2797,7 +2801,7 @@ void input_config_set_device_name(unsigned port, const char *name)
             name,
             sizeof(input_device_names[port]));
 
-	  input_autoconfigure_joypad_reindex_devices();
+      input_autoconfigure_joypad_reindex_devices();
    }
 }
 

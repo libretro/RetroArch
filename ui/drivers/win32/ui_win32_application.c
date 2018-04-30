@@ -23,9 +23,9 @@
 
 #include "../../ui_companion_driver.h"
 
-static bool ui_application_win32_initialize(void)
+static void* ui_application_win32_initialize(void)
 {
-   return true;
+   return NULL;
 }
 
 static bool ui_application_win32_pending_events(void)
@@ -48,9 +48,16 @@ static void ui_application_win32_process_events(void)
    }
 }
 
-const ui_application_t ui_application_win32 = {
+static void ui_application_win32_run(void *args)
+{
+   (void)args;
+}
+
+ui_application_t ui_application_win32 = {
    ui_application_win32_initialize,
    ui_application_win32_pending_events,
    ui_application_win32_process_events,
+   ui_application_win32_run,
+   NULL,
    "win32"
 };

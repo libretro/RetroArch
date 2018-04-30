@@ -52,6 +52,10 @@
 #include "file_path_special.h"
 #include "verbosity.h"
 
+#ifdef HAVE_QT
+#include "ui/ui_companion_driver.h"
+#endif
+
 /* If this is non-NULL. RARCH_LOG and friends
  * will write to this file. */
 static FILE *log_file_fp         = NULL;
@@ -174,16 +178,35 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #else
 
    {
+#ifdef HAVE_QT
+      char buffer[1024];
+#endif
 #ifdef HAVE_FILE_LOGGER
       FILE *fp = (FILE*)retro_main_log_file();
 #else
       FILE *fp = stderr;
 #endif
 
-      fprintf(fp, "%s ",
-            tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
-      vfprintf(fp, fmt, ap);
-      fflush(fp);
+#ifdef HAVE_QT
+      buffer[0] = '\0';
+      vsnprintf(buffer, sizeof(buffer), fmt, ap);
+
+      if (fp)
+      {
+         fprintf(fp, "%s", buffer);
+         fflush(fp);
+      }
+
+      ui_companion_driver_log_msg(buffer);
+#else
+      if (fp)
+      {
+         fprintf(fp, "%s ",
+               tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
+         vfprintf(fp, fmt, ap);
+         fflush(fp);
+      }
+#endif
    }
 #endif
 }
