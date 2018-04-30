@@ -144,9 +144,9 @@ static int action_start_shader_pass(unsigned type, const char *label)
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   menu->hack_shader_pass    = type - MENU_SETTINGS_SHADER_PASS_0;
+   menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
 
-   menu_shader_manager_clear_pass_path((unsigned)menu->hack_shader_pass);
+   menu_shader_manager_clear_pass_path(menu->scratchpad.unsigned_var);
 
    return 0;
 }

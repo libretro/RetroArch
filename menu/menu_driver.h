@@ -369,7 +369,10 @@ typedef struct
    unsigned rpl_entry_selection_ptr;
    unsigned rdb_entry_start_game_selection_ptr;
    size_t                     core_len;
-   size_t                     hack_shader_pass;
+   struct
+   {
+      unsigned                unsigned_var;
+   } scratchpad;
    uint64_t state;
 
    char *core_buf;

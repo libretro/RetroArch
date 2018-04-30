@@ -1298,7 +1298,7 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_SHADER_PASS:
          {
             struct video_shader *shader           = menu_shader_get();
-            struct video_shader_pass *shader_pass = shader ? &shader->pass[(unsigned)menu->hack_shader_pass] : NULL;
+            struct video_shader_pass *shader_pass = shader ? &shader->pass[menu->scratchpad.unsigned_var] : NULL;
             flush_char                            = msg_hash_to_str((enum msg_hash_enums)flush_id);
 
             if (shader_pass)
@@ -3337,7 +3337,7 @@ static int action_ok_shader_pass(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   menu->hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
+   menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
    return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
          entry_idx, ACTION_OK_DL_SHADER_PASS);
 }
