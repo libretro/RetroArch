@@ -2245,6 +2245,14 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_INPUT_SETTINGS,
                MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
                &group_info,

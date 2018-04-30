@@ -271,6 +271,8 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE,
       "deferred_archive_open_detect_core")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST,
       "deferred_audio_settings_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST,
+      "deferred_audio_mixer_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST,
       "deferred_configuration_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST,
@@ -1487,3 +1489,7 @@ MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS,
       "menu_show_overlay_settings")
 MSG_HASH(MENU_ENUM_LABEL_AUDIO_ENABLE_MENU,
       "audio_enable_menu")
+MSG_HASH(MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,
+      "audio_mixer_settings")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST,
+      "deferred_mixer_stream_settings_list")

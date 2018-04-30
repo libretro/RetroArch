@@ -15,6 +15,7 @@
 
 #include <compat/strl.h>
 
+#include "../../audio/audio_driver.h"
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 
@@ -460,6 +461,40 @@ static int action_bind_sublabel_remap_kbd_sublabel(
    return 0;
 }
 
+static int action_bind_sublabel_audio_mixer_stream(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   char msg[64];
+   unsigned         offset = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN);
+   settings_t    *settings = config_get_ptr();
+   audio_mixer_stream_t *stream = audio_driver_mixer_get_stream(offset);
+
+   if (!stream)
+      return 0;
+
+   switch (stream->state)
+   {
+      case AUDIO_STREAM_STATE_NONE:
+         strlcpy(msg, "N/A", sizeof(msg));
+         break;
+      case AUDIO_STREAM_STATE_STOPPED:
+         strlcpy(msg, "Stopped", sizeof(msg));
+         break;
+      case AUDIO_STREAM_STATE_PLAYING:
+         strlcpy(msg, "Playing", sizeof(msg));
+         break;
+      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+         strlcpy(msg, "Playing (Looped)", sizeof(msg));
+         break;
+   }
+
+   snprintf(s, len, "State : %s | Volume: %.2f dB", msg, 
+         stream->volume);
+   return 0;
+}
 
 static int action_bind_sublabel_remap_sublabel(
       file_list_t *list,
@@ -551,6 +586,13 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_sublabel);
+   }
+
+   if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN
+      && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mixer_stream);
+      return 0;
    }
 
    if (cbs->enum_idx != MSG_UNKNOWN)

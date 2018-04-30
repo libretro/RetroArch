@@ -4256,6 +4256,45 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          info->need_clear   = true;
          break;
+      case DISPLAYLIST_MIXER_STREAM_SETTINGS_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         {
+            char lbl_remove[PATH_MAX_LENGTH];
+            char lbl_stop[PATH_MAX_LENGTH];
+            unsigned id               = info->type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN;
+
+            lbl_remove[0] = lbl_stop[0] = '\0';
+
+            snprintf(lbl_stop, sizeof(lbl_stop), "mixer_stream_%d_action_stop", id);
+            snprintf(lbl_remove, sizeof(lbl_remove), "mixer_stream_%d_action_remove", id);
+
+            menu_entries_append_enum(info->list,
+                  "Stop",
+                  lbl_stop,
+                  MSG_UNKNOWN,
+                  (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN  +  id),
+                  0, 0);
+            menu_entries_append_enum(info->list,
+                  "Remove",
+                  lbl_remove,
+                  MSG_UNKNOWN,
+                  (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN  +  id),
+                  0, 0);
+            count++;
+
+            if (count == 0)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                     FILE_TYPE_NONE, 0, 0);
+         }
+
+         info->need_push    = true;
+         info->need_refresh = true;
+         info->need_clear   = true;
+         break;
       case DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST:
          /* TODO/FIXME ? */
          break;
@@ -6054,6 +6093,35 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          info->need_push    = true;
          break;
+      case DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST:
+         {
+            unsigned i;
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+            for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
+            {
+               char msg[128];
+               char msg_lbl[128];
+               snprintf(msg, sizeof(msg), "Mixer Stream #%d :\n", i+1);
+               snprintf(msg_lbl, sizeof(msg_lbl), "audio_mixer_stream_%d\n", i);
+               menu_entries_append_enum(info->list, msg, msg_lbl,
+                     MSG_UNKNOWN,
+                     (MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN  +  i),
+                     0, 0);
+               count++;
+            }
+
+            if (count == 0)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+                     MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                     0, 0, 0);
+
+            info->need_refresh = true;
+            info->need_push    = true;
+         }
+         break;
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_displaylist_parse_settings_enum(menu, info,
@@ -6244,6 +6312,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_VIDEO_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUDIO_SETTINGS,   PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
