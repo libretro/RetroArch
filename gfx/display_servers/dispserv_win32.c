@@ -102,11 +102,11 @@ static void* win32_display_server_init(void)
 
 static void win32_display_server_destroy(void *data)
 {
-   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
-
-   if (win32_orig_width > 0 && win32_orig_height > 0)
+   if (orig_width > 0 && orig_height > 0 )
       video_display_server_switch_resolution(win32_orig_width, win32_orig_height,
-         0, 60);
+         60, 60);
+
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
 
 #ifdef HAS_TASKBAR_EXT
    if (g_taskbarList && win32_taskbar_is_created())
@@ -200,14 +200,14 @@ static bool win32_set_window_decorations(void *data, bool on)
 }
 
 static bool win32_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int f_restore, float hz)
+      unsigned width, unsigned height, int win_hz, float hz)
 {
    LONG res;
    DEVMODE curDevmode;
    DEVMODE devmode;
 
    int iModeNum;
-   int freq               = 0;
+   int freq               = win_hz;
    DWORD flags            = 0;
    int depth              = 0;
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
@@ -215,24 +215,10 @@ static bool win32_display_server_set_resolution(void *data,
    if (!serv)
       return false;
   
-   if (win32_orig_width == 0)
-	   win32_orig_width          = GetSystemMetrics(SM_CXSCREEN);
-   if (win32_orig_height == 0)
-	   win32_orig_height         = GetSystemMetrics(SM_CYSCREEN);
-   
-   /* set hz float to an int for windows switching */
-   if (hz < 53)
-      hz = 50;	
-   if (hz >= 53  &&  hz < 57)
-      hz = 55;	
-   if (hz >= 57)
-      hz = 60;	
-
-   video_monitor_set_refresh_rate(hz);
-   
-   
-   if (f_restore == 0)
-      freq                = hz;
+   if (orig_width == 0)
+	   orig_width          = GetSystemMetrics(SM_CXSCREEN);
+   if (orig_height == 0)
+	   orig_height         = GetSystemMetrics(SM_CYSCREEN);
 
    EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
 
