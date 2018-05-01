@@ -2090,12 +2090,12 @@ static void menu_input_st_string_cb_cheat_file_save_as(
    menu_input_dialog_end();
 }
 
-#define default_action_dialog_start(funcname, _label_setting, _idx, _cb) \
-static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
+#define default_action_dialog_start(funcname, _label, _idx, _cb) \
+static int (funcname)(const char *path, const char *label_setting, unsigned type, size_t idx, size_t entry_idx) \
 { \
    menu_input_ctx_line_t line; \
-   line.label         = label; \
-   line.label_setting = _label_setting; \
+   line.label         = _label; \
+   line.label_setting = label_setting; \
    line.type          = type; \
    line.idx           = (_idx); \
    line.cb            = _cb; \
