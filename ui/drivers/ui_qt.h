@@ -155,6 +155,7 @@ private:
    QColor m_highlightColor;
    QLabel *m_highlightColorLabel;
    QString m_customThemePath;
+   QCheckBox *m_suggestLoadedCoreFirstCheckBox;
 };
 
 class CoreInfoLabel : public QLabel

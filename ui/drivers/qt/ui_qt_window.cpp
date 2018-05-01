@@ -238,6 +238,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    ,m_highlightColor()
    ,m_highlightColorLabel(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR), this))
    ,m_customThemePath()
+   ,m_suggestLoadedCoreFirstCheckBox(new QCheckBox(this))
 {
    QFormLayout *form = new QFormLayout();
    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -263,6 +264,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS), m_saveDockPositionsCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB), m_saveLastTabCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES), m_showHiddenFilesCheckBox);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST), m_suggestLoadedCoreFirstCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME), m_themeComboBox);
    form->addRow(m_highlightColorLabel, m_highlightColorPushButton);
 
@@ -337,6 +339,7 @@ void ViewOptionsDialog::loadViewOptions()
    m_saveDockPositionsCheckBox->setChecked(m_settings->value("save_dock_positions", false).toBool());
    m_saveLastTabCheckBox->setChecked(m_settings->value("save_last_tab", false).toBool());
    m_showHiddenFilesCheckBox->setChecked(m_settings->value("show_hidden_files", true).toBool());
+   m_suggestLoadedCoreFirstCheckBox->setChecked(m_settings->value("suggest_loaded_core_first", false).toBool());
 
    themeIndex = m_themeComboBox->findData(m_mainwindow->getThemeFromString(m_settings->value("theme", "default").toString()));
 
@@ -375,6 +378,7 @@ void ViewOptionsDialog::saveViewOptions()
    m_settings->setValue("theme", m_mainwindow->getThemeString(static_cast<MainWindow::Theme>(m_themeComboBox->currentData(Qt::UserRole).toInt())));
    m_settings->setValue("show_hidden_files", m_showHiddenFilesCheckBox->isChecked());
    m_settings->setValue("highlight_color", m_highlightColor);
+   m_settings->setValue("suggest_loaded_core_first", m_suggestLoadedCoreFirstCheckBox->isChecked());
 
    if (!m_mainwindow->customThemeString().isEmpty())
       m_settings->setValue("custom_theme", m_customThemePath);
@@ -1782,6 +1786,9 @@ void MainWindow::onRunClicked()
    if (!item)
       return;
 
+   if (m_pendingRun)
+      coreSelection = CORE_SELECTION_CURRENT;
+
    contentHash = item->data(Qt::UserRole).value<QHash<QString, QString> >();
 
    if (coreSelection == CORE_SELECTION_ASK)
@@ -1892,6 +1899,9 @@ void MainWindow::onRunClicked()
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
 
+   menu_navigation_set_selection(0);
+   command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+
    if (!task_push_load_content_from_playlist_from_menu(
             corePath, contentPath, contentLabel,
             &content_info,
@@ -1982,7 +1992,7 @@ void MainWindow::setCoreActions()
    else
       m_startCorePushButton->hide();
 
-   if (isCoreLoaded())
+   if (isCoreLoaded() && m_settings->value("suggest_loaded_core_first", false).toBool())
    {
       QVariantMap comboBoxMap;
       comboBoxMap["core_name"] = m_currentCore;
@@ -2640,8 +2650,8 @@ void MainWindow::onCoreLoaded()
 
    if (m_pendingRun)
    {
-      m_pendingRun = false;
       onRunClicked();
+      m_pendingRun = false;
    }
 }
 
