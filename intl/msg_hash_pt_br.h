@@ -871,6 +871,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
       "Alternar captura do Mouse")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
       "Alternar foco do jogo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
+      "Alternar menu desktop")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
       "Carregar Estado de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
@@ -1361,7 +1363,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
       "Habilitar Rebobinagem")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
-      "Granularidade do Voltar Atrás")
+      "Granularidade da Rebobinagem")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
       "Rebobinagem")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
@@ -1658,6 +1660,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
       "Habilitar Companheiro da Interface de Usuário")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
       "Companheiro da Interface de Usuário Roda na Inicialização")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
+      "Mostrar menu desktop na inicialização")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+      "Ativar menu desktop (reiniciar)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
       "Barra de Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
@@ -1849,7 +1855,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
       "Monocromático")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
-       "Monocromático Inverted")
+       "Monocromático Invertido")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
       "Sistemático")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE,
@@ -3491,10 +3497,14 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
       "Ativar espessura de preenchimento de borda")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
       "Ativar espessura de preenchimento do plano de fundo")
-MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION, "Para monitores CRT de 15 kHz apenas. Tenta usar a resolução exata do núcleo/jogo e a taxa de atualização.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION, "Trocar para Resolução CRT") 
-MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER, "Quando Trocar para Resolução CRT está ativada, força a resolução horizontal ultrawide  para minimizar a alternância de modo.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER, "Super Resolução CRT") 
+MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+      "Para monitores CRT de 15 kHz apenas. Tenta usar a resolução exata do núcleo/jogo e a taxa de atualização.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+      "Trocar para Resolução CRT")
+MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+      "Quando Trocar para Resolução CRT está ativada, força a resolução horizontal ultrawide  para minimizar a alternância de modo.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+      "Super Resolução CRT")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
       "Mostrar Configurações de Rebobinagem")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
@@ -3515,3 +3525,121 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
       "Configurações do Mixer")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
       "Visualizar e/ou modificar as configurações do mixer de áudio.") 
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_INFO,
+      "Informação")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
+      "&Arquivo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
+      "&Carregar Núcleo...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
+      "&Descarregar Núcleo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT,
+      "Sai&r")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT,
+      "&Editar")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH,
+      "&Pesquisar")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
+      "&Visualizar")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS,
+      "Docas Fechadas")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
+      "&Opções...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
+      "Lembrar posições da doca:")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+      "Lembrar geometria da janela:")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+      "Lembrar a última guia do navegador de conteúdo:")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
+      "Tema")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT,
+      "<Padrão do Sistema>")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
+      "Escuro")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
+      "Personalizado...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+      "Opções")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
+      "Carregar Núcleo Personalizado...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+      "Carregar Núcleo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
+      "Carregando Núcleo...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_NAME,
+      "Nome")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
+      "Versão")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+      "Listas de Reprodução")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+      "Navegador de Arquivos")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
+      "Topo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
+      "Subir")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
+      "Navegador de Conteúdo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
+      "Arte da Capa")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
+      "Captura de Tela")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+      "Tela de Título")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
+      "Todas as Listas de Reprodução")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CORE,
+      "Núcleo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
+      "Informação do Núcleo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
+      "<Me pergunte>")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
+      "Informação")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_WARNING,
+      "Advertência")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_ERROR,
+      "Erro")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
+      "Por favor, reinicie o programa para que as alterações entrem em vigor.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_LOG,
+      "Relatório")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
+      "Verificação Terminada.<br><br>\n"
+      "Para que o conteúdo seja digitalizado corretamente, você deve:\n"
+      "<ul><li>ter um núcleo compatível já baixado</li>\n"
+      "<li>ter os \"Arquivos de Informação de Núcleo\" atualizados via Atualizador Online</li>\n"
+      "<li>ter a \"Base de Dados\" atualizada via Atualizador Online</li>\n"
+      "<li>reiniciar o RetroArch caso alguma das situações acima tenha sido feita</li></ul>\n"
+      "E finalmente, o conteúdo deve corresponder as bases de dados existentes <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">aqui</a>. Se ainda não estiver funcionando, considere <a href=\"https://www.github.com/libretro/RetroArch/issues\">enviar um relatório de erro</a>.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
+      "Não mostrar isto novamente")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_STOP,
+      "Parar")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+      "Associar Núcleo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
+      "Ocultar Listas de Reprodução")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_HIDE,
+      "Ocultar")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+      "Cor de Destaque")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
+      "&Escolher...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
+      "Selecionar Cor")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SELECT_THEME,
+      "Selecionar Tema")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
+      "Tema Personalizado")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
+      "O caminho do arquivo está em branco.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
+      "O arquivo está vazio.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+      "Não foi possível abrir o arquivo para leitura.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
+      "O arquivo não existe.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+      "Sugerir primeiro núcleo carregado")
