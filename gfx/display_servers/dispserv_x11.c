@@ -98,36 +98,14 @@ static bool x11_set_resolution(void *data,
    char fbset[150];
    char output[150];
 
-   hsp = width*1.10;
+   hsp = width*1.14;
       
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);	  
    
    /* following code is the mode line genorator */
-	 
-   if (width < 599)
-   {
-      hfp = width+8;
-      hbp = width*1.10;
-   }
-   if (width > 599 && width < 1919)
-   {
-      hfp = width+16;
-      hbp = width*1.18;
-   } 
-
-   if (width > 1919 && width < 2559)
-   {
-      hfp = width+32;
-      hbp = width*1.20;
-   } 
-
-   if (width > 2559)
-   {
-      hfp = width+48;
-      hbp = width*1.24;
-   } 
-
+   hfp = width+24;
+   hbp = width*1.26;
    hmax = hbp;
    
    if (height < 241)
@@ -221,14 +199,14 @@ static bool x11_set_resolution(void *data,
    /* create progressive newmode from modline variables */
    if (height < 300)
    {
-      sprintf(xrandr,"xrandr --newmode \"%dx%d_%0.2f\" %0.2f %d %d %d %d %d %d %d %d -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
+      sprintf(xrandr,"xrandr --newmode \"%dx%d_%0.2f\" %lf %d %d %d %d %d %d %d %d -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
       system(xrandr);
 
    }
    /* create interlaced newmode from modline variables */
    if (height > 300)
    {    
-      sprintf(xrandr,"xrandr --newmode \"%dx%d_%0.2f\" %0.2f %d %d %d %d %d %d %d %d interlace -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
+      sprintf(xrandr,"xrandr --newmode \"%dx%d_%0.2f\" %lf %d %d %d %d %d %d %d %d interlace -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
       system(xrandr);
 
    }
