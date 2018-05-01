@@ -193,7 +193,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 
       if (fp)
       {
-         fprintf(fp, "%s", buffer);
+         fprintf(fp, "%s %s", tag ? tag : file_path_str(FILE_PATH_LOG_INFO), buffer);
          fflush(fp);
       }
 
