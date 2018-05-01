@@ -66,7 +66,7 @@ static void switch_crt_hz(void)
 }
 
 
-static void crt_aspect_ratio_switch(unsigned width, unsigned height)
+void crt_aspect_ratio_switch(unsigned width, unsigned height)
 {
    /* send aspect float to videeo_driver */
    fly_aspect = (float)width / height;
