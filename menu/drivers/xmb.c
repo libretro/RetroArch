@@ -169,6 +169,22 @@ enum
    XMB_TEXTURE_RETROPAD_X,
    XMB_TEXTURE_RETROPAD_L,
    XMB_TEXTURE_RETROPAD_R,
+   XMB_TEXTURE_RETROPAD_L2,
+   XMB_TEXTURE_RETROPAD_R2,
+   XMB_TEXTURE_RETROPAD_L3,
+   XMB_TEXTURE_RETROPAD_R3,
+   XMB_TEXTURE_RETROPAD_DPAD_UP,
+   XMB_TEXTURE_RETROPAD_DPAD_DOWN,
+   XMB_TEXTURE_RETROPAD_DPAD_LEFT,
+   XMB_TEXTURE_RETROPAD_DPAD_RIGHT,
+   XMB_TEXTURE_RETROPAD_LEFT_STICK_UP,
+   XMB_TEXTURE_RETROPAD_LEFT_STICK_DOWN,
+   XMB_TEXTURE_RETROPAD_LEFT_STICK_LEFT,
+   XMB_TEXTURE_RETROPAD_LEFT_STICK_RIGHT,
+   XMB_TEXTURE_RETROPAD_RIGHT_STICK_UP,
+   XMB_TEXTURE_RETROPAD_RIGHT_STICK_DOWN,
+   XMB_TEXTURE_RETROPAD_RIGHT_STICK_LEFT,
+   XMB_TEXTURE_RETROPAD_RIGHT_STICK_RIGHT,
    XMB_TEXTURE_LAST
 
 };
@@ -911,11 +927,11 @@ static void xmb_render_messagebox_internal(
    menu_display_blend_begin(video_info);
 
    xmb_draw_icon(video_info,
-         xmb->icon_size * 2,
+         xmb->icon_size * 3,
          &mymat_tmp,
          texture,
-         800,
-         500,
+         video_info->width / 2 - (xmb->icon_size * 3) / 2,
+         video_info->height / 3,
          video_info->width,
          video_info->height,
          1.0,
@@ -4393,15 +4409,49 @@ static const char *xmb_texture_path(unsigned id)
       case XMB_TEXTURE_DIALOG_SLICE:
          return "dialog-slice.png";
       case XMB_TEXTURE_RETROPAD:
-      case XMB_TEXTURE_RETROPAD_B:
-      case XMB_TEXTURE_RETROPAD_Y:
-      case XMB_TEXTURE_RETROPAD_SELECT:
-      case XMB_TEXTURE_RETROPAD_START:
-      case XMB_TEXTURE_RETROPAD_A:
-      case XMB_TEXTURE_RETROPAD_X:
-      case XMB_TEXTURE_RETROPAD_L:
-      case XMB_TEXTURE_RETROPAD_R:
          return "input/retropad.png";
+      case XMB_TEXTURE_RETROPAD_B:
+         return "input/retropad_b.png";
+      case XMB_TEXTURE_RETROPAD_Y:
+         return "input/retropad_y.png";
+      case XMB_TEXTURE_RETROPAD_SELECT:
+         return "input/retropad_select.png";
+      case XMB_TEXTURE_RETROPAD_START:
+         return "input/retropad_start.png";
+      case XMB_TEXTURE_RETROPAD_A:
+         return "input/retropad_a.png";
+      case XMB_TEXTURE_RETROPAD_X:
+         return "input/retropad_x.png";
+      case XMB_TEXTURE_RETROPAD_L:
+         return "input/retropad_l.png";
+      case XMB_TEXTURE_RETROPAD_R:
+         return "input/retropad_r.png";
+      case XMB_TEXTURE_RETROPAD_L2:
+         return "input/retropad_l2.png";
+      case XMB_TEXTURE_RETROPAD_R2:
+         return "input/retropad_r2.png";
+      case XMB_TEXTURE_RETROPAD_L3:
+         return "input/retropad_l3.png";
+      case XMB_TEXTURE_RETROPAD_R3:
+         return "input/retropad_r3.png";
+      case XMB_TEXTURE_RETROPAD_DPAD_UP:
+         return "input/retropad_dpad_up.png";
+      case XMB_TEXTURE_RETROPAD_DPAD_DOWN:
+         return "input/retropad_dpad_down.png";
+      case XMB_TEXTURE_RETROPAD_DPAD_LEFT:
+         return "input/retropad_dpad_left.png";
+      case XMB_TEXTURE_RETROPAD_DPAD_RIGHT:
+         return "input/retropad_right.png";
+      case XMB_TEXTURE_RETROPAD_LEFT_STICK_UP:
+      case XMB_TEXTURE_RETROPAD_LEFT_STICK_DOWN:
+      case XMB_TEXTURE_RETROPAD_LEFT_STICK_LEFT:
+      case XMB_TEXTURE_RETROPAD_LEFT_STICK_RIGHT:
+         return "input/retropad_left_stick.png";
+      case XMB_TEXTURE_RETROPAD_RIGHT_STICK_UP:
+      case XMB_TEXTURE_RETROPAD_RIGHT_STICK_DOWN:
+      case XMB_TEXTURE_RETROPAD_RIGHT_STICK_LEFT:
+      case XMB_TEXTURE_RETROPAD_RIGHT_STICK_RIGHT:
+         return "input/retropad_right_stick.png";
 
 
 
