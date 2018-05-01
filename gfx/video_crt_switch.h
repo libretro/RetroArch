@@ -29,6 +29,8 @@ RETRO_BEGIN_DECLS
 
 void crt_switch_res_core(unsigned width, unsigned height, float hz);
 
+void crt_aspect_ratio_switch(unsigned width, unsigned height);
+
 void crt_video_restore(void);
 
 RETRO_END_DECLS
