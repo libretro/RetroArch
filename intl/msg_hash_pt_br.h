@@ -3642,4 +3642,4 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
       "O arquivo não existe.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
-      "Sugerir carregar núcleo primeiro")
+      "Sugerir primeiro núcleo carregado")
