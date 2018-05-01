@@ -87,9 +87,14 @@ if [ "$HAVE_QT" != "no" ]; then
 	echobuf="Checking for moc"
 	if [ -z "$MOC" ]; then
 		MOC="$(exists "moc")" || MOC=""
-		[ -z "$MOC" ] && die 1 "$echobuf ... Not found. Exiting."
+		if [ -z "$MOC" ]; then
+			die : "$echobuf ... Not found."
+		else
+			echo "$echobuf ... $MOC"
+		fi
+	else
+		echo "$echobuf ... $MOC"
 	fi
-	echo "$echobuf ... $MOC"
 fi
 
 if [ -z "$PKG_CONF_PATH" ]; then
