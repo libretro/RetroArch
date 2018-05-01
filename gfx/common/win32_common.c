@@ -92,6 +92,9 @@ extern void *dinput_wgl;
 extern void *dinput;
 #endif
 
+typedef LONG(CALLBACK* QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_INFO*, UINT32*, DISPLAYCONFIG_MODE_INFO*, DISPLAYCONFIG_TOPOLOGY_ID*);
+typedef LONG(CALLBACK* GETDISPLAYCONFIGBUFFERSIZES)(UINT32, UINT32*, UINT32*);
+
 static bool g_resized               = false;
 bool g_restore_desktop              = false;
 static bool doubleclick_on_titlebar = false;
@@ -1276,6 +1279,18 @@ float win32_get_refresh_rate(void *data)
    DISPLAYCONFIG_PATH_INFO *PathInfoArray  = NULL;
    DISPLAYCONFIG_MODE_INFO *ModeInfoArray  = NULL;
    int result                              = 0;
+#ifdef HAVE_DYNAMIC
+	static QUERYDISPLAYCONFIG pQueryDisplayConfig;
+	static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes;
+	if (!pQueryDisplayConfig)
+		pQueryDisplayConfig = (QUERYDISPLAYCONFIG)GetProcAddress(GetModuleHandle("user32.dll"), "QueryDisplayConfig");
+
+	if (!pGetDisplayConfigBufferSizes)
+		pGetDisplayConfigBufferSizes = (GETDISPLAYCONFIGBUFFERSIZES)GetProcAddress(GetModuleHandle("user32.dll"), "GetDisplayConfigBufferSizes");
+#else
+	static QUERYDISPLAYCONFIG pQueryDisplayConfig                   = QueryDisplayConfig;
+	static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes = GetDisplayConfigBufferSizes;
+#endif
 
    version_info.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
    if (!GetVersionEx(&version_info))
@@ -1285,7 +1300,7 @@ float win32_get_refresh_rate(void *data)
        (version_info.dwMajorVersion == 6 && version_info.dwMinorVersion < 1))
        return refresh_rate;
 
-   result = GetDisplayConfigBufferSizes(QDC_DATABASE_CURRENT,
+   result = pGetDisplayConfigBufferSizes(QDC_DATABASE_CURRENT,
                                         &NumPathArrayElements,
                                         &NumModeInfoArrayElements);
 
@@ -1297,12 +1312,13 @@ float win32_get_refresh_rate(void *data)
    ModeInfoArray = (DISPLAYCONFIG_MODE_INFO *)
       malloc(sizeof(DISPLAYCONFIG_MODE_INFO) * NumModeInfoArrayElements);
 
-   result = QueryDisplayConfig(QDC_DATABASE_CURRENT,
+   result = pQueryDisplayConfig(QDC_DATABASE_CURRENT,
                                &NumPathArrayElements,
                                PathInfoArray,
                                &NumModeInfoArrayElements,
                                ModeInfoArray,
                                &TopologyID);
+
    if (result == ERROR_SUCCESS && NumPathArrayElements >= 1)
    {
       refresh_rate = (float) PathInfoArray[0].targetInfo.refreshRate.Numerator /
