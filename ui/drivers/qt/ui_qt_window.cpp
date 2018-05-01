@@ -520,7 +520,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_coreInfoPushButton->setFixedSize(m_coreInfoPushButton->sizeHint());
 
    searchResetButton = new QToolButton(m_searchWidget);
-   searchResetButton->setDefaultAction(new QAction("Clr", searchResetButton));
+   searchResetButton->setDefaultAction(new QAction("Clear", searchResetButton));
    searchResetButton->setFixedSize(searchResetButton->sizeHint());
 
    connect(searchResetButton, SIGNAL(clicked()), this, SLOT(onSearchResetClicked()));
