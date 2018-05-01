@@ -1,5 +1,6 @@
 <!-- <!DOCTYPE manifest [ <!ENTITY % versionDTD SYSTEM "../../../version.dtd"> %versionDTD; ]> !-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools"
     package="com.retroarch"
     android:versionCode="1556806339"
     android:versionName="1.7.7"
@@ -24,7 +25,8 @@
         android:label="RetroArch"
         android:hasCode="true"
         android:isGame="true"
-        android:banner="@drawable/banner">
+        android:banner="@drawable/banner"
+        tools:ignore="UnusedAttribute">
         <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
         <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true" android:launchMode="singleInstance">
             <intent-filter>
