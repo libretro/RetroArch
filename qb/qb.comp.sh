@@ -86,14 +86,20 @@ fi
 if [ "$HAVE_QT" != "no" ]; then
 	echobuf="Checking for moc"
 	if [ -z "$MOC" ]; then
-		MOC="$(exists "moc")" || MOC=""
-		if [ -z "$MOC" ]; then
-			die : "$echobuf ... Not found."
-		else
-			echo "$echobuf ... $MOC"
-		fi
-	else
-		echo "$echobuf ... $MOC"
+		MOC_PATH="none"
+		for moc in moc-qt5 moc; do
+			MOC="$(exists "$moc")" || MOC=""
+			[ "${MOC}" ] && {
+				MOC_PATH="$MOC"
+				break
+			}
+		done
+	fi
+
+	echo "$echobuf ... $MOC_PATH"
+
+	if [ "$MOC_PATH" = "none" ]; then
+		die : 'Warning: moc not found, Qt companion support will be disabled.'
 	fi
 fi
 
