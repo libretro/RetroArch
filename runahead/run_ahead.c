@@ -361,7 +361,10 @@ static bool runahead_create(void)
 static bool runahead_save_state(void)
 {
    bool okay                                  = false;
-   retro_ctx_serialize_info_t *serialize_info =
+   retro_ctx_serialize_info_t *serialize_info;
+   if (!runahead_save_state_list)
+      return false;
+   serialize_info =
       (retro_ctx_serialize_info_t*)runahead_save_state_list->data[0];
    set_fast_savestate();
    okay = core_serialize(serialize_info);
