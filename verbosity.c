@@ -213,17 +213,18 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 
 void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
 {
-   int i, offset;
+   unsigned i, offset;
    int padding = size % 16;
    uint8_t buf[16];
 
    RARCH_LOG("== %d-byte buffer ==================\n", size);
+
    for(i = 0, offset = 0; i < size; i++)
    {
       buf[offset] = data[i];
       offset++;
 
-      if(offset == 16)
+      if (offset == 16)
       {
          offset = 0;
          RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
