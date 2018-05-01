@@ -1324,6 +1324,9 @@ QList<QHash<QString, QString> > MainWindow::getCoreInfo()
 
    core_info_get_list(&core_info_list);
 
+   if (!core_info_list || core_info_list->count == 0)
+      return infoList;
+
    for (i = 0; i < core_info_list->count; i++)
    {
       const core_info_t *core = &core_info_list->list[i];
