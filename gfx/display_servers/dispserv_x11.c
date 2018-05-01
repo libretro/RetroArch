@@ -26,6 +26,7 @@
 
 static char old_mode[150];
 static char new_mode[150];
+static bool crt_en     = false;
 
 typedef struct
 {
@@ -47,7 +48,8 @@ static void x11_display_server_destroy(void *data)
 {
    dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
 
-   system("xrandr -s 704x480");
+   if (crt_en == true)
+      system("xrandr -s 704x480");
 
    if (dispserv)
       free(dispserv);
@@ -99,6 +101,8 @@ static bool x11_set_resolution(void *data,
    char fbset[150];
    char output[150];
 
+   crt_en = true;
+
    hsp = width*1.12;
       
    /* set core refresh from hz */
@@ -110,6 +114,7 @@ static bool x11_set_resolution(void *data,
       width = width*2;
       crt_aspect_ratio_switch(width, height);
    }
+
    hfp = width+16;
    hbp = width*1.22;
    hmax = hbp;
