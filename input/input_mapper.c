@@ -84,11 +84,16 @@ void input_mapper_free(input_mapper_t *handle)
 void input_mapper_poll(input_mapper_t *handle)
 {
    unsigned i, j;
-   input_bits_t current_input;
+   input_bits_t current_input, current_overlay_input;
    settings_t *settings                       = config_get_ptr();
-   unsigned max_users                         = 
+   unsigned max_users                         =
       *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    bool key_event[RARCH_CUSTOM_BIND_LIST_END] = { false };
+   bool poll_overlay = false;
+
+   if (input_overlay_is_alive(overlay_ptr))
+      poll_overlay = true;
+
 
 #ifdef HAVE_MENU
    if (menu_driver_is_alive())
@@ -158,7 +163,10 @@ void input_mapper_poll(input_mapper_t *handle)
             for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
             {
                unsigned current_button_value = BIT256_GET(current_input, j);
-               unsigned remap_button         = 
+               if (poll_overlay && i == 0)
+                  current_button_value |= input_overlay_key_pressed(overlay_ptr, j);
+
+               unsigned remap_button         =
                   settings->uints.input_remap_ids[i][j];
                bool remap_valid              = (current_button_value == 1) &&
                   (j != remap_button) && (remap_button != RARCH_UNMAPPED);
