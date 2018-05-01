@@ -29,6 +29,7 @@ ifneq ($(V), 1)
 endif
 
 OBJ :=
+OBJ += wiiu/main.o
 OBJ += wiiu/input/wpad_driver.o
 OBJ += wiiu/input/kpad_driver.o
 OBJ += wiiu/input/pad_functions.o
