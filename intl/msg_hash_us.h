@@ -871,6 +871,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
       "Grab mouse toggle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
       "Game focus toggle")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
+      "Desktop menu toggle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
       "Load state")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
@@ -1657,6 +1659,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
       "UI Companion Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
       "UI Companion Start On Boot")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
+      "Show desktop menu on startup")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+      "Enable desktop menu (restart)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
       "Menubar")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
@@ -2034,7 +2040,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
 MSG_HASH(MSG_ADDED_TO_FAVORITES,
       "Added to favorites")
 MSG_HASH(MSG_RESET_CORE_ASSOCIATION,
-      "Playlist entry core association has been reset.")      
+      "Playlist entry core association has been reset.")
 MSG_HASH(MSG_APPENDED_DISK,
       "Appended disk")
 MSG_HASH(MSG_APPLICATION_DIR,
@@ -3490,10 +3496,14 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
       "Enable border filler thickness")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
       "Enable background filler thickness")
-MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION, "For 15 kHz CRT displays only. Attempts to use exact core/game resolution and refresh rate.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION, "CRT SwitchRes") 
-MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER, "When CRT SwitchRes is enabled, force ultrawide horizontal resolution to minimize mode switching.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER, "CRT Super Resolution") 
+MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+      "For 15 kHz CRT displays only. Attempts to use exact core/game resolution and refresh rate.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+      "CRT SwitchRes")
+MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+      "When CRT SwitchRes is enabled, force ultrawide horizontal resolution to minimize mode switching.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+      "CRT Super Resolution")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
       "Show Rewind Settings")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
@@ -3514,3 +3524,121 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
       "Mixer Settings")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
       "View and/or modify audio mixer settings.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_INFO,
+      "Info")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
+      "&File")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
+      "&Load Core...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
+      "&Unload Core")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT,
+      "E&xit")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT,
+      "&Edit")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH,
+      "&Search")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
+      "&View")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS,
+      "Closed Docks")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
+      "&Options...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
+      "Remember dock positions:")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+      "Remember window geometry:")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+      "Remember last content browser tab:")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
+      "Theme")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT,
+      "<System Default>")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
+      "Dark")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
+      "Custom...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+      "Options")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
+      "Load Custom Core...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+      "Load Core")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
+      "Loading Core...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_NAME,
+      "Name")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
+      "Version")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+      "Playlists")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+      "File Browser")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
+      "Top")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
+      "Up")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
+      "Content Browser")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
+      "Boxart")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
+      "Screenshot")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+      "Title Screen")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
+      "All Playlists")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CORE,
+      "Core")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
+      "Core Info")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
+      "<Ask me>")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
+      "Information")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_WARNING,
+      "Warning")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_ERROR,
+      "Error")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
+      "Please restart the program for the changes to take effect.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_LOG,
+      "Log")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
+      "Scan Finished.<br><br>\n"
+      "In order for content to be correctly scanned, you must:\n"
+      "<ul><li>have a compatible core already downloaded</li>\n"
+      "<li>have \"Core Info Files\" updated via Online Updater</li>\n"
+      "<li>have \"Databases\" updated via Online Updater</li>\n"
+      "<li>restart RetroArch if any of the above was just done</li></ul>\n"
+      "Finally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
+      "Don't show this again")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_STOP,
+      "Stop")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+      "Associate Core")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
+      "Hidden Playlists")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_HIDE,
+      "Hide")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+      "Highlight Color")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
+      "&Choose...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
+      "Select Color")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SELECT_THEME,
+      "Select Theme")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
+      "Custom Theme")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
+      "File path is blank.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
+      "File is empty.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+      "Could not open file for reading.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
+      "File does not exist.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+      "Suggest loaded core first")

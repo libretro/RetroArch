@@ -434,7 +434,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 
 #ifndef _XBOX
 static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
-		WPARAM wparam, LPARAM lparam)
+      WPARAM wparam, LPARAM lparam)
 {
    uint16_t mod          = 0;
 
@@ -818,7 +818,7 @@ bool win32_window_create(void *data, unsigned style,
    notification_filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
    notification_filter.dbcc_classguid  = GUID_DEVINTERFACE_HID;
    notification_handler                = RegisterDeviceNotification(
-	   main_window.hwnd, &notification_filter, DEVICE_NOTIFY_WINDOW_HANDLE);
+      main_window.hwnd, &notification_filter, DEVICE_NOTIFY_WINDOW_HANDLE);
 
    if (!notification_handler)
       RARCH_ERR("Error registering for notifications\n");
@@ -1029,7 +1029,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
       float refresh_mod    = settings->bools.video_black_frame_insertion ? 2.0f : 1.0f;
       unsigned refresh     = roundf(settings->floats.video_refresh_rate
             * refresh_mod * settings->uints.video_swap_interval);
-     
+
       if (windowed_full)
       {
          *style          = WS_EX_TOPMOST | WS_POPUP;

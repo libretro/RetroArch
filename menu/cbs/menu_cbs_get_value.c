@@ -31,6 +31,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_driver.h"
 
+#include "../../audio/audio_driver.h"
 #include "../../core.h"
 #include "../../core_info.h"
 #include "../../configuration.h"
@@ -55,6 +56,26 @@
 #endif
 
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
+
+static void menu_action_setting_audio_mixer_stream_volume(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   unsigned         offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
+
+   *w = 19;
+   strlcpy(s2, path, len2);
+
+   if (offset >= AUDIO_MIXER_MAX_STREAMS)
+      return;
+
+   snprintf(s, len, "%.2f dB", audio_driver_mixer_get_stream_volume(offset));
+}
 
 static void menu_action_setting_disp_set_label_cheat_num_passes(
       file_list_t* list,
@@ -2094,7 +2115,13 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
 static int menu_cbs_init_bind_get_string_representation_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
-   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+   if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
+         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_audio_mixer_stream_volume);
+   }
+   else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_GET_VALUE(cbs,

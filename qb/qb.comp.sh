@@ -83,6 +83,15 @@ if [ "$OS" = "Win32" ]; then
 	echo "$echobuf ... $WINDRES"
 fi
 
+if [ "$HAVE_QT" != "no" ]; then
+	echobuf="Checking for moc"
+	if [ -z "$MOC" ]; then
+		MOC="$(exists "moc")" || MOC=""
+		[ -z "$MOC" ] && die 1 "$echobuf ... Not found. Exiting."
+	fi
+	echo "$echobuf ... $MOC"
+fi
+
 if [ -z "$PKG_CONF_PATH" ]; then
 	PKG_CONF_PATH="none"
 	for pkgconf in pkgconf pkg-config; do

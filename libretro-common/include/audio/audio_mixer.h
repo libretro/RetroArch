@@ -73,6 +73,10 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
 
 void audio_mixer_stop(audio_mixer_voice_t* voice);
 
+float audio_mixer_voice_get_volume(audio_mixer_voice_t *voice);
+
+void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val);
+
 void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bool override);
 
 RETRO_END_DECLS

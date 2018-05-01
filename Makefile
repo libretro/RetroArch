@@ -150,7 +150,28 @@ ifneq ($(findstring $(GPERFTOOLS),tcmalloc),)
    LIBS += -ltcmalloc
 endif
 
+# Qt MOC generation, required for QObject-derived classes
+ifneq ($(MOC_HEADERS),)
+    # prefix moc_ to base filename of paths and change extension from h to cpp, so a/b/foo.h becomes a/b/moc_foo.cpp
+    MOC_SRC := $(join $(addsuffix moc_,$(addprefix $(OBJDIR)/,$(dir $(MOC_HEADERS)))), $(notdir $(MOC_HEADERS:.h=.cpp)))
+    MOC_OBJ := $(patsubst %.cpp,%.o,$(MOC_SRC))
+    RARCH_OBJ += $(MOC_OBJ)
+endif
+
 all: $(TARGET) config.mk
+
+$(MOC_SRC):
+	@$(if $(Q), $(shell echo echo MOC $<),)
+	$(eval MOC_TMP := $(patsubst %.h,%_moc.cpp,$@))
+	$(Q)$(MOC) -o $(MOC_TMP) $<
+
+$(foreach x,$(join $(addsuffix :,$(MOC_SRC)),$(MOC_HEADERS)),$(eval $x))
+
+$(MOC_OBJ):
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
+
+$(foreach x,$(join $(addsuffix :,$(MOC_OBJ)),$(MOC_SRC)),$(eval $x))
 
 ifeq ($(MAKECMDGOALS),clean)
 config.mk:
@@ -250,3 +271,6 @@ clean:
 	rm -f *.d
 
 .PHONY: all install uninstall clean
+
+print-%:
+	@echo '$*=$($*)'

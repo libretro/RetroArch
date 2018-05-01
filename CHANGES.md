@@ -4,6 +4,7 @@
 - HID: Merge new HID subsystem.
 - HID: Fix WaveBird support for the Wii U GCA.
 - LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Japanese translation.
 - MENU: Audio mixer now works in the menu without any cores loaded. You have to enable the setting 'Enable menu audio' for this to work.
 - SCANNER: Add Wii Backup File WBFS support.
 - X11: CRT SwitchRes support for X11/Linux.

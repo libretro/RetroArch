@@ -43,6 +43,7 @@ typedef struct
    char *path;
    void *config_data;
    char *display_name;
+   char *display_version;
    char *core_name;
    char *system_manufacturer;
    char *systemname;

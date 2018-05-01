@@ -229,6 +229,8 @@ static void *video_context_data                          = NULL;
 static bool deferred_video_context_driver_set_flags      = false;
 static gfx_ctx_flags_t deferred_flag_data                = {0};
 
+static bool video_started_fullscreen                     = false;
+
 static shader_backend_t *current_shader                  = NULL;
 static void *current_shader_data                         = NULL;
 
@@ -421,6 +423,11 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    &shader_null_backend,
    NULL
 };
+
+bool video_driver_started_fullscreen(void)
+{
+   return video_started_fullscreen;
+}
 
 /* Stub functions */
 
@@ -1020,6 +1027,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
       video_driver_state_out_rgb32 :
       (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
    video.parent        = 0;
+
+   video_started_fullscreen = video.fullscreen;
 
    /* Reset video frame count */
    video_driver_frame_count = 0;
@@ -1631,7 +1640,7 @@ bool video_driver_supports_viewport_read(void)
 bool video_driver_supports_read_frame_raw(void)
 {
    if (current_video->read_frame_raw)
-	   return true;
+      return true;
    return false;
 }
 
@@ -2562,11 +2571,11 @@ void video_driver_frame(const void *data, unsigned width,
       compute_audio_buffer_statistics(&audio_stats);
 
       snprintf(video_info.stat_text,
-            sizeof(video_info.stat_text), 
+            sizeof(video_info.stat_text),
             "Video Statistics:\n -Frame rate: %6.2f fps\n -Frame time: %6.2f ms\n -Frame time deviation: %.3f %%\n"
             " -Frame count: %" PRIu64"\n -Viewport: %d x %d x %3.2f\n"
             "Audio Statistics:\n -Average buffer saturation: %.2f %%\n -Standard deviation: %.2f %%\n -Time spent close to underrun: %.2f %%\n -Time spent close to blocking: %.2f %%\n -Sample count: %d\n"
-            "Core Geometry:\n -Size: %u x %u\n -Max Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n", 
+            "Core Geometry:\n -Size: %u x %u\n -Max Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n",
             video_info.frame_rate,
             video_info.frame_time,
             100.0 * stddev,
@@ -3336,7 +3345,7 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
 
 enum gfx_ctx_api video_context_driver_get_api(void)
 {
-   enum gfx_ctx_api ctx_api = video_context_data ? 
+   enum gfx_ctx_api ctx_api = video_context_data ?
       current_video_context.get_api(video_context_data) : GFX_CTX_NONE;
 
    if (ctx_api == GFX_CTX_NONE)
@@ -3436,7 +3445,7 @@ void video_shader_driver_use(void *data)
 {
    if (current_shader && current_shader->use)
    {
-      video_shader_ctx_info_t *shader_info = 
+      video_shader_ctx_info_t *shader_info =
          (video_shader_ctx_info_t*)data;
       current_shader->use(shader_info->data, current_shader_data,
             shader_info->idx, shader_info->set_active);

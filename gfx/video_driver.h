@@ -1347,6 +1347,8 @@ float video_driver_get_refresh_rate(void);
 
 extern bool (*video_driver_cb_has_focus)(void);
 
+bool video_driver_started_fullscreen(void);
+
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;
 extern video_driver_t video_psp1;

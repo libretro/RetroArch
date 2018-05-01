@@ -324,23 +324,27 @@ DEFINES += -DHAVE_IMAGEVIEWER
 OBJ += cores/libretro-imageviewer/image_core.o
 endif
 
-# Qt
-
-ifeq ($(HAVE_QT_WRAPPER), 1)
-OBJ += ui/drivers/ui_qt.o
-LIBS += -lQt5Quick -lQt5Widgets -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core -L./ui/drivers/qt/build/release/
-LIBS += -lwrapper
-endif
+# Qt WIMP GUI
 
 ifeq ($(HAVE_QT), 1)
 OBJ += ui/drivers/ui_qt.o \
        ui/drivers/qt/ui_qt_application.o \
        ui/drivers/qt/ui_qt_window.o \
        ui/drivers/qt/ui_qt_browser_window.o \
+       ui/drivers/qt/ui_qt_load_core_window.o \
        ui/drivers/qt/ui_qt_msg_window.o
 
+MOC_HEADERS += ui/drivers/ui_qt.h \
+							 ui/drivers/qt/ui_qt_load_core_window.h
+
+DEFINES += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) -DHAVE_MAIN
+#DEFINES += $(QT5WEBENGINE_CFLAGS)
+LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS)
+#LIBS += $(QT5WEBENGINE_LIBS)
+NEED_CXX_LINKER = 1
+
 ifneq ($(findstring Linux,$(OS)),)
-DEFINES += -I/usr/include/qt -fPIC
+DEFINES += -fPIC
 endif
 endif
 
@@ -1185,7 +1189,7 @@ ifeq ($(HAVE_VULKAN), 1)
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_vulkan.o
    endif
-   LIBS += -lstdc++
+   #LIBS += -lstdc++
    DEFINES += -DHAVE_VULKAN
    INCLUDE_DIRS += -Igfx/include
 

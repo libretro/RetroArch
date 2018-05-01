@@ -1236,3 +1236,19 @@ void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bo
          *sample = 1.0f;
    }
 }
+
+float audio_mixer_voice_get_volume(audio_mixer_voice_t *voice)
+{
+   if (!voice)
+      return 0.0f;
+
+   return voice->volume;
+}
+
+void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val)
+{
+   if (!voice)
+      return;
+
+   voice->volume = val;
+}

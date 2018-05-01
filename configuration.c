@@ -1180,6 +1180,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("automatically_add_content_to_playlist", &settings->bools.automatically_add_content_to_playlist, true, automatically_add_content_to_playlist, false);
    SETTING_BOOL("ui_companion_start_on_boot",    &settings->bools.ui_companion_start_on_boot, true, ui_companion_start_on_boot, false);
    SETTING_BOOL("ui_companion_enable",           &settings->bools.ui_companion_enable, true, ui_companion_enable, false);
+   SETTING_BOOL("ui_companion_toggle",           &settings->bools.ui_companion_toggle, false, ui_companion_toggle, false);
+   SETTING_BOOL("desktop_menu_enable",           &settings->bools.desktop_menu_enable, true, desktop_menu_enable, false);
    SETTING_BOOL("video_gpu_record",              &settings->bools.video_gpu_record, true, gpu_record, false);
    SETTING_BOOL("input_remap_binds_enable",      &settings->bools.input_remap_binds_enable, true, true, false);
    SETTING_BOOL("all_users_control_menu",        &settings->bools.input_all_users_control_menu, true, all_users_control_menu, false);
@@ -3526,14 +3528,14 @@ static void save_keybind_mbutton(config_file_t *conf,
       const char *base,
       const struct retro_keybind *bind, bool save_empty)
 {
-	char key[64];
+   char key[64];
 
-	key[0] = '\0';
+   key[0] = '\0';
 
-	fill_pathname_join_delim_concat(key, prefix,
-		base, '_', "_mbtn", sizeof(key));
+   fill_pathname_join_delim_concat(key, prefix,
+      base, '_', "_mbtn", sizeof(key));
 
-	switch ( bind->mbutton )
+   switch ( bind->mbutton )
    {
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          config_set_uint64(conf, key, 1);

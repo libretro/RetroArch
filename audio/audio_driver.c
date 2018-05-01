@@ -45,6 +45,16 @@
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 
+/**
+ * db_to_gain:
+ * @db          : Decibels.
+ *
+ * Converts decibels to voltage gain.
+ *
+ * Returns: voltage gain value.
+ **/
+#define db_to_gain(db) (powf(10.0f, (db) / 20.0f))
+
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
    &audio_alsa,
@@ -361,6 +371,12 @@ static bool audio_driver_deinit_internal(void)
    return true;
 }
 
+static void audio_driver_mixer_init(unsigned out_rate)
+{
+   audio_mixer_init(out_rate);
+}
+
+
 static bool audio_driver_init_internal(bool audio_cb_inited)
 {
    unsigned new_rate     = 0;
@@ -527,7 +543,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    audio_driver_free_samples_count = 0;
 
-   audio_mixer_init(settings->uints.audio_out_rate);
+   audio_driver_mixer_init(settings->uints.audio_out_rate);
 
    /* Threaded driver is initially stopped. */
    if (
@@ -665,7 +681,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
    if (audio_mixer_active)
    {
       bool override     = audio_driver_mixer_mute_enable ? true :
-         (audio_driver_mixer_volume_gain != 0.0f) ? true : false;
+         (audio_driver_mixer_volume_gain != 1.0f) ? true : false;
       float mixer_gain  = !audio_driver_mixer_mute_enable ?
          audio_driver_mixer_volume_gain : 0.0f;
       audio_mixer_mix(audio_driver_output_samples_buf,
@@ -1071,7 +1087,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    audio_mixer_stop_cb_t stop_cb = audio_mixer_play_stop_cb;
    bool looped                   = false;
    void *buf                     = NULL;
-
+   
    if (!audio_driver_mixer_get_free_stream_slot(&free_slot))
       return false;
 
@@ -1157,7 +1173,7 @@ static void audio_driver_mixer_play_stream_internal(unsigned i, bool looped)
    switch (audio_mixer_streams[i].state)
    {
       case AUDIO_STREAM_STATE_STOPPED:
-         audio_mixer_streams[i].voice = audio_mixer_play(audio_mixer_streams[i].handle, looped, audio_mixer_streams[i].volume, audio_mixer_streams[i].stop_cb);
+         audio_mixer_streams[i].voice = audio_mixer_play(audio_mixer_streams[i].handle, looped, 1.0f, audio_mixer_streams[i].stop_cb);
          set_state = true;
          break;
       case AUDIO_STREAM_STATE_PLAYING:
@@ -1178,6 +1194,29 @@ void audio_driver_mixer_play_stream(unsigned i)
 void audio_driver_mixer_play_stream_looped(unsigned i)
 {
    audio_driver_mixer_play_stream_internal(i, true);
+}
+
+float audio_driver_mixer_get_stream_volume(unsigned i)
+{
+   if (i >= AUDIO_MIXER_MAX_STREAMS)
+      return 0.0f;
+
+   return audio_mixer_streams[i].volume;
+}
+
+void audio_driver_mixer_set_stream_volume(unsigned i, float vol)
+{
+   audio_mixer_voice_t *voice     = NULL;
+
+   if (i >= AUDIO_MIXER_MAX_STREAMS)
+      return;
+
+   audio_mixer_streams[i].volume  = vol;
+
+   voice                          = audio_mixer_streams[i].voice;
+
+   if (voice)
+      audio_mixer_voice_set_volume(voice, db_to_gain(vol));
 }
 
 void audio_driver_mixer_stop_stream(unsigned i)
@@ -1205,6 +1244,7 @@ void audio_driver_mixer_stop_stream(unsigned i)
       if (voice)
          audio_mixer_stop(voice);
       audio_mixer_streams[i].state   = AUDIO_STREAM_STATE_STOPPED;
+      audio_mixer_streams[i].volume  = 1.0f;
    }
 }
 
@@ -1235,8 +1275,8 @@ void audio_driver_mixer_remove_stream(unsigned i)
       if (handle)
          audio_mixer_destroy(handle);
       audio_mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
-      audio_mixer_streams[i].volume  = 0.0f;
       audio_mixer_streams[i].stop_cb = NULL;
+      audio_mixer_streams[i].volume  = 0.0f;
       audio_mixer_streams[i].handle  = NULL;
       audio_mixer_streams[i].voice   = NULL;
    }
@@ -1452,15 +1492,6 @@ void audio_set_bool(enum audio_action action, bool val)
    }
 }
 
-/**
- * db_to_gain:
- * @db          : Decibels.
- *
- * Converts decibels to voltage gain.
- *
- * Returns: voltage gain value.
- **/
-#define db_to_gain(db) (powf(10.0f, (db) / 20.0f))
 
 void audio_set_float(enum audio_action action, float val)
 {

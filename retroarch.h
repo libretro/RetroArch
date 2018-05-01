@@ -357,6 +357,10 @@ void runloop_msg_queue_lock(void);
 void runloop_msg_queue_unlock(void);
 #endif
 
+#ifdef HAVE_DYNAMIC
+bool retroarch_core_set_on_cmdline(void);
+#endif
+
 RETRO_END_DECLS
 
 #endif

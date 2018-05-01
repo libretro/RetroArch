@@ -4601,7 +4601,10 @@ static bool setting_append_list(
             {
                if (!input_config_bind_map_get_meta(i))
                   continue;
-
+#ifndef HAVE_QT
+               if (i == RARCH_UI_COMPANION_TOGGLE)
+                  continue;
+#endif
                CONFIG_BIND_ALT(
                      list, list_info,
                      &input_config_binds[0][i],
@@ -5630,7 +5633,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, XMB_THEME_LAST-1, 1, true, true);
-		 }
+       }
 #endif
             CONFIG_BOOL(
                   list, list_info,
@@ -5804,20 +5807,20 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-				CONFIG_STRING(
-				   list, list_info,
-				   settings->paths.menu_content_show_settings_password,
-				   sizeof(settings->paths.menu_content_show_settings_password),
-				   MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
-				   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-				   "",
-				   &group_info,
-				   &subgroup_info,
-				   parent_group,
-				   general_write_handler,
-				   general_read_handler);
-				settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED);
-			}
+            CONFIG_STRING(
+               list, list_info,
+               settings->paths.menu_content_show_settings_password,
+               sizeof(settings->paths.menu_content_show_settings_password),
+               MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
+               MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED);
+         }
 #endif
 
             CONFIG_BOOL(
@@ -6054,7 +6057,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-            
+
             CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_xmb_vertical_thumbnails,
@@ -6516,8 +6519,37 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
          }
+#ifdef HAVE_QT
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.desktop_menu_enable,
+               MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,
+               MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+               desktop_menu_enable,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_ADVANCED);
 
-
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ui_companion_toggle,
+               MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,
+               MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
+               ui_companion_toggle,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_ADVANCED);
+#endif
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
@@ -6562,7 +6594,7 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
 
-		   START_SUB_GROUP(list, list_info, "Playlist", &group_info, &subgroup_info, parent_group);
+         START_SUB_GROUP(list, list_info, "Playlist", &group_info, &subgroup_info, parent_group);
 
          CONFIG_BOOL(
                list, list_info,
@@ -6579,7 +6611,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-		   CONFIG_BOOL(
+         CONFIG_BOOL(
                list, list_info,
                &settings->bools.playlist_entry_remove,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,

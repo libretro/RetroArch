@@ -31,7 +31,7 @@ static bool ui_browser_window_null_save(ui_browser_window_state_t *state)
    return false;
 }
 
-const ui_browser_window_t ui_browser_window_null = {
+ui_browser_window_t ui_browser_window_null = {
    ui_browser_window_null_open,
    ui_browser_window_null_save,
    "null"

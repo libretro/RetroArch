@@ -21,9 +21,9 @@
 
 #include "../../ui_companion_driver.h"
 
-static bool ui_application_null_initialize(void)
+static void* ui_application_null_initialize(void)
 {
-   return true;
+   return NULL;
 }
 
 static bool ui_application_null_pending_events(void)
@@ -35,9 +35,16 @@ static void ui_application_null_process_events(void)
 {
 }
 
-const ui_application_t ui_application_null = {
+static void ui_application_null_run(void *args)
+{
+   (void)args;
+}
+
+ui_application_t ui_application_null = {
    ui_application_null_initialize,
    ui_application_null_pending_events,
    ui_application_null_process_events,
+   ui_application_null_run,
+   NULL,
    "null"
 };

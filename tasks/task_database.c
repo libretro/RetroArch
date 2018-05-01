@@ -38,7 +38,7 @@
 #include "../retroarch.h"
 #endif
 #include "../verbosity.h"
-
+#include "../ui/ui_companion_driver.h"
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE                99999
 #endif
@@ -1264,6 +1264,7 @@ static void task_database_handler(retro_task_t *task)
 #else
             fprintf(stderr, "msg: %s\n", msg);
 #endif
+            ui_companion_driver_notify_refresh();
             goto task_finished;
          }
          break;

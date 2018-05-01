@@ -30,6 +30,7 @@
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 
+#include "../../audio/audio_driver.h"
 #include "../../configuration.h"
 #include "../../core.h"
 #include "../../core_info.h"
@@ -56,8 +57,6 @@ static int generic_shader_action_parameter_right(struct video_shader_parameter *
    param->current += param->step;
    param->current  = MIN(MAX(param->minimum, param->current), param->maximum);
 
-   if (ui_companion_is_on_foreground())
-      ui_companion_driver_notify_refresh();
    return 0;
 }
 
@@ -73,7 +72,7 @@ int shader_action_parameter_right(unsigned type, const char *label, bool wraparo
    video_shader_driver_get_current_shader(&shader_info);
 
    param_prev = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-   param_menu = shader ? &shader->parameters[type - 
+   param_menu = shader ? &shader->parameters[type -
       MENU_SETTINGS_SHADER_PARAMETER_0] : NULL;
 
    if (!param_prev || !param_menu)
@@ -111,8 +110,8 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
    if (!settings)
       return 0;
 
-   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - 
-      (MENU_SETTINGS_INPUT_DESC_KBD_END - 
+   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END -
+      (MENU_SETTINGS_INPUT_DESC_KBD_END -
       MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
 
    id = (type / (offset + 1)) - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
@@ -161,7 +160,7 @@ int action_right_input_desc(unsigned type, const char *label,
 
    /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
       also skip all the axes until analog remapping is implemented */
-   if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*|| 
+   if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*||
        (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
       action_right_input_desc(type, label, wraparound);
 
@@ -204,6 +203,24 @@ static int action_right_scroll(unsigned type, const char *label,
    return 0;
 }
 
+static int audio_mixer_stream_volume_right(unsigned type, const char *label,
+      bool wraparound)
+{
+   unsigned         offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
+   float orig_volume            = 0.0f;
+   
+   if (offset >= AUDIO_MIXER_MAX_STREAMS)
+      return 0;
+
+   orig_volume                  = audio_driver_mixer_get_stream_volume(offset);
+   orig_volume                  = orig_volume + 1.00f;
+
+   audio_driver_mixer_set_stream_volume(offset, orig_volume);
+
+   return 0;
+}
+
+
 static int action_right_goto_tab(void)
 {
    menu_ctx_list_t list_info;
@@ -211,7 +228,7 @@ static int action_right_goto_tab(void)
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    size_t selection           = menu_navigation_get_selection();
    menu_file_list_cbs_t *cbs  = selection_buf ? (menu_file_list_cbs_t*)
-	   file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
+      file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
 
    list_info.type             = MENU_LIST_HORIZONTAL;
    list_info.action           = MENU_ACTION_RIGHT;
@@ -482,6 +499,11 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          && type <= MENU_SETTINGS_CHEAT_END)
    {
       BIND_ACTION_RIGHT(cbs, action_right_cheat);
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
+         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
+   {
+      BIND_ACTION_RIGHT(cbs, audio_mixer_stream_volume_right);
    }
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)

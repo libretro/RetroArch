@@ -1,5 +1,6 @@
 /* RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2018 - Brad Parker
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -34,7 +35,7 @@ static bool ui_browser_window_qt_save(ui_browser_window_state_t *state)
    return false;
 }
 
-const ui_browser_window_t ui_browser_window_qt = {
+ui_browser_window_t ui_browser_window_qt = {
    ui_browser_window_qt_open,
    ui_browser_window_qt_save,
    "qt"
