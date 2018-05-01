@@ -19,6 +19,7 @@
 #include "../common/x11_common.h"
 #include "../../configuration.h"
 #include "../video_driver.h" /* needed to set refresh rate in set resolution */
+#include "../video_crt_switch.h" /* needed to set aspect for low res in linux */
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -44,9 +45,9 @@ static void* x11_display_server_init(void)
 
 static void x11_display_server_destroy(void *data)
 {
-   
-   system("xrandr -s 704x480"); 
    dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+
+   system("xrandr -s 704x480");
 
    if (dispserv)
       free(dispserv);
@@ -98,14 +99,19 @@ static bool x11_set_resolution(void *data,
    char fbset[150];
    char output[150];
 
-   hsp = width*1.14;
+   hsp = width*1.12;
       
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);	  
    
    /* following code is the mode line genorator */
-   hfp = width+24;
-   hbp = width*1.26;
+   if (width < 300)
+   {
+      width = width*2;
+      crt_aspect_ratio_switch(width, height);
+   }
+   hfp = width+16;
+   hbp = width*1.22;
    hmax = hbp;
    
    if (height < 241)
