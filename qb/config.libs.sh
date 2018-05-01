@@ -282,7 +282,8 @@ if [ "$HAVE_QT" != 'no' ]; then
    #check_val '' QT5WEBENGINE -lQt5WebEngine QT5WEBENGINE
 
    if [ "$HAVE_QT5CORE" = "no" ] || [ "$HAVE_QT5GUI" = "no" ] || [ "$HAVE_QT5WIDGETS" = "no" ]; then
-      die 1 'Error: Qt support requested, but required libraries could not be found.'
+      die : 'Notice: Not building Qt support, required libraries were not found.'
+      HAVE_QT=no
    else
       HAVE_QT=yes
    fi
