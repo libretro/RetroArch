@@ -270,7 +270,7 @@ check_val '' PULSE -lpulse
 check_val '' SDL -lSDL SDL
 check_val '' SDL2 -lSDL2 SDL2
 
-if [ "$HAVE_QT" != 'no' ]; then
+if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
    check_pkgconf QT5GUI Qt5Gui 5.2
    check_pkgconf QT5WIDGETS Qt5Widgets 5.2
