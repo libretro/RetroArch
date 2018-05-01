@@ -131,7 +131,7 @@ void ui_companion_driver_init_first(void)
    ui_companion = (ui_companion_driver_t*)ui_companion_init_first();
 
 #ifdef HAVE_QT
-   if (settings->bools.desktop_menu_enable)
+   if (settings->bools.desktop_menu_enable && settings->bools.ui_companion_toggle)
    {
       ui_companion_qt_data = ui_companion_qt.init();
       qt_is_inited = true;
@@ -159,8 +159,16 @@ void ui_companion_driver_toggle(bool force)
 
 #ifdef HAVE_QT
    if (settings->bools.desktop_menu_enable)
-      if (ui_companion_qt.toggle)
+   {
+      if ((settings->bools.ui_companion_toggle || force) && !qt_is_inited)
+      {
+         ui_companion_qt_data = ui_companion_qt.init();
+         qt_is_inited = true;
+      }
+
+      if (qt_is_inited && ui_companion_qt.toggle)
          ui_companion_qt.toggle(ui_companion_qt_data, force);
+   }
 #endif
 }
 

@@ -95,7 +95,9 @@ AppHandler::~AppHandler()
 void AppHandler::exit()
 {
    app_exiting = true;
-   qApp->closeAllWindows();
+
+   if (qApp)
+      qApp->closeAllWindows();
 }
 
 bool AppHandler::isExiting() const
