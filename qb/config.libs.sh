@@ -270,7 +270,7 @@ check_val '' PULSE -lpulse
 check_val '' SDL -lSDL SDL
 check_val '' SDL2 -lSDL2 SDL2
 
-if [ "$HAVE_QT" = "yes" ]; then
+if [ "$HAVE_QT" != 'no' ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
    check_pkgconf QT5GUI Qt5Gui 5.2
    check_pkgconf QT5WIDGETS Qt5Widgets 5.2
@@ -283,6 +283,8 @@ if [ "$HAVE_QT" = "yes" ]; then
 
    if [ "$HAVE_QT5CORE" = "no" ] || [ "$HAVE_QT5GUI" = "no" ] || [ "$HAVE_QT5WIDGETS" = "no" ]; then
       die 1 'Error: Qt support requested, but required libraries could not be found.'
+   else
+      HAVE_QT=yes
    fi
 
    #if [ "$HAVE_QT5WEBENGINE" = "no" ]; then

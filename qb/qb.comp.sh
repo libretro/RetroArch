@@ -83,7 +83,7 @@ if [ "$OS" = "Win32" ]; then
 	echo "$echobuf ... $WINDRES"
 fi
 
-if [ "$HAVE_QT" = "yes" ]; then
+if [ "$HAVE_QT" != "no" ]; then
 	echobuf="Checking for moc"
 	if [ -z "$MOC" ]; then
 		MOC="$(exists "moc")" || MOC=""
