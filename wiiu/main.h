@@ -10,14 +10,9 @@
 #include "system/memory.h"
 #include "system/exception_handler.h"
 
-#include "../retroarch.h"
-#include "../verbosity.h"
-#include "../frontend/frontend.h"
-#include "../gfx/video_driver.h"
-#include "../tasks/tasks_internal.h"
-
 void __init(void);
 void __fini(void);
+
 int main(int argc, char **argv);
 
 #endif /* WIIU_MAIN_H */
