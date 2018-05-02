@@ -21,6 +21,7 @@
 #include <errno.h>
 
 #include <file/nbio.h>
+#include <file/file_path.h>
 #include <audio/audio_mixer.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
@@ -37,6 +38,7 @@ typedef struct nbio_buf
 {
    void *buf;
    unsigned bufsize;
+   char *path;
 } nbio_buf_t;
 
 struct audio_mixer_handle
@@ -56,7 +58,11 @@ static void task_audio_mixer_load_free(retro_task_t *task)
    if (image)
    {
       if (image->buffer)
+      {
+         if (image->buffer->path)
+            free(image->buffer->path);
          free(image->buffer);
+      }
    }
 
    if (!string_is_empty(nbio->path))
@@ -101,9 +107,12 @@ static void task_audio_mixer_handle_upload_ogg(void *task_data,
    params.buf                  = img->buf;
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
+   params.basename             = !string_is_empty(img->path) ? strdup(path_basename(img->path)) : NULL;
 
    audio_driver_mixer_add_stream(&params);
 
+   if (params.basename != NULL)
+      free(params.basename);
    free(img);
    free(user_data);
 }
@@ -123,9 +132,12 @@ static void task_audio_mixer_handle_upload_flac(void *task_data,
    params.buf                  = img->buf;
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
+   params.basename             = !string_is_empty(img->path) ? strdup(path_basename(img->path)) : NULL;
 
    audio_driver_mixer_add_stream(&params);
 
+   if (params.basename != NULL)
+      free(params.basename);
    free(img);
    free(user_data);
 }
@@ -145,9 +157,12 @@ static void task_audio_mixer_handle_upload_mp3(void *task_data,
    params.buf                  = img->buf;
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
+   params.basename             = !string_is_empty(img->path) ? strdup(path_basename(img->path)) : NULL;
 
    audio_driver_mixer_add_stream(&params);
 
+   if (params.basename != NULL)
+      free(params.basename);
    free(img);
    free(user_data);
 }
@@ -167,9 +182,12 @@ static void task_audio_mixer_handle_upload_mod(void *task_data,
    params.buf                  = img->buf;
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
+   params.basename             = !string_is_empty(img->path) ? strdup(path_basename(img->path)) : NULL;
 
    audio_driver_mixer_add_stream(&params);
 
+   if (params.basename != NULL)
+      free(params.basename);
    free(img);
    free(user_data);
 }
@@ -189,9 +207,12 @@ static void task_audio_mixer_handle_upload_wav(void *task_data,
    params.buf                  = img->buf;
    params.bufsize              = img->bufsize;
    params.cb                   = NULL;
+   params.basename             = !string_is_empty(img->path) ? strdup(path_basename(img->path)) : NULL;
 
    audio_driver_mixer_add_stream(&params);
 
+   if (params.basename != NULL)
+      free(params.basename);
    free(img);
    free(user_data);
 }
@@ -213,6 +234,7 @@ bool task_audio_mixer_load_handler(retro_task_t *task)
       {
          img->buf     = image->buffer->buf;
          img->bufsize = image->buffer->bufsize;
+         img->path    = strdup(nbio->path);
       }
 
       task_set_data(task, img);

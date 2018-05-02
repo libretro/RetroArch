@@ -196,6 +196,15 @@ audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i)
    return &audio_mixer_streams[i];
 }
 
+const char *audio_driver_mixer_get_stream_name(unsigned i)
+{
+   if (i > (AUDIO_MIXER_MAX_STREAMS-1))
+      return NULL;
+   if (!string_is_empty(audio_mixer_streams[i].name))
+      return audio_mixer_streams[i].name;
+   return "N/A";
+}
+
 /**
  * compute_audio_buffer_statistics:
  *
@@ -1145,6 +1154,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       audio_mixer_active = true;
    }
 
+   audio_mixer_streams[free_slot].name    = !string_is_empty(params->basename) ? strdup(params->basename) : NULL; 
    audio_mixer_streams[free_slot].buf     = buf;
    audio_mixer_streams[free_slot].handle  = handle;
    audio_mixer_streams[free_slot].voice   = voice;
@@ -1274,11 +1284,16 @@ void audio_driver_mixer_remove_stream(unsigned i)
       audio_mixer_sound_t *handle = audio_mixer_streams[i].handle;
       if (handle)
          audio_mixer_destroy(handle);
+
+      if (!string_is_empty(audio_mixer_streams[i].name))
+         free(audio_mixer_streams[i].name);
+
       audio_mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
       audio_mixer_streams[i].stop_cb = NULL;
       audio_mixer_streams[i].volume  = 0.0f;
       audio_mixer_streams[i].handle  = NULL;
       audio_mixer_streams[i].voice   = NULL;
+      audio_mixer_streams[i].name    = NULL;
    }
 }
 
