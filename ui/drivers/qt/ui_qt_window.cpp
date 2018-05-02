@@ -492,6 +492,7 @@ MainWindow::MainWindow(QWidget *parent) :
    QDir playlistDir(settings->paths.directory_playlist);
    QString configDir = QFileInfo(path_get(RARCH_PATH_CONFIG)).dir().absolutePath();
    QToolButton *searchResetButton = NULL;
+   int i = 0;
 
    m_tableWidget->setAlternatingRowColors(true);
 
@@ -631,7 +632,16 @@ MainWindow::MainWindow(QWidget *parent) :
    qApp->processEvents();
    QTimer::singleShot(0, this, SLOT(onBrowserStartClicked()));
 
-   m_listWidget->setCurrentRow(0);
+   for (i = 0; i < m_listWidget->count(); i++)
+   {
+      /* select the first non-hidden row */
+      if (!m_listWidget->isRowHidden(i))
+      {
+         m_listWidget->setCurrentRow(i);
+         break;
+      }
+   }
+
    m_searchLineEdit->setFocus();
    m_loadCoreWindow->setWindowModality(Qt::ApplicationModal);
 
@@ -2695,6 +2705,7 @@ void MainWindow::initContentTableWidget()
    QListWidgetItem *item = m_listWidget->currentItem();
    QStringList horizontal_header_labels;
    QString path;
+   int i = 0;
 
    if (!item)
       return;
@@ -2734,7 +2745,16 @@ void MainWindow::initContentTableWidget()
       m_tableWidget->sortByColumn(0, Qt::AscendingOrder);
 
    m_tableWidget->resizeColumnsToContents();
-   m_tableWidget->selectRow(0);
+
+   for (i = 0; i < m_tableWidget->rowCount(); i++)
+   {
+      /* select the first non-hidden row */
+      if (!m_tableWidget->isRowHidden(i))
+      {
+         m_tableWidget->selectRow(i);
+         break;
+      }
+   }
 
    onSearchEnterPressed();
 }
