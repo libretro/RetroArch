@@ -897,7 +897,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    selectedAction = menu->exec(cursorPos);
 
    if (!selectedAction)
-      return;
+      goto end;
 
    if (!specialPlaylist && selectedAction->parent() == associateMenu.data())
    {
@@ -925,11 +925,6 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
             new_playlist_names, sizeof(settings->arrays.playlist_names));
       strlcpy(settings->arrays.playlist_cores,
             new_playlist_cores, sizeof(settings->arrays.playlist_cores));
-
-      if (stnames)
-         string_list_free(stnames);
-      if (stcores)
-         string_list_free(stcores);
    }
    else if (selectedAction == hideAction.data())
    {
@@ -975,6 +970,12 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    }
 
    setCoreActions();
+
+end:
+   if (stnames)
+      string_list_free(stnames);
+   if (stcores)
+      string_list_free(stcores);
 }
 
 void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
