@@ -35,7 +35,7 @@ RETRO_BEGIN_DECLS
 
 #define AUDIO_MAX_RATIO                16
 
-#define AUDIO_MIXER_MAX_STREAMS        8
+#define AUDIO_MIXER_MAX_STREAMS        16
 
 enum audio_action
 {

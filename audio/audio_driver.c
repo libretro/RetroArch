@@ -204,7 +204,7 @@ audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i)
 const char *audio_driver_mixer_get_stream_name(unsigned i)
 {
    if (i > (AUDIO_MIXER_MAX_STREAMS-1))
-      return NULL;
+      return "N/A";
    if (!string_is_empty(audio_mixer_streams[i].name))
       return audio_mixer_streams[i].name;
    return "N/A";
