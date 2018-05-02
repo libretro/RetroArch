@@ -1377,6 +1377,8 @@ MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY,
       "audio_add_to_mixer_and_play")
 MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,
       "audio_add_to_mixer_and_collection")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
+      "audio_add_to_mixer_and_collection_and_play")
 MSG_HASH(MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE,
       "filter_by_current_Core")
 MSG_HASH(MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,

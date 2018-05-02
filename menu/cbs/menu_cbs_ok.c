@@ -1909,6 +1909,34 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
          "musicplayer");
 
    if (filestream_exists(combined_path))
+      task_push_audio_mixer_load(combined_path,
+            NULL, NULL);
+
+   return 0;
+}
+
+static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char combined_path[PATH_MAX_LENGTH];
+   menu_handle_t *menu                 = NULL;
+
+   combined_path[0] = '\0';
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+
+   fill_pathname_join(combined_path, menu->scratch2_buf,
+         menu->scratch_buf, sizeof(combined_path));
+
+   command_playlist_push_write(
+         g_defaults.music_history,
+         combined_path,
+         NULL,
+         "builtin",
+         "musicplayer");
+
+   if (filestream_exists(combined_path))
       task_push_audio_mixer_load_and_play(combined_path,
             NULL, NULL);
 
@@ -4158,6 +4186,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION:
             BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer_and_collection);
+            break;
+         case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY:
+            BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer_and_collection_and_play);
             break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER:
             BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer);
