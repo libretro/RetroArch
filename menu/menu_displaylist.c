@@ -2841,6 +2841,12 @@ static int menu_displaylist_parse_horizontal_content_actions(
                msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER),
                MENU_ENUM_LABEL_ADD_TO_MIXER,
                FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
+
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY),
+               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY),
+               MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY,
+               FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
       }
 
       menu_entries_append_enum(info->list,

@@ -1868,6 +1868,25 @@ static int action_ok_audio_add_to_mixer(const char *path,
    return 0;
 }
 
+static int action_ok_audio_add_to_mixer_and_play(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *entry_path              = NULL;
+   playlist_t *tmp_playlist            = playlist_get_cached();
+
+   if (!tmp_playlist)
+      return -1;
+
+   playlist_get_index(tmp_playlist, entry_idx,
+         &entry_path, NULL, NULL, NULL, NULL, NULL);
+
+   if (filestream_exists(entry_path))
+      task_push_audio_mixer_load_and_play(entry_path,
+            NULL, NULL);
+
+   return 0;
+}
+
 static int action_ok_audio_add_to_mixer_and_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1890,7 +1909,7 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
          "musicplayer");
 
    if (filestream_exists(combined_path))
-      task_push_audio_mixer_load(combined_path,
+      task_push_audio_mixer_load_and_play(combined_path,
             NULL, NULL);
 
    return 0;
@@ -4142,6 +4161,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ADD_TO_MIXER:
             BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer);
+            break;
+         case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY:
+            BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer_and_play);
             break;
          case MENU_ENUM_LABEL_MENU_WALLPAPER:
             BIND_ACTION_OK(cbs, action_ok_menu_wallpaper);

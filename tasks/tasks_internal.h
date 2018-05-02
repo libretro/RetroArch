@@ -259,7 +259,11 @@ void task_push_get_powerstate(void);
 
 enum frontend_powerstate get_last_powerstate(int *percent);
 
-bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, void *user_data);
+bool task_push_audio_mixer_load_and_play(
+      const char *fullpath, retro_task_callback_t cb, void *user_data);
+
+bool task_push_audio_mixer_load(
+      const char *fullpath, retro_task_callback_t cb, void *user_data);
 
 extern const char* const input_builtin_autoconfs[];
 
