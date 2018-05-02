@@ -222,8 +222,8 @@ create_config_make()
 
 	printf %s\\n "Creating make config: $outfile"
 
-	{	[ "$USE_LANG_C" = 'yes' ] && printf %s\\n "CC = $CC" "CFLAGS = $CFLAGS"
-		[ "$USE_LANG_CXX" = 'yes' ] && printf %s\\n "CXX = $CXX" "CXXFLAGS = $CXXFLAGS"
+	{	[ "${CC}" ] && printf %s\\n "CC = $CC" "CFLAGS = $CFLAGS"
+		[ "${CXX}" ] && printf %s\\n "CXX = $CXX" "CXXFLAGS = $CXXFLAGS"
 
 		printf %s\\n "WINDRES = $WINDRES" \
 			"MOC = $MOC" \
