@@ -34,6 +34,10 @@
 #include "input_remote.h"
 #endif
 
+#ifdef HAVE_OVERLAY
+#include "input_overlay.h"
+#endif
+
 #include "input_mapper.h"
 
 #include "input_driver.h"
@@ -715,8 +719,11 @@ int16_t input_state(unsigned port, unsigned device,
             {
                res = current_input->input_state(
                      current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
+
+#ifdef HAVE_OVERLAY
                if (input_overlay_is_alive(overlay_ptr) && port == 0)
                   res |= input_overlay_key_pressed(overlay_ptr, id);
+#endif
             }
             else
                res = 0;
