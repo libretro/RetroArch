@@ -284,6 +284,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_MENU_VIEWS_SETTINGS_LIST;
       case ACTION_OK_DL_QUICK_MENU_VIEWS_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_VIEWS_SETTINGS_LIST;
+      case ACTION_OK_DL_QUICK_MENU_OVERRIDE_OPTIONS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS;
       case ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_USER_INTERFACE_SETTINGS_LIST;
       case ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST:
@@ -821,6 +823,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_MENU_SETTINGS_LIST:
       case ACTION_OK_DL_MENU_VIEWS_SETTINGS_LIST:
       case ACTION_OK_DL_QUICK_MENU_VIEWS_SETTINGS_LIST:
+      case ACTION_OK_DL_QUICK_MENU_OVERRIDE_OPTIONS_LIST:
       case ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST:
       case ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST:
       case ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
@@ -3356,6 +3359,7 @@ default_action_ok_func(action_ok_onscreen_display_list, ACTION_OK_DL_ONSCREEN_DI
 default_action_ok_func(action_ok_onscreen_notifications_list, ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)
 default_action_ok_func(action_ok_onscreen_overlay_list, ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST)
 default_action_ok_func(action_ok_menu_list, ACTION_OK_DL_MENU_SETTINGS_LIST)
+default_action_ok_func(action_ok_quick_menu_override_options, ACTION_OK_DL_QUICK_MENU_OVERRIDE_OPTIONS_LIST)
 default_action_ok_func(action_ok_menu_views_list, ACTION_OK_DL_MENU_VIEWS_SETTINGS_LIST)
 default_action_ok_func(action_ok_quick_menu_views_list, ACTION_OK_DL_QUICK_MENU_VIEWS_SETTINGS_LIST)
 default_action_ok_func(action_ok_user_interface_list, ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST)
@@ -4560,6 +4564,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_menu_views_list);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS:
+            BIND_ACTION_OK(cbs, action_ok_quick_menu_override_options);
             break;
          case MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_quick_menu_views_list);

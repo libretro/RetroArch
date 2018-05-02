@@ -1501,3 +1501,7 @@ MSG_HASH(MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,
       "audio_mixer_settings")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST,
       "deferred_mixer_stream_settings_list")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS,
+      "quick_menu_override_options")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS,
+      "deferred_quick_menu_override_options")

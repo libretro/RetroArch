@@ -49,6 +49,7 @@
    return 0; \
 }
 
+default_sublabel_macro(action_bind_sublabel_quick_menu_override_options,             MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_crt_switchres,             MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION)
 default_sublabel_macro(action_bind_sublabel_crt_switchres_super,       MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER)
 default_sublabel_macro(action_bind_sublabel_automatically_add_content_to_playlist,             MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST)
@@ -596,6 +597,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_override_options);
+            break;
          case MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_crt_switchres);
             break;

@@ -2758,23 +2758,12 @@ static int menu_displaylist_parse_load_content_settings(
          }
       }
 
-      if (settings->bools.quick_menu_show_save_core_overrides && !settings->bools.kiosk_mode_enable)
-      {
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
-               msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
-               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-               MENU_SETTING_ACTION, 0, 0);
-      }
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS),
+            msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS),
+            MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS,
+            MENU_SETTING_ACTION, 0, 0);
 
-      if (settings->bools.quick_menu_show_save_game_overrides && !settings->bools.kiosk_mode_enable)
-      {
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
-               msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
-               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-               MENU_SETTING_ACTION, 0, 0);
-      }
 
 #ifdef HAVE_CHEEVOS
       if(settings->bools.cheevos_enable)
@@ -6550,6 +6539,38 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          ret = menu_displaylist_parse_options_remappings(info);
 
          info->need_push    = true;
+         break;
+      case DISPLAYLIST_OPTIONS_OVERRIDES:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         if (settings->bools.quick_menu_show_save_core_overrides && !settings->bools.kiosk_mode_enable)
+         {
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
+                  MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+                  MENU_SETTING_ACTION, 0, 0);
+            count++;
+         }
+
+         if (settings->bools.quick_menu_show_save_game_overrides && !settings->bools.kiosk_mode_enable)
+         {
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
+                  MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+                  MENU_SETTING_ACTION, 0, 0);
+            count++;
+         }
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                  0, 0, 0);
+
+         info->need_push = true;
          break;
       case DISPLAYLIST_SHADER_PARAMETERS:
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:

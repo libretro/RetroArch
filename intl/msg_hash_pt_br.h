@@ -3646,3 +3646,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
       "O arquivo não existe.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
       "Sugerir primeiro núcleo carregado")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
+      "Configuration Override options")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
+      "Options for overriding the global configuration.")
