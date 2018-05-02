@@ -49,6 +49,18 @@
    return 0; \
 }
 
+default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_play,
+      MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY)
+default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_play_looped,
+      MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED)
+default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_play_sequential,
+      MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL)
+default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_stop,
+      MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP)
+default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_remove,
+      MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE)
+default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_volume,
+      MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME)
 default_sublabel_macro(action_bind_sublabel_quick_menu_override_options,             MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_crt_switchres,             MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION)
 default_sublabel_macro(action_bind_sublabel_crt_switchres_super,       MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER)
@@ -444,13 +456,7 @@ static int action_bind_sublabel_remap_kbd_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned offset;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings)
-      return 0;
-
-   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - 
+   unsigned offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - 
       (MENU_SETTINGS_INPUT_DESC_KBD_END - 
       MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
 
@@ -578,6 +584,48 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_kbd_sublabel);
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN
+         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs,
+         menu_action_sublabel_setting_audio_mixer_stream_play);
+      return 0;
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN
+         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs,
+         menu_action_sublabel_setting_audio_mixer_stream_play_looped);
+      return 0;
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN
+         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs,
+         menu_action_sublabel_setting_audio_mixer_stream_play_sequential);
+      return 0;
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN
+         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs,
+         menu_action_sublabel_setting_audio_mixer_stream_remove);
+      return 0;
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN
+         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs,
+         menu_action_sublabel_setting_audio_mixer_stream_stop);
+      return 0;
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
+         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs,
+         menu_action_sublabel_setting_audio_mixer_stream_volume);
+      return 0;
    }
 
    if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
