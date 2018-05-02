@@ -5390,6 +5390,10 @@ MSG_HASH(
 	"Agregar al mezclador"
 	)
 MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
+	"Add to mixer and play"
+	)
+MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
 	"Agregar al mezclador y colección"
 	)

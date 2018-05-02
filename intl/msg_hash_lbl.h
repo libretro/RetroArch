@@ -1373,6 +1373,8 @@ MSG_HASH(MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,
       "netplay_mitm_server")
 MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER,
       "audio_add_to_mixer")
+MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY,
+      "audio_add_to_mixer_and_play")
 MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,
       "audio_add_to_mixer_and_collection")
 MSG_HASH(MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE,
