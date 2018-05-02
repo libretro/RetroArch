@@ -1058,6 +1058,10 @@ static void audio_mixer_play_stop_cb(
          {
             unsigned i = (unsigned)idx;
 
+            if (!string_is_empty(audio_mixer_streams[i].name))
+               free(audio_mixer_streams[i].name);
+
+            audio_mixer_streams[i].name    = NULL;
             audio_mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
             audio_mixer_streams[i].volume  = 0.0f;
             audio_mixer_streams[i].buf     = NULL;
