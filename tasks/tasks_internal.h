@@ -37,12 +37,6 @@ RETRO_BEGIN_DECLS
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
 
-typedef struct nbio_buf
-{
-   void *buf;
-   unsigned bufsize;
-} nbio_buf_t;
-
 enum content_mode_load
 {
    CONTENT_MODE_LOAD_NONE = 0,

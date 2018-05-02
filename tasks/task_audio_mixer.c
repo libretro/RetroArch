@@ -33,6 +33,12 @@
 
 #include "tasks_internal.h"
 
+typedef struct nbio_buf
+{
+   void *buf;
+   unsigned bufsize;
+} nbio_buf_t;
+
 struct audio_mixer_handle
 {
    nbio_buf_t *buffer;
