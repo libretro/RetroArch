@@ -1132,8 +1132,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
 #endif
          break;
       case AUDIO_MIXER_TYPE_NONE:
-         free(buf);
-         return false;
+         break;
    }
 
    if (!handle)
@@ -1142,15 +1141,19 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       return false;
    }
 
-   if (params->state == AUDIO_STREAM_STATE_PLAYING)
-      voice = audio_mixer_play(handle, looped, params->volume, stop_cb);
-   else if (params->state == AUDIO_STREAM_STATE_PLAYING_LOOPED)
+   switch (params->state)
    {
-      looped = true;
-      voice  = audio_mixer_play(handle, looped, params->volume, stop_cb);
+      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+         looped = true;
+         /* fall-through */
+      case AUDIO_STREAM_STATE_PLAYING:
+         voice = audio_mixer_play(handle, looped, params->volume, stop_cb);
+         break;
+      default:
+         break;
    }
 
-   audio_mixer_active = true;
+   audio_mixer_active                     = true;
 
    audio_mixer_streams[free_slot].name    = !string_is_empty(params->basename) ? strdup(params->basename) : NULL; 
    audio_mixer_streams[free_slot].buf     = buf;
