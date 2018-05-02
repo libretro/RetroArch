@@ -53,7 +53,8 @@ enum audio_mixer_state
    AUDIO_STREAM_STATE_NONE = 0,
    AUDIO_STREAM_STATE_STOPPED,
    AUDIO_STREAM_STATE_PLAYING,
-   AUDIO_STREAM_STATE_PLAYING_LOOPED
+   AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL
 };
 
 typedef struct audio_mixer_stream
@@ -293,6 +294,8 @@ audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i);
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
 
 void audio_driver_mixer_play_stream(unsigned i);
+
+void audio_driver_mixer_play_stream_sequential(unsigned i);
 
 void audio_driver_mixer_play_stream_looped(unsigned i);
 

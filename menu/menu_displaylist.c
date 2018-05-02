@@ -4277,19 +4277,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          {
             char lbl_play[128];
             char lbl_play_looped[128];
+            char lbl_play_sequential[128];
             char lbl_remove[128];
             char lbl_stop[128];
             char lbl_volume[128];
             unsigned id               = info->type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN;
 
             lbl_remove[0] = lbl_stop[0] = lbl_play[0] = lbl_play_looped[0] = '\0';
-            lbl_volume[0] = '\0';
+            lbl_volume[0] = lbl_play_sequential[0] = '\0';
 
             snprintf(lbl_volume, sizeof(lbl_volume), "mixer_stream_%d_action_volume", id);
             snprintf(lbl_stop, sizeof(lbl_stop), "mixer_stream_%d_action_stop", id);
             snprintf(lbl_remove, sizeof(lbl_remove), "mixer_stream_%d_action_remove", id);
             snprintf(lbl_play, sizeof(lbl_play), "mixer_stream_%d_action_play", id);
             snprintf(lbl_play_looped, sizeof(lbl_play_looped), "mixer_stream_%d_action_play_looped", id);
+            snprintf(lbl_play_sequential, sizeof(lbl_play_sequential), "mixer_stream_%d_action_play_sequential", id);
 
             menu_entries_append_enum(info->list,
                   "Play",
@@ -4302,6 +4304,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   lbl_play_looped,
                   MSG_UNKNOWN,
                   (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN  +  id),
+                  0, 0);
+            menu_entries_append_enum(info->list,
+                  "Play (Sequential)",
+                  lbl_play_sequential,
+                  MSG_UNKNOWN,
+                  (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN  +  id),
                   0, 0);
             menu_entries_append_enum(info->list,
                   "Stop",

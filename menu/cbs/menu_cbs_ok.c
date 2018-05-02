@@ -1780,6 +1780,7 @@ static int action_ok_mixer_stream_action_play(const char *path,
          break;
       case AUDIO_STREAM_STATE_PLAYING:
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
       case AUDIO_STREAM_STATE_NONE:
          break;
    }
@@ -1799,6 +1800,27 @@ static int action_ok_mixer_stream_action_play_looped(const char *path,
          break;
       case AUDIO_STREAM_STATE_PLAYING:
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
+      case AUDIO_STREAM_STATE_NONE:
+         break;
+   }
+   return 0;
+}
+
+static int action_ok_mixer_stream_action_play_sequential(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN;
+   enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
+
+   switch (state)
+   {
+      case AUDIO_STREAM_STATE_STOPPED:
+         audio_driver_mixer_play_stream_sequential(stream_id);
+         break;
+      case AUDIO_STREAM_STATE_PLAYING:
+      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
       case AUDIO_STREAM_STATE_NONE:
          break;
    }
@@ -1815,6 +1837,7 @@ static int action_ok_mixer_stream_action_remove(const char *path,
    {
       case AUDIO_STREAM_STATE_PLAYING:
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
       case AUDIO_STREAM_STATE_STOPPED:
          audio_driver_mixer_remove_stream(stream_id);
          break;
@@ -1834,6 +1857,7 @@ static int action_ok_mixer_stream_action_stop(const char *path,
    {
       case AUDIO_STREAM_STATE_PLAYING:
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
          audio_driver_mixer_stop_stream(stream_id);
          break;
       case AUDIO_STREAM_STATE_STOPPED:
@@ -4732,6 +4756,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
       && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_END)
    {
       BIND_ACTION_OK(cbs, action_ok_mixer_stream_action_play_looped);
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN
+      && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_END)
+   {
+      BIND_ACTION_OK(cbs, action_ok_mixer_stream_action_play_sequential);
    }
    else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN
       && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_END)

@@ -488,6 +488,9 @@ static int action_bind_sublabel_audio_mixer_stream(
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
          strlcpy(msg, "Playing (Looped)", sizeof(msg));
          break;
+      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
+         strlcpy(msg, "Playing (Sequential)", sizeof(msg));
+         break;
    }
 
    snprintf(s, len, "State : %s | Volume: %.2f dB", msg, 
