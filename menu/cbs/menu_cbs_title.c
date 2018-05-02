@@ -19,6 +19,8 @@
 
 #include <compat/strl.h>
 
+#include "../../audio/audio_driver.h"
+
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 
@@ -79,7 +81,8 @@ static int action_get_title_action_generic(const char *path, const char *label,
 static int action_get_title_mixer_stream_actions(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
    unsigned         offset      = (menu_type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN);
-   snprintf(s, len, "Mixer Stream #%d", offset + 1);
+
+   snprintf(s, len, "Mixer Stream #%d: %s", offset + 1, audio_driver_mixer_get_stream_name(offset));
    return 0;
 }
 

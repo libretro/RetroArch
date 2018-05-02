@@ -468,8 +468,7 @@ static int action_bind_sublabel_audio_mixer_stream(
       char *s, size_t len)
 {
    char msg[64];
-   unsigned         offset = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN);
-   settings_t    *settings = config_get_ptr();
+   unsigned              offset = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN);
    audio_mixer_stream_t *stream = audio_driver_mixer_get_stream(offset);
 
    if (!stream)
@@ -502,13 +501,8 @@ static int action_bind_sublabel_remap_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned offset;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings)
-      return 0;
-
-   offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   unsigned offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) 
+      / (RARCH_FIRST_CUSTOM_BIND + 8);
 
    snprintf(s, len, "User #%d: %s", offset + 1,
       input_config_get_device_display_name(offset) ? 
