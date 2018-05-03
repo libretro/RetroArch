@@ -860,10 +860,10 @@ static int iohidmanager_hid_manager_set_device_matching(
 
    iohidmanager_hid_append_matching_dictionary(matcher,
          kHIDPage_GenericDesktop,
-         kHIDUSage_GD_Joystick);
+         kHIDUsage_GD_Joystick);
    iohidmanager_hid_append_matching_dictionary(matcher,
          kHIDPage_GenericDesktop,
-         kHIDUSage_GD_Gamepad);
+         kHIDUsage_GD_GamePad);
 
    IOHIDManagerSetDeviceMatchingMultiple(hid->ptr, matcher);
    IOHIDManagerRegisterDeviceMatchingCallback(hid->ptr,
