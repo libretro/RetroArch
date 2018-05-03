@@ -499,29 +499,50 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_historyPlaylistsItem(NULL)
    ,m_folderIcon()
    ,m_customThemeString()
-   ,m_gridLayout(new FlowLayout())
+   ,m_gridLayout(NULL)
    ,m_gridWidget(new QWidget(this))
    ,m_gridScrollArea(new QScrollArea(m_gridWidget))
    ,m_gridItems()
+   ,m_gridLayoutWidget(new QWidget())
+   ,m_zoomSlider(NULL)
+   ,m_lastZoomSliderValue(0)
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
    QString configDir = QFileInfo(path_get(RARCH_PATH_CONFIG)).dir().absolutePath();
    QToolButton *searchResetButton = NULL;
-   QWidget *gridLayoutWidget = new QWidget();
+   QWidget *zoomWidget = new QWidget();
+   QHBoxLayout *zoomLayout = new QHBoxLayout();
    int i = 0;
+
+   m_zoomSlider = new QSlider(Qt::Horizontal, zoomWidget);
+
+   m_zoomSlider->setMinimum(0);
+   m_zoomSlider->setMaximum(100);
+   m_zoomSlider->setValue(50);
+
+   m_lastZoomSliderValue = m_zoomSlider->value();
 
    m_gridWidget->setLayout(new QVBoxLayout());
 
-   gridLayoutWidget->setLayout(m_gridLayout);
+   m_gridLayout = new FlowLayout(m_gridLayoutWidget);
 
    m_gridScrollArea->setAlignment(Qt::AlignCenter);
    m_gridScrollArea->setFrameShape(QFrame::NoFrame);
    m_gridScrollArea->setWidgetResizable(true);
-   m_gridScrollArea->setWidget(gridLayoutWidget);
+   m_gridScrollArea->setWidget(m_gridLayoutWidget);
 
    m_gridWidget->layout()->addWidget(m_gridScrollArea);
    m_gridWidget->layout()->setAlignment(Qt::AlignCenter);
+
+   m_zoomSlider->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred));
+
+   zoomWidget->setLayout(zoomLayout);
+   zoomLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
+   zoomLayout->addWidget(new QLabel("Zoom:"));
+   zoomLayout->addWidget(m_zoomSlider);
+
+   m_gridWidget->layout()->addWidget(zoomWidget);
 
    m_tableWidget->setAlternatingRowColors(true);
 
@@ -644,6 +665,7 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(m_dirTree, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileBrowserTreeContextMenuRequested(const QPoint&)));
    connect(m_listWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onPlaylistWidgetContextMenuRequested(const QPoint&)));
    connect(m_launchWithComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onLaunchWithComboBoxIndexChanged(int)));
+   connect(m_zoomSlider, SIGNAL(valueChanged(int)), this, SLOT(onZoomValueChanged(int)));
 
    /* make sure these use an auto connection so it will be queued if called from a different thread (some facilities in RA log messages from other threads) */
    connect(this, SIGNAL(gotLogMessage(const QString&)), this, SLOT(onGotLogMessage(const QString&)), Qt::AutoConnection);
@@ -687,7 +709,18 @@ MainWindow::~MainWindow()
       delete m_thumbnailPixmap2;
    if (m_thumbnailPixmap3)
       delete m_thumbnailPixmap3;
+
    removeGridItems();
+}
+
+void MainWindow::onZoomValueChanged(int value)
+{
+   foreach(GridItem *item, m_gridItems)
+   {
+      item->widget->setFixedSize(QSize(value * 5.12f, value * 5.12f));
+   }
+
+   m_lastZoomSliderValue = value;
 }
 
 void MainWindow::showWelcomeScreen()
@@ -2853,6 +2886,10 @@ void MainWindow::initContentGridLayout()
    }
    else
       addPlaylistItemsToGrid(path);
+
+   QTimer::singleShot(0, this, [this]() {
+      m_gridLayoutWidget->resize(m_gridScrollArea->viewport()->size());
+   });
 }
 
 void MainWindow::initContentTableWidget()

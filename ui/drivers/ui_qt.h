@@ -29,6 +29,7 @@
 #include <QPalette>
 #include <QPlainTextEdit>
 #include <QFutureWatcher>
+#include <QPixmap>
 #include <QImage>
 
 extern "C" {
@@ -57,6 +58,7 @@ class QCheckBox;
 class QFormLayout;
 class QStyle;
 class QScrollArea;
+class QSlider;
 class LoadCoreWindow;
 class MainWindow;
 class ThumbnailWidget;
@@ -320,6 +322,7 @@ private slots:
    void onPlaylistWidgetContextMenuRequested(const QPoint &pos);
    void onStopClicked();
    void onDeferredImageLoaded();
+   void onZoomValueChanged(int value);
 
 private:
    void setCurrentCoreLabel();
@@ -374,6 +377,9 @@ private:
    QWidget *m_gridWidget;
    QScrollArea *m_gridScrollArea;
    QList<GridItem*> m_gridItems;
+   QWidget *m_gridLayoutWidget;
+   QSlider *m_zoomSlider;
+   int m_lastZoomSliderValue;
 
 protected:
    void closeEvent(QCloseEvent *event);
