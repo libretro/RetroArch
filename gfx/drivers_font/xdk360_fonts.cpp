@@ -49,15 +49,10 @@ struct XPR_HEADER
 /* structure member offsets matter */
 struct XBRESOURCE
 {
-#if defined(_XBOX1)
-   char *strName;
-   DWORD dwOffset;
-#elif defined(_XBOX360)
    DWORD dwType;
    DWORD dwOffset;
    DWORD dwSize;
    char *strName;
-#endif
 };
 
 enum
@@ -90,39 +85,19 @@ class PackedResource
 
       BOOL m_bInitialized;             /* Resource is fully initialized */
 
-      /* Retrieves the resource tags */
-      void GetResourceTags( DWORD* pdwNumResourceTags, XBRESOURCE** ppResourceTags );
       /* Functions to retrieve resources by their name */
       void *GetData( const char* strName );
-      void *GetTexture(const char* strName);
+      LPDIRECT3DTEXTURE9 *GetTexture(const char* strName);
 
       /* Constructor/destructor */
       PackedResource();
       ~PackedResource();
 };
 
-void *PackedResource::GetTexture(const char* strName)
+LPDIRECT3DTEXTURE9 *PackedResource::GetTexture(const char* strName)
 { 
-#ifdef _XBOX1
-		  LPDIRECT3DRESOURCE8 pResource = (LPDIRECT3DRESOURCE8)GetData(strName);
-         /* Register the resource, if it has not yet been registered. We mark
-          * a resource as registered by upping it's reference count. */
-         if( pResource && ( pResource->Common & D3DCOMMON_REFCOUNT_MASK ) == 1 )
-         {
-            /* Special case CPU-copy push buffers (which live in system memory) */
-            if( ( pResource->Common & D3DCOMMON_TYPE_PUSHBUFFER ) &&
-                  ( pResource->Common & D3DPUSHBUFFER_RUN_USING_CPU_COPY ) )
-               pResource->Data += (DWORD)m_pSysMemData;
-            else
-               pResource->Register( m_pVidMemData );
-
-            pResource->AddRef();
-         }
-		 return (LPDIRECT3DTEXTURE8)pResource;
-#elif defined(_XBOX360)
-		 LPDIRECT3DRESOURCE9 pResource = (LPDIRECT3DRESOURCE9)GetData(strName);
-         return (LPDIRECT3DTEXTURE9)pResource;
-#endif
+   LPDIRECT3DRESOURCE9 pResource = (LPDIRECT3DRESOURCE9)GetData(strName);
+   return (LPDIRECT3DTEXTURE9)pResource;
 }
 
 PackedResource::PackedResource()
@@ -146,11 +121,7 @@ void *PackedResource::GetData(const char *strName)
    if (!m_pResourceTags || !strName)
       return NULL;
 
-#if defined(_XBOX1)
-   for (DWORD i=0; m_pResourceTags[i].strName; i++)
-#elif defined(_XBOX360)
    for (DWORD i = 0; i < m_dwNumResourceTags; i++)
-#endif
    {
       if (string_is_equal_noncase(strName, m_pResourceTags[i].strName))
          return &m_pSysMemData[m_pResourceTags[i].dwOffset];
@@ -161,106 +132,38 @@ void *PackedResource::GetData(const char *strName)
 
 static INLINE void* AllocateContiguousMemory(DWORD Size, DWORD Alignment)
 {
-#if defined(_XBOX1)
-   return D3D_AllocContiguousMemory(Size, Alignment);
-#elif defined(_XBOX360)
    return XMemAlloc(Size, MAKE_XALLOC_ATTRIBUTES(0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
             Alignment, XALLOC_MEMPROTECT_WRITECOMBINE, 0, XALLOC_MEMTYPE_PHYSICAL));
-#endif
 }
 
 static INLINE void FreeContiguousMemory(void* pData)
 {
-#if defined(_XBOX1)
-   return D3D_FreeContiguousMemory(pData);
-#elif defined(_XBOX360)
    return XMemFree(pData, MAKE_XALLOC_ATTRIBUTES(0, 0, 0, 0, eXALLOCAllocatorId_GameMax,
             0, 0, 0, XALLOC_MEMTYPE_PHYSICAL));
-#endif
 }
-
-#ifdef _XBOX1
-char g_strMediaPath[512] = "D:\\Media\\";
-
-static HRESULT FindMediaFile(char *strPath, const char *strFilename, size_t strPathsize)
-{
-   if (!strFilename || !strPath)
-      return E_INVALIDARG;
-
-   strlcpy(strPath, strFilename, strPathsize);
-
-   if(strFilename[1] != ':')
-      snprintf(strPath, strPathsize, "%s%s", g_strMediaPath, strFilename);
-
-   HANDLE hFile = CreateFile(strPath, GENERIC_READ, FILE_SHARE_READ, NULL, 
-         OPEN_EXISTING, 0, NULL);
-
-   if (hFile == INVALID_HANDLE_VALUE)
-      return 0x82000004;
-
-   CloseHandle(hFile);
-
-   return S_OK;
-}
-
-#endif
 
 HRESULT PackedResource::Create(const char *strFilename,
       DWORD dwNumResourceTags, void* pResourceTags)
 {
    unsigned i;
-   HANDLE hFile;
    DWORD dwNumBytesRead;
    XPR_HEADER xprh;
-   bool retval                   = false;
-#ifdef _XBOX360
-   (void)dwNumResourceTags;
-   (void)pResourceTags;
-#endif
-#ifdef _XBOX1
-   char strResourcePath[512];
-   bool bHasResourceOffsetsTable = false;
-
-   if (FAILED(FindMediaFile(strResourcePath, strFilename, sizeof(strResourcePath))))
-      return E_FAIL;
-   strFilename = strResourcePath;
-#endif
-
-   hFile = CreateFile(strFilename, GENERIC_READ, FILE_SHARE_READ, NULL,
+   HANDLE hFile = CreateFile(strFilename, GENERIC_READ, FILE_SHARE_READ, NULL,
          OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
+
    if (hFile == INVALID_HANDLE_VALUE)
       return E_FAIL;
 
-   retval = ReadFile(hFile, &xprh, sizeof(XPR_HEADER), &dwNumBytesRead, NULL);
-
-#if defined(_XBOX1)
-   if(xprh.dwMagic == XPR0_MAGIC_VALUE)
-      bHasResourceOffsetsTable = false;
-   else if(xprh.dwMagic == XPR1_MAGIC_VALUE)
-      bHasResourceOffsetsTable = true;
-   else
-#elif defined(_XBOX360)
-      if(!retval)
-      {
-         CloseHandle(hFile);
-         return E_FAIL;
-      }
-
-   if (xprh.dwMagic != XPR2_MAGIC_VALUE)
-#endif
+   if (!ReadFile(hFile, &xprh, sizeof(XPR_HEADER), &dwNumBytesRead, NULL) ||
+         xprh.dwMagic != XPR2_MAGIC_VALUE)
    {
       CloseHandle(hFile);
       return E_FAIL;
    }
 
    /* Compute memory requirements */
-#if defined(_XBOX1)
-   m_dwSysMemDataSize = xprh.dwHeaderSize - sizeof(XPR_HEADER);
-   m_dwVidMemDataSize = xprh.dwTotalSize - xprh.dwHeaderSize;
-#elif defined(_XBOX360)
    m_dwSysMemDataSize = xprh.dwHeaderSize;
    m_dwVidMemDataSize = xprh.dwDataSize;
-#endif
 
    /* Allocate memory */
    m_pSysMemData = (BYTE*)malloc(m_dwSysMemDataSize);
@@ -272,12 +175,8 @@ HRESULT PackedResource::Create(const char *strFilename,
    }
 
    m_pVidMemData = (BYTE*)AllocateContiguousMemory(m_dwVidMemDataSize,
-#if defined(_XBOX1)
-         D3DTEXTURE_ALIGNMENT
-#elif defined(_XBOX360)
          XALLOC_PHYSICAL_ALIGNMENT_4K
-#endif
-     );
+         );
 
    if(!m_pVidMemData)
    {
@@ -299,57 +198,25 @@ HRESULT PackedResource::Create(const char *strFilename,
    /* Done with the file */
    CloseHandle( hFile);
 
-#ifdef _XBOX1
-   if (bHasResourceOffsetsTable)
+   /* Extract resource table from the header data */
+   m_dwNumResourceTags = *(DWORD*)(m_pSysMemData + 0);
+   m_pResourceTags     = (XBRESOURCE*)(m_pSysMemData + 4);
+
+   /* Patch up the resources */
+
+   for(i = 0; i < m_dwNumResourceTags; i++)
    {
-#endif
-
-      /* Extract resource table from the header data */
-      m_dwNumResourceTags = *(DWORD*)(m_pSysMemData + 0);
-      m_pResourceTags     = (XBRESOURCE*)(m_pSysMemData + 4);
-
-      /* Patch up the resources */
-
-      for(i = 0; i < m_dwNumResourceTags; i++)
+      m_pResourceTags[i].strName = (char*)(m_pSysMemData + (DWORD)m_pResourceTags[i].strName);
+      if((m_pResourceTags[i].dwType & 0xffff0000) == (RESOURCETYPE_TEXTURE & 0xffff0000))
       {
-         m_pResourceTags[i].strName = (char*)(m_pSysMemData + (DWORD)m_pResourceTags[i].strName);
-#ifdef _XBOX360
-         if((m_pResourceTags[i].dwType & 0xffff0000) == (RESOURCETYPE_TEXTURE & 0xffff0000))
-         {
-            D3DTexture *pTexture = (D3DTexture*)&m_pSysMemData[m_pResourceTags[i].dwOffset];
-            XGOffsetBaseTextureAddress(pTexture, m_pVidMemData, m_pVidMemData);
-         }
-#endif
+         D3DTexture *pTexture = (D3DTexture*)&m_pSysMemData[m_pResourceTags[i].dwOffset];
+         XGOffsetBaseTextureAddress(pTexture, m_pVidMemData, m_pVidMemData);
       }
-
-#ifdef _XBOX1
    }
-#endif
-
-#ifdef _XBOX1
-   /* Use user-supplied number of resources and the resource tags */
-   if(dwNumResourceTags != 0 || pResourceTags != NULL)
-   {
-      m_pResourceTags     = (XBRESOURCE*)pResourceTags;
-      m_dwNumResourceTags = dwNumResourceTags;
-   }
-#endif
 
    m_bInitialized = true;
 
    return S_OK;
-}
-
-void PackedResource::GetResourceTags(DWORD* pdwNumResourceTags,
-      XBRESOURCE** ppResourceTags)
-{
-#ifdef _XBOX360
-   if (pdwNumResourceTags)
-      (*pdwNumResourceTags) = m_dwNumResourceTags;
-
-   if (ppResourceTags)
-      (*ppResourceTags) = m_pResourceTags;
-#endif
 }
 
 void PackedResource::Destroy()
