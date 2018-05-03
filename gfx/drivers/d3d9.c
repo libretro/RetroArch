@@ -408,7 +408,7 @@ static void d3d9_set_mvp(void *data,
       const void *mat_data)
 {
    d3d9_video_t *d3d = (d3d9_video_t*)data;
-   d3d9_set_vertex_shader_constantf((LPDIRECT3DDEVICE9)d3d->dev, 0, (const float*)mat_data, 4);
+   d3d9_set_vertex_shader_constantf(d3d->dev, 0, (const float*)mat_data, 4);
 }
 
 static void d3d9_overlay_render(d3d9_video_t *d3d,
@@ -437,7 +437,7 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
    if (!d3d || !overlay || !overlay->tex)
       return;
 
-   dev                 = (LPDIRECT3DDEVICE9)d3d->dev;
+   dev                 = d3d->dev;
 
    if (!overlay->vert_buf)
    {
@@ -484,7 +484,7 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
    memcpy(verts, vert, sizeof(vert));
    d3d9_vertex_buffer_unlock((LPDIRECT3DVERTEXBUFFER9)overlay->vert_buf);
 
-   d3d9_enable_blend_func((LPDIRECT3DDEVICE9)d3d->dev);
+   d3d9_enable_blend_func(d3d->dev);
 
    /* set vertex declaration for overlay. */
    d3d9_vertex_declaration_new(dev, &vElems, (void**)&vertex_decl);
@@ -919,7 +919,7 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
             D3DDECLUSAGE_COLOR, 0},
          D3DDECL_END()
       };
-      if (!d3d9_vertex_declaration_new((LPDIRECT3DDEVICE9)d3d->dev,
+      if (!d3d9_vertex_declaration_new(d3d->dev,
                (void*)VertexElements, (void**)&d3d->menu_display.decl))
          return false;
    }
@@ -943,7 +943,7 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
    d3d_matrix_ortho_off_center_lh(&d3d->mvp_transposed, 0, 1, 0, 1, 0, 1);
    d3d_matrix_transpose(&d3d->mvp, &d3d->mvp_transposed);
 
-   d3d9_set_render_state((LPDIRECT3DDEVICE9)d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d9_set_render_state(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
 
    return true;
 }
@@ -1080,7 +1080,7 @@ static void d3d9_set_osd_msg(void *data,
       const void *params, void *font)
 {
    d3d9_video_t          *d3d = (d3d9_video_t*)data;
-   LPDIRECT3DDEVICE9     dev  = (LPDIRECT3DDEVICE9)d3d->dev;
+   LPDIRECT3DDEVICE9     dev  = d3d->dev;
 
    if (d3d->renderchain_driver->set_font_rect && params)
       d3d->renderchain_driver->set_font_rect(d3d, params);
@@ -1582,16 +1582,16 @@ static bool d3d9_frame(void *data, const void *frame,
    screen_vp.MaxZ   = 1;
    screen_vp.Width  = width;
    screen_vp.Height = height;
-   d3d9_set_viewports((LPDIRECT3DDEVICE9)d3d->dev, &screen_vp);
-   d3d9_clear((LPDIRECT3DDEVICE9)d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   d3d9_set_viewports(d3d->dev, &screen_vp);
+   d3d9_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    /* Insert black frame first, so we
     * can screenshot, etc. */
    if (video_info->black_frame_insertion)
    {
-      if (!d3d9_swap(d3d, (LPDIRECT3DDEVICE9)d3d->dev) || d3d->needs_restore)
+      if (!d3d9_swap(d3d, d3d->dev) || d3d->needs_restore)
          return true;
-      d3d9_clear((LPDIRECT3DDEVICE9)d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      d3d9_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
    if (!d3d->renderchain_driver->render(
@@ -1611,10 +1611,10 @@ static bool d3d9_frame(void *data, const void *frame,
       d3d9_overlay_render(d3d, video_info, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
-      d3d9_set_vertex_declaration((LPDIRECT3DDEVICE9)d3d->dev, (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
-      d3d9_set_stream_source((LPDIRECT3DDEVICE9)d3d->dev, 0, (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer, 0, sizeof(Vertex));
+      d3d9_set_vertex_declaration(d3d->dev, (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
+      d3d9_set_stream_source(d3d->dev, 0, (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer, 0, sizeof(Vertex));
 
-      d3d9_set_viewports((LPDIRECT3DDEVICE9)d3d->dev, &screen_vp);
+      d3d9_set_viewports(d3d->dev, &screen_vp);
       menu_driver_frame(video_info);
    }
    else if (video_info->statistics_show)
@@ -1624,11 +1624,11 @@ static bool d3d9_frame(void *data, const void *frame,
 
       if (osd_params)
       {
-         d3d9_set_viewports((LPDIRECT3DDEVICE9)d3d->dev, &screen_vp);
-         d3d9_begin_scene((LPDIRECT3DDEVICE9)d3d->dev);
+         d3d9_set_viewports(d3d->dev, &screen_vp);
+         d3d9_begin_scene(d3d->dev);
          font_driver_render_msg(video_info, NULL, video_info->stat_text,
                (const struct font_params*)&video_info->osd_stat_params);
-         d3d9_end_scene((LPDIRECT3DDEVICE9)d3d->dev);
+         d3d9_end_scene(d3d->dev);
       }
    }
 #endif
@@ -1644,14 +1644,14 @@ static bool d3d9_frame(void *data, const void *frame,
 
    if (msg && *msg)
    {
-      d3d9_set_viewports((LPDIRECT3DDEVICE9)d3d->dev, &screen_vp);
-      d3d9_begin_scene((LPDIRECT3DDEVICE9)d3d->dev);
+      d3d9_set_viewports(d3d->dev, &screen_vp);
+      d3d9_begin_scene(d3d->dev);
       font_driver_render_msg(video_info, NULL, msg, NULL);
-      d3d9_end_scene((LPDIRECT3DDEVICE9)d3d->dev);
+      d3d9_end_scene(d3d->dev);
    }
 
    d3d9_update_title(video_info);
-   d3d9_swap(d3d, (LPDIRECT3DDEVICE9)d3d->dev);
+   d3d9_swap(d3d, d3d->dev);
 
    return true;
 }
