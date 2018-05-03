@@ -721,8 +721,6 @@ int16_t input_state(unsigned port, unsigned device,
                      current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
 
 #ifdef HAVE_OVERLAY
-               /* TODO/FIXME - I assume this is what needs to 
-                * be done instead? */
                if (input_overlay_is_alive(overlay_ptr) && port == 0)
                   res |= res_overlay;
 #endif
