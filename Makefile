@@ -92,20 +92,19 @@ APPEND_CFLAGS := $(CFLAGS)
 CXXFLAGS += $(APPEND_CFLAGS) -std=c++11 -D__STDC_CONSTANT_MACROS
 OBJCFLAGS :=  $(CFLAGS) -D__STDC_CONSTANT_MACROS
 
-ifeq ($(CXX_BUILD), 1)
-   LINK = $(CXX)
-   CFLAGS   := $(CXXFLAGS) -xc++
-   CFLAGS   += -DCXX_BUILD
-   CXXFLAGS += -DCXX_BUILD
-else
-   ifeq ($(NEED_CXX_LINKER),1)
+ifeq ($(HAVE_CXX), 1)
+   ifeq ($(CXX_BUILD), 1)
       LINK = $(CXX)
-   else ifeq ($(findstring Win32,$(OS)),)
-      LINK = $(CC)
+      CFLAGS   := $(CXXFLAGS) -xc++
+      CFLAGS   += -DCXX_BUILD
+      CXXFLAGS += -DCXX_BUILD
+   else ifeq ($(NEED_CXX_LINKER),1)
+      LINK = $(CXX)
    else
-      # directx-related code is c++
-      LINK = $(CXX)
+      LINK = $(CC)
    endif
+else
+   LINK = $(CC)
 
    ifneq ($(GNU90_BUILD), 1)
       ifneq ($(findstring icc,$(CC)),)
