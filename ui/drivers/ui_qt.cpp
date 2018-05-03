@@ -451,11 +451,11 @@ static void* ui_companion_qt_init(void)
       if (qsettings->contains("save_geometry"))
          mainwindow->restoreGeometry(qsettings->value("geometry").toByteArray());
 
-   if (qsettings->value("save_dock_positions", false).toBool())
+   if (qsettings->contains("save_dock_positions"))
       if (qsettings->contains("dock_positions"))
          mainwindow->restoreState(qsettings->value("dock_positions").toByteArray());
 
-   if (qsettings->value("save_last_tab", false).toBool())
+   if (qsettings->contains("save_last_tab"))
    {
       if (qsettings->contains("last_tab"))
       {
