@@ -277,7 +277,7 @@ static bool slang_process_reflection(
                shader_info->pass[index].feedback = true;
 
             if (semantic == SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY &&
-                shader_info->history_size < index)
+                (unsigned)shader_info->history_size < index)
                shader_info->history_size = index;
          }
 
