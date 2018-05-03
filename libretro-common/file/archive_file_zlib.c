@@ -240,7 +240,7 @@ static int zip_file_read(
       const char *needle, void **buf,
       const char *optional_outfile)
 {
-   file_archive_transfer_t zlib             = {0};
+   file_archive_transfer_t zlib             = {ARCHIVE_TRANSFER_NONE, 0, NULL, NULL, NULL, NULL, NULL, NULL };
    struct archive_extract_userdata userdata = {{0}};
    bool returnerr                           = true;
    int ret                                  = 0;

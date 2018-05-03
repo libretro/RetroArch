@@ -1255,7 +1255,7 @@ static void audio_driver_mixer_play_stream_internal(unsigned i, unsigned type)
    }
 
    if (set_state)
-      audio_mixer_streams[i].state   = type;
+      audio_mixer_streams[i].state   = (enum audio_mixer_state)type;
 }
 
 void audio_driver_mixer_play_stream(unsigned i)

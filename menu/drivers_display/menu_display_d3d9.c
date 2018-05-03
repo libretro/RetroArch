@@ -87,7 +87,7 @@ static void menu_display_d3d9_blend_begin(video_frame_info_t *video_info)
    if (!d3d)
       return;
 
-   d3d9_enable_blend_func(d3d->dev);
+   d3d9_enable_blend_func((LPDIRECT3DDEVICE9)d3d->dev);
 }
 
 static void menu_display_d3d9_blend_end(video_frame_info_t *video_info)
@@ -98,7 +98,7 @@ static void menu_display_d3d9_blend_end(video_frame_info_t *video_info)
    if (!d3d)
       return;
 
-   d3d9_disable_blend_func(d3d->dev);
+   d3d9_disable_blend_func((LPDIRECT3DDEVICE9)d3d->dev);
 }
 
 static void menu_display_d3d9_viewport(void *data, video_frame_info_t *video_info)
@@ -108,16 +108,19 @@ static void menu_display_d3d9_viewport(void *data, video_frame_info_t *video_inf
 static void menu_display_d3d9_bind_texture(void *data, d3d_video_t *d3d)
 {
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+   LPDIRECT3DDEVICE9        dev;
 
    if (!d3d || !draw || !draw->texture)
       return;
 
-   d3d9_set_texture(d3d->dev, 0, (void*)draw->texture);
-   d3d9_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_COMM_CLAMP);
-   d3d9_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_COMM_CLAMP);
-   d3d9_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_COMM_LINEAR);
-   d3d9_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_COMM_LINEAR);
-   d3d9_set_sampler_mipfilter(d3d->dev, 0, D3DTEXF_COMM_LINEAR);
+   dev = (LPDIRECT3DDEVICE9)d3d->dev;
+
+   d3d9_set_texture(dev, 0, (LPDIRECT3DTEXTURE9)draw->texture);
+   d3d9_set_sampler_address_u(dev, 0, D3DTADDRESS_COMM_CLAMP);
+   d3d9_set_sampler_address_v(dev, 0, D3DTADDRESS_COMM_CLAMP);
+   d3d9_set_sampler_minfilter(dev, 0, D3DTEXF_COMM_LINEAR);
+   d3d9_set_sampler_magfilter(dev, 0, D3DTEXF_COMM_LINEAR);
+   d3d9_set_sampler_mipfilter(dev, 0, D3DTEXF_COMM_LINEAR);
 }
 
 static void menu_display_d3d9_draw(void *data, video_frame_info_t *video_info)
@@ -126,6 +129,7 @@ static void menu_display_d3d9_draw(void *data, video_frame_info_t *video_info)
    video_shader_ctx_mvp_t mvp;
    math_matrix_4x4 mop, m1, m2;
    unsigned width, height;
+   LPDIRECT3DDEVICE9 dev;
    d3d_video_t *d3d              = video_info ? (d3d_video_t*)video_info->userdata : NULL;   
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    Vertex * pv                   = NULL;
@@ -135,12 +139,15 @@ static void menu_display_d3d9_draw(void *data, video_frame_info_t *video_info)
 
    if (!d3d || !draw || draw->pipeline.id)
       return;
+
+   dev                           = (LPDIRECT3DDEVICE9)d3d->dev;
+
    if((d3d->menu_display.offset + draw->coords->vertices )
          > (unsigned)d3d->menu_display.size)
       return;
 
    pv           = (Vertex*)
-      d3d9_vertex_buffer_lock(d3d->menu_display.buffer);
+      d3d9_vertex_buffer_lock((LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer);
 
    if (!pv)
       return;
@@ -178,7 +185,7 @@ static void menu_display_d3d9_draw(void *data, video_frame_info_t *video_info)
                colors[2]  /* B */
                );
    }
-   d3d9_vertex_buffer_unlock(d3d->menu_display.buffer);
+   d3d9_vertex_buffer_unlock((LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer);
 
    if(!draw->matrix_data)
       draw->matrix_data = menu_display_d3d9_get_default_mvp(video_info);
@@ -206,8 +213,8 @@ static void menu_display_d3d9_draw(void *data, video_frame_info_t *video_info)
    mvp.matrix = &m1;
    video_driver_set_mvp(&mvp);
    menu_display_d3d9_bind_texture(draw, (d3d_video_t*)video_info->userdata);
-   d3d9_draw_primitive(d3d->dev,
-         menu_display_prim_to_d3d9_enum(draw->prim_type),
+   d3d9_draw_primitive(dev,
+         (D3DPRIMITIVETYPE)menu_display_prim_to_d3d9_enum(draw->prim_type),
          d3d->menu_display.offset,
          draw->coords->vertices - 
          ((draw->prim_type == MENU_DISPLAY_PRIM_TRIANGLESTRIP) 
@@ -270,12 +277,15 @@ static void menu_display_d3d9_restore_clear_color(void)
 static void menu_display_d3d9_clear_color(
       menu_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info)
 {
+   LPDIRECT3DDEVICE9 dev;
    DWORD    clear_color = 0;
    d3d_video_t     *d3d = video_info ? 
       (d3d_video_t*)video_info->userdata : NULL;
 
    if (!d3d || !clearcolor)
       return;
+
+   dev                  = (LPDIRECT3DDEVICE9)d3d->dev;
 
    clear_color = D3DCOLOR_ARGB(
          BYTE_CLAMP(clearcolor->a * 255.0f), /* A */
@@ -284,7 +294,7 @@ static void menu_display_d3d9_clear_color(
          BYTE_CLAMP(clearcolor->b * 255.0f)  /* B */
          );
 
-   d3d9_clear(d3d->dev, 0, NULL, D3D_COMM_CLEAR_TARGET, clear_color, 0, 0);
+   d3d9_clear(dev, 0, NULL, D3D_COMM_CLEAR_TARGET, clear_color, 0, 0);
 }
 
 static bool menu_display_d3d9_font_init_first(
