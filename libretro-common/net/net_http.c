@@ -90,7 +90,7 @@ struct http_connection_t
 static char urlencode_lut[256];
 static bool urlencode_lut_inited = false;
 
-void urlencode_lut_init()
+void urlencode_lut_init(void)
 {
    unsigned i;
 
