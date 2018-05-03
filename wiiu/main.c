@@ -17,24 +17,35 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <unistd.h>
 #include <fat.h>
 #include <iosuhax.h>
 #include <sys/iosupport.h>
-#include <unistd.h>
-#include <wiiu/gx2.h>
-#include <wiiu/ios.h>
-#include <wiiu/kpad.h>
-#include <wiiu/os.h>
-#include <wiiu/procui.h>
-#include <wiiu/sysapp.h>
 
-#include "main.h"
+#include "hbl.h"
+
+#include "fs/fs_utils.h"
+#include "fs/sd_fat_devoptab.h"
+
+#include "system/dynamic.h"
+#include "system/memory.h"
+#include "system/exception_handler.h"
+
+#include "wiiu/gx2.h"
+#include "wiiu/ios.h"
+#include "wiiu/kpad.h"
+#include "wiiu/os.h"
+#include "wiiu/procui.h"
+#include "wiiu/sysapp.h"
 
 /**
  * This file contains the main entrypoints for the Wii U executable that
  * set up the call to main().
  */
+
+int main(int argc, char **argv);
+void __fini(void);
+void __init(void);
 
 static void fsdev_init(void);
 static void fsdev_exit(void);

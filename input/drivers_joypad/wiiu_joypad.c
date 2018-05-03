@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wiiu/input.h>
+#include "wiiu/input.h"
 
 #include "wiiu_dbg.h"
 
