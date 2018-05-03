@@ -63,8 +63,8 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
       { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
       D3DDECL_END()
    };
-   d3d_video_t *d3d               = (d3d_video_t*)data;
-   d3d_video_t *pass              = (d3d_video_t*)data;
+   d3d9_video_t *d3d               = (d3d9_video_t*)data;
+   d3d9_video_t *pass              = (d3d9_video_t*)data;
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)
       d3d->renderchain_data;
 
@@ -77,7 +77,7 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
 static bool hlsl_d3d9_renderchain_create_first_pass(void *data,
       const video_info_t *info)
 {
-   d3d_video_t       *d3d         = (d3d_video_t*)data;
+   d3d9_video_t       *d3d         = (d3d9_video_t*)data;
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)
       d3d->renderchain_data;
 
@@ -122,7 +122,7 @@ static void hlsl_d3d9_renderchain_set_vertices(
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
    unsigned width, height;
-   d3d_video_t *d3d         = (d3d_video_t*)data;
+   d3d9_video_t *d3d         = (d3d9_video_t*)data;
    hlsl_d3d9_renderchain_t *chain = d3d ?
       (hlsl_d3d9_renderchain_t*)d3d->renderchain_data : NULL;
 
@@ -242,7 +242,7 @@ static void hlsl_d3d9_renderchain_deinit_shader(void *data)
 
 static void hlsl_d3d9_renderchain_free(void *data)
 {
-   d3d_video_t *chain = (d3d_video_t*)data;
+   d3d9_video_t *chain = (d3d9_video_t*)data;
 
    if (!chain)
       return;
@@ -266,7 +266,7 @@ static bool hlsl_d3d9_renderchain_init_shader(void *data,
       void *renderchain_data)
 {
    video_shader_ctx_init_t init;
-   d3d_video_t        *d3d        = (d3d_video_t*)data;
+   d3d9_video_t        *d3d        = (d3d9_video_t*)data;
    settings_t *settings           = config_get_ptr();
    (void)renderchain_data;
 
@@ -292,7 +292,7 @@ static bool hlsl_d3d9_renderchain_init(void *data,
       )
 {
    unsigned width, height;
-   d3d_video_t *d3d                   = (d3d_video_t*)data;
+   d3d9_video_t *d3d                   = (d3d9_video_t*)data;
    const video_info_t *video_info     = (const video_info_t*)_video_info;
    const struct LinkInfo *link_info   = (const struct LinkInfo*)info_data;
    hlsl_d3d9_renderchain_t *chain     = (hlsl_d3d9_renderchain_t*)
@@ -342,7 +342,7 @@ static bool hlsl_d3d9_renderchain_render(void *data, const void *frame,
 {
    unsigned i;
    unsigned width, height;
-   d3d_video_t      *d3d          = (d3d_video_t*)data;
+   d3d9_video_t      *d3d          = (d3d9_video_t*)data;
    settings_t *settings           = config_get_ptr();
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)d3d->renderchain_data;
    bool video_smooth              = settings->bools.video_smooth;
@@ -411,7 +411,7 @@ static void hlsl_d3d9_renderchain_viewport_info(
       void *data, struct video_viewport *vp)
 {
    unsigned width, height;
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
 
    if (!d3d || !vp)
       return;

@@ -454,8 +454,8 @@ error:
 static void *hlsl_init(void *data, const char *path)
 {
    unsigned i;
-   d3d_video_t         *d3d = (d3d_video_t*)data;
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)
+   d3d9_video_t         *d3d = (d3d9_video_t*)data;
+   hlsl_shader_data_t *hlsl  = (hlsl_shader_data_t*)
       calloc(1, sizeof(hlsl_shader_data_t));
 
    if (!hlsl || !d3d)

@@ -255,7 +255,7 @@ typedef struct
 typedef struct
 {
    Font_Locals_t s_FontLocals;
-   d3d_video_t *d3d;
+   d3d9_video_t *d3d;
    uint32_t m_dwSavedState;
    uint32_t m_cMaxGlyph;                /* Number of entries in the translator table. */
    uint32_t m_dwNumGlyphs;              /* Number of valid glyphs. */
@@ -360,7 +360,7 @@ static void *xdk360_init_font(void *video_data,
 
    (void)font_size;
 
-   font->d3d                  = (d3d_video_t*)video_data;
+   font->d3d                  = (d3d9_video_t*)video_data;
 
    font->m_pFontTexture       = NULL;
    font->m_dwNumGlyphs        = 0L;

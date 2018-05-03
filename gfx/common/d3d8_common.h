@@ -22,10 +22,55 @@
 
 #include <d3d8.h>
 
+#include "../drivers/d3d.h"
 #include "../video_driver.h"
 #include "../../verbosity.h"
 
 RETRO_BEGIN_DECLS
+
+typedef struct d3d8_video
+{
+   bool keep_aspect;
+   bool should_resize;
+   bool quitting;
+   bool needs_restore;
+   bool overlays_enabled;
+   /* TODO - refactor this away properly. */
+   bool resolution_hd_enable;
+
+   unsigned cur_mon_id;
+   unsigned dev_rotation;
+
+   overlay_t *menu;
+   const d3d_renderchain_driver_t *renderchain_driver;
+   void *renderchain_data;
+
+   RECT font_rect;
+   RECT font_rect_shifted;
+   math_matrix_4x4 mvp;
+   math_matrix_4x4 mvp_rotate;
+   math_matrix_4x4 mvp_transposed;
+
+   struct video_viewport vp;
+   struct video_shader shader;
+   video_info_t video_info;
+   WNDCLASSEX windowClass;
+   LPDIRECT3DDEVICE8 dev;
+   d3d_video_viewport_t final_viewport;
+
+   char *shader_path;
+
+   struct
+   {
+      int size;
+      int offset;
+      void *buffer;
+      void *decl;
+   }menu_display;
+
+   size_t overlays_size;
+   overlay_t *overlays;
+} d3d8_video_t;
 
 static INLINE bool d3d8_swap(void *data, LPDIRECT3DDEVICE8 dev)
 {

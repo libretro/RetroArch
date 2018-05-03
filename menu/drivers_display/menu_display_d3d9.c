@@ -81,8 +81,8 @@ static INT32 menu_display_prim_to_d3d9_enum(
 
 static void menu_display_d3d9_blend_begin(video_frame_info_t *video_info)
 {
-   d3d_video_t *d3d = video_info ? 
-      (d3d_video_t*)video_info->userdata : NULL;
+   d3d9_video_t *d3d = video_info ? 
+      (d3d9_video_t*)video_info->userdata : NULL;
 
    if (!d3d)
       return;
@@ -92,8 +92,8 @@ static void menu_display_d3d9_blend_begin(video_frame_info_t *video_info)
 
 static void menu_display_d3d9_blend_end(video_frame_info_t *video_info)
 {
-   d3d_video_t *d3d = video_info ? 
-      (d3d_video_t*)video_info->userdata : NULL;
+   d3d9_video_t *d3d = video_info ? 
+      (d3d9_video_t*)video_info->userdata : NULL;
 
    if (!d3d)
       return;
@@ -105,7 +105,7 @@ static void menu_display_d3d9_viewport(void *data, video_frame_info_t *video_inf
 {
 }
 
-static void menu_display_d3d9_bind_texture(void *data, d3d_video_t *d3d)
+static void menu_display_d3d9_bind_texture(void *data, d3d9_video_t *d3d)
 {
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    LPDIRECT3DDEVICE9        dev;
@@ -130,7 +130,7 @@ static void menu_display_d3d9_draw(void *data, video_frame_info_t *video_info)
    math_matrix_4x4 mop, m1, m2;
    unsigned width, height;
    LPDIRECT3DDEVICE9 dev;
-   d3d_video_t *d3d              = video_info ? (d3d_video_t*)video_info->userdata : NULL;   
+   d3d9_video_t *d3d              = video_info ? (d3d9_video_t*)video_info->userdata : NULL;   
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    Vertex * pv                   = NULL;
    const float *vertex           = NULL;
@@ -212,7 +212,7 @@ static void menu_display_d3d9_draw(void *data, video_frame_info_t *video_info)
    mvp.data   = d3d;
    mvp.matrix = &m1;
    video_driver_set_mvp(&mvp);
-   menu_display_d3d9_bind_texture(draw, (d3d_video_t*)video_info->userdata);
+   menu_display_d3d9_bind_texture(draw, (d3d9_video_t*)video_info->userdata);
    d3d9_draw_primitive(dev,
          (D3DPRIMITIVETYPE)menu_display_prim_to_d3d9_enum(draw->prim_type),
          d3d->menu_display.offset,
@@ -279,8 +279,8 @@ static void menu_display_d3d9_clear_color(
 {
    LPDIRECT3DDEVICE9 dev;
    DWORD    clear_color = 0;
-   d3d_video_t     *d3d = video_info ? 
-      (d3d_video_t*)video_info->userdata : NULL;
+   d3d9_video_t     *d3d = video_info ? 
+      (d3d9_video_t*)video_info->userdata : NULL;
 
    if (!d3d || !clearcolor)
       return;
