@@ -105,7 +105,9 @@ ifeq ($(HAVE_CXX), 1)
    endif
 else
    LINK = $(CC)
+endif
 
+ifneq ($(CXX_BUILD), 1)
    ifneq ($(GNU90_BUILD), 1)
       ifneq ($(findstring icc,$(CC)),)
          CFLAGS += -std=c99 -D_GNU_SOURCE
