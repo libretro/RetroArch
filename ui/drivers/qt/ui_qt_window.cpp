@@ -2836,6 +2836,32 @@ void MainWindow::addPlaylistItemsToGrid(QString pathString)
       QString thumbnailFileNameNoExt;
       QLabel *newLabel = NULL;
       QSize thumbnailWidgetSizeHint(screenSize.width() / 8, screenSize.height() / 8);
+      QByteArray extension;
+      QString extensionStr;
+      QString imagePath;
+      int lastIndex = -1;
+
+      lastIndex = hash["path"].lastIndexOf('.');
+
+      if (lastIndex >= 0)
+      {
+         extensionStr = hash["path"].mid(lastIndex + 1);
+
+         if (!extensionStr.isEmpty())
+         {
+            extension = extensionStr.toLower().toUtf8();
+         }
+      }
+
+      if (!extension.isEmpty() && m_imageFormats.contains(extension))
+      {
+         /* use thumbnail widgets to show regular image files */
+         imagePath = hash["path"];
+      }
+      else
+      {
+         imagePath = QString(settings->paths.directory_thumbnails) + "/" + hash.value("db_name") + "/" + THUMBNAIL_BOXART + "/" + thumbnailFileNameNoExt + ".png";
+      }
 
       thumbnailFileNameNoExt = hash["label_noext"];
       thumbnailFileNameNoExt.replace(m_fileSanitizerRegex, "_");
@@ -2862,7 +2888,7 @@ void MainWindow::addPlaylistItemsToGrid(QString pathString)
       m_gridLayout->addWidget(item->widget);
       m_gridItems.append(item);
 
-      loadImageDeferred(item, QString(settings->paths.directory_thumbnails) + "/" + hash.value("db_name") + "/" + THUMBNAIL_BOXART + "/" + thumbnailFileNameNoExt + ".png");
+      loadImageDeferred(item, imagePath);
    }
 }
 
