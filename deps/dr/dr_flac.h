@@ -4081,7 +4081,6 @@ static drflac_bool32 drflac__on_seek_ogg(void* pUserData, int offset, drflac_see
 
        if (oggbs->bytesRemainingInPage >= (size_t)bytesRemainingToSeek)
        {
-          bytesSeeked += bytesRemainingToSeek;
           oggbs->bytesRemainingInPage -= bytesRemainingToSeek;
           break;
        }
@@ -4117,7 +4116,6 @@ drflac_bool32 drflac_ogg__seek_to_sample(drflac* pFlac, drflac_uint64 sampleInde
       return DRFLAC_FALSE;
    oggbs->bytesRemainingInPage = 0;
 
-   runningFrameBytePos = oggbs->currentBytePos;   /* <-- Points to the OggS identifier. */
    for (;;)
    {
       if (!drflac_oggbs__goto_next_page(oggbs, drflac_ogg_recover_on_crc_mismatch)) {

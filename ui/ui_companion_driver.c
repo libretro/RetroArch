@@ -152,8 +152,10 @@ void ui_companion_driver_init_first(void)
 
 void ui_companion_driver_toggle(bool force)
 {
+#ifdef HAVE_QT
    settings_t *settings = config_get_ptr();
-
+#endif
+    
    if (ui_companion && ui_companion->toggle)
       ui_companion->toggle(ui_companion_data, false);
 
@@ -175,7 +177,6 @@ void ui_companion_driver_toggle(bool force)
 void ui_companion_driver_notify_refresh(void)
 {
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
-   settings_t *settings = config_get_ptr();
 
    if (!ui)
       return;
@@ -253,7 +254,9 @@ const ui_application_t *ui_companion_driver_get_application_ptr(void)
 void ui_companion_driver_msg_queue_push(const char *msg, unsigned priority, unsigned duration, bool flush)
 {
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
+#ifdef HAVE_QT
    settings_t *settings = config_get_ptr();
+#endif
 
    if (ui && ui->msg_queue_push)
       ui->msg_queue_push(ui_companion_data, msg, priority, duration, flush);
