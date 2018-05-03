@@ -29,6 +29,7 @@
 #include <QMenu>
 #include <QDockWidget>
 #include <QList>
+#include <QtConcurrentRun>
 
 #include "../ui_qt.h"
 #include "ui_qt_load_core_window.h"
@@ -100,6 +101,16 @@ static void scan_finished_handler(void *task_data, void *user_data, const char *
       ui_window.qtWindow->settings()->setValue("scan_finish_confirm", false);
 }
 #endif
+
+GridItem::GridItem() :
+   widget(NULL)
+   ,label(NULL)
+   ,hash()
+   ,image()
+   ,pixmap()
+   ,imageWatcher()
+{
+}
 
 TreeView::TreeView(QWidget *parent) :
    QTreeView(parent)
@@ -2753,6 +2764,29 @@ void MainWindow::removeGridItems()
    }
 }
 
+void MainWindow::onDeferredImageLoaded()
+{
+   const QFutureWatcher<GridItem*> *watcher = static_cast<QFutureWatcher<GridItem*>*>(sender());
+   GridItem *item = watcher->result();
+
+   if (!item->image.isNull())
+      item->label->setPixmap(QPixmap::fromImage(item->image));
+}
+
+void MainWindow::loadImageDeferred(GridItem *item, QString path)
+{
+   connect(&item->imageWatcher, SIGNAL(finished()), this, SLOT(onDeferredImageLoaded()), Qt::QueuedConnection);
+   item->imageWatcher.setFuture(QtConcurrent::run<GridItem*>(this, &MainWindow::doDeferredImageLoad, item, path));
+}
+
+GridItem* MainWindow::doDeferredImageLoad(GridItem *item, QString path)
+{
+   /* this runs in another thread */
+   item->image = QImage(path);
+
+   return item;
+}
+
 void MainWindow::addPlaylistItemsToGrid(QString pathString)
 {
    QList<QHash<QString, QString> > items = getPlaylistItems(pathString);
@@ -2764,7 +2798,6 @@ void MainWindow::addPlaylistItemsToGrid(QString pathString)
       const QHash<QString, QString> &hash = items.at(i);
       GridItem *item = new GridItem();
       ThumbnailLabel *label = NULL;
-      QPixmap pixmap;
       QString thumbnailFileNameNoExt;
       QLabel *newLabel = NULL;
 
@@ -2779,9 +2812,7 @@ void MainWindow::addPlaylistItemsToGrid(QString pathString)
 
       label = new ThumbnailLabel(item->widget);
 
-      pixmap = QPixmap(QString(settings->paths.directory_thumbnails) + "/" + hash.value("db_name") + "/" + THUMBNAIL_BOXART + "/" + thumbnailFileNameNoExt + ".png");
-
-      label->setPixmap(pixmap);
+      item->label = label;
 
       item->widget->layout()->addWidget(label);
 
@@ -2793,6 +2824,8 @@ void MainWindow::addPlaylistItemsToGrid(QString pathString)
 
       m_gridLayout->addWidget(item->widget);
       m_gridItems.append(item);
+
+      loadImageDeferred(item, QString(settings->paths.directory_thumbnails) + "/" + hash.value("db_name") + "/" + THUMBNAIL_BOXART + "/" + thumbnailFileNameNoExt + ".png");
    }
 }
 

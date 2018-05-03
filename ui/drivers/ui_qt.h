@@ -28,6 +28,8 @@
 #include <QRegularExpression>
 #include <QPalette>
 #include <QPlainTextEdit>
+#include <QFutureWatcher>
+#include <QImage>
 
 extern "C" {
 #include <retro_common_api.h>
@@ -58,12 +60,19 @@ class QScrollArea;
 class LoadCoreWindow;
 class MainWindow;
 class ThumbnailWidget;
+class ThumbnailLabel;
 class FlowLayout;
 
 struct GridItem
 {
+   GridItem();
+
    ThumbnailWidget *widget;
+   ThumbnailLabel *label;
    QHash<QString, QString> hash;
+   QImage image;
+   QPixmap pixmap;
+   QFutureWatcher<GridItem*> imageWatcher;
 };
 
 class ThumbnailWidget : public QWidget
@@ -255,6 +264,7 @@ public:
    bool setCustomThemeFile(QString filePath);
    void setCustomThemeString(QString qss);
    const QString& customThemeString() const;
+   GridItem* doDeferredImageLoad(GridItem *item, QString path);
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -309,6 +319,7 @@ private slots:
    void onFileBrowserTreeContextMenuRequested(const QPoint &pos);
    void onPlaylistWidgetContextMenuRequested(const QPoint &pos);
    void onStopClicked();
+   void onDeferredImageLoaded();
 
 private:
    void setCurrentCoreLabel();
@@ -316,6 +327,7 @@ private:
    bool isCoreLoaded();
    bool isContentLessCore();
    void removeGridItems();
+   void loadImageDeferred(GridItem *item, QString path);
    QList<QHash<QString, QString> > getPlaylistItems(QString pathString);
 
    LoadCoreWindow *m_loadCoreWindow;
