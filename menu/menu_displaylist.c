@@ -4283,37 +4283,37 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             snprintf(lbl_play_sequential, sizeof(lbl_play_sequential), "mixer_stream_%d_action_play_sequential", id);
 
             menu_entries_append_enum(info->list,
-                  "Play",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY),
                   lbl_play,
                   MSG_UNKNOWN,
                   (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN  +  id),
                   0, 0);
             menu_entries_append_enum(info->list,
-                  "Play (Looped)",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED),
                   lbl_play_looped,
                   MSG_UNKNOWN,
                   (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN  +  id),
                   0, 0);
             menu_entries_append_enum(info->list,
-                  "Play (Sequential)",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL),
                   lbl_play_sequential,
                   MSG_UNKNOWN,
                   (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN  +  id),
                   0, 0);
             menu_entries_append_enum(info->list,
-                  "Stop",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP),
                   lbl_stop,
                   MSG_UNKNOWN,
                   (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN  +  id),
                   0, 0);
             menu_entries_append_enum(info->list,
-                  "Remove",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE),
                   lbl_remove,
                   MSG_UNKNOWN,
                   (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN  +  id),
                   0, 0);
             menu_entries_append_enum(info->list,
-                  "Volume",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME),
                   lbl_volume,
                   MSG_UNKNOWN,
                   (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN  +  id),
