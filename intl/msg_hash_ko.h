@@ -3262,3 +3262,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
       "This will stop playback of the audio stream and remove it entirely from memory.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
       "Adjust the volume of the audio stream.")
+MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
+      "Add this audio track to an available audio stream slot. If no slots are currently available, it will be ignored.")
+MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
+      "Add this audio track to an available audio stream slot and play it. If no slots are currently available, it will be ignored.")

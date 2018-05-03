@@ -49,6 +49,10 @@
    return 0; \
 }
 
+default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_add_to_mixer_and_play,
+      MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY)
+default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_add_to_mixer,
+      MENU_ENUM_SUBLABEL_ADD_TO_MIXER)
 default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_play,
       MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY)
 default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_play_looped,
@@ -645,6 +649,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_ADD_TO_MIXER:
+         case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION:
+            BIND_ACTION_SUBLABEL(cbs, menu_action_sublabel_setting_audio_mixer_add_to_mixer);
+            break;
+         case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY:
+         case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY:
+            BIND_ACTION_SUBLABEL(cbs, menu_action_sublabel_setting_audio_mixer_add_to_mixer_and_play);
+            break;
          case MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_override_options);
             break;
