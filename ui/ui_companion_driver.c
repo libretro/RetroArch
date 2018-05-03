@@ -177,6 +177,9 @@ void ui_companion_driver_toggle(bool force)
 void ui_companion_driver_notify_refresh(void)
 {
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
+#ifdef HAVE_QT
+   settings_t            *settings = config_get_ptr();
+#endif
 
    if (!ui)
       return;
