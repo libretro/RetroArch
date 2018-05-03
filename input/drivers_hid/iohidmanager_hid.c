@@ -512,8 +512,8 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
    RARCH_LOG("Port %d: %s.\n", idx, device_name);
 }
 
-static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_t* hid)
-
+static void iohidmanager_hid_device_add(void *data, IOReturn result,
+      void *sender, IOHIDDeviceRef device)
 {
    int i;
    IOReturn ret;
@@ -527,6 +527,8 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
    apple_input_rec_t *tmp                   = NULL;
    apple_input_rec_t *tmpButtons            = NULL;
    apple_input_rec_t *tmpAxes               = NULL;
+   iohidmanager_hid_t                  *hid = (iohidmanager_hid_t*)	
+      hid_driver_get_data();
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)
       calloc(1, sizeof(*adapter));
 
@@ -850,70 +852,24 @@ static int iohidmanager_hid_manager_free(iohidmanager_hid_t *hid)
 static int iohidmanager_hid_manager_set_device_matching(
       iohidmanager_hid_t *hid)
 {
-   unsigned i;
-   hid_list_t* devList          = NULL;
-	CFSetRef set                 = IOHIDManagerCopyDevices(hid->ptr);
-	CFIndex num_devices          = CFSetGetCount(set);
-	IOHIDDeviceRef *device_array = (IOHIDDeviceRef*)calloc(num_devices, sizeof(IOHIDDeviceRef));
+   CFMutableArrayRef matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0,
+         &kCFTypeArrayCallBacks);
 
-	CFSetGetValues(set, (const void **) device_array);
-	
-	for (i = 0; i < num_devices; i++)
-   {
-      IOHIDDeviceRef dev = device_array[i];
+   if (!matcher)
+      return -1;
 
-      /* filter gamepad/joystick devices */
-      if (	IOHIDDeviceConformsTo(dev, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick)
-            ||	IOHIDDeviceConformsTo(dev, kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad)
-         )
-      {
-         if (!devList)
-         {
-            devList          = (hid_list_t *)malloc(sizeof(hid_list_t));
-            devList->device  = dev;
-            devList->lid     = iohidmanager_hid_device_get_location_id(dev);
-            devList->next    = NULL;
-         }
-         else
-         {
-            hid_list_t *ptr  = NULL;
-            hid_list_t *new  = (hid_list_t *)malloc(sizeof(hid_list_t));
-            new->device      = dev;
-            new->lid         = iohidmanager_hid_device_get_location_id(dev);
-            new->next        = NULL;
+   iohidmanager_hid_append_matching_dictionary(matcher,
+         kHIDPage_GenericDesktop,
+         kHIDUSage_GD_Joystick);
+   iohidmanager_hid_append_matching_dictionary(matcher,
+         kHIDPage_GenericDesktop,
+         kHIDUSage_GD_Gamepad);
 
-            ptr              = devList;
+   IOHIDManagerSetDeviceMatchingMultiple(hid->ptr, matcher);
+   IOHIDManagerRegisterDeviceMatchingCallback(hid->ptr,
+         iohidmanager_hid_device_add, 0);
 
-            if ( new->lid < ptr->lid )
-            {
-               new->next = ptr;
-               devList   = new;
-            }
-            else
-            {
-               while ((ptr->lid < new->lid ) && ptr->next)
-                  ptr    = ptr->next;
-
-               new->next = ptr->next;
-               ptr->next = new;
-            }
-         }
-      }
-   }
-
-   {
-      /* register devices */
-      hid_list_t * ptr = devList;
-      while (ptr)
-      {
-         iohidmanager_hid_device_add(ptr->device, hid);
-         ptr = ptr->next;
-         free(devList);
-         devList = ptr;
-      }
-   }
-
-	free(device_array);
+   CFRelease(matcher);
 
    return 0;
 }
