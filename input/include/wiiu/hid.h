@@ -17,9 +17,9 @@
 #ifndef __WIIU_HID__H
 #define __WIIU_HID__H
 
-#include "wiiu/hid_types.h"
-#include "wiiu/input.h"
-#include "input/common/hid/hid_device_driver.h"
+#include "hid_types.h"
+#include "input.h"
+#include "../../common/hid/hid_device_driver.h"
 
 #define DEVICE_UNUSED 0
 #define DEVICE_USED   1

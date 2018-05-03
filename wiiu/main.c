@@ -31,12 +31,12 @@
 #include "system/memory.h"
 #include "system/exception_handler.h"
 
-#include "wiiu/gx2.h"
-#include "wiiu/ios.h"
-#include "wiiu/kpad.h"
-#include "wiiu/os.h"
-#include "wiiu/procui.h"
-#include "wiiu/sysapp.h"
+#include <wiiu/gx2.h>
+#include <wiiu/ios.h>
+#include <wiiu/kpad.h>
+#include <wiiu/os.h>
+#include <wiiu/procui.h>
+#include <wiiu/sysapp.h>
 
 /**
  * This file contains the main entrypoints for the Wii U executable that
