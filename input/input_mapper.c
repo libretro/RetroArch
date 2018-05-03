@@ -88,7 +88,7 @@ void input_mapper_free(input_mapper_t *handle)
 void input_mapper_poll(input_mapper_t *handle)
 {
    unsigned i, j;
-   input_bits_t current_input, current_overlay_input;
+   input_bits_t current_input;
    settings_t *settings                       = config_get_ptr();
    unsigned max_users                         =
       *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
