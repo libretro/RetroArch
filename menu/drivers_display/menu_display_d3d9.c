@@ -87,7 +87,7 @@ static void menu_display_d3d9_blend_begin(video_frame_info_t *video_info)
    if (!d3d)
       return;
 
-   d3d9_enable_blend_func((LPDIRECT3DDEVICE9)d3d->dev);
+   d3d9_enable_blend_func(d3d->dev);
 }
 
 static void menu_display_d3d9_blend_end(video_frame_info_t *video_info)
@@ -98,7 +98,7 @@ static void menu_display_d3d9_blend_end(video_frame_info_t *video_info)
    if (!d3d)
       return;
 
-   d3d9_disable_blend_func((LPDIRECT3DDEVICE9)d3d->dev);
+   d3d9_disable_blend_func(d3d->dev);
 }
 
 static void menu_display_d3d9_viewport(void *data, video_frame_info_t *video_info)
@@ -140,7 +140,7 @@ static void menu_display_d3d9_draw(void *data, video_frame_info_t *video_info)
    if (!d3d || !draw || draw->pipeline.id)
       return;
 
-   dev                           = (LPDIRECT3DDEVICE9)d3d->dev;
+   dev                           = d3d->dev;
 
    if((d3d->menu_display.offset + draw->coords->vertices )
          > (unsigned)d3d->menu_display.size)

@@ -1633,7 +1633,7 @@ static bool d3d9_cg_renderchain_read_viewport(
    LPDIRECT3DSURFACE9 dest   = NULL;
    bool ret                  = true;
    d3d9_video_t *d3d         = (d3d9_video_t*)data;
-   LPDIRECT3DDEVICE9 d3dr    = (LPDIRECT3DDEVICE9)d3d->dev;
+   LPDIRECT3DDEVICE9 d3dr    = d3d->dev;
 
    video_driver_get_size(&width, &height);
 

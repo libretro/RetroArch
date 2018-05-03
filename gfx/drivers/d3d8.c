@@ -330,7 +330,7 @@ static bool d3d8_renderchain_init(void *data,
 
    video_driver_get_size(&width, &height);
 
-   chain->dev                   = (LPDIRECT3DDEVICE8)dev_data;
+   chain->dev                   = dev_data;
    chain->pixel_size            = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
    chain->tex_w                 = link_info->tex_w;
    chain->tex_h                 = link_info->tex_h;
