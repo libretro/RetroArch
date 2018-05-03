@@ -2897,6 +2897,8 @@ void MainWindow::initContentGridLayout()
 void MainWindow::onContentGridInited()
 {
    m_gridLayoutWidget->resize(m_gridScrollArea->viewport()->size());
+
+   onZoomValueChanged(m_zoomSlider->value());
 }
 
 void MainWindow::initContentTableWidget()
