@@ -2803,7 +2803,10 @@ void MainWindow::onDeferredImageLoaded()
    GridItem *item = watcher->result();
 
    if (!item->image.isNull())
+   {
       item->label->setPixmap(QPixmap::fromImage(item->image));
+      item->label->update();
+   }
 }
 
 void MainWindow::loadImageDeferred(GridItem *item, QString path)
