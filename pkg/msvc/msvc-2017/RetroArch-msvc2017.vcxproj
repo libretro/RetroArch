@@ -9,6 +9,22 @@
       <Configuration>Debug Cg</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug QT+CG|Win32">
+      <Configuration>Debug QT+CG</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug QT+CG|x64">
+      <Configuration>Debug QT+CG</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug QT|Win32">
+      <Configuration>Debug QT</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug QT|x64">
+      <Configuration>Debug QT</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
@@ -23,6 +39,22 @@
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release Cg|x64">
       <Configuration>Release Cg</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release QT+CG|Win32">
+      <Configuration>Release QT+CG</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release QT+CG|x64">
+      <Configuration>Release QT+CG</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release QT|Win32">
+      <Configuration>Release QT</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release QT|x64">
+      <Configuration>Release QT</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
@@ -53,6 +85,18 @@
     <CharacterSet>NotSet</CharacterSet>
     <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -60,6 +104,18 @@
     <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>NotSet</CharacterSet>
@@ -73,6 +129,20 @@
     <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -93,6 +163,20 @@
     <CharacterSet>NotSet</CharacterSet>
     <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
@@ -102,10 +186,22 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -114,10 +210,22 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -137,6 +245,24 @@
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
+    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
+    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
@@ -152,6 +278,24 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\</IncludePath>
+    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+    <ExecutablePath>$(QtDirectory)\msvc2017_64\bin;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\</IncludePath>
+    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+    <ExecutablePath>$(QtDirectory)\msvc2017_64\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -169,6 +313,24 @@
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
+    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
+    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
@@ -184,6 +346,24 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\</IncludePath>
+    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+    <ExecutablePath>$(QtDirectory)\msvc2017_64\bin;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\</IncludePath>
+    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+    <ExecutablePath>$(QtDirectory)\msvc2017_64\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -226,6 +406,48 @@
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_SPIRV_CROSS;HAVE_UPDATE_ASSETS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_FBO;WANT_ZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_SPIRV_CROSS;HAVE_UPDATE_ASSETS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_FBO;WANT_ZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>
@@ -264,6 +486,48 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_SPIRV_CROSS;HAVE_UPDATE_ASSETS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_SPIRV_CROSS;HAVE_UPDATE_ASSETS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_FBO;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;WANT_ZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -318,6 +582,58 @@
       <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_SPIRV_CROSS;HAVE_UPDATE_ASSETS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;WANT_ZLIB;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_SPIRV_CROSS;HAVE_UPDATE_ASSETS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;WANT_ZLIB;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -369,6 +685,58 @@
       <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_SPIRV_CROSS;HAVE_UPDATE_ASSETS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_SPIRV_CROSS;HAVE_UPDATE_ASSETS;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;WANT_ZLIB;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\media\rarch.rc" />
   </ItemGroup>
@@ -376,18 +744,166 @@
     <ClCompile Include="..\..\..\griffin\griffin.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp" />
     <ClCompile Include="..\..\..\griffin\griffin_glslang.cpp">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
+    <ClCompile Include="MetaObjects\moc_ui_qt.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="MetaObjects\moc_ui_qt_load_core_window.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\ui\drivers\qt\ui_qt_load_core_window.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">false</ExcludedFromBuild>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">false</LinkObjects>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">false</LinkObjects>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">false</LinkObjects>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">false</LinkObjects>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">false</LinkObjects>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">false</LinkObjects>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</LinkObjects>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</LinkObjects>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">true</ExcludedFromBuild>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\ui\drivers\ui_qt.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</ExcludedFromBuild>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</LinkObjects>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">false</ExcludedFromBuild>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">false</LinkObjects>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">false</LinkObjects>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">false</LinkObjects>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">false</LinkObjects>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">moc.exe "%(FullPath)" &gt; "$(ProjectDir)MetaObjects\moc_%(Filename).cpp"</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">QT: Generate $(ProjectDir)MetaObjects\moc_%(Filename).cpp</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">$(ProjectDir)MetaObjects\moc_%(Filename).cpp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">false</LinkObjects>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">false</LinkObjects>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">true</ExcludedFromBuild>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -37,6 +37,7 @@ UI
 #include "../ui/drivers/ui_qt.cpp"
 
 #include "../ui/drivers/qt/ui_qt_window.cpp"
+#include "../ui/drivers/qt/ui_qt_load_core_window.cpp"
 #include "../ui/drivers/qt/ui_qt_browser_window.cpp"
 #include "../ui/drivers/qt/ui_qt_msg_window.cpp"
 #include "../ui/drivers/qt/ui_qt_application.cpp"
