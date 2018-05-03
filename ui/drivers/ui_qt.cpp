@@ -57,6 +57,7 @@ typedef struct ui_companion_qt
 
 ThumbnailWidget::ThumbnailWidget(QWidget *parent) :
    QWidget(parent)
+   ,m_sizeHint(QSize(256, 256))
 {
 }
 
@@ -80,7 +81,12 @@ void ThumbnailWidget::resizeEvent(QResizeEvent *event)
 
 QSize ThumbnailWidget::sizeHint() const
 {
-   return QSize(256, 256);
+   return m_sizeHint;
+}
+
+void ThumbnailWidget::setSizeHint(QSize size)
+{
+   m_sizeHint = size;
 }
 
 ThumbnailLabel::ThumbnailLabel(QWidget *parent) :

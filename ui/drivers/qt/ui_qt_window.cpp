@@ -2823,6 +2823,8 @@ GridItem* MainWindow::doDeferredImageLoad(GridItem *item, QString path)
 void MainWindow::addPlaylistItemsToGrid(QString pathString)
 {
    QList<QHash<QString, QString> > items = getPlaylistItems(pathString);
+   QScreen *screen = qApp->primaryScreen();
+   QSize screenSize = screen->size();
    settings_t *settings = config_get_ptr();
    int i = 0;
 
@@ -2833,12 +2835,14 @@ void MainWindow::addPlaylistItemsToGrid(QString pathString)
       ThumbnailLabel *label = NULL;
       QString thumbnailFileNameNoExt;
       QLabel *newLabel = NULL;
+      QSize thumbnailWidgetSizeHint(screenSize.width() / 8, screenSize.height() / 8);
 
       thumbnailFileNameNoExt = hash["label_noext"];
       thumbnailFileNameNoExt.replace(m_fileSanitizerRegex, "_");
 
       item->hash = hash;
       item->widget = new ThumbnailWidget();
+      item->widget->setSizeHint(thumbnailWidgetSizeHint);
       item->widget->setFixedSize(item->widget->sizeHint());
       item->widget->setLayout(new QVBoxLayout());
       item->widget->setStyleSheet("background-color: #555555");

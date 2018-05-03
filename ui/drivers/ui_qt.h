@@ -83,6 +83,9 @@ class ThumbnailWidget : public QWidget
 public:
    ThumbnailWidget(QWidget *parent = 0);
    QSize sizeHint() const;
+   void setSizeHint(QSize size);
+private:
+   QSize m_sizeHint;
 protected:
    void paintEvent(QPaintEvent *event);
    void resizeEvent(QResizeEvent *event);
