@@ -517,8 +517,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_zoomSlider = new QSlider(Qt::Horizontal, zoomWidget);
 
-   m_zoomSlider->setMinimum(0);
-   m_zoomSlider->setMaximum(100);
+   m_zoomSlider->setMinimum(20);
+   m_zoomSlider->setMaximum(400);
    m_zoomSlider->setValue(50);
 
    m_lastZoomSliderValue = m_zoomSlider->value();
@@ -2887,9 +2887,12 @@ void MainWindow::initContentGridLayout()
    else
       addPlaylistItemsToGrid(path);
 
-   QTimer::singleShot(0, this, [this]() {
-      m_gridLayoutWidget->resize(m_gridScrollArea->viewport()->size());
-   });
+   QTimer::singleShot(0, this, SLOT(onContentGridInited()));
+}
+
+void MainWindow::onContentGridInited()
+{
+   m_gridLayoutWidget->resize(m_gridScrollArea->viewport()->size());
 }
 
 void MainWindow::initContentTableWidget()

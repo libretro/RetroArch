@@ -323,6 +323,7 @@ private slots:
    void onStopClicked();
    void onDeferredImageLoaded();
    void onZoomValueChanged(int value);
+   void onContentGridInited();
 
 private:
    void setCurrentCoreLabel();
