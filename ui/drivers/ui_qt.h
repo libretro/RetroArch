@@ -57,6 +57,14 @@ class QStyle;
 class QScrollArea;
 class LoadCoreWindow;
 class MainWindow;
+class ThumbnailWidget;
+class FlowLayout;
+
+struct GridItem
+{
+   ThumbnailWidget *widget;
+   QHash<QString, QString> hash;
+};
 
 class ThumbnailWidget : public QWidget
 {
@@ -223,6 +231,8 @@ public:
    TreeView* dirTreeView();
    QListWidget* playlistListWidget();
    TableWidget* contentTableWidget();
+   FlowLayout* contentGridLayout();
+   QWidget* contentGridWidget();
    QWidget* searchWidget();
    QLineEdit* searchLineEdit();
    QComboBox* launchWithComboBox();
@@ -259,6 +269,7 @@ public slots:
    void onBrowserUpClicked();
    void onBrowserStartClicked();
    void initContentTableWidget();
+   void initContentGridLayout();
    void onViewClosedDocksAboutToShow();
    void onShowHiddenDockWidgetAction();
    void setCoreActions();
@@ -288,6 +299,7 @@ private slots:
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
    void addPlaylistItemsToTable(QString path);
+   void addPlaylistItemsToGrid(QString path);
    void onContentItemDoubleClicked(QTableWidgetItem *item);
    void onCoreLoadWindowClosed();
    void onTabWidgetIndexChanged(int index);
@@ -303,6 +315,8 @@ private:
    void getPlaylistFiles();
    bool isCoreLoaded();
    bool isContentLessCore();
+   void removeGridItems();
+   QList<QHash<QString, QString> > getPlaylistItems(QString pathString);
 
    LoadCoreWindow *m_loadCoreWindow;
    QTimer *m_timer;
@@ -344,6 +358,10 @@ private:
    QListWidgetItem *m_historyPlaylistsItem;
    QIcon m_folderIcon;
    QString m_customThemeString;
+   FlowLayout *m_gridLayout;
+   QWidget *m_gridWidget;
+   QScrollArea *m_gridScrollArea;
+   QList<GridItem*> m_gridItems;
 
 protected:
    void closeEvent(QCloseEvent *event);

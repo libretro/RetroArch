@@ -256,6 +256,9 @@ static void* ui_companion_qt_init(void)
 
    layout = new QVBoxLayout();
    layout->addWidget(mainwindow->contentTableWidget());
+   layout->addWidget(mainwindow->contentGridWidget());
+
+   mainwindow->contentTableWidget()->hide();
 
    widget->setLayout(layout);
 

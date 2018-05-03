@@ -33,6 +33,7 @@
 #include "../ui_qt.h"
 #include "ui_qt_load_core_window.h"
 #include "ui_qt_themes.h"
+#include "flowlayout.h"
 
 extern "C" {
 #include "../../../version.h"
@@ -487,12 +488,29 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_historyPlaylistsItem(NULL)
    ,m_folderIcon()
    ,m_customThemeString()
+   ,m_gridLayout(new FlowLayout())
+   ,m_gridWidget(new QWidget(this))
+   ,m_gridScrollArea(new QScrollArea(m_gridWidget))
+   ,m_gridItems()
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
    QString configDir = QFileInfo(path_get(RARCH_PATH_CONFIG)).dir().absolutePath();
    QToolButton *searchResetButton = NULL;
+   QWidget *gridLayoutWidget = new QWidget();
    int i = 0;
+
+   m_gridWidget->setLayout(new QVBoxLayout());
+
+   gridLayoutWidget->setLayout(m_gridLayout);
+
+   m_gridScrollArea->setAlignment(Qt::AlignCenter);
+   m_gridScrollArea->setFrameShape(QFrame::NoFrame);
+   m_gridScrollArea->setWidgetResizable(true);
+   m_gridScrollArea->setWidget(gridLayoutWidget);
+
+   m_gridWidget->layout()->addWidget(m_gridScrollArea);
+   m_gridWidget->layout()->setAlignment(Qt::AlignCenter);
 
    m_tableWidget->setAlternatingRowColors(true);
 
@@ -658,6 +676,7 @@ MainWindow::~MainWindow()
       delete m_thumbnailPixmap2;
    if (m_thumbnailPixmap3)
       delete m_thumbnailPixmap3;
+   removeGridItems();
 }
 
 void MainWindow::showWelcomeScreen()
@@ -2512,13 +2531,24 @@ void MainWindow::onCurrentListItemChanged(QListWidgetItem *current, QListWidgetI
    if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) != msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
       return;
 
-   initContentTableWidget();
+   //initContentTableWidget();
+   initContentGridLayout();
    setCoreActions();
 }
 
 TableWidget* MainWindow::contentTableWidget()
 {
    return m_tableWidget;
+}
+
+QWidget* MainWindow::contentGridWidget()
+{
+   return m_gridWidget;
+}
+
+FlowLayout* MainWindow::contentGridLayout()
+{
+   return m_gridLayout;
 }
 
 void MainWindow::onBrowserDownloadsClicked()
@@ -2700,6 +2730,98 @@ void MainWindow::onLoadCoreClicked(const QStringList &extensionFilters)
    m_loadCoreWindow->initCoreList(extensionFilters);
 }
 
+void MainWindow::removeGridItems()
+{
+   if (m_gridItems.count() > 0)
+   {
+      QMutableListIterator<GridItem*> items(m_gridItems);
+
+      while (items.hasNext())
+      {
+         GridItem *item = items.next();
+
+         if (item)
+         {
+            items.remove();
+
+            m_gridLayout->removeWidget(item->widget);
+
+            delete item->widget;
+            delete item;
+         }
+      }
+   }
+}
+
+void MainWindow::addPlaylistItemsToGrid(QString pathString)
+{
+   QList<QHash<QString, QString> > items = getPlaylistItems(pathString);
+   settings_t *settings = config_get_ptr();
+   int i = 0;
+
+   for (i = 0; i < items.count(); i++)
+   {
+      const QHash<QString, QString> &hash = items.at(i);
+      GridItem *item = new GridItem();
+      ThumbnailLabel *label = NULL;
+      QPixmap pixmap;
+      QString thumbnailFileNameNoExt;
+      QLabel *newLabel = NULL;
+
+      thumbnailFileNameNoExt = hash["label_noext"];
+      thumbnailFileNameNoExt.replace(m_fileSanitizerRegex, "_");
+
+      item->hash = hash;
+      item->widget = new ThumbnailWidget();
+      item->widget->setFixedSize(item->widget->sizeHint());
+      item->widget->setLayout(new QVBoxLayout());
+      item->widget->setStyleSheet("background-color: #555555");
+
+      label = new ThumbnailLabel(item->widget);
+
+      pixmap = QPixmap(QString(settings->paths.directory_thumbnails) + "/" + hash.value("db_name") + "/" + THUMBNAIL_BOXART + "/" + thumbnailFileNameNoExt + ".png");
+
+      label->setPixmap(pixmap);
+
+      item->widget->layout()->addWidget(label);
+
+      newLabel = new QLabel(hash.value("label"), item->widget);
+      newLabel->setAlignment(Qt::AlignCenter);
+
+      item->widget->layout()->addWidget(newLabel);
+      qobject_cast<QVBoxLayout*>(item->widget->layout())->setStretchFactor(label, 1);
+
+      m_gridLayout->addWidget(item->widget);
+      m_gridItems.append(item);
+   }
+}
+
+void MainWindow::initContentGridLayout()
+{
+   QListWidgetItem *item = m_listWidget->currentItem();
+   QString path;
+
+   if (!item)
+      return;
+
+   removeGridItems();
+
+   path = item->data(Qt::UserRole).toString();
+
+   if (path == ALL_PLAYLISTS_TOKEN)
+   {
+      settings_t *settings = config_get_ptr();
+      QDir playlistDir(settings->paths.directory_playlist);
+
+      foreach (QString playlist, m_playlistFiles)
+      {
+         addPlaylistItemsToGrid(playlistDir.absoluteFilePath(playlist));
+      }
+   }
+   else
+      addPlaylistItemsToGrid(path);
+}
+
 void MainWindow::initContentTableWidget()
 {
    QListWidgetItem *item = m_listWidget->currentItem();
@@ -2759,22 +2881,20 @@ void MainWindow::initContentTableWidget()
    onSearchEnterPressed();
 }
 
-void MainWindow::addPlaylistItemsToTable(QString pathString)
+QList<QHash<QString, QString> > MainWindow::getPlaylistItems(QString pathString)
 {
    QByteArray pathArray;
+   QList<QHash<QString, QString> > items;
    const char *pathData = NULL;
    playlist_t *playlist = NULL;
    unsigned playlistSize = 0;
    unsigned i = 0;
-   int oldRowCount = m_tableWidget->rowCount();
 
    pathArray.append(pathString);
    pathData = pathArray.constData();
 
    playlist = playlist_init(pathData, COLLECTION_SIZE);
    playlistSize = playlist_get_size(playlist);
-
-   m_tableWidget->setRowCount(oldRowCount + playlistSize);
 
    for (i = 0; i < playlistSize; i++)
    {
@@ -2784,7 +2904,6 @@ void MainWindow::addPlaylistItemsToTable(QString pathString)
       const char *core_name = NULL;
       const char *crc32 = NULL;
       const char *db_name = NULL;
-      QTableWidgetItem *labelItem = NULL;
       QHash<QString, QString> hash;
 
       playlist_get_index(playlist, i,
@@ -2822,15 +2941,40 @@ void MainWindow::addPlaylistItemsToTable(QString pathString)
          hash["db_name"].remove(file_path_str(FILE_PATH_LPL_EXTENSION));
       }
 
-      labelItem = new QTableWidgetItem(hash["label"]);
+      items.append(hash);
+   }
+
+   playlist_free(playlist);
+   playlist = NULL;
+
+   return items;
+}
+
+void MainWindow::addPlaylistItemsToTable(QString pathString)
+{
+   QList<QHash<QString, QString> > items = getPlaylistItems(pathString);
+   int i = 0;
+   int oldRowCount = m_tableWidget->rowCount();
+
+   m_tableWidget->setRowCount(oldRowCount + items.count());
+
+   for (i = 0; i < items.count(); i++)
+   {
+      const char *path = NULL;
+      const char *label = NULL;
+      const char *core_path = NULL;
+      const char *core_name = NULL;
+      const char *crc32 = NULL;
+      const char *db_name = NULL;
+      QTableWidgetItem *labelItem = NULL;
+      const QHash<QString, QString> &hash = items.at(i);
+
+      labelItem = new QTableWidgetItem(hash.value("label"));
       labelItem->setData(Qt::UserRole, QVariant::fromValue<QHash<QString, QString> >(hash));
       labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable);
 
       m_tableWidget->setItem(oldRowCount + i, 0, labelItem);
    }
-
-   playlist_free(playlist);
-   playlist = NULL;
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
