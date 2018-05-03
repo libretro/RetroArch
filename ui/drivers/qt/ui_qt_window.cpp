@@ -2863,11 +2863,10 @@ void MainWindow::addPlaylistItemsToGrid(QString pathString)
       }
       else
       {
+         thumbnailFileNameNoExt = hash["label_noext"];
+         thumbnailFileNameNoExt.replace(m_fileSanitizerRegex, "_");
          imagePath = QString(settings->paths.directory_thumbnails) + "/" + hash.value("db_name") + "/" + THUMBNAIL_BOXART + "/" + thumbnailFileNameNoExt + ".png";
       }
-
-      thumbnailFileNameNoExt = hash["label_noext"];
-      thumbnailFileNameNoExt.replace(m_fileSanitizerRegex, "_");
 
       item->hash = hash;
       item->widget = new ThumbnailWidget();
