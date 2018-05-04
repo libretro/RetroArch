@@ -560,6 +560,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_zoomSlider->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred));
 
    zoomWidget->setLayout(zoomLayout);
+   zoomLayout->setContentsMargins(0, 0, 0, 0);
    zoomLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
    zoomLayout->addWidget(zoomLabel);
    zoomLayout->addWidget(m_zoomSlider);
