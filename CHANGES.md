@@ -6,6 +6,7 @@
 - HID/OSX: Fix regression with IODHIDManager - gamepads which are connected later would not be autoconfigured.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
+- LOCALIZATION: Update Portuguese translation.
 - MENU: Audio mixer now works in the menu without any cores loaded. You have to enable the setting 'Enable menu audio' for this to work.
 - REMAPPING/OVERLAYS: Fix regression - overlays could no longer be remapped.
 - SCANNER: Add Wii Backup File WBFS support.
