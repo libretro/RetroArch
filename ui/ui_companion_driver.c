@@ -155,7 +155,7 @@ void ui_companion_driver_toggle(bool force)
 #ifdef HAVE_QT
    settings_t *settings = config_get_ptr();
 #endif
-    
+
    if (ui_companion && ui_companion->toggle)
       ui_companion->toggle(ui_companion_data, false);
 
@@ -168,7 +168,7 @@ void ui_companion_driver_toggle(bool force)
          qt_is_inited = true;
       }
 
-      if (qt_is_inited && ui_companion_qt.toggle)
+      if (ui_companion_qt.toggle && qt_is_inited)
          ui_companion_qt.toggle(ui_companion_qt_data, force);
    }
 #endif
@@ -187,7 +187,7 @@ void ui_companion_driver_notify_refresh(void)
       ui->notify_refresh(ui_companion_data);
 #ifdef HAVE_QT
    if (settings->bools.desktop_menu_enable)
-      if (ui_companion_qt.notify_refresh)
+      if (ui_companion_qt.notify_refresh && qt_is_inited)
          ui_companion_qt.notify_refresh(ui_companion_qt_data);
 #endif
 }
@@ -265,7 +265,7 @@ void ui_companion_driver_msg_queue_push(const char *msg, unsigned priority, unsi
       ui->msg_queue_push(ui_companion_data, msg, priority, duration, flush);
 #ifdef HAVE_QT
    if (settings->bools.desktop_menu_enable)
-      if (ui_companion_qt.msg_queue_push)
+      if (ui_companion_qt.msg_queue_push && qt_is_inited)
          ui_companion_qt.msg_queue_push(ui_companion_qt_data, msg, priority, duration, flush);
 #endif
 }
@@ -292,7 +292,7 @@ void ui_companion_driver_log_msg(const char *msg)
    settings_t *settings = config_get_ptr();
 
    if (settings->bools.desktop_menu_enable)
-      if (ui_companion_qt_data)
+      if (ui_companion_qt_data && qt_is_inited)
          ui_companion_qt.log_msg(ui_companion_qt_data, msg);
 #endif
 }
