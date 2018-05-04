@@ -518,7 +518,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_zoomSlider = new QSlider(Qt::Horizontal, zoomWidget);
 
    m_zoomSlider->setMinimum(20);
-   m_zoomSlider->setMaximum(400);
+   m_zoomSlider->setMaximum(200);
    m_zoomSlider->setValue(50);
 
    m_lastZoomSliderValue = m_zoomSlider->value();
