@@ -2,6 +2,7 @@
 - AUDIO: Audio mixer supports FLAC/MP3 file types now!
 - COMMON: Fixed bug 'crashing in cores that don't range check retro_set_controller_type'. Some people were having crashes when device is set to RETRO_DEVICE_NONE and the cores don't check the number of ports, in VBAM's case it was overflowing and crashing. QuickNES was crashing too.
 - COMMON: Fixed buffer overflow in url encoding (affecting MSVC2010/2013).
+- COMMON: (QuickMenu) Added Configuration Override submenu.
 - HID: Merge new HID subsystem.
 - HID: Fix WaveBird support for the Wii U GCA.
 - HID/OSX: Fix regression with IODHIDManager - gamepads which are connected later would not be autoconfigured.
