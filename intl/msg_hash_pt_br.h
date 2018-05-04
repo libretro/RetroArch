@@ -3657,7 +3657,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
       "Irá iniciar a reprodução do fluxo de áudio. Uma vez terminado, ele irá pular para o próximo fluxo de áudio em ordem sequencial e repetirá este comportamento. Útil como um modo de reprodução de álbum.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
-      "Isso interromperá a reprodução do fluxo de áudio, mas não o removerá da memória. Você pode começar a reproduzi-lo novamente selecionando "Reproduzir".")
+      "Isso interromperá a reprodução do fluxo de áudio, mas não o removerá da memória. Você pode começar a reproduzi-lo novamente selecionando 'Reproduzir'.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
       "Isso interromperá a reprodução do fluxo de áudio e o removerá completamente da memória.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
