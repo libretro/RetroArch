@@ -173,7 +173,7 @@ check_switch() # $1 = language  $2 = HAVE_$2  $3 = switch  $4 = critical error m
 	}
 }
 
-check_val() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = include directory [checked only if non-empty]
+check_val() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = include directories [checked only if non-empty]
 {	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	oldval="$(eval "printf %s \"\$TMP_$2\"")"
 	if [ "$tmpval" = 'no' ] && [ "$oldval" != 'no' ]; then
@@ -183,9 +183,19 @@ check_val() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = include directory [che
 		if [ "${4:-}" ] && [ "$answer" = 'yes' ]; then
 			val="$2"
 			include="$4"
+			tmpinc=""
 			eval "set -- $INCLUDES"
 			for dir do
-				[ -d "/$dir/$include" ] && { eval "${val}_CFLAGS=\"-I/$dir/$include\""; break; }
+				eval "set -- $include"
+				for inc do
+					if [ -d "/$dir/$inc" ]; then
+						tmpinc="${tmpinc} -I/$dir/$inc"
+					else
+						tmpinc=""
+						break
+					fi
+				done
+				[ "${tmpinc}" ] && { eval "${val}_CFLAGS=\"${tmpinc#${tmpinc%%[! ]*}}\""; break; }
 			done
 			[ -z "$(eval "printf %s \"\${${val}_CFLAGS}\"")" ] && eval "HAVE_$val=no"
 		fi

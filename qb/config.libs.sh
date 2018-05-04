@@ -278,10 +278,10 @@ if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
    check_pkgconf QT5WIDGETS Qt5Widgets 5.2
    #check_pkgconf QT5WEBENGINE Qt5WebEngine 5.4
 
-   check_val '' QT5CORE -lQt5Core QT5CORE
-   check_val '' QT5GUI -lQt5Gui QT5GUI
-   check_val '' QT5WIDGETS -lQt5Widgets QT5WIDGETS
-   #check_val '' QT5WEBENGINE -lQt5WebEngine QT5WEBENGINE
+   check_val '' QT5CORE -lQt5Core 'qt5 qt5/QtCore'
+   check_val '' QT5GUI -lQt5Gui 'qt5 qt5/QtGui'
+   check_val '' QT5WIDGETS -lQt5Widgets 'qt5 qt5/QtWidgets'
+   #check_val '' QT5WEBENGINE -lQt5WebEngine 'qt5 qt5/QtWebEngine'
 
    if [ "$HAVE_QT5CORE" = "no" ] || [ "$HAVE_QT5GUI" = "no" ] || [ "$HAVE_QT5WIDGETS" = "no" ]; then
       die : 'Notice: Not building Qt support, required libraries were not found.'
