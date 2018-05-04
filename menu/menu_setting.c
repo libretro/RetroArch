@@ -6533,7 +6533,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_ADVANCED);
+               SD_FLAG_NONE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -6548,7 +6548,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_ADVANCED);
+               SD_FLAG_NONE);
 #endif
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
