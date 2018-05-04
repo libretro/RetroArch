@@ -4,7 +4,7 @@
 # RetroArch
 
 RetroArch is the reference frontend for the libretro API.
-Popular examples of implementations for this API includes videogame system emulators and game engines as well as
+Popular examples of implementations for this API includes video game system emulators and game engines as well as
 more generalized 3D programs.
 These programs are instantiated as dynamic libraries. We refer to these as "libretro cores".
 
@@ -79,7 +79,7 @@ RetroArch has been ported to the following platforms:
    - Original Microsoft Xbox
    - Microsoft Xbox 360 (Libxenon/XeXDK)
    - Nintendo Wii, GameCube (Libogc)
-   - Nintendo WiiU
+   - Nintendo Wii U
    - Nintendo 3DS
    - Nintendo Switch
    - Raspberry Pi
@@ -161,7 +161,7 @@ If you are running windows, before enabling the CRT SwitchRes options pleasae ma
 - 2560 x 448 @ 60.000000
 - 2560 x 480 @ 60.000000
 
-Install these modelines replacing 2560 with your desired super resuloution. The above resolutions are NTSC only so if you would be playing any PAL content please add pal modelines:
+Install these modelines replacing 2560 with your desired super resulution. The above resolutions are NTSC only so if you would be playing any PAL content please add pal modelines:
 
 - 2560 x 192 @ 50.000000
 - 2560 x 200 @ 50.000000
@@ -173,7 +173,7 @@ Install these modelines replacing 2560 with your desired super resuloution. The 
 - 2560 x 448 @ 50.000000
 - 2560 x 480 @ 50.000000
 
-Some games will require heigher PAL resolutions which should also be installed:
+Some games will require higher PAL resolutions which should also be installed:
 
 - 2560 x 512 @ 50.000000
 - 2560 x 576 @ 50.000000
@@ -182,11 +182,11 @@ Ideally install all these modelines and everything will work great.
 
 ## Super Resolutions
 
-The default super resolution is 2560. It is displayed just under the CRT switch option, which can be found in video settings. This can be changed within the retroarch.cfg. The only compatible resolutions are 1920, 2560 and 3840. Any other resolutions will be ignored and native swithing will be activated.
+The default super resolution is 2560. It is displayed just under the CRT switch option, which can be found in video settings. This can be changed within the retroarch.cfg. The only compatible resolutions are 1920, 2560 and 3840. Any other resolutions will be ignored and native switching will be activated.
 
 ## Native Resolutions
 
-If native reolutions are activeted you will need a whole new set of modelines:
+If native resolutions are activated you will need a whole new set of modelines:
 
 - 512 x 240 @ 50.006977 SNESpal
 - 512 x 224 @ 50.006977 SNESpal
@@ -253,6 +253,6 @@ These modelines are more acurate giving exact hz. However, some games may have u
 
 ## CRT resolution switching & Mame
 
-Some arecade resolutions can be alot different. There is resolution detection to ensure mame games will be diplayed in the closest available resolution but drawn at their native resolution within this resolution. Meaning that the mame game will look just like the original hardware.
+Some arecade resolutions can be alot different. There is resolution detection to ensure mame games will be displayed in the closest available resolution but drawn at their native resolution within this resolution. Meaning that the mame game will look just like the original hardware.
 
 Mame roms that run in a vertical aspect like DoDonPachi need to be roted within mame before rolution swithing and aspect correction will work. Do this before enableing CRT switchRes so that Retroarch will run in your desktop resolution. Once you have roted any games that may need it switch CRT SwitchRes on.
