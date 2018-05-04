@@ -54,6 +54,7 @@ extern "C" {
 #include <encodings/utf.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
+#include <math.h>
 }
 
 #define TIMER_MSEC 1000 /* periodic timer for gathering statistics */
@@ -84,6 +85,24 @@ enum CoreSelection
    CORE_SELECTION_ASK,
    CORE_SELECTION_LOAD_CORE
 };
+
+static double lerp(double x, double y, double a, double b, double d) {
+  return a + (b - a) * ((double)(d - x) / (double)(y - x));
+}
+
+/* https://stackoverflow.com/questions/7246622/how-to-create-a-slider-with-a-non-linear-scale */
+static double expScale(double inputValue, double midValue, double maxValue)
+{
+   double returnValue = 0;
+   double M = maxValue / midValue;
+   double C = log(pow(M - 1, 2));
+   double B = maxValue / (exp(C) - 1);
+   double A = -1 * B;
+
+   returnValue = A + B * exp(C * inputValue);
+
+   return returnValue;
+}
 
 #ifdef HAVE_LIBRETRODB
 static void scan_finished_handler(void *task_data, void *user_data, const char *err)
@@ -513,12 +532,15 @@ MainWindow::MainWindow(QWidget *parent) :
    QToolButton *searchResetButton = NULL;
    QWidget *zoomWidget = new QWidget();
    QHBoxLayout *zoomLayout = new QHBoxLayout();
+   QLabel *zoomLabel = new QLabel("Zoom:", zoomWidget);
    int i = 0;
+
+   zoomLabel->setObjectName("zoomLabel");
 
    m_zoomSlider = new QSlider(Qt::Horizontal, zoomWidget);
 
-   m_zoomSlider->setMinimum(20);
-   m_zoomSlider->setMaximum(200);
+   m_zoomSlider->setMinimum(0);
+   m_zoomSlider->setMaximum(100);
    m_zoomSlider->setValue(50);
 
    m_lastZoomSliderValue = m_zoomSlider->value();
@@ -539,7 +561,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
    zoomWidget->setLayout(zoomLayout);
    zoomLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
-   zoomLayout->addWidget(new QLabel("Zoom:"));
+   zoomLayout->addWidget(zoomLabel);
    zoomLayout->addWidget(m_zoomSlider);
 
    m_gridWidget->layout()->addWidget(zoomWidget);
@@ -717,7 +739,14 @@ void MainWindow::onZoomValueChanged(int value)
 {
    foreach(GridItem *item, m_gridItems)
    {
-      item->widget->setFixedSize(QSize(value * 5.12f, value * 5.12f));
+      int newSize = 0;
+
+      if (value < 50)
+         newSize = expScale(lerp(0, 49, 25, 49, value) / 50.0, 102, 256);
+      else
+         newSize = expScale(value / 100.0, 256, 1024);
+
+      item->widget->setFixedSize(QSize(newSize, newSize));
    }
 
    m_lastZoomSliderValue = value;
