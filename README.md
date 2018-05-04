@@ -149,7 +149,7 @@ Instructions for compiling and installing RetroArch can be found in the [Libretr
 
 CRT Switch res will turn on, on the fly. However, you will need to restart retroarch to disable it. With CRT SwitchRes enable Retroarch will start in 2560 x 480 @ 60.  
 
-If you are running windows, before enabling the CRT SwitchRes options pleasae make sure you have installed CRTEmudriver and installed some modelines. The minimum modelins for all games to switch correctly are:
+If you are running windows, before enabling the CRT SwitchRes options please make sure you have installed CRTEmudriver and installed some modelines. The minimum modelins for all games to switch correctly are:
 
 - 2560 x 192 @ 60.000000
 - 2560 x 200 @ 60.000000
@@ -161,7 +161,7 @@ If you are running windows, before enabling the CRT SwitchRes options pleasae ma
 - 2560 x 448 @ 60.000000
 - 2560 x 480 @ 60.000000
 
-Install these modelines replacing 2560 with your desired super resulution. The above resolutions are NTSC only so if you would be playing any PAL content please add pal modelines:
+Install these modelines replacing 2560 with your desired super resolution. The above resolutions are NTSC only so if you would be playing any PAL content please add pal modelines:
 
 - 2560 x 192 @ 50.000000
 - 2560 x 200 @ 50.000000
@@ -249,10 +249,10 @@ If native resolutions are activated you will need a whole new set of modelines:
 - 400 x 254 @ 54.706841 MK
 - 384 x 224 @ 59.637405 CPS1
 
-These modelines are more acurate giving exact hz. However, some games may have unwanted results. This is due to mid-scanline resolution chages on the orgiginal hardware. For the best results super resolutions are the way to go.
+These modelines are more accurate giving exact hz. However, some games may have unwanted results. This is due to mid-scanline resolution changes on the original hardware. For the best results super resolutions are the way to go.
 
 ## CRT resolution switching & Mame
 
-Some arecade resolutions can be alot different. There is resolution detection to ensure mame games will be displayed in the closest available resolution but drawn at their native resolution within this resolution. Meaning that the mame game will look just like the original hardware.
+Some arcade resolutions can be a lot different. There is resolution detection to ensure mame games will be displayed in the closest available resolution but drawn at their native resolution within this resolution. Meaning that the mame game will look just like the original hardware.
 
-Mame roms that run in a vertical aspect like DoDonPachi need to be roted within mame before rolution swithing and aspect correction will work. Do this before enableing CRT switchRes so that Retroarch will run in your desktop resolution. Once you have roted any games that may need it switch CRT SwitchRes on.
+Mame roms that run in a vertical aspect like DoDonPachi need to be rotated within mame before resolution switching and aspect correction will work. Do this before enabling CRT switchRes so that Retroarch will run in your desktop resolution. Once you have roted any games that may need it switch CRT SwitchRes on.
