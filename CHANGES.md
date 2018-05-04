@@ -3,9 +3,11 @@
 - COMMON: Fixed bug 'crashing in cores that don't range check retro_set_controller_type'. Some people were having crashes when device is set to RETRO_DEVICE_NONE and the cores don't check the number of ports, in VBAM's case it was overflowing and crashing. QuickNES was crashing too.
 - HID: Merge new HID subsystem.
 - HID: Fix WaveBird support for the Wii U GCA.
+- HID/OSX: Fix regression with IODHIDManager - gamepads which are connected later would not be autoconfigured.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - MENU: Audio mixer now works in the menu without any cores loaded. You have to enable the setting 'Enable menu audio' for this to work.
+- REMAPPING/OVERLAYS: Fix regression - overlays could no longer be remapped.
 - SCANNER: Add Wii Backup File WBFS support.
 - X11: CRT SwitchRes support for X11/Linux.
 
