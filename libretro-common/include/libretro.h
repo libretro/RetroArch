@@ -2368,7 +2368,9 @@ RETRO_API bool retro_unserialize(const void *data, size_t size);
 RETRO_API void retro_cheat_reset(void);
 RETRO_API void retro_cheat_set(unsigned index, bool enabled, const char *code);
 
-/* Loads a game. */
+/* Loads a game. 
+ * Return true to indicate successful loading and false to indicate load failure.
+ */
 RETRO_API bool retro_load_game(const struct retro_game_info *game);
 
 /* Loads a "special" kind of game. Should not be used,
@@ -2378,7 +2380,7 @@ RETRO_API bool retro_load_game_special(
   const struct retro_game_info *info, size_t num_info
 );
 
-/* Unloads a currently loaded game. */
+/* Unloads the currently loaded game. Called before retro_deinit(void). */
 RETRO_API void retro_unload_game(void);
 
 /* Gets region of game. */
