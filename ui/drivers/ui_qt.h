@@ -75,6 +75,7 @@ struct GridItem
    QImage image;
    QPixmap pixmap;
    QFutureWatcher<GridItem*> imageWatcher;
+   QMutex mutex;
 };
 
 class ThumbnailWidget : public QWidget

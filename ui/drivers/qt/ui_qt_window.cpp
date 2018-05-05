@@ -128,6 +128,7 @@ GridItem::GridItem() :
    ,image()
    ,pixmap()
    ,imageWatcher()
+   ,mutex()
 {
 }
 
@@ -738,8 +739,12 @@ MainWindow::~MainWindow()
 
 void MainWindow::onZoomValueChanged(int value)
 {
+   if (m_gridItems.count() == 0)
+      return;
+
    foreach(GridItem *item, m_gridItems)
    {
+      QMutexLocker lock(&item->mutex);
       int newSize = 0;
 
       if (value < 50)
@@ -2816,11 +2821,16 @@ void MainWindow::removeGridItems()
 
          if (item)
          {
+            item->mutex.lock();
+
             items.remove();
 
             m_gridLayout->removeWidget(item->widget);
 
             delete item->widget;
+
+            item->mutex.unlock();
+
             delete item;
          }
       }
@@ -2830,13 +2840,25 @@ void MainWindow::removeGridItems()
 void MainWindow::onDeferredImageLoaded()
 {
    const QFutureWatcher<GridItem*> *watcher = static_cast<QFutureWatcher<GridItem*>*>(sender());
-   GridItem *item = watcher->result();
+   GridItem *item = NULL;
+
+   if (!watcher)
+      return;
+
+   item = watcher->result();
+
+   if (!item)
+      return;
+
+   item->mutex.lock();
 
    if (!item->image.isNull())
    {
       item->label->setPixmap(QPixmap::fromImage(item->image));
       item->label->update();
    }
+
+   item->mutex.unlock();
 }
 
 void MainWindow::loadImageDeferred(GridItem *item, QString path)
@@ -2848,7 +2870,14 @@ void MainWindow::loadImageDeferred(GridItem *item, QString path)
 GridItem* MainWindow::doDeferredImageLoad(GridItem *item, QString path)
 {
    /* this runs in another thread */
+   if (!item)
+      return NULL;
+
+   item->mutex.lock();
+
    item->image = QImage(path);
+
+   item->mutex.unlock();
 
    return item;
 }
