@@ -118,6 +118,10 @@
 
 #include "command.h"
 
+#ifdef HAVE_RUNAHEAD
+#include "runahead/run_ahead.h"
+#endif
+
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
 
 #define FAIL_CPU(simd_type) do { \
@@ -218,6 +222,7 @@ static bool rarch_ups_pref                                 = false;
 static bool rarch_bps_pref                                 = false;
 static bool rarch_ips_pref                                 = false;
 static bool rarch_patch_blocked                            = false;
+static bool rarch_first_start                              = true;
 
 static bool runloop_force_nonblock                         = false;
 static bool runloop_paused                                 = false;
@@ -234,7 +239,9 @@ static bool runloop_remaps_game_active                     = false;
 static bool runloop_game_options_active                    = false;
 static bool runloop_missing_bios                           = false;
 static bool runloop_autosave                               = false;
-
+#ifdef HAVE_DYNAMIC
+static bool core_set_on_cmdline                            = false;
+#endif
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
 static retro_keyboard_event_t runloop_key_event            = NULL;
@@ -253,6 +260,13 @@ static retro_time_t frame_limit_minimum_time               = 0.0;
 static retro_time_t frame_limit_last_time                  = 0.0;
 
 extern bool input_driver_flushing_input;
+
+#ifdef HAVE_DYNAMIC
+bool retroarch_core_set_on_cmdline(void)
+{
+   return core_set_on_cmdline;
+}
+#endif
 
 #ifdef HAVE_THREADS
 void runloop_msg_queue_lock(void)
@@ -860,6 +874,11 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
             {
                settings_t *settings  = config_get_ptr();
 
+               if (rarch_first_start)
+               {
+                  core_set_on_cmdline = true;
+               }
+
                path_clear(RARCH_PATH_CORE);
                strlcpy(settings->paths.directory_libretro, optarg,
                      sizeof(settings->paths.directory_libretro));
@@ -872,6 +891,11 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
             }
             else if (filestream_exists(optarg))
             {
+               if (rarch_first_start)
+               {
+                  core_set_on_cmdline = true;
+               }
+
                rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, optarg);
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
 
@@ -1348,11 +1372,18 @@ bool retroarch_main_init(int argc, char *argv[])
    rarch_error_on_init     = false;
    rarch_is_inited         = true;
 
+   if (rarch_first_start)
+      rarch_first_start = false;
+
    return true;
 
 error:
    command_event(CMD_EVENT_CORE_DEINIT, NULL);
    rarch_is_inited         = false;
+
+   if (rarch_first_start)
+      rarch_first_start = false;
+
    return false;
 }
 
@@ -1817,8 +1848,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             if (!idx)
                return false;
             core_option_manager_prev(runloop_core_options, *idx);
-            if (ui_companion_is_on_foreground())
-               ui_companion_driver_notify_refresh();
          }
          break;
       case RARCH_CTL_CORE_OPTION_NEXT:
@@ -1827,8 +1856,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             if (!idx)
                return false;
             core_option_manager_next(runloop_core_options, *idx);
-            if (ui_companion_is_on_foreground())
-               ui_companion_driver_notify_refresh();
          }
          break;
       case RARCH_CTL_CORE_OPTIONS_GET:
@@ -2318,13 +2345,8 @@ void runloop_msg_queue_push(const char *msg,
       msg_queue_push(runloop_msg_queue, msg_info.msg,
             msg_info.prio, msg_info.duration);
 
-      if (ui_companion_is_on_foreground())
-      {
-         const ui_companion_driver_t *ui = ui_companion_get_ptr();
-         if (ui->msg_queue_push)
-            ui->msg_queue_push(msg_info.msg,
-                  msg_info.prio, msg_info.duration, msg_info.flush);
-      }
+      ui_companion_driver_msg_queue_push(msg_info.msg,
+            msg_info.prio, msg_info.duration, msg_info.flush);
    }
 
 #ifdef HAVE_THREADS
@@ -2377,7 +2399,7 @@ bool runloop_msg_queue_pull(const char **ret)
 
 #ifdef HAVE_MENU
 static bool input_driver_toggle_button_combo(
-      unsigned mode, retro_bits_t* p_input)
+      unsigned mode, input_bits_t* p_input)
 {
    switch (mode)
    {
@@ -2427,9 +2449,9 @@ static enum runloop_state runloop_check_state(
       bool input_nonblock_state,
       unsigned *sleep_ms)
 {
-   retro_bits_t current_input;
+   input_bits_t current_input;
 #ifdef HAVE_MENU
-   static retro_bits_t last_input   = {{0}};
+   static input_bits_t last_input   = {{0}};
 #endif
    static bool old_fs_toggle_pressed= false;
    static bool old_focus            = true;
@@ -2442,12 +2464,16 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
+#endif
 
+   BIT256_CLEAR_ALL_PTR(&current_input);
+
+#ifdef HAVE_MENU
    if (menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb()))
-	   input_menu_keys_pressed(settings, &current_input);
+      input_menu_keys_pressed(settings, &current_input);
    else
 #endif
-	   input_keys_pressed(settings, &current_input);
+      input_keys_pressed(settings, &current_input);
 
 #ifdef HAVE_MENU
    last_input                       = current_input;
@@ -2595,15 +2621,16 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    if (menu_is_alive)
    {
-      static retro_bits_t old_input = {{0}};
+      static input_bits_t old_input = {{0}};
       menu_ctx_iterate_t iter;
 
       retro_ctx.poll_cb();
 
+
       {
          enum menu_action action;
          bool focused               = false;
-         retro_bits_t trigger_input = current_input;
+         input_bits_t trigger_input = current_input;
 
          bits_clear_bits(trigger_input.data, old_input.data,
                ARRAY_SIZE(trigger_input.data));
@@ -2619,10 +2646,19 @@ static enum runloop_state runloop_check_state(
             rarch_menu_running_finished();
 
          if (focused || !runloop_idle)
+         {
+            bool libretro_running = menu_display_libretro_running(
+                  rarch_is_inited, 
+                  (current_core_type == CORE_TYPE_DUMMY));
+
             menu_driver_render(runloop_idle, rarch_is_inited,
                   (current_core_type == CORE_TYPE_DUMMY)
                   )
                ;
+            if (settings->bools.audio_enable_menu &&
+                  !libretro_running)
+               audio_driver_menu_sample();
+         }
 
          old_input                 = current_input;
 
@@ -2641,7 +2677,6 @@ static enum runloop_state runloop_check_state(
       if (runloop_idle)
          return RUNLOOP_STATE_SLEEP;
 
-
    /* Check game focus toggle */
    {
       static bool old_pressed = false;
@@ -2650,6 +2685,20 @@ static enum runloop_state runloop_check_state(
 
       if (pressed && !old_pressed)
          command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)0);
+
+      old_pressed             = pressed;
+   }
+
+   /* Check UI companion toggle */
+   {
+      static bool old_pressed = false;
+      bool pressed            = BIT256_GET(
+            current_input, RARCH_UI_COMPANION_TOGGLE);
+
+      if (pressed && !old_pressed)
+      {
+         command_event(CMD_EVENT_UI_COMPANION_TOGGLE, (void*)(intptr_t)0);
+      }
 
       old_pressed             = pressed;
    }
@@ -2830,11 +2879,13 @@ static enum runloop_state runloop_check_state(
 
       if (new_button_state && !old_button_state)
       {
-         if (input_nonblock_state) {
+         if (input_nonblock_state)
+         {
             input_driver_unset_nonblock_state();
             runloop_fastmotion = false;
          }
-         else {
+         else
+         {
             input_driver_set_nonblock_state();
             runloop_fastmotion = true;
          }
@@ -2842,11 +2893,13 @@ static enum runloop_state runloop_check_state(
       }
       else if (old_hold_button_state != new_hold_button_state)
       {
-         if (new_hold_button_state) {
+         if (new_hold_button_state)
+         {
             input_driver_set_nonblock_state();
             runloop_fastmotion = true;
          }
-         else {
+         else
+         {
             input_driver_unset_nonblock_state();
             runloop_fastmotion = false;
          }
@@ -2948,7 +3001,9 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
-   
+#ifdef HAVE_CHEEVOS
+   if (!settings->bools.cheevos_enable)
+#endif
    {
       static bool old_slowmotion_button_state      = false;
       static bool old_slowmotion_hold_button_state = false;
@@ -2959,21 +3014,17 @@ static enum runloop_state runloop_check_state(
 
       if (new_slowmotion_button_state && !old_slowmotion_button_state)
          {
-            if (runloop_slowmotion) {
+            if (runloop_slowmotion)
                   runloop_slowmotion = false;
-            }
-            else {
+            else
                   runloop_slowmotion = true;
-            }
          }
       else if (old_slowmotion_hold_button_state != new_slowmotion_hold_button_state)
       {
-         if (new_slowmotion_hold_button_state) {
+         if (new_slowmotion_hold_button_state)
             runloop_slowmotion = true;
-         }
-         else {
+         else
             runloop_slowmotion = false;
-         }
       }
 
       if (runloop_slowmotion)
@@ -3248,7 +3299,13 @@ int runloop_iterate(unsigned *sleep_ms)
    if ((settings->uints.video_frame_delay > 0) && !input_nonblock_state)
       retro_sleep(settings->uints.video_frame_delay);
 
-   core_run();
+#ifdef HAVE_RUNAHEAD
+   /* Run Ahead Feature replaces the call to core_run in this loop */
+   if (settings->bools.run_ahead_enabled && settings->uints.run_ahead_frames > 0)
+      run_ahead(settings->uints.run_ahead_frames, settings->bools.run_ahead_secondary_instance);
+   else
+#endif
+      core_run();
 
 #ifdef HAVE_CHEEVOS
    if (runloop_check_cheevos())

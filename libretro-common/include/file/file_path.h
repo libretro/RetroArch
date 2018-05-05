@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (file_path.h).
@@ -432,7 +432,7 @@ void path_basedir_wrapper(char *path);
 #endif
 
 /**
- * path_default_slash:
+ * path_default_slash and path_default_slash_c:
  *
  * Gets the default slash separator.
  *
@@ -440,8 +440,10 @@ void path_basedir_wrapper(char *path);
  */
 #ifdef _WIN32
 #define path_default_slash() "\\"
+#define path_default_slash_c() '\\'
 #else
 #define path_default_slash() "/"
+#define path_default_slash_c() '/'
 #endif
 
 /**

@@ -103,6 +103,8 @@ void task_file_load_handler(retro_task_t *task)
             if (!task_image_load_handler(task))
                task_set_finished(task, true);
             break;
+         case NBIO_TYPE_MP3:
+         case NBIO_TYPE_FLAC:
          case NBIO_TYPE_OGG:
          case NBIO_TYPE_MOD:
          case NBIO_TYPE_WAV:

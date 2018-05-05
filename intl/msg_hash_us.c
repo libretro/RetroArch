@@ -22,8 +22,10 @@
 #include <string/stdstring.h>
 
 #include "../msg_hash.h"
-#include "../configuration.h"
 #include "../verbosity.h"
+
+#ifdef RARCH_INTERNAL
+#include "../configuration.h"
 
 int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
@@ -888,6 +890,13 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
             }
             break;
+			
+		case MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION: snprintf(s, len, "SET CRT"); 
+			break;
+			
+		case MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER: snprintf(s, len, "SET CRT SUPER"); 
+			break;
+			
         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
             snprintf(s, len,
                      "Load Shader Preset. \n"
@@ -1193,6 +1202,13 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "large pitch changes. If your monitor does \n"
                              "not run at 60Hz, or something close to it, \n"
                              "disable VSync, and leave this at its default.");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED:
+            snprintf(s, len,
+                     "Set Polled Refresh Rate\n"
+                             " \n"
+                            "Sets the refresh rate to the actual value\n"
+                            "polled from the display driver.");
             break;
         case MENU_ENUM_LABEL_VIDEO_ROTATION:
             snprintf(s, len,
@@ -2029,6 +2045,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
     return 0;
 }
+#endif
 
 #ifdef HAVE_MENU
 static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)

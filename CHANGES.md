@@ -1,22 +1,75 @@
-# 1.7.2 (future)
+# 1.7.4 (future)
+
+# 1.7.3
+- AUDIO: Audio mixer supports FLAC/MP3 file types now!
+- COMMON: Fixed bug 'crashing in cores that don't range check retro_set_controller_type'. Some people were having crashes when device is set to RETRO_DEVICE_NONE and the cores don't check the number of ports, in VBAM's case it was overflowing and crashing. QuickNES was crashing too.
+- COMMON: Fixed buffer overflow in url encoding (affecting MSVC2010/2013).
+- COMMON: (QuickMenu) Added Configuration Override submenu.
+- HID: Merge new HID subsystem.
+- HID: Fix WaveBird support for the Wii U GCA.
+- HID/OSX: Fix regression with IODHIDManager - gamepads which are connected later would not be autoconfigured.
+- LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Japanese translation.
+- LOCALIZATION: Update Portuguese translation.
+- MENU: New WIMP Qt GUI!
+- MENU: Audio mixer now works in the menu without any cores loaded. You have to enable the setting 'Enable menu audio' for this to work.
+- REMAPPING/OVERLAYS: Fix regression - overlays could no longer be remapped.
+- SCANNER: Add Wii Backup File WBFS support.
+- X11: CRT SwitchRes support for X11/Linux.
+
+# 1.7.2
 - ANDROID/OPENSL: Prevent crashes when setting audio latency too low (buffer count can never be lower than 2 now).
+- CRT: Added CRT SwitchRes.
+- COMMON: Hide the 'Core delete' option if the 'Core updater' is also hidden.
 - COMMON: Add way to reset core association for playlist entry.
+- COMMON: Fix invalid long command line options causing infinite loop on Windows
 - COMMON: Add OSD statistics for video/audio/core.
+- COMMON: Added runahead system; allows you to drive down latency even further.
+- COMMON: Fix buggy behavior that could happen with ZIP file reading on some platforms as a result of not initializing struct.
 - CHEEVOS: Support Atari 2600, Virtual Boy, and Arcade (only Neo Geo, CPS-1, CPS-2 and CPS-3 and only with fbalpha core).
 - CHEEVOS: Add option to automatically take a screenshot when an achievement is triggered.
-- D3D11: Experimental hardware renderer. Allows for libretro cores to use D3D11 for hardware rendering.
+- CHEEVOS: Fixed incompatibilities with Neo Geo Pocket achievement sets.
+- CHEEVOS: Store only login token, not password.
+- D3D10: Added D3D10 driver to release build. Has working shaders (Slang), overlay, and menu display driver support. Should be on par capabilities wise
+with D3D11 driver except for there being no hardware rendering right now.
+- D3D11: Experimental hardware renderer. Allows for libretro cores to use D3D11 for hardware rendering. First core to use this is PPSSPP.
+- D3D11: Increase backwards compatibility, shaders compile with Shader Model 4.0 now, added support for more feature levels.
+- D3D10/D3D11/D3D12: Fix crashes with completely black or white thumbnail textures in XMB.
+- GUI: Support disabling window decorations on Windows and Linux.
 - LIBRETRO: Addition - Functions to enable and disable audio and video, and an environment function to query status of audio and video enables.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Polish translation.
-- MENU: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
+- MENU: Add Rewind/Latency/Overlay settings to Quick Menu, add options to show/hide them (User Interface -> Views -> Quick Menu)
+- MENU/RGUI: Only show Menu Linear Filter for RGUI and only show it for
+video drivers that implement it (D3D8/9/10/11/12/GL)
+- MENU/RGUI: Add User Interface -> Appearance options.
+- MENU/RGUI: D3D8/D3D9: Hookup Menu Linear Filter
+- MENU/XMB: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
+- MENU/XMB: Left/right thumbnails are now automatically scaled according to layout.
+- MENU/XMB: Add Left Thumbnails (additional to the right). 
 - MENU/XMB: Fixed left/right tab regression.
 - MENU/XMB: Fix scaling of tall images that were cut on bottom previously.
 - MENU/XMB: Menu scale factor setting now changes texts length, image scaling and margins.
 - MENU/XMB: Mouse cursor scales correctly now.
+- MENU/XMB: Add toggle to show/hide Playlist tabs.
+- MENU/XMB: Add menu layout - can switch between Desktop, Handheld and Auto.
+- MENU/XMB: Don't load menu pipeline shaders unless XMB is selected (D3D10/D3D11/D3D12/GL/Vulkan)
+- MENU/VIDEO: Only show black frame insertion for the video drivers/context drivers
+that support it (so far this includes - D3D8/D3D9, OpenGL, Vulkan)
+- MENU/VIDEO:  Only show max swapchain images if supported by video driver and/or context driver (so far this includes - DRM EGL context driver, VideoCore EGL context driver, Vulkan)
+- MENU/MaterialUI: Automatic DPI Scaling should be much improved now, now scales as expected at 1440p and 4K resolutions.
 - MENU/MaterialUI: Fix wrong calculation of an entry height causing long playlists to end up outside of screen range. This also could cause crashes on low DPI screens.
 - IOS: Fixed crash when opening downloaded roms from Safari or using the "Open in.." functionality. Added the compiler flag to support keyboard remapping to controls.
 - IOS: Fixed buffer overlap that caused a crash while trying to download GLSL shaders from the buildbot.
 - PS3: fix URLS
+- REMAPS: Mapping keyboard keys from more than one gamepad (works with dosbox)
+- REMAPS: Mapping more than one button to the same action
+- REMAPS: Unmapping buttons
+- REMAPS: Unmapping analogs
+- REMAPS: Mapping a button to trigger an analog response (tested with mupen, can run on SM64 with the d-pad now, triggers a full analog tilt)
+- REMAPS: Mapping an analog to another analog (having more than one analog mapped to the same output causes issues)
+- REMAPS: Mapping an analog to produce a button response
+- SCANNER: Should be able to scan dual-layer Wii disc images now, filestream code now supports files larger than 4GB.
 - SHADERS/SLANG: Slang shaders should work again on Android version and MSVC versions (basically all the Griffin-based versions).
 - SHADERS: If GL context is GLES2/3/Core context, Cg shaders are unavailable. Applies to shader list too.
 - SHADERS: Hide cg/glsl shaders from being able to be selected if D3D8/9/10/11/Vulkan video drivers are selected.
@@ -27,8 +80,10 @@
 - VULKAN/X11: Fix X11 Vulkan bug from Wayland driver.
 - VULKAN: Fix multi-line text spacing in menus with Vulkan driver.
 - WINDOWS XP: Add Cheevos support.
-- WINDOWS/MSVC 2005: Add Cheevos support.
+- WINDOWS/MSVC 2003/2005/2010/2013/2015/2017: Add Cheevos support.
 - VITA: Bugfix for 'PS Vita takes many time to start to accept input' issue.
+- X11: Allow compositor disabling on X11 fullscreen through _NET_WM_BYPASS_COMPOSITOR
+- X11: Prioritize _NET_WM_STATE_FULLSCREEN_ in true fullscreen mode
 - WIIU: Fix OOB read/write in keyboard driver.
 
 # 1.7.1
@@ -69,9 +124,8 @@
 - LOCALIZATION: Update Spanish translation.
 - NETPLAY: Add menu option to select different MITM (relay) server locations.
 - OSX: Modify HID buttons detection algorithm.
-- QB: Added --datarootdir.
-- QB: Added --bindir and --mandir and deprecated --with-bin_dir and --with-man_dir.
-- QB: Added --docdir.
+- QB: Added --datarootdir, --sysconfdir, --bindir, --docdir and --mandir.
+- QB: Deprecated --global-config-dir, --with-bin_dir and --with-man_dir.
 - SHADERS: Allow saving of shader presets based on the parent directory (Saving one for */foo/bar/mario.sfc* would result in *shaders/presets/corename/bar.ext*). We decided it's safer to still isolate the presets to a single core because different cores may treat video output differently.
 - SHADERS: Don't save the path to the current preset to the main config. This was causing weird behavior, instead it will try to load *currentconfig.ext* and it will save a preset with that name when select *apply shader preset*. The resulting shader will restore properly after restarting and even after core/parent/game specific presets are loaded
 - SOLARIS: Initial port.

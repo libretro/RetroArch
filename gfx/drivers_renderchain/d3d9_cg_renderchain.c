@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <string.h>
 #include <math.h>
 
@@ -463,9 +465,9 @@ static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,
       index = cgGetParameterResourceIndex(param);
       d3d9_set_texture(chain->dev, index, chain->passes->data[0].tex);
       d3d9_set_sampler_magfilter(chain->dev, index,
-            d3d9_translate_filter(chain->passes->data[0].info.pass->filter));
+            d3d_translate_filter(chain->passes->data[0].info.pass->filter));
       d3d9_set_sampler_minfilter(chain->dev, index,
-            d3d9_translate_filter(chain->passes->data[0].info.pass->filter));
+            d3d_translate_filter(chain->passes->data[0].info.pass->filter));
       d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
       d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       unsigned_vector_list_append(chain->bound_tex, index);
@@ -539,9 +541,9 @@ static void d3d9_cg_renderchain_bind_prev(void *data, const void *pass_data)
          unsigned_vector_list_append(chain->bound_tex, index);
 
          d3d9_set_sampler_magfilter(chain->dev, index,
-               d3d9_translate_filter(chain->passes->data[0].info.pass->filter));
+               d3d_translate_filter(chain->passes->data[0].info.pass->filter));
          d3d9_set_sampler_minfilter(chain->dev, index,
-               d3d9_translate_filter(chain->passes->data[0].info.pass->filter));
+               d3d_translate_filter(chain->passes->data[0].info.pass->filter));
          d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
          d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
@@ -570,9 +572,9 @@ static void d3d9_cg_renderchain_add_lut_internal(void *data,
 
    d3d9_set_texture(chain->dev, index, chain->luts->data[i].tex);
    d3d9_set_sampler_magfilter(chain->dev, index,
-         d3d9_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
+         d3d_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
    d3d9_set_sampler_minfilter(chain->dev, index,
-         d3d9_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
+         d3d_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
    d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
    d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
    unsigned_vector_list_append(chain->bound_tex, index);
@@ -623,9 +625,9 @@ static void d3d9_cg_renderchain_bind_pass(
 
          d3d9_set_texture(chain->dev, index, chain->passes->data[i].tex);
          d3d9_set_sampler_magfilter(chain->dev, index,
-               d3d9_translate_filter(chain->passes->data[i].info.pass->filter));
+               d3d_translate_filter(chain->passes->data[i].info.pass->filter));
          d3d9_set_sampler_minfilter(chain->dev, index,
-               d3d9_translate_filter(chain->passes->data[i].info.pass->filter));
+               d3d_translate_filter(chain->passes->data[i].info.pass->filter));
          d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
          d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
@@ -774,7 +776,7 @@ static void *d3d9_cg_renderchain_new(void)
 static bool d3d9_cg_renderchain_init_shader(void *data,
       void *renderchain_data)
 {
-   d3d_video_t *d3d              = (d3d_video_t*)data;
+   d3d9_video_t *d3d             = (d3d9_video_t*)data;
    cg_renderchain_t *renderchain = (cg_renderchain_t*)renderchain_data;
 
    if (!d3d || !renderchain)
@@ -887,9 +889,9 @@ static bool d3d9_cg_renderchain_create_first_pass(
 
       d3d9_set_texture(chain->dev, 0, chain->prev.tex[i]);
       d3d9_set_sampler_minfilter(chain->dev, 0,
-            d3d9_translate_filter(info->pass->filter));
+            d3d_translate_filter(info->pass->filter));
       d3d9_set_sampler_magfilter(chain->dev, 0,
-            d3d9_translate_filter(info->pass->filter));
+            d3d_translate_filter(info->pass->filter));
       d3d9_set_sampler_address_u(chain->dev, 0, D3DTADDRESS_BORDER);
       d3d9_set_sampler_address_v(chain->dev, 0, D3DTADDRESS_BORDER);
       d3d9_set_texture(chain->dev, 0, NULL);
@@ -911,7 +913,7 @@ static bool d3d9_cg_renderchain_init(void *data,
       const void *info_data, bool rgb32)
 {
    const struct LinkInfo *info    = (const struct LinkInfo*)info_data;
-   d3d_video_t *d3d               = (d3d_video_t*)data;
+   d3d9_video_t *d3d              = (d3d9_video_t*)data;
    cg_renderchain_t *chain        = (cg_renderchain_t*)d3d->renderchain_data;
    const video_info_t *video_info = (const video_info_t*)_video_info;
    unsigned fmt                   = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
@@ -1025,7 +1027,7 @@ static void d3d9_cg_renderchain_convert_geometry(
 }
 
 static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
-      d3d_video_t *d3d)
+      d3d9_video_t *d3d)
 {
    unsigned i;
    struct LinkInfo link_info;
@@ -1074,7 +1076,7 @@ static void d3d9_cg_renderchain_set_final_viewport(
       void *renderchain_data,
       const void *viewport_data)
 {
-   d3d_video_t                  *d3d    = (d3d_video_t*)data;
+   d3d9_video_t                  *d3d   = (d3d9_video_t*)data;
    cg_renderchain_t              *chain = (cg_renderchain_t*)renderchain_data;
    const D3DVIEWPORT9 *final_viewport   = (const D3DVIEWPORT9*)viewport_data;
 
@@ -1331,8 +1333,8 @@ static void cg_d3d9_renderchain_blit_to_texture(
       unsigned width, unsigned height,
       unsigned pitch)
 {
-   D3DLOCKED_RECT d3dlr;
-   struct Pass *first = (struct Pass*)&chain->passes->data[0];
+   D3DLOCKED_RECT d3dlr = {0, NULL};
+   struct Pass *first   = (struct Pass*)&chain->passes->data[0];
 
    if (
          (first->last_width != width || first->last_height != height)
@@ -1426,9 +1428,9 @@ static void cg_d3d9_renderchain_render_pass(
 
    d3d9_set_texture(chain->dev, 0, pass->tex);
    d3d9_set_sampler_minfilter(chain->dev, 0,
-         d3d9_translate_filter(pass->info.pass->filter));
+         d3d_translate_filter(pass->info.pass->filter));
    d3d9_set_sampler_magfilter(chain->dev, 0,
-         d3d9_translate_filter(pass->info.pass->filter));
+         d3d_translate_filter(pass->info.pass->filter));
 
    d3d9_set_vertex_declaration(chain->dev, pass->vertex_decl);
    for (i = 0; i < 4; i++)
@@ -1491,7 +1493,7 @@ static bool d3d9_cg_renderchain_render(
    LPDIRECT3DSURFACE9 back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
    struct Pass *last_pass  = NULL;
-   d3d_video_t *d3d        = (d3d_video_t*)data;
+   d3d9_video_t *d3d       = (d3d9_video_t*)data;
    cg_renderchain_t *chain = d3d ? (cg_renderchain_t*)d3d->renderchain_data : NULL;
 
    d3d9_cg_renderchain_start_render(chain);
@@ -1594,7 +1596,7 @@ static void d3d9_cg_renderchain_set_font_rect(
       const void *font_data)
 {
    settings_t *settings             = config_get_ptr();
-   d3d_video_t *d3d                 = (d3d_video_t*)data;
+   d3d9_video_t *d3d                = (d3d9_video_t*)data;
    float pos_x                      = settings->floats.video_msg_pos_x;
    float pos_y                      = settings->floats.video_msg_pos_y;
    float font_size                  = settings->floats.video_font_size;
@@ -1630,8 +1632,8 @@ static bool d3d9_cg_renderchain_read_viewport(
    LPDIRECT3DSURFACE9 target = NULL;
    LPDIRECT3DSURFACE9 dest   = NULL;
    bool ret                  = true;
-   d3d_video_t *d3d          = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE9 d3dr    = (LPDIRECT3DDEVICE9)d3d->dev;
+   d3d9_video_t *d3d         = (d3d9_video_t*)data;
+   LPDIRECT3DDEVICE9 d3dr    = d3d->dev;
 
    video_driver_get_size(&width, &height);
 
@@ -1688,7 +1690,7 @@ static void d3d9_cg_renderchain_viewport_info(
       void *data, struct video_viewport *vp)
 {
    unsigned width, height;
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
 
    if (!d3d || !vp)
       return;

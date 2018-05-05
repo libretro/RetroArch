@@ -206,36 +206,39 @@ bool d3d12_init_queue(d3d12_video_t* d3d12)
    return true;
 }
 
-bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, HWND hwnd)
+bool d3d12_init_swapchain(d3d12_video_t* d3d12,
+      int width, int height, HWND hwnd)
 {
-   {
-      DXGI_SWAP_CHAIN_DESC desc = { 0 };
-      desc.BufferCount          = countof(d3d12->chain.renderTargets);
-      desc.BufferDesc.Width     = width;
-      desc.BufferDesc.Height    = height;
-      desc.BufferDesc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
-      desc.SampleDesc.Count     = 1;
+   unsigned i;
+   DXGI_SWAP_CHAIN_DESC desc;
+
+   memset(&desc, 0, sizeof(DXGI_SWAP_CHAIN_DESC));
+
+   desc.BufferCount          = countof(d3d12->chain.renderTargets);
+   desc.BufferDesc.Width     = width;
+   desc.BufferDesc.Height    = height;
+   desc.BufferDesc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+   desc.SampleDesc.Count     = 1;
 #if 0
-      desc.BufferDesc.RefreshRate.Numerator   = 60;
-      desc.BufferDesc.RefreshRate.Denominator = 1;
-      desc.SampleDesc.Quality                 = 0;
+   desc.BufferDesc.RefreshRate.Numerator   = 60;
+   desc.BufferDesc.RefreshRate.Denominator = 1;
+   desc.SampleDesc.Quality                 = 0;
 #endif
-      desc.BufferUsage  = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-      desc.OutputWindow = hwnd;
-      desc.Windowed     = TRUE;
+   desc.BufferUsage  = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+   desc.OutputWindow = hwnd;
+   desc.Windowed     = TRUE;
 #if 0
-      desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+   desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 #else
-      desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+   desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
-      DXGICreateSwapChain(d3d12->factory, d3d12->queue.handle, &desc, &d3d12->chain.handle);
-   }
+   DXGICreateSwapChain(d3d12->factory, d3d12->queue.handle, &desc, &d3d12->chain.handle);
 
    DXGIMakeWindowAssociation(d3d12->factory, hwnd, DXGI_MWA_NO_ALT_ENTER);
 
    d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
 
-   for (int i = 0; i < countof(d3d12->chain.renderTargets); i++)
+   for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
    {
       DXGIGetSwapChainBuffer(d3d12->chain.handle, i, &d3d12->chain.renderTargets[i]);
       D3D12CreateRenderTargetView(
@@ -270,7 +273,7 @@ static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descri
    int                         i;
    D3D12_CPU_DESCRIPTOR_HANDLE handle = { 0 };
 
-   for (i = heap->start; i < heap->desc.NumDescriptors; i++)
+   for (i = heap->start; i < (int)heap->desc.NumDescriptors; i++)
    {
       if (!heap->map[i])
       {
@@ -372,18 +375,18 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
    cs_root_params[CS_ROOT_ID_TEXTURE_T].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
    cs_root_params[CS_ROOT_ID_TEXTURE_T].DescriptorTable.NumDescriptorRanges = countof(srv_tbl);
    cs_root_params[CS_ROOT_ID_TEXTURE_T].DescriptorTable.pDescriptorRanges   = srv_tbl;
-   cs_root_params[CS_ROOT_ID_TEXTURE_T].ShaderVisibility                    = 0;
+   cs_root_params[CS_ROOT_ID_TEXTURE_T].ShaderVisibility                    = D3D12_SHADER_VISIBILITY_ALL;
 
    cs_root_params[CS_ROOT_ID_UAV_T].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
    cs_root_params[CS_ROOT_ID_UAV_T].DescriptorTable.NumDescriptorRanges = countof(uav_tbl);
    cs_root_params[CS_ROOT_ID_UAV_T].DescriptorTable.pDescriptorRanges   = uav_tbl;
-   cs_root_params[CS_ROOT_ID_UAV_T].ShaderVisibility                    = 0;
+   cs_root_params[CS_ROOT_ID_UAV_T].ShaderVisibility                    = D3D12_SHADER_VISIBILITY_ALL;
 
    cs_root_params[CS_ROOT_ID_CONSTANTS].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
    cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.Num32BitValues = 3;
    cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.RegisterSpace  = 0;
    cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.ShaderRegister = 0;
-   cs_root_params[CS_ROOT_ID_CONSTANTS].ShaderVisibility         = 0;
+   cs_root_params[CS_ROOT_ID_CONSTANTS].ShaderVisibility         = D3D12_SHADER_VISIBILITY_ALL;
 
    static_sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
    static_sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
@@ -732,6 +735,9 @@ void d3d12_update_texture(
 {
    uint8_t*    dst;
    D3D12_RANGE read_range = { 0, 0 };
+
+   if (!texture || !texture->upload_buffer)
+      return;
 
    D3D12Map(texture->upload_buffer, 0, &read_range, (void**)&dst);
 

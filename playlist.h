@@ -129,6 +129,12 @@ void playlist_write_file(playlist_t *playlist);
 
 void playlist_qsort(playlist_t *playlist);
 
+void playlist_free_cached(void);
+
+playlist_t *playlist_get_cached(void);
+
+bool playlist_init_cached(const char *path, size_t size);
+
 RETRO_END_DECLS
 
 #endif

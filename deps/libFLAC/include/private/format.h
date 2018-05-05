@@ -33,7 +33,7 @@
 #ifndef FLAC__PRIVATE__FORMAT_H
 #define FLAC__PRIVATE__FORMAT_H
 
-#include "FLAC/format.h"
+#include "../FLAC/format.h"
 
 unsigned FLAC__format_get_max_rice_partition_order(unsigned blocksize, unsigned predictor_order);
 unsigned FLAC__format_get_max_rice_partition_order_from_blocksize(unsigned blocksize);

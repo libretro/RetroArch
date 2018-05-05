@@ -533,11 +533,13 @@ static void gdi_set_video_mode(void *data, unsigned width, unsigned height,
 }
 
 static const video_poke_interface_t gdi_poke_interface = {
+   NULL, /* get_flags */
    NULL,                      /* set_coords */
    NULL,                      /* set_mvp */
    NULL,
    NULL,
    gdi_set_video_mode,
+   win32_get_refresh_rate,
    NULL,
    gdi_get_video_output_size,
    gdi_get_video_output_prev,

@@ -22,6 +22,8 @@
 #include <wiiu/os.h>
 #include "wiiu_dbg.h"
 #include "exception_handler.h"
+#include "version.h"
+#include "version_git.h"
 
 /*	Settings */
 #define NUM_STACK_TRACE_LINES 5
@@ -182,6 +184,11 @@ void __attribute__((__noreturn__)) exception_cb(OSContext* ctx, OSExceptionType 
    else
       buf_add("Stack pointer invalid. Could not trace further.\n");
 
+#ifdef HAVE_GIT_VERSION
+   buf_add("RetroArch " PACKAGE_VERSION " (%s) built " __DATE__, retroarch_git_version);
+#else
+   buf_add("RetroArch " PACKAGE_VERSION " built " __DATE__);
+#endif
    OSFatal(exception_msgbuf);
    for (;;) {}
 }

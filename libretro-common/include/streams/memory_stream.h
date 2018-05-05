@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (memory_stream.h).
@@ -36,9 +36,9 @@ memstream_t *memstream_open(unsigned writing);
 
 void memstream_close(memstream_t *stream);
 
-size_t memstream_read(memstream_t *stream, void *data, size_t bytes);
+uint64_t memstream_read(memstream_t *stream, void *data, uint64_t bytes);
 
-size_t memstream_write(memstream_t *stream, const void *data, size_t bytes);
+uint64_t memstream_write(memstream_t *stream, const void *data, uint64_t bytes);
 
 int memstream_getc(memstream_t *stream);
 
@@ -46,15 +46,15 @@ void memstream_putc(memstream_t *stream, int c);
 
 char *memstream_gets(memstream_t *stream, char *buffer, size_t len);
 
-size_t memstream_pos(memstream_t *stream);
+uint64_t memstream_pos(memstream_t *stream);
 
 void memstream_rewind(memstream_t *stream);
 
-int memstream_seek(memstream_t *stream, int offset, int whence);
+int64_t memstream_seek(memstream_t *stream, int64_t offset, int whence);
 
-void memstream_set_buffer(uint8_t *buffer, size_t size);
+void memstream_set_buffer(uint8_t *buffer, uint64_t size);
 
-size_t memstream_get_last_size(void);
+uint64_t memstream_get_last_size(void);
 
 RETRO_END_DECLS
 

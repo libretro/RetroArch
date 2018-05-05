@@ -32,7 +32,7 @@
 
 #include "../../input/input_driver.h"
 
-static const char *osk_grid[45]  = {NULL};
+static char *osk_grid[45]        = {NULL};
 
 static int osk_ptr               = 0;
 static enum osk_type osk_idx     = OSK_LOWERCASE_LATIN;
@@ -148,7 +148,7 @@ void menu_event_osk_iterate(void)
    }
 }
 
-const char** menu_event_get_osk_grid(void)
+char** menu_event_get_osk_grid(void)
 {
    return osk_grid;
 }

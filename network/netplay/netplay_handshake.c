@@ -564,8 +564,8 @@ bool netplay_handshake_sync(netplay_t *netplay,
    autosave_unlock();
 
    /* Send basic sync info */
-   cmd[0] = htonl(NETPLAY_CMD_SYNC);
-   cmd[1] = htonl(2*sizeof(uint32_t)
+   cmd[0]     = htonl(NETPLAY_CMD_SYNC);
+   cmd[1]     = htonl(2*sizeof(uint32_t)
          /* Controller devices */
          + MAX_INPUT_DEVICES*sizeof(uint32_t)
 
@@ -580,11 +580,13 @@ bool netplay_handshake_sync(netplay_t *netplay,
 
          /* And finally, sram */
          + mem_info.size);
-   cmd[2] = htonl(netplay->self_frame_count);
-   client_num = connection - netplay->connections + 1;
+   cmd[2]     = htonl(netplay->self_frame_count);
+   client_num = (uint32_t)(connection - netplay->connections + 1);
+    
    if (netplay->local_paused || netplay->remote_paused)
       client_num |= NETPLAY_CMD_SYNC_BIT_PAUSED;
-   cmd[3] = htonl(client_num);
+    
+   cmd[3]     = htonl(client_num);
 
    if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmd,
             sizeof(cmd)))

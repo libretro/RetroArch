@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (dir_list.c).
@@ -185,12 +185,15 @@ static int dir_list_read(const char *dir,
       bool is_dir                     = false;
       int ret                         = 0;
       const char *name                = retro_dirent_get_name(entry);
-      const char *file_ext            = path_get_extension(name);
+      const char *file_ext            = "";
 
       file_path[0] = '\0';
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
       is_dir = retro_dirent_is_dir(entry, file_path);
+
+      if(!is_dir)
+         file_ext = path_get_extension(name);
 
       if (!include_hidden)
       {
@@ -200,7 +203,7 @@ static int dir_list_read(const char *dir,
 
       if(is_dir && recursive)
       {
-         if(strstr(name, ".") || strstr(name, ".."))
+         if(strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
             continue;
 
          dir_list_read(file_path, list, ext_list, include_dirs,

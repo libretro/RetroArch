@@ -23,7 +23,7 @@ typedef enum glslang_format
 {
    SLANG_FORMAT_UNKNOWN = 0,
 
-   // 8-bit
+   /* 8-bit */
    SLANG_FORMAT_R8_UNORM,
    SLANG_FORMAT_R8_UINT,
    SLANG_FORMAT_R8_SINT,
@@ -35,11 +35,11 @@ typedef enum glslang_format
    SLANG_FORMAT_R8G8B8A8_SINT,
    SLANG_FORMAT_R8G8B8A8_SRGB,
 
-   // 10-bit
+   /* 10-bit */
    SLANG_FORMAT_A2B10G10R10_UNORM_PACK32,
    SLANG_FORMAT_A2B10G10R10_UINT_PACK32,
 
-   // 16-bit
+   /* 16-bit */
    SLANG_FORMAT_R16_UINT,
    SLANG_FORMAT_R16_SINT,
    SLANG_FORMAT_R16_SFLOAT,
@@ -50,7 +50,7 @@ typedef enum glslang_format
    SLANG_FORMAT_R16G16B16A16_SINT,
    SLANG_FORMAT_R16G16B16A16_SFLOAT,
 
-   // 32-bit
+   /* 32-bit */
    SLANG_FORMAT_R32_UINT,
    SLANG_FORMAT_R32_SINT,
    SLANG_FORMAT_R32_SFLOAT,
@@ -105,7 +105,7 @@ struct glslang_output
 
 bool glslang_compile_shader(const char *shader_path, glslang_output *output);
 
-// Helpers for internal use.
+/* Helpers for internal use. */
 bool glslang_read_shader_file(const char *path, std::vector<std::string> *output, bool root_file);
 bool glslang_parse_meta(const std::vector<std::string> &lines, glslang_meta *meta);
 #endif

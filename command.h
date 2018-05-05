@@ -139,7 +139,7 @@ enum event_command
    /* Add a playlist entry to favorites. */
    CMD_EVENT_ADD_TO_FAVORITES,
    /* Reset playlist entry associated core to DETECT */
-   CMD_EVENT_RESET_CORE_ASSOCIATION,   
+   CMD_EVENT_RESET_CORE_ASSOCIATION,
    /* Toggles pause. */
    CMD_EVENT_PAUSE_TOGGLE,
    /* Pauses RetroArch. */
@@ -218,6 +218,8 @@ enum event_command
    CMD_EVENT_GRAB_MOUSE_TOGGLE,
    /* Toggles game focus. */
    CMD_EVENT_GAME_FOCUS_TOGGLE,
+   /* Toggles desktop menu. */
+   CMD_EVENT_UI_COMPANION_TOGGLE,
    /* Toggles fullscreen mode. */
    CMD_EVENT_FULLSCREEN_TOGGLE,
    CMD_EVENT_PERFCNT_REPORT_FRONTEND_LOG,
@@ -271,7 +273,7 @@ void command_playlist_push_write(
 void command_playlist_update_write(
       void *data,
       size_t idx,
-      const char *path,      
+      const char *path,
       const char *label,
       const char *core_path,
       const char *core_display_name,

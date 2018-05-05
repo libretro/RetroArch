@@ -22,14 +22,14 @@
 #endif
 
 #include "../drivers/d3d.h"
-#include "../drivers/d3d_common.h"
-#include "../drivers/d3d8_common.h"
+#include "../common/d3d_common.h"
+#include "../common/d3d8_common.h"
 
 #include "../font_driver.h"
 
 typedef struct
 {
-   d3d_video_t *d3d;
+   d3d8_video_t *d3d;
    XFONT *debug_font;
    D3DSurface *surf;
 } xfonts_t;
@@ -46,7 +46,7 @@ static void *xfonts_init_font(void *video_data,
    (void)font_path;
    (void)font_size;
 
-   xfont->d3d = (d3d_video_t*)video_data;
+   xfont->d3d = (d3d8_video_t*)video_data;
 
    XFONT_OpenDefaultFont(&xfont->debug_font);
 

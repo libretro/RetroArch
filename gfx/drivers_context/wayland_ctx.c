@@ -58,6 +58,7 @@ typedef struct gfx_ctx_wayland_data
    unsigned height;
    unsigned physical_width;
    unsigned physical_height;
+   int refresh_rate;
    struct wl_registry *registry;
    struct wl_compositor *compositor;
    struct wl_surface *surface;
@@ -440,6 +441,7 @@ static void display_handle_mode(void *data,
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    wl->width                  = width;
    wl->height                 = height;
+   wl->refresh_rate           = refresh;
 
    /* Certain older Wayland implementations report in Hz,
     * but it should be mHz. */
@@ -1369,6 +1371,13 @@ static void gfx_ctx_wl_show_mouse(void *data, bool state)
    wl->cursor.visible = state;
 }
 
+static float gfx_ctx_wl_get_refresh_rate(void *data)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   return (float) wl->refresh_rate / 1000.0f;
+}
+
 const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_init,
    gfx_ctx_wl_destroy,
@@ -1377,6 +1386,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_set_swap_interval,
    gfx_ctx_wl_set_video_mode,
    gfx_ctx_wl_get_video_size,
+   gfx_ctx_wl_get_refresh_rate,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

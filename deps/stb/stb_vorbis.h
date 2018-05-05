@@ -3278,7 +3278,7 @@ static stb_vorbis * vorbis_alloc(stb_vorbis *f)
 
 unsigned int stb_vorbis_get_file_offset(stb_vorbis *f)
 {
-   return f->stream - f->stream_start;
+   return (unsigned int)(f->stream - f->stream_start);
 }
 
 #ifndef STB_VORBIS_NO_PULLDATA_API

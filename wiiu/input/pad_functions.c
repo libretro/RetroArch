@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wiiu/pad_driver.h>
+#include "wiiu_input.h"
 
 enum wiiu_pad_axes {
   AXIS_LEFT_ANALOG_X,
@@ -75,29 +75,8 @@ void wiiu_pad_set_axis_value(int16_t state[3][2], int16_t left_x, int16_t left_y
   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = touch_y;
 }
 
-
-void wiiu_pad_read_axis_data(uint32_t axis, axis_data *data)
-{
-   data->axis        = AXIS_POS_GET(axis);
-   data->is_negative = false;
-
-   if(data->axis >= AXIS_INVALID)
-   {
-      data->axis = AXIS_NEG_GET(axis);
-      data->is_negative = true;
-   }
-}
-
-void wiiu_pad_connect(unsigned pad, input_device_driver_t *driver)
-{
-   if(!input_autoconfigure_connect(driver->name(pad), NULL, driver->ident,
-            pad, VID_NONE, PID_NONE))
-      input_config_set_device_name(pad, driver->name(pad));
-}
-
 wiiu_pad_functions_t pad_functions = {
   wiiu_pad_get_axis_value,
   wiiu_pad_set_axis_value,
-  wiiu_pad_read_axis_data,
-  wiiu_pad_connect
+  gamepad_read_axis_data,
 };

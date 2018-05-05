@@ -74,7 +74,7 @@ static bool ui_browser_window_win32_save(ui_browser_window_state_t *state)
    return ui_browser_window_win32_core(state, true);
 }
 
-const ui_browser_window_t ui_browser_window_win32 = {
+ui_browser_window_t ui_browser_window_win32 = {
    ui_browser_window_win32_open,
    ui_browser_window_win32_save,
    "win32"

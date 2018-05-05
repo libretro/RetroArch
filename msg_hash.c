@@ -31,6 +31,7 @@ static unsigned uint_user_language;
 
 int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
+#ifdef HAVE_MENU
    int ret = -1;
 
 #ifdef HAVE_LANGEXTRA
@@ -90,6 +91,9 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       return ret;
 
    return menu_hash_get_help_us_enum(msg, s, len);
+#else
+   return 0;
+#endif
 }
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)

@@ -34,16 +34,16 @@
 #  include <config.h>
 #endif
 
-#include "private/cpu.h"
+#include "include/private/cpu.h"
 
 #ifndef FLAC__INTEGER_ONLY_LIBRARY
 #ifndef FLAC__NO_ASM
 #if (defined FLAC__CPU_IA32 || defined FLAC__CPU_X86_64) && FLAC__HAS_X86INTRIN
-#include "private/lpc.h"
+#include "include/private/lpc.h"
 #ifdef FLAC__SSE2_SUPPORTED
 
-#include "FLAC/assert.h"
-#include "FLAC/format.h"
+#include "include/FLAC/assert.h"
+#include "include/FLAC/format.h"
 
 #include <emmintrin.h> /* SSE2 */
 

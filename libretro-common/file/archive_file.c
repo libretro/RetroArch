@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (archive_file.c).
@@ -129,7 +129,7 @@ static void file_archive_free(file_archive_file_data_t *data)
 
 static file_archive_file_data_t* file_archive_open(const char *path)
 {
-   ssize_t ret            = -1;
+   int64_t ret            = -1;
    bool read_from_file    = false;
    file_archive_file_data_t *data = (file_archive_file_data_t*)
       calloc(1, sizeof(*data));
@@ -722,7 +722,7 @@ error:
  */
 int file_archive_compressed_read(
       const char * path, void **buf,
-      const char* optional_filename, ssize_t *length)
+      const char* optional_filename, int64_t *length)
 {
    const struct file_archive_file_backend *backend = NULL;
    int ret                            = 0;

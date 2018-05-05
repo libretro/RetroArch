@@ -5,44 +5,41 @@
    "version": "0.2.0",
    "configurations": [
       {
-         "name": "msys2-mingw64 debug",
+         "name": "(gdb) Launch",
          "type": "cppdbg",
          "request": "launch",
          "program": "${workspaceFolder}/retroarch.exe",
-         "args": [],
+         "args": ["-v"],
          "stopAtEntry": false,
          "cwd": "${workspaceFolder}",
          "environment": [],
-         "externalConsole": true,
+         "externalConsole": false,
          "MIMode": "gdb",
          "miDebuggerPath": "c:\\msys64\\mingw64\\bin\\gdb.exe",
          "setupCommands": [
-            {
-               "description": "Enable pretty-printing for gdb",
-               "text": "-enable-pretty-printing",
-               "ignoreFailures": true
-            }
+             {
+                 "description": "Enable pretty-printing for gdb",
+                 "text": "-enable-pretty-printing",
+                 "ignoreFailures": true
+             }
          ]
       },
-      {
-         "name": "msys2-mingw32 debug",
+      { 
+         "name": "(gdb) Attach",
          "type": "cppdbg",
-         "request": "launch",
+         "request": "attach",
          "program": "${workspaceFolder}/retroarch.exe",
-         "args": [],
-         "stopAtEntry": false,
-         "cwd": "${workspaceFolder}",
-         "environment": [],
-         "externalConsole": true,
+         "processId": "${command:pickProcess}",
          "MIMode": "gdb",
-         "miDebuggerPath": "c:\\msys64\\mingw32\\bin\\gdb.exe",
+         "miDebuggerPath": "c:\\msys64\\mingw64\\bin\\gdb.exe",
          "setupCommands": [
-            {
-               "description": "Enable pretty-printing for gdb",
-               "text": "-enable-pretty-printing",
-               "ignoreFailures": true
-            }
+             {
+                 "description": "Enable pretty-printing for gdb",
+                 "text": "-enable-pretty-printing",
+                 "ignoreFailures": true
+             }
          ]
-      }
+      },
+
    ]
 }

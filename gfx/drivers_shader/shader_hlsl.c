@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <retro_math.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
@@ -23,6 +25,7 @@
 
 #include "../../defines/d3d_defines.h"
 #include "../common/d3d_common.h"
+#include "../common/d3d9_common.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -35,48 +38,6 @@
 
 #include "../drivers/d3d_shaders/opaque.hlsl.d3d9.h"
 #include "shader_hlsl.h"
-
-#ifdef __cplusplus
-
-#ifndef ID3DXConstantTable_SetDefaults
-#define ID3DXConstantTable_SetDefaults(p,a) (p)->SetDefaults(a);
-#endif
-
-#ifndef ID3DXConstantTable_SetFloatArray
-#define ID3DXConstantTable_SetFloatArray(p,a,b,c,d) (p)->SetFloatArray(a,b,c,d)
-#endif
-
-#ifndef ID3DXConstantTable_GetConstantByName
-#define ID3DXConstantTable_GetConstantByName(p,a,b)  ((p)->GetConstantByName(a, b))
-#endif
-
-#ifndef ID3DXConstantTable_SetMatrix
-#define ID3DXConstantTable_SetMatrix(p,a,b,c) ((p)->SetMatrix(a,b,c))
-#endif
-
-#else
-
-#ifndef ID3DXConstantTable_SetDefaults
-#define ID3DXConstantTable_SetDefaults(p,a) (p)->lpVtbl->SetDefaults(p,a)
-#endif
-
-#ifndef ID3DXConstantTable_SetFloatArray
-#define ID3DXConstantTable_SetFloatArray(p,a,b,c,d) (p)->lpVtbl->SetFloatArray(p,a,b,c,d)
-#endif
-
-#ifndef ID3DXConstantTable_GetConstantByName
-#define ID3DXConstantTable_GetConstantByName(p,a,b)  ((p)->lpVtbl->GetConstantByName(p, a, b))
-#endif
-
-#ifndef ID3DXConstantTable_SetMatrix
-#define ID3DXConstantTable_SetMatrix(p,a,b,c) ((p)->lpVtbl->SetMatrix(p,a,b,c))
-#endif
-
-#endif
-
-#define set_param_2f(param, xy, constanttable) if (param) { ID3DXConstantTable_SetFloatArray(constanttable, d3dr, param, xy, 2); }
-#define get_constant_by_name(a, b, constanttable) ID3DXConstantTable_GetConstantByName(constanttable, a, b)
-
 
 struct shader_program_hlsl_data
 {
@@ -165,65 +126,77 @@ static void hlsl_set_uniform_parameter(
 static void hlsl_set_params(void *dat, void *shader_data)
 {
    float ori_size[2], tex_size[2], out_size[2];
-   video_shader_ctx_params_t      *params = (video_shader_ctx_params_t*)dat;
-   void *data                             = params->data;
-   unsigned width                         = params->width;
-   unsigned height                        = params->height;
-   unsigned tex_width                     = params->tex_width;
-   unsigned tex_height                    = params->tex_height;
-   unsigned out_width                     = params->out_width;
-   unsigned out_height                    = params->out_height;
-   unsigned frame_count                   = params->frame_counter;
-   const void *_info                      = params->info;
-   const void *_prev_info                 = params->prev_info;
-   const void *_feedback_info             = params->feedback_info;
-   const void *_fbo_info                  = params->fbo_info;
-   unsigned fbo_info_cnt                  = params->fbo_info_cnt;
-   float frame_cnt                        = frame_count;
-   const struct video_tex_info *info      = (const struct video_tex_info*)_info;
-   const struct video_tex_info *prev_info = (const struct video_tex_info*)_prev_info;
-   const struct video_tex_info *fbo_info  = (const struct video_tex_info*)_fbo_info;
-   hlsl_shader_data_t *hlsl               = (hlsl_shader_data_t*)shader_data;
-   LPDIRECT3DDEVICE9 d3dr                 = (LPDIRECT3DDEVICE9)hlsl->dev;
+   video_shader_ctx_params_t      *params   = (video_shader_ctx_params_t*)dat;
+   void *data                               = params->data;
+   unsigned width                           = params->width;
+   unsigned height                          = params->height;
+   unsigned tex_width                       = params->tex_width;
+   unsigned tex_height                      = params->tex_height;
+   unsigned out_width                       = params->out_width;
+   unsigned out_height                      = params->out_height;
+   unsigned frame_count                     = params->frame_counter;
+   const void *_info                        = params->info;
+   const void *_prev_info                   = params->prev_info;
+   const void *_feedback_info               = params->feedback_info;
+   const void *_fbo_info                    = params->fbo_info;
+   unsigned fbo_info_cnt                    = params->fbo_info_cnt;
+   float frame_cnt                          = frame_count;
+   const struct video_tex_info *info        = (const struct video_tex_info*)_info;
+   const struct video_tex_info *prev_info   = (const struct video_tex_info*)_prev_info;
+   const struct video_tex_info *fbo_info    = (const struct video_tex_info*)_fbo_info;
+   hlsl_shader_data_t *hlsl                 = (hlsl_shader_data_t*)shader_data;
+   LPDIRECT3DDEVICE9 d3dr                   = (LPDIRECT3DDEVICE9)hlsl->dev;
+   struct shader_program_hlsl_data *program =  NULL;
 
    if (!hlsl || !d3dr)
       return;
 
-   ori_size[0] = (float)width;
-   ori_size[1] = (float)height;
-   tex_size[0] = (float)tex_width;
-   tex_size[1] = (float)tex_height;
-   out_size[0] = (float)out_width;
-   out_size[1] = (float)out_height;
+   program                                  = &hlsl->prg[hlsl->active_idx];
 
-   ID3DXConstantTable_SetDefaults(
-         hlsl->prg[hlsl->active_idx].f_ctable, d3dr);
-   ID3DXConstantTable_SetDefaults(
-         hlsl->prg[hlsl->active_idx].v_ctable, d3dr);
+   if (!program)
+      return;
 
-   set_param_2f(hlsl->prg[hlsl->active_idx].vid_size_f, ori_size, hlsl->prg[hlsl->active_idx].f_ctable);
-   set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_f, tex_size, hlsl->prg[hlsl->active_idx].f_ctable);
-   set_param_2f(hlsl->prg[hlsl->active_idx].out_size_f, out_size, hlsl->prg[hlsl->active_idx].f_ctable);
+   ori_size[0]                              = (float)width;
+   ori_size[1]                              = (float)height;
+   tex_size[0]                              = (float)tex_width;
+   tex_size[1]                              = (float)tex_height;
+   out_size[0]                              = (float)out_width;
+   out_size[1]                              = (float)out_height;
 
-   if (hlsl->prg[hlsl->active_idx].frame_cnt_f)
-      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].f_ctable,
-            d3dr,hlsl->prg[hlsl->active_idx].frame_cnt_f, frame_cnt);
+   d3d9x_constant_table_set_defaults(d3dr, program->f_ctable);
+   d3d9x_constant_table_set_defaults(d3dr, program->v_ctable);
 
-   if (hlsl->prg[hlsl->active_idx].frame_dir_f)
-      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].f_ctable,
-            d3dr, hlsl->prg[hlsl->active_idx].frame_dir_f, state_manager_frame_is_reversed() ? -1.0 : 1.0);
+   if (program->vid_size_f)
+      d3d9x_constant_table_set_float_array(d3dr, program->f_ctable, (void*)program->vid_size_f, ori_size, 2);
+   if (program->tex_size_f)
+      d3d9x_constant_table_set_float_array(d3dr, program->f_ctable, (void*)program->tex_size_f, tex_size, 2);
+   if (program->out_size_f)
+      d3d9x_constant_table_set_float_array(d3dr, program->f_ctable, (void*)program->out_size_f, out_size, 2);
 
-   set_param_2f(hlsl->prg[hlsl->active_idx].vid_size_v, ori_size, hlsl->prg[hlsl->active_idx].v_ctable);
-   set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_v, tex_size, hlsl->prg[hlsl->active_idx].v_ctable);
-   set_param_2f(hlsl->prg[hlsl->active_idx].out_size_v, out_size, hlsl->prg[hlsl->active_idx].v_ctable);
+   if (program->frame_cnt_f)
+      d3d9x_constant_table_set_float(program->f_ctable,
+            d3dr, (void*)program->frame_cnt_f, frame_cnt);
 
-   if (hlsl->prg[hlsl->active_idx].frame_cnt_v)
-      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].v_ctable,
-            d3dr, hlsl->prg[hlsl->active_idx].frame_cnt_v, frame_cnt);
+   if (program->frame_dir_f)
+      d3d9x_constant_table_set_float(program->f_ctable,
+            d3dr, (void*)program->frame_dir_f,
+            state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
-   if (hlsl->prg[hlsl->active_idx].frame_dir_v)
-      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].v_ctable,
-            d3dr, hlsl->prg[hlsl->active_idx].frame_dir_v, state_manager_frame_is_reversed() ? -1.0 : 1.0);
+   if (program->vid_size_v)
+      d3d9x_constant_table_set_float_array(d3dr, program->v_ctable, (void*)program->vid_size_v, ori_size, 2);
+   if (program->tex_size_v)
+      d3d9x_constant_table_set_float_array(d3dr, program->v_ctable, (void*)program->tex_size_v, tex_size, 2);
+   if (program->out_size_v)
+      d3d9x_constant_table_set_float_array(d3dr, program->v_ctable, (void*)program->out_size_v, out_size, 2);
+
+   if (program->frame_cnt_v)
+      d3d9x_constant_table_set_float(program->v_ctable,
+            d3dr, (void*)program->frame_cnt_v, frame_cnt);
+
+   if (program->frame_dir_v)
+      d3d9x_constant_table_set_float(program->v_ctable,
+            d3dr, (void*)program->frame_dir_v,
+            state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
@@ -247,43 +220,49 @@ static bool hlsl_compile_program(
 
    if (program_info->is_file)
    {
-      if (!d3dx_compile_shader_from_file(program_info->combined, NULL, NULL,
+      if (!d3d9x_compile_shader_from_file(program_info->combined, NULL, NULL,
                "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &program->f_ctable))
          goto error;
-      if (!d3dx_compile_shader_from_file(program_info->combined, NULL, NULL,
+      if (!d3d9x_compile_shader_from_file(program_info->combined, NULL, NULL,
                "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &program->v_ctable))
          goto error;
    }
    else
    {
       /* TODO - crashes currently - to do with 'end of line' of stock shader */
-      if (!d3dx_compile_shader(program_info->combined,
+      if (!d3d9x_compile_shader(program_info->combined,
                strlen(program_info->combined), NULL, NULL,
                "main_fragment", "ps_3_0", 0, &code_f, &listing_f,
                &program->f_ctable ))
+      {
+         RARCH_ERR("Failure building stock fragment shader..\n");
          goto error;
-      if (!d3dx_compile_shader(program_info->combined,
+      }
+      if (!d3d9x_compile_shader(program_info->combined,
                strlen(program_info->combined), NULL, NULL,
                "main_vertex", "vs_3_0", 0, &code_v, &listing_v,
                &program->v_ctable ))
+      {
+         RARCH_ERR("Failure building stock vertex shader..\n");
          goto error;
+      }
    }
 
-   d3d_create_pixel_shader(d3dr, (const DWORD*)d3dx_get_buffer_ptr(code_f),  (void**)&program->fprg);
-   d3d_create_vertex_shader(d3dr, (const DWORD*)d3dx_get_buffer_ptr(code_v), (void**)&program->vprg);
-   d3dxbuffer_release((void*)code_f);
-   d3dxbuffer_release((void*)code_v);
+   d3d9_create_pixel_shader(d3dr, (const DWORD*)d3d9x_get_buffer_ptr(code_f),  (void**)&program->fprg);
+   d3d9_create_vertex_shader(d3dr, (const DWORD*)d3d9x_get_buffer_ptr(code_v), (void**)&program->vprg);
+   d3d9x_buffer_release((void*)code_f);
+   d3d9x_buffer_release((void*)code_v);
 
    return true;
 
 error:
    RARCH_ERR("Cg/HLSL error:\n");
    if (listing_f)
-      RARCH_ERR("Fragment:\n%s\n", (char*)d3dx_get_buffer_ptr(listing_f));
+      RARCH_ERR("Fragment:\n%s\n", (char*)d3d9x_get_buffer_ptr(listing_f));
    if (listing_v)
-      RARCH_ERR("Vertex:\n%s\n", (char*)d3dx_get_buffer_ptr(listing_v));
-   d3dxbuffer_release((void*)listing_f);
-   d3dxbuffer_release((void*)listing_v);
+      RARCH_ERR("Vertex:\n%s\n", (char*)d3d9x_get_buffer_ptr(listing_v));
+   d3d9x_buffer_release((void*)listing_f);
+   d3d9x_buffer_release((void*)listing_v);
 
    return false;
 }
@@ -306,21 +285,35 @@ static bool hlsl_load_stock(hlsl_shader_data_t *hlsl)
 
 static void hlsl_set_program_attributes(hlsl_shader_data_t *hlsl, unsigned i)
 {
+   struct shader_program_hlsl_data *program  = NULL;
    if (!hlsl)
       return;
 
-   hlsl->prg[i].vid_size_f  = get_constant_by_name(NULL, "$IN.video_size",      hlsl->prg[i].f_ctable);
-   hlsl->prg[i].tex_size_f  = get_constant_by_name(NULL, "$IN.texture_size",    hlsl->prg[i].f_ctable);
-   hlsl->prg[i].out_size_f  = get_constant_by_name(NULL, "$IN.output_size",     hlsl->prg[i].f_ctable);
-   hlsl->prg[i].frame_cnt_f = get_constant_by_name(NULL, "$IN.frame_count",     hlsl->prg[i].f_ctable);
-   hlsl->prg[i].frame_dir_f = get_constant_by_name(NULL, "$IN.frame_direction", hlsl->prg[i].f_ctable);
-   hlsl->prg[i].vid_size_v  = get_constant_by_name(NULL, "$IN.video_size",      hlsl->prg[i].v_ctable);
-   hlsl->prg[i].tex_size_v  = get_constant_by_name(NULL, "$IN.texture_size",    hlsl->prg[i].v_ctable);
-   hlsl->prg[i].out_size_v  = get_constant_by_name(NULL, "$IN.output_size",     hlsl->prg[i].v_ctable);
-   hlsl->prg[i].frame_cnt_v = get_constant_by_name(NULL, "$IN.frame_count",     hlsl->prg[i].v_ctable);
-   hlsl->prg[i].frame_dir_v = get_constant_by_name(NULL, "$IN.frame_direction", hlsl->prg[i].v_ctable);
-   hlsl->prg[i].mvp         = get_constant_by_name(NULL, "$modelViewProj",      hlsl->prg[i].v_ctable);
-   d3d_matrix_identity(&hlsl->prg[i].mvp_val);
+   program                                   = &hlsl->prg[i];
+
+   if (!program)
+      return;
+
+   if (program->f_ctable)
+   {
+      program->vid_size_f  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->f_ctable, NULL, "$IN.video_size");
+      program->tex_size_f  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->f_ctable, NULL, "$IN.texture_size");
+      program->out_size_f  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->f_ctable, NULL, "$IN.output_size");
+      program->frame_cnt_f = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->f_ctable, NULL, "$IN.frame_count");
+      program->frame_dir_f = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->f_ctable, NULL, "$IN.frame_direction");
+   }
+
+   if (program->v_ctable)
+   {
+      program->vid_size_v  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->v_ctable, NULL, "$IN.video_size");
+      program->tex_size_v  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->v_ctable, NULL, "$IN.texture_size");
+      program->out_size_v  = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->v_ctable, NULL, "$IN.output_size");
+      program->frame_cnt_v = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->v_ctable, NULL, "$IN.frame_count");
+      program->frame_dir_v = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->v_ctable, NULL, "$IN.frame_direction");
+      program->mvp         = (D3DXHANDLE)d3d9x_constant_table_get_constant_by_name(program->v_ctable, NULL, "$modelViewProj");
+   }
+
+   d3d_matrix_identity(&program->mvp_val);
 }
 
 static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
@@ -350,7 +343,8 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, const char *path)
    if (!hlsl_load_stock(hlsl))
       return false;
 
-   hlsl->cg_shader = (struct video_shader*)calloc(1, sizeof(*hlsl->cg_shader));
+   hlsl->cg_shader = (struct video_shader*)
+      calloc(1, sizeof(*hlsl->cg_shader));
    if (!hlsl->cg_shader)
       return false;
 
@@ -387,18 +381,18 @@ static void hlsl_deinit_progs(hlsl_shader_data_t *hlsl)
    for (i = 1; i < RARCH_HLSL_MAX_SHADERS; i++)
    {
       if (hlsl->prg[i].fprg && hlsl->prg[i].fprg != hlsl->prg[0].fprg)
-         d3d_free_pixel_shader(hlsl->dev, hlsl->prg[i].fprg);
+         d3d9_free_pixel_shader(hlsl->dev, hlsl->prg[i].fprg);
       if (hlsl->prg[i].vprg && hlsl->prg[i].vprg != hlsl->prg[0].vprg)
-         d3d_free_vertex_shader(hlsl->dev, hlsl->prg[i].vprg);
+         d3d9_free_vertex_shader(hlsl->dev, hlsl->prg[i].vprg);
 
       hlsl->prg[i].fprg = NULL;
       hlsl->prg[i].vprg = NULL;
    }
 
    if (hlsl->prg[0].fprg)
-      d3d_free_pixel_shader(hlsl->dev, hlsl->prg[0].fprg);
+      d3d9_free_pixel_shader(hlsl->dev, hlsl->prg[0].fprg);
    if (hlsl->prg[0].vprg)
-      d3d_free_vertex_shader(hlsl->dev, hlsl->prg[0].vprg);
+      d3d9_free_vertex_shader(hlsl->dev, hlsl->prg[0].vprg);
 
    hlsl->prg[0].fprg = NULL;
    hlsl->prg[0].vprg = NULL;
@@ -419,7 +413,8 @@ static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, const char *path)
       goto error;
 
    if (!hlsl->cg_shader)
-      hlsl->cg_shader = (struct video_shader*)calloc(1, sizeof(*hlsl->cg_shader));
+      hlsl->cg_shader = (struct video_shader*)calloc
+         (1, sizeof(*hlsl->cg_shader));
    if (!hlsl->cg_shader)
       goto error;
 
@@ -433,7 +428,8 @@ static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, const char *path)
 
    if (hlsl->cg_shader->passes > RARCH_HLSL_MAX_SHADERS - 3)
    {
-      RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n", RARCH_HLSL_MAX_SHADERS - 3);
+      RARCH_WARN("Too many shaders ... "
+            "Capping shader amount to %d.\n", RARCH_HLSL_MAX_SHADERS - 3);
       hlsl->cg_shader->passes = RARCH_HLSL_MAX_SHADERS - 3;
    }
 
@@ -458,8 +454,8 @@ error:
 static void *hlsl_init(void *data, const char *path)
 {
    unsigned i;
-   d3d_video_t         *d3d = (d3d_video_t*)data;
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)
+   d3d9_video_t         *d3d = (d3d9_video_t*)data;
+   hlsl_shader_data_t *hlsl  = (hlsl_shader_data_t*)
       calloc(1, sizeof(hlsl_shader_data_t));
 
    if (!hlsl || !d3d)
@@ -481,11 +477,16 @@ static void *hlsl_init(void *data, const char *path)
          goto error;
    }
 
+   RARCH_LOG("Setting up program attributes...\n");
+   RARCH_LOG("Shader passes: %d\n", hlsl->cg_shader->passes);
+
    for(i = 1; i <= hlsl->cg_shader->passes; i++)
       hlsl_set_program_attributes(hlsl, i);
 
-   d3d_set_vertex_shader(hlsl->dev, 1, hlsl->prg[1].vprg);
-   d3d_set_pixel_shader(hlsl->dev, hlsl->prg[1].fprg);
+   RARCH_LOG("Setting up vertex shader...\n");
+   d3d9_set_vertex_shader(hlsl->dev, 1, hlsl->prg[1].vprg);
+   RARCH_LOG("Setting up pixel shader...\n");
+   d3d9_set_pixel_shader(hlsl->dev, hlsl->prg[1].fprg);
 
    return hlsl;
 
@@ -513,19 +514,26 @@ static void hlsl_deinit(void *data)
       free(hlsl);
 }
 
-static void hlsl_use(void *data, void *shader_data, unsigned idx, bool set_active)
+static void hlsl_use(void *data, void *shader_data,
+      unsigned idx, bool set_active)
 {
-   hlsl_shader_data_t *hlsl      = (hlsl_shader_data_t*)shader_data;
-   LPDIRECT3DDEVICE9        d3dr = hlsl ? (LPDIRECT3DDEVICE9)hlsl->dev : NULL;
+   hlsl_shader_data_t            *hlsl      = (hlsl_shader_data_t*)shader_data;
+   LPDIRECT3DDEVICE9                  d3dr  = hlsl ? (LPDIRECT3DDEVICE9)hlsl->dev : NULL;
+   struct shader_program_hlsl_data *program =  NULL;
 
-   if (!hlsl || !hlsl->prg[idx].vprg || !hlsl->prg[idx].fprg)
+   if (!hlsl)
+      return;
+
+   program                                  = &hlsl->prg[idx];
+
+   if (!program || !program->vprg || !program->fprg)
       return;
 
    if (set_active)
-      hlsl->active_idx = idx;
+      hlsl->active_idx           = idx;
 
-   d3d_set_vertex_shader(d3dr, idx, hlsl->prg[idx].vprg);
-   d3d_set_pixel_shader(d3dr, hlsl->prg[idx].fprg);
+   d3d9_set_vertex_shader(d3dr, idx, program->vprg);
+   d3d9_set_pixel_shader(d3dr, program->fprg);
 }
 
 static unsigned hlsl_num(void *data)
@@ -549,27 +557,34 @@ static bool hlsl_filter_type(void *data, unsigned idx, bool *smooth)
    return false;
 }
 
-static void hlsl_shader_scale(void *data, unsigned idx, struct gfx_fbo_scale *scale)
+static void hlsl_shader_scale(void *data, unsigned idx,
+      struct gfx_fbo_scale *scale)
 {
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
    if (hlsl && idx)
-      *scale = hlsl->cg_shader->pass[idx - 1].fbo;
+      *scale                = hlsl->cg_shader->pass[idx - 1].fbo;
    else
-      scale->valid = false;
+      scale->valid          = false;
 }
 
 static bool hlsl_set_mvp(void *data, void *shader_data, const void *mat_data)
 {
-   hlsl_shader_data_t *hlsl        = (hlsl_shader_data_t*)shader_data;
-   LPDIRECT3DDEVICE9 d3dr          = hlsl ? (LPDIRECT3DDEVICE9)hlsl->dev : NULL;
-   const math_matrix_4x4 *mat      = (const math_matrix_4x4*)mat_data;
+   hlsl_shader_data_t *hlsl                 = (hlsl_shader_data_t*)shader_data;
+   LPDIRECT3DDEVICE9 d3dr                   = hlsl ? 
+      (LPDIRECT3DDEVICE9)hlsl->dev : NULL;
+   const math_matrix_4x4 *mat               = (const math_matrix_4x4*)mat_data;
+   struct shader_program_hlsl_data *program =  NULL;
 
-   if (!hlsl || !hlsl->prg[hlsl->active_idx].mvp)
+   if (!hlsl)
       return false;
 
-   ID3DXConstantTable_SetMatrix(hlsl->prg[hlsl->active_idx].v_ctable, d3dr,
-         hlsl->prg[hlsl->active_idx].mvp,
-         &hlsl->prg[hlsl->active_idx].mvp_val);
+   program                                  = &hlsl->prg[hlsl->active_idx];
+
+   if (!program || !program->mvp)
+      return false;
+
+   d3d9x_constant_table_set_matrix(d3dr, program->v_ctable, 
+         (void*)program->mvp, &program->mvp_val);
    return true;
 }
 
@@ -590,8 +605,24 @@ static struct video_shader *hlsl_get_current_shader(void *data)
    return NULL;
 }
 
+static enum gfx_wrap_type hlsl_wrap_type(void *data, unsigned idx)
+{
+#if 0
+   /* TODO/FIXME - actual implementation */
+#endif
+   return RARCH_WRAP_BORDER;
+}
+
+static bool hlsl_set_coords(void *handle_data,
+      void *shader_data, const struct video_coords *coords)
+{
+   /* TODO/FIXME - actual implementation */
+   return false;
+}
+
 const shader_backend_t hlsl_backend = {
    hlsl_init,
+   NULL, /* hlsl_init_menu_shaders */
    hlsl_deinit,
    hlsl_set_params,
    hlsl_set_uniform_parameter,
@@ -599,9 +630,9 @@ const shader_backend_t hlsl_backend = {
    hlsl_use,
    hlsl_num,
    hlsl_filter_type,
-   NULL,              /* hlsl_wrap_type  */
+   hlsl_wrap_type,
    hlsl_shader_scale,
-   NULL,              /* hlsl_set_coords */
+   hlsl_set_coords,
    hlsl_set_mvp,
    NULL,              /* hlsl_get_prev_textures */
    hlsl_get_feedback_pass,

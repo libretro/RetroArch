@@ -142,7 +142,9 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 
    /* bundle copy */
-   sprintf(data_assets_path, "%s/%s", data_path, "assets");
+   snprintf(data_assets_path,
+         sizeof(data_assets_path),
+         "%s/%s", data_path, "assets");
 
    if (!filestream_exists(data_assets_path))
    {
@@ -150,7 +152,9 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
 
       RARCH_LOG( "Copying application assets to data directory...\n" );
 
-      sprintf(copy_command, "cp -r %s/. %s", assets_path, data_path);
+      snprintf(copy_command,
+            sizeof(copy_command),
+            "cp -r %s/. %s", assets_path, data_path);
 
       if(system(copy_command) == -1)
          RARCH_LOG( "Asset copy failed: Shell could not be run.\n" );

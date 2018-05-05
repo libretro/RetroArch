@@ -1252,12 +1252,22 @@ static struct video_shader *thread_get_current_shader(void *data)
    return thr->poke->get_current_shader(thr->driver_data);
 }
 
+static uint32_t thread_get_flags(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   if (!thr || !thr->poke || !thr->poke->get_flags)
+      return 0;
+   return thr->poke->get_flags(thr->driver_data);
+}
+
 static const video_poke_interface_t thread_poke = {
+   thread_get_flags,
    NULL,                            /* set_coords */
    NULL,                            /* set_mvp */
    thread_load_texture,
    thread_unload_texture,
    thread_set_video_mode,
+   NULL,
    thread_set_filtering,
    thread_get_video_output_size,
    thread_get_video_output_prev,

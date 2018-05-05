@@ -68,7 +68,7 @@ static bool ps3_joypad_button(unsigned port_num, uint16_t joykey)
    return pad_state[port_num] & (UINT64_C(1) << joykey);
 }
 
-static void ps3_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
+static void ps3_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
 	if (port_num < MAX_PADS)
    {

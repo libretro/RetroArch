@@ -512,7 +512,7 @@ typedef enum {
 	FLAC__METADATA_TYPE_UNDEFINED = 7,
 	/**< marker to denote beginning of undefined type range; this number will increase as new metadata types are added */
 
-	FLAC__MAX_METADATA_TYPE = FLAC__MAX_METADATA_TYPE_CODE,
+	FLAC__MAX_METADATA_TYPE = FLAC__MAX_METADATA_TYPE_CODE
 	/**< No type will ever be greater than this. There is not enough room in the protocol block. */
 } FLAC__MetadataType;
 

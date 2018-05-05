@@ -101,6 +101,12 @@ const char *file_path_str(enum file_path_enum enum_idx)
       case FILE_PATH_PNG_EXTENSION:
          str = ".png";
          break;
+      case FILE_PATH_MP3_EXTENSION:
+         str = ".mp3";
+         break;
+      case FILE_PATH_FLAC_EXTENSION:
+         str = ".flac";
+         break;
       case FILE_PATH_OGG_EXTENSION:
          str = ".ogg";
          break;

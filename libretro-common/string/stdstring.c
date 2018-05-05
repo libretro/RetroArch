@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (stdstring.c).
@@ -169,7 +169,7 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode)
          }
 
          character = utf8skip(&string[i], 1);
-         char_len = character - &string[i];
+         char_len  = (unsigned)(character - &string[i]);
 
          if (!unicode)
             counter += char_len - 1;

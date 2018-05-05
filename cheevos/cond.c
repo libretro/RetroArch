@@ -65,7 +65,7 @@ static cheevos_cond_op_t cheevos_cond_parse_operator(const char** memaddr)
    }
    else
    {
-      RARCH_ERR(CHEEVOS_TAG "unknown operator %c\n.", *str);
+      CHEEVOS_ERR(CHEEVOS_TAG "unknown operator %c\n.", *str);
       op = CHEEVOS_COND_OP_EQUALS;
    }
 
@@ -168,9 +168,6 @@ void cheevos_cond_parse_in_set(cheevos_cond_t* cond, const char* memaddr, unsign
          if (index == which)
          {
             cheevos_cond_parse(cond, &memaddr);
-#ifdef CHEEVOS_VERBOSE
-            /*cheevos_log_cond(cond);*/
-#endif
             cond++;
          }
          else

@@ -28,6 +28,7 @@
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 
+#include "../../audio/audio_driver.h"
 #include "../../configuration.h"
 #include "../../core.h"
 #include "../../core_info.h"
@@ -48,6 +49,18 @@
    cbs->action_start = name; \
    cbs->action_start_ident = #name;
 #endif
+
+static int action_start_audio_mixer_stream_volume(unsigned type, const char *label)
+{
+   unsigned         offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
+
+   if (offset >= AUDIO_MIXER_MAX_STREAMS)
+      return 0;
+
+   audio_driver_mixer_set_stream_volume(offset, 1.0f);
+
+   return 0;
+}
 
 static int action_start_remap_file_load(unsigned type, const char *label)
 {
@@ -144,9 +157,9 @@ static int action_start_shader_pass(unsigned type, const char *label)
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   menu->hack_shader_pass    = type - MENU_SETTINGS_SHADER_PASS_0;
+   menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
 
-   menu_shader_manager_clear_pass_path((unsigned)menu->hack_shader_pass);
+   menu_shader_manager_clear_pass_path(menu->scratchpad.unsigned_var);
 
    return 0;
 }
@@ -368,6 +381,13 @@ int menu_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
 {
    if (!cbs)
       return -1;
+
+   if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
+         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
+   {
+      BIND_ACTION_START(cbs, action_start_audio_mixer_stream_volume);
+      return 0;
+   }
 
    BIND_ACTION_START(cbs, action_start_lookup_setting);
 

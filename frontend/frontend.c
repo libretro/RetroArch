@@ -37,6 +37,13 @@
 #include "../paths.h"
 #include "../retroarch.h"
 
+/* griffin hack */
+#ifdef HAVE_QT
+#ifndef HAVE_MAIN
+#define HAVE_MAIN
+#endif
+#endif
+
 #ifndef HAVE_MAIN
 #include "../retroarch.h"
 #endif
@@ -98,6 +105,9 @@ void main_exit(void *args)
 int rarch_main(int argc, char *argv[], void *data)
 {
    void *args                      = (void*)data;
+#if defined(HAVE_MAIN) && defined(HAVE_QT)
+   const ui_application_t *ui_application = NULL;
+#endif
 
    rarch_ctl(RARCH_CTL_PREINIT, NULL);
    frontend_driver_init_first(args);
@@ -124,7 +134,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
    ui_companion_driver_init_first();
 
-#ifndef HAVE_MAIN
+#if !defined(HAVE_MAIN)
    do
    {
       unsigned sleep_ms = 0;
@@ -140,6 +150,11 @@ int rarch_main(int argc, char *argv[], void *data)
    }while(1);
 
    main_exit(args);
+#elif defined(HAVE_QT)
+   ui_application = ui_companion_driver_get_qt_application_ptr();
+
+   if (ui_application && ui_application->run)
+      ui_application->run(args);
 #endif
 
    return 0;

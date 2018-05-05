@@ -34,10 +34,11 @@
 #  include <config.h>
 #endif
 
-#include "private/cpu.h"
-#include "share/compat.h"
 #include <stdlib.h>
 #include <string.h>
+
+#include "include/private/cpu.h"
+#include "include/share/compat.h"
 
 #if defined(_MSC_VER)
 #  include <intrin.h> /* for __cpuid() and _xgetbv() */
@@ -83,7 +84,7 @@ cpu_xgetbv_x86(void)
 	return (uint32_t)_xgetbv(0);
 #elif defined __GNUC__
 	uint32_t lo, hi;
-	asm volatile (".byte 0x0f, 0x01, 0xd0" : "=a"(lo), "=d"(hi) : "c" (0));
+	__asm__ volatile (".byte 0x0f, 0x01, 0xd0" : "=a"(lo), "=d"(hi) : "c" (0));
 	return lo;
 #else
 	return 0;

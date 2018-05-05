@@ -66,9 +66,14 @@
 #include "msg_hash.h"
 #include "verbosity.h"
 
+#ifdef HAVE_RUNAHEAD
+#include "runahead/secondary_core.h"
+#include "runahead/run_ahead.h"
+#endif
+
 #ifdef HAVE_DYNAMIC
 #define SYMBOL(x) do { \
-   function_t func = dylib_proc(lib_handle, #x); \
+   function_t func = dylib_proc(lib_handle_local, #x); \
    memcpy(&current_core->x, &func, sizeof(func)); \
    if (current_core->x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "init_libretro_sym()"); } \
 } while (0)
@@ -383,14 +388,36 @@ bool libretro_get_system_info(const char *path,
  * Setup libretro callback symbols. Returns true on success,
  * or false if symbols could not be loaded.
  **/
-static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current_core)
+bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, dylib_t *lib_handle_p)
 {
+   /* the library handle for use with the SYMBOL macro */
+   dylib_t lib_handle_local;
    switch (type)
    {
       case CORE_TYPE_PLAIN:
 #ifdef HAVE_DYNAMIC
-         if (!load_dynamic_core())
-            return false;
+#ifdef HAVE_RUNAHEAD
+         if (!lib_path || !lib_handle_p)
+#endif
+         {
+            if (!load_dynamic_core())
+               return false;
+            lib_handle_local = lib_handle;
+         }
+#ifdef HAVE_RUNAHEAD
+         else
+         {
+            /* for a secondary core, we already have a 
+             * primary library loaded, so we can skip 
+             * some checks and just load the library */
+            retro_assert(lib_path != NULL && lib_handle_p != NULL);
+            lib_handle_local = dylib_load(lib_path);
+
+            if (!lib_handle_local)
+               return false;
+            *lib_handle_p = lib_handle_local;
+         }
+#endif
 #endif
 
          SYMBOL(retro_init);
@@ -615,6 +642,11 @@ static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current
    return true;
 }
 
+static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current_core)
+{
+   return init_libretro_sym_custom(type, current_core, NULL, NULL);
+}
+
 /**
  * init_libretro_sym:
  * @type                        : Type of core to be loaded.
@@ -634,6 +666,11 @@ bool init_libretro_sym(enum rarch_core_type type, struct retro_core_t *current_c
    if (!load_symbols(type, current_core))
       return false;
 
+#ifdef HAVE_RUNAHEAD
+   /* remember last core type created, so creating a 
+    * secondary core will know what core type to use. */
+   set_last_core_type(type);
+#endif
    return true;
 }
 
@@ -885,23 +922,27 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
          break;
 #endif
 
-	case RETRO_HW_CONTEXT_DIRECT3D:
-		switch(major)
-		{
+#if defined(HAVE_D3D9) || defined(HAVE_D3D11)
+      case RETRO_HW_CONTEXT_DIRECT3D:
+         switch (major)
+         {
 #ifdef HAVE_D3D9
-		case 9:
+            case 9:
+               RARCH_LOG("Requesting D3D9 context.\n");
+               break;
 #endif
 #ifdef HAVE_D3D11
-		case 11:
+            case 11:
+               RARCH_LOG("Requesting D3D11 context.\n");
+               break;
 #endif
-			RARCH_LOG("Requesting D3D%i context.\n", major);
-			break;
-		default:
-			goto unknown;
-		}
-		break;
+            default:
+               RARCH_LOG("Requesting unknown context.\n");
+               return false;
+         }
+         break;
+#endif
 
-unknown:
       default:
          RARCH_LOG("Requesting unknown context.\n");
          return false;
@@ -1718,13 +1759,15 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          int result = 0;
          if (!audio_driver_is_suspended() && audio_driver_is_active())
-         {
             result |= 2;
-         }
          if (video_driver_is_active() && !video_driver_is_stub_frame())
-         {
             result |= 1;
-         }
+#ifdef HAVE_RUNAHEAD
+         if (want_fast_savestate())
+            result |= 4;
+         if (get_hard_disable_audio())
+            result |= 8;
+#endif
          if (data != NULL)
          {
             int* result_p = (int*)data;

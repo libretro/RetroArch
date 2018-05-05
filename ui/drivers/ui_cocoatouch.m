@@ -698,7 +698,7 @@ static void ui_companion_cocoatouch_msg_queue_push(const char *msg,
    }
 }
 
-const ui_companion_driver_t ui_companion_cocoatouch = {
+ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_init,
    ui_companion_cocoatouch_deinit,
    ui_companion_cocoatouch_iterate,

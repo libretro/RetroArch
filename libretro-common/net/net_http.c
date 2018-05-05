@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_http.c).
@@ -90,7 +90,7 @@ struct http_connection_t
 static char urlencode_lut[256];
 static bool urlencode_lut_inited = false;
 
-void urlencode_lut_init()
+void urlencode_lut_init(void)
 {
    unsigned i;
 
@@ -109,6 +109,7 @@ void net_http_urlencode(char **dest, const char *source)
    char *enc  = NULL;
    /* Assume every character will be encoded, so we need 3 times the space. */
    size_t len = strlen(source) * 3 + 1;
+   size_t count = len;
 
    if (!urlencode_lut_inited)
       urlencode_lut_init();
@@ -119,11 +120,16 @@ void net_http_urlencode(char **dest, const char *source)
 
    for (; *source; source++)
    {
+      int written = 0;
+
       /* any non-ascii character will just be encoded without question */
       if ((unsigned)*source < sizeof(urlencode_lut) && urlencode_lut[(unsigned)*source])
-         snprintf(enc, len, "%c", urlencode_lut[(unsigned)*source]);
+         written = snprintf(enc, count, "%c", urlencode_lut[(unsigned)*source]);
       else
-         snprintf(enc, len, "%%%02X", *source & 0xFF);
+         written = snprintf(enc, count, "%%%02X", *source & 0xFF);
+
+      if (written > 0)
+         count -= written;
 
       while (*++enc);
    }

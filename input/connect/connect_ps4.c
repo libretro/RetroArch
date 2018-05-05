@@ -25,6 +25,7 @@
 #include "joypad_connection.h"
 #include "../input_defines.h"
 #include "../../driver.h"
+#include "../common/hid/hid_device_driver.h"
 
 enum connect_ps4_dpad_states
 {
@@ -185,7 +186,7 @@ static bool hidpad_ps4_check_dpad(struct ps4 *rpt, unsigned id)
    return false;
 }
 
-static void hidpad_ps4_get_buttons(void *data, retro_bits_t* state)
+static void hidpad_ps4_get_buttons(void *data, input_bits_t* state)
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
    struct ps4                *rpt = device ?

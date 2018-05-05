@@ -21,11 +21,13 @@
 #include <compat/strl.h>
 #include <retro_endianness.h>
 #include <file/file_path.h>
+#include <lists/string_list.h>
+#include <lists/dir_list.h>
 #include <string/stdstring.h>
 
 #include "libretro-db/libretrodb.h"
 
-#include "list_special.h"
+#include "core_info.h"
 #include "database_info.h"
 #include "verbosity.h"
 
@@ -366,16 +368,22 @@ static void dir_list_prioritize(struct string_list *list)
 }
 
 database_info_handle_t *database_info_dir_init(const char *dir,
-      enum database_type type, retro_task_t *task)
+      enum database_type type, retro_task_t *task,
+      bool show_hidden_files)
 {
-   struct string_list       *list  = NULL;
-   database_info_handle_t     *db  = (database_info_handle_t*)
+   core_info_list_t *core_info_list = NULL;
+   struct string_list       *list   = NULL;
+   database_info_handle_t     *db   = (database_info_handle_t*)
       calloc(1, sizeof(*db));
 
    if (!db)
       return NULL;
 
-   list               = dir_list_new_special(dir, DIR_LIST_RECURSIVE, NULL);
+   core_info_get_list(&core_info_list);
+
+   list = dir_list_new(dir, core_info_list->all_ext,
+         false, show_hidden_files,
+         false, true);
 
    if (!list)
    {

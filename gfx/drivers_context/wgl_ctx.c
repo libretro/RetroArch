@@ -760,6 +760,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_swap_interval,
    gfx_ctx_wgl_set_video_mode,
    gfx_ctx_wgl_get_video_size,
+   win32_get_refresh_rate,
    gfx_ctx_wgl_get_video_output_size,
    gfx_ctx_wgl_get_video_output_prev,
    gfx_ctx_wgl_get_video_output_next,
