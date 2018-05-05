@@ -2369,7 +2369,7 @@ RETRO_API void retro_cheat_reset(void);
 RETRO_API void retro_cheat_set(unsigned index, bool enabled, const char *code);
 
 /* Loads a game. 
- * Retrun true to indicate succesful loading and false to indicate load failure.
+ * Return true to indicate successful loading and false to indicate load failure.
  */
 RETRO_API bool retro_load_game(const struct retro_game_info *game);
 
