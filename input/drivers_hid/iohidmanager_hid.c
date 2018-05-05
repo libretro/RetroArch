@@ -586,7 +586,6 @@ static void iohidmanager_hid_device_add_device(IOHIDDeviceRef device, iohidmanag
    adapter->slot = pad_connection_pad_init(hid->slots,
          adapter->name, dev_vid, dev_pid, adapter,
          &iohidmanager_hid);
-	printf("in adapter %p, add uniqueId %d on slot %d \n", adapter, deviceUniqueId, adapter->slot);
 
    if (adapter->slot == -1)
       goto error;
