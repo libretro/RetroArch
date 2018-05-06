@@ -17,31 +17,33 @@
 #ifndef __WIIU_INPUT__H
 #define __WIIU_INPUT__H
 
-#include "wiiu_hid_types.h"
-#include "../../input/include/gamepad.h"
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif /* HAVE_CONFIG_H */
-
 #include <string.h>
 #include <malloc.h>
 #include <unistd.h>
+
+#include "hid_types.h"
+#include "../gamepad.h"
+
 #include <wiiu/os.h>
 #include <wiiu/syshid.h>
 #include <wiiu/vpad.h>
 #include <wiiu/kpad.h>
 #include <wiiu/pad_strings.h>
+#include "hid.h"
 
-#include "../../input/input_driver.h"
-#include "../../input/common/hid/hid_device_driver.h"
-#include "../../tasks/tasks_internal.h"
-#include "../../input/connect/joypad_connection.h"
-#include "../../retroarch.h"
-#include "../../verbosity.h"
-#include "../../command.h"
-#include "../../gfx/video_driver.h"
-#include "wiiu_hid.h"
+#include "../../input_driver.h"
+#include "../../common/hid/hid_device_driver.h"
+#include "../../connect/joypad_connection.h"
+#include "../../../retroarch.h"
+#include "../../../verbosity.h"
+#include "../../../command.h"
+
+#ifdef HAVE_CONFIG_H
+#include "../../../config.h"
+#endif /* HAVE_CONFIG_H */
+
+#include "../../../gfx/video_driver.h"
+#include "../../../tasks/tasks_internal.h"
 
 #define WIIMOTE_TYPE_WIIPLUS 0x00
 #define WIIMOTE_TYPE_NUNCHUK 0x01

@@ -249,16 +249,17 @@ IMPORT_END();
 
 /* padscore */
 IMPORT_BEGIN(padscore);
-
 IMPORT(KPADInit);
 IMPORT(WPADProbe);
+IMPORT(KPADSetConnectCallback);
+
 IMPORT(WPADSetDataFormat);
 IMPORT(WPADEnableURCC);
 IMPORT(WPADEnableWiiRemote);
 IMPORT(WPADRead);
 IMPORT(KPADRead);
 IMPORT(KPADReadEx);
-
+IMPORT(KPADShutdown);
 IMPORT_END();
 
 /* nsyskbd */

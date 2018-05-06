@@ -29,9 +29,10 @@ ifneq ($(V), 1)
 endif
 
 OBJ :=
-OBJ += wiiu/input/wpad_driver.o
-OBJ += wiiu/input/kpad_driver.o
-OBJ += wiiu/input/pad_functions.o
+OBJ += wiiu/main.o
+OBJ += input/drivers_joypad/wiiu/wpad_driver.o
+OBJ += input/drivers_joypad/wiiu/kpad_driver.o
+OBJ += input/drivers_joypad/wiiu/pad_functions.o
 OBJ += wiiu/system/memory.o
 OBJ += wiiu/system/atomic.o
 OBJ += wiiu/system/exception_handler.o
@@ -47,8 +48,8 @@ endif
 
 ifeq ($(WIIU_HID),1)
    DEFINES += -DWIIU_HID
-   OBJ += wiiu/input/hidpad_driver.o
-   OBJ += wiiu/input/wiiu_hid.o
+   OBJ += input/drivers_joypad/wiiu/hidpad_driver.o
+   OBJ += input/drivers_hid/wiiu_hid.o
    OBJ += input/connect/joypad_connection.o \
           input/common/hid/hid_device_driver.o \
           input/common/hid/device_wiiu_gca.o \
@@ -197,7 +198,16 @@ else
    ELF2RPL   := $(ELF2RPL).exe
 endif
 
-INCDIRS := -I. -Ideps -Ideps/stb -Ideps/libz -Ideps/7zip -Ilibretro-common/include -Iwiiu -Iwiiu/include -I$(DEVKITPRO)/portlibs/ppc/include
+INCDIRS := -I.
+INCDIRS += -Ideps
+INCDIRS += -Ideps/stb
+INCDIRS += -Ideps/libz
+INCDIRS += -Ideps/7zip
+INCDIRS += -Ilibretro-common/include
+INCDIRS += -Iinput/include
+INCDIRS += -Iwiiu
+INCDIRS += -Iwiiu/include
+INCDIRS += -I$(DEVKITPRO)/portlibs/ppc/include
 LIBDIRS := -L. -L$(DEVKITPRO)/portlibs/ppc/lib
 
 CFLAGS  := -mwup -mcpu=750 -meabi -mhard-float
