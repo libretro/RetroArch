@@ -256,10 +256,10 @@ public:
    QToolButton* runPushButton();
    QToolButton* stopPushButton();
    QTabWidget* browserAndPlaylistTabWidget();
-   QList<QHash<QString, QString> > getPlaylistDefaultCores();
+   QVector<QHash<QString, QString> > getPlaylistDefaultCores();
    ViewOptionsDialog* viewOptionsDialog();
    QSettings* settings();
-   QList<QHash<QString, QString> > getCoreInfo();
+   QVector<QHash<QString, QString> > getCoreInfo();
    void setTheme(Theme theme = THEME_SYSTEM_DEFAULT);
    Theme theme();
    Theme getThemeFromString(QString themeString);
@@ -315,7 +315,7 @@ private slots:
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
    void addPlaylistItemsToTable(QString path);
-   void addPlaylistItemsToGrid(QString path);
+   void addPlaylistItemsToGrid(const QString &path);
    void onContentItemDoubleClicked(QTableWidgetItem *item);
    void onCoreLoadWindowClosed();
    void onTabWidgetIndexChanged(int index);
@@ -328,6 +328,8 @@ private slots:
    void onDeferredImageLoaded();
    void onZoomValueChanged(int value);
    void onContentGridInited();
+   void onUpdateGridItemPixmapFromImage(GridItem *item);
+   void onPendingItemUpdates();
 
 private:
    void setCurrentCoreLabel();
@@ -336,7 +338,8 @@ private:
    bool isContentLessCore();
    void removeGridItems();
    void loadImageDeferred(GridItem *item, QString path);
-   QList<QHash<QString, QString> > getPlaylistItems(QString pathString);
+   void calcGridItemSize(GridItem *item, int zoomValue);
+   QVector<QHash<QString, QString> > getPlaylistItems(QString pathString);
 
    LoadCoreWindow *m_loadCoreWindow;
    QTimer *m_timer;
@@ -385,6 +388,7 @@ private:
    QWidget *m_gridLayoutWidget;
    QSlider *m_zoomSlider;
    int m_lastZoomSliderValue;
+   QList<GridItem*> m_pendingItemUpdates;
 
 protected:
    void closeEvent(QCloseEvent *event);

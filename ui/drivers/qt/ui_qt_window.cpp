@@ -200,7 +200,7 @@ void CoreInfoDialog::showCoreInfo()
    int row = 0;
    int rowCount = m_formLayout->rowCount();
    int i = 0;
-   QList<QHash<QString, QString> > infoList = m_mainwindow->getCoreInfo();
+   QVector<QHash<QString, QString> > infoList = m_mainwindow->getCoreInfo();
 
    if (rowCount > 0)
    {
@@ -526,6 +526,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_gridLayoutWidget(new QWidget())
    ,m_zoomSlider(NULL)
    ,m_lastZoomSliderValue(0)
+   ,m_pendingItemUpdates()
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -707,7 +708,7 @@ MainWindow::MainWindow(QWidget *parent) :
    qApp->processEvents();
    QTimer::singleShot(0, this, SLOT(onBrowserStartClicked()));
 
-   for (i = 0; i < m_listWidget->count(); i++)
+   for (i = 0; i < m_listWidget->count() && m_listWidget->count() > 0; i++)
    {
       /* select the first non-hidden row */
       if (!m_listWidget->isRowHidden(i))
@@ -737,22 +738,27 @@ MainWindow::~MainWindow()
    removeGridItems();
 }
 
+inline void MainWindow::calcGridItemSize(GridItem *item, int zoomValue)
+{
+   QMutexLocker lock(&item->mutex);
+   int newSize = 0;
+
+   if (zoomValue < 50)
+      newSize = expScale(lerp(0, 49, 25, 49, zoomValue) / 50.0, 102, 256);
+   else
+      newSize = expScale(zoomValue / 100.0, 256, 1024);
+
+   item->widget->setFixedSize(QSize(newSize, newSize));
+}
+
 void MainWindow::onZoomValueChanged(int value)
 {
-   if (m_gridItems.count() == 0)
-      return;
+   int i = 0;
 
-   foreach(GridItem *item, m_gridItems)
+   for (i = 0; i < m_gridItems.count() && m_gridItems.count() > 0; i++)
    {
-      QMutexLocker lock(&item->mutex);
-      int newSize = 0;
-
-      if (value < 50)
-         newSize = expScale(lerp(0, 49, 25, 49, value) / 50.0, 102, 256);
-      else
-         newSize = expScale(value / 100.0, 256, 1024);
-
-      item->widget->setFixedSize(QSize(newSize, newSize));
+      GridItem *item = m_gridItems.at(i);
+      calcGridItemSize(item, value);
    }
 
    m_lastZoomSliderValue = value;
@@ -948,20 +954,17 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
    menu->addAction(hideAction.data());
 
-   if (m_listWidget->count() > 0)
+   for (j = 0; j < m_listWidget->count() && m_listWidget->count() > 0; j++)
    {
-      for (j = 0; j < m_listWidget->count(); j++)
-      {
-         QListWidgetItem *item = m_listWidget->item(j);
-         bool hidden = m_listWidget->isItemHidden(item);
+      QListWidgetItem *item = m_listWidget->item(j);
+      bool hidden = m_listWidget->isItemHidden(item);
 
-         if (hidden)
-         {
-            QAction *action = hiddenPlaylistsMenu->addAction(item->text());
-            action->setProperty("row", j);
-            action->setProperty("core_path", item->data(Qt::UserRole).toString());
-            foundHiddenPlaylist = true;
-         }
+      if (hidden)
+      {
+         QAction *action = hiddenPlaylistsMenu->addAction(item->text());
+         action->setProperty("row", j);
+         action->setProperty("core_path", item->data(Qt::UserRole).toString());
+         foundHiddenPlaylist = true;
       }
    }
 
@@ -986,17 +989,28 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
       core_info_get_list(&core_info_list);
 
-      for (i = 0; i < core_info_list->count; i++)
+      for (i = 0; i < core_info_list->count && core_info_list->count > 0; i++)
       {
          const core_info_t *core = &core_info_list->list[i];
          coreList[core->core_name] = core;
       }
 
-      foreach (const QString &key, coreList.keys())
       {
-         const core_info_t *core = coreList.value(key);
-         QAction *action = associateMenu->addAction(core->core_name);
-         action->setProperty("core_path", core->path);
+         QMapIterator<QString, const core_info_t*> coreListIterator(coreList);
+
+         while (coreListIterator.hasNext())
+         {
+            QString key;
+            const core_info_t *core = NULL;
+            QAction *action = NULL;
+
+            coreListIterator.next();
+
+            key = coreListIterator.key();
+            core = coreList.value(key);
+            action = associateMenu->addAction(core->core_name);
+            action->setProperty("core_path", core->path);
+         }
       }
 
       menu->addMenu(associateMenu.data());
@@ -1180,6 +1194,7 @@ void MainWindow::reloadPlaylists()
    QDir playlistDir(settings->paths.directory_playlist);
    QString currentPlaylistPath;
    QStringList hiddenPlaylists = m_settings->value("hidden_playlists").toStringList();
+   int i = 0;
 
    currentItem = m_listWidget->currentItem();
 
@@ -1230,9 +1245,10 @@ void MainWindow::reloadPlaylists()
    if (hiddenPlaylists.contains(QFileInfo(settings->paths.path_content_video_history).fileName()))
       m_listWidget->setRowHidden(m_listWidget->row(videoPlaylistsItem), true);
 
-   foreach (QString file, m_playlistFiles)
+   for (i = 0; i < m_playlistFiles.count() && m_playlistFiles.count() > 0; i++)
    {
       QListWidgetItem *item = NULL;
+      const QString &file = m_playlistFiles.at(i);
       QString fileDisplayName = file;
       QString fileName = file;
       bool hasIcon = false;
@@ -1270,7 +1286,6 @@ void MainWindow::reloadPlaylists()
 
       if (firstItem)
       {
-         int i = 0;
          bool found = false;
 
          for (i = 0; i < m_listWidget->count(); i++)
@@ -1318,7 +1333,7 @@ void MainWindow::onGotLogMessage(const QString &msg)
 
 void MainWindow::onLaunchWithComboBoxIndexChanged(int)
 {
-   QList<QHash<QString, QString> > infoList = getCoreInfo();
+   QVector<QHash<QString, QString> > infoList = getCoreInfo();
    QString coreInfoText;
    QVariantMap coreMap = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
    CoreSelection coreSelection = static_cast<CoreSelection>(coreMap.value("core_selection").toInt());
@@ -1423,9 +1438,9 @@ void MainWindow::setTheme(Theme theme)
    }
 }
 
-QList<QHash<QString, QString> > MainWindow::getCoreInfo()
+QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 {
-   QList<QHash<QString, QString> > infoList;
+   QVector<QHash<QString, QString> > infoList;
    QHash<QString, QString> currentCore = getSelectedCore();
    core_info_list_t *core_info_list = NULL;
    const core_info_t *core_info = NULL;
@@ -1850,7 +1865,7 @@ QHash<QString, QString> MainWindow::getSelectedCore()
       }
       case CORE_SELECTION_PLAYLIST_DEFAULT:
       {
-         QList<QHash<QString, QString> > cores;
+         QVector<QHash<QString, QString> > cores;
          int i = 0;
 
          if (!contentItem || contentHash["db_name"].isEmpty())
@@ -1982,7 +1997,7 @@ void MainWindow::onRunClicked()
       }
       case CORE_SELECTION_PLAYLIST_DEFAULT:
       {
-         QList<QHash<QString, QString> > cores = getPlaylistDefaultCores();
+         QVector<QHash<QString, QString> > cores = getPlaylistDefaultCores();
          int i = 0;
 
          for (i = 0; i < cores.count(); i++)
@@ -2047,13 +2062,13 @@ ViewOptionsDialog* MainWindow::viewOptionsDialog()
    return m_viewOptionsDialog;
 }
 
-QList<QHash<QString, QString> > MainWindow::getPlaylistDefaultCores()
+QVector<QHash<QString, QString> > MainWindow::getPlaylistDefaultCores()
 {
    settings_t *settings = config_get_ptr();
    struct string_list *playlists = string_split(settings->arrays.playlist_names, ";");
    struct string_list *cores = string_split(settings->arrays.playlist_cores, ";");
    unsigned i = 0;
-   QList<QHash<QString, QString> > coreList;
+   QVector<QHash<QString, QString> > coreList;
 
    if (!playlists || !cores)
    {
@@ -2164,7 +2179,7 @@ void MainWindow::setCoreActions()
 
    if (!hash["db_name"].isEmpty())
    {
-      QList<QHash<QString, QString> > defaultCores = getPlaylistDefaultCores();
+      QVector<QHash<QString, QString> > defaultCores = getPlaylistDefaultCores();
       int i = 0;
 
       if (defaultCores.count() > 0)
@@ -2406,6 +2421,7 @@ void MainWindow::onViewClosedDocksAboutToShow()
    QMenu *menu = qobject_cast<QMenu*>(sender());
    QList<QDockWidget*> dockWidgets;
    bool found = false;
+   int i = 0;
 
    if (!menu)
       return;
@@ -2420,8 +2436,10 @@ void MainWindow::onViewClosedDocksAboutToShow()
       return;
    }
 
-   foreach (QDockWidget *dock, dockWidgets)
+   for (i = 0; i < dockWidgets.count() && dockWidgets.count() > 0; i++)
    {
+      const QDockWidget *dock = dockWidgets.at(i);
+
       if (!dock->isVisible())
       {
          QAction *action = menu->addAction(dock->property("menu_text").toString(), this, SLOT(onShowHiddenDockWidgetAction()));
@@ -2431,9 +2449,7 @@ void MainWindow::onViewClosedDocksAboutToShow()
    }
 
    if (!found)
-   {
       menu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE));
-   }
 }
 
 void MainWindow::onShowHiddenDockWidgetAction()
@@ -2826,6 +2842,7 @@ void MainWindow::removeGridItems()
             items.remove();
 
             m_gridLayout->removeWidget(item->widget);
+            m_pendingItemUpdates.removeAll(item);
 
             delete item->widget;
 
@@ -2854,11 +2871,37 @@ void MainWindow::onDeferredImageLoaded()
 
    if (!item->image.isNull())
    {
-      item->label->setPixmap(QPixmap::fromImage(item->image));
-      item->label->update();
+      m_pendingItemUpdates.append(item);
+      QTimer::singleShot(0, this, SLOT(onPendingItemUpdates()));
    }
 
    item->mutex.unlock();
+}
+
+void MainWindow::onPendingItemUpdates()
+{
+   QMutableListIterator<GridItem*> list(m_pendingItemUpdates);
+
+   while (list.hasNext())
+   {
+      GridItem *item = list.next();
+
+      if (!item)
+         continue;
+
+      onUpdateGridItemPixmapFromImage(item);
+
+      list.remove();
+   }
+}
+
+void MainWindow::onUpdateGridItemPixmapFromImage(GridItem *item)
+{
+   if (!item)
+      return;
+
+   item->label->setPixmap(QPixmap::fromImage(item->image));
+   item->label->update();
 }
 
 void MainWindow::loadImageDeferred(GridItem *item, QString path)
@@ -2882,13 +2925,14 @@ GridItem* MainWindow::doDeferredImageLoad(GridItem *item, QString path)
    return item;
 }
 
-void MainWindow::addPlaylistItemsToGrid(QString pathString)
+void MainWindow::addPlaylistItemsToGrid(const QString &pathString)
 {
-   QList<QHash<QString, QString> > items = getPlaylistItems(pathString);
+   QVector<QHash<QString, QString> > items = getPlaylistItems(pathString);
    QScreen *screen = qApp->primaryScreen();
    QSize screenSize = screen->size();
    settings_t *settings = config_get_ptr();
    int i = 0;
+   int zoomValue = m_zoomSlider->value();
 
    for (i = 0; i < items.count(); i++)
    {
@@ -2938,6 +2982,8 @@ void MainWindow::addPlaylistItemsToGrid(QString pathString)
 
       item->label = label;
 
+      calcGridItemSize(item, zoomValue);
+
       item->widget->layout()->addWidget(label);
 
       newLabel = new QLabel(hash.value("label"), item->widget);
@@ -2950,6 +2996,8 @@ void MainWindow::addPlaylistItemsToGrid(QString pathString)
       m_gridItems.append(item);
 
       loadImageDeferred(item, imagePath);
+
+      qApp->processEvents();
    }
 }
 
@@ -2969,9 +3017,11 @@ void MainWindow::initContentGridLayout()
    {
       settings_t *settings = config_get_ptr();
       QDir playlistDir(settings->paths.directory_playlist);
+      int i = 0;
 
-      foreach (QString playlist, m_playlistFiles)
+      for (i = 0; i < m_playlistFiles.count() && m_playlistFiles.count() > 0; i++)
       {
+         const QString &playlist = m_playlistFiles.at(i);
          addPlaylistItemsToGrid(playlistDir.absoluteFilePath(playlist));
       }
    }
@@ -3018,9 +3068,11 @@ void MainWindow::initContentTableWidget()
    {
       settings_t *settings = config_get_ptr();
       QDir playlistDir(settings->paths.directory_playlist);
+      int i = 0;
 
-      foreach (QString playlist, m_playlistFiles)
+      for (i = 0; i < m_playlistFiles.count() && m_playlistFiles.count() > 0; i++)
       {
+         const QString &playlist = m_playlistFiles.at(i);
          addPlaylistItemsToTable(playlistDir.absoluteFilePath(playlist));
       }
    }
@@ -3047,10 +3099,10 @@ void MainWindow::initContentTableWidget()
    onSearchEnterPressed();
 }
 
-QList<QHash<QString, QString> > MainWindow::getPlaylistItems(QString pathString)
+QVector<QHash<QString, QString> > MainWindow::getPlaylistItems(QString pathString)
 {
    QByteArray pathArray;
-   QList<QHash<QString, QString> > items;
+   QVector<QHash<QString, QString> > items;
    const char *pathData = NULL;
    playlist_t *playlist = NULL;
    unsigned playlistSize = 0;
@@ -3118,7 +3170,7 @@ QList<QHash<QString, QString> > MainWindow::getPlaylistItems(QString pathString)
 
 void MainWindow::addPlaylistItemsToTable(QString pathString)
 {
-   QList<QHash<QString, QString> > items = getPlaylistItems(pathString);
+   QVector<QHash<QString, QString> > items = getPlaylistItems(pathString);
    int i = 0;
    int oldRowCount = m_tableWidget->rowCount();
 

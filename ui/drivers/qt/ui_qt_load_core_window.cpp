@@ -266,8 +266,11 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
 
       if (rowsToHide.size() != m_table->rowCount())
       {
-         foreach (const int &row, rowsToHide)
+         int i = 0;
+
+         for (i = 0; i < rowsToHide.count() && rowsToHide.count() > 0; i++)
          {
+            const int &row = rowsToHide.at(i);
             m_table->setRowHidden(row, true);
          }
       }
