@@ -391,8 +391,9 @@ char *path_remove_extension(char *path)
    char *last = !string_is_empty(path) 
       ? (char*)strrchr(path_basename(path), '.') : NULL;
    if (!last)
-      return path;
-   *last = '\0';
+      return NULL;
+   if (*last)
+      *last = '\0';
    return path;
 }
 
