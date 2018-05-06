@@ -345,7 +345,7 @@ int main(int argc, char **argv)
    get_arguments(&argc, &argv);
 
 #ifdef IS_SALAMANDER
-   int salamander_main(argc, argv);
+   int salamander_main(int argc, char **argv);
    salamander_main(argc, argv);
 #else
    do_rarch_main(argc, argv);

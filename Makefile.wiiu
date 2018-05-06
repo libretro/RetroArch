@@ -30,12 +30,10 @@ endif
 
 OBJ :=
 OBJ += wiiu/main.o
-OBJ += input/drivers_joypad/wiiu/wpad_driver.o
-OBJ += input/drivers_joypad/wiiu/kpad_driver.o
-OBJ += input/drivers_joypad/wiiu/pad_functions.o
 OBJ += wiiu/system/memory.o
 OBJ += wiiu/system/atomic.o
 OBJ += wiiu/system/exception_handler.o
+OBJ += wiiu/system/missing_libc_functions.o
 OBJ += wiiu/fs/sd_fat_devoptab.o
 OBJ += wiiu/fs/fs_utils.o
 OBJ += wiiu/hbl.o
@@ -91,7 +89,6 @@ ifeq ($(HAVE_RUNAHEAD),1)
 	DEFINES += -DHAVE_RUNAHEAD
 endif
 
-   OBJ += wiiu/system/missing_libc_functions.o
    OBJ += wiiu/shader_utils.o
    OBJ += gfx/drivers/gx2_shaders/tex.o
    OBJ += gfx/drivers/gx2_shaders/sprite.o
@@ -149,6 +146,10 @@ endif
    	OBJ += menu/drivers_display/menu_display_wiiu.o
    	OBJ += input/drivers/wiiu_input.o
    	OBJ += input/drivers_joypad/wiiu_joypad.o
+        OBJ += input/drivers_joypad/wiiu/wpad_driver.o
+        OBJ += input/drivers_joypad/wiiu/kpad_driver.o
+        OBJ += input/drivers_joypad/wiiu/pad_functions.o
+
    	OBJ += audio/drivers/wiiu_audio.o
    	OBJ += frontend/drivers/platform_wiiu.o
    endif
