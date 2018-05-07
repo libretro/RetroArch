@@ -4674,7 +4674,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                         string_is_equal(core_path, path_get(RARCH_PATH_CORE)))
                   {
                      strlcpy(new_path_entry, core_path, sizeof(new_path_entry));
-                     snprintf(new_entry, sizeof(new_entry), "Current core (%s)", core_name);
+                     snprintf(new_entry, sizeof(new_entry), "%s (%s)",
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE),
+                           core_name);
                      strlcpy(new_lbl_entry, core_path, sizeof(new_lbl_entry));
                      new_type = MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE;
                   }
@@ -4767,7 +4769,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                         string_is_equal(core_path, path_get(RARCH_PATH_CORE)))
                   {
                      strlcpy(new_path_entry, core_path, sizeof(new_path_entry));
-                     snprintf(new_entry, sizeof(new_entry), "Current core (%s)", core_name);
+                     snprintf(new_entry, sizeof(new_entry), "%s (%s)", 
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE),
+                           core_name);
                      new_lbl_entry[0] = '\0';
                      new_type         = MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE;
                   }
