@@ -521,7 +521,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_coreInfoPushButton->setFixedSize(m_coreInfoPushButton->sizeHint());
 
    searchResetButton = new QToolButton(m_searchWidget);
-   searchResetButton->setDefaultAction(new QAction("Clear", searchResetButton));
+   searchResetButton->setDefaultAction(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR), searchResetButton));
    searchResetButton->setFixedSize(searchResetButton->sizeHint());
 
    connect(searchResetButton, SIGNAL(clicked()), this, SLOT(onSearchResetClicked()));
