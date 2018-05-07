@@ -3491,7 +3491,7 @@ no_playlists:
    return 0;
 }
 
-static int menu_displaylist_parse_cores(
+static unsigned menu_displaylist_parse_cores(
       menu_handle_t       *menu,
       menu_displaylist_info_t *info)
 {
@@ -3506,7 +3506,8 @@ static int menu_displaylist_parse_cores(
       if (frontend_driver_parse_drive_list(info->list, true) != 0)
          menu_entries_append_enum(info->list, "/", "",
                MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-      return 0;
+      items_found++;
+      return items_found;
    }
 
    str_list = dir_list_new(path, info->exts,
@@ -3534,11 +3535,12 @@ static int menu_displaylist_parse_cores(
 
    if (!str_list)
    {
-      const char *str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
-
+      const char *str = msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
       menu_entries_append_enum(info->list, str, "",
             MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
-      return 0;
+      items_found++;
+      return items_found;
    }
 
    info->download_core = true;
@@ -3549,14 +3551,7 @@ static int menu_displaylist_parse_cores(
 
    if (list_size == 0)
    {
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-            MENU_ENUM_LABEL_NO_ITEMS,
-            MENU_SETTING_NO_ITEM, 0, 0);
-
       string_list_free(str_list);
-
       return 0;
    }
 
@@ -3638,15 +3633,7 @@ static int menu_displaylist_parse_cores(
    string_list_free(str_list);
 
    if (items_found == 0)
-   {
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-            MENU_ENUM_LABEL_NO_ITEMS,
-            MENU_SETTING_NO_ITEM, 0, 0);
-
       return 0;
-   }
 
    {
       enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
@@ -3692,8 +3679,7 @@ static int menu_displaylist_parse_cores(
       info->need_sort = true;
    }
 
-
-   return 0;
+   return items_found;
 }
 
 static void menu_displaylist_parse_playlist_associations(
@@ -7234,11 +7220,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                info->exts = strdup(ext_name);
             }
          }
-         if (menu_displaylist_parse_cores(menu, info) == 0)
-         {
-            info->need_refresh = true;
-            info->need_push    = true;
-         }
+
+         count = menu_displaylist_parse_cores(menu, info);
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+                  MENU_ENUM_LABEL_NO_ITEMS,
+                  MENU_SETTING_NO_ITEM, 0, 0);
+
+         info->need_refresh       = true;
+         info->need_push          = true;
          info->push_builtin_cores = true;
          break;
       case DISPLAYLIST_DEFAULT:
