@@ -530,6 +530,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_zoomSlider(NULL)
    ,m_lastZoomSliderValue(0)
    ,m_pendingItemUpdates()
+   ,m_viewType(VIEW_TYPE_LIST)
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -537,8 +538,20 @@ MainWindow::MainWindow(QWidget *parent) :
    QToolButton *searchResetButton = NULL;
    QWidget *zoomWidget = new QWidget();
    QHBoxLayout *zoomLayout = new QHBoxLayout();
-   QLabel *zoomLabel = new QLabel("Zoom:", zoomWidget);
+   QLabel *zoomLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ZOOM), zoomWidget);
+   QPushButton *viewTypePushButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW), zoomWidget);
+   QMenu *viewTypeMenu = new QMenu(viewTypePushButton);
+   QAction *viewTypeIconsAction = NULL;
+   QAction *viewTypeListAction = NULL;
    int i = 0;
+
+   viewTypePushButton->setObjectName("viewTypePushButton");
+   viewTypePushButton->setFlat(true);
+
+   viewTypeIconsAction = viewTypeMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS));
+   viewTypeListAction = viewTypeMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST));
+
+   viewTypePushButton->setMenu(viewTypeMenu);
 
    zoomLabel->setObjectName("zoomLabel");
 
@@ -569,6 +582,7 @@ MainWindow::MainWindow(QWidget *parent) :
    zoomLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
    zoomLayout->addWidget(zoomLabel);
    zoomLayout->addWidget(m_zoomSlider);
+   zoomLayout->addWidget(viewTypePushButton);
 
    m_gridWidget->layout()->addWidget(zoomWidget);
 
@@ -688,12 +702,13 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(m_coreInfoPushButton, SIGNAL(clicked()), m_coreInfoDialog, SLOT(showCoreInfo()));
    connect(m_runPushButton, SIGNAL(clicked()), this, SLOT(onRunClicked()));
    connect(m_stopPushButton, SIGNAL(clicked()), this, SLOT(onStopClicked()));
-   connect(m_browserAndPlaylistTabWidget, SIGNAL(currentChanged(int)), this, SLOT(onTabWidgetIndexChanged(int)));
    connect(m_dirTree, SIGNAL(itemsSelected(QModelIndexList)), this, SLOT(onTreeViewItemsSelected(QModelIndexList)));
    connect(m_dirTree, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileBrowserTreeContextMenuRequested(const QPoint&)));
    connect(m_listWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onPlaylistWidgetContextMenuRequested(const QPoint&)));
    connect(m_launchWithComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onLaunchWithComboBoxIndexChanged(int)));
    connect(m_zoomSlider, SIGNAL(valueChanged(int)), this, SLOT(onZoomValueChanged(int)));
+   connect(viewTypeIconsAction, SIGNAL(triggered()), this, SLOT(onIconViewClicked()));
+   connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
 
    /* make sure these use an auto connection so it will be queued if called from a different thread (some facilities in RA log messages from other threads) */
    connect(this, SIGNAL(gotLogMessage(const QString&)), this, SLOT(onGotLogMessage(const QString&)), Qt::AutoConnection);
@@ -710,16 +725,6 @@ MainWindow::MainWindow(QWidget *parent) :
    /* both of these are necessary to get the folder to scroll to the top of the view */
    qApp->processEvents();
    QTimer::singleShot(0, this, SLOT(onBrowserStartClicked()));
-
-   for (i = 0; i < m_listWidget->count() && m_listWidget->count() > 0; i++)
-   {
-      /* select the first non-hidden row */
-      if (!m_listWidget->isRowHidden(i))
-      {
-         m_listWidget->setCurrentRow(i);
-         break;
-      }
-   }
 
    m_searchLineEdit->setFocus();
    m_loadCoreWindow->setWindowModality(Qt::ApplicationModal);
@@ -739,6 +744,18 @@ MainWindow::~MainWindow()
       delete m_thumbnailPixmap3;
 
    removeGridItems();
+}
+
+void MainWindow::onIconViewClicked()
+{
+   setCurrentViewType(VIEW_TYPE_ICONS);
+   onCurrentListItemChanged(m_listWidget->currentItem(), NULL);
+}
+
+void MainWindow::onListViewClicked()
+{
+   setCurrentViewType(VIEW_TYPE_LIST);
+   onCurrentListItemChanged(m_listWidget->currentItem(), NULL);
 }
 
 inline void MainWindow::calcGridItemSize(GridItem *item, int zoomValue)
@@ -2625,16 +2642,58 @@ void MainWindow::resizeThumbnails(bool one, bool two, bool three)
    }
 }
 
+void MainWindow::setCurrentViewType(ViewType viewType)
+{
+   m_viewType = viewType;
+
+   switch (viewType)
+   {
+      case VIEW_TYPE_ICONS:
+      {
+         m_tableWidget->hide();
+         m_gridWidget->show();
+         break;
+      }
+      case VIEW_TYPE_LIST:
+      default:
+      {
+         m_gridWidget->hide();
+         m_tableWidget->show();
+         break;
+      }
+   }
+}
+
+MainWindow::ViewType MainWindow::getCurrentViewType()
+{
+   return m_viewType;
+}
+
 void MainWindow::onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous)
 {
+   ViewType viewType = getCurrentViewType();
+
    Q_UNUSED(current)
    Q_UNUSED(previous)
 
    if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) != msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
       return;
 
-   //initContentTableWidget();
-   initContentGridLayout();
+   switch (viewType)
+   {
+      case VIEW_TYPE_ICONS:
+      {
+         initContentGridLayout();
+         break;
+      }
+      case VIEW_TYPE_LIST:
+      default:
+      {
+         initContentTableWidget();
+         break;
+      }
+   }
+
    setCoreActions();
 }
 
@@ -3041,6 +3100,8 @@ void MainWindow::onContentGridInited()
    m_gridLayoutWidget->resize(m_gridScrollArea->viewport()->size());
 
    onZoomValueChanged(m_zoomSlider->value());
+
+   onSearchEnterPressed();
 }
 
 void MainWindow::initContentTableWidget()
@@ -3213,6 +3274,24 @@ QSettings* MainWindow::settings()
    return m_settings;
 }
 
+QString MainWindow::getCurrentViewTypeString()
+{
+   switch (m_viewType)
+   {
+      case VIEW_TYPE_ICONS:
+      {
+         return QStringLiteral("icons");
+      }
+      case VIEW_TYPE_LIST:
+      default:
+      {
+         return QStringLiteral("list");
+      }
+   }
+
+   return QStringLiteral("list");
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
    if (m_settings->value("save_geometry", false).toBool())
@@ -3221,6 +3300,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
       m_settings->setValue("dock_positions", saveState());
    if (m_settings->value("save_last_tab", false).toBool())
       m_settings->setValue("last_tab", m_browserAndPlaylistTabWidget->currentIndex());
+
+   m_settings->setValue("view_type", getCurrentViewTypeString());
 
    QMainWindow::closeEvent(event);
 }

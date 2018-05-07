@@ -237,6 +237,8 @@ static void* ui_companion_qt_init(void)
    QAction *exitAction = NULL;
    QComboBox *launchWithComboBox = NULL;
    QSettings *qsettings = NULL;
+   QListWidget *listWidget = NULL;
+   int i = 0;
 
    if (!handle)
       return NULL;
@@ -257,14 +259,14 @@ static void* ui_companion_qt_init(void)
    mainwindow->setWindowTitle("RetroArch");
    mainwindow->setDockOptions(QMainWindow::AnimatedDocks | QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | GROUPED_DRAGGING);
 
+   listWidget = mainwindow->playlistListWidget();
+
    widget = new QWidget(mainwindow);
    widget->setObjectName("tableWidget");
 
    layout = new QVBoxLayout();
    layout->addWidget(mainwindow->contentTableWidget());
    layout->addWidget(mainwindow->contentGridWidget());
-
-   mainwindow->contentTableWidget()->hide();
 
    widget->setLayout(layout);
 
@@ -295,6 +297,10 @@ static void* ui_companion_qt_init(void)
 
    QObject::connect(viewClosedDocksMenu, SIGNAL(aboutToShow()), mainwindow, SLOT(onViewClosedDocksAboutToShow()));
 
+   viewMenu->addSeparator();
+   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS), mainwindow, SLOT(onIconViewClicked()));
+   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST), mainwindow, SLOT(onListViewClicked()));
+   viewMenu->addSeparator();
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS), mainwindow->viewOptionsDialog(), SLOT(showDialog()));
 
    playlistWidget = new QWidget();
@@ -464,17 +470,6 @@ static void* ui_companion_qt_init(void)
       if (qsettings->contains("dock_positions"))
          mainwindow->restoreState(qsettings->value("dock_positions").toByteArray());
 
-   if (qsettings->contains("save_last_tab"))
-   {
-      if (qsettings->contains("last_tab"))
-      {
-         int lastTabIndex = qsettings->value("last_tab", 0).toInt();
-
-         if (lastTabIndex >= 0 && browserAndPlaylistTabWidget->count() > lastTabIndex)
-            browserAndPlaylistTabWidget->setCurrentIndex(lastTabIndex);
-      }
-   }
-
    if (qsettings->contains("theme"))
    {
       QString themeStr = qsettings->value("theme").toString();
@@ -491,6 +486,55 @@ static void* ui_companion_qt_init(void)
    }
    else
       mainwindow->setTheme();
+
+   if (qsettings->contains("view_type"))
+   {
+      QString viewType = qsettings->value("view_type", "list").toString();
+
+      if (viewType == "list")
+         mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
+      else if (viewType == "icons")
+         mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_ICONS);
+      else
+         mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
+   }
+   else
+      mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
+
+   /* We make sure to hook up the tab widget callback only after the tabs themselves have been added,
+    * but before changing to a specific one, to avoid the callback firing before the view type is set.
+    */
+   QObject::connect(browserAndPlaylistTabWidget, SIGNAL(currentChanged(int)), mainwindow, SLOT(onTabWidgetIndexChanged(int)));
+
+   /* setting the last tab must come after setting the view type */
+   if (qsettings->contains("save_last_tab"))
+   {
+      if (qsettings->contains("last_tab"))
+      {
+         int lastTabIndex = qsettings->value("last_tab", 0).toInt();
+
+         if (lastTabIndex >= 0 && browserAndPlaylistTabWidget->count() > lastTabIndex)
+         {
+            browserAndPlaylistTabWidget->setCurrentIndex(lastTabIndex);
+            mainwindow->onTabWidgetIndexChanged(lastTabIndex);
+         }
+      }
+   }
+   else
+   {
+      browserAndPlaylistTabWidget->setCurrentIndex(0);
+      mainwindow->onTabWidgetIndexChanged(0);
+   }
+
+   for (i = 0; i < listWidget->count() && listWidget->count() > 0; i++)
+   {
+      /* select the first non-hidden row */
+      if (!listWidget->isRowHidden(i))
+      {
+         listWidget->setCurrentRow(i);
+         break;
+      }
+   }
 
    return handle;
 }

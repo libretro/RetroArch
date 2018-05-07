@@ -226,6 +226,12 @@ class MainWindow : public QMainWindow
    Q_OBJECT
 
 public:
+   enum ViewType
+   {
+      VIEW_TYPE_ICONS,
+      VIEW_TYPE_LIST
+   };
+
    enum Theme
    {
       THEME_SYSTEM_DEFAULT,
@@ -270,6 +276,7 @@ public:
    void setCustomThemeString(QString qss);
    const QString& customThemeString() const;
    GridItem* doDeferredImageLoad(GridItem *item, QString path);
+   void setCurrentViewType(ViewType viewType);
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -303,6 +310,9 @@ public slots:
    void deferReloadPlaylists();
    void onGotReloadPlaylists();
    void showWelcomeScreen();
+   void onIconViewClicked();
+   void onListViewClicked();
+   void onTabWidgetIndexChanged(int index);
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
@@ -317,7 +327,6 @@ private slots:
    void addPlaylistItemsToGrid(const QString &path);
    void onContentItemDoubleClicked(QTableWidgetItem *item);
    void onCoreLoadWindowClosed();
-   void onTabWidgetIndexChanged(int index);
    void onTreeViewItemsSelected(QModelIndexList selectedIndexes);
    void onSearchResetClicked();
    void onLaunchWithComboBoxIndexChanged(int index);
@@ -339,6 +348,8 @@ private:
    void loadImageDeferred(GridItem *item, QString path);
    void calcGridItemSize(GridItem *item, int zoomValue);
    QVector<QHash<QString, QString> > getPlaylistItems(QString pathString);
+   QString getCurrentViewTypeString();
+   ViewType getCurrentViewType();
 
    LoadCoreWindow *m_loadCoreWindow;
    QTimer *m_timer;
@@ -388,6 +399,7 @@ private:
    QSlider *m_zoomSlider;
    int m_lastZoomSliderValue;
    QList<GridItem*> m_pendingItemUpdates;
+   ViewType m_viewType;
 
 protected:
    void closeEvent(QCloseEvent *event);
