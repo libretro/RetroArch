@@ -2048,9 +2048,10 @@ static int menu_displaylist_parse_settings_internal(void *data,
       )
 {
    enum setting_type precond;
-   size_t             count  = 0;
-   uint64_t flags            = 0;
-   settings_t *settings      = config_get_ptr();
+   size_t             count    = 0;
+   uint64_t flags              = 0;
+   settings_t *settings        = config_get_ptr();
+   bool show_advanced_settings = settings->bools.menu_show_advanced_settings;
 
    if (!setting)
       return -1;
@@ -2177,16 +2178,15 @@ static int menu_displaylist_parse_settings_internal(void *data,
             goto loop;
       }
 
-#ifdef HAVE_LAKKA
-      if ((flags & SD_FLAG_ADVANCED || flags & SD_FLAG_LAKKA_ADVANCED) &&
-            !settings->bools.menu_show_advanced_settings)
+      if ((flags & SD_FLAG_ADVANCED) &&
+            !show_advanced_settings)
          goto loop;
-#else
-      if (flags & SD_FLAG_ADVANCED &&
-            !settings->bools.menu_show_advanced_settings)
+
+#ifdef HAVE_LAKKA
+      if ((flags & SD_FLAG_LAKKA_ADVANCED) &&
+            !show_advanced_settings)
          goto loop;
 #endif
-
 
       menu_entries_append(info->list, short_description,
             name, menu_setting_set_flags(setting), 0, 0);
