@@ -2537,13 +2537,10 @@ static int menu_displaylist_parse_horizontal_list(
 }
 
 static int menu_displaylist_parse_load_content_settings(
+      menu_handle_t *menu,
       menu_displaylist_info_t *info)
 {
-   menu_handle_t *menu    = NULL;
    settings_t *settings   = config_get_ptr();
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return -1;
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
@@ -2783,7 +2780,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
          && string_is_equal(menu->deferred_path, fullpath);
 
    if (content_loaded)
-      menu_displaylist_parse_load_content_settings(info);
+      menu_displaylist_parse_load_content_settings(menu, info);
    else
    {
       const char *ext = NULL;
@@ -6351,7 +6348,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_CONTENT_SETTINGS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_load_content_settings(info);
+         ret = menu_displaylist_parse_load_content_settings(menu, info);
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -6365,7 +6362,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_ADD_CONTENT_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_add_content_list(info);
+         count = menu_displaylist_parse_add_content_list(info);
 
          if (count == 0)
             menu_entries_append_enum(info->list,
@@ -6387,7 +6384,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_scan_directory_list(info);
+         count = menu_displaylist_parse_scan_directory_list(info);
 
          if (count == 0)
             menu_entries_append_enum(info->list,
@@ -6396,6 +6393,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
                   FILE_TYPE_NONE, 0, 0);
 
+         ret                = 0;
          info->need_push    = true;
          info->need_refresh = true;
          break;
