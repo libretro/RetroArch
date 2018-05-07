@@ -63,6 +63,8 @@
 #include <QRect>
 #include <QStyle>
 
+class ThumbnailWidget;
+
 class FlowLayout : public QLayout
 {
    Q_OBJECT
@@ -83,13 +85,13 @@ public:
    void setGeometry(const QRect &rect);
    QSize sizeHint() const;
    QLayoutItem* takeAt(int index);
-   void addWidgetDeferred(QWidget *widget);
+   void addWidgetDeferred(QPointer<ThumbnailWidget> widget);
 
 signals:
-   void signalAddWidgetDeferred(QWidget *widget);
+   void signalAddWidgetDeferred(QPointer<ThumbnailWidget> widget);
 
 private slots:
-   void onAddWidgetDeferred(QWidget *widget);
+   void onAddWidgetDeferred(QPointer<ThumbnailWidget> widget);
 
 private:
    int doLayout(const QRect &rect, bool testOnly) const;

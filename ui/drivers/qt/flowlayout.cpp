@@ -55,13 +55,14 @@
 #include <QtWidgets>
 
 #include "flowlayout.h"
+#include "../ui_qt.h"
 
 FlowLayout::FlowLayout(QWidget *parent, int margin, int hSpacing, int vSpacing)
    : QLayout(parent), m_hSpace(hSpacing), m_vSpace(vSpacing)
 {
    setContentsMargins(margin, margin, margin, margin);
 
-   connect(this, SIGNAL(signalAddWidgetDeferred(QWidget*)), this, SLOT(onAddWidgetDeferred(QWidget*)), Qt::QueuedConnection);
+   connect(this, SIGNAL(signalAddWidgetDeferred(QPointer<ThumbnailWidget>)), this, SLOT(onAddWidgetDeferred(QPointer<ThumbnailWidget>)), Qt::QueuedConnection);
 }
 
 FlowLayout::FlowLayout(int margin, int hSpacing, int vSpacing)
@@ -226,18 +227,22 @@ int FlowLayout::smartSpacing(QStyle::PixelMetric pm) const
    else if (parentObj->isWidgetType())
    {
       const QWidget *pw = static_cast<const QWidget*>(parentObj);
-      return pw->style()->pixelMetric(pm, 0, pw);
+      return pw->style()->pixelMetric(pm, NULL, pw);
    }
    else
        return static_cast<const QLayout*>(parentObj)->spacing();
 }
 
-void FlowLayout::addWidgetDeferred(QWidget *widget)
+void FlowLayout::addWidgetDeferred(QPointer<ThumbnailWidget> widget)
 {
    emit signalAddWidgetDeferred(widget);
 }
 
-void FlowLayout::onAddWidgetDeferred(QWidget *widget)
+void FlowLayout::onAddWidgetDeferred(QPointer<ThumbnailWidget> widget)
 {
+   /* widget might have been deleted before we got to it since this uses a queued connection, hence the guarded QPointer */
+   if (!widget)
+      return;
+
    addWidget(widget);
 }

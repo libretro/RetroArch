@@ -31,6 +31,7 @@
 #include <QFutureWatcher>
 #include <QPixmap>
 #include <QImage>
+#include <QPointer>
 
 extern "C" {
 #include <retro_common_api.h>
@@ -65,12 +66,14 @@ class ThumbnailWidget;
 class ThumbnailLabel;
 class FlowLayout;
 
-struct GridItem
+class GridItem : public QObject
 {
+   Q_OBJECT
+public:
    GridItem();
 
-   ThumbnailWidget *widget;
-   ThumbnailLabel *label;
+   QPointer<ThumbnailWidget> widget;
+   QPointer<ThumbnailLabel> label;
    QHash<QString, QString> hash;
    QImage image;
    QPixmap pixmap;
@@ -394,7 +397,7 @@ private:
    FlowLayout *m_gridLayout;
    QWidget *m_gridWidget;
    QScrollArea *m_gridScrollArea;
-   QList<GridItem*> m_gridItems;
+   QVector<QPointer<GridItem> > m_gridItems;
    QWidget *m_gridLayoutWidget;
    QSlider *m_zoomSlider;
    int m_lastZoomSliderValue;
@@ -405,6 +408,8 @@ protected:
    void closeEvent(QCloseEvent *event);
    void keyPressEvent(QKeyEvent *event);
 };
+
+Q_DECLARE_METATYPE(QPointer<ThumbnailWidget>)
 
 RETRO_BEGIN_DECLS
 

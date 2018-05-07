@@ -126,7 +126,8 @@ static void scan_finished_handler(void *task_data, void *user_data, const char *
 #endif
 
 GridItem::GridItem() :
-   widget(NULL)
+   QObject()
+   ,widget(NULL)
    ,label(NULL)
    ,hash()
    ,image()
@@ -544,6 +545,8 @@ MainWindow::MainWindow(QWidget *parent) :
    QAction *viewTypeIconsAction = NULL;
    QAction *viewTypeListAction = NULL;
    int i = 0;
+
+   qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
 
    viewTypePushButton->setObjectName("viewTypePushButton");
    viewTypePushButton->setFlat(true);
@@ -2895,13 +2898,13 @@ void MainWindow::removeGridItems()
 {
    if (m_gridItems.count() > 0)
    {
-      QMutableListIterator<GridItem*> items(m_gridItems);
+      QMutableVectorIterator<QPointer<GridItem> > items(m_gridItems);
 
       m_pendingItemUpdates.clear();
 
       while (items.hasNext())
       {
-         GridItem *item = items.next();
+         QPointer<GridItem> item = items.next();
 
          if (item)
          {
@@ -3003,8 +3006,8 @@ void MainWindow::addPlaylistItemsToGrid(const QString &pathString)
    for (i = 0; i < items.count(); i++)
    {
       const QHash<QString, QString> &hash = items.at(i);
-      GridItem *item = new GridItem();
-      ThumbnailLabel *label = NULL;
+      QPointer<GridItem> item (new GridItem());
+      QPointer<ThumbnailLabel> label;
       QString thumbnailFileNameNoExt;
       QLabel *newLabel = NULL;
       QSize thumbnailWidgetSizeHint(screenSize.width() / 8, screenSize.height() / 8);
