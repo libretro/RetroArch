@@ -4,6 +4,7 @@
 - MENU/QT/WIMP: Remove button ghostly inside highlighting.
 - PS3: Add audio mixer support for FLAC and MP3.
 - WIIU: Fix out-of-bounds rendering bug
+- WIIU: Implement UDP broadcast network logging on Wii U.
 
 # 1.7.3
 - AUDIO: Audio mixer supports FLAC/MP3 file types now!
