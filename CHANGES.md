@@ -1,4 +1,9 @@
 # 1.7.4 (future)
+- HID/OSX: Fix to set hid device registration deterministic (#6497), to address issue #6640 re-adding dynamic device registration
+- MENU/QT/WIMP: QT QSlider styling for Dark Theme.
+- MENU/QT/WIMP: Remove button ghostly inside highlighting.
+- PS3: Add audio mixer support for FLAC and MP3.
+- WIIU: Fix out-of-bounds rendering bug
 
 # 1.7.3
 - AUDIO: Audio mixer supports FLAC/MP3 file types now!
