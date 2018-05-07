@@ -589,6 +589,11 @@ void net_print_exp(const char *str)
    sendto(wiiu_log_socket, str, strlen(str), 0, (struct sockaddr *)&broadcast, sizeof(broadcast));
 }
 
+/* RFC 791 specifies that any IP host must be able to receive a datagram of 576 bytes.
+ * Since we're generally never logging more than a line or two's worth of data (~100 bytes)
+ * this is a reasonable size for our use. */
+#define DGRAM_SIZE 576
+
 static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_t len)
 {
    if( wiiu_log_socket < 0)
@@ -599,19 +604,19 @@ static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_
 
    wiiu_log_lock = 1;
 
-   int ret;
+   int sent;
    int remaining = len;
 
    while(remaining > 0)
    {
-      int block = remaining < 1472 ? remaining : 1472;
-      ret = sendto(wiiu_log_socket, ptr, block, 0, (struct sockaddr *)&broadcast, sizeof(broadcast));
+      int block = remaining < DGRAM_SIZE ? remaining : DGRAM_SIZE;
+      sent = sendto(wiiu_log_socket, ptr, block, 0, (struct sockaddr *)&broadcast, sizeof(broadcast));
 
-      if(ret < 0)
+      if(sent < 0)
          break;
 
-      remaining -= ret;
-      ptr += ret;
+      remaining -= sent;
+      ptr       += sent;
    }
 
    wiiu_log_lock = 0;
