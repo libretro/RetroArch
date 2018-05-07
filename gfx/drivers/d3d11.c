@@ -632,7 +632,9 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       desc.OutputWindow                       = main_window.hwnd;
       desc.SampleDesc.Count                   = 1;
       desc.SampleDesc.Quality                 = 0;
+#if 0
       desc.Scaling                            = DXGI_SCALING_STRETCH;
+#endif
       desc.Windowed                           = TRUE;
 #if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
       /* On phone, no swap effects are supported. */
