@@ -4809,6 +4809,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_CORE_OPTIONS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
          if (rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
          {
             size_t opts = 0;
@@ -4834,28 +4835,25 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                         MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE,
                         MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0);
             }
-            if (opts == 0)
-            {
-               menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE),
-                     MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
-                     MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
-            }
-            else
+
+            if (opts != 0)
             {
                core_option_manager_t *coreopts = NULL;
 
                rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
                for (i = 0; i < opts; i++)
+               {
                   menu_entries_append_enum(info->list,
                         core_option_manager_get_desc(coreopts, i), "",
                         MENU_ENUM_LABEL_CORE_OPTION_ENTRY,
                         (unsigned)(MENU_SETTINGS_CORE_OPTION_START + i), 0, 0);
+                  count++;
+               }
             }
          }
-         else
+
+         if (count == 0)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE),
