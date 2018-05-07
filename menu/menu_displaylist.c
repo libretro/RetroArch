@@ -4142,19 +4142,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 {
    size_t i;
    menu_ctx_displaylist_t disp_list;
-   unsigned count                = 0;
-   int ret                       = 0;
-   core_info_list_t *list        = NULL;
    menu_handle_t       *menu     = NULL;
    bool load_content             = true;
    bool use_filebrowser          = false;
+   unsigned count                = 0;
+   int ret                       = 0;
    menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
    settings_t      *settings     = config_get_ptr();
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return false;
-
-   core_info_get_list(&list);
 
    disp_list.info = info;
    disp_list.type = type;
@@ -6446,16 +6443,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   MENU_SETTING_ACTION, 0, 0);
 #endif
 
-         if (core_info_list_num_info_files(list))
-         {
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                  MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
-                  MENU_SETTING_ACTION, 0, 0);
-         }
+       {
+          core_info_list_t *list        = NULL;
+          core_info_get_list(&list);
+          if (core_info_list_num_info_files(list))
+          {
+             menu_entries_append_enum(info->list,
+                   msg_hash_to_str(
+                      MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                   msg_hash_to_str(
+                      MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                   MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
+                   MENU_SETTING_ACTION, 0, 0);
+          }
+       }
 
 #ifdef HAVE_LIBRETRODB
          menu_entries_append_enum(info->list,
