@@ -4482,8 +4482,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_HISTORY:
          {
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
             settings_t      *settings     = config_get_ptr();
+
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
             if (settings->bools.history_list_enable)
                menu_displaylist_parse_playlist_generic(
                      menu, info,

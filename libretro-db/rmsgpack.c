@@ -599,7 +599,7 @@ int rmsgpack_read(RFILE *fd,
       case _MPF_BIN8:
       case _MPF_BIN16:
       case _MPF_BIN32:
-         if ((rv = read_buff(fd, 1<<(type - _MPF_BIN8),
+         if ((rv = read_buff(fd, (size_t)(1 << (type - _MPF_BIN8)),
                      &buff, &tmp_len)) < 0)
             return rv;
 
@@ -633,7 +633,7 @@ int rmsgpack_read(RFILE *fd,
       case _MPF_STR8:
       case _MPF_STR16:
       case _MPF_STR32:
-         if ((rv = read_buff(fd, 1<<(type - _MPF_STR8), &buff, &tmp_len)) < 0)
+         if ((rv = read_buff(fd, (size_t)(1 << (type - _MPF_STR8)), &buff, &tmp_len)) < 0)
             return rv;
 
          if (callbacks->read_string)
