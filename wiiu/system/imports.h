@@ -203,6 +203,16 @@ IMPORT(GX2GetSwapStatus);
 
 IMPORT_END();
 
+/* nn_ac */
+IMPORT_BEGIN(nn_ac);
+IMPORT(ACInitialize);
+IMPORT(ACFinalize);
+IMPORT(ACConnect);
+IMPORT(ACClose);
+IMPORT(ACGetAssignedAddress);
+IMPORT(ACGetAssignedSubnet);
+IMPORT_END();
+
 /* proc_ui */
 IMPORT_BEGIN(proc_ui);
 

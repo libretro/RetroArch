@@ -23,6 +23,7 @@
 #include <arpa/inet.h>
 
 #include <wiiu/types.h>
+#include <wiiu/ac.h>
 #include <file/file_path.h>
 
 #ifndef IS_SALAMANDER
@@ -314,9 +315,10 @@ static void main_loop(void);
 static void main_teardown(void);
 
 static void init_network(void);
+static void deinit_network(void);
 static void init_logging(void);
 static void deinit_logging(void);
-static void wiiu_log_init(const char *ipString, int port);
+static void wiiu_log_init(int port);
 static void wiiu_log_deinit(void);
 static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_t len);
 static void init_pad_libraries(void);
@@ -324,10 +326,14 @@ static void deinit_pad_libraries(void);
 static void SaveCallback(void);
 static bool swap_is_pending(void *start_time);
 
+static struct sockaddr_in broadcast;
 static int wiiu_log_socket = -1;
 static volatile int wiiu_log_lock = 0;
 
-#if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
+#if !defined(PC_DEVELOPMENT_TCP_PORT)
+#define PC_DEVELOPMENT_TCP_PORT 4405
+#endif
+
 static devoptab_t dotab_stdout =
 {
    "stdout_net",   /* device name */
@@ -337,7 +343,6 @@ static devoptab_t dotab_stdout =
    wiiu_log_write, /* device write */
    NULL,           /* ... */
 };
-#endif /* defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT) */
 
 int main(int argc, char **argv)
 {
@@ -400,6 +405,7 @@ static void main_teardown(void)
    deinit_pad_libraries();
    ProcUIShutdown();
    deinit_logging();
+   deinit_network();
 }
 
 static void main_loop(void)
@@ -457,6 +463,8 @@ static bool swap_is_pending(void *start_time)
 
 static void init_network(void)
 {
+   ACInitialize();
+   ACConnect();
 #ifdef IS_SALAMANDER
    socket_lib_init();
 #else
@@ -464,13 +472,36 @@ static void init_network(void)
 #endif /* IS_SALAMANDER */
 }
 
+static void deinit_network(void)
+{
+   ACClose();
+   ACFinalize();
+}
+
+int getBroadcastAddress(ACIpAddress *broadcast)
+{
+   ACIpAddress myIp, mySubnet;
+   ACResult result;
+
+   if(broadcast == NULL)
+      return -1;
+
+   result = ACGetAssignedAddress(&myIp);
+   if(result < 0)
+      return -1;
+   result = ACGetAssignedSubnet(&mySubnet);
+   if(result < 0)
+      return -1;
+
+   *broadcast = myIp | (~mySubnet);
+   return 0;
+}
+
 static void init_logging(void)
 {
-#if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
-   wiiu_log_init(PC_DEVELOPMENT_IP_ADDRESS, PC_DEVELOPMENT_TCP_PORT);
+   wiiu_log_init(PC_DEVELOPMENT_TCP_PORT);
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
-#endif /* defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT) */
 }
 
 static void deinit_logging(void)
@@ -478,16 +509,31 @@ static void deinit_logging(void)
    fflush(stdout);
    fflush(stderr);
 
-#if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
    wiiu_log_deinit();
-#endif /* defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT) */
 }
 
+static int broadcast_init(int port)
+{
+   ACIpAddress broadcast_ip;
+   if(getBroadcastAddress(&broadcast_ip) < 0)
+      return -1;
 
-static void wiiu_log_init(const char *ipString, int port)
+   memset(&broadcast, 0, sizeof(broadcast));
+   broadcast.sin_family = AF_INET;
+   broadcast.sin_port = htons(port);
+   broadcast.sin_addr.s_addr = htonl(broadcast_ip);
+
+   return 0;
+}
+
+static void wiiu_log_init(int port)
 {
    wiiu_log_lock = 0;
-   wiiu_log_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+   if(broadcast_init(port) < 0)
+      return;
+
+   wiiu_log_socket = socket(AF_INET, SOCK_DGRAM, 0);
 
    if(wiiu_log_socket < 0)
       return;
@@ -495,15 +541,14 @@ static void wiiu_log_init(const char *ipString, int port)
    struct sockaddr_in connect_addr;
    memset(&connect_addr, 0, sizeof(connect_addr));
    connect_addr.sin_family = AF_INET;
-   connect_addr.sin_port = port;
-   inet_aton(ipString, &connect_addr.sin_addr);
+   connect_addr.sin_port = 0;
+   connect_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-   if(connect(wiiu_log_socket,
-      (struct sockaddr *)&connect_addr,
-      sizeof(connect_addr)) < 0)
+   if( bind(wiiu_log_socket, (struct sockaddr *)&connect_addr, sizeof(connect_addr)) < 0)
    {
       socketclose(wiiu_log_socket);
       wiiu_log_socket = -1;
+      return;
    }
 }
 
@@ -541,8 +586,13 @@ void net_print(const char *str)
 
 void net_print_exp(const char *str)
 {
-   send(wiiu_log_socket, str, strlen(str), 0);
+   sendto(wiiu_log_socket, str, strlen(str), 0, (struct sockaddr *)&broadcast, sizeof(broadcast));
 }
+
+/* RFC 791 specifies that any IP host must be able to receive a datagram of 576 bytes.
+ * Since we're generally never logging more than a line or two's worth of data (~100 bytes)
+ * this is a reasonable size for our use. */
+#define DGRAM_SIZE 576
 
 static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_t len)
 {
@@ -554,19 +604,19 @@ static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_
 
    wiiu_log_lock = 1;
 
-   int ret;
+   int sent;
    int remaining = len;
 
    while(remaining > 0)
    {
-      int block = remaining < 1400 ? remaining : 1400;
-      ret = send(wiiu_log_socket, ptr, block, 0);
+      int block = remaining < DGRAM_SIZE ? remaining : DGRAM_SIZE;
+      sent = sendto(wiiu_log_socket, ptr, block, 0, (struct sockaddr *)&broadcast, sizeof(broadcast));
 
-      if(ret < 0)
+      if(sent < 0)
          break;
 
-      remaining -= ret;
-      ptr += ret;
+      remaining -= sent;
+      ptr       += sent;
    }
 
    wiiu_log_lock = 0;
