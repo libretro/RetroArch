@@ -2475,13 +2475,13 @@ static void menu_displaylist_set_new_playlist(
 
 
 static int menu_displaylist_parse_horizontal_list(
+      menu_handle_t *menu,
       menu_displaylist_info_t *info)
 {
    menu_ctx_list_t list_info;
    menu_ctx_list_t list_horiz_info;
    bool is_historylist                 = false;
    playlist_t *playlist                = NULL;
-   menu_handle_t        *menu          = NULL;
    struct item_file *item              = NULL;
    settings_t      *settings           = config_get_ptr();
 
@@ -2496,9 +2496,6 @@ static int menu_displaylist_parse_horizontal_list(
    menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_ENTRY,      &list_horiz_info);
 
    item = (struct item_file*)list_horiz_info.entry;
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return -1;
 
    if (!item)
       return -1;
@@ -6334,7 +6331,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_HORIZONTAL:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_horizontal_list(info);
+         ret = menu_displaylist_parse_horizontal_list(menu, info);
 
          info->need_sort    = true;
          info->need_refresh = true;
