@@ -4173,7 +4173,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_MUSIC_LIST:
          {
             char combined_path[PATH_MAX_LENGTH];
-            const char *ext = NULL;
+            const char *ext  = NULL;
 
             combined_path[0] = '\0';
 
@@ -4191,23 +4191,35 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION),
                      MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,
                      FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+               count++;
 
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY),
                      msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY),
                      MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
                      FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+               count++;
             }
 
 #ifdef HAVE_FFMPEG
             if (settings->bools.multimedia_builtin_mediaplayer_enable)
+            {
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN_MUSIC),
                      msg_hash_to_str(MENU_ENUM_LABEL_RUN_MUSIC),
                      MENU_ENUM_LABEL_RUN_MUSIC,
                      FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+               count++;
+            }
 #endif
          }
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+                  MENU_ENUM_LABEL_NO_ITEMS,
+                  MENU_SETTING_NO_ITEM, 0, 0);
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
