@@ -636,7 +636,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       desc.Windowed                           = TRUE;
 #if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
       /* On phone, no swap effects are supported. */
-      desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+      desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
 #else
       desc.SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL;
 #endif
