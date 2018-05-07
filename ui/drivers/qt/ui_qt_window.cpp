@@ -852,12 +852,12 @@ void MainWindow::setCustomThemeString(QString qss)
 
 bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowModality modality)
 {
-   QPointer<QScopedPointer<QMessageBox> > msgBoxPtr;
+   QPointer<QMessageBox> msgBoxPtr;
    QMessageBox *msgBox = NULL;
    QCheckBox *checkBox = NULL;
 
-   msgBoxPtr.data()->reset(new QMessageBox(this));
-   msgBox = msgBoxPtr.data()->data();
+   msgBoxPtr = new QMessageBox(this);
+   msgBox = msgBoxPtr.data();
    checkBox = new QCheckBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN), msgBox);
 
    msgBox->setWindowModality(modality);
