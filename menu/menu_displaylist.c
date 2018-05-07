@@ -2429,34 +2429,9 @@ loop:
    return 0;
 }
 
-static int menu_displaylist_parse_settings(void *data,
-      menu_displaylist_info_t *info,
-      const char *info_label,
-      enum menu_displaylist_parse_type parse_type,
-      bool add_empty_entry)
-{
-   return menu_displaylist_parse_settings_internal(data,
-         info,
-         parse_type,
-         add_empty_entry,
-         menu_setting_find(info_label)
-         );
-}
+#define menu_displaylist_parse_settings(data, info, info_label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal(data, info, parse_type, add_empty_entry, menu_setting_find(info_label))
 
-static int menu_displaylist_parse_settings_enum(void *data,
-      menu_displaylist_info_t *info,
-      enum msg_hash_enums label,
-      enum menu_displaylist_parse_type parse_type,
-      bool add_empty_entry)
-{
-   return menu_displaylist_parse_settings_internal_enum(data,
-         info,
-         parse_type,
-         add_empty_entry,
-         menu_setting_find_enum(label),
-         label
-         );
-}
+#define menu_displaylist_parse_settings_enum(data, info, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(data, info, parse_type, add_empty_entry, menu_setting_find_enum(label), label)
 
 static void menu_displaylist_set_new_playlist(
       menu_handle_t *menu, const char *path)
@@ -2483,7 +2458,6 @@ static int menu_displaylist_parse_horizontal_list(
    bool is_historylist                 = false;
    playlist_t *playlist                = NULL;
    struct item_file *item              = NULL;
-   settings_t      *settings           = config_get_ptr();
 
    menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
 
@@ -2504,6 +2478,8 @@ static int menu_displaylist_parse_horizontal_list(
    {
       char path_playlist[PATH_MAX_LENGTH];
       char lpl_basename[PATH_MAX_LENGTH];
+      settings_t      *settings           = config_get_ptr();
+
       lpl_basename[0]   = '\0';
       path_playlist[0]  = '\0';
 
