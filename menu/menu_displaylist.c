@@ -5597,28 +5597,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (string_is_equal(settings->arrays.wifi_driver, "null"))
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
-                  MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
-                  0, 0, 0);
+
 #ifdef HAVE_NETWORKING
-         else
+         if (!string_is_equal(settings->arrays.wifi_driver, "null"))
          {
             struct string_list *ssid_list = string_list_new();
             driver_wifi_get_ssids(ssid_list);
 
             if (ssid_list->size == 0)
-            {
                task_push_wifi_scan(wifi_scan_callback);
-
-               menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
-                     MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
-                     0, 0, 0);
-            }
             else
             {
                unsigned i;
@@ -5630,16 +5617,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                         msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
                         MENU_ENUM_LABEL_CONNECT_WIFI,
                         MENU_WIFI, 0, 0);
+                  count++;
                }
             }
          }
-#else
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
-               msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
-               MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
-               0, 0, 0);
 #endif
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
+                  MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
+                  0, 0, 0);
 
          info->need_refresh = true;
          info->need_push    = true;
