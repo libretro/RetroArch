@@ -111,6 +111,10 @@ static void scan_finished_handler(void *task_data, void *user_data, const char *
    menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
    menu_environ.data = NULL;
 
+   (void)task_data;
+   (void)user_data;
+   (void)err;
+
    menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
 
    if (!ui_window.qtWindow->settings()->value("scan_finish_confirm", true).toBool())
@@ -128,7 +132,6 @@ GridItem::GridItem() :
    ,image()
    ,pixmap()
    ,imageWatcher()
-   ,mutex()
 {
 }
 
@@ -740,7 +743,6 @@ MainWindow::~MainWindow()
 
 inline void MainWindow::calcGridItemSize(GridItem *item, int zoomValue)
 {
-   QMutexLocker lock(&item->mutex);
    int newSize = 0;
 
    if (zoomValue < 50)
@@ -850,12 +852,12 @@ void MainWindow::setCustomThemeString(QString qss)
 
 bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowModality modality)
 {
-   QScopedPointer<QMessageBox> msgBoxPtr;
+   QPointer<QScopedPointer<QMessageBox> > msgBoxPtr;
    QMessageBox *msgBox = NULL;
    QCheckBox *checkBox = NULL;
 
-   msgBoxPtr.reset(new QMessageBox(this));
-   msgBox = msgBoxPtr.data();
+   msgBoxPtr.data()->reset(new QMessageBox(this));
+   msgBox = msgBoxPtr.data()->data();
    checkBox = new QCheckBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN), msgBox);
 
    msgBox->setWindowModality(modality);
@@ -891,6 +893,9 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowM
    msgBox->setText(msg);
    msgBox->exec();
 
+   if (!msgBoxPtr)
+      return true;
+
    if (checkBox->isChecked())
       return false;
 
@@ -904,7 +909,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    QScopedPointer<QMenu> associateMenu;
    QScopedPointer<QMenu> hiddenPlaylistsMenu;
    QScopedPointer<QAction> hideAction;
-   QAction *selectedAction = NULL;
+   QPointer<QAction> selectedAction;
    QPoint cursorPos = QCursor::pos();
    QListWidgetItem *selectedItem = m_listWidget->itemAt(m_listWidget->viewport()->mapFromGlobal(cursorPos));
    QDir playlistDir(settings->paths.directory_playlist);
@@ -1103,7 +1108,7 @@ end:
 void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
 {
 #ifdef HAVE_LIBRETRODB
-   QAction *action = NULL;
+   QPointer<QAction> action;
    QList<QAction*> actions;
    QScopedPointer<QAction> scanAction;
    QDir dir;
@@ -1152,6 +1157,8 @@ void MainWindow::onGotStatusMessage(QString msg, unsigned priority, unsigned dur
    int msecDuration = 0;
    QScreen *screen = qApp->primaryScreen();
    QStatusBar *status = statusBar();
+
+   Q_UNUSED(priority)
 
    if (msg.isEmpty())
       return;
@@ -2831,23 +2838,21 @@ void MainWindow::removeGridItems()
    {
       QMutableListIterator<GridItem*> items(m_gridItems);
 
+      m_pendingItemUpdates.clear();
+
       while (items.hasNext())
       {
          GridItem *item = items.next();
 
          if (item)
          {
-            item->mutex.lock();
+            item->imageWatcher.waitForFinished();
 
             items.remove();
 
             m_gridLayout->removeWidget(item->widget);
-            m_pendingItemUpdates.removeAll(item);
 
             delete item->widget;
-
-            item->mutex.unlock();
-
             delete item;
          }
       }
@@ -2867,15 +2872,14 @@ void MainWindow::onDeferredImageLoaded()
    if (!item)
       return;
 
-   item->mutex.lock();
-
-   if (!item->image.isNull())
+   if (m_gridItems.contains(item))
    {
-      m_pendingItemUpdates.append(item);
-      QTimer::singleShot(0, this, SLOT(onPendingItemUpdates()));
+      if (!item->image.isNull())
+      {
+         m_pendingItemUpdates.append(item);
+         QTimer::singleShot(0, this, SLOT(onPendingItemUpdates()));
+      }
    }
-
-   item->mutex.unlock();
 }
 
 void MainWindow::onPendingItemUpdates()
@@ -2889,7 +2893,8 @@ void MainWindow::onPendingItemUpdates()
       if (!item)
          continue;
 
-      onUpdateGridItemPixmapFromImage(item);
+      if (m_gridItems.contains(item))
+         onUpdateGridItemPixmapFromImage(item);
 
       list.remove();
    }
@@ -2898,6 +2903,9 @@ void MainWindow::onPendingItemUpdates()
 void MainWindow::onUpdateGridItemPixmapFromImage(GridItem *item)
 {
    if (!item)
+      return;
+
+   if (!m_gridItems.contains(item))
       return;
 
    item->label->setPixmap(QPixmap::fromImage(item->image));
@@ -2916,11 +2924,10 @@ GridItem* MainWindow::doDeferredImageLoad(GridItem *item, QString path)
    if (!item)
       return NULL;
 
-   item->mutex.lock();
-
+   /* While we are indeed writing across thread boundaries here, the image is never accessed until after
+    * its thread finishes, and the item is never deleted without first waiting for the thread to finish.
+    */
    item->image = QImage(path);
-
-   item->mutex.unlock();
 
    return item;
 }
@@ -2992,12 +2999,10 @@ void MainWindow::addPlaylistItemsToGrid(const QString &pathString)
       item->widget->layout()->addWidget(newLabel);
       qobject_cast<QVBoxLayout*>(item->widget->layout())->setStretchFactor(label, 1);
 
-      m_gridLayout->addWidget(item->widget);
+      m_gridLayout->addWidgetDeferred(item->widget);
       m_gridItems.append(item);
 
       loadImageDeferred(item, imagePath);
-
-      qApp->processEvents();
    }
 }
 
@@ -3178,12 +3183,6 @@ void MainWindow::addPlaylistItemsToTable(QString pathString)
 
    for (i = 0; i < items.count(); i++)
    {
-      const char *path = NULL;
-      const char *label = NULL;
-      const char *core_path = NULL;
-      const char *core_name = NULL;
-      const char *crc32 = NULL;
-      const char *db_name = NULL;
       QTableWidgetItem *labelItem = NULL;
       const QHash<QString, QString> &hash = items.at(i);
 

@@ -336,7 +336,8 @@ OBJ += ui/drivers/ui_qt.o \
        ui/drivers/qt/flowlayout.o
 
 MOC_HEADERS += ui/drivers/ui_qt.h \
-							 ui/drivers/qt/ui_qt_load_core_window.h
+							 ui/drivers/qt/ui_qt_load_core_window.h \
+							 ui/drivers/qt/flowlayout.h
 
 DEFINES += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) $(QT5CONCURRENT_CFLAGS) -DHAVE_MAIN
 #DEFINES += $(QT5WEBENGINE_CFLAGS)

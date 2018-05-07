@@ -60,6 +60,8 @@ FlowLayout::FlowLayout(QWidget *parent, int margin, int hSpacing, int vSpacing)
    : QLayout(parent), m_hSpace(hSpacing), m_vSpace(vSpacing)
 {
    setContentsMargins(margin, margin, margin, margin);
+
+   connect(this, SIGNAL(signalAddWidgetDeferred(QWidget*)), this, SLOT(onAddWidgetDeferred(QWidget*)), Qt::QueuedConnection);
 }
 
 FlowLayout::FlowLayout(int margin, int hSpacing, int vSpacing)
@@ -70,9 +72,9 @@ FlowLayout::FlowLayout(int margin, int hSpacing, int vSpacing)
 
 FlowLayout::~FlowLayout()
 {
-   QLayoutItem *item;
+   QLayoutItem *item = NULL;
 
-   while ((item = takeAt(0)))
+   while ((item = takeAt(0)) != NULL)
       delete item;
 }
 
@@ -228,4 +230,14 @@ int FlowLayout::smartSpacing(QStyle::PixelMetric pm) const
    }
    else
        return static_cast<const QLayout*>(parentObj)->spacing();
+}
+
+void FlowLayout::addWidgetDeferred(QWidget *widget)
+{
+   emit signalAddWidgetDeferred(widget);
+}
+
+void FlowLayout::onAddWidgetDeferred(QWidget *widget)
+{
+   addWidget(widget);
 }
