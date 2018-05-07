@@ -2761,11 +2761,10 @@ static int menu_displaylist_parse_load_content_settings(
 }
 
 static int menu_displaylist_parse_horizontal_content_actions(
+      menu_handle_t *menu,
       menu_displaylist_info_t *info)
 {
    bool content_loaded             = false;
-   unsigned idx                    = 0;
-   menu_handle_t *menu             = NULL;
    const char *label               = NULL;
    const char *entry_path          = NULL;
    const char *core_path           = NULL;
@@ -2774,11 +2773,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    playlist_t *playlist            = playlist_get_cached();
    settings_t *settings            = config_get_ptr();
    const char *fullpath            = path_get(RARCH_PATH_CONTENT);
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return -1;
-
-   idx                             = menu->rpl_entry_selection_ptr;
+   unsigned idx                    = menu->rpl_entry_selection_ptr;
 
    if (playlist)
       playlist_get_index(playlist, idx,
@@ -3016,17 +3011,6 @@ static unsigned menu_displaylist_parse_scan_directory_list(
    return count;
 }
 
-static int menu_displaylist_parse_netplay_room_list(
-      menu_displaylist_info_t *info)
-{
-
-#ifdef HAVE_NETWORKING
-   netplay_refresh_rooms_menu(info->list);
-#endif
-
-   return 0;
-}
-
 static unsigned menu_displaylist_parse_options(
       menu_displaylist_info_t *info)
 {
@@ -3212,15 +3196,12 @@ static int menu_displaylist_parse_options_cheats(
 }
 
 static int menu_displaylist_parse_options_remappings(
+      menu_handle_t *menu,
       menu_displaylist_info_t *info)
 {
    unsigned p, retro_id;
    rarch_system_info_t *system = NULL;
-   menu_handle_t       *menu   = NULL;
    unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return -1;
 
    for (p = 0; p < max_users; p++)
    {
@@ -6365,7 +6346,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_horizontal_content_actions(info);
+         ret = menu_displaylist_parse_horizontal_content_actions(menu, info);
          info->need_refresh = true;
          info->need_push    = true;
          break;
@@ -6421,8 +6402,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_NETPLAY_ROOM_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_netplay_room_list(info);
 
+#ifdef HAVE_NETWORKING
+         netplay_refresh_rooms_menu(info->list);
+#endif
+
+         ret                = 0;
          info->need_push    = true;
          info->need_refresh = true;
          break;
@@ -6530,7 +6515,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_options_remappings(info);
+         ret = menu_displaylist_parse_options_remappings(menu, info);
 
          info->need_push    = true;
          break;
