@@ -5274,6 +5274,49 @@ static bool setting_append_list(
                      general_read_handler,
                      SD_FLAG_NONE
                      );
+
+            /* These colors are hints. The menu driver is not required to use them. */
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_entry_normal_color,
+                  MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR,
+                  MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
+                  menu_entry_normal_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_entry_hover_color,
+                  MENU_ENUM_LABEL_ENTRY_HOVER_COLOR,
+                  MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
+                  menu_entry_hover_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_title_color,
+                  MENU_ENUM_LABEL_TITLE_COLOR,
+                  MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
+                  menu_title_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
          }
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
@@ -5390,50 +5433,6 @@ static bool setting_append_list(
                );
 #endif
 
-#if 0
-         /* These colors are hints. The menu driver is not required to use them. */
-         CONFIG_HEX(
-               list, list_info,
-               &settings->menu.entry_normal_color,
-               MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR,
-               MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-               menu_entry_normal_color,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-         CONFIG_HEX(
-               list, list_info,
-               &settings->menu.entry_hover_color,
-               MENU_ENUM_LABEL_ENTRY_HOVER_COLOR,
-               MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-               menu_entry_hover_color,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-         CONFIG_HEX(
-               list, list_info,
-               &settings->menu.title_color,
-               MENU_ENUM_LABEL_TITLE_COLOR,
-               MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-               menu_title_color,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
 
