@@ -35,7 +35,7 @@ RETRO_BEGIN_DECLS
 
 #define AUDIO_MAX_RATIO                16
 
-#define AUDIO_MIXER_MAX_STREAMS        8
+#define AUDIO_MIXER_MAX_STREAMS        16
 
 enum audio_action
 {
@@ -53,7 +53,8 @@ enum audio_mixer_state
    AUDIO_STREAM_STATE_NONE = 0,
    AUDIO_STREAM_STATE_STOPPED,
    AUDIO_STREAM_STATE_PLAYING,
-   AUDIO_STREAM_STATE_PLAYING_LOOPED
+   AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL
 };
 
 typedef struct audio_mixer_stream
@@ -64,6 +65,7 @@ typedef struct audio_mixer_stream
    enum audio_mixer_state state;
    float volume;
    void *buf;
+   char *name;
    size_t bufsize;
 } audio_mixer_stream_t;
 
@@ -164,6 +166,7 @@ typedef struct audio_mixer_stream_params
    enum audio_mixer_type  type;
    enum audio_mixer_state state;
    void *buf;
+   char *basename;
    size_t bufsize;
    audio_mixer_stop_cb_t cb;
 } audio_mixer_stream_params_t;
@@ -292,6 +295,8 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
 
 void audio_driver_mixer_play_stream(unsigned i);
 
+void audio_driver_mixer_play_stream_sequential(unsigned i);
+
 void audio_driver_mixer_play_stream_looped(unsigned i);
 
 void audio_driver_mixer_stop_stream(unsigned i);
@@ -305,6 +310,8 @@ void audio_driver_mixer_remove_stream(unsigned i);
 enum resampler_quality audio_driver_get_resampler_quality(void);
 
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
+
+const char *audio_driver_mixer_get_stream_name(unsigned i);
 
 bool compute_audio_buffer_statistics(audio_statistics_t *stats);
 

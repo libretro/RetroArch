@@ -82,6 +82,7 @@ generic_deferred_push(deferred_push_video_shader_preset_parameters, DISPLAYLIST_
 generic_deferred_push(deferred_push_video_shader_parameters,        DISPLAYLIST_SHADER_PARAMETERS)
 generic_deferred_push(deferred_push_settings,                       DISPLAYLIST_SETTINGS_ALL)
 generic_deferred_push(deferred_push_shader_options,                 DISPLAYLIST_OPTIONS_SHADERS)
+generic_deferred_push(deferred_push_quick_menu_override_options,    DISPLAYLIST_OPTIONS_OVERRIDES)
 generic_deferred_push(deferred_push_options,                        DISPLAYLIST_OPTIONS)
 generic_deferred_push(deferred_push_netplay,                        DISPLAYLIST_NETPLAY_ROOM_LIST)
 generic_deferred_push(deferred_push_netplay_sublist,                DISPLAYLIST_NETPLAY)
@@ -902,6 +903,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_hotkey_binds_list);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_quick_menu_override_options);
    }
    else
    {

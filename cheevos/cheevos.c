@@ -3253,24 +3253,19 @@ found:
          char urle_user[64];
          char urle_login[64];
          const char *username = coro ? coro->settings->arrays.cheevos_username : NULL;
-         const char *login;
-         bool via_token;
+         const char *login    = NULL;
+         bool via_token       = false;
 
          if (coro)
          {
             if (string_is_empty(coro->settings->arrays.cheevos_password))
             {
-               via_token = true;
-               login = coro->settings->arrays.cheevos_token;
+               via_token      = true;
+               login          = coro->settings->arrays.cheevos_token;
             }
             else
-            {
-               via_token = false;
-               login = coro->settings->arrays.cheevos_password;
-            }
+               login          = coro->settings->arrays.cheevos_password;
          }
-         else
-            login = NULL;
         
          if (string_is_empty(username) || string_is_empty(login))
          {

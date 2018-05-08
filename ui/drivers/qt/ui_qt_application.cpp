@@ -15,6 +15,7 @@
  */
 
 #include <QApplication>
+#include <QAbstractEventDispatcher>
 
 extern "C" {
 #include "../../ui_companion_driver.h"
@@ -95,7 +96,9 @@ AppHandler::~AppHandler()
 void AppHandler::exit()
 {
    app_exiting = true;
-   qApp->closeAllWindows();
+
+   if (qApp)
+      qApp->closeAllWindows();
 }
 
 bool AppHandler::isExiting() const
@@ -142,13 +145,18 @@ static void* ui_application_qt_initialize(void)
 
 static bool ui_application_qt_pending_events(void)
 {
-  return QApplication::hasPendingEvents();
+   QAbstractEventDispatcher *dispatcher = QApplication::eventDispatcher();
+
+   if (dispatcher)
+      return dispatcher->hasPendingEvents();
+
+   return false;
 }
 
 static void ui_application_qt_process_events(void)
 {
-  if(ui_application_qt_pending_events())
-     QApplication::processEvents();
+   if (ui_application_qt_pending_events())
+      QApplication::processEvents();
 }
 
 static void ui_application_qt_quit(void)

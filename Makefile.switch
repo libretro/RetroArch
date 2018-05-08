@@ -6,7 +6,7 @@ WHOLE_ARCHIVE_LINK      = 0
 
 OBJ :=
 
-DEFINES := -DSWITCH=1 -U__linux__ -U__linux
+DEFINES := -DSWITCH=1 -U__linux__ -U__linux -DRARCH_INTERNAL
 
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
@@ -46,7 +46,7 @@ endif
 
 include $(LIBTRANSISTOR_HOME)/libtransistor.mk
 
-INCDIRS := -I. -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBTRANSISTOR_HOME)/build/sdl2_install/include/SDL2/
+INCDIRS := -I. -Ideps -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBTRANSISTOR_HOME)/build/sdl2_install/include/SDL2/
 LIBDIRS := -L.
 
 TARGETS := $(TARGET).nro

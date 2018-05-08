@@ -57,6 +57,26 @@
 
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
+static void menu_action_setting_audio_mixer_stream_name(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   unsigned         offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN);
+
+   *w = 19;
+   strlcpy(s2, path, len2);
+
+   if (offset >= AUDIO_MIXER_MAX_STREAMS)
+      return;
+
+   strlcpy(s, audio_driver_mixer_get_stream_name(offset), len);
+}
+
 static void menu_action_setting_audio_mixer_stream_volume(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -2115,7 +2135,14 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
 static int menu_cbs_init_bind_get_string_representation_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
-   if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
+   if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN
+      && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_END)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_audio_mixer_stream_name);
+      return 0;
+   }
+   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
          && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
    {
       BIND_ACTION_GET_VALUE(cbs,

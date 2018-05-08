@@ -1373,8 +1373,12 @@ MSG_HASH(MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,
       "netplay_mitm_server")
 MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER,
       "audio_add_to_mixer")
+MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY,
+      "audio_add_to_mixer_and_play")
 MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,
       "audio_add_to_mixer_and_collection")
+MSG_HASH(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
+      "audio_add_to_mixer_and_collection_and_play")
 MSG_HASH(MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE,
       "filter_by_current_Core")
 MSG_HASH(MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,
@@ -1497,3 +1501,7 @@ MSG_HASH(MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,
       "audio_mixer_settings")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST,
       "deferred_mixer_stream_settings_list")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS,
+      "quick_menu_override_options")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS,
+      "deferred_quick_menu_override_options")

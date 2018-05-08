@@ -492,6 +492,7 @@ MainWindow::MainWindow(QWidget *parent) :
    QDir playlistDir(settings->paths.directory_playlist);
    QString configDir = QFileInfo(path_get(RARCH_PATH_CONFIG)).dir().absolutePath();
    QToolButton *searchResetButton = NULL;
+   int i = 0;
 
    m_tableWidget->setAlternatingRowColors(true);
 
@@ -520,7 +521,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_coreInfoPushButton->setFixedSize(m_coreInfoPushButton->sizeHint());
 
    searchResetButton = new QToolButton(m_searchWidget);
-   searchResetButton->setDefaultAction(new QAction("Clear", searchResetButton));
+   searchResetButton->setDefaultAction(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR), searchResetButton));
    searchResetButton->setFixedSize(searchResetButton->sizeHint());
 
    connect(searchResetButton, SIGNAL(clicked()), this, SLOT(onSearchResetClicked()));
@@ -631,7 +632,16 @@ MainWindow::MainWindow(QWidget *parent) :
    qApp->processEvents();
    QTimer::singleShot(0, this, SLOT(onBrowserStartClicked()));
 
-   m_listWidget->setCurrentRow(0);
+   for (i = 0; i < m_listWidget->count(); i++)
+   {
+      /* select the first non-hidden row */
+      if (!m_listWidget->isRowHidden(i))
+      {
+         m_listWidget->setCurrentRow(i);
+         break;
+      }
+   }
+
    m_searchLineEdit->setFocus();
    m_loadCoreWindow->setWindowModality(Qt::ApplicationModal);
 
@@ -897,7 +907,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    selectedAction = menu->exec(cursorPos);
 
    if (!selectedAction)
-      return;
+      goto end;
 
    if (!specialPlaylist && selectedAction->parent() == associateMenu.data())
    {
@@ -925,11 +935,6 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
             new_playlist_names, sizeof(settings->arrays.playlist_names));
       strlcpy(settings->arrays.playlist_cores,
             new_playlist_cores, sizeof(settings->arrays.playlist_cores));
-
-      if (stnames)
-         string_list_free(stnames);
-      if (stcores)
-         string_list_free(stcores);
    }
    else if (selectedAction == hideAction.data())
    {
@@ -975,6 +980,12 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    }
 
    setCoreActions();
+
+end:
+   if (stnames)
+      string_list_free(stnames);
+   if (stcores)
+      string_list_free(stcores);
 }
 
 void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
@@ -1323,6 +1334,9 @@ QList<QHash<QString, QString> > MainWindow::getCoreInfo()
    unsigned i = 0;
 
    core_info_get_list(&core_info_list);
+
+   if (!core_info_list || core_info_list->count == 0)
+      return infoList;
 
    for (i = 0; i < core_info_list->count; i++)
    {
@@ -2691,6 +2705,7 @@ void MainWindow::initContentTableWidget()
    QListWidgetItem *item = m_listWidget->currentItem();
    QStringList horizontal_header_labels;
    QString path;
+   int i = 0;
 
    if (!item)
       return;
@@ -2730,7 +2745,16 @@ void MainWindow::initContentTableWidget()
       m_tableWidget->sortByColumn(0, Qt::AscendingOrder);
 
    m_tableWidget->resizeColumnsToContents();
-   m_tableWidget->selectRow(0);
+
+   for (i = 0; i < m_tableWidget->rowCount(); i++)
+   {
+      /* select the first non-hidden row */
+      if (!m_tableWidget->isRowHidden(i))
+      {
+         m_tableWidget->selectRow(i);
+         break;
+      }
+   }
 
    onSearchEnterPressed();
 }

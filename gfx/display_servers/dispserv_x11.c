@@ -103,7 +103,7 @@ static bool x11_set_resolution(void *data,
 
    crt_en = true;
 
-   hsp = width*1.12;
+   hsp = width*1.14;
       
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);	  

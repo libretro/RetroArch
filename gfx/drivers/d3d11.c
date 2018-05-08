@@ -616,7 +616,8 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       {
          D3D_FEATURE_LEVEL_11_0,
          D3D_FEATURE_LEVEL_10_1,
-         D3D_FEATURE_LEVEL_10_0
+         D3D_FEATURE_LEVEL_10_0,
+         D3D_FEATURE_LEVEL_9_3
       };
       DXGI_SWAP_CHAIN_DESC desc               = { 0 };
       UINT number_feature_levels              = ARRAY_SIZE(requested_feature_levels);
@@ -631,16 +632,19 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       desc.OutputWindow                       = main_window.hwnd;
       desc.SampleDesc.Count                   = 1;
       desc.SampleDesc.Quality                 = 0;
-      desc.Windowed                           = TRUE;
-      desc.SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL;
 #if 0
+      desc.Scaling                            = DXGI_SCALING_STRETCH;
+#endif
+      desc.Windowed                           = TRUE;
+#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+      /* On phone, no swap effects are supported. */
       desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
-      desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
-      desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+#else
+      desc.SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL;
 #endif
 
 #ifdef DEBUG
-      flags |= D3D11_CREATE_DEVICE_DEBUG;
+      flags                                  |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 		if(cached_device_d3d11 && cached_context)
 		{

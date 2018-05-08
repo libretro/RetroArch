@@ -270,6 +270,8 @@ check_val '' PULSE -lpulse
 check_val '' SDL -lSDL SDL
 check_val '' SDL2 -lSDL2 SDL2
 
+check_enabled QT 'Qt companion'
+
 if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
    check_pkgconf QT5GUI Qt5Gui 5.2
@@ -486,6 +488,8 @@ fi
 
 check_lib '' STRCASESTR "$CLIB" strcasestr
 check_lib '' MMAP "$CLIB" mmap
+
+check_enabled VULKAN vulkan
 
 if [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Win32' ]; then
    HAVE_VULKAN=yes

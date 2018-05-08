@@ -105,7 +105,7 @@ void main_exit(void *args)
 int rarch_main(int argc, char *argv[], void *data)
 {
    void *args                      = (void*)data;
-#ifdef HAVE_MAIN
+#if defined(HAVE_MAIN) && defined(HAVE_QT)
    const ui_application_t *ui_application = NULL;
 #endif
 
@@ -134,7 +134,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
    ui_companion_driver_init_first();
 
-#ifndef HAVE_MAIN
+#if !defined(HAVE_MAIN)
    do
    {
       unsigned sleep_ms = 0;
@@ -150,7 +150,7 @@ int rarch_main(int argc, char *argv[], void *data)
    }while(1);
 
    main_exit(args);
-#elif HAVE_QT
+#elif defined(HAVE_QT)
    ui_application = ui_companion_driver_get_qt_application_ptr();
 
    if (ui_application && ui_application->run)

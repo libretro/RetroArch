@@ -383,6 +383,8 @@ const char *path_get_extension(const char *path)
  * Only '.'s after the last slash are considered.
  *
  * Returns: path with the extension part removed.
+ * If there is no extension at the end of path,
+ * returns a pointer to the unaltered original path.
  */
 char *path_remove_extension(char *path)
 {

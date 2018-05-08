@@ -34,6 +34,10 @@
 #include "input_remote.h"
 #endif
 
+#ifdef HAVE_OVERLAY
+#include "input_overlay.h"
+#endif
+
 #include "input_mapper.h"
 
 #include "input_driver.h"
@@ -647,7 +651,7 @@ void input_poll(void)
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   int16_t res = 0;
+   int16_t res = 0, res_overlay = 0;
 
    /* used to reset input state of a button when the gamepad mapper
       is in action for that button*/
@@ -690,6 +694,16 @@ int16_t input_state(unsigned port, unsigned device,
          }
       }
 
+#ifdef HAVE_OVERLAY
+      if (overlay_ptr)
+         input_state_overlay(overlay_ptr, &res_overlay, port, device, idx, id);
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+      if (input_driver_remote)
+         input_remote_state(&res, port, device, idx, id);
+#endif
+
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
       {
          bool bind_valid = libretro_input_binds[port] && libretro_input_binds[port][id].valid;
@@ -702,8 +716,15 @@ int16_t input_state(unsigned port, unsigned device,
             joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
             if (!reset_state)
+            {
                res = current_input->input_state(
                      current_input_data, joypad_info, libretro_input_binds, port, device, idx, id);
+
+#ifdef HAVE_OVERLAY
+               if (input_overlay_is_alive(overlay_ptr) && port == 0)
+                  res |= res_overlay;
+#endif
+            }
             else
                res = 0;
          }
@@ -713,15 +734,7 @@ int16_t input_state(unsigned port, unsigned device,
          input_mapper_state(input_driver_mapper,
                &res, port, device, idx, id);
 
-#ifdef HAVE_OVERLAY
-      if (overlay_ptr)
-         input_state_overlay(overlay_ptr, &res, port, device, idx, id);
-#endif
 
-#ifdef HAVE_NETWORKGAMEPAD
-      if (input_driver_remote)
-         input_remote_state(&res, port, device, idx, id);
-#endif
 
       /* Don't allow turbo for D-pad. */
       if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||

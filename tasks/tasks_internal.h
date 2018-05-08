@@ -37,12 +37,6 @@ RETRO_BEGIN_DECLS
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
 
-typedef struct nbio_buf
-{
-   void *buf;
-   unsigned bufsize;
-} nbio_buf_t;
-
 enum content_mode_load
 {
    CONTENT_MODE_LOAD_NONE = 0,
@@ -265,7 +259,11 @@ void task_push_get_powerstate(void);
 
 enum frontend_powerstate get_last_powerstate(int *percent);
 
-bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, void *user_data);
+bool task_push_audio_mixer_load_and_play(
+      const char *fullpath, retro_task_callback_t cb, void *user_data);
+
+bool task_push_audio_mixer_load(
+      const char *fullpath, retro_task_callback_t cb, void *user_data);
 
 extern const char* const input_builtin_autoconfs[];
 
