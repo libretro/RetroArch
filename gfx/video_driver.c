@@ -1017,6 +1017,10 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video.force_aspect  = settings->bools.video_force_aspect;
    video.font_enable   = settings->bools.video_font_enable;
    video.swap_interval = settings->uints.video_swap_interval;
+
+   if (video_driver_crt_switching_active)
+       video.swap_interval = 0;
+
 #ifdef GEKKO
    video.viwidth       = settings->uints.video_viwidth;
    video.vfilter       = settings->bools.video_vfilter;
@@ -2619,6 +2623,12 @@ void video_driver_frame(const void *data, unsigned width,
    {
       video_driver_crt_switching_active = true;
 
+      if (height > 300)
+         current_video_context.swap_interval(video_context_data, 0);
+
+      if (height < 300)
+         current_video_context.swap_interval(video_context_data, 1);
+
       if (video_info.crt_switch_resolution_super == 2560)
          width = 2560;
       if (video_info.crt_switch_resolution_super == 3840)
@@ -3186,9 +3196,13 @@ bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data)
 
 bool video_context_driver_swap_interval(unsigned *interval)
 {
+   if (!video_driver_crt_switching_active)
+   {
    if (!current_video_context.swap_interval)
       return false;
    current_video_context.swap_interval(video_context_data, *interval);
+   return true;
+   }
    return true;
 }
 
