@@ -219,6 +219,8 @@ $(OBJDIR)/%.o: %.rc $(HEADERS)
 	@$(if $(Q), $(shell echo echo WINDRES $<),)
 	$(Q)$(WINDRES) -o $@ $<
 
+compile: $(OBJ)
+
 install: $(TARGET)
 	rm -f $(OBJDIR)/git_version.o
 	mkdir -p $(DESTDIR)$(BIN_DIR) 2>/dev/null || /bin/true
