@@ -47,7 +47,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../core_info.h"
 
-#if !defined(_XBOX)
+#if !defined(_XBOX) && !defined(__WINRT__)
 
 #include <commdlg.h>
 #include <dbt.h>
@@ -1020,7 +1020,7 @@ bool win32_window_create(void *data, unsigned style,
 bool win32_get_metrics(void *data,
    enum display_metric_types type, float *value)
 {
-#ifndef _XBOX
+#if !defined(_XBOX) && !defined(__WINRT__)
    HDC monitor            = GetDC(NULL);
    int pixels_x           = GetDeviceCaps(monitor, HORZRES);
    int pixels_y           = GetDeviceCaps(monitor, VERTRES);
@@ -1053,7 +1053,7 @@ bool win32_get_metrics(void *data,
 
 void win32_monitor_init(void)
 {
-#ifndef _XBOX
+#if !defined(_XBOX) && !defined(__WINRT__)
    win32_monitor_count = 0;
    EnumDisplayMonitors(NULL, NULL,
          win32_monitor_enum_proc, 0);
@@ -1066,7 +1066,7 @@ static bool win32_monitor_set_fullscreen(
       unsigned width, unsigned height,
       unsigned refresh, char *dev_name)
 {
-#ifndef _XBOX
+#if !defined(_XBOX) && !defined(__WINRT__)
    DEVMODE devmode;
 
    memset(&devmode, 0, sizeof(devmode));
@@ -1087,7 +1087,7 @@ static bool win32_monitor_set_fullscreen(
 
 void win32_show_cursor(bool state)
 {
-#ifndef _XBOX
+#if !defined(_XBOX) && !defined(__WINRT__)
    if (state)
       while (ShowCursor(TRUE) < 0);
    else
@@ -1098,7 +1098,7 @@ void win32_show_cursor(bool state)
 void win32_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
-#ifndef _XBOX
+#if !defined(_XBOX) && !defined(__WINRT__)
    const ui_application_t *application =
       ui_companion_driver_get_application_ptr();
    if (application)
@@ -1117,7 +1117,7 @@ void win32_check_window(bool *quit, bool *resize,
 
 bool win32_suppress_screensaver(void *data, bool enable)
 {
-#ifndef _XBOX
+#if !defined(_XBOX) && !defined(__WINRT__)
    if (enable)
    {
       char tmp[PATH_MAX_LENGTH];
@@ -1188,7 +1188,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
    RECT *rect, RECT *mon_rect, DWORD *style)
 {
-#ifndef _XBOX
+#if !defined(_XBOX) && !defined(__WINRT__)
    if (fullscreen)
    {
       settings_t *settings = config_get_ptr();
@@ -1235,7 +1235,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data)
 {
-#ifndef _XBOX
+#if !defined(_XBOX) && !defined(__WINRT__)
    RECT *rect            = (RECT*)rect_data;
 
    if (!fullscreen || windowed_full)
@@ -1274,7 +1274,7 @@ bool win32_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-#ifndef _XBOX
+#if !defined(_XBOX) && !defined(__WINRT__)
    DWORD style;
    MSG msg;
    RECT mon_rect;
