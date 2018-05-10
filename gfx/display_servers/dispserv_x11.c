@@ -157,15 +157,15 @@ static bool x11_set_resolution(void *data,
    if (orig_height == 0)
       orig_height = scrn->height;
 
-   hsp = width*1.15;
+   hsp = width*1.12;
       
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);	  
    
    /* following code is the mode line genorator */
 
-   hfp = width+16;
-   hbp = width*1.26;
+   hfp = width+12;
+   hbp = width*1.22;
    hmax = hbp;
    
    if (height < 241)
