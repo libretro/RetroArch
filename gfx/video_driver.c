@@ -564,12 +564,12 @@ const video_poke_interface_t *video_driver_get_poke(void)
 
 static bool video_context_has_focus(void)
 {
-   return current_video_context.has_focus(video_context_data);
+   return current_video_context.has_focus && current_video_context.has_focus(video_context_data);
 }
 
 static bool video_driver_has_focus(void)
 {
-   return current_video->focus(video_driver_data);
+   return current_video && current_video->focus && current_video->focus(video_driver_data);
 }
 
 static bool null_driver_has_focus(void)
