@@ -500,9 +500,98 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    GetMonitorInfo(*hm_to_use, (LPMONITORINFO)mon);
 }
 
-/* Get the count of the files dropped */
-static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
+bool win32_load_content_from_gui(const char *szFilename)
 {
+   /* poll list of current cores */
+   size_t list_size;
+   content_ctx_info_t content_info = { 0 };
+   core_info_list_t *core_info_list = NULL;
+   const core_info_t *core_info = NULL;
+   core_info_get_list(&core_info_list);
+
+   if (!core_info_list)
+      return false;
+
+   core_info_list_get_supported_cores(core_info_list,
+      (const char*)szFilename, &core_info, &list_size);
+
+   if (!list_size)
+   {
+      return false;
+   }
+
+   path_set(RARCH_PATH_CONTENT, szFilename);
+
+   if (!path_is_empty(RARCH_PATH_CONTENT))
+   {
+      unsigned i;
+      core_info_t *current_core = NULL;
+      core_info_get_current_core(&current_core);
+
+      /*we already have path for libretro core */
+      for (i = 0; i < list_size; i++)
+      {
+         const core_info_t *info = (const core_info_t*)&core_info[i];
+
+         if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
+         {
+            /* Our previous core supports the current rom */
+            content_ctx_info_t content_info = { 0 };
+            task_push_load_content_with_current_core_from_companion_ui(
+               NULL,
+               &content_info,
+               CORE_TYPE_PLAIN,
+               NULL, NULL);
+            return true;
+         }
+      }
+   }
+
+   /* Poll for cores for current rom since none exist. */
+   if (list_size == 1)
+   {
+      /*pick core that only exists and is bound to work. Ish. */
+      const core_info_t *info = (const core_info_t*)&core_info[0];
+
+      if (info)
+      {
+         task_push_load_content_with_new_core_from_companion_ui(
+            info->path, NULL, &content_info, NULL, NULL);
+         return true;
+      }
+   }
+   else
+   {
+      bool okay = false;
+      settings_t *settings = config_get_ptr();
+      /* Fullscreen: Show mouse cursor for dialog */
+      if (settings->bools.video_fullscreen)
+      {
+         video_driver_show_mouse();
+      }
+
+      /* Pick one core that could be compatible, ew */
+      if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
+         main_window.hwnd, PickCoreProc, (LPARAM)NULL) == IDOK)
+      {
+         task_push_load_content_with_current_core_from_companion_ui(
+            NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+         okay = true;
+      }
+
+      /* Fullscreen: Hide mouse cursor after dialog */
+      if (settings->bools.video_fullscreen)
+      {
+         video_driver_hide_mouse();
+      }
+      return okay;
+   }
+   return false;
+}
+
+static bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
+{
+   bool okay = false;
 #ifdef LEGACY_WIN32
    char szFilename[1024];
    szFilename[0] = '\0';
@@ -514,92 +603,20 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 
    if (DragQueryFileR((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
    {
-      /* poll list of current cores */
-      size_t list_size;
-      content_ctx_info_t content_info  = {0};
-      core_info_list_t *core_info_list = NULL;
-      const core_info_t *core_info     = NULL;
-
 #ifdef LEGACY_WIN32
       DragQueryFileR((HDROP)wparam, 0, szFilename, sizeof(szFilename));
 #else
       DragQueryFileR((HDROP)wparam, 0, wszFilename, sizeof(wszFilename));
       szFilename = utf16_to_utf8_string_alloc(wszFilename);
 #endif
-
-      core_info_get_list(&core_info_list);
-
-      if (!core_info_list)
-         return 0;
-
-      core_info_list_get_supported_cores(core_info_list,
-            (const char*)szFilename, &core_info, &list_size);
-
-      if (!list_size)
-      {
-#ifndef LEGACY_WIN32
-         if (szFilename)
-            free(szFilename);
-#endif
-         return 0;
-      }
-
-      path_set(RARCH_PATH_CONTENT, szFilename);
-
+      okay = win32_load_content_from_gui(szFilename);
 #ifndef LEGACY_WIN32
       if (szFilename)
          free(szFilename);
 #endif
-
-      if (!path_is_empty(RARCH_PATH_CONTENT))
-      {
-         unsigned i;
-         core_info_t *current_core = NULL;
-         core_info_get_current_core(&current_core);
-
-         /*we already have path for libretro core */
-         for (i = 0; i < list_size; i++)
-         {
-            const core_info_t *info = (const core_info_t*)&core_info[i];
-
-            if (!string_is_equal(info->systemname, current_core->systemname))
-               break;
-
-            if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
-            {
-               /* Our previous core supports the current rom */
-               content_ctx_info_t content_info = {0};
-               task_push_load_content_with_current_core_from_companion_ui(
-                     NULL,
-                     &content_info,
-                     CORE_TYPE_PLAIN,
-                     NULL, NULL);
-               return 0;
-            }
-         }
-      }
-
-      /* Poll for cores for current rom since none exist. */
-      if (list_size ==1)
-      {
-         /*pick core that only exists and is bound to work. Ish. */
-         const core_info_t *info = (const core_info_t*)&core_info[0];
-
-         if (info)
-            task_push_load_content_with_new_core_from_companion_ui(
-                  info->path, NULL, &content_info, NULL, NULL);
-      }
-      else
-      {
-         /* Pick one core that could be compatible, ew */
-         if (DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),
-                  hwnd,PickCoreProc,(LPARAM)NULL)==IDOK)
-            task_push_load_content_with_current_core_from_companion_ui(
-                  NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-      }
    }
 
-   return 0;
+   return okay;
 }
 
 #ifndef _XBOX
@@ -691,10 +708,8 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          break;
       case WM_DROPFILES:
          {
-            int ret = win32_drag_query_file(hwnd, wparam);
+            win32_drag_query_file(hwnd, wparam);
             DragFinish((HDROP)wparam);
-            if (ret != 0)
-               return 0;
          }
          break;
       case WM_CHAR:
