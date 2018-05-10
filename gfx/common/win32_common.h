@@ -141,6 +141,8 @@ BOOL IsIconic(HWND hwnd);
 
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 
+bool win32_load_content_from_gui(const char *szFilename);
+
 RETRO_END_DECLS
 
 #endif

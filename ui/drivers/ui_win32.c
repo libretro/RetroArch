@@ -645,17 +645,9 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                   cmd         = CMD_EVENT_LOAD_CORE;
                   break;
                case ID_M_LOAD_CONTENT:
+                  if (win32_load_content_from_gui(win32_file))
                   {
-                     content_ctx_info_t content_info = {0};
-
-                     path_set(RARCH_PATH_CONTENT, win32_file);
-
                      do_wm_close = true;
-                     task_push_load_content_with_current_core_from_companion_ui(
-                           NULL,
-                           &content_info,
-                           CORE_TYPE_PLAIN,
-                           NULL, NULL);
                   }
                   break;
             }
