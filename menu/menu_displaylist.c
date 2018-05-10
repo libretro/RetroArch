@@ -6275,6 +6275,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE,
                PARSE_ONLY_BOOL, false) == 0)
             count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,
+               PARSE_ONLY_BOOL, false) == 0)
+            count++;
 
          if (count == 0)
             menu_entries_append_enum(info->list,

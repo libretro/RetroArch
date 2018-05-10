@@ -601,6 +601,9 @@ static const unsigned run_ahead_frames = 1;
 /* When using the Run Ahead feature, use a secondary instance of the core. */
 static const bool run_ahead_secondary_instance = true;
 
+/* Hide warning messages when using the Run Ahead feature. */
+static const bool run_ahead_hide_warnings = false;
+
 /* Enable stdin/network command interface. */
 static const bool network_cmd_enable = false;
 static const uint16_t network_cmd_port = 55355;

@@ -237,6 +237,7 @@ typedef struct settings
       bool rewind_enable;
       bool run_ahead_enabled;
       bool run_ahead_secondary_instance;
+      bool run_ahead_hide_warnings;
       bool pause_nonactive;
       bool block_sram_overwrite;
       bool savestate_auto_index;
