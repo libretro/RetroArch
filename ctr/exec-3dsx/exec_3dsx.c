@@ -45,22 +45,23 @@ int exec_3dsx(const char* path, const char* args){
 	inited = loader_Rosalina.init();
 	if(inited){
 		loader_Rosalina.launchFile(path, &newProgramArgs, NULL);
-		exit(0);
+		//exit(0);
 	}
 	
 	inited = loader_Ninjhax2.init();
 	if(inited){
 		loader_Ninjhax2.launchFile(path, &newProgramArgs, NULL);
-		exit(0);
+		//exit(0);
 	}
 	
 	inited = loader_Ninjhax1.init();
 	if(inited){
 		loader_Ninjhax1.launchFile(path, &newProgramArgs, NULL);
-		exit(0);
+		//exit(0);
 	}
 	
 	//should never be reached
-	errno = ENOTSUP;
-	return -1;
+	//errno = ENOTSUP;
+	//return -1;
+	return 0;
 }

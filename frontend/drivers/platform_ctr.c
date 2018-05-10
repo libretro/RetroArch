@@ -182,6 +182,7 @@ static void frontend_ctr_deinit(void* data)
 
 static void frontend_ctr_exec(const char* path, bool should_load_game)
 {
+   int error = 0;
    char args[0x300 - 0x4];
 
    DEBUG_VAR(path);
@@ -223,16 +224,15 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
          }
       }
 #endif
-      int error;
       if (envIsHomebrew())
          error = exec_3dsx(path, args);
       else
          error = exec_cia(path, args);
-      if (error)
-         RARCH_LOG("Cant execute new core:%s.\n", strerror(errno));
+
    }
    
-   svcSleepThread(INT64_MAX);
+     if (error)
+         RARCH_LOG("Cant execute new core:%s.\n", strerror(errno));
 }
 
 #ifndef IS_SALAMANDER

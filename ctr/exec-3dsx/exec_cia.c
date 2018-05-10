@@ -14,6 +14,15 @@ typedef struct{
 }ciaParam;
 
 
+static void errorAndQuit(const char* errorStr){
+	errorConf error;
+
+	errorInit(&error, ERROR_TEXT, CFG_LANGUAGE_EN);
+	errorText(&error, errorStr);
+	errorDisp(&error);
+	exit(0);
+}
+
 static int isCiaInstalled(u64 titleId){
 	u32 titlesToRetrieve;
 	u32 titlesRetrieved;
@@ -71,6 +80,8 @@ static int installCia(Handle ciaFile){
 		failed = FSFILE_Write(outputHandle, &bytesWritten, fileOffset, transferBuffer, bytesRead, 0);
 		if(R_FAILED(failed)){
 			AM_CancelCIAInstall(outputHandle);
+			if(R_DESCRIPTION(failed) == RD_ALREADY_EXISTS)
+				return 1;
 			return -1;
 		}
 		
@@ -100,15 +111,6 @@ static u64 getCiaTitleId(Handle ciaFile){
 	return ciaInfo.titleID;
 }
 
-static void errorAndQuit(const char* errorStr){
-	errorConf error;
-
-	errorInit(&error, ERROR_TEXT, CFG_LANGUAGE_EN);
-	errorText(&error, errorStr);
-	errorDisp(&error);
-	exit(0);
-}
-
 int exec_cia(const char* path, const char* args){
 	struct stat sBuff; 
 	bool fileExists;
@@ -132,6 +134,7 @@ int exec_cia(const char* path, const char* args){
 	inited = R_SUCCEEDED(amInit()) && R_SUCCEEDED(fsInit());
 	if(inited){
 		Result res;
+		int error;
 		FS_Archive ciaArchive;
 		Handle ciaFile;
 		u64 titleId;
@@ -202,8 +205,15 @@ int exec_cia(const char* path, const char* args){
 		}
 		
 		res = APT_PrepareToDoApplicationJump(0, titleId, 0x1);
-		if(R_SUCCEEDED(res))
-			res = APT_DoApplicationJump(&param, sizeof(param.argc) + argsLength, __argv_hmac);
+		if(R_FAILED(res))
+			errorAndQuit("CIA cant run, cant prepare.");
+		
+		res = APT_DoApplicationJump(&param, sizeof(param.argc) + argsLength, __argv_hmac);
+		if(R_FAILED(res))
+			errorAndQuit("CIA cant run, cant jump.");
+		
+		//wait for application jump, for some reason its not instant
+		while(1);
 	}
 	
 	//should never be reached
