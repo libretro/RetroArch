@@ -1450,11 +1450,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHUTDOWN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
       "Taxa de Câmera Lenta")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-      "Adiantar para Reduzir a Latência")
+      "Adiantar Quadro para Reduzir a Latência")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
       "Número de Quadros para Adiantar")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-      "Adiantar Usa uma Segunda Instância")
+      "O Adiantar Quadro Usará uma Segunda Instância")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
       "Classificar Arquivos de Jogo-Salvo em Pastas")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
@@ -2758,7 +2758,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-      "Usa uma segunda instância do núcleo do RetroArch para avançar. Evita problemas de áudio devido ao estado de carregamento."
+      "Usa uma segunda instância do núcleo do RetroArch para avançar quadros. Evita problemas de áudio devido ao estado de carregamento."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+      "Oculta a mensagem de aviso que aparece ao usar o Adiantar Quadro e o núcleo não suporta Estados de Jogo."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_ENABLE,
@@ -3472,6 +3476,14 @@ MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
       "Arquivo de remapeamento do jogo carregado.")
 MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
       "Arquivo de remapeamento principal carregado.")
+MSG_HASH(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+      "O Adiantar Quadro foi desativado porque esse núcleo não suporta estados de jogo.")
+MSG_HASH(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+      "Falha ao salvar o estado do jogo. O Adiantar Quadro foi desativado.")
+MSG_HASH(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+      "Falha ao carregar o estado do jogo. O Adiandar Quadro foi desativado.")
+MSG_HASH(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+      "Falha ao criar uma segunda instância. O Adiantar Quadro agora usará apenas uma instância.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
       "Adicione automaticamente conteúdo à lista de reprodução")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
@@ -3549,11 +3561,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
       "&Opções...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
-      "Lembrar posições da doca:")
+      "Lembrar Posições da Doca:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
-      "Lembrar geometria da janela:")
+      "Lembrar Geometria da Janela:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
-      "Lembrar a última aba do navegador de conteúdo:")
+      "Lembrar a Última Aba do Navegador de Conteúdo:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
       "Tema")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT,
@@ -3645,7 +3657,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
       "O arquivo não existe.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
-      "Sugerir primeiro núcleo carregado")
+      "Sugerir Primeiro Núcleo Carregado")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
       "Opções de Substituição de Configuração")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
@@ -3679,6 +3691,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
       "Volume")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
-      "Current core")
+      "Núcleo atual")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
-      "Clear")
+      "Limpar")
