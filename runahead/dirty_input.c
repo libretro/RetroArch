@@ -40,7 +40,7 @@ static void* InputListElementConstructor(void)
    return ptr;
 }
 
-static void input_state_destory(void)
+static void input_state_destroy(void)
 {
    mylist_destroy(&input_state_list);
 }
@@ -158,7 +158,7 @@ void remove_input_state_hook(void)
       retro_ctx.state_cb            = input_state_callback_original;
       current_core.retro_set_input_state(retro_ctx.state_cb);
       input_state_callback_original = NULL;
-      input_state_destory();
+      input_state_destroy();
    }
 
    if (retro_reset_callback_original)

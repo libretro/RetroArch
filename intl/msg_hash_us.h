@@ -1454,7 +1454,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
       "Number of Frames to Run Ahead")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-      "Runahead Use Second Instance")
+      "RunAhead Use Second Instance")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+      "RunAhead Hide Warnings")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
       "Sort Saves In Folders")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
@@ -2761,6 +2763,10 @@ MSG_HASH(
       "Use a second instance of the RetroArch core to run ahead. Prevents audio problems due to loading state."
       )
 MSG_HASH(
+      MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+      "Hides the warning message that appears when using RunAhead and the core does not support savestates."
+      )
+MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_ENABLE,
       "Enable rewinding. This will take a performance hit when playing."
       )
@@ -3472,6 +3478,14 @@ MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
       "Game remap file loaded.")
 MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
       "Core remap file loaded.")
+MSG_HASH(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+      "RunAhead has been disabled because this core does not support save states.")
+MSG_HASH(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+      "Failed to save state.  RunAhead has been disabled.")
+MSG_HASH(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+      "Failed to load state.  RunAhead has been disabled.")
+MSG_HASH(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+      "Failed to create second instance.  RunAhead will now use only one instance.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
       "Automatically add content to playlist")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
