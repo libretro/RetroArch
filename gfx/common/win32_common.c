@@ -533,9 +533,6 @@ bool win32_load_content_from_gui(const char *szFilename)
       {
          const core_info_t *info = (const core_info_t*)&core_info[i];
 
-         if (!string_is_equal(info->systemname, current_core->systemname))
-            break;
-
          if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
          {
             /* Our previous core supports the current rom */

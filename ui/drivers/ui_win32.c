@@ -645,10 +645,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                   cmd         = CMD_EVENT_LOAD_CORE;
                   break;
                case ID_M_LOAD_CONTENT:
-                  if (win32_load_content_from_gui(win32_file))
-                  {
-                     do_wm_close = true;
-                  }
+                  win32_load_content_from_gui(win32_file);
                   break;
             }
          }
