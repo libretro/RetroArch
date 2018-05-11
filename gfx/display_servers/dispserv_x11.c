@@ -25,14 +25,14 @@
 #include <unistd.h>
 #include <X11/Xlib.h>
 
-static unsigned orig_width          = 0;
-static unsigned orig_height         = 0;
-static char orig_res[50];
+static unsigned orig_width      = 0;
+static unsigned orig_height     = 0;
 static char old_mode[150];
 static char new_mode[150];
-static char output[450];
-static bool crt_en                  = false;
-static FILE *res;
+static char xrandr[250];
+static char fbset[150];
+static char output[150];
+static bool crt_en     = false;
 
 typedef struct
 {
@@ -53,49 +53,27 @@ static void* x11_display_server_init(void)
 static void x11_display_server_destroy(void *data)
 {
    dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
-   int i   = 0;
-
+   int i          = 0;
    if (crt_en == true)
    {
-      sprintf(orig_res, "xrandr -s %dx%d", orig_width, orig_height);
-      system(orig_res);
+      sprintf(output,"xrandr -s %dx%d", orig_width, orig_height);
+      system(output);
+   }  
+   for (i =0; i < 3; i++)
+   {
+      sprintf(output,"xrandr --delmode %s%d %s", "VGA",i ,old_mode);
+      system(output);  
+      sprintf(output,"xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
+      system(output);  
 
-      res= fopen ("res.sh", "w");
-      for (i =0; i < 3; i++)
-      {
-      fprintf(res, "if (xrandr | grep \"VGA-%d connected\" )" 
-                   "\nthen" 
-                   "\n   xrandr --delmode VGA-%d %s" 
-                   "\n   exit"
-                   "\n fi \n\n"
-                   "if (xrandr | grep \"VGA%d connected\" )" 
-                   "\nthen" 
-                   "\n   xrandr --delmode VGA%d %s" 
-                   "\n   exit"
-                   "\n fi \n\n"
-                   "if (xrandr | grep \"DVI-%d connected\" )" 
-                   "\nthen" 
-                   "\n   xrandr --delmode VGA-%d %s" 
-                   "\n   exit"
-                   "\n fi \n\n"
-                   "if (xrandr | grep \"DVI%d connected\" )" 
-                   "\nthen" 
-                   "\n   xrandr --delmode DVI%d %s" 
-                   "\n   exit"
-                   "\n fi \n\n"
-                   "\nexit" 
+      sprintf(output,"xrandr --delmode %s%d %s", "DVI",i ,old_mode);
+      system(output);  
+      sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
+      system(output);  
 
-                   ,i, i ,old_mode
-                   ,i, i ,old_mode
-                   ,i, i ,old_mode
-                   ,i, i ,old_mode);
-    }
-    fclose(res);
-      system("bash res.sh");
+   }     
       sprintf(output,"xrandr --rmmode %s", old_mode);
 	  system(output);
-
-   }
 
    if (dispserv)
       free(dispserv);
@@ -143,29 +121,27 @@ static bool x11_set_resolution(void *data,
    int hmax           = 0;
    int vmax           = 0;
    float pixel_clock  = 0;
-   char xrandr[250];
-   char fbset[150];
 
-   Display* disp = XOpenDisplay(NULL);
-   Screen* scrn = DefaultScreenOfDisplay(disp);
+   Display* disp      = XOpenDisplay(NULL);
+   Screen* scrn       = DefaultScreenOfDisplay(disp);
+   
+   if (orig_height == 0 && orig_width == 0)
+   { 
+      orig_width    = scrn->width;
+      orig_height   = scrn->height;
+   }
 
    crt_en = true;
 
-   if (orig_width == 0)
-      orig_width = scrn->width;
-
-   if (orig_height == 0)
-      orig_height = scrn->height;
-
-   hsp = width*1.12;
+   hsp = width*1.10;
       
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);	  
    
    /* following code is the mode line genorator */
 
-   hfp = width+12;
-   hbp = width*1.22;
+   hfp = width+8;
+   hbp = width*1.23;
    hmax = hbp;
    
    if (height < 241)
@@ -195,8 +171,7 @@ static bool x11_set_resolution(void *data,
    if (height > 250 && height < 260 && hz < 52)
    { 
       vmax = 313;
-   }sprintf(output,"xrandr --rmmode %s", old_mode);
-	  system(output);
+   }
    if (height > 260 && height < 300)
    { 
       vmax = 313;
@@ -218,15 +193,15 @@ static bool x11_set_resolution(void *data,
    
    if (hz < 53)
    {   
-   vfp = height+((vmax-height)*0.38);
+   vfp = height+((vmax-height)*0.20);
    }
    if (hz > 56)
    {   
-   vfp = height+((vmax-height)*0.28);
+   vfp = height+((vmax-height)*0.26);
    }
    if (hz > 53 && hz < 56)
    {   
-   vfp = height+((vmax-height)*0.35);
+   vfp = height+((vmax-height)*0.25);
    }
 
    
@@ -273,67 +248,40 @@ static bool x11_set_resolution(void *data,
    }
       /* variable for new mode */
       sprintf(new_mode,"%dx%d_%0.2f", width, height, hz); 
-   
-      res= fopen ("res.sh", "w");
-      for (i =0; i < 3; i++)
-      {
-      fprintf(res, "if (xrandr | grep \"VGA-%d connected\" )" 
-                 "\nthen" 
-                 "\n   xrandr --addmode VGA-%d %s" 
-                 "\n   xrandr --output VGA-%d --mode %s"
-                 "\n   xrandr --delmode VGA-%d %s" 
-                 "\n   exit"
-                 "\n fi \n \n"
-                 "if (xrandr | grep \"VGA%d connected\" )" 
-                 "\nthen" 
-                 "\n   xrandr --addmode VGA%d %s" 
-                 "\n   xrandr --output VGA%d --mode %s"
-                 "\n   xrandr --delmode VGA%d %s" 
-                 "\n   exit"
-                 "\n fi \n \n"
-                 "if (xrandr | grep \"DVI-%d connected\" )" 
-                 "\nthen" 
-                 "\n   xrandr --addmode DVI-%d %s" 
-                 "\n   xrandr --output DVI-%d --mode %s"
-                 "\n   xrandr --delmode DVI-%d %s" 
-                 "\n   exit"
-                 "\n fi \n \n"
-                 "if (xrandr | grep \"DVI%d connected\" )" 
-                 "\nthen" 
-                 "\n   xrandr --addmode DVI%d %s" 
-                 "\n   xrandr --output DVI%d --mode %s"
-                 "\n   xrandr --delmode DVI%d %s" 
-                 "\n   exit"
-                 "\n fi \n \n"
-                 "if (xrandr | grep \"HDMI-%d connected\" )" 
-                 "\nthen" 
-                 "\n   xrandr --addmode HDMI-%d %s" 
-                 "\n   xrandr --output HDMI-%d --mode %s"
-                 "\n   xrandr --delmode HDMI-%d %s" 
-                 "\n   exit"
-                 "\n fi \n \n"
-                 "if (xrandr | grep \"HDMI%d connected\" )" 
-                 "\nthen" 
-                 "\n   xrandr --addmode HDMI%d %s" 
-                 "\n   xrandr --output HDMI%d --mode %s"
-                 "\n   xrandr --delmode HMDI%d %s" 
-                 "\n   exit"
-                 "\n fi \n \n"
-                 "\nexit"
-                 ,i ,i ,new_mode,i , new_mode, i ,old_mode
-                 ,i ,i ,new_mode,i , new_mode, i ,old_mode
-                 ,i ,i ,new_mode,i , new_mode, i ,old_mode
-                 ,i ,i ,new_mode,i , new_mode, i ,old_mode
-                 ,i ,i ,new_mode,i , new_mode, i ,old_mode
-                 ,i ,i ,new_mode,i , new_mode, i ,old_mode);
-      }
-      fclose(res);
-
 
       /* need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to add and delete modes */
-   
-      system("bash res.sh"); 	 
-      
+      for (i =0; i < 3; i++)
+      {
+         sprintf(output,"xrandr --addmode %s%d %s", "DVI",i ,new_mode);
+         system(output); 
+		 sprintf(output,"xrandr --output %s%d --mode %s", "DVI", i, new_mode);
+         system(output);
+         sprintf(output,"xrandr --delmode %s%d %s", "DVI",i ,old_mode);
+         system(output); 
+ 
+         sprintf(output,"xrandr --addmode %s-%d %s", "DVI",i ,new_mode);
+         system(output); 
+		 sprintf(output,"xrandr --output %s-%d --mode %s", "DVI", i, new_mode);
+         system(output);
+         sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
+         system(output);
+
+         sprintf(output,"xrandr --addmode %s%d %s", "VGA",i ,new_mode);
+         system(output); 
+         sprintf(output,"xrandr --output %s%d --mode %s", "VGA", i, new_mode);
+         system(output);		 
+         sprintf(output,"xrandr --delmode %s%d %s", "VGA",i ,old_mode);
+         system(output); 
+
+         sprintf(output,"xrandr --addmode %s-%d %s", "VGA",i ,new_mode);
+         system(output);
+         sprintf(output,"xrandr --output %s-%d --mode %s", "VGA", i, new_mode);
+         system(output);
+         sprintf(output,"xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
+         system(output); 
+      }
+		 
+
 	  /* remove old mode */
       sprintf(output,"xrandr --rmmode %s", old_mode);
 	  system(output);
