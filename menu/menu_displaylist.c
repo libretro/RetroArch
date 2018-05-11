@@ -2702,11 +2702,16 @@ static int menu_displaylist_parse_load_content_settings(
          }
       }
 
-      menu_entries_append_enum(info->list,
+      if ((settings->bools.quick_menu_show_save_core_overrides ||
+         settings->bools.quick_menu_show_save_game_overrides) &&
+         !settings->bools.kiosk_mode_enable)
+      {
+         menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS),
             msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS),
             MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS,
             MENU_SETTING_ACTION, 0, 0);
+      }
 
 
 #ifdef HAVE_CHEEVOS
