@@ -47,7 +47,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../core_info.h"
 
-#if !defined(_XBOX) && !defined(__WINRT__)
+#if !defined(_XBOX)
 
 #include <commdlg.h>
 #include <dbt.h>
@@ -262,18 +262,18 @@ typedef struct DISPLAYCONFIG_PATH_INFO_CUSTOM {
 typedef LONG (WINAPI *QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_INFO_CUSTOM*, UINT32*, DISPLAYCONFIG_MODE_INFO_CUSTOM*, DISPLAYCONFIG_TOPOLOGY_ID_CUSTOM*);
 typedef LONG (WINAPI *GETDISPLAYCONFIGBUFFERSIZES)(UINT32, UINT32*, UINT32*);
 
-static bool g_resized               = false;
-bool g_restore_desktop              = false;
+static bool g_win32_resized         = false;
+bool g_win32_restore_desktop        = false;
 static bool doubleclick_on_titlebar = false;
 static bool g_taskbar_is_created    = false;
-bool g_inited                       = false;
-static bool g_quit                  = false;
+bool g_win32_inited                 = false;
+static bool g_win32_quit            = false;
 
-static int g_pos_x                  = CW_USEDEFAULT;
-static int g_pos_y                  = CW_USEDEFAULT;
+static int g_win32_pos_x            = CW_USEDEFAULT;
+static int g_win32_pos_y            = CW_USEDEFAULT;
 
-unsigned g_resize_width             = 0;
-unsigned g_resize_height            = 0;
+unsigned g_win32_resize_width       = 0;
+unsigned g_win32_resize_height      = 0;
 static unsigned g_taskbar_message   = 0;
 static unsigned win32_monitor_count = 0;
 
@@ -730,10 +730,10 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
 
             GetWindowPlacement(main_window.hwnd, &placement);
 
-            g_pos_x = placement.rcNormalPosition.left;
-            g_pos_y = placement.rcNormalPosition.top;
-            g_quit  = true;
-            *quit   = true;
+            g_win32_pos_x = placement.rcNormalPosition.left;
+            g_win32_pos_y = placement.rcNormalPosition.top;
+            g_win32_quit  = true;
+            *quit         = true;
          }
          break;
       case WM_SIZE:
@@ -741,9 +741,9 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          if (  wparam != SIZE_MAXHIDE && 
                wparam != SIZE_MINIMIZED)
          {
-            g_resize_width  = LOWORD(lparam);
-            g_resize_height = HIWORD(lparam);
-            g_resized       = true;
+            g_win32_resize_width  = LOWORD(lparam);
+            g_win32_resize_height = HIWORD(lparam);
+            g_win32_resized       = true;
          }
          *quit = true;
          break;
@@ -797,7 +797,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
             ui_window_win32_t win32_window;
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
             curD3D                = p_cs->lpCreateParams;
-            g_inited              = true;
+            g_win32_inited        = true;
 
             win32_window.hwnd     = hwnd;
 
@@ -858,7 +858,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
             ui_window_win32_t win32_window;
             win32_window.hwnd           = hwnd;
 
-            create_graphics_context(hwnd, &g_quit);
+            create_graphics_context(hwnd, &g_win32_quit);
 
             win32_set_droppable(&win32_window, true);
          }
@@ -956,7 +956,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
             ui_window_win32_t win32_window;
             win32_window.hwnd = hwnd;
 
-            create_gdi_context(hwnd, &g_quit);
+            create_gdi_context(hwnd, &g_win32_quit);
 
             win32_set_droppable(&win32_window, true);
          }
@@ -988,8 +988,8 @@ bool win32_window_create(void *data, unsigned style,
    main_window.hwnd = CreateWindowEx(0,
          "RetroArch", "RetroArch",
          style,
-         fullscreen ? mon_rect->left : g_pos_x,
-         fullscreen ? mon_rect->top  : g_pos_y,
+         fullscreen ? mon_rect->left : g_win32_pos_x,
+         fullscreen ? mon_rect->top  : g_win32_pos_y,
          width, height,
          NULL, NULL, NULL, data);
    if (!main_window.hwnd)
@@ -1035,7 +1035,7 @@ bool win32_window_create(void *data, unsigned style,
 bool win32_get_metrics(void *data,
    enum display_metric_types type, float *value)
 {
-#if !defined(_XBOX) && !defined(__WINRT__)
+#if !defined(_XBOX)
    HDC monitor            = GetDC(NULL);
    int pixels_x           = GetDeviceCaps(monitor, HORZRES);
    int pixels_y           = GetDeviceCaps(monitor, VERTRES);
@@ -1068,20 +1068,19 @@ bool win32_get_metrics(void *data,
 
 void win32_monitor_init(void)
 {
-#if !defined(_XBOX) && !defined(__WINRT__)
+#if !defined(_XBOX)
    win32_monitor_count = 0;
    EnumDisplayMonitors(NULL, NULL,
          win32_monitor_enum_proc, 0);
 #endif
-
-   g_quit              = false;
+   g_win32_quit              = false;
 }
 
 static bool win32_monitor_set_fullscreen(
       unsigned width, unsigned height,
       unsigned refresh, char *dev_name)
 {
-#if !defined(_XBOX) && !defined(__WINRT__)
+#if !defined(_XBOX)
    DEVMODE devmode;
 
    memset(&devmode, 0, sizeof(devmode));
@@ -1102,7 +1101,7 @@ static bool win32_monitor_set_fullscreen(
 
 void win32_show_cursor(bool state)
 {
-#if !defined(_XBOX) && !defined(__WINRT__)
+#if !defined(_XBOX)
    if (state)
       while (ShowCursor(TRUE) < 0);
    else
@@ -1113,26 +1112,26 @@ void win32_show_cursor(bool state)
 void win32_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
-#if !defined(_XBOX) && !defined(__WINRT__)
+#if !defined(_XBOX)
    const ui_application_t *application =
       ui_companion_driver_get_application_ptr();
    if (application)
       application->process_events();
+   *quit            = g_win32_quit;
 #endif
-   *quit            = g_quit;
 
-   if (g_resized)
+   if (g_win32_resized)
    {
-      *resize       = true;
-      *width        = g_resize_width;
-      *height       = g_resize_height;
-      g_resized     = false;
+      *resize             = true;
+      *width              = g_win32_resize_width;
+      *height             = g_win32_resize_height;
+      g_win32_resized     = false;
    }
 }
 
 bool win32_suppress_screensaver(void *data, bool enable)
 {
-#if !defined(_XBOX) && !defined(__WINRT__)
+#if !defined(_XBOX)
    if (enable)
    {
       char tmp[PATH_MAX_LENGTH];
@@ -1203,7 +1202,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
    RECT *rect, RECT *mon_rect, DWORD *style)
 {
-#if !defined(_XBOX) && !defined(__WINRT__)
+#if !defined(_XBOX)
    if (fullscreen)
    {
       settings_t *settings = config_get_ptr();
@@ -1217,9 +1216,9 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 
       if (windowed_full)
       {
-         *style          = WS_EX_TOPMOST | WS_POPUP;
-         g_resize_width  = *width  = mon_rect->right  - mon_rect->left;
-         g_resize_height = *height = mon_rect->bottom - mon_rect->top;
+         *style                = WS_EX_TOPMOST | WS_POPUP;
+         g_win32_resize_width  = *width  = mon_rect->right  - mon_rect->left;
+         g_win32_resize_height = *height = mon_rect->bottom - mon_rect->top;
       }
       else
       {
@@ -1241,8 +1240,8 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 
       AdjustWindowRect(rect, *style, FALSE);
 
-      g_resize_width  = *width   = rect->right  - rect->left;
-      g_resize_height = *height  = rect->bottom - rect->top;
+      g_win32_resize_width  = *width   = rect->right  - rect->left;
+      g_win32_resize_height = *height  = rect->bottom - rect->top;
    }
 #endif
 }
@@ -1250,7 +1249,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data)
 {
-#if !defined(_XBOX) && !defined(__WINRT__)
+#if !defined(_XBOX)
    RECT *rect            = (RECT*)rect_data;
 
    if (!fullscreen || windowed_full)
@@ -1269,7 +1268,7 @@ void win32_set_window(unsigned *width, unsigned *height,
          SetMenu(main_window.hwnd,
                LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
          SendMessage(main_window.hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
-         g_resize_height = *height += rc_temp.top + rect->top;
+         g_win32_resize_height = *height += rc_temp.top + rect->top;
          SetWindowPos(main_window.hwnd, NULL, 0, 0, *width, *height, SWP_NOMOVE);
       }
 
@@ -1289,7 +1288,7 @@ bool win32_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-#if !defined(_XBOX) && !defined(__WINRT__)
+#if !defined(_XBOX)
    DWORD style;
    MSG msg;
    RECT mon_rect;
@@ -1308,11 +1307,11 @@ bool win32_set_video_mode(void *data,
 
    win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
 
-   mon_rect              = current_mon.rcMonitor;
-   g_resize_width        = width;
-   g_resize_height       = height;
+   mon_rect                    = current_mon.rcMonitor;
+   g_win32_resize_width        = width;
+   g_win32_resize_height       = height;
 
-   windowed_full         = settings->bools.video_windowed_fullscreen;
+   windowed_full               = settings->bools.video_windowed_fullscreen;
 
    win32_set_style(&current_mon, &hm_to_use, &width, &height,
          fullscreen, windowed_full, &rect, &mon_rect, &style);
@@ -1326,7 +1325,7 @@ bool win32_set_video_mode(void *data,
 
    /* Wait until context is created (or failed to do so ...).
     * Please don't remove the (res = ) as GetMessage can return -1. */
-   while (!g_inited && !g_quit
+   while (!g_win32_inited && !g_win32_quit
          && (res = GetMessage(&msg, main_window.hwnd, 0, 0)) != 0)
    {
       if (res == -1)
@@ -1339,7 +1338,7 @@ bool win32_set_video_mode(void *data,
       DispatchMessage(&msg);
    }
 
-   if (g_quit)
+   if (g_win32_quit)
       return false;
 #endif
 
@@ -1365,7 +1364,7 @@ BOOL IsIconic(HWND hwnd)
 
 bool win32_has_focus(void)
 {
-   if (g_inited)
+   if (g_win32_inited)
    {
 #ifdef _XBOX
       if (GetForegroundWindow() == main_window.hwnd)
@@ -1392,8 +1391,8 @@ HWND win32_get_window(void)
 
 void win32_window_reset(void)
 {
-   g_quit              = false;
-   g_restore_desktop   = false;
+   g_win32_quit            = false;
+   g_win32_restore_desktop = false;
 }
 
 void win32_destroy_window(void)

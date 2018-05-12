@@ -1208,9 +1208,9 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
 #ifdef HAVE_MONITOR
    win32_monitor_info(&current_mon, &hm_to_use, &d3d->cur_mon_id);
 
-   mon_rect        = current_mon.rcMonitor;
-   g_resize_width  = info->width;
-   g_resize_height = info->height;
+   mon_rect              = current_mon.rcMonitor;
+   g_win32_resize_width  = info->width;
+   g_win32_resize_height = info->height;
 
    windowed_full   = settings->bools.video_windowed_fullscreen;
 

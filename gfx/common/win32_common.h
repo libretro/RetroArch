@@ -45,11 +45,11 @@
 
 RETRO_BEGIN_DECLS
 
-#if !defined(_XBOX) && !defined(__WINRT__)
-extern unsigned g_resize_width;
-extern unsigned g_resize_height;
-extern bool g_inited;
-extern bool g_restore_desktop;
+#if !defined(_XBOX)
+extern unsigned g_win32_resize_width;
+extern unsigned g_win32_resize_height;
+extern bool g_win32_inited;
+extern bool g_win32_restore_desktop;
 extern ui_window_win32_t main_window;
 
 void win32_monitor_get_info(void);

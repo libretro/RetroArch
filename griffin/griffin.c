@@ -170,7 +170,7 @@ CHEATS
 /*============================================================
 UI COMMON CONTEXT
 ============================================================ */
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../gfx/common/win32_common.c"
 #endif
 
@@ -179,7 +179,7 @@ VIDEO CONTEXT
 ============================================================ */
 #include "../gfx/drivers_context/gfx_null_ctx.c"
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 
 #if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/wgl_ctx.c"
@@ -439,7 +439,7 @@ VIDEO DRIVER
 #endif
 #include "../gfx/drivers/nullgfx.c"
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../gfx/drivers/gdi_gfx.c"
 #endif
 
@@ -501,7 +501,7 @@ FONTS
 #include "../gfx/drivers_font/vga_font.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../gfx/drivers_font/gdi_font.c"
 #endif
 
@@ -539,7 +539,7 @@ INPUT
 #include "../input/common/x11_input_common.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501
+#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
 /* winraw only available since XP */
 #include "../input/drivers/winraw_input.c"
 #endif
