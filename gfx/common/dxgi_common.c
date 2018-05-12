@@ -15,6 +15,8 @@
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_environment.h>
+
 #include <assert.h>
 
 #ifdef HAVE_CONFIG_H
@@ -333,6 +335,7 @@ void dxgi_update_title(video_frame_info_t* video_info)
 
 void dxgi_input_driver(const char* name, const input_driver_t** input, void** input_data)
 {
+#ifndef __WINRT__
    settings_t* settings = config_get_ptr();
 
 #if _WIN32_WINNT >= 0x0501
@@ -350,6 +353,7 @@ void dxgi_input_driver(const char* name, const input_driver_t** input, void** in
 
    *input_data = input_dinput.init(name);
    *input      = *input_data ? &input_dinput : NULL;
+#endif
 }
 
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt)
