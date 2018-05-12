@@ -63,7 +63,7 @@
 
 bool fill_pathname_application_data(char *s, size_t len)
 {
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef LEGACY_WIN32
    const char *appdata = getenv("APPDATA");
 
