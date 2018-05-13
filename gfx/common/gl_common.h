@@ -231,7 +231,7 @@ typedef struct gl_renderchain_driver
    const char *ident;
 } gl_renderchain_driver_t;
 
-typedef struct gl
+struct gl
 {
    GLenum internal_fmt;
    GLenum texture_type; /* RGB565 or ARGB */
@@ -315,7 +315,7 @@ typedef struct gl
 
    const gl_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
-} gl_t;
+};
 
 static INLINE void gl_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
       GLint min_filter)
