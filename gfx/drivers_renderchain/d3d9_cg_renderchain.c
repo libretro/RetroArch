@@ -930,16 +930,14 @@ static bool d3d9_cg_renderchain_set_pass_size(
 
 static void d3d9_cg_renderchain_convert_geometry(
       void *data,
-      const void *info_data,
+      const struct LinkInfo *info,
       unsigned *out_width,
       unsigned *out_height,
       unsigned width,
       unsigned height,
-      void *final_viewport_data)
+      D3DVIEWPORT9 *final_viewport)
 {
-   const struct LinkInfo *info                 = (const struct LinkInfo*)info_data;
    cg_renderchain_t *chain                     = (cg_renderchain_t*)data;
-   D3DVIEWPORT9 *final_viewport                = (D3DVIEWPORT9*)final_viewport_data;
 
    if (!chain || !info)
       return;

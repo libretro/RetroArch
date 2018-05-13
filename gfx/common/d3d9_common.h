@@ -50,10 +50,10 @@ typedef struct d3d9_renderchain_driver
    void (*add_state_tracker)(void *data, void *tracker_data);
    bool (*render)(d3d9_video_t *d3d, const void *frame,
          unsigned width, unsigned height, unsigned pitch, unsigned rotation);
-   void (*convert_geometry)(void *data, const void *info_data,
+   void (*convert_geometry)(void *data, const struct LinkInfo *info,
          unsigned *out_width, unsigned *out_height,
          unsigned width, unsigned height,
-         void *final_viewport);
+         D3DVIEWPORT9 *final_viewport);
    void (*set_font_rect)(d3d9_video_t *d3d, const void *param_data);
    bool (*read_viewport)(d3d9_video_t *d3d, uint8_t *buffer, bool is_idle);
    const char *ident;

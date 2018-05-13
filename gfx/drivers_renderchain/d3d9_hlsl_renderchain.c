@@ -202,7 +202,8 @@ static void hlsl_d3d9_renderchain_blit_to_texture(
             0, &d3dlr, NULL, chain->tex_h, D3DLOCK_NOSYSLOCK);
    }
 
-   /* Set the texture to NULL so D3D doesn't complain about it being in use... */
+   /* Set the texture to NULL so D3D doesn't 
+    * complain about it being in use... */
    d3d9_set_texture(chain->dev, 0, NULL);
 
    if (d3d9_lock_rectangle(chain->tex, 0, &d3dlr, NULL, 0, 0))
@@ -351,19 +352,16 @@ static void hlsl_d3d9_renderchain_add_state_tracker(
 }
 
 static void hlsl_d3d9_renderchain_convert_geometry(
-	  void *data, const void *info_data,
+	  void *data, const struct LinkInfo *info,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height,
-      void *final_viewport_data)
+      D3DVIEWPORT9 *final_viewport)
 {
    (void)data;
-   (void)info_data;
    (void)out_width;
    (void)out_height;
    (void)width;
    (void)height;
-   (void)final_viewport_data;
-
    /* stub */
 }
 
