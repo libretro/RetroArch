@@ -245,7 +245,7 @@ static bool hlsl_d3d9_renderchain_init_shader(d3d9_video_t *d3d,
    init.path                      = retroarch_get_shader_preset();
    init.shader                    = NULL;
 
-   RARCH_LOG("D3D]: Using HLSL shader backend.\n");
+   RARCH_LOG("[D3D9]: Using HLSL shader backend.\n");
 
    return video_shader_driver_init(&init);
 }

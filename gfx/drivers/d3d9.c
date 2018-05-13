@@ -82,7 +82,7 @@ static bool d3d9_set_resize(d3d9_video_t *d3d,
          && (new_height == d3d->video_info.height))
       return false;
 
-   RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
+   RARCH_LOG("[D3D9]: Resize %ux%u.\n", new_width, new_height);
    d3d->video_info.width  = new_width;
    d3d->video_info.height = new_height;
    video_driver_set_size(&new_width, &new_height);
@@ -126,7 +126,7 @@ static bool d3d9_init_imports(d3d9_video_t *d3d)
 
    if (!state_tracker)
    {
-      RARCH_ERR("[D3D]: Failed to initialize state tracker.\n");
+      RARCH_ERR("[D3D9]: Failed to initialize state tracker.\n");
       return false;
    }
 
@@ -182,7 +182,7 @@ static bool renderchain_d3d_init_first(
 
 static void d3d9_log_info(const struct LinkInfo *info)
 {
-   RARCH_LOG("[D3D]: Render pass info:\n");
+   RARCH_LOG("[D3D9]: Render pass info:\n");
    RARCH_LOG("\tTexture width: %u\n", info->tex_w);
    RARCH_LOG("\tTexture height: %u\n", info->tex_h);
 
@@ -246,7 +246,7 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
             &d3d->renderchain_driver,
             &d3d->renderchain_data))
    {
-	   RARCH_ERR("[D3D]: Renderchain could not be initialized.\n");
+	   RARCH_ERR("[D3D9]: Renderchain could not be initialized.\n");
 	   return false;
    }
 
@@ -261,11 +261,11 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
             d3d->video_info.rgb32)
       )
    {
-      RARCH_ERR("[D3D]: Failed to init render chain.\n");
+      RARCH_ERR("[D3D9]: Failed to init render chain.\n");
       return false;
    }
 
-   RARCH_LOG("[D3D]: Renderchain driver: %s\n", d3d->renderchain_driver->ident);
+   RARCH_LOG("[D3D9]: Renderchain driver: %s\n", d3d->renderchain_driver->ident);
    d3d9_log_info(&link_info);
 
 #ifndef _XBOX
@@ -291,7 +291,7 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
       if (!d3d->renderchain_driver->add_pass(
                d3d->renderchain_data, &link_info))
       {
-         RARCH_ERR("[D3D]: Failed to add pass.\n");
+         RARCH_ERR("[D3D9]: Failed to add pass.\n");
          return false;
       }
       d3d9_log_info(&link_info);
@@ -314,7 +314,7 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
                      settings->bools.video_smooth :
                      (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
             {
-               RARCH_ERR("[D3D]: Failed to init LUTs.\n");
+               RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
                return false;
             }
          }
@@ -324,7 +324,7 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
       {
          if (!d3d9_init_imports(d3d))
          {
-            RARCH_ERR("[D3D]: Failed to init imports.\n");
+            RARCH_ERR("[D3D9]: Failed to init imports.\n");
             return false;
          }
       }
@@ -368,7 +368,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
 
    if (!conf)
    {
-      RARCH_ERR("[D3D]: Failed to load preset.\n");
+      RARCH_ERR("[D3D9]: Failed to load preset.\n");
       return false;
    }
 
@@ -377,7 +377,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
    if (!video_shader_read_conf_cgp(conf, &d3d->shader))
    {
       config_file_free(conf);
-      RARCH_ERR("[D3D]: Failed to parse CGP file.\n");
+      RARCH_ERR("[D3D9]: Failed to parse CGP file.\n");
       return false;
    }
 
@@ -385,7 +385,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
 
    if (!string_is_empty(shader_path))
       video_shader_resolve_relative(&d3d->shader, shader_path);
-   RARCH_LOG("[D3D]: Found %u shaders.\n", d3d->shader.passes);
+   RARCH_LOG("[D3D9]: Found %u shaders.\n", d3d->shader.passes);
 
    for (i = 0; i < d3d->shader.passes; i++)
    {
@@ -780,7 +780,7 @@ static bool d3d9_init_base(void *data, const video_info_t *info)
 
    if (!g_pD3D9)
    {
-      RARCH_ERR("[D3D]: Failed to create D3D interface.\n");
+      RARCH_ERR("[D3D9]: Failed to create D3D interface.\n");
       return false;
    }
 
@@ -790,7 +790,7 @@ static bool d3d9_init_base(void *data, const video_info_t *info)
             d3d->cur_mon_id)
       )
    {
-      RARCH_ERR("[D3D]: Failed to initialize device.\n");
+      RARCH_ERR("[D3D9]: Failed to initialize device.\n");
       return false;
    }
 
@@ -936,7 +936,7 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
 
          ret = d3d9_init_base(d3d, info);
          if (ret)
-            RARCH_LOG("[D3D]: Recovered from dead state.\n");
+            RARCH_LOG("[D3D9]: Recovered from dead state.\n");
       }
       menu_driver_init(info->is_threaded);
    }
@@ -946,7 +946,7 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
 
    if (!d3d9_init_chain(d3d, info))
    {
-      RARCH_ERR("[D3D]: Failed to initialize render chain.\n");
+      RARCH_ERR("[D3D9]: Failed to initialize render chain.\n");
       return false;
    }
 
@@ -1012,7 +1012,7 @@ static bool d3d9_restore(void *data)
 
    if (!d3d9_initialize(d3d, &d3d->video_info))
    {
-      RARCH_ERR("[D3D]: Restore error.\n");
+      RARCH_ERR("[D3D9]: Restore error.\n");
       return false;
    }
 
@@ -1231,7 +1231,7 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
    full_y                = (windowed_full || info->height == 0) ?
       (mon_rect.bottom - mon_rect.top)  : info->height;
 
-   RARCH_LOG("[D3D]: Monitor size: %dx%d.\n",
+   RARCH_LOG("[D3D9]: Monitor size: %dx%d.\n",
          (int)(mon_rect.right  - mon_rect.left),
          (int)(mon_rect.bottom - mon_rect.top));
 #else
@@ -1289,7 +1289,7 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
 
    d3d9_input_driver(input, input_data);
 
-   RARCH_LOG("[D3D]: Init complete.\n");
+   RARCH_LOG("[D3D9]: Init complete.\n");
    return true;
 }
 
@@ -1342,7 +1342,7 @@ static void *d3d9_init(const video_info_t *info,
 
    if (!d3d9_init_internal(d3d, info, input, input_data))
    {
-      RARCH_ERR("[D3D]: Failed to init D3D.\n");
+      RARCH_ERR("[D3D9]: Failed to init D3D.\n");
       free(d3d);
       return NULL;
    }
@@ -1476,7 +1476,7 @@ static bool d3d9_overlay_load(void *data,
 
       if (!overlay->tex)
       {
-         RARCH_ERR("[D3D]: Failed to create overlay texture\n");
+         RARCH_ERR("[D3D9]: Failed to create overlay texture\n");
          return false;
       }
 
@@ -1612,7 +1612,7 @@ static bool d3d9_frame(void *data, const void *frame,
 
       if (!d3d9_restore(d3d))
       {
-         RARCH_ERR("[D3D]: Failed to restore.\n");
+         RARCH_ERR("[D3D9]: Failed to restore.\n");
          return false;
       }
    }
@@ -1652,7 +1652,7 @@ static bool d3d9_frame(void *data, const void *frame,
             frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
    {
-      RARCH_ERR("[D3D]: Failed to render scene.\n");
+      RARCH_ERR("[D3D9]: Failed to render scene.\n");
       return false;
    }
 
@@ -1744,7 +1744,7 @@ static bool d3d9_set_shader(void *data,
 
    if (!d3d9_process_shader(d3d) || !d3d9_restore(d3d))
    {
-      RARCH_ERR("[D3D]: Setting shader failed.\n");
+      RARCH_ERR("[D3D9]: Setting shader failed.\n");
       if (!string_is_empty(old_shader))
       {
          d3d->shader_path = strdup(old_shader);
@@ -1786,7 +1786,7 @@ static void d3d9_set_menu_texture_frame(void *data,
 
       if (!d3d->menu->tex)
       {
-         RARCH_ERR("[D3D]: Failed to create menu texture.\n");
+         RARCH_ERR("[D3D9]: Failed to create menu texture.\n");
          return;
       }
 
@@ -1886,7 +1886,7 @@ static void d3d9_video_texture_load_d3d(
 
    if (!tex)
    {
-      RARCH_ERR("[D3D]: Failed to create texture\n");
+      RARCH_ERR("[D3D9]: Failed to create texture\n");
       return;
    }
 

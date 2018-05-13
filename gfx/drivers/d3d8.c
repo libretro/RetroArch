@@ -385,11 +385,11 @@ static bool d3d8_init_chain(d3d8_video_t *d3d, const video_info_t *video_info)
             d3d->video_info.rgb32)
       )
    {
-      RARCH_ERR("[D3D]: Failed to init render chain.\n");
+      RARCH_ERR("[D3D8]: Failed to init render chain.\n");
       return false;
    }
 
-   RARCH_LOG("[D3D]: Renderchain driver: %s\n", "d3d8");
+   RARCH_LOG("[D3D8]: Renderchain driver: %s\n", "d3d8");
 
    return true;
 }
@@ -777,7 +777,7 @@ static bool d3d8_init_base(void *data, const video_info_t *info)
 
    if (!g_pD3D8)
    {
-      RARCH_ERR("[D3D]: Failed to create D3D interface.\n");
+      RARCH_ERR("[D3D8]: Failed to create D3D interface.\n");
       return false;
    }
 
@@ -787,7 +787,7 @@ static bool d3d8_init_base(void *data, const video_info_t *info)
             d3d->cur_mon_id)
       )
    {
-      RARCH_ERR("[D3D]: Failed to initialize device.\n");
+      RARCH_ERR("[D3D8]: Failed to initialize device.\n");
       return false;
    }
 
@@ -938,7 +938,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
 
          ret = d3d8_init_base(d3d, info);
          if (ret)
-            RARCH_LOG("[D3D]: Recovered from dead state.\n");
+            RARCH_LOG("[D3D8]: Recovered from dead state.\n");
       }
       menu_driver_init(info->is_threaded);
    }
@@ -948,7 +948,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
 
    if (!d3d8_init_chain(d3d, info))
    {
-      RARCH_ERR("[D3D]: Failed to initialize render chain.\n");
+      RARCH_ERR("[D3D8]: Failed to initialize render chain.\n");
       return false;
    }
 
@@ -991,7 +991,7 @@ static bool d3d8_restore(void *data)
 
    if (!d3d8_initialize(d3d, &d3d->video_info))
    {
-      RARCH_ERR("[D3D]: Restore error.\n");
+      RARCH_ERR("[D3D8]: Restore error.\n");
       return false;
    }
 
@@ -1030,7 +1030,7 @@ static bool d3d8_set_resize(d3d8_video_t *d3d,
          && (new_height == d3d->video_info.height))
       return false;
 
-   RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
+   RARCH_LOG("[D3D8]: Resize %ux%u.\n", new_width, new_height);
    d3d->video_info.width  = new_width;
    d3d->video_info.height = new_height;
    video_driver_set_size(&new_width, &new_height);
@@ -1219,7 +1219,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    full_y          = (windowed_full || info->height == 0) ?
       (mon_rect.bottom - mon_rect.top)  : info->height;
 
-   RARCH_LOG("[D3D]: Monitor size: %dx%d.\n",
+   RARCH_LOG("[D3D8]: Monitor size: %dx%d.\n",
          (int)(mon_rect.right  - mon_rect.left),
          (int)(mon_rect.bottom - mon_rect.top));
 #else
@@ -1253,7 +1253,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
 
    d3d8_input_driver(input, input_data);
 
-   RARCH_LOG("[D3D]: Init complete.\n");
+   RARCH_LOG("[D3D8]: Init complete.\n");
    return true;
 }
 
@@ -1306,7 +1306,7 @@ static void *d3d8_init(const video_info_t *info,
 
    if (!d3d8_init_internal(d3d, info, input, input_data))
    {
-      RARCH_ERR("[D3D]: Failed to init D3D.\n");
+      RARCH_ERR("[D3D8]: Failed to init D3D.\n");
       free(d3d);
       return NULL;
    }
@@ -1444,7 +1444,7 @@ static bool d3d8_overlay_load(void *data,
 
       if (!overlay->tex)
       {
-         RARCH_ERR("[D3D]: Failed to create overlay texture\n");
+         RARCH_ERR("[D3D8]: Failed to create overlay texture\n");
          return false;
       }
 
@@ -1578,7 +1578,7 @@ static bool d3d8_frame(void *data, const void *frame,
 
       if (!d3d8_restore(d3d))
       {
-         RARCH_ERR("[D3D]: Failed to restore.\n");
+         RARCH_ERR("[D3D8]: Failed to restore.\n");
          return false;
       }
    }
@@ -1614,7 +1614,7 @@ static bool d3d8_frame(void *data, const void *frame,
             frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
    {
-      RARCH_ERR("[D3D]: Failed to render scene.\n");
+      RARCH_ERR("[D3D8]: Failed to render scene.\n");
       return false;
    }
 
@@ -1706,7 +1706,7 @@ static void d3d8_set_menu_texture_frame(void *data,
 
       if (!d3d->menu->tex)
       {
-         RARCH_ERR("[D3D]: Failed to create menu texture.\n");
+         RARCH_ERR("[D3D8]: Failed to create menu texture.\n");
          return;
       }
 
@@ -1800,7 +1800,7 @@ static void d3d8_video_texture_load_d3d(
 
    if (!tex)
    {
-      RARCH_ERR("[D3D]: Failed to create texture\n");
+      RARCH_ERR("[D3D8]: Failed to create texture\n");
       return;
    }
 

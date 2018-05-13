@@ -208,8 +208,8 @@ static bool d3d9_cg_load_program(void *data,
       goto error;
    }
 
-   RARCH_LOG("[D3D Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
-   RARCH_LOG("[D3D Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
+   RARCH_LOG("[D3D9 Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
+   RARCH_LOG("[D3D9 Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
 
    if (path_is_file && !string_is_empty(prog))
       *fPrg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
@@ -354,7 +354,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
       decl[index]     = element;
       indices[index]  = true;
 
-      RARCH_LOG("[FVF]: POSITION semantic found.\n");
+      RARCH_LOG("[D3D9 Cg]: FVF POSITION semantic found.\n");
    }
 
    param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD");
@@ -366,7 +366,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
       static const D3DVERTEXELEMENT9 tex_coord0    = DECL_FVF_TEXCOORD(1, 3, 0);
       stream_taken[1] = true;
       texcoord0_taken = true;
-      RARCH_LOG("[FVF]: TEXCOORD0 semantic found.\n");
+      RARCH_LOG("[D3D9 Cg]: FVF TEXCOORD0 semantic found.\n");
       index           = cgGetParameterResourceIndex(param);
       decl[index]     = tex_coord0;
       indices[index]  = true;
@@ -378,7 +378,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
       static const D3DVERTEXELEMENT9 tex_coord1    = DECL_FVF_TEXCOORD(2, 5, 1);
       stream_taken[2] = true;
       texcoord1_taken = true;
-      RARCH_LOG("[FVF]: TEXCOORD1 semantic found.\n");
+      RARCH_LOG("[D3D9 Cg]: FVF TEXCOORD1 semantic found.\n");
       index           = cgGetParameterResourceIndex(param);
       decl[index]     = tex_coord1;
       indices[index]  = true;
@@ -392,7 +392,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
    {
       static const D3DVERTEXELEMENT9 color = DECL_FVF_COLOR(3, 7, 0);
       stream_taken[3] = true;
-      RARCH_LOG("[FVF]: COLOR0 semantic found.\n");
+      RARCH_LOG("[D3D9 Cg]: FVF COLOR0 semantic found.\n");
       index           = cgGetParameterResourceIndex(param);
       decl[index]     = color;
       indices[index]  = true;
@@ -652,7 +652,7 @@ static void d3d9_cg_deinit_progs(void *data)
    if (!cg_data)
       return;
 
-   RARCH_LOG("CG: Destroying programs.\n");
+   RARCH_LOG("[D3D9 Cg]: Destroying programs.\n");
 
    if (cg_data->passes->count >= 1)
    {
@@ -716,7 +716,7 @@ static void d3d9_cg_deinit_context_state(void *data)
    cg_renderchain_t *cg_data = (cg_renderchain_t*)data;
    if (cg_data->cgCtx)
    {
-      RARCH_LOG("CG: Destroying context.\n");
+      RARCH_LOG("[D3D9 Cg]: Destroying context.\n");
       cgDestroyContext(cg_data->cgCtx);
    }
    cg_data->cgCtx = NULL;
@@ -990,7 +990,7 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
    if (!d3d9_cg_renderchain_set_pass_size(chain, 0,
             current_width, current_height))
    {
-      RARCH_ERR("[D3D]: Failed to set pass size.\n");
+      RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
       return;
    }
 
@@ -1007,7 +1007,7 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
       if (!d3d9_cg_renderchain_set_pass_size(chain, i,
                link_info.tex_w, link_info.tex_h))
       {
-         RARCH_ERR("[D3D]: Failed to set pass size.\n");
+         RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
          return;
       }
 
@@ -1105,7 +1105,7 @@ static bool d3d9_cg_renderchain_add_lut(void *data,
          false
          );
 
-   RARCH_LOG("[D3D]: LUT texture loaded: %s.\n", path);
+   RARCH_LOG("[D3D9 Cg]: LUT texture loaded: %s.\n", path);
 
    info.tex    = lut;
    info.smooth = smooth;
