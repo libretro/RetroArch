@@ -33,16 +33,18 @@ extern "C" {
 #define VK_MAKE_VERSION(major, minor, patch) \
     (((major) << 22) | ((minor) << 12) | (patch))
 
-// DEPRECATED: This define has been removed. Specific version defines (e.g. VK_API_VERSION_1_0), or the VK_MAKE_VERSION macro, should be used instead.
-//#define VK_API_VERSION VK_MAKE_VERSION(1, 0, 0) // Patch version should always be set to 0
+/* DEPRECATED: This define has been removed. Specific version defines (e.g. VK_API_VERSION_1_0), or the VK_MAKE_VERSION macro, should be used instead. */
+#if 0
+#define VK_API_VERSION VK_MAKE_VERSION(1, 0, 0) /* Patch version should always be set to 0 */
+#endif
 
-// Vulkan 1.0 version number
-#define VK_API_VERSION_1_0 VK_MAKE_VERSION(1, 0, 0)// Patch version should always be set to 0
+/* Vulkan 1.0 version number */
+#define VK_API_VERSION_1_0 VK_MAKE_VERSION(1, 0, 0)/* Patch version should always be set to 0 */
 
 #define VK_VERSION_MAJOR(version) ((uint32_t)(version) >> 22)
 #define VK_VERSION_MINOR(version) (((uint32_t)(version) >> 12) & 0x3ff)
 #define VK_VERSION_PATCH(version) ((uint32_t)(version) & 0xfff)
-// Version of this file
+/* Version of this file */
 #define VK_HEADER_VERSION 73
 
 
@@ -3654,9 +3656,8 @@ VKAPI_ATTR void VKAPI_CALL vkCmdExecuteCommands(
 #endif
 
 #define VK_VERSION_1_1 1
-// Vulkan 1.1 version number
-#define VK_API_VERSION_1_1 VK_MAKE_VERSION(1, 1, 0)// Patch version should always be set to 0
-
+/* Vulkan 1.1 version number */
+#define VK_API_VERSION_1_1 VK_MAKE_VERSION(1, 1, 0) /* Patch version should always be set to 0 */
 
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkSamplerYcbcrConversion)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDescriptorUpdateTemplate)

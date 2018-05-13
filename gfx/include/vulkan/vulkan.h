@@ -76,4 +76,4 @@
 #include "vulkan_xlib_xrandr.h"
 #endif
 
-#endif // VULKAN_H_
+#endif /* VULKAN_H_ */
