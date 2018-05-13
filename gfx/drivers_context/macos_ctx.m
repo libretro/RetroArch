@@ -85,10 +85,10 @@ typedef struct cocoa_ctx_data
    bool core_hw_context_enable;
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;
-   unsigned width;
-   unsigned height;
    unsigned swap_interval;
 #endif
+    unsigned width;
+    unsigned height;
 } cocoa_ctx_data_t;
 
 #if defined(HAVE_COCOATOUCH)
