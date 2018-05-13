@@ -773,21 +773,18 @@ static void *d3d9_cg_renderchain_new(void)
    return renderchain;
 }
 
-static bool d3d9_cg_renderchain_init_shader(void *data,
-      void *renderchain_data)
+static bool d3d9_cg_renderchain_init_shader(d3d9_video_t *d3d,
+      cg_renderchain_t *renderchain)
 {
-   d3d9_video_t *d3d             = (d3d9_video_t*)data;
-   cg_renderchain_t *renderchain = (cg_renderchain_t*)renderchain_data;
+   CGcontext cgCtx    = cgCreateContext();
 
-   if (!d3d || !renderchain)
-      return false;
-
-   renderchain->cgCtx = cgCreateContext();
-   if (!renderchain->cgCtx)
+   if (!cgCtx)
    {
       RARCH_ERR("Failed to create Cg context.\n");
       return false;
    }
+
+   renderchain->cgCtx = cgCtx;
 
    if (FAILED(cgD3D9SetDevice((IDirect3DDevice9*)d3d->dev)))
       return false;
@@ -906,16 +903,15 @@ static bool d3d9_cg_renderchain_create_first_pass(
    return true;
 }
 
-static bool d3d9_cg_renderchain_init(void *data,
-      const void *_video_info,
+static bool d3d9_cg_renderchain_init(
+      d3d9_video_t *d3d,
+      const video_info_t *video_info,
       void *dev_,
       const void *final_viewport_,
       const void *info_data, bool rgb32)
 {
    const struct LinkInfo *info    = (const struct LinkInfo*)info_data;
-   d3d9_video_t *d3d              = (d3d9_video_t*)data;
    cg_renderchain_t *chain        = (cg_renderchain_t*)d3d->renderchain_data;
-   const video_info_t *video_info = (const video_info_t*)_video_info;
    unsigned fmt                   = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
 
    if (!chain)
@@ -1072,11 +1068,10 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
 }
 
 static void d3d9_cg_renderchain_set_final_viewport(
-      void *data,
+      d3d9_video_t *d3d,
       void *renderchain_data,
       const void *viewport_data)
 {
-   d3d9_video_t                  *d3d   = (d3d9_video_t*)data;
    cg_renderchain_t              *chain = (cg_renderchain_t*)renderchain_data;
    const D3DVIEWPORT9 *final_viewport   = (const D3DVIEWPORT9*)viewport_data;
 
@@ -1485,7 +1480,7 @@ static void cg_d3d9_renderchain_render_pass(
 }
 
 static bool d3d9_cg_renderchain_render(
-      void *data,
+      d3d9_video_t *d3d,
       const void *frame_data,
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
@@ -1493,7 +1488,6 @@ static bool d3d9_cg_renderchain_render(
    LPDIRECT3DSURFACE9 back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
    struct Pass *last_pass  = NULL;
-   d3d9_video_t *d3d       = (d3d9_video_t*)data;
    cg_renderchain_t *chain = d3d ? (cg_renderchain_t*)d3d->renderchain_data : NULL;
 
    d3d9_cg_renderchain_start_render(chain);
@@ -1592,11 +1586,10 @@ static bool d3d9_cg_renderchain_render(
 }
 
 static void d3d9_cg_renderchain_set_font_rect(
-      void *data,
+      d3d9_video_t *d3d,
       const void *font_data)
 {
    settings_t *settings             = config_get_ptr();
-   d3d9_video_t *d3d                = (d3d9_video_t*)data;
    float pos_x                      = settings->floats.video_msg_pos_x;
    float pos_y                      = settings->floats.video_msg_pos_y;
    float font_size                  = settings->floats.video_font_size;
@@ -1625,21 +1618,16 @@ static void d3d9_cg_renderchain_set_font_rect(
 }
 
 static bool d3d9_cg_renderchain_read_viewport(
-      void *data, uint8_t *buffer, bool is_idle)
+      d3d9_video_t *d3d, uint8_t *buffer, bool is_idle)
 {
    unsigned width, height;
    D3DLOCKED_RECT rect;
    LPDIRECT3DSURFACE9 target = NULL;
    LPDIRECT3DSURFACE9 dest   = NULL;
    bool ret                  = true;
-   d3d9_video_t *d3d         = (d3d9_video_t*)data;
    LPDIRECT3DDEVICE9 d3dr    = d3d->dev;
 
    video_driver_get_size(&width, &height);
-
-   (void)d3d;
-   (void)data;
-   (void)buffer;
 
    if (
          !d3d9_device_get_render_target(d3dr, 0, (void**)&target)     ||
@@ -1687,12 +1675,12 @@ end:
 }
 
 static void d3d9_cg_renderchain_viewport_info(
-      void *data, struct video_viewport *vp)
+      d3d9_video_t *d3d,
+      struct video_viewport *vp)
 {
    unsigned width, height;
-   d3d9_video_t *d3d = (d3d9_video_t*)data;
 
-   if (!d3d || !vp)
+   if (!vp)
       return;
 
    video_driver_get_size(&width, &height);

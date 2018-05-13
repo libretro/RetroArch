@@ -35,28 +35,28 @@ typedef struct d3d9_renderchain_driver
 {
    void (*chain_free)(void *data);
    void *(*chain_new)(void);
-   bool (*init)(void *data,
-         const void *video_info_data,
+   bool (*init)(d3d9_video_t *d3d,
+         const video_info_t *video_info,
          void *dev_data,
          const void *final_viewport_data,
          const void *info_data,
          bool rgb32);
-   void (*set_final_viewport)(void *data,
+   void (*set_final_viewport)(d3d9_video_t *d3d,
          void *renderchain_data, const void *viewport_data);
    bool (*add_pass)(void *data, const void *info_data);
    bool (*add_lut)(void *data,
          const char *id, const char *path,
          bool smooth);
    void (*add_state_tracker)(void *data, void *tracker_data);
-   bool (*render)(void *chain_data, const void *data,
+   bool (*render)(d3d9_video_t *d3d, const void *frame,
          unsigned width, unsigned height, unsigned pitch, unsigned rotation);
    void (*convert_geometry)(void *data, const void *info_data,
          unsigned *out_width, unsigned *out_height,
          unsigned width, unsigned height,
          void *final_viewport);
-   void (*set_font_rect)(void *data, const void *param_data);
-   bool (*read_viewport)(void *data, uint8_t *buffer, bool is_idle);
-   void (*viewport_info)(void *data, struct video_viewport *vp);
+   void (*set_font_rect)(d3d9_video_t *d3d, const void *param_data);
+   bool (*read_viewport)(d3d9_video_t *d3d, uint8_t *buffer, bool is_idle);
+   void (*viewport_info)(d3d9_video_t *d3d, struct video_viewport *vp);
    const char *ident;
 } d3d9_renderchain_driver_t;
 
