@@ -29,6 +29,37 @@
 
 RETRO_BEGIN_DECLS
 
+typedef struct d3d9_video d3d9_video_t;
+
+typedef struct d3d9_renderchain_driver
+{
+   void (*chain_free)(void *data);
+   void *(*chain_new)(void);
+   bool (*init)(void *data,
+         const void *video_info_data,
+         void *dev_data,
+         const void *final_viewport_data,
+         const void *info_data,
+         bool rgb32);
+   void (*set_final_viewport)(void *data,
+         void *renderchain_data, const void *viewport_data);
+   bool (*add_pass)(void *data, const void *info_data);
+   bool (*add_lut)(void *data,
+         const char *id, const char *path,
+         bool smooth);
+   void (*add_state_tracker)(void *data, void *tracker_data);
+   bool (*render)(void *chain_data, const void *data,
+         unsigned width, unsigned height, unsigned pitch, unsigned rotation);
+   void (*convert_geometry)(void *data, const void *info_data,
+         unsigned *out_width, unsigned *out_height,
+         unsigned width, unsigned height,
+         void *final_viewport);
+   void (*set_font_rect)(void *data, const void *param_data);
+   bool (*read_viewport)(void *data, uint8_t *buffer, bool is_idle);
+   void (*viewport_info)(void *data, struct video_viewport *vp);
+   const char *ident;
+} d3d9_renderchain_driver_t;
+
 typedef struct d3d9_video
 {
    bool keep_aspect;
@@ -43,7 +74,7 @@ typedef struct d3d9_video
    unsigned dev_rotation;
 
    overlay_t *menu;
-   const d3d_renderchain_driver_t *renderchain_driver;
+   const d3d9_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
 
    RECT font_rect;

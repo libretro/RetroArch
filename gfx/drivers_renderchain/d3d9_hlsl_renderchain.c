@@ -427,7 +427,7 @@ static void hlsl_d3d9_renderchain_viewport_info(
    vp->full_height  = height;
 }
 
-d3d_renderchain_driver_t hlsl_d3d9_renderchain = {
+d3d9_renderchain_driver_t hlsl_d3d9_renderchain = {
    hlsl_d3d9_renderchain_free,
    hlsl_d3d9_renderchain_new,
    hlsl_d3d9_renderchain_init,
