@@ -2937,9 +2937,11 @@ end:
 bool config_load_override(void)
 {
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
+   char parent_name[PATH_MAX_LENGTH];
    char *buf                              = NULL;
    char *core_path                        = NULL;
    char *game_path                        = NULL;
+   char *parent_path                      = NULL;
    char *config_directory                 = NULL;
    config_file_t *new_conf                = NULL;
    bool should_append                     = false;
@@ -2948,12 +2950,17 @@ bool config_load_override(void)
       system->info.library_name : NULL;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
 
+   if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
+      fill_pathname_parent_dir_name(parent_name, path_get(RARCH_PATH_BASENAME), sizeof(parent_name));
+
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
    game_path                              = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
    core_path                              = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
+   parent_path = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
    buf                                    = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -2970,6 +2977,12 @@ bool config_load_override(void)
          game_name,
          file_path_str(FILE_PATH_CONFIG_EXTENSION),
          path_size);
+
+   fill_pathname_join_special_ext(parent_path,
+      config_directory, core_name,
+      parent_name,
+      file_path_str(FILE_PATH_CONFIG_EXTENSION),
+      path_size);
 
    fill_pathname_join_special_ext(core_path,
          config_directory, core_name,
@@ -2994,6 +3007,24 @@ bool config_load_override(void)
    else
       RARCH_LOG("[overrides] no core-specific overrides found at %s.\n",
             core_path);
+
+   /* Create a new config file from parent_path */
+   new_conf = config_file_new(parent_path);
+
+   /* If a core override exists, add its location to append_config_path */
+   if (new_conf)
+   {
+      RARCH_LOG("[overrides] core-specific overrides found at %s.\n",
+         parent_path);
+
+      config_file_free(new_conf);
+      path_set(RARCH_PATH_CONFIG_APPEND, parent_path);
+
+      should_append = true;
+   }
+   else
+      RARCH_LOG("[overrides] no core-specific overrides found at %s.\n",
+         parent_path);
 
    /* Create a new config file from game_path */
    new_conf = config_file_new(game_path);
@@ -3062,6 +3093,7 @@ bool config_load_override(void)
    free(buf);
    free(config_directory);
    free(core_path);
+   free(parent_path);
    free(game_path);
    return true;
 
@@ -3069,6 +3101,7 @@ error:
    free(buf);
    free(config_directory);
    free(core_path);
+   free(parent_path);
    free(game_path);
    return false;
 }
