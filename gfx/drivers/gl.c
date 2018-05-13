@@ -579,25 +579,23 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
 static INLINE void gl_set_shader_viewports(gl_t *gl)
 {
-   unsigned width, height;
+   unsigned i, width, height;
    video_shader_ctx_info_t shader_info;
+   video_frame_info_t video_info;
 
+   video_driver_build_info(&video_info);
    video_driver_get_size(&width, &height);
 
    shader_info.data       = gl;
-   shader_info.idx        = 0;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
-
-   gl_set_viewport_wrapper(gl, width, height, false, true);
-
-   shader_info.data       = gl;
-   shader_info.idx        = 1;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(&shader_info);
-   gl_set_viewport_wrapper(gl, width, height, false, true);
+   for (i = 0; i < 2; i++)
+   {
+      shader_info.idx        = i;
+      video_shader_driver_use(&shader_info);
+      gl_set_viewport(gl, &video_info,
+            width, height, false, true);
+   }
 }
 
 void gl_load_texture_data(
