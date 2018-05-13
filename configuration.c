@@ -2937,11 +2937,10 @@ end:
 bool config_load_override(void)
 {
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
-   char parent_name[PATH_MAX_LENGTH];
    char *buf                              = NULL;
    char *core_path                        = NULL;
    char *game_path                        = NULL;
-   char *parent_path                      = NULL;
+   char *content_path                     = NULL;
    char *config_directory                 = NULL;
    config_file_t *new_conf                = NULL;
    bool should_append                     = false;
@@ -2949,9 +2948,10 @@ bool config_load_override(void)
    const char *core_name                  = system ?
       system->info.library_name : NULL;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
+   char content_dir_name[PATH_MAX_LENGTH];
 
    if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
-      fill_pathname_parent_dir_name(parent_name, path_get(RARCH_PATH_BASENAME), sizeof(parent_name));
+      fill_pathname_parent_dir_name(content_dir_name, path_get(RARCH_PATH_BASENAME), sizeof(content_dir_name));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -2960,7 +2960,7 @@ bool config_load_override(void)
       malloc(PATH_MAX_LENGTH * sizeof(char));
    core_path                              = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
-   parent_path = (char*)
+   content_path = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
    buf                                    = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -2971,16 +2971,16 @@ bool config_load_override(void)
    fill_pathname_application_special(config_directory, path_size,
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
-   /* Concatenate strings into full paths for core_path, game_path */
+   /* Concatenate strings into full paths for core_path, game_path, content_path */
    fill_pathname_join_special_ext(game_path,
          config_directory, core_name,
          game_name,
          file_path_str(FILE_PATH_CONFIG_EXTENSION),
          path_size);
 
-   fill_pathname_join_special_ext(parent_path,
+   fill_pathname_join_special_ext(content_path,
       config_directory, core_name,
-      parent_name,
+      content_dir_name,
       file_path_str(FILE_PATH_CONFIG_EXTENSION),
       path_size);
 
@@ -2990,10 +2990,10 @@ bool config_load_override(void)
          file_path_str(FILE_PATH_CONFIG_EXTENSION),
          path_size);
 
+   /* per-core overrides */
    /* Create a new config file from core_path */
    new_conf = config_file_new(core_path);
 
-   /* If a core override exists, add its location to append_config_path */
    if (new_conf)
    {
       RARCH_LOG("[overrides] core-specific overrides found at %s.\n",
@@ -3008,28 +3008,45 @@ bool config_load_override(void)
       RARCH_LOG("[overrides] no core-specific overrides found at %s.\n",
             core_path);
 
-   /* Create a new config file from parent_path */
-   new_conf = config_file_new(parent_path);
+   /* per-content-dir overrides */
+   /* Create a new config file from content_path */
+   new_conf = config_file_new(content_path);
 
-   /* If a core override exists, add its location to append_config_path */
    if (new_conf)
    {
-      RARCH_LOG("[overrides] core-specific overrides found at %s.\n",
-         parent_path);
+      char *temp_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+      temp_path[0]    = '\0';
 
       config_file_free(new_conf);
-      path_set(RARCH_PATH_CONFIG_APPEND, parent_path);
+
+      RARCH_LOG("[overrides] content-dir-specific overrides found at %s.\n",
+            game_path);
+
+      if (should_append)
+      {
+         RARCH_LOG("[overrides] content-dir-specific overrides stacking on top of previous overrides.\n");
+         strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), path_size);
+         strlcat(temp_path, "|", path_size);
+         strlcat(temp_path, content_path, path_size);
+      }
+      else
+         strlcpy(temp_path, content_path, path_size);
+
+      path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
+
+      free(temp_path);
 
       should_append = true;
    }
    else
-      RARCH_LOG("[overrides] no core-specific overrides found at %s.\n",
-         parent_path);
+      RARCH_LOG("[overrides] no content-dir-specific overrides found at %s.\n",
+         content_path);
 
+   /* per-game overrides */
    /* Create a new config file from game_path */
    new_conf = config_file_new(game_path);
 
-   /* If a game override exists, add it's location to append_config_path */
    if (new_conf)
    {
       char *temp_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -3043,6 +3060,7 @@ bool config_load_override(void)
 
       if (should_append)
       {
+         RARCH_LOG("[overrides] game-specific overrides stacking on top of previous overrides\n");
          strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), path_size);
          strlcat(temp_path, "|", path_size);
          strlcat(temp_path, game_path, path_size);
@@ -3093,7 +3111,7 @@ bool config_load_override(void)
    free(buf);
    free(config_directory);
    free(core_path);
-   free(parent_path);
+   free(content_path);
    free(game_path);
    return true;
 
@@ -3101,7 +3119,7 @@ error:
    free(buf);
    free(config_directory);
    free(core_path);
-   free(parent_path);
+   free(content_path);
    free(game_path);
    return false;
 }
@@ -3268,21 +3286,21 @@ success:
 bool config_load_shader_preset(void)
 {
    unsigned idx;
-   char parent_name[PATH_MAX_LENGTH];
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
    config_file_t *new_conf                = NULL;
    char *shader_directory                 = NULL;
    char *core_path                        = NULL;
    char *game_path                        = NULL;
-   char *parent_path                      = NULL;
+   char *content_path                     = NULL;
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system
       ? system->info.library_name : NULL;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
+   char content_dir_name[PATH_MAX_LENGTH];
 
    if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
-      fill_pathname_parent_dir_name(parent_name, path_get(RARCH_PATH_BASENAME), sizeof(parent_name));
+      fill_pathname_parent_dir_name(content_dir_name, path_get(RARCH_PATH_BASENAME), sizeof(content_dir_name));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -3302,7 +3320,7 @@ bool config_load_shader_preset(void)
    game_path                              = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
    /* final path for parent-dir-specific configuration (prefix+suffix) */
-   parent_path                            = (char*)
+   content_path                            = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
 
    shader_directory[0] = core_path[0] = game_path[0] = '\0';
@@ -3353,26 +3371,26 @@ bool config_load_shader_preset(void)
       if (!check_shader_compatibility((enum file_path_enum)(idx)))
          continue;
       /* Concatenate strings into full paths for core_path, parent path */
-      fill_pathname_join_special_ext(parent_path,
+      fill_pathname_join_special_ext(content_path,
             shader_directory, core_name,
-            parent_name,
+            content_dir_name,
             file_path_str((enum file_path_enum)(idx)),
             path_size);
 
       /* Create a new config file from parent path */
-      new_conf = config_file_new(parent_path);
+      new_conf = config_file_new(content_path);
 
       if (!new_conf)
       {
-         RARCH_LOG("Shaders: no parent-dir-specific preset found at %s.\n",
-               parent_path);
+         RARCH_LOG("Shaders: no content-dir-specific preset found at %s.\n",
+               content_path);
          continue;
       }
 
       /* Parent-dir shader preset exists, load it. */
-      RARCH_LOG("Shaders: parent-dir-specific shader preset found at %s.\n",
-            parent_path);
-      retroarch_set_shader_preset(parent_path);
+      RARCH_LOG("Shaders: content-dir-specific shader preset found at %s.\n",
+            content_path);
+      retroarch_set_shader_preset(content_path);
       goto success;
    }
 
@@ -3407,14 +3425,14 @@ bool config_load_shader_preset(void)
    free(shader_directory);
    free(core_path);
    free(game_path);
-   free(parent_path);
+   free(content_path);
    return false;
 
 success:
    free(shader_directory);
    free(core_path);
    free(game_path);
-   free(parent_path);
+   free(content_path);
    config_file_free(new_conf);
    return true;
 }
