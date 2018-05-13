@@ -67,6 +67,52 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(d3d9_video_t *d3d,
          VertexElements, (void**)&chain->vertex_decl);
 }
 
+static void d3d9_hlsl_renderchain_log_info(
+      void *data, const void *info_data)
+{
+   const struct LinkInfo *info = (const struct LinkInfo*)info_data;
+   RARCH_LOG("[D3D]: Render pass info:\n");
+   RARCH_LOG("\tTexture width: %u\n", info->tex_w);
+   RARCH_LOG("\tTexture height: %u\n", info->tex_h);
+
+   RARCH_LOG("\tScale type (X): ");
+
+   switch (info->pass->fbo.type_x)
+   {
+      case RARCH_SCALE_INPUT:
+         RARCH_LOG("Relative @ %fx\n", info->pass->fbo.scale_x);
+         break;
+
+      case RARCH_SCALE_VIEWPORT:
+         RARCH_LOG("Viewport @ %fx\n", info->pass->fbo.scale_x);
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_x);
+         break;
+   }
+
+   RARCH_LOG("\tScale type (Y): ");
+
+   switch (info->pass->fbo.type_y)
+   {
+      case RARCH_SCALE_INPUT:
+         RARCH_LOG("Relative @ %fx\n", info->pass->fbo.scale_y);
+         break;
+
+      case RARCH_SCALE_VIEWPORT:
+         RARCH_LOG("Viewport @ %fx\n", info->pass->fbo.scale_y);
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_y);
+         break;
+   }
+
+   RARCH_LOG("\tBilinear filter: %s\n",
+         info->pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
+}
+
 static bool hlsl_d3d9_renderchain_create_first_pass(d3d9_video_t *d3d,
       const video_info_t *info)
 {
@@ -260,7 +306,7 @@ static bool hlsl_d3d9_renderchain_init(
       )
 {
    unsigned width, height;
-   const struct LinkInfo *link_info   = (const struct LinkInfo*)info_data;
+   const struct LinkInfo *info        = (const struct LinkInfo*)info_data;
    hlsl_d3d9_renderchain_t *chain     = (hlsl_d3d9_renderchain_t*)
       d3d->renderchain_data;
    unsigned fmt                       = (rgb32)
@@ -274,11 +320,12 @@ static bool hlsl_d3d9_renderchain_init(
 
    chain->dev                         = (LPDIRECT3DDEVICE9)dev_data;
    chain->pixel_size                  = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
-   chain->tex_w                       = link_info->tex_w;
-   chain->tex_h                       = link_info->tex_h;
+   chain->tex_w                       = info->tex_w;
+   chain->tex_h                       = info->tex_h;
 
    if (!hlsl_d3d9_renderchain_create_first_pass(d3d, video_info))
       return false;
+   d3d9_hlsl_renderchain_log_info(chain, info);
 
    /* FIXME */
    if (custom_vp->width == 0)
