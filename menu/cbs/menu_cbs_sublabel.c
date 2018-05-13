@@ -462,15 +462,13 @@ static int action_bind_sublabel_remap_kbd_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - 
-      (MENU_SETTINGS_INPUT_DESC_KBD_END - 
-      MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
+   unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
 
-   snprintf(s, len, "User #%d: %s", offset + 1,
-      input_config_get_device_display_name(offset) ? 
-      input_config_get_device_display_name(offset) : 
-      (input_config_get_device_name(offset) ? 
-      input_config_get_device_name(offset) : "N/A"));
+   snprintf(s, len, "User #%d: %s", user_idx + 1,
+      input_config_get_device_display_name(user_idx) ? 
+      input_config_get_device_display_name(user_idx) : 
+      (input_config_get_device_name(user_idx) ? 
+      input_config_get_device_name(user_idx) : "N/A"));
    return 0;
 }
 
