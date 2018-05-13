@@ -47,6 +47,14 @@
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
 
+#ifdef HAVE_COCOA
+#define VK_USE_PLATFORM_MACOS_MVK
+#endif
+
+#ifdef HAVE_COCOATOUCH
+#define VK_USE_PLATFORM_IOS_MVK
+#endif
+
 #include <vulkan/vulkan_symbol_wrapper.h>
 
 #endif
