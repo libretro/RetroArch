@@ -2049,6 +2049,23 @@ void cheevos_populate_menu(void *data)
    cheevo_t *cheevo              = cheevos_locals.core.cheevos;
    end                           = cheevo + cheevos_locals.core.count;
 
+   if(settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable 
+      && cheevos_loaded)
+   {
+      if (!cheevos_hardcore_paused)
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE),
+               msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE),
+               MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,
+               MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS, 0, 0);
+      else
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME),
+               msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_RESUME),
+               MENU_ENUM_LABEL_ACHIEVEMENT_RESUME,
+               MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS, 0, 0);
+   }
+
    if (cheevo)
    {
       for (i = 0; cheevo < end; i++, cheevo++)

@@ -2731,25 +2731,6 @@ static int menu_displaylist_parse_load_content_settings(
             msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0);
-
-#ifdef HAVE_CHEEVOS
-      if(settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable)
-      {
-         if (!cheevos_hardcore_paused)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE),
-                  MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,
-                  MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS, 0, 0);
-         else
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME),
-                  msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_RESUME),
-                  MENU_ENUM_LABEL_ACHIEVEMENT_RESUME,
-                  MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS, 0, 0);
-      }
-#endif
-
    return 0;
 }
 
