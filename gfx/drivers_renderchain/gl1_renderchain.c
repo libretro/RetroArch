@@ -56,12 +56,11 @@ typedef struct gl1_renderchain
 } gl1_renderchain_t;
 
 static void gl1_renderchain_viewport_info(
-      void *data, void *chain_data,
+      gl_t *gl, void *chain_data,
       struct video_viewport *vp)
 {
    unsigned width, height;
    unsigned top_y, top_dist;
-   gl_t *gl         = (gl_t*)data;
 
    video_driver_get_size(&width, &height);
 
@@ -76,16 +75,10 @@ static void gl1_renderchain_viewport_info(
 }
 
 static bool gl1_renderchain_read_viewport(
-      void *data, void *chain_data,
+      gl_t *gl, void *chain_data,
       uint8_t *buffer, bool is_idle)
 {
-   unsigned                     num_pixels = 0;
-   gl_t                                *gl = (gl_t*)data;
-
-   if (!gl)
-      return false;
-
-   num_pixels = gl->vp.width * gl->vp.height;
+   unsigned num_pixels = gl->vp.width * gl->vp.height;
 
    /* Use slow synchronous readbacks. Use this with plain screenshots
       as we don't really care about performance in this case. */
@@ -179,12 +172,12 @@ static void gl1_renderchain_disable_client_arrays(void *data,
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
-static void gl1_renderchain_restore_default_state(void *data,
+static void gl1_renderchain_restore_default_state(gl_t *gl,
       void *chain_data)
 {
-   gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
+
    glEnable(GL_TEXTURE_2D);
    glDisable(GL_DEPTH_TEST);
    glDisable(GL_CULL_FACE);
@@ -192,13 +185,12 @@ static void gl1_renderchain_restore_default_state(void *data,
 }
 
 static void gl1_renderchain_copy_frame(
-      void *data,
+      gl_t *gl,
       void *chain_data,
       video_frame_info_t *video_info,
       const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-   gl_t               *gl = (gl_t*)data;
    const GLvoid *data_buf = frame;
    glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(pitch));
 
@@ -228,14 +220,13 @@ static void gl1_renderchain_copy_frame(
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 }
 
-static void gl1_renderchain_readback(void *data,
+static void gl1_renderchain_readback(
+      gl_t *gl,
       void *chain_data,
       unsigned alignment,
       unsigned fmt, unsigned type,
       void *src)
 {
-   gl_t *gl = (gl_t*)data;
-
    glPixelStorei(GL_PACK_ALIGNMENT, alignment);
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
    glReadBuffer(GL_BACK);
@@ -278,7 +269,7 @@ static void gl1_renderchain_set_coords(void *handle_data,
 }
 
 static void gl1_renderchain_render(
-      void *data,
+      gl_t *gl,
       void *chain_data,
       video_frame_info_t *video_info,
       uint64_t frame_count,
