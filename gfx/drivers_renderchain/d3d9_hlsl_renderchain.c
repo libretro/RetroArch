@@ -252,14 +252,13 @@ static bool hlsl_d3d9_renderchain_init_shader(d3d9_video_t *d3d,
 static bool hlsl_d3d9_renderchain_init(
       d3d9_video_t *d3d,
       const video_info_t *video_info,
-      void *dev_data,
-      const void *final_viewport_data,
-      const void *info_data,
+      LPDIRECT3DDEVICE9 dev,
+      const D3DVIEWPORT9 *final_viewport,
+      const struct LinkInfo *info,
       bool rgb32
       )
 {
    unsigned width, height;
-   const struct LinkInfo *info        = (const struct LinkInfo*)info_data;
    hlsl_d3d9_renderchain_t *chain     = (hlsl_d3d9_renderchain_t*)
       d3d->renderchain_data;
    unsigned fmt                       = (rgb32)
@@ -271,7 +270,7 @@ static bool hlsl_d3d9_renderchain_init(
 
    video_driver_get_size(&width, &height);
 
-   chain->dev                         = (LPDIRECT3DDEVICE9)dev_data;
+   chain->dev                         = dev;
    chain->pixel_size                  = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
    chain->tex_w                       = info->tex_w;
    chain->tex_h                       = info->tex_h;

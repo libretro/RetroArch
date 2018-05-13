@@ -447,10 +447,10 @@ static void d3d9_viewport_info(void *data, struct video_viewport *vp)
 
    video_driver_get_size(&width, &height);
 
-   vp->x            = d3d->final_viewport.x;
-   vp->y            = d3d->final_viewport.y;
-   vp->width        = d3d->final_viewport.width;
-   vp->height       = d3d->final_viewport.height;
+   vp->x            = d3d->final_viewport.X;
+   vp->y            = d3d->final_viewport.Y;
+   vp->width        = d3d->final_viewport.Width;
+   vp->height       = d3d->final_viewport.Height;
 
    vp->full_width   = width;
    vp->full_height  = height;
@@ -894,12 +894,12 @@ static void d3d9_set_viewport(void *data,
    if (y < 0)
       y = 0;
 
-   d3d->final_viewport.x      = x;
-   d3d->final_viewport.y      = y;
-   d3d->final_viewport.width  = width;
-   d3d->final_viewport.height = height;
-   d3d->final_viewport.min_z  = 0.0f;
-   d3d->final_viewport.max_z  = 1.0f;
+   d3d->final_viewport.X      = x;
+   d3d->final_viewport.Y      = y;
+   d3d->final_viewport.Width  = width;
+   d3d->final_viewport.Height = height;
+   d3d->final_viewport.MinZ   = 0.0f;
+   d3d->final_viewport.MaxZ   = 1.0f;
 
    if (d3d->renderchain_driver && d3d->renderchain_driver->set_font_rect)
       d3d->renderchain_driver->set_font_rect(d3d, NULL);

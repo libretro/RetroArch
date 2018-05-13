@@ -52,15 +52,5 @@ typedef struct Vertex
    float u, v;
 } Vertex;
 
-typedef struct d3d_video_viewport
-{
-   DWORD x;
-   DWORD y;
-   DWORD width;
-   DWORD height;
-   float min_z;
-   float max_z;
-} d3d_video_viewport_t;
-
 #endif
 

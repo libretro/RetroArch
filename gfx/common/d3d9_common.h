@@ -37,9 +37,9 @@ typedef struct d3d9_renderchain_driver
    void *(*chain_new)(void);
    bool (*init)(d3d9_video_t *d3d,
          const video_info_t *video_info,
-         void *dev_data,
-         const void *final_viewport_data,
-         const void *info_data,
+         LPDIRECT3DDEVICE9 dev,
+         const D3DVIEWPORT9 *final_viewport,
+         const struct LinkInfo *info,
          bool rgb32);
    void (*set_final_viewport)(d3d9_video_t *d3d,
          void *renderchain_data, const void *viewport_data);
@@ -87,7 +87,7 @@ typedef struct d3d9_video
    video_info_t video_info;
    WNDCLASSEX windowClass;
    LPDIRECT3DDEVICE9 dev;
-   d3d_video_viewport_t final_viewport;
+   D3DVIEWPORT9 final_viewport;
 
    char *shader_path;
 

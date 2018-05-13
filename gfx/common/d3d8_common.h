@@ -56,7 +56,7 @@ typedef struct d3d8_video
    video_info_t video_info;
    WNDCLASSEX windowClass;
    LPDIRECT3DDEVICE8 dev;
-   d3d_video_viewport_t final_viewport;
+   D3DVIEWPORT8 final_viewport;
 
    char *shader_path;
 

@@ -860,11 +860,11 @@ static bool d3d9_cg_renderchain_create_first_pass(
 static bool d3d9_cg_renderchain_init(
       d3d9_video_t *d3d,
       const video_info_t *video_info,
-      void *dev_,
-      const void *final_viewport_,
-      const void *info_data, bool rgb32)
+      LPDIRECT3DDEVICE9 dev,
+      const D3DVIEWPORT9 *final_viewport,
+      const struct LinkInfo *info,
+      bool rgb32)
 {
-   const struct LinkInfo *info    = (const struct LinkInfo*)info_data;
    cg_renderchain_t *chain        = (cg_renderchain_t*)d3d->renderchain_data;
    unsigned fmt                   = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
 
@@ -876,10 +876,10 @@ static bool d3d9_cg_renderchain_init(
       return false;
    }
 
-   chain->dev            = (void*)dev_;
+   chain->dev            = dev;
    chain->video_info     = video_info;
    chain->state_tracker  = NULL;
-   chain->final_viewport = (D3DVIEWPORT9*)final_viewport_;
+   chain->final_viewport = (D3DVIEWPORT9*)final_viewport;
    chain->frame_count    = 0;
    chain->pixel_size     = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
 
@@ -1599,13 +1599,13 @@ static bool d3d9_cg_renderchain_read_viewport(
       unsigned pitchpix       = rect.Pitch / 4;
       const uint32_t *pixels  = (const uint32_t*)rect.pBits;
 
-      pixels                 += d3d->final_viewport.x;
-      pixels                 += (d3d->final_viewport.height - 1) * pitchpix;
-      pixels                 -= d3d->final_viewport.y * pitchpix;
+      pixels                 += d3d->final_viewport.X;
+      pixels                 += (d3d->final_viewport.Height - 1) * pitchpix;
+      pixels                 -= d3d->final_viewport.Y * pitchpix;
 
-      for (y = 0; y < d3d->final_viewport.height; y++, pixels -= pitchpix)
+      for (y = 0; y < d3d->final_viewport.Height; y++, pixels -= pitchpix)
       {
-         for (x = 0; x < d3d->final_viewport.width; x++)
+         for (x = 0; x < d3d->final_viewport.Width; x++)
          {
             *buffer++ = (pixels[x] >>  0) & 0xff;
             *buffer++ = (pixels[x] >>  8) & 0xff;
