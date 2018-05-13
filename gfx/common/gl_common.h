@@ -370,6 +370,21 @@ void gl_load_texture_data(
       unsigned width, unsigned height,
       const void *frame, unsigned base_size);
 
+static INLINE GLenum gl_min_filter_to_mag(GLenum type)
+{
+   switch (type)
+   {
+      case GL_LINEAR_MIPMAP_LINEAR:
+         return GL_LINEAR;
+      case GL_NEAREST_MIPMAP_NEAREST:
+         return GL_NEAREST;
+      default:
+         break;
+   }
+
+   return type;
+}
+
 RETRO_END_DECLS
 
 #endif

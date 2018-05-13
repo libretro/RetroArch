@@ -166,8 +166,6 @@ static void gl2_renderchain_bind_backbuffer(void *data,
 
 void context_bind_hw_render(bool enable);
 
-GLenum min_filter_to_mag(GLenum type);
-
 void gl_load_texture_data(
       uint32_t id_data,
       enum gfx_wrap_type wrap_type,
@@ -629,7 +627,7 @@ static void gl_create_fbo_texture(gl_t *gl,
          : (smooth ? GL_LINEAR : GL_NEAREST);
    }
 
-   mag_filter = min_filter_to_mag(min_filter);
+   mag_filter = gl_min_filter_to_mag(min_filter);
    wrap.idx   = i + 2;
 
    video_shader_driver_wrap_type(&wrap);

@@ -427,21 +427,6 @@ static bool gl_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    return video_shader_driver_init(&init_data);
 }
 
-GLenum min_filter_to_mag(GLenum type)
-{
-   switch (type)
-   {
-      case GL_LINEAR_MIPMAP_LINEAR:
-         return GL_LINEAR;
-      case GL_NEAREST_MIPMAP_NEAREST:
-         return GL_NEAREST;
-      default:
-         break;
-   }
-
-   return type;
-}
-
 static uintptr_t gl_get_current_framebuffer(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -1943,7 +1928,7 @@ static void *gl_init(const video_info_t *video,
          (video->smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
          : (video->smooth ? GL_LINEAR : GL_NEAREST);
 
-   gl->tex_mag_filter = min_filter_to_mag(gl->tex_min_filter);
+   gl->tex_mag_filter = gl_min_filter_to_mag(gl->tex_min_filter);
 
    wrap_info.idx      = 1;
 
@@ -2102,7 +2087,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
       return;
 
    gl->tex_min_filter    = new_filt;
-   gl->tex_mag_filter    = min_filter_to_mag(gl->tex_min_filter);
+   gl->tex_mag_filter    = gl_min_filter_to_mag(gl->tex_min_filter);
    gl->wrap_mode         = wrap_mode;
 
    for (i = 0; i < gl->textures; i++)
