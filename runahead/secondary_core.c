@@ -278,12 +278,19 @@ static bool has_variable_update;
 static bool rarch_environment_secondary_core_hook(unsigned cmd, void *data)
 {
    bool result = rarch_environment_cb(cmd, data);
-   if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE && has_variable_update)
+   if (has_variable_update)
    {
-      bool *bool_p = (bool*)data;
-      *bool_p = true;
-      has_variable_update = false;
-      return true;
+      if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE)
+      {
+         bool *bool_p = (bool*)data;
+         *bool_p = true;
+         has_variable_update = false;
+         return true;
+      }
+      else if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE)
+      {
+         has_variable_update = false;
+      }
    }
    return result;
 }

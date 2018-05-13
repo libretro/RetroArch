@@ -29,6 +29,10 @@
 
 #include "../verbosity.h"
 
+#ifdef HAVE_RUNAHEAD
+#include "../runahead/secondary_core.h"
+#endif
+
 static bool core_option_manager_parse_variable(
       core_option_manager_t *opt, size_t idx,
       const struct retro_variable *var)
@@ -127,6 +131,13 @@ void core_option_manager_get(core_option_manager_t *opt, void *data)
 
    if (!opt)
       return;
+
+#ifdef HAVE_RUNAHEAD
+   if (opt->updated)
+   {
+      secondary_core_set_variable_update();
+   }
+#endif
 
    opt->updated = false;
 
