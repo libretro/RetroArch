@@ -1069,25 +1069,6 @@ static void gl2_renderchain_bind_prev_texture(
    }
 }
 
-static void gl2_renderchain_viewport_info(
-      gl_t *gl, void *chain_data,
-      struct video_viewport *vp)
-{
-   unsigned width, height;
-   unsigned top_y, top_dist;
-
-   video_driver_get_size(&width, &height);
-
-   *vp             = gl->vp;
-   vp->full_width  = width;
-   vp->full_height = height;
-
-   /* Adjust as GL viewport is bottom-up. */
-   top_y           = vp->y + vp->height;
-   top_dist        = height - top_y;
-   vp->y           = top_dist;
-}
-
 static bool gl2_renderchain_read_viewport(
       gl_t *gl,
       void *chain_data,
@@ -1574,7 +1555,6 @@ gl_renderchain_driver_t gl2_renderchain = {
    NULL,
    gl2_renderchain_bind_backbuffer,
    gl2_renderchain_deinit_fbo,
-   gl2_renderchain_viewport_info,
    gl2_renderchain_read_viewport,
    gl2_renderchain_bind_prev_texture,
    gl2_renderchain_free_internal,

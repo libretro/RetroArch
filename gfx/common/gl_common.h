@@ -196,8 +196,6 @@ typedef struct gl_renderchain_driver
    void (*ff_matrix)(const void *data);
    void (*bind_backbuffer)(void *data, void *chain_data);
    void (*deinit_fbo)(gl_t *gl, void *chain_data);
-   void (*viewport_info)(
-         gl_t *gl, void *chain_data, struct video_viewport *vp);
    bool (*read_viewport)(
          gl_t *gl, void *chain_data, uint8_t *buffer, bool is_idle);
    void (*bind_prev_texture)(

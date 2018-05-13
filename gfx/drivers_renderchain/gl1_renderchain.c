@@ -55,25 +55,6 @@ typedef struct gl1_renderchain
    void *empty;
 } gl1_renderchain_t;
 
-static void gl1_renderchain_viewport_info(
-      gl_t *gl, void *chain_data,
-      struct video_viewport *vp)
-{
-   unsigned width, height;
-   unsigned top_y, top_dist;
-
-   video_driver_get_size(&width, &height);
-
-   *vp             = gl->vp;
-   vp->full_width  = width;
-   vp->full_height = height;
-
-   /* Adjust as GL viewport is bottom-up. */
-   top_y           = vp->y + vp->height;
-   top_dist        = height - top_y;
-   vp->y           = top_dist;
-}
-
 static bool gl1_renderchain_read_viewport(
       gl_t *gl, void *chain_data,
       uint8_t *buffer, bool is_idle)
@@ -304,7 +285,6 @@ gl_renderchain_driver_t gl1_renderchain = {
    gl1_renderchain_ff_matrix,
    NULL,                                  /* bind_backbuffer */
    NULL,                                  /* deinit_fbo */
-   gl1_renderchain_viewport_info,
    gl1_renderchain_read_viewport,
    NULL,                                  /* bind_prev_texture */
    gl1_renderchain_free_internal,

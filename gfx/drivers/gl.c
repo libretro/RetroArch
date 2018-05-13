@@ -2237,10 +2237,20 @@ error:
 
 static void gl_viewport_info(void *data, struct video_viewport *vp)
 {
+   unsigned width, height;
+   unsigned top_y, top_dist;
    gl_t *gl             = (gl_t*)data;
-   if (!gl->renderchain_driver || !gl->renderchain_driver->viewport_info)
-      return;
-   gl->renderchain_driver->viewport_info(gl, gl->renderchain_data, vp);
+
+   video_driver_get_size(&width, &height);
+
+   *vp             = gl->vp;
+   vp->full_width  = width;
+   vp->full_height = height;
+
+   /* Adjust as GL viewport is bottom-up. */
+   top_y           = vp->y + vp->height;
+   top_dist        = height - top_y;
+   vp->y           = top_dist;
 }
 
 static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
