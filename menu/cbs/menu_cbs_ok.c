@@ -2638,10 +2638,12 @@ static int action_ok_save_state(const char *path,
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
-static int action_ok_toggle_hardcode_mode(const char *path,
+static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#ifdef HAVE_CHEEVOS
    cheevos_hardcore_paused = !cheevos_hardcore_paused;
+#endif
    generic_action_ok_command(CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
@@ -4663,7 +4665,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE:
          case MENU_ENUM_LABEL_ACHIEVEMENT_RESUME:
-            BIND_ACTION_OK(cbs, action_ok_toggle_hardcode_mode);
+            BIND_ACTION_OK(cbs, action_ok_cheevos_toggle_hardcore_mode);
             break;
          default:
             return -1;
