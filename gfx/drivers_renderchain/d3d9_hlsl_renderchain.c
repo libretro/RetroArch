@@ -47,12 +47,6 @@ typedef struct hlsl_d3d9_renderchain
    LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
 } hlsl_d3d9_renderchain_t;
 
-static void hlsl_d3d9_renderchain_clear(hlsl_d3d9_renderchain_t *chain)
-{
-   d3d9_texture_free(chain->tex);
-   d3d9_vertex_buffer_free(chain->vertex_buf, chain->vertex_decl);
-}
-
 static bool hlsl_d3d9_renderchain_init_shader_fvf(d3d9_video_t *d3d,
       hlsl_d3d9_renderchain_t *chain)
 {
@@ -222,7 +216,8 @@ static void hlsl_d3d9_renderchain_free(void *data)
    if (!chain)
       return;
 
-   hlsl_d3d9_renderchain_clear(chain);
+   d3d9_texture_free(chain->tex);
+   d3d9_vertex_buffer_free(chain->vertex_buf, chain->vertex_decl);
    free(chain);
 }
 
