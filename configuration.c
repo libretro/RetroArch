@@ -3171,11 +3171,16 @@ bool config_load_remap(void)
    char *remap_directory                  = NULL;
    char *core_path                        = NULL;
    char *game_path                        = NULL;
+   char *content_path                     = NULL;
    config_file_t *new_conf                = NULL;
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = runloop_get_system_info();
    const char *core_name                  = system ? system->info.library_name : NULL;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
+   char content_dir_name[PATH_MAX_LENGTH];
+
+   if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
+      fill_pathname_parent_dir_name(content_dir_name, path_get(RARCH_PATH_BASENAME), sizeof(content_dir_name));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -3194,7 +3199,11 @@ bool config_load_remap(void)
    /* final path for game-specific configuration (prefix+suffix) */
    game_path                              = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
+   /* final path for content-dir-specific configuration (prefix+suffix) */
+   content_path = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
    remap_directory[0] = core_path[0] = game_path[0] = '\0';
+
 
    strlcpy(remap_directory,
          settings->paths.directory_input_remapping,
@@ -3205,6 +3214,12 @@ bool config_load_remap(void)
    fill_pathname_join_special_ext(core_path,
          remap_directory, core_name,
          core_name,
+         file_path_str(FILE_PATH_REMAP_EXTENSION),
+         path_size);
+
+   fill_pathname_join_special_ext(content_path,
+         remap_directory, core_name,
+         content_dir_name,
          file_path_str(FILE_PATH_REMAP_EXTENSION),
          path_size);
 
@@ -3234,6 +3249,28 @@ bool config_load_remap(void)
       RARCH_LOG("Remaps: no game-specific remap found at %s.\n", game_path);
       input_remapping_set_defaults(false);
    }
+
+   /* Create a new config file from content_path */
+   new_conf = config_file_new(content_path);
+
+   /* If a content-dir remap file exists, load it. */
+   if (new_conf)
+   {
+      RARCH_LOG("Remaps: content-dir-specific remap found at %s.\n", content_path);
+      if (input_remapping_load_file(new_conf, content_path))
+      {
+         runloop_msg_queue_push(msg_hash_to_str(
+                  MSG_GAME_REMAP_FILE_LOADED), 1, 100, true);
+         rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
+         goto success;
+      }
+   }
+   else
+   {
+      RARCH_LOG("Remaps: no content-dir-specific remap found at %s.\n", content_path);
+      input_remapping_set_defaults(false);
+   }
+
 
    /* Create a new config file from core_path */
    new_conf = config_file_new(core_path);
@@ -4087,6 +4124,7 @@ bool config_save_overrides(int override_type)
    char *override_directory                    = NULL;
    char *core_path                             = NULL;
    char *game_path                             = NULL;
+   char *content_path                          = NULL;
    settings_t *overrides                       = config_get_ptr();
    int bool_settings_size                      = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                     = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
@@ -4097,6 +4135,10 @@ bool config_save_overrides(int override_type)
    rarch_system_info_t *system                 = runloop_get_system_info();
    const char *core_name                       = system ? system->info.library_name : NULL;
    const char *game_name                       = path_basename(path_get(RARCH_PATH_BASENAME));
+   char content_dir_name[PATH_MAX_LENGTH];
+
+   if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
+      fill_pathname_parent_dir_name(content_dir_name, path_get(RARCH_PATH_BASENAME), sizeof(content_dir_name));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -4106,6 +4148,7 @@ bool config_save_overrides(int override_type)
    override_directory                          = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    core_path                                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    game_path                                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   content_path =                                (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
    config_directory[0] = override_directory[0] = core_path[0] = game_path[0] = '\0';
 
@@ -4122,6 +4165,12 @@ bool config_save_overrides(int override_type)
    fill_pathname_join_special_ext(game_path,
          config_directory, core_name,
          game_name,
+         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         path_size);
+
+   fill_pathname_join_special_ext(content_path,
+         config_directory, core_name,
+         content_dir_name,
          file_path_str(FILE_PATH_CONFIG_EXTENSION),
          path_size);
 
@@ -4287,6 +4336,11 @@ bool config_save_overrides(int override_type)
             /* Create a new config file from core_path */
             RARCH_LOG ("[overrides] path %s\n", game_path);
             ret = config_file_write(conf, game_path);
+            break;
+         case OVERRIDE_CONTENT_DIR:
+            /* Create a new config file from content_path */
+            RARCH_LOG ("[overrides] path %s\n", content_path);
+            ret = config_file_write(conf, content_path);
             break;
          default:
             break;

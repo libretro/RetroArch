@@ -261,9 +261,11 @@ static bool quick_menu_show_options              = true;
 static bool quick_menu_show_controls             = true;
 static bool quick_menu_show_cheats               = true;
 static bool quick_menu_show_shaders              = true;
-static bool quick_menu_show_save_core_overrides  = true;
-static bool quick_menu_show_save_game_overrides  = true;
 static bool quick_menu_show_information          = true;
+
+static bool quick_menu_show_save_core_overrides         = true;
+static bool quick_menu_show_save_game_overrides         = true;
+static bool quick_menu_show_save_content_dir_overrides  = true;
 
 static bool kiosk_mode_enable            = false;
 
