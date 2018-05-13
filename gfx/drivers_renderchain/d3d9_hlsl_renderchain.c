@@ -221,7 +221,7 @@ static void hlsl_d3d9_renderchain_free(void *data)
    if (!chain)
       return;
 
-   hlsl_d3d9_renderchain_clear(chain->renderchain_data);
+   hlsl_d3d9_renderchain_clear(chain);
    free(chain);
 }
 
@@ -241,7 +241,7 @@ static bool hlsl_d3d9_renderchain_init_shader(d3d9_video_t *d3d,
    video_shader_ctx_init_t init;
 
    init.shader_type               = RARCH_SHADER_HLSL;
-   init.data                      = data;
+   init.data                      = d3d;
    init.path                      = retroarch_get_shader_preset();
    init.shader                    = NULL;
 
@@ -252,7 +252,7 @@ static bool hlsl_d3d9_renderchain_init_shader(d3d9_video_t *d3d,
 
 static bool hlsl_d3d9_renderchain_init(
       d3d9_video_t *d3d,
-      const void *_video_info,
+      const video_info_t *video_info,
       void *dev_data,
       const void *final_viewport_data,
       const void *info_data,
@@ -266,8 +266,6 @@ static bool hlsl_d3d9_renderchain_init(
    unsigned fmt                       = (rgb32)
       ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
    struct video_viewport *custom_vp   = video_viewport_get_custom();
-
-   (void)final_viewport_data;
 
    if (!hlsl_d3d9_renderchain_init_shader(d3d, chain))
       return false;
