@@ -58,15 +58,17 @@ static void menu_display_d3d10_blend_end(video_frame_info_t *video_info)
          d3d10->blend_disable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
 }
 
-static void menu_display_d3d10_viewport(void* data, video_frame_info_t *video_info)
+static void menu_display_d3d10_viewport(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_d3d10_draw(void* data, video_frame_info_t *video_info)
+static void menu_display_d3d10_draw(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
    int                      vertex_count;
-   d3d10_video_t*           d3d10 = video_info ? (d3d10_video_t*)video_info->userdata : NULL;
-   menu_display_ctx_draw_t* draw  = (menu_display_ctx_draw_t*)data;
+   d3d10_video_t*           d3d10 = video_info ? 
+      (d3d10_video_t*)video_info->userdata : NULL;
 
    if (!d3d10 || !draw || !draw->texture)
       return;
@@ -183,11 +185,11 @@ static void menu_display_d3d10_draw(void* data, video_frame_info_t *video_info)
    return;
 }
 
-static void menu_display_d3d10_draw_pipeline(void* data,
+static void menu_display_d3d10_draw_pipeline(menu_display_ctx_draw_t* draw,
       video_frame_info_t *video_info)
 {
-   menu_display_ctx_draw_t* draw  = (menu_display_ctx_draw_t*)data;
-   d3d10_video_t*           d3d10 = video_info ? (d3d10_video_t*)video_info->userdata : NULL;
+   d3d10_video_t*           d3d10 = video_info ? 
+      (d3d10_video_t*)video_info->userdata : NULL;
 
    if (!d3d10 || !draw)
       return;

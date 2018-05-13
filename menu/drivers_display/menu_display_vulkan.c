@@ -99,10 +99,9 @@ static unsigned to_menu_pipeline(
 }
 #endif
 
-static void menu_display_vk_viewport(void *data,
+static void menu_display_vk_viewport(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    vk_t *vk                      = video_info ? (vk_t*)video_info->userdata 
       : NULL;
 
@@ -117,17 +116,17 @@ static void menu_display_vk_viewport(void *data,
    vk->vk_vp.maxDepth = 1.0f;
 }
 
-static void menu_display_vk_draw_pipeline(void *data, video_frame_info_t *video_info)
+static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
 #ifdef HAVE_SHADERPIPELINE
-   float output_size[2];
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   video_coord_array_t *ca       = NULL;
-   vk_t *vk                      = video_info ? (vk_t*)video_info->userdata : NULL;
-
    static uint8_t ubo_scratch_data[768];
    static float t                = 0.0f;
    static struct video_coords blank_coords;
+   float output_size[2];
+   video_coord_array_t *ca       = NULL;
+   vk_t *vk                      = video_info ? 
+      (vk_t*)video_info->userdata : NULL;
 
    if (!vk || !draw)
       return;
@@ -179,7 +178,8 @@ static void menu_display_vk_draw_pipeline(void *data, video_frame_info_t *video_
 #endif
 }
 
-static void menu_display_vk_draw(void *data, video_frame_info_t *video_info)
+static void menu_display_vk_draw(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
    unsigned i;
    struct vk_buffer_range range;
@@ -188,8 +188,8 @@ static void menu_display_vk_draw(void *data, video_frame_info_t *video_info)
    const float *tex_coord        = NULL;
    const float *color            = NULL;
    struct vk_vertex *pv          = NULL;
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   vk_t *vk                      = video_info ? (vk_t*)video_info->userdata : NULL;
+   vk_t *vk                      = video_info ? 
+      (vk_t*)video_info->userdata : NULL;
 
    if (!vk || !draw)
       return;

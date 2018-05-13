@@ -59,15 +59,17 @@ static void menu_display_d3d12_blend_end(video_frame_info_t *video_info)
    D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
 }
 
-static void menu_display_d3d12_viewport(void* data, video_frame_info_t *video_info)
+static void menu_display_d3d12_viewport(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_d3d12_draw(void* data, video_frame_info_t *video_info)
+static void menu_display_d3d12_draw(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
    int                      vertex_count;
-   d3d12_video_t*           d3d12 = video_info ? (d3d12_video_t*)video_info->userdata : NULL;
-   menu_display_ctx_draw_t* draw  = (menu_display_ctx_draw_t*)data;
+   d3d12_video_t*           d3d12 = video_info ? 
+      (d3d12_video_t*)video_info->userdata : NULL;
 
    if (!d3d12 || !draw || !draw->texture)
       return;
@@ -200,10 +202,9 @@ static void menu_display_d3d12_draw(void* data, video_frame_info_t *video_info)
    return;
 }
 
-static void menu_display_d3d12_draw_pipeline(void* data,
+static void menu_display_d3d12_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   menu_display_ctx_draw_t *draw  = (menu_display_ctx_draw_t*)data;
    d3d12_video_t           *d3d12 = video_info ? 
       (d3d12_video_t*)video_info->userdata : NULL;
 

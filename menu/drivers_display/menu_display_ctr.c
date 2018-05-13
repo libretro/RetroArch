@@ -53,18 +53,20 @@ static void menu_display_ctr_blend_end(video_frame_info_t *video_info)
 
 }
 
-static void menu_display_ctr_viewport(void *data, video_frame_info_t *video_info)
+static void menu_display_ctr_viewport(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
 
 }
 
 
-static void menu_display_ctr_draw(void *data, video_frame_info_t *video_info)
+static void menu_display_ctr_draw(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
    struct ctr_texture *texture      = NULL;
    const float *color               = NULL;
-   ctr_video_t             *ctr     = video_info ? (ctr_video_t*)video_info->userdata : NULL;
-   menu_display_ctx_draw_t *draw    = (menu_display_ctx_draw_t*)data;
+   ctr_video_t             *ctr     = video_info ? 
+      (ctr_video_t*)video_info->userdata : NULL;
 
    if (!ctr || !draw)
       return;
@@ -157,7 +159,8 @@ static void menu_display_ctr_draw(void *data, video_frame_info_t *video_info)
 #endif
 }
 
-static void menu_display_ctr_draw_pipeline(void *data, video_frame_info_t *video_info)
+static void menu_display_ctr_draw_pipeline(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
 }
 

@@ -101,7 +101,8 @@ static void menu_display_d3d9_blend_end(video_frame_info_t *video_info)
    d3d9_disable_blend_func(d3d->dev);
 }
 
-static void menu_display_d3d9_viewport(void *data, video_frame_info_t *video_info)
+static void menu_display_d3d9_viewport(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
 }
 
@@ -123,15 +124,16 @@ static void menu_display_d3d9_bind_texture(void *data, d3d9_video_t *d3d)
    d3d9_set_sampler_mipfilter(dev, 0, D3DTEXF_COMM_LINEAR);
 }
 
-static void menu_display_d3d9_draw(void *data, video_frame_info_t *video_info)
+static void menu_display_d3d9_draw(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
    unsigned i;
    video_shader_ctx_mvp_t mvp;
    math_matrix_4x4 mop, m1, m2;
    unsigned width, height;
    LPDIRECT3DDEVICE9 dev;
-   d3d9_video_t *d3d              = video_info ? (d3d9_video_t*)video_info->userdata : NULL;   
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+   d3d9_video_t *d3d              = video_info ? 
+      (d3d9_video_t*)video_info->userdata : NULL;   
    Vertex * pv                   = NULL;
    const float *vertex           = NULL;
    const float *tex_coord        = NULL;
@@ -223,11 +225,10 @@ static void menu_display_d3d9_draw(void *data, video_frame_info_t *video_info)
    d3d->menu_display.offset += draw->coords->vertices;
 }
 
-static void menu_display_d3d9_draw_pipeline(void *data,
+static void menu_display_d3d9_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 #if defined(HAVE_HLSL) || defined(HAVE_CG)
-   menu_display_ctx_draw_t *draw     = (menu_display_ctx_draw_t*)data;
    static float t                    = 0;
    video_coord_array_t *ca           = NULL;
    

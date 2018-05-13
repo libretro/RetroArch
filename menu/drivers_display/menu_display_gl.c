@@ -96,30 +96,20 @@ static void menu_display_gl_blend_end(video_frame_info_t *video_info)
    glDisable(GL_BLEND);
 }
 
-static void menu_display_gl_viewport(void *data, video_frame_info_t *video_info)
+static void menu_display_gl_viewport(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-
    if (draw)
       glViewport(draw->x, draw->y, draw->width, draw->height);
 }
 
-static void menu_display_gl_bind_texture(void *data)
-{
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-
-   if (!draw)
-      return;
-
-   glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
-}
-
-static void menu_display_gl_draw(void *data, video_frame_info_t *video_info)
+static void menu_display_gl_draw(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
-   gl_t             *gl          = video_info ? (gl_t*)video_info->userdata : NULL;
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+   gl_t             *gl          = video_info ? 
+      (gl_t*)video_info->userdata : NULL;
 
    if (!gl || !draw)
       return;
@@ -132,7 +122,8 @@ static void menu_display_gl_draw(void *data, video_frame_info_t *video_info)
       draw->coords->lut_tex_coord = menu_display_gl_get_default_tex_coords();
 
    menu_display_gl_viewport(draw, video_info);
-   menu_display_gl_bind_texture(draw);
+   if (draw)
+      glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
    coords.handle_data = gl;
    coords.data        = draw->coords;
@@ -151,14 +142,13 @@ static void menu_display_gl_draw(void *data, video_frame_info_t *video_info)
    gl->coords.color     = gl->white_color_ptr;
 }
 
-static void menu_display_gl_draw_pipeline(void *data,
+static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 #ifdef HAVE_SHADERPIPELINE
    video_shader_ctx_info_t shader_info;
    struct uniform_info uniform_param;
    static float t                   = 0;
-   menu_display_ctx_draw_t *draw    = (menu_display_ctx_draw_t*)data;
    video_coord_array_t *ca          = menu_display_get_coords_array();
 
    draw->x                          = 0;
