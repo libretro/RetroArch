@@ -55,12 +55,6 @@ typedef struct gl1_renderchain
    void *empty;
 } gl1_renderchain_t;
 
-void gl1_renderchain_free(void *data, void *chain_data)
-{
-   (void)chain_data;
-   (void)data;
-}
-
 static void gl1_renderchain_viewport_info(
       void *data, void *chain_data,
       struct video_viewport *vp)
@@ -124,12 +118,12 @@ static bool gl1_renderchain_read_viewport(
 
 void gl1_renderchain_free_internal(void *data, void *chain_data)
 {
-   gl1_renderchain_t *cg_data = (gl1_renderchain_t*)chain_data;
+   gl1_renderchain_t *chain = (gl1_renderchain_t*)chain_data;
 
-   if (!cg_data)
+   if (!chain)
       return;
 
-   free(cg_data);
+   free(chain);
 }
 
 static void *gl1_renderchain_new(void)
@@ -326,7 +320,7 @@ gl_renderchain_driver_t gl1_renderchain = {
    gl1_renderchain_new,
    NULL,                                  /* renderchain_init */
    NULL,                                  /* init_hw_render */
-   gl1_renderchain_free,
+   NULL,                                  /* renderchain_free     */
    NULL,                                  /* deinit_hw_render     */
    NULL,                                  /* start_render         */
    NULL,                                  /* check_fbo_dimensions */
