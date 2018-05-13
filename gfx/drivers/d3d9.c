@@ -1971,6 +1971,7 @@ static const video_poke_interface_t d3d9_poke_interface = {
    d3d9_unload_texture,
    d3d9_set_video_mode,
 #ifdef _XBOX
+   NULL,
 #else
    win32_get_refresh_rate,
 #endif

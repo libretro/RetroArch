@@ -97,7 +97,7 @@ class PackedResource
 LPDIRECT3DTEXTURE9 *PackedResource::GetTexture(const char* strName)
 { 
    LPDIRECT3DRESOURCE9 pResource = (LPDIRECT3DRESOURCE9)GetData(strName);
-   return (LPDIRECT3DTEXTURE9)pResource;
+   return (LPDIRECT3DTEXTURE9*)pResource;
 }
 
 PackedResource::PackedResource()
