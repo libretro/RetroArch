@@ -180,6 +180,50 @@ static bool renderchain_d3d_init_first(
    return false;
 }
 
+static void d3d9_log_info(const struct LinkInfo *info)
+{
+   RARCH_LOG("[D3D]: Render pass info:\n");
+   RARCH_LOG("\tTexture width: %u\n", info->tex_w);
+   RARCH_LOG("\tTexture height: %u\n", info->tex_h);
+
+   RARCH_LOG("\tScale type (X): ");
+
+   switch (info->pass->fbo.type_x)
+   {
+      case RARCH_SCALE_INPUT:
+         RARCH_LOG("Relative @ %fx\n", info->pass->fbo.scale_x);
+         break;
+
+      case RARCH_SCALE_VIEWPORT:
+         RARCH_LOG("Viewport @ %fx\n", info->pass->fbo.scale_x);
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_x);
+         break;
+   }
+
+   RARCH_LOG("\tScale type (Y): ");
+
+   switch (info->pass->fbo.type_y)
+   {
+      case RARCH_SCALE_INPUT:
+         RARCH_LOG("Relative @ %fx\n", info->pass->fbo.scale_y);
+         break;
+
+      case RARCH_SCALE_VIEWPORT:
+         RARCH_LOG("Viewport @ %fx\n", info->pass->fbo.scale_y);
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_y);
+         break;
+   }
+
+   RARCH_LOG("\tBilinear filter: %s\n",
+         info->pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
+}
+
 static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
 {
    struct LinkInfo link_info;
@@ -222,6 +266,7 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
    }
 
    RARCH_LOG("[D3D]: Renderchain driver: %s\n", d3d->renderchain_driver->ident);
+   d3d9_log_info(&link_info);
 
 #ifndef _XBOX
    current_width  = link_info.tex_w;
@@ -249,6 +294,7 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
          RARCH_ERR("[D3D]: Failed to add pass.\n");
          return false;
       }
+      d3d9_log_info(&link_info);
    }
 #endif
 
