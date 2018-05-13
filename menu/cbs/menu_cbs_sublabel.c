@@ -1746,6 +1746,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_DELETE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_delete);
+            break;
          case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_pause_hardcode_mode);
             break;
