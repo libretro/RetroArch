@@ -1823,11 +1823,8 @@ bool command_event(enum event_command cmd, void *data)
             return false;
 
 #ifdef HAVE_CHEEVOS
-         {
-            settings_t *settings      = config_get_ptr();
-            if (cheevos_hardcore_active)
-               return false;
-         }
+         if (cheevos_hardcore_active)
+            return false;
 #endif
 
          return command_event_main_state(cmd);
@@ -1867,7 +1864,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-               if (cheevos_hardcore_active)
+            if (cheevos_hardcore_active)
                return false;
 #endif
 
@@ -1969,15 +1966,11 @@ bool command_event(enum event_command cmd, void *data)
          cheat_manager_apply_cheats();
          break;
       case CMD_EVENT_REWIND_DEINIT:
-         {
 #ifdef HAVE_CHEEVOS
-            settings_t *settings      = config_get_ptr();
-            if (cheevos_hardcore_active)
-               return false;
+         if (cheevos_hardcore_active)
+            return false;
 #endif
-
-            state_manager_event_deinit();
-         }
+         state_manager_event_deinit();
          break;
       case CMD_EVENT_REWIND_INIT:
          {
