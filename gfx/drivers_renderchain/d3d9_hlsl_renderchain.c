@@ -41,6 +41,7 @@ typedef struct hlsl_d3d9_renderchain
    unsigned tex_w;
    unsigned tex_h;
    LPDIRECT3DDEVICE9 dev;
+   D3DVIEWPORT9 *final_viewport;
    LPDIRECT3DTEXTURE9 tex;
    LPDIRECT3DVERTEXBUFFER9 vertex_buf;
    LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
@@ -259,32 +260,26 @@ static bool hlsl_d3d9_renderchain_init(
       bool rgb32
       )
 {
-   unsigned width, height;
    hlsl_d3d9_renderchain_t *chain     = (hlsl_d3d9_renderchain_t*)
       d3d->renderchain_data;
    unsigned fmt                       = (rgb32)
       ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
-   struct video_viewport *custom_vp   = video_viewport_get_custom();
 
    if (!hlsl_d3d9_renderchain_init_shader(d3d, chain))
+   {
+      RARCH_ERR("[D3D9 HLSL]: Failed to initialize shader subsystem.\n");
       return false;
-
-   video_driver_get_size(&width, &height);
+   }
 
    chain->dev                         = dev;
+   chain->final_viewport              = (D3DVIEWPORT9*)final_viewport;
+   chain->frame_count                 = 0;
    chain->pixel_size                  = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
    chain->tex_w                       = info->tex_w;
    chain->tex_h                       = info->tex_h;
 
    if (!hlsl_d3d9_renderchain_create_first_pass(d3d, video_info))
       return false;
-
-   /* FIXME */
-   if (custom_vp->width == 0)
-      custom_vp->width = width;
-
-   if (custom_vp->height == 0)
-      custom_vp->height = height;
 
    return true;
 }

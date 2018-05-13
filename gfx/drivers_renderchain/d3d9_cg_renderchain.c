@@ -118,7 +118,6 @@ typedef struct cg_renderchain
    CGprogram vStock;
    CGprogram fStock;
    LPDIRECT3DDEVICE9 dev;
-   const video_info_t *video_info;
    D3DVIEWPORT9 *final_viewport;
    struct pass_vector_list *passes;
    struct unsigned_vector_list *bound_tex;
@@ -872,12 +871,11 @@ static bool d3d9_cg_renderchain_init(
       return false;
    if (!d3d9_cg_renderchain_init_shader(d3d, chain))
    {
-      RARCH_ERR("Failed to initialize shader subsystem.\n");
+      RARCH_ERR("[D3D9 Cg]: Failed to initialize shader subsystem.\n");
       return false;
    }
 
    chain->dev            = dev;
-   chain->video_info     = video_info;
    chain->state_tracker  = NULL;
    chain->final_viewport = (D3DVIEWPORT9*)final_viewport;
    chain->frame_count    = 0;
