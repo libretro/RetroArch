@@ -42,7 +42,6 @@ typedef struct d3d8_video
    unsigned dev_rotation;
 
    overlay_t *menu;
-   const d3d_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
 
    RECT font_rect;
