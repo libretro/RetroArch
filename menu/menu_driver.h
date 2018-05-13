@@ -406,7 +406,7 @@ typedef struct
    } scratchpad;
 } menu_handle_t;
 
-typedef struct menu_display_ctx_draw
+struct menu_display_ctx_draw
 {
    float x;
    float y;
@@ -429,7 +429,7 @@ typedef struct menu_display_ctx_draw
    } pipeline;
    float rotation;
    float scale_factor;
-} menu_display_ctx_draw_t;
+};
 
 typedef struct menu_display_ctx_rotate_draw
 {
