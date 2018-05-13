@@ -885,5 +885,9 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    .get_flags            = cocoagl_gfx_ctx_get_flags,
    .set_flags            = cocoagl_gfx_ctx_set_flags,
    .bind_hw_render       = cocoagl_gfx_ctx_bind_hw_render,
+#if defined(HAVE_VULKAN)
    .get_context_data     = cocoagl_gfx_ctx_get_context_data,
+#else
+   .get_context_data     = NULL,
+#endif
 };
