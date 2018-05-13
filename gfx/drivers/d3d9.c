@@ -395,12 +395,21 @@ static bool d3d9_process_shader(d3d9_video_t *d3d)
 
 static void d3d9_viewport_info(void *data, struct video_viewport *vp)
 {
+   unsigned width, height;
    d3d9_video_t *d3d   = (d3d9_video_t*)data;
 
-   if (  d3d &&
-         d3d->renderchain_driver &&
-         d3d->renderchain_driver->viewport_info)
-      d3d->renderchain_driver->viewport_info(d3d, vp);
+   if (!vp)
+      return;
+
+   video_driver_get_size(&width, &height);
+
+   vp->x            = d3d->final_viewport.x;
+   vp->y            = d3d->final_viewport.y;
+   vp->width        = d3d->final_viewport.width;
+   vp->height       = d3d->final_viewport.height;
+
+   vp->full_width   = width;
+   vp->full_height  = height;
 }
 
 static void d3d9_set_mvp(void *data,

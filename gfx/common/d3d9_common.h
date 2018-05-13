@@ -56,7 +56,6 @@ typedef struct d3d9_renderchain_driver
          void *final_viewport);
    void (*set_font_rect)(d3d9_video_t *d3d, const void *param_data);
    bool (*read_viewport)(d3d9_video_t *d3d, uint8_t *buffer, bool is_idle);
-   void (*viewport_info)(d3d9_video_t *d3d, struct video_viewport *vp);
    const char *ident;
 } d3d9_renderchain_driver_t;
 
