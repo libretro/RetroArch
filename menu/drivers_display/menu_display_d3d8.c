@@ -106,12 +106,10 @@ static void menu_display_d3d8_viewport(menu_display_ctx_draw_t *draw,
 {
 }
 
-static void menu_display_d3d8_bind_texture(void *data, d3d8_video_t *d3d)
+static void menu_display_d3d8_bind_texture(menu_display_ctx_draw_t *draw,
+      d3d8_video_t *d3d)
 {
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-
-   if (!d3d || !draw || !draw->texture)
-      return;
+   LPDIRECT3DDEVICE8 dev = d3d->dev;
 
    d3d8_set_texture(d3d->dev, 0, (void*)draw->texture);
    d3d8_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_COMM_CLAMP);
@@ -218,7 +216,9 @@ static void menu_display_d3d8_draw(menu_display_ctx_draw_t *draw,
    mvp.data   = d3d;
    mvp.matrix = &m1;
    video_driver_set_mvp(&mvp);
-   menu_display_d3d8_bind_texture(draw, (d3d8_video_t*)video_info->userdata);
+   if (draw && draw->texture)
+      menu_display_d3d8_bind_texture(draw, d3d);
+
    d3d8_draw_primitive(d3d->dev,
          menu_display_prim_to_d3d8_enum(draw->prim_type),
          d3d->menu_display.offset,
