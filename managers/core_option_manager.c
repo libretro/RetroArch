@@ -135,7 +135,7 @@ void core_option_manager_get(core_option_manager_t *opt, void *data)
 #ifdef HAVE_RUNAHEAD
    if (opt->updated)
    {
-      secondary_core_set_variable_update(true);
+      secondary_core_set_variable_update();
    }
 #endif
 
