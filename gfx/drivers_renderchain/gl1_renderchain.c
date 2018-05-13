@@ -296,7 +296,22 @@ static void gl1_renderchain_set_coords(void *handle_data,
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
-gl_renderchain_driver_t gl2_renderchain = {
+static void gl1_renderchain_render(
+      void *data,
+      void *chain_data,
+      video_frame_info_t *video_info,
+      uint64_t frame_count,
+      const struct video_tex_info *tex_info,
+      const struct video_tex_info *feedback_info)
+{
+   /* TODO/FIXME - implement 
+    * check this commit out to see how it looked like way back when -
+    *
+    * https://github.com/libretro/RetroArch/commit/af7819e5cc1f7e413ff100575ed01ce00dfa1509
+    * */
+}
+
+gl_renderchain_driver_t gl1_renderchain = {
    gl1_renderchain_set_coords,
    gl1_renderchain_set_mvp,
    NULL,                                  /* init_textures_reference */
@@ -329,7 +344,7 @@ gl_renderchain_driver_t gl2_renderchain = {
    NULL,                                  /* start_render         */
    NULL,                                  /* check_fbo_dimensions */
    NULL,                                  /* recompute_pass_sizes */
-   NULL,                                  /* renderchain_render   */
+   gl1_renderchain_render,
    NULL,                                  /* resolve_extensions   */
    "gl1",
 };
