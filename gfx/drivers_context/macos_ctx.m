@@ -353,7 +353,9 @@ static bool cocoagl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned 
 
 static void cocoagl_gfx_ctx_swap_interval(void *data, unsigned interval)
 {
+#ifdef HAVE_VULKAN
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+#endif
    
    switch (cocoagl_api)
    {
@@ -692,7 +694,9 @@ static void *cocoagl_gfx_ctx_get_context_data(void *data)
 
 static void cocoagl_gfx_ctx_swap_buffers(void *data, void *data2)
 {
+#ifdef HAVE_VULKAN
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+#endif
    
    switch (cocoagl_api)
    {
@@ -742,7 +746,9 @@ static gfx_ctx_proc_t cocoagl_gfx_ctx_get_proc_address(const char *symbol_name)
 
 static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
+#ifdef HAVE_VULKAN
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+#endif
    
    switch (cocoagl_api)
    {
@@ -780,8 +786,10 @@ static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned heig
 static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
                                          bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
    unsigned new_width, new_height;
+#ifdef HAVE_VULKAN
+   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+#endif
    
    *quit = false;
    
