@@ -1535,13 +1535,12 @@ static bool d3d9_cg_renderchain_render(
 
 static void d3d9_cg_renderchain_set_font_rect(
       d3d9_video_t *d3d,
-      const void *font_data)
+      const struct font_params *params)
 {
    settings_t *settings             = config_get_ptr();
    float pos_x                      = settings->floats.video_msg_pos_x;
    float pos_y                      = settings->floats.video_msg_pos_y;
    float font_size                  = settings->floats.video_font_size;
-   const struct font_params *params = (const struct font_params*)font_data;
 
    if (params)
    {
