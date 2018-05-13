@@ -476,8 +476,7 @@ static void gl_set_video_mode(void *data, unsigned width, unsigned height,
 static void gl_update_input_size(gl_t *gl, unsigned width,
       unsigned height, unsigned pitch, bool clear)
 {
-   GLfloat xamt, yamt;
-   bool set_coords = false;
+   float xamt, yamt;
 
    if ((width != gl->last_width[gl->tex_index] ||
             height != gl->last_height[gl->tex_index]) && gl->empty_buf)
@@ -502,24 +501,18 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
                gl->texture_fmt, gl->empty_buf);
 #endif
       }
-
-      set_coords = true;
    }
+   /* We might have used different texture coordinates
+    * last frame. Edge case if resolution changes very rapidly. */
    else if ((width !=
             gl->last_width[(gl->tex_index + gl->textures - 1) % gl->textures]) ||
          (height !=
-          gl->last_height[(gl->tex_index + gl->textures - 1) % gl->textures]))
-   {
-      /* We might have used different texture coordinates
-       * last frame. Edge case if resolution changes very rapidly. */
-      set_coords = true;
-   }
-
-   if (!set_coords)
+          gl->last_height[(gl->tex_index + gl->textures - 1) % gl->textures])) { }
+   else
       return;
 
-   xamt = (GLfloat)width  / gl->tex_w;
-   yamt = (GLfloat)height / gl->tex_h;
+   xamt = (float)width  / gl->tex_w;
+   yamt = (float)height / gl->tex_h;
    set_texture_coords(gl->tex_info.coord, xamt, yamt);
 }
 
