@@ -8,6 +8,7 @@
 - MENU/QT/WIMP: Remove button ghostly inside highlighting.
 - PS3: Add audio mixer support for FLAC and MP3.
 - PSP: Use proper button labels, fix inverted R-Stick Y axis.
+- REMAPS: Fix the way offsets are calculated for keyboard remapping.
 - RUNAHEAD: Fix full-screen mode change breaking Secondary Core's environment variables.
 - VITA: Use proper button labels, fix inverted R-Stick Y axis.
 - WII: Change deflicker setting to work in 480p or higher, and always enables vfilter so that the user can easily change brightness.
