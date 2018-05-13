@@ -28,7 +28,6 @@
 #endif
 
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA)
-//#include "../gfx/drivers_context/cocoa_gl_ctx.m"
 #include "../gfx/drivers_context/macos_ctx.m"
 #include "../ui/drivers/cocoa/cocoa_common.m"
 
