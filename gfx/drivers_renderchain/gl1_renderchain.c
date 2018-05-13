@@ -61,19 +61,6 @@ void gl1_renderchain_free(void *data, void *chain_data)
    (void)data;
 }
 
-static void gl1_renderchain_bind_prev_texture(
-      void *data,
-      void *chain_data,
-      const struct video_tex_info *tex_info)
-{
-   gl_t *gl = (gl_t*)data;
-
-   memmove(gl->prev_info + 1, gl->prev_info,
-         sizeof(*tex_info) * (gl->textures - 1));
-   memcpy(&gl->prev_info[0], tex_info,
-         sizeof(*tex_info));
-}
-
 static void gl1_renderchain_viewport_info(
       void *data, void *chain_data,
       struct video_viewport *vp)
@@ -334,7 +321,7 @@ gl_renderchain_driver_t gl1_renderchain = {
    NULL,                                  /* deinit_fbo */
    gl1_renderchain_viewport_info,
    gl1_renderchain_read_viewport,
-   gl1_renderchain_bind_prev_texture,
+   NULL,                                  /* bind_prev_texture */
    gl1_renderchain_free_internal,
    gl1_renderchain_new,
    NULL,                                  /* renderchain_init */
