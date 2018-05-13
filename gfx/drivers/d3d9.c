@@ -147,7 +147,6 @@ static bool renderchain_d3d_init_first(
    switch (api)
    {
       case GFX_CTX_DIRECT3D9_API:
-#ifdef HAVE_D3D9
          {
             static const d3d9_renderchain_driver_t *renderchain_d3d_drivers[] = {
 #if defined(_WIN32) && defined(HAVE_CG)
@@ -172,7 +171,6 @@ static bool renderchain_d3d_init_first(
                return true;
             }
          }
-#endif
          break;
       case GFX_CTX_NONE:
       default:
