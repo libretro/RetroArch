@@ -36,12 +36,11 @@
 typedef struct hlsl_d3d9_renderchain
 {
    unsigned pixel_size;
-   unsigned last_width;
-   unsigned last_height;
+   uint64_t frame_count;
+   unsigned last_width, last_height;
    unsigned tex_w;
    unsigned tex_h;
-   uint64_t frame_count;
-   void *dev;
+   LPDIRECT3DDEVICE9 dev;
    LPDIRECT3DTEXTURE9 tex;
    LPDIRECT3DVERTEXBUFFER9 vertex_buf;
    LPDIRECT3DVERTEXDECLARATION9 vertex_decl;

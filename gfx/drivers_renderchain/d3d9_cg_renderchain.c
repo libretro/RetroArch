@@ -86,8 +86,8 @@ struct Pass
    D3DPOOL pool;
    LPDIRECT3DTEXTURE9 tex;
    LPDIRECT3DVERTEXBUFFER9 vertex_buf;
-   CGprogram vPrg, fPrg;
    LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
+   CGprogram vPrg, fPrg;
    struct unsigned_vector_list *attrib_map;
 };
 
@@ -106,7 +106,7 @@ struct Pass
 typedef struct cg_renderchain
 {
    unsigned pixel_size;
-   unsigned frame_count;
+   uint64_t frame_count;
    struct
    {
       LPDIRECT3DTEXTURE9 tex[TEXTURES];
@@ -117,7 +117,7 @@ typedef struct cg_renderchain
    } prev;
    CGprogram vStock;
    CGprogram fStock;
-   void *dev;
+   LPDIRECT3DDEVICE9 dev;
    const video_info_t *video_info;
    D3DVIEWPORT9 *final_viewport;
    struct pass_vector_list *passes;
@@ -607,8 +607,8 @@ static void d3d9_cg_renderchain_bind_pass(
       snprintf(attr_tex_size,   sizeof(attr_tex_size),   "%s.texture_size", pass_base);
       snprintf(attr_coord,      sizeof(attr_coord),      "%s.tex_coord",    pass_base);
 
-      video_size[0]  = chain->passes->data[i].last_width;
-      video_size[1]  = chain->passes->data[i].last_height;
+      video_size[0]   = chain->passes->data[i].last_width;
+      video_size[1]   = chain->passes->data[i].last_height;
       texture_size[0] = chain->passes->data[i].info.tex_w;
       texture_size[1] = chain->passes->data[i].info.tex_h;
 
