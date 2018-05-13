@@ -3298,7 +3298,8 @@ static int menu_displaylist_parse_options_remappings(
 
                menu_entries_append_enum(info->list, descriptor, "",
                      MSG_UNKNOWN,
-                     (MENU_SETTINGS_INPUT_DESC_KBD_BEGIN  +  retro_id) * (p + 1), 0, 0);
+                     MENU_SETTINGS_INPUT_DESC_KBD_BEGIN +
+                     (p * RARCH_FIRST_CUSTOM_BIND) + retro_id, 0, 0);
             }
          }
       }
