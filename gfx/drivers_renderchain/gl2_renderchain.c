@@ -177,13 +177,12 @@ void gl_load_texture_data(
       const void *frame, unsigned base_size);
 
 void gl_set_viewport(
-      void *data, video_frame_info_t *video_info,
+      gl_t *gl, video_frame_info_t *video_info,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate);
 
 static void gl2_renderchain_convert_geometry(
-      void *data,
       struct video_fbo_rect *fbo_rect,
       struct gfx_fbo_scale *fbo_scale,
       unsigned last_width, unsigned last_max_width,
@@ -757,7 +756,7 @@ static void gl2_renderchain_recompute_pass_sizes(
       struct gfx_fbo_scale *fbo_scale    = &chain->fbo_scale[i];
 
       gl2_renderchain_convert_geometry(
-            gl, fbo_rect, fbo_scale,
+            fbo_rect, fbo_scale,
             last_width, last_max_width,
             last_height, last_max_height,
             vp_width, vp_height

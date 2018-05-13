@@ -262,7 +262,8 @@ static void gl_set_projection(gl_t *gl,
    matrix_4x4_multiply(gl->mvp, rot, gl->mvp_no_rot);
 }
 
-void gl_set_viewport(void *data, video_frame_info_t *video_info,
+void gl_set_viewport(gl_t *gl,
+      video_frame_info_t *video_info,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
@@ -271,7 +272,6 @@ void gl_set_viewport(void *data, video_frame_info_t *video_info,
    int x                    = 0;
    int y                    = 0;
    float device_aspect      = (float)viewport_width / viewport_height;
-   gl_t           *gl       = (gl_t*)data;
    unsigned height          = video_info->height;
 
    aspect_data.aspect       = &device_aspect;
