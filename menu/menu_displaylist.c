@@ -2571,7 +2571,7 @@ static int menu_displaylist_parse_load_content_settings(
 
       if (settings->bools.quick_menu_show_save_load_state
 #ifdef HAVE_CHEEVOS
-          && !(settings->bools.cheevos_hardcore_mode_enable && cheevos_loaded)
+          && !cheevos_hardcore_active
 #endif
          )
       {
@@ -2594,7 +2594,7 @@ static int menu_displaylist_parse_load_content_settings(
       if (settings->bools.quick_menu_show_save_load_state &&
           settings->bools.quick_menu_show_undo_save_load_state
 #ifdef HAVE_CHEEVOS
-          && !(settings->bools.cheevos_hardcore_mode_enable && cheevos_loaded)
+          && !cheevos_hardcore_active
 #endif
          )
       {
@@ -2731,7 +2731,6 @@ static int menu_displaylist_parse_load_content_settings(
             msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0);
-
    return 0;
 }
 

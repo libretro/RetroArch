@@ -417,6 +417,8 @@ default_sublabel_macro(action_bind_sublabel_video_viewport_custom_y,            
 default_sublabel_macro(action_bind_sublabel_netplay_use_mitm_server,               MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER)
 default_sublabel_macro(action_bind_sublabel_netplay_mitm_server,                   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER)
 default_sublabel_macro(action_bind_sublabel_core_delete,                           MENU_ENUM_SUBLABEL_CORE_DELETE)
+default_sublabel_macro(action_bind_sublabel_pause_hardcode_mode,                   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE)
+default_sublabel_macro(action_bind_sublabel_resume_hardcode_mode,                  MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -1744,6 +1746,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_DELETE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_delete);
+         case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_pause_hardcode_mode);
+            break;
+         case MENU_ENUM_LABEL_ACHIEVEMENT_RESUME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_resume_hardcode_mode);
+            break;
          default:
          case MSG_UNKNOWN:
             return -1;
