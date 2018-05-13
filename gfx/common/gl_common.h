@@ -155,8 +155,9 @@ RETRO_BEGIN_DECLS
 #endif
 
 typedef struct gl gl_t;
+typedef struct gl_renderchain_driver gl_renderchain_driver_t;
 
-typedef struct gl_renderchain_driver
+struct gl_renderchain_driver
 {
    void (*set_coords)(void *handle_data,
          void *chain_data,
@@ -229,7 +230,7 @@ typedef struct gl_renderchain_driver
          const char *context_ident,
          const video_info_t *video);
    const char *ident;
-} gl_renderchain_driver_t;
+};
 
 struct gl
 {
