@@ -1023,10 +1023,9 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
 static void d3d9_cg_renderchain_set_final_viewport(
       d3d9_video_t *d3d,
       void *renderchain_data,
-      const void *viewport_data)
+      const D3DVIEWPORT9 *final_viewport)
 {
    cg_renderchain_t              *chain = (cg_renderchain_t*)renderchain_data;
-   const D3DVIEWPORT9 *final_viewport   = (const D3DVIEWPORT9*)viewport_data;
 
    if (chain && final_viewport)
       chain->final_viewport = (D3DVIEWPORT9*)final_viewport;
@@ -1036,10 +1035,9 @@ static void d3d9_cg_renderchain_set_final_viewport(
 
 static bool d3d9_cg_renderchain_add_pass(
       void *data,
-      const void *info_data)
+      const struct LinkInfo *info)
 {
    struct Pass pass;
-   const struct LinkInfo *info = (const struct LinkInfo*)info_data;
    cg_renderchain_t *chain     = (cg_renderchain_t*)data;
 
    pass.info                   = *info;

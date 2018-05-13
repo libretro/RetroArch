@@ -290,7 +290,7 @@ static bool hlsl_d3d9_renderchain_init(
 
 static void hlsl_d3d9_renderchain_set_final_viewport(
       d3d9_video_t *d3d,
-      void *renderchain_data, const void *viewport_data)
+      void *renderchain_data, const D3DVIEWPORT9 *final_viewport)
 {
 }
 
@@ -303,7 +303,8 @@ static bool hlsl_d3d9_renderchain_render(
    unsigned i;
    unsigned width, height;
    settings_t *settings           = config_get_ptr();
-   hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)d3d->renderchain_data;
+   hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)
+      d3d->renderchain_data;
    bool video_smooth              = settings->bools.video_smooth;
 
    chain->frame_count++;
@@ -332,10 +333,9 @@ static bool hlsl_d3d9_renderchain_render(
 }
 
 static bool hlsl_d3d9_renderchain_add_pass(
-      void *data, const void *info_data)
+      void *data, const struct LinkInfo *info)
 {
    (void)data;
-   (void)info_data;
 
    /* stub */
    return true;

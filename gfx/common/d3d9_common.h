@@ -42,8 +42,8 @@ typedef struct d3d9_renderchain_driver
          const struct LinkInfo *info,
          bool rgb32);
    void (*set_final_viewport)(d3d9_video_t *d3d,
-         void *renderchain_data, const void *viewport_data);
-   bool (*add_pass)(void *data, const void *info_data);
+         void *renderchain_data, const D3DVIEWPORT9 *final_viewport);
+   bool (*add_pass)(void *data, const struct LinkInfo *info);
    bool (*add_lut)(void *data,
          const char *id, const char *path,
          bool smooth);
