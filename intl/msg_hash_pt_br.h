@@ -215,6 +215,14 @@ MSG_HASH(
       "Lista de Conquistas"
       )
 MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+      "Pausar Conquistas no Modo Hardcore"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
+      "Contiuar Conquistas no Modo Hardcore"
+      )
+MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
       "Lista de Conquistas (Hardcore)"
       )
@@ -3694,3 +3702,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
       "Núcleo atual")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
       "Limpar")
+MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+      "Pausar conquistas para a sessão atual (Esta ação ativará Estados de Jogos, Trapaças, Rebobinagem, Pausa e Câmera Lenta).")
+MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+      "Continuar conquistas para a sessão atual (Esta ação desabilitará Estados de Jogos, Trapaças, Rebobinagem, Pausa e Câmera Lenta e reiniciará o jogo atual).")
