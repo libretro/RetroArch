@@ -2370,6 +2370,9 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
          command_event_save_current_config(OVERRIDE_CORE);
          break;
+      case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+         command_event_save_current_config(OVERRIDE_CONTENT_DIR);
+         break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
          command_event_save_current_config(OVERRIDE_GAME);
          break;
