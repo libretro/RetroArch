@@ -427,13 +427,13 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
          decl, (void**)&pass->vertex_decl);
 }
 
-static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,
-      void *pass_data)
+static void d3d9_cg_renderchain_bind_orig(
+      cg_renderchain_t *chain,
+      struct cg_pass *pass)
 {
    CGparameter param;
    float video_size[2];
    float texture_size[2];
-   struct cg_pass *pass = (struct cg_pass*)pass_data;
    video_size[0]        = chain->passes->data[0].last_width;
    video_size[1]        = chain->passes->data[0].last_height;
    texture_size[0]      = chain->passes->data[0].info.tex_w;
@@ -445,6 +445,7 @@ static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,
    set_cg_param(pass->fPrg, "ORIG.texture_size", texture_size);
 
    param = cgGetNamedParameter(pass->fPrg, "ORIG.texture");
+
    if (param)
    {
       unsigned index = cgGetParameterResourceIndex(param);
@@ -473,7 +474,8 @@ static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,
    }
 }
 
-static void d3d9_cg_renderchain_bind_prev(void *data, const void *pass_data)
+static void d3d9_cg_renderchain_bind_prev(cg_renderchain_t *chain,
+      struct cg_pass *pass)
 {
    unsigned i;
    float texture_size[2];
@@ -481,8 +483,6 @@ static void d3d9_cg_renderchain_bind_prev(void *data, const void *pass_data)
    char attr_input_size[64] = {0};
    char attr_tex_size[64]   = {0};
    char attr_coord[64]      = {0};
-   cg_renderchain_t *chain  = (cg_renderchain_t*)data;
-   struct cg_pass    *pass  = (struct cg_pass*)pass_data;
    static const char *prev_names[] = {
       "PREV",
       "PREV1",
@@ -1352,7 +1352,7 @@ static void cg_d3d9_renderchain_render_pass(
    d3d9_cg_renderchain_bind_orig(chain, pass);
 
    /* Set prev textures. */
-   d3d9_cg_renderchain_bind_prev(chain, (const void*)pass);
+   d3d9_cg_renderchain_bind_prev(chain, pass);
 
    /* Set lookup textures */
    for (i = 0; i < chain->luts->count; i++)
