@@ -200,11 +200,10 @@ static INLINE void d3d9_texture_free(LPDIRECT3DTEXTURE9 tex)
 static INLINE void d3d9_set_transform(
       LPDIRECT3DDEVICE9 dev,
       D3DTRANSFORMSTATETYPE state,
-      const void *_matrix)
+      CONST D3DMATRIX *matrix)
 {
-#ifndef _XBOX
-   CONST D3DMATRIX *matrix = (CONST D3DMATRIX*)_matrix;
    /* XBox 360 D3D9 does not support fixed-function pipeline. */
+#ifndef _XBOX
    IDirect3DDevice9_SetTransform(dev, state, matrix);
 #endif
 }
@@ -319,10 +318,9 @@ static INLINE void d3d9_unlock_rectangle(LPDIRECT3DTEXTURE9 tex)
 }
 
 static INLINE void d3d9_lock_rectangle_clear(void *tex,
-      unsigned level, void *_lr, RECT *rect,
+      unsigned level, D3DLOCKED_RECT *lr, RECT *rect,
       unsigned rectangle_height, unsigned flags)
 {
-   D3DLOCKED_RECT *lr = (D3DLOCKED_RECT*)_lr;
 #if defined(_XBOX)
    level              = 0;
 #endif
@@ -531,13 +529,10 @@ static INLINE void d3d9_surface_free(LPDIRECT3DSURFACE9 surf)
 }
 
 static INLINE bool d3d9_device_get_render_target_data(
-      void *_dev,
-      void *_src, void *_dst)
+      LPDIRECT3DDEVICE9 dev,
+      LPDIRECT3DSURFACE9 src, LPDIRECT3DSURFACE9 dst)
 {
 #ifndef _XBOX
-   LPDIRECT3DSURFACE9 src = (LPDIRECT3DSURFACE9)_src;
-   LPDIRECT3DSURFACE9 dst = (LPDIRECT3DSURFACE9)_dst;
-   LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
    if (dev &&
          SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(
                dev, src, dst)))
@@ -559,19 +554,16 @@ static INLINE bool d3d9_device_get_render_target(
 }
 
 static INLINE void d3d9_device_set_render_target(
-      void *_dev, unsigned idx,
-      void *data)
+      LPDIRECT3DDEVICE9 dev, unsigned idx,
+      LPDIRECT3DSURFACE9 surf)
 {
-   LPDIRECT3DSURFACE9 surf = (LPDIRECT3DSURFACE9)data;
-   LPDIRECT3DDEVICE9   dev = (LPDIRECT3DDEVICE9)_dev;
    if (dev)
       IDirect3DDevice9_SetRenderTarget(dev, idx, surf);
 }
 
 static INLINE bool d3d9_get_render_state(
-      void *data, INT32 state, DWORD *value)
+      LPDIRECT3DDEVICE9 dev, INT32 state, DWORD *value)
 {
-   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
    if (!dev)
       return false;
 
@@ -587,7 +579,7 @@ static INLINE bool d3d9_get_render_state(
 }
 
 static INLINE bool d3d9_device_create_offscreen_plain_surface(
-      void *_dev,
+      LPDIRECT3DDEVICE9 dev,
       unsigned width,
       unsigned height,
       unsigned format,
@@ -596,7 +588,6 @@ static INLINE bool d3d9_device_create_offscreen_plain_surface(
       void *data)
 {
 #ifndef _XBOX
-   LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
    if (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
                width, height,
                (D3DFORMAT)format, (D3DPOOL)pool,
@@ -633,14 +624,14 @@ static INLINE void d3d9_surface_unlock_rect(LPDIRECT3DSURFACE9 surf)
 static INLINE bool d3d9_get_adapter_display_mode(
       LPDIRECT3D9 d3d,
       unsigned idx,
-      void *display_mode)
+      D3DDISPLAYMODE *display_mode)
 {
    if (!d3d)
       return false;
 #ifndef _XBOX
    if (FAILED(
             IDirect3D9_GetAdapterDisplayMode(
-               d3d, idx, (D3DDISPLAYMODE*)display_mode)))
+               d3d, idx, display_mode)))
       return false;
 #endif
 
@@ -669,10 +660,8 @@ static INLINE bool d3d9_device_get_backbuffer(
    return false;
 }
 
-static INLINE void d3d9_device_free(void *_dev, void *_pd3d)
+static INLINE void d3d9_device_free(LPDIRECT3DDEVICE9 dev, LPDIRECT3D9 pd3d)
 {
-   LPDIRECT3D9      pd3d = (LPDIRECT3D9)_pd3d;
-   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    if (dev)
       IDirect3DDevice9_Release(dev);
    if (pd3d)
