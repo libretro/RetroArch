@@ -95,9 +95,13 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(LPDIRECT3DDEVICE9 dev,
 static bool hlsl_d3d9_renderchain_create_first_pass(
       LPDIRECT3DDEVICE9 dev,
       hlsl_d3d9_renderchain_t *chain,
-      const video_info_t *info,
-      unsigned fmt)
+      const struct LinkInfo *info,
+      unsigned _fmt)
 {
+   unsigned fmt = 
+      (_fmt == RETRO_PIXEL_FORMAT_RGB565) ? 
+      d3d9_get_rgb565_format() : d3d9_get_xrgb8888_format();
+
    chain->vertex_buf        = d3d9_vertex_buffer_new(
          dev, 4 * sizeof(Vertex),
          D3DUSAGE_WRITEONLY,
@@ -109,9 +113,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       return false;
 
    chain->tex = d3d9_texture_new(dev, NULL,
-         chain->tex_w, chain->tex_h, 1, 0,
-         info->rgb32 ? 
-         d3d9_get_xrgb8888_format() : d3d9_get_rgb565_format(),
+         chain->tex_w, chain->tex_h, 1, 0, fmt,
          0, 0, 0, 0, NULL, NULL, false);
 
    if (!chain->tex)
@@ -350,7 +352,8 @@ static bool hlsl_d3d9_renderchain_init(
    chain->tex_w                       = info->tex_w;
    chain->tex_h                       = info->tex_h;
 
-   if (!hlsl_d3d9_renderchain_create_first_pass(dev, chain, video_info, fmt))
+
+   if (!hlsl_d3d9_renderchain_create_first_pass(dev, chain, info, fmt))
       return false;
 
    return true;

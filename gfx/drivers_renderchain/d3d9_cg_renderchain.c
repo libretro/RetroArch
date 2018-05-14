@@ -766,11 +766,13 @@ static bool d3d9_cg_renderchain_init_shader(d3d9_video_t *d3d,
 static bool d3d9_cg_renderchain_create_first_pass(
       LPDIRECT3DDEVICE9 dev,
       cg_renderchain_t *chain,
-      const struct LinkInfo *info, unsigned fmt)
+      const struct LinkInfo *info, unsigned _fmt)
 {
    unsigned i;
    struct cg_pass pass;
    struct d3d_matrix ident;
+   unsigned fmt = (_fmt == RETRO_PIXEL_FORMAT_RGB565) ? 
+      d3d9_get_rgb565_format() : d3d9_get_xrgb8888_format();
 
    d3d_matrix_identity(&ident);
 
@@ -799,9 +801,8 @@ static bool d3d9_cg_renderchain_create_first_pass(
 
       chain->prev.tex[i] = (LPDIRECT3DTEXTURE9)
          d3d9_texture_new(chain->dev, NULL,
-            info->tex_w, info->tex_h, 1, 0,
-            (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 
-            d3d9_get_rgb565_format() : d3d9_get_xrgb8888_format(),
+            info->tex_w, info->tex_h, 1, 0, fmt,
+            fmt,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
       if (!chain->prev.tex[i])
