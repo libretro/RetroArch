@@ -274,10 +274,9 @@ static INLINE void d3d8_unlock_rectangle(LPDIRECT3DTEXTURE8 tex)
 
 static INLINE void d3d8_lock_rectangle_clear(
       void *tex,
-      unsigned level, void *_lr, RECT *rect,
+      unsigned level, D3DLOCKED_RECT *lr, RECT *rect,
       unsigned rectangle_height, unsigned flags)
 {
-   D3DLOCKED_RECT *lr = (D3DLOCKED_RECT*)_lr;
 #if defined(_XBOX)
    level              = 0;
 #endif
