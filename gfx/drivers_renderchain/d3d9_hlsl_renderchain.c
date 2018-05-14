@@ -71,8 +71,6 @@ typedef struct hlsl_d3d9_renderchain
       unsigned last_width[TEXTURES];
       unsigned last_height[TEXTURES];
    } prev;
-   unsigned tex_w;
-   unsigned tex_h;
    LPDIRECT3DDEVICE9 dev;
    D3DVIEWPORT9 *final_viewport;
    struct hlsl_pass_vector_list  *passes;
@@ -157,7 +155,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       return false;
 
    pass.tex = d3d9_texture_new(dev, NULL,
-         chain->tex_w, chain->tex_h, 1, 0, fmt,
+         pass.info.tex_w, pass.info.tex_h, 1, 0, fmt,
          0, 0, 0, 0, NULL, NULL, false);
 
    if (!pass.tex)
@@ -200,8 +198,8 @@ static void hlsl_d3d9_renderchain_set_vertices(
       pass->last_width  = vert_width;
       pass->last_height = vert_height;
 
-      tex_w              = vert_width  / ((float)chain->tex_w);
-      tex_h              = vert_height / ((float)chain->tex_h);
+      tex_w              = vert_width  / ((float)pass->info.tex_w);
+      tex_h              = vert_height / ((float)pass->info.tex_h);
 
       vert[0].x          = -1.0f;
       vert[0].y          = -1.0f;
@@ -226,8 +224,8 @@ static void hlsl_d3d9_renderchain_set_vertices(
       /* Align texels and vertices. */
       for (i = 0; i < 4; i++)
       {
-         vert[i].x      -= 0.5f / ((float)chain->tex_w);
-         vert[i].y      += 0.5f / ((float)chain->tex_h);
+         vert[i].x      -= 0.5f / ((float)pass->info.tex_w);
+         vert[i].y      += 0.5f / ((float)pass->info.tex_h);
       }
 
       verts = d3d9_vertex_buffer_lock(pass->vertex_buf);
@@ -244,8 +242,8 @@ static void hlsl_d3d9_renderchain_set_vertices(
    params.data          = d3d;
    params.width         = vert_width;
    params.height        = vert_height;
-   params.tex_width     = chain->tex_w;
-   params.tex_height    = chain->tex_h;
+   params.tex_width     = pass->info.tex_w;
+   params.tex_height    = pass->info.tex_h;
    params.out_width     = width;
    params.out_height    = height;
    params.frame_counter = (unsigned int)frame_count;
@@ -393,8 +391,6 @@ static bool hlsl_d3d9_renderchain_init(
    chain->final_viewport              = (D3DVIEWPORT9*)final_viewport;
    chain->frame_count                 = 0;
    chain->pixel_size                  = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
-   chain->tex_w                       = info->tex_w;
-   chain->tex_h                       = info->tex_h;
 
    if (!hlsl_d3d9_renderchain_create_first_pass(dev, chain, info, fmt))
       return false;
@@ -408,51 +404,76 @@ static void hlsl_d3d9_renderchain_set_final_viewport(
 {
 }
 
+static void hlsl_d3d9_renderchain_render_pass(
+      hlsl_d3d9_renderchain_t *chain,
+      struct hlsl_pass *pass,
+      state_tracker_t *tracker,
+      unsigned pass_index)
+{
+   unsigned i;
+
+   d3d9_set_texture(chain->dev, 0, pass->tex);
+   d3d9_set_sampler_minfilter(chain->dev, 0,
+         d3d_translate_filter(pass->info.pass->filter));
+   d3d9_set_sampler_magfilter(chain->dev, 0,
+         d3d_translate_filter(pass->info.pass->filter));
+
+   d3d9_set_vertex_declaration(chain->dev, pass->vertex_decl);
+   for (i = 0; i < 4; i++)
+      d3d9_set_stream_source(chain->dev, i,
+            pass->vertex_buf, 0,
+            sizeof(Vertex));
+
+   d3d9_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
+
+   /* So we don't render with linear filter into render targets,
+    * which apparently looked odd (too blurry). */
+   d3d9_set_sampler_minfilter(chain->dev, 0, D3DTEXF_POINT);
+   d3d9_set_sampler_magfilter(chain->dev, 0, D3DTEXF_POINT);
+}
+
 static bool hlsl_d3d9_renderchain_render(
       d3d9_video_t *d3d,
       state_tracker_t *tracker,
       const void *frame,
-      unsigned frame_width, unsigned frame_height,
+      unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
 {
-   unsigned i;
-   unsigned width, height;
+   unsigned i, current_width, current_height, out_width = 0, out_height = 0;
+   struct hlsl_pass *last_pass    = NULL;
+   struct hlsl_pass *first_pass   = NULL;
    settings_t *settings           = config_get_ptr();
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)
       d3d->renderchain_data;
-   bool video_smooth              = settings->bools.video_smooth;
 
-   chain->frame_count++;
+   current_width                  = width;
+   current_height                 = height;
 
-   video_driver_get_size(&width, &height);
+   first_pass                     = (struct hlsl_pass*)&chain->passes->data[0];
+   last_pass                      = (struct hlsl_pass*)&chain->passes->data[0];
 
-   d3d9_renderchain_blit_to_texture(chain->passes->data[0].tex,
+   d3d9_renderchain_blit_to_texture(first_pass->tex,
          frame,
-         chain->tex_w,
-         chain->tex_h,
-         frame_width,
-         frame_height,
-         chain->passes->data[0].last_width,
-         chain->passes->data[0].last_height,
+         first_pass->info.tex_w,
+         first_pass->info.tex_h,
+         width,
+         height,
+         first_pass->last_width,
+         first_pass->last_height,
          pitch,
          chain->pixel_size);
 
-   hlsl_d3d9_renderchain_set_vertices(d3d, chain,
-         &chain->passes->data[0],
-         1, frame_width, frame_height, chain->frame_count);
-
-   d3d9_set_texture(chain->dev, 0, chain->passes->data[0].tex);
    d3d9_set_viewports(chain->dev, &d3d->final_viewport);
-   d3d9_set_sampler_minfilter(chain->dev, 0,
-         video_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d9_set_sampler_magfilter(chain->dev, 0,
-         video_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
 
-   d3d9_set_vertex_declaration(chain->dev, chain->passes->data[0].vertex_decl);
-   for (i = 0; i < 4; i++)
-      d3d9_set_stream_source(chain->dev, i,
-            chain->passes->data[0].vertex_buf, 0, sizeof(Vertex));
-   d3d9_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
+   hlsl_d3d9_renderchain_set_vertices(d3d, chain,
+         last_pass,
+         1, width, height, chain->frame_count);
+
+   hlsl_d3d9_renderchain_render_pass(chain, last_pass,
+         tracker,
+         chain->passes->count);
+
+   chain->frame_count++;
 
    return true;
 }

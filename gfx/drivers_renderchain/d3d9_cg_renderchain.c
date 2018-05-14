@@ -1368,10 +1368,9 @@ static bool d3d9_cg_renderchain_render(
    LPDIRECT3DSURFACE9 back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
    struct cg_pass *last_pass  = NULL;
+   struct cg_pass *first_pass = NULL;
    cg_renderchain_t *chain    = d3d ? 
       (cg_renderchain_t*)d3d->renderchain_data : NULL;
-   struct cg_pass *first_pass = NULL;
-   
 
    d3d9_cg_renderchain_start_render(chain);
 
@@ -1432,9 +1431,8 @@ static bool d3d9_cg_renderchain_render(
             out_width, out_height,
             out_width, out_height, 0);
 
-      if (chain)
-         cg_d3d9_renderchain_render_pass(chain, from_pass, tracker,
-               i + 1);
+      cg_d3d9_renderchain_render_pass(chain, from_pass, tracker,
+            i + 1);
 
       current_width = out_width;
       current_height = out_height;
@@ -1467,15 +1465,12 @@ static bool d3d9_cg_renderchain_render(
 
    d3d9_surface_free(back_buffer);
 
-   if (chain)
-   {
-      d3d9_cg_renderchain_end_render(chain);
-      cgD3D9BindProgram(chain->fStock);
-      cgD3D9BindProgram(chain->vStock);
-      d3d9_cg_renderchain_calc_and_set_shader_mvp(
-            chain, chain->vStock, chain->final_viewport->Width,
-            chain->final_viewport->Height, 0);
-   }
+   d3d9_cg_renderchain_end_render(chain);
+   cgD3D9BindProgram(chain->fStock);
+   cgD3D9BindProgram(chain->vStock);
+   d3d9_cg_renderchain_calc_and_set_shader_mvp(
+         chain, chain->vStock, chain->final_viewport->Width,
+         chain->final_viewport->Height, 0);
 
    return true;
 }
