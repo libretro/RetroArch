@@ -274,8 +274,8 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
 
    for (i = 1; i < d3d->shader.passes; i++)
    {
-      d3d->renderchain_driver->convert_geometry(d3d->renderchain_data,
-		    &link_info,
+      d3d9_convert_geometry(
+            &link_info,
             &out_width, &out_height,
             current_width, current_height, &d3d->final_viewport);
 

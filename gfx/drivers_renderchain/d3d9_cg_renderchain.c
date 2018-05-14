@@ -896,51 +896,6 @@ static bool d3d9_cg_renderchain_set_pass_size(
    return true;
 }
 
-static void d3d9_cg_renderchain_convert_geometry(
-      void *data,
-      const struct LinkInfo *info,
-      unsigned *out_width,
-      unsigned *out_height,
-      unsigned width,
-      unsigned height,
-      D3DVIEWPORT9 *final_viewport)
-{
-   cg_renderchain_t *chain                     = (cg_renderchain_t*)data;
-
-   if (!chain || !info)
-      return;
-
-   switch (info->pass->fbo.type_x)
-   {
-      case RARCH_SCALE_VIEWPORT:
-         *out_width = info->pass->fbo.scale_x * final_viewport->Width;
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         *out_width = info->pass->fbo.abs_x;
-         break;
-
-      case RARCH_SCALE_INPUT:
-         *out_width = info->pass->fbo.scale_x * width;
-         break;
-   }
-
-   switch (info->pass->fbo.type_y)
-   {
-      case RARCH_SCALE_VIEWPORT:
-         *out_height = info->pass->fbo.scale_y * final_viewport->Height;
-         break;
-
-      case RARCH_SCALE_ABSOLUTE:
-         *out_height = info->pass->fbo.abs_y;
-         break;
-
-      case RARCH_SCALE_INPUT:
-         *out_height = info->pass->fbo.scale_y * height;
-         break;
-   }
-}
-
 static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
       d3d9_video_t *d3d)
 {
@@ -964,7 +919,7 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
 
    for (i = 1; i < d3d->shader.passes; i++)
    {
-      d3d9_cg_renderchain_convert_geometry(chain,
+      d3d9_convert_geometry(
             &link_info,
             &out_width, &out_height,
             current_width, current_height, &d3d->final_viewport);
@@ -1379,7 +1334,7 @@ static bool d3d9_cg_renderchain_render(
 
    first_pass                 = (struct cg_pass*)&chain->passes->data[0];
 
-   d3d9_cg_renderchain_convert_geometry(chain,
+   d3d9_renderchain_convert_geometry(
          &first_pass->info,
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
@@ -1408,7 +1363,7 @@ static bool d3d9_cg_renderchain_render(
 
       d3d9_device_set_render_target(chain->dev, 0, (void*)target);
 
-      d3d9_cg_renderchain_convert_geometry(chain, &from_pass->info,
+      d3d9_convert_geometry(&from_pass->info,
             &out_width, &out_height,
             current_width, current_height, chain->final_viewport);
 
@@ -1445,7 +1400,7 @@ static bool d3d9_cg_renderchain_render(
    last_pass = (struct cg_pass*)&chain->passes->
       data[chain->passes->count - 1];
 
-   d3d9_cg_renderchain_convert_geometry(chain, &last_pass->info,
+   d3d9_convert_geometry(&last_pass->info,
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
 
@@ -1540,7 +1495,6 @@ d3d9_renderchain_driver_t cg_d3d9_renderchain = {
    d3d9_cg_renderchain_add_pass,
    d3d9_cg_renderchain_add_lut,
    d3d9_cg_renderchain_render,
-   d3d9_cg_renderchain_convert_geometry,
    d3d9_cg_renderchain_read_viewport,
    "cg_d3d9",
 };

@@ -54,7 +54,7 @@ typedef struct d3d9_renderchain_driver
    bool (*render)(d3d9_video_t *d3d, state_tracker_t *tracker,
          const void *frame,
          unsigned width, unsigned height, unsigned pitch, unsigned rotation);
-   void (*convert_geometry)(void *data, const struct LinkInfo *info,
+   void (*convert_geometry)(const struct LinkInfo *info,
          unsigned *out_width, unsigned *out_height,
          unsigned width, unsigned height,
          D3DVIEWPORT9 *final_viewport);
@@ -769,6 +769,48 @@ static INLINE INT32 d3d9_get_xrgb8888_format(void)
 #else
    return D3DFMT_X8R8G8B8;
 #endif
+}
+
+static INLINE void d3d9_convert_geometry(
+      const struct LinkInfo *info,
+      unsigned *out_width,
+      unsigned *out_height,
+      unsigned width,
+      unsigned height,
+      D3DVIEWPORT9 *final_viewport)
+{
+   if (!info)
+      return;
+
+   switch (info->pass->fbo.type_x)
+   {
+      case RARCH_SCALE_VIEWPORT:
+         *out_width = info->pass->fbo.scale_x * final_viewport->Width;
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         *out_width = info->pass->fbo.abs_x;
+         break;
+
+      case RARCH_SCALE_INPUT:
+         *out_width = info->pass->fbo.scale_x * width;
+         break;
+   }
+
+   switch (info->pass->fbo.type_y)
+   {
+      case RARCH_SCALE_VIEWPORT:
+         *out_height = info->pass->fbo.scale_y * final_viewport->Height;
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         *out_height = info->pass->fbo.abs_y;
+         break;
+
+      case RARCH_SCALE_INPUT:
+         *out_height = info->pass->fbo.scale_y * height;
+         break;
+   }
 }
 
 RETRO_END_DECLS

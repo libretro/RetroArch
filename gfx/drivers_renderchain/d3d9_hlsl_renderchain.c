@@ -487,20 +487,6 @@ static bool hlsl_d3d9_renderchain_add_pass(
    return true;
 }
 
-static void hlsl_d3d9_renderchain_convert_geometry(
-	  void *data, const struct LinkInfo *info,
-      unsigned *out_width, unsigned *out_height,
-      unsigned width, unsigned height,
-      D3DVIEWPORT9 *final_viewport)
-{
-   (void)data;
-   (void)out_width;
-   (void)out_height;
-   (void)width;
-   (void)height;
-   /* stub */
-}
-
 d3d9_renderchain_driver_t hlsl_d3d9_renderchain = {
    hlsl_d3d9_renderchain_free,
    hlsl_d3d9_renderchain_new,
@@ -509,7 +495,6 @@ d3d9_renderchain_driver_t hlsl_d3d9_renderchain = {
    hlsl_d3d9_renderchain_add_pass,
    NULL, /* add_lut */
    hlsl_d3d9_renderchain_render,
-   hlsl_d3d9_renderchain_convert_geometry,
    NULL, /* read_viewport */
    "hlsl_d3d9",
 };
