@@ -1316,7 +1316,7 @@ static void cg_d3d9_renderchain_set_params(
    static unsigned cnt = 0;
 
    if (pass_index == 1)
-      cnt = state_tracker_get_uniform(chain->state_tracker, tracker_info,
+      cnt = state_tracker_get_uniform(tracker, tracker_info,
             GFX_MAX_VARIABLES, chain->frame_count);
 
    for (i = 0; i < cnt; i++)
@@ -1461,8 +1461,8 @@ static bool d3d9_cg_renderchain_render(
             out_width, out_height, 0);
 
       if (chain)
-         cg_d3d9_renderchain_render_pass(chain, tracker,
-               from_pass, i + 1);
+         cg_d3d9_renderchain_render_pass(chain, from_pass, tracker,
+               i + 1);
 
       current_width = out_width;
       current_height = out_height;
@@ -1488,8 +1488,9 @@ static bool d3d9_cg_renderchain_render(
          rotation);
 
    if (chain)
-      cg_d3d9_renderchain_render_pass(chain, tracker,
-            last_pass, chain->passes->count);
+      cg_d3d9_renderchain_render_pass(chain, last_pass,
+            tracker,
+            chain->passes->count);
 
    chain->frame_count++;
 
