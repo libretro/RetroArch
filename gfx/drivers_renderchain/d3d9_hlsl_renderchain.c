@@ -33,10 +33,28 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
+struct hlsl_pass
+{
+   unsigned last_width, last_height;
+   struct LinkInfo info;
+   D3DPOOL pool;
+   LPDIRECT3DTEXTURE9 tex;
+   LPDIRECT3DVERTEXBUFFER9 vertex_buf;
+   LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
+};
+
 typedef struct hlsl_d3d9_renderchain
 {
    unsigned pixel_size;
    uint64_t frame_count;
+   struct
+   {
+      LPDIRECT3DTEXTURE9 tex[TEXTURES];
+      LPDIRECT3DVERTEXBUFFER9 vertex_buf[TEXTURES];
+      unsigned ptr;
+      unsigned last_width[TEXTURES];
+      unsigned last_height[TEXTURES];
+   } prev;
    unsigned last_width, last_height;
    unsigned tex_w;
    unsigned tex_h;

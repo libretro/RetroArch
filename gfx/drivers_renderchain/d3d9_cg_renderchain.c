@@ -79,7 +79,7 @@ struct CGVertex
    float r, g, b, a;
 };
 
-struct Pass
+struct cg_pass
 {
    unsigned last_width, last_height;
    struct LinkInfo info;
@@ -91,7 +91,7 @@ struct Pass
    struct unsigned_vector_list *attrib_map;
 };
 
-#define VECTOR_LIST_TYPE struct Pass
+#define VECTOR_LIST_TYPE struct cg_pass
 #define VECTOR_LIST_NAME pass
 #include "../../libretro-common/lists/vector_list.c"
 #undef VECTOR_LIST_TYPE
@@ -257,7 +257,7 @@ error:
 
 static void d3d9_cg_renderchain_set_shader_params(
       cg_renderchain_t *chain,
-      struct Pass *pass,
+      struct cg_pass *pass,
       unsigned video_w, unsigned video_h,
       unsigned tex_w, unsigned tex_h,
       unsigned viewport_w, unsigned viewport_h)
@@ -306,7 +306,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
    bool texcoord1_taken                        = false;
    bool stream_taken[4]                        = {false};
    cg_renderchain_t *chain                     = (cg_renderchain_t*)data;
-   struct Pass          *pass                  = (struct Pass*)pass_data;
+   struct cg_pass          *pass               = (struct cg_pass*)pass_data;
    static const D3DVERTEXELEMENT9 decl_end     = D3DDECL_END();
    D3DVERTEXELEMENT9 decl[MAXD3DDECLLENGTH]    = {{0}};
    bool *indices                               = NULL;
@@ -447,7 +447,7 @@ static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,
    CGparameter param;
    float video_size[2];
    float texture_size[2];
-   struct Pass    *pass = (struct Pass*)pass_data;
+   struct cg_pass *pass = (struct cg_pass*)pass_data;
    video_size[0]        = chain->passes->data[0].last_width;
    video_size[1]        = chain->passes->data[0].last_height;
    texture_size[0]      = chain->passes->data[0].info.tex_w;
@@ -494,7 +494,7 @@ static void d3d9_cg_renderchain_bind_prev(void *data, const void *pass_data)
    char attr_tex_size[64]   = {0};
    char attr_coord[64]      = {0};
    cg_renderchain_t *chain  = (cg_renderchain_t*)data;
-   struct Pass       *pass  = (struct Pass*)pass_data;
+   struct cg_pass    *pass  = (struct cg_pass*)pass_data;
    static const char *prev_names[] = {
       "PREV",
       "PREV1",
@@ -581,7 +581,7 @@ static void d3d9_cg_renderchain_add_lut_internal(void *data,
 
 static void d3d9_cg_renderchain_bind_pass(
       cg_renderchain_t *chain,
-      struct Pass *pass, unsigned pass_index)
+      struct cg_pass *pass, unsigned pass_index)
 {
    unsigned i, index;
 
@@ -796,7 +796,7 @@ static bool d3d9_cg_renderchain_create_first_pass(
       const struct LinkInfo *info, unsigned fmt)
 {
    unsigned i;
-   struct Pass pass;
+   struct cg_pass pass;
    D3DMATRIX ident;
 
    if (!chain)
@@ -897,7 +897,7 @@ static bool d3d9_cg_renderchain_set_pass_size(
       cg_renderchain_t *chain,
       unsigned pass_index, unsigned width, unsigned height)
 {
-   struct Pass *pass = (struct Pass*)&chain->passes->data[pass_index];
+   struct cg_pass *pass = (struct cg_pass*)&chain->passes->data[pass_index];
 
    if (width != pass->info.tex_w || height != pass->info.tex_h)
    {
@@ -1034,7 +1034,7 @@ static bool d3d9_cg_renderchain_add_pass(
       void *data,
       const struct LinkInfo *info)
 {
-   struct Pass pass;
+   struct cg_pass pass;
    cg_renderchain_t *chain     = (cg_renderchain_t*)data;
 
    pass.info                   = *info;
@@ -1174,7 +1174,7 @@ static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
 
 static void cg_d3d9_renderchain_set_vertices(
       cg_renderchain_t *chain,
-      struct Pass *pass,
+      struct cg_pass *pass,
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned vp_width, unsigned vp_height,
@@ -1276,7 +1276,7 @@ static void cg_d3d9_renderchain_blit_to_texture(
       unsigned pitch)
 {
    D3DLOCKED_RECT d3dlr = {0, NULL};
-   struct Pass *first   = (struct Pass*)&chain->passes->data[0];
+   struct cg_pass *first   = (struct cg_pass*)&chain->passes->data[0];
 
    if (
          (first->last_width != width || first->last_height != height)
@@ -1330,7 +1330,7 @@ static void cg_d3d9_renderchain_unbind_all(cg_renderchain_t *chain)
 
 static void cg_d3d9_renderchain_set_params(
       cg_renderchain_t *chain,
-      struct Pass *pass,
+      struct cg_pass *pass,
       unsigned pass_index)
 {
    unsigned i;
@@ -1360,7 +1360,7 @@ static void cg_d3d9_renderchain_set_params(
 
 static void cg_d3d9_renderchain_render_pass(
       cg_renderchain_t *chain,
-      struct Pass *pass,
+      struct cg_pass *pass,
       unsigned pass_index)
 {
    unsigned i, index;
@@ -1434,7 +1434,7 @@ static bool d3d9_cg_renderchain_render(
 {
    LPDIRECT3DSURFACE9 back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
-   struct Pass *last_pass  = NULL;
+   struct cg_pass *last_pass  = NULL;
    cg_renderchain_t *chain = d3d ? (cg_renderchain_t*)d3d->renderchain_data : NULL;
 
    d3d9_cg_renderchain_start_render(chain);
@@ -1455,8 +1455,8 @@ static bool d3d9_cg_renderchain_render(
    for (i = 0; i < chain->passes->count - 1; i++)
    {
       D3DVIEWPORT9   viewport = {0};
-      struct Pass *from_pass  = (struct Pass*)&chain->passes->data[i];
-      struct Pass *to_pass    = (struct Pass*)&chain->passes->data[i + 1];
+      struct cg_pass *from_pass  = (struct cg_pass*)&chain->passes->data[i];
+      struct cg_pass *to_pass    = (struct cg_pass*)&chain->passes->data[i + 1];
 
       d3d9_texture_get_surface_level(to_pass->tex, 0, (void**)&target);
 
@@ -1496,7 +1496,7 @@ static bool d3d9_cg_renderchain_render(
    /* Final pass */
    d3d9_device_set_render_target(chain->dev, 0, (void*)back_buffer);
 
-   last_pass = (struct Pass*)&chain->passes->
+   last_pass = (struct cg_pass*)&chain->passes->
       data[chain->passes->count - 1];
 
    d3d9_cg_renderchain_convert_geometry(chain, &last_pass->info,
