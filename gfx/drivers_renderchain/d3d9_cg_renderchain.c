@@ -1331,7 +1331,7 @@ static void cg_d3d9_renderchain_render_pass(
       state_tracker_t *tracker,
       unsigned pass_index)
 {
-   unsigned i, index;
+   unsigned i;
 
    cgD3D9BindProgram(pass->fPrg);
    cgD3D9BindProgram(pass->vPrg);
@@ -1364,17 +1364,17 @@ static void cg_d3d9_renderchain_render_pass(
 
       if (fparam)
       {
-         index           = cgGetParameterResourceIndex(fparam);
+         unsigned index  = cgGetParameterResourceIndex(fparam);
          bound_index     = index;
 
          d3d9_cg_renderchain_add_lut_internal(chain, index, i);
       }
 
-      vparam             = cgGetNamedParameter(pass->vPrg, chain->luts->data[i].id);
+      vparam = cgGetNamedParameter(pass->vPrg, chain->luts->data[i].id);
 
       if (vparam)
       {
-         index           = cgGetParameterResourceIndex(vparam);
+         unsigned index = cgGetParameterResourceIndex(vparam);
          if (index != (unsigned)bound_index)
             d3d9_cg_renderchain_add_lut_internal(chain, index, i);
       }
