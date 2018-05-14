@@ -3262,7 +3262,7 @@ bool config_load_remap(void)
       {
          runloop_msg_queue_push(msg_hash_to_str(
                   MSG_GAME_REMAP_FILE_LOADED), 1, 100, true);
-         rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
+         rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
          goto success;
       }
    }

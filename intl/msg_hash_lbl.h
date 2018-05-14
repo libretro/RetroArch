@@ -897,8 +897,12 @@ MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_LOAD,
       "remap_file_load")
 MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
       "remap_file_save_core")
+MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+      "remap_file_save_content_dir")
 MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
       "remap_file_save_game")
+MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+      "remap_file_remove_content_dir")
 MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE,
       "remap_file_remove_core")
 MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
