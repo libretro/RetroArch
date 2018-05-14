@@ -274,7 +274,9 @@ static void d3d9_cg_renderchain_set_shader_params(
    { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, \
       D3DDECLUSAGE_COLOR, (BYTE)(index) } \
 
-static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
+static bool d3d9_cg_renderchain_init_shader_fvf(
+      cg_renderchain_t *chain,
+      struct cg_pass *pass)
 {
    CGparameter param;
    unsigned index, i, count;
@@ -282,8 +284,6 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
    bool texcoord0_taken                        = false;
    bool texcoord1_taken                        = false;
    bool stream_taken[4]                        = {false};
-   cg_renderchain_t *chain                     = (cg_renderchain_t*)data;
-   struct cg_pass          *pass               = (struct cg_pass*)pass_data;
    static const D3DVERTEXELEMENT9 decl_end     = D3DDECL_END();
    D3DVERTEXELEMENT9 decl[MAXD3DDECLLENGTH]    = {{0}};
    bool *indices                               = NULL;
