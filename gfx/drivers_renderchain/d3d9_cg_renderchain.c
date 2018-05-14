@@ -57,12 +57,6 @@
       cgD3D9SetUniform(cgp, &val); \
 } while(0)
 
-#define VECTOR_LIST_TYPE unsigned
-#define VECTOR_LIST_NAME unsigned
-#include "../../libretro-common/lists/vector_list.c"
-#undef VECTOR_LIST_TYPE
-#undef VECTOR_LIST_NAME
-
 struct lut_info
 {
    LPDIRECT3DTEXTURE9 tex;
@@ -87,7 +81,7 @@ struct cg_pass
    LPDIRECT3DVERTEXBUFFER9 vertex_buf;
    LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
    CGprogram vPrg, fPrg;
-   struct unsigned_vector_list *attrib_map;
+   void *attrib_map;
 };
 
 #define VECTOR_LIST_TYPE struct cg_pass
@@ -96,11 +90,7 @@ struct cg_pass
 #undef VECTOR_LIST_TYPE
 #undef VECTOR_LIST_NAME
 
-#define VECTOR_LIST_TYPE struct lut_info
-#define VECTOR_LIST_NAME lut_info
-#include "../../libretro-common/lists/vector_list.c"
-#undef VECTOR_LIST_TYPE
-#undef VECTOR_LIST_NAME
+#include "d3d9_renderchain.h"
 
 typedef struct cg_renderchain
 {
@@ -410,12 +400,14 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
    for (i = 0; i < count; i++)
    {
       if (indices[i])
-         unsigned_vector_list_append(pass->attrib_map, 0);
+         unsigned_vector_list_append((struct unsigned_vector_list *)
+               pass->attrib_map, 0);
       else
       {
          D3DVERTEXELEMENT9 elem = D3D9_DECL_FVF_TEXCOORD(index, 3, tex_index);
 
-         unsigned_vector_list_append(pass->attrib_map, index);
+         unsigned_vector_list_append((struct unsigned_vector_list *)
+               pass->attrib_map, index);
 
          decl[i]     = elem;
 
@@ -438,7 +430,6 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
 static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,
       void *pass_data)
 {
-   unsigned index;
    CGparameter param;
    float video_size[2];
    float texture_size[2];
@@ -456,7 +447,7 @@ static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,
    param = cgGetNamedParameter(pass->fPrg, "ORIG.texture");
    if (param)
    {
-      index = cgGetParameterResourceIndex(param);
+      unsigned index = cgGetParameterResourceIndex(param);
       d3d9_set_texture(chain->dev, index, chain->passes->data[0].tex);
       d3d9_set_sampler_magfilter(chain->dev, index,
             d3d_translate_filter(chain->passes->data[0].info.pass->filter));
@@ -470,9 +461,11 @@ static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,
    param = cgGetNamedParameter(pass->vPrg, "ORIG.tex_coord");
    if (param)
    {
-      LPDIRECT3DVERTEXBUFFER9 vert_buf = (LPDIRECT3DVERTEXBUFFER9)chain->passes->data[0].vertex_buf;
-
-      index = pass->attrib_map->data[cgGetParameterResourceIndex(param)];
+      LPDIRECT3DVERTEXBUFFER9 vert_buf = (LPDIRECT3DVERTEXBUFFER9)
+         chain->passes->data[0].vertex_buf;
+      struct unsigned_vector_list *attrib_map = (struct unsigned_vector_list*)
+         pass->attrib_map;
+      unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
       d3d9_set_stream_source(chain->dev, index,
             vert_buf, 0, sizeof(struct CGVertex));
@@ -482,7 +475,7 @@ static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,
 
 static void d3d9_cg_renderchain_bind_prev(void *data, const void *pass_data)
 {
-   unsigned i, index;
+   unsigned i;
    float texture_size[2];
    char attr_texture[64]    = {0};
    char attr_input_size[64] = {0};
@@ -525,8 +518,7 @@ static void d3d9_cg_renderchain_bind_prev(void *data, const void *pass_data)
       if (param)
       {
          LPDIRECT3DTEXTURE9 tex;
-
-         index = cgGetParameterResourceIndex(param);
+         unsigned index = cgGetParameterResourceIndex(param);
 
          tex = (LPDIRECT3DTEXTURE9)
             chain->prev.tex[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
@@ -547,8 +539,8 @@ static void d3d9_cg_renderchain_bind_prev(void *data, const void *pass_data)
       {
          LPDIRECT3DVERTEXBUFFER9 vert_buf = (LPDIRECT3DVERTEXBUFFER9)
             chain->prev.vertex_buf[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
-
-         index = pass->attrib_map->data[cgGetParameterResourceIndex(param)];
+         struct unsigned_vector_list *attrib_map = (struct unsigned_vector_list*)pass->attrib_map;
+         unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
          d3d9_set_stream_source(chain->dev, index,
                vert_buf, 0, sizeof(struct CGVertex));
@@ -578,7 +570,7 @@ static void d3d9_cg_renderchain_bind_pass(
       cg_renderchain_t *chain,
       struct cg_pass *pass, unsigned pass_index)
 {
-   unsigned i, index;
+   unsigned i;
 
    /* We only bother binding passes which are two indices behind. */
    if (pass_index < 3)
@@ -614,7 +606,7 @@ static void d3d9_cg_renderchain_bind_pass(
       param = cgGetNamedParameter(pass->fPrg, attr_texture);
       if (param)
       {
-         index = cgGetParameterResourceIndex(param);
+         unsigned index = cgGetParameterResourceIndex(param);
          unsigned_vector_list_append(chain->bound_tex, index);
 
          d3d9_set_texture(chain->dev, index, chain->passes->data[i].tex);
@@ -629,9 +621,12 @@ static void d3d9_cg_renderchain_bind_pass(
       param = cgGetNamedParameter(pass->vPrg, attr_coord);
       if (param)
       {
-         index = pass->attrib_map->data[cgGetParameterResourceIndex(param)];
+         struct unsigned_vector_list *attrib_map = 
+            (struct unsigned_vector_list*)pass->attrib_map;
+         unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
-         d3d9_set_stream_source(chain->dev, index, chain->passes->data[i].vertex_buf,
+         d3d9_set_stream_source(chain->dev, index,
+               chain->passes->data[i].vertex_buf,
                0, sizeof(struct CGVertex));
          unsigned_vector_list_append(chain->bound_vert, index);
       }
@@ -788,8 +783,6 @@ static bool d3d9_cg_renderchain_create_first_pass(
    struct cg_pass pass;
    struct d3d_matrix ident;
 
-   pass.attrib_map = unsigned_vector_list_new();
-
    d3d_matrix_identity(&ident);
 
    d3d9_set_transform(dev, D3DTS_WORLD, (D3DMATRIX*)&ident);
@@ -798,7 +791,8 @@ static bool d3d9_cg_renderchain_create_first_pass(
    pass.info        = *info;
    pass.last_width  = 0;
    pass.last_height = 0;
-   pass.attrib_map  = unsigned_vector_list_new();
+   pass.attrib_map  = (struct unsigned_vector_list*)
+      unsigned_vector_list_new();
 
    chain->prev.ptr  = 0;
 
@@ -1025,7 +1019,8 @@ static bool d3d9_cg_renderchain_add_pass(
    pass.info                   = *info;
    pass.last_width             = 0;
    pass.last_height            = 0;
-   pass.attrib_map             = unsigned_vector_list_new();
+   pass.attrib_map             = (struct unsigned_vector_list*)
+      unsigned_vector_list_new();
    pass.pool                   = D3DPOOL_DEFAULT;
 
    d3d9_cg_load_program(chain, &pass.fPrg,
