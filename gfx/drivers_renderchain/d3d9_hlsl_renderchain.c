@@ -22,7 +22,6 @@
 
 #include <d3d9.h>
 
-#include "d3d9_renderchain.h"
 #include "../../defines/d3d_defines.h"
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
@@ -41,7 +40,16 @@ struct hlsl_pass
    LPDIRECT3DTEXTURE9 tex;
    LPDIRECT3DVERTEXBUFFER9 vertex_buf;
    LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
+   void *attrib_map;
 };
+
+#define VECTOR_LIST_TYPE struct hlsl_pass
+#define VECTOR_LIST_NAME hlsl_pass
+#include "../../libretro-common/lists/vector_list.c"
+#undef VECTOR_LIST_TYPE
+#undef VECTOR_LIST_NAME
+
+#include "d3d9_renderchain.h"
 
 typedef struct hlsl_d3d9_renderchain
 {
@@ -202,12 +210,81 @@ static void hlsl_d3d9_renderchain_set_vertices(
    video_shader_driver_set_parameters(&params);
 }
 
+static void d3d9_hlsl_deinit_progs(hlsl_d3d9_renderchain_t *chain)
+{
+   RARCH_LOG("[D3D9 HLSL]: Destroying programs.\n");
+
+   if (chain->passes->count >= 1)
+   {
+      unsigned i;
+
+      d3d9_vertex_buffer_free(NULL, chain->passes->data[0].vertex_decl);
+
+      for (i = 1; i < chain->passes->count; i++)
+      {
+         if (chain->passes->data[i].tex)
+            d3d9_texture_free(chain->passes->data[i].tex);
+         chain->passes->data[i].tex = NULL;
+         d3d9_vertex_buffer_free(
+               chain->passes->data[i].vertex_buf,
+               chain->passes->data[i].vertex_decl);
+      }
+   }
+}
+
+static void d3d9_hlsl_destroy_resources(hlsl_d3d9_renderchain_t *chain)
+{
+   unsigned i;
+
+   for (i = 0; i < TEXTURES; i++)
+   {
+      if (chain->prev.tex[i])
+         d3d9_texture_free(chain->prev.tex[i]);
+      if (chain->prev.vertex_buf[i])
+         d3d9_vertex_buffer_free(chain->prev.vertex_buf[i], NULL);
+   }
+
+   d3d9_hlsl_deinit_progs(chain);
+
+   for (i = 0; i < chain->luts->count; i++)
+   {
+      if (chain->luts->data[i].tex)
+         d3d9_texture_free(chain->luts->data[i].tex);
+   }
+}
+
 static void hlsl_d3d9_renderchain_free(void *data)
 {
+   unsigned i;
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)data;
 
    if (!chain)
       return;
+
+   d3d9_hlsl_destroy_resources(chain);
+
+   if (chain->passes)
+   {
+      unsigned i;
+
+      for (i = 0; i < chain->passes->count; i++)
+      {
+         if (chain->passes->data[i].attrib_map)
+            free(chain->passes->data[i].attrib_map);
+      }
+
+      hlsl_pass_vector_list_free(chain->passes);
+
+      chain->passes = NULL;
+   }
+
+   lut_info_vector_list_free(chain->luts);
+   unsigned_vector_list_free(chain->bound_tex);
+   unsigned_vector_list_free(chain->bound_vert);
+
+   chain->luts       = NULL;
+   chain->bound_tex  = NULL;
+   chain->bound_vert = NULL;
 
    d3d9_texture_free(chain->tex);
    d3d9_vertex_buffer_free(chain->vertex_buf, chain->vertex_decl);
@@ -220,6 +297,11 @@ void *hlsl_d3d9_renderchain_new(void)
       (hlsl_d3d9_renderchain_t*)calloc(1, sizeof(*renderchain));
    if (!renderchain)
       return NULL;
+
+   renderchain->passes     = hlsl_pass_vector_list_new();
+   renderchain->luts       = lut_info_vector_list_new();
+   renderchain->bound_tex  = unsigned_vector_list_new();
+   renderchain->bound_vert = unsigned_vector_list_new();
 
    return renderchain;
 }
