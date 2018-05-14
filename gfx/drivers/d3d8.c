@@ -90,18 +90,18 @@ static void d3d8_renderchain_set_mvp(
       void *shader_data,
       const void *mat_data)
 {
-   D3DMATRIX matrix;
+   struct d3d_matrix matrix;
    d3d8_video_t      *d3d = (d3d8_video_t*)data;
 
    d3d_matrix_identity(&matrix);
 
-   d3d8_set_transform(d3d->dev, D3DTS_PROJECTION, &matrix);
-   d3d8_set_transform(d3d->dev, D3DTS_VIEW, &matrix);
+   d3d8_set_transform(d3d->dev, D3DTS_PROJECTION, (D3DMATRIX*)&matrix);
+   d3d8_set_transform(d3d->dev, D3DTS_VIEW, (D3DMATRIX*)&matrix);
 
    if (mat_data)
       d3d_matrix_transpose(&matrix, mat_data);
 
-   d3d8_set_transform(d3d->dev, D3DTS_WORLD, &matrix);
+   d3d8_set_transform(d3d->dev, D3DTS_WORLD, (D3DMATRIX*)&matrix);
 }
 
 static bool d3d8_renderchain_create_first_pass(void *data,
@@ -877,7 +877,7 @@ static void d3d8_set_viewport(void *data,
       bool force_full,
       bool allow_rotate)
 {
-   D3DMATRIX proj, ortho, rot, matrix;
+   struct d3d_matrix proj, ortho, rot, matrix;
    int x               = 0;
    int y               = 0;
    d3d8_video_t *d3d = (d3d8_video_t*)data;

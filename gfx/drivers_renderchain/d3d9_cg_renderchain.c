@@ -793,14 +793,14 @@ static bool d3d9_cg_renderchain_create_first_pass(
 {
    unsigned i;
    struct cg_pass pass;
-   D3DMATRIX ident;
+   struct d3d_matrix ident;
 
    pass.attrib_map = unsigned_vector_list_new();
 
    d3d_matrix_identity(&ident);
 
-   d3d9_set_transform(dev, D3DTS_WORLD, &ident);
-   d3d9_set_transform(dev, D3DTS_VIEW, &ident);
+   d3d9_set_transform(dev, D3DTS_WORLD, (D3DMATRIX*)&ident);
+   d3d9_set_transform(dev, D3DTS_VIEW,  (D3DMATRIX*)&ident);
 
    pass.info        = *info;
    pass.last_width  = 0;
@@ -1153,7 +1153,7 @@ static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
-   D3DMATRIX proj, ortho, rot, matrix;
+   struct d3d_matrix proj, ortho, rot, matrix;
 
    d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
    d3d_matrix_identity(&rot);
@@ -1162,7 +1162,7 @@ static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
    d3d_matrix_multiply(&proj, &ortho, &rot);
    d3d_matrix_transpose(&matrix, &proj);
 
-   d3d9_cg_renderchain_set_shader_mvp(chain, vPrg, &matrix);
+   d3d9_cg_renderchain_set_shader_mvp(chain, vPrg, (D3DMATRIX*)&matrix);
 }
 
 static void cg_d3d9_renderchain_set_vertices(
