@@ -4279,6 +4279,11 @@ bool config_save_overrides(int override_type)
 
       for (i = 0; i < (unsigned)path_settings_size; i++)
       {
+
+         /* blacklist video_shader, better handled by shader presets*/ 
+         /* to-do: add setting to control blacklisting */
+         if (string_is_equal(path_settings[i].ident, "video_shader"))
+            continue;
          if (!string_is_equal(path_settings[i].ptr, path_overrides[i].ptr))
          {
             RARCH_LOG("   original: %s=%s\n",
@@ -4309,6 +4314,9 @@ bool config_save_overrides(int override_type)
             config_set_int(conf, cfg, overrides->uints.input_joypad_map[i]);
          }
 
+
+         /* blacklist these since they are handled by remaps */
+         /* to-do: add setting to control blacklisting
          if (settings->uints.input_libretro_device[i]
                != overrides->uints.input_libretro_device[i])
          {
@@ -4322,6 +4330,7 @@ bool config_save_overrides(int override_type)
             snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
             config_set_int(conf, cfg, overrides->uints.input_analog_dpad_mode[i]);
          }
+         */
       }
 
       ret = false;
