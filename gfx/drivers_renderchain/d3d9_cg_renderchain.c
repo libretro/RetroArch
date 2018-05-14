@@ -802,7 +802,6 @@ static bool d3d9_cg_renderchain_create_first_pass(
       chain->prev.tex[i] = (LPDIRECT3DTEXTURE9)
          d3d9_texture_new(chain->dev, NULL,
             info->tex_w, info->tex_h, 1, 0, fmt,
-            fmt,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
       if (!chain->prev.tex[i])
@@ -1334,7 +1333,7 @@ static bool d3d9_cg_renderchain_render(
 
    first_pass                 = (struct cg_pass*)&chain->passes->data[0];
 
-   d3d9_renderchain_convert_geometry(
+   d3d9_convert_geometry(
          &first_pass->info,
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
