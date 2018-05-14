@@ -862,11 +862,9 @@ static bool d3d9_cg_renderchain_init(
 }
 
 static bool d3d9_cg_renderchain_set_pass_size(
-      cg_renderchain_t *chain,
-      unsigned pass_index, unsigned width, unsigned height)
+      cg_renderchain_t *chain, struct cg_pass *pass,
+      unsigned width, unsigned height)
 {
-   struct cg_pass *pass = (struct cg_pass*)&chain->passes->data[pass_index];
-
    if (width != pass->info.tex_w || height != pass->info.tex_h)
    {
       d3d9_texture_free(pass->tex);
@@ -900,8 +898,10 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
 {
    unsigned i;
    struct LinkInfo link_info;
-   unsigned current_width            = d3d->video_info.input_scale * RARCH_SCALE_BASE;
-   unsigned current_height           = d3d->video_info.input_scale * RARCH_SCALE_BASE;
+   unsigned input_scale              = d3d->video_info.input_scale 
+      * RARCH_SCALE_BASE;
+   unsigned current_width            = input_scale;
+   unsigned current_height           = input_scale;
    unsigned out_width                = 0;
    unsigned out_height               = 0;
 
@@ -909,7 +909,9 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
    link_info.tex_w                   = current_width;
    link_info.tex_h                   = current_height;
 
-   if (!d3d9_cg_renderchain_set_pass_size(chain, 0,
+
+   if (!d3d9_cg_renderchain_set_pass_size(chain,
+            (struct cg_pass*)&chain->passes->data[0],
             current_width, current_height))
    {
       RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
@@ -926,7 +928,8 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
       link_info.tex_w = next_pow2(out_width);
       link_info.tex_h = next_pow2(out_height);
 
-      if (!d3d9_cg_renderchain_set_pass_size(chain, i,
+      if (!d3d9_cg_renderchain_set_pass_size(chain,
+               (struct cg_pass*)&chain->passes->data[i],
                link_info.tex_w, link_info.tex_h))
       {
          RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
