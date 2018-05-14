@@ -282,9 +282,6 @@ static bool hlsl_d3d9_renderchain_init(
    }
 
    chain->dev                         = dev;
-#if 0
-   chain->state_tracker               = NULL;
-#endif
    chain->final_viewport              = (D3DVIEWPORT9*)final_viewport;
    chain->frame_count                 = 0;
    chain->pixel_size                  = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
@@ -305,6 +302,7 @@ static void hlsl_d3d9_renderchain_set_final_viewport(
 
 static bool hlsl_d3d9_renderchain_render(
       d3d9_video_t *d3d,
+      state_tracker_t *tracker,
       const void *frame,
       unsigned frame_width, unsigned frame_height,
       unsigned pitch, unsigned rotation)
@@ -350,15 +348,6 @@ static bool hlsl_d3d9_renderchain_add_pass(
    return true;
 }
 
-static void hlsl_d3d9_renderchain_add_state_tracker(
-      void *data, void *tracker_data)
-{
-   (void)data;
-   (void)tracker_data;
-
-   /* stub */
-}
-
 static void hlsl_d3d9_renderchain_convert_geometry(
 	  void *data, const struct LinkInfo *info,
       unsigned *out_width, unsigned *out_height,
@@ -380,7 +369,6 @@ d3d9_renderchain_driver_t hlsl_d3d9_renderchain = {
    hlsl_d3d9_renderchain_set_final_viewport,
    hlsl_d3d9_renderchain_add_pass,
    NULL,
-   hlsl_d3d9_renderchain_add_state_tracker,
    hlsl_d3d9_renderchain_render,
    hlsl_d3d9_renderchain_convert_geometry,
    NULL,

@@ -51,8 +51,8 @@ typedef struct d3d9_renderchain_driver
    bool (*add_lut)(void *data,
          const char *id, const char *path,
          bool smooth);
-   void (*add_state_tracker)(void *data, void *tracker_data);
-   bool (*render)(d3d9_video_t *d3d, const void *frame,
+   bool (*render)(d3d9_video_t *d3d, state_tracker_t *tracker,
+         const void *frame,
          unsigned width, unsigned height, unsigned pitch, unsigned rotation);
    void (*convert_geometry)(void *data, const struct LinkInfo *info,
          unsigned *out_width, unsigned *out_height,
@@ -86,6 +86,7 @@ typedef struct d3d9_video
    math_matrix_4x4 mvp_rotate;
    math_matrix_4x4 mvp_transposed;
 
+   state_tracker_t *state_tracker;
    struct video_viewport vp;
    struct video_shader shader;
    video_info_t video_info;

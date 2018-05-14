@@ -122,7 +122,6 @@ typedef struct cg_renderchain
    struct unsigned_vector_list *bound_tex;
    struct unsigned_vector_list *bound_vert;
    struct lut_info_vector_list *luts;
-   state_tracker_t *state_tracker;
    CGcontext cgCtx;
 } cg_renderchain_t;
 
@@ -696,12 +695,6 @@ static void d3d9_cg_destroy_resources(void *data)
          d3d9_texture_free(cg_data->luts->data[i].tex);
    }
 
-   if (cg_data->state_tracker)
-   {
-      state_tracker_free(cg_data->state_tracker);
-      cg_data->state_tracker = NULL;
-   }
-
    cgD3D9UnloadAllPrograms();
    cgD3D9SetDevice(NULL);
 }
@@ -870,7 +863,6 @@ static bool d3d9_cg_renderchain_init(
    }
 
    chain->dev            = dev;
-   chain->state_tracker  = NULL;
    chain->final_viewport = (D3DVIEWPORT9*)final_viewport;
    chain->frame_count    = 0;
    chain->pixel_size     = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
@@ -1115,16 +1107,6 @@ static bool d3d9_cg_renderchain_add_lut(void *data,
    return true;
 }
 
-static void d3d9_cg_renderchain_add_state_tracker(
-      void *data, void *tracker_data)
-{
-   state_tracker_t *tracker = (state_tracker_t*)tracker_data;
-   cg_renderchain_t     *chain = (cg_renderchain_t*)data;
-   if (chain->state_tracker)
-      state_tracker_free(chain->state_tracker);
-   chain->state_tracker = tracker;
-}
-
 static void d3d9_cg_renderchain_start_render(cg_renderchain_t *chain)
 {
    chain->passes->data[0].tex         = chain->prev.tex[chain->prev.ptr];
@@ -1324,36 +1306,34 @@ static void cg_d3d9_renderchain_unbind_all(cg_renderchain_t *chain)
 static void cg_d3d9_renderchain_set_params(
       cg_renderchain_t *chain,
       struct cg_pass *pass,
+      state_tracker_t *tracker,
       unsigned pass_index)
 {
    unsigned i;
-
    /* Set state parameters. */
-   if (chain->state_tracker)
+   /* Only query uniforms in first pass. */
+   static struct state_tracker_uniform tracker_info[GFX_MAX_VARIABLES];
+   static unsigned cnt = 0;
+
+   if (pass_index == 1)
+      cnt = state_tracker_get_uniform(chain->state_tracker, tracker_info,
+            GFX_MAX_VARIABLES, chain->frame_count);
+
+   for (i = 0; i < cnt; i++)
    {
-      /* Only query uniforms in first pass. */
-      static struct state_tracker_uniform tracker_info[GFX_MAX_VARIABLES];
-      static unsigned cnt = 0;
-
-      if (pass_index == 1)
-         cnt = state_tracker_get_uniform(chain->state_tracker, tracker_info,
-               GFX_MAX_VARIABLES, chain->frame_count);
-
-      for (i = 0; i < cnt; i++)
-      {
-         CGparameter param_f = cgGetNamedParameter(
-               pass->fPrg, tracker_info[i].id);
-         CGparameter param_v = cgGetNamedParameter(
-               pass->vPrg, tracker_info[i].id);
-         d3d9_cg_set_param_1f(param_f, &tracker_info[i].value);
-         d3d9_cg_set_param_1f(param_v, &tracker_info[i].value);
-      }
+      CGparameter param_f = cgGetNamedParameter(
+            pass->fPrg, tracker_info[i].id);
+      CGparameter param_v = cgGetNamedParameter(
+            pass->vPrg, tracker_info[i].id);
+      d3d9_cg_set_param_1f(param_f, &tracker_info[i].value);
+      d3d9_cg_set_param_1f(param_v, &tracker_info[i].value);
    }
 }
 
 static void cg_d3d9_renderchain_render_pass(
       cg_renderchain_t *chain,
       struct cg_pass *pass,
+      state_tracker_t *tracker,
       unsigned pass_index)
 {
    unsigned i, index;
@@ -1407,7 +1387,8 @@ static void cg_d3d9_renderchain_render_pass(
 
    d3d9_cg_renderchain_bind_pass(chain, pass, pass_index);
 
-   cg_d3d9_renderchain_set_params(chain, pass, pass_index);
+   if (tracker)
+      cg_d3d9_renderchain_set_params(chain, pass, tracker, pass_index);
 
    d3d9_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
@@ -1421,6 +1402,7 @@ static void cg_d3d9_renderchain_render_pass(
 
 static bool d3d9_cg_renderchain_render(
       d3d9_video_t *d3d,
+      state_tracker_t *tracker,
       const void *frame_data,
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
@@ -1479,7 +1461,8 @@ static bool d3d9_cg_renderchain_render(
             out_width, out_height, 0);
 
       if (chain)
-         cg_d3d9_renderchain_render_pass(chain, from_pass, i + 1);
+         cg_d3d9_renderchain_render_pass(chain, tracker,
+               from_pass, i + 1);
 
       current_width = out_width;
       current_height = out_height;
@@ -1505,7 +1488,7 @@ static bool d3d9_cg_renderchain_render(
          rotation);
 
    if (chain)
-      cg_d3d9_renderchain_render_pass(chain,
+      cg_d3d9_renderchain_render_pass(chain, tracker,
             last_pass, chain->passes->count);
 
    chain->frame_count++;
@@ -1620,7 +1603,6 @@ d3d9_renderchain_driver_t cg_d3d9_renderchain = {
    d3d9_cg_renderchain_set_final_viewport,
    d3d9_cg_renderchain_add_pass,
    d3d9_cg_renderchain_add_lut,
-   d3d9_cg_renderchain_add_state_tracker,
    d3d9_cg_renderchain_render,
    d3d9_cg_renderchain_convert_geometry,
    d3d9_cg_renderchain_set_font_rect,

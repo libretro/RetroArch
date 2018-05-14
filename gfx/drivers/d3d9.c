@@ -129,8 +129,7 @@ static bool d3d9_init_imports(d3d9_video_t *d3d)
       return false;
    }
 
-   d3d->renderchain_driver->add_state_tracker(
-         d3d->renderchain_data, state_tracker);
+   d3d->state_tracker = state_tracker;
 
    return true;
 }
@@ -319,13 +318,10 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
          }
       }
 
-      if (d3d->renderchain_driver->add_state_tracker)
+      if (!d3d9_init_imports(d3d))
       {
-         if (!d3d9_init_imports(d3d))
-         {
-            RARCH_ERR("[D3D9]: Failed to init imports.\n");
-            return false;
-         }
+         RARCH_ERR("[D3D9]: Failed to init imports.\n");
+         return false;
       }
    }
 
@@ -611,6 +607,11 @@ static void d3d9_deinitialize(d3d9_video_t *d3d)
 
    d3d9_deinit_chain(d3d);
    d3d9_vertex_buffer_free(d3d->menu_display.buffer, d3d->menu_display.decl);
+
+   if (d3d->state_tracker)
+      state_tracker_free(d3d->state_tracker);
+
+   d3d->state_tracker       = NULL;
    d3d->menu_display.buffer = NULL;
    d3d->menu_display.decl = NULL;
 }
@@ -1646,7 +1647,7 @@ static bool d3d9_frame(void *data, const void *frame,
    }
 
    if (!d3d->renderchain_driver->render(
-            d3d,
+            d3d, d3d->state_tracker,
             frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
    {
