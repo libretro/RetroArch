@@ -796,9 +796,6 @@ static bool d3d9_cg_renderchain_create_first_pass(
    struct cg_pass pass;
    D3DMATRIX ident;
 
-   if (!chain)
-      return false;
-
    pass.attrib_map = unsigned_vector_list_new();
 
    d3d_matrix_identity(&ident);
