@@ -85,7 +85,7 @@ struct cg_pass
 };
 
 #define VECTOR_LIST_TYPE struct cg_pass
-#define VECTOR_LIST_NAME pass
+#define VECTOR_LIST_NAME cg_pass
 #include "../../libretro-common/lists/vector_list.c"
 #undef VECTOR_LIST_TYPE
 #undef VECTOR_LIST_NAME
@@ -108,7 +108,7 @@ typedef struct cg_renderchain
    CGprogram fStock;
    LPDIRECT3DDEVICE9 dev;
    D3DVIEWPORT9 *final_viewport;
-   struct pass_vector_list *passes;
+   struct cg_pass_vector_list  *passes;
    struct unsigned_vector_list *bound_tex;
    struct unsigned_vector_list *bound_vert;
    struct lut_info_vector_list *luts;
@@ -724,7 +724,7 @@ void d3d9_cg_renderchain_free(void *data)
             free(cg_data->passes->data[i].attrib_map);
       }
 
-      pass_vector_list_free(cg_data->passes);
+      cg_pass_vector_list_free(cg_data->passes);
 
       cg_data->passes = NULL;
    }
@@ -748,7 +748,7 @@ static void *d3d9_cg_renderchain_new(void)
    if (!renderchain)
       return NULL;
 
-   renderchain->passes     = pass_vector_list_new();
+   renderchain->passes     = cg_pass_vector_list_new();
    renderchain->luts       = lut_info_vector_list_new();
    renderchain->bound_tex  = unsigned_vector_list_new();
    renderchain->bound_vert = unsigned_vector_list_new();
@@ -833,7 +833,7 @@ static bool d3d9_cg_renderchain_create_first_pass(
 
    if (!d3d9_cg_renderchain_init_shader_fvf(chain, &pass))
       return false;
-   pass_vector_list_append(chain->passes, pass);
+   cg_pass_vector_list_append(chain->passes, pass);
    return true;
 }
 
@@ -1056,7 +1056,7 @@ static bool d3d9_cg_renderchain_add_pass(
    d3d9_set_sampler_address_v(chain->dev, 0, D3DTADDRESS_BORDER);
    d3d9_set_texture(chain->dev, 0, NULL);
 
-   pass_vector_list_append(chain->passes, pass);
+   cg_pass_vector_list_append(chain->passes, pass);
 
    return true;
 }
