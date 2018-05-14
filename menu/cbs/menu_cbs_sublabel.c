@@ -299,6 +299,8 @@ default_sublabel_macro(action_bind_sublabel_accounts_list,                      
 default_sublabel_macro(action_bind_sublabel_input_meta_rewind,                     MENU_ENUM_SUBLABEL_INPUT_META_REWIND)
 default_sublabel_macro(action_bind_sublabel_restart_content,                       MENU_ENUM_SUBLABEL_RESTART_CONTENT)
 default_sublabel_macro(action_bind_sublabel_save_current_config_override_core,     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE)
+default_sublabel_macro(action_bind_sublabel_save_current_config_override_content_dir,
+                                                                                   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR)
 default_sublabel_macro(action_bind_sublabel_save_current_config_override_game,     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME)
 default_sublabel_macro(action_bind_sublabel_core_cheat_options,                    MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_shader_options,                        MENU_ENUM_SUBLABEL_SHADER_OPTIONS)
@@ -1037,6 +1039,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_current_config_override_core);
+            break;
+         case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_current_config_override_content_dir);
             break;
          case MENU_ENUM_LABEL_RESTART_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_restart_content);

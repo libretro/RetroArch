@@ -288,6 +288,7 @@ void input_remapping_set_defaults(bool deinit)
          free(global->name.remapfile);
       global->name.remapfile = NULL;
       rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
+      rarch_ctl(RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
       rarch_ctl(RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE, NULL);
    }
 

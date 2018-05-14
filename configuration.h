@@ -57,6 +57,7 @@ enum override_type
 {
    OVERRIDE_NONE = 0,
    OVERRIDE_CORE,
+   OVERRIDE_CONTENT_DIR,
    OVERRIDE_GAME
 };
 
@@ -177,6 +178,7 @@ typedef struct settings
       bool quick_menu_show_shaders;
       bool quick_menu_show_save_core_overrides;
       bool quick_menu_show_save_game_overrides;
+      bool quick_menu_show_save_content_dir_overrides;
       bool quick_menu_show_information;
       bool kiosk_mode_enable;
 

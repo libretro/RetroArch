@@ -1343,12 +1343,16 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
       "Load Remap File")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
       "Save Core Remap File")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
+      "Save Content Directory Remap File")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
       "Save Game Remap File")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
       "Delete Core Remap File")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
       "Delete Game Remap File")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+      "Delete Game Content Directory Remap File")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REQUIRED,
       "Required")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -1409,6 +1413,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
       "Save Current Configuration")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
       "Save Core Overrides")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+      "Save Content Directory Overrides")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "Save Game Overrides")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
@@ -3075,6 +3081,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
       "Restarts the content from the beginning.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
       "Saves an override configuration file which will apply for all content loaded with this core. Will take precedence over the main configuration.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+      "Saves an override configuration file which will apply for all content loaded from the same directory as the current file. Will take precedence over the main configuration.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "Saves an override configuration file which will apply for the current content only. Will take precedence over the main configuration.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
@@ -3669,7 +3677,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
       "Suggest loaded core first")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
-      "Configuration Override options")
+      "Overrides")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
       "Options for overriding the global configuration.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,

@@ -2225,6 +2225,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_RESUME_CONTENT:
          return xmb->textures.list[XMB_TEXTURE_RESUME];
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
       case MENU_ENUM_LABEL_FAVORITES:

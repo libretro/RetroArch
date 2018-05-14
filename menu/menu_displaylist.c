@@ -3207,6 +3207,11 @@ static int menu_displaylist_parse_options_remappings(
          MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
          MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR),
+         msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR),
+         MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+         MENU_SETTING_ACTION, 0, 0);
+   menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME),
          msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME),
          MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
@@ -3227,6 +3232,15 @@ static int menu_displaylist_parse_options_remappings(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
             msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
             MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+
+   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR),
+            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR),
+            MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
             MENU_SETTING_ACTION, 0, 0);
    }
 
@@ -6556,6 +6570,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                count++;
             }
 
+            if (settings->bools.quick_menu_show_save_content_dir_overrides 
+                  && !settings->bools.kiosk_mode_enable)
+            {
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
+                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
+                     MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+                     MENU_SETTING_ACTION, 0, 0);
+               count++;
+            }
+
             if (settings->bools.quick_menu_show_save_game_overrides 
                   && !settings->bools.kiosk_mode_enable)
             {
@@ -6566,6 +6591,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      MENU_SETTING_ACTION, 0, 0);
                count++;
             }
+
          }
 
          if (count == 0)

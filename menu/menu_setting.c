@@ -2169,6 +2169,16 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+               MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
                MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
                &group_info,

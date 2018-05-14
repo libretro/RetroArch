@@ -1297,7 +1297,9 @@ static void command_event_restore_default_shader_preset(void)
 
 static void command_event_restore_remaps(void)
 {
-   if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) || 
+       rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) || 
+       rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
       input_remapping_set_defaults(true);
 }
 
@@ -1520,6 +1522,7 @@ static void command_event_save_current_config(enum override_type type)
          break;
       case OVERRIDE_GAME:
       case OVERRIDE_CORE:
+      case OVERRIDE_CONTENT_DIR:
          if (config_save_overrides(type))
          {
             strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
@@ -2369,6 +2372,9 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
          command_event_save_current_config(OVERRIDE_CORE);
+         break;
+      case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+         command_event_save_current_config(OVERRIDE_CONTENT_DIR);
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
          command_event_save_current_config(OVERRIDE_GAME);
