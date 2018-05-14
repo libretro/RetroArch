@@ -19,8 +19,20 @@
 #include <stdint.h>
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
+#include <boolean.h>
+
+#include <d3d9.h>
+#include "../common/d3d9_common.h"
 
 RETRO_BEGIN_DECLS
+
+struct lut_info
+{
+   LPDIRECT3DTEXTURE9 tex;
+   char id[64];
+   bool smooth;
+};
 
 #define VECTOR_LIST_TYPE unsigned
 #define VECTOR_LIST_NAME unsigned
@@ -33,6 +45,34 @@ RETRO_BEGIN_DECLS
 #include "../../libretro-common/lists/vector_list.c"
 #undef VECTOR_LIST_TYPE
 #undef VECTOR_LIST_NAME
+
+static INLINE void d3d9_renderchain_blit_to_texture(
+      LPDIRECT3DTEXTURE9 tex,
+      const void *frame,
+      unsigned tex_width,  unsigned tex_height,
+      unsigned width,      unsigned height,
+      unsigned last_width, unsigned last_height,
+      unsigned pitch, unsigned pixel_size)
+{
+   D3DLOCKED_RECT d3dlr    = {0, NULL};
+
+   if (
+         (last_width != width || last_height != height)
+      )
+   {
+      d3d9_lock_rectangle(tex, 0, &d3dlr,
+            NULL, tex_height, D3DLOCK_NOSYSLOCK);
+      d3d9_lock_rectangle_clear(tex, 0, &d3dlr,
+            NULL, tex_height, D3DLOCK_NOSYSLOCK);
+   }
+
+   if (d3d9_lock_rectangle(tex, 0, &d3dlr, NULL, 0, 0))
+   {
+      d3d9_texture_blit(pixel_size, tex,
+            &d3dlr, frame, width, height, pitch);
+      d3d9_unlock_rectangle(tex);
+   }
+}
 
 RETRO_END_DECLS
 

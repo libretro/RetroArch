@@ -22,6 +22,7 @@
 
 #include <d3d9.h>
 
+#include "d3d9_renderchain.h"
 #include "../../defines/d3d_defines.h"
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
@@ -59,6 +60,11 @@ typedef struct hlsl_d3d9_renderchain
    unsigned tex_h;
    LPDIRECT3DDEVICE9 dev;
    D3DVIEWPORT9 *final_viewport;
+   struct hlsl_pass_vector_list  *passes;
+   struct unsigned_vector_list *bound_tex;
+   struct unsigned_vector_list *bound_vert;
+   struct lut_info_vector_list *luts;
+
    LPDIRECT3DTEXTURE9 tex;
    LPDIRECT3DVERTEXBUFFER9 vertex_buf;
    LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
@@ -196,32 +202,6 @@ static void hlsl_d3d9_renderchain_set_vertices(
    video_shader_driver_set_parameters(&params);
 }
 
-static void hlsl_d3d9_renderchain_blit_to_texture(
-      hlsl_d3d9_renderchain_t *chain, const void *frame,
-      unsigned width, unsigned height, unsigned pitch)
-{
-   D3DLOCKED_RECT d3dlr           = { 0, NULL };
-
-   if (chain->last_width != width || chain->last_height != height)
-   {
-      d3d9_lock_rectangle(chain->tex,
-            0, &d3dlr, NULL, chain->tex_h, D3DLOCK_NOSYSLOCK);
-      d3d9_lock_rectangle_clear(chain->tex,
-            0, &d3dlr, NULL, chain->tex_h, D3DLOCK_NOSYSLOCK);
-   }
-
-   /* Set the texture to NULL so D3D doesn't 
-    * complain about it being in use... */
-   d3d9_set_texture(chain->dev, 0, NULL);
-
-   if (d3d9_lock_rectangle(chain->tex, 0, &d3dlr, NULL, 0, 0))
-   {
-      d3d9_texture_blit(chain->pixel_size, chain->tex,
-            &d3dlr, frame, width, height, pitch);
-      d3d9_unlock_rectangle(chain->tex);
-   }
-}
-
 static void hlsl_d3d9_renderchain_free(void *data)
 {
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)data;
@@ -318,8 +298,17 @@ static bool hlsl_d3d9_renderchain_render(
 
    video_driver_get_size(&width, &height);
 
-   hlsl_d3d9_renderchain_blit_to_texture(chain,
-         frame, frame_width, frame_height, pitch);
+   d3d9_renderchain_blit_to_texture(chain->tex,
+         frame,
+         chain->tex_w,
+         chain->tex_h,
+         frame_width,
+         frame_height,
+         chain->last_width,
+         chain->last_height,
+         pitch,
+         chain->pixel_size);
+
    hlsl_d3d9_renderchain_set_vertices(d3d, chain,
          1, frame_width, frame_height, chain->frame_count);
 

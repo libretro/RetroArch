@@ -32,7 +32,6 @@
 #include <string/stdstring.h>
 
 #include "../common/d3d_common.h"
-#include "../common/d3d9_common.h"
 #include "../drivers/d3d_shaders/opaque.cg.d3d9.h"
 
 #include "../video_driver.h"
@@ -56,13 +55,6 @@
    if (cgp) \
       cgD3D9SetUniform(cgp, &val); \
 } while(0)
-
-struct lut_info
-{
-   LPDIRECT3DTEXTURE9 tex;
-   char id[64];
-   bool smooth;
-};
 
 struct CGVertex
 {
@@ -1239,33 +1231,6 @@ static void cg_d3d9_renderchain_set_vertices(
    }
 }
 
-static void cg_d3d9_renderchain_blit_to_texture(
-      cg_renderchain_t *chain,
-      const void *frame,
-      unsigned width, unsigned height,
-      unsigned pitch)
-{
-   D3DLOCKED_RECT d3dlr = {0, NULL};
-   struct cg_pass *first   = (struct cg_pass*)&chain->passes->data[0];
-
-   if (
-         (first->last_width != width || first->last_height != height)
-      )
-   {
-      d3d9_lock_rectangle(first->tex, 0, &d3dlr,
-            NULL, first->info.tex_h, D3DLOCK_NOSYSLOCK);
-      d3d9_lock_rectangle_clear(first->tex, 0, &d3dlr,
-            NULL, first->info.tex_h, D3DLOCK_NOSYSLOCK);
-   }
-
-   if (d3d9_lock_rectangle(first->tex, 0, &d3dlr, NULL, 0, 0))
-   {
-      d3d9_texture_blit(chain->pixel_size, first->tex,
-            &d3dlr, frame, width, height, pitch);
-      d3d9_unlock_rectangle(first->tex);
-   }
-}
-
 static void cg_d3d9_renderchain_unbind_all(cg_renderchain_t *chain)
 {
    unsigned i;
@@ -1407,19 +1372,30 @@ static bool d3d9_cg_renderchain_render(
    struct cg_pass *last_pass  = NULL;
    cg_renderchain_t *chain    = d3d ? 
       (cg_renderchain_t*)d3d->renderchain_data : NULL;
+   struct cg_pass *first_pass = NULL;
+   
 
    d3d9_cg_renderchain_start_render(chain);
 
-   current_width         = width;
-   current_height        = height;
+   current_width              = width;
+   current_height             = height;
+
+   first_pass                 = (struct cg_pass*)&chain->passes->data[0];
 
    d3d9_cg_renderchain_convert_geometry(chain,
-         &chain->passes->data[0].info,
+         &first_pass->info,
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
 
-   cg_d3d9_renderchain_blit_to_texture(chain,
-         frame_data, width, height, pitch);
+   d3d9_renderchain_blit_to_texture(first_pass->tex,
+         frame_data,
+         first_pass->info.tex_w,
+         first_pass->info.tex_h,
+         width,
+         height,
+         first_pass->last_width,
+         first_pass->last_height,
+         pitch, chain->pixel_size);
 
    /* Grab back buffer. */
    d3d9_device_get_render_target(chain->dev, 0, (void**)&back_buffer);
@@ -1485,10 +1461,9 @@ static bool d3d9_cg_renderchain_render(
          chain->final_viewport->Width, chain->final_viewport->Height,
          rotation);
 
-   if (chain)
-      cg_d3d9_renderchain_render_pass(chain, last_pass,
-            tracker,
-            chain->passes->count);
+   cg_d3d9_renderchain_render_pass(chain, last_pass,
+         tracker,
+         chain->passes->count);
 
    chain->frame_count++;
 
