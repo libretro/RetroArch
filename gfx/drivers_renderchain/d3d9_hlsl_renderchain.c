@@ -47,7 +47,7 @@ typedef struct hlsl_d3d9_renderchain
    LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
 } hlsl_d3d9_renderchain_t;
 
-static bool hlsl_d3d9_renderchain_init_shader_fvf(d3d9_video_t *d3d,
+static bool hlsl_d3d9_renderchain_init_shader_fvf(LPDIRECT3DDEVICE9 dev,
       hlsl_d3d9_renderchain_t *chain)
 {
    static const D3DVERTEXELEMENT9 VertexElements[] =
@@ -57,18 +57,18 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(d3d9_video_t *d3d,
       D3DDECL_END()
    };
 
-   return d3d9_vertex_declaration_new(d3d->dev,
+   return d3d9_vertex_declaration_new(dev,
          VertexElements, (void**)&chain->vertex_decl);
 }
 
-static bool hlsl_d3d9_renderchain_create_first_pass(d3d9_video_t *d3d,
-      const video_info_t *info)
+static bool hlsl_d3d9_renderchain_create_first_pass(
+      LPDIRECT3DDEVICE9 dev,
+      hlsl_d3d9_renderchain_t *chain,
+      const video_info_t *info,
+      unsigned fmt)
 {
-   hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)
-      d3d->renderchain_data;
-
    chain->vertex_buf        = d3d9_vertex_buffer_new(
-         d3d->dev, 4 * sizeof(Vertex),
+         dev, 4 * sizeof(Vertex),
          D3DUSAGE_WRITEONLY,
          0,
          D3DPOOL_MANAGED,
@@ -77,7 +77,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(d3d9_video_t *d3d,
    if (!chain->vertex_buf)
       return false;
 
-   chain->tex = d3d9_texture_new(d3d->dev, NULL,
+   chain->tex = d3d9_texture_new(dev, NULL,
          chain->tex_w, chain->tex_h, 1, 0,
          info->rgb32 ? 
          d3d9_get_xrgb8888_format() : d3d9_get_rgb565_format(),
@@ -86,12 +86,12 @@ static bool hlsl_d3d9_renderchain_create_first_pass(d3d9_video_t *d3d,
    if (!chain->tex)
       return false;
 
-   d3d9_set_sampler_address_u(d3d->dev, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   d3d9_set_sampler_address_v(d3d->dev, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   d3d9_set_render_state(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
-   d3d9_set_render_state(d3d->dev, D3DRS_ZENABLE, FALSE);
+   d3d9_set_sampler_address_u(dev, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   d3d9_set_sampler_address_v(dev, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   d3d9_set_render_state(dev, D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d9_set_render_state(dev, D3DRS_ZENABLE, FALSE);
 
-   if (!hlsl_d3d9_renderchain_init_shader_fvf(d3d, chain))
+   if (!hlsl_d3d9_renderchain_init_shader_fvf(dev, chain))
       return false;
 
    return true;
@@ -256,6 +256,8 @@ static bool hlsl_d3d9_renderchain_init(
    unsigned fmt                       = (rgb32)
       ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
 
+   if (!chain)
+      return false;
    if (!hlsl_d3d9_renderchain_init_shader(d3d, chain))
    {
       RARCH_ERR("[D3D9 HLSL]: Failed to initialize shader subsystem.\n");
@@ -263,13 +265,16 @@ static bool hlsl_d3d9_renderchain_init(
    }
 
    chain->dev                         = dev;
+#if 0
+   chain->state_tracker               = NULL;
+#endif
    chain->final_viewport              = (D3DVIEWPORT9*)final_viewport;
    chain->frame_count                 = 0;
    chain->pixel_size                  = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
    chain->tex_w                       = info->tex_w;
    chain->tex_h                       = info->tex_h;
 
-   if (!hlsl_d3d9_renderchain_create_first_pass(d3d, video_info))
+   if (!hlsl_d3d9_renderchain_create_first_pass(dev, chain, video_info, fmt))
       return false;
 
    return true;

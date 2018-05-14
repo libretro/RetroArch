@@ -791,6 +791,7 @@ static bool d3d9_cg_renderchain_init_shader(d3d9_video_t *d3d,
 }
 
 static bool d3d9_cg_renderchain_create_first_pass(
+      LPDIRECT3DDEVICE9 dev,
       cg_renderchain_t *chain,
       const struct LinkInfo *info, unsigned fmt)
 {
@@ -805,8 +806,8 @@ static bool d3d9_cg_renderchain_create_first_pass(
 
    d3d_matrix_identity(&ident);
 
-   d3d9_set_transform(chain->dev, D3DTS_WORLD, &ident);
-   d3d9_set_transform(chain->dev, D3DTS_VIEW, &ident);
+   d3d9_set_transform(dev, D3DTS_WORLD, &ident);
+   d3d9_set_transform(dev, D3DTS_VIEW, &ident);
 
    pass.info        = *info;
    pass.last_width  = 0;
@@ -838,12 +839,12 @@ static bool d3d9_cg_renderchain_create_first_pass(
          return false;
 
       d3d9_set_texture(chain->dev, 0, chain->prev.tex[i]);
-      d3d9_set_sampler_minfilter(chain->dev, 0,
+      d3d9_set_sampler_minfilter(dev, 0,
             d3d_translate_filter(info->pass->filter));
-      d3d9_set_sampler_magfilter(chain->dev, 0,
+      d3d9_set_sampler_magfilter(dev, 0,
             d3d_translate_filter(info->pass->filter));
-      d3d9_set_sampler_address_u(chain->dev, 0, D3DTADDRESS_BORDER);
-      d3d9_set_sampler_address_v(chain->dev, 0, D3DTADDRESS_BORDER);
+      d3d9_set_sampler_address_u(dev, 0, D3DTADDRESS_BORDER);
+      d3d9_set_sampler_address_v(dev, 0, D3DTADDRESS_BORDER);
       d3d9_set_texture(chain->dev, 0, NULL);
    }
 
@@ -881,7 +882,7 @@ static bool d3d9_cg_renderchain_init(
    chain->frame_count    = 0;
    chain->pixel_size     = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
 
-   if (!d3d9_cg_renderchain_create_first_pass(chain, info, fmt))
+   if (!d3d9_cg_renderchain_create_first_pass(dev, chain, info, fmt))
       return false;
    if (!d3d9_cg_load_program(chain, &chain->fStock, &chain->vStock, NULL, false))
       return false;
