@@ -43,8 +43,6 @@ typedef struct d3d8_video
    overlay_t *menu;
    void *renderchain_data;
 
-   RECT font_rect;
-   RECT font_rect_shifted;
    math_matrix_4x4 mvp;
    math_matrix_4x4 mvp_rotate;
    math_matrix_4x4 mvp_transposed;

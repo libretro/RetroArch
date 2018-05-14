@@ -1410,13 +1410,16 @@ static bool d3d9_cg_renderchain_render(
    LPDIRECT3DSURFACE9 back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
    struct cg_pass *last_pass  = NULL;
-   cg_renderchain_t *chain = d3d ? (cg_renderchain_t*)d3d->renderchain_data : NULL;
+   cg_renderchain_t *chain    = d3d ? 
+      (cg_renderchain_t*)d3d->renderchain_data : NULL;
 
    d3d9_cg_renderchain_start_render(chain);
 
    current_width         = width;
    current_height        = height;
-   d3d9_cg_renderchain_convert_geometry(chain, &chain->passes->data[0].info,
+
+   d3d9_cg_renderchain_convert_geometry(chain,
+         &chain->passes->data[0].info,
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
 
@@ -1509,37 +1512,6 @@ static bool d3d9_cg_renderchain_render(
    return true;
 }
 
-static void d3d9_cg_renderchain_set_font_rect(
-      d3d9_video_t *d3d,
-      const struct font_params *params)
-{
-   settings_t *settings             = config_get_ptr();
-   float pos_x                      = settings->floats.video_msg_pos_x;
-   float pos_y                      = settings->floats.video_msg_pos_y;
-   float font_size                  = settings->floats.video_font_size;
-
-   if (params)
-   {
-      pos_x                       = params->x;
-      pos_y                       = params->y;
-      font_size                  *= params->scale;
-   }
-
-   if (!d3d)
-      return;
-
-   d3d->font_rect.left            = d3d->video_info.width * pos_x;
-   d3d->font_rect.right           = d3d->video_info.width;
-   d3d->font_rect.top             = (1.0f - pos_y) * d3d->video_info.height - font_size;
-   d3d->font_rect.bottom          = d3d->video_info.height;
-
-   d3d->font_rect_shifted         = d3d->font_rect;
-   d3d->font_rect_shifted.left   -= 2;
-   d3d->font_rect_shifted.right  -= 2;
-   d3d->font_rect_shifted.top    += 2;
-   d3d->font_rect_shifted.bottom += 2;
-}
-
 static bool d3d9_cg_renderchain_read_viewport(
       d3d9_video_t *d3d, uint8_t *buffer, bool is_idle)
 {
@@ -1606,7 +1578,6 @@ d3d9_renderchain_driver_t cg_d3d9_renderchain = {
    d3d9_cg_renderchain_add_lut,
    d3d9_cg_renderchain_render,
    d3d9_cg_renderchain_convert_geometry,
-   d3d9_cg_renderchain_set_font_rect,
    d3d9_cg_renderchain_read_viewport,
    "cg_d3d9",
 };

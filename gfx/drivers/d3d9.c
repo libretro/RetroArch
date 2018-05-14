@@ -876,6 +876,37 @@ static void d3d9_calculate_rect(void *data,
    }
 }
 
+static void d3d9_set_font_rect(
+      d3d9_video_t *d3d,
+      const struct font_params *params)
+{
+   settings_t *settings             = config_get_ptr();
+   float pos_x                      = settings->floats.video_msg_pos_x;
+   float pos_y                      = settings->floats.video_msg_pos_y;
+   float font_size                  = settings->floats.video_font_size;
+
+   if (params)
+   {
+      pos_x                       = params->x;
+      pos_y                       = params->y;
+      font_size                  *= params->scale;
+   }
+
+   if (!d3d)
+      return;
+
+   d3d->font_rect.left            = d3d->video_info.width * pos_x;
+   d3d->font_rect.right           = d3d->video_info.width;
+   d3d->font_rect.top             = (1.0f - pos_y) * d3d->video_info.height - font_size;
+   d3d->font_rect.bottom          = d3d->video_info.height;
+
+   d3d->font_rect_shifted         = d3d->font_rect;
+   d3d->font_rect_shifted.left   -= 2;
+   d3d->font_rect_shifted.right  -= 2;
+   d3d->font_rect_shifted.top    += 2;
+   d3d->font_rect_shifted.bottom += 2;
+}
+
 static void d3d9_set_viewport(void *data,
       unsigned width, unsigned height,
       bool force_full,
@@ -901,8 +932,7 @@ static void d3d9_set_viewport(void *data,
    d3d->final_viewport.MinZ   = 0.0f;
    d3d->final_viewport.MaxZ   = 1.0f;
 
-   if (d3d->renderchain_driver && d3d->renderchain_driver->set_font_rect)
-      d3d->renderchain_driver->set_font_rect(d3d, NULL);
+   d3d9_set_font_rect(d3d, NULL);
 }
 
 static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
@@ -1135,11 +1165,10 @@ static void d3d9_set_osd_msg(void *data,
    d3d9_video_t          *d3d = (d3d9_video_t*)data;
    LPDIRECT3DDEVICE9     dev  = d3d->dev;
 
-   if (d3d->renderchain_driver->set_font_rect && params)
-      d3d->renderchain_driver->set_font_rect(d3d, params);
-
+   d3d9_set_font_rect(d3d, params);
    d3d9_begin_scene(dev);
-   font_driver_render_msg(video_info, font, msg, (const struct font_params *)params);
+   font_driver_render_msg(video_info, font,
+         msg, (const struct font_params *)params);
    d3d9_end_scene(dev);
 }
 

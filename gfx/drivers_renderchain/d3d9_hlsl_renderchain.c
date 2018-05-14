@@ -372,6 +372,5 @@ d3d9_renderchain_driver_t hlsl_d3d9_renderchain = {
    hlsl_d3d9_renderchain_render,
    hlsl_d3d9_renderchain_convert_geometry,
    NULL,
-   NULL,
    "hlsl_d3d9",
 };
