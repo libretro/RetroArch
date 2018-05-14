@@ -71,7 +71,7 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(LPDIRECT3DDEVICE9 dev,
    static const D3DVERTEXELEMENT9 VertexElements[] =
    {
       { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+      D3D9_DECL_FVF_TEXCOORD(0, 2, 0),
       D3DDECL_END()
    };
 

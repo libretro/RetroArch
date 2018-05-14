@@ -290,9 +290,6 @@ static void d3d9_cg_renderchain_set_shader_params(
    set_cg_param(pass->vPrg, "IN.frame_count", frame_cnt);
 }
 
-#define DECL_FVF_TEXCOORD(stream, offset, index) \
-   { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, \
-      D3DDECLUSAGE_TEXCOORD, (BYTE)(index) }
 #define DECL_FVF_COLOR(stream, offset, index) \
    { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, \
       D3DDECLUSAGE_COLOR, (BYTE)(index) } \
@@ -362,7 +359,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
 
    if (param)
    {
-      static const D3DVERTEXELEMENT9 tex_coord0    = DECL_FVF_TEXCOORD(1, 3, 0);
+      static const D3DVERTEXELEMENT9 tex_coord0    = D3D9_DECL_FVF_TEXCOORD(1, 3, 0);
       stream_taken[1] = true;
       texcoord0_taken = true;
       RARCH_LOG("[D3D9 Cg]: FVF TEXCOORD0 semantic found.\n");
@@ -374,7 +371,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
    param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD1");
    if (param)
    {
-      static const D3DVERTEXELEMENT9 tex_coord1    = DECL_FVF_TEXCOORD(2, 5, 1);
+      static const D3DVERTEXELEMENT9 tex_coord1    = D3D9_DECL_FVF_TEXCOORD(2, 5, 1);
       stream_taken[2] = true;
       texcoord1_taken = true;
       RARCH_LOG("[D3D9 Cg]: FVF TEXCOORD1 semantic found.\n");
@@ -418,7 +415,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
          unsigned_vector_list_append(pass->attrib_map, 0);
       else
       {
-         D3DVERTEXELEMENT9 elem = DECL_FVF_TEXCOORD(index, 3, tex_index);
+         D3DVERTEXELEMENT9 elem = D3D9_DECL_FVF_TEXCOORD(index, 3, tex_index);
 
          unsigned_vector_list_append(pass->attrib_map, index);
 

@@ -27,6 +27,10 @@
 #include "../video_driver.h"
 #include "../../verbosity.h"
 
+#define D3D9_DECL_FVF_TEXCOORD(stream, offset, index) \
+   { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, \
+      D3DDECLUSAGE_TEXCOORD, (BYTE)(index) }
+
 RETRO_BEGIN_DECLS
 
 typedef struct d3d9_video d3d9_video_t;
