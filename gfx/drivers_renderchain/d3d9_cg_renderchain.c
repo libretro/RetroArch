@@ -892,7 +892,7 @@ static bool d3d9_cg_set_pass_size(
    return true;
 }
 
-static void d3d_recompute_pass_sizes(
+static void d3d9_cg_recompute_pass_sizes(
       LPDIRECT3DDEVICE9 dev,
       cg_renderchain_t *chain,
       d3d9_video_t *d3d)
@@ -956,7 +956,7 @@ static void d3d9_cg_renderchain_set_final_viewport(
    if (chain && final_viewport)
       chain->final_viewport = (D3DVIEWPORT9*)final_viewport;
 
-   d3d_recompute_pass_sizes(chain->dev, chain, d3d);
+   d3d9_cg_recompute_pass_sizes(chain->dev, chain, d3d);
 }
 
 static bool d3d9_cg_renderchain_add_pass(
