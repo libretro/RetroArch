@@ -32,7 +32,6 @@
 #endif
 
 #include "../video_shader_parse.h"
-#include "../drivers/d3d.h"
 #include "../../managers/state_manager.h"
 #include "../../verbosity.h"
 

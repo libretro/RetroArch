@@ -36,9 +36,7 @@
 #include "../../driver.h"
 #include "../video_driver.h"
 
-#ifdef _XBOX
-#include "../../defines/xdk_defines.h"
-#else
+#ifndef _XBOX
 #include "../../ui/drivers/ui_win32_resource.h"
 #include "../../ui/drivers/ui_win32.h"
 #endif

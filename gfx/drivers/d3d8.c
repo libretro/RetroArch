@@ -31,7 +31,6 @@
 
 #include <d3d8.h>
 
-#include "d3d.h"
 #include "../../defines/d3d_defines.h"
 #include "../common/d3d8_common.h"
 #include "../common/d3d_common.h"
@@ -1198,9 +1197,8 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    d3d->menu->vert_coords[2] = 1;
    d3d->menu->vert_coords[3] = -1;
 
-   memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
-
 #ifdef HAVE_WINDOW
+   memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
    d3d->windowClass.lpfnWndProc = WndProcD3D;
    win32_window_init(&d3d->windowClass, true, NULL);
 #endif

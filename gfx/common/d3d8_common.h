@@ -22,7 +22,6 @@
 
 #include <d3d8.h>
 
-#include "../drivers/d3d.h"
 #include "../video_driver.h"
 #include "../../verbosity.h"
 
@@ -53,7 +52,9 @@ typedef struct d3d8_video
    struct video_viewport vp;
    struct video_shader shader;
    video_info_t video_info;
+#ifdef HAVE_WINDOW
    WNDCLASSEX windowClass;
+#endif
    LPDIRECT3DDEVICE8 dev;
    D3DVIEWPORT8 final_viewport;
 

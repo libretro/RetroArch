@@ -23,7 +23,7 @@
 
 #include <d3d9.h>
 
-#include "../drivers/d3d.h"
+#include "d3d_common.h"
 #include "../video_driver.h"
 #include "../../verbosity.h"
 
@@ -89,7 +89,9 @@ typedef struct d3d9_video
    struct video_viewport vp;
    struct video_shader shader;
    video_info_t video_info;
+#ifdef HAVE_WINDOW
    WNDCLASSEX windowClass;
+#endif
    LPDIRECT3DDEVICE9 dev;
    D3DVIEWPORT9 final_viewport;
 

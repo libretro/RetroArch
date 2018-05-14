@@ -26,7 +26,6 @@
 #include "../menu_driver.h"
 
 #include "../../gfx/video_driver.h"
-#include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
 #include "../../gfx/common/d3d8_common.h"
 
