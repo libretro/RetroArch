@@ -541,13 +541,10 @@ static void d3d9_cg_renderchain_bind_prev(cg_renderchain_t *chain,
    }
 }
 
-static void d3d9_cg_renderchain_add_lut_internal(void *data,
+static void d3d9_cg_renderchain_add_lut_internal(
+      cg_renderchain_t *chain,
       unsigned index, unsigned i)
 {
-   cg_renderchain_t *chain = (cg_renderchain_t*)data;
-   if (!chain)
-      return;
-
    d3d9_set_texture(chain->dev, index, chain->luts->data[i].tex);
    d3d9_set_sampler_magfilter(chain->dev, index,
          d3d_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
@@ -861,8 +858,10 @@ static bool d3d9_cg_renderchain_init(
    return true;
 }
 
-static bool d3d9_cg_renderchain_set_pass_size(
-      cg_renderchain_t *chain, struct cg_pass *pass,
+static bool d3d9_cg_set_pass_size(
+      LPDIRECT3DDEVICE9 dev,
+      struct cg_pass *pass,
+      struct cg_pass *pass2,
       unsigned width, unsigned height)
 {
    if (width != pass->info.tex_w || height != pass->info.tex_h)
@@ -873,10 +872,10 @@ static bool d3d9_cg_renderchain_set_pass_size(
       pass->info.tex_h = height;
       pass->pool       = D3DPOOL_DEFAULT;
       pass->tex        = (LPDIRECT3DTEXTURE9)
-         d3d9_texture_new(chain->dev, NULL,
+         d3d9_texture_new(dev, NULL,
             width, height, 1,
             D3DUSAGE_RENDERTARGET,
-            chain->passes->data[chain->passes->count - 1].info.pass->fbo.fp_fbo ?
+            pass2->info.pass->fbo.fp_fbo ?
             D3DFMT_A32B32G32R32F : d3d9_get_argb8888_format(),
             D3DPOOL_DEFAULT, 0, 0, 0,
             NULL, NULL, false);
@@ -884,16 +883,18 @@ static bool d3d9_cg_renderchain_set_pass_size(
       if (!pass->tex)
          return false;
 
-      d3d9_set_texture(chain->dev, 0, pass->tex);
-      d3d9_set_sampler_address_u(chain->dev, 0, D3DTADDRESS_BORDER);
-      d3d9_set_sampler_address_v(chain->dev, 0, D3DTADDRESS_BORDER);
-      d3d9_set_texture(chain->dev, 0, NULL);
+      d3d9_set_texture(dev, 0, pass->tex);
+      d3d9_set_sampler_address_u(dev, 0, D3DTADDRESS_BORDER);
+      d3d9_set_sampler_address_v(dev, 0, D3DTADDRESS_BORDER);
+      d3d9_set_texture(dev, 0, NULL);
    }
 
    return true;
 }
 
-static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
+static void d3d_recompute_pass_sizes(
+      LPDIRECT3DDEVICE9 dev,
+      cg_renderchain_t *chain,
       d3d9_video_t *d3d)
 {
    unsigned i;
@@ -910,8 +911,9 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
    link_info.tex_h                   = current_height;
 
 
-   if (!d3d9_cg_renderchain_set_pass_size(chain,
+   if (!d3d9_cg_set_pass_size(dev,
             (struct cg_pass*)&chain->passes->data[0],
+            (struct cg_pass*)&chain->passes->data[chain->passes->count - 1],
             current_width, current_height))
    {
       RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
@@ -928,8 +930,9 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
       link_info.tex_w = next_pow2(out_width);
       link_info.tex_h = next_pow2(out_height);
 
-      if (!d3d9_cg_renderchain_set_pass_size(chain,
+      if (!d3d9_cg_set_pass_size(dev,
                (struct cg_pass*)&chain->passes->data[i],
+               (struct cg_pass*)&chain->passes->data[chain->passes->count - 1],
                link_info.tex_w, link_info.tex_h))
       {
          RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
@@ -953,7 +956,7 @@ static void d3d9_cg_renderchain_set_final_viewport(
    if (chain && final_viewport)
       chain->final_viewport = (D3DVIEWPORT9*)final_viewport;
 
-   d3d_recompute_pass_sizes(chain, d3d);
+   d3d_recompute_pass_sizes(chain->dev, chain, d3d);
 }
 
 static bool d3d9_cg_renderchain_add_pass(
