@@ -188,13 +188,18 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
    DEBUG_VAR(path);
    DEBUG_STR(path);
 
-   strncpy(args, elf_path_cst, sizeof(args));
+   args[0] = '\0';
+   strcat(args, "\"");
+   strcat(args, elf_path_cst);
+   strcat(args, "\"");
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
+	  strcat(args, " \"");
       strcat(args, path_get(RARCH_PATH_CONTENT));
+	  strcat(args, "\"");
       RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
    }
 #endif
