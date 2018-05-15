@@ -65,7 +65,7 @@ static void get_first_valid_core(char* path_return)
 {
    DIR* dir;
    struct dirent* ent;
-   const char* extension = envIsHomebrew() ? "3dsx" : "cia";
+   const char* extension = envIsHomebrew() ? ".3dsx" : ".cia";
 
    path_return[0] = '\0';
 
@@ -78,8 +78,8 @@ static void get_first_valid_core(char* path_return)
             break;
          if (strlen(ent->d_name) > strlen(extension) && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
          {
-			strcpy(path_return, "sdmc:/retroarch/cores");
-			strcat(path_return, "/");
+            strcpy(path_return, "sdmc:/retroarch/cores");
+            strcat(path_return, "/");
             strcat(path_return, ent->d_name);
             break;
          }
@@ -188,7 +188,7 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
    DEBUG_VAR(path);
    DEBUG_STR(path);
 
-   strlcpy(args, elf_path_cst, sizeof(args));
+   strncpy(args, elf_path_cst, sizeof(args));
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
 #ifndef IS_SALAMANDER
@@ -205,10 +205,10 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
       struct stat sbuff;
       bool file_exists;
 
-      fileExists = stat(path, &sBuff) == 0;
-      if (!fileExists)
+      file_exists = stat(path, &sbuff) == 0;
+      if (!file_exists)
       {
-         char core_path[512];
+         char core_path[PATH_MAX];
 
          /* find first valid core and load it if the target core doesnt exist */
          get_first_valid_core(&core_path[0]);
@@ -225,14 +225,23 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
       }
 #endif
       if (envIsHomebrew())
-         error = exec_3dsx(path, args);
+      {
+         exec_3dsx_no_path_in_args(path, args);
+      }
       else
-         error = exec_cia(path, args);
+      {
+         RARCH_LOG("\n");
+         RARCH_LOG("\n");
+         RARCH_LOG("Warning:\n");
+         RARCH_LOG("First core launch may take 20 seconds!\n");
+         RARCH_LOG("Do not force quit before then or your memory card may be corrupted!\n");
+         RARCH_LOG("\n");
+         RARCH_LOG("\n");
+         exec_cia(path, args);
+      }
 
+      exit(0);//couldnt launch new core, but context is corrupt so we have to quit
    }
-   
-     if (error)
-         RARCH_LOG("Cant execute new core:%s.\n", strerror(errno));
 }
 
 #ifndef IS_SALAMANDER

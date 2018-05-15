@@ -10,11 +10,13 @@ extern const loaderFuncs_s loader_Ninjhax1;
 extern const loaderFuncs_s loader_Ninjhax2;
 extern const loaderFuncs_s loader_Rosalina;
 
-static argData_s newProgramArgs;;//the argv variable must remain in memory even when the application exits for the new program to load properly
+static void (*launch_3dsx)(const char* path, argData_s* args, executableMetadata_s* em);
 
 
-int exec_3dsx(const char* path, const char* args){
+static int exec_3dsx_actual(const char* path, const char* args, bool appendPath){
 	struct stat sBuff; 
+	argData_s newProgramArgs;
+	char* writeableString[0x400];
 	bool fileExists;
 	bool inited;
 	
@@ -29,39 +31,50 @@ int exec_3dsx(const char* path, const char* args){
 		return -1;
 	}
 	else if(S_ISDIR(sBuff.st_mode)){
-		errno = EINVAL;;
+		errno = EINVAL;
 		return -1;
 	}
-	
-	if(args == NULL || args[0] == '\0')
-		args = path;
-	
-	int argsSize = strlen(args);
-	strncpy((char*)newProgramArgs.buf , args, ENTRY_ARGBUFSIZE);
-	if(argsSize >= ENTRY_ARGBUFSIZE)
-		((char*)&newProgramArgs.buf[0])[ENTRY_ARGBUFSIZE - 1] = '\0';
-	newProgramArgs.dst = (char*)newProgramArgs.buf + (argsSize < ENTRY_ARGBUFSIZE ? argsSize : ENTRY_ARGBUFSIZE);
+
+	//args the string functions write to the passed string, this will cause a write to read only memory sot the string must be cloned
+	memset(newProgramArgs.buf, '\0', sizeof(newProgramArgs.buf));
+	newProgramArgs.dst = (char*)&newProgramArgs.buf[1];
+	if(appendPath){
+		strcpy(writeableString, path);
+		launchAddArg(&newProgramArgs, writeableString);
+	}
+	if(args != NULL && args[0] != '\0'){
+		strcpy(writeableString, args);
+		launchAddArgsFromString(&newProgramArgs, writeableString);
+	}
 	
 	inited = loader_Rosalina.init();
-	if(inited){
-		loader_Rosalina.launchFile(path, &newProgramArgs, NULL);
-		//exit(0);
+	launch_3dsx = loader_Rosalina.launchFile;
+	
+	if(!inited){
+		inited = loader_Ninjhax2.init();
+		launch_3dsx = loader_Ninjhax2.launchFile;
+	}
+
+	if(!inited){
+		inited = loader_Ninjhax1.init();
+		launch_3dsx = loader_Ninjhax1.launchFile;
 	}
 	
-	inited = loader_Ninjhax2.init();
 	if(inited){
-		loader_Ninjhax2.launchFile(path, &newProgramArgs, NULL);
-		//exit(0);
-	}
-	
-	inited = loader_Ninjhax1.init();
-	if(inited){
-		loader_Ninjhax1.launchFile(path, &newProgramArgs, NULL);
-		//exit(0);
+		osSetSpeedupEnable(false);
+		launch_3dsx(path, &newProgramArgs, NULL);
+		exit(0);
 	}
 	
 	//should never be reached
-	//errno = ENOTSUP;
-	//return -1;
-	return 0;
+	errno = ENOTSUP;
+	return -1;
+}
+
+int exec_3dsx(const char* path, const char* args){
+	return exec_3dsx_actual(path, args, true/*appendPath*/);
+}
+
+int exec_3dsx_no_path_in_args(const char* path, const char* args){
+	return exec_3dsx_actual(path, args, false/*appendPath*/);
 }

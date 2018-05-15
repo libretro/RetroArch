@@ -1,3 +1,5 @@
+#pragma once
+
 #include "common.h"
 
 extern void (*__system_retAddr)(void);
@@ -20,5 +22,8 @@ typedef struct
 	// Optional fields
 	void (* useTitle)(u64 tid, u8 mediatype);
 } loaderFuncs_s;
+
+size_t launchAddArg(argData_s* ad, const char* arg);
+void launchAddArgsFromString(argData_s* ad, char* arg);
 
 Handle launchOpenFile(const char* path);
