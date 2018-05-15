@@ -48,8 +48,6 @@
 
 #define d3d9_cg_set_param_1f(param, x) if (param) cgD3D9SetUniform(param, x)
 
-#define D3D_PI 3.14159265358979323846264338327
-
 #define set_cg_param(prog, param, val) do { \
    CGparameter cgp = cgGetNamedParameter(prog, param); \
    if (cgp) \

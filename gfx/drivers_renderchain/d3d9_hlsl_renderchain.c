@@ -253,6 +253,10 @@ static void hlsl_d3d9_renderchain_set_vertices(
    params.fbo_info      = NULL;
    params.fbo_info_cnt  = 0;
 
+#if 0
+   d3d9_cg_renderchain_calc_and_set_shader_mvp(
+         /*pass->vPrg, */vp_width, vp_height, rotation);
+#endif
    video_shader_driver_set_parameters(&params);
 }
 
@@ -527,6 +531,24 @@ static void hlsl_d3d9_renderchain_render_pass(
    d3d9_set_sampler_magfilter(chain->dev, 0, D3DTEXF_POINT);
 }
 
+static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
+      unsigned vp_width, unsigned vp_height,
+      unsigned rotation)
+{
+   struct d3d_matrix proj, ortho, rot, matrix;
+
+   d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
+   d3d_matrix_identity(&rot);
+   d3d_matrix_rotation_z(&rot, rotation * (D3D_PI / 2.0));
+
+   d3d_matrix_multiply(&proj, &ortho, &rot);
+   d3d_matrix_transpose(&matrix, &proj);
+
+#if 0
+   cgD3D9SetUniformMatrix(cgpModelViewProj, (D3DMATRIX*)&matrix);
+#endif
+}
+
 static bool hlsl_d3d9_renderchain_render(
       d3d9_video_t *d3d,
       state_tracker_t *tracker,
@@ -577,6 +599,10 @@ static bool hlsl_d3d9_renderchain_render(
          chain->passes->count);
 
    chain->frame_count++;
+
+   d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
+         /* chain->vStock, */ chain->final_viewport->Width,
+         chain->final_viewport->Height, 0);
 
    return true;
 }

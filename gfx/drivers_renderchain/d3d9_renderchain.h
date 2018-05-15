@@ -34,6 +34,8 @@ struct lut_info
    bool smooth;
 };
 
+#define D3D_PI 3.14159265358979323846264338327
+
 #define VECTOR_LIST_TYPE unsigned
 #define VECTOR_LIST_NAME unsigned
 #include "../../libretro-common/lists/vector_list.c"
