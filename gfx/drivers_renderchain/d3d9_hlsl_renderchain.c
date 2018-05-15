@@ -175,6 +175,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
 
 static void hlsl_d3d9_renderchain_set_vertices(
       d3d9_video_t *d3d,
+      const video_frame_info_t *video_info,
       hlsl_d3d9_renderchain_t *chain,
       struct hlsl_pass *pass,
       unsigned pass_count,
@@ -254,7 +255,7 @@ static void hlsl_d3d9_renderchain_set_vertices(
    params.fbo_info_cnt  = 0;
 
 #if 0
-   d3d9_cg_renderchain_calc_and_set_shader_mvp(
+   d3d9_cg_renderchain_calc_and_set_shader_mvp(video_info,
          /*pass->vPrg, */vp_width, vp_height, rotation);
 #endif
    video_shader_driver_set_parameters(&params);
@@ -532,6 +533,7 @@ static void hlsl_d3d9_renderchain_render_pass(
 }
 
 static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
+      const video_frame_info_t *video_info,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
@@ -544,6 +546,8 @@ static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
    d3d_matrix_multiply(&proj, &ortho, &rot);
    d3d_matrix_transpose(&matrix, &proj);
 
+   video_info->cb_set_mvp(NULL,
+         video_info->shader_data, (void*)&matrix);
 #if 0
    cgD3D9SetUniformMatrix(cgpModelViewProj, (D3DMATRIX*)&matrix);
 #endif
@@ -551,6 +555,7 @@ static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
 
 static bool hlsl_d3d9_renderchain_render(
       d3d9_video_t *d3d,
+      const video_frame_info_t *video_info,
       state_tracker_t *tracker,
       const void *frame,
       unsigned width, unsigned height,
@@ -591,7 +596,8 @@ static bool hlsl_d3d9_renderchain_render(
 
    d3d9_set_viewports(chain->dev, &d3d->final_viewport);
 
-   hlsl_d3d9_renderchain_set_vertices(d3d, chain, last_pass,
+   hlsl_d3d9_renderchain_set_vertices(d3d, video_info,
+         chain, last_pass,
          1, width, height, chain->frame_count);
 
    hlsl_d3d9_renderchain_render_pass(chain, last_pass,
@@ -600,7 +606,7 @@ static bool hlsl_d3d9_renderchain_render(
 
    chain->frame_count++;
 
-   d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
+   d3d9_hlsl_renderchain_calc_and_set_shader_mvp(video_info,
          /* chain->vStock, */ chain->final_viewport->Width,
          chain->final_viewport->Height, 0);
 
