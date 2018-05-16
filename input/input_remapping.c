@@ -48,7 +48,7 @@ bool input_remapping_load_file(void *data, const char *path)
       return false;
 
    if (!string_is_empty(global->name.remapfile))
-      free(global->name.remapfile);
+      input_remapping_set_defaults(true);
    global->name.remapfile = strdup(path);
 
    for (i = 0; i < MAX_USERS; i++)
