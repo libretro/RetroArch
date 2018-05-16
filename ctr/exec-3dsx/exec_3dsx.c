@@ -76,10 +76,10 @@ static int exec_3dsx_actual(const char* path, const char** args, bool appendPath
 	return -1;
 }
 
-int exec_3dsx(const char* path, const char* args){
+int exec_3dsx(const char* path, const char** args){
 	return exec_3dsx_actual(path, args, true/*appendPath*/);
 }
 
-int exec_3dsx_no_path_in_args(const char* path, const char* args){
+int exec_3dsx_no_path_in_args(const char* path, const char** args){
 	return exec_3dsx_actual(path, args, false/*appendPath*/);
 }
