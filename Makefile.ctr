@@ -31,6 +31,12 @@ OBJ += ctr/ctr_system.o
 OBJ += ctr/ctr_memory.o
 OBJ += ctr/ctr_linear.o
 OBJ += ctr/gpu_old.o
+OBJ += ctr/exec-3dsx/exec_cia.o \
+	ctr/exec-3dsx/exec_3dsx.o \
+	ctr/exec-3dsx/mini-hb-menu/launch.o \
+	ctr/exec-3dsx/mini-hb-menu/loaders/rosalina.o \
+	ctr/exec-3dsx/mini-hb-menu/loaders/hax2.o \
+	ctr/exec-3dsx/mini-hb-menu/loaders/ninjhax1.o
 
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
 	APP_USE_SVCHAX = 1
