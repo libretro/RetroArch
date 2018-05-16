@@ -297,12 +297,7 @@ static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
 
 static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, const char *path)
 {
-   struct video_shader *cg_shader = NULL;
-
-   if (!hlsl_load_stock(hlsl))
-      return false;
-
-   cg_shader = (struct video_shader*)
+   struct video_shader *cg_shader = (struct video_shader*)
       calloc(1, sizeof(*cg_shader));
 
    if (!cg_shader)
@@ -338,16 +333,12 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, const char *path)
 static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, const char *path)
 {
    unsigned i;
-   config_file_t *conf = NULL;
-   if (!hlsl_load_stock(hlsl))
-      return false;
-
-   RARCH_LOG("Loading Cg meta-shader: %s\n", path);
-
-   conf = config_file_new(path);
+   config_file_t *conf = config_file_new(path);
 
    if (!conf)
       goto error;
+
+   RARCH_LOG("Loaded Cg meta-shader: %s\n", path);
 
    if (!hlsl->cg_shader)
       hlsl->cg_shader = (struct video_shader*)calloc
@@ -400,6 +391,9 @@ static hlsl_shader_data_t *hlsl_init(d3d9_video_t *d3d, const char *path)
    hlsl->dev         = d3d->dev;
 
    if (!hlsl->dev)
+      goto error;
+
+   if (!hlsl_load_stock(hlsl))
       goto error;
 
    if (path && (string_is_equal(path_get_extension(path), ".cgp")))
