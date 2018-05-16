@@ -227,22 +227,6 @@ error:
    return false;
 }
 
-static bool hlsl_load_stock(hlsl_shader_data_t *hlsl)
-{
-   struct shader_program_info program_info;
-
-   program_info.combined     = stock_hlsl_program;
-   program_info.is_file      = false;
-
-   if (!hlsl_compile_program(hlsl, 0, &hlsl->prg[0], &program_info))
-   {
-      RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
-      return false;
-   }
-
-   return true;
-}
-
 static void hlsl_set_program_attributes(hlsl_shader_data_t *hlsl,
       unsigned i)
 {
@@ -382,6 +366,7 @@ error:
 static hlsl_shader_data_t *hlsl_init(d3d9_video_t *d3d, const char *path)
 {
    unsigned i;
+   struct shader_program_info program_info;
    hlsl_shader_data_t *hlsl  = (hlsl_shader_data_t*)
       calloc(1, sizeof(hlsl_shader_data_t));
 
@@ -393,8 +378,15 @@ static hlsl_shader_data_t *hlsl_init(d3d9_video_t *d3d, const char *path)
    if (!hlsl->dev)
       goto error;
 
-   if (!hlsl_load_stock(hlsl))
+   program_info.combined     = stock_hlsl_program;
+   program_info.is_file      = false;
+
+   /* Load stock shader */
+   if (!hlsl_compile_program(hlsl, 0, &hlsl->prg[0], &program_info))
+   {
+      RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       goto error;
+   }
 
    if (path && (string_is_equal(path_get_extension(path), ".cgp")))
    {
