@@ -123,16 +123,10 @@ typedef struct hlsl_d3d9_renderchain
 } hlsl_d3d9_renderchain_t;
 
 static void hlsl_use(hlsl_shader_data_t *hlsl,
+      LPDIRECT3DDEVICE9 d3dr,
       unsigned idx, bool set_active)
 {
-   LPDIRECT3DDEVICE9                  d3dr  = hlsl ? 
-      (LPDIRECT3DDEVICE9)hlsl->dev : NULL;
-   struct shader_program_hlsl_data *program =  NULL;
-
-   if (!hlsl)
-      return;
-
-   program                                  = &hlsl->prg[idx];
+   struct shader_program_hlsl_data *program = &hlsl->prg[idx];
 
    if (!program || !program->vprg || !program->fprg)
       return;
@@ -145,18 +139,12 @@ static void hlsl_use(hlsl_shader_data_t *hlsl,
 }
 
 static bool hlsl_set_mvp(hlsl_shader_data_t *hlsl,
+      LPDIRECT3DDEVICE9 d3dr,
       const void *mat_data)
 {
-   LPDIRECT3DDEVICE9 d3dr                   = hlsl ? 
-      (LPDIRECT3DDEVICE9)hlsl->dev : NULL;
    const math_matrix_4x4 *mat               = (const math_matrix_4x4*)
       mat_data;
-   struct shader_program_hlsl_data *program =  NULL;
-
-   if (!hlsl)
-      return false;
-
-   program                                  = &hlsl->prg[hlsl->active_idx];
+   struct shader_program_hlsl_data *program = &hlsl->prg[hlsl->active_idx];
 
    if (!program || !program->mvp)
       return false;
@@ -258,11 +246,7 @@ static bool hlsl_load_stock(hlsl_shader_data_t *hlsl)
 static void hlsl_set_program_attributes(hlsl_shader_data_t *hlsl,
       unsigned i)
 {
-   struct shader_program_hlsl_data *program  = NULL;
-   if (!hlsl)
-      return;
-
-   program                                   = &hlsl->prg[i];
+   struct shader_program_hlsl_data *program = &hlsl->prg[i];
 
    if (!program)
       return;
@@ -313,14 +297,18 @@ static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
 
 static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, const char *path)
 {
+   struct video_shader *cg_shader = NULL;
+
    if (!hlsl_load_stock(hlsl))
       return false;
 
-   hlsl->cg_shader = (struct video_shader*)
-      calloc(1, sizeof(*hlsl->cg_shader));
-   if (!hlsl->cg_shader)
+   cg_shader = (struct video_shader*)
+      calloc(1, sizeof(*cg_shader));
+
+   if (!cg_shader)
       return false;
 
+   hlsl->cg_shader         = cg_shader;
    hlsl->cg_shader->passes = 1;
 
    if (!string_is_empty(path))
@@ -445,6 +433,7 @@ error:
 }
 
 static void hlsl_set_params(hlsl_shader_data_t *hlsl,
+      LPDIRECT3DDEVICE9 d3dr,
       video_shader_ctx_params_t *params)
 {
    float ori_size[2], tex_size[2], out_size[2];
@@ -465,13 +454,7 @@ static void hlsl_set_params(hlsl_shader_data_t *hlsl,
    const struct video_tex_info *info        = (const struct video_tex_info*)_info;
    const struct video_tex_info *prev_info   = (const struct video_tex_info*)_prev_info;
    const struct video_tex_info *fbo_info    = (const struct video_tex_info*)_fbo_info;
-   LPDIRECT3DDEVICE9 d3dr                   = (LPDIRECT3DDEVICE9)hlsl->dev;
-   struct shader_program_hlsl_data *program =  NULL;
-
-   if (!hlsl || !d3dr)
-      return;
-
-   program                                  = &hlsl->prg[hlsl->active_idx];
+   struct shader_program_hlsl_data *program = &hlsl->prg[hlsl->active_idx];
 
    if (!program)
       return;
@@ -715,7 +698,8 @@ static void hlsl_d3d9_renderchain_set_vertices(
       d3d9_vertex_buffer_unlock(pass->vertex_buf);
    }
 
-   hlsl_use(chain->shader_pipeline, pass_count, true);
+   if (chain->shader_pipeline)
+      hlsl_use(chain->shader_pipeline, chain->dev, pass_count, true);
 
    params.data          = d3d;
    params.width         = vert_width;
@@ -735,7 +719,8 @@ static void hlsl_d3d9_renderchain_set_vertices(
    d3d9_cg_renderchain_calc_and_set_shader_mvp(chain,
          /*pass->vPrg, */vp_width, vp_height, rotation);
 #endif
-   hlsl_set_params(chain->shader_pipeline, &params);
+   if (chain->shader_pipeline)
+      hlsl_set_params(chain->shader_pipeline, chain->dev, &params);
 }
 
 static void d3d9_hlsl_deinit_progs(hlsl_d3d9_renderchain_t *chain)
@@ -1023,7 +1008,8 @@ static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
    d3d_matrix_multiply(&proj, &ortho, &rot);
    d3d_matrix_transpose(&matrix, &proj);
 
-   hlsl_set_mvp(chain->shader_pipeline, (void*)&matrix);
+   if (chain->shader_pipeline)
+      hlsl_set_mvp(chain->shader_pipeline, chain->dev, (void*)&matrix);
 #if 0
    cgD3D9SetUniformMatrix(cgpModelViewProj, (D3DMATRIX*)&matrix);
 #endif
