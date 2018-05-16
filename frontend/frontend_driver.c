@@ -154,7 +154,7 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
    if (envIsHomebrew())
       strlcpy(s, "3dsx", len);
    else
-	  strlcpy(s, "cia", len);
+      strlcpy(s, "cia", len);
    return true;
 #else
    return false;
