@@ -173,23 +173,28 @@ int exec_cia(const char* path, const char* args){
 		FSFILE_Close(ciaFile);
 		FSUSER_CloseArchive(ciaArchive);
 		
-		if(args == NULL || args[0] == '\0'){
-			param.argc = 0;
-			argsLength = 0;
-		}
-		else{
+		param.argc = 0;
+		argsLength = 0;
+		if(args != NULL && args[0] != '\0'){
 			bool inSingleQuotes = false;
 			bool inDoubleQuotes = false;
 			int argStringLength = strlen(args);
-			param.argc = 0;
-			argsLength = 0;
 			
 			//build argument list like a terminal command on linux
-			for(unsigned int argPtr = 0; argPtr < argStringLength; argPtr++){
-				if(args[argPtr] == '\'')
+			for(unsigned int argPtr = 0; argPtr <= argStringLength; argPtr++){
+				if(args[argPtr] == '\''){
 					inSingleQuotes = !inSingleQuotes;
-				else if(args[argPtr] == '\"')
+				}
+				else if(args[argPtr] == '\"'){
 					inDoubleQuotes = !inDoubleQuotes;
+				}
+				else if(args[argPtr] == '\0'){
+					//last character in a valid arg string, end of last arg
+					if(param.args[0] != '\0')
+						param.argc++;
+					param.args[argsLength] = args[argPtr];
+					argsLength++;
+				}
 				else{
 					if(!inSingleQuotes && !inDoubleQuotes && args[argPtr] == ' '){
 						param.argc++;
