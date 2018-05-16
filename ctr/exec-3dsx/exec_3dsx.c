@@ -13,10 +13,11 @@ extern const loaderFuncs_s loader_Rosalina;
 static void (*launch_3dsx)(const char* path, argData_s* args, executableMetadata_s* em);
 
 
-static int exec_3dsx_actual(const char* path, const char* args, bool appendPath){
+static int exec_3dsx_actual(const char* path, const char** args, bool appendPath){
 	struct stat sBuff; 
 	argData_s newProgramArgs;
-	char* writeableString[0x400];
+	unsigned int argChars = 0;
+	unsigned int argNum = 0;
 	bool fileExists;
 	bool inited;
 	
@@ -39,12 +40,16 @@ static int exec_3dsx_actual(const char* path, const char* args, bool appendPath)
 	memset(newProgramArgs.buf, '\0', sizeof(newProgramArgs.buf));
 	newProgramArgs.dst = (char*)&newProgramArgs.buf[1];
 	if(appendPath){
-		strcpy(writeableString, path);
-		launchAddArg(&newProgramArgs, writeableString);
+		strcpy(newProgramArgs.dst, path);
+		newProgramArgs.dst += strlen(path) + 1;
+		newProgramArgs.buf[0]++;
+		
 	}
-	if(args != NULL && args[0] != '\0'){
-		strcpy(writeableString, args);
-		launchAddArgsFromString(&newProgramArgs, writeableString);
+	while(args[argNum] != NULL){
+		strcpy(newProgramArgs.dst, args[argNum]);
+		newProgramArgs.dst += strlen(args[argNum]) + 1;
+		newProgramArgs.buf[0]++;
+		argNum++;
 	}
 	
 	inited = loader_Rosalina.init();

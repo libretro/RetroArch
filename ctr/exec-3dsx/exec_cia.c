@@ -115,7 +115,7 @@ static int installCia(Handle ciaFile){
 	return 1;
 }
 
-int exec_cia(const char* path, const char* args){
+int exec_cia(const char* path, const char** args){
 	struct stat sBuff; 
 	bool fileExists;
 	bool inited;
@@ -175,38 +175,12 @@ int exec_cia(const char* path, const char* args){
 		
 		param.argc = 0;
 		argsLength = 0;
-		if(args != NULL && args[0] != '\0'){
-			bool inSingleQuotes = false;
-			bool inDoubleQuotes = false;
-			int argStringLength = strlen(args);
-			
-			//build argument list like a terminal command on linux
-			for(unsigned int argPtr = 0; argPtr <= argStringLength; argPtr++){
-				if(args[argPtr] == '\''){
-					inSingleQuotes = !inSingleQuotes;
-				}
-				else if(args[argPtr] == '\"'){
-					inDoubleQuotes = !inDoubleQuotes;
-				}
-				else if(args[argPtr] == '\0'){
-					//last character in a valid arg string, end of last arg
-					if(param.args[0] != '\0')
-						param.argc++;
-					param.args[argsLength] = args[argPtr];
-					argsLength++;
-				}
-				else{
-					if(!inSingleQuotes && !inDoubleQuotes && args[argPtr] == ' '){
-						param.argc++;
-						param.args[argsLength] = '\0';
-					}
-					else{
-						param.args[argsLength] = args[argPtr];
-					}
-					
-					argsLength++;
-				}
-			}
+		char* argLocation = param.args;
+		while(args[param.argc] != NULL){
+			strcpy(argLocation, args[param.argc]);
+			argLocation += strlen(args[param.argc]) + 1;
+			argsLength += strlen(args[param.argc]) + 1;
+			param.argc++;
 		}
 		
 		res = APT_PrepareToDoApplicationJump(0, ciaInfo.titleID, 0x1);

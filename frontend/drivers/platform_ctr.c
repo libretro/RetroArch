@@ -182,24 +182,28 @@ static void frontend_ctr_deinit(void* data)
 
 static void frontend_ctr_exec(const char* path, bool should_load_game)
 {
+   char gamePath[PATH_MAX];
+   const char* argData[3];
+   int args = 0;
    int error = 0;
-   char args[0x300 - 0x4];
 
    DEBUG_VAR(path);
    DEBUG_STR(path);
+   
+   argData[0] = NULL;
 
-   args[0] = '\0';
-   strcat(args, "\"");
-   strcat(args, elf_path_cst);
-   strcat(args, "\"");
+   argData[args] = elf_path_cst;
+   argData[args + 1] = NULL;
+   args++;
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
-	  strcat(args, " \"");
-      strcat(args, path_get(RARCH_PATH_CONTENT));
-	  strcat(args, "\"");
+      strcpy(gamePath, path_get(RARCH_PATH_CONTENT));
+	  argData[args] = gamePath;
+	  argData[args + 1] = NULL;
+	  args++;
       RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
    }
 #endif
@@ -231,7 +235,7 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
 #endif
       if (envIsHomebrew())
       {
-         exec_3dsx_no_path_in_args(path, args);
+         exec_3dsx_no_path_in_args(path, argData);
       }
       else
       {
@@ -242,7 +246,7 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
          RARCH_LOG("Do not force quit before then or your memory card may be corrupted!\n");
          RARCH_LOG("\n");
          RARCH_LOG("\n");
-         exec_cia(path, args);
+         exec_cia(path, argData);
       }
 
       exit(0);//couldnt launch new core, but context is corrupt so we have to quit
