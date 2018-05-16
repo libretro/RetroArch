@@ -417,9 +417,6 @@ static const shader_backend_t *shader_ctx_drivers[] = {
 #ifdef HAVE_CG
    &gl_cg_backend,
 #endif
-#ifdef HAVE_HLSL
-   &hlsl_backend,
-#endif
    &shader_null_backend,
    NULL
 };
@@ -3427,12 +3424,6 @@ static const shader_backend_t *video_shader_set_backend(
          break;
 #endif
       case RARCH_SHADER_HLSL:
-#ifdef HAVE_HLSL
-         RARCH_LOG("[Shader driver]: Using HLSL shader backend.\n");
-         return &hlsl_backend;
-#else
-         break;
-#endif
       case RARCH_SHADER_NONE:
       default:
          break;

@@ -1296,7 +1296,6 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
 
 
 extern const shader_backend_t gl_glsl_backend;
-extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
 
