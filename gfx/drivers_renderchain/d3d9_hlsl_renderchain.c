@@ -60,11 +60,11 @@ typedef struct hlsl_shader_data
 
 #include "d3d9_renderchain.h"
 
-typedef struct hlsl_d3d9_renderchain
+typedef struct hlsl_renderchain
 {
    struct d3d9_renderchain chain;
    hlsl_shader_data_t *shader_pipeline;
-} hlsl_d3d9_renderchain_t;
+} hlsl_renderchain_t;
 
 static void *d3d9_hlsl_get_constant_by_name(void *data, const char *name)
 {
@@ -530,8 +530,8 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
    return true;
 }
 
-static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
-      hlsl_d3d9_renderchain_t *chain,
+static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
+      hlsl_renderchain_t *chain,
       d3d9_video_t *d3d,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
@@ -555,7 +555,7 @@ static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
 
 static void hlsl_d3d9_renderchain_set_vertices(
       d3d9_video_t *d3d,
-      hlsl_d3d9_renderchain_t *chain,
+      hlsl_renderchain_t *chain,
       struct shader_pass *pass,
       unsigned pass_count,
       unsigned width, unsigned height,
@@ -570,7 +570,7 @@ static void hlsl_d3d9_renderchain_set_vertices(
             vp_width, vp_height, rotation);
 
    hlsl_use(chain->shader_pipeline, chain->chain.dev, pass_count, true);
-   d3d9_hlsl_renderchain_calc_and_set_shader_mvp(chain, d3d,
+   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, d3d,
          /*pass->vPrg, */vp_width, vp_height, rotation);
    hlsl_d3d9_renderchain_set_shader_params(&chain->chain,
          chain->shader_pipeline, chain->chain.dev,
@@ -580,7 +580,7 @@ static void hlsl_d3d9_renderchain_set_vertices(
          vp_width, vp_height);
 }
 
-static void d3d9_hlsl_deinit_progs(hlsl_d3d9_renderchain_t *chain)
+static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
 {
    RARCH_LOG("[D3D9 HLSL]: Destroying programs.\n");
 
@@ -602,7 +602,7 @@ static void d3d9_hlsl_deinit_progs(hlsl_d3d9_renderchain_t *chain)
    }
 }
 
-static void d3d9_hlsl_destroy_resources(hlsl_d3d9_renderchain_t *chain)
+static void d3d9_hlsl_destroy_resources(hlsl_renderchain_t *chain)
 {
    unsigned i;
 
@@ -626,7 +626,7 @@ static void d3d9_hlsl_destroy_resources(hlsl_d3d9_renderchain_t *chain)
 static void hlsl_d3d9_renderchain_free(void *data)
 {
    unsigned i;
-   hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)data;
+   hlsl_renderchain_t *chain = (hlsl_renderchain_t*)data;
 
    if (!chain)
       return;
@@ -639,8 +639,8 @@ static void hlsl_d3d9_renderchain_free(void *data)
 
 void *hlsl_d3d9_renderchain_new(void)
 {
-   hlsl_d3d9_renderchain_t *renderchain =
-      (hlsl_d3d9_renderchain_t*)calloc(1, sizeof(*renderchain));
+   hlsl_renderchain_t *renderchain =
+      (hlsl_renderchain_t*)calloc(1, sizeof(*renderchain));
    if (!renderchain)
       return NULL;
 
@@ -650,7 +650,7 @@ void *hlsl_d3d9_renderchain_new(void)
 }
 
 static bool hlsl_d3d9_renderchain_init_shader(d3d9_video_t *d3d,
-      hlsl_d3d9_renderchain_t *chain)
+      hlsl_renderchain_t *chain)
 {
    hlsl_shader_data_t *shader = hlsl_init(d3d, retroarch_get_shader_preset());
    if (!shader)
@@ -672,7 +672,7 @@ static bool hlsl_d3d9_renderchain_init(
       bool rgb32
       )
 {
-   hlsl_d3d9_renderchain_t *chain     = (hlsl_d3d9_renderchain_t*)
+   hlsl_renderchain_t *chain     = (hlsl_renderchain_t*)
       d3d->renderchain_data;
    unsigned fmt                       = (rgb32)
       ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
@@ -701,7 +701,7 @@ static void hlsl_d3d9_renderchain_set_final_viewport(
       void *renderchain_data,
       const D3DVIEWPORT9 *final_viewport)
 {
-   hlsl_d3d9_renderchain_t *_chain = (hlsl_d3d9_renderchain_t*)renderchain_data;
+   hlsl_renderchain_t      *_chain = (hlsl_renderchain_t*)renderchain_data;
    d3d9_renderchain_t      *chain  = (d3d9_renderchain_t*)&_chain->chain;
 
    if (chain && final_viewport)
@@ -735,7 +735,7 @@ static void d3d9_hlsl_renderchain_set_params(
 }
 
 static void hlsl_d3d9_renderchain_render_pass(
-      hlsl_d3d9_renderchain_t *chain,
+      hlsl_renderchain_t *chain,
       struct shader_pass *pass,
       state_tracker_t *tracker,
       unsigned pass_index)
@@ -824,8 +824,7 @@ static bool hlsl_d3d9_renderchain_render(
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
    struct shader_pass *last_pass    = NULL;
    struct shader_pass *first_pass   = NULL;
-   settings_t *settings           = config_get_ptr();
-   hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)
+   hlsl_renderchain_t *chain        = (hlsl_renderchain_t*)
       d3d->renderchain_data;
 
    d3d9_renderchain_start_render(&chain->chain);
@@ -937,7 +936,7 @@ static bool hlsl_d3d9_renderchain_render(
    cgD3D9BindProgram(chain->fStock);
    cgD3D9BindProgram(chain->vStock);
 #endif
-   d3d9_hlsl_renderchain_calc_and_set_shader_mvp(chain, d3d,
+   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, d3d,
          /* chain->vStock, */ chain->chain.final_viewport->Width,
          chain->chain.final_viewport->Height, 0);
 
@@ -956,8 +955,8 @@ static bool hlsl_d3d9_renderchain_add_pass(
 static bool hlsl_d3d9_renderchain_add_lut(void *data,
       const char *id, const char *path, bool smooth)
 {
-   hlsl_d3d9_renderchain_t *_chain  = (hlsl_d3d9_renderchain_t*)data;
-   d3d9_renderchain_t *chain        = (d3d9_renderchain_t*)&_chain->chain;
+   hlsl_renderchain_t *_chain  = (hlsl_renderchain_t*)data;
+   d3d9_renderchain_t *chain   = (d3d9_renderchain_t*)&_chain->chain;
 
    return d3d9_renderchain_add_lut(chain, id, path, smooth);
 }
