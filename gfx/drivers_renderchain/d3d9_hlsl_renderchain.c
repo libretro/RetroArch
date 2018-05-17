@@ -114,8 +114,8 @@ static void hlsl_use(hlsl_shader_data_t *hlsl,
    if (set_active)
       hlsl->active_idx           = idx;
 
-   d3d9_set_vertex_shader(d3dr, idx, program->vprg);
-   d3d9_set_pixel_shader(d3dr, program->fprg);
+   d3d9_set_vertex_shader(d3dr, program->vprg);
+   d3d9_set_pixel_shader(d3dr,  program->fprg);
 }
 
 static bool d3d9_hlsl_load_program(
@@ -311,7 +311,7 @@ static hlsl_shader_data_t *hlsl_init(hlsl_renderchain_t *chain, const char *path
    d3d_matrix_identity(&chain->mvp_val);
 
    RARCH_LOG("[D3D9 HLSL]: Setting up vertex shader...\n");
-   d3d9_set_vertex_shader(chain->chain.dev, 1, hlsl->prg[1].vprg);
+   d3d9_set_vertex_shader(chain->chain.dev, hlsl->prg[1].vprg);
    RARCH_LOG("[D3D9 HLSL]: Setting up pixel shader...\n");
    d3d9_set_pixel_shader(chain->chain.dev, hlsl->prg[1].fprg);
 

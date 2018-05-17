@@ -386,8 +386,7 @@ static INLINE bool d3d9_set_pixel_shader(
 }
 
 static INLINE bool d3d9_set_vertex_shader(
-      LPDIRECT3DDEVICE9 dev, unsigned index,
-      LPDIRECT3DVERTEXSHADER9 shader)
+      LPDIRECT3DDEVICE9 dev, LPDIRECT3DVERTEXSHADER9 shader)
 {
 #ifdef _XBOX
    IDirect3DDevice9_SetVertexShader(dev, shader);
