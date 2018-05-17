@@ -1097,40 +1097,6 @@ static void cg_d3d9_renderchain_set_vertices(
          vp_width, vp_height);
 }
 
-static void cg_d3d9_renderchain_unbind_all(cg_renderchain_t *chain)
-{
-   unsigned i;
-
-   /* Have to be a bit anal about it.
-    * Render targets hate it when they have filters apparently.
-    */
-   for (i = 0; i < chain->chain.bound_tex->count; i++)
-   {
-      d3d9_set_sampler_minfilter(chain->chain.dev,
-            chain->chain.bound_tex->data[i], D3DTEXF_POINT);
-      d3d9_set_sampler_magfilter(chain->chain.dev,
-            chain->chain.bound_tex->data[i], D3DTEXF_POINT);
-      d3d9_set_texture(chain->chain.dev,
-            chain->chain.bound_tex->data[i], NULL);
-   }
-
-   for (i = 0; i < chain->chain.bound_vert->count; i++)
-      d3d9_set_stream_source(chain->chain.dev,
-            chain->chain.bound_vert->data[i], 0, 0, 0);
-
-   if (chain->chain.bound_tex)
-   {
-      unsigned_vector_list_free(chain->chain.bound_tex);
-      chain->chain.bound_tex = unsigned_vector_list_new();
-   }
-
-   if (chain->chain.bound_vert)
-   {
-      unsigned_vector_list_free(chain->chain.bound_vert);
-      chain->chain.bound_vert = unsigned_vector_list_new();
-   }
-}
-
 static void cg_d3d9_renderchain_set_params(
       cg_renderchain_t *chain,
       struct shader_pass *pass,
@@ -1228,7 +1194,7 @@ static void cg_d3d9_renderchain_render_pass(
    d3d9_set_sampler_minfilter(chain->chain.dev, 0, D3DTEXF_POINT);
    d3d9_set_sampler_magfilter(chain->chain.dev, 0, D3DTEXF_POINT);
 
-   cg_d3d9_renderchain_unbind_all(chain);
+   d3d9_renderchain_unbind_all(&chain->chain);
 }
 
 static bool d3d9_cg_renderchain_render(

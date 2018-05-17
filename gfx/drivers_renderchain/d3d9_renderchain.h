@@ -154,6 +154,40 @@ static INLINE void d3d9_cg_renderchain_add_lut_internal(
    unsigned_vector_list_append(chain->bound_tex, index);
 }
 
+static INLINE void d3d9_renderchain_unbind_all(d3d9_renderchain_t *chain)
+{
+   unsigned i;
+
+   /* Have to be a bit anal about it.
+    * Render targets hate it when they have filters apparently.
+    */
+   for (i = 0; i < chain->bound_tex->count; i++)
+   {
+      d3d9_set_sampler_minfilter(chain->dev,
+            chain->bound_tex->data[i], D3DTEXF_POINT);
+      d3d9_set_sampler_magfilter(chain->dev,
+            chain->bound_tex->data[i], D3DTEXF_POINT);
+      d3d9_set_texture(chain->dev,
+            chain->bound_tex->data[i], NULL);
+   }
+
+   for (i = 0; i < chain->bound_vert->count; i++)
+      d3d9_set_stream_source(chain->dev,
+            chain->bound_vert->data[i], 0, 0, 0);
+
+   if (chain->bound_tex)
+   {
+      unsigned_vector_list_free(chain->bound_tex);
+      chain->bound_tex = unsigned_vector_list_new();
+   }
+
+   if (chain->bound_vert)
+   {
+      unsigned_vector_list_free(chain->bound_vert);
+      chain->bound_vert = unsigned_vector_list_new();
+   }
+}
+
 static INLINE void d3d9_init_renderchain(d3d9_renderchain_t *chain)
 {
    chain->passes     = shader_pass_vector_list_new();
