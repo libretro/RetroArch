@@ -420,6 +420,8 @@ const char* xmb_theme_ident(void)
          return "systematic";
       case XMB_ICON_THEME_DOTART:
          return "dot-art";
+      case XMB_ICON_THEME_EMOJIACTIVE:
+         return "emojiactive";
       case XMB_ICON_THEME_CUSTOM:
          return "custom";
       case XMB_ICON_THEME_MONOCHROME_INVERTED:
