@@ -43,6 +43,8 @@ struct shader_pass
    LPDIRECT3DVERTEXBUFFER9 vertex_buf;
    LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
    void *attrib_map;
+   void *vprg;
+   void *fprg;
 };
 
 #define D3D_PI 3.14159265358979323846264338327
