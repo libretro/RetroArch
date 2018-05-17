@@ -120,7 +120,7 @@ void hlsl_set_proj_matrix(hlsl_shader_data_t *hlsl, void *matrix_data)
 }
 #endif
 
-static bool hlsl_compile_program(
+static bool d3d9_hlsl_load_program(
       hlsl_shader_data_t *hlsl,
       unsigned idx,
       struct shader_program_hlsl_data *program,
@@ -146,7 +146,6 @@ static bool hlsl_compile_program(
    }
    else
    {
-      /* TODO - crashes currently - to do with 'end of line' of stock shader */
       if (!d3d9x_compile_shader(program_info->combined,
                strlen(program_info->combined), NULL, NULL,
                "main_fragment", "ps_3_0", 0, &code_f, &listing_f,
@@ -165,7 +164,7 @@ static bool hlsl_compile_program(
       }
    }
 
-   d3d9_create_pixel_shader(d3dr, (const DWORD*)d3d9x_get_buffer_ptr(code_f),  (void**)&program->fprg);
+   d3d9_create_pixel_shader(d3dr,  (const DWORD*)d3d9x_get_buffer_ptr(code_f),  (void**)&program->fprg);
    d3d9_create_vertex_shader(d3dr, (const DWORD*)d3d9x_get_buffer_ptr(code_v), (void**)&program->vprg);
    d3d9x_buffer_release((void*)code_f);
    d3d9x_buffer_release((void*)code_v);
@@ -230,7 +229,7 @@ static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
 
    RARCH_LOG("Loading Cg/HLSL shader: \"%s\".\n", path_buf);
 
-   if (!hlsl_compile_program(hlsl, i + 1, &hlsl->prg[i + 1], &program_info))
+   if (!d3d9_hlsl_load_program(hlsl, i + 1, &hlsl->prg[i + 1], &program_info))
       return false;
 
    return true;
@@ -259,7 +258,7 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, const char *path)
       strlcpy(hlsl->cg_shader->pass[0].source.path,
             path, sizeof(hlsl->cg_shader->pass[0].source.path));
 
-      if (!hlsl_compile_program(hlsl, 1, &hlsl->prg[1], &program_info))
+      if (!d3d9_hlsl_load_program(hlsl, 1, &hlsl->prg[1], &program_info))
          return false;
    }
    else
@@ -339,7 +338,7 @@ static hlsl_shader_data_t *hlsl_init(d3d9_video_t *d3d, const char *path)
    program_info.is_file      = false;
 
    /* Load stock shader */
-   if (!hlsl_compile_program(hlsl, 0, &hlsl->prg[0], &program_info))
+   if (!d3d9_hlsl_load_program(hlsl, 0, &hlsl->prg[0], &program_info))
    {
       RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       goto error;
