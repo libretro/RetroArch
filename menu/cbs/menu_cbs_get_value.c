@@ -934,6 +934,10 @@ static void menu_action_setting_disp_set_label_xmb_theme(
          strlcpy(s,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART), len);
          break;
+      case XMB_ICON_THEME_EMOJIACTIVE:
+         strlcpy(s,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_EMOJIACTIVE), len);
+         break;
       case XMB_ICON_THEME_MONOCHROME_INVERTED:
          strlcpy(s,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED), len);
