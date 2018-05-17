@@ -713,7 +713,6 @@ static void hlsl_d3d9_renderchain_set_final_viewport(
    d3d9_recompute_pass_sizes(chain->dev, chain, d3d);
 }
 
-#if 0
 static void d3d9_hlsl_renderchain_set_params(
       d3d9_renderchain_t *chain,
       LPDIRECT3DDEVICE9 dev,
@@ -737,7 +736,6 @@ static void d3d9_hlsl_renderchain_set_params(
       d3d9_hlsl_set_param_2f(pass->vprg, dev, tracker_info[i].id, &tracker_info[i].value);
    }
 }
-#endif
 
 static void hlsl_d3d9_renderchain_render_pass(
       hlsl_d3d9_renderchain_t *chain,
@@ -800,11 +798,12 @@ static void hlsl_d3d9_renderchain_render_pass(
 
    /* We only bother binding passes which are two indices behind. */
    if (pass_index >= 3)
-      d3d9_hlsl_renderchain_bind_pass(chain, chain->dev, pass, pass_index);
+      d3d9_hlsl_renderchain_bind_pass(chain, chain->chain.dev, pass, pass_index);
 
-   if (tracker)
-      d3d9_hlsl_renderchain_set_params(chain, chain->dev, pass, tracker, pass_index);
 #endif
+   if (tracker)
+      d3d9_hlsl_renderchain_set_params(&chain->chain,
+            chain->chain.dev, pass, tracker, pass_index);
 
    d3d9_draw_primitive(chain->chain.dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
