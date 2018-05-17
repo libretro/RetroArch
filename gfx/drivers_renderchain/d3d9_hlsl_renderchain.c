@@ -511,7 +511,6 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
 
 static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
       hlsl_renderchain_t *chain,
-      d3d9_video_t *d3d,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
@@ -526,9 +525,8 @@ static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
    d3d_matrix_multiply(&proj, &ortho, &rot);
    d3d_matrix_transpose(&matrix, &proj);
 
-   if (program)
-      d3d9_hlsl_set_param_matrix(program->v_ctable,
-            chain->chain.dev, "modelViewProj", &chain->mvp_val);
+   d3d9_hlsl_set_param_matrix(program->v_ctable,
+         chain->chain.dev, "modelViewProj", (const void*)&matrix);
 }
 
 
@@ -549,7 +547,7 @@ static void hlsl_d3d9_renderchain_set_vertices(
             vp_width, vp_height, rotation);
 
    hlsl_use(chain->shader_pipeline, chain->chain.dev, pass_count, true);
-   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, d3d,
+   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain,
          /*pass->vPrg, */vp_width, vp_height, rotation);
    hlsl_d3d9_renderchain_set_shader_params(&chain->chain,
          chain->shader_pipeline, chain->chain.dev,
@@ -915,7 +913,7 @@ static bool hlsl_d3d9_renderchain_render(
    cgD3D9BindProgram(chain->fStock);
    cgD3D9BindProgram(chain->vStock);
 #endif
-   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, d3d,
+   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain,
          /* chain->vStock, */ chain->chain.final_viewport->Width,
          chain->chain.final_viewport->Height, 0);
 
