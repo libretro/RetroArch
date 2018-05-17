@@ -48,7 +48,6 @@ typedef struct hlsl_renderchain
 {
    struct d3d9_renderchain chain;
    struct shader_pass stock_shader;
-   D3DXMATRIX mvp_val;
 } hlsl_renderchain_t;
 
 static void *d3d9_hlsl_get_constant_by_name(void *data, const char *name)
@@ -178,7 +177,6 @@ static void hlsl_d3d9_renderchain_set_shader_params(
    d3d9x_constant_table_set_defaults(dev, fprg);
    d3d9x_constant_table_set_defaults(dev, vprg);
 
-
    d3d9_hlsl_set_param_2f(vprg, dev, "IN.video_size",      &video_size);
    d3d9_hlsl_set_param_2f(fprg, dev, "IN.video_size",      &video_size);
    d3d9_hlsl_set_param_2f(vprg, dev, "IN.texture_size",    &texture_size);
@@ -304,19 +302,14 @@ static void hlsl_d3d9_renderchain_set_vertices(
             pass, width, height, out_width, out_height,
             vp_width, vp_height, rotation);
 
-   RARCH_LOG("DIKKE LUL 1\n");
-   d3d9_hlsl_bind_program(pass,  chain->chain.dev);
-   RARCH_LOG("DIKKE LUL 2\n");
    hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, pass,
          vp_width, vp_height, rotation);
-   RARCH_LOG("DIKKE LUL 3\n");
    hlsl_d3d9_renderchain_set_shader_params(&chain->chain,
          chain->chain.dev,
          pass,
          width, height,
          pass->info.tex_w, pass->info.tex_h,
          vp_width, vp_height);
-   RARCH_LOG("DIKKE LUL 4\n");
 }
 
 static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
@@ -391,8 +384,6 @@ static bool hlsl_d3d9_renderchain_init_shader(d3d9_video_t *d3d,
       hlsl_renderchain_t *chain)
 {
    RARCH_LOG("[D3D9]: Using HLSL shader backend.\n");
-
-   d3d_matrix_identity(&chain->mvp_val);
 
    return true;
 }
