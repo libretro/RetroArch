@@ -1216,13 +1216,22 @@ static bool hlsl_d3d9_renderchain_add_pass(
    return true;
 }
 
+static bool hlsl_d3d9_renderchain_add_lut(void *data,
+      const char *id, const char *path, bool smooth)
+{
+   hlsl_d3d9_renderchain_t *_chain  = (hlsl_d3d9_renderchain_t*)data;
+   d3d9_renderchain_t *chain        = (d3d9_renderchain_t*)&_chain->chain;
+
+   return d3d9_renderchain_add_lut(chain, id, path, smooth);
+}
+
 d3d9_renderchain_driver_t hlsl_d3d9_renderchain = {
    hlsl_d3d9_renderchain_free,
    hlsl_d3d9_renderchain_new,
    hlsl_d3d9_renderchain_init,
    hlsl_d3d9_renderchain_set_final_viewport,
    hlsl_d3d9_renderchain_add_pass,
-   NULL, /* add_lut */
+   hlsl_d3d9_renderchain_add_lut,
    hlsl_d3d9_renderchain_render,
    "hlsl_d3d9",
 };

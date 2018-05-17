@@ -42,10 +42,6 @@
 #pragma comment(lib, "cgd3d9")
 #endif
 
-#define D3D_DEFAULT_NONPOW2         ((UINT)-2)
-#define D3D_FILTER_LINEAR           (3 << 0)
-#define D3D_FILTER_POINT            (2 << 0)
-
 #define d3d9_cg_set_param_1f(param, x) if (param) cgD3D9SetUniform(param, x)
 
 static void set_cg_param(void *data, const char *name, const void *values)
@@ -977,42 +973,10 @@ static bool d3d9_cg_renderchain_add_pass(
 static bool d3d9_cg_renderchain_add_lut(void *data,
       const char *id, const char *path, bool smooth)
 {
-   struct lut_info info;
-   cg_renderchain_t *chain = (cg_renderchain_t*)data;
-   LPDIRECT3DTEXTURE9 lut  = (LPDIRECT3DTEXTURE9)
-      d3d9_texture_new(
-         chain->chain.dev,
-         path,
-         D3D_DEFAULT_NONPOW2,
-         D3D_DEFAULT_NONPOW2,
-         0,
-         0,
-         ((D3DFORMAT)-3), /* D3DFMT_FROM_FILE */
-         D3DPOOL_MANAGED,
-         smooth ? D3D_FILTER_LINEAR : D3D_FILTER_POINT,
-         0,
-         0,
-         NULL,
-         NULL,
-         false
-         );
+   cg_renderchain_t *_chain  = (cg_renderchain_t*)data;
+   d3d9_renderchain_t *chain = (d3d9_renderchain_t*)&_chain->chain;
 
-   RARCH_LOG("[D3D9 Cg]: LUT texture loaded: %s.\n", path);
-
-   info.tex    = lut;
-   info.smooth = smooth;
-   strlcpy(info.id, id, sizeof(info.id));
-   if (!lut)
-      return false;
-
-   d3d9_set_texture(chain->chain.dev, 0, lut);
-   d3d9_set_sampler_address_u(chain->chain.dev, 0, D3DTADDRESS_BORDER);
-   d3d9_set_sampler_address_v(chain->chain.dev, 0, D3DTADDRESS_BORDER);
-   d3d9_set_texture(chain->chain.dev, 0, NULL);
-
-   lut_info_vector_list_append(chain->chain.luts, info);
-
-   return true;
+   return d3d9_renderchain_add_lut(chain, id, path, smooth);
 }
 
 static void d3d9_cg_renderchain_start_render(cg_renderchain_t *chain)

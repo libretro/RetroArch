@@ -24,8 +24,13 @@
 
 #include <d3d9.h>
 #include "../common/d3d9_common.h"
+#include "../../verbosity.h"
 
 RETRO_BEGIN_DECLS
+
+#define D3D_DEFAULT_NONPOW2         ((UINT)-2)
+#define D3D_FILTER_LINEAR           (3 << 0)
+#define D3D_FILTER_POINT            (2 << 0)
 
 struct lut_info
 {
@@ -94,6 +99,46 @@ typedef struct d3d9_renderchain
    struct unsigned_vector_list *bound_vert;
    struct lut_info_vector_list *luts;
 } d3d9_renderchain_t;
+
+static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
+      const char *id, const char *path, bool smooth)
+{
+   struct lut_info info;
+   LPDIRECT3DTEXTURE9 lut    = (LPDIRECT3DTEXTURE9)
+      d3d9_texture_new(
+            chain->dev,
+            path,
+            D3D_DEFAULT_NONPOW2,
+            D3D_DEFAULT_NONPOW2,
+            0,
+            0,
+            ((D3DFORMAT)-3), /* D3DFMT_FROM_FILE */
+            D3DPOOL_MANAGED,
+            smooth ? D3D_FILTER_LINEAR : D3D_FILTER_POINT,
+            0,
+            0,
+            NULL,
+            NULL,
+            false
+            );
+
+   RARCH_LOG("[D3D9 Cg]: LUT texture loaded: %s.\n", path);
+
+   info.tex    = lut;
+   info.smooth = smooth;
+   strlcpy(info.id, id, sizeof(info.id));
+   if (!lut)
+      return false;
+
+   d3d9_set_texture(chain->dev, 0, lut);
+   d3d9_set_sampler_address_u(chain->dev, 0, D3DTADDRESS_BORDER);
+   d3d9_set_sampler_address_v(chain->dev, 0, D3DTADDRESS_BORDER);
+   d3d9_set_texture(chain->dev, 0, NULL);
+
+   lut_info_vector_list_append(chain->luts, info);
+
+   return true;
+}
 
 static INLINE void d3d9_init_renderchain(d3d9_renderchain_t *chain)
 {
