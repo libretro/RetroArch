@@ -594,7 +594,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
    }
 
    pass.vertex_buf        = d3d9_vertex_buffer_new(
-         dev, 4 * sizeof(Vertex),
+         dev, 4 * sizeof(struct HLSLVertex),
          D3DUSAGE_WRITEONLY,
          0,
          D3DPOOL_MANAGED,
