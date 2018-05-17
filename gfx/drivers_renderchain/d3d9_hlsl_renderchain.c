@@ -196,15 +196,6 @@ error:
    return false;
 }
 
-static void hlsl_set_program_attributes(hlsl_shader_data_t *hlsl,
-      unsigned i)
-{
-   struct shader_program_hlsl_data *program = &hlsl->prg[i];
-
-   if (program)
-      d3d_matrix_identity(&program->mvp_val);
-}
-
 static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
       const char *cgp_path, unsigned i)
 {
@@ -219,7 +210,7 @@ static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
    fill_pathname_resolve_relative(path_buf, cgp_path,
          hlsl->cg_shader->pass[i].source.path, sizeof(path_buf));
 
-   RARCH_LOG("Loading Cg/HLSL shader: \"%s\".\n", path_buf);
+   RARCH_LOG("[D3D9 HLSL]: Loading Cg/HLSL shader: \"%s\".\n", path_buf);
 
    if (!d3d9_hlsl_load_program(hlsl, i + 1, &hlsl->prg[i + 1], &program_info))
       return false;
@@ -245,7 +236,7 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, const char *path)
       program_info.combined = path;
       program_info.is_file  = true;
 
-      RARCH_LOG("Loading Cg/HLSL file: %s\n", path);
+      RARCH_LOG("[D3D9 HLSL]: Loading Cg/HLSL file: %s\n", path);
 
       strlcpy(hlsl->cg_shader->pass[0].source.path,
             path, sizeof(hlsl->cg_shader->pass[0].source.path));
@@ -255,7 +246,7 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, const char *path)
    }
    else
    {
-      RARCH_LOG("Loading stock Cg/HLSL file.\n");
+      RARCH_LOG("[D3D9 HLSL]: Loading stock Cg/HLSL file.\n");
       hlsl->prg[1] = hlsl->prg[0];
    }
 
@@ -270,7 +261,7 @@ static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, const char *path)
    if (!conf)
       goto error;
 
-   RARCH_LOG("Loaded Cg meta-shader: %s\n", path);
+   RARCH_LOG("[D3D9 HLSL]: Loaded HLSL/Cg meta-shader: %s\n", path);
 
    if (!hlsl->cg_shader)
       hlsl->cg_shader = (struct video_shader*)calloc
@@ -332,7 +323,7 @@ static hlsl_shader_data_t *hlsl_init(d3d9_video_t *d3d, const char *path)
    /* Load stock shader */
    if (!d3d9_hlsl_load_program(hlsl, 0, &hlsl->prg[0], &program_info))
    {
-      RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
+      RARCH_ERR("[D3D9 HLSL]: Failed to compile passthrough shader, is something wrong with your environment?\n");
       goto error;
    }
 
@@ -347,15 +338,20 @@ static hlsl_shader_data_t *hlsl_init(d3d9_video_t *d3d, const char *path)
          goto error;
    }
 
-   RARCH_LOG("Setting up program attributes...\n");
-   RARCH_LOG("Shader passes: %d\n", hlsl->cg_shader->passes);
+   RARCH_LOG("[D3D9 HLSL]: Setting up program attributes...\n");
+   RARCH_LOG("[D3D9 HLSL]: Shader passes: %d\n", hlsl->cg_shader->passes);
 
    for(i = 1; i <= hlsl->cg_shader->passes; i++)
-      hlsl_set_program_attributes(hlsl, i);
+   {
+      struct shader_program_hlsl_data *program = &hlsl->prg[i];
 
-   RARCH_LOG("Setting up vertex shader...\n");
+      if (program)
+         d3d_matrix_identity(&program->mvp_val);
+   }
+
+   RARCH_LOG("[D3D9 HLSL]: Setting up vertex shader...\n");
    d3d9_set_vertex_shader(hlsl->dev, 1, hlsl->prg[1].vprg);
-   RARCH_LOG("Setting up pixel shader...\n");
+   RARCH_LOG("[D3D9 HLSL]: Setting up pixel shader...\n");
    d3d9_set_pixel_shader(hlsl->dev, hlsl->prg[1].fprg);
 
    return hlsl;
