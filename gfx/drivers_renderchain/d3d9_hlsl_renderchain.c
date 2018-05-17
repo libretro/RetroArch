@@ -129,7 +129,6 @@ static void hlsl_use(hlsl_shader_data_t *hlsl,
 }
 
 static bool d3d9_hlsl_load_program(
-      hlsl_shader_data_t *hlsl,
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
       const char *prog, bool path_is_file)
@@ -199,7 +198,7 @@ static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
 
    RARCH_LOG("[D3D9 HLSL]: Loading Cg/HLSL shader: \"%s\".\n", path_buf);
 
-   if (!d3d9_hlsl_load_program(hlsl, dev, &pass, path_buf, true))
+   if (!d3d9_hlsl_load_program(dev, &pass, path_buf, true))
       return false;
 
    hlsl->prg[i + 1].fprg   = pass.fprg;
@@ -231,7 +230,7 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, LPDIRECT3DDEVICE9 dev,
       strlcpy(hlsl->cg_shader->pass[0].source.path,
             path, sizeof(hlsl->cg_shader->pass[0].source.path));
 
-      if (!d3d9_hlsl_load_program(hlsl, dev, &pass, path, true))
+      if (!d3d9_hlsl_load_program(dev, &pass, path, true))
          return false;
 
       hlsl->prg[1].fprg   = pass.fprg;
@@ -308,7 +307,7 @@ static hlsl_shader_data_t *hlsl_init(hlsl_renderchain_t *chain, const char *path
       return NULL;
 
    /* Load stock shader */
-   if (!d3d9_hlsl_load_program(hlsl, chain->chain.dev, &pass, stock_hlsl_program, false))
+   if (!d3d9_hlsl_load_program(chain->chain.dev, &pass, stock_hlsl_program, false))
    {
       RARCH_ERR("[D3D9 HLSL]: Failed to compile passthrough shader, is something wrong with your environment?\n");
       goto error;
@@ -504,23 +503,6 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       d3d9_set_sampler_address_v(dev, 0, D3DTADDRESS_BORDER);
       d3d9_set_texture(chain->dev, 0, NULL);
    }
-
-   pass.vertex_buf        = d3d9_vertex_buffer_new(
-         dev, 4 * sizeof(struct D3D9Vertex),
-         D3DUSAGE_WRITEONLY,
-         0,
-         D3DPOOL_MANAGED,
-         NULL);
-
-   if (!pass.vertex_buf)
-      return false;
-
-   pass.tex = d3d9_texture_new(dev, NULL,
-         pass.info.tex_w, pass.info.tex_h, 1, 0, fmt,
-         0, 0, 0, 0, NULL, NULL, false);
-
-   if (!pass.tex)
-      return false;
 
    d3d9_set_sampler_address_u(dev, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    d3d9_set_sampler_address_v(dev, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
