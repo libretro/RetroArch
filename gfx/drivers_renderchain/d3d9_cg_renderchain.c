@@ -42,6 +42,12 @@
 #pragma comment(lib, "cgd3d9")
 #endif
 
+static void *d3d9_cg_get_constant_by_name(void *data, const char *name)
+{
+   CGprogram   prog   = (CGprogram)data;
+   return cgGetNamedParameter(prog, name);
+}
+
 static INLINE void d3d9_cg_set_param_1f(void *data, const void *value)
 {
    CGparameter param = (CGparameter)data;
@@ -52,7 +58,7 @@ static INLINE void d3d9_cg_set_param_1f(void *data, const void *value)
 static INLINE void set_cg_param(void *data, const char *name, const void *values)
 {
    CGprogram   prog   = (CGprogram)data;
-   CGparameter cgp    = cgGetNamedParameter(prog, name);
+   CGparameter cgp    = d3d9_cg_get_constant_by_name(prog, name);
    if (cgp)
       cgD3D9SetUniform(cgp, values);
 }
@@ -401,7 +407,7 @@ static void d3d9_cg_renderchain_bind_orig(
    set_cg_param(pass->vprg, "ORIG.texture_size", &texture_size);
    set_cg_param(pass->fprg, "ORIG.texture_size", &texture_size);
 
-   param = cgGetNamedParameter(pass->fprg, "ORIG.texture");
+   param = d3d9_cg_get_constant_by_name(pass->fprg, "ORIG.texture");
 
    if (param)
    {
@@ -416,7 +422,7 @@ static void d3d9_cg_renderchain_bind_orig(
       unsigned_vector_list_append(chain->bound_tex, index);
    }
 
-   param = cgGetNamedParameter(pass->vprg, "ORIG.tex_coord");
+   param = d3d9_cg_get_constant_by_name(pass->vprg, "ORIG.tex_coord");
    if (param)
    {
       LPDIRECT3DVERTEXBUFFER9 vert_buf = (LPDIRECT3DVERTEXBUFFER9)first_pass->vertex_buf;
@@ -472,7 +478,7 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
       set_cg_param(pass->vprg, attr_tex_size,   &texture_size);
       set_cg_param(pass->fprg, attr_tex_size,   &texture_size);
 
-      param = cgGetNamedParameter(pass->fprg, attr_texture);
+      param = d3d9_cg_get_constant_by_name(pass->fprg, attr_texture);
       if (param)
       {
          LPDIRECT3DTEXTURE9 tex;
@@ -493,7 +499,7 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
          d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
 
-      param = cgGetNamedParameter(pass->vprg, attr_coord);
+      param = d3d9_cg_get_constant_by_name(pass->vprg, attr_coord);
       if (param)
       {
          LPDIRECT3DVERTEXBUFFER9 vert_buf = (LPDIRECT3DVERTEXBUFFER9)
@@ -543,7 +549,7 @@ static void d3d9_cg_renderchain_bind_pass(
       set_cg_param(pass->vprg, attr_tex_size,     &texture_size);
       set_cg_param(pass->fprg, attr_tex_size,     &texture_size);
 
-      param = cgGetNamedParameter(pass->fprg, attr_texture);
+      param = d3d9_cg_get_constant_by_name(pass->fprg, attr_texture);
       if (param)
       {
          unsigned index = cgGetParameterResourceIndex(param);
@@ -558,7 +564,7 @@ static void d3d9_cg_renderchain_bind_pass(
          d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
 
-      param = cgGetNamedParameter(pass->vprg, attr_coord);
+      param = d3d9_cg_get_constant_by_name(pass->vprg, attr_coord);
       if (param)
       {
          struct unsigned_vector_list *attrib_map = 
@@ -834,7 +840,7 @@ static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
       unsigned rotation)
 {
    struct d3d_matrix proj, ortho, rot, matrix;
-   CGparameter cgpModelViewProj = cgGetNamedParameter(vprg, "modelViewProj");
+   CGparameter cgpModelViewProj = d3d9_cg_get_constant_by_name(vprg, "modelViewProj");
 
    d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
    d3d_matrix_identity(&rot);
@@ -959,9 +965,9 @@ static void cg_d3d9_renderchain_set_params(
 
    for (i = 0; i < cnt; i++)
    {
-      CGparameter param_f = cgGetNamedParameter(
+      CGparameter param_f = d3d9_cg_get_constant_by_name(
             pass->fprg, tracker_info[i].id);
-      CGparameter param_v = cgGetNamedParameter(
+      CGparameter param_v = d3d9_cg_get_constant_by_name(
             pass->vprg, tracker_info[i].id);
       d3d9_cg_set_param_1f(param_f, &tracker_info[i].value);
       d3d9_cg_set_param_1f(param_v, &tracker_info[i].value);
@@ -1001,7 +1007,7 @@ static void cg_d3d9_renderchain_render_pass(
    for (i = 0; i < chain->luts->count; i++)
    {
       CGparameter vparam;
-      CGparameter fparam = cgGetNamedParameter(
+      CGparameter fparam = d3d9_cg_get_constant_by_name(
             pass->fprg, chain->luts->data[i].id);
       int bound_index    = -1;
 
@@ -1013,7 +1019,7 @@ static void cg_d3d9_renderchain_render_pass(
          d3d9_renderchain_add_lut_internal(chain, index, i);
       }
 
-      vparam = cgGetNamedParameter(pass->vprg,
+      vparam = d3d9_cg_get_constant_by_name(pass->vprg,
             chain->luts->data[i].id);
 
       if (vparam)
