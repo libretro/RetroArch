@@ -95,6 +95,14 @@ typedef struct d3d9_renderchain
    struct lut_info_vector_list *luts;
 } d3d9_renderchain_t;
 
+static INLINE void d3d9_init_renderchain(d3d9_renderchain_t *chain)
+{
+   chain->passes     = shader_pass_vector_list_new();
+   chain->luts       = lut_info_vector_list_new();
+   chain->bound_tex  = unsigned_vector_list_new();
+   chain->bound_vert = unsigned_vector_list_new();
+}
+
 static INLINE void d3d9_renderchain_blit_to_texture(
       LPDIRECT3DTEXTURE9 tex,
       const void *frame,

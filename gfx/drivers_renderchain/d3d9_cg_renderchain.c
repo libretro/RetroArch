@@ -107,7 +107,7 @@ static INLINE CGparameter d3d9_cg_find_param_from_semantic(
             return ret;
       }
 
-      if (     cgGetParameterDirection(param) != CG_IN
+      if (     cgGetParameterDirection(param)   != CG_IN
             || cgGetParameterVariability(param) != CG_VARYING)
          continue;
 
@@ -147,8 +147,10 @@ static bool d3d9_cg_load_program(void *data,
       goto error;
    }
 
-   RARCH_LOG("[D3D9 Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
-   RARCH_LOG("[D3D9 Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
+   RARCH_LOG("[D3D9 Cg]: Vertex profile: %s\n",
+         cgGetProfileString(vertex_profile));
+   RARCH_LOG("[D3D9 Cg]: Fragment profile: %s\n",
+         cgGetProfileString(fragment_profile));
 
    if (path_is_file && !string_is_empty(prog))
       *fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
@@ -695,10 +697,7 @@ static void *d3d9_cg_renderchain_new(void)
    if (!renderchain)
       return NULL;
 
-   renderchain->chain.passes     = shader_pass_vector_list_new();
-   renderchain->chain.luts       = lut_info_vector_list_new();
-   renderchain->chain.bound_tex  = unsigned_vector_list_new();
-   renderchain->chain.bound_vert = unsigned_vector_list_new();
+   d3d9_init_renderchain(&renderchain->chain);
 
    return renderchain;
 }

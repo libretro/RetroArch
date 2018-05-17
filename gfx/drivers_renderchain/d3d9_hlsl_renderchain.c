@@ -799,10 +799,7 @@ void *hlsl_d3d9_renderchain_new(void)
    if (!renderchain)
       return NULL;
 
-   renderchain->chain.passes     = shader_pass_vector_list_new();
-   renderchain->chain.luts       = lut_info_vector_list_new();
-   renderchain->chain.bound_tex  = unsigned_vector_list_new();
-   renderchain->chain.bound_vert = unsigned_vector_list_new();
+   d3d9_init_renderchain(&renderchain->chain);
 
    return renderchain;
 }
