@@ -1022,6 +1022,21 @@ static void hlsl_d3d9_renderchain_render_pass(
    d3d9_set_sampler_magfilter(chain->dev, 0, D3DTEXF_POINT);
 }
 
+static void d3d9_hlsl_renderchain_start_render(hlsl_d3d9_renderchain_t *chain)
+{
+   chain->passes->data[0].tex         = chain->prev.tex[chain->prev.ptr];
+   chain->passes->data[0].vertex_buf  = chain->prev.vertex_buf[chain->prev.ptr];
+   chain->passes->data[0].last_width  = chain->prev.last_width[chain->prev.ptr];
+   chain->passes->data[0].last_height = chain->prev.last_height[chain->prev.ptr];
+}
+
+static void d3d9_hlsl_renderchain_end_render(hlsl_d3d9_renderchain_t *chain)
+{
+   chain->prev.last_width[chain->prev.ptr]  = chain->passes->data[0].last_width;
+   chain->prev.last_height[chain->prev.ptr] = chain->passes->data[0].last_height;
+   chain->prev.ptr                          = (chain->prev.ptr + 1) & TEXTURESMASK;
+}
+
 static bool hlsl_d3d9_renderchain_render(
       d3d9_video_t *d3d,
       const video_frame_info_t *video_info,
@@ -1036,6 +1051,8 @@ static bool hlsl_d3d9_renderchain_render(
    settings_t *settings           = config_get_ptr();
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)
       d3d->renderchain_data;
+
+   d3d9_hlsl_renderchain_start_render(chain);
 
    current_width                  = width;
    current_height                 = height;
@@ -1077,6 +1094,8 @@ static bool hlsl_d3d9_renderchain_render(
          chain->passes->count);
 
    chain->frame_count++;
+
+   d3d9_hlsl_renderchain_end_render(chain);
 
    d3d9_hlsl_renderchain_calc_and_set_shader_mvp(chain,
          /* chain->vStock, */ chain->final_viewport->Width,
