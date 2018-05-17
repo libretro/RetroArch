@@ -38,6 +38,8 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
+#include "d3d9_renderchain.h"
+
 #ifdef _MSC_VER
 #pragma comment(lib, "cgd3d9")
 #endif
@@ -66,7 +68,11 @@ static INLINE void d3d9_cg_set_param_2f(void *data, void *userdata,
 
 static INLINE void d3d9_cg_bind_program(void *data)
 {
-   cgD3D9BindProgram((CGprogram)data);
+   struct shader_pass *pass = (struct shader_pass*)data;
+   if (!pass)
+      return;
+   cgD3D9BindProgram((CGprogram)pass->fprg);
+   cgD3D9BindProgram((CGprogram)pass->vprg);
 }
 
 static INLINE void d3d9_cg_set_param_matrix(void *data, void *userdata,
@@ -77,8 +83,6 @@ static INLINE void d3d9_cg_set_param_matrix(void *data, void *userdata,
    if (cgp)
       cgD3D9SetUniformMatrix(cgp, (D3DMATRIX*)values);
 }
-
-#include "d3d9_renderchain.h"
 
 typedef struct cg_renderchain
 {
@@ -796,8 +800,7 @@ static bool d3d9_cg_renderchain_init(
    if (!d3d9_cg_load_program(chain, &chain->stock_shader, NULL, false))
       return false;
 
-   d3d9_cg_bind_program(chain->stock_shader.fprg);
-   d3d9_cg_bind_program(chain->stock_shader.vprg);
+   d3d9_cg_bind_program(&chain->stock_shader);
 
    return true;
 }
@@ -920,8 +923,7 @@ static void d3d9_cg_renderchain_render_pass(
 {
    unsigned i;
 
-   d3d9_cg_bind_program(pass->fprg);
-   d3d9_cg_bind_program(pass->vprg);
+   d3d9_cg_bind_program(pass);
 
    d3d9_set_texture(chain->dev, 0, pass->tex);
    d3d9_set_sampler_minfilter(chain->dev, 0,
@@ -1099,8 +1101,7 @@ static bool d3d9_cg_renderchain_render(
    d3d9_surface_free(back_buffer);
 
    d3d9_renderchain_end_render(chain);
-   d3d9_cg_bind_program(_chain->stock_shader.fprg);
-   d3d9_cg_bind_program(_chain->stock_shader.vprg);
+   d3d9_cg_bind_program(&_chain->stock_shader);
    d3d9_cg_renderchain_calc_and_set_shader_mvp(
          _chain->stock_shader.vprg,
          chain->final_viewport->Width,
