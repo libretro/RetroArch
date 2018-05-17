@@ -194,7 +194,7 @@ error:
 }
 
 static void d3d9_cg_renderchain_set_shader_params(
-      cg_renderchain_t *chain,
+      d3d9_renderchain_t *chain,
       struct shader_pass *pass,
       unsigned video_w, unsigned video_h,
       unsigned tex_w, unsigned tex_h,
@@ -219,10 +219,10 @@ static void d3d9_cg_renderchain_set_shader_params(
    set_cg_param(pass->vprg, "IN.output_size",  &output_size);
    set_cg_param(pass->fprg, "IN.output_size",  &output_size);
 
-   frame_cnt            = chain->chain.frame_count;
+   frame_cnt            = chain->frame_count;
 
    if (pass->info.pass->frame_count_mod)
-      frame_cnt         = chain->chain.frame_count 
+      frame_cnt         = chain->frame_count 
          % pass->info.pass->frame_count_mod;
 
    set_cg_param(pass->fprg, "IN.frame_count", &frame_cnt);
@@ -379,13 +379,13 @@ static bool d3d9_cg_renderchain_init_shader_fvf(
 }
 
 static void d3d9_cg_renderchain_bind_orig(
-      cg_renderchain_t *chain,
+      d3d9_renderchain_t *chain,
       struct shader_pass *pass)
 {
    CGparameter param;
    float video_size[2];
    float texture_size[2];
-   struct shader_pass *first_pass = (struct shader_pass*)&chain->chain.passes->data[0];
+   struct shader_pass *first_pass = (struct shader_pass*)&chain->passes->data[0];
    video_size[0]              = first_pass->last_width;
    video_size[1]              = first_pass->last_height;
    texture_size[0]            = first_pass->info.tex_w;
@@ -401,14 +401,14 @@ static void d3d9_cg_renderchain_bind_orig(
    if (param)
    {
       unsigned index = cgGetParameterResourceIndex(param);
-      d3d9_set_texture(chain->chain.dev, index, first_pass->tex);
-      d3d9_set_sampler_magfilter(chain->chain.dev, index,
+      d3d9_set_texture(chain->dev, index, first_pass->tex);
+      d3d9_set_sampler_magfilter(chain->dev, index,
             d3d_translate_filter(first_pass->info.pass->filter));
-      d3d9_set_sampler_minfilter(chain->chain.dev, index,
+      d3d9_set_sampler_minfilter(chain->dev, index,
             d3d_translate_filter(first_pass->info.pass->filter));
-      d3d9_set_sampler_address_u(chain->chain.dev, index, D3DTADDRESS_BORDER);
-      d3d9_set_sampler_address_v(chain->chain.dev, index, D3DTADDRESS_BORDER);
-      unsigned_vector_list_append(chain->chain.bound_tex, index);
+      d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
+      d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
+      unsigned_vector_list_append(chain->bound_tex, index);
    }
 
    param = cgGetNamedParameter(pass->vprg, "ORIG.tex_coord");
@@ -419,13 +419,13 @@ static void d3d9_cg_renderchain_bind_orig(
          pass->attrib_map;
       unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
-      d3d9_set_stream_source(chain->chain.dev, index,
+      d3d9_set_stream_source(chain->dev, index,
             vert_buf, 0, sizeof(struct D3D9Vertex));
-      unsigned_vector_list_append(chain->chain.bound_vert, index);
+      unsigned_vector_list_append(chain->bound_vert, index);
    }
 }
 
-static void d3d9_cg_renderchain_bind_prev(cg_renderchain_t *chain,
+static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
       struct shader_pass *pass)
 {
    unsigned i;
@@ -444,8 +444,8 @@ static void d3d9_cg_renderchain_bind_prev(cg_renderchain_t *chain,
       "PREV6",
    };
 
-   texture_size[0] = chain->chain.passes->data[0].info.tex_w;
-   texture_size[1] = chain->chain.passes->data[0].info.tex_h;
+   texture_size[0] = chain->passes->data[0].info.tex_w;
+   texture_size[1] = chain->passes->data[0].info.tex_h;
 
    for (i = 0; i < TEXTURES - 1; i++)
    {
@@ -457,10 +457,10 @@ static void d3d9_cg_renderchain_bind_prev(cg_renderchain_t *chain,
       snprintf(attr_tex_size,   sizeof(attr_tex_size),   "%s.texture_size", prev_names[i]);
       snprintf(attr_coord,      sizeof(attr_coord),      "%s.tex_coord",    prev_names[i]);
 
-      video_size[0] = chain->chain.prev.last_width[
-         (chain->chain.prev.ptr - (i + 1)) & TEXTURESMASK];
-      video_size[1] = chain->chain.prev.last_height[
-         (chain->chain.prev.ptr - (i + 1)) & TEXTURESMASK];
+      video_size[0] = chain->prev.last_width[
+         (chain->prev.ptr - (i + 1)) & TEXTURESMASK];
+      video_size[1] = chain->prev.last_height[
+         (chain->prev.ptr - (i + 1)) & TEXTURESMASK];
 
       set_cg_param(pass->vprg, attr_input_size, &video_size);
       set_cg_param(pass->fprg, attr_input_size, &video_size);
@@ -474,38 +474,38 @@ static void d3d9_cg_renderchain_bind_prev(cg_renderchain_t *chain,
          unsigned index = cgGetParameterResourceIndex(param);
 
          tex = (LPDIRECT3DTEXTURE9)
-            chain->chain.prev.tex[
-            (chain->chain.prev.ptr - (i + 1)) & TEXTURESMASK];
+            chain->prev.tex[
+            (chain->prev.ptr - (i + 1)) & TEXTURESMASK];
 
-         d3d9_set_texture(chain->chain.dev, index, tex);
-         unsigned_vector_list_append(chain->chain.bound_tex, index);
+         d3d9_set_texture(chain->dev, index, tex);
+         unsigned_vector_list_append(chain->bound_tex, index);
 
-         d3d9_set_sampler_magfilter(chain->chain.dev, index,
-               d3d_translate_filter(chain->chain.passes->data[0].info.pass->filter));
-         d3d9_set_sampler_minfilter(chain->chain.dev, index,
-               d3d_translate_filter(chain->chain.passes->data[0].info.pass->filter));
-         d3d9_set_sampler_address_u(chain->chain.dev, index, D3DTADDRESS_BORDER);
-         d3d9_set_sampler_address_v(chain->chain.dev, index, D3DTADDRESS_BORDER);
+         d3d9_set_sampler_magfilter(chain->dev, index,
+               d3d_translate_filter(chain->passes->data[0].info.pass->filter));
+         d3d9_set_sampler_minfilter(chain->dev, index,
+               d3d_translate_filter(chain->passes->data[0].info.pass->filter));
+         d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
+         d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
 
       param = cgGetNamedParameter(pass->vprg, attr_coord);
       if (param)
       {
          LPDIRECT3DVERTEXBUFFER9 vert_buf = (LPDIRECT3DVERTEXBUFFER9)
-            chain->chain.prev.vertex_buf[
-            (chain->chain.prev.ptr - (i + 1)) & TEXTURESMASK];
+            chain->prev.vertex_buf[
+            (chain->prev.ptr - (i + 1)) & TEXTURESMASK];
          struct unsigned_vector_list *attrib_map = (struct unsigned_vector_list*)pass->attrib_map;
          unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
-         d3d9_set_stream_source(chain->chain.dev, index,
+         d3d9_set_stream_source(chain->dev, index,
                vert_buf, 0, sizeof(struct D3D9Vertex));
-         unsigned_vector_list_append(chain->chain.bound_vert, index);
+         unsigned_vector_list_append(chain->bound_vert, index);
       }
    }
 }
 
 static void d3d9_cg_renderchain_bind_pass(
-      cg_renderchain_t *chain,
+      d3d9_renderchain_t *chain,
       struct shader_pass *pass, unsigned pass_index)
 {
    unsigned i;
@@ -520,7 +520,7 @@ static void d3d9_cg_renderchain_bind_pass(
       char attr_input_size[64]  = {0};
       char attr_tex_size[64]    = {0};
       char attr_coord[64]       = {0};
-      struct shader_pass *curr_pass = (struct shader_pass*)&chain->chain.passes->data[i];
+      struct shader_pass *curr_pass = (struct shader_pass*)&chain->passes->data[i];
 
       snprintf(pass_base,       sizeof(pass_base),       "PASS%u",          i);
       snprintf(attr_texture,    sizeof(attr_texture),    "%s.texture",      pass_base);
@@ -542,15 +542,15 @@ static void d3d9_cg_renderchain_bind_pass(
       if (param)
       {
          unsigned index = cgGetParameterResourceIndex(param);
-         unsigned_vector_list_append(chain->chain.bound_tex, index);
+         unsigned_vector_list_append(chain->bound_tex, index);
 
-         d3d9_set_texture(chain->chain.dev, index, curr_pass->tex);
-         d3d9_set_sampler_magfilter(chain->chain.dev, index,
+         d3d9_set_texture(chain->dev, index, curr_pass->tex);
+         d3d9_set_sampler_magfilter(chain->dev, index,
                d3d_translate_filter(curr_pass->info.pass->filter));
-         d3d9_set_sampler_minfilter(chain->chain.dev, index,
+         d3d9_set_sampler_minfilter(chain->dev, index,
                d3d_translate_filter(curr_pass->info.pass->filter));
-         d3d9_set_sampler_address_u(chain->chain.dev, index, D3DTADDRESS_BORDER);
-         d3d9_set_sampler_address_v(chain->chain.dev, index, D3DTADDRESS_BORDER);
+         d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
+         d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
 
       param = cgGetNamedParameter(pass->vprg, attr_coord);
@@ -560,9 +560,9 @@ static void d3d9_cg_renderchain_bind_pass(
             (struct unsigned_vector_list*)pass->attrib_map;
          unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
-         d3d9_set_stream_source(chain->chain.dev, index, curr_pass->vertex_buf,
+         d3d9_set_stream_source(chain->dev, index, curr_pass->vertex_buf,
                0, sizeof(struct D3D9Vertex));
-         unsigned_vector_list_append(chain->chain.bound_vert, index);
+         unsigned_vector_list_append(chain->bound_vert, index);
       }
    }
 }
@@ -965,25 +965,6 @@ static bool d3d9_cg_renderchain_add_lut(void *data,
    return d3d9_renderchain_add_lut(chain, id, path, smooth);
 }
 
-static void d3d9_cg_renderchain_start_render(cg_renderchain_t *chain)
-{
-   chain->chain.passes->data[0].tex         = chain->chain.prev.tex[
-      chain->chain.prev.ptr];
-   chain->chain.passes->data[0].vertex_buf  = chain->chain.prev.vertex_buf[
-      chain->chain.prev.ptr];
-   chain->chain.passes->data[0].last_width  = chain->chain.prev.last_width[
-      chain->chain.prev.ptr];
-   chain->chain.passes->data[0].last_height = chain->chain.prev.last_height[
-      chain->chain.prev.ptr];
-}
-
-static void d3d9_cg_renderchain_end_render(cg_renderchain_t *chain)
-{
-   chain->chain.prev.last_width[chain->chain.prev.ptr]  = chain->chain.passes->data[0].last_width;
-   chain->chain.prev.last_height[chain->chain.prev.ptr] = chain->chain.passes->data[0].last_height;
-   chain->chain.prev.ptr                          = (chain->chain.prev.ptr + 1) & TEXTURESMASK;
-}
-
 static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
       CGprogram vprg,
       unsigned vp_width, unsigned vp_height,
@@ -1005,7 +986,7 @@ static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
 
 static void cg_d3d9_renderchain_set_vertices(
       const video_frame_info_t *video_info,
-      cg_renderchain_t *chain,
+      d3d9_renderchain_t *chain,
       struct shader_pass *pass,
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
@@ -1098,7 +1079,7 @@ static void cg_d3d9_renderchain_set_vertices(
 }
 
 static void cg_d3d9_renderchain_set_params(
-      cg_renderchain_t *chain,
+      d3d9_renderchain_t *chain,
       struct shader_pass *pass,
       state_tracker_t *tracker,
       unsigned pass_index)
@@ -1111,7 +1092,7 @@ static void cg_d3d9_renderchain_set_params(
 
    if (pass_index == 1)
       cnt = state_tracker_get_uniform(tracker, tracker_info,
-            GFX_MAX_VARIABLES, chain->chain.frame_count);
+            GFX_MAX_VARIABLES, chain->frame_count);
 
    for (i = 0; i < cnt; i++)
    {
@@ -1125,7 +1106,7 @@ static void cg_d3d9_renderchain_set_params(
 }
 
 static void cg_d3d9_renderchain_render_pass(
-      cg_renderchain_t *chain,
+      d3d9_renderchain_t *chain,
       struct shader_pass *pass,
       state_tracker_t *tracker,
       unsigned pass_index)
@@ -1135,15 +1116,15 @@ static void cg_d3d9_renderchain_render_pass(
    cgD3D9BindProgram(pass->fprg);
    cgD3D9BindProgram(pass->vprg);
 
-   d3d9_set_texture(chain->chain.dev, 0, pass->tex);
-   d3d9_set_sampler_minfilter(chain->chain.dev, 0,
+   d3d9_set_texture(chain->dev, 0, pass->tex);
+   d3d9_set_sampler_minfilter(chain->dev, 0,
          d3d_translate_filter(pass->info.pass->filter));
-   d3d9_set_sampler_magfilter(chain->chain.dev, 0,
+   d3d9_set_sampler_magfilter(chain->dev, 0,
          d3d_translate_filter(pass->info.pass->filter));
 
-   d3d9_set_vertex_declaration(chain->chain.dev, pass->vertex_decl);
+   d3d9_set_vertex_declaration(chain->dev, pass->vertex_decl);
    for (i = 0; i < 4; i++)
-      d3d9_set_stream_source(chain->chain.dev, i,
+      d3d9_set_stream_source(chain->dev, i,
             pass->vertex_buf, 0,
             sizeof(struct D3D9Vertex));
 
@@ -1154,11 +1135,11 @@ static void cg_d3d9_renderchain_render_pass(
    d3d9_cg_renderchain_bind_prev(chain, pass);
 
    /* Set lookup textures */
-   for (i = 0; i < chain->chain.luts->count; i++)
+   for (i = 0; i < chain->luts->count; i++)
    {
       CGparameter vparam;
       CGparameter fparam = cgGetNamedParameter(
-            pass->fprg, chain->chain.luts->data[i].id);
+            pass->fprg, chain->luts->data[i].id);
       int bound_index    = -1;
 
       if (fparam)
@@ -1166,17 +1147,17 @@ static void cg_d3d9_renderchain_render_pass(
          unsigned index  = cgGetParameterResourceIndex(fparam);
          bound_index     = index;
 
-         d3d9_cg_renderchain_add_lut_internal(&chain->chain, index, i);
+         d3d9_cg_renderchain_add_lut_internal(chain, index, i);
       }
 
       vparam = cgGetNamedParameter(pass->vprg,
-            chain->chain.luts->data[i].id);
+            chain->luts->data[i].id);
 
       if (vparam)
       {
          unsigned index = cgGetParameterResourceIndex(vparam);
          if (index != (unsigned)bound_index)
-            d3d9_cg_renderchain_add_lut_internal(&chain->chain, index, i);
+            d3d9_cg_renderchain_add_lut_internal(chain, index, i);
       }
    }
 
@@ -1187,14 +1168,14 @@ static void cg_d3d9_renderchain_render_pass(
    if (tracker)
       cg_d3d9_renderchain_set_params(chain, pass, tracker, pass_index);
 
-   d3d9_draw_primitive(chain->chain.dev, D3DPT_TRIANGLESTRIP, 0, 2);
+   d3d9_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
    /* So we don't render with linear filter into render targets,
     * which apparently looked odd (too blurry). */
-   d3d9_set_sampler_minfilter(chain->chain.dev, 0, D3DTEXF_POINT);
-   d3d9_set_sampler_magfilter(chain->chain.dev, 0, D3DTEXF_POINT);
+   d3d9_set_sampler_minfilter(chain->dev, 0, D3DTEXF_POINT);
+   d3d9_set_sampler_magfilter(chain->dev, 0, D3DTEXF_POINT);
 
-   d3d9_renderchain_unbind_all(&chain->chain);
+   d3d9_renderchain_unbind_all(chain);
 }
 
 static bool d3d9_cg_renderchain_render(
@@ -1212,7 +1193,7 @@ static bool d3d9_cg_renderchain_render(
    cg_renderchain_t *chain        = d3d ? 
       (cg_renderchain_t*)d3d->renderchain_data : NULL;
 
-   d3d9_cg_renderchain_start_render(chain);
+   d3d9_renderchain_start_render(&chain->chain);
 
    current_width              = width;
    current_height             = height;
@@ -1268,12 +1249,13 @@ static bool d3d9_cg_renderchain_render(
       d3d9_set_viewports(chain->chain.dev, &viewport);
 
       cg_d3d9_renderchain_set_vertices(video_info,
-            chain, from_pass,
+            &chain->chain, from_pass,
             current_width, current_height,
             out_width, out_height,
             out_width, out_height, 0);
 
-      cg_d3d9_renderchain_render_pass(chain, from_pass, tracker,
+      cg_d3d9_renderchain_render_pass(&chain->chain,
+            from_pass, tracker,
             i + 1);
 
       current_width = out_width;
@@ -1294,14 +1276,15 @@ static bool d3d9_cg_renderchain_render(
    d3d9_set_viewports(chain->chain.dev, chain->chain.final_viewport);
 
    cg_d3d9_renderchain_set_vertices(video_info,
-         chain, last_pass,
+         &chain->chain, last_pass,
          current_width, current_height,
          out_width, out_height,
          chain->chain.final_viewport->Width,
          chain->chain.final_viewport->Height,
          rotation);
 
-   cg_d3d9_renderchain_render_pass(chain, last_pass,
+   cg_d3d9_renderchain_render_pass(&chain->chain,
+         last_pass,
          tracker,
          chain->chain.passes->count);
 
@@ -1309,7 +1292,7 @@ static bool d3d9_cg_renderchain_render(
 
    d3d9_surface_free(back_buffer);
 
-   d3d9_cg_renderchain_end_render(chain);
+   d3d9_renderchain_end_render(&chain->chain);
    cgD3D9BindProgram(chain->fStock);
    cgD3D9BindProgram(chain->vStock);
    d3d9_cg_renderchain_calc_and_set_shader_mvp(

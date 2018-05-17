@@ -154,6 +154,25 @@ static INLINE void d3d9_cg_renderchain_add_lut_internal(
    unsigned_vector_list_append(chain->bound_tex, index);
 }
 
+static INLINE void d3d9_renderchain_start_render(d3d9_renderchain_t *chain)
+{
+   chain->passes->data[0].tex         = chain->prev.tex[
+      chain->prev.ptr];
+   chain->passes->data[0].vertex_buf  = chain->prev.vertex_buf[
+      chain->prev.ptr];
+   chain->passes->data[0].last_width  = chain->prev.last_width[
+      chain->prev.ptr];
+   chain->passes->data[0].last_height = chain->prev.last_height[
+      chain->prev.ptr];
+}
+
+static INLINE void d3d9_renderchain_end_render(d3d9_renderchain_t *chain)
+{
+   chain->prev.last_width[chain->prev.ptr]  = chain->passes->data[0].last_width;
+   chain->prev.last_height[chain->prev.ptr] = chain->passes->data[0].last_height;
+   chain->prev.ptr                          = (chain->prev.ptr + 1) & TEXTURESMASK;
+}
+
 static INLINE void d3d9_renderchain_unbind_all(d3d9_renderchain_t *chain)
 {
    unsigned i;
