@@ -364,7 +364,7 @@ error:
 
 static void hlsl_d3d9_renderchain_set_shader_params(
       hlsl_shader_data_t *hlsl,
-      LPDIRECT3DDEVICE9 d3dr,
+      LPDIRECT3DDEVICE9 dev,
       video_shader_ctx_params_t *params)
 {
    float ori_size[2], tex_size[2], out_size[2];
@@ -403,23 +403,23 @@ static void hlsl_d3d9_renderchain_set_shader_params(
    out_size[0]                              = (float)out_width;
    out_size[1]                              = (float)out_height;
 
-   d3d9x_constant_table_set_defaults(d3dr, fprg);
-   d3d9x_constant_table_set_defaults(d3dr, vprg);
+   d3d9x_constant_table_set_defaults(dev, fprg);
+   d3d9x_constant_table_set_defaults(dev, vprg);
 
    if (state_manager_frame_is_reversed())
       frame_dir = -1.0f;
 
-   d3d9_hlsl_set_param_2f(fprg, d3dr, "IN.video_size",      &ori_size);
-   d3d9_hlsl_set_param_2f(fprg, d3dr, "IN.texture_size",    &tex_size);
-   d3d9_hlsl_set_param_2f(fprg, d3dr, "IN.output_size",     &out_size);
-   d3d9_hlsl_set_param_1f(fprg, d3dr, "IN.frame_count",     &frame_cnt);
-   d3d9_hlsl_set_param_1f(fprg, d3dr, "IN.frame_direction", &frame_dir);
+   d3d9_hlsl_set_param_2f(fprg, dev, "IN.video_size",      &ori_size);
+   d3d9_hlsl_set_param_2f(fprg, dev, "IN.texture_size",    &tex_size);
+   d3d9_hlsl_set_param_2f(fprg, dev, "IN.output_size",     &out_size);
+   d3d9_hlsl_set_param_1f(fprg, dev, "IN.frame_count",     &frame_cnt);
+   d3d9_hlsl_set_param_1f(fprg, dev, "IN.frame_direction", &frame_dir);
 
-   d3d9_hlsl_set_param_2f(vprg, d3dr, "IN.video_size",      &ori_size);
-   d3d9_hlsl_set_param_2f(vprg, d3dr, "IN.texture_size",    &tex_size);
-   d3d9_hlsl_set_param_2f(vprg, d3dr, "IN.output_size",     &out_size);
-   d3d9_hlsl_set_param_1f(vprg, d3dr, "IN.frame_count",     &frame_cnt);
-   d3d9_hlsl_set_param_1f(vprg, d3dr, "IN.frame_direction", &frame_dir);
+   d3d9_hlsl_set_param_2f(vprg, dev, "IN.video_size",      &ori_size);
+   d3d9_hlsl_set_param_2f(vprg, dev, "IN.texture_size",    &tex_size);
+   d3d9_hlsl_set_param_2f(vprg, dev, "IN.output_size",     &out_size);
+   d3d9_hlsl_set_param_1f(vprg, dev, "IN.frame_count",     &frame_cnt);
+   d3d9_hlsl_set_param_1f(vprg, dev, "IN.frame_direction", &frame_dir);
 
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
