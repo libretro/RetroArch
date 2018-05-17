@@ -123,7 +123,7 @@ static bool d3d9_hlsl_load_program(
       LPDIRECT3DDEVICE9 dev,
       unsigned idx,
       struct shader_program_hlsl_data *program,
-      struct shader_program_info *program_info)
+      const char *prog, bool path_is_file)
 {
    ID3DXBuffer *listing_f                    = NULL;
    ID3DXBuffer *listing_v                    = NULL;
@@ -133,27 +133,25 @@ static bool d3d9_hlsl_load_program(
    if (!program)
       program = &hlsl->prg[idx];
 
-   if (program_info->is_file)
+   if (path_is_file)
    {
-      if (!d3d9x_compile_shader_from_file(program_info->combined, NULL, NULL,
+      if (!d3d9x_compile_shader_from_file(prog, NULL, NULL,
                "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &program->f_ctable))
          goto error;
-      if (!d3d9x_compile_shader_from_file(program_info->combined, NULL, NULL,
+      if (!d3d9x_compile_shader_from_file(prog, NULL, NULL,
                "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &program->v_ctable))
          goto error;
    }
    else
    {
-      if (!d3d9x_compile_shader(program_info->combined,
-               strlen(program_info->combined), NULL, NULL,
+      if (!d3d9x_compile_shader(prog, strlen(prog), NULL, NULL,
                "main_fragment", "ps_3_0", 0, &code_f, &listing_f,
                &program->f_ctable ))
       {
          RARCH_ERR("Failure building stock fragment shader..\n");
          goto error;
       }
-      if (!d3d9x_compile_shader(program_info->combined,
-               strlen(program_info->combined), NULL, NULL,
+      if (!d3d9x_compile_shader(prog, strlen(prog), NULL, NULL,
                "main_vertex", "vs_3_0", 0, &code_v, &listing_v,
                &program->v_ctable ))
       {
@@ -185,20 +183,16 @@ static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
       LPDIRECT3DDEVICE9 dev,
       const char *cgp_path, unsigned i)
 {
-   struct shader_program_info program_info;
    char path_buf[PATH_MAX_LENGTH];
 
    path_buf[0]           = '\0';
-
-   program_info.combined = path_buf;
-   program_info.is_file  = true;
 
    fill_pathname_resolve_relative(path_buf, cgp_path,
          hlsl->cg_shader->pass[i].source.path, sizeof(path_buf));
 
    RARCH_LOG("[D3D9 HLSL]: Loading Cg/HLSL shader: \"%s\".\n", path_buf);
 
-   if (!d3d9_hlsl_load_program(hlsl, dev, i + 1, &hlsl->prg[i + 1], &program_info))
+   if (!d3d9_hlsl_load_program(hlsl, dev, i + 1, &hlsl->prg[i + 1], path_buf, true))
       return false;
 
    return true;
@@ -218,17 +212,12 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, LPDIRECT3DDEVICE9 dev,
 
    if (!string_is_empty(path))
    {
-      struct shader_program_info program_info;
-
-      program_info.combined = path;
-      program_info.is_file  = true;
-
       RARCH_LOG("[D3D9 HLSL]: Loading Cg/HLSL file: %s\n", path);
 
       strlcpy(hlsl->cg_shader->pass[0].source.path,
             path, sizeof(hlsl->cg_shader->pass[0].source.path));
 
-      if (!d3d9_hlsl_load_program(hlsl, dev, 1, &hlsl->prg[1], &program_info))
+      if (!d3d9_hlsl_load_program(hlsl, dev, 1, &hlsl->prg[1], path, true))
          return false;
    }
    else
@@ -292,18 +281,14 @@ error:
 static hlsl_shader_data_t *hlsl_init(d3d9_video_t *d3d, const char *path)
 {
    unsigned i;
-   struct shader_program_info program_info;
    hlsl_shader_data_t *hlsl  = (hlsl_shader_data_t*)
       calloc(1, sizeof(hlsl_shader_data_t));
 
    if (!hlsl)
-      goto error;
-
-   program_info.combined     = stock_hlsl_program;
-   program_info.is_file      = false;
+      return NULL;
 
    /* Load stock shader */
-   if (!d3d9_hlsl_load_program(hlsl, d3d->dev, 0, &hlsl->prg[0], &program_info))
+   if (!d3d9_hlsl_load_program(hlsl, d3d->dev, 0, &hlsl->prg[0], stock_hlsl_program, false))
    {
       RARCH_ERR("[D3D9 HLSL]: Failed to compile passthrough shader, is something wrong with your environment?\n");
       goto error;
