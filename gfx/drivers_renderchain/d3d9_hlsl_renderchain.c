@@ -666,7 +666,6 @@ static void hlsl_d3d9_renderchain_set_vertices(
       pass->last_width   = width;
       pass->last_height  = height;
 
-
       vert[0].x          = 0.0f;
       vert[0].y          = out_height;
       vert[0].z          = 0.5f;
@@ -715,12 +714,14 @@ static void hlsl_d3d9_renderchain_set_vertices(
       vert[3].b         = 1.0f;
       vert[3].a         = 1.0f;
 
+#if 0
       /* Align texels and vertices. */
       for (i = 0; i < 4; i++)
       {
          vert[i].x      -= 0.5f;
          vert[i].y      += 0.5f;
       }
+#endif
 
       verts = d3d9_vertex_buffer_lock(pass->vertex_buf);
       memcpy(verts, vert, sizeof(vert));
