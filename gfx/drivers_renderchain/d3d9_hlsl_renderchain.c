@@ -349,32 +349,21 @@ error:
 }
 
 static void hlsl_d3d9_renderchain_set_shader_params(
+      d3d9_renderchain_t *chain,
       hlsl_shader_data_t *hlsl,
       LPDIRECT3DDEVICE9 dev,
-      video_shader_ctx_params_t *params)
+      struct shader_pass *pass,
+      unsigned video_w, unsigned video_h,
+      unsigned tex_w, unsigned tex_h,
+      unsigned viewport_w, unsigned viewport_h)
 {
-   float ori_size[2], tex_size[2], out_size[2];
-   void *data                               = params->data;
-   unsigned width                           = params->width;
-   unsigned height                          = params->height;
-   unsigned tex_width                       = params->tex_width;
-   unsigned tex_height                      = params->tex_height;
-   unsigned out_width                       = params->out_width;
-   unsigned out_height                      = params->out_height;
-   unsigned frame_count                     = params->frame_counter;
-   const void *_info                        = params->info;
-   const void *_prev_info                   = params->prev_info;
-   const void *_feedback_info               = params->feedback_info;
-   const void *_fbo_info                    = params->fbo_info;
-   unsigned fbo_info_cnt                    = params->fbo_info_cnt;
-   float frame_cnt                          = frame_count;
-   const struct video_tex_info *info        = (const struct video_tex_info*)_info;
-   const struct video_tex_info *prev_info   = (const struct video_tex_info*)_prev_info;
-   const struct video_tex_info *fbo_info    = (const struct video_tex_info*)_fbo_info;
+   float frame_cnt;
+   float video_size[2];
+   float texture_size[2];
+   float output_size[2];
    struct shader_program_hlsl_data *program = &hlsl->prg[hlsl->active_idx];
    void *fprg                               = NULL;
    void *vprg                               = NULL;
-   float frame_dir                          = 1.0f;
 
    if (!program)
       return;
@@ -382,32 +371,32 @@ static void hlsl_d3d9_renderchain_set_shader_params(
    fprg                                     = program->f_ctable;
    vprg                                     = program->v_ctable;
 
-   ori_size[0]                              = (float)width;
-   ori_size[1]                              = (float)height;
-   tex_size[0]                              = (float)tex_width;
-   tex_size[1]                              = (float)tex_height;
-   out_size[0]                              = (float)out_width;
-   out_size[1]                              = (float)out_height;
+   video_size[0]                            = video_w;
+   video_size[1]                            = video_h;
+   texture_size[0]                          = tex_w;
+   texture_size[1]                          = tex_h;
+   output_size[0]                           = viewport_w;
+   output_size[1]                           = viewport_h;
 
    d3d9x_constant_table_set_defaults(dev, fprg);
    d3d9x_constant_table_set_defaults(dev, vprg);
 
-   if (state_manager_frame_is_reversed())
-      frame_dir = -1.0f;
 
-   d3d9_hlsl_set_param_2f(fprg, dev, "IN.video_size",      &ori_size);
-   d3d9_hlsl_set_param_2f(fprg, dev, "IN.texture_size",    &tex_size);
-   d3d9_hlsl_set_param_2f(fprg, dev, "IN.output_size",     &out_size);
+   d3d9_hlsl_set_param_2f(vprg, dev, "IN.video_size",      &video_size);
+   d3d9_hlsl_set_param_2f(fprg, dev, "IN.video_size",      &video_size);
+   d3d9_hlsl_set_param_2f(vprg, dev, "IN.texture_size",    &texture_size);
+   d3d9_hlsl_set_param_2f(fprg, dev, "IN.texture_size",    &texture_size);
+   d3d9_hlsl_set_param_2f(vprg, dev, "IN.output_size",     &output_size);
+   d3d9_hlsl_set_param_2f(fprg, dev, "IN.output_size",     &output_size);
+
+   frame_cnt = chain->frame_count;
+
+   if (pass->info.pass->frame_count_mod)
+      frame_cnt         = chain->frame_count 
+         % pass->info.pass->frame_count_mod;
+
    d3d9_hlsl_set_param_1f(fprg, dev, "IN.frame_count",     &frame_cnt);
-   d3d9_hlsl_set_param_1f(fprg, dev, "IN.frame_direction", &frame_dir);
-
-   d3d9_hlsl_set_param_2f(vprg, dev, "IN.video_size",      &ori_size);
-   d3d9_hlsl_set_param_2f(vprg, dev, "IN.texture_size",    &tex_size);
-   d3d9_hlsl_set_param_2f(vprg, dev, "IN.output_size",     &out_size);
    d3d9_hlsl_set_param_1f(vprg, dev, "IN.frame_count",     &frame_cnt);
-   d3d9_hlsl_set_param_1f(vprg, dev, "IN.frame_direction", &frame_dir);
-
-   /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
 
 static void hlsl_deinit_progs(hlsl_shader_data_t *hlsl)
@@ -578,15 +567,15 @@ static void hlsl_d3d9_renderchain_set_vertices(
       uint64_t frame_count,
       unsigned rotation)
 {
-   video_shader_ctx_params_t params;
+   const struct LinkInfo *info = (const struct LinkInfo*)&pass->info;
 
    if (pass->last_width != width || pass->last_height != height)
    {
       unsigned i;
       struct D3D9Vertex vert[4];
       void *verts        = NULL;
-      float _u           = (width)  / pass->info.tex_w;
-      float _v           = (height) / pass->info.tex_h;
+      float _u           = (float)(width)  / info->tex_w;
+      float _v           = (float)(height) / info->tex_h;
 
       pass->last_width   = width;
       pass->last_height  = height;
@@ -656,24 +645,15 @@ static void hlsl_d3d9_renderchain_set_vertices(
    if (chain->shader_pipeline)
       hlsl_use(chain->shader_pipeline, chain->chain.dev, pass_count, true);
 
-   params.data          = d3d;
-   params.width         = width;
-   params.height        = height;
-   params.tex_width     = pass->info.tex_w;
-   params.tex_height    = pass->info.tex_h;
-   params.out_width     = out_width;
-   params.out_height    = out_height;
-   params.frame_counter = (unsigned int)frame_count;
-   params.info          = NULL;
-   params.prev_info     = NULL;
-   params.feedback_info = NULL;
-   params.fbo_info      = NULL;
-   params.fbo_info_cnt  = 0;
-
    d3d9_hlsl_renderchain_calc_and_set_shader_mvp(chain, d3d,
          /*pass->vPrg, */vp_width, vp_height, rotation);
    if (chain->shader_pipeline)
-      hlsl_d3d9_renderchain_set_shader_params(chain->shader_pipeline, chain->chain.dev, &params);
+      hlsl_d3d9_renderchain_set_shader_params(&chain->chain,
+            chain->shader_pipeline, chain->chain.dev,
+            pass,
+            width, height,
+            info->tex_w, info->tex_h,
+            vp_width, vp_height);
 }
 
 static void d3d9_hlsl_deinit_progs(hlsl_d3d9_renderchain_t *chain)

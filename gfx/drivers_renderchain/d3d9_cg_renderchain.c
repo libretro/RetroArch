@@ -496,10 +496,8 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
       param = d3d9_cg_get_constant_by_name(pass->fprg, attr_texture);
       if (param)
       {
-         LPDIRECT3DTEXTURE9 tex;
-         unsigned index = cgGetParameterResourceIndex(param);
-
-         tex = (LPDIRECT3DTEXTURE9)
+         unsigned         index = cgGetParameterResourceIndex(param);
+         LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)
             chain->prev.tex[
             (chain->prev.ptr - (i + 1)) & TEXTURESMASK];
 
