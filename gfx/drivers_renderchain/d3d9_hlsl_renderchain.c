@@ -106,14 +106,20 @@ static bool d3d9_hlsl_load_program(
    ID3DXBuffer *code_f                       = NULL;
    ID3DXBuffer *code_v                       = NULL;
 
-   if (path_is_file)
+   if (path_is_file && !string_is_empty(prog))
    {
       if (!d3d9x_compile_shader_from_file(prog, NULL, NULL,
                "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &pass->ftable))
+      {
+         RARCH_ERR("Could not compile fragment shader program (%s)..\n", prog);
          goto error;
+      }
       if (!d3d9x_compile_shader_from_file(prog, NULL, NULL,
                "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &pass->vtable))
+      {
+         RARCH_ERR("Could not compile vertex shader program (%s)..\n", prog);
          goto error;
+      }
    }
    else
    {
@@ -121,14 +127,14 @@ static bool d3d9_hlsl_load_program(
                "main_fragment", "ps_3_0", 0, &code_f, &listing_f,
                &pass->ftable ))
       {
-         RARCH_ERR("Failure building stock fragment shader..\n");
+         RARCH_ERR("Could not compile stock fragment shader..\n");
          goto error;
       }
       if (!d3d9x_compile_shader(prog, strlen(prog), NULL, NULL,
                "main_vertex", "vs_3_0", 0, &code_v, &listing_v,
                &pass->vtable ))
       {
-         RARCH_ERR("Failure building stock vertex shader..\n");
+         RARCH_ERR("Could not compile stock vertex shader..\n");
          goto error;
       }
    }
