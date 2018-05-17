@@ -63,6 +63,7 @@ typedef struct hlsl_renderchain
 {
    struct d3d9_renderchain chain;
    hlsl_shader_data_t *shader_pipeline;
+   struct shader_pass stock_shader;
    D3DXMATRIX mvp_val;
 } hlsl_renderchain_t;
 
@@ -296,28 +297,16 @@ error:
    return false;
 }
 
-static hlsl_shader_data_t *hlsl_init(hlsl_renderchain_t *chain, const char *path)
+static hlsl_shader_data_t *hlsl_init(hlsl_renderchain_t *chain/*, const char *path */)
 {
    unsigned i;
-   struct shader_pass pass;
    hlsl_shader_data_t *hlsl  = (hlsl_shader_data_t*)
       calloc(1, sizeof(hlsl_shader_data_t));
 
    if (!hlsl)
       return NULL;
 
-   /* Load stock shader */
-   if (!d3d9_hlsl_load_program(chain->chain.dev, &pass, stock_hlsl_program, false))
-   {
-      RARCH_ERR("[D3D9 HLSL]: Failed to compile passthrough shader, is something wrong with your environment?\n");
-      goto error;
-   }
-
-   hlsl->prg[0].fprg   = pass.fprg;
-   hlsl->prg[0].vprg   = pass.vprg;
-   hlsl->prg[0].ftable = pass.ftable;
-   hlsl->prg[0].vtable = pass.vtable;
-
+#if 0
    if (path && (string_is_equal(path_get_extension(path), ".cgp")))
    {
       if (!hlsl_load_preset(hlsl, chain->chain.dev, path))
@@ -331,15 +320,9 @@ static hlsl_shader_data_t *hlsl_init(hlsl_renderchain_t *chain, const char *path
 
    RARCH_LOG("[D3D9 HLSL]: Setting up program attributes...\n");
    RARCH_LOG("[D3D9 HLSL]: Shader passes: %d\n", hlsl->cg_shader->passes);
+#endif
 
    d3d_matrix_identity(&chain->mvp_val);
-
-#if 0
-   RARCH_LOG("[D3D9 HLSL]: Setting up vertex shader...\n");
-   d3d9_set_vertex_shader(chain->chain.dev, hlsl->prg[1].vprg);
-   RARCH_LOG("[D3D9 HLSL]: Setting up pixel shader...\n");
-   d3d9_set_pixel_shader(chain->chain.dev, hlsl->prg[1].fprg);
-#endif
 
    return hlsl;
 
@@ -520,12 +503,11 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
 
 static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
       hlsl_renderchain_t *chain,
+      struct shader_pass *pass,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
    struct d3d_matrix proj, ortho, rot, matrix;
-   hlsl_shader_data_t                 *hlsl = chain->shader_pipeline;
-   struct shader_program_hlsl_data *program = &hlsl->prg[hlsl->active_idx];
 
    d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
    d3d_matrix_identity(&rot);
@@ -534,7 +516,7 @@ static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
    d3d_matrix_multiply(&proj, &ortho, &rot);
    d3d_matrix_transpose(&matrix, &proj);
 
-   d3d9_hlsl_set_param_matrix(program->vtable,
+   d3d9_hlsl_set_param_matrix(pass->vtable,
          chain->chain.dev, "modelViewProj", (const void*)&matrix);
 }
 
@@ -556,8 +538,8 @@ static void hlsl_d3d9_renderchain_set_vertices(
             vp_width, vp_height, rotation);
 
    hlsl_use(chain->shader_pipeline, chain->chain.dev, pass_count, true);
-   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain,
-         /*pass->vPrg, */vp_width, vp_height, rotation);
+   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, pass,
+         vp_width, vp_height, rotation);
    hlsl_d3d9_renderchain_set_shader_params(&chain->chain,
          chain->shader_pipeline, chain->chain.dev,
          pass,
@@ -638,7 +620,7 @@ void *hlsl_d3d9_renderchain_new(void)
 static bool hlsl_d3d9_renderchain_init_shader(d3d9_video_t *d3d,
       hlsl_renderchain_t *chain)
 {
-   hlsl_shader_data_t *shader = hlsl_init(chain, retroarch_get_shader_preset());
+   hlsl_shader_data_t *shader = hlsl_init(chain);
    if (!shader)
       return false;
 
@@ -678,6 +660,9 @@ static bool hlsl_d3d9_renderchain_init(
 
    if (!hlsl_d3d9_renderchain_create_first_pass(dev, &chain->chain, info, fmt))
       return false;
+   if (!d3d9_hlsl_load_program(chain->chain.dev, &chain->stock_shader, stock_hlsl_program, false))
+      return false;
+   d3d9_hlsl_bind_program(&chain->stock_shader, dev);
 
    return true;
 }
@@ -915,11 +900,9 @@ static bool hlsl_d3d9_renderchain_render(
    d3d9_surface_free(back_buffer);
 
    d3d9_renderchain_end_render(&chain->chain);
-#if 0
    d3d9_hlsl_bind_program(&chain->stock_shader, chain->chain.dev);
-#endif
-   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain,
-         /* chain->vStock, */ chain->chain.final_viewport->Width,
+   hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, &chain->stock_shader,
+         chain->chain.final_viewport->Width,
          chain->chain.final_viewport->Height, 0);
 
    return true;
