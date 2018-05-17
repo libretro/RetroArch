@@ -488,7 +488,7 @@ static void hlsl_deinit(hlsl_shader_data_t *hlsl)
 }
 
 static bool hlsl_d3d9_renderchain_init_shader_fvf(
-      hlsl_d3d9_renderchain_t *chain,
+      d3d9_renderchain_t *chain,
       struct shader_pass *pass)
 {
    static const D3DVERTEXELEMENT9 decl[] =
@@ -498,13 +498,13 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(
       D3DDECL_END()
    };
 
-   return d3d9_vertex_declaration_new(chain->chain.dev,
+   return d3d9_vertex_declaration_new(chain->dev,
          decl, (void**)&pass->vertex_decl);
 }
 
 static bool hlsl_d3d9_renderchain_create_first_pass(
       LPDIRECT3DDEVICE9 dev,
-      hlsl_d3d9_renderchain_t *chain,
+      d3d9_renderchain_t *chain,
       const struct LinkInfo *info,
       unsigned _fmt)
 {
@@ -520,36 +520,36 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
    pass.attrib_map  = (struct unsigned_vector_list*)
       unsigned_vector_list_new();
 
-   chain->chain.prev.ptr  = 0;
+   chain->prev.ptr  = 0;
 
    for (i = 0; i < TEXTURES; i++)
    {
-      chain->chain.prev.last_width[i]  = 0;
-      chain->chain.prev.last_height[i] = 0;
-      chain->chain.prev.vertex_buf[i]  = (LPDIRECT3DVERTEXBUFFER9)
+      chain->prev.last_width[i]  = 0;
+      chain->prev.last_height[i] = 0;
+      chain->prev.vertex_buf[i]  = (LPDIRECT3DVERTEXBUFFER9)
          d3d9_vertex_buffer_new(
-            chain->chain.dev, 4 * sizeof(struct D3D9Vertex),
+            chain->dev, 4 * sizeof(struct D3D9Vertex),
             D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
-      if (!chain->chain.prev.vertex_buf[i])
+      if (!chain->prev.vertex_buf[i])
          return false;
 
-      chain->chain.prev.tex[i] = (LPDIRECT3DTEXTURE9)
-         d3d9_texture_new(chain->chain.dev, NULL,
+      chain->prev.tex[i] = (LPDIRECT3DTEXTURE9)
+         d3d9_texture_new(chain->dev, NULL,
             info->tex_w, info->tex_h, 1, 0, fmt,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
-      if (!chain->chain.prev.tex[i])
+      if (!chain->prev.tex[i])
          return false;
 
-      d3d9_set_texture(chain->chain.dev, 0, chain->chain.prev.tex[i]);
+      d3d9_set_texture(chain->dev, 0, chain->prev.tex[i]);
       d3d9_set_sampler_minfilter(dev, 0,
             d3d_translate_filter(info->pass->filter));
       d3d9_set_sampler_magfilter(dev, 0,
             d3d_translate_filter(info->pass->filter));
       d3d9_set_sampler_address_u(dev, 0, D3DTADDRESS_BORDER);
       d3d9_set_sampler_address_v(dev, 0, D3DTADDRESS_BORDER);
-      d3d9_set_texture(chain->chain.dev, 0, NULL);
+      d3d9_set_texture(chain->dev, 0, NULL);
    }
 
    pass.vertex_buf        = d3d9_vertex_buffer_new(
@@ -576,7 +576,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
 
    if (!hlsl_d3d9_renderchain_init_shader_fvf(chain, &pass))
       return false;
-   shader_pass_vector_list_append(chain->chain.passes, pass);
+   shader_pass_vector_list_append(chain->passes, pass);
 
    return true;
 }
@@ -845,7 +845,7 @@ static bool hlsl_d3d9_renderchain_init(
    chain->chain.frame_count                 = 0;
    chain->chain.pixel_size                  = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
 
-   if (!hlsl_d3d9_renderchain_create_first_pass(dev, chain, info, fmt))
+   if (!hlsl_d3d9_renderchain_create_first_pass(dev, &chain->chain, info, fmt))
       return false;
 
    return true;
