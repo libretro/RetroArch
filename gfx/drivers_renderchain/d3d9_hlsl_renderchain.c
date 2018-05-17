@@ -928,10 +928,23 @@ static bool hlsl_d3d9_renderchain_render(
 static bool hlsl_d3d9_renderchain_add_pass(
       void *data, const struct LinkInfo *info)
 {
-   (void)data;
+   struct shader_pass pass;
+   hlsl_renderchain_t *chain   = (hlsl_renderchain_t*)data;
 
-   /* stub */
-   return true;
+   pass.info                   = *info;
+   pass.last_width             = 0;
+   pass.last_height            = 0;
+   pass.attrib_map             = (struct unsigned_vector_list*)
+      unsigned_vector_list_new();
+   pass.pool                   = D3DPOOL_DEFAULT;
+
+   d3d9_hlsl_load_program(chain->chain.dev, &pass, info->pass->source.path, true);
+
+   if (!hlsl_d3d9_renderchain_init_shader_fvf(&chain->chain, &pass))
+      return false;
+
+   return d3d9_renderchain_add_pass(&chain->chain, &pass,
+         info);
 }
 
 static bool hlsl_d3d9_renderchain_add_lut(void *data,
