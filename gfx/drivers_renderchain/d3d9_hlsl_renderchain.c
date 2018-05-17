@@ -362,7 +362,8 @@ error:
    return NULL;
 }
 
-static void hlsl_set_params(hlsl_shader_data_t *hlsl,
+static void hlsl_d3d9_renderchain_set_shader_params(
+      hlsl_shader_data_t *hlsl,
       LPDIRECT3DDEVICE9 d3dr,
       video_shader_ctx_params_t *params)
 {
@@ -685,7 +686,7 @@ static void hlsl_d3d9_renderchain_set_vertices(
    d3d9_hlsl_renderchain_calc_and_set_shader_mvp(chain, d3d,
          /*pass->vPrg, */vp_width, vp_height, rotation);
    if (chain->shader_pipeline)
-      hlsl_set_params(chain->shader_pipeline, chain->chain.dev, &params);
+      hlsl_d3d9_renderchain_set_shader_params(chain->shader_pipeline, chain->chain.dev, &params);
 }
 
 static void d3d9_hlsl_deinit_progs(hlsl_d3d9_renderchain_t *chain)
@@ -880,7 +881,7 @@ static void hlsl_d3d9_renderchain_render_pass(
       d3d9_cg_renderchain_bind_pass(chain, pass, pass_index);
 
    if (tracker)
-      cg_d3d9_renderchain_set_params(chain, pass, tracker, pass_index);
+      hlsl_d3d9_renderchain_set_shader_params(chain, pass, tracker, pass_index);
 #endif
 
    d3d9_draw_primitive(chain->chain.dev, D3DPT_TRIANGLESTRIP, 0, 2);
