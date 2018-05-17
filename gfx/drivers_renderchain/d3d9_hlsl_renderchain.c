@@ -140,10 +140,8 @@ static void hlsl_use(hlsl_shader_data_t *hlsl,
 
 static bool hlsl_set_mvp(hlsl_shader_data_t *hlsl,
       LPDIRECT3DDEVICE9 d3dr,
-      const void *mat_data)
+      const D3DMATRIX *mat)
 {
-   const math_matrix_4x4 *mat               = (const math_matrix_4x4*)
-      mat_data;
    struct shader_program_hlsl_data *program = &hlsl->prg[hlsl->active_idx];
 
    if (!program || !program->mvp)
@@ -1023,10 +1021,8 @@ static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
    d3d_matrix_transpose(&matrix, &proj);
 
    if (chain->shader_pipeline)
-      hlsl_set_mvp(chain->shader_pipeline, chain->dev, (void*)&matrix);
-#if 0
-   cgD3D9SetUniformMatrix(cgpModelViewProj, (D3DMATRIX*)&matrix);
-#endif
+      hlsl_set_mvp(chain->shader_pipeline, chain->dev,
+            (const D3DMATRIX*)&matrix);
 }
 
 static bool hlsl_d3d9_renderchain_render(
