@@ -48,7 +48,6 @@ struct shader_program_hlsl_data
    LPDIRECT3DPIXELSHADER9 fprg;
    LPD3DXCONSTANTTABLE v_ctable;
    LPD3DXCONSTANTTABLE f_ctable;
-   D3DXMATRIX mvp_val;
 };
 
 typedef struct hlsl_shader_data
@@ -64,6 +63,7 @@ typedef struct hlsl_renderchain
 {
    struct d3d9_renderchain chain;
    hlsl_shader_data_t *shader_pipeline;
+   D3DXMATRIX mvp_val;
 } hlsl_renderchain_t;
 
 static void *d3d9_hlsl_get_constant_by_name(void *data, const char *name)
@@ -278,7 +278,7 @@ error:
    return false;
 }
 
-static hlsl_shader_data_t *hlsl_init(d3d9_video_t *d3d, const char *path)
+static hlsl_shader_data_t *hlsl_init(hlsl_renderchain_t *chain, const char *path)
 {
    unsigned i;
    hlsl_shader_data_t *hlsl  = (hlsl_shader_data_t*)
@@ -288,7 +288,7 @@ static hlsl_shader_data_t *hlsl_init(d3d9_video_t *d3d, const char *path)
       return NULL;
 
    /* Load stock shader */
-   if (!d3d9_hlsl_load_program(hlsl, d3d->dev, 0, &hlsl->prg[0], stock_hlsl_program, false))
+   if (!d3d9_hlsl_load_program(hlsl, chain->chain.dev, 0, &hlsl->prg[0], stock_hlsl_program, false))
    {
       RARCH_ERR("[D3D9 HLSL]: Failed to compile passthrough shader, is something wrong with your environment?\n");
       goto error;
@@ -296,30 +296,24 @@ static hlsl_shader_data_t *hlsl_init(d3d9_video_t *d3d, const char *path)
 
    if (path && (string_is_equal(path_get_extension(path), ".cgp")))
    {
-      if (!hlsl_load_preset(hlsl, d3d->dev, path))
+      if (!hlsl_load_preset(hlsl, chain->chain.dev, path))
          goto error;
    }
    else
    {
-      if (!hlsl_load_plain(hlsl, d3d->dev, path))
+      if (!hlsl_load_plain(hlsl, chain->chain.dev, path))
          goto error;
    }
 
    RARCH_LOG("[D3D9 HLSL]: Setting up program attributes...\n");
    RARCH_LOG("[D3D9 HLSL]: Shader passes: %d\n", hlsl->cg_shader->passes);
 
-   for(i = 1; i <= hlsl->cg_shader->passes; i++)
-   {
-      struct shader_program_hlsl_data *program = &hlsl->prg[i];
-
-      if (program)
-         d3d_matrix_identity(&program->mvp_val);
-   }
+   d3d_matrix_identity(&chain->mvp_val);
 
    RARCH_LOG("[D3D9 HLSL]: Setting up vertex shader...\n");
-   d3d9_set_vertex_shader(d3d->dev, 1, hlsl->prg[1].vprg);
+   d3d9_set_vertex_shader(chain->chain.dev, 1, hlsl->prg[1].vprg);
    RARCH_LOG("[D3D9 HLSL]: Setting up pixel shader...\n");
-   d3d9_set_pixel_shader(d3d->dev, hlsl->prg[1].fprg);
+   d3d9_set_pixel_shader(chain->chain.dev, hlsl->prg[1].fprg);
 
    return hlsl;
 
@@ -534,7 +528,7 @@ static void hlsl_d3d9_renderchain_calc_and_set_shader_mvp(
 
    if (program)
       d3d9_hlsl_set_param_matrix(program->v_ctable,
-            chain->chain.dev, "modelViewProj", &program->mvp_val);
+            chain->chain.dev, "modelViewProj", &chain->mvp_val);
 }
 
 
@@ -637,7 +631,7 @@ void *hlsl_d3d9_renderchain_new(void)
 static bool hlsl_d3d9_renderchain_init_shader(d3d9_video_t *d3d,
       hlsl_renderchain_t *chain)
 {
-   hlsl_shader_data_t *shader = hlsl_init(d3d, retroarch_get_shader_preset());
+   hlsl_shader_data_t *shader = hlsl_init(chain, retroarch_get_shader_preset());
    if (!shader)
       return false;
 
