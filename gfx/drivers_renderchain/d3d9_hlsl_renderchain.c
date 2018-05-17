@@ -53,7 +53,6 @@ struct shader_program_hlsl_data
 
 typedef struct hlsl_shader_data
 {
-   LPDIRECT3DDEVICE9 dev;
    struct shader_program_hlsl_data prg[RARCH_HLSL_MAX_SHADERS];
    unsigned active_idx;
    struct video_shader *cg_shader;
@@ -121,11 +120,11 @@ static void hlsl_use(hlsl_shader_data_t *hlsl,
 
 static bool d3d9_hlsl_load_program(
       hlsl_shader_data_t *hlsl,
+      LPDIRECT3DDEVICE9 dev,
       unsigned idx,
       struct shader_program_hlsl_data *program,
       struct shader_program_info *program_info)
 {
-   LPDIRECT3DDEVICE9 d3dr                    = (LPDIRECT3DDEVICE9)hlsl->dev;
    ID3DXBuffer *listing_f                    = NULL;
    ID3DXBuffer *listing_v                    = NULL;
    ID3DXBuffer *code_f                       = NULL;
@@ -163,8 +162,8 @@ static bool d3d9_hlsl_load_program(
       }
    }
 
-   d3d9_create_pixel_shader(d3dr,  (const DWORD*)d3d9x_get_buffer_ptr(code_f),  (void**)&program->fprg);
-   d3d9_create_vertex_shader(d3dr, (const DWORD*)d3d9x_get_buffer_ptr(code_v), (void**)&program->vprg);
+   d3d9_create_pixel_shader(dev,  (const DWORD*)d3d9x_get_buffer_ptr(code_f),  (void**)&program->fprg);
+   d3d9_create_vertex_shader(dev, (const DWORD*)d3d9x_get_buffer_ptr(code_v), (void**)&program->vprg);
    d3d9x_buffer_release((void*)code_f);
    d3d9x_buffer_release((void*)code_v);
 
@@ -183,6 +182,7 @@ error:
 }
 
 static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
+      LPDIRECT3DDEVICE9 dev,
       const char *cgp_path, unsigned i)
 {
    struct shader_program_info program_info;
@@ -198,13 +198,14 @@ static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
 
    RARCH_LOG("[D3D9 HLSL]: Loading Cg/HLSL shader: \"%s\".\n", path_buf);
 
-   if (!d3d9_hlsl_load_program(hlsl, i + 1, &hlsl->prg[i + 1], &program_info))
+   if (!d3d9_hlsl_load_program(hlsl, dev, i + 1, &hlsl->prg[i + 1], &program_info))
       return false;
 
    return true;
 }
 
-static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, const char *path)
+static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, LPDIRECT3DDEVICE9 dev,
+      const char *path)
 {
    struct video_shader *cg_shader = (struct video_shader*)
       calloc(1, sizeof(*cg_shader));
@@ -227,7 +228,7 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, const char *path)
       strlcpy(hlsl->cg_shader->pass[0].source.path,
             path, sizeof(hlsl->cg_shader->pass[0].source.path));
 
-      if (!d3d9_hlsl_load_program(hlsl, 1, &hlsl->prg[1], &program_info))
+      if (!d3d9_hlsl_load_program(hlsl, dev, 1, &hlsl->prg[1], &program_info))
          return false;
    }
    else
@@ -239,7 +240,7 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, const char *path)
    return true;
 }
 
-static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, const char *path)
+static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, LPDIRECT3DDEVICE9 dev, const char *path)
 {
    unsigned i;
    config_file_t *conf = config_file_new(path);
@@ -272,7 +273,7 @@ static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, const char *path)
 
    for (i = 0; i < hlsl->cg_shader->passes; i++)
    {
-      if (!hlsl_load_shader(hlsl, path, i))
+      if (!hlsl_load_shader(hlsl, dev, path, i))
          goto error;
    }
 
@@ -298,16 +299,11 @@ static hlsl_shader_data_t *hlsl_init(d3d9_video_t *d3d, const char *path)
    if (!hlsl)
       goto error;
 
-   hlsl->dev         = d3d->dev;
-
-   if (!hlsl->dev)
-      goto error;
-
    program_info.combined     = stock_hlsl_program;
    program_info.is_file      = false;
 
    /* Load stock shader */
-   if (!d3d9_hlsl_load_program(hlsl, 0, &hlsl->prg[0], &program_info))
+   if (!d3d9_hlsl_load_program(hlsl, d3d->dev, 0, &hlsl->prg[0], &program_info))
    {
       RARCH_ERR("[D3D9 HLSL]: Failed to compile passthrough shader, is something wrong with your environment?\n");
       goto error;
@@ -315,12 +311,12 @@ static hlsl_shader_data_t *hlsl_init(d3d9_video_t *d3d, const char *path)
 
    if (path && (string_is_equal(path_get_extension(path), ".cgp")))
    {
-      if (!hlsl_load_preset(hlsl, path))
+      if (!hlsl_load_preset(hlsl, d3d->dev, path))
          goto error;
    }
    else
    {
-      if (!hlsl_load_plain(hlsl, path))
+      if (!hlsl_load_plain(hlsl, d3d->dev, path))
          goto error;
    }
 
@@ -336,9 +332,9 @@ static hlsl_shader_data_t *hlsl_init(d3d9_video_t *d3d, const char *path)
    }
 
    RARCH_LOG("[D3D9 HLSL]: Setting up vertex shader...\n");
-   d3d9_set_vertex_shader(hlsl->dev, 1, hlsl->prg[1].vprg);
+   d3d9_set_vertex_shader(d3d->dev, 1, hlsl->prg[1].vprg);
    RARCH_LOG("[D3D9 HLSL]: Setting up pixel shader...\n");
-   d3d9_set_pixel_shader(hlsl->dev, hlsl->prg[1].fprg);
+   d3d9_set_pixel_shader(d3d->dev, hlsl->prg[1].fprg);
 
    return hlsl;
 
@@ -399,36 +395,37 @@ static void hlsl_d3d9_renderchain_set_shader_params(
    d3d9_hlsl_set_param_1f(vprg, dev, "IN.frame_count",     &frame_cnt);
 }
 
-static void hlsl_deinit_progs(hlsl_shader_data_t *hlsl)
+static void hlsl_deinit_progs(hlsl_shader_data_t *hlsl,
+      LPDIRECT3DDEVICE9 dev)
 {
    unsigned i;
 
    for (i = 1; i < RARCH_HLSL_MAX_SHADERS; i++)
    {
       if (hlsl->prg[i].fprg && hlsl->prg[i].fprg != hlsl->prg[0].fprg)
-         d3d9_free_pixel_shader(hlsl->dev, hlsl->prg[i].fprg);
+         d3d9_free_pixel_shader(dev, hlsl->prg[i].fprg);
       if (hlsl->prg[i].vprg && hlsl->prg[i].vprg != hlsl->prg[0].vprg)
-         d3d9_free_vertex_shader(hlsl->dev, hlsl->prg[i].vprg);
+         d3d9_free_vertex_shader(dev, hlsl->prg[i].vprg);
 
       hlsl->prg[i].fprg = NULL;
       hlsl->prg[i].vprg = NULL;
    }
 
    if (hlsl->prg[0].fprg)
-      d3d9_free_pixel_shader(hlsl->dev, hlsl->prg[0].fprg);
+      d3d9_free_pixel_shader(dev, hlsl->prg[0].fprg);
    if (hlsl->prg[0].vprg)
-      d3d9_free_vertex_shader(hlsl->dev, hlsl->prg[0].vprg);
+      d3d9_free_vertex_shader(dev, hlsl->prg[0].vprg);
 
    hlsl->prg[0].fprg = NULL;
    hlsl->prg[0].vprg = NULL;
 }
 
-static void hlsl_deinit(hlsl_shader_data_t *hlsl)
+static void hlsl_deinit(hlsl_shader_data_t *hlsl, LPDIRECT3DDEVICE9 dev)
 {
    if (!hlsl)
       return;
 
-   hlsl_deinit_progs(hlsl);
+   hlsl_deinit_progs(hlsl, dev);
    memset(hlsl->prg, 0, sizeof(hlsl->prg));
 
    if (hlsl->cg_shader)
@@ -634,7 +631,7 @@ static void hlsl_d3d9_renderchain_free(void *data)
    if (!chain)
       return;
 
-   hlsl_deinit(chain->shader_pipeline);
+   hlsl_deinit(chain->shader_pipeline, chain->chain.dev);
    d3d9_hlsl_destroy_resources(chain);
    d3d9_renderchain_destroy_passes_and_luts(&chain->chain);
    free(chain);
