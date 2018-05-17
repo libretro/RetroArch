@@ -92,6 +92,16 @@ static INLINE void d3d9_hlsl_set_param_1f(void *data, void *userdata, const char
       d3d9x_constant_table_set_float(prog, (LPDIRECT3DDEVICE9)userdata, (void*)param, *val);
 }
 
+static INLINE void d3d9_hlsl_bind_program(void *data,
+      LPDIRECT3DDEVICE9 dev)
+{
+   struct shader_pass *pass = (struct shader_pass*)data;
+   if (!pass)
+      return;
+   d3d9_set_vertex_shader(dev, (LPDIRECT3DVERTEXSHADER9)pass->vprg);
+   d3d9_set_pixel_shader(dev,  (LPDIRECT3DPIXELSHADER9)pass->fprg);
+}
+
 static INLINE void d3d9_hlsl_set_param_matrix(void *data, void *userdata,
       const char *name, const void *values)
 {
