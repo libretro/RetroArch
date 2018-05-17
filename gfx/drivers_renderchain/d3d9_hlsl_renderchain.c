@@ -622,32 +622,49 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
    return true;
 }
 
+static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
+      hlsl_d3d9_renderchain_t *chain,
+      unsigned vp_width, unsigned vp_height,
+      unsigned rotation)
+{
+   struct d3d_matrix proj, ortho, rot, matrix;
+
+   d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
+   d3d_matrix_identity(&rot);
+   d3d_matrix_rotation_z(&rot, rotation * (D3D_PI / 2.0));
+
+   d3d_matrix_multiply(&proj, &ortho, &rot);
+   d3d_matrix_transpose(&matrix, &proj);
+
+   if (chain->shader_pipeline)
+      hlsl_set_mvp(chain->shader_pipeline, chain->dev,
+            (const D3DMATRIX*)&matrix);
+}
+
+
 static void hlsl_d3d9_renderchain_set_vertices(
       d3d9_video_t *d3d,
-      const video_frame_info_t *video_info,
       hlsl_d3d9_renderchain_t *chain,
       struct hlsl_pass *pass,
       unsigned pass_count,
-      unsigned vert_width, unsigned vert_height,
-      uint64_t frame_count)
+      unsigned width, unsigned height,
+      unsigned out_width, unsigned out_height,
+      unsigned vp_width, unsigned vp_height,
+      uint64_t frame_count,
+      unsigned rotation)
 {
    video_shader_ctx_params_t params;
-   unsigned width, height;
 
-   video_driver_get_size(&width, &height);
-
-   if (pass->last_width != vert_width || pass->last_height != vert_height)
+   if (pass->last_width != width || pass->last_height != height)
    {
       unsigned i;
       struct HLSLVertex vert[4];
       void *verts        = NULL;
-      unsigned out_width = vert_width;
-      unsigned out_height= vert_height;
-      float _u           = (vert_width)  / pass->info.tex_w;
-      float _v           = (vert_height) / pass->info.tex_h;
+      float _u           = (width)  / pass->info.tex_w;
+      float _v           = (height) / pass->info.tex_h;
 
-      pass->last_width   = vert_width;
-      pass->last_height  = vert_height;
+      pass->last_width   = width;
+      pass->last_height  = height;
 
 
       vert[0].x          = 0.0f;
@@ -714,12 +731,12 @@ static void hlsl_d3d9_renderchain_set_vertices(
       hlsl_use(chain->shader_pipeline, chain->dev, pass_count, true);
 
    params.data          = d3d;
-   params.width         = vert_width;
-   params.height        = vert_height;
+   params.width         = width;
+   params.height        = height;
    params.tex_width     = pass->info.tex_w;
    params.tex_height    = pass->info.tex_h;
-   params.out_width     = width;
-   params.out_height    = height;
+   params.out_width     = out_width;
+   params.out_height    = out_height;
    params.frame_counter = (unsigned int)frame_count;
    params.info          = NULL;
    params.prev_info     = NULL;
@@ -727,10 +744,8 @@ static void hlsl_d3d9_renderchain_set_vertices(
    params.fbo_info      = NULL;
    params.fbo_info_cnt  = 0;
 
-#if 0
-   d3d9_cg_renderchain_calc_and_set_shader_mvp(chain,
+   d3d9_hlsl_renderchain_calc_and_set_shader_mvp(chain,
          /*pass->vPrg, */vp_width, vp_height, rotation);
-#endif
    if (chain->shader_pipeline)
       hlsl_set_params(chain->shader_pipeline, chain->dev, &params);
 }
@@ -1006,25 +1021,6 @@ static void hlsl_d3d9_renderchain_render_pass(
    d3d9_set_sampler_magfilter(chain->dev, 0, D3DTEXF_POINT);
 }
 
-static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
-      hlsl_d3d9_renderchain_t *chain,
-      unsigned vp_width, unsigned vp_height,
-      unsigned rotation)
-{
-   struct d3d_matrix proj, ortho, rot, matrix;
-
-   d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
-   d3d_matrix_identity(&rot);
-   d3d_matrix_rotation_z(&rot, rotation * (D3D_PI / 2.0));
-
-   d3d_matrix_multiply(&proj, &ortho, &rot);
-   d3d_matrix_transpose(&matrix, &proj);
-
-   if (chain->shader_pipeline)
-      hlsl_set_mvp(chain->shader_pipeline, chain->dev,
-            (const D3DMATRIX*)&matrix);
-}
-
 static bool hlsl_d3d9_renderchain_render(
       d3d9_video_t *d3d,
       const video_frame_info_t *video_info,
@@ -1068,9 +1064,12 @@ static bool hlsl_d3d9_renderchain_render(
 
    d3d9_set_viewports(chain->dev, &d3d->final_viewport);
 
-   hlsl_d3d9_renderchain_set_vertices(d3d, video_info,
-         chain, last_pass,
-         1, width, height, chain->frame_count);
+   hlsl_d3d9_renderchain_set_vertices(d3d,
+         chain, last_pass, 1,
+         current_width, current_height,
+         out_width, out_height,
+         chain->final_viewport->Width, chain->final_viewport->Height,
+         chain->frame_count, rotation);
 
    hlsl_d3d9_renderchain_render_pass(chain, last_pass,
          tracker,
