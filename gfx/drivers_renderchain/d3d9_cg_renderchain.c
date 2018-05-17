@@ -64,6 +64,11 @@ static INLINE void d3d9_cg_set_param_2f(void *data, void *userdata,
    return d3d9_cg_set_param_1f(data, userdata, name, values);
 }
 
+static INLINE void d3d9_cg_bind_program(void *data)
+{
+   cgD3D9BindProgram((CGprogram)data);
+}
+
 static INLINE void d3d9_cg_set_param_matrix(void *data, void *userdata,
       const char *name, const void *values)
 {
@@ -791,8 +796,8 @@ static bool d3d9_cg_renderchain_init(
    if (!d3d9_cg_load_program(chain, &chain->stock_shader, NULL, false))
       return false;
 
-   cgD3D9BindProgram((CGprogram)chain->stock_shader.fprg);
-   cgD3D9BindProgram((CGprogram)chain->stock_shader.vprg);
+   d3d9_cg_bind_program(chain->stock_shader.fprg);
+   d3d9_cg_bind_program(chain->stock_shader.vprg);
 
    return true;
 }
@@ -915,8 +920,8 @@ static void d3d9_cg_renderchain_render_pass(
 {
    unsigned i;
 
-   cgD3D9BindProgram(pass->fprg);
-   cgD3D9BindProgram(pass->vprg);
+   d3d9_cg_bind_program(pass->fprg);
+   d3d9_cg_bind_program(pass->vprg);
 
    d3d9_set_texture(chain->dev, 0, pass->tex);
    d3d9_set_sampler_minfilter(chain->dev, 0,
@@ -1094,8 +1099,8 @@ static bool d3d9_cg_renderchain_render(
    d3d9_surface_free(back_buffer);
 
    d3d9_renderchain_end_render(chain);
-   cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
-   cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
+   d3d9_cg_bind_program(_chain->stock_shader.fprg);
+   d3d9_cg_bind_program(_chain->stock_shader.vprg);
    d3d9_cg_renderchain_calc_and_set_shader_mvp(
          _chain->stock_shader.vprg,
          chain->final_viewport->Width,
