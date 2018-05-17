@@ -140,7 +140,7 @@ static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
    return true;
 }
 
-static INLINE void d3d9_cg_renderchain_add_lut_internal(
+static INLINE void d3d9_renderchain_add_lut_internal(
       d3d9_renderchain_t *chain,
       unsigned index, unsigned i)
 {
@@ -204,6 +204,96 @@ static INLINE void d3d9_renderchain_unbind_all(d3d9_renderchain_t *chain)
    {
       unsigned_vector_list_free(chain->bound_vert);
       chain->bound_vert = unsigned_vector_list_new();
+   }
+}
+
+static INLINE bool d3d9_renderchain_set_pass_size(
+      LPDIRECT3DDEVICE9 dev,
+      struct shader_pass *pass,
+      struct shader_pass *pass2,
+      unsigned width, unsigned height)
+{
+   if (width != pass->info.tex_w || height != pass->info.tex_h)
+   {
+      d3d9_texture_free(pass->tex);
+
+      pass->info.tex_w = width;
+      pass->info.tex_h = height;
+      pass->pool       = D3DPOOL_DEFAULT;
+      pass->tex        = (LPDIRECT3DTEXTURE9)
+         d3d9_texture_new(dev, NULL,
+            width, height, 1,
+            D3DUSAGE_RENDERTARGET,
+            pass2->info.pass->fbo.fp_fbo ?
+            D3DFMT_A32B32G32R32F : d3d9_get_argb8888_format(),
+            D3DPOOL_DEFAULT, 0, 0, 0,
+            NULL, NULL, false);
+
+      if (!pass->tex)
+         return false;
+
+      d3d9_set_texture(dev, 0, pass->tex);
+      d3d9_set_sampler_address_u(dev, 0, D3DTADDRESS_BORDER);
+      d3d9_set_sampler_address_v(dev, 0, D3DTADDRESS_BORDER);
+      d3d9_set_texture(dev, 0, NULL);
+   }
+
+   return true;
+}
+
+static INLINE void d3d9_recompute_pass_sizes(
+      LPDIRECT3DDEVICE9 dev,
+      d3d9_renderchain_t *chain,
+      d3d9_video_t *d3d)
+{
+   unsigned i;
+   struct LinkInfo link_info;
+   unsigned input_scale              = d3d->video_info.input_scale 
+      * RARCH_SCALE_BASE;
+   unsigned current_width            = input_scale;
+   unsigned current_height           = input_scale;
+   unsigned out_width                = 0;
+   unsigned out_height               = 0;
+
+   link_info.pass                    = &d3d->shader.pass[0];
+   link_info.tex_w                   = current_width;
+   link_info.tex_h                   = current_height;
+
+
+   if (!d3d9_renderchain_set_pass_size(dev,
+            (struct shader_pass*)&chain->passes->data[0],
+            (struct shader_pass*)&chain->passes->data[
+            chain->passes->count - 1],
+            current_width, current_height))
+   {
+      RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
+      return;
+   }
+
+   for (i = 1; i < d3d->shader.passes; i++)
+   {
+      d3d9_convert_geometry(
+            &link_info,
+            &out_width, &out_height,
+            current_width, current_height, &d3d->final_viewport);
+
+      link_info.tex_w = next_pow2(out_width);
+      link_info.tex_h = next_pow2(out_height);
+
+      if (!d3d9_renderchain_set_pass_size(dev,
+               (struct shader_pass*)&chain->passes->data[i],
+               (struct shader_pass*)&chain->passes->data[
+               chain->passes->count - 1],
+               link_info.tex_w, link_info.tex_h))
+      {
+         RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
+         return;
+      }
+
+      current_width  = out_width;
+      current_height = out_height;
+
+      link_info.pass = &d3d->shader.pass[i];
    }
 }
 

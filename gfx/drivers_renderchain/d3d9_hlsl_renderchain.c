@@ -851,107 +851,18 @@ static bool hlsl_d3d9_renderchain_init(
    return true;
 }
 
-static bool d3d9_hlsl_set_pass_size(
-      LPDIRECT3DDEVICE9 dev,
-      struct shader_pass *pass,
-      struct shader_pass *pass2,
-      unsigned width, unsigned height)
-{
-   if (width != pass->info.tex_w || height != pass->info.tex_h)
-   {
-      d3d9_texture_free(pass->tex);
-
-      pass->info.tex_w = width;
-      pass->info.tex_h = height;
-      pass->pool       = D3DPOOL_DEFAULT;
-      pass->tex        = (LPDIRECT3DTEXTURE9)
-         d3d9_texture_new(dev, NULL,
-            width, height, 1,
-            D3DUSAGE_RENDERTARGET,
-            pass2->info.pass->fbo.fp_fbo ?
-            D3DFMT_A32B32G32R32F : d3d9_get_argb8888_format(),
-            D3DPOOL_DEFAULT, 0, 0, 0,
-            NULL, NULL, false);
-
-      if (!pass->tex)
-         return false;
-
-      d3d9_set_texture(dev, 0, pass->tex);
-      d3d9_set_sampler_address_u(dev, 0, D3DTADDRESS_BORDER);
-      d3d9_set_sampler_address_v(dev, 0, D3DTADDRESS_BORDER);
-      d3d9_set_texture(dev, 0, NULL);
-   }
-
-   return true;
-}
-
-static void d3d9_hlsl_recompute_pass_sizes(
-      LPDIRECT3DDEVICE9 dev,
-      hlsl_d3d9_renderchain_t *chain,
-      d3d9_video_t *d3d)
-{
-   unsigned i;
-   struct LinkInfo link_info;
-   unsigned input_scale              = d3d->video_info.input_scale 
-      * RARCH_SCALE_BASE;
-   unsigned current_width            = input_scale;
-   unsigned current_height           = input_scale;
-   unsigned out_width                = 0;
-   unsigned out_height               = 0;
-
-   link_info.pass                    = &d3d->shader.pass[0];
-   link_info.tex_w                   = current_width;
-   link_info.tex_h                   = current_height;
-
-
-   if (!d3d9_hlsl_set_pass_size(dev,
-            (struct shader_pass*)&chain->chain.passes->data[0],
-            (struct shader_pass*)&chain->chain.passes->data[
-            chain->chain.passes->count - 1],
-            current_width, current_height))
-   {
-      RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
-      return;
-   }
-
-   for (i = 1; i < d3d->shader.passes; i++)
-   {
-      d3d9_convert_geometry(
-            &link_info,
-            &out_width, &out_height,
-            current_width, current_height, &d3d->final_viewport);
-
-      link_info.tex_w = next_pow2(out_width);
-      link_info.tex_h = next_pow2(out_height);
-
-      if (!d3d9_hlsl_set_pass_size(dev,
-               (struct shader_pass*)&chain->chain.passes->data[i],
-               (struct shader_pass*)&chain->chain.passes->data[
-               chain->chain.passes->count - 1],
-               link_info.tex_w, link_info.tex_h))
-      {
-         RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
-         return;
-      }
-
-      current_width  = out_width;
-      current_height = out_height;
-
-      link_info.pass = &d3d->shader.pass[i];
-   }
-}
-
 static void hlsl_d3d9_renderchain_set_final_viewport(
       d3d9_video_t *d3d,
       void *renderchain_data,
       const D3DVIEWPORT9 *final_viewport)
 {
-   hlsl_d3d9_renderchain_t *chain     = (hlsl_d3d9_renderchain_t*)renderchain_data;
+   hlsl_d3d9_renderchain_t *_chain = (hlsl_d3d9_renderchain_t*)renderchain_data;
+   d3d9_renderchain_t      *chain  = (d3d9_renderchain_t*)&_chain->chain;
 
    if (chain && final_viewport)
-      chain->chain.final_viewport = (D3DVIEWPORT9*)final_viewport;
+      chain->final_viewport = (D3DVIEWPORT9*)final_viewport;
 
-   d3d9_hlsl_recompute_pass_sizes(chain->chain.dev, chain, d3d);
+   d3d9_recompute_pass_sizes(chain->dev, chain, d3d);
 }
 
 static void hlsl_d3d9_renderchain_render_pass(
@@ -999,7 +910,7 @@ static void hlsl_d3d9_renderchain_render_pass(
          unsigned index  = cgGetParameterResourceIndex(fparam);
          bound_index     = index;
 
-         d3d9_cg_renderchain_add_lut_internal(&chain->chain, index, i);
+         d3d9_renderchain_add_lut_internal(&chain->chain, index, i);
       }
 
       vparam = cgGetNamedParameter(pass->vPrg, chain->chain.luts->data[i].id);
@@ -1008,7 +919,7 @@ static void hlsl_d3d9_renderchain_render_pass(
       {
          unsigned index = cgGetParameterResourceIndex(vparam);
          if (index != (unsigned)bound_index)
-            d3d9_cg_renderchain_add_lut_internal(&chain->chain, index, i);
+            d3d9_renderchain_add_lut_internal(&chain->chain, index, i);
       }
    }
 
