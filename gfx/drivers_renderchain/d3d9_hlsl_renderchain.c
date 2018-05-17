@@ -1224,6 +1224,5 @@ d3d9_renderchain_driver_t hlsl_d3d9_renderchain = {
    hlsl_d3d9_renderchain_add_pass,
    NULL, /* add_lut */
    hlsl_d3d9_renderchain_render,
-   NULL, /* read_viewport */
    "hlsl_d3d9",
 };

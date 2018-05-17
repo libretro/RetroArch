@@ -56,7 +56,6 @@ typedef struct d3d9_renderchain_driver
          state_tracker_t *tracker,
          const void *frame,
          unsigned width, unsigned height, unsigned pitch, unsigned rotation);
-   bool (*read_viewport)(d3d9_video_t *d3d, uint8_t *buffer, bool is_idle);
    const char *ident;
 } d3d9_renderchain_driver_t;
 

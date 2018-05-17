@@ -1740,14 +1740,59 @@ static bool d3d9_frame(void *data, const void *frame,
 
 static bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
-   d3d9_video_t *d3d   = (d3d9_video_t*)data;
+   unsigned width, height;
+   D3DLOCKED_RECT rect;
+   LPDIRECT3DSURFACE9 target = NULL;
+   LPDIRECT3DSURFACE9 dest   = NULL;
+   bool ret                  = true;
+   d3d9_video_t *d3d         = (d3d9_video_t*)data;
+   LPDIRECT3DDEVICE9 d3dr    = d3d->dev;
 
-   if (  !d3d ||
-         !d3d->renderchain_driver ||
-         !d3d->renderchain_driver->read_viewport)
-      return false;
+   video_driver_get_size(&width, &height);
 
-   return d3d->renderchain_driver->read_viewport(d3d, buffer, false);
+   if (
+         !d3d9_device_get_render_target(d3dr, 0, (void**)&target)     ||
+         !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
+            d3d9_get_xrgb8888_format(),
+            D3DPOOL_SYSTEMMEM, (void**)&dest, NULL) ||
+         !d3d9_device_get_render_target_data(d3dr, (void*)target, (void*)dest)
+         )
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (d3d9_surface_lock_rect(dest, (void*)&rect))
+   {
+      unsigned x, y;
+      unsigned pitchpix       = rect.Pitch / 4;
+      const uint32_t *pixels  = (const uint32_t*)rect.pBits;
+
+      pixels                 += d3d->final_viewport.X;
+      pixels                 += (d3d->final_viewport.Height - 1) * pitchpix;
+      pixels                 -= d3d->final_viewport.Y * pitchpix;
+
+      for (y = 0; y < d3d->final_viewport.Height; y++, pixels -= pitchpix)
+      {
+         for (x = 0; x < d3d->final_viewport.Width; x++)
+         {
+            *buffer++ = (pixels[x] >>  0) & 0xff;
+            *buffer++ = (pixels[x] >>  8) & 0xff;
+            *buffer++ = (pixels[x] >> 16) & 0xff;
+         }
+      }
+
+      d3d9_surface_unlock_rect((void*)dest);
+   }
+   else
+      ret = false;
+
+end:
+   if (target)
+      d3d9_surface_free(target);
+   if (dest)
+      d3d9_surface_free(dest);
+   return ret;
 }
 
 static bool d3d9_set_shader(void *data,
