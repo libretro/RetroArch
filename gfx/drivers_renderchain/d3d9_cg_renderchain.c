@@ -42,9 +42,14 @@
 #pragma comment(lib, "cgd3d9")
 #endif
 
-#define d3d9_cg_set_param_1f(param, x) if (param) cgD3D9SetUniform(param, x)
+static INLINE void d3d9_cg_set_param_1f(void *data, const void *value)
+{
+   CGparameter param = (CGparameter)data;
+   if (param)
+      cgD3D9SetUniform(param, value);
+}
 
-static void set_cg_param(void *data, const char *name, const void *values)
+static INLINE void set_cg_param(void *data, const char *name, const void *values)
 {
    CGprogram   prog   = (CGprogram)data;
    CGparameter cgp    = cgGetNamedParameter(prog, name);
@@ -623,10 +628,8 @@ static void d3d9_cg_destroy_resources(cg_renderchain_t *chain)
    cgD3D9SetDevice(NULL);
 }
 
-static void d3d9_cg_deinit_context_state(void *data)
+static void d3d9_cg_deinit_context_state(cg_renderchain_t *chain)
 {
-   cg_renderchain_t *chain = (cg_renderchain_t*)data;
-
    if (chain->cgCtx)
    {
       RARCH_LOG("[D3D9 Cg]: Destroying context.\n");
@@ -681,7 +684,8 @@ static bool d3d9_cg_renderchain_init_shader(d3d9_video_t *d3d,
 
 static bool d3d9_cg_renderchain_create_first_pass(
       LPDIRECT3DDEVICE9 dev,
-      cg_renderchain_t *chain,
+      cg_renderchain_t   *cg_chain,
+      d3d9_renderchain_t *chain,
       const struct LinkInfo *info, unsigned _fmt)
 {
    unsigned i;
@@ -701,44 +705,44 @@ static bool d3d9_cg_renderchain_create_first_pass(
    pass.attrib_map  = (struct unsigned_vector_list*)
       unsigned_vector_list_new();
 
-   chain->chain.prev.ptr  = 0;
+   chain->prev.ptr  = 0;
 
    for (i = 0; i < TEXTURES; i++)
    {
-      chain->chain.prev.last_width[i]  = 0;
-      chain->chain.prev.last_height[i] = 0;
-      chain->chain.prev.vertex_buf[i]  = (LPDIRECT3DVERTEXBUFFER9)
+      chain->prev.last_width[i]  = 0;
+      chain->prev.last_height[i] = 0;
+      chain->prev.vertex_buf[i]  = (LPDIRECT3DVERTEXBUFFER9)
          d3d9_vertex_buffer_new(
-            chain->chain.dev, 4 * sizeof(struct D3D9Vertex),
+            chain->dev, 4 * sizeof(struct D3D9Vertex),
             D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
-      if (!chain->chain.prev.vertex_buf[i])
+      if (!chain->prev.vertex_buf[i])
          return false;
 
-      chain->chain.prev.tex[i] = (LPDIRECT3DTEXTURE9)
-         d3d9_texture_new(chain->chain.dev, NULL,
+      chain->prev.tex[i] = (LPDIRECT3DTEXTURE9)
+         d3d9_texture_new(chain->dev, NULL,
             info->tex_w, info->tex_h, 1, 0, fmt,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
-      if (!chain->chain.prev.tex[i])
+      if (!chain->prev.tex[i])
          return false;
 
-      d3d9_set_texture(chain->chain.dev, 0, chain->chain.prev.tex[i]);
+      d3d9_set_texture(chain->dev, 0, chain->prev.tex[i]);
       d3d9_set_sampler_minfilter(dev, 0,
             d3d_translate_filter(info->pass->filter));
       d3d9_set_sampler_magfilter(dev, 0,
             d3d_translate_filter(info->pass->filter));
       d3d9_set_sampler_address_u(dev, 0, D3DTADDRESS_BORDER);
       d3d9_set_sampler_address_v(dev, 0, D3DTADDRESS_BORDER);
-      d3d9_set_texture(chain->chain.dev, 0, NULL);
+      d3d9_set_texture(chain->dev, 0, NULL);
    }
 
-   d3d9_cg_load_program(chain, &pass.fprg,
+   d3d9_cg_load_program(cg_chain, &pass.fprg,
          &pass.vprg, info->pass->source.path, true);
 
-   if (!d3d9_cg_renderchain_init_shader_fvf(&chain->chain, &pass))
+   if (!d3d9_cg_renderchain_init_shader_fvf(chain, &pass))
       return false;
-   shader_pass_vector_list_append(chain->chain.passes, pass);
+   shader_pass_vector_list_append(chain->passes, pass);
    return true;
 }
 
@@ -766,7 +770,7 @@ static bool d3d9_cg_renderchain_init(
    chain->chain.frame_count    = 0;
    chain->chain.pixel_size     = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
 
-   if (!d3d9_cg_renderchain_create_first_pass(dev, chain, info, fmt))
+   if (!d3d9_cg_renderchain_create_first_pass(dev, chain, &chain->chain, info, fmt))
       return false;
    if (!d3d9_cg_load_program(chain, &chain->fStock, &chain->vStock, NULL, false))
       return false;
@@ -811,37 +815,8 @@ static bool d3d9_cg_renderchain_add_pass(
    if (!d3d9_cg_renderchain_init_shader_fvf(&chain->chain, &pass))
       return false;
 
-   pass.vertex_buf = (LPDIRECT3DVERTEXBUFFER9)
-      d3d9_vertex_buffer_new(chain->chain.dev,
-         4 * sizeof(struct D3D9Vertex),
-         D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
-
-   if (!pass.vertex_buf)
-      return false;
-
-   pass.tex = (LPDIRECT3DTEXTURE9)d3d9_texture_new(
-         chain->chain.dev,
-         NULL,
-         info->tex_w,
-         info->tex_h,
-         1,
-         D3DUSAGE_RENDERTARGET,
-         chain->chain.passes->data[
-         chain->chain.passes->count - 1].info.pass->fbo.fp_fbo
-         ? D3DFMT_A32B32G32R32F : d3d9_get_argb8888_format(),
-         D3DPOOL_DEFAULT, 0, 0, 0, NULL, NULL, false);
-
-   if (!pass.tex)
-      return false;
-
-   d3d9_set_texture(chain->chain.dev, 0, pass.tex);
-   d3d9_set_sampler_address_u(chain->chain.dev, 0, D3DTADDRESS_BORDER);
-   d3d9_set_sampler_address_v(chain->chain.dev, 0, D3DTADDRESS_BORDER);
-   d3d9_set_texture(chain->chain.dev, 0, NULL);
-
-   shader_pass_vector_list_append(chain->chain.passes, pass);
-
-   return true;
+   return d3d9_renderchain_add_pass(&chain->chain, &pass,
+         info);
 }
 
 static bool d3d9_cg_renderchain_add_lut(void *data,

@@ -100,6 +100,48 @@ typedef struct d3d9_renderchain
    struct lut_info_vector_list *luts;
 } d3d9_renderchain_t;
 
+static INLINE bool d3d9_renderchain_add_pass(d3d9_renderchain_t *chain,
+      struct shader_pass *pass,
+      const struct LinkInfo *info)
+{
+   LPDIRECT3DTEXTURE9      tex;
+   LPDIRECT3DVERTEXBUFFER9 vertbuf = (LPDIRECT3DVERTEXBUFFER9)
+      d3d9_vertex_buffer_new(chain->dev,
+            4 * sizeof(struct D3D9Vertex),
+            D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
+
+   if (!vertbuf)
+      return false;
+
+   pass->vertex_buf = vertbuf;
+
+   tex = (LPDIRECT3DTEXTURE9)d3d9_texture_new(
+         chain->dev,
+         NULL,
+         info->tex_w,
+         info->tex_h,
+         1,
+         D3DUSAGE_RENDERTARGET,
+         chain->passes->data[
+         chain->passes->count - 1].info.pass->fbo.fp_fbo
+         ? D3DFMT_A32B32G32R32F : d3d9_get_argb8888_format(),
+         D3DPOOL_DEFAULT, 0, 0, 0, NULL, NULL, false);
+
+   if (!tex)
+      return false;
+
+   pass->tex        = tex;
+
+   d3d9_set_texture(chain->dev, 0, pass->tex);
+   d3d9_set_sampler_address_u(chain->dev, 0, D3DTADDRESS_BORDER);
+   d3d9_set_sampler_address_v(chain->dev, 0, D3DTADDRESS_BORDER);
+   d3d9_set_texture(chain->dev, 0, NULL);
+
+   shader_pass_vector_list_append(chain->passes, *pass);
+
+   return true;
+}
+
 static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
       const char *id, const char *path, bool smooth)
 {
