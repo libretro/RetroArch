@@ -78,8 +78,7 @@ static INLINE void d3d9_cg_set_param_matrix(void *data, void *userdata,
 typedef struct cg_renderchain
 {
    struct d3d9_renderchain chain;
-   CGprogram vStock;
-   CGprogram fStock;
+   struct shader_pass stock_shader;
    CGcontext cgCtx;
 } cg_renderchain_t;
 
@@ -618,10 +617,10 @@ static void d3d9_cg_deinit_progs(cg_renderchain_t *chain)
       }
    }
 
-   if (chain->fStock)
-      cgDestroyProgram(chain->fStock);
-   if (chain->vStock)
-      cgDestroyProgram(chain->vStock);
+   if (chain->stock_shader.fprg)
+      cgDestroyProgram(chain->stock_shader.fprg);
+   if (chain->stock_shader.vprg)
+      cgDestroyProgram(chain->stock_shader.vprg);
 }
 
 static void d3d9_cg_destroy_resources(cg_renderchain_t *chain)
@@ -793,11 +792,12 @@ static bool d3d9_cg_renderchain_init(
    if (!d3d9_cg_renderchain_create_first_pass(dev, chain, &chain->chain, info, fmt))
       return false;
    if (!d3d9_cg_load_program(chain,
-            (void**)&chain->fStock, (void**)&chain->vStock, NULL, false))
+            (void**)&chain->stock_shader.fprg,
+            (void**)&chain->stock_shader.vprg, NULL, false))
       return false;
 
-   cgD3D9BindProgram(chain->fStock);
-   cgD3D9BindProgram(chain->vStock);
+   cgD3D9BindProgram((CGprogram)chain->stock_shader.fprg);
+   cgD3D9BindProgram((CGprogram)chain->stock_shader.vprg);
 
    return true;
 }
@@ -1101,10 +1101,10 @@ static bool d3d9_cg_renderchain_render(
    d3d9_surface_free(back_buffer);
 
    d3d9_renderchain_end_render(chain);
-   cgD3D9BindProgram(_chain->fStock);
-   cgD3D9BindProgram(_chain->vStock);
+   cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
+   cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
    d3d9_cg_renderchain_calc_and_set_shader_mvp(
-         _chain->vStock,
+         _chain->stock_shader.vprg,
          chain->final_viewport->Width,
          chain->final_viewport->Height, 0);
 
