@@ -1011,7 +1011,7 @@ static void hlsl_d3d9_renderchain_render_pass(
    for (i = 0; i < 4; i++)
       d3d9_set_stream_source(chain->dev, i,
             pass->vertex_buf, 0,
-            sizeof(Vertex));
+            sizeof(struct HLSLVertex));
 
    d3d9_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
