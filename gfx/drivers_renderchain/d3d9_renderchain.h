@@ -122,7 +122,7 @@ static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
             false
             );
 
-   RARCH_LOG("[D3D9 Cg]: LUT texture loaded: %s.\n", path);
+   RARCH_LOG("[D3D9]: LUT texture loaded: %s.\n", path);
 
    info.tex    = lut;
    info.smooth = smooth;
@@ -293,7 +293,7 @@ static INLINE void d3d9_recompute_pass_sizes(
             chain->passes->count - 1],
             current_width, current_height))
    {
-      RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
+      RARCH_ERR("[D3D9]: Failed to set pass size.\n");
       return;
    }
 
@@ -313,7 +313,7 @@ static INLINE void d3d9_recompute_pass_sizes(
                chain->passes->count - 1],
                link_info.tex_w, link_info.tex_h))
       {
-         RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
+         RARCH_ERR("[D3D9]: Failed to set pass size.\n");
          return;
       }
 
