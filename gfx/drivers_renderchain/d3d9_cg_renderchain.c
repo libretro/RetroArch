@@ -867,7 +867,6 @@ static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
 }
 
 static void d3d9_cg_renderchain_set_vertices(
-      const video_frame_info_t *video_info,
       d3d9_renderchain_t *chain,
       struct shader_pass *pass,
       unsigned width, unsigned height,
@@ -1127,7 +1126,7 @@ static bool d3d9_cg_renderchain_render(
 
       d3d9_set_viewports(chain->dev, &viewport);
 
-      d3d9_cg_renderchain_set_vertices(video_info,
+      d3d9_cg_renderchain_set_vertices(
             chain, from_pass,
             current_width, current_height,
             out_width, out_height,
@@ -1154,7 +1153,7 @@ static bool d3d9_cg_renderchain_render(
 
    d3d9_set_viewports(chain->dev, chain->final_viewport);
 
-   d3d9_cg_renderchain_set_vertices(video_info,
+   d3d9_cg_renderchain_set_vertices(
          chain, last_pass,
          current_width, current_height,
          out_width, out_height,

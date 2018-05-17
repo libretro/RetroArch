@@ -963,7 +963,8 @@ static bool hlsl_d3d9_renderchain_render(
 
       d3d9_set_viewports(chain->chain.dev, &viewport);
 
-      hlsl_d3d9_renderchain_set_vertices(d3d,
+      hlsl_d3d9_renderchain_set_vertices(
+            d3d,
             chain, from_pass, i,
             current_width, current_height,
             out_width, out_height,
@@ -991,7 +992,8 @@ static bool hlsl_d3d9_renderchain_render(
 
    d3d9_set_viewports(chain->chain.dev, chain->chain.final_viewport);
 
-   hlsl_d3d9_renderchain_set_vertices(d3d,
+   hlsl_d3d9_renderchain_set_vertices(
+         d3d,
          chain, last_pass, chain->chain.passes->count - 1,
          current_width, current_height,
          out_width, out_height,
