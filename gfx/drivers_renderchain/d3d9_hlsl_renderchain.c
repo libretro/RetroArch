@@ -261,17 +261,11 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       d3d9_set_texture(chain->dev, 0, NULL);
    }
 
-   d3d9_set_sampler_address_u(dev, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   d3d9_set_sampler_address_v(dev, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   d3d9_set_render_state(dev, D3DRS_CULLMODE, D3DCULL_NONE);
-   d3d9_set_render_state(dev, D3DRS_ZENABLE, FALSE);
-
    d3d9_hlsl_load_program(chain->dev, &pass, info->pass->source.path, true);
 
    if (!hlsl_d3d9_renderchain_init_shader_fvf(chain, &pass))
       return false;
    shader_pass_vector_list_append(chain->passes, pass);
-
    return true;
 }
 
@@ -310,15 +304,19 @@ static void hlsl_d3d9_renderchain_set_vertices(
             pass, width, height, out_width, out_height,
             vp_width, vp_height, rotation);
 
+   RARCH_LOG("DIKKE LUL 1\n");
    d3d9_hlsl_bind_program(pass,  chain->chain.dev);
+   RARCH_LOG("DIKKE LUL 2\n");
    hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, pass,
          vp_width, vp_height, rotation);
+   RARCH_LOG("DIKKE LUL 3\n");
    hlsl_d3d9_renderchain_set_shader_params(&chain->chain,
          chain->chain.dev,
          pass,
          width, height,
          pass->info.tex_w, pass->info.tex_h,
          vp_width, vp_height);
+   RARCH_LOG("DIKKE LUL 4\n");
 }
 
 static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
@@ -430,6 +428,7 @@ static bool hlsl_d3d9_renderchain_init(
       return false;
    if (!d3d9_hlsl_load_program(chain->chain.dev, &chain->stock_shader, stock_hlsl_program, false))
       return false;
+
    d3d9_hlsl_bind_program(&chain->stock_shader, dev);
 
    return true;
@@ -629,8 +628,8 @@ static bool hlsl_d3d9_renderchain_render(
             out_width, out_height,
             chain->chain.frame_count, 0);
 
-      hlsl_d3d9_renderchain_render_pass(chain, from_pass,
-            tracker,
+      hlsl_d3d9_renderchain_render_pass(chain,
+            from_pass, tracker,
             i + 1);
 
       current_width = out_width;
