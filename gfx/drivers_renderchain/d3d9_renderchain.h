@@ -34,6 +34,17 @@ struct lut_info
    bool smooth;
 };
 
+struct shader_pass
+{
+   unsigned last_width, last_height;
+   struct LinkInfo info;
+   D3DPOOL pool;
+   LPDIRECT3DTEXTURE9 tex;
+   LPDIRECT3DVERTEXBUFFER9 vertex_buf;
+   LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
+   void *attrib_map;
+};
+
 #define D3D_PI 3.14159265358979323846264338327
 
 #define VECTOR_LIST_TYPE unsigned
@@ -47,6 +58,32 @@ struct lut_info
 #include "../../libretro-common/lists/vector_list.c"
 #undef VECTOR_LIST_TYPE
 #undef VECTOR_LIST_NAME
+
+#define VECTOR_LIST_TYPE struct shader_pass
+#define VECTOR_LIST_NAME shader_pass
+#include "../../libretro-common/lists/vector_list.c"
+#undef VECTOR_LIST_TYPE
+#undef VECTOR_LIST_NAME
+
+typedef struct d3d9_renderchain
+{
+   unsigned pixel_size;
+   uint64_t frame_count;
+   struct
+   {
+      LPDIRECT3DTEXTURE9 tex[TEXTURES];
+      LPDIRECT3DVERTEXBUFFER9 vertex_buf[TEXTURES];
+      unsigned ptr;
+      unsigned last_width[TEXTURES];
+      unsigned last_height[TEXTURES];
+   } prev;
+   LPDIRECT3DDEVICE9 dev;
+   D3DVIEWPORT9 *final_viewport;
+   struct shader_pass_vector_list  *passes;
+   struct unsigned_vector_list *bound_tex;
+   struct unsigned_vector_list *bound_vert;
+   struct lut_info_vector_list *luts;
+} d3d9_renderchain_t;
 
 static INLINE void d3d9_renderchain_blit_to_texture(
       LPDIRECT3DTEXTURE9 tex,

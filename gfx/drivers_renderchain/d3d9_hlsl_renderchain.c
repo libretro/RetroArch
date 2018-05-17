@@ -64,26 +64,13 @@ struct shader_program_hlsl_data
    D3DXMATRIX mvp_val;
 };
 
-typedef struct hlsl_shader_data hlsl_shader_data_t;
-
-struct hlsl_shader_data
+typedef struct hlsl_shader_data
 {
    LPDIRECT3DDEVICE9 dev;
    struct shader_program_hlsl_data prg[RARCH_HLSL_MAX_SHADERS];
    unsigned active_idx;
    struct video_shader *cg_shader;
-};
-
-struct hlsl_pass
-{
-   unsigned last_width, last_height;
-   struct LinkInfo info;
-   D3DPOOL pool;
-   LPDIRECT3DTEXTURE9 tex;
-   LPDIRECT3DVERTEXBUFFER9 vertex_buf;
-   LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
-   void *attrib_map;
-};
+} hlsl_shader_data_t;
 
 struct HLSLVertex
 {
@@ -93,33 +80,12 @@ struct HLSLVertex
    float r, g, b, a;
 };
 
-#define VECTOR_LIST_TYPE struct hlsl_pass
-#define VECTOR_LIST_NAME hlsl_pass
-#include "../../libretro-common/lists/vector_list.c"
-#undef VECTOR_LIST_TYPE
-#undef VECTOR_LIST_NAME
-
 #include "d3d9_renderchain.h"
 
 typedef struct hlsl_d3d9_renderchain
 {
-   unsigned pixel_size;
-   uint64_t frame_count;
-   struct
-   {
-      LPDIRECT3DTEXTURE9 tex[TEXTURES];
-      LPDIRECT3DVERTEXBUFFER9 vertex_buf[TEXTURES];
-      unsigned ptr;
-      unsigned last_width[TEXTURES];
-      unsigned last_height[TEXTURES];
-   } prev;
-   LPDIRECT3DDEVICE9 dev;
-   D3DVIEWPORT9 *final_viewport;
+   struct d3d9_renderchain chain;
    hlsl_shader_data_t *shader_pipeline;
-   struct hlsl_pass_vector_list  *passes;
-   struct unsigned_vector_list *bound_tex;
-   struct unsigned_vector_list *bound_vert;
-   struct lut_info_vector_list *luts;
 } hlsl_d3d9_renderchain_t;
 
 static void hlsl_use(hlsl_shader_data_t *hlsl,
@@ -531,7 +497,7 @@ static void hlsl_deinit(hlsl_shader_data_t *hlsl)
 
 static bool hlsl_d3d9_renderchain_init_shader_fvf(
       hlsl_d3d9_renderchain_t *chain,
-      struct hlsl_pass *pass)
+      struct shader_pass *pass)
 {
    static const D3DVERTEXELEMENT9 decl[] =
    {
@@ -540,7 +506,7 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(
       D3DDECL_END()
    };
 
-   return d3d9_vertex_declaration_new(chain->dev,
+   return d3d9_vertex_declaration_new(chain->chain.dev,
          decl, (void**)&pass->vertex_decl);
 }
 
@@ -551,7 +517,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       unsigned _fmt)
 {
    unsigned i;
-   struct hlsl_pass pass;
+   struct shader_pass pass;
    unsigned fmt = 
       (_fmt == RETRO_PIXEL_FORMAT_RGB565) ? 
       d3d9_get_rgb565_format() : d3d9_get_xrgb8888_format();
@@ -562,36 +528,36 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
    pass.attrib_map  = (struct unsigned_vector_list*)
       unsigned_vector_list_new();
 
-   chain->prev.ptr  = 0;
+   chain->chain.prev.ptr  = 0;
 
    for (i = 0; i < TEXTURES; i++)
    {
-      chain->prev.last_width[i]  = 0;
-      chain->prev.last_height[i] = 0;
-      chain->prev.vertex_buf[i]  = (LPDIRECT3DVERTEXBUFFER9)
+      chain->chain.prev.last_width[i]  = 0;
+      chain->chain.prev.last_height[i] = 0;
+      chain->chain.prev.vertex_buf[i]  = (LPDIRECT3DVERTEXBUFFER9)
          d3d9_vertex_buffer_new(
-            chain->dev, 4 * sizeof(struct HLSLVertex),
+            chain->chain.dev, 4 * sizeof(struct HLSLVertex),
             D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
-      if (!chain->prev.vertex_buf[i])
+      if (!chain->chain.prev.vertex_buf[i])
          return false;
 
-      chain->prev.tex[i] = (LPDIRECT3DTEXTURE9)
-         d3d9_texture_new(chain->dev, NULL,
+      chain->chain.prev.tex[i] = (LPDIRECT3DTEXTURE9)
+         d3d9_texture_new(chain->chain.dev, NULL,
             info->tex_w, info->tex_h, 1, 0, fmt,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
-      if (!chain->prev.tex[i])
+      if (!chain->chain.prev.tex[i])
          return false;
 
-      d3d9_set_texture(chain->dev, 0, chain->prev.tex[i]);
+      d3d9_set_texture(chain->chain.dev, 0, chain->chain.prev.tex[i]);
       d3d9_set_sampler_minfilter(dev, 0,
             d3d_translate_filter(info->pass->filter));
       d3d9_set_sampler_magfilter(dev, 0,
             d3d_translate_filter(info->pass->filter));
       d3d9_set_sampler_address_u(dev, 0, D3DTADDRESS_BORDER);
       d3d9_set_sampler_address_v(dev, 0, D3DTADDRESS_BORDER);
-      d3d9_set_texture(chain->dev, 0, NULL);
+      d3d9_set_texture(chain->chain.dev, 0, NULL);
    }
 
    pass.vertex_buf        = d3d9_vertex_buffer_new(
@@ -618,7 +584,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
 
    if (!hlsl_d3d9_renderchain_init_shader_fvf(chain, &pass))
       return false;
-   hlsl_pass_vector_list_append(chain->passes, pass);
+   shader_pass_vector_list_append(chain->chain.passes, pass);
 
    return true;
 }
@@ -640,7 +606,7 @@ static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
 
    if (chain->shader_pipeline)
       hlsl_set_mvp(chain->shader_pipeline, d3d,
-            chain->dev,
+            chain->chain.dev,
             (const D3DMATRIX*)&matrix);
 }
 
@@ -648,7 +614,7 @@ static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
 static void hlsl_d3d9_renderchain_set_vertices(
       d3d9_video_t *d3d,
       hlsl_d3d9_renderchain_t *chain,
-      struct hlsl_pass *pass,
+      struct shader_pass *pass,
       unsigned pass_count,
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
@@ -732,7 +698,7 @@ static void hlsl_d3d9_renderchain_set_vertices(
    }
 
    if (chain->shader_pipeline)
-      hlsl_use(chain->shader_pipeline, chain->dev, pass_count, true);
+      hlsl_use(chain->shader_pipeline, chain->chain.dev, pass_count, true);
 
    params.data          = d3d;
    params.width         = width;
@@ -751,27 +717,27 @@ static void hlsl_d3d9_renderchain_set_vertices(
    d3d9_hlsl_renderchain_calc_and_set_shader_mvp(chain, d3d,
          /*pass->vPrg, */vp_width, vp_height, rotation);
    if (chain->shader_pipeline)
-      hlsl_set_params(chain->shader_pipeline, chain->dev, &params);
+      hlsl_set_params(chain->shader_pipeline, chain->chain.dev, &params);
 }
 
 static void d3d9_hlsl_deinit_progs(hlsl_d3d9_renderchain_t *chain)
 {
    RARCH_LOG("[D3D9 HLSL]: Destroying programs.\n");
 
-   if (chain->passes->count >= 1)
+   if (chain->chain.passes->count >= 1)
    {
       unsigned i;
 
-      d3d9_vertex_buffer_free(NULL, chain->passes->data[0].vertex_decl);
+      d3d9_vertex_buffer_free(NULL, chain->chain.passes->data[0].vertex_decl);
 
-      for (i = 1; i < chain->passes->count; i++)
+      for (i = 1; i < chain->chain.passes->count; i++)
       {
-         if (chain->passes->data[i].tex)
-            d3d9_texture_free(chain->passes->data[i].tex);
-         chain->passes->data[i].tex = NULL;
+         if (chain->chain.passes->data[i].tex)
+            d3d9_texture_free(chain->chain.passes->data[i].tex);
+         chain->chain.passes->data[i].tex = NULL;
          d3d9_vertex_buffer_free(
-               chain->passes->data[i].vertex_buf,
-               chain->passes->data[i].vertex_decl);
+               chain->chain.passes->data[i].vertex_buf,
+               chain->chain.passes->data[i].vertex_decl);
       }
    }
 }
@@ -782,18 +748,18 @@ static void d3d9_hlsl_destroy_resources(hlsl_d3d9_renderchain_t *chain)
 
    for (i = 0; i < TEXTURES; i++)
    {
-      if (chain->prev.tex[i])
-         d3d9_texture_free(chain->prev.tex[i]);
-      if (chain->prev.vertex_buf[i])
-         d3d9_vertex_buffer_free(chain->prev.vertex_buf[i], NULL);
+      if (chain->chain.prev.tex[i])
+         d3d9_texture_free(chain->chain.prev.tex[i]);
+      if (chain->chain.prev.vertex_buf[i])
+         d3d9_vertex_buffer_free(chain->chain.prev.vertex_buf[i], NULL);
    }
 
    d3d9_hlsl_deinit_progs(chain);
 
-   for (i = 0; i < chain->luts->count; i++)
+   for (i = 0; i < chain->chain.luts->count; i++)
    {
-      if (chain->luts->data[i].tex)
-         d3d9_texture_free(chain->luts->data[i].tex);
+      if (chain->chain.luts->data[i].tex)
+         d3d9_texture_free(chain->chain.luts->data[i].tex);
    }
 }
 
@@ -808,28 +774,28 @@ static void hlsl_d3d9_renderchain_free(void *data)
    hlsl_deinit(chain->shader_pipeline);
    d3d9_hlsl_destroy_resources(chain);
 
-   if (chain->passes)
+   if (chain->chain.passes)
    {
       unsigned i;
 
-      for (i = 0; i < chain->passes->count; i++)
+      for (i = 0; i < chain->chain.passes->count; i++)
       {
-         if (chain->passes->data[i].attrib_map)
-            free(chain->passes->data[i].attrib_map);
+         if (chain->chain.passes->data[i].attrib_map)
+            free(chain->chain.passes->data[i].attrib_map);
       }
 
-      hlsl_pass_vector_list_free(chain->passes);
+      shader_pass_vector_list_free(chain->chain.passes);
 
-      chain->passes = NULL;
+      chain->chain.passes = NULL;
    }
 
-   lut_info_vector_list_free(chain->luts);
-   unsigned_vector_list_free(chain->bound_tex);
-   unsigned_vector_list_free(chain->bound_vert);
+   lut_info_vector_list_free(chain->chain.luts);
+   unsigned_vector_list_free(chain->chain.bound_tex);
+   unsigned_vector_list_free(chain->chain.bound_vert);
 
-   chain->luts       = NULL;
-   chain->bound_tex  = NULL;
-   chain->bound_vert = NULL;
+   chain->chain.luts       = NULL;
+   chain->chain.bound_tex  = NULL;
+   chain->chain.bound_vert = NULL;
 
    free(chain);
 }
@@ -841,10 +807,10 @@ void *hlsl_d3d9_renderchain_new(void)
    if (!renderchain)
       return NULL;
 
-   renderchain->passes     = hlsl_pass_vector_list_new();
-   renderchain->luts       = lut_info_vector_list_new();
-   renderchain->bound_tex  = unsigned_vector_list_new();
-   renderchain->bound_vert = unsigned_vector_list_new();
+   renderchain->chain.passes     = shader_pass_vector_list_new();
+   renderchain->chain.luts       = lut_info_vector_list_new();
+   renderchain->chain.bound_tex  = unsigned_vector_list_new();
+   renderchain->chain.bound_vert = unsigned_vector_list_new();
 
    return renderchain;
 }
@@ -885,10 +851,10 @@ static bool hlsl_d3d9_renderchain_init(
       return false;
    }
 
-   chain->dev                         = dev;
-   chain->final_viewport              = (D3DVIEWPORT9*)final_viewport;
-   chain->frame_count                 = 0;
-   chain->pixel_size                  = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
+   chain->chain.dev                         = dev;
+   chain->chain.final_viewport              = (D3DVIEWPORT9*)final_viewport;
+   chain->chain.frame_count                 = 0;
+   chain->chain.pixel_size                  = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
 
    if (!hlsl_d3d9_renderchain_create_first_pass(dev, chain, info, fmt))
       return false;
@@ -898,8 +864,8 @@ static bool hlsl_d3d9_renderchain_init(
 
 static bool d3d9_hlsl_set_pass_size(
       LPDIRECT3DDEVICE9 dev,
-      struct hlsl_pass *pass,
-      struct hlsl_pass *pass2,
+      struct shader_pass *pass,
+      struct shader_pass *pass2,
       unsigned width, unsigned height)
 {
    if (width != pass->info.tex_w || height != pass->info.tex_h)
@@ -950,8 +916,9 @@ static void d3d9_hlsl_recompute_pass_sizes(
 
 
    if (!d3d9_hlsl_set_pass_size(dev,
-            (struct hlsl_pass*)&chain->passes->data[0],
-            (struct hlsl_pass*)&chain->passes->data[chain->passes->count - 1],
+            (struct shader_pass*)&chain->chain.passes->data[0],
+            (struct shader_pass*)&chain->chain.passes->data[
+            chain->chain.passes->count - 1],
             current_width, current_height))
    {
       RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
@@ -969,8 +936,9 @@ static void d3d9_hlsl_recompute_pass_sizes(
       link_info.tex_h = next_pow2(out_height);
 
       if (!d3d9_hlsl_set_pass_size(dev,
-               (struct hlsl_pass*)&chain->passes->data[i],
-               (struct hlsl_pass*)&chain->passes->data[chain->passes->count - 1],
+               (struct shader_pass*)&chain->chain.passes->data[i],
+               (struct shader_pass*)&chain->chain.passes->data[
+               chain->chain.passes->count - 1],
                link_info.tex_w, link_info.tex_h))
       {
          RARCH_ERR("[D3D9 Cg]: Failed to set pass size.\n");
@@ -992,9 +960,9 @@ static void hlsl_d3d9_renderchain_set_final_viewport(
    hlsl_d3d9_renderchain_t *chain     = (hlsl_d3d9_renderchain_t*)renderchain_data;
 
    if (chain && final_viewport)
-      chain->final_viewport = (D3DVIEWPORT9*)final_viewport;
+      chain->chain.final_viewport = (D3DVIEWPORT9*)final_viewport;
 
-   d3d9_hlsl_recompute_pass_sizes(chain->dev, chain, d3d);
+   d3d9_hlsl_recompute_pass_sizes(chain->chain.dev, chain, d3d);
 }
 
 static void hlsl_d3d9_renderchain_unbind_all(hlsl_d3d9_renderchain_t *chain)
@@ -1004,34 +972,35 @@ static void hlsl_d3d9_renderchain_unbind_all(hlsl_d3d9_renderchain_t *chain)
    /* Have to be a bit anal about it.
     * Render targets hate it when they have filters apparently.
     */
-   for (i = 0; i < chain->bound_tex->count; i++)
+   for (i = 0; i < chain->chain.bound_tex->count; i++)
    {
-      d3d9_set_sampler_minfilter(chain->dev,
-            chain->bound_tex->data[i], D3DTEXF_POINT);
-      d3d9_set_sampler_magfilter(chain->dev,
-            chain->bound_tex->data[i], D3DTEXF_POINT);
-      d3d9_set_texture(chain->dev, chain->bound_tex->data[i], NULL);
+      d3d9_set_sampler_minfilter(chain->chain.dev,
+            chain->chain.bound_tex->data[i], D3DTEXF_POINT);
+      d3d9_set_sampler_magfilter(chain->chain.dev,
+            chain->chain.bound_tex->data[i], D3DTEXF_POINT);
+      d3d9_set_texture(chain->chain.dev, chain->chain.bound_tex->data[i], NULL);
    }
 
-   for (i = 0; i < chain->bound_vert->count; i++)
-      d3d9_set_stream_source(chain->dev, chain->bound_vert->data[i], 0, 0, 0);
+   for (i = 0; i < chain->chain.bound_vert->count; i++)
+      d3d9_set_stream_source(chain->chain.dev,
+            chain->chain.bound_vert->data[i], 0, 0, 0);
 
-   if (chain->bound_tex)
+   if (chain->chain.bound_tex)
    {
-      unsigned_vector_list_free(chain->bound_tex);
-      chain->bound_tex = unsigned_vector_list_new();
+      unsigned_vector_list_free(chain->chain.bound_tex);
+      chain->chain.bound_tex = unsigned_vector_list_new();
    }
 
-   if (chain->bound_vert)
+   if (chain->chain.bound_vert)
    {
-      unsigned_vector_list_free(chain->bound_vert);
-      chain->bound_vert = unsigned_vector_list_new();
+      unsigned_vector_list_free(chain->chain.bound_vert);
+      chain->chain.bound_vert = unsigned_vector_list_new();
    }
 }
 
 static void hlsl_d3d9_renderchain_render_pass(
       hlsl_d3d9_renderchain_t *chain,
-      struct hlsl_pass *pass,
+      struct shader_pass *pass,
       state_tracker_t *tracker,
       unsigned pass_index)
 {
@@ -1042,15 +1011,15 @@ static void hlsl_d3d9_renderchain_render_pass(
    cgD3D9BindProgram(pass->vPrg);
 #endif
 
-   d3d9_set_texture(chain->dev, 0, pass->tex);
-   d3d9_set_sampler_minfilter(chain->dev, 0,
+   d3d9_set_texture(chain->chain.dev, 0, pass->tex);
+   d3d9_set_sampler_minfilter(chain->chain.dev, 0,
          d3d_translate_filter(pass->info.pass->filter));
-   d3d9_set_sampler_magfilter(chain->dev, 0,
+   d3d9_set_sampler_magfilter(chain->chain.dev, 0,
          d3d_translate_filter(pass->info.pass->filter));
 
-   d3d9_set_vertex_declaration(chain->dev, pass->vertex_decl);
+   d3d9_set_vertex_declaration(chain->chain.dev, pass->vertex_decl);
    for (i = 0; i < 4; i++)
-      d3d9_set_stream_source(chain->dev, i,
+      d3d9_set_stream_source(chain->chain.dev, i,
             pass->vertex_buf, 0,
             sizeof(struct HLSLVertex));
 
@@ -1062,11 +1031,11 @@ static void hlsl_d3d9_renderchain_render_pass(
    d3d9_cg_renderchain_bind_prev(chain, pass);
 
    /* Set lookup textures */
-   for (i = 0; i < chain->luts->count; i++)
+   for (i = 0; i < chain->chain.luts->count; i++)
    {
       CGparameter vparam;
       CGparameter fparam = cgGetNamedParameter(
-            pass->fPrg, chain->luts->data[i].id);
+            pass->fPrg, chain->chain.luts->data[i].id);
       int bound_index    = -1;
 
       if (fparam)
@@ -1077,7 +1046,7 @@ static void hlsl_d3d9_renderchain_render_pass(
          d3d9_cg_renderchain_add_lut_internal(chain, index, i);
       }
 
-      vparam = cgGetNamedParameter(pass->vPrg, chain->luts->data[i].id);
+      vparam = cgGetNamedParameter(pass->vPrg, chain->chain.luts->data[i].id);
 
       if (vparam)
       {
@@ -1094,29 +1063,29 @@ static void hlsl_d3d9_renderchain_render_pass(
       cg_d3d9_renderchain_set_params(chain, pass, tracker, pass_index);
 #endif
 
-   d3d9_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
+   d3d9_draw_primitive(chain->chain.dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
    /* So we don't render with linear filter into render targets,
     * which apparently looked odd (too blurry). */
-   d3d9_set_sampler_minfilter(chain->dev, 0, D3DTEXF_POINT);
-   d3d9_set_sampler_magfilter(chain->dev, 0, D3DTEXF_POINT);
+   d3d9_set_sampler_minfilter(chain->chain.dev, 0, D3DTEXF_POINT);
+   d3d9_set_sampler_magfilter(chain->chain.dev, 0, D3DTEXF_POINT);
 
    hlsl_d3d9_renderchain_unbind_all(chain);
 }
 
 static void d3d9_hlsl_renderchain_start_render(hlsl_d3d9_renderchain_t *chain)
 {
-   chain->passes->data[0].tex         = chain->prev.tex[chain->prev.ptr];
-   chain->passes->data[0].vertex_buf  = chain->prev.vertex_buf[chain->prev.ptr];
-   chain->passes->data[0].last_width  = chain->prev.last_width[chain->prev.ptr];
-   chain->passes->data[0].last_height = chain->prev.last_height[chain->prev.ptr];
+   chain->chain.passes->data[0].tex         = chain->chain.prev.tex[chain->chain.prev.ptr];
+   chain->chain.passes->data[0].vertex_buf  = chain->chain.prev.vertex_buf[chain->chain.prev.ptr];
+   chain->chain.passes->data[0].last_width  = chain->chain.prev.last_width[chain->chain.prev.ptr];
+   chain->chain.passes->data[0].last_height = chain->chain.prev.last_height[chain->chain.prev.ptr];
 }
 
 static void d3d9_hlsl_renderchain_end_render(hlsl_d3d9_renderchain_t *chain)
 {
-   chain->prev.last_width[chain->prev.ptr]  = chain->passes->data[0].last_width;
-   chain->prev.last_height[chain->prev.ptr] = chain->passes->data[0].last_height;
-   chain->prev.ptr                          = (chain->prev.ptr + 1) & TEXTURESMASK;
+   chain->chain.prev.last_width[chain->chain.prev.ptr]  = chain->chain.passes->data[0].last_width;
+   chain->chain.prev.last_height[chain->chain.prev.ptr] = chain->chain.passes->data[0].last_height;
+   chain->chain.prev.ptr                          = (chain->chain.prev.ptr + 1) & TEXTURESMASK;
 }
 
 static bool hlsl_d3d9_renderchain_render(
@@ -1129,8 +1098,8 @@ static bool hlsl_d3d9_renderchain_render(
 {
    LPDIRECT3DSURFACE9 back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
-   struct hlsl_pass *last_pass    = NULL;
-   struct hlsl_pass *first_pass   = NULL;
+   struct shader_pass *last_pass    = NULL;
+   struct shader_pass *first_pass   = NULL;
    settings_t *settings           = config_get_ptr();
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)
       d3d->renderchain_data;
@@ -1140,12 +1109,13 @@ static bool hlsl_d3d9_renderchain_render(
    current_width                  = width;
    current_height                 = height;
 
-   first_pass                     = (struct hlsl_pass*)&chain->passes->data[0];
+   first_pass                     = (struct shader_pass*)
+      &chain->chain.passes->data[0];
 
    d3d9_convert_geometry(
          &first_pass->info,
          &out_width, &out_height,
-         current_width, current_height, chain->final_viewport);
+         current_width, current_height, chain->chain.final_viewport);
 
    d3d9_renderchain_blit_to_texture(first_pass->tex,
          frame,
@@ -1156,25 +1126,27 @@ static bool hlsl_d3d9_renderchain_render(
          first_pass->last_width,
          first_pass->last_height,
          pitch,
-         chain->pixel_size);
+         chain->chain.pixel_size);
 
    /* Grab back buffer. */
-   d3d9_device_get_render_target(chain->dev, 0, (void**)&back_buffer);
+   d3d9_device_get_render_target(chain->chain.dev, 0, (void**)&back_buffer);
 
    /* In-between render target passes. */
-   for (i = 0; i < chain->passes->count - 1; i++)
+   for (i = 0; i < chain->chain.passes->count - 1; i++)
    {
       D3DVIEWPORT9   viewport = {0};
-      struct hlsl_pass *from_pass  = (struct hlsl_pass*)&chain->passes->data[i];
-      struct hlsl_pass *to_pass    = (struct hlsl_pass*)&chain->passes->data[i + 1];
+      struct shader_pass *from_pass  = (struct shader_pass*)
+         &chain->chain.passes->data[i];
+      struct shader_pass *to_pass    = (struct shader_pass*)
+         &chain->chain.passes->data[i + 1];
 
       d3d9_texture_get_surface_level(to_pass->tex, 0, (void**)&target);
 
-      d3d9_device_set_render_target(chain->dev, 0, (void*)target);
+      d3d9_device_set_render_target(chain->chain.dev, 0, (void*)target);
 
       d3d9_convert_geometry(&from_pass->info,
             &out_width, &out_height,
-            current_width, current_height, chain->final_viewport);
+            current_width, current_height, chain->chain.final_viewport);
 
       /* Clear out whole FBO. */
       viewport.Width  = to_pass->info.tex_w;
@@ -1182,20 +1154,20 @@ static bool hlsl_d3d9_renderchain_render(
       viewport.MinZ   = 0.0f;
       viewport.MaxZ   = 1.0f;
 
-      d3d9_set_viewports(chain->dev, &viewport);
-      d3d9_clear(chain->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      d3d9_set_viewports(chain->chain.dev, &viewport);
+      d3d9_clear(chain->chain.dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
       viewport.Width  = out_width;
       viewport.Height = out_height;
 
-      d3d9_set_viewports(chain->dev, &viewport);
+      d3d9_set_viewports(chain->chain.dev, &viewport);
 
       hlsl_d3d9_renderchain_set_vertices(d3d,
             chain, from_pass, i,
             current_width, current_height,
             out_width, out_height,
             out_width, out_height,
-            chain->frame_count, 0);
+            chain->chain.frame_count, 0);
 
       hlsl_d3d9_renderchain_render_pass(chain, from_pass,
             tracker,
@@ -1207,29 +1179,30 @@ static bool hlsl_d3d9_renderchain_render(
    }
 
    /* Final pass */
-   d3d9_device_set_render_target(chain->dev, 0, (void*)back_buffer);
+   d3d9_device_set_render_target(chain->chain.dev, 0, (void*)back_buffer);
 
-   last_pass = (struct cg_pass*)&chain->passes->
-      data[chain->passes->count - 1];
+   last_pass = (struct shader_pass*)&chain->chain.passes->
+      data[chain->chain.passes->count - 1];
 
    d3d9_convert_geometry(&last_pass->info,
          &out_width, &out_height,
-         current_width, current_height, chain->final_viewport);
+         current_width, current_height, chain->chain.final_viewport);
 
-   d3d9_set_viewports(chain->dev, chain->final_viewport);
+   d3d9_set_viewports(chain->chain.dev, chain->chain.final_viewport);
 
    hlsl_d3d9_renderchain_set_vertices(d3d,
-         chain, last_pass, chain->passes->count - 1,
+         chain, last_pass, chain->chain.passes->count - 1,
          current_width, current_height,
          out_width, out_height,
-         chain->final_viewport->Width, chain->final_viewport->Height,
-         chain->frame_count, rotation);
+         chain->chain.final_viewport->Width,
+         chain->chain.final_viewport->Height,
+         chain->chain.frame_count, rotation);
 
    hlsl_d3d9_renderchain_render_pass(chain, last_pass,
          tracker,
-         chain->passes->count);
+         chain->chain.passes->count);
 
-   chain->frame_count++;
+   chain->chain.frame_count++;
 
    d3d9_surface_free(back_buffer);
 
@@ -1239,8 +1212,8 @@ static bool hlsl_d3d9_renderchain_render(
    cgD3D9BindProgram(chain->vStock);
 #endif
    d3d9_hlsl_renderchain_calc_and_set_shader_mvp(chain, d3d,
-         /* chain->vStock, */ chain->final_viewport->Width,
-         chain->final_viewport->Height, 0);
+         /* chain->vStock, */ chain->chain.final_viewport->Width,
+         chain->chain.final_viewport->Height, 0);
 
    return true;
 }
