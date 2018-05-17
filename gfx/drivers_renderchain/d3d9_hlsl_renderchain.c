@@ -334,10 +334,12 @@ static hlsl_shader_data_t *hlsl_init(hlsl_renderchain_t *chain, const char *path
 
    d3d_matrix_identity(&chain->mvp_val);
 
+#if 0
    RARCH_LOG("[D3D9 HLSL]: Setting up vertex shader...\n");
    d3d9_set_vertex_shader(chain->chain.dev, hlsl->prg[1].vprg);
    RARCH_LOG("[D3D9 HLSL]: Setting up pixel shader...\n");
    d3d9_set_pixel_shader(chain->chain.dev, hlsl->prg[1].fprg);
+#endif
 
    return hlsl;
 
@@ -726,10 +728,7 @@ static void hlsl_d3d9_renderchain_render_pass(
 {
    unsigned i;
 
-#if 0
-   cgD3D9BindProgram(pass->fPrg);
-   cgD3D9BindProgram(pass->vPrg);
-#endif
+   d3d9_hlsl_bind_program(pass, chain->chain.dev);
 
    d3d9_set_texture(chain->chain.dev, 0, pass->tex);
    d3d9_set_sampler_minfilter(chain->chain.dev, 0,
@@ -917,8 +916,7 @@ static bool hlsl_d3d9_renderchain_render(
 
    d3d9_renderchain_end_render(&chain->chain);
 #if 0
-   cgD3D9BindProgram(chain->fStock);
-   cgD3D9BindProgram(chain->vStock);
+   d3d9_hlsl_bind_program(&chain->stock_shader, chain->chain.dev);
 #endif
    hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain,
          /* chain->vStock, */ chain->chain.final_viewport->Width,
