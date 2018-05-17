@@ -874,89 +874,17 @@ static void d3d9_cg_renderchain_set_vertices(
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
-   const struct LinkInfo *info = (const struct LinkInfo*)&pass->info;
-
    if (pass->last_width != width || pass->last_height != height)
-   {
-      struct D3D9Vertex vert[4];
-      unsigned i;
-      void *verts       = NULL;
-      float _u          = (float)(width)  / info->tex_w;
-      float _v          = (float)(height) / info->tex_h;
-
-      pass->last_width  = width;
-      pass->last_height = height;
-
-      vert[0].x         = 0.0f;
-      vert[0].y         = out_height;
-      vert[0].z         = 0.5f;
-      vert[0].u         = 0.0f;
-      vert[0].v         = 0.0f;
-      vert[0].lut_u     = 0.0f;
-      vert[0].lut_v     = 0.0f;
-      vert[0].r         = 1.0f;
-      vert[0].g         = 1.0f;
-      vert[0].b         = 1.0f;
-      vert[0].a         = 1.0f;
-
-      vert[1].x         = out_width;
-      vert[1].y         = out_height;
-      vert[1].z         = 0.5f;
-      vert[1].u         = _u;
-      vert[1].v         = 0.0f;
-      vert[1].lut_u     = 1.0f;
-      vert[1].lut_v     = 0.0f;
-      vert[1].r         = 1.0f;
-      vert[1].g         = 1.0f;
-      vert[1].b         = 1.0f;
-      vert[1].a         = 1.0f;
-
-      vert[2].x         = 0.0f;
-      vert[2].y         = 0.0f;
-      vert[2].z         = 0.5f;
-      vert[2].u         = 0.0f;
-      vert[2].v         = _v;
-      vert[2].lut_u     = 0.0f;
-      vert[2].lut_v     = 1.0f;
-      vert[2].r         = 1.0f;
-      vert[2].g         = 1.0f;
-      vert[2].b         = 1.0f;
-      vert[2].a         = 1.0f;
-
-      vert[3].x         = out_width;
-      vert[3].y         = 0.0f;
-      vert[3].z         = 0.5f;
-      vert[3].u         = _u;
-      vert[3].v         = _v;
-      vert[3].lut_u     = 1.0f;
-      vert[3].lut_v     = 1.0f;
-      vert[3].r         = 1.0f;
-      vert[3].g         = 1.0f;
-      vert[3].b         = 1.0f;
-      vert[3].a         = 1.0f;
-
-      /* Align texels and vertices.
-       *
-       * Fixes infamous 'half-texel offset' issue of D3D9
-       *	http://msdn.microsoft.com/en-us/library/bb219690%28VS.85%29.aspx.
-       */
-      for (i = 0; i < 4; i++)
-      {
-         vert[i].x     -= 0.5f;
-         vert[i].y     += 0.5f;
-      }
-
-      verts             = d3d9_vertex_buffer_lock(pass->vertex_buf);
-      memcpy(verts, vert, sizeof(vert));
-      d3d9_vertex_buffer_unlock(pass->vertex_buf);
-   }
+      d3d9_renderchain_set_vertices_on_change(chain,
+            pass, width, height, out_width, out_height,
+            vp_width, vp_height, rotation);
 
    d3d9_cg_renderchain_calc_and_set_shader_mvp(
          pass->vprg, vp_width, vp_height, rotation);
    d3d9_cg_renderchain_set_shader_params(chain, chain->dev,
          pass,
          width, height,
-         info->tex_w, info->tex_h,
+         pass->info.tex_w, pass->info.tex_h,
          vp_width, vp_height);
 }
 
