@@ -140,6 +140,33 @@ static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
    return true;
 }
 
+static INLINE void d3d9_renderchain_destroy_passes_and_luts(
+      d3d9_renderchain_t *chain)
+{
+   if (chain->passes)
+   {
+      unsigned i;
+
+      for (i = 0; i < chain->passes->count; i++)
+      {
+         if (chain->passes->data[i].attrib_map)
+            free(chain->passes->data[i].attrib_map);
+      }
+
+      shader_pass_vector_list_free(chain->passes);
+
+      chain->passes = NULL;
+   }
+
+   lut_info_vector_list_free(chain->luts);
+   unsigned_vector_list_free(chain->bound_tex);
+   unsigned_vector_list_free(chain->bound_vert);
+
+   chain->luts       = NULL;
+   chain->bound_tex  = NULL;
+   chain->bound_vert = NULL;
+}
+
 static INLINE void d3d9_renderchain_add_lut_internal(
       d3d9_renderchain_t *chain,
       unsigned index, unsigned i)

@@ -644,30 +644,7 @@ void d3d9_cg_renderchain_free(void *data)
       return;
 
    d3d9_cg_destroy_resources(chain);
-
-   if (chain->chain.passes)
-   {
-      unsigned i;
-
-      for (i = 0; i < chain->chain.passes->count; i++)
-      {
-         if (chain->chain.passes->data[i].attrib_map)
-            free(chain->chain.passes->data[i].attrib_map);
-      }
-
-      shader_pass_vector_list_free(chain->chain.passes);
-
-      chain->chain.passes = NULL;
-   }
-
-   lut_info_vector_list_free(chain->chain.luts);
-   unsigned_vector_list_free(chain->chain.bound_tex);
-   unsigned_vector_list_free(chain->chain.bound_vert);
-
-   chain->chain.luts       = NULL;
-   chain->chain.bound_tex  = NULL;
-   chain->chain.bound_vert = NULL;
-
+   d3d9_renderchain_destroy_passes_and_luts(&chain->chain);
    d3d9_cg_deinit_context_state(chain);
 
    free(chain);
