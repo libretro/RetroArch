@@ -641,42 +641,70 @@ static void hlsl_d3d9_renderchain_set_vertices(
    if (pass->last_width != vert_width || pass->last_height != vert_height)
    {
       unsigned i;
-      Vertex vert[4];
-      float tex_w       = 0.0f;
-      float tex_h       = 0.0f;
-      void *verts       = NULL;
+      struct HLSLVertex vert[4];
+      void *verts        = NULL;
+      unsigned out_width = vert_width;
+      unsigned out_height= vert_height;
+      float _u           = (vert_width)  / pass->info.tex_w;
+      float _v           = (vert_height) / pass->info.tex_h;
 
-      pass->last_width  = vert_width;
-      pass->last_height = vert_height;
+      pass->last_width   = vert_width;
+      pass->last_height  = vert_height;
 
-      tex_w              = vert_width  / ((float)pass->info.tex_w);
-      tex_h              = vert_height / ((float)pass->info.tex_h);
 
-      vert[0].x          = -1.0f;
-      vert[0].y          = -1.0f;
+      vert[0].x          = 0.0f;
+      vert[0].y          = out_height;
+      vert[0].z          = 0.5f;
       vert[0].u          = 0.0f;
-      vert[0].v          = tex_h;
+      vert[0].v          = 0.0f;
+      vert[0].lut_u      = 0.0f;
+      vert[0].lut_v      = 0.0f;
+      vert[0].r          = 1.0f;
+      vert[0].g          = 1.0f;
+      vert[0].b          = 1.0f;
+      vert[0].a          = 1.0f;
 
-      vert[1].x          =  1.0f;
-      vert[1].y          = -1.0f;
-      vert[1].u          = tex_w;
-      vert[1].v          = tex_h;
+      vert[1].x         = out_width;
+      vert[1].y         = out_height;
+      vert[1].z         = 0.5f;
+      vert[1].u         = _u;
+      vert[1].v         = 0.0f;
+      vert[1].lut_u     = 1.0f;
+      vert[1].lut_v     = 0.0f;
+      vert[1].r         = 1.0f;
+      vert[1].g         = 1.0f;
+      vert[1].b         = 1.0f;
+      vert[1].a         = 1.0f;
 
-      vert[2].x          = -1.0f;
-      vert[2].y          =  1.0f;
-      vert[2].u          = 0.0f;
-      vert[2].v          = 0.0f;
+      vert[2].x         = 0.0f;
+      vert[2].y         = 0.0f;
+      vert[2].z         = 0.5f;
+      vert[2].u         = 0.0f;
+      vert[2].v         = _v;
+      vert[2].lut_u     = 0.0f;
+      vert[2].lut_v     = 1.0f;
+      vert[2].r         = 1.0f;
+      vert[2].g         = 1.0f;
+      vert[2].b         = 1.0f;
+      vert[2].a         = 1.0f;
 
-      vert[3].x          =  1.0f;
-      vert[3].y          =  1.0f;
-      vert[3].u          = tex_w;
-      vert[3].v          = 0.0f;
+      vert[3].x         = out_width;
+      vert[3].y         = 0.0f;
+      vert[3].z         = 0.5f;
+      vert[3].u         = _u;
+      vert[3].v         = _v;
+      vert[3].lut_u     = 1.0f;
+      vert[3].lut_v     = 1.0f;
+      vert[3].r         = 1.0f;
+      vert[3].g         = 1.0f;
+      vert[3].b         = 1.0f;
+      vert[3].a         = 1.0f;
 
       /* Align texels and vertices. */
       for (i = 0; i < 4; i++)
       {
-         vert[i].x      -= 0.5f / ((float)pass->info.tex_w);
-         vert[i].y      += 0.5f / ((float)pass->info.tex_h);
+         vert[i].x      -= 0.5f;
+         vert[i].y      += 0.5f;
       }
 
       verts = d3d9_vertex_buffer_lock(pass->vertex_buf);
