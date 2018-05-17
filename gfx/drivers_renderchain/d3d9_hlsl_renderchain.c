@@ -46,9 +46,6 @@ struct shader_program_hlsl_data
 {
    LPDIRECT3DVERTEXSHADER9 vprg;
    LPDIRECT3DPIXELSHADER9 fprg;
-
-   D3DXHANDLE     mvp;
-
    LPD3DXCONSTANTTABLE v_ctable;
    LPD3DXCONSTANTTABLE f_ctable;
    D3DXMATRIX mvp_val;
@@ -96,6 +93,16 @@ static INLINE void d3d9_hlsl_set_param_1f(void *data, void *userdata, const char
       d3d9x_constant_table_set_float(prog, (LPDIRECT3DDEVICE9)userdata, (void*)param, *val);
 }
 
+static INLINE void d3d9_hlsl_set_param_matrix(void *data, void *userdata,
+      const char *name, const void *values)
+{
+   LPD3DXCONSTANTTABLE prog = (LPD3DXCONSTANTTABLE)data;
+   D3DXHANDLE param         = d3d9_hlsl_get_constant_by_name(prog, name);
+   if (param)
+      d3d9x_constant_table_set_matrix((LPDIRECT3DDEVICE9)userdata, prog, 
+            (void*)param, (D3DMATRIX*)values);
+}
+
 static void hlsl_use(hlsl_shader_data_t *hlsl,
       LPDIRECT3DDEVICE9 d3dr,
       unsigned idx, bool set_active)
@@ -119,22 +126,12 @@ static bool hlsl_set_mvp(hlsl_shader_data_t *hlsl,
 {
    struct shader_program_hlsl_data *program = &hlsl->prg[hlsl->active_idx];
 
-   if (!program || !program->mvp)
+   if (!program)
       return false;
 
-   d3d9x_constant_table_set_matrix(d3dr, program->v_ctable, 
-         (void*)program->mvp, &program->mvp_val);
+   d3d9_hlsl_set_param_matrix(program->v_ctable, d3dr, "modelViewProj", &program->mvp_val);
    return true;
 }
-
-#if 0
-void hlsl_set_proj_matrix(hlsl_shader_data_t *hlsl, void *matrix_data)
-{
-   const D3DMATRIX *matrix  = (const D3DMATRIX*)matrix_data;
-   if (hlsl && matrix)
-      hlsl->prg[hlsl->active_idx].mvp_val = *matrix;
-}
-#endif
 
 static bool d3d9_hlsl_load_program(
       hlsl_shader_data_t *hlsl,
@@ -203,18 +200,9 @@ static void hlsl_set_program_attributes(hlsl_shader_data_t *hlsl,
       unsigned i)
 {
    struct shader_program_hlsl_data *program = &hlsl->prg[i];
-   void *fprg              = NULL;
-   void *vprg              = NULL;
 
-   if (!program)
-      return;
-
-   vprg                    = program->v_ctable;
-
-   if (vprg)
-      program->mvp         = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(vprg, "modelViewProj");
-
-   d3d_matrix_identity(&program->mvp_val);
+   if (program)
+      d3d_matrix_identity(&program->mvp_val);
 }
 
 static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
