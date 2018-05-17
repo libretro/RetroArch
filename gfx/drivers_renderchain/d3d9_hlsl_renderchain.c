@@ -42,27 +42,11 @@
 
 #define RARCH_HLSL_MAX_SHADERS 16
 
-struct shader_program_hlsl_data
-{
-   LPDIRECT3DVERTEXSHADER9 vprg;
-   LPDIRECT3DPIXELSHADER9 fprg;
-   LPD3DXCONSTANTTABLE vtable;
-   LPD3DXCONSTANTTABLE ftable;
-};
-
-typedef struct hlsl_shader_data
-{
-   struct shader_program_hlsl_data prg[RARCH_HLSL_MAX_SHADERS];
-   unsigned active_idx;
-   struct video_shader *cg_shader;
-} hlsl_shader_data_t;
-
 #include "d3d9_renderchain.h"
 
 typedef struct hlsl_renderchain
 {
    struct d3d9_renderchain chain;
-   hlsl_shader_data_t *shader_pipeline;
    struct shader_pass stock_shader;
    D3DXMATRIX mvp_val;
 } hlsl_renderchain_t;
@@ -111,22 +95,6 @@ static INLINE void d3d9_hlsl_set_param_matrix(void *data, void *userdata,
    if (param)
       d3d9x_constant_table_set_matrix((LPDIRECT3DDEVICE9)userdata, prog, 
             (void*)param, (D3DMATRIX*)values);
-}
-
-static void hlsl_use(hlsl_shader_data_t *hlsl,
-      LPDIRECT3DDEVICE9 d3dr,
-      unsigned idx, bool set_active)
-{
-   struct shader_program_hlsl_data *program = &hlsl->prg[idx];
-
-   if (!program || !program->vprg || !program->fprg)
-      return;
-
-   if (set_active)
-      hlsl->active_idx           = idx;
-
-   d3d9_set_vertex_shader(d3dr, program->vprg);
-   d3d9_set_pixel_shader(d3dr,  program->fprg);
 }
 
 static bool d3d9_hlsl_load_program(
@@ -185,156 +153,8 @@ error:
    return false;
 }
 
-static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
-      LPDIRECT3DDEVICE9 dev,
-      const char *cgp_path, unsigned i)
-{
-   struct shader_pass pass;
-   char path_buf[PATH_MAX_LENGTH];
-
-   path_buf[0]           = '\0';
-
-   fill_pathname_resolve_relative(path_buf, cgp_path,
-         hlsl->cg_shader->pass[i].source.path, sizeof(path_buf));
-
-   RARCH_LOG("[D3D9 HLSL]: Loading Cg/HLSL shader: \"%s\".\n", path_buf);
-
-   if (!d3d9_hlsl_load_program(dev, &pass, path_buf, true))
-      return false;
-
-   hlsl->prg[i + 1].fprg   = pass.fprg;
-   hlsl->prg[i + 1].vprg   = pass.vprg;
-   hlsl->prg[i + 1].ftable = pass.ftable;
-   hlsl->prg[i + 1].vtable = pass.vtable;
-
-   return true;
-}
-
-static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, LPDIRECT3DDEVICE9 dev,
-      const char *path)
-{
-   struct video_shader *cg_shader = (struct video_shader*)
-      calloc(1, sizeof(*cg_shader));
-
-   if (!cg_shader)
-      return false;
-
-   hlsl->cg_shader         = cg_shader;
-   hlsl->cg_shader->passes = 1;
-
-   if (!string_is_empty(path))
-   {
-      struct shader_pass pass;
-
-      RARCH_LOG("[D3D9 HLSL]: Loading Cg/HLSL file: %s\n", path);
-
-      strlcpy(hlsl->cg_shader->pass[0].source.path,
-            path, sizeof(hlsl->cg_shader->pass[0].source.path));
-
-      if (!d3d9_hlsl_load_program(dev, &pass, path, true))
-         return false;
-
-      hlsl->prg[1].fprg   = pass.fprg;
-      hlsl->prg[1].vprg   = pass.vprg;
-      hlsl->prg[1].ftable = pass.ftable;
-      hlsl->prg[1].vtable = pass.vtable;
-   }
-   else
-   {
-      RARCH_LOG("[D3D9 HLSL]: Loading stock Cg/HLSL file.\n");
-      hlsl->prg[1] = hlsl->prg[0];
-   }
-
-   return true;
-}
-
-static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, LPDIRECT3DDEVICE9 dev, const char *path)
-{
-   unsigned i;
-   config_file_t *conf = config_file_new(path);
-
-   if (!conf)
-      goto error;
-
-   RARCH_LOG("[D3D9 HLSL]: Loaded HLSL/Cg meta-shader: %s\n", path);
-
-   if (!hlsl->cg_shader)
-      hlsl->cg_shader = (struct video_shader*)calloc
-         (1, sizeof(*hlsl->cg_shader));
-   if (!hlsl->cg_shader)
-      goto error;
-
-   if (!video_shader_read_conf_cgp(conf, hlsl->cg_shader))
-   {
-      RARCH_ERR("Failed to parse CGP file.\n");
-      goto error;
-   }
-
-   config_file_free(conf);
-
-   if (hlsl->cg_shader->passes > RARCH_HLSL_MAX_SHADERS - 3)
-   {
-      RARCH_WARN("Too many shaders ... "
-            "Capping shader amount to %d.\n", RARCH_HLSL_MAX_SHADERS - 3);
-      hlsl->cg_shader->passes = RARCH_HLSL_MAX_SHADERS - 3;
-   }
-
-   for (i = 0; i < hlsl->cg_shader->passes; i++)
-   {
-      if (!hlsl_load_shader(hlsl, dev, path, i))
-         goto error;
-   }
-
-   /* TODO - textures / imports */
-   return true;
-
-error:
-   RARCH_ERR("Failed to load preset.\n");
-   if (conf)
-      config_file_free(conf);
-   conf = NULL;
-
-   return false;
-}
-
-static hlsl_shader_data_t *hlsl_init(hlsl_renderchain_t *chain/*, const char *path */)
-{
-   unsigned i;
-   hlsl_shader_data_t *hlsl  = (hlsl_shader_data_t*)
-      calloc(1, sizeof(hlsl_shader_data_t));
-
-   if (!hlsl)
-      return NULL;
-
-#if 0
-   if (path && (string_is_equal(path_get_extension(path), ".cgp")))
-   {
-      if (!hlsl_load_preset(hlsl, chain->chain.dev, path))
-         goto error;
-   }
-   else
-   {
-      if (!hlsl_load_plain(hlsl, chain->chain.dev, path))
-         goto error;
-   }
-
-   RARCH_LOG("[D3D9 HLSL]: Setting up program attributes...\n");
-   RARCH_LOG("[D3D9 HLSL]: Shader passes: %d\n", hlsl->cg_shader->passes);
-#endif
-
-   d3d_matrix_identity(&chain->mvp_val);
-
-   return hlsl;
-
-error:
-   if (hlsl)
-      free(hlsl);
-   return NULL;
-}
-
 static void hlsl_d3d9_renderchain_set_shader_params(
       d3d9_renderchain_t *chain,
-      hlsl_shader_data_t *hlsl,
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
       unsigned video_w, unsigned video_h,
@@ -345,15 +165,8 @@ static void hlsl_d3d9_renderchain_set_shader_params(
    float video_size[2];
    float texture_size[2];
    float output_size[2];
-   struct shader_program_hlsl_data *program = &hlsl->prg[hlsl->active_idx];
-   void *fprg                               = NULL;
-   void *vprg                               = NULL;
-
-   if (!program)
-      return;
-
-   fprg                                     = program->ftable;
-   vprg                                     = program->vtable;
+   void *fprg                               = pass->ftable;
+   void *vprg                               = pass->vtable;
 
    video_size[0]                            = video_w;
    video_size[1]                            = video_h;
@@ -381,47 +194,6 @@ static void hlsl_d3d9_renderchain_set_shader_params(
 
    d3d9_hlsl_set_param_1f(fprg, dev, "IN.frame_count",     &frame_cnt);
    d3d9_hlsl_set_param_1f(vprg, dev, "IN.frame_count",     &frame_cnt);
-}
-
-static void hlsl_deinit_progs(hlsl_shader_data_t *hlsl,
-      LPDIRECT3DDEVICE9 dev)
-{
-   unsigned i;
-
-   for (i = 1; i < RARCH_HLSL_MAX_SHADERS; i++)
-   {
-      if (hlsl->prg[i].fprg && hlsl->prg[i].fprg != hlsl->prg[0].fprg)
-         d3d9_free_pixel_shader(dev, hlsl->prg[i].fprg);
-      if (hlsl->prg[i].vprg && hlsl->prg[i].vprg != hlsl->prg[0].vprg)
-         d3d9_free_vertex_shader(dev, hlsl->prg[i].vprg);
-
-      hlsl->prg[i].fprg = NULL;
-      hlsl->prg[i].vprg = NULL;
-   }
-
-   if (hlsl->prg[0].fprg)
-      d3d9_free_pixel_shader(dev, hlsl->prg[0].fprg);
-   if (hlsl->prg[0].vprg)
-      d3d9_free_vertex_shader(dev, hlsl->prg[0].vprg);
-
-   hlsl->prg[0].fprg = NULL;
-   hlsl->prg[0].vprg = NULL;
-}
-
-static void hlsl_deinit(hlsl_shader_data_t *hlsl, LPDIRECT3DDEVICE9 dev)
-{
-   if (!hlsl)
-      return;
-
-   hlsl_deinit_progs(hlsl, dev);
-   memset(hlsl->prg, 0, sizeof(hlsl->prg));
-
-   if (hlsl->cg_shader)
-      free(hlsl->cg_shader);
-   hlsl->cg_shader = NULL;
-
-   if (hlsl)
-      free(hlsl);
 }
 
 static bool hlsl_d3d9_renderchain_init_shader_fvf(
@@ -494,6 +266,8 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
    d3d9_set_render_state(dev, D3DRS_CULLMODE, D3DCULL_NONE);
    d3d9_set_render_state(dev, D3DRS_ZENABLE, FALSE);
 
+   d3d9_hlsl_load_program(chain->dev, &pass, info->pass->source.path, true);
+
    if (!hlsl_d3d9_renderchain_init_shader_fvf(chain, &pass))
       return false;
    shader_pass_vector_list_append(chain->passes, pass);
@@ -525,7 +299,6 @@ static void hlsl_d3d9_renderchain_set_vertices(
       d3d9_video_t *d3d,
       hlsl_renderchain_t *chain,
       struct shader_pass *pass,
-      unsigned pass_count,
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned vp_width, unsigned vp_height,
@@ -537,11 +310,11 @@ static void hlsl_d3d9_renderchain_set_vertices(
             pass, width, height, out_width, out_height,
             vp_width, vp_height, rotation);
 
-   hlsl_use(chain->shader_pipeline, chain->chain.dev, pass_count, true);
+   d3d9_hlsl_bind_program(pass,  chain->chain.dev);
    hlsl_d3d9_renderchain_calc_and_set_shader_mvp(chain, pass,
          vp_width, vp_height, rotation);
    hlsl_d3d9_renderchain_set_shader_params(&chain->chain,
-         chain->shader_pipeline, chain->chain.dev,
+         chain->chain.dev,
          pass,
          width, height,
          pass->info.tex_w, pass->info.tex_h,
@@ -599,7 +372,6 @@ static void hlsl_d3d9_renderchain_free(void *data)
    if (!chain)
       return;
 
-   hlsl_deinit(chain->shader_pipeline, chain->chain.dev);
    d3d9_hlsl_destroy_resources(chain);
    d3d9_renderchain_destroy_passes_and_luts(&chain->chain);
    free(chain);
@@ -620,13 +392,9 @@ void *hlsl_d3d9_renderchain_new(void)
 static bool hlsl_d3d9_renderchain_init_shader(d3d9_video_t *d3d,
       hlsl_renderchain_t *chain)
 {
-   hlsl_shader_data_t *shader = hlsl_init(chain);
-   if (!shader)
-      return false;
-
    RARCH_LOG("[D3D9]: Using HLSL shader backend.\n");
 
-   chain->shader_pipeline           = shader;
+   d3d_matrix_identity(&chain->mvp_val);
 
    return true;
 }
@@ -855,7 +623,7 @@ static bool hlsl_d3d9_renderchain_render(
 
       hlsl_d3d9_renderchain_set_vertices(
             d3d,
-            chain, from_pass, i,
+            chain, from_pass,
             current_width, current_height,
             out_width, out_height,
             out_width, out_height,
@@ -884,7 +652,7 @@ static bool hlsl_d3d9_renderchain_render(
 
    hlsl_d3d9_renderchain_set_vertices(
          d3d,
-         chain, last_pass, chain->chain.passes->count - 1,
+         chain, last_pass,
          current_width, current_height,
          out_width, out_height,
          chain->chain.final_viewport->Width,
