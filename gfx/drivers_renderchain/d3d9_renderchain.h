@@ -140,6 +140,20 @@ static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
    return true;
 }
 
+static INLINE void d3d9_cg_renderchain_add_lut_internal(
+      d3d9_renderchain_t *chain,
+      unsigned index, unsigned i)
+{
+   d3d9_set_texture(chain->dev, index, chain->luts->data[i].tex);
+   d3d9_set_sampler_magfilter(chain->dev, index,
+         d3d_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
+   d3d9_set_sampler_minfilter(chain->dev, index,
+         d3d_translate_filter(chain->luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
+   d3d9_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
+   d3d9_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
+   unsigned_vector_list_append(chain->bound_tex, index);
+}
+
 static INLINE void d3d9_init_renderchain(d3d9_renderchain_t *chain)
 {
    chain->passes     = shader_pass_vector_list_new();

@@ -504,20 +504,6 @@ static void d3d9_cg_renderchain_bind_prev(cg_renderchain_t *chain,
    }
 }
 
-static void d3d9_cg_renderchain_add_lut_internal(
-      cg_renderchain_t *chain,
-      unsigned index, unsigned i)
-{
-   d3d9_set_texture(chain->chain.dev, index, chain->chain.luts->data[i].tex);
-   d3d9_set_sampler_magfilter(chain->chain.dev, index,
-         d3d_translate_filter(chain->chain.luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
-   d3d9_set_sampler_minfilter(chain->chain.dev, index,
-         d3d_translate_filter(chain->chain.luts->data[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
-   d3d9_set_sampler_address_u(chain->chain.dev, index, D3DTADDRESS_BORDER);
-   d3d9_set_sampler_address_v(chain->chain.dev, index, D3DTADDRESS_BORDER);
-   unsigned_vector_list_append(chain->chain.bound_tex, index);
-}
-
 static void d3d9_cg_renderchain_bind_pass(
       cg_renderchain_t *chain,
       struct shader_pass *pass, unsigned pass_index)
@@ -1214,7 +1200,7 @@ static void cg_d3d9_renderchain_render_pass(
          unsigned index  = cgGetParameterResourceIndex(fparam);
          bound_index     = index;
 
-         d3d9_cg_renderchain_add_lut_internal(chain, index, i);
+         d3d9_cg_renderchain_add_lut_internal(&chain->chain, index, i);
       }
 
       vparam = cgGetNamedParameter(pass->vprg,
@@ -1224,7 +1210,7 @@ static void cg_d3d9_renderchain_render_pass(
       {
          unsigned index = cgGetParameterResourceIndex(vparam);
          if (index != (unsigned)bound_index)
-            d3d9_cg_renderchain_add_lut_internal(chain, index, i);
+            d3d9_cg_renderchain_add_lut_internal(&chain->chain, index, i);
       }
    }
 

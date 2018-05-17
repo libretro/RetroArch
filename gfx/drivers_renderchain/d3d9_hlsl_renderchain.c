@@ -1032,7 +1032,7 @@ static void hlsl_d3d9_renderchain_render_pass(
          unsigned index  = cgGetParameterResourceIndex(fparam);
          bound_index     = index;
 
-         d3d9_cg_renderchain_add_lut_internal(chain, index, i);
+         d3d9_cg_renderchain_add_lut_internal(&chain->chain, index, i);
       }
 
       vparam = cgGetNamedParameter(pass->vPrg, chain->chain.luts->data[i].id);
@@ -1041,7 +1041,7 @@ static void hlsl_d3d9_renderchain_render_pass(
       {
          unsigned index = cgGetParameterResourceIndex(vparam);
          if (index != (unsigned)bound_index)
-            d3d9_cg_renderchain_add_lut_internal(chain, index, i);
+            d3d9_cg_renderchain_add_lut_internal(&chain->chain, index, i);
       }
    }
 
