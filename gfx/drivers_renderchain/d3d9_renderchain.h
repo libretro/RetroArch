@@ -50,6 +50,8 @@ struct shader_pass
    void *attrib_map;
    void *vprg;
    void *fprg;
+   void *vtable;
+   void *ftable;
 };
 
 #define D3D_PI 3.14159265358979323846264338327
