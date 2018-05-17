@@ -72,14 +72,6 @@ typedef struct hlsl_shader_data
    struct video_shader *cg_shader;
 } hlsl_shader_data_t;
 
-struct HLSLVertex
-{
-   float x, y, z;
-   float u, v;
-   float lut_u, lut_v;
-   float r, g, b, a;
-};
-
 #include "d3d9_renderchain.h"
 
 typedef struct hlsl_d3d9_renderchain
@@ -536,7 +528,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       chain->chain.prev.last_height[i] = 0;
       chain->chain.prev.vertex_buf[i]  = (LPDIRECT3DVERTEXBUFFER9)
          d3d9_vertex_buffer_new(
-            chain->chain.dev, 4 * sizeof(struct HLSLVertex),
+            chain->chain.dev, 4 * sizeof(struct D3D9Vertex),
             D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
       if (!chain->chain.prev.vertex_buf[i])
@@ -561,7 +553,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
    }
 
    pass.vertex_buf        = d3d9_vertex_buffer_new(
-         dev, 4 * sizeof(struct HLSLVertex),
+         dev, 4 * sizeof(struct D3D9Vertex),
          D3DUSAGE_WRITEONLY,
          0,
          D3DPOOL_MANAGED,
@@ -627,7 +619,7 @@ static void hlsl_d3d9_renderchain_set_vertices(
    if (pass->last_width != width || pass->last_height != height)
    {
       unsigned i;
-      struct HLSLVertex vert[4];
+      struct D3D9Vertex vert[4];
       void *verts        = NULL;
       float _u           = (width)  / pass->info.tex_w;
       float _v           = (height) / pass->info.tex_h;
@@ -1021,7 +1013,7 @@ static void hlsl_d3d9_renderchain_render_pass(
    for (i = 0; i < 4; i++)
       d3d9_set_stream_source(chain->chain.dev, i,
             pass->vertex_buf, 0,
-            sizeof(struct HLSLVertex));
+            sizeof(struct D3D9Vertex));
 
 #if 0
    /* Set orig texture. */

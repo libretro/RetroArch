@@ -56,14 +56,6 @@ static void set_cg_param(void *data, const char *name, const void *values)
       cgD3D9SetUniform(cgp, values);
 }
 
-struct CGVertex
-{
-   float x, y, z;
-   float u, v;
-   float lut_u, lut_v;
-   float r, g, b, a;
-};
-
 #include "d3d9_renderchain.h"
 
 typedef struct cg_renderchain
@@ -430,7 +422,7 @@ static void d3d9_cg_renderchain_bind_orig(
       unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
       d3d9_set_stream_source(chain->chain.dev, index,
-            vert_buf, 0, sizeof(struct CGVertex));
+            vert_buf, 0, sizeof(struct D3D9Vertex));
       unsigned_vector_list_append(chain->chain.bound_vert, index);
    }
 }
@@ -508,7 +500,7 @@ static void d3d9_cg_renderchain_bind_prev(cg_renderchain_t *chain,
          unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
          d3d9_set_stream_source(chain->chain.dev, index,
-               vert_buf, 0, sizeof(struct CGVertex));
+               vert_buf, 0, sizeof(struct D3D9Vertex));
          unsigned_vector_list_append(chain->chain.bound_vert, index);
       }
    }
@@ -585,7 +577,7 @@ static void d3d9_cg_renderchain_bind_pass(
          unsigned index = attrib_map->data[cgGetParameterResourceIndex(param)];
 
          d3d9_set_stream_source(chain->chain.dev, index, curr_pass->vertex_buf,
-               0, sizeof(struct CGVertex));
+               0, sizeof(struct D3D9Vertex));
          unsigned_vector_list_append(chain->chain.bound_vert, index);
       }
    }
@@ -759,7 +751,7 @@ static bool d3d9_cg_renderchain_create_first_pass(
       chain->chain.prev.last_height[i] = 0;
       chain->chain.prev.vertex_buf[i]  = (LPDIRECT3DVERTEXBUFFER9)
          d3d9_vertex_buffer_new(
-            chain->chain.dev, 4 * sizeof(struct CGVertex),
+            chain->chain.dev, 4 * sizeof(struct D3D9Vertex),
             D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
       if (!chain->chain.prev.vertex_buf[i])
@@ -952,7 +944,7 @@ static bool d3d9_cg_renderchain_add_pass(
 
    pass.vertex_buf = (LPDIRECT3DVERTEXBUFFER9)
       d3d9_vertex_buffer_new(chain->chain.dev,
-         4 * sizeof(struct CGVertex),
+         4 * sizeof(struct D3D9Vertex),
          D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
    if (!pass.vertex_buf)
@@ -1075,7 +1067,7 @@ static void cg_d3d9_renderchain_set_vertices(
 
    if (pass->last_width != width || pass->last_height != height)
    {
-      struct CGVertex vert[4];
+      struct D3D9Vertex vert[4];
       unsigned i;
       void *verts       = NULL;
       float _u          = (float)(width)  / info->tex_w;
@@ -1238,7 +1230,7 @@ static void cg_d3d9_renderchain_render_pass(
    for (i = 0; i < 4; i++)
       d3d9_set_stream_source(chain->chain.dev, i,
             pass->vertex_buf, 0,
-            sizeof(struct CGVertex));
+            sizeof(struct D3D9Vertex));
 
    /* Set orig texture. */
    d3d9_cg_renderchain_bind_orig(chain, pass);
