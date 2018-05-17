@@ -994,6 +994,38 @@ static void hlsl_d3d9_renderchain_set_final_viewport(
    d3d9_hlsl_recompute_pass_sizes(chain->dev, chain, d3d);
 }
 
+static void hlsl_d3d9_renderchain_unbind_all(hlsl_d3d9_renderchain_t *chain)
+{
+   unsigned i;
+
+   /* Have to be a bit anal about it.
+    * Render targets hate it when they have filters apparently.
+    */
+   for (i = 0; i < chain->bound_tex->count; i++)
+   {
+      d3d9_set_sampler_minfilter(chain->dev,
+            chain->bound_tex->data[i], D3DTEXF_POINT);
+      d3d9_set_sampler_magfilter(chain->dev,
+            chain->bound_tex->data[i], D3DTEXF_POINT);
+      d3d9_set_texture(chain->dev, chain->bound_tex->data[i], NULL);
+   }
+
+   for (i = 0; i < chain->bound_vert->count; i++)
+      d3d9_set_stream_source(chain->dev, chain->bound_vert->data[i], 0, 0, 0);
+
+   if (chain->bound_tex)
+   {
+      unsigned_vector_list_free(chain->bound_tex);
+      chain->bound_tex = unsigned_vector_list_new();
+   }
+
+   if (chain->bound_vert)
+   {
+      unsigned_vector_list_free(chain->bound_vert);
+      chain->bound_vert = unsigned_vector_list_new();
+   }
+}
+
 static void hlsl_d3d9_renderchain_render_pass(
       hlsl_d3d9_renderchain_t *chain,
       struct hlsl_pass *pass,
@@ -1001,6 +1033,11 @@ static void hlsl_d3d9_renderchain_render_pass(
       unsigned pass_index)
 {
    unsigned i;
+
+#if 0
+   cgD3D9BindProgram(pass->fPrg);
+   cgD3D9BindProgram(pass->vPrg);
+#endif
 
    d3d9_set_texture(chain->dev, 0, pass->tex);
    d3d9_set_sampler_minfilter(chain->dev, 0,
@@ -1014,12 +1051,54 @@ static void hlsl_d3d9_renderchain_render_pass(
             pass->vertex_buf, 0,
             sizeof(struct HLSLVertex));
 
+#if 0
+   /* Set orig texture. */
+   d3d9_cg_renderchain_bind_orig(chain, pass);
+
+   /* Set prev textures. */
+   d3d9_cg_renderchain_bind_prev(chain, pass);
+
+   /* Set lookup textures */
+   for (i = 0; i < chain->luts->count; i++)
+   {
+      CGparameter vparam;
+      CGparameter fparam = cgGetNamedParameter(
+            pass->fPrg, chain->luts->data[i].id);
+      int bound_index    = -1;
+
+      if (fparam)
+      {
+         unsigned index  = cgGetParameterResourceIndex(fparam);
+         bound_index     = index;
+
+         d3d9_cg_renderchain_add_lut_internal(chain, index, i);
+      }
+
+      vparam = cgGetNamedParameter(pass->vPrg, chain->luts->data[i].id);
+
+      if (vparam)
+      {
+         unsigned index = cgGetParameterResourceIndex(vparam);
+         if (index != (unsigned)bound_index)
+            d3d9_cg_renderchain_add_lut_internal(chain, index, i);
+      }
+   }
+
+   if (pass_index >= 3)
+      d3d9_cg_renderchain_bind_pass(chain, pass, pass_index);
+
+   if (tracker)
+      cg_d3d9_renderchain_set_params(chain, pass, tracker, pass_index);
+#endif
+
    d3d9_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
    /* So we don't render with linear filter into render targets,
     * which apparently looked odd (too blurry). */
    d3d9_set_sampler_minfilter(chain->dev, 0, D3DTEXF_POINT);
    d3d9_set_sampler_magfilter(chain->dev, 0, D3DTEXF_POINT);
+
+   hlsl_d3d9_renderchain_unbind_all(chain);
 }
 
 static void d3d9_hlsl_renderchain_start_render(hlsl_d3d9_renderchain_t *chain)
@@ -1045,6 +1124,7 @@ static bool hlsl_d3d9_renderchain_render(
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
 {
+   LPDIRECT3DSURFACE9 back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
    struct hlsl_pass *last_pass    = NULL;
    struct hlsl_pass *first_pass   = NULL;
@@ -1058,7 +1138,6 @@ static bool hlsl_d3d9_renderchain_render(
    current_height                 = height;
 
    first_pass                     = (struct hlsl_pass*)&chain->passes->data[0];
-   last_pass                      = (struct hlsl_pass*)&chain->passes->data[0];
 
    d3d9_convert_geometry(
          &first_pass->info,
@@ -1076,14 +1155,68 @@ static bool hlsl_d3d9_renderchain_render(
          pitch,
          chain->pixel_size);
 
+   /* Grab back buffer. */
+   d3d9_device_get_render_target(chain->dev, 0, (void**)&back_buffer);
+
+   /* In-between render target passes. */
+   for (i = 0; i < chain->passes->count - 1; i++)
+   {
+      D3DVIEWPORT9   viewport = {0};
+      struct hlsl_pass *from_pass  = (struct hlsl_pass*)&chain->passes->data[i];
+      struct hlsl_pass *to_pass    = (struct hlsl_pass*)&chain->passes->data[i + 1];
+
+      d3d9_texture_get_surface_level(to_pass->tex, 0, (void**)&target);
+
+      d3d9_device_set_render_target(chain->dev, 0, (void*)target);
+
+      d3d9_convert_geometry(&from_pass->info,
+            &out_width, &out_height,
+            current_width, current_height, chain->final_viewport);
+
+      /* Clear out whole FBO. */
+      viewport.Width  = to_pass->info.tex_w;
+      viewport.Height = to_pass->info.tex_h;
+      viewport.MinZ   = 0.0f;
+      viewport.MaxZ   = 1.0f;
+
+      d3d9_set_viewports(chain->dev, &viewport);
+      d3d9_clear(chain->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+
+      viewport.Width  = out_width;
+      viewport.Height = out_height;
+
+      d3d9_set_viewports(chain->dev, &viewport);
+
+      hlsl_d3d9_renderchain_set_vertices(d3d,
+            chain, from_pass, i,
+            current_width, current_height,
+            out_width, out_height,
+            out_width, out_height,
+            chain->frame_count, 0);
+
+      hlsl_d3d9_renderchain_render_pass(chain, from_pass,
+            tracker,
+            i + 1);
+
+      current_width = out_width;
+      current_height = out_height;
+      d3d9_surface_free(target);
+   }
+
+   /* Final pass */
+   d3d9_device_set_render_target(chain->dev, 0, (void*)back_buffer);
+
+   last_pass = (struct cg_pass*)&chain->passes->
+      data[chain->passes->count - 1];
+
    d3d9_convert_geometry(&last_pass->info,
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
 
-   d3d9_set_viewports(chain->dev, &d3d->final_viewport);
+   d3d9_set_viewports(chain->dev, chain->final_viewport);
 
    hlsl_d3d9_renderchain_set_vertices(d3d,
-         chain, last_pass, 1,
+         chain, last_pass, chain->passes->count - 1,
          current_width, current_height,
          out_width, out_height,
          chain->final_viewport->Width, chain->final_viewport->Height,
@@ -1095,8 +1228,13 @@ static bool hlsl_d3d9_renderchain_render(
 
    chain->frame_count++;
 
-   d3d9_hlsl_renderchain_end_render(chain);
+   d3d9_surface_free(back_buffer);
 
+   d3d9_hlsl_renderchain_end_render(chain);
+#if 0
+   cgD3D9BindProgram(chain->fStock);
+   cgD3D9BindProgram(chain->vStock);
+#endif
    d3d9_hlsl_renderchain_calc_and_set_shader_mvp(chain,
          /* chain->vStock, */ chain->final_viewport->Width,
          chain->final_viewport->Height, 0);

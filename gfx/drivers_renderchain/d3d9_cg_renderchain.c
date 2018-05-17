@@ -559,10 +559,6 @@ static void d3d9_cg_renderchain_bind_pass(
 {
    unsigned i;
 
-   /* We only bother binding passes which are two indices behind. */
-   if (pass_index < 3)
-      return;
-
    for (i = 1; i < pass_index - 1; i++)
    {
       CGparameter param;
@@ -1292,7 +1288,9 @@ static void cg_d3d9_renderchain_render_pass(
       }
    }
 
-   d3d9_cg_renderchain_bind_pass(chain, pass, pass_index);
+   /* We only bother binding passes which are two indices behind. */
+   if (pass_index >= 3)
+      d3d9_cg_renderchain_bind_pass(chain, pass, pass_index);
 
    if (tracker)
       cg_d3d9_renderchain_set_params(chain, pass, tracker, pass_index);
