@@ -1202,8 +1202,11 @@ static bool gl_frame(void *data, const void *frame,
 
    video_info->cb_swap_buffers(video_info->context_data, video_info);
 
-   /* check if we are fast forwarding, if we are ignore hard sync */
-   if (gl->have_sync && video_info->hard_sync && !video_info->input_driver_nonblock_state)
+   /* check if we are fast forwarding or in menu, if we are ignore hard sync */
+   if (  gl->have_sync
+         && video_info->hard_sync
+         && !video_info->input_driver_nonblock_state
+         && !gl->menu_texture_enable)
    {
       glClear(GL_COLOR_BUFFER_BIT);
 
