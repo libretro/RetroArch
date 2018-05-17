@@ -868,7 +868,7 @@ static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
    d3d9_cg_set_param_matrix(data, NULL, "modelViewProj", (const void*)&matrix);
 }
 
-static void cg_d3d9_renderchain_set_vertices(
+static void d3d9_cg_renderchain_set_vertices(
       const video_frame_info_t *video_info,
       d3d9_renderchain_t *chain,
       struct shader_pass *pass,
@@ -963,7 +963,7 @@ static void cg_d3d9_renderchain_set_vertices(
          vp_width, vp_height);
 }
 
-static void cg_d3d9_renderchain_set_params(
+static void d3d9_cg_renderchain_set_params(
       d3d9_renderchain_t *chain,
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
@@ -987,7 +987,7 @@ static void cg_d3d9_renderchain_set_params(
    }
 }
 
-static void cg_d3d9_renderchain_render_pass(
+static void d3d9_cg_renderchain_render_pass(
       d3d9_renderchain_t *chain,
       struct shader_pass *pass,
       state_tracker_t *tracker,
@@ -1048,7 +1048,7 @@ static void cg_d3d9_renderchain_render_pass(
       d3d9_cg_renderchain_bind_pass(chain, chain->dev, pass, pass_index);
 
    if (tracker)
-      cg_d3d9_renderchain_set_params(chain, chain->dev, pass, tracker, pass_index);
+      d3d9_cg_renderchain_set_params(chain, chain->dev, pass, tracker, pass_index);
 
    d3d9_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
@@ -1129,13 +1129,13 @@ static bool d3d9_cg_renderchain_render(
 
       d3d9_set_viewports(chain->dev, &viewport);
 
-      cg_d3d9_renderchain_set_vertices(video_info,
+      d3d9_cg_renderchain_set_vertices(video_info,
             chain, from_pass,
             current_width, current_height,
             out_width, out_height,
             out_width, out_height, 0);
 
-      cg_d3d9_renderchain_render_pass(chain,
+      d3d9_cg_renderchain_render_pass(chain,
             from_pass, tracker,
             i + 1);
 
@@ -1156,7 +1156,7 @@ static bool d3d9_cg_renderchain_render(
 
    d3d9_set_viewports(chain->dev, chain->final_viewport);
 
-   cg_d3d9_renderchain_set_vertices(video_info,
+   d3d9_cg_renderchain_set_vertices(video_info,
          chain, last_pass,
          current_width, current_height,
          out_width, out_height,
@@ -1164,7 +1164,7 @@ static bool d3d9_cg_renderchain_render(
          chain->final_viewport->Height,
          rotation);
 
-   cg_d3d9_renderchain_render_pass(chain,
+   d3d9_cg_renderchain_render_pass(chain,
          last_pass,
          tracker,
          chain->passes->count);

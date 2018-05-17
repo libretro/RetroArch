@@ -119,20 +119,6 @@ static void hlsl_use(hlsl_shader_data_t *hlsl,
    d3d9_set_pixel_shader(d3dr, program->fprg);
 }
 
-static bool hlsl_set_mvp(hlsl_shader_data_t *hlsl,
-      d3d9_video_t *d3d,
-      LPDIRECT3DDEVICE9 d3dr,
-      const D3DMATRIX *mat)
-{
-   struct shader_program_hlsl_data *program = &hlsl->prg[hlsl->active_idx];
-
-   if (!program)
-      return false;
-
-   d3d9_hlsl_set_param_matrix(program->v_ctable, d3dr, "modelViewProj", &program->mvp_val);
-   return true;
-}
-
 static bool d3d9_hlsl_load_program(
       hlsl_shader_data_t *hlsl,
       unsigned idx,
@@ -565,6 +551,8 @@ static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
       unsigned rotation)
 {
    struct d3d_matrix proj, ortho, rot, matrix;
+   hlsl_shader_data_t                 *hlsl = chain->shader_pipeline;
+   struct shader_program_hlsl_data *program = &hlsl->prg[hlsl->active_idx];
 
    d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
    d3d_matrix_identity(&rot);
@@ -573,10 +561,9 @@ static void d3d9_hlsl_renderchain_calc_and_set_shader_mvp(
    d3d_matrix_multiply(&proj, &ortho, &rot);
    d3d_matrix_transpose(&matrix, &proj);
 
-   if (chain->shader_pipeline)
-      hlsl_set_mvp(chain->shader_pipeline, d3d,
-            chain->chain.dev,
-            (const D3DMATRIX*)&matrix);
+   if (program)
+      d3d9_hlsl_set_param_matrix(program->v_ctable,
+            chain->chain.dev, "modelViewProj", &program->mvp_val);
 }
 
 
@@ -819,6 +806,32 @@ static void hlsl_d3d9_renderchain_set_final_viewport(
    d3d9_recompute_pass_sizes(chain->dev, chain, d3d);
 }
 
+#if 0
+static void d3d9_hlsl_renderchain_set_params(
+      d3d9_renderchain_t *chain,
+      LPDIRECT3DDEVICE9 dev,
+      struct shader_pass *pass,
+      state_tracker_t *tracker,
+      unsigned pass_index)
+{
+   unsigned i;
+   /* Set state parameters. */
+   /* Only query uniforms in first pass. */
+   static struct state_tracker_uniform tracker_info[GFX_MAX_VARIABLES];
+   static unsigned cnt = 0;
+
+   if (pass_index == 1)
+      cnt = state_tracker_get_uniform(tracker, tracker_info,
+            GFX_MAX_VARIABLES, chain->frame_count);
+
+   for (i = 0; i < cnt; i++)
+   {
+      d3d9_hlsl_set_param_2f(pass->fprg, dev, tracker_info[i].id, &tracker_info[i].value);
+      d3d9_hlsl_set_param_2f(pass->vprg, dev, tracker_info[i].id, &tracker_info[i].value);
+   }
+}
+#endif
+
 static void hlsl_d3d9_renderchain_render_pass(
       hlsl_d3d9_renderchain_t *chain,
       struct shader_pass *pass,
@@ -846,17 +859,17 @@ static void hlsl_d3d9_renderchain_render_pass(
 
 #if 0
    /* Set orig texture. */
-   d3d9_cg_renderchain_bind_orig(chain, pass);
+   d3d9_hlsl_renderchain_bind_orig(chain, chain->dev, pass);
 
    /* Set prev textures. */
-   d3d9_cg_renderchain_bind_prev(chain, pass);
+   d3d9_hlsl_renderchain_bind_prev(chain, chain->dev, pass);
 
    /* Set lookup textures */
-   for (i = 0; i < chain->chain.luts->count; i++)
+   for (i = 0; i < chain->luts->count; i++)
    {
       CGparameter vparam;
-      CGparameter fparam = cgGetNamedParameter(
-            pass->fPrg, chain->chain.luts->data[i].id);
+      CGparameter fparam = d3d9_hlsl_get_constant_by_name(
+            pass->fprg, chain->luts->data[i].id);
       int bound_index    = -1;
 
       if (fparam)
@@ -864,24 +877,26 @@ static void hlsl_d3d9_renderchain_render_pass(
          unsigned index  = cgGetParameterResourceIndex(fparam);
          bound_index     = index;
 
-         d3d9_renderchain_add_lut_internal(&chain->chain, index, i);
+         d3d9_renderchain_add_lut_internal(chain, index, i);
       }
 
-      vparam = cgGetNamedParameter(pass->vPrg, chain->chain.luts->data[i].id);
+      vparam = d3d9_hlsl_get_constant_by_name(pass->vprg,
+            chain->luts->data[i].id);
 
       if (vparam)
       {
          unsigned index = cgGetParameterResourceIndex(vparam);
          if (index != (unsigned)bound_index)
-            d3d9_renderchain_add_lut_internal(&chain->chain, index, i);
+            d3d9_renderchain_add_lut_internal(chain, index, i);
       }
    }
 
+   /* We only bother binding passes which are two indices behind. */
    if (pass_index >= 3)
-      d3d9_cg_renderchain_bind_pass(chain, pass, pass_index);
+      d3d9_hlsl_renderchain_bind_pass(chain, chain->dev, pass, pass_index);
 
    if (tracker)
-      hlsl_d3d9_renderchain_set_shader_params(chain, pass, tracker, pass_index);
+      d3d9_hlsl_renderchain_set_params(chain, chain->dev, pass, tracker, pass_index);
 #endif
 
    d3d9_draw_primitive(chain->chain.dev, D3DPT_TRIANGLESTRIP, 0, 2);
