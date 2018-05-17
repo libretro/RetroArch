@@ -50,12 +50,9 @@ struct shader_program_hlsl_data
    D3DXHANDLE	   vid_size_f;
    D3DXHANDLE	   tex_size_f;
    D3DXHANDLE	   out_size_f;
-   D3DXHANDLE     frame_cnt_f;
-   D3DXHANDLE     frame_dir_f;
    D3DXHANDLE	   vid_size_v;
    D3DXHANDLE	   tex_size_v;
    D3DXHANDLE	   out_size_v;
-   D3DXHANDLE     frame_cnt_v;
    D3DXHANDLE     frame_dir_v;
    D3DXHANDLE     mvp;
 
@@ -87,6 +84,15 @@ static void *d3d9_hlsl_get_constant_by_name(void *data, const char *name)
    lbl[0] = '\0';
    snprintf(lbl, sizeof(lbl), "$%s", name);
    return d3d9x_constant_table_get_constant_by_name(prog, NULL, lbl);
+}
+
+static INLINE void d3d9_hlsl_set_param_1f(void *data, void *userdata, const char *name, const void *value)
+{
+   LPD3DXCONSTANTTABLE prog = (LPD3DXCONSTANTTABLE)data;
+   D3DXHANDLE param         = d3d9_hlsl_get_constant_by_name(prog, name);
+   float *val               = (float*)value;
+   if (param)
+      d3d9x_constant_table_set_float(prog, (LPDIRECT3DDEVICE9)userdata, (void*)param, *val);
 }
 
 static void hlsl_use(hlsl_shader_data_t *hlsl,
@@ -210,8 +216,6 @@ static void hlsl_set_program_attributes(hlsl_shader_data_t *hlsl,
       program->vid_size_f  = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(fprg, "IN.video_size");
       program->tex_size_f  = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(fprg, "IN.texture_size");
       program->out_size_f  = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(fprg, "IN.output_size");
-      program->frame_cnt_f = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(fprg, "IN.frame_count");
-      program->frame_dir_f = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(fprg, "IN.frame_direction");
    }
 
    if (vprg)
@@ -219,7 +223,6 @@ static void hlsl_set_program_attributes(hlsl_shader_data_t *hlsl,
       program->vid_size_v  = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(vprg, "IN.video_size");
       program->tex_size_v  = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(vprg, "IN.texture_size");
       program->out_size_v  = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(vprg, "IN.output_size");
-      program->frame_cnt_v = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(vprg, "IN.frame_count");
       program->frame_dir_v = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(vprg, "IN.frame_direction");
       program->mvp         = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(vprg, "modelViewProj");
    }
@@ -413,6 +416,7 @@ static void hlsl_set_params(hlsl_shader_data_t *hlsl,
    struct shader_program_hlsl_data *program = &hlsl->prg[hlsl->active_idx];
    void *fprg                               = NULL;
    void *vprg                               = NULL;
+   float frame_dir                          = 1.0f;
 
    if (!program)
       return;
@@ -437,14 +441,13 @@ static void hlsl_set_params(hlsl_shader_data_t *hlsl,
    if (program->out_size_f)
       d3d9x_constant_table_set_float_array(d3dr, fprg, (void*)program->out_size_f, out_size, 2);
 
-   if (program->frame_cnt_f)
-      d3d9x_constant_table_set_float(fprg,
-            d3dr, (void*)program->frame_cnt_f, frame_cnt);
+   if (state_manager_frame_is_reversed())
+      frame_dir = -1.0f;
 
-   if (program->frame_dir_f)
-      d3d9x_constant_table_set_float(fprg,
-            d3dr, (void*)program->frame_dir_f,
-            state_manager_frame_is_reversed() ? -1.0 : 1.0);
+   d3d9_hlsl_set_param_1f(fprg, d3dr, "IN.frame_count", &frame_cnt);
+   d3d9_hlsl_set_param_1f(vprg, d3dr, "IN.frame_count", &frame_cnt);
+   d3d9_hlsl_set_param_1f(fprg, d3dr, "IN.frame_direction", &frame_dir);
+   d3d9_hlsl_set_param_1f(vprg, d3dr, "IN.frame_direction", &frame_dir);
 
    if (program->vid_size_v)
       d3d9x_constant_table_set_float_array(d3dr, vprg, (void*)program->vid_size_v, ori_size, 2);
@@ -452,15 +455,6 @@ static void hlsl_set_params(hlsl_shader_data_t *hlsl,
       d3d9x_constant_table_set_float_array(d3dr, vprg, (void*)program->tex_size_v, tex_size, 2);
    if (program->out_size_v)
       d3d9x_constant_table_set_float_array(d3dr, vprg, (void*)program->out_size_v, out_size, 2);
-
-   if (program->frame_cnt_v)
-      d3d9x_constant_table_set_float(vprg,
-            d3dr, (void*)program->frame_cnt_v, frame_cnt);
-
-   if (program->frame_dir_v)
-      d3d9x_constant_table_set_float(vprg,
-            d3dr, (void*)program->frame_dir_v,
-            state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
