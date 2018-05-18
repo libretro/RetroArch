@@ -370,16 +370,13 @@ static INLINE void d3d9_free_pixel_shader(LPDIRECT3DDEVICE9 dev,
 
 static INLINE bool d3d9_set_pixel_shader(
       LPDIRECT3DDEVICE9 dev,
-      LPDIRECT3DPIXELSHADER9 d3dps)
+      LPDIRECT3DPIXELSHADER9 shader)
 {
-   if (!dev || !d3dps)
-      return false;
-
 #ifdef _XBOX
    /* Returns void on Xbox */
-   IDirect3DDevice9_SetPixelShader(dev, d3dps);
+   IDirect3DDevice9_SetPixelShader(dev, shader);
 #else
-   if (IDirect3DDevice9_SetPixelShader(dev, d3dps) != D3D_OK)
+   if (IDirect3DDevice9_SetPixelShader(dev, shader) != D3D_OK)
       return false;
 #endif
    return true;
