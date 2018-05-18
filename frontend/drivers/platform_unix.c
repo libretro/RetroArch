@@ -668,7 +668,7 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
 {
    char path[1024];
    const char *base  = proc_acpi_battery_path;
-   ssize_t length    = 0;
+   int64_t length    = 0;
    char         *ptr = NULL;
    char  *buf        = NULL;
    char  *buf_info   = NULL;
@@ -796,7 +796,7 @@ static void check_proc_acpi_sysfs_battery(const char *node,
    bool       charge = false;
    bool       choose = false;
    unsigned capacity = 0;
-   ssize_t length    = 0;
+   int64_t length    = 0;
    int       maximum = -1;
    int     remaining = -1;
    int          secs = -1;
@@ -849,7 +849,7 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
    char        *ptr = NULL;
    char        *key = NULL;
    char        *val = NULL;
-   ssize_t length   = 0;
+   int64_t length   = 0;
 
    path[0]          = '\0';
 
@@ -936,7 +936,7 @@ static bool frontend_unix_powerstate_check_apm(
    int battery_flag    = 0;
    int battery_percent = 0;
    int battery_time    = 0;
-   ssize_t length      = 0;
+   int64_t length      = 0;
    char *ptr           = NULL;
    char  *buf          = NULL;
    char *str           = NULL;
