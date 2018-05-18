@@ -3246,8 +3246,10 @@ MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
 	"Mostrar pestaña juego en red"
 	)
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-      "Menu Layout")
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+      "Menu Layout"
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_XMB_THEME,
 	"Tema de iconos del menú"
@@ -5140,8 +5142,10 @@ MSG_HASH(
 	MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
 	"Limita los FPS en el menú"
 	)
-MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,
-      "Select a different layout for the XMB interface.")
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_XMB_LAYOUT,
+      "Select a different layout for the XMB interface."
+	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_XMB_THEME,
 	"Seleccionar un tema de iconos diferente. Los cambios tendrán efecto al reiniciar"
@@ -5414,8 +5418,10 @@ MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
 	"Agregar al mezclador y colección"
 	)
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
-      "Add to mixer and play")
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
+      "Add to mixer and play"
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
 	"Filtrar por núcleo actual"
@@ -5840,75 +5846,151 @@ MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
 	"Mostrar Decoraciones de Ventanas"
 	)
-MSG_HASH(MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
       "Mostrar Estadísticas"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
     "Mostrar estadísticas técnicas en pantalla."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
-      "Enable border filler")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-      "Enable border filler thickness")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-      "Enable background filler thickness")
-MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION, "For 15 kHz CRT displays only. Attempts to use exact core/game resolution and refresh rate.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION, "CRT SwitchRes") 
-MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER, "When CRT SwitchRes is enabled, force ultrawide horizontal resolution to minimize mode switching.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER, "CRT Super Resolution") 
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
-      "Show Rewind Settings")
-MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-      "Show/hide the Rewind options.")
-MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
-      "Show/hide the Latency options.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
-      "Show Latency Settings")
-MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-      "Show/hide the Overlay options.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
-      "Show Overlay Settings")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-      "Enable menu audio")
-MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-      "Enable or disable menu sound.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-      "Mixer Settings")
-MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-      "View and/or modify audio mixer settings.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
-      "Overrides")
-MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
-      "Options for overriding the global configuration.")
-MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
-      "Will start playback of the audio stream. Once finished, it will remove the current audio stream from memory.")
-MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
-      "Will start playback of the audio stream. Once finished, it will loop and play the track again from the beginning.")
-MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
-      "Will start playback of the audio stream. Once finished, it will jump to the next audio stream in sequential order and repeat this behavior. Useful as an album playback mode.")
-MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
-      "This will stop playback of the audio stream, but not remove it from memory. You can start playing it again by selecting 'Play'.")
-MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
-      "This will stop playback of the audio stream and remove it entirely from memory.")
-MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
-      "Adjust the volume of the audio stream.")
-MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-      "Add this audio track to an available audio stream slot. If no slots are currently available, it will be ignored.")
-MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-      "Add this audio track to an available audio stream slot and play it. If no slots are currently available, it will be ignored.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
-      "Play")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
-      "Play (Looped)")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
-      "Play (Sequential)")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
-      "Stop")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
-      "Remove")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
-      "Volume")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
-      "Current core")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
-      "Clear")
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+    "Activar relleno de borde"
+    )
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+    "Activar ancho del relleno de borde"
+    )
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+    "Activar ancho del relleno de fondo"
+    )
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+    "Para pantallas CRT de 15 kHz. Intenta usar la resolución y refresco exactos del núcleo/juego."
+    )
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+    "CRT SwitchRes"
+    )
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+    "Al activar CRT SwitchRes, forzar resolución ultrawide horizontal para minimizar el cambio de modos"
+    )
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+    "Super Resolucion CRT"
+    )
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
+    "Mostrar opciones de rebobinado"
+    )
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+    "Muestra/oculta las opciones de rebobinado."
+    )
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
+    "Muestra/oculta las opciones de latencia."
+    )
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
+    "Mostrar opciones de latencia"
+    )
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+    "Muestra/oculta las opciones de overlays."
+    )
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
+    "Mostrar opciones de overlay"
+    )
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+    "Activar el menu de audio"
+    )
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+    "Activa o desactiva el menu de sonido."
+    )
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+    "Opciones del mezclador"
+    )
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+    "Ver o modificar las opciones del mezclador de audio."
+    )
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
+    "Anulaciones"
+    )
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
+    "Opciones para anular las configuraciones globales."
+    )
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
+    "Comenzara la reproducción de audio. Al finalizar, será quitado de la memoria."
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
+    "Comenzara la reproducción de audio. Al finalizar, será reproducido nuevamente."
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+    "Comenzara la reproducción de audio. Al finalizar, continuará con el siguiente, útil para albums."
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
+    "Detener la reproducción, no lo quitará de la memoria. Puedes continuar la reproducción."
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
+    "Detener la reproducción y quitarlo de la memoria."
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
+    "Ajusta el volumen del audio."
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
+    "Agrega esta pista de audio a una casilla, si no hay disponibles, se ignorará."
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
+    "Agrega esta pista de audio a una casilla, y la reproduce, si no hay disponibles, se ignorará."
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
+    "Reproducir"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
+    "Reproducir (Repetir)"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
+    "Reproducir (Secuencial)"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
+    "Detener"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+    "Quitar"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
+    "Volumen"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
+    "Núcleo actual"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
+    "Limpiar"
+	)
