@@ -96,47 +96,74 @@ static INLINE void d3d9_hlsl_set_param_matrix(void *data, void *userdata,
             (void*)param, (D3DMATRIX*)values);
 }
 
-static bool d3d9_hlsl_load_program(
+static bool d3d9_hlsl_load_program_from_file(
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
-      const char *prog, bool path_is_file)
+      const char *prog)
 {
    ID3DXBuffer *listing_f                    = NULL;
    ID3DXBuffer *listing_v                    = NULL;
    ID3DXBuffer *code_f                       = NULL;
    ID3DXBuffer *code_v                       = NULL;
 
-   if (path_is_file && !string_is_empty(prog))
+   if (string_is_empty(prog))
+      return false;
+
+   if (!d3d9x_compile_shader_from_file(prog, NULL, NULL,
+            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &pass->ftable))
    {
-      if (!d3d9x_compile_shader_from_file(prog, NULL, NULL,
-               "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &pass->ftable))
-      {
-         RARCH_ERR("Could not compile fragment shader program (%s)..\n", prog);
-         goto error;
-      }
-      if (!d3d9x_compile_shader_from_file(prog, NULL, NULL,
-               "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &pass->vtable))
-      {
-         RARCH_ERR("Could not compile vertex shader program (%s)..\n", prog);
-         goto error;
-      }
+      RARCH_ERR("Could not compile fragment shader program (%s)..\n", prog);
+      goto error;
    }
-   else
+   if (!d3d9x_compile_shader_from_file(prog, NULL, NULL,
+            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &pass->vtable))
    {
-      if (!d3d9x_compile_shader(prog, strlen(prog), NULL, NULL,
-               "main_fragment", "ps_3_0", 0, &code_f, &listing_f,
-               &pass->ftable ))
-      {
-         RARCH_ERR("Could not compile stock fragment shader..\n");
-         goto error;
-      }
-      if (!d3d9x_compile_shader(prog, strlen(prog), NULL, NULL,
-               "main_vertex", "vs_3_0", 0, &code_v, &listing_v,
-               &pass->vtable ))
-      {
-         RARCH_ERR("Could not compile stock vertex shader..\n");
-         goto error;
-      }
+      RARCH_ERR("Could not compile vertex shader program (%s)..\n", prog);
+      goto error;
+   }
+
+   d3d9_create_pixel_shader(dev,  (const DWORD*)d3d9x_get_buffer_ptr(code_f),  (void**)&pass->fprg);
+   d3d9_create_vertex_shader(dev, (const DWORD*)d3d9x_get_buffer_ptr(code_v), (void**)&pass->vprg);
+   d3d9x_buffer_release((void*)code_f);
+   d3d9x_buffer_release((void*)code_v);
+
+   return true;
+
+error:
+   RARCH_ERR("Cg/HLSL error:\n");
+   if (listing_f)
+      RARCH_ERR("Fragment:\n%s\n", (char*)d3d9x_get_buffer_ptr(listing_f));
+   if (listing_v)
+      RARCH_ERR("Vertex:\n%s\n", (char*)d3d9x_get_buffer_ptr(listing_v));
+   d3d9x_buffer_release((void*)listing_f);
+   d3d9x_buffer_release((void*)listing_v);
+
+   return false;
+}
+
+static bool d3d9_hlsl_load_program(
+      LPDIRECT3DDEVICE9 dev,
+      struct shader_pass *pass,
+      const char *prog)
+{
+   ID3DXBuffer *listing_f                    = NULL;
+   ID3DXBuffer *listing_v                    = NULL;
+   ID3DXBuffer *code_f                       = NULL;
+   ID3DXBuffer *code_v                       = NULL;
+
+   if (!d3d9x_compile_shader(prog, strlen(prog), NULL, NULL,
+            "main_fragment", "ps_3_0", 0, &code_f, &listing_f,
+            &pass->ftable ))
+   {
+      RARCH_ERR("Could not compile stock fragment shader..\n");
+      goto error;
+   }
+   if (!d3d9x_compile_shader(prog, strlen(prog), NULL, NULL,
+            "main_vertex", "vs_3_0", 0, &code_v, &listing_v,
+            &pass->vtable ))
+   {
+      RARCH_ERR("Could not compile stock vertex shader..\n");
+      goto error;
    }
 
    d3d9_create_pixel_shader(dev,  (const DWORD*)d3d9x_get_buffer_ptr(code_f),  (void**)&pass->fprg);
@@ -265,7 +292,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       d3d9_set_texture(chain->dev, 0, NULL);
    }
 
-   d3d9_hlsl_load_program(chain->dev, &pass, info->pass->source.path, true);
+   d3d9_hlsl_load_program_from_file(chain->dev, &pass, info->pass->source.path);
 
    if (!hlsl_d3d9_renderchain_init_shader_fvf(chain, &pass))
       return false;
@@ -423,7 +450,7 @@ static bool hlsl_d3d9_renderchain_init(
 
    if (!hlsl_d3d9_renderchain_create_first_pass(dev, &chain->chain, info, fmt))
       return false;
-   if (!d3d9_hlsl_load_program(chain->chain.dev, &chain->stock_shader, stock_hlsl_program, false))
+   if (!d3d9_hlsl_load_program(chain->chain.dev, &chain->stock_shader, stock_hlsl_program))
       return false;
 
    d3d9_hlsl_bind_program(&chain->stock_shader, dev);
@@ -685,7 +712,7 @@ static bool hlsl_d3d9_renderchain_add_pass(
       unsigned_vector_list_new();
    pass.pool                   = D3DPOOL_DEFAULT;
 
-   d3d9_hlsl_load_program(chain->chain.dev, &pass, info->pass->source.path, true);
+   d3d9_hlsl_load_program_from_file(chain->chain.dev, &pass, info->pass->source.path);
 
    if (!hlsl_d3d9_renderchain_init_shader_fvf(&chain->chain, &pass))
       return false;
