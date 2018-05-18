@@ -84,11 +84,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
-      "OSTRZEŻENIE: Grający w online ma inną wersję rdzenia. Jeśli wystąpią problemy, użyj tej samej wersji."
+      "OSTRZEŻENIE: Grający online ma inną wersję rdzenia. Jeśli wystąpią problemy, użyj tej samej wersji."
       )
 MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
-      "Ten rdzeń nie obsługuje gry internetwoej między architekturami w tych systemach"
+      "Ten rdzeń nie obsługuje gry online między architekturami w tych systemach"
       )
 MSG_HASH(
       MSG_NETPLAY_PLATFORM_DEPENDENT,
@@ -132,7 +132,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_PEER_PAUSED,
-      "Gra online \"%s\" wstrzymano"
+      "Gre online \"%s\" wstrzymano"
       )
 MSG_HASH(
       MSG_NETPLAY_CHANGED_NICK,
@@ -148,7 +148,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-      "Trudna synchronizacja CPU i GPU. Zmniejsza opóźnienie kosztem wydajności."
+      "Synchronizacja CPU i GPU. Zmniejsza opóźnienie kosztem wydajności."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_THREADED,
@@ -208,7 +208,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
-      "Retro Osiągniecia"
+      "Retro osiągniecia"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
@@ -232,7 +232,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-      "Pokoje gry online"
+      "Pokoje gry internetowej"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
@@ -740,11 +740,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
       "Przeładowanie pada")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
-      "Aux A")
+      "Pomocniczy A")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
-      "Aux B")
+      "Pomocniczy B")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
-      "Aux C")
+      "Pomocniczy C")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
       "Start broni")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
@@ -854,9 +854,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
       "Przełącznik wysuwania dysku")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
-      "Dysk następny")
+      "Następnyd dysk ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
-      "Dysk poprzedni")
+      "Poprzedni dysk ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
       "Włącz klawisze skrótów")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
@@ -904,7 +904,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
       "Zwolnione tempo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
-      "Slow motion toggle")
+      "Przełącznik opóźnionego ruchu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
       "Slot zapisu -")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
@@ -950,19 +950,19 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
       "Wprowadź powiązania użytkownika %u")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
-      "Latency")
+      "Opóźnienie")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
       "Status wewnętrznej pamięci")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-      "Wprowadź Autoconfig")
+      "Wprowadź autoconfig")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
       "Sterownik joypada")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
       "Usługi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
-      "chiński (Uproszczony)")
+      "chiński (uproszczony)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
-      "chiński (Tradycyjny)")
+      "chiński (tradycyjny)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
       "holenderski")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
@@ -1140,7 +1140,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
       "Hasło spontaniczne serwera")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
-      "Widz gry online Włączone")
+      "Widz gry online włączone")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
       "Port TCP gry online")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -2746,7 +2746,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-      "Liczba klatek do uruchomienia. Powoduje problemy z grą, takie jak jitter, jeśli przekroczysz liczbę klatek wystąpią opóźnienia wewnętrzne w grze."
+      "Liczba klatek do uruchomienia. Powoduje problemy z grą, takie jak drganie, jeśli przekroczysz liczbę klatek wystąpią opóźnienia wewnętrzne w grze."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_ENABLE,
@@ -3547,4 +3547,4 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
       "Obecny rdzeń")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
-	  "Oczyść")
+	   "Oczyść")
