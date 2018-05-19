@@ -140,9 +140,9 @@ if [ $SALAMANDER = "yes" ]; then
    fi
    if [ $PLATFORM = "ctr" ] ; then
    mv -f ../retroarch_3ds_salamander.cia ../pkg/${platform}/build/cia/retroarch_3ds.cia
-   mkdir -p ../pkg/${platform}/build/3dsx/RetroArch
-   mv -f ../retroarch_3ds_salamander.3dsx ../pkg/${platform}/build/3dsx/RetroArch/RetroArch.3dsx
-   mv -f ../retroarch_3ds_salamander.smdh ../pkg/${platform}/build/3dsx/RetroArch/RetroArch.smdh
+   mkdir -p ../pkg/${platform}/build/3dsx/3ds/RetroArch
+   mv -f ../retroarch_3ds_salamander.3dsx ../pkg/${platform}/build/3dsx/3ds/RetroArch/RetroArch.3dsx
+   mv -f ../retroarch_3ds_salamander.smdh ../pkg/${platform}/build/3dsx/3ds/RetroArch/RetroArch.smdh
    # the .3ds port cant use salamander since you can only have one ROM on a cartridge at once
    make -C ../ -f Makefile.${platform}.salamander clean || exit 1
    fi
