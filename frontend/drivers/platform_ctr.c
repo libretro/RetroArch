@@ -182,27 +182,29 @@ static void frontend_ctr_deinit(void* data)
 
 static void frontend_ctr_exec(const char* path, bool should_load_game)
 {
-   char gamePath[PATH_MAX];
-   const char* argData[3];
+   char game_path[PATH_MAX];
+   const char* arg_data[3];
+   errorConf error_dialog;
+   char error_string[PATH_MAX + 200];
    int args = 0;
    int error = 0;
 
    DEBUG_VAR(path);
    DEBUG_STR(path);
    
-   argData[0] = NULL;
+   arg_data[0] = NULL;
 
-   argData[args] = elf_path_cst;
-   argData[args + 1] = NULL;
+   arg_data[args] = elf_path_cst;
+   arg_data[args + 1] = NULL;
    args++;
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
-      strcpy(gamePath, path_get(RARCH_PATH_CONTENT));
-	  argData[args] = gamePath;
-	  argData[args + 1] = NULL;
+      strcpy(game_path, path_get(RARCH_PATH_CONTENT));
+	  arg_data[args] = game_path;
+	  arg_data[args + 1] = NULL;
 	  args++;
       RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
    }
@@ -224,18 +226,17 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
 
          if (core_path[0] == '\0')
          {
-            errorConf error;
-
-            errorInit(&error, ERROR_TEXT, CFG_LANGUAGE_EN);
-            errorText(&error, "There are no cores installed, install a core to continue.");
-            errorDisp(&error);
+            errorInit(&error_dialog, ERROR_TEXT, CFG_LANGUAGE_EN);
+            errorText(&error_dialog, "There are no cores installed, install a core to continue.");
+            errorDisp(&error_dialog);
             exit(0);
          }
       }
 #endif
+	  
       if (envIsHomebrew())
       {
-         exec_3dsx_no_path_in_args(path, argData);
+         exec_3dsx_no_path_in_args(path, arg_data);
       }
       else
       {
@@ -246,9 +247,13 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
          RARCH_LOG("Do not force quit before then or your memory card may be corrupted!\n");
          RARCH_LOG("\n");
          RARCH_LOG("\n");
-         exec_cia(path, argData);
+         exec_cia(path, arg_data);
       }
 
+      errorInit(&error_dialog, ERROR_TEXT, CFG_LANGUAGE_EN);
+      sprintf(error_string, "Cant launch core:%s", path);
+      errorText(&error_dialog, error_string);
+      errorDisp(&error_dialog);
       exit(0);//couldnt launch new core, but context is corrupt so we have to quit
    }
 }
