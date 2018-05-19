@@ -2,7 +2,7 @@ TARGET := retroarch_3ds_salamander
 LIBRETRO =
 
 DEBUG                   = 0
-BUILD_3DSX              = 0
+BUILD_3DSX              = 1
 BUILD_3DS               = 0
 BUILD_CIA               = 1
 
