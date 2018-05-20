@@ -185,7 +185,7 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
    char game_path[PATH_MAX];
    const char* arg_data[3];
    errorConf error_dialog;
-   char error_string[PATH_MAX + 200];
+   char error_string[200 + PATH_MAX];
    int args = 0;
    int error = 0;
 
@@ -251,7 +251,7 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
       }
 
       errorInit(&error_dialog, ERROR_TEXT, CFG_LANGUAGE_EN);
-      sprintf(error_string, "Cant launch core:%s", path);
+      snprintf(error_string, sizeof(error_string), "Cant launch core:%s", path);
       errorText(&error_dialog, error_string);
       errorDisp(&error_dialog);
       exit(0);//couldnt launch new core, but context is corrupt so we have to quit
