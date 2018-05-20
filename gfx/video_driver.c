@@ -417,9 +417,6 @@ static const shader_backend_t *shader_ctx_drivers[] = {
 #ifdef HAVE_CG
    &gl_cg_backend,
 #endif
-#ifdef HAVE_HLSL
-   &hlsl_backend,
-#endif
    &shader_null_backend,
    NULL
 };
@@ -564,12 +561,12 @@ const video_poke_interface_t *video_driver_get_poke(void)
 
 static bool video_context_has_focus(void)
 {
-   return current_video_context.has_focus(video_context_data);
+   return current_video_context.has_focus && current_video_context.has_focus(video_context_data);
 }
 
 static bool video_driver_has_focus(void)
 {
-   return current_video->focus(video_driver_data);
+   return current_video && current_video->focus && current_video->focus(video_driver_data);
 }
 
 static bool null_driver_has_focus(void)
@@ -3427,12 +3424,6 @@ static const shader_backend_t *video_shader_set_backend(
          break;
 #endif
       case RARCH_SHADER_HLSL:
-#ifdef HAVE_HLSL
-         RARCH_LOG("[Shader driver]: Using HLSL shader backend.\n");
-         return &hlsl_backend;
-#else
-         break;
-#endif
       case RARCH_SHADER_NONE:
       default:
          break;

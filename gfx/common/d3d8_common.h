@@ -22,7 +22,6 @@
 
 #include <d3d8.h>
 
-#include "../drivers/d3d.h"
 #include "../video_driver.h"
 #include "../../verbosity.h"
 
@@ -42,11 +41,8 @@ typedef struct d3d8_video
    unsigned dev_rotation;
 
    overlay_t *menu;
-   const d3d_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
 
-   RECT font_rect;
-   RECT font_rect_shifted;
    math_matrix_4x4 mvp;
    math_matrix_4x4 mvp_rotate;
    math_matrix_4x4 mvp_transposed;
@@ -54,9 +50,11 @@ typedef struct d3d8_video
    struct video_viewport vp;
    struct video_shader shader;
    video_info_t video_info;
+#ifdef HAVE_WINDOW
    WNDCLASSEX windowClass;
+#endif
    LPDIRECT3DDEVICE8 dev;
-   d3d_video_viewport_t final_viewport;
+   D3DVIEWPORT8 final_viewport;
 
    char *shader_path;
 
@@ -274,10 +272,9 @@ static INLINE void d3d8_unlock_rectangle(LPDIRECT3DTEXTURE8 tex)
 
 static INLINE void d3d8_lock_rectangle_clear(
       void *tex,
-      unsigned level, void *_lr, RECT *rect,
+      unsigned level, D3DLOCKED_RECT *lr, RECT *rect,
       unsigned rectangle_height, unsigned flags)
 {
-   D3DLOCKED_RECT *lr = (D3DLOCKED_RECT*)_lr;
 #if defined(_XBOX)
    level              = 0;
 #endif

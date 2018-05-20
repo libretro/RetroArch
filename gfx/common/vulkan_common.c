@@ -1691,6 +1691,12 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_DISPLAY:
          instance_extensions[ext_count++] = "VK_KHR_display";
          break;
+      case VULKAN_WSI_MVK_MACOS:
+         instance_extensions[ext_count++] = "VK_MVK_macos_surface";
+         break;
+      case VULKAN_WSI_MVK_IOS:
+         instance_extensions[ext_count++] = "VK_MVK_ios_surface";
+         break;
       case VULKAN_WSI_NONE:
       default:
          break;
@@ -1700,6 +1706,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    {
 #ifdef _WIN32
       vulkan_library = dylib_load("vulkan-1.dll");
+#elif __APPLE__
+      vulkan_library = dylib_load("libMoltenVK.dylib");
 #else
       vulkan_library = dylib_load("libvulkan.so");
 #endif
@@ -2177,6 +2185,48 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
                      (const struct vulkan_display_surface_info*)display))
                return false;
          }
+         break;
+      case VULKAN_WSI_MVK_MACOS:
+#ifdef HAVE_COCOA
+         {
+            PFN_vkCreateMacOSSurfaceMVK create;
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateMacOSSurfaceMVK", create))
+               return false;
+            VkMacOSSurfaceCreateInfoMVK surf_info;
+
+            memset(&surf_info, 0, sizeof(surf_info));
+
+            surf_info.sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
+            surf_info.pNext = NULL;
+            surf_info.flags = 0;
+            surf_info.pView = surface;
+            
+            if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
+                != VK_SUCCESS)
+               return false;
+         }
+#endif
+         break;
+      case VULKAN_WSI_MVK_IOS:
+#ifdef HAVE_COCOATOUCH
+         {
+            PFN_vkCreateIOSSurfaceMVK create;
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateIOSSurfaceMVK", create))
+               return false;
+            VkIOSSurfaceCreateInfoMVK surf_info;
+
+            memset(&surf_info, 0, sizeof(surf_info));
+
+            surf_info.sType = VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK;
+            surf_info.pNext = NULL;
+            surf_info.flags = 0;
+            surf_info.pView = surface;
+            
+            if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
+                != VK_SUCCESS)
+               return false;
+         }
+#endif
          break;
       case VULKAN_WSI_NONE:
       default:

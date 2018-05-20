@@ -215,6 +215,14 @@ MSG_HASH(
       "Achievements"
       )
 MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+      "Pause Achievements Hardcore Mode"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
+      "Resume Achievements Hardcore Mode"
+      )
+MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
       "Achievements (Hardcore)"
       )
@@ -1335,12 +1343,16 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
       "Load Remap File")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
       "Save Core Remap File")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
+      "Save Content Directory Remap File")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
       "Save Game Remap File")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
       "Delete Core Remap File")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
       "Delete Game Remap File")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+      "Delete Game Content Directory Remap File")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REQUIRED,
       "Required")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -1401,6 +1413,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
       "Save Current Configuration")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
       "Save Core Overrides")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+      "Save Content Directory Overrides")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "Save Game Overrides")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
@@ -1454,7 +1468,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
       "Number of Frames to Run Ahead")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-      "Runahead Use Second Instance")
+      "RunAhead Use Second Instance")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+      "RunAhead Hide Warnings")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
       "Sort Saves In Folders")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
@@ -2761,6 +2777,10 @@ MSG_HASH(
       "Use a second instance of the RetroArch core to run ahead. Prevents audio problems due to loading state."
       )
 MSG_HASH(
+      MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+      "Hides the warning message that appears when using RunAhead and the core does not support savestates."
+      )
+MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_ENABLE,
       "Enable rewinding. This will take a performance hit when playing."
       )
@@ -3061,6 +3081,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
       "Restarts the content from the beginning.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
       "Saves an override configuration file which will apply for all content loaded with this core. Will take precedence over the main configuration.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+      "Saves an override configuration file which will apply for all content loaded from the same directory as the current file. Will take precedence over the main configuration.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "Saves an override configuration file which will apply for the current content only. Will take precedence over the main configuration.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
@@ -3472,6 +3494,14 @@ MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
       "Game remap file loaded.")
 MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
       "Core remap file loaded.")
+MSG_HASH(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+      "RunAhead has been disabled because this core does not support save states.")
+MSG_HASH(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+      "Failed to save state.  RunAhead has been disabled.")
+MSG_HASH(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+      "Failed to load state.  RunAhead has been disabled.")
+MSG_HASH(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+      "Failed to create second instance.  RunAhead will now use only one instance.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
       "Automatically add content to playlist")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
@@ -3647,7 +3677,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
       "Suggest loaded core first")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
-      "Configuration Override options")
+      "Overrides")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
       "Options for overriding the global configuration.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
@@ -3682,3 +3712,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
       "Current core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
       "Clear")
+MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+      "Pause achievements for current session (This action will enable savestates, cheats, rewind, pause, and slow-motion).")
+MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+      "Resume achievements for current session (This action will disable savestates, cheats, rewind, pause, and slow-motion and reset the current game).")

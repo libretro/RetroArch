@@ -127,8 +127,8 @@ static void gfx_ctx_gdi_get_video_size(void *data,
    }
    else
    {
-      *width  = g_resize_width;
-      *height = g_resize_height;
+      *width  = g_win32_resize_width;
+      *height = g_win32_resize_height;
    }
 }
 
@@ -141,7 +141,7 @@ static void *gfx_ctx_gdi_init(
    if (!gdi)
       return NULL;
 
-   if (g_inited)
+   if (g_win32_inited)
       goto error;
 
    win32_window_reset();
@@ -190,16 +190,16 @@ static void gfx_ctx_gdi_destroy(void *data)
       win32_destroy_window();
    }
 
-   if (g_restore_desktop)
+   if (g_win32_restore_desktop)
    {
       win32_monitor_get_info();
-      g_restore_desktop     = false;
+      g_win32_restore_desktop     = false;
    }
 
    if (gdi)
       free(gdi);
 
-   g_inited                     = false;
+   g_win32_inited                   = false;
    win32_gdi_major                  = 0;
    win32_gdi_minor                  = 0;
 }
@@ -341,7 +341,7 @@ void create_gdi_context(HWND hwnd, bool *quit)
 
    setup_gdi_pixel_format(win32_gdi_hdc);
 
-   g_inited = true;
+   g_win32_inited = true;
 }
 
 const gfx_ctx_driver_t gfx_ctx_gdi = {

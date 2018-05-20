@@ -21,7 +21,6 @@
 
 #include <string/stdstring.h>
 
-#include "../drivers/d3d.h"
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
 #include "../font_driver.h"
@@ -97,7 +96,7 @@ class PackedResource
 LPDIRECT3DTEXTURE9 *PackedResource::GetTexture(const char* strName)
 { 
    LPDIRECT3DRESOURCE9 pResource = (LPDIRECT3DRESOURCE9)GetData(strName);
-   return (LPDIRECT3DTEXTURE9)pResource;
+   return (LPDIRECT3DTEXTURE9*)pResource;
 }
 
 PackedResource::PackedResource()

@@ -278,12 +278,19 @@ static bool has_variable_update;
 static bool rarch_environment_secondary_core_hook(unsigned cmd, void *data)
 {
    bool result = rarch_environment_cb(cmd, data);
-   if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE && has_variable_update)
+   if (has_variable_update)
    {
-      bool *bool_p = (bool*)data;
-      *bool_p = true;
-      has_variable_update = false;
-      return true;
+      if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE)
+      {
+         bool *bool_p = (bool*)data;
+         *bool_p = true;
+         has_variable_update = false;
+         return true;
+      }
+      else if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE)
+      {
+         has_variable_update = false;
+      }
    }
    return result;
 }
@@ -295,16 +302,24 @@ void secondary_core_set_variable_update(void)
 
 bool secondary_core_run_no_input_polling(void)
 {
-   if (!secondary_module)
+   if (secondary_core_ensure_exists())
    {
-      if (!secondary_core_create())
-         return false;
+      secondary_core.retro_run();
+      return true;
    }
-   secondary_core.retro_run();
-   return true;
+   return false;
 }
 
 bool secondary_core_deserialize(const void *buffer, int size)
+{
+   if (secondary_core_ensure_exists())
+   {
+      return secondary_core.retro_unserialize(buffer, size);
+   }
+   return false;
+}
+
+bool secondary_core_ensure_exists(void)
 {
    if (!secondary_module)
    {
@@ -314,7 +329,7 @@ bool secondary_core_deserialize(const void *buffer, int size)
          return false;
       }
    }
-   return secondary_core.retro_unserialize(buffer, size);
+   return true;
 }
 
 void secondary_core_destroy(void)

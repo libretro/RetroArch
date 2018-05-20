@@ -101,6 +101,8 @@ void get_ios_version(int *major, int *minor);
 
 @end
 
+CocoaView* recreate_cocoa_view();
+
 #endif
 
 #define BOXSTRING(x) [NSString stringWithUTF8String:x]

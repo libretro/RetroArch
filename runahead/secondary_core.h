@@ -12,6 +12,7 @@ RETRO_BEGIN_DECLS
 
 bool secondary_core_run_no_input_polling(void);
 bool secondary_core_deserialize(const void *buffer, int size);
+bool secondary_core_ensure_exists(void);
 void secondary_core_destroy(void);
 void set_last_core_type(enum rarch_core_type type);
 void remember_controller_port_device(long port, long device);

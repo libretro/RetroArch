@@ -897,8 +897,12 @@ MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_LOAD,
       "remap_file_load")
 MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
       "remap_file_save_core")
+MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+      "remap_file_save_content_dir")
 MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
       "remap_file_save_game")
+MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+      "remap_file_remove_content_dir")
 MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE,
       "remap_file_remove_core")
 MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
@@ -955,6 +959,8 @@ MSG_HASH(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
       "save_current_config")
 MSG_HASH(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
       "save_current_config_override_core")
+MSG_HASH(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+      "save_current_config_override_content_dir")
 MSG_HASH(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "save_current_config_override_game")
 MSG_HASH(MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
@@ -999,6 +1005,8 @@ MSG_HASH(MENU_ENUM_LABEL_RUN_AHEAD_ENABLED,
       "run_ahead_enabled")
 MSG_HASH(MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE,
       "run_ahead_secondary_instance")
+MSG_HASH(MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,
+      "run_ahead_hide_warnings")
 MSG_HASH(MENU_ENUM_LABEL_RUN_AHEAD_FRAMES,
       "run_ahead_frames")
 MSG_HASH(MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE,
