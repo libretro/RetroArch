@@ -846,11 +846,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
       "Menu przełączenia gamepad combo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
-      "Indeks oszustw -")
+      "Indeks kodów -")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
-      "Indeks oszustw +")
+      "Indeks kodów +")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
-      "Włącz oszustwa")
+      "Włącz kody")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
       "Przełącznik wysuwania dysku")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
@@ -880,7 +880,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
       "Przełącznik wyciszania dźwięku")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-      "Netplay przełącza tryb play/spectate")
+      "Gra online przełącza tryb gracz/widz")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
       "Przełączanie klawiatury ekranowej")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -1764,7 +1764,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
       "Szacowana liczba klatek na sekundę na ekranie")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-      "Set Display-Reported Refresh Rate")
+      "Ustaw częstotliwość odświeżania raportowanego")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
       "Obrót")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
@@ -3095,7 +3095,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Upewnia się, że liczba klatek na sekundę jest ograniczona w menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,
-      "Select a different layout for the XMB interface.")
+      "Wybierz inny układ interfejsu XMB.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_THEME,
       "Wybierz inny motyw dla ikony. Zmiany zaczną obowiązywać po ponownym uruchomieniu programu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
@@ -3457,7 +3457,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
 MSG_HASH(MSG_CONFIG_OVERRIDE_LOADED,
       "Przeładowanie konfiguracji zostało załadowane.")
 MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
-      "Załadowano plik remap gry.")
+      "Załadowano plik remapu gry.")
 MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
       "Załadowano plik wymiany rdzenia.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
