@@ -1453,6 +1453,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
       "Liczba klatek do uruchomienia")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
       "Sortuj zapisy w folderach")
+    MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
+      "RunAhead Użyj drugiej instancji")
+    MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+      "Ukryj ostrzeżenia RunAhead")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
       "Sortuj zapis w folderach")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -2747,6 +2751,14 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
       "Liczba klatek do uruchomienia. Powoduje problemy z grą, takie jak drganie, jeśli przekroczysz liczbę klatek wystąpią opóźnienia wewnętrzne w grze."
+      )
+    MSG_HASH(
+      MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
+      "Zastosuj drugą instancję rdzenia RetroArch, aby uruchomić z wyprzedzeniem. Zapobiega problemom z dźwiękiem ze względu na stan ładowania."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+      "Ukrywa komunikat ostrzegawczy, który pojawia się podczas korzystania z RunAhead, a rdzeń nie obsługuje stanów składowania."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_ENABLE,
