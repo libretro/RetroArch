@@ -686,7 +686,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
       "Criar arquivo de opções do jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
-      "Arquivo de opções do jogo")
+      "Salvar arquivo de opções do jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP,
       "Ajuda")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
@@ -1343,12 +1343,16 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
       "Carregar Arquivo de Remapeamento")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
       "Salvar Arquivo de Remapeamento de Núcleo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
+      "Salvar Diretório de Conteúdo de Arquivo de Remapeamento de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
       "Salvar Arquivo de Remapeamento de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-      "Remover Arquivo de Remapeamento de Núcleo")
+      "Excluir Arquivo de Remapeamento de Núcleo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-      "Remover Arquivo de Remapeamento de Jogo")
+      "Excluir Arquivo de Remapeamento de Jogo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+      "Excluir Diretório de Conteúdo de Arquivo de Remapeamento de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REQUIRED,
       "Obrigatório")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -1409,6 +1413,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
       "Salvar Configuração Atual")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
       "Salvar Redefinição de Núcleo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+      "Salvar Diretório de Conteúdo de Redefinição de Núcleo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "Salvar Redefinição de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
@@ -1462,7 +1468,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
       "Número de Quadros para Adiantar")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-      "O Adiantar Quadro Usará uma Segunda Instância")
+      "O Adiantamento de Quadro Usará uma Segunda Instância")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+      "Ocultar Avisos do Adiantamento de Quadro")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
       "Classificar Arquivos de Jogo-Salvo em Pastas")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
@@ -3073,6 +3081,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
       "Reinicia o conteúdo do começo.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
       "Salva um arquivo de redefinição de configuração que será aplicado a todo o conteúdo carregado por este núcleo. Terá prioridade sobre a configuração principal.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+      "Salva um arquivo de redefinição de configuração que será aplicado a todo o conteúdo carregado no mesmo diretório que o arquivo atual. Terá prioridade sobre a configuração principal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "Salva um arquivo de redefinição de configuração que será aplicado apenas ao conteúdo atual. Terá prioridade sobre a configuração principal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
@@ -3313,7 +3323,7 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
       "Exibir Atualizador de Núcleos")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-      "Exibir a opção de atualizar núcleos (e arquivos de informação de núcleo).")
+      "Exibir/ocultar a opção de atualizar núcleos (e arquivos de informação de núcleo).")
 MSG_HASH(MSG_PREPARING_FOR_CONTENT_SCAN,
       "Preparando a busca de conteúdo...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
