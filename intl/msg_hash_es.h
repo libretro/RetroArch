@@ -223,6 +223,14 @@ MSG_HASH(
 	"Lista de logros"
 	)
 MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+	"Pausar Modo Hardcore de logros"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
+	"Continuar usando el modo Hardcore de logros"
+	)
+MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
 	"Lista de logros (Hardcore)"
 	)
@@ -509,6 +517,10 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
 	"Logros modo informativo"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
+	"Captura de pantalla automatica"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -1207,6 +1219,10 @@ MSG_HASH(
 	"Game focus (desactivar hotkeys)"
 	)
 MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
+	"Activar menú de escritorio"
+	)
+MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
 	"Cargar estado"
 	)
@@ -1268,7 +1284,11 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
-	"Cámara lenta"
+	"Tecla a mantener para cámara lenta"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
+	"Activar Cámara lenta"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
@@ -1357,6 +1377,10 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
 	"Controles del usuario %u"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+	"Latencia"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
@@ -2123,6 +2147,10 @@ MSG_HASH(
 	"Guardar controles para el núcleo"
 	)
 MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
+	"Lugar donde guardar controles para el núcleo"
+	)
+MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
 	"Guardar controles para el juego"
 	)
@@ -2134,6 +2162,10 @@ MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
 	"Borrar controles personalizados del juego"
 	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+	"Borrar directorio de controles personalizados"
+    )
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_REQUIRED,
 	"Necesario"
@@ -2207,6 +2239,10 @@ MSG_HASH(
 	"Agregar a Favoritos"
 	)
 MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
+	"Restablecer asociación de núcleo"
+    )
+MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_RUN,
 	"Iniciar"
 	)
@@ -2249,6 +2285,10 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
 	"Guardar anulaciones del núcleo"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+	"Lugar donde guardar anulaciones del juego"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -2345,6 +2385,22 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
 	"Velocidad de cámara lenta"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
+	"Reducir latencia emulando anticipadamente (Run-Ahead)"
+    )
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
+	"Número de Frames para adelantarse (to run ahead)"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
+	"Segunda instancia de RunAhead"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+	"Ocultar advertencias de RunAhead"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
@@ -2612,7 +2668,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
-	"Soporte de BMP  (RBMP)"
+	"Soporte de BMP (RBMP)"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
@@ -2707,6 +2763,14 @@ MSG_HASH(
 	"Miniaturas"
 	)
 MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+	"Miniaturas Izquierdas"
+    )
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+	"Miniaturas Disposición Vertical"
+	)
+MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
 	"Miniaturas"
 	)
@@ -2746,6 +2810,14 @@ MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
 	"Ejecutar al inicio la IU ayudante"
 	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
+	"Mostrar menú de escritorio al inicio"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+	"Activar menú de escritorio (reiniciar)"
+    )
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
 	"Barra de menús"
@@ -3171,6 +3243,10 @@ MSG_HASH(
 	"Claro"
 	)
 MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MORNING_BLUE,
+	"Azul Mañana"
+	)
+MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE,
 	"Violeta"
 	)
@@ -3223,6 +3299,10 @@ MSG_HASH(
 	"Mostrar pestaña importar contenido"
 	)
 MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
+	"Mostrar pestañas de Playlists"
+    )
+MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
 	"Mostrar pestaña favoritos"
 	)
@@ -3248,7 +3328,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-      "Menu Layout"
+	"Disposición del menú"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_XMB_THEME,
@@ -3285,6 +3365,10 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
 	"Activar para ver notificaciones mas informativas sobre logros"
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
+	"Automaticamente hacer una captura de pantalla al obtener un logro"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
@@ -3391,6 +3475,10 @@ MSG_HASH(
 	"Cambiar los controles para este usuario"
 	)
 MSG_HASH(
+	MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+	"Cambiar las opciones relacionados con el video, audio y lantencia de entrada."
+    )
+MSG_HASH(
 	MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
 	"Activar o desactivar registros a la terminal"
 	)
@@ -3481,6 +3569,10 @@ MSG_HASH(
 MSG_HASH(
 	MSG_ADDED_TO_FAVORITES,
 	"Agregado a los favoritos"
+	)
+MSG_HASH(
+	MSG_RESET_CORE_ASSOCIATION,
+	"Restablecida la asociación de la entrada de la lista"
 	)
 MSG_HASH(
 	MSG_APPENDED_DISK,
@@ -3641,6 +3733,10 @@ MSG_HASH(
 MSG_HASH(
 	MSG_DOWNLOADING,
 	"Descargando"
+	)
+MSG_HASH(
+	MSG_INDEX_FILE,
+	"indice"
 	)
 MSG_HASH(
 	MSG_DOWNLOAD_FAILED,
@@ -4703,6 +4799,22 @@ MSG_HASH(
 	"Al usar cámara lenta, el contenido se ralentizará el factor especificado"
 	)
 MSG_HASH(
+	MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
+	"Ejecutar la logica del núcleo uno o mas frames por adelentado, luego cargar el estado de nuevo, para reducir la latencia de entrada percibida"
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+	"El numero de frames para ir adelantado, si excedes el numero de frames de lag internos del juego, puede causar intermitencia (jitter)"
+    )
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
+	"Usar una segunda instancia del núcleo para adelantarse (RunAhead). Previene problemas de audio causados por las cargas de estado."
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+	"Oculta el mensaje de advertencia que aparece al usar RunAhead si el núcleo no soporta guardar el estado (savestates)"
+	)
+MSG_HASH(
 	MENU_ENUM_SUBLABEL_REWIND_ENABLE,
 	"Habilita el rebobinado. Tendrá un impacto en el rendimiento del juego"
 	)
@@ -4891,6 +5003,14 @@ MSG_HASH(
 	"Tipo de miniaturas a mostrar"
 	)
 MSG_HASH(
+	MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
+	"Tipo de miniaturas a mostrar a la izquierda"
+    )
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
+	"Muestra la miniatura izquierda debajo de la derecha, a la derecha de la pantalla"
+	)
+MSG_HASH(
 	MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
 	"Mostrar el día y hora en el menú"
 	)
@@ -5059,6 +5179,10 @@ MSG_HASH(
 	"Guarda un archivo de anulación que se aplicará a todo el contenido cargado con este núcleo. Tomará precedencia sobre la configuración principal"
 	)
 MSG_HASH(
+	MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+	"Guarda un archivo de configuraciones que aplicará a todo el contenido cargado desde el mismo directorio que el archivo actual. Toma precedencia sobre el archivo principal"
+	)
+MSG_HASH(
 	MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
 	"Guarda un archivo de anulación que se aplicará solo a este contenido cargado. Tomará precedencia sobre la configuración principal"
 	)
@@ -5144,7 +5268,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_XMB_LAYOUT,
-      "Select a different layout for the XMB interface."
+	"Seleccionar una disposición diferente para la interfaz XMB."
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -5205,6 +5329,10 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
 	"Mostrar la pestaña de importar contenido en el menú principal"
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
+	"Mostrar las pestañas de playlists en el menú principal"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
@@ -5420,7 +5548,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
-      "Add to mixer and play"
+	"Agregar al mezclador y reproducir"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
@@ -5811,6 +5939,22 @@ MSG_HASH(
 	"Archivo de reasignaciones de núcleo cargado"
 	)
 MSG_HASH(
+	MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+	"RunAhead se desactivó porque este núcleo no soporta archivos de estado (savestates)"
+	)
+MSG_HASH(
+	MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+	"Fallo al guardar el estado. RunAhead se ha desactivado"
+    )
+MSG_HASH(
+	MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+	"Fallo al cargar el estado. RunAhead se ha desactivado"
+	)
+MSG_HASH(
+	MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+	"Fallo al crear la segunda instancia. RunAhead usará solo una"
+	)
+MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
 	"Agregar contenido automáticamente a la lista de reproducción"
 	)
@@ -5848,149 +5992,387 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-      "Mostrar Estadísticas"
-    )
+	"Mostrar Estadísticas"
+	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
-    "Mostrar estadísticas técnicas en pantalla."
-    )
+	"Mostrar estadísticas técnicas en pantalla."
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
-    "Activar relleno de borde"
-    )
+	"Activar relleno de borde"
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-    "Activar ancho del relleno de borde"
-    )
+	"Activar ancho del relleno de borde"
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-    "Activar ancho del relleno de fondo"
-    )
+	"Activar ancho del relleno de fondo"
+	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-    "Para pantallas CRT de 15 kHz. Intenta usar la resolución y refresco exactos del núcleo/juego."
-    )
+	"Para pantallas CRT de 15 kHz. Intenta usar la resolución y refresco exactos del núcleo/juego."
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
-    "CRT SwitchRes"
-    )
+	"CRT SwitchRes"
+	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-    "Al activar CRT SwitchRes, forzar resolución ultrawide horizontal para minimizar el cambio de modos"
-    )
+	"Al activar CRT SwitchRes, forzar resolución ultrawide horizontal para minimizar el cambio de modos"
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
-    "Super Resolucion CRT"
-    )
+	"Super Resolucion CRT"
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
-    "Mostrar opciones de rebobinado"
-    )
+	"Mostrar opciones de rebobinado"
+	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-    "Muestra/oculta las opciones de rebobinado."
-    )
+	"Muestra/oculta las opciones de rebobinado."
+	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
-    "Muestra/oculta las opciones de latencia."
-    )
+	"Muestra/oculta las opciones de latencia."
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
-    "Mostrar opciones de latencia"
-    )
+	"Mostrar opciones de latencia"
+	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-    "Muestra/oculta las opciones de overlays."
-    )
+	"Muestra/oculta las opciones de overlays."
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
-    "Mostrar opciones de overlay"
-    )
+	"Mostrar opciones de overlay"
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-    "Activar el menu de audio"
-    )
+	"Activar el menu de audio"
+	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-    "Activa o desactiva el menu de sonido."
-    )
+	"Activa o desactiva el menu de sonido."
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-    "Opciones del mezclador"
-    )
+	"Opciones del mezclador"
+	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-    "Ver o modificar las opciones del mezclador de audio."
+	"Ver o modificar las opciones del mezclador de audio."
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_INFO,
+	"Info"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
+	"&Archivo"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
+	"&Cargar núcleo..."
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
+	"&Descargar núcleo"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT,
+	"&Salir"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT,
+	"&Editar"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH,
+	"&Buscar"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
+	"&Ver"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS,
+	"Docks cerrados"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
+	"&Opciones..."
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
+	"Recordar las posiciones de dock:"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+	"Recordar la geometría de la ventana:"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+	"Recordar la ultima pestaña de contenido:"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
+	"Tema"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT,
+	"<Por defeco>"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
+	"Oscuro"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
+	"Personalizado..."
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+	"Opciones"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
+	"Cargar nucleo personalizado..."
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+	"Cargar núcleo"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
+	"Cargando núcleo..."
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_NAME,
+	"Nombre"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
+	"Versión"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+	"Playlists"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+	"Explorador de archivos"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
+	"Inicio"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
+	"Arriba"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
+	"Explorador de contenido"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
+	"Caja"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
+	"Captura de pantalla"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+	"Pantalla de título"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
+	"Todas las Playlists"
     )
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_CORE,
+	"Núcleo"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
+	"Info de núcleo"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
+	"<Preguntarme>"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
+	"Información"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_WARNING,
+	"Advertencia"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_ERROR,
+	"Error"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
+	"Por favor reinicie el programa para que los cambios tengan efecto"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_LOG,
+	"Log"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
+	"Escaneo Terminado.<br><br>\n"
+	"En orden para que el contenido sea correctamente escaneado, debes:\n"
+	"<ul><li>tener un núcleo compatible descargado</li>\n"
+	"<li>tener los \"Archivos de información de núcleos\" actualizados</li>\n"
+	"<li>tener las \"Bases de datos\" actualizadas</li>\n"
+	"<li>reiniciar RetroArch si actualizaste algo con el \"Actualizador en línea\"</li></ul>\n"
+	"Por último, el contenido debe coincidir las bases de datos existente de <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">aquí</a>. Si aún no funciona, considere <a href=\"https://www.github.com/libretro/RetroArch/issues\">enviar un reporte de error.</a>.""
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
+	"No mostrar esto de nuevo"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_STOP,
+	"Detener"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+	"Asociar núcleo"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
+	"Playlists Ocultas"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_HIDE,
+	"Ocultar"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+	"Color de resaltado"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
+	"&Elegir..."
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
+	"Seleccionar Color"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_SELECT_THEME,
+	"Seleccionar tema"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
+	"Tema personalizado"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
+	"La dirección está vacía"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
+	"Archivo vacío"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+	"No se pudo abrir el archivo para la lectura"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
+	"El archivo no existe"
+	)
+MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+	"Sugerir el núcleo cargado primero"
+	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
-    "Anulaciones"
-    )
+	"Anulaciones"
+	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
-    "Opciones para anular las configuraciones globales."
-    )
+	"Opciones para anular las configuraciones globales."
+	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
-    "Comenzara la reproducción de audio. Al finalizar, será quitado de la memoria."
+	"Comenzara la reproducción de audio. Al finalizar, será quitado de la memoria."
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
-    "Comenzara la reproducción de audio. Al finalizar, será reproducido nuevamente."
+	"Comenzara la reproducción de audio. Al finalizar, será reproducido nuevamente."
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
-    "Comenzara la reproducción de audio. Al finalizar, continuará con el siguiente, útil para albums."
+	"Comenzara la reproducción de audio. Al finalizar, continuará con el siguiente, útil para albums."
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
-    "Detener la reproducción, no lo quitará de la memoria. Puedes continuar la reproducción."
+	"Detener la reproducción, no lo quitará de la memoria. Puedes continuar la reproducción."
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
-    "Detener la reproducción y quitarlo de la memoria."
+	"Detener la reproducción y quitarlo de la memoria."
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
-    "Ajusta el volumen del audio."
+	"Ajusta el volumen del audio."
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-    "Agrega esta pista de audio a una casilla, si no hay disponibles, se ignorará."
+	"Agrega esta pista de audio a una casilla, si no hay disponibles, se ignorará."
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-    "Agrega esta pista de audio a una casilla, y la reproduce, si no hay disponibles, se ignorará."
+	"Agrega esta pista de audio a una casilla, y la reproduce, si no hay disponibles, se ignorará."
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
-    "Reproducir"
+	"Reproducir"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
-    "Reproducir (Repetir)"
+	"Reproducir (Repetir)"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
-    "Reproducir (Secuencial)"
+	"Reproducir (Secuencial)"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
-    "Detener"
+	"Detener"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
-    "Quitar"
+	"Quitar"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
-    "Volumen"
+	"Volumen"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
-    "Núcleo actual"
+	"Núcleo actual"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
-    "Limpiar"
+	"Limpiar"
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+	"Pausar logros por esta sesión (Esto activará los archivos de guardado, cámara lenta, trucos, rebobinado y pausa)"
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+	"Continuar los logros para esta sesión (Esto desactivará los archivos de guardado, cámara lenta, trucos, rebobinado y pausa)"
 	)
