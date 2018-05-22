@@ -1344,7 +1344,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
       "Salvar Arquivo de Remapeamento de Núcleo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
-      "Salvar Diretório de Conteúdo de Arquivo de Remapeamento de Jogo")
+      "Salvar Arquivo de Remapeamento de Jogo do Diretório de Conteúdo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
       "Salvar Arquivo de Remapeamento de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
@@ -1352,7 +1352,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
       "Excluir Arquivo de Remapeamento de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-      "Excluir Diretório de Conteúdo de Arquivo de Remapeamento de Jogo")
+      "Excluir Arquivo de Remapeamento de Jogo do Diretório de Conteúdo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REQUIRED,
       "Obrigatório")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -1414,7 +1414,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
       "Salvar Redefinição de Núcleo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-      "Salvar Diretório de Conteúdo de Redefinição de Núcleo")
+      "Salvar Redefinições do Diretório de Conteúdo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "Salvar Redefinição de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
@@ -1810,7 +1810,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
       "Salvar Predefinição de Núcleo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
-      "Salvar Predefinição de Diretório de Conteúdo")
+      "Salvar Predefinição do Diretório de Conteúdo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
       "Salvar Predefinição de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
