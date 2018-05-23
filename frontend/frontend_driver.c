@@ -119,6 +119,9 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
 #elif defined(__APPLE__) || defined(__MACH__)
    strlcpy(s, "dylib", len);
    return true;
+#elif defined(__SWITCH__)
+   strlcpy(s, "nro", len);
+   return true;
 #else
    strlcpy(s, "so", len);
    return true;
