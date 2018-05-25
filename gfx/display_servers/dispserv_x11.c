@@ -103,7 +103,7 @@ static bool x11_set_resolution(void *data,
 
    crt_en = true;
 
-   hsp = width*1.14;
+   hsp = width*1.16;
       
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);	  
@@ -115,8 +115,8 @@ static bool x11_set_resolution(void *data,
       crt_aspect_ratio_switch(width, height);
    }
 
-   hfp = width+16;
-   hbp = width*1.22;
+   hfp = width+8;
+   hbp = width*1.32;
    hmax = hbp;
    
    if (height < 241)
