@@ -23,15 +23,9 @@
 
 #include <sys/types.h>
 #include <unistd.h>
-#include <X11/Xlib.h>
 
-static unsigned orig_width      = 0;
-static unsigned orig_height     = 0;
 static char old_mode[150];
 static char new_mode[150];
-static char xrandr[250];
-static char fbset[150];
-static char output[150];
 static bool crt_en     = false;
 
 typedef struct
@@ -53,27 +47,9 @@ static void* x11_display_server_init(void)
 static void x11_display_server_destroy(void *data)
 {
    dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
-   int i          = 0;
+
    if (crt_en == true)
-   {
-      sprintf(output,"xrandr -s %dx%d", orig_width, orig_height);
-      system(output);
-   }  
-   for (i =0; i < 3; i++)
-   {
-      sprintf(output,"xrandr --delmode %s%d %s", "VGA",i ,old_mode);
-      system(output);  
-      sprintf(output,"xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
-      system(output);  
-
-      sprintf(output,"xrandr --delmode %s%d %s", "DVI",i ,old_mode);
-      system(output);  
-      sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
-      system(output);  
-
-   }     
-      sprintf(output,"xrandr --rmmode %s", old_mode);
-	  system(output);
+      system("xrandr -s 704x480");
 
    if (dispserv)
       free(dispserv);
@@ -121,27 +97,26 @@ static bool x11_set_resolution(void *data,
    int hmax           = 0;
    int vmax           = 0;
    float pixel_clock  = 0;
-
-   Display* disp      = XOpenDisplay(NULL);
-   Screen* scrn       = DefaultScreenOfDisplay(disp);
-   
-   if (orig_height == 0 && orig_width == 0)
-   { 
-      orig_width    = scrn->width;
-      orig_height   = scrn->height;
-   }
+   char xrandr[250];
+   char fbset[150];
+   char output[150];
 
    crt_en = true;
 
-   hsp = width*1.16;
+   hsp = width*1.14;
       
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);	  
    
    /* following code is the mode line genorator */
+   if (width < 300)
+   {
+      width = width*2;
+      crt_aspect_ratio_switch(width, height);
+   }
 
-   hfp = width+8;
-   hbp = width*1.32;
+   hfp = width+16;
+   hbp = width*1.22;
    hmax = hbp;
    
    if (height < 241)
@@ -193,15 +168,15 @@ static bool x11_set_resolution(void *data,
    
    if (hz < 53)
    {   
-   vfp = height+((vmax-height)*0.20);
+   vfp = height+((vmax-height)*0.38);
    }
    if (hz > 56)
    {   
-   vfp = height+((vmax-height)*0.26);
+   vfp = height+((vmax-height)*0.15);
    }
    if (hz > 53 && hz < 56)
    {   
-   vfp = height+((vmax-height)*0.25);
+   vfp = height+((vmax-height)*0.35);
    }
 
    
@@ -254,34 +229,33 @@ static bool x11_set_resolution(void *data,
       {
          sprintf(output,"xrandr --addmode %s%d %s", "DVI",i ,new_mode);
          system(output); 
-		 sprintf(output,"xrandr --output %s%d --mode %s", "DVI", i, new_mode);
-         system(output);
          sprintf(output,"xrandr --delmode %s%d %s", "DVI",i ,old_mode);
          system(output); 
- 
+      }
+      for (i =0; i < 3; i++)
+      {
          sprintf(output,"xrandr --addmode %s-%d %s", "DVI",i ,new_mode);
          system(output); 
-		 sprintf(output,"xrandr --output %s-%d --mode %s", "DVI", i, new_mode);
-         system(output);
          sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
          system(output);
-
+      }
+      for (i =0; i < 3; i++)
+      {
          sprintf(output,"xrandr --addmode %s%d %s", "VGA",i ,new_mode);
-         system(output); 
-         sprintf(output,"xrandr --output %s%d --mode %s", "VGA", i, new_mode);
-         system(output);		 
+         system(output);  
          sprintf(output,"xrandr --delmode %s%d %s", "VGA",i ,old_mode);
          system(output); 
-
+      }
+      for (i =0; i < 3; i++)
+      {
          sprintf(output,"xrandr --addmode %s-%d %s", "VGA",i ,new_mode);
-         system(output);
-         sprintf(output,"xrandr --output %s-%d --mode %s", "VGA", i, new_mode);
-         system(output);
+         system(output); 
          sprintf(output,"xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
          system(output); 
       }
 		 
-
+      sprintf(output,"xrandr -s %s", new_mode);
+      system(output);
 	  /* remove old mode */
       sprintf(output,"xrandr --rmmode %s", old_mode);
 	  system(output);
