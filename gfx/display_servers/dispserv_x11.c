@@ -133,7 +133,7 @@ static bool x11_set_resolution(void *data,
 
    crt_en = true;
 
-   hsp = width*1.10;
+   hsp = width*1.16;
       
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);	  
@@ -141,7 +141,7 @@ static bool x11_set_resolution(void *data,
    /* following code is the mode line genorator */
 
    hfp = width+8;
-   hbp = width*1.23;
+   hbp = width*1.32;
    hmax = hbp;
    
    if (height < 241)
