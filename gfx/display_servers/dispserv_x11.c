@@ -109,11 +109,6 @@ static bool x11_set_resolution(void *data,
    video_monitor_set_refresh_rate(hz);	  
    
    /* following code is the mode line genorator */
-   if (width < 300)
-   {
-      width = width*2;
-      crt_aspect_ratio_switch(width, height);
-   }
 
    hfp = width+8;
    hbp = width*1.32;
