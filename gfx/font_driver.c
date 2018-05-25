@@ -824,7 +824,7 @@ void font_driver_render_msg(
 #ifdef HAVE_LANGEXTRA
       char *new_msg = font_driver_reshape_msg(msg);
 #else
-      char *new_msg = msg;
+      char *new_msg = (char*)msg;
 #endif
 
       font->renderer->render_msg(video_info,

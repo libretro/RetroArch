@@ -199,6 +199,7 @@ default_sublabel_macro(action_bind_sublabel_fastforward_ratio,             MENU_
 default_sublabel_macro(action_bind_sublabel_slowmotion_ratio,              MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO)
 default_sublabel_macro(action_bind_sublabel_run_ahead_enabled,             MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED)
 default_sublabel_macro(action_bind_sublabel_run_ahead_secondary_instance,  MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE)
+default_sublabel_macro(action_bind_sublabel_run_ahead_hide_warnings,       MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS)
 default_sublabel_macro(action_bind_sublabel_run_ahead_frames,              MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES)
 default_sublabel_macro(action_bind_sublabel_rewind,                        MENU_ENUM_SUBLABEL_REWIND_ENABLE)
 default_sublabel_macro(action_bind_sublabel_rewind_granularity,            MENU_ENUM_SUBLABEL_REWIND_GRANULARITY)
@@ -298,6 +299,8 @@ default_sublabel_macro(action_bind_sublabel_accounts_list,                      
 default_sublabel_macro(action_bind_sublabel_input_meta_rewind,                     MENU_ENUM_SUBLABEL_INPUT_META_REWIND)
 default_sublabel_macro(action_bind_sublabel_restart_content,                       MENU_ENUM_SUBLABEL_RESTART_CONTENT)
 default_sublabel_macro(action_bind_sublabel_save_current_config_override_core,     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE)
+default_sublabel_macro(action_bind_sublabel_save_current_config_override_content_dir,
+                                                                                   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR)
 default_sublabel_macro(action_bind_sublabel_save_current_config_override_game,     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME)
 default_sublabel_macro(action_bind_sublabel_core_cheat_options,                    MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_shader_options,                        MENU_ENUM_SUBLABEL_SHADER_OPTIONS)
@@ -416,6 +419,8 @@ default_sublabel_macro(action_bind_sublabel_video_viewport_custom_y,            
 default_sublabel_macro(action_bind_sublabel_netplay_use_mitm_server,               MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER)
 default_sublabel_macro(action_bind_sublabel_netplay_mitm_server,                   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER)
 default_sublabel_macro(action_bind_sublabel_core_delete,                           MENU_ENUM_SUBLABEL_CORE_DELETE)
+default_sublabel_macro(action_bind_sublabel_pause_hardcode_mode,                   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE)
+default_sublabel_macro(action_bind_sublabel_resume_hardcode_mode,                  MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -461,15 +466,13 @@ static int action_bind_sublabel_remap_kbd_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END - 
-      (MENU_SETTINGS_INPUT_DESC_KBD_END - 
-      MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
+   unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
 
-   snprintf(s, len, "User #%d: %s", offset + 1,
-      input_config_get_device_display_name(offset) ? 
-      input_config_get_device_display_name(offset) : 
-      (input_config_get_device_name(offset) ? 
-      input_config_get_device_name(offset) : "N/A"));
+   snprintf(s, len, "User #%d: %s", user_idx + 1,
+      input_config_get_device_display_name(user_idx) ? 
+      input_config_get_device_display_name(user_idx) : 
+      (input_config_get_device_name(user_idx) ? 
+      input_config_get_device_name(user_idx) : "N/A"));
    return 0;
 }
 
@@ -1037,6 +1040,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_current_config_override_core);
             break;
+         case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_current_config_override_content_dir);
+            break;
          case MENU_ENUM_LABEL_RESTART_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_restart_content);
             break;
@@ -1318,6 +1324,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_run_ahead_secondary_instance);
+            break;
+         case MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_run_ahead_hide_warnings);
             break;
          case MENU_ENUM_LABEL_RUN_AHEAD_FRAMES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_run_ahead_frames);
@@ -1742,6 +1751,13 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_DELETE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_delete);
+            break;
+         case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_pause_hardcode_mode);
+            break;
+         case MENU_ENUM_LABEL_ACHIEVEMENT_RESUME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_resume_hardcode_mode);
+            break;
          default:
          case MSG_UNKNOWN:
             return -1;

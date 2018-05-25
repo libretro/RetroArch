@@ -213,6 +213,22 @@ bool menu_shader_manager_set_preset(void *data,
    return true;
 }
 
+static const char *shader_get_preset_extension(unsigned type)
+{
+   switch (type)
+   {
+      case RARCH_SHADER_GLSL:
+         return file_path_str(FILE_PATH_GLSLP_EXTENSION);
+      case RARCH_SHADER_SLANG:
+         return file_path_str(FILE_PATH_SLANGP_EXTENSION);
+      case RARCH_SHADER_HLSL:
+      case RARCH_SHADER_CG:
+         return file_path_str(FILE_PATH_CGP_EXTENSION);
+   }
+
+   return NULL;
+}
+
 /**
  * menu_shader_manager_save_preset:
  * @basename                 : basename of preset
@@ -256,24 +272,9 @@ bool menu_shader_manager_save_preset(
             && !strstr(basename,
                file_path_str(FILE_PATH_SLANGP_EXTENSION)))
       {
-         switch (type)
-         {
-            case RARCH_SHADER_GLSL:
-               strlcat(buffer,
-                     file_path_str(FILE_PATH_GLSLP_EXTENSION),
-                     sizeof(buffer));
-               break;
-            case RARCH_SHADER_SLANG:
-               strlcat(buffer,
-                     file_path_str(FILE_PATH_SLANGP_EXTENSION),
-                     sizeof(buffer));
-               break;
-            case RARCH_SHADER_CG:
-               strlcat(buffer,
-                     file_path_str(FILE_PATH_CGP_EXTENSION),
-                     sizeof(buffer));
-               break;
-         }
+         const char *preset_ext = shader_get_preset_extension(type);
+         if (!string_is_empty(preset_ext))
+            strlcat(buffer, preset_ext, sizeof(buffer));
       }
    }
    else
@@ -287,36 +288,25 @@ bool menu_shader_manager_save_preset(
          const char *config_path     = path_get(RARCH_PATH_CONFIG);
          /* In a multi-config setting, we can't have
           * conflicts on menu.cgp/menu.glslp. */
-         const char *preset_ext       = NULL;
+         const char *preset_ext      = shader_get_preset_extension(type);
 
-         switch (type)
+         if (!string_is_empty(preset_ext))
          {
-            case RARCH_SHADER_GLSL:
-               preset_ext = file_path_str(FILE_PATH_GLSLP_EXTENSION);
-               break;
-            case RARCH_SHADER_SLANG:
-               preset_ext = file_path_str(FILE_PATH_SLANGP_EXTENSION);
-               break;
-            case RARCH_SHADER_HLSL:
-            case RARCH_SHADER_CG:
-               preset_ext = file_path_str(FILE_PATH_CGP_EXTENSION);
-               break;
-         }
-
-         if (config_path)
-         {
-            fill_pathname_base_ext(default_preset,
-                  config_path,
-                  preset_ext,
-                  sizeof(default_preset));
-         }
-         else
-         {
-            strlcpy(default_preset, "menu",
-                  sizeof(default_preset));
-            strlcat(default_preset, 
-                  preset_ext,
-                  sizeof(default_preset));
+            if (config_path)
+            {
+               fill_pathname_base_ext(default_preset,
+                     config_path,
+                     preset_ext,
+                     sizeof(default_preset));
+            }
+            else
+            {
+               strlcpy(default_preset, "menu",
+                     sizeof(default_preset));
+               strlcat(default_preset, 
+                     preset_ext,
+                     sizeof(default_preset));
+            }
          }
       }
 
@@ -327,7 +317,6 @@ bool menu_shader_manager_save_preset(
    if (!fullpath)
    {
       settings_t *settings = config_get_ptr();
-
 
       if (!path_is_empty(RARCH_PATH_CONFIG))
          fill_pathname_basedir(

@@ -5,7 +5,7 @@ DEBUG                   = 0
 GRIFFIN_BUILD           = 1
 WHOLE_ARCHIVE_LINK      = 0
 BUILD_3DSX              = 1
-BUILD_3DS               = 1
+BUILD_3DS               = 0
 BUILD_CIA               = 1
 LIBCTRU_NO_DEPRECATION  = 1
 
@@ -31,6 +31,12 @@ OBJ += ctr/ctr_system.o
 OBJ += ctr/ctr_memory.o
 OBJ += ctr/ctr_linear.o
 OBJ += ctr/gpu_old.o
+OBJ += ctr/exec-3dsx/exec_cia.o \
+	ctr/exec-3dsx/exec_3dsx.o \
+	ctr/exec-3dsx/mini-hb-menu/launch.o \
+	ctr/exec-3dsx/mini-hb-menu/loaders/rosalina.o \
+	ctr/exec-3dsx/mini-hb-menu/loaders/hax2.o \
+	ctr/exec-3dsx/mini-hb-menu/loaders/ninjhax1.o
 
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
 	APP_USE_SVCHAX = 1
@@ -162,7 +168,7 @@ endif
 
 all: $(TARGET)
 
-$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA) $(TARGET).core
+$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
 $(TARGET).3dsx: $(TARGET).elf
 $(TARGET).elf: $(OBJ) libretro_ctr.a
 
@@ -255,9 +261,6 @@ $(TARGET).3ds: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 $(TARGET).cia: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 	$(MAKEROM) -f cia -o $@ $(MAKEROM_ARGS_COMMON) -DAPP_ENCRYPTED=false
 
-$(TARGET).core: $(TARGET).elf
-	echo $(APP_UNIQUE_ID) > $(TARGET).core
-
 
 clean:
 	rm -f $(OBJ)
@@ -265,7 +268,6 @@ clean:
 	rm -f $(TARGET).elf
 	rm -f $(TARGET).3ds
 	rm -f $(TARGET).cia
-	rm -f $(TARGET).core
 	rm -f $(TARGET).smdh
 	rm -f $(TARGET).bnr
 	rm -f $(TARGET).icn

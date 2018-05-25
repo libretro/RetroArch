@@ -168,6 +168,8 @@ enum menu_settings_type
    MENU_SETTING_GROUP,
    MENU_SETTING_SUBGROUP,
    MENU_SETTING_HORIZONTAL_MENU,
+   MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS,
+   MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS,
    MENU_WIFI,
    MENU_ROOM,
 /*
@@ -338,13 +340,17 @@ typedef struct menu_display_frame_info
    bool shadows_enable;
 } menu_display_frame_info_t;
 
+typedef struct menu_display_ctx_draw menu_display_ctx_draw_t;
+
 typedef struct menu_display_ctx_driver
 {
    /* Draw graphics to the screen. */
-   void (*draw)(void *data, video_frame_info_t *video_info);
+   void (*draw)(menu_display_ctx_draw_t *draw, video_frame_info_t *video_info);
    /* Draw one of the menu pipeline shaders. */
-   void (*draw_pipeline)(void *data, video_frame_info_t *video_info);
-   void (*viewport)(void *data, video_frame_info_t *video_info);
+   void (*draw_pipeline)(menu_display_ctx_draw_t *draw,
+         video_frame_info_t *video_info);
+   void (*viewport)(menu_display_ctx_draw_t *draw,
+         video_frame_info_t *video_info);
    /* Start blending operation. */
    void (*blend_begin)(video_frame_info_t *video_info);
    /* Finish blending operation. */
@@ -400,7 +406,7 @@ typedef struct
    } scratchpad;
 } menu_handle_t;
 
-typedef struct menu_display_ctx_draw
+struct menu_display_ctx_draw
 {
    float x;
    float y;
@@ -423,7 +429,7 @@ typedef struct menu_display_ctx_draw
    } pipeline;
    float rotation;
    float scale_factor;
-} menu_display_ctx_draw_t;
+};
 
 typedef struct menu_display_ctx_rotate_draw
 {

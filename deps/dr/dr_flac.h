@@ -656,7 +656,7 @@ const char* drflac_next_vorbis_comment(drflac_vorbis_comment_iterator* pIter, dr
 
 /* Compile-time CPU feature support. */
 #if !defined(DR_FLAC_NO_SIMD) && (defined(DRFLAC_X86) || defined(DRFLAC_X64))
-    #ifdef _MSC_VER
+    #if defined(_MSC_VER) && !defined(__clang__)
         #if _MSC_VER >= 1400
             #include <intrin.h>
             static void drflac__cpuid(int info[4], int fid)
@@ -670,19 +670,8 @@ const char* drflac_next_vorbis_comment(drflac_vorbis_comment_iterator* pIter, dr
         #if defined(__GNUC__) || defined(__clang__)
             static void drflac__cpuid(int info[4], int fid)
             {
-                __asm__ (
-                    "movl %[fid], %%eax\n\t"
-                    "cpuid\n\t"
-                    "movl %%eax, %[info0]\n\t"
-                    "movl %%ebx, %[info1]\n\t"
-                    "movl %%ecx, %[info2]\n\t"
-                    "movl %%edx, %[info3]\n\t"
-                    : [info0] "=rm"(info[0]),
-                      [info1] "=rm"(info[1]),
-                      [info2] "=rm"(info[2]),
-                      [info3] "=rm"(info[3])
-                    : [fid] "rm"(fid)
-                    : "eax", "ebx", "ecx", "edx"
+                __asm__ __volatile__ (
+                    "cpuid" : "=a"(info[0]), "=b"(info[1]), "=c"(info[2]), "=d"(info[3]) : "a"(fid), "c"(0)
                 );
             }
         #else

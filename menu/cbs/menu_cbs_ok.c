@@ -67,6 +67,10 @@
 #include "../../network/netplay/netplay_discovery.h"
 #endif
 
+#ifdef HAVE_CHEEVOS
+#include "../cheevos/cheevos.h"
+#endif
+
 enum
 {
    ACTION_OK_LOAD_PRESET = 0,
@@ -89,8 +93,10 @@ enum
 enum
 {
    ACTION_OK_REMAP_FILE_SAVE_CORE = 0,
+   ACTION_OK_REMAP_FILE_SAVE_CONTENT_DIR,
    ACTION_OK_REMAP_FILE_SAVE_GAME,
    ACTION_OK_REMAP_FILE_REMOVE_CORE,
+   ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR,
    ACTION_OK_REMAP_FILE_REMOVE_GAME
 };
 
@@ -2305,6 +2311,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
 {
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
+   char content_dir[PATH_MAX_LENGTH];
    settings_t *settings            = config_get_ptr();
    const char *core_name           = NULL;
    rarch_system_info_t *info       = runloop_get_system_info();
@@ -2334,6 +2341,15 @@ static int generic_action_ok_remap_file_operation(const char *path,
             fill_pathname_join(file, core_name,
                   path_basename(path_get(RARCH_PATH_BASENAME)), sizeof(file));
          break;
+      case ACTION_OK_REMAP_FILE_SAVE_CONTENT_DIR:
+      case ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR:
+         if (!string_is_empty(core_name))
+         {
+            fill_pathname_parent_dir_name(content_dir, path_get(RARCH_PATH_BASENAME), sizeof(content_dir));
+            fill_pathname_join(file, core_name,
+                  content_dir, sizeof(file));
+         }
+         break;
    }
 
    if (!filestream_exists(directory))
@@ -2347,6 +2363,8 @@ static int generic_action_ok_remap_file_operation(const char *path,
             rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
          else if (action_type == ACTION_OK_REMAP_FILE_SAVE_GAME)
             rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
+         else if (action_type == ACTION_OK_REMAP_FILE_SAVE_CONTENT_DIR)
+            rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
@@ -2375,6 +2393,13 @@ static int generic_action_ok_remap_file_operation(const char *path,
             input_remapping_set_defaults(true);
          }
 
+         else if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR &&
+               rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
+         {
+            rarch_ctl(RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+            input_remapping_set_defaults(true);
+         }
+
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY),
                1, 100, true);
@@ -2394,6 +2419,13 @@ static int action_ok_remap_file_save_core(const char *path,
          idx, entry_idx, ACTION_OK_REMAP_FILE_SAVE_CORE);
 }
 
+static int action_ok_remap_file_save_content_dir(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_remap_file_operation(path, label, type,
+         idx, entry_idx, ACTION_OK_REMAP_FILE_SAVE_CONTENT_DIR);
+}
+
 static int action_ok_remap_file_save_game(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2406,6 +2438,13 @@ static int action_ok_remap_file_remove_core(const char *path,
 {
    return generic_action_ok_remap_file_operation(path, label, type,
          idx, entry_idx, ACTION_OK_REMAP_FILE_REMOVE_CORE);
+}
+
+static int action_ok_remap_file_remove_content_dir(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_remap_file_operation(path, label, type,
+         idx, entry_idx, ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR);
 }
 
 static int action_ok_remap_file_remove_game(const char *path,
@@ -2631,6 +2670,16 @@ static int action_ok_save_state(const char *path,
 {
    if (generic_action_ok_command(CMD_EVENT_SAVE_STATE) == -1)
       return menu_cbs_exit();
+   return generic_action_ok_command(CMD_EVENT_RESUME);
+}
+
+static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_CHEEVOS
+   cheevos_hardcore_paused = !cheevos_hardcore_paused;
+#endif
+   generic_action_ok_command(CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
@@ -4508,11 +4557,17 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
             BIND_ACTION_OK(cbs, action_ok_remap_file_save_core);
             break;
+         case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR:
+            BIND_ACTION_OK(cbs, action_ok_remap_file_save_content_dir);
+            break;
          case MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME:
             BIND_ACTION_OK(cbs, action_ok_remap_file_save_game);
             break;
          case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE:
             BIND_ACTION_OK(cbs, action_ok_remap_file_remove_core);
+            break;
+         case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR:
+            BIND_ACTION_OK(cbs, action_ok_remap_file_remove_content_dir);
             break;
          case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
             BIND_ACTION_OK(cbs, action_ok_remap_file_remove_game);
@@ -4649,6 +4704,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CORE_DELETE:
             BIND_ACTION_OK(cbs, action_ok_core_delete);
             break;
+         case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE:
+         case MENU_ENUM_LABEL_ACHIEVEMENT_RESUME:
+            BIND_ACTION_OK(cbs, action_ok_cheevos_toggle_hardcore_mode);
+            break;
          default:
             return -1;
       }
@@ -4725,6 +4784,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_REMAP_FILE_SAVE_CORE:
             BIND_ACTION_OK(cbs, action_ok_remap_file_save_core);
+            break;
+         case MENU_LABEL_REMAP_FILE_SAVE_CONTENT_DIR:
+            BIND_ACTION_OK(cbs, action_ok_remap_file_save_content_dir);
             break;
          case MENU_LABEL_REMAP_FILE_SAVE_GAME:
             BIND_ACTION_OK(cbs, action_ok_remap_file_save_game);

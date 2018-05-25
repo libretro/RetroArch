@@ -23,11 +23,41 @@
 
 #include <d3d9.h>
 
-#include "../drivers/d3d.h"
+#include "d3d_common.h"
 #include "../video_driver.h"
 #include "../../verbosity.h"
 
+#define D3D9_DECL_FVF_TEXCOORD(stream, offset, index) \
+   { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, \
+      D3DDECLUSAGE_TEXCOORD, (BYTE)(index) }
+
 RETRO_BEGIN_DECLS
+
+typedef struct d3d9_video d3d9_video_t;
+
+typedef struct d3d9_renderchain_driver
+{
+   void (*chain_free)(void *data);
+   void *(*chain_new)(void);
+   bool (*init)(d3d9_video_t *d3d,
+         const video_info_t *video_info,
+         LPDIRECT3DDEVICE9 dev,
+         const D3DVIEWPORT9 *final_viewport,
+         const struct LinkInfo *info,
+         bool rgb32);
+   void (*set_final_viewport)(d3d9_video_t *d3d,
+         void *renderchain_data, const D3DVIEWPORT9 *final_viewport);
+   bool (*add_pass)(void *data, const struct LinkInfo *info);
+   bool (*add_lut)(void *data,
+         const char *id, const char *path,
+         bool smooth);
+   bool (*render)(d3d9_video_t *d3d,
+         const video_frame_info_t *video_info,
+         state_tracker_t *tracker,
+         const void *frame,
+         unsigned width, unsigned height, unsigned pitch, unsigned rotation);
+   const char *ident;
+} d3d9_renderchain_driver_t;
 
 typedef struct d3d9_video
 {
@@ -43,7 +73,7 @@ typedef struct d3d9_video
    unsigned dev_rotation;
 
    overlay_t *menu;
-   const d3d_renderchain_driver_t *renderchain_driver;
+   const d3d9_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
 
    RECT font_rect;
@@ -52,12 +82,15 @@ typedef struct d3d9_video
    math_matrix_4x4 mvp_rotate;
    math_matrix_4x4 mvp_transposed;
 
+   state_tracker_t *state_tracker;
    struct video_viewport vp;
    struct video_shader shader;
    video_info_t video_info;
+#ifdef HAVE_WINDOW
    WNDCLASSEX windowClass;
+#endif
    LPDIRECT3DDEVICE9 dev;
-   d3d_video_viewport_t final_viewport;
+   D3DVIEWPORT9 final_viewport;
 
    char *shader_path;
 
@@ -164,11 +197,10 @@ static INLINE void d3d9_texture_free(LPDIRECT3DTEXTURE9 tex)
 static INLINE void d3d9_set_transform(
       LPDIRECT3DDEVICE9 dev,
       D3DTRANSFORMSTATETYPE state,
-      const void *_matrix)
+      CONST D3DMATRIX *matrix)
 {
-#ifndef _XBOX
-   CONST D3DMATRIX *matrix = (CONST D3DMATRIX*)_matrix;
    /* XBox 360 D3D9 does not support fixed-function pipeline. */
+#ifndef _XBOX
    IDirect3DDevice9_SetTransform(dev, state, matrix);
 #endif
 }
@@ -283,10 +315,9 @@ static INLINE void d3d9_unlock_rectangle(LPDIRECT3DTEXTURE9 tex)
 }
 
 static INLINE void d3d9_lock_rectangle_clear(void *tex,
-      unsigned level, void *_lr, RECT *rect,
+      unsigned level, D3DLOCKED_RECT *lr, RECT *rect,
       unsigned rectangle_height, unsigned flags)
 {
-   D3DLOCKED_RECT *lr = (D3DLOCKED_RECT*)_lr;
 #if defined(_XBOX)
    level              = 0;
 #endif
@@ -339,24 +370,20 @@ static INLINE void d3d9_free_pixel_shader(LPDIRECT3DDEVICE9 dev,
 
 static INLINE bool d3d9_set_pixel_shader(
       LPDIRECT3DDEVICE9 dev,
-      LPDIRECT3DPIXELSHADER9 d3dps)
+      LPDIRECT3DPIXELSHADER9 shader)
 {
-   if (!dev || !d3dps)
-      return false;
-
 #ifdef _XBOX
    /* Returns void on Xbox */
-   IDirect3DDevice9_SetPixelShader(dev, d3dps);
+   IDirect3DDevice9_SetPixelShader(dev, shader);
 #else
-   if (IDirect3DDevice9_SetPixelShader(dev, d3dps) != D3D_OK)
+   if (IDirect3DDevice9_SetPixelShader(dev, shader) != D3D_OK)
       return false;
 #endif
    return true;
 }
 
 static INLINE bool d3d9_set_vertex_shader(
-      LPDIRECT3DDEVICE9 dev, unsigned index,
-      LPDIRECT3DVERTEXSHADER9 shader)
+      LPDIRECT3DDEVICE9 dev, LPDIRECT3DVERTEXSHADER9 shader)
 {
 #ifdef _XBOX
    IDirect3DDevice9_SetVertexShader(dev, shader);
@@ -495,13 +522,10 @@ static INLINE void d3d9_surface_free(LPDIRECT3DSURFACE9 surf)
 }
 
 static INLINE bool d3d9_device_get_render_target_data(
-      void *_dev,
-      void *_src, void *_dst)
+      LPDIRECT3DDEVICE9 dev,
+      LPDIRECT3DSURFACE9 src, LPDIRECT3DSURFACE9 dst)
 {
 #ifndef _XBOX
-   LPDIRECT3DSURFACE9 src = (LPDIRECT3DSURFACE9)_src;
-   LPDIRECT3DSURFACE9 dst = (LPDIRECT3DSURFACE9)_dst;
-   LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
    if (dev &&
          SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(
                dev, src, dst)))
@@ -523,19 +547,16 @@ static INLINE bool d3d9_device_get_render_target(
 }
 
 static INLINE void d3d9_device_set_render_target(
-      void *_dev, unsigned idx,
-      void *data)
+      LPDIRECT3DDEVICE9 dev, unsigned idx,
+      LPDIRECT3DSURFACE9 surf)
 {
-   LPDIRECT3DSURFACE9 surf = (LPDIRECT3DSURFACE9)data;
-   LPDIRECT3DDEVICE9   dev = (LPDIRECT3DDEVICE9)_dev;
    if (dev)
       IDirect3DDevice9_SetRenderTarget(dev, idx, surf);
 }
 
 static INLINE bool d3d9_get_render_state(
-      void *data, INT32 state, DWORD *value)
+      LPDIRECT3DDEVICE9 dev, INT32 state, DWORD *value)
 {
-   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
    if (!dev)
       return false;
 
@@ -551,7 +572,7 @@ static INLINE bool d3d9_get_render_state(
 }
 
 static INLINE bool d3d9_device_create_offscreen_plain_surface(
-      void *_dev,
+      LPDIRECT3DDEVICE9 dev,
       unsigned width,
       unsigned height,
       unsigned format,
@@ -560,7 +581,6 @@ static INLINE bool d3d9_device_create_offscreen_plain_surface(
       void *data)
 {
 #ifndef _XBOX
-   LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
    if (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
                width, height,
                (D3DFORMAT)format, (D3DPOOL)pool,
@@ -597,14 +617,14 @@ static INLINE void d3d9_surface_unlock_rect(LPDIRECT3DSURFACE9 surf)
 static INLINE bool d3d9_get_adapter_display_mode(
       LPDIRECT3D9 d3d,
       unsigned idx,
-      void *display_mode)
+      D3DDISPLAYMODE *display_mode)
 {
    if (!d3d)
       return false;
 #ifndef _XBOX
    if (FAILED(
             IDirect3D9_GetAdapterDisplayMode(
-               d3d, idx, (D3DDISPLAYMODE*)display_mode)))
+               d3d, idx, display_mode)))
       return false;
 #endif
 
@@ -633,10 +653,8 @@ static INLINE bool d3d9_device_get_backbuffer(
    return false;
 }
 
-static INLINE void d3d9_device_free(void *_dev, void *_pd3d)
+static INLINE void d3d9_device_free(LPDIRECT3DDEVICE9 dev, LPDIRECT3D9 pd3d)
 {
-   LPDIRECT3D9      pd3d = (LPDIRECT3D9)_pd3d;
-   LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
    if (dev)
       IDirect3DDevice9_Release(dev);
    if (pd3d)
@@ -744,6 +762,48 @@ static INLINE INT32 d3d9_get_xrgb8888_format(void)
 #else
    return D3DFMT_X8R8G8B8;
 #endif
+}
+
+static INLINE void d3d9_convert_geometry(
+      const struct LinkInfo *info,
+      unsigned *out_width,
+      unsigned *out_height,
+      unsigned width,
+      unsigned height,
+      D3DVIEWPORT9 *final_viewport)
+{
+   if (!info)
+      return;
+
+   switch (info->pass->fbo.type_x)
+   {
+      case RARCH_SCALE_VIEWPORT:
+         *out_width = info->pass->fbo.scale_x * final_viewport->Width;
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         *out_width = info->pass->fbo.abs_x;
+         break;
+
+      case RARCH_SCALE_INPUT:
+         *out_width = info->pass->fbo.scale_x * width;
+         break;
+   }
+
+   switch (info->pass->fbo.type_y)
+   {
+      case RARCH_SCALE_VIEWPORT:
+         *out_height = info->pass->fbo.scale_y * final_viewport->Height;
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         *out_height = info->pass->fbo.abs_y;
+         break;
+
+      case RARCH_SCALE_INPUT:
+         *out_height = info->pass->fbo.scale_y * height;
+         break;
+   }
 }
 
 RETRO_END_DECLS

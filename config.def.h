@@ -181,7 +181,7 @@ static unsigned swap_interval = 1;
 static const bool video_threaded = false;
 
 #if defined(HAVE_THREADS)
-#if defined(GEKKO) || defined(PSP) || defined(_3DS)
+#if defined(GEKKO) || defined(PSP)
 /* For single-core consoles right now it's better to have this be disabled. */
 static const bool threaded_data_runloop_enable = false;
 #else
@@ -261,9 +261,11 @@ static bool quick_menu_show_options              = true;
 static bool quick_menu_show_controls             = true;
 static bool quick_menu_show_cheats               = true;
 static bool quick_menu_show_shaders              = true;
-static bool quick_menu_show_save_core_overrides  = true;
-static bool quick_menu_show_save_game_overrides  = true;
 static bool quick_menu_show_information          = true;
+
+static bool quick_menu_show_save_core_overrides         = true;
+static bool quick_menu_show_save_game_overrides         = true;
+static bool quick_menu_show_save_content_dir_overrides  = true;
 
 static bool kiosk_mode_enable            = false;
 
@@ -600,6 +602,9 @@ static const unsigned run_ahead_frames = 1;
 
 /* When using the Run Ahead feature, use a secondary instance of the core. */
 static const bool run_ahead_secondary_instance = true;
+
+/* Hide warning messages when using the Run Ahead feature. */
+static const bool run_ahead_hide_warnings = false;
 
 /* Enable stdin/network command interface. */
 static const bool network_cmd_enable = false;

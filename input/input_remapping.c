@@ -48,7 +48,7 @@ bool input_remapping_load_file(void *data, const char *path)
       return false;
 
    if (!string_is_empty(global->name.remapfile))
-      free(global->name.remapfile);
+      input_remapping_set_defaults(true);
    global->name.remapfile = strdup(path);
 
    for (i = 0; i < MAX_USERS; i++)
@@ -288,6 +288,7 @@ void input_remapping_set_defaults(bool deinit)
          free(global->name.remapfile);
       global->name.remapfile = NULL;
       rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
+      rarch_ctl(RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
       rarch_ctl(RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE, NULL);
    }
 

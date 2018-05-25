@@ -825,111 +825,6 @@ typedef struct video_driver
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 } video_driver_t;
 
-typedef struct d3d_renderchain_driver
-{
-   void (*chain_free)(void *data);
-   void *(*chain_new)(void);
-   bool (*init)(void *data,
-         const void *video_info_data,
-         void *dev_data,
-         const void *final_viewport_data,
-         const void *info_data,
-         bool rgb32);
-   void (*set_final_viewport)(void *data,
-         void *renderchain_data, const void *viewport_data);
-   bool (*add_pass)(void *data, const void *info_data);
-   bool (*add_lut)(void *data,
-         const char *id, const char *path,
-         bool smooth);
-   void (*add_state_tracker)(void *data, void *tracker_data);
-   bool (*render)(void *chain_data, const void *data,
-         unsigned width, unsigned height, unsigned pitch, unsigned rotation);
-   void (*convert_geometry)(void *data, const void *info_data,
-         unsigned *out_width, unsigned *out_height,
-         unsigned width, unsigned height,
-         void *final_viewport);
-   void (*set_font_rect)(void *data, const void *param_data);
-   bool (*read_viewport)(void *data, uint8_t *buffer, bool is_idle);
-   void (*viewport_info)(void *data, struct video_viewport *vp);
-   const char *ident;
-} d3d_renderchain_driver_t;
-
-typedef struct gl_renderchain_driver
-{
-   void (*set_coords)(void *handle_data,
-         void *chain_data,
-         void *shader_data, const struct video_coords *coords);
-   void (*set_mvp)(void *data,
-         void *chain_data,
-         void *shader_data,
-         const void *mat_data);
-   void (*init_texture_reference)(
-         void *data, void *chain_data, unsigned i,
-         unsigned internal_fmt, unsigned texture_fmt,
-         unsigned texture_type);
-   void (*fence_iterate)(void *data, void *chain_data,
-         unsigned hard_sync_frames);
-   void (*fence_free)(void *data, void *chain_data);
-   void (*readback)(void *data,
-         void *chain_data,
-         unsigned alignment,
-         unsigned fmt, unsigned type,
-         void *src);
-   void (*init_pbo)(unsigned size, const void *data);
-   void (*bind_pbo)(unsigned idx);
-   void (*unbind_pbo)(void *data, void *chain_data);
-   void (*copy_frame)(
-      void *data,
-      void *chain_data,
-      video_frame_info_t *video_info,
-      const void *frame,
-      unsigned width, unsigned height, unsigned pitch);
-   void (*restore_default_state)(void *data, void *chain_data);
-   void (*new_vao)(void *data, void *chain_data);
-   void (*free_vao)(void *data, void *chain_data);
-   void (*bind_vao)(void *data, void *chain_data);
-   void (*unbind_vao)(void *data, void *chain_data);
-   void (*disable_client_arrays)(void *data, void *chain_data);
-   void (*ff_vertex)(const void *data);
-   void (*ff_matrix)(const void *data);
-   void (*bind_backbuffer)(void *data, void *chain_data);
-   void (*deinit_fbo)(void *data, void *chain_data);
-   void (*viewport_info)(
-         void *data, void *chain_data, struct video_viewport *vp);
-   bool (*read_viewport)(
-         void *data, void *chain_data, uint8_t *buffer, bool is_idle);
-   void (*bind_prev_texture)(
-         void *data,
-         void *chain_data,
-         const struct video_tex_info *tex_info);
-   void (*chain_free)(void *data, void *chain_data);
-   void *(*chain_new)(void);
-   void (*init)(void *data, void *chain_data,
-         unsigned fbo_width, unsigned fbo_height);
-   bool (*init_hw_render)(void *data, void *chain_data,
-         unsigned width, unsigned height);
-   void (*free)(void *data, void *chain_data);
-   void (*deinit_hw_render)(void *data, void *chain_data);
-   void (*start_render)(void *data, void *chain_data,
-         video_frame_info_t *video_info);
-   void (*check_fbo_dimensions)(void *data, void *chain_data);
-   void (*recompute_pass_sizes)(void *data,
-         void *chain_data,
-         unsigned width, unsigned height,
-         unsigned vp_width, unsigned vp_height);
-   void (*renderchain_render)(void *data,
-         void *chain_data,
-         video_frame_info_t *video_info,
-         uint64_t frame_count,
-         const struct video_tex_info *tex_info,
-         const struct video_tex_info *feedback_info);
-   void (*resolve_extensions)(
-         void *data,
-         void *chain_data,
-         const char *context_ident,
-         const video_info_t *video);
-   const char *ident;
-} gl_renderchain_driver_t;
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
@@ -1401,7 +1296,6 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
 
 
 extern const shader_backend_t gl_glsl_backend;
-extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
 

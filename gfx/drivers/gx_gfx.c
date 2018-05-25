@@ -435,7 +435,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    for (i = 0; i < 12; i++)
       gx_mode.sample_pattern[i][0] = gx_mode.sample_pattern[i][1] = 6;
 
-   if (modetype == VI_INTERLACE)
+   if (modetype != VI_NON_INTERLACE && settings->bools.video_vfilter)
    {
       gx_mode.vfilter[0] = 8;
       gx_mode.vfilter[1] = 8;
@@ -485,9 +485,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    GX_SetDispCopyDst((u16)xfbWidth, (u16)xfbHeight);
 
    GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern,
-         (gx_mode.xfbMode == VI_XFBMODE_SF)
-         ? GX_FALSE : settings->bools.video_vfilter,
-         gx_mode.vfilter);
+         GX_TRUE, gx_mode.vfilter);
    GXColor color = { 0, 0, 0, 0xff };
    GX_SetCopyClear(color, GX_MAX_Z24);
    GX_SetFieldMode(gx_mode.field_rendering,
@@ -1596,8 +1594,11 @@ static bool gx_frame(void *data, const void *frame,
 #endif
 
    _CPU_ISR_Disable(level);
-   if (referenceRetraceCount > retraceCount)
-      VIDEO_WaitVSync();
+   if (referenceRetraceCount > retraceCount) {
+      if(g_vsync) {
+         VIDEO_WaitVSync();
+      }
+   }
    referenceRetraceCount = retraceCount;
    _CPU_ISR_Restore(level);
 

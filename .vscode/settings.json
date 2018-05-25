@@ -12,7 +12,8 @@
    "files.associations": {
       "frontend_driver.h": "c",
       "*.in": "c",
-      "*.rh": "c"
+      "*.rh": "c",
+      "array": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

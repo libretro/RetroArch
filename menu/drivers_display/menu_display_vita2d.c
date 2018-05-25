@@ -94,21 +94,16 @@ static void menu_display_vita2d_blend_end(video_frame_info_t *video_info)
 
 }
 
-static void menu_display_vita2d_viewport(void *data, video_frame_info_t *video_info)
+static void menu_display_vita2d_viewport(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
-    vita_video_t             *vita2d = video_info ? (vita_video_t*)video_info->userdata : NULL;
-   menu_display_ctx_draw_t     *draw = (menu_display_ctx_draw_t*)data;
-
-   if (!vita2d || !draw)
-      return;
-
 #if 0
    vita2d_texture_set_wvp(draw->x, draw->y, draw->width, draw->height);
 #endif
 }
 
 
-static void menu_display_vita2d_draw(void *data,
+static void menu_display_vita2d_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 #if 0
@@ -119,8 +114,8 @@ static void menu_display_vita2d_draw(void *data,
     const float *vertex              = NULL;
     const float *tex_coord           = NULL;
     const float *color               = NULL;
-    vita_video_t             *vita2d = video_info ? (vita_video_t*)video_info->userdata : NULL;
-    menu_display_ctx_draw_t *draw    = (menu_display_ctx_draw_t*)data;
+    vita_video_t             *vita2d = video_info ? 
+       (vita_video_t*)video_info->userdata : NULL;
 
    if (!vita2d || !draw)
       return;
@@ -200,11 +195,9 @@ static void menu_display_vita2d_draw(void *data,
   }
 }
 
-static void menu_display_vita2d_draw_pipeline(void *data, video_frame_info_t *video_info)
+static void menu_display_vita2d_draw_pipeline(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
-#ifdef HAVE_SHADERPIPELINE
-
-#endif
 }
 
 static void menu_display_vita2d_restore_clear_color(void)

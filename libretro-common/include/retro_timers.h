@@ -91,6 +91,8 @@ static INLINE void retro_sleep(unsigned msec)
    sceKernelDelayThread(1000 * msec);
 #elif defined(_3DS)
    svcSleepThread(1000000 * (s64)msec);
+#elif defined(__WINRT__)
+	/* TODO/FIXME */
 #elif defined(_WIN32)
    Sleep(msec);
 #elif defined(XENON)

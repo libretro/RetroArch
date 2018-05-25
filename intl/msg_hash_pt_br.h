@@ -215,6 +215,14 @@ MSG_HASH(
       "Lista de Conquistas"
       )
 MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+      "Pausar Conquistas no Modo Hardcore"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
+      "Contiuar Conquistas no Modo Hardcore"
+      )
+MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
       "Lista de Conquistas (Hardcore)"
       )
@@ -678,7 +686,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
       "Criar arquivo de opções do jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
-      "Arquivo de opções do jogo")
+      "Salvar arquivo de opções do jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP,
       "Ajuda")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
@@ -1335,12 +1343,16 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
       "Carregar Arquivo de Remapeamento")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
       "Salvar Arquivo de Remapeamento de Núcleo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
+      "Salvar Arquivo de Remapeamento de Jogo do Diretório de Conteúdo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
       "Salvar Arquivo de Remapeamento de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-      "Remover Arquivo de Remapeamento de Núcleo")
+      "Excluir Arquivo de Remapeamento de Núcleo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-      "Remover Arquivo de Remapeamento de Jogo")
+      "Excluir Arquivo de Remapeamento de Jogo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+      "Excluir Arquivo de Remapeamento de Jogo do Diretório de Conteúdo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REQUIRED,
       "Obrigatório")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -1401,6 +1413,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
       "Salvar Configuração Atual")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
       "Salvar Redefinição de Núcleo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+      "Salvar Redefinições do Diretório de Conteúdo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "Salvar Redefinição de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
@@ -1450,11 +1464,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHUTDOWN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
       "Taxa de Câmera Lenta")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-      "Adiantar para Reduzir a Latência")
+      "Adiantar Quadro para Reduzir a Latência")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
       "Número de Quadros para Adiantar")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-      "Adiantar Usa uma Segunda Instância")
+      "O Adiantamento de Quadro Usará uma Segunda Instância")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+      "Ocultar Avisos do Adiantamento de Quadro")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
       "Classificar Arquivos de Jogo-Salvo em Pastas")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
@@ -1794,7 +1810,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
       "Salvar Predefinição de Núcleo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
-      "Salvar Predefinição de Diretório de Conteúdo")
+      "Salvar Predefinição do Diretório de Conteúdo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
       "Salvar Predefinição de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
@@ -2758,7 +2774,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-      "Usa uma segunda instância do núcleo do RetroArch para avançar. Evita problemas de áudio devido ao estado de carregamento."
+      "Usa uma segunda instância do núcleo do RetroArch para avançar quadros. Evita problemas de áudio devido ao estado de carregamento."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+      "Oculta a mensagem de aviso que aparece ao usar o Adiantar Quadro e o núcleo não suporta Estados de Jogo."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_ENABLE,
@@ -3061,6 +3081,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
       "Reinicia o conteúdo do começo.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
       "Salva um arquivo de redefinição de configuração que será aplicado a todo o conteúdo carregado por este núcleo. Terá prioridade sobre a configuração principal.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+      "Salva um arquivo de redefinição de configuração que será aplicado a todo o conteúdo carregado no mesmo diretório que o arquivo atual. Terá prioridade sobre a configuração principal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "Salva um arquivo de redefinição de configuração que será aplicado apenas ao conteúdo atual. Terá prioridade sobre a configuração principal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
@@ -3301,7 +3323,7 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
       "Exibir Atualizador de Núcleos")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-      "Exibir a opção de atualizar núcleos (e arquivos de informação de núcleo).")
+      "Exibir/ocultar a opção de atualizar núcleos (e arquivos de informação de núcleo).")
 MSG_HASH(MSG_PREPARING_FOR_CONTENT_SCAN,
       "Preparando a busca de conteúdo...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -3472,6 +3494,14 @@ MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
       "Arquivo de remapeamento do jogo carregado.")
 MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
       "Arquivo de remapeamento principal carregado.")
+MSG_HASH(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+      "O Adiantar Quadro foi desativado porque esse núcleo não suporta estados de jogo.")
+MSG_HASH(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+      "Falha ao salvar o estado do jogo. O Adiantar Quadro foi desativado.")
+MSG_HASH(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+      "Falha ao carregar o estado do jogo. O Adiandar Quadro foi desativado.")
+MSG_HASH(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+      "Falha ao criar uma segunda instância. O Adiantar Quadro agora usará apenas uma instância.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
       "Adicione automaticamente conteúdo à lista de reprodução")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
@@ -3549,11 +3579,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
       "&Opções...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
-      "Lembrar posições da doca:")
+      "Lembrar Posições da Doca:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
-      "Lembrar geometria da janela:")
+      "Lembrar Geometria da Janela:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
-      "Lembrar a última aba do navegador de conteúdo:")
+      "Lembrar a Última Aba do Navegador de Conteúdo:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
       "Tema")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT,
@@ -3645,7 +3675,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
       "O arquivo não existe.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
-      "Sugerir primeiro núcleo carregado")
+      "Sugerir Primeiro Núcleo Carregado")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
       "Opções de Substituição de Configuração")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
@@ -3679,6 +3709,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
       "Volume")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
-      "Current core")
+      "Núcleo atual")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
-      "Clear")
+      "Limpar")
+MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+      "Pausar conquistas para a sessão atual (Esta ação ativará Estados de Jogos, Trapaças, Rebobinagem, Pausa e Câmera Lenta).")
+MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+      "Continuar conquistas para a sessão atual (Esta ação desabilitará Estados de Jogos, Trapaças, Rebobinagem, Pausa e Câmera Lenta e reiniciará o jogo atual).")

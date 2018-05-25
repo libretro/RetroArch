@@ -236,6 +236,7 @@ static bool runloop_perfcnt_enable                         = false;
 static bool runloop_overrides_active                       = false;
 static bool runloop_remaps_core_active                     = false;
 static bool runloop_remaps_game_active                     = false;
+static bool runloop_remaps_content_dir_active              = false;
 static bool runloop_game_options_active                    = false;
 static bool runloop_missing_bios                           = false;
 static bool runloop_autosave                               = false;
@@ -348,6 +349,7 @@ static void global_free(void)
    runloop_overrides_active              = false;
    runloop_remaps_core_active            = false;
    runloop_remaps_game_active            = false;
+   runloop_remaps_content_dir_active     = false;
 
    core_unset_input_descriptors();
 
@@ -1701,6 +1703,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_REMAPS_GAME_ACTIVE:
          return runloop_remaps_game_active;
+      case RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE:
+         runloop_remaps_content_dir_active = true;
+         break;
+      case RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE:
+         runloop_remaps_content_dir_active = false;
+         break;
+      case RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE:
+         return runloop_remaps_content_dir_active;
       case RARCH_CTL_SET_MISSING_BIOS:
          runloop_missing_bios = true;
          break;
@@ -2987,7 +2997,11 @@ static enum runloop_state runloop_check_state(
    }
 
 #ifdef HAVE_CHEEVOS
-   if (!settings->bools.cheevos_hardcore_mode_enable)
+   cheevos_hardcore_active =  settings->bools.cheevos_enable
+                              && settings->bools.cheevos_hardcore_mode_enable
+                              && cheevos_loaded && !cheevos_hardcore_paused;
+
+   if (!cheevos_hardcore_active)
 #endif
    {
       char s[128];
@@ -3002,7 +3016,7 @@ static enum runloop_state runloop_check_state(
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
 #ifdef HAVE_CHEEVOS
-   if (!settings->bools.cheevos_enable)
+   if (!cheevos_hardcore_active)
 #endif
    {
       static bool old_slowmotion_button_state      = false;
