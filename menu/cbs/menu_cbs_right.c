@@ -103,21 +103,18 @@ int action_right_cheat(unsigned type, const char *label,
 int action_right_input_desc_kbd(unsigned type, const char *label,
       bool wraparound)
 {
-   unsigned key_id, id, offset;
+   unsigned key_id, user_idx, btn_idx;
    unsigned remap_id;
    settings_t *settings = config_get_ptr();
 
    if (!settings)
       return 0;
 
-   offset = type / ((MENU_SETTINGS_INPUT_DESC_KBD_END -
-      (MENU_SETTINGS_INPUT_DESC_KBD_END -
-      MENU_SETTINGS_INPUT_DESC_KBD_BEGIN))) - 1;
-
-   id = (type / (offset + 1)) - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+   user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
+   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_FIRST_CUSTOM_BIND * user_idx;
 
    remap_id =
-      settings->uints.input_keymapper_ids[offset][id];
+      settings->uints.input_keymapper_ids[user_idx][btn_idx];
 
    for (key_id = 0; key_id < RARCH_MAX_KEYS - 1; key_id++)
    {
@@ -130,7 +127,7 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
    else
       key_id = 0;
 
-   settings->uints.input_keymapper_ids[offset][id] = key_descriptors[key_id].key;
+   settings->uints.input_keymapper_ids[user_idx][btn_idx] = key_descriptors[key_id].key;
 
    return 0;
 }

@@ -1217,7 +1217,7 @@ static void JSON_Parser_NullTerminateToken(JSON_Parser parser)
       can write the null terminator to the buffer with impunity. */
    static const byte nullTerminatorBytes[LONGEST_ENCODING_SEQUENCE] = { 0 };
    Encoding encoding = (Encoding)((parser->token == T_NUMBER) ? parser->numberEncoding : parser->stringEncoding);
-   memcpy(parser->pTokenBytes + parser->tokenBytesUsed, nullTerminatorBytes, SHORTEST_ENCODING_SEQUENCE(encoding));
+   memcpy(parser->pTokenBytes + parser->tokenBytesUsed, nullTerminatorBytes, (size_t)SHORTEST_ENCODING_SEQUENCE(encoding));
 }
 
 static JSON_Status JSON_Parser_FlushParser(JSON_Parser parser)
@@ -1514,10 +1514,10 @@ static JSON_Status JSON_Parser_HandleInvalidNumber(JSON_Parser parser,
          "1.2e-!" => "1.2"
          */
       parser->codepointLocationByte -= (size_t)codepointsSinceValidNumber
-         * SHORTEST_ENCODING_SEQUENCE(parser->inputEncoding);
+         * (size_t)SHORTEST_ENCODING_SEQUENCE(parser->inputEncoding);
       parser->codepointLocationColumn -= (size_t)codepointsSinceValidNumber;
       parser->tokenBytesUsed -= (size_t)codepointsSinceValidNumber
-         * SHORTEST_ENCODING_SEQUENCE(parser->numberEncoding);
+         * (size_t)SHORTEST_ENCODING_SEQUENCE(parser->numberEncoding);
       return JSON_Parser_ProcessToken(parser); /* always fails */
    }
    /* Allow JSON_Parser_FlushLexer() to fail. */
@@ -3232,7 +3232,7 @@ static JSON_Status JSON_Writer_OutputString(JSON_Writer writer, const byte* pByt
    static const byte* const quoteEncodings[5] = { quoteUTF + 3, quoteUTF + 3, quoteUTF + 2, quoteUTF + 3, quoteUTF };
 
    const byte* pQuoteEncoded = quoteEncodings[writer->outputEncoding - 1];
-   size_t minSequenceLength = SHORTEST_ENCODING_SEQUENCE(writer->outputEncoding);
+   size_t minSequenceLength = (size_t)SHORTEST_ENCODING_SEQUENCE(writer->outputEncoding);
    DecoderData decoderData;
    WriteBufferData bufferData;
    size_t i = 0;
@@ -3510,7 +3510,7 @@ static JSON_Status JSON_Writer_OutputSpaces(JSON_Writer writer, size_t numberOfS
    static const byte spacesUTF32[SPACES_PER_CHUNK * 4 + 3] = { 0, 0, 0, ' ', 0, 0, 0, ' ', 0, 0, 0, ' ', 0, 0, 0, ' ', 0, 0, 0, ' ', 0, 0, 0, ' ', 0, 0, 0, ' ', 0, 0, 0, ' ', 0, 0, 0 };
    static const byte* const spacesEncodings[5] = { spacesUTF8, spacesUTF16 + 1, spacesUTF16, spacesUTF32 + 3, spacesUTF32 };
 
-   size_t encodedLength = SHORTEST_ENCODING_SEQUENCE(writer->outputEncoding);
+   size_t encodedLength = (size_t)SHORTEST_ENCODING_SEQUENCE(writer->outputEncoding);
    const byte* encoded = spacesEncodings[writer->outputEncoding - 1];
    while (numberOfSpaces > SPACES_PER_CHUNK)
    {
@@ -3529,7 +3529,7 @@ static JSON_Status JSON_Writer_WriteSimpleToken(JSON_Writer writer, Symbol token
    JSON_Status status = JSON_Failure;
    if (writer && !GET_FLAGS(writer->state, WRITER_IN_PROTECTED_API) && writer->error == JSON_Error_None)
    {
-      size_t encodedLength = length * SHORTEST_ENCODING_SEQUENCE(writer->outputEncoding);
+      size_t encodedLength = length * (size_t)SHORTEST_ENCODING_SEQUENCE(writer->outputEncoding);
       SET_FLAGS_ON(WriterState, writer->state, WRITER_STARTED | WRITER_IN_PROTECTED_API);
       if (JSON_Writer_ProcessToken(writer, token) &&
             JSON_Writer_OutputBytes(writer, encodings[writer->outputEncoding - 1], encodedLength))
@@ -3870,11 +3870,9 @@ JSON_Status JSON_CALL JSON_Writer_WriteNewLine(JSON_Writer writer)
          encodings = lfEncodings;
          length = 1;
       }
-      encodedLength = length * SHORTEST_ENCODING_SEQUENCE(writer->outputEncoding);
+      encodedLength = length * (size_t)SHORTEST_ENCODING_SEQUENCE(writer->outputEncoding);
       if (JSON_Writer_OutputBytes(writer, encodings[writer->outputEncoding - 1], encodedLength))
-      {
          status = JSON_Success;
-      }
       SET_FLAGS_OFF(WriterState, writer->state, WRITER_IN_PROTECTED_API);
    }
    return status;

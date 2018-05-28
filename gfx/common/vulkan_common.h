@@ -81,7 +81,9 @@ enum vulkan_wsi_type
    VULKAN_WSI_WIN32,
    VULKAN_WSI_XCB,
    VULKAN_WSI_XLIB,
-   VULKAN_WSI_DISPLAY
+   VULKAN_WSI_DISPLAY,
+   VULKAN_WSI_MVK_MACOS,
+   VULKAN_WSI_MVK_IOS,
 };
 
 typedef struct vulkan_context

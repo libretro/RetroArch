@@ -2169,6 +2169,16 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+               MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
                MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
                &group_info,
@@ -4689,7 +4699,7 @@ static bool setting_append_list(
             general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 1, 6, 1, true, true);
 
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.run_ahead_secondary_instance,
@@ -4706,6 +4716,22 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
 #endif
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.run_ahead_hide_warnings,
+               MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,
+               MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_ADVANCED
+               );
 
          CONFIG_BOOL(
                list, list_info,
@@ -5274,6 +5300,49 @@ static bool setting_append_list(
                      general_read_handler,
                      SD_FLAG_NONE
                      );
+
+            /* These colors are hints. The menu driver is not required to use them. */
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_entry_normal_color,
+                  MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR,
+                  MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
+                  menu_entry_normal_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_entry_hover_color,
+                  MENU_ENUM_LABEL_ENTRY_HOVER_COLOR,
+                  MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
+                  menu_entry_hover_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_title_color,
+                  MENU_ENUM_LABEL_TITLE_COLOR,
+                  MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
+                  menu_title_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
          }
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
@@ -5390,50 +5459,6 @@ static bool setting_append_list(
                );
 #endif
 
-#if 0
-         /* These colors are hints. The menu driver is not required to use them. */
-         CONFIG_HEX(
-               list, list_info,
-               &settings->menu.entry_normal_color,
-               MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR,
-               MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-               menu_entry_normal_color,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-         CONFIG_HEX(
-               list, list_info,
-               &settings->menu.entry_hover_color,
-               MENU_ENUM_LABEL_ENTRY_HOVER_COLOR,
-               MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-               menu_entry_hover_color,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-         CONFIG_HEX(
-               list, list_info,
-               &settings->menu.title_color,
-               MENU_ENUM_LABEL_TITLE_COLOR,
-               MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
-               menu_title_color,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -6533,7 +6558,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_ADVANCED);
+               SD_FLAG_NONE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -6548,7 +6573,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_ADVANCED);
+               SD_FLAG_NONE);
 #endif
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -6686,21 +6711,22 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.cheevos_badges_enable,
-               MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE,
-               MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
-               false,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.cheevos_badges_enable,
+                  MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
+                  false,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
 
          CONFIG_BOOL(
                list, list_info,

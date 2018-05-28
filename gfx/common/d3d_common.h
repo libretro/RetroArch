@@ -16,18 +16,61 @@
 #ifndef _D3D_COMMON_H
 #define _D3D_COMMON_H
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifndef _XBOX
+#define HAVE_WINDOW
+#endif
+
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "../font_driver.h"
 #include "../video_driver.h"
 
 RETRO_BEGIN_DECLS
+
+struct d3d_matrix
+{
+   union {
+      struct {
+         float        _11, _12, _13, _14;
+         float        _21, _22, _23, _24;
+         float        _31, _32, _33, _34;
+         float        _41, _42, _43, _44;
+
+      };
+      float m[4][4];
+   };
+};
+
 
 typedef struct d3d_texture
 {
    void *data;
    INT32 pool;
 } d3d_texture_t;
+
+typedef struct
+{
+   bool fullscreen;
+   bool enabled;
+   unsigned tex_w, tex_h;
+   float tex_coords[4];
+   float vert_coords[4];
+   float alpha_mod;
+   void *tex;
+   void *vert_buf;
+} overlay_t;
+
+typedef struct Vertex
+{
+   float x, y, z;
+   uint32_t color;
+   float u, v;
+} Vertex;
 
 #ifndef BYTE_CLAMP
 #define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))

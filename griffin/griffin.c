@@ -13,15 +13,19 @@
 * You should have received a copy of the GNU General Public License along with RetroArch.
 * If not, see <http://www.gnu.org/licenses/>.
 */
+#include <retro_environment.h>
 
 #define CINTERFACE
+
+#if !defined(__WINRT__)
 #define HAVE_IBXM 1
+#endif
 
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
 #define HAVE_COMPRESSION 1
 #endif
 
-#if _MSC_VER
+#if _MSC_VER && !defined(__WINRT__)
 #include "../libretro-common/compat/compat_snprintf.c"
 #endif
 
@@ -170,7 +174,7 @@ CHEATS
 /*============================================================
 UI COMMON CONTEXT
 ============================================================ */
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../gfx/common/win32_common.c"
 #endif
 
@@ -179,7 +183,7 @@ VIDEO CONTEXT
 ============================================================ */
 #include "../gfx/drivers_context/gfx_null_ctx.c"
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 
 #if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/wgl_ctx.c"
@@ -278,13 +282,6 @@ VIDEO SHADERS
 
 #ifdef HAVE_GLSL
 #include "../gfx/drivers_shader/shader_glsl.c"
-#endif
-
-#if defined(HAVE_D3D)
-
-#ifdef HAVE_HLSL
-#include "../gfx/drivers_shader/shader_hlsl.c"
-#endif
 #endif
 
 /*============================================================
@@ -439,7 +436,7 @@ VIDEO DRIVER
 #endif
 #include "../gfx/drivers/nullgfx.c"
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../gfx/drivers/gdi_gfx.c"
 #endif
 
@@ -501,7 +498,7 @@ FONTS
 #include "../gfx/drivers_font/vga_font.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../gfx/drivers_font/gdi_font.c"
 #endif
 
@@ -539,7 +536,7 @@ INPUT
 #include "../input/common/x11_input_common.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501
+#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
 /* winraw only available since XP */
 #include "../input/drivers/winraw_input.c"
 #endif
@@ -907,7 +904,7 @@ FRONTEND
 
 #include "../frontend/frontend_driver.c"
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../frontend/drivers/platform_win32.c"
 #endif
 
@@ -952,7 +949,7 @@ UI
 #include "../ui/drivers/null/ui_null_msg_window.c"
 #include "../ui/drivers/null/ui_null_application.c"
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../ui/drivers/ui_win32.c"
 #include "../ui/drivers/win32/ui_win32_window.c"
 #include "../ui/drivers/win32/ui_win32_browser_window.c"

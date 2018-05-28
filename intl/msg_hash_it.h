@@ -3340,38 +3340,42 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
       "Abilita o disabilita il suono del menu.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-      "Mixer Settings")
+      "Impostazioni del mixer")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-      "View and/or modify audio mixer settings.")
+      "Visualizza e/o modifica le impostazioni del mixer audio.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
-      "Configuration Override options")
+      "Opzioni di override della configurazione")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
-      "Options for overriding the global configuration.")
+      "Opzioni per sovrascrivere la configurazione globale.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
-      "Will start playback of the audio stream. Once finished, it will remove the current audio stream from memory.")
+      "Avvierà la riproduzione dello stream audio. Una volta terminato, rimuoverà lo stream audio corrente dalla memoria.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
-      "Will start playback of the audio stream. Once finished, it will loop and play the track again from the beginning.")
+      "Avvierà la riproduzione dello stream audio. Una volta terminato, eseguirà un ciclo e riprodurrà nuovamente la traccia dall'inizio.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
-      "Will start playback of the audio stream. Once finished, it will jump to the next audio stream in sequential order and repeat this behavior. Useful as an album playback mode.")
+      "Avvierà la riproduzione dello stream audio. Una volta terminato, salterà al successivo stream audio in ordine sequenziale e ripeterà questo comportamento. Utile come una modalità di riproduzione dell'album.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
-      "This will stop playback of the audio stream, but not remove it from memory. You can start playing it again by selecting 'Play'.")
+      "Questo fermerà la riproduzione dello stream audio, ma non lo rimuoverà dalla memoria. Puoi avviarlo di nuovo selezionando 'Play'.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
-      "This will stop playback of the audio stream and remove it entirely from memory.")
+      "Questo fermerà la riproduzione dello stream audio e lo rimuoverà interamente dalla memoria.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
-      "Adjust the volume of the audio stream.")
+      "Regola il volume dello stream audio.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-      "Add this audio track to an available audio stream slot. If no slots are currently available, it will be ignored.")
+      "Aggiunge questa traccia audio a uno slot dello stream audio disponibile. Se non ci sono slot attualmente disponibili, verrà ignorata.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-      "Add this audio track to an available audio stream slot and play it. If no slots are currently available, it will be ignored.")
+      "Aggiunge questa traccia audio a uno slot di streaming audio disponibile per riprodurla. Se non ci sono slot attualmente disponibili, verrà ignorata.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
       "Play")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
       "Play (Looped)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
-      "Play (Sequential)")
+      "Play (Sequenziale)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
       "Stop")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
-      "Remove")
+      "Rimuovi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
       "Volume")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
+      "Core attuale")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
+      "Cancella")

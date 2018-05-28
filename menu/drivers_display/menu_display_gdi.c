@@ -42,19 +42,19 @@ static void menu_display_gdi_blend_end(video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_gdi_draw(void *data, video_frame_info_t *video_info)
+static void menu_display_gdi_draw(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
-   (void)data;
 }
 
-static void menu_display_gdi_draw_pipeline(void *data, video_frame_info_t *video_info)
+static void menu_display_gdi_draw_pipeline(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
-   (void)data;
 }
 
-static void menu_display_gdi_viewport(void *data, video_frame_info_t *video_info)
+static void menu_display_gdi_viewport(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
-   (void)data;
 }
 
 static void menu_display_gdi_restore_clear_color(void)

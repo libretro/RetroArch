@@ -19,6 +19,9 @@
 #include "cocoa_common.h"
 #ifdef HAVE_COCOA
 #include "../ui_cocoa.h"
+#ifdef HAVE_VULKAN
+#import <QuartzCore/CAMetalLayer.h>
+#endif
 #endif
 
 #include <retro_assert.h>
@@ -50,6 +53,18 @@ void *nsview_get_ptr(void)
 {
     return g_instance;
 }
+
+CocoaView* recreate_cocoa_view()
+{
+   NSWindow* window = g_instance.window;
+   [g_instance removeFromSuperview];
+   g_instance = nil;
+   [[CocoaView get] setFrame: [[window contentView] bounds]];
+   [[window contentView] setAutoresizesSubviews:YES];
+   [[window contentView] addSubview:[CocoaView get]];
+   [window makeFirstResponder:[CocoaView get]];
+   return [CocoaView get];
+}
 #endif
 
 /* forward declarations */
@@ -65,6 +80,29 @@ void *glkitview_init(void);
     cocoa_input_data_t *apple = (cocoa_input_data_t*)input_driver_get_data();
     (void)apple;
 }
+
+#ifdef HAVE_VULKAN
+/** Indicates that the view wants to draw using the backing layer instead of using drawRect:.  */
+-(BOOL) wantsUpdateLayer
+{
+   return YES;
+}
+
+/** Returns a Metal-compatible layer. */
++(Class) layerClass
+{
+   return [CAMetalLayer class];
+}
+
+/** If the wantsLayer property is set to YES, this method will be invoked to return a layer instance. */
+-(CALayer*) makeBackingLayer
+{
+   CALayer* layer = [self.class.layerClass layer];
+   CGSize viewScale = [self convertSizeToBacking: CGSizeMake(1.0, 1.0)];
+   layer.contentsScale = MIN(viewScale.width, viewScale.height);
+   return layer;
+}
+#endif
 #endif
 
 + (CocoaView*)get
@@ -83,6 +121,8 @@ void *glkitview_init(void);
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
    ui_window_cocoa_t cocoa_view;
    cocoa_view.data = (CocoaView*)self;
+   //self.wantsLayer = YES;
+   
     
    [self registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
 #elif defined(HAVE_COCOATOUCH)

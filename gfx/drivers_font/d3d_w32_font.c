@@ -24,7 +24,6 @@
 #include "../../config.h"
 #endif
 
-#include "../drivers/d3d.h"
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
 #include "../font_driver.h"

@@ -122,4 +122,3 @@ uint32_t bitstream_flush(struct bitstream* bitstream)
 	bitstream->bits = bitstream->buffer = 0;
 	return bitstream->doffset;
 }
-

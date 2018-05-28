@@ -19,6 +19,10 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
+#if defined(_3DS)
+#include <3ds.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -147,7 +151,10 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
    strlcpy(s, "elf", len);
    return true;
 #elif defined(_3DS)
-   strlcpy(s, "core", len);
+   if (envIsHomebrew())
+      strlcpy(s, "3dsx", len);
+   else
+      strlcpy(s, "cia", len);
    return true;
 #else
    return false;

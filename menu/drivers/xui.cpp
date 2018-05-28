@@ -47,7 +47,6 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
-#include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
 #include "../../gfx/common/d3d9_common.h"
 

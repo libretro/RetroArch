@@ -1296,7 +1296,7 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
    }
 
    GX2SetViewport(wiiu->vp.x, wiiu->vp.y, wiiu->vp.width, wiiu->vp.height, 0.0f, 1.0f);
-   GX2SetScissor(wiiu->vp.x, wiiu->vp.y, wiiu->vp.width, wiiu->vp.height);
+   GX2SetScissor(0, 0, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height);
    GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
 
    GX2SetShaderMode(GX2_SHADER_MODE_GEOMETRY_SHADER);
@@ -1311,7 +1311,6 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
                             wiiu->ubo_tex);
    GX2SetViewport(0.0f, 0.0f, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height,
                   0.0f, 1.0f);
-   GX2SetScissor(0, 0, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height);
 
 #ifdef HAVE_OVERLAY
 

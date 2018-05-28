@@ -20,7 +20,7 @@
  * controllers.
  */
 
-#include "wiiu_input.h"
+#include "../../include/wiiu/input.h"
 
 static bool kpad_init(void *data);
 static bool kpad_query_pad(unsigned pad);

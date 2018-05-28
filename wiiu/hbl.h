@@ -1,6 +1,8 @@
 #ifndef __WIIU_HBL_LOADER_H__
 #define __WIIU_HBL_LOADER_H__
 
+#include "wiiu/types.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

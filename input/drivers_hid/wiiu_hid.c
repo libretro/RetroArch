@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "wiiu_hid.h"
+#include "../include/wiiu/hid.h"
 #include <wiiu/os/atomic.h>
 
 static wiiu_event_list events;

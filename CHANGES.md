@@ -1,4 +1,24 @@
-# 1.7.3 (future)
+# 1.7.4 (future)
+- COMMON: Automatically hide "Configuration Override options" in Quick Menu.
+- COMMON: Small Bugfix to not trigger savestate code when pressing Reset.
+- HID/OSX: Fix to set hid device registration deterministic (#6497), to address issue #6640 re-adding dynamic device registration.
+- LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Polish translation.
+- LOCALIZATION: Update Portuguese / Brazilian translation.
+- LOCALIZATION: Update Spanish translation.
+- MENU/QT/WIMP: QT QSlider styling for Dark Theme.
+- MENU/QT/WIMP: Remove button ghostly inside highlighting.
+- PS3: Add audio mixer support for FLAC and MP3.
+- PSP: Use proper button labels, fix inverted R-Stick Y axis.
+- REMAPS: Fix the way offsets are calculated for keyboard remapping.
+- RUNAHEAD: Fix full-screen mode change breaking Secondary Core's environment variables.
+- VITA: Use proper button labels, fix inverted R-Stick Y axis.
+- VULKAN/OSX: Initial MoltenVK support. Not enabled yet, several MoltenVK bugs should be fixed first before we can have it fully working.
+- WII: Change deflicker setting to work in 480p or higher, and always enables vfilter so that the user can easily change brightness.
+- WIIU: Fix out-of-bounds rendering bug
+- WIIU: Implement UDP broadcast network logging on Wii U.
+
+# 1.7.3
 - AUDIO: Audio mixer supports FLAC/MP3 file types now!
 - COMMON: Fixed bug 'crashing in cores that don't range check retro_set_controller_type'. Some people were having crashes when device is set to RETRO_DEVICE_NONE and the cores don't check the number of ports, in VBAM's case it was overflowing and crashing. QuickNES was crashing too.
 - COMMON: Fixed buffer overflow in url encoding (affecting MSVC2010/2013).
@@ -9,6 +29,7 @@
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese translation.
+- MENU: New WIMP Qt GUI!
 - MENU: Audio mixer now works in the menu without any cores loaded. You have to enable the setting 'Enable menu audio' for this to work.
 - REMAPPING/OVERLAYS: Fix regression - overlays could no longer be remapped.
 - SCANNER: Add Wii Backup File WBFS support.

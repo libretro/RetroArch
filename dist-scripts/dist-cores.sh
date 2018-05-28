@@ -40,10 +40,9 @@ elif [ $PLATFORM = "ctr" ] ; then
 platform=ctr
 SALAMANDER=yes
 EXT=a
-mkdir -p ../pkg/3ds/cia
-mkdir -p ../pkg/3ds/rom
-mkdir -p ../pkg/3ds/3ds
-mkdir -p ../pkg/3ds/retroarch/cores
+mkdir -p ../pkg/${platform}/build/cia
+mkdir -p ../pkg/${platform}/build/3dsx
+mkdir -p ../pkg/${platform}/build/rom
 
 # Emscripten
 elif [ $PLATFORM = "emscripten" ] ; then
@@ -140,8 +139,12 @@ if [ $SALAMANDER = "yes" ]; then
      make -C ../ -f Makefile.${platform}.salamander clean || exit 1
    fi
    if [ $PLATFORM = "ctr" ] ; then
-   mv -f ../retroarch_3ds_salamander.cia ../pkg/3ds/cia/retroarch_3ds.cia
-   make -C ../ -f Makefile.${platform} clean || exit 1
+   mv -f ../retroarch_3ds_salamander.cia ../pkg/${platform}/build/cia/retroarch_3ds.cia
+   mkdir -p ../pkg/${platform}/build/3dsx/3ds/RetroArch
+   mv -f ../retroarch_3ds_salamander.3dsx ../pkg/${platform}/build/3dsx/3ds/RetroArch/RetroArch.3dsx
+   mv -f ../retroarch_3ds_salamander.smdh ../pkg/${platform}/build/3dsx/3ds/RetroArch/RetroArch.smdh
+   # the .3ds port cant use salamander since you can only have one ROM on a cartridge at once
+   make -C ../ -f Makefile.${platform}.salamander clean || exit 1
    fi
    if [ $PLATFORM = "wii" ] ; then
    mv -f ../retroarch-salamander_wii.dol ../pkg/${platform}/boot.dol
@@ -243,13 +246,9 @@ for f in `ls -v *_${platform}.${EXT}`; do
             cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/${platform}/retroarch.vpk/vpk/info/"${name}_libretro.info"
          fi
    elif [ $PLATFORM = "ctr" ] ; then
-      mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
-      mv -f ../retroarch_3ds.3ds ../pkg/3ds/rom/${name}_libretro.3ds
-      mv -f ../retroarch_3ds.core ../pkg/3ds/retroarch/cores/${name}_libretro.core
-      mkdir -p ../pkg/3ds/3ds/${name}_libretro
-      mv -f ../retroarch_3ds.3dsx ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.3dsx
-      mv -f ../retroarch_3ds.smdh ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.smdh
-      mv -f ../retroarch_3ds.xml  ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.xml 2> /dev/null
+      mv -f ../retroarch_3ds.cia ../pkg/${platform}/build/cia/${name}_libretro.cia
+      mv -f ../retroarch_3ds.3dsx ../pkg/${platform}/build/3dsx/${name}_libretro.3dsx
+      mv -f ../retroarch_3ds.3ds ../pkg/${platform}/build/rom/${name}_libretro.3ds
    elif [ $PLATFORM = "unix" ] ; then
       mv -f ../retroarch ../pkg/${platform}/${name}_libretro.elf
    elif [ $PLATFORM = "ngc" ] ; then

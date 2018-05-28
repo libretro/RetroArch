@@ -656,7 +656,7 @@ const char* drflac_next_vorbis_comment(drflac_vorbis_comment_iterator* pIter, dr
 
 /* Compile-time CPU feature support. */
 #if !defined(DR_FLAC_NO_SIMD) && (defined(DRFLAC_X86) || defined(DRFLAC_X64))
-    #ifdef _MSC_VER
+    #if defined(_MSC_VER) && !defined(__clang__)
         #if _MSC_VER >= 1400
             #include <intrin.h>
             static void drflac__cpuid(int info[4], int fid)
@@ -670,19 +670,8 @@ const char* drflac_next_vorbis_comment(drflac_vorbis_comment_iterator* pIter, dr
         #if defined(__GNUC__) || defined(__clang__)
             static void drflac__cpuid(int info[4], int fid)
             {
-                __asm__ (
-                    "movl %[fid], %%eax\n\t"
-                    "cpuid\n\t"
-                    "movl %%eax, %[info0]\n\t"
-                    "movl %%ebx, %[info1]\n\t"
-                    "movl %%ecx, %[info2]\n\t"
-                    "movl %%edx, %[info3]\n\t"
-                    : [info0] "=rm"(info[0]),
-                      [info1] "=rm"(info[1]),
-                      [info2] "=rm"(info[2]),
-                      [info3] "=rm"(info[3])
-                    : [fid] "rm"(fid)
-                    : "eax", "ebx", "ecx", "edx"
+                __asm__ __volatile__ (
+                    "cpuid" : "=a"(info[0]), "=b"(info[1]), "=c"(info[2]), "=d"(info[3]) : "a"(fid), "c"(0)
                 );
             }
         #else
@@ -2139,11 +2128,11 @@ static drflac_bool32 drflac__read_rice_parts__reference(drflac_bs* bs, drflac_ui
 static DRFLAC_INLINE drflac_bool32 drflac__read_rice_parts(drflac_bs* bs, drflac_uint8 riceParam, drflac_uint32* pZeroCounterOut, drflac_uint32* pRiceParamPartOut)
 {
    drflac_uint32 riceLength;
-   drflac_uint32 riceParamPart;
+   drflac_uint32 riceParamPart     = 0;
    drflac_uint32 setBitOffsetPlus1;
-   drflac_cache_t riceParamMask = DRFLAC_CACHE_L1_SELECTION_MASK(riceParam);
-   drflac_cache_t resultHiShift = DRFLAC_CACHE_L1_SIZE_BITS(bs) - riceParam;
-   drflac_uint32 zeroCounter = 0;
+   drflac_cache_t riceParamMask    = DRFLAC_CACHE_L1_SELECTION_MASK(riceParam);
+   drflac_cache_t resultHiShift    = DRFLAC_CACHE_L1_SIZE_BITS(bs) - riceParam;
+   drflac_uint32 zeroCounter       = 0;
    while (bs->cache == 0) {
       zeroCounter += (drflac_uint32)DRFLAC_CACHE_L1_BITS_REMAINING(bs);
       if (!drflac__reload_cache(bs))
@@ -2206,9 +2195,9 @@ static DRFLAC_INLINE drflac_bool32 drflac__read_rice_parts(drflac_bs* bs, drflac
 
 static drflac_bool32 drflac__decode_samples_with_residual__rice__simple(drflac_bs* bs, drflac_uint32 bitsPerSample, drflac_uint32 count, drflac_uint8 riceParam, drflac_uint32 order, drflac_int32 shift, const drflac_int32* coefficients, drflac_int32* pSamplesOut)
 {
-    drflac_uint32 zeroCountPart;
-    drflac_uint32 riceParamPart;
-    drflac_uint32 i = 0;
+    drflac_uint32 zeroCountPart = 0;
+    drflac_uint32 riceParamPart = 0;
+    drflac_uint32 i             = 0;
 
     drflac_assert(bs != NULL);
     drflac_assert(count > 0);
@@ -2564,13 +2553,13 @@ static drflac_bool32 drflac__read_next_frame_header(drflac_bs* bs, drflac_uint8 
     for (;;)
     {
        drflac_bool32 isVariableBlockSize = false;
-       drflac_uint8 blockSize = 0;
-       drflac_uint8 blockingStrategy = 0;
-       drflac_uint8 crc8 = 0xCE; /* 0xCE = drflac_crc8(0, 0x3FFE, 14); */
-       drflac_uint8 reserved = 0;
-       drflac_uint8 sampleRate = 0;
-       drflac_uint8 channelAssignment = 0;
-       drflac_uint8 bitsPerSample = 0;
+       drflac_uint8 blockSize            = 0;
+       drflac_uint8 blockingStrategy     = 0;
+       drflac_uint8 crc8                 = 0xCE; /* 0xCE = drflac_crc8(0, 0x3FFE, 14); */
+       drflac_uint8 reserved             = 0;
+       drflac_uint8 sampleRate           = 0;
+       drflac_uint8 channelAssignment    = 0;
+       drflac_uint8 bitsPerSample        = 0;
 
        if (!drflac__find_and_seek_to_next_sync_code(bs))
           return DRFLAC_FALSE;
@@ -2738,7 +2727,7 @@ static drflac_bool32 drflac__read_subframe_header(drflac_bs* bs, drflac_subframe
    pSubframe->wastedBitsPerSample = 0;
    if ((header & 0x01) == 1)
    {
-      unsigned int wastedBitsPerSample;
+      unsigned int wastedBitsPerSample = 0;
       if (!drflac__seek_past_next_set_bit(bs, &wastedBitsPerSample))
          return DRFLAC_FALSE;
       pSubframe->wastedBitsPerSample = (unsigned char)wastedBitsPerSample + 1;
@@ -3301,8 +3290,8 @@ drflac_bool32 drflac__read_and_decode_metadata(drflac* pFlac)
     {
        drflac_metadata metadata;
        drflac_uint8 isLastBlock = 0;
-       drflac_uint8 blockType;
-       drflac_uint32 blockSize;
+       drflac_uint8 blockType   = 0;
+       drflac_uint32 blockSize  = 0;
 
        if (!drflac__read_and_decode_block_header(pFlac->bs.onRead, pFlac->bs.pUserData, &isLastBlock, &blockType, &blockSize))
           return DRFLAC_FALSE;
@@ -3536,9 +3525,9 @@ drflac_bool32 drflac__read_and_decode_metadata(drflac* pFlac)
 
 drflac_bool32 drflac__init_private__native(drflac_init_info* pInit, drflac_read_proc onRead, drflac_seek_proc onSeek, drflac_meta_proc onMeta, void* pUserData, void* pUserDataMD, drflac_bool32 relaxed)
 {
-    drflac_uint8 isLastBlock;
-    drflac_uint8 blockType;
-    drflac_uint32 blockSize;
+    drflac_uint8 isLastBlock = 0;
+    drflac_uint8 blockType   = 0;
+    drflac_uint32 blockSize  = 0;
 
     (void)onSeek;
 
@@ -4294,9 +4283,9 @@ drflac_bool32 drflac__init_private__ogg(drflac_init_info* pInit, drflac_read_pro
                  {
                     drflac_streaminfo streaminfo;
                     /* The remaining data in the page should be the STREAMINFO block. */
-                    drflac_uint8 isLastBlock;
-                    drflac_uint8 blockType;
-                    drflac_uint32 blockSize;
+                    drflac_uint8 isLastBlock = 0;
+                    drflac_uint8 blockType   = 0;
+                    drflac_uint32 blockSize  = 0;
                     if (!drflac__read_and_decode_block_header(onRead, pUserData, &isLastBlock, &blockType, &blockSize))
                        return DRFLAC_FALSE;
 

@@ -54,17 +54,18 @@ static void menu_display_wiiu_blend_end(video_frame_info_t *video_info)
 
 }
 
-static void menu_display_wiiu_viewport(void *data, video_frame_info_t *video_info)
+static void menu_display_wiiu_viewport(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
 
 }
 
 
-static void menu_display_wiiu_draw(void *data, video_frame_info_t *video_info)
+static void menu_display_wiiu_draw(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
-   wiiu_video_t             *wiiu  = video_info ? (wiiu_video_t*)video_info->userdata : NULL;
-   menu_display_ctx_draw_t *draw   = (menu_display_ctx_draw_t*)data;
-
+   wiiu_video_t             *wiiu  = video_info ? 
+      (wiiu_video_t*)video_info->userdata : NULL;
 
    if (!wiiu || !draw)
       return;
@@ -237,42 +238,43 @@ static void menu_display_wiiu_draw(void *data, video_frame_info_t *video_info)
                       sizeof(*wiiu->vertex_cache.v), wiiu->vertex_cache.v);
 }
 
-static void menu_display_wiiu_draw_pipeline(void *data, video_frame_info_t *video_info)
+static void menu_display_wiiu_draw_pipeline(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
 {
-   menu_display_ctx_draw_t *draw  = (menu_display_ctx_draw_t*)data;
    video_coord_array_t *ca        = NULL;
-   wiiu_video_t             *wiiu = video_info ? (wiiu_video_t*)video_info->userdata : NULL;
+   wiiu_video_t             *wiiu = video_info ? 
+      (wiiu_video_t*)video_info->userdata : NULL;
 
    if (!wiiu || !draw)
       return;
 
    switch(draw->pipeline.id)
    {
-   case VIDEO_SHADER_MENU:
-   case VIDEO_SHADER_MENU_2:
-      ca = menu_display_get_coords_array();
-      if(!wiiu->menu_shader_vbo)
-      {
-         wiiu->menu_shader_vbo = MEM2_alloc(ca->coords.vertices * 2 * sizeof(float), GX2_VERTEX_BUFFER_ALIGNMENT);
-         memcpy(wiiu->menu_shader_vbo, ca->coords.vertex, ca->coords.vertices * 2 * sizeof(float));
-         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu_shader_vbo, ca->coords.vertices * 2 * sizeof(float));
-      }
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_2:
+         ca = menu_display_get_coords_array();
+         if(!wiiu->menu_shader_vbo)
+         {
+            wiiu->menu_shader_vbo = MEM2_alloc(ca->coords.vertices * 2 * sizeof(float), GX2_VERTEX_BUFFER_ALIGNMENT);
+            memcpy(wiiu->menu_shader_vbo, ca->coords.vertex, ca->coords.vertices * 2 * sizeof(float));
+            GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu_shader_vbo, ca->coords.vertices * 2 * sizeof(float));
+         }
 
-      draw->coords->vertex             = wiiu->menu_shader_vbo;
-      draw->coords->vertices           = ca->coords.vertices;
-      GX2SetAttribBuffer(0, draw->coords->vertices * 2 * sizeof(float), 2 * sizeof(float), wiiu->menu_shader_vbo);
-      GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_ONE,
-                         GX2_BLEND_COMBINE_MODE_ADD, GX2_DISABLE, 0, 0, 0);
+         draw->coords->vertex             = wiiu->menu_shader_vbo;
+         draw->coords->vertices           = ca->coords.vertices;
+         GX2SetAttribBuffer(0, draw->coords->vertices * 2 * sizeof(float), 2 * sizeof(float), wiiu->menu_shader_vbo);
+         GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_ONE,
+               GX2_BLEND_COMBINE_MODE_ADD, GX2_DISABLE, 0, 0, 0);
 
-      break;
-   case VIDEO_SHADER_MENU_3:
-   case VIDEO_SHADER_MENU_4:
-   case VIDEO_SHADER_MENU_5:
-   case VIDEO_SHADER_MENU_6:
-      GX2SetAttribBuffer(0, 4 * sizeof(*wiiu->v), sizeof(*wiiu->v), wiiu->v);
-      break;
-   default:
-      return;
+         break;
+      case VIDEO_SHADER_MENU_3:
+      case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
+         GX2SetAttribBuffer(0, 4 * sizeof(*wiiu->v), sizeof(*wiiu->v), wiiu->v);
+         break;
+      default:
+         return;
    }
 
    if(!wiiu->menu_shader_ubo)

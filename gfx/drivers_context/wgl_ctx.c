@@ -191,9 +191,9 @@ static void create_gl_context(HWND hwnd, bool *quit)
    if (win32_hrc)
    {
       if (wglMakeCurrent(win32_hdc, win32_hrc))
-         g_inited = true;
+         g_win32_inited = true;
       else
-         *quit     = true;
+         *quit          = true;
    }
    else
    {
@@ -295,7 +295,7 @@ void create_graphics_context(HWND hwnd, bool *quit)
                   width, height, win32_interval))
             *quit = true;
 
-         g_inited = true;
+         g_win32_inited = true;
 #endif
       }
       break;
@@ -458,8 +458,8 @@ static void gfx_ctx_wgl_get_video_size(void *data,
    }
    else
    {
-      *width  = g_resize_width;
-      *height = g_resize_height;
+      *width  = g_win32_resize_width;
+      *height = g_win32_resize_height;
    }
 }
 
@@ -471,7 +471,7 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
    if (!wgl)
       return NULL;
 
-   if (g_inited)
+   if (g_win32_inited)
       goto error;
 
 #ifdef HAVE_DYNAMIC
@@ -558,10 +558,10 @@ static void gfx_ctx_wgl_destroy(void *data)
       win32_destroy_window();
    }
 
-   if (g_restore_desktop)
+   if (g_win32_restore_desktop)
    {
       win32_monitor_get_info();
-      g_restore_desktop     = false;
+      g_win32_restore_desktop     = false;
    }
 
 #ifdef HAVE_DYNAMIC
@@ -572,7 +572,7 @@ static void gfx_ctx_wgl_destroy(void *data)
       free(wgl);
 
    win32_core_hw_context_enable = false;
-   g_inited                     = false;
+   g_win32_inited               = false;
    win32_major                  = 0;
    win32_minor                  = 0;
    p_swap_interval              = NULL;

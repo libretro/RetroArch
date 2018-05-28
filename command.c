@@ -1088,7 +1088,7 @@ static void command_event_load_auto_state(void)
 #endif
 
 #ifdef HAVE_CHEEVOS
-   if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
+   if (cheevos_hardcore_active)
       goto error;
 #endif
 
@@ -1297,7 +1297,9 @@ static void command_event_restore_default_shader_preset(void)
 
 static void command_event_restore_remaps(void)
 {
-   if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) || 
+       rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) || 
+       rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
       input_remapping_set_defaults(true);
 }
 
@@ -1326,7 +1328,7 @@ static bool command_event_save_auto_state(void)
       goto error;
 
 #ifdef HAVE_CHEEVOS
-   if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
+   if (cheevos_hardcore_active)
       goto error;
 #endif
 
@@ -1520,6 +1522,7 @@ static void command_event_save_current_config(enum override_type type)
          break;
       case OVERRIDE_GAME:
       case OVERRIDE_CORE:
+      case OVERRIDE_CONTENT_DIR:
          if (config_save_overrides(type))
          {
             strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
@@ -1823,11 +1826,8 @@ bool command_event(enum event_command cmd, void *data)
             return false;
 
 #ifdef HAVE_CHEEVOS
-         {
-            settings_t *settings      = config_get_ptr();
-            if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
-               return false;
-         }
+         if (cheevos_hardcore_active)
+            return false;
 #endif
 
          return command_event_main_state(cmd);
@@ -1862,12 +1862,12 @@ bool command_event(enum event_command cmd, void *data)
 #if HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
 #endif
-         return command_event_main_state(cmd);
+         return false;
       case CMD_EVENT_SAVE_STATE:
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-            if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
+            if (cheevos_hardcore_active)
                return false;
 #endif
 
@@ -1969,21 +1969,17 @@ bool command_event(enum event_command cmd, void *data)
          cheat_manager_apply_cheats();
          break;
       case CMD_EVENT_REWIND_DEINIT:
-         {
 #ifdef HAVE_CHEEVOS
-            settings_t *settings      = config_get_ptr();
-            if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
-               return false;
+         if (cheevos_hardcore_active)
+            return false;
 #endif
-
-            state_manager_event_deinit();
-         }
+         state_manager_event_deinit();
          break;
       case CMD_EVENT_REWIND_INIT:
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-            if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
+               if (cheevos_hardcore_active)
                return false;
 #endif
             if (settings->bools.rewind_enable)
@@ -2376,6 +2372,9 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
          command_event_save_current_config(OVERRIDE_CORE);
+         break;
+      case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+         command_event_save_current_config(OVERRIDE_CONTENT_DIR);
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
          command_event_save_current_config(OVERRIDE_GAME);

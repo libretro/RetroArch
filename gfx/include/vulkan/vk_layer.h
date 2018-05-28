@@ -1,10 +1,9 @@
-//
-// File: vk_layer.h
-//
+/* File: vk_layer.h */
+
 /*
- * Copyright (c) 2015-2016 The Khronos Group Inc.
- * Copyright (c) 2015-2016 Valve Corporation
- * Copyright (c) 2015-2016 LunarG, Inc.
+ * Copyright (c) 2015-2017 The Khronos Group Inc.
+ * Copyright (c) 2015-2017 Valve Corporation
+ * Copyright (c) 2015-2017 LunarG, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,224 +34,46 @@
 #define VK_LAYER_EXPORT
 #endif
 
-typedef struct VkLayerDispatchTable_ {
-    PFN_vkGetDeviceProcAddr GetDeviceProcAddr;
-    PFN_vkDestroyDevice DestroyDevice;
-    PFN_vkGetDeviceQueue GetDeviceQueue;
-    PFN_vkQueueSubmit QueueSubmit;
-    PFN_vkQueueWaitIdle QueueWaitIdle;
-    PFN_vkDeviceWaitIdle DeviceWaitIdle;
-    PFN_vkAllocateMemory AllocateMemory;
-    PFN_vkFreeMemory FreeMemory;
-    PFN_vkMapMemory MapMemory;
-    PFN_vkUnmapMemory UnmapMemory;
-    PFN_vkFlushMappedMemoryRanges FlushMappedMemoryRanges;
-    PFN_vkInvalidateMappedMemoryRanges InvalidateMappedMemoryRanges;
-    PFN_vkGetDeviceMemoryCommitment GetDeviceMemoryCommitment;
-    PFN_vkGetImageSparseMemoryRequirements GetImageSparseMemoryRequirements;
-    PFN_vkGetImageMemoryRequirements GetImageMemoryRequirements;
-    PFN_vkGetBufferMemoryRequirements GetBufferMemoryRequirements;
-    PFN_vkBindImageMemory BindImageMemory;
-    PFN_vkBindBufferMemory BindBufferMemory;
-    PFN_vkQueueBindSparse QueueBindSparse;
-    PFN_vkCreateFence CreateFence;
-    PFN_vkDestroyFence DestroyFence;
-    PFN_vkGetFenceStatus GetFenceStatus;
-    PFN_vkResetFences ResetFences;
-    PFN_vkWaitForFences WaitForFences;
-    PFN_vkCreateSemaphore CreateSemaphore;
-    PFN_vkDestroySemaphore DestroySemaphore;
-    PFN_vkCreateEvent CreateEvent;
-    PFN_vkDestroyEvent DestroyEvent;
-    PFN_vkGetEventStatus GetEventStatus;
-    PFN_vkSetEvent SetEvent;
-    PFN_vkResetEvent ResetEvent;
-    PFN_vkCreateQueryPool CreateQueryPool;
-    PFN_vkDestroyQueryPool DestroyQueryPool;
-    PFN_vkGetQueryPoolResults GetQueryPoolResults;
-    PFN_vkCreateBuffer CreateBuffer;
-    PFN_vkDestroyBuffer DestroyBuffer;
-    PFN_vkCreateBufferView CreateBufferView;
-    PFN_vkDestroyBufferView DestroyBufferView;
-    PFN_vkCreateImage CreateImage;
-    PFN_vkDestroyImage DestroyImage;
-    PFN_vkGetImageSubresourceLayout GetImageSubresourceLayout;
-    PFN_vkCreateImageView CreateImageView;
-    PFN_vkDestroyImageView DestroyImageView;
-    PFN_vkCreateShaderModule CreateShaderModule;
-    PFN_vkDestroyShaderModule DestroyShaderModule;
-    PFN_vkCreatePipelineCache CreatePipelineCache;
-    PFN_vkDestroyPipelineCache DestroyPipelineCache;
-    PFN_vkGetPipelineCacheData GetPipelineCacheData;
-    PFN_vkMergePipelineCaches MergePipelineCaches;
-    PFN_vkCreateGraphicsPipelines CreateGraphicsPipelines;
-    PFN_vkCreateComputePipelines CreateComputePipelines;
-    PFN_vkDestroyPipeline DestroyPipeline;
-    PFN_vkCreatePipelineLayout CreatePipelineLayout;
-    PFN_vkDestroyPipelineLayout DestroyPipelineLayout;
-    PFN_vkCreateSampler CreateSampler;
-    PFN_vkDestroySampler DestroySampler;
-    PFN_vkCreateDescriptorSetLayout CreateDescriptorSetLayout;
-    PFN_vkDestroyDescriptorSetLayout DestroyDescriptorSetLayout;
-    PFN_vkCreateDescriptorPool CreateDescriptorPool;
-    PFN_vkDestroyDescriptorPool DestroyDescriptorPool;
-    PFN_vkResetDescriptorPool ResetDescriptorPool;
-    PFN_vkAllocateDescriptorSets AllocateDescriptorSets;
-    PFN_vkFreeDescriptorSets FreeDescriptorSets;
-    PFN_vkUpdateDescriptorSets UpdateDescriptorSets;
-    PFN_vkCreateFramebuffer CreateFramebuffer;
-    PFN_vkDestroyFramebuffer DestroyFramebuffer;
-    PFN_vkCreateRenderPass CreateRenderPass;
-    PFN_vkDestroyRenderPass DestroyRenderPass;
-    PFN_vkGetRenderAreaGranularity GetRenderAreaGranularity;
-    PFN_vkCreateCommandPool CreateCommandPool;
-    PFN_vkDestroyCommandPool DestroyCommandPool;
-    PFN_vkResetCommandPool ResetCommandPool;
-    PFN_vkAllocateCommandBuffers AllocateCommandBuffers;
-    PFN_vkFreeCommandBuffers FreeCommandBuffers;
-    PFN_vkBeginCommandBuffer BeginCommandBuffer;
-    PFN_vkEndCommandBuffer EndCommandBuffer;
-    PFN_vkResetCommandBuffer ResetCommandBuffer;
-    PFN_vkCmdBindPipeline CmdBindPipeline;
-    PFN_vkCmdBindDescriptorSets CmdBindDescriptorSets;
-    PFN_vkCmdBindVertexBuffers CmdBindVertexBuffers;
-    PFN_vkCmdBindIndexBuffer CmdBindIndexBuffer;
-    PFN_vkCmdSetViewport CmdSetViewport;
-    PFN_vkCmdSetScissor CmdSetScissor;
-    PFN_vkCmdSetLineWidth CmdSetLineWidth;
-    PFN_vkCmdSetDepthBias CmdSetDepthBias;
-    PFN_vkCmdSetBlendConstants CmdSetBlendConstants;
-    PFN_vkCmdSetDepthBounds CmdSetDepthBounds;
-    PFN_vkCmdSetStencilCompareMask CmdSetStencilCompareMask;
-    PFN_vkCmdSetStencilWriteMask CmdSetStencilWriteMask;
-    PFN_vkCmdSetStencilReference CmdSetStencilReference;
-    PFN_vkCmdDraw CmdDraw;
-    PFN_vkCmdDrawIndexed CmdDrawIndexed;
-    PFN_vkCmdDrawIndirect CmdDrawIndirect;
-    PFN_vkCmdDrawIndexedIndirect CmdDrawIndexedIndirect;
-    PFN_vkCmdDispatch CmdDispatch;
-    PFN_vkCmdDispatchIndirect CmdDispatchIndirect;
-    PFN_vkCmdCopyBuffer CmdCopyBuffer;
-    PFN_vkCmdCopyImage CmdCopyImage;
-    PFN_vkCmdBlitImage CmdBlitImage;
-    PFN_vkCmdCopyBufferToImage CmdCopyBufferToImage;
-    PFN_vkCmdCopyImageToBuffer CmdCopyImageToBuffer;
-    PFN_vkCmdUpdateBuffer CmdUpdateBuffer;
-    PFN_vkCmdFillBuffer CmdFillBuffer;
-    PFN_vkCmdClearColorImage CmdClearColorImage;
-    PFN_vkCmdClearDepthStencilImage CmdClearDepthStencilImage;
-    PFN_vkCmdClearAttachments CmdClearAttachments;
-    PFN_vkCmdResolveImage CmdResolveImage;
-    PFN_vkCmdSetEvent CmdSetEvent;
-    PFN_vkCmdResetEvent CmdResetEvent;
-    PFN_vkCmdWaitEvents CmdWaitEvents;
-    PFN_vkCmdPipelineBarrier CmdPipelineBarrier;
-    PFN_vkCmdBeginQuery CmdBeginQuery;
-    PFN_vkCmdEndQuery CmdEndQuery;
-    PFN_vkCmdResetQueryPool CmdResetQueryPool;
-    PFN_vkCmdWriteTimestamp CmdWriteTimestamp;
-    PFN_vkCmdCopyQueryPoolResults CmdCopyQueryPoolResults;
-    PFN_vkCmdPushConstants CmdPushConstants;
-    PFN_vkCmdBeginRenderPass CmdBeginRenderPass;
-    PFN_vkCmdNextSubpass CmdNextSubpass;
-    PFN_vkCmdEndRenderPass CmdEndRenderPass;
-    PFN_vkCmdExecuteCommands CmdExecuteCommands;
-    PFN_vkCreateSwapchainKHR CreateSwapchainKHR;
-    PFN_vkDestroySwapchainKHR DestroySwapchainKHR;
-    PFN_vkGetSwapchainImagesKHR GetSwapchainImagesKHR;
-    PFN_vkAcquireNextImageKHR AcquireNextImageKHR;
-    PFN_vkQueuePresentKHR QueuePresentKHR;
-} VkLayerDispatchTable;
+/* Definition for VkLayerDispatchTable and VkLayerInstanceDispatchTable now appear in externally generated header */
+#include "vk_layer_dispatch_table.h"
 
-typedef struct VkLayerInstanceDispatchTable_ {
-    PFN_vkGetInstanceProcAddr GetInstanceProcAddr;
-    PFN_vkDestroyInstance DestroyInstance;
-    PFN_vkEnumeratePhysicalDevices EnumeratePhysicalDevices;
-    PFN_vkGetPhysicalDeviceFeatures GetPhysicalDeviceFeatures;
-    PFN_vkGetPhysicalDeviceImageFormatProperties
-        GetPhysicalDeviceImageFormatProperties;
-    PFN_vkGetPhysicalDeviceFormatProperties GetPhysicalDeviceFormatProperties;
-    PFN_vkGetPhysicalDeviceSparseImageFormatProperties
-        GetPhysicalDeviceSparseImageFormatProperties;
-    PFN_vkGetPhysicalDeviceProperties GetPhysicalDeviceProperties;
-    PFN_vkGetPhysicalDeviceQueueFamilyProperties
-        GetPhysicalDeviceQueueFamilyProperties;
-    PFN_vkGetPhysicalDeviceMemoryProperties GetPhysicalDeviceMemoryProperties;
-    PFN_vkEnumerateDeviceExtensionProperties EnumerateDeviceExtensionProperties;
-    PFN_vkEnumerateDeviceLayerProperties EnumerateDeviceLayerProperties;
-    PFN_vkDestroySurfaceKHR DestroySurfaceKHR;
-    PFN_vkGetPhysicalDeviceSurfaceSupportKHR GetPhysicalDeviceSurfaceSupportKHR;
-    PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR
-        GetPhysicalDeviceSurfaceCapabilitiesKHR;
-    PFN_vkGetPhysicalDeviceSurfaceFormatsKHR GetPhysicalDeviceSurfaceFormatsKHR;
-    PFN_vkGetPhysicalDeviceSurfacePresentModesKHR
-        GetPhysicalDeviceSurfacePresentModesKHR;
-    PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallbackEXT;
-    PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallbackEXT;
-    PFN_vkDebugReportMessageEXT DebugReportMessageEXT;
-#ifdef VK_USE_PLATFORM_MIR_KHR
-    PFN_vkCreateMirSurfaceKHR CreateMirSurfaceKHR;
-    PFN_vkGetPhysicalDeviceMirPresentationSupportKHR
-        GetPhysicalDeviceMirPresentationSupportKHR;
-#endif
-#ifdef VK_USE_PLATFORM_WAYLAND_KHR
-    PFN_vkCreateWaylandSurfaceKHR CreateWaylandSurfaceKHR;
-    PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR
-        GetPhysicalDeviceWaylandPresentationSupportKHR;
-#endif
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-    PFN_vkCreateWin32SurfaceKHR CreateWin32SurfaceKHR;
-    PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR
-        GetPhysicalDeviceWin32PresentationSupportKHR;
-#endif
-#ifdef VK_USE_PLATFORM_XCB_KHR
-    PFN_vkCreateXcbSurfaceKHR CreateXcbSurfaceKHR;
-    PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR
-        GetPhysicalDeviceXcbPresentationSupportKHR;
-#endif
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-    PFN_vkCreateXlibSurfaceKHR CreateXlibSurfaceKHR;
-    PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR
-        GetPhysicalDeviceXlibPresentationSupportKHR;
-#endif
-#ifdef VK_USE_PLATFORM_ANDROID_KHR
-    PFN_vkCreateAndroidSurfaceKHR CreateAndroidSurfaceKHR;
-#endif
-    PFN_vkGetPhysicalDeviceDisplayPropertiesKHR
-        GetPhysicalDeviceDisplayPropertiesKHR;
-    PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR
-        GetPhysicalDeviceDisplayPlanePropertiesKHR;
-    PFN_vkGetDisplayPlaneSupportedDisplaysKHR
-        GetDisplayPlaneSupportedDisplaysKHR;
-    PFN_vkGetDisplayModePropertiesKHR
-        GetDisplayModePropertiesKHR;
-    PFN_vkCreateDisplayModeKHR
-        CreateDisplayModeKHR;
-    PFN_vkGetDisplayPlaneCapabilitiesKHR
-        GetDisplayPlaneCapabilitiesKHR;
-    PFN_vkCreateDisplayPlaneSurfaceKHR
-        CreateDisplayPlaneSurfaceKHR;
-} VkLayerInstanceDispatchTable;
+#define MAX_NUM_UNKNOWN_EXTS 250
 
-// LL node for tree of dbg callback functions
-typedef struct VkLayerDbgFunctionNode_ {
-    VkDebugReportCallbackEXT msgCallback;
-    PFN_vkDebugReportCallbackEXT pfnMsgCallback;
-    VkFlags msgFlags;
-    void *pUserData;
-    struct VkLayerDbgFunctionNode_ *pNext;
-} VkLayerDbgFunctionNode;
+ /* Loader-Layer version negotiation API.  Versions add the following features:
+  *   Versions 0/1 - Initial.  Doesn't support vk_layerGetPhysicalDeviceProcAddr
+  *                  or vk_icdNegotiateLoaderLayerInterfaceVersion.
+  *   Version 2    - Add support for vk_layerGetPhysicalDeviceProcAddr and
+  *                  vk_icdNegotiateLoaderLayerInterfaceVersion.
+  */
+#define CURRENT_LOADER_LAYER_INTERFACE_VERSION 2
+#define MIN_SUPPORTED_LOADER_LAYER_INTERFACE_VERSION 1
 
-typedef enum VkLayerDbgAction_ {
-    VK_DBG_LAYER_ACTION_IGNORE = 0x0,
-    VK_DBG_LAYER_ACTION_CALLBACK = 0x1,
-    VK_DBG_LAYER_ACTION_LOG_MSG = 0x2,
-    VK_DBG_LAYER_ACTION_BREAK = 0x4,
-    VK_DBG_LAYER_ACTION_DEBUG_OUTPUT = 0x8,
-} VkLayerDbgAction;
+#define VK_CURRENT_CHAIN_VERSION 1
 
-// ------------------------------------------------------------------------------------------------
-// CreateInstance and CreateDevice support structures
+/* Version negotiation values */
+typedef enum VkNegotiateLayerStructType {
+    LAYER_NEGOTIATE_UNINTIALIZED = 0,
+    LAYER_NEGOTIATE_INTERFACE_STRUCT = 1,
+} VkNegotiateLayerStructType;
+
+/* Version negotiation structures */
+typedef struct VkNegotiateLayerInterface {
+    VkNegotiateLayerStructType sType;
+    void *pNext;
+    uint32_t loaderLayerInterfaceVersion;
+    PFN_vkGetInstanceProcAddr pfnGetInstanceProcAddr;
+    PFN_vkGetDeviceProcAddr pfnGetDeviceProcAddr;
+    PFN_GetPhysicalDeviceProcAddr pfnGetPhysicalDeviceProcAddr;
+} VkNegotiateLayerInterface;
+
+/* Version negotiation functions */
+typedef VkResult (VKAPI_PTR *PFN_vkNegotiateLoaderLayerInterfaceVersion)(VkNegotiateLayerInterface *pVersionStruct);
+
+/* Function prototype for unknown physical device extension command */
+typedef VkResult(VKAPI_PTR *PFN_PhysDevExt)(VkPhysicalDevice phys_device);
+
+/* ------------------------------------------------------------------------------------------------
+ * CreateInstance and CreateDevice support structures */
 
 /* Sub type of structure for instance and device loader ext of CreateInfo.
  * When sType == VK_STRUCTURE_TYPE_LOADER_INSTANCE_CREATE_INFO
@@ -267,6 +88,7 @@ typedef enum VkLayerFunction_ {
 typedef struct VkLayerInstanceLink_ {
     struct VkLayerInstanceLink_ *pNext;
     PFN_vkGetInstanceProcAddr pfnNextGetInstanceProcAddr;
+    PFN_GetPhysicalDeviceProcAddr pfnNextGetPhysicalDeviceProcAddr;
 } VkLayerInstanceLink;
 
 /*
@@ -287,7 +109,7 @@ typedef VkResult (VKAPI_PTR *PFN_vkSetDeviceLoaderData)(VkDevice device,
         void *object);
 
 typedef struct {
-    VkStructureType sType; // VK_STRUCTURE_TYPE_LOADER_INSTANCE_CREATE_INFO
+    VkStructureType sType; /* VK_STRUCTURE_TYPE_LOADER_INSTANCE_CREATE_INFO */
     const void *pNext;
     VkLayerFunction function;
     union {
@@ -303,7 +125,7 @@ typedef struct VkLayerDeviceLink_ {
 } VkLayerDeviceLink;
 
 typedef struct {
-    VkStructureType sType; // VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO
+    VkStructureType sType; /* VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO */
     const void *pNext;
     VkLayerFunction function;
     union {
@@ -312,3 +134,62 @@ typedef struct {
     } u;
 } VkLayerDeviceCreateInfo;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+VKAPI_ATTR VkResult VKAPI_CALL vkNegotiateLoaderLayerInterfaceVersion(VkNegotiateLayerInterface *pVersionStruct);
+
+typedef enum VkChainType {
+    VK_CHAIN_TYPE_UNKNOWN = 0,
+    VK_CHAIN_TYPE_ENUMERATE_INSTANCE_EXTENSION_PROPERTIES = 1,
+    VK_CHAIN_TYPE_ENUMERATE_INSTANCE_LAYER_PROPERTIES = 2,
+    VK_CHAIN_TYPE_ENUMERATE_INSTANCE_VERSION = 3,
+} VkChainType;
+
+typedef struct VkChainHeader {
+    VkChainType type;
+    uint32_t version;
+    uint32_t size;
+} VkChainHeader;
+
+typedef struct VkEnumerateInstanceExtensionPropertiesChain {
+    VkChainHeader header;
+    VkResult(VKAPI_PTR *pfnNextLayer)(const struct VkEnumerateInstanceExtensionPropertiesChain *, const char *, uint32_t *,
+                                      VkExtensionProperties *);
+    const struct VkEnumerateInstanceExtensionPropertiesChain *pNextLink;
+
+#if defined(__cplusplus)
+    inline VkResult CallDown(const char *pLayerName, uint32_t *pPropertyCount, VkExtensionProperties *pProperties) const {
+        return pfnNextLayer(pNextLink, pLayerName, pPropertyCount, pProperties);
+    }
+#endif
+} VkEnumerateInstanceExtensionPropertiesChain;
+
+typedef struct VkEnumerateInstanceLayerPropertiesChain {
+    VkChainHeader header;
+    VkResult(VKAPI_PTR *pfnNextLayer)(const struct VkEnumerateInstanceLayerPropertiesChain *, uint32_t *, VkLayerProperties *);
+    const struct VkEnumerateInstanceLayerPropertiesChain *pNextLink;
+
+#if defined(__cplusplus)
+    inline VkResult CallDown(uint32_t *pPropertyCount, VkLayerProperties *pProperties) const {
+        return pfnNextLayer(pNextLink, pPropertyCount, pProperties);
+    }
+#endif
+} VkEnumerateInstanceLayerPropertiesChain;
+
+typedef struct VkEnumerateInstanceVersionChain {
+    VkChainHeader header;
+    VkResult(VKAPI_PTR *pfnNextLayer)(const struct VkEnumerateInstanceVersionChain *, uint32_t *);
+    const struct VkEnumerateInstanceVersionChain *pNextLink;
+
+#if defined(__cplusplus)
+    inline VkResult CallDown(uint32_t *pApiVersion) const {
+        return pfnNextLayer(pNextLink, pApiVersion);
+    }
+#endif
+} VkEnumerateInstanceVersionChain;
+
+#ifdef __cplusplus
+}
+#endif

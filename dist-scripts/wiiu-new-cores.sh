@@ -137,7 +137,6 @@ buildCore()
     rm -f libretro_wiiu.a
     cp $distDir/$core libretro_wiiu.a
     make -f Makefile.wiiu \
-      PC_DEVELOPMENT_IP_ADDRESS=$PC_DEVELOPMENT_IP_ADDRESS \
       PC_DEVELOPMENT_TCP_PORT=$PC_DEVELOPMENT_TCP_PORT \
       -j3 || exit 1
 
