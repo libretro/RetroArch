@@ -797,10 +797,8 @@ static bool content_file_init(
       return false;
 
    if (content->size > 0)
-   {
-      info = (struct retro_game_info*)
+      info                   = (struct retro_game_info*)
          calloc(content->size, sizeof(*info));
-   }
 
    if (info)
    {
