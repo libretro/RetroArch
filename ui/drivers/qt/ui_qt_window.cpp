@@ -2999,6 +2999,7 @@ void MainWindow::addPlaylistItemsToGrid(const QString &pathString)
    QVector<QHash<QString, QString> > items = getPlaylistItems(pathString);
    QScreen *screen = qApp->primaryScreen();
    QSize screenSize = screen->size();
+   QListWidgetItem *currentItem = m_listWidget->currentItem();
    settings_t *settings = config_get_ptr();
    int i = 0;
    int zoomValue = m_zoomSlider->value();
@@ -3006,7 +3007,7 @@ void MainWindow::addPlaylistItemsToGrid(const QString &pathString)
    for (i = 0; i < items.count(); i++)
    {
       const QHash<QString, QString> &hash = items.at(i);
-      QPointer<GridItem> item (new GridItem());
+      QPointer<GridItem> item;
       QPointer<ThumbnailLabel> label;
       QString thumbnailFileNameNoExt;
       QLabel *newLabel = NULL;
@@ -3015,6 +3016,14 @@ void MainWindow::addPlaylistItemsToGrid(const QString &pathString)
       QString extensionStr;
       QString imagePath;
       int lastIndex = -1;
+
+      if (m_listWidget->currentItem() != currentItem)
+      {
+         /* user changed the current playlist before we finished loading... abort */
+         break;
+      }
+
+      item = new GridItem();
 
       lastIndex = hash["path"].lastIndexOf('.');
 
@@ -3065,6 +3074,9 @@ void MainWindow::addPlaylistItemsToGrid(const QString &pathString)
       m_gridItems.append(item);
 
       loadImageDeferred(item, imagePath);
+
+      if (i % 25 == 0)
+         qApp->processEvents();
    }
 }
 
