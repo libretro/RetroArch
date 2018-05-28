@@ -59,9 +59,9 @@ static void input_state_set_last(unsigned port, unsigned device,
    for (i = 0; i < (unsigned)input_state_list->size; i++)
    {
       element = (InputListElement*)input_state_list->data[i];
-      if (  (element->port == port )    &&
+      if (  (element->port   == port)   &&
             (element->device == device) &&
-            (element->index == index)   &&
+            (element->index  == index)  &&
             (id >= 0 && id < (sizeof(element->state) / sizeof(int16_t)))
          )
       {
