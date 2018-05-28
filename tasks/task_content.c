@@ -796,8 +796,11 @@ static bool content_file_init(
          !content_file_init_set_attribs(content, special, content_ctx, error_string))
       return false;
 
-   info                   = (struct retro_game_info*)
-      calloc(content->size, sizeof(*info));
+   if (content->size > 0)
+   {
+      info = (struct retro_game_info*)
+         calloc(content->size, sizeof(*info));
+   }
 
    if (info)
    {
