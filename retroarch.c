@@ -1382,13 +1382,16 @@ bool retroarch_main_init(int argc, char *argv[])
    rarch_is_inited         = true;
 
 #ifdef HAVE_DISCORD
-   {
-      discord_init();
-      discord_is_inited       = true;
-   }
+   if (command_event(CMD_EVENT_DISCORD_INIT, NULL))
+      discord_is_inited = true;
 
    if (discord_is_inited)
-      discord_update(DISCORD_PRESENCE_MENU);
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_MENU;
+
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+   }
 #endif
 
    if (rarch_first_start)
@@ -2339,8 +2342,7 @@ bool retroarch_main_quit(void)
    rarch_menu_running_finished();
 
 #ifdef HAVE_DISCORD
-   if (discord_is_inited)
-      discord_shutdown();
+   command_event(CMD_EVENT_DISCORD_DEINIT, NULL);
    discord_is_inited          = false;
 #endif
 
@@ -3350,7 +3352,12 @@ int runloop_iterate(unsigned *sleep_ms)
 
 #ifdef HAVE_DISCORD
    if (discord_is_inited)
-      discord_update(DISCORD_PRESENCE_GAME);
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_GAME;
+
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+   }
 #endif
 
    for (i = 0; i < max_users; i++)

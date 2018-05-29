@@ -1744,8 +1744,8 @@ void command_playlist_update_write(
  **/
 bool command_event(enum event_command cmd, void *data)
 {
-   settings_t *settings      = config_get_ptr();
-   bool boolean              = false;
+   static bool discord_inited = false;
+   bool boolean               = false;
 
    switch (cmd)
    {
@@ -1942,25 +1942,26 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_REINIT_FROM_TOGGLE:
          retroarch_unset_forced_fullscreen();
       case CMD_EVENT_REINIT:
+         video_driver_reinit();
          {
-            video_driver_reinit();
-            {
-               const input_driver_t *input_drv = input_get_ptr();
-               void *input_data                = input_get_data();
-               /* Poll input to avoid possibly stale data to corrupt things. */
-               if (input_drv && input_drv->poll)
-                  input_drv->poll(input_data);
-            }
-            command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
+            const input_driver_t *input_drv = input_get_ptr();
+            void *input_data                = input_get_data();
+            /* Poll input to avoid possibly stale data to corrupt things. */
+            if (input_drv && input_drv->poll)
+               input_drv->poll(input_data);
+         }
+         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
 #ifdef HAVE_MENU
+         {
+            settings_t *settings      = config_get_ptr();
             menu_display_set_framebuffer_dirty_flag();
             if (settings->bools.video_fullscreen)
                video_driver_hide_mouse();
 
             if (menu_driver_is_alive())
                command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
-#endif
          }
+#endif
          break;
       case CMD_EVENT_CHEATS_DEINIT:
          cheat_manager_state_free();
@@ -2825,6 +2826,35 @@ TODO: Add a setting for these tweaks */
          extern int libui_main(void);
          libui_main();
 #endif
+         break;
+      case CMD_EVENT_DISCORD_INIT:
+         {
+            settings_t *settings      = config_get_ptr();
+
+            if (!settings->bools.discord_enable)
+               return false;
+            if (discord_inited)
+               return true;
+
+            discord_init();
+            discord_inited = true;
+         }
+         break;
+      case CMD_EVENT_DISCORD_DEINIT:
+         if (!discord_inited)
+            return false;
+
+         discord_shutdown();
+         discord_inited = false;
+         break;
+      case CMD_EVENT_DISCORD_UPDATE:
+         if (!data || !discord_inited)
+            return false;
+
+         {
+            discord_userdata_t *userdata = (discord_userdata_t*)data;
+            discord_update(userdata->status);
+         }
          break;
       case CMD_EVENT_NONE:
          return false;

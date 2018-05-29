@@ -39,6 +39,11 @@ enum discord_presence
    DISCORD_PRESENCE_NETPLAY_CLIENT
 };
 
+typedef struct discord_userdata
+{
+   enum discord_presence status;
+} discord_userdata_t;
+
 void discord_init(void);
 
 void discord_shutdown(void);
