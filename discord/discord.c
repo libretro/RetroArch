@@ -15,6 +15,8 @@
 
 #include "discord.h"
 
+#include "../msg_hash.h"
+
 static const char* APPLICATION_ID = "450822022025576457";
 static int FrustrationLevel       = 0;
 static int64_t start_time         = 0;
@@ -78,7 +80,7 @@ void discord_update(enum discord_presence presence)
    switch (presence)
    {
       case DISCORD_PRESENCE_MENU:
-         discord_presence.state           = "In-Menu";
+         discord_presence.state           = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU);
          discord_presence.largeImageKey   = "icon";
          discord_presence.instance        = 0;
          discord_presence.startTimestamp  = start_time;
@@ -108,7 +110,7 @@ void discord_init(void)
 {
    DiscordEventHandlers handlers;
 
-   RARCH_LOG("[Discord] initializing\n");
+   RARCH_LOG("[Discord] initializing ..\n");
    start_time            = time(0);
 
    memset(&handlers, 0, sizeof(handlers));
@@ -126,7 +128,7 @@ void discord_init(void)
 
 void discord_shutdown(void)
 {
-   RARCH_LOG("[Discord] shutting down\n");
+   RARCH_LOG("[Discord] shutting down ..\n");
    Discord_ClearPresence();
    Discord_Shutdown();
    discord_ready = false;

@@ -1513,3 +1513,5 @@ MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS,
       "quick_menu_override_options")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS,
       "deferred_quick_menu_override_options")
+MSG_HASH(MENU_ENUM_LABEL_DISCORD_IN_MENU,
+      "discord_in_menu")

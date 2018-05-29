@@ -3716,3 +3716,5 @@ MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
       "Pausar conquistas para a sessão atual (Esta ação ativará Estados de Jogos, Trapaças, Rebobinagem, Pausa e Câmera Lenta).")
 MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
       "Continuar conquistas para a sessão atual (Esta ação desabilitará Estados de Jogos, Trapaças, Rebobinagem, Pausa e Câmera Lenta e reiniciará o jogo atual).")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
+      "In-Menu")
