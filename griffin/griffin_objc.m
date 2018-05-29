@@ -54,9 +54,5 @@
 #endif
 
 #if defined(HAVE_DISCORD)
-
-#if defined(__APPLE__)
 #include "../deps/discord-rpc/src/discord_register_osx.m"
-#endif
-
 #endif
