@@ -16,17 +16,17 @@
 #include "discord.h"
 
 static const char* APPLICATION_ID = "450822022025576457";
-static int FrustrationLevel = 0;
-static int64_t start_time;
+static int FrustrationLevel       = 0;
+static int64_t start_time         = 0;
 
-static bool discord_ready = false;
-static unsigned discord_status = 0;
+static bool discord_ready         = false;
+static unsigned discord_status    = 0;
 
 DiscordRichPresence discord_presence;
 
 static void handle_discord_ready(const DiscordUser* connectedUser)
 {
-   RARCH_LOG("[discord] connected to user %s#%s - %s\n",
+   RARCH_LOG("[Discord] connected to user %s#%s - %s\n",
       connectedUser->username,
       connectedUser->discriminator,
       connectedUser->userId);
@@ -34,29 +34,29 @@ static void handle_discord_ready(const DiscordUser* connectedUser)
 
 static void handle_discord_disconnected(int errcode, const char* message)
 {
-   RARCH_LOG("[discord] disconnected (%d: %s)\n", errcode, message);
+   RARCH_LOG("[Discord] disconnected (%d: %s)\n", errcode, message);
 }
 
 static void handle_discord_error(int errcode, const char* message)
 {
-   RARCH_LOG("[discord] error (%d: %s)\n", errcode, message);
+   RARCH_LOG("[Discord] error (%d: %s)\n", errcode, message);
 }
 
 static void handle_discord_join(const char* secret)
 {
-   RARCH_LOG("[discord] join (%s)\n", secret);
+   RARCH_LOG("[Discord] join (%s)\n", secret);
 }
 
 static void handle_discord_spectate(const char* secret)
 {
-   RARCH_LOG("[discord] spectate (%s)\n", secret);
+   RARCH_LOG("[Discord] spectate (%s)\n", secret);
 }
 
 static void handle_discord_join_request(const DiscordUser* request)
 {
    int response = -1;
    char yn[4];
-   RARCH_LOG("[discord] join request from %s#%s - %s\n",
+   RARCH_LOG("[Discord] join request from %s#%s - %s\n",
       request->username,
       request->discriminator,
       request->userId);
@@ -64,57 +64,66 @@ static void handle_discord_join_request(const DiscordUser* request)
 
 void discord_update(unsigned presence)
 {
-   if (!discord_ready || discord_status != DISCORD_PRESENCE_MENU && discord_status == presence)
+   if (!discord_ready)
+      return;
+   if (
+         (discord_status != DISCORD_PRESENCE_MENU) && 
+         (discord_status == presence))
       return;
 
-   RARCH_LOG("[discord] updating (%d)\n", presence);
+   RARCH_LOG("[Discord] updating (%d)\n", presence);
+
    memset(&discord_presence, 0, sizeof(discord_presence));
 
    switch (presence)
    {
       case DISCORD_PRESENCE_MENU:
-         discord_presence.state = "In-Menu";
-         discord_presence.largeImageKey = "icon";
-         discord_presence.instance = 0;
-         discord_presence.startTimestamp = start_time;
+         discord_presence.state           = "In-Menu";
+         discord_presence.largeImageKey   = "icon";
+         discord_presence.instance        = 0;
+         discord_presence.startTimestamp  = start_time;
          break;
       case DISCORD_PRESENCE_GAME:
-         start_time = time(0);
-         discord_presence.state = "Link's House";
-         discord_presence.details = "Legend of Zelda, The - Link's Awakening DX";
-         discord_presence.largeImageKey = "icon";
-         //discord_presence.smallImageKey = "icon";
-         discord_presence.instance = 0;
-         discord_presence.startTimestamp = start_time;
+         start_time                       = time(0);
+         discord_presence.state           = "Link's House";
+         discord_presence.details         = "Legend of Zelda, The - Link's Awakening DX";
+         discord_presence.largeImageKey   = "icon";
+#if 0
+         discord_presence.smallImageKey   = "icon";
+#endif
+         discord_presence.instance        = 0;
+         discord_presence.startTimestamp  = start_time;
          break;
       default:
          break;
    }
    Discord_UpdatePresence(&discord_presence);
-   discord_status = presence;
+   discord_status                         = presence;
 }
 
-void discord_init()
+void discord_init(void)
 {
-   RARCH_LOG("[discord] initializing\n");
-   start_time = time(0);
-
    DiscordEventHandlers handlers;
+
+   RARCH_LOG("[Discord] initializing\n");
+   start_time            = time(0);
+
    memset(&handlers, 0, sizeof(handlers));
-   handlers.ready = handle_discord_ready;
+   handlers.ready        = handle_discord_ready;
    handlers.disconnected = handle_discord_disconnected;
-   handlers.errored = handle_discord_error;
-   handlers.joinGame = handle_discord_join;
+   handlers.errored      = handle_discord_error;
+   handlers.joinGame     = handle_discord_join;
    handlers.spectateGame = handle_discord_spectate;
-   handlers.joinRequest = handle_discord_join_request;
+   handlers.joinRequest  = handle_discord_join_request;
+
    Discord_Initialize(APPLICATION_ID, &handlers, 1, NULL);
 
-   discord_ready = true;
+   discord_ready         = true;
 }
 
-void discord_shutdown()
+void discord_shutdown(void)
 {
-   RARCH_LOG("[discord] shutting down\n");
+   RARCH_LOG("[Discord] shutting down\n");
    Discord_ClearPresence();
    Discord_Shutdown();
    discord_ready = false;
