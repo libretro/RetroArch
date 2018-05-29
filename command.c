@@ -2828,6 +2828,7 @@ TODO: Add a setting for these tweaks */
 #endif
          break;
       case CMD_EVENT_DISCORD_INIT:
+#ifdef HAVE_DISCORD
          {
             settings_t *settings      = config_get_ptr();
 
@@ -2839,15 +2840,19 @@ TODO: Add a setting for these tweaks */
             discord_init();
             discord_inited = true;
          }
+#endif
          break;
       case CMD_EVENT_DISCORD_DEINIT:
+#ifdef HAVE_DISCORD
          if (!discord_inited)
             return false;
 
          discord_shutdown();
          discord_inited = false;
+#endif
          break;
       case CMD_EVENT_DISCORD_UPDATE:
+#ifdef HAVE_DISCORD
          if (!data || !discord_inited)
             return false;
 
@@ -2855,6 +2860,7 @@ TODO: Add a setting for these tweaks */
             discord_userdata_t *userdata = (discord_userdata_t*)data;
             discord_update(userdata->status);
          }
+#endif
          break;
       case CMD_EVENT_NONE:
          return false;
