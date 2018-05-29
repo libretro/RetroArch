@@ -106,6 +106,7 @@ C89_QT=no
 HAVE_XSHM=no               # XShm video driver support
 HAVE_CHEEVOS=yes           # Retro Achievements
 HAVE_DISCORD=no            # Discord Integration
+C89_DISCORD=no
 HAVE_SHADERPIPELINE=yes    # Additional shader-based pipelines
 C89_SHADERPIPELINE=no
 HAVE_VULKAN=auto           # Vulkan support
