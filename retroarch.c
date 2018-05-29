@@ -201,6 +201,9 @@ static retro_bits_t has_set_libretro_device;
 
 static bool has_set_core                                   = false;
 static bool has_set_username                               = false;
+#ifdef HAVE_DISCORD
+static bool discord_is_inited                              = false;
+#endif
 static bool rarch_is_inited                                = false;
 static bool rarch_error_on_init                            = false;
 static bool rarch_block_config_read                        = false;
@@ -1379,8 +1382,13 @@ bool retroarch_main_init(int argc, char *argv[])
    rarch_is_inited         = true;
 
 #ifdef HAVE_DISCORD
-   discord_init();
-   discord_update(DISCORD_PRESENCE_MENU);
+   {
+      discord_init();
+      discord_is_inited       = true;
+   }
+
+   if (discord_is_inited)
+      discord_update(DISCORD_PRESENCE_MENU);
 #endif
 
    if (rarch_first_start)
@@ -2331,7 +2339,9 @@ bool retroarch_main_quit(void)
    rarch_menu_running_finished();
 
 #ifdef HAVE_DISCORD
-   discord_shutdown();
+   if (discord_is_inited)
+      discord_shutdown();
+   discord_is_inited          = false;
 #endif
 
    return true;
@@ -3337,8 +3347,10 @@ int runloop_iterate(unsigned *sleep_ms)
    if (runloop_check_cheevos())
       cheevos_test();
 #endif
+
 #ifdef HAVE_DISCORD
-   discord_update(DISCORD_PRESENCE_GAME);
+   if (discord_is_inited)
+      discord_update(DISCORD_PRESENCE_GAME);
 #endif
 
    for (i = 0; i < max_users; i++)
