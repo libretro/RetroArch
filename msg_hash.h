@@ -1309,6 +1309,7 @@ enum msg_hash_enums
    /* Privacy settings */
 
    MENU_LABEL(CAMERA_ALLOW),
+   MENU_LABEL(DISCORD_ALLOW),
    MENU_LABEL(LOCATION_ALLOW),
 
    /* RDB Settings */

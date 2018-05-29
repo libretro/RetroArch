@@ -230,6 +230,7 @@ typedef struct settings
       bool bundle_assets_extract_enable;
 
       /* Misc. */
+      bool discord_enable;
       bool threaded_data_runloop_enable;
       bool set_supports_no_game_enable;
       bool auto_screenshot_filename;

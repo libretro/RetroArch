@@ -3718,3 +3718,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
       "Resume achievements for current session (This action will disable savestates, cheats, rewind, pause, and slow-motion and reset the current game).")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
       "In-Menu")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
+      "Enable Discord"
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
+      "Enable or disable Discord support. Will not work with the browser version, only native desktop client."
+      )
