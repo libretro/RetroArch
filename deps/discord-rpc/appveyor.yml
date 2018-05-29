@@ -1,0 +1,17 @@
+version: '{build}'
+install:
+  - python -m pip install click
+
+build_script:
+  - mkdir examples\unrealstatus\Plugins\discordrpc\Binaries\ThirdParty\discordrpcLibrary\Win64
+  - python build.py
+
+artifacts:
+- path: builds\install\win32-dynamic
+  name: win32-dynamic
+- path: builds\install\win32-static
+  name: win32-static
+- path: builds\install\win64-dynamic
+  name: win64-dynamic
+- path: builds\install\win64-static
+  name: win64-static
