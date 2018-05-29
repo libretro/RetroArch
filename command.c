@@ -44,6 +44,10 @@
 #include "cheevos/var.h"
 #endif
 
+#ifdef HAVE_DISCORD
+#include "discord/discord.h"
+#endif
+
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_content.h"
@@ -1275,8 +1279,8 @@ static bool command_event_init_core(enum rarch_core_type *data)
    if (!core_load(settings->uints.input_poll_type_behavior))
       return false;
 
-   rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
 
+   rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
    return true;
 }
 

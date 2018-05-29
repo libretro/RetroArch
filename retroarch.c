@@ -70,6 +70,10 @@
 #include "cheevos/cheevos.h"
 #endif
 
+#ifdef HAVE_DISCORD
+#include "discord/discord.h"
+#endif
+
 #ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
 #endif
@@ -1374,9 +1378,13 @@ bool retroarch_main_init(int argc, char *argv[])
    rarch_error_on_init     = false;
    rarch_is_inited         = true;
 
+#ifdef HAVE_DISCORD
+   discord_init();
+   discord_update(DISCORD_PRESENCE_MENU);
+#endif
+
    if (rarch_first_start)
       rarch_first_start = false;
-
    return true;
 
 error:
@@ -1384,7 +1392,7 @@ error:
    rarch_is_inited         = false;
 
    if (rarch_first_start)
-      rarch_first_start = false;
+         rarch_first_start = false;
 
    return false;
 }
@@ -2321,6 +2329,10 @@ bool retroarch_main_quit(void)
 
    runloop_shutdown_initiated = true;
    rarch_menu_running_finished();
+
+#ifdef HAVE_DISCORD
+   discord_shutdown();
+#endif
 
    return true;
 }
@@ -3324,6 +3336,9 @@ int runloop_iterate(unsigned *sleep_ms)
 #ifdef HAVE_CHEEVOS
    if (runloop_check_cheevos())
       cheevos_test();
+#endif
+#ifdef HAVE_DISCORD
+   discord_update(DISCORD_PRESENCE_GAME);
 #endif
 
    for (i = 0; i < max_users; i++)
