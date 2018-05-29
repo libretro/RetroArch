@@ -7872,6 +7872,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
+#ifdef HAVE_DISCORD
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.discord_enable,
@@ -7886,6 +7887,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+#endif
 
          if (string_is_not_equal(settings->arrays.location_driver, "null"))
          {
