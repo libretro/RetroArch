@@ -80,3 +80,20 @@ FONTS
 #include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp"
 #endif
 #endif
+
+#if defined(HAVE_DISCORD)
+#include "../deps/discord-rpc/src/discord_rpc.cpp"
+#include "../deps/discord-rpc/src/rpc_connection.cpp"
+#include "../deps/discord-rpc/src/serialization.cpp"
+
+#if defined(_WIN32)
+#include "../deps/discord-rpc/src/discord_register_win.cpp"
+#include "../deps/discord-rpc/src/connection_win.cpp"
+#endif
+#if defined(__linux__)
+#include "../deps/discord-rpc/src/discord_register_linux.cpp"
+#endif
+#if defined(__unix__) || defined(__APPLE__)
+#include "../deps/discord-rpc/src/connection_unix.cpp"
+#endif
+#endif

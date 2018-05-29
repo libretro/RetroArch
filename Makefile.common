@@ -1635,6 +1635,14 @@ ifneq ($(findstring Win32,$(OS)),)
 				  deps/discord-rpc/src/connection_win.o
       LIBS += -lpsapi -ladvapi32
 endif
+ifneq ($(findstring Linux,$(OS)),)
+		OBJ  += deps/discord-rpc/src/discord_register_linux.o \
+				  deps/discord-rpc/src/connection_unix.o
+endif
+ifneq ($(findstring Darwin,$(OS)),)
+		OBJ  += deps/discord-rpc/src/discord_register_osx.o \
+				  deps/discord-rpc/src/connection_unix.o
+endif
 
    endif
 

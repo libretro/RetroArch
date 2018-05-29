@@ -1394,3 +1394,7 @@ HTTP SERVER
 #include "../deps/civetweb/civetweb.c"
 #include "network/httpserver/httpserver.c"
 #endif
+
+#if defined(HAVE_DISCORD)
+#include "../discord/discord.c"
+#endif
