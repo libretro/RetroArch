@@ -62,7 +62,7 @@ static void handle_discord_join_request(const DiscordUser* request)
       request->userId);
 }
 
-void discord_update(unsigned presence)
+void discord_update(enum discord_presence presence)
 {
    if (!discord_ready)
       return;
@@ -94,7 +94,10 @@ void discord_update(unsigned presence)
          discord_presence.instance        = 0;
          discord_presence.startTimestamp  = start_time;
          break;
-      default:
+      case DISCORD_PRESENCE_NETPLAY_HOSTING:
+      case DISCORD_PRESENCE_NETPLAY_CLIENT:
+      case DISCORD_PRESENCE_CHEEVO_UNLOCKED:
+         /* TODO/FIXME */
          break;
    }
    Discord_UpdatePresence(&discord_presence);

@@ -39,9 +39,10 @@ enum discord_presence
    DISCORD_PRESENCE_NETPLAY_CLIENT
 };
 
+void discord_init(void);
 
-void discord_init();
-void discord_shutdown();
-void discord_update(unsigned presence);
+void discord_shutdown(void);
+
+void discord_update(enum discord_presence presence);
 
 #endif /* __RARCH_DISCORD_H */
