@@ -27,12 +27,11 @@ interface to include support for emulators and/or game engines. libretro is comp
 
 ## Binaries
 
-Latest Windows binaries are currently hosted on the [buildbot](http://buildbot.libretro.com/).
+Latest binaries are currently hosted on the [buildbot](http://buildbot.libretro.com/).
 
 ## Support
 
-To reach developers, either make an issue here on GitHub, make a thread on the [forum](http://www.libretro.com/forums/),
-or visit our IRC channel: #retroarch @ irc.freenode.org.
+To reach developers, either make an issue here on GitHub, make a thread on the [forum](http://www.libretro.com/forums/), chat on [Discord](https://discord.gg/C4amCeV), or visit our IRC channel: #retroarch @ irc.freenode.org.
 
 ## Documentation
 
@@ -51,13 +50,13 @@ More developer-centric stuff is found [here](https://github.com/libretro/libretr
 
 RetroArch attempts to be small and lean
 while still having all the useful core features expected from an emulator.
-It is designed to be very portable and features a gamepad-centric UI.
+It is designed to be very portable and features a gamepad-centric and touchscreen UI.
 It also has a full-featured command-line interface.
 
 In some areas, RetroArch goes beyond and emphasizes on not-so-common technical features such as multi-pass shader support,
-real-time rewind (Braid-style), video recording (using FFmpeg), etc.
+real-time rewind (Braid-style), video recording (using FFmpeg), run-ahead input latency removal, etc.
 
-RetroArch also emphasizes on being easy to integrate into various launcher frontends.
+RetroArch also emphasizes being easy to integrate into various launcher frontends.
 
 ## Platforms
 
@@ -66,22 +65,24 @@ RetroArch has been ported to the following platforms:
    - DOS
    - Windows
    - Linux
-   - Emscripten
+   - Emscripten (WebAssembly and JavaScript)
    - FreeBSD
    - NetBSD
    - OpenBSD
    - Haiku
    - Solaris
-   - MacOS X
+   - macOS (PPC, x86-32 and x86-64)
    - PlayStation 3
    - PlayStation Portable
    - PlayStation Vita
    - Original Microsoft Xbox
    - Microsoft Xbox 360 (Libxenon/XeXDK)
-   - Nintendo Wii, GameCube (Libogc)
+   - Nintendo GameCube
+   - Nintendo Wii
    - Nintendo Wii U
    - Nintendo 3DS
    - Nintendo Switch
+   - Nintendo NES/SNES Classic Edition
    - Raspberry Pi
    - Android
    - iOS
@@ -147,9 +148,9 @@ Instructions for compiling and installing RetroArch can be found in the [Libretr
 
 ## CRT 15Khz Resolution Switching
 
-CRT Switch res will turn on, on the fly. However, you will need to restart retroarch to disable it. With CRT SwitchRes enable Retroarch will start in 2560 x 480 @ 60.  
+CRT SwitchRes will turn on, on the fly. However, you will need to restart RetroArch to disable it. With CRT SwitchRes enable RetroArch will start in 2560 x 480 @ 60.  
 
-If you are running windows, before enabling the CRT SwitchRes options please make sure you have installed CRTEmudriver and installed some modelines. The minimum modelins for all games to switch correctly are:
+If you are running Windows, before enabling the CRT SwitchRes options please make sure you have installed CRTEmudriver and installed some modelines. The minimum modelines for all games to switch correctly are:
 
 - 2560 x 192 @ 60.000000
 - 2560 x 200 @ 60.000000
@@ -161,7 +162,7 @@ If you are running windows, before enabling the CRT SwitchRes options please mak
 - 2560 x 448 @ 60.000000
 - 2560 x 480 @ 60.000000
 
-Install these modelines replacing 2560 with your desired super resolution. The above resolutions are NTSC only so if you would be playing any PAL content please add pal modelines:
+Install these modelines replacing 2560 with your desired super resolution. The above resolutions are NTSC only so if you would be playing any PAL content please add PAL modelines:
 
 - 2560 x 192 @ 50.000000
 - 2560 x 200 @ 50.000000
@@ -251,8 +252,8 @@ If native resolutions are activated you will need a whole new set of modelines:
 
 These modelines are more accurate giving exact hz. However, some games may have unwanted results. This is due to mid-scanline resolution changes on the original hardware. For the best results super resolutions are the way to go.
 
-## CRT resolution switching & Mame
+## CRT resolution switching & MAME
 
-Some arcade resolutions can be a lot different. There is resolution detection to ensure mame games will be displayed in the closest available resolution but drawn at their native resolution within this resolution. Meaning that the mame game will look just like the original hardware.
+Some arcade resolutions can be very different from consumer CRTs. There is resolution detection to ensure MAME games will be displayed in the closest available resolution but drawn at their native resolution within this resolution. Meaning that the MAME game will look just like the original hardware.
 
-Mame roms that run in a vertical aspect like DoDonPachi need to be rotated within mame before resolution switching and aspect correction will work. Do this before enabling CRT switchRes so that Retroarch will run in your desktop resolution. Once you have roted any games that may need it switch CRT SwitchRes on.
+MAME ROMs that run in a vertical aspect like DoDonPachi need to be rotated within MAME before resolution switching and aspect correction will work. Do this before enabling CRT SwitchRes so that RetroArch will run in your desktop resolution. Once you have rotated any games that may need it turn CRT SwitchRes on.
