@@ -322,8 +322,9 @@ static bool netplay_poll(void)
                               (netplay_data->run_frame_count - netplay_data->unread_frame_count) :
                               0;
       settings_t *settings  = config_get_ptr();
-      unsigned input_latency_frames_min = settings->uints.netplay_input_latency_frames_min;
-      unsigned input_latency_frames_max = input_latency_frames_min + settings->uints.netplay_input_latency_frames_range;
+      int input_latency_frames_min = settings->uints.netplay_input_latency_frames_min -
+            (settings->bools.run_ahead_enabled ? settings->uints.run_ahead_frames : 0);
+      int input_latency_frames_max = input_latency_frames_min + settings->uints.netplay_input_latency_frames_range;
 
       /* Assume we need a couple frames worth of time to actually run the
        * current frame */
@@ -1424,6 +1425,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             ret = netplay_enabled;
             goto done;
 
+         case RARCH_NETPLAY_CTL_IS_REPLAYING:
          case RARCH_NETPLAY_CTL_IS_DATA_INITED:
             ret = false;
             goto done;
@@ -1450,6 +1452,9 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          ret = false;
          goto done;
       case RARCH_NETPLAY_CTL_IS_ENABLED:
+         goto done;
+      case RARCH_NETPLAY_CTL_IS_REPLAYING:
+         ret = netplay_data->is_replay;
          goto done;
       case RARCH_NETPLAY_CTL_IS_SERVER:
          ret = netplay_enabled && !netplay_is_client;

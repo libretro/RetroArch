@@ -1771,6 +1771,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (get_hard_disable_audio())
             result |= 8;
 #endif
+#ifdef HAVE_NETWORKING
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_REPLAYING, NULL))
+            result &= ~(1|2);
+#endif
          if (data != NULL)
          {
             int* result_p = (int*)data;
