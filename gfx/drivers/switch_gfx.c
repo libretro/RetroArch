@@ -232,13 +232,14 @@ static bool switch_frame(void *data, const void *frame,
       RARCH_LOG("message: %s\n", msg);
 
    r = surface_dequeue_buffer(&sw->surface, &out_buffer);
-   if (sw->vsync)
-	   switch_wait_vsync(sw);
-   svcSleepThread(10000);
    if(r != RESULT_OK) {
 	   return true; // just skip the frame
    }
-   
+
+   r = surface_wait_buffer(&sw->surface);
+   if(r != RESULT_OK) {
+	   return true;
+   }
    gfx_slow_swizzling_blit(out_buffer, sw->image, 1280, 720, 0, 0);
    
    r = surface_queue_buffer(&sw->surface);
