@@ -1184,6 +1184,9 @@ void input_get_state_for_port(void *data, unsigned port, input_bits_t *p_new_sta
          BIT256_SET_PTR(p_new_state, i);
    }
 
+   if (!joypad_driver)
+      return;
+
    for (i = 0; i < 2; i++)
    {
       for (j = 0; j < 2; j++)
