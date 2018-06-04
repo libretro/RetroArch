@@ -1163,6 +1163,23 @@ struct retro_led_interface
                                             * * State will never be saved when using Hard Disable Audio.
                                             */
 
+#define RETRO_ENVIRONMENT_GET_MIDI_INTERFACE (48 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+typedef bool (RETRO_CALLCONV *retro_midi_input_enabled_t)(void);
+typedef bool (RETRO_CALLCONV *retro_midi_output_enabled_t)(void);
+typedef bool (RETRO_CALLCONV *retro_midi_read_t)(uint8_t *byte);
+typedef bool (RETRO_CALLCONV *retro_midi_write_t)(uint8_t byte, uint32_t delta_time);
+typedef bool (RETRO_CALLCONV *retro_midi_flush_t)(void);
+
+struct retro_midi_interface
+{
+   retro_midi_input_enabled_t input_enabled;
+   retro_midi_output_enabled_t output_enabled;
+   retro_midi_read_t read;
+   retro_midi_write_t write;
+   retro_midi_flush_t flush;
+};
+
 #define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE (41 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* const struct retro_hw_render_interface ** --
                                             * Returns an API specific rendering interface for accessing API specific data.

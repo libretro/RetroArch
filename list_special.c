@@ -50,6 +50,7 @@
 #include "input/input_driver.h"
 #include "audio/audio_driver.h"
 #include "record/record_driver.h"
+#include "midi/midi_driver.h"
 #include "configuration.h"
 
 struct string_list *dir_list_new_special(const char *input_dir,
@@ -269,6 +270,15 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; record_driver_find_handle(i); i++)
          {
             const char *opt  = record_driver_find_ident(i);
+            *len            += strlen(opt) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+         break;
+      case STRING_LIST_MIDI_DRIVERS:
+         for (i = 0; midi_driver_find_handle(i); i++)
+         {
+            const char *opt  = midi_driver_find_ident(i);
             *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);

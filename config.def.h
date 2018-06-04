@@ -689,6 +689,11 @@ static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_NORMAL;
 #endif
 
+/* MIDI */
+static const char *midi_input     = "Off";
+static const char *midi_output    = "Off";
+static const unsigned midi_volume = 100;
+
 #if defined(ANDROID)
 #if defined(ANDROID_ARM)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/";

@@ -403,6 +403,8 @@ typedef struct settings
       unsigned led_map[MAX_LEDS];
 
       unsigned run_ahead_frames;
+
+      unsigned midi_volume;
    } uints;
 
    struct
@@ -424,6 +426,7 @@ typedef struct settings
       char audio_resampler[32];
       char input_driver[32];
       char input_joypad_driver[32];
+      char midi_driver[32];
 
       char input_keyboard_layout[64];
 
@@ -437,6 +440,9 @@ typedef struct settings
       char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
 
       char netplay_mitm_server[255];
+
+      char midi_input[32];
+      char midi_output[32];
    } arrays;
 
    struct
@@ -582,6 +588,9 @@ const char *config_get_default_joypad(void);
  * Returns: Default menu driver.
  **/
 const char *config_get_default_menu(void);
+
+const char *config_get_default_midi(void);
+const char *config_get_midi_driver_options(void);
 
 const char *config_get_default_record(void);
 

@@ -55,6 +55,7 @@
 #include "performance_counters.h"
 #include "gfx/video_driver.h"
 #include "led/led_driver.h"
+#include "midi/midi_driver.h"
 
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
@@ -1775,6 +1776,22 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             int* result_p = (int*)data;
             *result_p = result;
+         }
+      }
+      break;
+
+      case RETRO_ENVIRONMENT_GET_MIDI_INTERFACE:
+      {
+         struct retro_midi_interface *midi_interface =
+               (struct retro_midi_interface *)data;
+
+         if (midi_interface)
+         {
+            midi_interface->input_enabled = midi_driver_input_enabled;
+            midi_interface->output_enabled = midi_driver_output_enabled;
+            midi_interface->read = midi_driver_read;
+            midi_interface->write = midi_driver_write;
+            midi_interface->flush = midi_driver_flush;
          }
       }
       break;

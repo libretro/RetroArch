@@ -38,6 +38,7 @@
 #include "location/location_driver.h"
 #include "wifi/wifi_driver.h"
 #include "led/led_driver.h"
+#include "midi/midi_driver.h"
 #include "configuration.h"
 #include "core.h"
 #include "core_info.h"
@@ -112,6 +113,12 @@ static const void *find_driver_nonempty(const char *label, int i,
       drv = record_driver_find_handle(i);
       if (drv)
          strlcpy(s, record_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "midi_driver"))
+   {
+      drv = midi_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, midi_driver_find_ident(i), len);
    }
    else if (string_is_equal(label, "audio_resampler_driver"))
    {
@@ -396,6 +403,9 @@ void drivers_init(int flags)
    {
       led_driver_init();
    }
+
+   if (flags & DRIVER_MIDI_MASK)
+      midi_driver_init();
 }
 
 
@@ -459,6 +469,9 @@ void driver_uninit(int flags)
    
    if ((flags & DRIVER_AUDIO_MASK) && !audio_driver_owns_driver())
       audio_driver_destroy_data();
+
+   if (flags & DRIVER_MIDI_MASK)
+      midi_driver_free();
 }
 
 bool driver_ctl(enum driver_ctl_state state, void *data)
