@@ -2163,12 +2163,18 @@ static void xmb_populate_entries(void *data,
       xmb_selection_pointer_changed(xmb, false);
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
       if (!string_is_equal(xmb_thumbnails_ident('R'),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      {
+         xmb_update_thumbnail_path(xmb, 0, 'R');
          xmb_update_thumbnail_image(xmb);
+      }
       xmb_update_savestate_thumbnail_image(xmb);
       if (!string_is_equal(xmb_thumbnails_ident('L'),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      {
+         xmb_update_thumbnail_path(xmb, 0, 'L');
          xmb_update_thumbnail_image(xmb);
+      }
       return;
    }
 
@@ -3066,7 +3072,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Right thumbnail big size */
-   if (xmb->use_ps3_layout &&
+   if (!xmb->savestate_thumbnail && xmb->use_ps3_layout &&
          (!settings->bools.menu_xmb_vertical_thumbnails || 
          (settings->bools.menu_xmb_vertical_thumbnails && !xmb->left_thumbnail)))
    {
@@ -3205,7 +3211,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* No Right Thumbnail, draw only the left one big size */
-   if (xmb->use_ps3_layout &&
+   if (!xmb->savestate_thumbnail && xmb->use_ps3_layout &&
       settings->bools.menu_xmb_vertical_thumbnails && !xmb->thumbnail)
    {
       /* Do not draw the left thumbnail if there is no space available */
@@ -3514,7 +3520,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Right side 2 thumbnails on top of each other */
    /* here to be displayed above the horizontal icons */
-   if (xmb->use_ps3_layout &&
+   if (!xmb->savestate_thumbnail && xmb->use_ps3_layout &&
       xmb->left_thumbnail && xmb->thumbnail &&
       settings->bools.menu_xmb_vertical_thumbnails)
    {
@@ -4472,11 +4478,17 @@ static void xmb_context_reset(void *data, bool is_threaded)
       xmb_context_reset_horizontal_list(xmb);
 
       if (!string_is_equal(xmb_thumbnails_ident('R'),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      {
+         xmb_update_thumbnail_path(xmb, 0, 'R');
          xmb_update_thumbnail_image(xmb);
-      if (!string_is_equal(xmb_thumbnails_ident('R'),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      }
+      if (!string_is_equal(xmb_thumbnails_ident('L'),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      {
+         xmb_update_thumbnail_path(xmb, 0, 'L');
          xmb_update_thumbnail_image(xmb);
+      }
       xmb_update_savestate_thumbnail_image(xmb);
 
       free(iconpath);
