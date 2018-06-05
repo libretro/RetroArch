@@ -316,8 +316,6 @@ $(BUILD_DIR)/$(TARGET).rpx: $(BUILD_DIR)/$(TARGET).rpx.elf $(ELF2RPL) .$(TARGET)
 	@touch .$(TARGET).rpx.last
 	$(Q)-$(ELF2RPL) $< $@
 
-compile: $(OBJ) $(HBL_ELF_OBJ)
-
 clean:
 	rm -f $(OBJ) $(RPX_OBJ) $(HBL_ELF_OBJ) $(TARGET).elf $(TARGET).rpx.elf $(TARGET).rpx
 	rm -f $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).rpx.elf $(BUILD_DIR)/$(TARGET).rpx

@@ -22,6 +22,8 @@
 #include <iosuhax.h>
 #include <sys/iosupport.h>
 
+#include "wiiu_main.h"
+
 #include "hbl.h"
 
 #include "fs/fs_utils.h"
@@ -50,7 +52,8 @@ void __init(void);
 static void fsdev_init(void);
 static void fsdev_exit(void);
 
-static int iosuhaxMount = 0;
+bool iosuhaxMount = 0;
+
 static int mcp_hook_fd = -1;
 
 /* HBL elf entry point */
@@ -163,35 +166,58 @@ void MCPHookClose(void)
    mcp_hook_fd = -1;
 }
 
+static bool try_init_iosuhax(void)
+{
+   int result = IOSUHAX_Open(NULL);
+   if(result < 0)
+      result = MCPHookOpen();
+
+   return (result < 0) ? false : true;
+}
+
+static void try_shutdown_iosuhax(void)
+{
+  if(!iosuhaxMount)
+    return;
+
+  if (mcp_hook_fd >= 0)
+    MCPHookClose();
+  else
+    IOSUHAX_Close();
+
+  iosuhaxMount = false;
+}
+
 static void fsdev_init(void)
 {
-   iosuhaxMount = 0;
-   int res = IOSUHAX_Open(NULL);
+   iosuhaxMount = try_init_iosuhax();
 
-   if (res < 0)
-      res = MCPHookOpen();
-
-   if (res < 0)
-      mount_sd_fat("sd");
+   if(hooks.fs_mount != NULL && hooks.fs_unmount != NULL)
+     hooks.fs_mount();
    else
    {
-      iosuhaxMount = 1;
-      fatInitDefault();
+     if(iosuhaxMount)
+       fatInitDefault();
+     else
+       mount_sd_fat("sd");
    }
 }
 
 static void fsdev_exit(void)
 {
-   if (iosuhaxMount)
-   {
-      fatUnmount("sd:");
-      fatUnmount("usb:");
+   if(hooks.fs_mount != NULL && hooks.fs_unmount != NULL)
 
-      if (mcp_hook_fd >= 0)
-         MCPHookClose();
-      else
-         IOSUHAX_Close();
-   }
+     hooks.fs_unmount();
    else
-      unmount_sd_fat("sd");
+   {
+      if (iosuhaxMount)
+      {
+         fatUnmount("sd:");
+         fatUnmount("usb:");
+      }
+      else
+         unmount_sd_fat("sd");
+   }
+
+   try_shutdown_iosuhax();
 }

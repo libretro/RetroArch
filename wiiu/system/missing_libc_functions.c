@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <wiiu/os.h>
 #include <pwd.h>
-#include <features/features_cpu.h>
 #include <sys/reent.h>
 #include <errno.h>
 #include <time.h>

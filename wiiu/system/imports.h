@@ -1,6 +1,13 @@
 /* coreinit */
 IMPORT_BEGIN(coreinit);
 
+IMPORT(OSScreenInit);
+IMPORT(OSScreenGetBufferSizeEx);
+IMPORT(OSScreenSetBufferEx);
+IMPORT(OSScreenEnableEx);
+IMPORT(OSScreenFlipBuffersEx);
+IMPORT(OSScreenClearBufferEx);
+IMPORT(OSScreenPutFontEx);
 IMPORT(OSFatal);
 IMPORT(OSDynLoad_Acquire);
 IMPORT(OSDynLoad_FindExport);
