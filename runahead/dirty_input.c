@@ -50,6 +50,7 @@ static void input_state_set_last(unsigned port, unsigned device,
 {
    unsigned i;
    InputListElement *element = NULL;
+   const int MAX_ID = sizeof(element->state) / sizeof(int16_t);
 
    if (!input_state_list)
       mylist_create(&input_state_list, 16,
@@ -59,8 +60,11 @@ static void input_state_set_last(unsigned port, unsigned device,
    for (i = 0; i < (unsigned)input_state_list->size; i++)
    {
       element = (InputListElement*)input_state_list->data[i];
-      if (     element->port == port 
-            && element->device == device && element->index == index)
+      if (  (element->port   == port)   &&
+            (element->device == device) &&
+            (element->index  == index)  &&
+            (id >= 0 && id < MAX_ID)
+         )
       {
          element->state[id] = value;
          return;
@@ -72,7 +76,8 @@ static void input_state_set_last(unsigned port, unsigned device,
    element->port      = port;
    element->device    = device;
    element->index     = index;
-   element->state[id] = value;
+   if (id >= 0 && id < MAX_ID)
+      element->state[id] = value;
 }
 
 static int16_t input_state_get_last(unsigned port,
@@ -88,10 +93,12 @@ static int16_t input_state_get_last(unsigned port,
    {
       InputListElement *element = 
          (InputListElement*)input_state_list->data[i];
+      const int MAX_ID = sizeof(element->state) / sizeof(int16_t);
 
       if (  (element->port   == port)   && 
             (element->device == device) &&
-            (element->index  == index)
+            (element->index  == index)  &&
+            (id >= 0 && id < MAX_ID)
          )
          return element->state[id];
    }

@@ -2,12 +2,12 @@ TARGET := retroarch_3ds_salamander
 LIBRETRO =
 
 DEBUG                   = 0
-BUILD_3DSX              = 0
+BUILD_3DSX              = 1
 BUILD_3DS               = 0
 BUILD_CIA               = 1
 
-APP_TITLE            = Retroarch 3DS
-APP_DESCRIPTION      = Retroarch 3DS
+APP_TITLE            = RetroArch 3DS
+APP_DESCRIPTION      = RetroArch 3DS
 APP_AUTHOR           = Team Libretro
 APP_PRODUCT_CODE     = RETROARCH-3DS
 APP_UNIQUE_ID        = 0xBAC00
@@ -189,7 +189,7 @@ ifeq ($(APP_BIG_TEXT_SECTION), 1)
 else
 	rm -f $(TARGET).xml
 endif
-	-3dsxtool $< $@ $(_3DSXFLAGS)
+	$(DEVKITARM)/bin/3dsxtool $< $@ $(_3DSXFLAGS)
 
 $(TARGET).elf: ctr/3dsx_custom_crt0.o
 	$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@

@@ -213,6 +213,7 @@ else
    HAVE_NETWORK_CMD='no'
    HAVE_NETWORKGAMEPAD='no'
    HAVE_CHEEVOS='no'
+   HAVE_DISCORD='no'
 fi
 
 check_lib '' STDIN_CMD "$CLIB" fcntl

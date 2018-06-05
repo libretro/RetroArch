@@ -448,7 +448,7 @@ static int action_bind_sublabel_subsystem_add(
       char *s, size_t len)
 {
    rarch_system_info_t *system                  = runloop_get_system_info();
-   const struct retro_subsystem_info *subsystem = system ?
+   const struct retro_subsystem_info *subsystem = (system && system->subsystem.data) ?
 	   system->subsystem.data + (type - MENU_SETTINGS_SUBSYSTEM_ADD) : NULL;
 
    if (subsystem && content_get_subsystem_rom_id() < subsystem->num_roms)

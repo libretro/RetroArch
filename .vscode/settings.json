@@ -13,7 +13,10 @@
       "frontend_driver.h": "c",
       "*.in": "c",
       "*.rh": "c",
-      "array": "c"
+      "array": "c",
+      "stdlib.h": "c",
+      "cmath": "c",
+      "cstdlib": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

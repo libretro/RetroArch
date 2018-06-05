@@ -588,7 +588,10 @@ void d3d9x_constant_table_set_defaults(LPDIRECT3DDEVICE9 dev,
 #if defined(HAVE_D3DX)
    LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
    if (consttbl && dev)
-      consttbl->lpVtbl->SetDefaults(consttbl, dev);
+   {
+      if (consttbl->lpVtbl->SetDefaults)
+         consttbl->lpVtbl->SetDefaults(consttbl, dev);
+   }
 #endif
 }
 

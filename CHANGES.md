@@ -5,6 +5,7 @@
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Polish translation.
 - LOCALIZATION: Update Portuguese / Brazilian translation.
+- LOCALIZATION: Update Spanish translation.
 - MENU/QT/WIMP: QT QSlider styling for Dark Theme.
 - MENU/QT/WIMP: Remove button ghostly inside highlighting.
 - PS3: Add audio mixer support for FLAC and MP3.
