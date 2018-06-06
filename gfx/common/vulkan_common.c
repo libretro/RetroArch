@@ -950,8 +950,8 @@ void vulkan_image_layout_transition(
    barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
    barrier.image                       = image;
    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   barrier.subresourceRange.levelCount = 1;
-   barrier.subresourceRange.layerCount = 1;
+   barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+   barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
    vkCmdPipelineBarrier(cmd,
          srcStages,
@@ -2653,6 +2653,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       RARCH_ERR("[Vulkan]: Failed to create swapchain.\n");
       return false;
    }
+
+   if (old_swapchain != VK_NULL_HANDLE)
+      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
 
    vk->context.swapchain_width  = swapchain_size.width;
    vk->context.swapchain_height = swapchain_size.height;
