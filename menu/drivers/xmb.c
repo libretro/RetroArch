@@ -2981,6 +2981,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    float pseudo_font_length                = 0.0f;
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
    settings_t *settings                    = config_get_ptr();
+   unsigned xmb_system_tab                 = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
+   bool hide_thumbnails                    = false;
 
    if (!xmb)
       return;
@@ -3071,8 +3073,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->savestate_thumbnail);
    }
 
+   /* This is used for hiding thumbnails when going into sub-levels in the
+    * Quick Menu as well as when selecting "Information" for a playlist entry.
+    * NOTE: This is currently a pretty crude check, simply going by menu depth 
+    * and not specifically identifying which menu we're actually in. */
+   hide_thumbnails = xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && xmb->depth > 2;
+
    /* Right thumbnail big size */
-   if (!xmb->savestate_thumbnail && xmb->use_ps3_layout &&
+   if (!hide_thumbnails && !xmb->savestate_thumbnail && xmb->use_ps3_layout &&
          (!settings->bools.menu_xmb_vertical_thumbnails || 
          (settings->bools.menu_xmb_vertical_thumbnails && !xmb->left_thumbnail)))
    {
@@ -3143,7 +3151,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Left thumbnail in the left margin */
    /* Do not draw the left thumbnail if there is no space available */
-   if (xmb->use_ps3_layout &&
+   if (!hide_thumbnails && xmb->use_ps3_layout &&
          !settings->bools.menu_xmb_vertical_thumbnails &&
          (xmb->margins_screen_top + xmb->icon_size *
          (!(xmb->depth == 1)? 2.1 : 1) + min_thumb_size)
@@ -3211,7 +3219,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* No Right Thumbnail, draw only the left one big size */
-   if (!xmb->savestate_thumbnail && xmb->use_ps3_layout &&
+   if (!hide_thumbnails && !xmb->savestate_thumbnail && xmb->use_ps3_layout &&
       settings->bools.menu_xmb_vertical_thumbnails && !xmb->thumbnail)
    {
       /* Do not draw the left thumbnail if there is no space available */
@@ -3281,7 +3289,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* PSP Layout Only - Left thumbnail in the left margin */
    /* Do not draw the left thumbnail if there is no space available */
-   if (!xmb->use_ps3_layout &&
+   if (!hide_thumbnails && !xmb->use_ps3_layout &&
          (xmb->margins_screen_top + xmb->icon_size * 1.5)
          <= (float)height)
    {
@@ -3520,7 +3528,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Right side 2 thumbnails on top of each other */
    /* here to be displayed above the horizontal icons */
-   if (!xmb->savestate_thumbnail && xmb->use_ps3_layout &&
+   if (!hide_thumbnails && !xmb->savestate_thumbnail && xmb->use_ps3_layout && 
       xmb->left_thumbnail && xmb->thumbnail &&
       settings->bools.menu_xmb_vertical_thumbnails)
    {
