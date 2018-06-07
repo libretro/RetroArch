@@ -70,6 +70,10 @@
 #include "cheevos/cheevos.h"
 #endif
 
+#ifdef HAVE_DISCORD
+#include "discord/discord.h"
+#endif
+
 #ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
 #endif
@@ -197,6 +201,9 @@ static retro_bits_t has_set_libretro_device;
 
 static bool has_set_core                                   = false;
 static bool has_set_username                               = false;
+#ifdef HAVE_DISCORD
+static bool discord_is_inited                              = false;
+#endif
 static bool rarch_is_inited                                = false;
 static bool rarch_error_on_init                            = false;
 static bool rarch_block_config_read                        = false;
@@ -1374,9 +1381,21 @@ bool retroarch_main_init(int argc, char *argv[])
    rarch_error_on_init     = false;
    rarch_is_inited         = true;
 
+#ifdef HAVE_DISCORD
+   if (command_event(CMD_EVENT_DISCORD_INIT, NULL))
+      discord_is_inited = true;
+
+   if (discord_is_inited)
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_MENU;
+
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+   }
+#endif
+
    if (rarch_first_start)
       rarch_first_start = false;
-
    return true;
 
 error:
@@ -1384,7 +1403,7 @@ error:
    rarch_is_inited         = false;
 
    if (rarch_first_start)
-      rarch_first_start = false;
+         rarch_first_start = false;
 
    return false;
 }
@@ -2321,6 +2340,11 @@ bool retroarch_main_quit(void)
 
    runloop_shutdown_initiated = true;
    rarch_menu_running_finished();
+
+#ifdef HAVE_DISCORD
+   command_event(CMD_EVENT_DISCORD_DEINIT, NULL);
+   discord_is_inited          = false;
+#endif
 
    return true;
 }
@@ -3315,7 +3339,11 @@ int runloop_iterate(unsigned *sleep_ms)
 
 #ifdef HAVE_RUNAHEAD
    /* Run Ahead Feature replaces the call to core_run in this loop */
-   if (settings->bools.run_ahead_enabled && settings->uints.run_ahead_frames > 0)
+   if (settings->bools.run_ahead_enabled && settings->uints.run_ahead_frames > 0
+#ifdef HAVE_NETWORKING
+      && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
+#endif
+      )
       run_ahead(settings->uints.run_ahead_frames, settings->bools.run_ahead_secondary_instance);
    else
 #endif
@@ -3324,6 +3352,16 @@ int runloop_iterate(unsigned *sleep_ms)
 #ifdef HAVE_CHEEVOS
    if (runloop_check_cheevos())
       cheevos_test();
+#endif
+
+#ifdef HAVE_DISCORD
+   if (discord_is_inited)
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_GAME;
+
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+   }
 #endif
 
    for (i = 0; i < max_users; i++)

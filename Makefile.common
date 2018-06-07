@@ -1625,6 +1625,29 @@ ifeq ($(HAVE_NETWORKING), 1)
          $(LIBRETRO_COMM_DIR)/utils/md5.o
    endif
 
+   ifeq ($(HAVE_DISCORD), 1)
+      DEFINES += -DHAVE_DISCORD
+      DEFINES += -Ideps/discord-rpc/include/ -Ideps/discord-rpc/thirdparty/rapidjson-1.1.0/include/
+      OBJ     += deps/discord-rpc/src/discord_rpc.o \
+					  deps/discord-rpc/src/rpc_connection.o \
+					  deps/discord-rpc/src/serialization.o \
+					  discord/discord.o
+ifneq ($(findstring Win32,$(OS)),)
+      OBJ  += deps/discord-rpc/src/discord_register_win.o \
+				  deps/discord-rpc/src/connection_win.o
+      LIBS += -lpsapi -ladvapi32
+endif
+ifneq ($(findstring Linux,$(OS)),)
+		OBJ  += deps/discord-rpc/src/discord_register_linux.o \
+				  deps/discord-rpc/src/connection_unix.o
+endif
+ifneq ($(findstring Darwin,$(OS)),)
+		OBJ  += deps/discord-rpc/src/discord_register_osx.o \
+				  deps/discord-rpc/src/connection_unix.o
+endif
+
+   endif
+
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
       OBJ += input/input_remote.o \
              cores/libretro-net-retropad/net_retropad_core.o

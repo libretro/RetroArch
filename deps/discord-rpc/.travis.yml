@@ -1,0 +1,47 @@
+language: cpp
+
+env:
+  global:
+    - CLANG_FORMAT_SUFFIX="-dummy" # don't use formatting on Travis, this is
+                                   # needed not to use default 3.5 version
+                                   # which is too old.
+
+matrix:
+  include:
+    - os: linux
+      env: MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+    - os: linux
+      env: MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-trusty-4.0
+          packages:
+            - clang-4.0
+    - os: linux
+      env: MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-trusty-5.0
+          packages:
+            - clang-5.0
+    - os: osx
+      osx_image: xcode9
+
+# prevent Travis from overwriting our CXX variables
+before_install:
+    - eval "${MATRIX_EVAL}"
+    - echo $CXX
+
+script:
+    - mkdir build
+    - cd build
+    - cmake -DCLANG_FORMAT_SUFFIX=$CLANG_FORMAT_SUFFIX --config Release ..
+    - cmake --build . -- -j2

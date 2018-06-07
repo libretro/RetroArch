@@ -6376,3 +6376,13 @@ MSG_HASH(
 	MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
 	"Continuar los logros para esta sesión (Esto desactivará los archivos de guardado, cámara lenta, trucos, rebobinado y pausa)"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
+      "In-Menu")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
+      "Enable Discord"
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
+      "Enable or disable Discord support. Will not work with the browser version, only native desktop client."
+      )

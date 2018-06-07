@@ -52,3 +52,7 @@
 #ifdef HAVE_MFI
 #include "../input/drivers_joypad/mfi_joypad.m"
 #endif
+
+#if defined(HAVE_DISCORD)
+#include "../deps/discord-rpc/src/discord_register_osx.m"
+#endif
