@@ -22,8 +22,6 @@
 #include <iosuhax.h>
 #include <sys/iosupport.h>
 
-#include "wiiu_main.h"
-
 #include "hbl.h"
 
 #include "fs/fs_utils.h"
@@ -188,8 +186,15 @@ static void try_shutdown_iosuhax(void)
   iosuhaxMount = false;
 }
 
+/**
+ * Mount the filesystem(s) needed by the application. By default, we
+ * mount the SD card to /sd.
+ *
+ * The 'iosuhaxMount' symbol used here is public and can be referenced
+ * in overriding implementations.
+ */
 __attribute__((weak))
-void mount_filesystems(void)
+void __mount_filesystems(void)
 {
    if(iosuhaxMount)
       fatInitDefault();
@@ -197,8 +202,12 @@ void mount_filesystems(void)
       mount_sd_fat("sd");
 }
 
+/**
+ * Unmount filesystems. Implementing applications should be careful to
+ * clean up anything mounted in __mount_filesystems() here.
+ */
 __attribute__((weak))
-void unmount_filesystems(void)
+void __unmount_filesystems(void)
 {
   if (iosuhaxMount)
   {
@@ -213,11 +222,11 @@ static void fsdev_init(void)
 {
    iosuhaxMount = try_init_iosuhax();
 
-   mount_filesystems();
+   __mount_filesystems();
 }
 
 static void fsdev_exit(void)
 {
-   unmount_filesystems();
+   __unmount_filesystems();
    try_shutdown_iosuhax();
 }
