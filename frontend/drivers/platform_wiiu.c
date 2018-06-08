@@ -49,7 +49,6 @@
 #include "../../retroarch.h"
 #include "../../gfx/video_driver.h"
 
-#include "wiiu_main.h"
 #include "hbl.h"
 #include "wiiu_dbg.h"
 #include "system/exception_handler.h"
@@ -67,10 +66,6 @@
 /**
  * The Wii U frontend driver, along with the main() method.
  */
-
-/* TODO: If we want greater control over which filesystems get mounted,
- * implement callbacks and assign them below. */
-hooks_t hooks = { NULL, NULL };
 
 static enum frontend_fork wiiu_fork_mode = FRONTEND_FORK_NONE;
 static const char *elf_path_cst = WIIU_SD_PATH "retroarch/retroarch.elf";

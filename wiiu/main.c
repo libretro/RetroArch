@@ -188,36 +188,36 @@ static void try_shutdown_iosuhax(void)
   iosuhaxMount = false;
 }
 
+__attribute__((weak))
+void mount_filesystems(void)
+{
+   if(iosuhaxMount)
+      fatInitDefault();
+   else
+      mount_sd_fat("sd");
+}
+
+__attribute__((weak))
+void unmount_filesystems(void)
+{
+  if (iosuhaxMount)
+  {
+    fatUnmount("sd:");
+    fatUnmount("usb:");
+  }
+  else
+    unmount_sd_fat("sd");
+}
+
 static void fsdev_init(void)
 {
    iosuhaxMount = try_init_iosuhax();
 
-   if(hooks.fs_mount != NULL && hooks.fs_unmount != NULL)
-     hooks.fs_mount();
-   else
-   {
-     if(iosuhaxMount)
-       fatInitDefault();
-     else
-       mount_sd_fat("sd");
-   }
+   mount_filesystems();
 }
 
 static void fsdev_exit(void)
 {
-   if(hooks.fs_mount != NULL && hooks.fs_unmount != NULL)
-
-     hooks.fs_unmount();
-   else
-   {
-      if (iosuhaxMount)
-      {
-         fatUnmount("sd:");
-         fatUnmount("usb:");
-      }
-      else
-         unmount_sd_fat("sd");
-   }
-
+   unmount_filesystems();
    try_shutdown_iosuhax();
 }
