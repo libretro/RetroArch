@@ -3717,12 +3717,12 @@ MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
 MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
       "Continuar conquistas para a sessão atual (Esta ação desabilitará Estados de Jogos, Trapaças, Rebobinagem, Pausa e Câmera Lenta e reiniciará o jogo atual).")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
-      "In-Menu")
+      "No Menu")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-      "Enable Discord"
+      "Habilitar o Discord"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-      "Enable or disable Discord support. Will not work with the browser version, only native desktop client."
+      "Habilitar ou desabilitar o suporte ao Discord. Não funcionará com a versão do navegador, apenas o cliente nativo de desktop."
       )
