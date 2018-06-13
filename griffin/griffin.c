@@ -72,7 +72,6 @@ CONSOLE EXTENSIONS
 #endif
 
 #ifdef INTERNAL_LIBOGC
-#ifdef HW_RVL
 #include "../wii/libogc/libfat/cache.c"
 #include "../wii/libogc/libfat/directory.c"
 #include "../wii/libogc/libfat/disc.c"
@@ -83,7 +82,6 @@ CONSOLE EXTENSIONS
 #include "../wii/libogc/libfat/libfat.c"
 #include "../wii/libogc/libfat/lock.c"
 #include "../wii/libogc/libfat/partition.c"
-#endif
 #endif
 
 #endif
