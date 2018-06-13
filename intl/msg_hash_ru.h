@@ -3350,3 +3350,7 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
       "Включить или отключить поддержку Discord. Работает только с нативным клиентом."
       )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+      "Задержка")
+MSG_HASH(MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+      "Изменить настройки относящиеся к задержке видео, аудио и ввода.")
