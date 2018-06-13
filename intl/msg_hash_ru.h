@@ -205,7 +205,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-      "Активы"
+      "Ресурсы"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
@@ -595,9 +595,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
       "Драйвер")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
-      "Загрузка макета при выключении ядра")
+      "Загрузка заглушки при выключении ядра")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-      "Проверять отсутствие firmware перед загрузкой")
+      "Проверять отсутствие прошивки перед загрузкой")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
       "Динамические обои")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
@@ -831,7 +831,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
       "Переключение экранной клавиатуры")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
-      "Наложение поверх")
+      "Следующий оверлей")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
       "Приостановить переключение")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
@@ -859,17 +859,17 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
       "Громкость +")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
-      "Отобразить наложение")
+      "Отобразить оверлей")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-      "Скрыть наложение в меню")
+      "Скрыть оверлей в меню")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-      "Тип поведения")
+      "Задержка опроса устройств")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
-      "Раньше")
+      "Ранняя")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
-      "Позже")
+      "Поздняя")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
-      "Нормально")
+      "Нормальная")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
       "Предпочительно переднее касание")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
@@ -893,7 +893,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
       "Состояние внутренней памяти")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-      "Ввод автоматической настройки")
+      "Преднастроенные контроллеры")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
       "Драйвер геймпада")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
@@ -1123,7 +1123,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
       "Экранное отображение")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
-      "Экранное наложение")
+      "Оверлей")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
       "Экранные уведомления")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
@@ -1131,19 +1131,19 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OPTIONAL,
       "Опционально")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY,
-      "Наложение")
+      "Оверлей")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
-      "Автозагрузка наложения")
+      "Автозагрузка оверлея")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
-      "Наложение")
+      "Оверлей")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
-      "Непрозрачность наложения")
+      "Непрозрачность оверлея")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
-      "Преднастройка наложения")
+      "Преднастройка оверлея")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
-      "Масштаб наложения")
+      "Масштаб оверлея")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
-      "Экранное наложение")
+      "Оверлей")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
       "Использовать режим PAL60")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
@@ -1291,7 +1291,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
       "Включить SAMBA")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
-      "Сохранить файл")
+      "Сохранения")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
       "Сохранить индекс автосостояния")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -1379,7 +1379,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
       "Включен режим BGM")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
-      "Система/BIOS")
+      "System/BIOS")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
       "Системная информация")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
@@ -1635,9 +1635,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
       "GPU Screenshot включен")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-      "GPU Sync максимум")
+      "Принудительная синхронизация GPU")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-      "GPU Sync Frames максимум")
+      "Количество кадров принудительной синхронизации GPU")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
       "Максимальное количество образов свопчейнов")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
@@ -1663,7 +1663,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
       "Видео")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
-      "Видеошейдер")
+      "Шейдеры")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
       "Шейдерные проходы")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -2159,7 +2159,7 @@ MSG_HASH(MSG_MOVIE_RECORD_STOPPED,
 MSG_HASH(MSG_NETPLAY_FAILED,
       "Ошибка запуска сетевой игры.")
 MSG_HASH(MSG_NO_CONTENT_STARTING_DUMMY_CORE,
-      "Нет содержимого, начиная с фиктивного ядра.")
+      "Нет содержимого, запуск фиктивного ядра.")
 MSG_HASH(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
       "Сохраненное состояние не было перезаписано.")
 MSG_HASH(MSG_NO_STATE_HAS_BEEN_LOADED_YET,
@@ -2310,7 +2310,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-      "Влияйте на то, как входной опрос выполняется внутри RetroArch. Установка его на «Раньше» или «Позже» может привести к меньшему времени ожидания в зависимости от вашей конфигурации."
+      "Изменение скорости опроса устройств. Значения «Ранняя» или «Поздняя» могут привести к меньшей задержке в зависимости от вашей конфигурации."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
@@ -2520,7 +2520,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
       "Введите ваш никнейм. Он будет использоваться в сессиях Netplay и т.д.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-      "Записывать процесс игры с выбранными фильтрами (неработает с шейдерами). Ваше видео будет выглядить красивым =)")
+      "Производить запись после применения фильтров (но не шейдеров). Записанное видео будет так же красиво как и во время игры.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
       "Выберите, какое ядро использовать.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
@@ -2900,7 +2900,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
       "Разрешить пользователю удалять отдельные записи из коллекции.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
-      "Устанавливает каталог System. Ядра могут запрашивать его для загрузки BIOS, системных настроек и т.д.")
+      "Устанавливает каталог System. Ядра могут запрашивать его для загрузки BIOS, прошивок, системных настроек и т.д.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
       "Установить начальный каталог для файлового браузера.")
 MSG_HASH(
@@ -2982,7 +2982,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
       "Сохранять все коллекции в выбранной папке.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
-      "Если выбрана папка, содержимое, которое временно извлечено (например, из архивов), будет извлечено в этой папке."
+      "Контент извлеченный из архивов будет временно размещен в этой папке."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
       "Сохраненные запросы находятся в этом каталоге.")
@@ -2992,12 +2992,12 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
-      "Это местоположение запрашивается по умолчанию, когда интерфейсы меню пытаются найти загружаемые активы и т.д."
+      "Это местоположение запрашивается по умолчанию, когда интерфейсы меню пытаются найти загружаемые ресурсы (ассеты) и т.д."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
-      "Выберите папку для сохрания всех save files. Если путь к папку не задано, попробуйте сохранить внутри рабочего каталога файла содержимого.")
+      "Выберите папку для внутриигровых сохранений. Если путь к папке не задан, то будет использован рабочий каталог.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-      "Выберите папку для сохрания всех save states. Если путь к папку не задано, попробуйте сохранить внутри рабочего каталога файла содержимого.")
+      "Выберите папку для сохрания состояний. Если путь к папке не задан, то будет использован рабочий каталог.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
       "Выберите папку, где будут сохраняться ваши скриншоты.")
 MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
@@ -3274,18 +3274,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
       "Отобразить статисктику")
 MSG_HASH(MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
       "Отображать на экране техническую статистику.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
-      "Enable border filler")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-      "Enable border filler thickness")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-      "Enable background filler thickness")
-MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION, "For 15 kHz CRT displays only. Attempts to use exact core/game resolution and refresh rate.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION, "CRT SwitchRes") 
-MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER, "When CRT SwitchRes is enabled, force ultrawide horizontal resolution to minimize mode switching.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER, "CRT Super Resolution") 
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
-      "Отображать настройки перемотки Show Rewind Settings")
+      "Отображать настройки перемотки")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
       "Показать/скрыть настройки перемотки.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
@@ -3342,15 +3332,33 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
       "Очистить")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
       "In-Menu")
-MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-      "Включить Discord"
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-      "Включить или отключить поддержку Discord. Работает только с нативным клиентом."
-      )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
+      "Включить Discord")
+MSG_HASH(MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
+      "Включить или отключить поддержку Discord. Работает только с нативным клиентом.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
       "Задержка")
 MSG_HASH(MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
       "Изменить настройки относящиеся к задержке видео, аудио и ввода.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
+      "Run-Ahead to Reduce Latency")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
+      "Number of Frames to Run Ahead")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
+      "RunAhead Use Second Instance")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+      "RunAhead Hide Warnings")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+      "Включить заполнитель границ")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+      "Включить толщину заполнителя границ")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+      "Включить фон заполнителя границ")
+MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION, 
+      "Только для 15 кГц CRT дисплеев. Пытается использовать точное разрешение и частоту обновления ядра/игры.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION, 
+      "CRT SwitchRes") 
+MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER, 
+      "When CRT SwitchRes is enabled, force ultrawide horizontal resolution to minimize mode switching.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER, 
+      "CRT Super Resolution") 
