@@ -1768,7 +1768,7 @@ void content_set_subsystem(unsigned idx)
 {
    rarch_system_info_t                  *system = runloop_get_system_info();
    const struct retro_subsystem_info *subsystem = system ?
-	   system->subsystem.data + pending_subsystem_id : NULL;
+	   system->subsystem.data + idx : NULL;
 
    pending_subsystem_id                         = idx;
 
