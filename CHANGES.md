@@ -15,6 +15,7 @@
 - REMAPS: Fix the way offsets are calculated for keyboard remapping.
 - RUNAHEAD: Fix full-screen mode change breaking Secondary Core's environment variables.
 - VITA: Use proper button labels, fix inverted R-Stick Y axis.
+- VULKAN: Fix two validation errors.
 - VULKAN/OSX: Initial MoltenVK support. Not enabled yet, several MoltenVK bugs should be fixed first before we can have it fully working.
 - WII: Change deflicker setting to work in 480p or higher, and always enables vfilter so that the user can easily change brightness.
 - WIIU: Fix out-of-bounds rendering bug
