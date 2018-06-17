@@ -107,6 +107,13 @@ if __name__ == '__main__':
       f.write('typedef GLint GLfixed;\n')
       f.write('#endif\n')
 
+      f.write('#if defined(OSX) && !defined(MAC_OS_X_VERSION_10_7)\n')
+      f.write('typedef long long int GLint64;\n')
+      f.write('typedef unsigned long long int GLuint64;\n')
+      f.write('typedef unsigned long long int GLuint64EXT;\n')
+      f.write('typedef struct __GLsync *GLsync;\n')
+      f.write('#endif\n')
+
       dump(f, typedefs)
       dump(f, overrides)
       dump(f, externs)
