@@ -585,7 +585,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
       input_driver_keyboard_mapping_set_block( true );
       menu_input_key_bind_poll_bind_state( &binds, menu_bind_port, timed_out );
 
-#if 0
+#ifdef ANDROID
 
 	  /*keep resetting bind during the hold period, or we'll potentially bind joystick and mouse, etc.*/
 	  binds.buffer = *( binds.output );
