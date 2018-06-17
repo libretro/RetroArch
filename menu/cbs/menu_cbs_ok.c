@@ -316,6 +316,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST;
       case ACTION_OK_DL_PRIVACY_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_PRIVACY_SETTINGS_LIST;
+      case ACTION_OK_DL_MIDI_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_MIDI_SETTINGS_LIST;
       case ACTION_OK_DL_AUDIO_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST;
       case ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST:
@@ -842,6 +844,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_USER_SETTINGS_LIST:
       case ACTION_OK_DL_DIRECTORY_SETTINGS_LIST:
       case ACTION_OK_DL_PRIVACY_SETTINGS_LIST:
+      case ACTION_OK_DL_MIDI_SETTINGS_LIST:
       case ACTION_OK_DL_AUDIO_SETTINGS_LIST:
       case ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
@@ -3420,6 +3423,7 @@ default_action_ok_func(action_ok_user_list, ACTION_OK_DL_USER_SETTINGS_LIST)
 default_action_ok_func(action_ok_netplay_sublist, ACTION_OK_DL_NETPLAY)
 default_action_ok_func(action_ok_directory_list, ACTION_OK_DL_DIRECTORY_SETTINGS_LIST)
 default_action_ok_func(action_ok_privacy_list, ACTION_OK_DL_PRIVACY_SETTINGS_LIST)
+default_action_ok_func(action_ok_midi_list, ACTION_OK_DL_MIDI_SETTINGS_LIST)
 default_action_ok_func(action_ok_rdb_entry, ACTION_OK_DL_RDB_ENTRY)
 default_action_ok_func(action_ok_mixer_stream_actions, ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST)
 default_action_ok_func(action_ok_browse_url_list, ACTION_OK_DL_BROWSE_URL_LIST)
@@ -4661,6 +4665,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_privacy_list);
+            break;
+         case MENU_ENUM_LABEL_MIDI_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_midi_list);
             break;
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_video_resolution);

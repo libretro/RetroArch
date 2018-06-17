@@ -4966,6 +4966,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RECORD_DRIVER,
                PARSE_ONLY_STRING_OPTIONS, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MIDI_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false);
 #ifdef HAVE_LAKKA
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_WIFI_DRIVER,
@@ -5945,6 +5948,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          info->need_push    = true;
          break;
+      case DISPLAYLIST_MIDI_SETTINGS_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MIDI_INPUT,
+               PARSE_ONLY_STRING, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MIDI_OUTPUT,
+               PARSE_ONLY_STRING, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MIDI_VOLUME,
+               PARSE_ONLY_UINT, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_displaylist_parse_settings_enum(menu, info,
@@ -6365,6 +6384,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_DIRECTORY_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PRIVACY_SETTINGS,   PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MIDI_SETTINGS,   PARSE_ACTION, false);
          info->need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL:

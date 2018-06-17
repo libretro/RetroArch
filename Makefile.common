@@ -264,6 +264,8 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o \
+       midi/midi_driver.o \
+       midi/drivers/null_midi.o
 
 ifeq ($(HAVE_RUNAHEAD), 1)
 DEFINES += -DHAVE_RUNAHEAD
@@ -684,6 +686,12 @@ ifeq ($(HAVE_XAUDIO), 1)
    OBJ += audio/drivers/xaudio.o
    DEFINES += -DHAVE_XAUDIO
    LIBS += -lole32
+endif
+
+ifeq ($(HAVE_WINMM), 1)
+   OBJ += midi/drivers/winmm_midi.o
+   DEFINES += -DHAVE_WINMM
+   LIBS += -lwinmm
 endif
 
 # Audio Resamplers

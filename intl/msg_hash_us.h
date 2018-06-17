@@ -1261,6 +1261,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PRESENT,
       "Present")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
       "Privacy")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
+      "MIDI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
       "Quit RetroArch")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
@@ -1331,6 +1333,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
       "Load Recording Config...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
       "Record Driver")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
+      "MIDI Driver")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
       "Enable Recording")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_PATH,
@@ -1977,6 +1981,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
       "Change account, username, and language settings.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
       "Change your privacy settings.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
+      "Change MIDI settings.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
       "Change default directories where files are located.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
@@ -2865,6 +2871,10 @@ MSG_HASH(
       "Record driver to use."
       )
 MSG_HASH(
+      MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+      "MIDI driver to use."
+      )
+MSG_HASH(
       MENU_ENUM_SUBLABEL_WIFI_DRIVER,
       "WiFi driver to use."
       )
@@ -3726,3 +3736,15 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
       "Enable or disable Discord support. Will not work with the browser version, only native desktop client."
       )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+      "Input")
+MSG_HASH(MENU_ENUM_SUBLABEL_MIDI_INPUT,
+      "Select input device.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+      "Output")
+MSG_HASH(MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+      "Select output device.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
+      "Volume")
+MSG_HASH(MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+      "Set output volume (%).")

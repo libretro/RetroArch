@@ -26,6 +26,7 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <streams/stdin_stream.h>
+#include <midi/midi_driver.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -2040,6 +2041,7 @@ TODO: Add a setting for these tweaks */
          command_event_save_auto_state();
          break;
       case CMD_EVENT_AUDIO_STOP:
+         midi_driver_set_all_sounds_off();
          return audio_driver_stop();
       case CMD_EVENT_AUDIO_START:
          return audio_driver_start(rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL));

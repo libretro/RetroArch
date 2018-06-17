@@ -25,6 +25,7 @@ HAVE_XAUDIO              := 1
 HAVE_XINPUT              := 1
 HAVE_WASAPI              := 0
 HAVE_THREAD_STORAGE      := 1
+HAVE_WINMM               := 1
 
 HAVE_RPNG                := 1
 HAVE_ZLIB                := 1

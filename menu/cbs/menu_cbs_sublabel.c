@@ -75,6 +75,7 @@ default_sublabel_macro(action_bind_sublabel_saving_settings_list,          MENU_
 default_sublabel_macro(action_bind_sublabel_logging_settings_list,         MENU_ENUM_SUBLABEL_LOGGING_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_user_interface_settings_list,  MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_privacy_settings_list,         MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_midi_settings_list,            MENU_ENUM_SUBLABEL_MIDI_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_directory_settings_list,       MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_playlist_settings_list,        MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_network_settings_list,         MENU_ENUM_SUBLABEL_NETWORK_SETTINGS)
@@ -222,6 +223,7 @@ default_sublabel_macro(action_bind_sublabel_camera_driver,                 MENU_
 default_sublabel_macro(action_bind_sublabel_location_driver,               MENU_ENUM_SUBLABEL_LOCATION_DRIVER)
 default_sublabel_macro(action_bind_sublabel_menu_driver,                   MENU_ENUM_SUBLABEL_MENU_DRIVER)
 default_sublabel_macro(action_bind_sublabel_record_driver,                 MENU_ENUM_SUBLABEL_RECORD_DRIVER)
+default_sublabel_macro(action_bind_sublabel_midi_driver,                   MENU_ENUM_SUBLABEL_MIDI_DRIVER)
 default_sublabel_macro(action_bind_sublabel_wifi_driver,                   MENU_ENUM_SUBLABEL_WIFI_DRIVER)
 default_sublabel_macro(action_bind_sublabel_filter_supported_extensions,   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_wallpaper,                     MENU_ENUM_SUBLABEL_MENU_WALLPAPER)
@@ -421,6 +423,9 @@ default_sublabel_macro(action_bind_sublabel_netplay_mitm_server,                
 default_sublabel_macro(action_bind_sublabel_core_delete,                           MENU_ENUM_SUBLABEL_CORE_DELETE)
 default_sublabel_macro(action_bind_sublabel_pause_hardcode_mode,                   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE)
 default_sublabel_macro(action_bind_sublabel_resume_hardcode_mode,                  MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME)
+default_sublabel_macro(action_bind_sublabel_midi_input,                            MENU_ENUM_SUBLABEL_MIDI_INPUT)
+default_sublabel_macro(action_bind_sublabel_midi_output,                           MENU_ENUM_SUBLABEL_MIDI_OUTPUT)
+default_sublabel_macro(action_bind_sublabel_midi_volume,                           MENU_ENUM_SUBLABEL_MIDI_VOLUME)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -1256,6 +1261,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_RECORD_DRIVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_record_driver);
             break;
+         case MENU_ENUM_LABEL_MIDI_DRIVER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_midi_driver);
+            break;
          case MENU_ENUM_LABEL_MENU_DRIVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_driver);
             break;
@@ -1680,6 +1688,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_privacy_settings_list);
             break;
+         case MENU_ENUM_LABEL_MIDI_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_midi_settings_list);
+            break;
          case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_directory_settings_list);
             break;
@@ -1757,6 +1768,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ACHIEVEMENT_RESUME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_resume_hardcode_mode);
+            break;
+         case MENU_ENUM_LABEL_MIDI_INPUT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_midi_input);
+            break;
+         case MENU_ENUM_LABEL_MIDI_OUTPUT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_midi_output);
+            break;
+         case MENU_ENUM_LABEL_MIDI_VOLUME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_midi_volume);
             break;
          default:
          case MSG_UNKNOWN:

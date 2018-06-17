@@ -322,6 +322,7 @@ if [ "$OS" = 'Win32' ]; then
 
    HAVE_WASAPI=yes
    HAVE_XAUDIO=yes
+   HAVE_WINMM=yes
 else
    HAVE_D3D9=no
    HAVE_D3D10=no
