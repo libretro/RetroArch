@@ -1,10 +1,12 @@
 # 1.7.4 (future)
+- ANDROID: Powerstate/battery level support.
 - COMMON: Automatically hide "Configuration Override options" in Quick Menu.
 - COMMON: Small Bugfix to not trigger savestate code when pressing Reset.
 - HID/OSX: Fix to set hid device registration deterministic (#6497), to address issue #6640 re-adding dynamic device registration.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Polish translation.
 - LOCALIZATION: Update Portuguese / Brazilian translation.
+- LOCALIZATION: Update Russian translation.
 - LOCALIZATION: Update Spanish translation.
 - MENU/QT/WIMP: QT QSlider styling for Dark Theme.
 - MENU/QT/WIMP: Remove button ghostly inside highlighting.
