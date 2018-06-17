@@ -26,7 +26,6 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <streams/stdin_stream.h>
-#include <midi/midi_driver.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -48,6 +47,8 @@
 #ifdef HAVE_DISCORD
 #include "discord/discord.h"
 #endif
+
+#include "midi/midi_driver.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
