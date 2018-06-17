@@ -161,25 +161,17 @@ bool midi_driver_set_volume(unsigned volume)
 
 bool midi_driver_init_io_buffers(void)
 {
-   if (midi_drv_input_enabled)
-   {
-      midi_drv_input_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
-      if (!midi_drv_input_buffer)
-         return false;
+   midi_drv_input_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
+   midi_drv_output_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
 
-      midi_drv_input_event.data = midi_drv_input_buffer;
-      midi_drv_input_event.data_size = 0;
-   }
+   if (!midi_drv_input_buffer || !midi_drv_output_buffer)
+      return false;
 
-   if (midi_drv_output_enabled)
-   {
-      midi_drv_output_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
-      if (!midi_drv_output_buffer)
-         return false;
+   midi_drv_input_event.data = midi_drv_input_buffer;
+   midi_drv_input_event.data_size = 0;
 
-      midi_drv_output_event.data = midi_drv_output_buffer;
-      midi_drv_output_event.data_size = 0;
-   }
+   midi_drv_output_event.data = midi_drv_output_buffer;
+   midi_drv_output_event.data_size = 0;
 
    return true;
 }
