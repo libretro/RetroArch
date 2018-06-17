@@ -65,7 +65,7 @@ enum {
 #endif
 
 /* Use this to enable/disable using the touch screen as mouse */
-#define ENABLE_TOUCH_SCREEN_MOUSE 0
+#define ENABLE_TOUCH_SCREEN_MOUSE 1
 
 typedef struct
 {
