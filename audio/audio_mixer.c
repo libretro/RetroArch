@@ -673,7 +673,8 @@ static bool audio_mixer_play_flac(
 
    if (!flac_buffer)
    {
-      resamp->free(resampler_data);
+      if (resamp && resamp->free)
+         resamp->free(resampler_data);
       goto error;
    }
 
