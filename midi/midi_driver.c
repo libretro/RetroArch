@@ -14,16 +14,15 @@
  */
 
 #include <string.h>
-
-#include <configuration.h>
-#include <verbosity.h>
 #include <lists/string_list.h>
+#include <retro_miscellaneous.h>
+
+#include "../configuration.h"
+#include "../verbosity.h"
 
 #include "midi_driver.h"
 
 #define MIDI_DRIVER_BUF_SIZE 4096
-
-#define MIDI_DRIVER_COUNT (int)(sizeof(midi_drivers) / sizeof(midi_driver_t*))
 
 extern midi_driver_t midi_null;
 extern midi_driver_t midi_winmm;
@@ -61,9 +60,9 @@ static const uint8_t midi_drv_ev_sizes[128] =
 
 static midi_driver_t *midi_driver_find_driver(const char *ident)
 {
-   int i;
+   unsigned i;
 
-   for (i = 0; i < MIDI_DRIVER_COUNT; ++i)
+   for (i = 0; i < ARRAY_SIZE(midi_drivers); ++i)
    {
       if (!strcmp(midi_drivers[i]->ident, ident))
          return midi_drivers[i];
@@ -101,16 +100,16 @@ struct string_list *midi_driver_get_avail_outputs(void)
 }
 bool midi_driver_set_all_sounds_off(void)
 {
-   uint8_t data[3]     = { 0xB0, 120, 0 };
-   bool result         = true;
    midi_event_t event;
    uint8_t i;
+   uint8_t data[3]     = { 0xB0, 120, 0 };
+   bool result         = true;
 
    if (!midi_drv_data || !midi_drv_output_enabled)
       return false;
 
-   event.data = data;
-   event.data_size = sizeof(data);
+   event.data       = data;
+   event.data_size  = sizeof(data);
    event.delta_time = 0;
 
    for (i = 0; i < 16; ++i)
@@ -132,9 +131,9 @@ bool midi_driver_set_all_sounds_off(void)
 
 bool midi_driver_set_volume(unsigned volume)
 {
+   midi_event_t event;
    uint8_t data[8]     = { 0xF0, 0x7F, 0x7F, 0x04, 0x01, 0, 0, 0xF7 };
    const char *err_str = NULL;
-   midi_event_t event;
 
    if (!midi_drv_data || !midi_drv_output_enabled)
       return false;
@@ -161,7 +160,7 @@ bool midi_driver_set_volume(unsigned volume)
 
 bool midi_driver_init_io_buffers(void)
 {
-   midi_drv_input_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
+   midi_drv_input_buffer  = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
    midi_drv_output_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
 
    if (!midi_drv_input_buffer || !midi_drv_output_buffer)
@@ -178,7 +177,7 @@ bool midi_driver_init_io_buffers(void)
 
 bool midi_driver_init(void)
 {
-   settings_t *sett                 = config_get_ptr();
+   settings_t *settings             = config_get_ptr();
    midi_drv_inputs                  = string_list_new();
    midi_drv_outputs                 = string_list_new();
    union string_list_elem_attr attr = {0};
@@ -186,7 +185,7 @@ bool midi_driver_init(void)
 
    RARCH_LOG("[MIDI]: Initializing ...\n");
 
-   if (!sett)
+   if (!settings)
       err_str = "settings unavailable";
    else if (!midi_drv_inputs || !midi_drv_outputs)
       err_str = "string_list_new failed";
@@ -198,9 +197,9 @@ bool midi_driver_init(void)
       char * input  = NULL;
       char * output = NULL;
 
-      midi_drv = midi_driver_find_driver(sett->arrays.midi_driver);
-      if (strcmp(midi_drv->ident, sett->arrays.midi_driver))
-         strcpy(sett->arrays.midi_driver, midi_drv->ident);
+      midi_drv = midi_driver_find_driver(settings->arrays.midi_driver);
+      if (strcmp(midi_drv->ident, settings->arrays.midi_driver))
+         strcpy(settings->arrays.midi_driver, midi_drv->ident);
 
       if (!midi_drv->get_avail_inputs(midi_drv_inputs))
          err_str = "list of input devices unavailable";
@@ -208,27 +207,27 @@ bool midi_driver_init(void)
          err_str = "list of output devices unavailable";
       else
       {
-         if (strcmp(sett->arrays.midi_input, "Off"))
+         if (strcmp(settings->arrays.midi_input, "Off"))
          {
-            if (string_list_find_elem(midi_drv_inputs, sett->arrays.midi_input))
-               input = sett->arrays.midi_input;
+            if (string_list_find_elem(midi_drv_inputs, settings->arrays.midi_input))
+               input = settings->arrays.midi_input;
             else
             {
                RARCH_WARN("[MIDI]: Input device \"%s\" unavailable.\n",
-                     sett->arrays.midi_input);
-               strcpy(sett->arrays.midi_input, "Off");
+                     settings->arrays.midi_input);
+               strcpy(settings->arrays.midi_input, "Off");
             }
          }
 
-         if (strcmp(sett->arrays.midi_output, "Off"))
+         if (strcmp(settings->arrays.midi_output, "Off"))
          {
-            if (string_list_find_elem(midi_drv_outputs, sett->arrays.midi_output))
-               output = sett->arrays.midi_output;
+            if (string_list_find_elem(midi_drv_outputs, settings->arrays.midi_output))
+               output = settings->arrays.midi_output;
             else
             {
                RARCH_WARN("[MIDI]: Output device \"%s\" unavailable.\n",
-                     sett->arrays.midi_output);
-               strcpy(sett->arrays.midi_output, "Off");
+                     settings->arrays.midi_output);
+               strcpy(settings->arrays.midi_output, "Off");
             }
          }
 
@@ -251,7 +250,7 @@ bool midi_driver_init(void)
                if (output)
                {
                   RARCH_LOG("[MIDI]: Output device \"%s\".\n", output);
-                  midi_driver_set_volume(sett->uints.midi_volume);
+                  midi_driver_set_volume(settings->uints.midi_volume);
                }
                else
                   RARCH_LOG("[MIDI]: Output disabled.\n");
@@ -268,7 +267,7 @@ bool midi_driver_init(void)
    else
       RARCH_LOG("[MIDI]: Initialized \"%s\" driver.\n", midi_drv->ident);
 
-   return err_str == NULL;;
+   return err_str == NULL;
 }
 
 void midi_driver_free(void)
@@ -301,7 +300,7 @@ void midi_driver_free(void)
       midi_drv_output_buffer = NULL;
    }
 
-   midi_drv_input_enabled = false;
+   midi_drv_input_enabled  = false;
    midi_drv_output_enabled = false;
 }
 
@@ -361,13 +360,13 @@ bool midi_driver_set_output(const char *output)
 
    if (output)
    {
-      settings_t *sett = config_get_ptr();
+      settings_t *settings = config_get_ptr();
 
       midi_drv_output_enabled = true;
       RARCH_LOG("[MIDI]: Output device changed to \"%s\".\n", output);
 
-      if (sett)
-         midi_driver_set_volume(sett->uints.midi_volume);
+      if (settings)
+         midi_driver_set_volume(settings->uints.midi_volume);
       else
          RARCH_ERR("[MIDI]: Volume change failed (settings unavailable).\n");
    }
