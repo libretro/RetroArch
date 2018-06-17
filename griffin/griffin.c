@@ -793,6 +793,17 @@ AUDIO
 #include "../audio/drivers/nullaudio.c"
 
 /*============================================================
+MIDI
+============================================================ */
+#include "../midi/midi_driver.c"
+
+#include "../midi/drivers/null_midi.c"
+
+#ifdef HAVE_WINMM
+#include "../midi/drivers/winmm_midi.c"
+#endif
+
+/*============================================================
 DRIVERS
 ============================================================ */
 #include "../gfx/video_driver.c"
