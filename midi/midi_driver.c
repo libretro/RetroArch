@@ -75,7 +75,7 @@ static midi_driver_t *midi_driver_find_driver(const char *ident)
 
 const void *midi_driver_find_handle(int index)
 {
-   if (index < 0 || index >= MIDI_DRIVER_COUNT)
+   if (index < 0 || index >= ARRAY_SIZE(midi_drivers))
       return NULL;
 
    return midi_drivers[index];
@@ -83,7 +83,7 @@ const void *midi_driver_find_handle(int index)
 
 const char *midi_driver_find_ident(int index)
 {
-   if (index < 0 || index >= MIDI_DRIVER_COUNT)
+   if (index < 0 || index >= ARRAY_SIZE(midi_drivers))
       return NULL;
 
    return midi_drivers[index]->ident;
