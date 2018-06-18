@@ -1177,11 +1177,29 @@ struct retro_led_interface
                                             */
 
 #define RETRO_ENVIRONMENT_GET_MIDI_INTERFACE (48 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* struct retro_midi_interface ** --
+                                            * Returns a MIDI interface that can be used for raw data I/O.
+                                            */
 
+/* Retrieves the current state of the MIDI input.
+ * Returns true if it's enabled, false otherwise. */
 typedef bool (RETRO_CALLCONV *retro_midi_input_enabled_t)(void);
+
+/* Retrieves the current state of the MIDI output.
+ * Returns true if it's enabled, false otherwise */
 typedef bool (RETRO_CALLCONV *retro_midi_output_enabled_t)(void);
+
+/* Reads next byte from the input stream.
+ * Returns true if byte is read, false otherwise. */
 typedef bool (RETRO_CALLCONV *retro_midi_read_t)(uint8_t *byte);
+
+/* Writes byte to the output stream.
+ * 'delta_time' is in microseconds and represent time elapsed since previous write.
+ * Returns true if byte is written, false otherwise. */
 typedef bool (RETRO_CALLCONV *retro_midi_write_t)(uint8_t byte, uint32_t delta_time);
+
+/* Flushes previously written data.
+ * Returns true if successful, false otherwise. */
 typedef bool (RETRO_CALLCONV *retro_midi_flush_t)(void);
 
 struct retro_midi_interface
