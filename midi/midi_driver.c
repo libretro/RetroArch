@@ -178,10 +178,11 @@ bool midi_driver_init_io_buffers(void)
 bool midi_driver_init(void)
 {
    settings_t *settings             = config_get_ptr();
-   midi_drv_inputs                  = string_list_new();
-   midi_drv_outputs                 = string_list_new();
    union string_list_elem_attr attr = {0};
    const char *err_str              = NULL;
+
+   midi_drv_inputs                  = string_list_new();
+   midi_drv_outputs                 = string_list_new();
 
    RARCH_LOG("[MIDI]: Initializing ...\n");
 
