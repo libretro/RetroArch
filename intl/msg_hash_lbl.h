@@ -1529,3 +1529,5 @@ MSG_HASH(MENU_ENUM_LABEL_MIDI_OUTPUT,
       "midi_output")
 MSG_HASH(MENU_ENUM_LABEL_MIDI_VOLUME,
       "midi_volume")
+MSG_HASH(MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE,
+      "sustained_performance_mode")

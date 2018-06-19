@@ -162,6 +162,7 @@ struct android_app
    jmethodID isAndroidTV;
    jmethodID getPowerstate;
    jmethodID getBatteryLevel;
+   jmethodID setSustainedPerformanceMode;
 };
 
 
