@@ -18,10 +18,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 	public void onResume() {
 		super.onResume();
 
-		if (Build.VERSION.SDK_INT >= 24) {
-			if (isSustainedPerformanceModeSupported())
-				setSustainedPerformanceMode(true);
-		}
+		setSustainedPerformanceMode(sustainedPerformanceMode);
 
 		if (Build.VERSION.SDK_INT >= 19) {
 			// Immersive mode

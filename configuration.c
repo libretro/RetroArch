@@ -1445,6 +1445,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("video_msg_bgcolor_enable",      &settings->bools.video_msg_bgcolor_enable, true, message_bgcolor_enable, false);
    SETTING_BOOL("video_window_show_decorations", &settings->bools.video_window_show_decorations, true, window_decorations, false);
 
+   SETTING_BOOL("sustained_performance_mode",    &settings->bools.sustained_performance_mode, true, sustained_performance_mode, false);
+
    *size = count;
 
    return tmp;
@@ -2941,8 +2943,10 @@ static bool config_load_file(const char *path, bool set_defaults,
                settings->arrays.video_driver);
          settings->paths.path_shader[0] = '\0';
          break;
+      }
    }
-}
+
+   frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
 
    ret = true;
 

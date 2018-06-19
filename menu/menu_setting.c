@@ -1633,6 +1633,9 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_MIDI_VOLUME:
          midi_driver_set_volume(settings->uints.midi_volume);
          break;
+      case MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE:
+         frontend_unix_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
+         break;
       default:
          break;
    }
@@ -6377,6 +6380,21 @@ static bool setting_append_list(
          parent_group = msg_hash_to_str(MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.sustained_performance_mode,
+               MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE,
+               MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
+               sustained_performance_mode,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

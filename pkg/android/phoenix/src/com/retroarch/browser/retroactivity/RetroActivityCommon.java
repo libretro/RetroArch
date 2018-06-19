@@ -12,6 +12,8 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.util.Log;
 
+import java.util.concurrent.CountDownLatch;
+
 /**
  * Class which provides common methods for RetroActivity related classes.
  */
@@ -22,6 +24,7 @@ public class RetroActivityCommon extends RetroActivityLocation
   public static int FRONTEND_POWERSTATE_CHARGING = 2;
   public static int FRONTEND_POWERSTATE_CHARGED = 3;
   public static int FRONTEND_POWERSTATE_ON_POWER_SOURCE = 4;
+  public boolean sustainedPerformanceMode = true;
 
 	// Exiting cleanly from NDK seems to be nearly impossible.
 	// Have to use exit(0) to avoid weird things happening, even with runOnUiThread() approaches.
@@ -34,10 +37,33 @@ public class RetroActivityCommon extends RetroActivityLocation
   @TargetApi(24)
   public void setSustainedPerformanceMode(boolean on)
   {
-    Log.i("RetroActivity", "setting sustained performance mode to " + on);
-    getWindow().setSustainedPerformanceMode(on);
+    sustainedPerformanceMode = on;
+
+    if (Build.VERSION.SDK_INT >= 24) {
+      if (isSustainedPerformanceModeSupported()) {
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            Log.i("RetroActivity", "setting sustained performance mode to " + sustainedPerformanceMode);
+
+            getWindow().setSustainedPerformanceMode(sustainedPerformanceMode);
+
+            latch.countDown();
+          }
+        });
+
+        try {
+          latch.await();
+        }catch(InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    }
   }
 
+  @TargetApi(24)
   public boolean isSustainedPerformanceModeSupported()
   {
     boolean supported = false;
