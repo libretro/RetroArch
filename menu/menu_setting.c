@@ -1634,7 +1634,7 @@ void general_write_handler(void *data)
          midi_driver_set_volume(settings->uints.midi_volume);
          break;
       case MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE:
-         frontend_unix_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
+         frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
          break;
       default:
          break;
