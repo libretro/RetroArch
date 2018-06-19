@@ -5499,6 +5499,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          info->need_push    = true;
          break;
+      case DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         /* Fill in entry here */
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                  0, 0, 0);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_displaylist_parse_settings_enum(menu, info,
@@ -6366,6 +6381,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,   PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,  PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,

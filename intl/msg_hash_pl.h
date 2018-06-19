@@ -3570,3 +3570,7 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
       "Włącz lub wyłącz wsparcie dla Discrod. Nie będzie działać z wersją przeglądarkową, jedynie z natywnym klientem."
       )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+      "Power Management")
+MSG_HASH(MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+      "Change power management settings.")

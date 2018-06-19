@@ -3389,3 +3389,7 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
       "Abilita o disabilita il supporto Discord. Non funzionerà con la versione del browser, solo con desktop client nativi."
       )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+      "Power Management")
+MSG_HASH(MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+      "Change power management settings.")

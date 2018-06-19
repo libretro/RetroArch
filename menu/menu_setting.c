@@ -114,6 +114,7 @@ enum settings_list_type
    SETTINGS_LIST_MENU_FILE_BROWSER,
    SETTINGS_LIST_MULTIMEDIA,
    SETTINGS_LIST_USER_INTERFACE,
+   SETTINGS_LIST_POWER_MANAGEMENT,
    SETTINGS_LIST_PLAYLIST,
    SETTINGS_LIST_CHEEVOS,
    SETTINGS_LIST_CORE_UPDATER,
@@ -2492,6 +2493,14 @@ static bool setting_append_list(
                list, list_info,
                MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,
                MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
                &group_info,
                &subgroup_info,
                parent_group);
@@ -6361,6 +6370,17 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+      case SETTINGS_LIST_POWER_MANAGEMENT:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS),
+               parent_group);
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
       case SETTINGS_LIST_USER_INTERFACE:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS),
@@ -8186,6 +8206,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_MENU_FILE_BROWSER,
       SETTINGS_LIST_MULTIMEDIA,
       SETTINGS_LIST_USER_INTERFACE,
+      SETTINGS_LIST_POWER_MANAGEMENT,
       SETTINGS_LIST_PLAYLIST,
       SETTINGS_LIST_CHEEVOS,
       SETTINGS_LIST_CORE_UPDATER,

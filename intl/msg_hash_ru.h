@@ -3462,3 +3462,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
       "Включить или выключить отображение значков в списке достижений.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
       "Автоматически сделать скриншот при получении достижения.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+      "Power Management")
+MSG_HASH(MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+      "Change power management settings.")

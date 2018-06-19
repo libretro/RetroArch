@@ -74,6 +74,7 @@ default_sublabel_macro(action_bind_sublabel_retro_achievements_settings_list, ME
 default_sublabel_macro(action_bind_sublabel_saving_settings_list,          MENU_ENUM_SUBLABEL_SAVING_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_logging_settings_list,         MENU_ENUM_SUBLABEL_LOGGING_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_user_interface_settings_list,  MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_power_management_settings_list,  MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_privacy_settings_list,         MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_midi_settings_list,            MENU_ENUM_SUBLABEL_MIDI_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_directory_settings_list,       MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS)
@@ -1684,6 +1685,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_interface_settings_list);
+            break;
+         case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_power_management_settings_list);
             break;
          case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_privacy_settings_list);
