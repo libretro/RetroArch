@@ -1,11 +1,15 @@
 package com.retroarch.browser.retroactivity;
 
 import com.retroarch.browser.preferences.util.UserPreferences;
+import android.annotation.TargetApi;
 import android.content.res.Configuration;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.app.UiModeManager;
 import android.os.BatteryManager;
+import android.os.Build;
+import android.os.PowerManager;
 import android.util.Log;
 
 /**
@@ -26,6 +30,31 @@ public class RetroActivityCommon extends RetroActivityLocation
 	{
       finish();
 	}
+
+  @TargetApi(24)
+  public void setSustainedPerformanceMode(boolean on)
+  {
+    Log.i("RetroActivity", "setting sustained performance mode to " + on);
+    getWindow().setSustainedPerformanceMode(on);
+  }
+
+  public boolean isSustainedPerformanceModeSupported()
+  {
+    boolean supported = false;
+
+    if (Build.VERSION.SDK_INT >= 24)
+    {
+      PowerManager powerManager = (PowerManager)getSystemService(Context.POWER_SERVICE);
+
+      if (powerManager.isSustainedPerformanceModeSupported())
+        supported = true;
+    }
+
+
+    Log.i("RetroActivity", "isSustainedPerformanceModeSupported? " + supported);
+
+    return supported;
+  }
 
   public int getBatteryLevel()
   {
