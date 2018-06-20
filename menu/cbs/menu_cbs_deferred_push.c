@@ -539,7 +539,7 @@ static int general_push(menu_displaylist_info_t *info,
       struct retro_system_info sysinfo = {0};
 
       (void)sysinfo;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       if (settings->bools.multimedia_builtin_mediaplayer_enable)
       {
          libretro_ffmpeg_retro_get_system_info(&sysinfo);

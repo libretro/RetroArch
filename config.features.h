@@ -272,6 +272,12 @@ static const bool _ffmpeg_supp = true;
 static const bool _ffmpeg_supp = false;
 #endif
 
+#ifdef HAVE_MPV
+static const bool _mpv_supp = true;
+#else
+static const bool _mpv_supp = false;
+#endif
+
 #ifdef HAVE_FREETYPE
 static const bool _freetype_supp = true;
 #else

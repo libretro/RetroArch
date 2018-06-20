@@ -1345,7 +1345,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("content_show_images",           &settings->bools.menu_content_show_images, true, content_show_images, false);
 #endif
    SETTING_BOOL("content_show_music",            &settings->bools.menu_content_show_music, true, content_show_music, false);
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    SETTING_BOOL("content_show_video",            &settings->bools.menu_content_show_video, true, content_show_video, false);
 #endif
 #ifdef HAVE_NETWORKING
@@ -1726,7 +1726,7 @@ static void config_set_defaults(void)
 #endif
 #endif
 
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    configuration_set_bool(settings, settings->bools.multimedia_builtin_mediaplayer_enable, true);
 #else
    configuration_set_bool(settings, settings->bools.multimedia_builtin_mediaplayer_enable, false);

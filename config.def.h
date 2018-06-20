@@ -289,7 +289,7 @@ static bool content_show_favorites   = true;
 static bool content_show_images      = true;
 #endif
 static bool content_show_music       = true;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
 static bool content_show_video       = true;
 #endif
 #ifdef HAVE_NETWORKING

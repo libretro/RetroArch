@@ -2134,7 +2134,7 @@ TODO: Add a setting for these tweaks */
          }
          g_defaults.music_history = NULL;
 
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
          if (g_defaults.video_history)
          {
             playlist_write_file(g_defaults.video_history);
@@ -2184,7 +2184,7 @@ TODO: Add a setting for these tweaks */
                   settings->paths.path_content_music_history,
                   content_history_size);
 
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   settings->paths.path_content_video_history);

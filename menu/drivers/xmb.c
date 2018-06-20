@@ -99,7 +99,7 @@ enum
    XMB_TEXTURE_HISTORY,
    XMB_TEXTURE_FAVORITES,
    XMB_TEXTURE_MUSICS,
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    XMB_TEXTURE_MOVIES,
 #endif
 #ifdef HAVE_NETWORKING
@@ -165,7 +165,7 @@ enum
    XMB_SYSTEM_TAB_HISTORY,
    XMB_SYSTEM_TAB_FAVORITES,
    XMB_SYSTEM_TAB_MUSIC,
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    XMB_SYSTEM_TAB_VIDEO,
 #endif
 #ifdef HAVE_IMAGEVIEWER
@@ -267,7 +267,7 @@ typedef struct xmb_handle
    xmb_node_t images_tab_node;
 #endif
    xmb_node_t music_tab_node;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    xmb_node_t video_tab_node;
 #endif
    xmb_node_t settings_tab_node;
@@ -1692,7 +1692,7 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
 #endif
       case XMB_SYSTEM_TAB_MUSIC:
          return &xmb->music_tab_node;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case XMB_SYSTEM_TAB_VIDEO:
          return &xmb->video_tab_node;
 #endif
@@ -2265,7 +2265,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             case XMB_SYSTEM_TAB_IMAGES:
                return xmb->textures.list[XMB_TEXTURE_IMAGE];
 #endif
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             case XMB_SYSTEM_TAB_VIDEO:
                return xmb->textures.list[XMB_TEXTURE_MOVIE];
 #endif
@@ -4088,7 +4088,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 #endif
    if (settings->bools.menu_content_show_music)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    if (settings->bools.menu_content_show_video)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
@@ -4265,7 +4265,7 @@ static const char *xmb_texture_path(unsigned id)
          return "add-favorite.png";
       case XMB_TEXTURE_MUSICS:
          return "musics.png";
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case XMB_TEXTURE_MOVIES:
          return "movies.png";
 #endif
@@ -4402,7 +4402,7 @@ static void xmb_context_reset_textures(
    xmb->music_tab_node.alpha    = xmb->categories_active_alpha;
    xmb->music_tab_node.zoom     = xmb->categories_active_zoom;
 
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    xmb->video_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_MOVIES];
    xmb->video_tab_node.alpha    = xmb->categories_active_alpha;
    xmb->video_tab_node.zoom     = xmb->categories_active_zoom;
@@ -4742,7 +4742,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                menu_stack->list[stack_size - 1].type =
                   MENU_MUSIC_TAB;
                break;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             case XMB_SYSTEM_TAB_VIDEO:
                menu_stack->list[stack_size - 1].label =
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB));

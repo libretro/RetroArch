@@ -866,6 +866,12 @@ CORES
 #include "../cores/libretro-ffmpeg/ffmpeg_core.c"
 #endif
 
+#if defined(HAVE_MPV)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#include "../cores/libretro-mpv/mpv-libretro.c"
+#endif
+#endif
+
 #include "../cores/dynamic_dummy.c"
 
 /*============================================================

@@ -2570,7 +2570,7 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
 default_action_ok_start_builtin_core(action_ok_start_net_retropad_core, CORE_TYPE_NETRETROPAD)
 default_action_ok_start_builtin_core(action_ok_start_video_processor_core, CORE_TYPE_VIDEO_PROCESSOR)
 
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
 static int action_ok_file_load_ffmpeg(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2586,7 +2586,12 @@ static int action_ok_file_load_ffmpeg(const char *path,
       fill_pathname_join(new_path, menu_path, path,
             sizeof(new_path));
 
+   /* TODO/FIXME - should become runtime optional */
+#ifdef HAVE_MPV
+   return default_action_ok_load_content_with_core_from_menu(new_path, CORE_TYPE_MPV);
+#else
    return default_action_ok_load_content_with_core_from_menu(new_path, CORE_TYPE_FFMPEG);
+#endif
 }
 #endif
 
@@ -2604,7 +2609,12 @@ static int action_ok_audio_run(const char *path,
    fill_pathname_join(combined_path, menu->scratch2_buf,
          menu->scratch_buf, sizeof(combined_path));
 
+   /* TODO/FIXME - should become runtime optional */
+#ifdef HAVE_MPV
+   return default_action_ok_load_content_with_core_from_menu(combined_path, CORE_TYPE_MPV);
+#else
    return default_action_ok_load_content_with_core_from_menu(combined_path, CORE_TYPE_FFMPEG);
+#endif
 }
 
 static int action_ok_file_load_imageviewer(const char *path,
@@ -3269,7 +3279,7 @@ static int action_ok_delete_entry(const char *path,
    char *conf_path           = NULL;
    char *def_conf_path       = NULL;
    char *def_conf_music_path = NULL;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    char *def_conf_video_path = NULL;
 #endif
 #ifdef HAVE_IMAGEVIEWER
@@ -3284,7 +3294,7 @@ static int action_ok_delete_entry(const char *path,
    conf_path                 = playlist_get_conf_path(playlist);
    def_conf_path             = playlist_get_conf_path(g_defaults.content_history);
    def_conf_music_path       = playlist_get_conf_path(g_defaults.music_history);
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    def_conf_video_path       = playlist_get_conf_path(g_defaults.video_history);
 #endif
 #ifdef HAVE_IMAGEVIEWER
@@ -3295,7 +3305,7 @@ static int action_ok_delete_entry(const char *path,
       playlist = g_defaults.content_history;
    else if (string_is_equal(conf_path, def_conf_music_path))
       playlist = g_defaults.music_history;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    else if (string_is_equal(conf_path, def_conf_video_path))
       playlist = g_defaults.video_history;
 #endif
@@ -5124,7 +5134,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             break;
          case FILE_TYPE_MOVIE:
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             /* TODO/FIXME - handle scan case */
             BIND_ACTION_OK(cbs, action_ok_file_load_ffmpeg);
 #endif

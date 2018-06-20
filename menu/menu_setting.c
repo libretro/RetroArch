@@ -6017,7 +6017,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_content_show_video,
