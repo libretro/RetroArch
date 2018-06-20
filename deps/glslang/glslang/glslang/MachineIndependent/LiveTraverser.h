@@ -33,6 +33,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 
+#ifndef _MACHINE_INDEPENDENT_LIVE_TRAVERSER_H
+#define _MACHINE_INDEPENDENT_LIVE_TRAVERSER_H
+
 #pragma once
 
 #include "../Include/Common.h"
@@ -136,3 +139,5 @@ private:
 };
 
 } // namespace glslang
+
+#endif

@@ -195,7 +195,7 @@ void TPpContext::TokenStream::putToken(int atom, TPpToken* ppToken)
 
 // Read the next token from a token stream.
 // (Not the source stream, but a stream used to hold a tokenized macro).
-int TPpContext::TokenStream::getToken(TParseContextBase& parseContext, TPpToken *ppToken)
+int TPpContext::TokenStream::getToken(TParseContextBase& _parseContext, TPpToken *ppToken)
 {
     // get the atom
     int atom = getSubtoken();
@@ -204,7 +204,7 @@ int TPpContext::TokenStream::getToken(TParseContextBase& parseContext, TPpToken 
 
     // init the token
     ppToken->clear();
-    ppToken->loc = parseContext.getCurrentLoc();
+    ppToken->loc = _parseContext.getCurrentLoc();
 
     // get the backing name string
     if (SaveName(atom)) {
@@ -216,7 +216,7 @@ int TPpContext::TokenStream::getToken(TParseContextBase& parseContext, TPpToken 
                 len++;
                 ch = getSubtoken();
             } else {
-                parseContext.error(ppToken->loc, "token too long", "", "");
+                _parseContext.error(ppToken->loc, "token too long", "", "");
                 break;
             }
         }
@@ -227,8 +227,8 @@ int TPpContext::TokenStream::getToken(TParseContextBase& parseContext, TPpToken 
     if (atom == '#') {
         if (current < data.size()) {
             if (getSubtoken() == '#') {
-                parseContext.requireProfile(ppToken->loc, ~EEsProfile, "token pasting (##)");
-                parseContext.profileRequires(ppToken->loc, ~EEsProfile, 130, 0, "token pasting (##)");
+                _parseContext.requireProfile(ppToken->loc, ~EEsProfile, "token pasting (##)");
+                _parseContext.profileRequires(ppToken->loc, ~EEsProfile, 130, 0, "token pasting (##)");
                 atom = PpAtomPaste;
             } else
                 ungetSubtoken();

@@ -233,15 +233,15 @@ bool InitializeSymbolTable(const TString& builtIns, int version, EProfile profil
 
     intermediate.setSource(source);
 
-    std::unique_ptr<TParseContextBase> parseContext(CreateParseContext(symbolTable, intermediate, version, profile, source,
+    std::unique_ptr<TParseContextBase> _parseContext(CreateParseContext(symbolTable, intermediate, version, profile, source,
                                                                        language, infoSink, spvVersion, true, EShMsgDefault,
                                                                        true));
 
     TShader::ForbidIncluder includer;
-    TPpContext ppContext(*parseContext, "", includer);
-    TScanContext scanContext(*parseContext);
-    parseContext->setScanContext(&scanContext);
-    parseContext->setPpContext(&ppContext);
+    TPpContext ppContext(*_parseContext, "", includer);
+    TScanContext scanContext(*_parseContext);
+    _parseContext->setScanContext(&scanContext);
+    _parseContext->setPpContext(&ppContext);
 
     //
     // Push the symbol table to give it an initial scope.  This
@@ -260,7 +260,7 @@ bool InitializeSymbolTable(const TString& builtIns, int version, EProfile profil
         return true;
 
     TInputScanner input(1, builtInShaders, builtInLengths);
-    if (! parseContext->parseShaderStrings(ppContext, input) != 0) {
+    if (! _parseContext->parseShaderStrings(ppContext, input) != 0) {
         infoSink.info.message(EPrefixInternalError, "Unable to parse built-ins");
         printf("Unable to parse built-ins\n%s\n", infoSink.info.c_str());
         printf("%s\n", builtInShaders[0]);
@@ -696,7 +696,7 @@ void RecordProcesses(TIntermediate& intermediate, EShMessages messages, const st
 // This is the common setup and cleanup code for PreprocessDeferred and
 // CompileDeferred.
 // It takes any callable with a signature of
-//  bool (TParseContextBase& parseContext, TPpContext& ppContext,
+//  bool (TParseContextBase& _parseContext, TPpContext& ppContext,
 //                  TInputScanner& input, bool versionWillBeError,
 //                  TSymbolTable& , TIntermediate& ,
 //                  EShOptimizationLevel , EShMessages );
@@ -849,31 +849,31 @@ bool ProcessDeferred(
     // Now we can process the full shader under proper symbols and rules.
     //
 
-    std::unique_ptr<TParseContextBase> parseContext(CreateParseContext(*symbolTable, intermediate, version, profile, source,
+    std::unique_ptr<TParseContextBase> _parseContext(CreateParseContext(*symbolTable, intermediate, version, profile, source,
                                                     stage, compiler->infoSink,
                                                     spvVersion, forwardCompatible, messages, false, sourceEntryPointName));
-    TPpContext ppContext(*parseContext, names[numPre] ? names[numPre] : "", includer);
+    TPpContext ppContext(*_parseContext, names[numPre] ? names[numPre] : "", includer);
 
     // only GLSL (bison triggered, really) needs an externally set scan context
-    glslang::TScanContext scanContext(*parseContext);
+    glslang::TScanContext scanContext(*_parseContext);
     if (source == EShSourceGlsl)
-        parseContext->setScanContext(&scanContext);
+        _parseContext->setScanContext(&scanContext);
 
-    parseContext->setPpContext(&ppContext);
-    parseContext->setLimits(*resources);
+    _parseContext->setPpContext(&ppContext);
+    _parseContext->setLimits(*resources);
     if (! goodVersion)
-        parseContext->addError();
+        _parseContext->addError();
     if (warnVersionNotFirst) {
         TSourceLoc loc;
         loc.init();
-        parseContext->warn(loc, "Illegal to have non-comment, non-whitespace tokens before #version", "#version", "");
+        _parseContext->warn(loc, "Illegal to have non-comment, non-whitespace tokens before #version", "#version", "");
     }
 
-    parseContext->initializeExtensionBehavior();
+    _parseContext->initializeExtensionBehavior();
 
     // Fill in the strings as outlined above.
     std::string preamble;
-    parseContext->getPreamble(preamble);
+    _parseContext->getPreamble(preamble);
     strings[0] = preamble.c_str();
     lengths[0] = strlen(strings[0]);
     names[0] = nullptr;
@@ -892,7 +892,7 @@ bool ProcessDeferred(
     // Push a new symbol allocation scope that will get used for the shader's globals.
     symbolTable->push();
 
-    bool success = processingContext(*parseContext, ppContext, fullInput,
+    bool success = processingContext(*_parseContext, ppContext, fullInput,
                                      versionWillBeError, *symbolTable,
                                      intermediate, optLevel, messages);
     return success;
@@ -967,7 +967,7 @@ private:
 // It places the result in the "string" argument to its constructor.
 struct DoPreprocessing {
     explicit DoPreprocessing(std::string* string): outputString(string) {}
-    bool operator()(TParseContextBase& parseContext, TPpContext& ppContext,
+    bool operator()(TParseContextBase& _parseContext, TPpContext& ppContext,
                     TInputScanner& input, bool versionWillBeError,
                     TSymbolTable&, TIntermediate&,
                     EShOptimizationLevel, EShMessages)
@@ -977,14 +977,14 @@ struct DoPreprocessing {
         static const std::string noSpaceBeforeTokens = ",";
         glslang::TPpToken ppToken;
 
-        parseContext.setScanner(&input);
+        _parseContext.setScanner(&input);
         ppContext.setInput(input, versionWillBeError);
 
         std::string outputBuffer;
         SourceLineSynchronizer lineSync(
             std::bind(&TInputScanner::getLastValidSourceIndex, &input), &outputBuffer);
 
-        parseContext.setExtensionCallback([&lineSync, &outputBuffer](
+        _parseContext.setExtensionCallback([&lineSync, &outputBuffer](
             int line, const char* extension, const char* behavior) {
                 lineSync.syncToLine(line);
                 outputBuffer += "#extension ";
@@ -993,7 +993,7 @@ struct DoPreprocessing {
                 outputBuffer += behavior;
         });
 
-        parseContext.setLineCallback([&lineSync, &outputBuffer, &parseContext](
+        _parseContext.setLineCallback([&lineSync, &outputBuffer, &_parseContext](
             int curLineNum, int newLineNum, bool hasSource, int sourceNum, const char* sourceName) {
             // SourceNum is the number of the source-string that is being parsed.
             lineSync.syncToLine(curLineNum);
@@ -1009,7 +1009,7 @@ struct DoPreprocessing {
                     outputBuffer += std::to_string(sourceNum);
                 }
             }
-            if (parseContext.lineDirectiveShouldSetNextLine()) {
+            if (_parseContext.lineDirectiveShouldSetNextLine()) {
                 // newLineNum is the new line number for the line following the #line
                 // directive. So the new line number for the current line is
                 newLineNum -= 1;
@@ -1019,7 +1019,7 @@ struct DoPreprocessing {
             lineSync.setLineNum(newLineNum + 1);
         });
 
-        parseContext.setVersionCallback(
+        _parseContext.setVersionCallback(
             [&lineSync, &outputBuffer](int line, int version, const char* str) {
                 lineSync.syncToLine(line);
                 outputBuffer += "#version ";
@@ -1030,7 +1030,7 @@ struct DoPreprocessing {
                 }
             });
 
-        parseContext.setPragmaCallback([&lineSync, &outputBuffer](
+        _parseContext.setPragmaCallback([&lineSync, &outputBuffer](
             int line, const glslang::TVector<glslang::TString>& ops) {
                 lineSync.syncToLine(line);
                 outputBuffer += "#pragma ";
@@ -1039,7 +1039,7 @@ struct DoPreprocessing {
                 }
         });
 
-        parseContext.setErrorCallback([&lineSync, &outputBuffer](
+        _parseContext.setErrorCallback([&lineSync, &outputBuffer](
             int line, const char* errorMessage) {
                 lineSync.syncToLine(line);
                 outputBuffer += "#error ";
@@ -1078,10 +1078,10 @@ struct DoPreprocessing {
         *outputString = std::move(outputBuffer);
 
         bool success = true;
-        if (parseContext.getNumErrors() > 0) {
+        if (_parseContext.getNumErrors() > 0) {
             success = false;
-            parseContext.infoSink.info.prefix(EPrefixError);
-            parseContext.infoSink.info << parseContext.getNumErrors() << " compilation errors.  No code generated.\n\n";
+            _parseContext.infoSink.info.prefix(EPrefixError);
+            _parseContext.infoSink.info << _parseContext.getNumErrors() << " compilation errors.  No code generated.\n\n";
         }
         return success;
     }
@@ -1091,28 +1091,28 @@ struct DoPreprocessing {
 // DoFullParse is a valid ProcessingConext template argument for fully
 // parsing the shader.  It populates the "intermediate" with the AST.
 struct DoFullParse{
-  bool operator()(TParseContextBase& parseContext, TPpContext& ppContext,
+  bool operator()(TParseContextBase& _parseContext, TPpContext& ppContext,
                   TInputScanner& fullInput, bool versionWillBeError,
                   TSymbolTable&, TIntermediate& intermediate,
                   EShOptimizationLevel optLevel, EShMessages messages)
     {
         bool success = true;
         // Parse the full shader.
-        if (! parseContext.parseShaderStrings(ppContext, fullInput, versionWillBeError))
+        if (! _parseContext.parseShaderStrings(ppContext, fullInput, versionWillBeError))
             success = false;
 
         if (success && intermediate.getTreeRoot()) {
             if (optLevel == EShOptNoGeneration)
-                parseContext.infoSink.info.message(EPrefixNone, "No errors.  No code generation or linking was requested.");
+                _parseContext.infoSink.info.message(EPrefixNone, "No errors.  No code generation or linking was requested.");
             else
-                success = intermediate.postProcess(intermediate.getTreeRoot(), parseContext.getLanguage());
+                success = intermediate.postProcess(intermediate.getTreeRoot(), _parseContext.getLanguage());
         } else if (! success) {
-            parseContext.infoSink.info.prefix(EPrefixError);
-            parseContext.infoSink.info << parseContext.getNumErrors() << " compilation errors.  No code generated.\n\n";
+            _parseContext.infoSink.info.prefix(EPrefixError);
+            _parseContext.infoSink.info << _parseContext.getNumErrors() << " compilation errors.  No code generated.\n\n";
         }
 
         if (messages & EShMsgAST)
-            intermediate.output(parseContext.infoSink, true);
+            intermediate.output(_parseContext.infoSink, true);
 
         return success;
     }

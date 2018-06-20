@@ -21,6 +21,7 @@
 
 #include "../deps/glslang/glslang/OGLCompilersDLL/InitializeDll.cpp"
 
+#include "../deps/glslang/glslang/glslang/MachineIndependent/attribute.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/Constant.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/glslang_tab.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/InfoSink.cpp"
@@ -46,9 +47,7 @@
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/Pp.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpAtom.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpContext.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpMemory.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpScanner.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpSymbols.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpTokens.cpp"
 
 #include "../deps/glslang/glslang/hlsl/hlslAttributes.cpp"

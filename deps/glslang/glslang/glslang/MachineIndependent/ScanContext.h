@@ -33,6 +33,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 
+#ifndef _MACHINE_INDEPENDENT_SCAN_CONTEXT_H
+#define _MACHINE_INDEPENDENT_SCAN_CONTEXT_H
+
 //
 // This holds context specific to the GLSL scanner, which
 // sits between the preprocessor scanner and parser.
@@ -51,7 +54,7 @@ class TParserToken;
 class TScanContext {
 public:
     explicit TScanContext(TParseContextBase& pc) :
-        parseContext(pc),
+        _parseContext(pc),
         afterType(false), afterStruct(false),
         field(false) { }
     virtual ~TScanContext() { }
@@ -77,7 +80,7 @@ protected:
     int firstGenerationImage(bool inEs310);
     int secondGenerationImage();
 
-    TParseContextBase& parseContext;
+    TParseContextBase& _parseContext;
     bool afterType;           // true if we've recognized a type, so can only be looking for an identifier
     bool afterStruct;         // true if we've recognized the STRUCT keyword, so can only be looking for an identifier
     bool field;               // true if we're on a field, right after a '.'
@@ -90,3 +93,5 @@ protected:
 };
 
 } // end namespace glslang
+
+#endif

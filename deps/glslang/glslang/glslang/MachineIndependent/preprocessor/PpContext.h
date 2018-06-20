@@ -291,7 +291,7 @@ protected:
 
     // Scanner data:
     int previous_token;
-    TParseContextBase& parseContext;
+    TParseContextBase& _parseContext;
 
     // Get the next token from *stack* of input sources, popping input sources
     // that are out of tokens, down until an input source is found that has a token.
@@ -411,7 +411,7 @@ protected:
     class tTokenInput : public tInput {
     public:
         tTokenInput(TPpContext* pp, TokenStream* t, bool prepasting) : tInput(pp), tokens(t), lastTokenPastes(prepasting) { }
-        virtual int scan(TPpToken *ppToken) override { return tokens->getToken(pp->parseContext, ppToken); }
+        virtual int scan(TPpToken *ppToken) override { return tokens->getToken(pp->_parseContext, ppToken); }
         virtual int getch() override { assert(0); return EndOfInput; }
         virtual void ungetch() override { assert(0); }
         virtual bool peekPasting() override { return tokens->peekTokenizedPasting(lastTokenPastes); }
@@ -450,7 +450,7 @@ protected:
                 // Move past escaped newlines, as many as sequentially exist
                 do {
                     if (input->peek() == '\r' || input->peek() == '\n') {
-                        bool allowed = pp->parseContext.lineContinuationCheck(input->getSourceLoc(), pp->inComment);
+                        bool allowed = pp->_parseContext.lineContinuationCheck(input->getSourceLoc(), pp->inComment);
                         if (! allowed && pp->inComment)
                             return '\\';
 
@@ -553,14 +553,14 @@ protected:
 
         void notifyActivated() override
         {
-            prevScanner = pp->parseContext.getScanner();
-            pp->parseContext.setScanner(&scanner);
+            prevScanner = pp->_parseContext.getScanner();
+            pp->_parseContext.setScanner(&scanner);
             pp->push_include(includedFile_);
         }
 
         void notifyDeleted() override
         {
-            pp->parseContext.setScanner(prevScanner);
+            pp->_parseContext.setScanner(prevScanner);
             pp->pop_include();
         }
 

@@ -34,6 +34,7 @@
 
 #include "../osinclude.h"
 
+#undef  STRICT
 #define STRICT
 #define VC_EXTRALEAN 1
 #include <windows.h>

@@ -50,8 +50,8 @@ namespace glslang {
 
     class HlslGrammar : public HlslTokenStream {
     public:
-        HlslGrammar(HlslScanContext& scanner, HlslParseContext& parseContext)
-            : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate),
+        HlslGrammar(HlslScanContext& scanner, HlslParseContext& _parseContext)
+            : HlslTokenStream(scanner), _parseContext(_parseContext), intermediate(_parseContext.intermediate),
               typeIdentifiers(false) { }
         virtual ~HlslGrammar() { }
 
@@ -130,7 +130,7 @@ namespace glslang {
         bool captureBlockTokens(TVector<HlslToken>& tokens);
         const char* getTypeString(EHlslTokenClass tokenClass) const;
 
-        HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
+        HlslParseContext& _parseContext;  // state of parsing and helper functions for building the intermediate
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST
         bool typeIdentifiers;            // shader uses some types as identifiers
     };
