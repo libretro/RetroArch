@@ -63,7 +63,7 @@ static INLINE void d3d9_cg_set_param_2f(void *data, void *userdata,
       const char *name, const void *values)
 {
    /* Makes zero difference to Cg D3D9 */
-   return d3d9_cg_set_param_1f(data, userdata, name, values);
+   d3d9_cg_set_param_1f(data, userdata, name, values);
 }
 
 static INLINE void d3d9_cg_bind_program(void *data)
