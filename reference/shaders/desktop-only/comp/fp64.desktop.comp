@@ -67,7 +67,6 @@ void main()
     dvec3 e = cross(a.xyz, a.yzw);
     a = faceforward(a, a, a);
     a = reflect(a, a);
-    a = refract(a, a, a.x);
     dmat4 l = dmat4(amat[0] * amat[0], amat[1] * amat[1], amat[2] * amat[2], amat[3] * amat[3]);
     l = outerProduct(a, a);
     l = transpose(l);

@@ -128,12 +128,21 @@ if (${PYTHONINTERP_FOUND})
 	add_test(NAME spirv-cross-test
 		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_shaders.py
 			${CMAKE_CURRENT_SOURCE_DIR}/shaders)
+	add_test(NAME spirv-cross-test-no-opt
+		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_shaders.py
+			${CMAKE_CURRENT_SOURCE_DIR}/shaders-no-opt)
 	add_test(NAME spirv-cross-test-metal
 		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_shaders.py --metal
 			${CMAKE_CURRENT_SOURCE_DIR}/shaders-msl)
+	add_test(NAME spirv-cross-test-metal-no-opt
+		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_shaders.py --metal
+			${CMAKE_CURRENT_SOURCE_DIR}/shaders-msl-no-opt)
 	add_test(NAME spirv-cross-test-hlsl
 		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_shaders.py --hlsl
 			${CMAKE_CURRENT_SOURCE_DIR}/shaders-hlsl)
+	add_test(NAME spirv-cross-test-hlsl-no-opt
+		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_shaders.py --hlsl
+			${CMAKE_CURRENT_SOURCE_DIR}/shaders-hlsl-no-opt)
 	add_test(NAME spirv-cross-test-opt
 		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_shaders.py --opt
 			${CMAKE_CURRENT_SOURCE_DIR}/shaders)

@@ -15,14 +15,24 @@ struct S1
     float4 a;
 };
 
+struct S0_1
+{
+    float4 a;
+};
+
 struct SSBO0
 {
-    S0 s0s[1];
+    S0_1 s0s[1];
+};
+
+struct S1_1
+{
+    float4 a;
 };
 
 struct SSBO1
 {
-    S1 s1s[1];
+    S1_1 s1s[1];
 };
 
 struct SSBO2

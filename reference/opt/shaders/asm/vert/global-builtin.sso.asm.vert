@@ -8,15 +8,9 @@ out gl_PerVertex
 struct VSOut
 {
     float a;
-    vec4 pos;
 };
 
-struct VSOut_1
-{
-    float a;
-};
-
-layout(location = 0) out VSOut_1 _entryPointOutput;
+layout(location = 0) out VSOut _entryPointOutput;
 
 void main()
 {

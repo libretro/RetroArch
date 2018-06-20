@@ -11,25 +11,23 @@ struct SPIRV_Cross_Output
     float4 FragColor : SV_Target0;
 };
 
-float4 _21;
-
 void frag_main()
 {
-    float4 _33;
-    do
+    bool _29;
+    for (;;)
     {
-        if (counter == 10)
+        _29 = counter == 10;
+        if (_29)
         {
-            _33 = 10.0f.xxxx;
             break;
         }
         else
         {
-            _33 = 30.0f.xxxx;
             break;
         }
-    } while (false);
-    FragColor = _33;
+    }
+    bool4 _35 = _29.xxxx;
+    FragColor = float4(_35.x ? 10.0f.xxxx.x : 30.0f.xxxx.x, _35.y ? 10.0f.xxxx.y : 30.0f.xxxx.y, _35.z ? 10.0f.xxxx.z : 30.0f.xxxx.z, _35.w ? 10.0f.xxxx.w : 30.0f.xxxx.w);
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)

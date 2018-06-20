@@ -9,18 +9,20 @@ layout(binding = 0, std430) buffer inputData
     float inputDataArray[];
 } _12;
 
-layout(binding = 1, std430) buffer outputData
+layout(binding = 1, std430) buffer _10_74
 {
-    float outputDataArray[];
+    float inputDataArray[];
 } _74;
 
 void main()
 {
     float _25 = _12.inputDataArray[gl_LocalInvocationID.x];
     bool _31 = _25 > 0.0;
+    uvec4 _37 = uvec4(unpackUint2x32(ballotARB(_31)), 0u, 0u);
+    uint _44 = mbcntAMD(packUint2x32(uvec2(_37.xy)));
     if (_31)
     {
-        _74.outputDataArray[mbcntAMD(packUint2x32(uvec2(unpackUint2x32(ballotARB(_31)).xy)))] = _25;
+        _74.inputDataArray[_44] = _25;
     }
 }
 

@@ -4,51 +4,52 @@ layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 layout(binding = 0, std430) readonly buffer Distribution
 {
     vec2 distribution[];
-} _136;
+} _137;
 
 layout(binding = 2, std140) uniform UBO
 {
     vec4 uModTime;
-} _165;
+} _166;
 
 layout(binding = 1, std430) writeonly buffer HeightmapFFT
 {
     uint heights[];
-} _224;
+} _225;
 
 void main()
 {
-    uvec2 _263 = uvec2(64u, 1u) * gl_NumWorkGroups.xy;
-    uvec2 _268 = _263 - gl_GlobalInvocationID.xy;
-    bvec2 _270 = equal(gl_GlobalInvocationID.xy, uvec2(0u));
-    uint _470;
-    if (_270.x)
+    uvec2 _264 = uvec2(64u, 1u) * gl_NumWorkGroups.xy;
+    uvec2 _269 = _264 - gl_GlobalInvocationID.xy;
+    bvec2 _271 = equal(gl_GlobalInvocationID.xy, uvec2(0u));
+    uint _475;
+    if (_271.x)
     {
-        _470 = 0u;
+        _475 = 0u;
     }
     else
     {
-        _470 = _268.x;
+        _475 = _269.x;
     }
-    uint _471;
-    if (_270.y)
+    uint _476;
+    if (_271.y)
     {
-        _471 = 0u;
+        _476 = 0u;
     }
     else
     {
-        _471 = _268.y;
+        _476 = _269.y;
     }
-    vec2 _296 = vec2(gl_GlobalInvocationID.xy);
-    vec2 _298 = vec2(_263);
-    float _308 = sqrt(9.81000041961669921875 * length(_165.uModTime.xy * mix(_296, _296 - _298, greaterThan(_296, _298 * 0.5)))) * _165.uModTime.z;
-    float _310 = cos(_308);
-    float _312 = sin(_308);
-    vec2 _315 = vec2(_310, _312);
-    vec2 _394 = _315.yy * (_136.distribution[(gl_GlobalInvocationID.xy.y * _263.x) + gl_GlobalInvocationID.xy.x]).yx;
-    vec2 _320 = vec2(_310, _312);
-    vec2 _420 = _320.yy * (_136.distribution[(_471 * _263.x) + _470]).yx;
-    vec2 _428 = ((_136.distribution[(_471 * _263.x) + _470]) * _320.xx) + vec2(-_420.x, _420.y);
-    _224.heights[(gl_GlobalInvocationID.xy.y * _263.x) + gl_GlobalInvocationID.xy.x] = packHalf2x16((((_136.distribution[(gl_GlobalInvocationID.xy.y * _263.x) + gl_GlobalInvocationID.xy.x]) * _315.xx) + vec2(-_394.x, _394.y)) + vec2(_428.x, -_428.y));
+    uint _448 = _264.x;
+    uint _280 = (gl_GlobalInvocationID.y * _448) + gl_GlobalInvocationID.x;
+    vec2 _297 = vec2(gl_GlobalInvocationID.xy);
+    vec2 _299 = vec2(_264);
+    float _309 = sqrt(9.81000041961669921875 * length(_166.uModTime.xy * mix(_297, _297 - _299, greaterThan(_297, _299 * 0.5)))) * _166.uModTime.z;
+    vec2 _316 = vec2(cos(_309), sin(_309));
+    vec2 _387 = _316.xx;
+    vec2 _392 = _316.yy;
+    vec2 _395 = _392 * _137.distribution[_280].yx;
+    vec2 _421 = _392 * (_137.distribution[(_476 * _448) + _475]).yx;
+    vec2 _429 = ((_137.distribution[(_476 * _448) + _475]) * _387) + vec2(-_421.x, _421.y);
+    _225.heights[_280] = packHalf2x16(((_137.distribution[_280] * _387) + vec2(-_395.x, _395.y)) + vec2(_429.x, -_429.y));
 }
 

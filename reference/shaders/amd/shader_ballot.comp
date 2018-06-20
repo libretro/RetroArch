@@ -18,7 +18,7 @@ void main()
 {
     float thisLaneData = _12.inputDataArray[gl_LocalInvocationID.x];
     bool laneActive = thisLaneData > 0.0;
-    uint thisLaneOutputSlot = mbcntAMD(packUint2x32(uvec2(unpackUint2x32(ballotARB(laneActive)).xy)));
+    uint thisLaneOutputSlot = mbcntAMD(packUint2x32(uvec2(uvec4(unpackUint2x32(ballotARB(laneActive)), 0u, 0u).xy)));
     int firstInvocation = readFirstInvocationARB(1);
     int invocation = readInvocationARB(1, 0u);
     vec3 swizzleInvocations = swizzleInvocationsAMD(vec3(0.0, 2.0, 1.0), uvec4(3u));

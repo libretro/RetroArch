@@ -3,24 +3,21 @@
 layout(location = 0) flat in int counter;
 layout(location = 0) out vec4 FragColor;
 
-vec4 _21;
-
 void main()
 {
-    vec4 _33;
-    do
+    bool _29;
+    for (;;)
     {
-        if (counter == 10)
+        _29 = counter == 10;
+        if (_29)
         {
-            _33 = vec4(10.0);
             break;
         }
         else
         {
-            _33 = vec4(30.0);
             break;
         }
-    } while (false);
-    FragColor = _33;
+    }
+    FragColor = mix(vec4(30.0), vec4(10.0), bvec4(_29));
 }
 

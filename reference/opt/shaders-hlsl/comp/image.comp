@@ -34,24 +34,26 @@ struct SPIRV_Cross_Input
 
 void comp_main()
 {
-    uImageOutF[int2(gl_GlobalInvocationID.xy)] = uImageInF[int2(gl_GlobalInvocationID.xy)].x;
-    uImageOutI[int2(gl_GlobalInvocationID.xy)] = uImageInI[int2(gl_GlobalInvocationID.xy)].x;
-    uImageOutU[int2(gl_GlobalInvocationID.xy)] = uImageInU[int2(gl_GlobalInvocationID.xy)].x;
-    uImageOutBuffer[int(gl_GlobalInvocationID.x)] = uImageInBuffer[int(gl_GlobalInvocationID.x)].x;
-    uImageOutF2[int2(gl_GlobalInvocationID.xy)] = uImageInF2[int2(gl_GlobalInvocationID.xy)].xy;
-    uImageOutI2[int2(gl_GlobalInvocationID.xy)] = uImageInI2[int2(gl_GlobalInvocationID.xy)].xy;
-    uImageOutU2[int2(gl_GlobalInvocationID.xy)] = uImageInU2[int2(gl_GlobalInvocationID.xy)].xy;
-    float4 _135 = uImageInBuffer2[int(gl_GlobalInvocationID.x)].xyyy;
-    uImageOutBuffer2[int(gl_GlobalInvocationID.x)] = _135.xy;
-    uImageOutF4[int2(gl_GlobalInvocationID.xy)] = uImageInF4[int2(gl_GlobalInvocationID.xy)];
-    int4 _165 = uImageInI4[int2(gl_GlobalInvocationID.xy)];
-    uImageOutI4[int2(gl_GlobalInvocationID.xy)] = _165;
-    uint4 _180 = uImageInU4[int2(gl_GlobalInvocationID.xy)];
-    uImageOutU4[int2(gl_GlobalInvocationID.xy)] = _180;
-    uImageOutBuffer4[int(gl_GlobalInvocationID.x)] = uImageInBuffer4[int(gl_GlobalInvocationID.x)];
-    uImageNoFmtF[int2(gl_GlobalInvocationID.xy)] = _135;
-    uImageNoFmtU[int2(gl_GlobalInvocationID.xy)] = _180;
-    uImageNoFmtI[int2(gl_GlobalInvocationID.xy)] = _165;
+    int2 _23 = int2(gl_GlobalInvocationID.xy);
+    uImageOutF[_23] = uImageInF[_23].x;
+    uImageOutI[_23] = uImageInI[_23].x;
+    uImageOutU[_23] = uImageInU[_23].x;
+    int _74 = int(gl_GlobalInvocationID.x);
+    uImageOutBuffer[_74] = uImageInBuffer[_74].x;
+    uImageOutF2[_23] = uImageInF2[_23].xy;
+    uImageOutI2[_23] = uImageInI2[_23].xy;
+    uImageOutU2[_23] = uImageInU2[_23].xy;
+    float4 _135 = uImageInBuffer2[_74].xyyy;
+    uImageOutBuffer2[_74] = _135.xy;
+    uImageOutF4[_23] = uImageInF4[_23];
+    int4 _165 = uImageInI4[_23];
+    uImageOutI4[_23] = _165;
+    uint4 _180 = uImageInU4[_23];
+    uImageOutU4[_23] = _180;
+    uImageOutBuffer4[_74] = uImageInBuffer4[_74];
+    uImageNoFmtF[_23] = _135;
+    uImageNoFmtU[_23] = _180;
+    uImageNoFmtI[_23] = _165;
 }
 
 [numthreads(1, 1, 1)]
