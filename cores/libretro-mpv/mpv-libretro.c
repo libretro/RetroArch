@@ -418,8 +418,10 @@ static void audio_callback(double fps)
 
         if(ret < 0)
         {
+#if 0
             log_cb(RETRO_LOG_ERROR, "mpv encountered an error in audio "
                     "callback: %d.\n", ret);
+#endif
             return;
         }
 
