@@ -1262,7 +1262,11 @@ static void retroarch_main_init_media(void)
       case RARCH_CONTENT_MUSIC:
          if (builtin_mediaplayer)
          {
-#ifdef HAVE_FFMPEG
+            /* TODO/FIXME - it needs to become possible to switch between FFmpeg and MPV at runtime */
+#if defined(HAVE_MPV)
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+            retroarch_set_current_core_type(CORE_TYPE_MPV, false);
+#elif defined(HAVE_FFMPEG)
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
             retroarch_set_current_core_type(CORE_TYPE_FFMPEG, false);
 #endif

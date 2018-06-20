@@ -90,6 +90,10 @@ static dylib_t lib_handle;
 #define SYMBOL_FFMPEG(x) current_core->x = libretro_ffmpeg_##x
 #endif
 
+#ifdef HAVE_MPV
+#define SYMBOL_MPV(x) current_core->x = libretro_mpv_##x
+#endif
+
 #ifdef HAVE_IMAGEVIEWER
 #define SYMBOL_IMAGEVIEWER(x) current_core->x = libretro_imageviewer_##x
 #endif
@@ -528,6 +532,43 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
          SYMBOL_FFMPEG(retro_get_region);
          SYMBOL_FFMPEG(retro_get_memory_data);
          SYMBOL_FFMPEG(retro_get_memory_size);
+#endif
+         break;
+      case CORE_TYPE_MPV:
+#ifdef HAVE_MPV
+         SYMBOL_MPV(retro_init);
+         SYMBOL_MPV(retro_deinit);
+
+         SYMBOL_MPV(retro_api_version);
+         SYMBOL_MPV(retro_get_system_info);
+         SYMBOL_MPV(retro_get_system_av_info);
+
+         SYMBOL_MPV(retro_set_environment);
+         SYMBOL_MPV(retro_set_video_refresh);
+         SYMBOL_MPV(retro_set_audio_sample);
+         SYMBOL_MPV(retro_set_audio_sample_batch);
+         SYMBOL_MPV(retro_set_input_poll);
+         SYMBOL_MPV(retro_set_input_state);
+
+         SYMBOL_MPV(retro_set_controller_port_device);
+
+         SYMBOL_MPV(retro_reset);
+         SYMBOL_MPV(retro_run);
+
+         SYMBOL_MPV(retro_serialize_size);
+         SYMBOL_MPV(retro_serialize);
+         SYMBOL_MPV(retro_unserialize);
+
+         SYMBOL_MPV(retro_cheat_reset);
+         SYMBOL_MPV(retro_cheat_set);
+
+         SYMBOL_MPV(retro_load_game);
+         SYMBOL_MPV(retro_load_game_special);
+
+         SYMBOL_MPV(retro_unload_game);
+         SYMBOL_MPV(retro_get_region);
+         SYMBOL_MPV(retro_get_memory_data);
+         SYMBOL_MPV(retro_get_memory_size);
 #endif
          break;
       case CORE_TYPE_IMAGEVIEWER:

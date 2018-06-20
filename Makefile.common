@@ -1101,9 +1101,13 @@ ifneq ($(C89_BUILD), 1)
 ifneq ($(HAVE_OPENGLES), 1)
    OBJ += cores/libretro-ffmpeg/ffmpeg_fft.o
    DEFINES += -I$(DEPS_DIR) -DHAVE_GL_FFT
-   NEED_CXX_LINKER=1
 endif
 endif
+endif
+
+ifeq ($(HAVE_MPV), 1)
+   OBJ += cores/libretro-mpv/libretro-mpv.o
+   DEFINES += -I$(DEPS_DIR) -DHAVE_MPV
 endif
 
    ifeq ($(HAVE_OPENGLES), 1)

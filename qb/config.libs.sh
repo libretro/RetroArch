@@ -368,6 +368,10 @@ else
    check_val '' ZLIB '-lz'
 fi
 
+if [ "$HAVE_MPV" != 'no' ]; then
+   check_pkgconf MPV libmpv
+fi
+
 if [ "$HAVE_THREADS" != 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
    check_pkgconf AVCODEC libavcodec 54
    check_pkgconf AVFORMAT libavformat 54
