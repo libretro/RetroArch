@@ -29,6 +29,12 @@
 #include <mpv/render_gl.h>
 
 #include <libretro.h>
+#ifdef RARCH_INTERNAL
+#include "internal_cores.h"
+#define CORE_PREFIX(s) libretro_mpv_##s
+#else
+#define CORE_PREFIX(s) s
+#endif
 
 #include "version.h"
 
@@ -37,12 +43,12 @@ static struct retro_hw_render_callback hw_render;
 static struct retro_log_callback logging;
 static retro_log_printf_t log_cb;
 
-static retro_video_refresh_t video_cb;
-static retro_audio_sample_t audio_cb;
-static retro_audio_sample_batch_t audio_batch_cb;
-static retro_environment_t environ_cb;
-static retro_input_poll_t input_poll_cb;
-static retro_input_state_t input_state_cb;
+static retro_video_refresh_t CORE_PREFIX(video_cb);
+static retro_audio_sample_t CORE_PREFIX(audio_cb);
+static retro_audio_sample_batch_t CORE_PREFIX(audio_batch_cb);
+static retro_environment_t CORE_PREFIX(environ_cb);
+static retro_input_poll_t CORE_PREFIX(input_poll_cb);
+static retro_input_state_t CORE_PREFIX(input_state_cb);
 
 static mpv_handle *mpv;
 static mpv_render_context *mpv_gl;
@@ -140,7 +146,7 @@ static void *get_proc_address_mpv(void *fn_ctx, const char *name)
 	return proc_addr;
 }
 
-void retro_init(void)
+void CORE_PREFIX(retro_init)(void)
 {
 	if(mpv_client_api_version() != MPV_CLIENT_API_VERSION)
 	{
@@ -151,23 +157,21 @@ void retro_init(void)
 	return;
 }
 
-void retro_deinit(void)
-{
-	return;
-}
+void CORE_PREFIX(retro_deinit)(void)
+{}
 
-unsigned retro_api_version(void)
+unsigned CORE_PREFIX(retro_api_version)(void)
 {
 	return RETRO_API_VERSION;
 }
 
-void retro_set_controller_port_device(unsigned port, unsigned device)
+void CORE_PREFIX(retro_set_controller_port_device)(unsigned port, unsigned device)
 {
 	log_cb(RETRO_LOG_INFO, "Plugging device %u into port %u.\n", device, port);
 	return;
 }
 
-void retro_get_system_info(struct retro_system_info *info)
+void CORE_PREFIX(retro_get_system_info)(struct retro_system_info *info)
 {
 	memset(info, 0, sizeof(*info));
 	info->library_name     = "mpv";
@@ -188,7 +192,7 @@ void retro_get_system_info(struct retro_system_info *info)
 		"vtt|wav|wsd|xl|xm|xmgz|xmr|xmv|xmz|xvag|y4m|yop|yuv|yuv10";
 }
 
-void retro_get_system_av_info(struct retro_system_av_info *info)
+void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 {
 	float sampling_rate = 48000.0f;
 
@@ -218,7 +222,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 	};
 }
 
-void retro_set_environment(retro_environment_t cb)
+void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
 	environ_cb = cb;
 
@@ -366,34 +370,33 @@ static bool retro_init_hw_context(void)
 	return true;
 }
 
-void retro_set_audio_sample(retro_audio_sample_t cb)
+void CORE_PREFIX(retro_set_audio_sample)(retro_audio_sample_t cb)
 {
 	audio_cb = cb;
 }
 
-void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb)
+void CORE_PREFIX(retro_set_audio_sample_batch)(retro_audio_sample_batch_t cb)
 {
 	audio_batch_cb = cb;
 }
 
-void retro_set_input_poll(retro_input_poll_t cb)
+void CORE_PREFIX(retro_set_input_poll)(retro_input_poll_t cb)
 {
 	input_poll_cb = cb;
 }
 
-void retro_set_input_state(retro_input_state_t cb)
+void CORE_PREFIX(retro_set_input_state)(retro_input_state_t cb)
 {
 	input_state_cb = cb;
 }
 
-void retro_set_video_refresh(retro_video_refresh_t cb)
+void CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
 {
 	video_cb = cb;
 }
 
-void retro_reset(void)
+void CORE_PREFIX(retro_reset)(void)
 {
-	return;
 }
 
 static void audio_callback(double fps)
@@ -500,7 +503,7 @@ static void retropad_update_input(void)
 	last.a = current.a;
 }
 
-void retro_run(void)
+void CORE_PREFIX(retro_run)(void)
 {
 	/* We only need to update the base video size once, and we do it here since
 	 * the input file is not processed during the first
@@ -582,22 +585,22 @@ void retro_run(void)
 }
 
 /* No save-state support */
-size_t retro_serialize_size(void)
+size_t CORE_PREFIX(retro_serialize_size)(void)
 {
 	return 0;
 }
 
-bool retro_serialize(void *data_, size_t size)
+bool CORE_PREFIX(retro_serialize)(void *data_, size_t size)
 {
 	return true;
 }
 
-bool retro_unserialize(const void *data_, size_t size)
+bool CORE_PREFIX(retro_unserialize)(const void *data_, size_t size)
 {
 	return true;
 }
 
-bool retro_load_game(const struct retro_game_info *info)
+bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
 	/* Supported on most systems. */
 	enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
@@ -649,41 +652,39 @@ bool retro_load_game(const struct retro_game_info *info)
 	return true;
 }
 
-bool retro_load_game_special(unsigned type, const struct retro_game_info *info,
+bool CORE_PREFIX(retro_load_game_special)(unsigned type, const struct retro_game_info *info,
 		size_t num)
 {
 	return false;
 }
 
-void retro_unload_game(void)
+void CORE_PREFIX(retro_unload_game)(void)
 {
 	free(filepath);
 	filepath = NULL;
-
-	return;
 }
 
-unsigned retro_get_region(void)
+unsigned CORE_PREFIX(retro_get_region)(void)
 {
 	return RETRO_REGION_NTSC;
 }
 
-void *retro_get_memory_data(unsigned id)
+void *CORE_PREFIX(retro_get_memory_data)(unsigned id)
 {
 	return NULL;
 }
 
-size_t retro_get_memory_size(unsigned id)
+size_t CORE_PREFIX(retro_get_memory_size)(unsigned id)
 {
 	return 0;
 }
 
-void retro_cheat_reset(void)
-{
-	return;
-}
+void CORE_PREFIX(retro_cheat_reset)(void)
+{}
 
-void retro_cheat_set(unsigned index, bool enabled, const char *code)
+void CORE_PREFIX(retro_cheat_set)(unsigned index, bool enabled, const char *code)
 {
-	return;
+   (void)index;
+   (void)enabled;
+   (void)code;
 }
