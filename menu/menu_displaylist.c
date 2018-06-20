@@ -5511,12 +5511,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-#ifdef ANDROID
          if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
-#endif
 
          if (count == 0)
             menu_entries_append_enum(info->list,

@@ -6381,6 +6381,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
+#ifdef ANDROID
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.sustained_performance_mode,
@@ -6395,6 +6396,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_CMD_APPLY_AUTO);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
