@@ -3,16 +3,14 @@
 
 using namespace metal;
 
-constant float4 _20[2] = {float4(10.0), float4(20.0)};
+struct main0_out
+{
+    float4 gl_Position [[position]];
+};
 
 struct main0_in
 {
     float4 vInput1 [[attribute(1)]];
-};
-
-struct main0_out
-{
-    float4 gl_Position [[position]];
 };
 
 vertex main0_out main0(main0_in in [[stage_in]])

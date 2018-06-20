@@ -1,13 +1,8 @@
 #version 450
 
-struct VSInput
-{
-    vec4 position;
-};
-
 struct VSOutput
 {
-    vec4 position;
+    int empty_struct_member;
 };
 
 layout(location = 0) in vec4 position;

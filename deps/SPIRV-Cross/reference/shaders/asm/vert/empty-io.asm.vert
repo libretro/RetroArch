@@ -10,6 +10,11 @@ struct VSOutput
     vec4 position;
 };
 
+struct VSOutput_1
+{
+    int empty_struct_member;
+};
+
 layout(location = 0) in vec4 position;
 
 VSOutput _main(VSInput _input)

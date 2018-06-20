@@ -12,14 +12,14 @@ struct UBO
     float2x4 uMVP;
 };
 
-struct main0_in
-{
-    float4 aVertex [[attribute(0)]];
-};
-
 struct main0_out
 {
     float4 gl_Position [[position]];
+};
+
+struct main0_in
+{
+    float4 aVertex [[attribute(0)]];
 };
 
 // Implementation of a conversion of matrix content from RowMajor to ColumnMajor organization.

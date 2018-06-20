@@ -13,9 +13,14 @@ struct UBO1
     Str foo;
 };
 
+struct Str_1
+{
+    float4x4 foo;
+};
+
 struct UBO2
 {
-    Str foo;
+    Str_1 foo;
 };
 
 struct main0_out

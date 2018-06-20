@@ -17,14 +17,14 @@ constant float4 _54[2] = {float4(8.0), float4(10.0)};
 constant float4 _55[2][2] = {{float4(1.0), float4(2.0)}, {float4(8.0), float4(10.0)}};
 constant Foobar _75[2] = {{10.0, 40.0}, {90.0, 70.0}};
 
-struct main0_in
-{
-    int index [[user(locn0)]];
-};
-
 struct main0_out
 {
     float4 FragColor [[color(0)]];
+};
+
+struct main0_in
+{
+    int index [[user(locn0)]];
 };
 
 // Implementation of an array copy function to cover GLSL's ability to copy an array via assignment.

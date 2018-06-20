@@ -15,7 +15,7 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    FragColor = -(-vIn);
+    FragColor = vIn;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)

@@ -2,7 +2,7 @@
 
 layout(set = 0, binding = 0) uniform sampler Sampler;
 layout(set = 0, binding = 0) uniform texture2D SampledImage;
-uniform sampler SPIRV_Cross_DummySampler;
+layout(set = 0, binding = 0) uniform sampler SPIRV_Cross_DummySampler;
 
 layout(location = 0) out vec4 _entryPointOutput;
 
