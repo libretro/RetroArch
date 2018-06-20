@@ -6177,6 +6177,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MIDI_SETTINGS,   PARSE_ACTION, false) == 0)
+            count++;
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUDIO_ENABLE,
                PARSE_ONLY_BOOL, false);
@@ -6415,8 +6418,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_DIRECTORY_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PRIVACY_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_MIDI_SETTINGS,   PARSE_ACTION, false);
          info->need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL:
