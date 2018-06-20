@@ -106,7 +106,7 @@ static void process_mpv_events(mpv_event_id event_block)
 				(struct mpv_event_end_file *)mp_event->data;
 
 			if(eof->reason == MPV_END_FILE_REASON_EOF)
-				environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+				CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 #if 0
 			/* The following could be done instead if the file was not
 			 * closed once the end was reached - allowing the user to seek
@@ -116,7 +116,7 @@ static void process_mpv_events(mpv_event_id event_block)
 				"Finished playing file", 60 * 5, /* 5 seconds */
 			};
 
-			environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &ra_msg);RETRO_ENVIRONMENT_SHUTDOWN
+			CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &ra_msg);RETRO_ENVIRONMENT_SHUTDOWN
 #endif
 		}
 		else if(mp_event->event_id == MPV_EVENT_NONE)
@@ -198,11 +198,11 @@ void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 
 #if 0
 	struct retro_variable var = { .key = "test_aspect" };
-	environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var);
+	CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var);
 
 	var.key = "test_samplerate";
 
-	if(environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	if(CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 		sampling_rate = strtof(var.value, NULL);
 #endif
 	info->timing = (struct retro_system_timing) {
@@ -224,7 +224,7 @@ void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 
 void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
-	environ_cb = cb;
+	CORE_PREFIX(environ_cb) = cb;
 
 	static const struct retro_variable vars[] = {
 #if 0
@@ -364,7 +364,7 @@ static bool retro_init_hw_context(void)
 	hw_render.context_reset = context_reset;
 	hw_render.context_destroy = context_destroy;
 
-	if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
+	if (!CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
 		return false;
 
 	return true;
@@ -372,27 +372,27 @@ static bool retro_init_hw_context(void)
 
 void CORE_PREFIX(retro_set_audio_sample)(retro_audio_sample_t cb)
 {
-	audio_cb = cb;
+	CORE_PREFIX(audio_cb) = cb;
 }
 
 void CORE_PREFIX(retro_set_audio_sample_batch)(retro_audio_sample_batch_t cb)
 {
-	audio_batch_cb = cb;
+	CORE_PREFIX(audio_batch_cb) = cb;
 }
 
 void CORE_PREFIX(retro_set_input_poll)(retro_input_poll_t cb)
 {
-	input_poll_cb = cb;
+	CORE_PREFIX(input_poll_cb) = cb;
 }
 
 void CORE_PREFIX(retro_set_input_state)(retro_input_state_t cb)
 {
-	input_state_cb = cb;
+	CORE_PREFIX(input_state_cb) = cb;
 }
 
 void CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
 {
-	video_cb = cb;
+	CORE_PREFIX(video_cb) = cb;
 }
 
 void CORE_PREFIX(retro_reset)(void)
@@ -430,7 +430,7 @@ static void audio_callback(double fps)
 
 		len -= ret;
 
-		audio_batch_cb((const int16_t*)buff, ret);
+		CORE_PREFIX(audio_batch_cb)((const int16_t*)buff, ret);
 	}
 	while(len > 4);
 }
@@ -446,7 +446,7 @@ static void retropad_update_input(void)
 	struct Input current;
 	static struct Input last;
 
-	input_poll_cb();
+	CORE_PREFIX(input_poll_cb)();
 
 	/* Commands that are called on rising edge only */
 
@@ -457,11 +457,11 @@ static void retropad_update_input(void)
 	 * Unsure if saving the memory is worth the extra checks, costing CPU time,
 	 * but both are incredibly miniscule anyway.
 	 */
-	current.l = input_state_cb(0, RETRO_DEVICE_JOYPAD,
+	current.l = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD,
 			0, RETRO_DEVICE_ID_JOYPAD_L) != 0 ? 1 : 0;
-	current.r = input_state_cb(0, RETRO_DEVICE_JOYPAD,
+	current.r = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD,
 			0, RETRO_DEVICE_ID_JOYPAD_R) != 0 ? 1 : 0;
-	current.a = input_state_cb(0, RETRO_DEVICE_JOYPAD,
+	current.a = CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD,
 			0, RETRO_DEVICE_ID_JOYPAD_A) != 0 ? 1 : 0;
 
 	if(current.l == 1 && last.l == 0)
@@ -474,24 +474,24 @@ static void retropad_update_input(void)
 		mpv_command_string(mpv, "cycle pause");
 
 	/* TODO #3: Press and hold commands with small delay */
-	if(input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+	if (CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
 			RETRO_DEVICE_ID_JOYPAD_LEFT))
 		mpv_command_string(mpv, "seek -5");
 
-	if(input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+	if (CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
 			RETRO_DEVICE_ID_JOYPAD_RIGHT))
 		mpv_command_string(mpv, "seek 5");
 
-	if(input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+	if (CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
 			RETRO_DEVICE_ID_JOYPAD_UP))
 		mpv_command_string(mpv, "seek 60");
 
-	if(input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+	if (CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
 			RETRO_DEVICE_ID_JOYPAD_DOWN))
 		mpv_command_string(mpv, "seek -60");
 
 	/* Press and hold commands */
-	if(input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+	if (CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
 			RETRO_DEVICE_ID_JOYPAD_X))
 		mpv_command_string(mpv, "show-progress");
 
@@ -547,7 +547,7 @@ void CORE_PREFIX(retro_run)(void)
 		};
 
 		if(width > 0 && height > 0)
-			environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &av_info);
+			CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &av_info);
 
 		updated_video_dimensions = true;
 	}
@@ -571,14 +571,14 @@ void CORE_PREFIX(retro_run)(void)
 			{0}
 		};
 		mpv_render_context_render(mpv_gl, params);
-		video_cb(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
+		CORE_PREFIX(video_cb)(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
 		frame_queue--;
 	}
 	else
-		video_cb(NULL, width, height, 0);
+		CORE_PREFIX(video_cb)(NULL, width, height, 0);
 #else
 	mpv_opengl_cb_draw(mpv_gl, hw_render.get_current_framebuffer(), width, height);
-	video_cb(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
+	CORE_PREFIX(video_cb)(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
 #endif
 
 	return;
@@ -631,16 +631,16 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
 	strcpy(filepath,info->path);
 
-	environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
+	CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
 	/* Not bothered if this fails. Assuming the default is selected anyway. */
-	if(environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt) == false)
+	if(CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt) == false)
 	{
 		log_cb(RETRO_LOG_ERROR, "XRGB8888 is not supported.\n");
 
 		/* Try RGB565 */
 		fmt = RETRO_PIXEL_FORMAT_RGB565;
-		environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
+		CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
 	}
 
 	if(retro_init_hw_context() == false)

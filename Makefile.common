@@ -1106,8 +1106,9 @@ endif
 endif
 
 ifeq ($(HAVE_MPV), 1)
-   OBJ += cores/libretro-mpv/libretro-mpv.o
+   OBJ += cores/libretro-mpv/mpv-libretro.o
    DEFINES += -I$(DEPS_DIR) -DHAVE_MPV
+	LIBS += -lmpv
 endif
 
    ifeq ($(HAVE_OPENGLES), 1)
