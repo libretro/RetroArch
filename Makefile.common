@@ -1385,10 +1385,6 @@ ifeq ($(HAVE_GLSLANG), 1)
       -I$(DEPS_DIR)/glslang/glslang/SPIRV \
       -I$(DEPS_DIR)/glslang
 
-   ifneq ($(findstring Win32,$(OS)),)
-		DEFINES += -DENABLE_HLSL
-	endif
-
    GLSLANG_SOURCES := \
       $(wildcard $(DEPS_DIR)/glslang/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/SPIRV/*.cpp) \
@@ -1396,8 +1392,13 @@ ifeq ($(HAVE_GLSLANG), 1)
       $(wildcard $(DEPS_DIR)/glslang/glslang/OGLCompilersDLL/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
+
+ifneq ($(findstring Win32,$(OS)),)
+DEFINES += -DENABLE_HLSL
+GLSLANG_SOURCES += $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp)
+endif
+
 
    OBJ += $(GLSLANG_SOURCES:.cpp=.o)
 endif
