@@ -7,7 +7,7 @@
 
 #import <Foundation/Foundation.h>
 #import "metal_common.h"
-#import "cocoa_common.h"
+#import "../../ui/drivers/cocoa/cocoa_common.h"
 #import <memory.h>
 #import <gfx/video_frame.h>
 #import <Metal/Metal.h>
