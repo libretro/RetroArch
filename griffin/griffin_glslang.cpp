@@ -50,6 +50,10 @@
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpScanner.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpTokens.cpp"
 
+#ifdef __APPLE__
+#include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp"
+#endif
+
 #include "../deps/glslang/glslang/hlsl/hlslAttributes.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslGrammar.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslOpMap.cpp"

@@ -36,7 +36,7 @@ typedef struct ui_application_cocoa
 
 typedef struct ui_window_cocoa
 {
-    CocoaView *data;
+    void *data;
 } ui_window_cocoa_t;
 
 RETRO_END_DECLS

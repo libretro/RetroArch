@@ -389,6 +389,7 @@ static void retroarch_print_features(void)
    _PSUPP(thread,          "Threads",         "Threading support");
 
    _PSUPP(vulkan,          "Vulkan",          "Vulkan video driver");
+   _PSUPP(metal,           "Metal",           "Metal video driver");
    _PSUPP(opengl,          "OpenGL",          "OpenGL   video driver support");
    _PSUPP(opengles,        "OpenGL ES",       "OpenGLES video driver support");
    _PSUPP(xvideo,          "XVideo",          "Video driver");

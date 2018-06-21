@@ -30,6 +30,13 @@
 #include "vulkan_common.h"
 #include "../../libretro-common/include/retro_timers.h"
 #include "../../configuration.h"
+#include "../include/vulkan/vulkan.h"
+#include "../../libretro-common/include/retro_assert.h"
+#include "vksym.h"
+#include "../../libretro-common/include/dynamic/dylib.h"
+#include "../../libretro-common/include/libretro_vulkan.h"
+#include "../../libretro-common/include/retro_math.h"
+#include "../../libretro-common/include/string/stdstring.h"
 
 static dylib_t                       vulkan_library;
 static VkInstance                    cached_instance_vk;
