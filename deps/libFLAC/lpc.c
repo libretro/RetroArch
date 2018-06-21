@@ -210,7 +210,7 @@ int FLAC__lpc_quantize_coefficients(const FLAC__real lp_coeff[], unsigned order,
 		FLAC__int32 q;
 		for(i = 0; i < order; i++) {
 			error += lp_coeff[i] * (1 << *shift);
-			q = lround(error);
+			q = (FLAC__int32)lround(error);
 
 #ifdef FLAC__OVERFLOW_DETECT
 			if(q > qmax+1) /* we expect q==qmax+1 occasionally due to rounding */
@@ -239,7 +239,7 @@ int FLAC__lpc_quantize_coefficients(const FLAC__real lp_coeff[], unsigned order,
 #endif
 		for(i = 0; i < order; i++) {
 			error += lp_coeff[i] / (1 << nshift);
-			q = lround(error);
+			q = (FLAC__int32)lround(error);
 #ifdef FLAC__OVERFLOW_DETECT
 			if(q > qmax+1) /* we expect q==qmax+1 occasionally due to rounding */
 				fprintf(stderr,"FLAC__lpc_quantize_coefficients: quantizer overflow: q>qmax %d>%d shift=%d cmax=%f precision=%u lpc[%u]=%f\n",q,qmax,*shift,cmax,precision+1,i,lp_coeff[i]);

@@ -181,10 +181,10 @@ static bool slang_process_reflection(
 
    out->cbuffers[SLANG_CBUFFER_UBO].stage_mask = sl_reflection.ubo_stage_mask;
    out->cbuffers[SLANG_CBUFFER_UBO].binding    = sl_reflection.ubo_binding;
-   out->cbuffers[SLANG_CBUFFER_UBO].size       = (sl_reflection.ubo_size + 0xF) & ~0xF;
+   out->cbuffers[SLANG_CBUFFER_UBO].size       = (unsigned)((sl_reflection.ubo_size + 0xF) & ~0xF);
    out->cbuffers[SLANG_CBUFFER_PC].stage_mask  = sl_reflection.push_constant_stage_mask;
    out->cbuffers[SLANG_CBUFFER_PC].binding     = sl_reflection.ubo_binding ? 0 : 1;
-   out->cbuffers[SLANG_CBUFFER_PC].size        = (sl_reflection.push_constant_size + 0xF) & ~0xF;
+   out->cbuffers[SLANG_CBUFFER_PC].size        = (unsigned)((sl_reflection.push_constant_size + 0xF) & ~0xF);
 
    for (semantic = 0; semantic < SLANG_NUM_BASE_SEMANTICS; semantic++)
    {
@@ -201,12 +201,12 @@ static bool slang_process_reflection(
 
          if (src.push_constant)
          {
-            uniform.offset = src.push_constant_offset;
+            uniform.offset = (unsigned)src.push_constant_offset;
             uniforms[SLANG_CBUFFER_PC].push_back(uniform);
          }
          else
          {
-            uniform.offset = src.ubo_offset;
+            uniform.offset = (unsigned)src.ubo_offset;
             uniforms[SLANG_CBUFFER_UBO].push_back(uniform);
          }
       }
@@ -227,12 +227,12 @@ static bool slang_process_reflection(
 
          if (src.push_constant)
          {
-            uniform.offset = src.push_constant_offset;
+            uniform.offset = (unsigned)src.push_constant_offset;
             uniforms[SLANG_CBUFFER_PC].push_back(uniform);
          }
          else
          {
-            uniform.offset = src.ubo_offset;
+            uniform.offset = (unsigned)src.ubo_offset;
             uniforms[SLANG_CBUFFER_UBO].push_back(uniform);
          }
       }
@@ -298,19 +298,19 @@ static bool slang_process_reflection(
 
             if (src.push_constant)
             {
-               uniform.offset = src.push_constant_offset;
+               uniform.offset = (unsigned)src.push_constant_offset;
                uniforms[SLANG_CBUFFER_PC].push_back(uniform);
             }
             else
             {
-               uniform.offset = src.ubo_offset;
+               uniform.offset = (unsigned)src.ubo_offset;
                uniforms[SLANG_CBUFFER_UBO].push_back(uniform);
             }
          }
       }
    }
 
-   out->texture_count = textures.size();
+   out->texture_count = (int)textures.size();
 
    textures.push_back({ NULL });
    out->textures = (texture_sem_t*)
@@ -323,7 +323,7 @@ static bool slang_process_reflection(
       if (uniforms[i].empty())
          continue;
 
-      out->cbuffers[i].uniform_count = uniforms[i].size();
+      out->cbuffers[i].uniform_count = (int)uniforms[i].size();
 
       uniforms[i].push_back({ NULL });
       out->cbuffers[i].uniforms =
@@ -424,8 +424,8 @@ bool slang_process(
          CompilerHLSL*         vs = (CompilerHLSL*)vs_compiler;
          CompilerHLSL*         ps = (CompilerHLSL*)ps_compiler;
          options.shader_model     = version;
-         vs->set_options(options);
-         ps->set_options(options);
+         vs->set_hlsl_options(options);
+         ps->set_hlsl_options(options);
 
 #if 0
          CompilerGLSL::Options glsl_options;

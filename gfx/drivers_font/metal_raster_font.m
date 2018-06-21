@@ -193,7 +193,7 @@ static void metal_raster_font_render_message(
    if (!font->font_driver->get_line_height)
    {
       if (r.metal)
-         metal_raster_font_render_line(r, msg, strlen(msg),
+         metal_raster_font_render_line(r, msg, (unsigned)strlen(msg),
                scale, color, pos_x, pos_y, text_align);
       return;
    }
@@ -208,7 +208,7 @@ static void metal_raster_font_render_message(
       /* Draw the line */
       if (delim)
       {
-         unsigned msg_len = delim - msg;
+         unsigned msg_len = (unsigned)(delim - msg);
          if (r.metal)
             metal_raster_font_render_line(r, msg, msg_len,
                   scale, color, pos_x, pos_y - (float)lines * line_height,
@@ -218,7 +218,7 @@ static void metal_raster_font_render_message(
       }
       else
       {
-         unsigned msg_len = strlen(msg);
+         unsigned msg_len = (unsigned)strlen(msg);
          if (r.metal)
             metal_raster_font_render_line(r, msg, msg_len,
                   scale, color, pos_x, pos_y - (float)lines * line_height,
@@ -226,11 +226,6 @@ static void metal_raster_font_render_message(
          break;
       }
    }
-}
-
-static void metal_raster_font_flush(MetalRaster *font)
-{
-
 }
 
 static void metal_raster_font_render_msg(
@@ -279,12 +274,12 @@ static void metal_raster_font_bind_block(void *data, void *userdata)
 }
 
 font_renderer_t metal_raster_font = {
-   .init                = metal_raster_font_init_font,
-   .free                = metal_raster_font_free_font,
-   .render_msg          = metal_raster_font_render_msg,
-   .ident               = "Metal raster",
-   .get_glyph           = metal_raster_font_get_glyph,
-   .bind_block          = metal_raster_font_bind_block,
-   .flush               = metal_raster_font_flush_block,
-   .get_message_width   = metal_get_message_width
+   metal_raster_font_init_font,
+   metal_raster_font_free_font,
+   metal_raster_font_render_msg,
+   "Metal raster",
+   metal_raster_font_get_glyph,
+   metal_raster_font_bind_block,
+   metal_raster_font_flush_block,
+   metal_get_message_width
 };

@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -143,7 +143,7 @@ SlangProcess::SlangProcess()
    while (token)
    {
       const char *value_str = strtok(0, delims);
-      int value = strtoul(value_str, nullptr, 0);
+      int             value = (int)strtoul(value_str, nullptr, 0);
 
       if (strcmp(token, "MaxLights") == 0)
          Resources.maxLights = value;
