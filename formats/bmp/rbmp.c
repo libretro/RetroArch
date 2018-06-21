@@ -159,7 +159,10 @@ static unsigned char *rbmp__convert_format(
             break;
          case ((3)*8+(2)):
             for(i=x-1; i >= 0; --i, src += 3, dest += 2)
-               dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]), dest[1] = 255;
+            {
+               dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]);
+               dest[1] = 255;
+            }
             break;
          case ((4)*8+(1)):
             for(i=x-1; i >= 0; --i, src += 4, dest += 1)
@@ -167,7 +170,10 @@ static unsigned char *rbmp__convert_format(
             break;
          case ((4)*8+(2)):
             for(i=x-1; i >= 0; --i, src += 4, dest += 2)
-               dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]), dest[1] = src[3];
+            {
+               dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]);
+               dest[1] = src[3];
+            }
             break;
          case ((4)*8+(3)):
             for(i=x-1; i >= 0; --i, src += 4, dest += 3)
@@ -438,7 +444,8 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
       {
          for (i=0; i < (int) s->img_x; i += 2)
          {
-            int v=rbmp__get8(s),v2=0;
+            int v=rbmp__get8(s);
+            int v2=0;
             if (bpp == 4)
             {
                v2 = v & 15;

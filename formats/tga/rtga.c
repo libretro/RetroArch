@@ -157,7 +157,10 @@ static unsigned char *rtga__convert_format(
             break;
          case ((3)*8+(2)):
             for(i=x-1; i >= 0; --i, src += 3, dest += 2)
-               dest[0] = RTGA_COMPUTE_Y(src[0],src[1],src[2]), dest[1] = 255;
+            {
+               dest[0] = RTGA_COMPUTE_Y(src[0],src[1],src[2]);
+               dest[1] = 255;
+            }
             break;
          case ((4)*8+(1)):
             for(i=x-1; i >= 0; --i, src += 4, dest += 1)
@@ -165,7 +168,10 @@ static unsigned char *rtga__convert_format(
             break;
          case ((4)*8+(2)):
             for(i=x-1; i >= 0; --i, src += 4, dest += 2)
-               dest[0] = RTGA_COMPUTE_Y(src[0],src[1],src[2]), dest[1] = src[3];
+            {
+               dest[0] = RTGA_COMPUTE_Y(src[0],src[1],src[2]);
+               dest[1] = src[3];
+            }
             break;
          case ((4)*8+(3)):
             for(i=x-1; i >= 0; --i, src += 4, dest += 3)
