@@ -219,7 +219,7 @@ static uintptr_t metal_load_texture(void *video_data, void *data,
    else {
    }
 
-   return nil;
+   return 0;
 }
 
 static void metal_unload_texture(void *data, uintptr_t handle)
