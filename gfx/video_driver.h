@@ -95,6 +95,7 @@ enum gfx_ctx_api
    GFX_CTX_DIRECT3D12_API,
    GFX_CTX_OPENVG_API,
    GFX_CTX_VULKAN_API,
+   GFX_CTX_METAL_API,
    GFX_CTX_GDI_API,
    GFX_CTX_GX_API,
    GFX_CTX_GX2_API
@@ -1246,6 +1247,7 @@ bool video_driver_started_fullscreen(void);
 
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;
+extern video_driver_t video_metal;
 extern video_driver_t video_psp1;
 extern video_driver_t video_vita2d;
 extern video_driver_t video_ctr;

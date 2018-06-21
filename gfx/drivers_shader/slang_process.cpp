@@ -382,15 +382,23 @@ bool slang_process(
       string          vs_code;
       string          ps_code;
 
-      if (dst_type == RARCH_SHADER_HLSL || dst_type == RARCH_SHADER_CG)
+      switch (dst_type)
       {
-         vs_compiler = new CompilerHLSL(output.vertex);
-         ps_compiler = new CompilerHLSL(output.fragment);
-      }
-      else
-      {
-         vs_compiler = new CompilerGLSL(output.vertex);
-         ps_compiler = new CompilerGLSL(output.fragment);
+         case RARCH_SHADER_HLSL:
+         case RARCH_SHADER_CG:
+            vs_compiler = new CompilerHLSL(output.vertex);
+            ps_compiler = new CompilerHLSL(output.fragment);
+            break;
+
+         case RARCH_SHADER_METAL:
+            vs_compiler = new CompilerMSL(output.vertex);
+            ps_compiler = new CompilerMSL(output.fragment);
+            break;
+
+         default:
+            vs_compiler = new CompilerGLSL(output.vertex);
+            ps_compiler = new CompilerGLSL(output.fragment);
+            break;
       }
 
       vs_resources = vs_compiler->get_shader_resources();
@@ -447,6 +455,26 @@ bool slang_process(
 
          vs_code = vs->compile();
          ps_code = ps->compile(ps_attrib_remap);
+      }
+      else if (dst_type == RARCH_SHADER_METAL)
+      {
+         CompilerMSL::Options options;
+         CompilerMSL*         vs = (CompilerMSL*)vs_compiler;
+         CompilerMSL*         ps = (CompilerMSL*)ps_compiler;
+         options.msl_version     = version;
+         vs->set_msl_options(options);
+         ps->set_msl_options(options);
+
+         std::vector<MSLVertexAttr> vs_attrib_remap;
+         std::vector<MSLResourceBinding> vs_res;
+
+         for (Resource& resource : vs_resources.stage_inputs)
+         {
+            std::string name = vs->get_name(resource.id);
+         }
+
+         vs_code = vs->compile();
+         ps_code = ps->compile();
       }
       else if (shader_info->type == RARCH_SHADER_GLSL)
       {

@@ -37,15 +37,23 @@
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
-id apple_platform;
+#if HAVE_METAL
+#import <Metal/Metal.h>
+#import <MetalKit/MetalKit.h>
+#endif
+
+id<ApplePlatform> apple_platform;
 
 #if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
-@interface RetroArch_OSX : NSObject
+@interface RetroArch_OSX : NSObject <ApplePlatform>
 #else
-@interface RetroArch_OSX : NSObject <NSApplicationDelegate>
+@interface RetroArch_OSX : NSObject <ApplePlatform, NSApplicationDelegate>
 #endif
 {
-    NSWindow* _window;
+   NSWindow* _window;
+   apple_view_type_t _vt;
+   NSView* _renderView;
+   id<PlatformDelegate> _delegate;
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
@@ -134,11 +142,11 @@ static void app_terminate(void)
             apple->mouse_rel_y = event.deltaY;
 
             /* Absolute */
-            pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+            pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
             apple->touches[0].screen_x = pos.x;
             apple->touches[0].screen_y = pos.y;
 
-            mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow]  fromView:nil];
+            mouse_pos = [apple_platform.renderView convertPoint:[event locationInWindow]  fromView:nil];
             apple->window_pos_x = (int16_t)mouse_pos.x;
             apple->window_pos_y = (int16_t)mouse_pos.y;
          }
@@ -150,7 +158,7 @@ static void app_terminate(void)
         case NSRightMouseDown:
         case NSOtherMouseDown:
          {
-            NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+            NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
             apple = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple || pos.y < 0)
                return;
@@ -163,7 +171,7 @@ static void app_terminate(void)
       case NSRightMouseUp:
       case NSOtherMouseUp:
          {
-            NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+            NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
             apple = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple || pos.y < 0)
                return;
@@ -183,33 +191,35 @@ static char** waiting_argv;
 
 @synthesize window = _window;
 
+#if !__has_feature(objc_arc)
 - (void)dealloc
 {
    [_window release];
    [super dealloc];
 }
+#endif
 
 #define NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY (1 << 17)
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    unsigned i;
+   apple_platform   = self;
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
+   self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
+#else
    SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
    SEL fsselector   = NSSelectorFromString(BOXSTRING("toggleFullScreen:"));
-   apple_platform   = self;
 
    if ([self.window respondsToSelector:selector])
    {
        if ([self.window respondsToSelector:fsselector])
           [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
    }
-
+#endif
    [self.window setAcceptsMouseMovedEvents: YES];
 
-   [[CocoaView get] setFrame: [[self.window contentView] bounds]];
    [[self.window contentView] setAutoresizesSubviews:YES];
-   [[self.window contentView] addSubview:[CocoaView get]];
-   [self.window makeFirstResponder:[CocoaView get]];
 
     for (i = 0; i < waiting_argc; i++)
     {
@@ -226,6 +236,87 @@ static char** waiting_argv;
    waiting_argc = 0;
 
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
+}
+
+- (void)setViewType:(apple_view_type_t)vt {
+   if (vt == _vt) {
+      return;
+   }
+   
+   RARCH_LOG("[Cocoa] change view type: %d → %d\n", _vt, vt);
+   
+   _vt = vt;
+   if (_renderView != nil)
+   {
+      _renderView.wantsLayer = NO;
+      _renderView.layer = nil;
+      [_renderView removeFromSuperview];
+      _renderView = nil;
+   }
+   
+   switch (vt) {
+      case APPLE_VIEW_TYPE_VULKAN:
+      case APPLE_VIEW_TYPE_METAL:
+      {
+         NSView *v = [CocoaView get];
+         v.wantsLayer = YES;
+         v.layer = CAMetalLayer.layer;
+         _renderView = v;
+         break;
+      }
+         
+      case APPLE_VIEW_TYPE_OPENGL:
+      {
+         _renderView = [CocoaView get];
+         break;
+      }
+      
+      case APPLE_VIEW_TYPE_NONE:
+      default:
+         return;
+   }
+   
+   _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+   _renderView.frame = self.window.contentView.bounds;
+   
+   [self.window.contentView addSubview:_renderView];
+   [self.window makeFirstResponder:_renderView];
+}
+
+- (apple_view_type_t)viewType {
+   return _vt;
+}
+
+- (id)renderView {
+   return _renderView;
+}
+
+- (id)delegate {
+   return _delegate;
+}
+
+- (void)setDelegate:(id<PlatformDelegate>)delegate {
+   _delegate = delegate;
+}
+
+- (id)viewHandle {
+   return nil;
+}
+
+- (bool)hasFocus {
+   return [NSApp isActive];
+}
+
+- (void)setVideoMode:(gfx_ctx_mode_t)mode {
+   // TODO(sgc): handle full screen
+   [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
+}
+
+- (void)setCursorVisible:(bool)v {
+   if (v)
+      [NSCursor unhide];
+   else
+      [NSCursor hide];
 }
 
 - (void) rarch_main
@@ -569,7 +660,7 @@ static void ui_companion_cocoa_notify_list_pushed(void *data,
 
 static void *ui_companion_cocoa_get_main_window(void *data)
 {
-    return ((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
+    return (BRIDGE void *)((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
 }
 
 ui_companion_driver_t ui_companion_cocoa = {

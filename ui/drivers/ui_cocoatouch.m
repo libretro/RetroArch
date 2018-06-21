@@ -41,7 +41,7 @@
 #endif
 
 static char msg_old[PATH_MAX_LENGTH];
-static id apple_platform;
+static id<ApplePlatform> apple_platform;
 static CFRunLoopObserverRef iterate_observer;
 
 /* forward declaration */
