@@ -133,7 +133,6 @@ bool midi_driver_set_volume(unsigned volume)
 {
    midi_event_t event;
    uint8_t data[8]     = { 0xF0, 0x7F, 0x7F, 0x04, 0x01, 0, 0, 0xF7 };
-   const char *err_str = NULL;
 
    if (!midi_drv_data || !midi_drv_output_enabled)
       return false;
@@ -464,7 +463,7 @@ bool midi_driver_write(uint8_t byte, uint32_t delta_time)
             midi_drv_output_event.data[0] == 0xF0)
       {
          if (byte == 0xF7)
-            event_size = midi_drv_output_event.data_size + 1;
+            event_size = (int)midi_drv_output_event.data_size + 1;
          else
          {
             if (!midi_drv->write(midi_drv_data, &midi_drv_output_event))
@@ -489,17 +488,17 @@ bool midi_driver_write(uint8_t byte, uint32_t delta_time)
                      midi_drv_output_event.data_size);
 #endif
 
-            midi_drv_output_pending = true;
-            event_size = midi_driver_get_event_size(byte);
-            midi_drv_output_event.data_size = 0;
+            midi_drv_output_pending          = true;
+            event_size                       = (int)midi_driver_get_event_size(byte);
+            midi_drv_output_event.data_size  = 0;
             midi_drv_output_event.delta_time = 0;
          }
       }
       else
       {
-         event_size = midi_driver_get_event_size(byte);
-         midi_drv_output_event.data_size = 0;
-         midi_drv_output_event.delta_time = 0;
+         event_size                          = (int)midi_driver_get_event_size(byte);
+         midi_drv_output_event.data_size     = 0;
+         midi_drv_output_event.delta_time    = 0;
       }
    }
 

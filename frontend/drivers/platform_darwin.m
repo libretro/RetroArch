@@ -306,8 +306,8 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
          NSInteger patchVersion;
       } NSMyOSVersion;
       NSMyOSVersion version = ((NSMyOSVersion(*)(id, SEL))objc_msgSend_stret)([NSProcessInfo processInfo], @selector(operatingSystemVersion));
-      *major = version.majorVersion;
-      *minor = version.minorVersion;
+      *major = (int)version.majorVersion;
+      *minor = (int)version.minorVersion;
    }
    else
    {

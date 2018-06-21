@@ -482,8 +482,8 @@ bool slang_process(
          CompilerGLSL*         vs = (CompilerGLSL*)vs_compiler;
          CompilerGLSL*         ps = (CompilerGLSL*)ps_compiler;
          options.version          = version;
-         ps->set_options(options);
-         vs->set_options(options);
+         ps->set_common_options(options);
+         vs->set_common_options(options);
 
          vs_code = vs->compile();
          ps_code = ps->compile();
