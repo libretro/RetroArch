@@ -37,13 +37,15 @@ typedef enum apple_view_type {
 } apple_view_type_t;
 
 @protocol PlatformDelegate
+#ifdef HAVE_METAL
 @optional
 - (void)viewDidUpdateFrame:(NSRect)rect;
+#endif
 @end
 
 @protocol ApplePlatform
 
-@property (readwrite) id<PlatformDelegate> delegate;
+@property (readwrite,retain) id<PlatformDelegate> delegate;
 
 /*!
  @brief viewHandle returns an appropriate handle for the current view type
