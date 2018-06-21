@@ -257,13 +257,15 @@ static char** waiting_argv;
    switch (vt) {
       case APPLE_VIEW_TYPE_VULKAN:
       case APPLE_VIEW_TYPE_METAL:
+#if defined(HAVE_METAL) || defined(HAVE_VULKAN)
       {
          NSView *v = [CocoaView get];
          v.wantsLayer = YES;
          v.layer = CAMetalLayer.layer;
          _renderView = v;
-         break;
       }
+#endif
+      break;
          
       case APPLE_VIEW_TYPE_OPENGL:
       {
