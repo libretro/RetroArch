@@ -1050,7 +1050,7 @@ static void audio_mixer_mix_flac(float* buffer, size_t num_frames,
    if (voice->types.flac.position == voice->types.flac.samples)
    {
 again:
-      temp_samples = drflac_read_f32( voice->types.flac.stream, AUDIO_MIXER_TEMP_BUFFER, temp_buffer);
+      temp_samples = (unsigned)drflac_read_f32( voice->types.flac.stream, AUDIO_MIXER_TEMP_BUFFER, temp_buffer);
       if (temp_samples == 0)
       {
          if (voice->repeat)
@@ -1122,7 +1122,7 @@ static void audio_mixer_mix_mp3(float* buffer, size_t num_frames,
    if (voice->types.mp3.position == voice->types.mp3.samples)
    {
 again:
-      temp_samples = drmp3_read_f32(&voice->types.mp3.stream, AUDIO_MIXER_TEMP_BUFFER/2, temp_buffer) * 2;
+      temp_samples = (unsigned)drmp3_read_f32(&voice->types.mp3.stream, AUDIO_MIXER_TEMP_BUFFER/2, temp_buffer) * 2;
       
       if (temp_samples == 0)
       {

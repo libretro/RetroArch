@@ -45,7 +45,10 @@ static INLINE bool string_is_equal(const char *a, const char *b)
    if (!a || !b)
       return false;
    while(*a && (*a == *b))
-      a++, b++;
+   {
+      a++;
+      b++;
+   }
    return (*(const unsigned char*)a - *(const unsigned char*)b) == 0;
 }
 
