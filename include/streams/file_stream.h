@@ -78,6 +78,8 @@ char *filestream_gets(RFILE *stream, char *s, size_t len);
 
 int filestream_getc(RFILE *stream);
 
+int filestream_scanf(RFILE *stream, const char* format, ...);
+
 int filestream_eof(RFILE *stream);
 
 bool filestream_write_file(const char *path, const void *data, int64_t size);
