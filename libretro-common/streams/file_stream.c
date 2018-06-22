@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <ctype.h>
 #include <errno.h>
 
 #ifdef HAVE_CONFIG_H
