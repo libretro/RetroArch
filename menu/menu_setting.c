@@ -2612,6 +2612,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          for (user = 0; user < MAX_USERS; user++)
             setting_append_list_input_player_options(list, list_info, parent_group, user);
