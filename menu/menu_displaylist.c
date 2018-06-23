@@ -5269,6 +5269,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
 
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS,
                PARSE_ONLY_BOOL, false);
 
@@ -6821,9 +6825,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_REBOOT,
                      PARSE_ACTION, false);
-            menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_SHUTDOWN,
-                  PARSE_ACTION, false);
+            if (settings->bools.menu_show_shutdown)
+               menu_displaylist_parse_settings_enum(menu, info,
+                     MENU_ENUM_LABEL_SHUTDOWN,
+                     PARSE_ACTION, false);
             info->need_push    = true;
          }
          break;

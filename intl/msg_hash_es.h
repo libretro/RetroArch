@@ -5759,6 +5759,14 @@ MSG_HASH(
 	"Mostrar/ocultar la opción de 'Reiniciar'"
 	)
 MSG_HASH(
+	MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
+	"Show Shutdown"
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
+	"Show/hide the 'Shutdown' option."
+	)
+MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
 	"Menú rápido"
 	)

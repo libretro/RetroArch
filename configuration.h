@@ -149,6 +149,7 @@ typedef struct settings
       bool menu_show_help;
       bool menu_show_quit_retroarch;
       bool menu_show_reboot;
+      bool menu_show_shutdown;
       bool menu_show_latency;
       bool menu_show_rewind;
       bool menu_show_overlays;
