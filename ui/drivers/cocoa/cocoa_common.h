@@ -36,21 +36,15 @@ typedef enum apple_view_type {
    APPLE_VIEW_TYPE_METAL,
 } apple_view_type_t;
 
-@protocol PlatformDelegate
 #ifdef HAVE_METAL
-@optional
-- (void)viewDidUpdateFrame:(NSRect)rect;
-#endif
+#import <MetalKit/MetalKit.h>
+
+@interface MetalView : MTKView
 @end
 
+#endif
+
 @protocol ApplePlatform
-
-@property (readwrite,retain) id<PlatformDelegate> delegate;
-
-/*!
- @brief viewHandle returns an appropriate handle for the current view type
- */
-@property (readonly) id viewHandle;
 
 /*! @brief renderView returns the current render view based on the viewType */
 @property (readonly) id renderView;

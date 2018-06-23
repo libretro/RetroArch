@@ -53,13 +53,14 @@ static void *metal_init(const video_info_t *video,
    gfx_ctx_mode_t mode;
 
    [apple_platform setViewType:APPLE_VIEW_TYPE_METAL];
-
    MetalDriver *md = [MetalDriver new];
    if (md == nil) {
       return NULL;
    }
+   MetalView *view = (MetalView *)apple_platform.renderView;
+   view.delegate = md;
 
-   apple_platform.delegate = md;
+   md.keepAspect = video->force_aspect;
 
    RARCH_LOG("[Metal]: Detecting screen resolution %ux%u.\n", video->width, video->height);
 
@@ -67,8 +68,8 @@ static void *metal_init(const video_info_t *video,
    mode.height = video->height;
    mode.fullscreen = video->fullscreen;
 
-   [apple_platform setVideoMode:mode];
    [md setVideo:video];
+   [apple_platform setVideoMode:mode];
 
    *input = NULL;
    *input_data = NULL;

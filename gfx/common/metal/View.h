@@ -10,6 +10,15 @@
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 
+typedef NS_ENUM(NSInteger, ViewDrawState)
+{
+   ViewDrawStateNone    = 0x00,
+   ViewDrawStateContext = 0x01,
+   ViewDrawStateEncoder = 0x02,
+   
+   ViewDrawStateAll     = 0x03,
+};
+
 @protocol View<NSObject>
 
 @property (readonly) RPixelFormat format;
@@ -17,9 +26,10 @@
 @property (readwrite) BOOL visible;
 @property (readwrite) CGRect frame;
 @property (readwrite) CGSize size;
+@property (readonly) ViewDrawState drawState;
 
 @optional
-- (void)prepareFrame:(Context *)ctx;
+- (void)drawWithContext:(Context *)ctx;
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce;
 
 @end

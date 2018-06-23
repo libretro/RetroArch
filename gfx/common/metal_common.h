@@ -9,6 +9,7 @@
 #define METAL_COMMON_H__
 
 #import <Metal/Metal.h>
+#import <MetalKit/MetalKit.h>
 #import "metal/metal_common.h"
 
 #include <retro_common_api.h>
@@ -20,6 +21,9 @@
 
 RETRO_BEGIN_DECLS
 
+extern MTLPixelFormat glslang_format_to_metal(glslang_format fmt);
+extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
+
 #pragma mark - Classes
 
 @interface FrameView : NSObject<View>
@@ -29,6 +33,7 @@ RETRO_BEGIN_DECLS
 @property (readwrite) BOOL visible;
 @property (readwrite) CGRect frame;
 @property (readwrite) CGSize size;
+@property (readonly) ViewDrawState drawState;
 @property (readonly) struct video_shader* shader;
 
 @property (readwrite) uint64_t         frameCount;
@@ -53,7 +58,7 @@ RETRO_BEGIN_DECLS
              filter:(RTextureFilter)filter;
 @end
 
-@interface MetalDriver : NSObject<PlatformDelegate>
+@interface MetalDriver : NSObject<MTKViewDelegate>
 
 @property (readonly) video_viewport_t* viewport;
 @property (readwrite) bool             keepAspect;
@@ -70,11 +75,6 @@ RETRO_BEGIN_DECLS
 
 /*! @brief setNeedsResize triggers a display resize */
 - (void)setNeedsResize;
-
-- (void)viewDidUpdateFrame:(NSRect)rect;
-
-
-#pragma mark - Menu APIs
 
 @end
 

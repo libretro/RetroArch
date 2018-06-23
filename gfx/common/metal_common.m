@@ -32,7 +32,7 @@
 @property (readwrite) video_viewport_t *viewport;
 
 - (instancetype)initWithDescriptor:(ViewDescriptor *)td renderer:(Renderer *)renderer;
-- (void)prepareFrame:(Context *)ctx;
+- (void)drawWithContext:(Context *)ctx;
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce;
 
 @end
@@ -72,32 +72,19 @@
    }
 }
 
-#pragma mark - swap chain
-
-- (void)viewDidUpdateFrame:(NSRect)rect
-{
-   RARCH_LOG("[MetalDriver] viewDidUpdateFrame %s\n", NSStringFromRect(rect).UTF8String);
-   _viewport->full_width = (unsigned int)rect.size.width;
-   _viewport->full_height = (unsigned int)rect.size.height;
-   video_driver_set_size(&_viewport->full_width, &_viewport->full_height);
-   resize_chain = YES;
-}
-
-
 #pragma mark - video
 
 - (void)setVideo:(const video_info_t *)video
 {
    _video = *video;
-   _viewport->full_width = _video.width;
-   _viewport->full_height = _video.height;
 
    if (!_renderer) {
       id<MTLDevice> device = MTLCreateSystemDefaultDevice();
       _device = device;
-      NSView *view = (NSView *)apple_platform.renderView;
+      MetalView *view = (MetalView *)apple_platform.renderView;
+      view.device = device;
       CAMetalLayer *layer = (CAMetalLayer *)view.layer;
-      layer.device = device;
+      //layer.device = device;
       _renderer = [[Renderer alloc] initWithDevice:device layer:layer];
       _menu.renderer = _renderer;
    }
@@ -119,11 +106,6 @@
 
 - (void)beginFrame
 {
-   if (resize_chain) {
-      [_renderer drawableSizeWillChange:CGSizeMake(_viewport->full_width, _viewport->full_height)];
-      resize_chain = NO;
-   }
-
    video_driver_update_viewport(_viewport, NO, _keepAspect);
 
    [_renderer beginFrame];
@@ -137,6 +119,21 @@
 - (void)setNeedsResize
 {
    // TODO(sgc): resize all drawables
+}
+
+#pragma mark - MTKViewDelegate
+
+- (void)mtkView:(MTKView *)view drawableSizeWillChange:(CGSize)size {
+   RARCH_LOG("[MetalDriver] drawableSizeWillChange: %s\n", NSStringFromSize(size).UTF8String);
+   _viewport->full_width = (unsigned int)size.width;
+   _viewport->full_height = (unsigned int)size.height;
+   video_driver_set_size(&_viewport->full_width, &_viewport->full_height);
+   [_renderer drawableSizeWillChange:size];
+   video_driver_update_viewport(_viewport, NO, _keepAspect);
+}
+
+- (void)drawInMTKView:(MTKView *)view {
+
 }
 
 extern inline matrix_float4x4 matrix_proj_ortho1(float left, float right, float top, float bottom)
@@ -292,12 +289,18 @@ typedef struct ALIGN(16)
       _format = d.format;
       _bpp = RPixelFormatToBPP(_format);
       _filter = d.filter;
+      if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm) {
+         _drawState = ViewDrawStateEncoder;
+      } else {
+         _drawState = ViewDrawStateAll;
+      }
       _visible = YES;
       _engine.mvp = matrix_proj_ortho1(0, 1, 0, 1);
       [self _initSamplers];
 
       self.size = d.size;
       self.frame = CGRectMake(0, 0, 1, 1);
+      resize_render_targets = YES;
    }
    return self;
 }
@@ -425,7 +428,6 @@ typedef struct ALIGN(16)
          if (init_history)
             [self _initHistory];
          else {
-            // TODO(sgc): change to ring buffer?
             int k;
             /* todo: what about frame-duping ?
              * maybe clone d3d10_texture_t with AddRef */
@@ -546,7 +548,7 @@ static vertex_t vertex_bytes[] = {
    }
 }
 
-- (void)prepareFrame:(Context *)ctx
+- (void)drawWithContext:(Context *)ctx
 {
    _texture = _engine.frame.texture[0].view;
    [self _convertFormat];
@@ -567,15 +569,15 @@ static vertex_t vertex_bytes[] = {
 
    MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
    rpd.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1.0);
-   rpd.colorAttachments[0].loadAction = MTLLoadActionDontCare;
+   rpd.colorAttachments[0].loadAction = MTLLoadActionClear;
    rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
 
    BOOL firstPass = YES;
    
    for (unsigned i = 0; i < _shader->passes; i++) {
-      BOOL lastPass  = i == _shader->passes - 1;
+      BOOL backBuffer = (_engine.pass[i].rt.view == nil);
 
-      if (lastPass) {
+      if (backBuffer) {
          rpd.colorAttachments[0].texture = _context.nextDrawable.texture;
       }
       else {
@@ -630,7 +632,7 @@ static vertex_t vertex_bytes[] = {
          texture_sem++;
       }
 
-      if (lastPass) {
+      if (backBuffer) {
          [rce setViewport:_engine.frame.viewport];
       }
       else {
@@ -645,7 +647,11 @@ static vertex_t vertex_bytes[] = {
       [rce endEncoding];
       _texture = _engine.pass[i].rt.view;
    }
-   _texture = nil;
+   if (_texture == nil) {
+      _drawState = ViewDrawStateContext;
+   } else {
+      _drawState = ViewDrawStateAll;
+   }
 }
 
 - (void)_updateRenderTargets
@@ -712,15 +718,17 @@ static vertex_t vertex_bytes[] = {
       }
 
       RARCH_LOG("[Metal]: Updating framebuffer size %u x %u.\n", width, height);
-
-      if (i != (_shader->passes - 1)) {
-
+      MTLPixelFormat fmt = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
+      if ((i != (_shader->passes - 1)) ||
+          (width != _viewport->width) || (height != _viewport->height) ||
+          fmt != MTLPixelFormatBGRA8Unorm)
+      {
          _engine.pass[i].viewport.width = width;
          _engine.pass[i].viewport.height = height;
          _engine.pass[i].viewport.znear = 0.0;
          _engine.pass[i].viewport.zfar = 1.0;
 
-         MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+         MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:fmt
                                                                                        width:width
                                                                                       height:height
                                                                                    mipmapped:false];
@@ -823,8 +831,16 @@ static vertex_t vertex_bytes[] = {
          if (!slang_process(shader, i, RARCH_SHADER_METAL, 20000, &semantics_map, &_engine.pass[i].semantics))
             return NO;
 
+#ifdef DEBUG
+         bool save_msl = true;
+#else
+         bool save_msl = false;
+#endif
+         NSString *vs_src = [NSString stringWithUTF8String:shader->pass[i].source.string.vertex];
+         NSString *fs_src = [NSString stringWithUTF8String:shader->pass[i].source.string.fragment];
+
+         // vertex descriptor
          @try {
-            // vertex descriptor
             MTLVertexDescriptor *vd = [MTLVertexDescriptor new];
             vd.attributes[0].offset = offsetof(vertex_t, pos);
             vd.attributes[0].format = MTLVertexFormatFloat4;
@@ -839,8 +855,11 @@ static vertex_t vertex_bytes[] = {
             psd.label = [NSString stringWithFormat:@"pass %d", i];
 
             MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
-            ca.pixelFormat = MTLPixelFormatBGRA8Unorm;
-            ca.blendingEnabled = YES;
+            
+            ca.pixelFormat = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
+
+            // TODO(sgc): confirm we never need blending for render passes
+            ca.blendingEnabled = NO;
             ca.sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
             ca.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
             ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
@@ -848,19 +867,18 @@ static vertex_t vertex_bytes[] = {
 
             psd.sampleCount = 1;
             psd.vertexDescriptor = vd;
-            NSString *vs_src = [NSString stringWithUTF8String:shader->pass[i].source.string.vertex];
-            NSLog(@"vertex function:\n%@", vs_src);
-            NSString *fs_src = [NSString stringWithUTF8String:shader->pass[i].source.string.fragment];
-            NSLog(@"fragment function:\n%@", fs_src);
 
             NSError *err;
             id<MTLLibrary> lib = [_context.device newLibraryWithSource:vs_src options:nil error:&err];
             if (err != nil) {
                if (lib == nil) {
+                  save_msl = true;
                   RARCH_ERR("Metal]: unable to compile vertex shader: %s\n", err.localizedDescription.UTF8String);
                   return NO;
                }
+#if DEBUG
                RARCH_WARN("[Metal]: warnings compiling vertex shader: %s\n", err.localizedDescription.UTF8String);
+#endif
             }
 
             psd.vertexFunction = [lib newFunctionWithName:@"main0"];
@@ -868,16 +886,20 @@ static vertex_t vertex_bytes[] = {
             lib = [_context.device newLibraryWithSource:fs_src options:nil error:&err];
             if (err != nil) {
                if (lib == nil) {
+                  save_msl = true;
                   RARCH_ERR("Metal]: unable to compile fragment shader: %s\n", err.localizedDescription.UTF8String);
                   return NO;
                }
+#if DEBUG
                RARCH_WARN("[Metal]: warnings compiling fragment shader: %s\n", err.localizedDescription.UTF8String);
+#endif
             }
             psd.fragmentFunction = [lib newFunctionWithName:@"main0"];
 
             STRUCT_ASSIGN(_engine.pass[i]._state,
                           [_context.device newRenderPipelineStateWithDescriptor:psd error:&err]);
             if (err != nil) {
+               save_msl = true;
                RARCH_ERR("error creating pipeline state: %s", err.localizedDescription.UTF8String);
                return NO;
             }
@@ -892,6 +914,29 @@ static vertex_t vertex_bytes[] = {
                STRUCT_ASSIGN(_engine.pass[i].buffers[j], buf);
             }
          } @finally {
+            if (save_msl) {
+               RARCH_LOG("[Metal]: saving metal shader files\n");
+
+               NSError *err = nil;
+               NSString *basePath = [[NSString stringWithUTF8String:shader->pass[i].source.path] stringByDeletingPathExtension];
+               [vs_src writeToFile:[basePath stringByAppendingPathExtension:@"vs.metal"]
+                        atomically:NO
+                          encoding:NSStringEncodingConversionAllowLossy
+                             error:&err];
+               if (err != nil) {
+                  RARCH_ERR("[Metal]: unable to save vertex shader source: %s\n", err.localizedDescription.UTF8String);
+               }
+               
+               err = nil;
+               [fs_src writeToFile:[basePath stringByAppendingPathExtension:@"fs.metal"]
+                        atomically:NO
+                          encoding:NSStringEncodingConversionAllowLossy
+                             error:&err];
+               if (err != nil) {
+                  RARCH_ERR("[Metal]: unable to save fragment shader source: %s\n", err.localizedDescription.UTF8String);
+               }
+            }
+
             free(shader->pass[i].source.string.vertex);
             free(shader->pass[i].source.string.fragment);
 
@@ -945,3 +990,67 @@ static vertex_t vertex_bytes[] = {
 }
 
 @end
+
+MTLPixelFormat glslang_format_to_metal(glslang_format fmt)
+{
+#undef FMT2
+#define FMT2(x,y) case SLANG_FORMAT_##x: return MTLPixelFormat##y
+   
+   switch (fmt)
+   {
+         FMT2(R8_UNORM, R8Unorm);
+         FMT2(R8_SINT, R8Sint);
+         FMT2(R8_UINT, R8Uint);
+         FMT2(R8G8_UNORM, RG8Unorm);
+         FMT2(R8G8_SINT, RG8Sint);
+         FMT2(R8G8_UINT, RG8Uint);
+         FMT2(R8G8B8A8_UNORM, RGBA8Unorm);
+         FMT2(R8G8B8A8_SINT, RGBA8Sint);
+         FMT2(R8G8B8A8_UINT, RGBA8Uint);
+         FMT2(R8G8B8A8_SRGB, RGBA8Unorm_sRGB);
+         
+         FMT2(A2B10G10R10_UNORM_PACK32, RGB10A2Unorm);
+         FMT2(A2B10G10R10_UINT_PACK32, RGB10A2Uint);
+         
+         FMT2(R16_UINT, R16Uint);
+         FMT2(R16_SINT, R16Sint);
+         FMT2(R16_SFLOAT, R16Float);
+         FMT2(R16G16_UINT, RG16Uint);
+         FMT2(R16G16_SINT, RG16Sint);
+         FMT2(R16G16_SFLOAT, RG16Float);
+         FMT2(R16G16B16A16_UINT, RGBA16Uint);
+         FMT2(R16G16B16A16_SINT, RGBA16Sint);
+         FMT2(R16G16B16A16_SFLOAT, RGBA16Float);
+         
+         FMT2(R32_UINT, R32Uint);
+         FMT2(R32_SINT, R32Sint);
+         FMT2(R32_SFLOAT, R32Float);
+         FMT2(R32G32_UINT, RG32Uint);
+         FMT2(R32G32_SINT, RG32Sint);
+         FMT2(R32G32_SFLOAT, RG32Float);
+         FMT2(R32G32B32A32_UINT, RGBA32Uint);
+         FMT2(R32G32B32A32_SINT, RGBA32Sint);
+         FMT2(R32G32B32A32_SFLOAT, RGBA32Float);
+         
+      case SLANG_FORMAT_UNKNOWN:
+      default:
+         break;
+   }
+#undef FMT2
+   return MTLPixelFormatInvalid;
+}
+
+MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt)
+{
+   switch (fmt)
+   {
+      case MTLPixelFormatRGBA8Unorm:
+         return MTLPixelFormatBGRA8Unorm;
+         
+      case MTLPixelFormatRGBA8Unorm_sRGB:
+         return MTLPixelFormatBGRA8Unorm_sRGB;
+         
+      default:
+         return fmt;
+   }
+}

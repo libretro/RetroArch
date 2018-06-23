@@ -13,11 +13,12 @@
 @property (readwrite) BOOL visible;
 @property (readwrite) CGRect frame;
 @property (readwrite) CGSize size;
+@property (readonly) ViewDrawState drawState;
 
 - (instancetype)initWithDescriptor:(ViewDescriptor *)td renderer:(Renderer *)renderer;
 
-- (void)prepareFrame:(Context *)ctx;
-- (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch;
+- (void)drawWithContext:(Context *)ctx;
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce;
+- (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch;
 
 @end
