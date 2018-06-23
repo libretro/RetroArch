@@ -19,9 +19,6 @@
 #include "cocoa_common.h"
 #ifdef HAVE_COCOA
 #include "../ui_cocoa.h"
-#ifdef HAVE_VULKAN
-#import <QuartzCore/CAMetalLayer.h>
-#endif
 #endif
 
 #include <retro_assert.h>
@@ -45,6 +42,21 @@
 
 #include "../../../location/location_driver.h"
 #include "../../../camera/camera_driver.h"
+
+#ifdef HAVE_METAL
+@implementation MetalView
+
+- (void)keyDown:(NSEvent*)theEvent
+{
+}
+
+/* Stop the annoying sound when pressing a key. */
+- (BOOL)acceptsFirstResponder
+{
+   return YES;
+}
+@end
+#endif
 
 static CocoaView* g_instance;
 
@@ -96,15 +108,13 @@ void *glkitview_init(void);
 }
 
 #if defined(HAVE_COCOA)
+- (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window {
+   return YES;
+}
+
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];
-
-   if (apple_platform.delegate != nil)
-   {
-      [apple_platform.delegate viewDidUpdateFrame:frameRect];
-   }
-
    cocoagl_gfx_ctx_update();
 }
 

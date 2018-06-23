@@ -44,6 +44,22 @@
 
 /* Begin PBXFileReference section */
 		05269A6120ABF20500C29F1E /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		0538874D20DDD5C600769232 /* dxgi_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dxgi_common.c; sourceTree = "<group>"; };
+		0538874E20DDD5C600769232 /* dxgi_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dxgi_common.h; sourceTree = "<group>"; };
+		0538875120DE11D200769232 /* retro_common_api.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_common_api.h; sourceTree = "<group>"; };
+		0538875220DE11D200769232 /* retro_environment.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_environment.h; sourceTree = "<group>"; };
+		0538875320DE11D200769232 /* retro_timers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_timers.h; sourceTree = "<group>"; };
+		0538875420DE11D200769232 /* retro_dirent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_dirent.h; sourceTree = "<group>"; };
+		0538875520DE11D300769232 /* retro_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_common.h; sourceTree = "<group>"; };
+		0538875620DE11D300769232 /* retro_inline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_inline.h; sourceTree = "<group>"; };
+		0538875720DE11D300769232 /* retro_assert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_assert.h; sourceTree = "<group>"; };
+		0538875820DE11D300769232 /* retro_endianness.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_endianness.h; sourceTree = "<group>"; };
+		0538875920DE11D300769232 /* libretro.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libretro.h; sourceTree = "<group>"; };
+		055312AB20DE130A00C4D7F4 /* gl_capabilities.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl_capabilities.c; sourceTree = "<group>"; };
+		055312AD20DE130A00C4D7F4 /* scaler_int.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scaler_int.c; sourceTree = "<group>"; };
+		055312AE20DE130A00C4D7F4 /* pixconv.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pixconv.c; sourceTree = "<group>"; };
+		055312AF20DE130A00C4D7F4 /* scaler_filter.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scaler_filter.c; sourceTree = "<group>"; };
+		055312B020DE130A00C4D7F4 /* scaler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scaler.c; sourceTree = "<group>"; };
 		05A8C51B20DB72F000FF7857 /* menu_shader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_shader.h; sourceTree = "<group>"; };
 		05A8C51D20DB72F000FF7857 /* menu_cbs_get_value.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs_get_value.c; sourceTree = "<group>"; };
 		05A8C51E20DB72F000FF7857 /* menu_cbs_sublabel.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs_sublabel.c; sourceTree = "<group>"; };
@@ -169,15 +185,7 @@
 		05A8C5C020DB72F000FF7857 /* ui_cocoa_window.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_window.m; sourceTree = "<group>"; };
 		05A8C5C120DB72F000FF7857 /* ui_cocoa_application.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_application.m; sourceTree = "<group>"; };
 		05A8C5C220DB72F000FF7857 /* cocoa_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cocoa_common.h; sourceTree = "<group>"; };
-		05A8C5C420DB72F000FF7857 /* ui_null_browser_window.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ui_null_browser_window.c; sourceTree = "<group>"; };
-		05A8C5C520DB72F000FF7857 /* ui_null_msg_window.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ui_null_msg_window.c; sourceTree = "<group>"; };
-		05A8C5C620DB72F000FF7857 /* ui_null_application.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ui_null_application.c; sourceTree = "<group>"; };
-		05A8C5C720DB72F000FF7857 /* ui_null_window.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ui_null_window.c; sourceTree = "<group>"; };
 		05A8C5C820DB72F000FF7857 /* ui_qt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ui_qt.h; sourceTree = "<group>"; };
-		05A8C5CA20DB72F000FF7857 /* ui_win32_application.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ui_win32_application.c; sourceTree = "<group>"; };
-		05A8C5CB20DB72F000FF7857 /* ui_win32_msg_window.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ui_win32_msg_window.c; sourceTree = "<group>"; };
-		05A8C5CC20DB72F000FF7857 /* ui_win32_browser_window.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ui_win32_browser_window.c; sourceTree = "<group>"; };
-		05A8C5CD20DB72F000FF7857 /* ui_win32_window.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ui_win32_window.c; sourceTree = "<group>"; };
 		05A8C5CE20DB72F000FF7857 /* ui_cocoa.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ui_cocoa.h; sourceTree = "<group>"; };
 		05A8C5CF20DB72F000FF7857 /* ui_cocoatouch.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ui_cocoatouch.m; sourceTree = "<group>"; };
 		05A8C5D020DB72F000FF7857 /* ui_qt.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ui_qt.cpp; sourceTree = "<group>"; };
@@ -389,9 +397,56 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0538874F20DE117B00769232 /* libretro-common */ = {
+			isa = PBXGroup;
+			children = (
+				0538875020DE11A800769232 /* include */,
+				055312AA20DE130A00C4D7F4 /* gfx */,
+			);
+			name = "libretro-common";
+			path = "../../libretro-common";
+			sourceTree = "<group>";
+		};
+		0538875020DE11A800769232 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				0538875920DE11D300769232 /* libretro.h */,
+				0538875720DE11D300769232 /* retro_assert.h */,
+				0538875120DE11D200769232 /* retro_common_api.h */,
+				0538875520DE11D300769232 /* retro_common.h */,
+				0538875420DE11D200769232 /* retro_dirent.h */,
+				0538875820DE11D300769232 /* retro_endianness.h */,
+				0538875220DE11D200769232 /* retro_environment.h */,
+				0538875620DE11D300769232 /* retro_inline.h */,
+				0538875320DE11D200769232 /* retro_timers.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		055312AA20DE130A00C4D7F4 /* gfx */ = {
+			isa = PBXGroup;
+			children = (
+				055312AC20DE130A00C4D7F4 /* scaler */,
+				055312AB20DE130A00C4D7F4 /* gl_capabilities.c */,
+			);
+			path = gfx;
+			sourceTree = "<group>";
+		};
+		055312AC20DE130A00C4D7F4 /* scaler */ = {
+			isa = PBXGroup;
+			children = (
+				055312AD20DE130A00C4D7F4 /* scaler_int.c */,
+				055312AE20DE130A00C4D7F4 /* pixconv.c */,
+				055312AF20DE130A00C4D7F4 /* scaler_filter.c */,
+				055312B020DE130A00C4D7F4 /* scaler.c */,
+			);
+			path = scaler;
+			sourceTree = "<group>";
+		};
 		05A8C51920DB72C200FF7857 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				0538874F20DE117B00769232 /* libretro-common */,
 				05A8C59520DB72F000FF7857 /* frontend */,
 				05A8C5D420DB72F000FF7857 /* gfx */,
 				05A8C57120DB72F000FF7857 /* intl */,
@@ -602,8 +657,6 @@
 			isa = PBXGroup;
 			children = (
 				05A8C5BB20DB72F000FF7857 /* cocoa */,
-				05A8C5C320DB72F000FF7857 /* null */,
-				05A8C5C920DB72F000FF7857 /* win32 */,
 				05A8C5CE20DB72F000FF7857 /* ui_cocoa.h */,
 				05A8C5BA20DB72F000FF7857 /* ui_cocoa.m */,
 				05A8C5CF20DB72F000FF7857 /* ui_cocoatouch.m */,
@@ -620,37 +673,15 @@
 		05A8C5BB20DB72F000FF7857 /* cocoa */ = {
 			isa = PBXGroup;
 			children = (
-				05A8C5BC20DB72F000FF7857 /* ui_cocoa_msg_window.m */,
+				05A8C5C220DB72F000FF7857 /* cocoa_common.h */,
 				05A8C5BD20DB72F000FF7857 /* cocoa_common.m */,
 				05A8C5BE20DB72F000FF7857 /* cocoatouch_menu.m */,
-				05A8C5BF20DB72F000FF7857 /* ui_cocoa_browser_window.m */,
-				05A8C5C020DB72F000FF7857 /* ui_cocoa_window.m */,
 				05A8C5C120DB72F000FF7857 /* ui_cocoa_application.m */,
-				05A8C5C220DB72F000FF7857 /* cocoa_common.h */,
+				05A8C5BF20DB72F000FF7857 /* ui_cocoa_browser_window.m */,
+				05A8C5BC20DB72F000FF7857 /* ui_cocoa_msg_window.m */,
+				05A8C5C020DB72F000FF7857 /* ui_cocoa_window.m */,
 			);
 			path = cocoa;
-			sourceTree = "<group>";
-		};
-		05A8C5C320DB72F000FF7857 /* null */ = {
-			isa = PBXGroup;
-			children = (
-				05A8C5C420DB72F000FF7857 /* ui_null_browser_window.c */,
-				05A8C5C520DB72F000FF7857 /* ui_null_msg_window.c */,
-				05A8C5C620DB72F000FF7857 /* ui_null_application.c */,
-				05A8C5C720DB72F000FF7857 /* ui_null_window.c */,
-			);
-			path = null;
-			sourceTree = "<group>";
-		};
-		05A8C5C920DB72F000FF7857 /* win32 */ = {
-			isa = PBXGroup;
-			children = (
-				05A8C5CA20DB72F000FF7857 /* ui_win32_application.c */,
-				05A8C5CB20DB72F000FF7857 /* ui_win32_msg_window.c */,
-				05A8C5CC20DB72F000FF7857 /* ui_win32_browser_window.c */,
-				05A8C5CD20DB72F000FF7857 /* ui_win32_window.c */,
-			);
-			path = win32;
 			sourceTree = "<group>";
 		};
 		05A8C5D420DB72F000FF7857 /* gfx */ = {
@@ -810,6 +841,8 @@
 				05A8C77020DB72F100FF7857 /* d3d_common.h */,
 				05A8C77720DB72F100FF7857 /* d3d10_common.c */,
 				05A8C76320DB72F100FF7857 /* d3d10_common.h */,
+				0538874D20DDD5C600769232 /* dxgi_common.c */,
+				0538874E20DDD5C600769232 /* dxgi_common.h */,
 				05A8C75D20DB72F100FF7857 /* gl_common.c */,
 				05A8C76F20DB72F100FF7857 /* gl_common.h */,
 				05A8C74420DB72F100FF7857 /* metal_common.h */,
@@ -823,26 +856,26 @@
 		05A8C74520DB72F100FF7857 /* metal */ = {
 			isa = PBXGroup;
 			children = (
+				05A8C74B20DB72F100FF7857 /* Context.h */,
+				05A8C75320DB72F100FF7857 /* Context.m */,
+				05A8C75720DB72F100FF7857 /* Filter.h */,
+				05A8C75020DB72F100FF7857 /* Filter.m */,
+				05A8C74820DB72F100FF7857 /* metal_common.h */,
 				05A8C74620DB72F100FF7857 /* MetalRenderer.h */,
 				05A8C74720DB72F100FF7857 /* PixelConverter.h */,
-				05A8C74820DB72F100FF7857 /* metal_common.h */,
-				05A8C74920DB72F100FF7857 /* TexturedView.h */,
-				05A8C74A20DB72F100FF7857 /* Renderer.h */,
-				05A8C74B20DB72F100FF7857 /* Context.h */,
-				05A8C74C20DB72F100FF7857 /* RendererCommon.h */,
-				05A8C74D20DB72F100FF7857 /* PixelConverter+private.h */,
-				05A8C74E20DB72F100FF7857 /* Shaders.metal */,
-				05A8C74F20DB72F100FF7857 /* View.h */,
-				05A8C75020DB72F100FF7857 /* Filter.m */,
-				05A8C75120DB72F100FF7857 /* ShaderTypes.h */,
 				05A8C75220DB72F100FF7857 /* PixelConverter.m */,
-				05A8C75320DB72F100FF7857 /* Context.m */,
-				05A8C75420DB72F100FF7857 /* RendererCommon.m */,
-				05A8C75520DB72F100FF7857 /* Renderer.m */,
-				05A8C75620DB72F100FF7857 /* TexturedView.m */,
-				05A8C75720DB72F100FF7857 /* Filter.h */,
-				05A8C75820DB72F100FF7857 /* View.m */,
 				05A8C75920DB72F100FF7857 /* PixelConverter.metal */,
+				05A8C74D20DB72F100FF7857 /* PixelConverter+private.h */,
+				05A8C74A20DB72F100FF7857 /* Renderer.h */,
+				05A8C75520DB72F100FF7857 /* Renderer.m */,
+				05A8C74C20DB72F100FF7857 /* RendererCommon.h */,
+				05A8C75420DB72F100FF7857 /* RendererCommon.m */,
+				05A8C74E20DB72F100FF7857 /* Shaders.metal */,
+				05A8C75120DB72F100FF7857 /* ShaderTypes.h */,
+				05A8C74920DB72F100FF7857 /* TexturedView.h */,
+				05A8C75620DB72F100FF7857 /* TexturedView.m */,
+				05A8C74F20DB72F100FF7857 /* View.h */,
+				05A8C75820DB72F100FF7857 /* View.m */,
 			);
 			path = metal;
 			sourceTree = "<group>";

@@ -53,7 +53,6 @@ id<ApplePlatform> apple_platform;
    NSWindow* _window;
    apple_view_type_t _vt;
    NSView* _renderView;
-   id<PlatformDelegate> _delegate;
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
@@ -259,9 +258,9 @@ static char** waiting_argv;
       case APPLE_VIEW_TYPE_METAL:
 #if defined(HAVE_METAL) || defined(HAVE_VULKAN)
       {
-         NSView *v = [CocoaView get];
-         v.wantsLayer = YES;
-         v.layer = CAMetalLayer.layer;
+         MetalView *v = [MetalView new];
+         v.paused = YES;
+         v.enableSetNeedsDisplay = NO;
          _renderView = v;
       }
 #endif
@@ -280,7 +279,7 @@ static char** waiting_argv;
    
    _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
    _renderView.frame = self.window.contentView.bounds;
-   
+
    [self.window.contentView addSubview:_renderView];
    [self.window makeFirstResponder:_renderView];
 }
@@ -291,18 +290,6 @@ static char** waiting_argv;
 
 - (id)renderView {
    return _renderView;
-}
-
-- (id)delegate {
-   return _delegate;
-}
-
-- (void)setDelegate:(id<PlatformDelegate>)delegate {
-   _delegate = delegate;
-}
-
-- (id)viewHandle {
-   return nil;
 }
 
 - (bool)hasFocus {

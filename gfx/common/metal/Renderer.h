@@ -12,7 +12,6 @@
 #import "Context.h"
 #import "PixelConverter.h"
 
-@class ViewDescriptor;
 @protocol View;
 
 @interface Renderer : NSObject

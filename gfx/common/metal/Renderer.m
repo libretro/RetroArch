@@ -113,9 +113,7 @@
 
    {
       MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
-      // Cornflower Blue #58BAF9
-      //rpd.colorAttachments[0].clearColor = MTLClearColorMake(0x58 / 255.0, 0xba / 255.0, 0xf9 / 255.0, 1.0);
-      rpd.colorAttachments[0].loadAction = MTLLoadActionLoad;
+      rpd.colorAttachments[0].loadAction = MTLLoadActionDontCare;
       rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
       _t_rpd = rpd;
    }
@@ -163,49 +161,60 @@
 
    for (id<View> v in _views) {
       if (!v.visible) continue;
-      if ([v respondsToSelector:@selector(prepareFrame:)]) {
-         [v prepareFrame:_context];
+      if ([v respondsToSelector:@selector(drawWithContext:)]) {
+         [v drawWithContext:_context];
       }
    }
-
-   id<CAMetalDrawable> drawable = _context.nextDrawable;
-   _t_rpd.colorAttachments[0].texture = drawable.texture;
-
-   id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:_t_rpd];
-   [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
-
+   
+   BOOL pendingDraws = NO;
    for (id<View> v in _views) {
-      if (!v.visible ||
-          ![v respondsToSelector:@selector(drawWithEncoder:)]) {
-         continue;
+      if (v.visible && (v.drawState & ViewDrawStateEncoder) != 0) {
+         pendingDraws = YES;
+         break;
       }
-
-      // set view state
-      if (v.format == RPixelFormatBGRX8Unorm) {
-         [rce setRenderPipelineState:_t_pipelineStateNoAlpha];
-      }
-      else {
-         [rce setRenderPipelineState:_t_pipelineState];
-      }
-
-      if (v.filter == RTextureFilterNearest) {
-         [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
-      }
-      else {
-         [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
-      }
-
-      [v drawWithEncoder:rce];
    }
-
-   [rce endEncoding];
+   
+   if (pendingDraws) {
+      id<CAMetalDrawable> drawable = _context.nextDrawable;
+      _t_rpd.colorAttachments[0].texture = drawable.texture;
+      
+      id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:_t_rpd];
+      [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
+      
+      for (id<View> v in _views) {
+         if (!v.visible ||
+             ![v respondsToSelector:@selector(drawWithEncoder:)] ||
+             (v.drawState & ViewDrawStateEncoder) == 0) {
+            continue;
+         }
+         
+         // set view state
+         if (v.format == RPixelFormatBGRX8Unorm || v.format == RPixelFormatB5G6R5Unorm) {
+            [rce setRenderPipelineState:_t_pipelineStateNoAlpha];
+         }
+         else {
+            [rce setRenderPipelineState:_t_pipelineState];
+         }
+         
+         if (v.filter == RTextureFilterNearest) {
+            [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
+         }
+         else {
+            [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
+         }
+         
+         [v drawWithEncoder:rce];
+      }
+      
+      [rce endEncoding];
+   }
 
    __block dispatch_semaphore_t inflight = _inflightSemaphore;
    [cb addCompletedHandler:^(id<MTLCommandBuffer> _) {
       dispatch_semaphore_signal(inflight);
    }];
 
-   [cb presentDrawable:drawable];
+   [cb presentDrawable:_context.nextDrawable];
    [_context end];
 }
 

@@ -11,33 +11,34 @@
 
 #import <Foundation/Foundation.h>
 
+// TODO(sgc): implement triple buffering
 /*! @brief maximum inflight frames */
-#define MAX_INFLIGHT 3
+#define MAX_INFLIGHT 1
 
 #pragma mark - Pixel Formats
 
 typedef NS_ENUM(NSUInteger, RPixelFormat) {
-    
-    RPixelFormatInvalid,
-    
-    /* 16-bit formats */
-    RPixelFormatBGRA4Unorm,
-    RPixelFormatB5G6R5Unorm,
-    
-    RPixelFormatBGRA8Unorm,
-    RPixelFormatBGRX8Unorm,
-    
-    RPixelFormatCount,
+   
+   RPixelFormatInvalid,
+   
+   /* 16-bit formats */
+   RPixelFormatBGRA4Unorm,
+   RPixelFormatB5G6R5Unorm,
+   
+   RPixelFormatBGRA8Unorm,
+   RPixelFormatBGRX8Unorm, // RetroArch XRGB
+   
+   RPixelFormatCount,
 };
 
 extern NSUInteger RPixelFormatToBPP(RPixelFormat format);
 extern NSString *NSStringFromRPixelFormat(RPixelFormat format);
 
 typedef NS_ENUM(NSUInteger, RTextureFilter) {
-    RTextureFilterNearest,
-    RTextureFilterLinear,
-    
-    RTextureFilterCount,
+   RTextureFilterNearest,
+   RTextureFilterLinear,
+   
+   RTextureFilterCount,
 };
 
 #endif /* RendererCommon_h */

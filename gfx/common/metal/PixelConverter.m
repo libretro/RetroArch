@@ -21,10 +21,10 @@
     {
         _context = c;
         NSError *err = nil;
-        _filters[RPixelFormatBGRA4Unorm]  = [Filter newFilterWithFunctionName:@"convert_abgr4444_to_bgra8888"
+        _filters[RPixelFormatBGRA4Unorm]  = [Filter newFilterWithFunctionName:@"convert_bgra4444_to_bgra8888"
                                                                        device:c.device library:c.library
                                                                         error:&err];
-        _filters[RPixelFormatB5G6R5Unorm] = [Filter newFilterWithFunctionName:@"convert_bgr565_to_bgra8888"
+        _filters[RPixelFormatB5G6R5Unorm] = [Filter newFilterWithFunctionName:@"convert_rgb565_to_bgra8888"
                                                                        device:c.device
                                                                       library:c.library
                                                                         error:&err];

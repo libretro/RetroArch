@@ -35,6 +35,11 @@
       _filter = d.filter;
       _context = r.context;
       _visible = YES;
+      if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm) {
+         _drawState = ViewDrawStateEncoder;
+      } else {
+         _drawState = ViewDrawStateAll;
+      }
       self.size = d.size;
       self.frame = CGRectMake(0, 0, 1, 1);
    }
@@ -113,7 +118,7 @@
    _pixelsDirty = NO;
 }
 
-- (void)prepareFrame:(Context *)ctx {
+- (void)drawWithContext:(Context *)ctx {
    [self _convertFormat];
 }
 
