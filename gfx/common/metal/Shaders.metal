@@ -53,3 +53,22 @@ fragment float4 basic_fragment_ndc_tex(ColorInOut in       [[stage_in]],
     half4 colorSample = tex.sample(samp, in.texCoord.xy);
     return float4(colorSample);
 }
+
+#pragma mark - functions for rendering fonts
+
+vertex FontFragmentIn font_vertex(const FontVertex in [[ stage_in ]], const device Uniforms &uniforms [[ buffer(BufferIndexUniforms) ]])
+{
+    FontFragmentIn out;
+    out.position = uniforms.projectionMatrix * float4(in.position, 0, 1);
+    out.texCoord = in.texCoord;
+    out.color    = in.color;
+    return out;
+}
+
+fragment float4 font_fragment(FontFragmentIn  in  [[ stage_in ]],
+                              texture2d<half> tex [[ texture(TextureIndexColor) ]],
+                              sampler samp        [[ sampler(SamplerIndexDraw) ]])
+{
+    half4 colorSample = tex.sample(samp, in.texCoord.xy);
+    return float4(in.color.rgb, in.color.a * colorSample.r);
+}

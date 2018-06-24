@@ -65,12 +65,14 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 @property (readonly) MetalMenu*        menu;
 @property (readwrite) uint64_t         frameCount;
 @property (readonly) FrameView*        frameView;
+@property (readonly) Context*          context;
 
 - (instancetype)init NS_DESIGNATED_INITIALIZER;
 
 - (void)setVideo:(const video_info_t *)video;
 
 - (void)beginFrame;
+- (void)drawViews;
 - (void)endFrame;
 
 /*! @brief setNeedsResize triggers a display resize */

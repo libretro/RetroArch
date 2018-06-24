@@ -41,6 +41,7 @@ typedef NS_ENUM(NSInteger, VertexAttribute)
 {
     VertexAttributePosition = 0,
     VertexAttributeTexcoord = 1,
+    VertexAttributeColor    = 2,
 };
 
 typedef NS_ENUM(NSInteger, TextureIndex)
@@ -69,6 +70,18 @@ typedef struct
 {
     matrix_float4x4 projectionMatrix;
 } Uniforms;
+
+typedef struct {
+   vector_float2 position  METAL_ATTRIBUTE(VertexAttributePosition);
+   vector_float2 texCoord  METAL_ATTRIBUTE(VertexAttributeTexcoord);
+   vector_float4 color     METAL_ATTRIBUTE(VertexAttributeColor);
+} FontVertex;
+
+typedef struct {
+   vector_float4 position METAL_POSITION;
+   vector_float2 texCoord;
+   vector_float4 color;
+} FontFragmentIn;
 
 #endif /* ShaderTypes_h */
 

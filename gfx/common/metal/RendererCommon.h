@@ -41,4 +41,6 @@ typedef NS_ENUM(NSUInteger, RTextureFilter) {
    RTextureFilterCount,
 };
 
+extern matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bottom);
+
 #endif /* RendererCommon_h */
