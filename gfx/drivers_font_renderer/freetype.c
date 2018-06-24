@@ -270,7 +270,7 @@ error:
  * but should hopefully work ... */
 
 static const char *font_paths[] = {
-   "assets://pkg/DejaVuSansMono.ttf",
+   "assets://pkg/osd-font.ttf",
 #if defined(_WIN32)
    "C:\\Windows\\Fonts\\consola.ttf",
    "C:\\Windows\\Fonts\\verdana.ttf",
@@ -304,9 +304,9 @@ static const char *font_renderer_ft_get_default_font(void)
    for (i = 0; i < ARRAY_SIZE(font_paths); i++)
    {
       /* Check if we are getting the font from the assets directory. */
-      if (string_is_equal(font_paths[i], "assets://pkg/DejaVuSansMono.ttf"))
+      if (string_is_equal(font_paths[i], "assets://pkg/osd-font.ttf"))
       {
-         fill_pathname_join(asset_path, settings->paths.directory_assets, "pkg/DejaVuSansMono.ttf", PATH_MAX_LENGTH);
+         fill_pathname_join(asset_path, settings->paths.directory_assets, "pkg/osd-font.ttf", PATH_MAX_LENGTH);
          font_paths[i] = asset_path;
       }
 
