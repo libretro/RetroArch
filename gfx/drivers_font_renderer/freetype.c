@@ -34,6 +34,10 @@
 #include FT_FREETYPE_H
 #include "../font_driver.h"
 
+#ifdef HAVE_MENU
+const char* xmb_theme_ident(void);
+#endif
+
 #define FT_ATLAS_ROWS 16
 #define FT_ATLAS_COLS 16
 #define FT_ATLAS_SIZE (FT_ATLAS_ROWS * FT_ATLAS_COLS)
@@ -270,6 +274,10 @@ error:
  * but should hopefully work ... */
 
 static const char *font_paths[] = {
+#ifdef HAVE_MENU
+   /* The current theme's font.ttf file. */
+   "assets://xmb/@currenttheme/font.ttf",
+#endif
    /* Assets directory OSD Font, @see font_renderer_ft_get_default_font() */
    "assets://pkg/osd-font.ttf",
 #if defined(_WIN32)
@@ -310,6 +318,16 @@ static const char *font_renderer_ft_get_default_font(void)
          fill_pathname_join(asset_path, settings->paths.directory_assets, "pkg/osd-font.ttf", PATH_MAX_LENGTH);
          font_paths[i] = asset_path;
       }
+
+#ifdef HAVE_MENU
+      /* Allow loading the current XMB theme's font.ttf file. */
+      if (string_is_equal(font_paths[i], "assets://xmb/@currenttheme/font.ttf")) {
+         fill_pathname_join(asset_path, settings->paths.directory_assets, "xmb", PATH_MAX_LENGTH);
+         fill_pathname_join(asset_path, asset_path, xmb_theme_ident(), PATH_MAX_LENGTH);
+         fill_pathname_join(asset_path, asset_path, "font.ttf", PATH_MAX_LENGTH);
+         font_paths[i] = asset_path;
+      }
+#endif
 
       if (filestream_exists(font_paths[i]))
          return font_paths[i];
