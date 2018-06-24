@@ -270,6 +270,7 @@ error:
  * but should hopefully work ... */
 
 static const char *font_paths[] = {
+   /* Assets directory OSD Font, @see font_renderer_ft_get_default_font() */
    "assets://pkg/osd-font.ttf",
 #if defined(_WIN32)
    "C:\\Windows\\Fonts\\consola.ttf",
