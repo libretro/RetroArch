@@ -42,7 +42,7 @@
 
    // other state
    Uniforms _uniforms;
-   BOOL _begin;
+   BOOL _begin, _end;
 }
 
 - (instancetype)initWithDevice:(id<MTLDevice>)device layer:(CAMetalLayer *)layer
@@ -57,6 +57,7 @@
 
       _conv = [[PixelConverter alloc] initWithContext:_context];
       _begin = NO;
+      _end   = NO;
    }
 
    return self;
@@ -137,78 +138,19 @@
 
 - (void)beginFrame
 {
-   assert(!_begin);
+   assert(!_begin && !_end);
    _begin = YES;
    dispatch_semaphore_wait(_inflightSemaphore, DISPATCH_TIME_FOREVER);
    [_context begin];
    [self _updateUniforms];
 }
 
-- (void)drawFrame
+- (void)endFrame
 {
-   @autoreleasepool {
-      [self _render];
-   }
-}
-
-- (void)_render
-{
-   assert(_begin);
-   _begin = NO;
-
+   assert(!_begin && _end);
+   _end = NO;
+   
    id<MTLCommandBuffer> cb = _context.commandBuffer;
-   cb.label = @"renderer cb";
-
-   for (id<View> v in _views) {
-      if (!v.visible) continue;
-      if ([v respondsToSelector:@selector(drawWithContext:)]) {
-         [v drawWithContext:_context];
-      }
-   }
-   
-   BOOL pendingDraws = NO;
-   for (id<View> v in _views) {
-      if (v.visible && (v.drawState & ViewDrawStateEncoder) != 0) {
-         pendingDraws = YES;
-         break;
-      }
-   }
-   
-   if (pendingDraws) {
-      id<CAMetalDrawable> drawable = _context.nextDrawable;
-      _t_rpd.colorAttachments[0].texture = drawable.texture;
-      
-      id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:_t_rpd];
-      [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
-      
-      for (id<View> v in _views) {
-         if (!v.visible ||
-             ![v respondsToSelector:@selector(drawWithEncoder:)] ||
-             (v.drawState & ViewDrawStateEncoder) == 0) {
-            continue;
-         }
-         
-         // set view state
-         if (v.format == RPixelFormatBGRX8Unorm || v.format == RPixelFormatB5G6R5Unorm) {
-            [rce setRenderPipelineState:_t_pipelineStateNoAlpha];
-         }
-         else {
-            [rce setRenderPipelineState:_t_pipelineState];
-         }
-         
-         if (v.filter == RTextureFilterNearest) {
-            [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
-         }
-         else {
-            [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
-         }
-         
-         [v drawWithEncoder:rce];
-      }
-      
-      [rce endEncoding];
-   }
-
    __block dispatch_semaphore_t inflight = _inflightSemaphore;
    [cb addCompletedHandler:^(id<MTLCommandBuffer> _) {
       dispatch_semaphore_signal(inflight);
@@ -216,6 +158,68 @@
 
    [cb presentDrawable:_context.nextDrawable];
    [_context end];
+}
+
+- (void)drawViews
+{
+   @autoreleasepool {
+      assert(_begin && !_end);
+      _begin = NO;
+      _end   = YES;
+      
+      id<MTLCommandBuffer> cb = _context.commandBuffer;
+      cb.label = @"renderer cb";
+      
+      for (id<View> v in _views) {
+         if (!v.visible) continue;
+         if ([v respondsToSelector:@selector(drawWithContext:)]) {
+            [v drawWithContext:_context];
+         }
+      }
+      
+      BOOL pendingDraws = NO;
+      for (id<View> v in _views) {
+         if (v.visible && (v.drawState & ViewDrawStateEncoder) != 0) {
+            pendingDraws = YES;
+            break;
+         }
+      }
+      
+      if (pendingDraws) {
+         id<CAMetalDrawable> drawable = _context.nextDrawable;
+         _t_rpd.colorAttachments[0].texture = drawable.texture;
+         
+         id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:_t_rpd];
+         [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
+         
+         for (id<View> v in _views) {
+            if (!v.visible ||
+                ![v respondsToSelector:@selector(drawWithEncoder:)] ||
+                (v.drawState & ViewDrawStateEncoder) == 0) {
+               continue;
+            }
+            
+            // set view state
+            if (v.format == RPixelFormatBGRX8Unorm || v.format == RPixelFormatB5G6R5Unorm) {
+               [rce setRenderPipelineState:_t_pipelineStateNoAlpha];
+            }
+            else {
+               [rce setRenderPipelineState:_t_pipelineState];
+            }
+            
+            if (v.filter == RTextureFilterNearest) {
+               [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
+            }
+            else {
+               [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
+            }
+            
+            [v drawWithEncoder:rce];
+         }
+         
+         [rce endEncoding];
+      }
+   }
 }
 
 #pragma mark - view APIs
@@ -254,29 +258,6 @@
 - (void)drawableSizeWillChange:(CGSize)size
 {
    _layer.drawableSize = size;
-}
-
-#pragma mark Matrix Math Utilities
-
-extern inline matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bottom)
-{
-   float near = 0;
-   float far = 1;
-
-   float sx = 2 / (right - left);
-   float sy = 2 / (top - bottom);
-   float sz = 1 / (far - near);
-   float tx = (right + left) / (left - right);
-   float ty = (top + bottom) / (bottom - top);
-   float tz = near / (far - near);
-
-   vector_float4 P = {sx, 0, 0, 0};
-   vector_float4 Q = {0, sy, 0, 0};
-   vector_float4 R = {0, 0, sz, 0};
-   vector_float4 S = {tx, ty, tz, 1};
-
-   matrix_float4x4 mat = {P, Q, R, S};
-   return mat;
 }
 
 @end

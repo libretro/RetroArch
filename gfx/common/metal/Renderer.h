@@ -23,7 +23,8 @@
 - (void)drawableSizeWillChange:(CGSize)size;
 
 - (void)beginFrame;
-- (void)drawFrame;
+- (void)drawViews;
+- (void)endFrame;
 
 #pragma mark - view management
 

@@ -73,6 +73,8 @@ static void *metal_init(const video_info_t *video,
 
    *input = NULL;
    *input_data = NULL;
+   
+   font_driver_init_osd((__bridge_retained void *)md, false, video->is_threaded, FONT_DRIVER_RENDER_METAL_API);
 
    return (__bridge_retained void *)md;
 }
@@ -83,20 +85,40 @@ static bool metal_frame(void *data, const void *frame,
                         unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
-   [md beginFrame];
+   @autoreleasepool {
+      [md beginFrame];
 
-   FrameView *v = md.frameView;
-   v.frameCount = frame_count;
-   v.size = CGSizeMake(frame_width, frame_height);
-   [v updateFrame:frame pitch:pitch];
+      FrameView *v = md.frameView;
+      v.frameCount = frame_count;
+      v.size = CGSizeMake(frame_width, frame_height);
+      [v updateFrame:frame pitch:pitch];
 
-#if defined(HAVE_MENU)
-   if (md.menu.enabled) {
-      menu_driver_frame(video_info);
+   #if defined(HAVE_MENU)
+      if (md.menu.enabled) {
+         menu_driver_frame(video_info);
+      }
+   #endif
+      
+      [md drawViews];
+      
+      if (video_info->statistics_show)
+      {
+         struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
+         
+         if (osd_params)
+         {
+            font_driver_render_msg(video_info, NULL, video_info->stat_text,
+                                   (const struct font_params*)&video_info->osd_stat_params);
+         }
+      }
+      
+      if (msg && *msg)
+      {
+         font_driver_render_msg(video_info, NULL, msg, NULL);
+      }
+
+      [md endFrame];
    }
-#endif
-
-   [md endFrame];
 
    return YES;
 }
@@ -148,6 +170,7 @@ static void metal_free(void *data)
 {
    MetalDriver *md = (__bridge_transfer MetalDriver *)data;
    md = nil;
+   font_driver_free_osd();
 }
 
 static void metal_set_viewport(void *data, unsigned viewport_width,

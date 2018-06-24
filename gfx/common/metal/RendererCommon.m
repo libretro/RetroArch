@@ -52,4 +52,23 @@ NSString *NSStringFromRPixelFormat(RPixelFormat format)
     return RPixelStrings[format];
 }
 
-
+matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bottom)
+{
+   float near = 0;
+   float far = 1;
+   
+   float sx = 2 / (right - left);
+   float sy = 2 / (top - bottom);
+   float sz = 1 / (far - near);
+   float tx = (right + left) / (left - right);
+   float ty = (top + bottom) / (bottom - top);
+   float tz = near / (far - near);
+   
+   vector_float4 P = {sx, 0, 0, 0};
+   vector_float4 Q = {0, sy, 0, 0};
+   vector_float4 R = {0, 0, sz, 0};
+   vector_float4 S = {tx, ty, tz, 1};
+   
+   matrix_float4x4 mat = {P, Q, R, S};
+   return mat;
+}

@@ -51,7 +51,6 @@
    FrameView *_frameView;
 
    video_info_t _video;
-   bool resize_chain;
 }
 
 - (instancetype)init
@@ -66,10 +65,15 @@
 
 - (void)dealloc
 {
+   RARCH_LOG("[MetalDriver]: destroyed\n");
    if (_viewport) {
       free(_viewport);
       _viewport = nil;
    }
+}
+
+- (Context *)context {
+   return _renderer.context;
 }
 
 #pragma mark - video
@@ -100,8 +104,6 @@
       [_renderer sendViewToBack:_frameView];
       [_frameView setFilteringIndex:0 smooth:video->smooth];
    }
-
-   resize_chain = YES;
 }
 
 - (void)beginFrame
@@ -111,9 +113,13 @@
    [_renderer beginFrame];
 }
 
+- (void)drawViews {
+   [_renderer drawViews];
+}
+
 - (void)endFrame
 {
-   [_renderer drawFrame];
+   [_renderer endFrame];
 }
 
 - (void)setNeedsResize
@@ -134,27 +140,6 @@
 
 - (void)drawInMTKView:(MTKView *)view {
 
-}
-
-extern inline matrix_float4x4 matrix_proj_ortho1(float left, float right, float top, float bottom)
-{
-   float near = 0;
-   float far = 1;
-
-   float sx = 2 / (right - left);
-   float sy = 2 / (top - bottom);
-   float sz = 1 / (far - near);
-   float tx = (right + left) / (left - right);
-   float ty = (top + bottom) / (bottom - top);
-   float tz = near / (far - near);
-
-   vector_float4 P = {sx, 0, 0, 0};
-   vector_float4 Q = {0, sy, 0, 0};
-   vector_float4 R = {0, 0, sz, 0};
-   vector_float4 S = {tx, ty, tz, 1};
-
-   matrix_float4x4 mat = {P, Q, R, S};
-   return mat;
 }
 
 @end
@@ -295,7 +280,7 @@ typedef struct ALIGN(16)
          _drawState = ViewDrawStateAll;
       }
       _visible = YES;
-      _engine.mvp = matrix_proj_ortho1(0, 1, 0, 1);
+      _engine.mvp = matrix_proj_ortho(0, 1, 0, 1);
       [self _initSamplers];
 
       self.size = d.size;
