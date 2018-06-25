@@ -222,11 +222,10 @@ GLenum rglGetError(void)
  * OpenGL    : 3.2
  * OpenGLES  : 3.0
  */
-void rglGetInteger64v(	GLenum pname,
- 	GLint64 * data)
+void rglGetInteger64v(	GLenum pname, int64_t *data)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
-   glGetInteger64v(pname, data);
+   glGetInteger64v(pname, (GLint64*)data);
 #endif
 }
 
@@ -2425,6 +2424,23 @@ void rglBufferStorage(GLenum target, GLsizeiptr size, const GLvoid *data, GLbitf
 #if defined(HAVE_OPENGL)
    glBufferStorage(target, size, data, flags);
 #endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0
+ * OpenGLES  : 2.0
+ */
+
+void rglUniform2iv(	GLint location,
+ 	GLsizei count,
+ 	const GLint *value)
+{
+#ifdef GLSM_DEBUG
+   log_cb(RETRO_LOG_INFO, "glUniform2iv.\n");
+#endif
+   glUniform2iv(location, count, value);
 }
 
 /*

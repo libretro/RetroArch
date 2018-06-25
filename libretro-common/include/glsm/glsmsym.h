@@ -38,6 +38,7 @@ RETRO_BEGIN_DECLS
 #define glBindSampler               rglBindSampler
 #define glSamplerParameteri         rglSamplerParameteri
 #define glGetBufferSubData          rglGetBufferSubData
+#define glUniform2iv                rglUniform2iv
 #define glUniform2uiv               rglUniform2uiv
 #define glTextureView               rglTextureView
 #define glGetQueryObjectuiv         rglGetQueryObjectuiv
@@ -464,7 +465,10 @@ void rglBindSampler(	GLuint unit,
 void rglGenSamplers(	GLsizei n,
  	GLuint *samplers);
 void rglGetInteger64v(	GLenum pname,
- 	GLint64 * data);
+ 	int64_t * data);
+void rglUniform2iv(	GLint location,
+ 	GLsizei count,
+ 	const GLint *value);
 
 RETRO_END_DECLS
 
