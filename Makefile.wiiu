@@ -118,7 +118,7 @@ endif
    	HAVE_RGUI = 1
    	HAVE_ZLIB = 1
    	HAVE_7ZIP = 1
-	HAVE_BUILTINZLIB = 0
+   	HAVE_BUILTINZLIB = 1
    	HAVE_LIBRETRODB = 1
    	HAVE_ZARCH = 0
    	HAVE_MATERIALUI = 1
@@ -232,7 +232,7 @@ CXXFLAGS = $(CFLAGS) -fno-rtti -fno-exceptions
 
 LDFLAGS  += -Wl,--gc-sections
 
-LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm -lpng -lz
+LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm
 
 ifneq ($(WANT_LIBFAT), 1)
 LIBS += -lfat
