@@ -1399,14 +1399,14 @@ static int cheevos_test_pause_cond_set(const cheevos_condset_t *condset,
 static int cheevos_test_cond_set(const cheevos_condset_t *condset,
       int *dirty_conds, int *reset_conds)
 {
-   if (!condset)
-      return 1; /* important: empty group must evaluate true */
-
-
-   /* the ints below are used for Pause conditions and their dependent AddSource/AddHits. */
    int in_pause              = 0;
    int has_pause             = 0;
    cheevos_cond_t *cond      = NULL;
+
+   if (!condset)
+      return 1; /* important: empty group must evaluate true */
+
+   /* the ints below are used for Pause conditions and their dependent AddSource/AddHits. */
 
    /* this loop needs to go backwards to check AddSource/AddHits */
    cond = condset->conds + condset->count - 1;
