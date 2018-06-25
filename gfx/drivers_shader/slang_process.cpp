@@ -388,8 +388,10 @@ bool slang_process(
       {
          case RARCH_SHADER_HLSL:
          case RARCH_SHADER_CG:
+#ifdef ENABLE_HLSL
             vs_compiler = new CompilerHLSL(output.vertex);
             ps_compiler = new CompilerHLSL(output.fragment);
+#endif
             break;
 
          case RARCH_SHADER_METAL:
