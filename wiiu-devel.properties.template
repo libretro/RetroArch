@@ -1,9 +1,0 @@
-#
-# To use this file:
-# 1. Copy this file to wiiu-devel.properties
-# 2. Fill in the variables below with your IP address and desired
-#    port number.
-#
-
-PC_DEVELOPMENT_TCP_PORT=4405
-WIIU_IP_ADDRESS=
