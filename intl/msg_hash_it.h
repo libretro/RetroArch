@@ -3394,10 +3394,10 @@ MSG_HASH(
       "Abilita o disabilita il supporto Discord. Non funzionerà con la versione del browser, solo con desktop client nativi."
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-      "Power Management")
+      "Gestione dell'alimentazione")
 MSG_HASH(MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-      "Change power management settings.")
+      "Modifica le impostazioni di gestione dell'alimentazione.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
-      "Sustained Performance Mode")
+      "Modalità delle Prestazioni Sostenute")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
-      "mpv support")
+      "supporto mpv ")
