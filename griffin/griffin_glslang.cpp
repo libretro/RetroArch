@@ -1,5 +1,6 @@
 ﻿
 #ifdef WANT_GLSLANG
+
 #ifdef _MSC_VER
 #include <compat/msvc.h>
 #ifdef strtoull
@@ -54,6 +55,7 @@
 #include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp"
 #endif
 
+#if defined(ENABLE_HLSL)
 #include "../deps/glslang/glslang/hlsl/hlslAttributes.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslGrammar.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslOpMap.cpp"
@@ -61,4 +63,6 @@
 #include "../deps/glslang/glslang/hlsl/hlslParseHelper.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslScanContext.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslTokenStream.cpp"
+#endif
+
 #endif
