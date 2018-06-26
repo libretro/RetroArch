@@ -422,6 +422,7 @@ bool slang_process(
          ps_compiler->set_decoration(
                ps_resources.push_constant_buffers[0].id, spv::DecorationBinding, 1);
 
+#ifdef ENABLE_HLSL
       if (dst_type == RARCH_SHADER_HLSL || dst_type == RARCH_SHADER_CG)
       {
          CompilerHLSL::Options options;
@@ -460,7 +461,9 @@ bool slang_process(
          vs_code = vs->compile();
          ps_code = ps->compile(ps_attrib_remap);
       }
-      else if (dst_type == RARCH_SHADER_METAL)
+      else
+#endif
+         if (dst_type == RARCH_SHADER_METAL)
       {
          CompilerMSL::Options options;
          CompilerMSL*         vs = (CompilerMSL*)vs_compiler;

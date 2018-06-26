@@ -3835,26 +3835,17 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 	auto ops = stream(instruction);
 	auto opcode = static_cast<Op>(instruction.op);
 
-#undef BOP
-#undef BOP_CAST
-#undef UOP
-#undef QFOP
-#undef TFOP
-#undef BFOP
-#undef BFOP_CAST
-#undef BFOP
-#undef UFOP
-#define BOP(op) emit_binary_op(ops[0], ops[1], ops[2], ops[3], #op)
-#define BOP_CAST(op, type) \
+#define HLSL_BOP(op) emit_binary_op(ops[0], ops[1], ops[2], ops[3], #op)
+#define HLSL_BOP_CAST(op, type) \
 	emit_binary_op_cast(ops[0], ops[1], ops[2], ops[3], #op, type, hlsl_opcode_is_sign_invariant(opcode))
-#define UOP(op) emit_unary_op(ops[0], ops[1], ops[2], #op)
-#define QFOP(op) emit_quaternary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], ops[5], #op)
-#define TFOP(op) emit_trinary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], #op)
-#define BFOP(op) emit_binary_func_op(ops[0], ops[1], ops[2], ops[3], #op)
-#define BFOP_CAST(op, type) \
+#define HLSL_UOP(op) emit_unary_op(ops[0], ops[1], ops[2], #op)
+#define HLS_QFOP(op) emit_quaternary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], ops[5], #op)
+#define HLSL_TFOP(op) emit_trinary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], #op)
+#define HLSL_BFOP(op) emit_binary_func_op(ops[0], ops[1], ops[2], ops[3], #op)
+#define HLSL_BFOP_CAST(op, type) \
 	emit_binary_func_op_cast(ops[0], ops[1], ops[2], ops[3], #op, type, hlsl_opcode_is_sign_invariant(opcode))
-#define BFOP(op) emit_binary_func_op(ops[0], ops[1], ops[2], ops[3], #op)
-#define UFOP(op) emit_unary_func_op(ops[0], ops[1], ops[2], #op)
+#define HLSL_BFOP(op) emit_binary_func_op(ops[0], ops[1], ops[2], ops[3], #op)
+#define HLSL_UFOP(op) emit_unary_func_op(ops[0], ops[1], ops[2], #op)
 
 	switch (opcode)
 	{
@@ -3923,39 +3914,39 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 	}
 
 	case OpDPdx:
-		UFOP(ddx);
+		HLSL_UFOP(ddx);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpDPdy:
-		UFOP(ddy);
+		HLSL_UFOP(ddy);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpDPdxFine:
-		UFOP(ddx_fine);
+		HLSL_UFOP(ddx_fine);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpDPdyFine:
-		UFOP(ddy_fine);
+		HLSL_UFOP(ddy_fine);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpDPdxCoarse:
-		UFOP(ddx_coarse);
+		HLSL_UFOP(ddx_coarse);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpDPdyCoarse:
-		UFOP(ddy_coarse);
+		HLSL_UFOP(ddy_coarse);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpFwidth:
 	case OpFwidthCoarse:
 	case OpFwidthFine:
-		UFOP(fwidth);
+		HLSL_UFOP(fwidth);
 		register_control_dependent_expression(ops[1]);
 		break;
 
@@ -3968,7 +3959,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (type.vecsize > 1)
 			emit_unrolled_unary_op(result_type, id, ops[2], "!");
 		else
-			UOP(!);
+			HLSL_UOP(!);
 		break;
 	}
 
@@ -3980,7 +3971,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "==");
 		else
-			BOP_CAST(==, SPIRType::Int);
+			HLSL_BOP_CAST(==, SPIRType::Int);
 		break;
 	}
 
@@ -3993,7 +3984,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "==");
 		else
-			BOP(==);
+			HLSL_BOP(==);
 		break;
 	}
 
@@ -4005,7 +3996,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "!=");
 		else
-			BOP_CAST(!=, SPIRType::Int);
+			HLSL_BOP_CAST(!=, SPIRType::Int);
 		break;
 	}
 
@@ -4018,7 +4009,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "!=");
 		else
-			BOP(!=);
+			HLSL_BOP(!=);
 		break;
 	}
 
@@ -4032,7 +4023,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], ">");
 		else
-			BOP_CAST(>, type);
+			HLSL_BOP_CAST(>, type);
 		break;
 	}
 
@@ -4044,7 +4035,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], ">");
 		else
-			BOP(>);
+			HLSL_BOP(>);
 		break;
 	}
 
@@ -4058,7 +4049,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], ">=");
 		else
-			BOP_CAST(>=, type);
+			HLSL_BOP_CAST(>=, type);
 		break;
 	}
 
@@ -4070,7 +4061,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], ">=");
 		else
-			BOP(>=);
+			HLSL_BOP(>=);
 		break;
 	}
 
@@ -4084,7 +4075,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "<");
 		else
-			BOP_CAST(<, type);
+			HLSL_BOP_CAST(<, type);
 		break;
 	}
 
@@ -4096,7 +4087,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "<");
 		else
-			BOP(<);
+			HLSL_BOP(<);
 		break;
 	}
 
@@ -4110,7 +4101,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "<=");
 		else
-			BOP_CAST(<=, type);
+			HLSL_BOP_CAST(<=, type);
 		break;
 	}
 
@@ -4122,7 +4113,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "<=");
 		else
-			BOP(<=);
+			HLSL_BOP(<=);
 		break;
 	}
 
@@ -4427,18 +4418,18 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		}
 
 		if (opcode == OpBitFieldSExtract)
-			TFOP(SPIRV_Cross_bitfieldSExtract);
+			HLSL_TFOP(SPIRV_Cross_bitfieldSExtract);
 		else
-			TFOP(SPIRV_Cross_bitfieldUExtract);
+			HLSL_TFOP(SPIRV_Cross_bitfieldUExtract);
 		break;
 	}
 
 	case OpBitCount:
-		UFOP(countbits);
+		HLSL_UFOP(countbits);
 		break;
 
 	case OpBitReverse:
-		UFOP(reversebits);
+		HLSL_UFOP(reversebits);
 		break;
 
 	default:
