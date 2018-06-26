@@ -696,7 +696,7 @@ static const char *midi_output    = "Off";
 static const unsigned midi_volume = 100;
 
 /* Only applies to Android 7.0 (API 24) and up */
-static const bool sustained_performance_mode = true;
+static const bool sustained_performance_mode = false;
 
 #if defined(ANDROID)
 #if defined(ANDROID_ARM)
