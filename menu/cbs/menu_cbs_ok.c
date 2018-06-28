@@ -4148,19 +4148,28 @@ static int action_ok_netplay_enable_client(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
+   settings_t *settings = config_get_ptr();
    menu_input_ctx_line_t line;
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       generic_action_ok_command(CMD_EVENT_NETPLAY_DEINIT);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-   line.label         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
-   line.label_setting = "no_setting";
-   line.type          = 0;
-   line.idx           = 0;
-   line.cb            = action_ok_netplay_enable_client_hostname_cb;
-
-   if (menu_input_dialog_start(&line))
+   if (!string_is_empty(settings->paths.netplay_server))
+   {
+      action_ok_netplay_enable_client_hostname_cb(NULL, settings->paths.netplay_server);
       return 0;
+   }
+   else
+   {
+      line.label         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
+      line.label_setting = "no_setting";
+      line.type          = 0;
+      line.idx           = 0;
+      line.cb            = action_ok_netplay_enable_client_hostname_cb;
+
+      if (menu_input_dialog_start(&line))
+         return 0;
+   }
 #endif
    return -1;
 }

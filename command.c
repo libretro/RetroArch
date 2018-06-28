@@ -2516,17 +2516,18 @@ TODO: Add a setting for these tweaks */
             /* buf is expected to be address|port */
             char *buf = (char *)data;
             static struct string_list *hostname = NULL;
+            settings_t *settings = config_get_ptr();
             hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             RARCH_LOG("[netplay] connecting to %s:%d\n",
                hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : 55435);
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
             if (!init_netplay(NULL, hostname->elems[0].data,
                !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : 55435))
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
@@ -2549,17 +2550,18 @@ TODO: Add a setting for these tweaks */
             /* buf is expected to be address|port */
             char *buf = (char *)data;
             static struct string_list *hostname = NULL;
+            settings_t *settings = config_get_ptr();
             hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             RARCH_LOG("[netplay] connecting to %s:%d\n",
                hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : 55435);
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
             if (!init_netplay_deferred(hostname->elems[0].data,
                !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : 55435))
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
