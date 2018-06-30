@@ -20,7 +20,6 @@
 
 @property (readonly) id<MTLDevice>        device;
 @property (readonly) id<MTLLibrary>       library;
-@property (readonly) id<MTLCommandQueue>  commandQueue;
 /*! @brief Returns the command buffer for the current frame */
 @property (readonly) id<MTLCommandBuffer> commandBuffer;
 @property (readonly) id<CAMetalDrawable>  nextDrawable;

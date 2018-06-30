@@ -882,8 +882,8 @@ static vertex_t vertex_bytes[] = {
    id<MTLCommandBuffer> cb = ctx.commandBuffer;
    
    MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
-   rpd.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1.0);
-   rpd.colorAttachments[0].loadAction = MTLLoadActionClear;
+   // rpd.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1.0);
+   rpd.colorAttachments[0].loadAction = MTLLoadActionDontCare;
    rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
    
    for (unsigned i = 0; i < _shader->passes; i++)
@@ -900,6 +900,9 @@ static vertex_t vertex_bytes[] = {
       }
       
       id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:rpd];
+#if METAL_DEBUG
+      rce.label = [NSString stringWithFormat:@"pass %d", i];
+#endif
       
       [rce setRenderPipelineState:_engine.pass[i]._state];
       
