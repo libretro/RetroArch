@@ -49,7 +49,6 @@
 #include "../../retroarch.h"
 #include "../../gfx/video_driver.h"
 
-
 #include "hbl.h"
 #include "wiiu_dbg.h"
 #include "system/exception_handler.h"
