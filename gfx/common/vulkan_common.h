@@ -139,6 +139,7 @@ struct vulkan_display_surface_info
 {
    unsigned width;
    unsigned height;
+   unsigned monitor_index;
 };
 
 struct vk_color

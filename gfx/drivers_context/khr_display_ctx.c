@@ -126,8 +126,9 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
       height = 0;
    }
 
-   info.width  = width;
-   info.height = height;
+   info.width         = width;
+   info.height        = height;
+   info.monitor_index = video_info->monitor_index;
 
    if (!vulkan_surface_create(&khr->vk, VULKAN_WSI_DISPLAY, &info, NULL,
             0, 0, khr->swap_interval))
