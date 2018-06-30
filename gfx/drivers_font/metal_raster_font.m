@@ -32,7 +32,6 @@
    id<MTLBuffer> _buffer;
    id<MTLTexture> _texture;
    
-   MTLRenderPassDescriptor *_rpd;
    id<MTLRenderPipelineState> _state;
    id<MTLSamplerState> _sampler;
    
@@ -161,12 +160,6 @@ static const NSUInteger kConstantAlignment = 4;
          RARCH_ERR("[MetalRaster]: error creating pipeline state: %s\n", err.localizedDescription.UTF8String);
          return NO;
       }
-   }
-   
-   {
-      _rpd = [MTLRenderPassDescriptor renderPassDescriptor];
-      _rpd.colorAttachments[0].loadAction = MTLLoadActionDontCare;
-      _rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
    }
    
    {
@@ -339,10 +332,8 @@ static INLINE void write_quad6(SpriteVertex *pv,
 {
    NSUInteger start = _offset * sizeof(SpriteVertex);
    [_vert didModifyRange:NSMakeRange(start, sizeof(SpriteVertex) * _vertices)];
-   _rpd.colorAttachments[0].texture = _context.nextDrawable.texture;
    
-   id<MTLCommandBuffer> cb = _context.commandBuffer;
-   id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:_rpd];
+   id<MTLRenderCommandEncoder> rce = _context.rce;
    [rce pushDebugGroup:@"render fonts"];
    [rce setRenderPipelineState:_state];
    [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
@@ -351,7 +342,6 @@ static INLINE void write_quad6(SpriteVertex *pv,
    [rce setFragmentSamplerState:_sampler atIndex:SamplerIndexDraw];
    [rce drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:_vertices];
    [rce popDebugGroup];
-   [rce endEncoding];
    
    _offset += _vertices;
    _vertices = 0;

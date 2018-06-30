@@ -20,10 +20,18 @@
 
 @property (readonly) id<MTLDevice>        device;
 @property (readonly) id<MTLLibrary>       library;
+
+/*! @brief Returns the command buffer used for pre-render work,
+ * such as mip maps for applying filters
+ * */
+@property (readonly) id<MTLCommandBuffer> blitCommandBuffer;
+
 /*! @brief Returns the command buffer for the current frame */
 @property (readonly) id<MTLCommandBuffer> commandBuffer;
 @property (readonly) id<CAMetalDrawable>  nextDrawable;
-@property (readonly) id<MTLTexture>       renderTexture;
+
+/*! @brief Main render encoder to back buffer */
+@property (readonly) id<MTLRenderCommandEncoder> rce;
 
 - (instancetype)initWithDevice:(id<MTLDevice>)d
                          layer:(CAMetalLayer *)layer

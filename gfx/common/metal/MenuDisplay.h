@@ -14,6 +14,7 @@
 @property (readwrite) MTLClearColor clearColor;
 
 - (instancetype)initWithDriver:(MetalDriver *)driver;
+- (void)drawPipeline:(menu_display_ctx_draw_t *)draw video:(video_frame_info_t *)video;
 - (void)draw:(menu_display_ctx_draw_t *)draw video:(video_frame_info_t *)video;
 
 #pragma mark - static methods

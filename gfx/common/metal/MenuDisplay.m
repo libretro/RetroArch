@@ -166,6 +166,11 @@ static INLINE void write_quad4a(SpriteVertex *pv,
    }
 }
 
+- (void)drawPipeline:(menu_display_ctx_draw_t *)draw video:(video_frame_info_t *)video
+{
+
+}
+
 - (void)draw:(menu_display_ctx_draw_t *)draw video:(video_frame_info_t *)video
 {
    Texture *tex = (__bridge Texture *)(void *)draw->texture;
@@ -225,30 +230,20 @@ static INLINE void write_quad4a(SpriteVertex *pv,
 #endif
       default:
       {
-         MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
          if (_clearNextRender)
          {
-            rpd.colorAttachments[0].clearColor = _clearColor;
-            rpd.colorAttachments[0].loadAction = MTLLoadActionClear;
+            // TODO(sgc): draw quad to clear
             _clearNextRender = NO;
          }
-         else
-         {
-            rpd.colorAttachments[0].loadAction = MTLLoadActionLoad;
-         }
-         rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
-         rpd.colorAttachments[0].texture = _context.nextDrawable.texture;
+   
+         id<MTLRenderCommandEncoder> rce = _context.rce;
          
-         id<MTLCommandBuffer> cb = _context.commandBuffer;
-         
-         id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:rpd];
          [rce setRenderPipelineState:[_driver getStockShader:VIDEO_SHADER_STOCK_BLEND blend:_blend]];
          [rce setVertexBytes:uniforms length:sizeof(*uniforms) atIndex:BufferIndexUniforms];
          [rce setVertexBytes:buf length:sizeof(buf) atIndex:BufferIndexPositions];
          [rce setFragmentTexture:tex.texture atIndex:TextureIndexColor];
          [rce setFragmentSamplerState:tex.sampler atIndex:SamplerIndexDraw];
          [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
-         [rce endEncoding];
          
          break;
       }

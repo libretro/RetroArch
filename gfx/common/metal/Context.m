@@ -16,17 +16,20 @@
 @end
 
 @interface Context()
-@property (readonly) id<MTLCommandBuffer> blitCommandBuffer;
 - (bool)_initConversionFilters;
 @end
 
 @implementation Context
 {
+   dispatch_semaphore_t _inflightSemaphore;
    id<MTLCommandQueue> _commandQueue;
    CAMetalLayer *_layer;
    id<CAMetalDrawable> _drawable;
    id<MTLSamplerState> _samplers[TEXTURE_FILTER_MIPMAP_NEAREST + 1];
    Filter *_filters[RPixelFormatCount]; // convert to bgra8888
+   
+   // main render pass state
+   id<MTLRenderCommandEncoder> _rce;
    
    id<MTLCommandBuffer> _blitCommandBuffer;
 }
@@ -37,6 +40,7 @@
 {
    if (self = [super init])
    {
+      _inflightSemaphore = dispatch_semaphore_create(MAX_INFLIGHT);
       _device = d;
       _layer = layer;
       _library = l;
@@ -63,8 +67,16 @@
       
       if (![self _initConversionFilters])
          return nil;
+      
+      if (![self _initMainState])
+         return nil;
    }
    return self;
+}
+
+- (bool)_initMainState
+{
+   return YES;
 }
 
 - (bool)_initConversionFilters
@@ -158,18 +170,13 @@
    return _drawable;
 }
 
-- (id<MTLTexture>)renderTexture
-{
-   return self.nextDrawable.texture;
-}
-
 - (void)convertFormat:(RPixelFormat)fmt from:(id<MTLBuffer>)src to:(id<MTLTexture>)dst
 {
    assert(dst.width * dst.height == src.length / RPixelFormatToBPP(fmt));
    assert(fmt >= 0 && fmt < RPixelFormatCount);
    Filter *conv = _filters[fmt];
    assert(conv != nil);
-   [conv apply:self.commandBuffer inBuf:src outTex:dst];
+   [conv apply:self.blitCommandBuffer inBuf:src outTex:dst];
 }
 
 - (id<MTLCommandBuffer>)blitCommandBuffer
@@ -182,7 +189,20 @@
 - (void)begin
 {
    assert(_commandBuffer == nil);
+   dispatch_semaphore_wait(_inflightSemaphore, DISPATCH_TIME_FOREVER);
    _commandBuffer = [_commandQueue commandBuffer];
+}
+
+- (id<MTLRenderCommandEncoder>)rce
+{
+   assert(_commandBuffer != nil);
+   if (_rce == nil)
+   {
+      MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
+      rpd.colorAttachments[0].texture = self.nextDrawable.texture;
+      _rce = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
+   }
+   return _rce;
 }
 
 - (void)end
@@ -197,7 +217,20 @@
       _blitCommandBuffer = nil;
    }
    
+   if (_rce)
+   {
+      [_rce endEncoding];
+      _rce = nil;
+   }
+   
+   __block dispatch_semaphore_t inflight = _inflightSemaphore;
+   [_commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> _) {
+      dispatch_semaphore_signal(inflight);
+   }];
+   
+   [_commandBuffer presentDrawable:self.nextDrawable];
    [_commandBuffer commit];
+   
    _commandBuffer = nil;
    _drawable = nil;
 }

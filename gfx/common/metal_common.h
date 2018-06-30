@@ -46,7 +46,8 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 
 @interface MetalMenu : NSObject
 
-@property (nonatomic, readwrite) BOOL enabled;
+@property (readonly) bool hasFrame;
+@property (readwrite) bool enabled;
 @property (readwrite) float alpha;
 
 - (void)updateFrame:(void const *)source;

@@ -52,7 +52,6 @@
    
    video_info_t _video;
    
-   dispatch_semaphore_t _inflightSemaphore;
    id<MTLDevice> _device;
    id<MTLLibrary> _library;
    Context *_context;
@@ -62,7 +61,6 @@
    // render target layer state
    id<MTLRenderPipelineState> _t_pipelineState;
    id<MTLRenderPipelineState> _t_pipelineStateNoAlpha;
-   MTLRenderPassDescriptor *_t_rpd;
    
    id<MTLSamplerState> _samplerStateLinear;
    id<MTLSamplerState> _samplerStateNearest;
@@ -82,7 +80,6 @@
 {
    if (self = [super init])
    {
-      _inflightSemaphore = dispatch_semaphore_create(MAX_INFLIGHT);
       _device = MTLCreateSystemDefaultDevice();
       MetalView *view = (MetalView *)apple_platform.renderView;
       view.device = _device;
@@ -200,13 +197,6 @@
    }
    
    {
-      MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
-      rpd.colorAttachments[0].loadAction = MTLLoadActionDontCare;
-      rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
-      _t_rpd = rpd;
-   }
-   
-   {
       MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];
       _samplerStateNearest = [_device newSamplerStateWithDescriptor:sd];
       
@@ -214,6 +204,7 @@
       sd.magFilter = MTLSamplerMinMagFilterLinear;
       _samplerStateLinear = [_device newSamplerStateWithDescriptor:sd];
    }
+   
    return YES;
 }
 
@@ -230,7 +221,7 @@
    
    {
       MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
-      psd.label = @"stock_blend";
+      psd.label = @"stock_no_blend";
       
       MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
       ca.pixelFormat = _layer.pixelFormat;
@@ -252,7 +243,8 @@
          RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
          return NO;
       }
-      
+   
+      psd.label = @"stock_blend";
       ca.blendingEnabled = YES;
       _states[VIDEO_SHADER_STOCK_BLEND][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
       if (err != nil)
@@ -335,7 +327,6 @@
    
    assert(!_begin && !_end);
    _begin = YES;
-   dispatch_semaphore_wait(_inflightSemaphore, DISPATCH_TIME_FOREVER);
    [_context begin];
    [self _updateUniforms];
 }
@@ -346,18 +337,14 @@
    _begin = NO;
    _end = YES;
    
-   id<MTLCommandBuffer> cb = _context.commandBuffer;
-   cb.label = @"renderer cb";
+   id<MTLRenderCommandEncoder> rce = _context.rce;
    
    // draw back buffer
+   [rce pushDebugGroup:@"core frame"];
    [_frameView drawWithContext:_context];
-   
-   id<CAMetalDrawable> drawable = _context.nextDrawable;
-   _t_rpd.colorAttachments[0].texture = drawable.texture;
    
    if ((_frameView.drawState & ViewDrawStateEncoder) != 0)
    {
-      id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:_t_rpd];
       [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
       [rce setRenderPipelineState:_t_pipelineStateNoAlpha];
       if (_frameView.filter == RTextureFilterNearest)
@@ -369,27 +356,31 @@
          [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
       }
       [_frameView drawWithEncoder:rce];
-      [rce endEncoding];
    }
+   [rce popDebugGroup];
 
 #if defined(HAVE_MENU)
    if (_menu.enabled)
    {
+      [rce pushDebugGroup:@"menu"];
       menu_driver_frame(video_info);
-      [_menu.view drawWithContext:_context];
-      id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:_t_rpd];
-      [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
-      [rce setRenderPipelineState:_t_pipelineState];
-      if (_menu.view.filter == RTextureFilterNearest)
+      
+      if (_menu.hasFrame)
       {
-         [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
+         [_menu.view drawWithContext:_context];
+         [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
+         [rce setRenderPipelineState:_t_pipelineState];
+         if (_menu.view.filter == RTextureFilterNearest)
+         {
+            [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
+         }
+         else
+         {
+            [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
+         }
+         [_menu.view drawWithEncoder:rce];
       }
-      else
-      {
-         [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
-      }
-      [_menu.view drawWithEncoder:rce];
-      [rce endEncoding];
+      [rce popDebugGroup];
    }
 #endif
 }
@@ -398,14 +389,6 @@
 {
    assert(!_begin && _end);
    _end = NO;
-   
-   id<MTLCommandBuffer> cb = _context.commandBuffer;
-   __block dispatch_semaphore_t inflight = _inflightSemaphore;
-   [cb addCompletedHandler:^(id<MTLCommandBuffer> _) {
-      dispatch_semaphore_signal(inflight);
-   }];
-   
-   [cb presentDrawable:_context.nextDrawable];
    [_context end];
 }
 
@@ -444,7 +427,7 @@
 {
    Context *_context;
    TexturedView *_view;
-   BOOL _enabled;
+   bool _enabled;
 }
 
 - (instancetype)initWithContext:(Context *)context
@@ -456,14 +439,19 @@
    return self;
 }
 
-- (void)setEnabled:(BOOL)enabled
+- (bool)hasFrame
+{
+   return _view != nil;
+}
+
+- (void)setEnabled:(bool)enabled
 {
    if (_enabled == enabled) return;
    _enabled = enabled;
    _view.visible = enabled;
 }
 
-- (BOOL)enabled
+- (bool)enabled
 {
    return _enabled;
 }
@@ -879,7 +867,7 @@ static vertex_t vertex_bytes[] = {
       }
    }
    
-   id<MTLCommandBuffer> cb = ctx.commandBuffer;
+   id<MTLCommandBuffer> cb = ctx.blitCommandBuffer;
    
    MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
    // rpd.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1.0);
@@ -888,18 +876,20 @@ static vertex_t vertex_bytes[] = {
    
    for (unsigned i = 0; i < _shader->passes; i++)
    {
+      id<MTLRenderCommandEncoder> rce = nil;
+      
       BOOL backBuffer = (_engine.pass[i].rt.view == nil);
       
       if (backBuffer)
       {
-         rpd.colorAttachments[0].texture = _context.nextDrawable.texture;
+         rce = _context.rce;
       }
       else
       {
          rpd.colorAttachments[0].texture = _engine.pass[i].rt.view;
+         rce = [cb renderCommandEncoderWithDescriptor:rpd];
       }
-      
-      id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:rpd];
+
 #if METAL_DEBUG
       rce.label = [NSString stringWithFormat:@"pass %d", i];
 #endif
@@ -962,17 +952,19 @@ static vertex_t vertex_bytes[] = {
       [rce setFragmentSamplerStates:samplers withRange:NSMakeRange(0, SLANG_NUM_BINDINGS)];
       [rce setVertexBytes:vertex_bytes length:sizeof(vertex_bytes) atIndex:4];
       [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
-      [rce endEncoding];
+      
+      if (!backBuffer)
+      {
+         [rce endEncoding];
+      }
+      
       _texture = _engine.pass[i].rt.view;
    }
+   
    if (_texture == nil)
-   {
       _drawState = ViewDrawStateContext;
-   }
    else
-   {
       _drawState = ViewDrawStateAll;
-   }
 }
 
 - (void)_updateRenderTargets
