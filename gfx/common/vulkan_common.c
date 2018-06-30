@@ -1892,6 +1892,10 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
    VkDisplayPlaneAlphaFlagBitsKHR alpha_mode = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
    VkDisplaySurfaceCreateInfoKHR create_info = { VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR };
    VkDisplayModeKHR best_mode = VK_NULL_HANDLE;
+   /* Monitor index starts on 1, 0 is auto. */
+   unsigned monitor_index = info->monitor_index;
+   unsigned saved_width = *width;
+   unsigned saved_height = *height;
 
    /* We need to decide on GPU here to be able to query support. */
    if (!vulkan_context_init_gpu(vk))
@@ -1933,8 +1937,18 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
    if (vkGetPhysicalDeviceDisplayPlanePropertiesKHR(vk->context.gpu, &plane_count, planes) != VK_SUCCESS)
       GOTO_FAIL();
 
+   if (monitor_index > display_count)
+   {
+      RARCH_WARN("Monitor index is out of range, using automatic display.\n");
+      monitor_index = 0;
+   }
+
+retry:
    for (dpy = 0; dpy < display_count; dpy++)
    {
+      if (monitor_index != 0 && (monitor_index - 1) != dpy)
+         continue;
+
       VkDisplayKHR display = displays[dpy].display;
       best_mode = VK_NULL_HANDLE;
       best_plane = UINT32_MAX;
@@ -2015,6 +2029,18 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
       }
    }
 out:
+
+   if (best_plane == UINT32_MAX && monitor_index != 0)
+   {
+      RARCH_WARN("Could not find suitable surface for monitor index: %u.\n",
+            monitor_index);
+      RARCH_WARN("Retrying first suitable monitor.\n");
+      monitor_index = 0;
+      best_mode = VK_NULL_HANDLE;
+      *width = saved_width;
+      *height = saved_height;
+      goto retry;
+   }
 
    if (best_mode == VK_NULL_HANDLE)
       GOTO_FAIL();
