@@ -8,9 +8,14 @@
 
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
+#import "RendererCommon.h"
 
-NS_ASSUME_NONNULL_BEGIN
+@interface Texture : NSObject
+@property (readonly) id<MTLTexture> texture;
+@property (readonly) id<MTLSamplerState> sampler;
+@end
 
+/*! @brief Context contains the render state used by various components */
 @interface Context : NSObject
 
 @property (readonly) id<MTLDevice>        device;
@@ -21,10 +26,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property (readonly) id<CAMetalDrawable>  nextDrawable;
 @property (readonly) id<MTLTexture>       renderTexture;
 
-+ (instancetype)newContextWithDevice:(id<MTLDevice>)d
-                               layer:(CAMetalLayer *)layer
-                             library:(id<MTLLibrary>)l
-                        commandQueue:(id<MTLCommandQueue>)q;
+- (instancetype)initWithDevice:(id<MTLDevice>)d
+                         layer:(CAMetalLayer *)layer
+                       library:(id<MTLLibrary>)l;
+
+- (Texture *)newTexture:(struct texture_image)image filter:(enum texture_filter_type)filter;
+- (void)convertFormat:(RPixelFormat)fmt from:(id<MTLBuffer>)src to:(id<MTLTexture>)dst;
 
 /*! @brief begin marks the beginning of a frame */
 - (void)begin;
@@ -33,5 +40,3 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)end;
 
 @end
-
-NS_ASSUME_NONNULL_END

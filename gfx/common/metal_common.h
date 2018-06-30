@@ -26,7 +26,7 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 
 #pragma mark - Classes
 
-@interface FrameView : NSObject<View>
+@interface FrameView : NSObject
 
 @property (readonly) RPixelFormat format;
 @property (readonly) RTextureFilter filter;
@@ -35,7 +35,6 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 @property (readwrite) CGSize size;
 @property (readonly) ViewDrawState drawState;
 @property (readonly) struct video_shader* shader;
-
 @property (readwrite) uint64_t         frameCount;
 
 - (void)setFilteringIndex:(int)index smooth:(bool)smooth;
@@ -63,17 +62,26 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 @property (readonly) video_viewport_t* viewport;
 @property (readwrite) bool             keepAspect;
 @property (readonly) MetalMenu*        menu;
-@property (readwrite) uint64_t         frameCount;
 @property (readonly) FrameView*        frameView;
+@property (readonly) MenuDisplay*      display;
 @property (readonly) Context*          context;
+@property (readonly) Uniforms*         viewportMVP;
 
-- (instancetype)init NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithVideo:(const video_info_t *)video
+                        input:(const input_driver_t **)input
+                    inputData:(void **)inputData;
 
 - (void)setVideo:(const video_info_t *)video;
+- (void)setShaderIndex:(NSUInteger)index;
+- (bool)renderFrame:(const void *)data
+              width:(unsigned)width
+             height:(unsigned)height
+         frameCount:(uint64_t)frameCount
+              pitch:(unsigned)pitch
+                msg:(const char *)msg
+               info:(video_frame_info_t *)video_info;
 
-- (void)beginFrame;
-- (void)drawViews;
-- (void)endFrame;
+- (id<MTLRenderPipelineState>)getStockShader:(int)index blend:(bool)blend;
 
 /*! @brief setNeedsResize triggers a display resize */
 - (void)setNeedsResize;

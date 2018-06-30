@@ -4,9 +4,7 @@
 
 #import "View.h"
 
-@class Renderer;
-
-@interface TexturedView : NSObject<View>
+@interface TexturedView : NSObject
 
 @property (readonly) RPixelFormat format;
 @property (readonly) RTextureFilter filter;
@@ -15,7 +13,7 @@
 @property (readwrite) CGSize size;
 @property (readonly) ViewDrawState drawState;
 
-- (instancetype)initWithDescriptor:(ViewDescriptor *)td renderer:(Renderer *)renderer;
+- (instancetype)initWithDescriptor:(ViewDescriptor *)td context:(Context *)c;
 
 - (void)drawWithContext:(Context *)ctx;
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce;

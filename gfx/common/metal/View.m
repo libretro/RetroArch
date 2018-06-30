@@ -6,6 +6,7 @@
 //  Copyright © 2018 Stuart Carnie. All rights reserved.
 //
 
+#import "View.h"
 #import "RendererCommon.h"
 
 @implementation ViewDescriptor

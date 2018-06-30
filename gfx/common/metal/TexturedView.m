@@ -4,16 +4,13 @@
 
 #import "TexturedView.h"
 #import "RendererCommon.h"
-#import "Renderer.h"
 #import "View.h"
 #import "Filter.h"
 
 #import "ShaderTypes.h"
 
-
 @implementation TexturedView
 {
-   __weak Renderer *_renderer;
    Context *_context;
    id<MTLTexture> _texture; // optimal render texture
    Vertex _v[4];
@@ -25,15 +22,14 @@
    bool _pixelsDirty;
 }
 
-- (instancetype)initWithDescriptor:(ViewDescriptor *)d renderer:(Renderer *)r
+- (instancetype)initWithDescriptor:(ViewDescriptor *)d context:(Context *)c
 {
    self = [super init];
    if (self) {
-      _renderer = r;
       _format = d.format;
       _bpp = RPixelFormatToBPP(_format);
       _filter = d.filter;
-      _context = r.context;
+      _context = c;
       _visible = YES;
       if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm) {
          _drawState = ViewDrawStateEncoder;
@@ -114,7 +110,7 @@
    if (!_pixelsDirty)
       return;
 
-   [_renderer.conv convertFormat:_format from:_pixels to:_texture];
+   [_context convertFormat:_format from:_pixels to:_texture];
    _pixelsDirty = NO;
 }
 
@@ -134,7 +130,7 @@
    if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm) {
       [_texture replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
                   mipmapLevel:0 withBytes:src
-                  bytesPerRow:(NSUInteger)(4 * _size.width)];
+                  bytesPerRow:(NSUInteger)(4 * pitch)];
    }
    else {
       void *dst = _pixels.contents;
