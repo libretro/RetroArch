@@ -1399,6 +1399,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
       "Zapisz bieżącą konfigurację")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
       "Zapisz przesłonięcia rdzenia")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+      "Zapisz nadpisania katalogu zawartości")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "Zapisz nadpisania gry")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
@@ -3059,6 +3061,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
       "Zarządza ustawieniami przewijania.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
       "Ponownie uruchamia zawartość od początku.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+      "Zapisuje plik konfiguracji zastąpienia, który będzie obowiązywał dla wszystkich treści załadowanych tym rdzeniem. Ma pierwszeństwo przed główną konfiguracją.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
       "Zapisuje plik konfiguracji zastąpienia, który będzie obowiązywał dla wszystkich treści załadowanych tym rdzeniem. Ma pierwszeństwo przed główną konfiguracją.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
