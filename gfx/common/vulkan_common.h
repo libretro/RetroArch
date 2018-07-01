@@ -130,6 +130,7 @@ typedef struct vulkan_context
 typedef struct gfx_ctx_vulkan_data
 {
    bool need_new_swapchain;
+   bool created_new_swapchain;
    vulkan_context_t context;
    VkSurfaceKHR vk_surface;
    VkSwapchainKHR swapchain;

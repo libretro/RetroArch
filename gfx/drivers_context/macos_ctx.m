@@ -767,7 +767,8 @@ static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned heig
          if (vulkan_create_swapchain(&cocoa_ctx->vk, width, height, cocoa_ctx->swap_interval))
          {
             cocoa_ctx->vk.context.invalid_swapchain = true;
-            vulkan_acquire_next_image(&cocoa_ctx->vk);
+            if (cocoa_ctx->vk.created_new_swapchain)
+               vulkan_acquire_next_image(&cocoa_ctx->vk);
          }
          else
          {
