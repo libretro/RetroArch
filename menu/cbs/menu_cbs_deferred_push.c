@@ -542,7 +542,11 @@ static int general_push(menu_displaylist_info_t *info,
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       if (settings->bools.multimedia_builtin_mediaplayer_enable)
       {
+#if defined(HAVE_FFMPEG)
          libretro_ffmpeg_retro_get_system_info(&sysinfo);
+#elif defined(HAVE_MPV)
+         libretro_mpv_retro_get_system_info(&sysinfo);
+#endif
          strlcat(newstring2, "|", PATH_MAX_LENGTH * sizeof(char));
          strlcat(newstring2, sysinfo.valid_extensions,
                PATH_MAX_LENGTH * sizeof(char));
