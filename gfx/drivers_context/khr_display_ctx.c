@@ -105,7 +105,8 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
       return false;
    }
 
-   vulkan_acquire_next_image(&khr->vk);
+   if (khr->vk.created_new_swapchain)
+      vulkan_acquire_next_image(&khr->vk);
 
    khr->vk.context.invalid_swapchain = true;
    khr->vk.need_new_swapchain = false;
