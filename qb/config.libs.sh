@@ -324,6 +324,7 @@ if [ "$OS" = 'Win32' ]; then
 
    HAVE_WASAPI=yes
    HAVE_XAUDIO=yes
+   HAVE_WINMM=yes
 else
    HAVE_D3D9=no
    HAVE_D3D10=no
@@ -367,6 +368,10 @@ elif [ "$HAVE_BUILTINZLIB" = 'yes' ]; then
 else
    check_pkgconf ZLIB zlib
    check_val '' ZLIB '-lz'
+fi
+
+if [ "$HAVE_MPV" != 'no' ]; then
+   check_pkgconf MPV libmpv
 fi
 
 if [ "$HAVE_THREADS" != 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then

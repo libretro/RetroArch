@@ -114,7 +114,7 @@ endif
 CFLAGS   += -I../../libretro-common/include
 
 OBJECTS	:= mpv-libretro.o
-LDFLAGS	+= -lmpv -ldl -lm
+LDFLAGS	+= -lmpv -lm
 CFLAGS	+= -Wall -pedantic
 
 all: $(TARGET)

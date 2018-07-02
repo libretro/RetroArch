@@ -416,4 +416,12 @@ bool frontend_driver_check_for_path_changes(path_change_data_t *change_data)
    return frontend->check_for_path_changes(change_data);
 }
 
+void frontend_driver_set_sustained_performance_mode(bool on)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->set_sustained_performance_mode)
+      return;
+   frontend->set_sustained_performance_mode(on);
+}
+
 #endif

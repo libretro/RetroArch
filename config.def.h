@@ -277,6 +277,7 @@ static bool menu_show_configurations     = true;
 static bool menu_show_help               = true;
 static bool menu_show_quit_retroarch     = true;
 static bool menu_show_reboot             = true;
+static bool menu_show_shutdown           = true;
 #if defined(HAVE_LAKKA) || defined(VITA) || defined(_3DS)
 static bool menu_show_core_updater       = false;
 #else
@@ -289,7 +290,7 @@ static bool content_show_favorites   = true;
 static bool content_show_images      = true;
 #endif
 static bool content_show_music       = true;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
 static bool content_show_video       = true;
 #endif
 #ifdef HAVE_NETWORKING
@@ -661,6 +662,8 @@ static const unsigned input_poll_type_behavior = 2;
 
 static const unsigned input_bind_timeout = 5;
 
+static const unsigned input_bind_hold = 2;
+
 static const unsigned menu_thumbnails_default = 3;
 
 static const unsigned menu_left_thumbnails_default = 0;
@@ -688,6 +691,14 @@ static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_
 #else
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_NORMAL;
 #endif
+
+/* MIDI */
+static const char *midi_input     = "Off";
+static const char *midi_output    = "Off";
+static const unsigned midi_volume = 100;
+
+/* Only applies to Android 7.0 (API 24) and up */
+static const bool sustained_performance_mode = false;
 
 #if defined(ANDROID)
 #if defined(ANDROID_ARM)

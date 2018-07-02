@@ -30,6 +30,13 @@
 #include "vulkan_common.h"
 #include "../../libretro-common/include/retro_timers.h"
 #include "../../configuration.h"
+#include "../include/vulkan/vulkan.h"
+#include "../../libretro-common/include/retro_assert.h"
+#include "vksym.h"
+#include "../../libretro-common/include/dynamic/dylib.h"
+#include "../../libretro-common/include/libretro_vulkan.h"
+#include "../../libretro-common/include/retro_math.h"
+#include "../../libretro-common/include/string/stdstring.h"
 
 static dylib_t                       vulkan_library;
 static VkInstance                    cached_instance_vk;
@@ -1885,6 +1892,10 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
    VkDisplayPlaneAlphaFlagBitsKHR alpha_mode = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
    VkDisplaySurfaceCreateInfoKHR create_info = { VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR };
    VkDisplayModeKHR best_mode = VK_NULL_HANDLE;
+   /* Monitor index starts on 1, 0 is auto. */
+   unsigned monitor_index = info->monitor_index;
+   unsigned saved_width = *width;
+   unsigned saved_height = *height;
 
    /* We need to decide on GPU here to be able to query support. */
    if (!vulkan_context_init_gpu(vk))
@@ -1926,8 +1937,18 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
    if (vkGetPhysicalDeviceDisplayPlanePropertiesKHR(vk->context.gpu, &plane_count, planes) != VK_SUCCESS)
       GOTO_FAIL();
 
+   if (monitor_index > display_count)
+   {
+      RARCH_WARN("Monitor index is out of range, using automatic display.\n");
+      monitor_index = 0;
+   }
+
+retry:
    for (dpy = 0; dpy < display_count; dpy++)
    {
+      if (monitor_index != 0 && (monitor_index - 1) != dpy)
+         continue;
+
       VkDisplayKHR display = displays[dpy].display;
       best_mode = VK_NULL_HANDLE;
       best_plane = UINT32_MAX;
@@ -2008,6 +2029,18 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
       }
    }
 out:
+
+   if (best_plane == UINT32_MAX && monitor_index != 0)
+   {
+      RARCH_WARN("Could not find suitable surface for monitor index: %u.\n",
+            monitor_index);
+      RARCH_WARN("Retrying first suitable monitor.\n");
+      monitor_index = 0;
+      best_mode = VK_NULL_HANDLE;
+      *width = saved_width;
+      *height = saved_height;
+      goto retry;
+   }
 
    if (best_mode == VK_NULL_HANDLE)
       GOTO_FAIL();
@@ -2293,12 +2326,18 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    if (vk->context.device)
       vkDeviceWaitIdle(vk->context.device);
    if (vk->swapchain)
+   {
       vkDestroySwapchainKHR(vk->context.device,
             vk->swapchain, NULL);
+      vk->swapchain = VK_NULL_HANDLE;
+   }
 
    if (destroy_surface && vk->vk_surface != VK_NULL_HANDLE)
+   {
       vkDestroySurfaceKHR(vk->context.instance,
             vk->vk_surface, NULL);
+      vk->vk_surface = VK_NULL_HANDLE;
+   }
 
    for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
    {
@@ -2473,6 +2512,19 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    vkDeviceWaitIdle(vk->context.device);
 
+   vk->created_new_swapchain = true;
+   if (vk->swapchain != VK_NULL_HANDLE &&
+         !vk->context.invalid_swapchain &&
+         vk->context.swapchain_width == width &&
+         vk->context.swapchain_height == height &&
+         vk->context.swap_interval == swap_interval)
+   {
+      /* Do not bother creating a swapchain redundantly. */
+      RARCH_LOG("[Vulkan]: Do not need to re-create swapchain.\n");
+      vk->created_new_swapchain = false;
+      return true;
+   }
+
    present_mode_count = 0;
    vkGetPhysicalDeviceSurfacePresentModesKHR(
          vk->context.gpu, vk->vk_surface,
@@ -2601,12 +2653,17 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    RARCH_LOG("[Vulkan]: Using swapchain size %u x %u.\n",
          swapchain_size.width, swapchain_size.height);
 
-   desired_swapchain_images = surface_properties.minImageCount + 1;
+   /* Unless we have other reasons to clamp, we should prefer 3 images.
+    * We hard sync against the swapchain, so if we have 2 images,
+    * we would be unable to overlap CPU and GPU, which can get very slow
+    * for GPU-rendered cores. */
+   desired_swapchain_images = 3;
 
    /* Limit latency. */
    if (desired_swapchain_images > settings->uints.video_max_swapchain_images)
       desired_swapchain_images = settings->uints.video_max_swapchain_images;
 
+   /* Clamp images requested to what is supported by the implementation. */
    if (desired_swapchain_images < surface_properties.minImageCount)
       desired_swapchain_images = surface_properties.minImageCount;
 
@@ -2647,6 +2704,14 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
       | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
+#ifdef _WIN32
+   /* On Windows, do not try to reuse the swapchain.
+    * It causes a lot of issues on nVidia for some reason. */
+   info.oldSwapchain = VK_NULL_HANDLE;
+   if (old_swapchain != VK_NULL_HANDLE)
+      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+#endif
+
    if (vkCreateSwapchainKHR(vk->context.device,
             &info, NULL, &vk->swapchain) != VK_SUCCESS)
    {
@@ -2654,8 +2719,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       return false;
    }
 
+#ifndef _WIN32
    if (old_swapchain != VK_NULL_HANDLE)
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+#endif
 
    vk->context.swapchain_width  = swapchain_size.width;
    vk->context.swapchain_height = swapchain_size.height;

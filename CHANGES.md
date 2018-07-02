@@ -1,18 +1,28 @@
 # 1.7.4 (future)
+- ANDROID: Add sustained performance mode, can be turned on/off in Power Management settings menu.
+- ANDROID: Powerstate/battery level support.
 - COMMON: Automatically hide "Configuration Override options" in Quick Menu.
 - COMMON: Small Bugfix to not trigger savestate code when pressing Reset.
 - HID/OSX: Fix to set hid device registration deterministic (#6497), to address issue #6640 re-adding dynamic device registration.
 - LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Polish translation.
 - LOCALIZATION: Update Portuguese / Brazilian translation.
+- LOCALIZATION: Update Russian translation.
 - LOCALIZATION: Update Spanish translation.
+- MIDI: Add MIDI support to the libretro API. Dosbox is the first proof of concept core implementing libretro MIDI.
+- MIDI: Add a Windows driver for MIDI, based on winmm.
 - MENU/QT/WIMP: QT QSlider styling for Dark Theme.
 - MENU/QT/WIMP: Remove button ghostly inside highlighting.
+- METAL: Initial work-in-progress video driver for Metal. macOS-only right now, and currently requires macOS 10.13. Works with RGUI right now.
+- METAL/SLANG: Slang shaders should be compatible with Metal video driver.
 - PS3: Add audio mixer support for FLAC and MP3.
 - PSP: Use proper button labels, fix inverted R-Stick Y axis.
 - REMAPS: Fix the way offsets are calculated for keyboard remapping.
 - RUNAHEAD: Fix full-screen mode change breaking Secondary Core's environment variables.
 - VITA: Use proper button labels, fix inverted R-Stick Y axis.
+- VULKAN: Fix two validation errors.
+- VULKAN: Try to avoid creating swapchains redundantly. Should fix black screen and having to alt tab out of window again to get display working on Nvidia GPUs (Windows).
 - VULKAN/OSX: Initial MoltenVK support. Not enabled yet, several MoltenVK bugs should be fixed first before we can have it fully working.
 - WII: Change deflicker setting to work in 480p or higher, and always enables vfilter so that the user can easily change brightness.
 - WIIU: Fix out-of-bounds rendering bug

@@ -53,7 +53,8 @@ enum rarch_shader_type
    RARCH_SHADER_CG,
    RARCH_SHADER_HLSL,
    RARCH_SHADER_GLSL,
-   RARCH_SHADER_SLANG
+   RARCH_SHADER_SLANG,
+   RARCH_SHADER_METAL
 };
 
 enum gfx_scale_type

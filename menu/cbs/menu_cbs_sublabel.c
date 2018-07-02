@@ -74,7 +74,9 @@ default_sublabel_macro(action_bind_sublabel_retro_achievements_settings_list, ME
 default_sublabel_macro(action_bind_sublabel_saving_settings_list,          MENU_ENUM_SUBLABEL_SAVING_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_logging_settings_list,         MENU_ENUM_SUBLABEL_LOGGING_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_user_interface_settings_list,  MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_power_management_settings_list,  MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_privacy_settings_list,         MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_midi_settings_list,            MENU_ENUM_SUBLABEL_MIDI_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_directory_settings_list,       MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_playlist_settings_list,        MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_network_settings_list,         MENU_ENUM_SUBLABEL_NETWORK_SETTINGS)
@@ -143,6 +145,7 @@ default_sublabel_macro(action_bind_sublabel_input_max_users,               MENU_
 default_sublabel_macro(action_bind_sublabel_input_poll_type_behavior,      MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR)
 default_sublabel_macro(action_bind_sublabel_input_all_users_control_menu,  MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU)
 default_sublabel_macro(action_bind_sublabel_input_bind_timeout,            MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT)
+default_sublabel_macro(action_bind_sublabel_input_bind_hold,               MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD)
 default_sublabel_macro(action_bind_sublabel_audio_volume,                  MENU_ENUM_SUBLABEL_AUDIO_VOLUME)
 default_sublabel_macro(action_bind_sublabel_audio_mixer_volume,            MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME)
 default_sublabel_macro(action_bind_sublabel_audio_sync,                    MENU_ENUM_SUBLABEL_AUDIO_SYNC)
@@ -222,6 +225,7 @@ default_sublabel_macro(action_bind_sublabel_camera_driver,                 MENU_
 default_sublabel_macro(action_bind_sublabel_location_driver,               MENU_ENUM_SUBLABEL_LOCATION_DRIVER)
 default_sublabel_macro(action_bind_sublabel_menu_driver,                   MENU_ENUM_SUBLABEL_MENU_DRIVER)
 default_sublabel_macro(action_bind_sublabel_record_driver,                 MENU_ENUM_SUBLABEL_RECORD_DRIVER)
+default_sublabel_macro(action_bind_sublabel_midi_driver,                   MENU_ENUM_SUBLABEL_MIDI_DRIVER)
 default_sublabel_macro(action_bind_sublabel_wifi_driver,                   MENU_ENUM_SUBLABEL_WIFI_DRIVER)
 default_sublabel_macro(action_bind_sublabel_filter_supported_extensions,   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_wallpaper,                     MENU_ENUM_SUBLABEL_MENU_WALLPAPER)
@@ -358,6 +362,7 @@ default_sublabel_macro(action_bind_sublabel_menu_show_configurations,           
 default_sublabel_macro(action_bind_sublabel_menu_show_help,                        MENU_ENUM_SUBLABEL_MENU_SHOW_HELP)
 default_sublabel_macro(action_bind_sublabel_menu_show_quit_retroarch,              MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH)
 default_sublabel_macro(action_bind_sublabel_menu_show_reboot,                      MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT)
+default_sublabel_macro(action_bind_sublabel_menu_show_shutdown,                    MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN)
 default_sublabel_macro(action_bind_sublabel_menu_show_online_updater,              MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER)
 default_sublabel_macro(action_bind_sublabel_menu_show_core_updater,                MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER)
 default_sublabel_macro(action_bind_sublabel_menu_music_tab,                        MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC)
@@ -421,6 +426,9 @@ default_sublabel_macro(action_bind_sublabel_netplay_mitm_server,                
 default_sublabel_macro(action_bind_sublabel_core_delete,                           MENU_ENUM_SUBLABEL_CORE_DELETE)
 default_sublabel_macro(action_bind_sublabel_pause_hardcode_mode,                   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE)
 default_sublabel_macro(action_bind_sublabel_resume_hardcode_mode,                  MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME)
+default_sublabel_macro(action_bind_sublabel_midi_input,                            MENU_ENUM_SUBLABEL_MIDI_INPUT)
+default_sublabel_macro(action_bind_sublabel_midi_output,                           MENU_ENUM_SUBLABEL_MIDI_OUTPUT)
+default_sublabel_macro(action_bind_sublabel_midi_volume,                           MENU_ENUM_SUBLABEL_MIDI_VOLUME)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -928,6 +936,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_SHOW_REBOOT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_reboot);
             break;
+         case MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_shutdown);
+            break;
          case MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_online_updater);
             break;
@@ -1256,6 +1267,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_RECORD_DRIVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_record_driver);
             break;
+         case MENU_ENUM_LABEL_MIDI_DRIVER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_midi_driver);
+            break;
          case MENU_ENUM_LABEL_MENU_DRIVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_driver);
             break;
@@ -1472,6 +1486,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_bind_timeout);
             break;
+         case MENU_ENUM_LABEL_INPUT_BIND_HOLD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_bind_hold);
+            break;
          case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_axis_threshold);
             break;
@@ -1677,8 +1694,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_interface_settings_list);
             break;
+         case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_power_management_settings_list);
+            break;
          case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_privacy_settings_list);
+            break;
+         case MENU_ENUM_LABEL_MIDI_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_midi_settings_list);
             break;
          case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_directory_settings_list);
@@ -1757,6 +1780,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ACHIEVEMENT_RESUME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_resume_hardcode_mode);
+            break;
+         case MENU_ENUM_LABEL_MIDI_INPUT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_midi_input);
+            break;
+         case MENU_ENUM_LABEL_MIDI_OUTPUT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_midi_output);
+            break;
+         case MENU_ENUM_LABEL_MIDI_VOLUME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_midi_volume);
             break;
          default:
          case MSG_UNKNOWN:

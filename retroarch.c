@@ -389,6 +389,7 @@ static void retroarch_print_features(void)
    _PSUPP(thread,          "Threads",         "Threading support");
 
    _PSUPP(vulkan,          "Vulkan",          "Vulkan video driver");
+   _PSUPP(metal,           "Metal",           "Metal video driver");
    _PSUPP(opengl,          "OpenGL",          "OpenGL   video driver support");
    _PSUPP(opengles,        "OpenGL ES",       "OpenGLES video driver support");
    _PSUPP(xvideo,          "XVideo",          "Video driver");
@@ -1262,7 +1263,11 @@ static void retroarch_main_init_media(void)
       case RARCH_CONTENT_MUSIC:
          if (builtin_mediaplayer)
          {
-#ifdef HAVE_FFMPEG
+            /* TODO/FIXME - it needs to become possible to switch between FFmpeg and MPV at runtime */
+#if defined(HAVE_MPV)
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+            retroarch_set_current_core_type(CORE_TYPE_MPV, false);
+#elif defined(HAVE_FFMPEG)
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
             retroarch_set_current_core_type(CORE_TYPE_FFMPEG, false);
 #endif
@@ -3204,7 +3209,7 @@ static enum runloop_state runloop_check_state(
       {
          /* rarch_timer_tick */
          timer.current = cpu_features_get_time_usec();
-         timer.timeout = (timer.timeout_end - timer.current) / 1000;
+         timer.timeout_us = (timer.timeout_end - timer.current);
 
          if (!timer.timer_end && rarch_timer_has_expired(&timer))
          {

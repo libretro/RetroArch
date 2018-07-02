@@ -52,17 +52,21 @@ enum {
     AMOTION_EVENT_BUTTON_TERTIARY = 1 << 2,
     AMOTION_EVENT_BUTTON_BACK = 1 << 3,
     AMOTION_EVENT_BUTTON_FORWARD = 1 << 4,
+    AMOTION_EVENT_AXIS_VSCROLL = 9,
 };
 #endif
 
 /* If using an SDK lower than 24 then add missing relative axis codes */
-#if __ANDROID_API__ < 24
+#ifndef AMOTION_EVENT_AXIS_RELATIVE_X
 #define AMOTION_EVENT_AXIS_RELATIVE_X 27
+#endif
+
+#ifndef AMOTION_EVENT_AXIS_RELATIVE_Y
 #define AMOTION_EVENT_AXIS_RELATIVE_Y 28
 #endif
 
 /* Use this to enable/disable using the touch screen as mouse */
-#define ENABLE_TOUCH_SCREEN_MOUSE 0
+#define ENABLE_TOUCH_SCREEN_MOUSE 1
 
 typedef struct
 {
@@ -118,7 +122,7 @@ typedef struct android_input
    unsigned pointer_count;
    int mouse_x_delta, mouse_y_delta;
    float mouse_x_prev, mouse_y_prev;
-   int mouse_l, mouse_r, mouse_m;
+   int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
    int64_t quick_tap_time;
 } android_input_t;
 
@@ -554,7 +558,7 @@ static int16_t android_mouse_state(android_input_t *android, unsigned id)
          break;
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          val = android->mouse_m;
-          break;
+         break;
       case RETRO_DEVICE_ID_MOUSE_X:
          val = android->mouse_x_delta;
          android->mouse_x_delta = 0; /* flush delta after it has been read */
@@ -562,6 +566,14 @@ static int16_t android_mouse_state(android_input_t *android, unsigned id)
       case RETRO_DEVICE_ID_MOUSE_Y:
          val = android->mouse_y_delta; /* flush delta after it has been read */
          android->mouse_y_delta = 0;
+         break;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         val = android->mouse_wu;
+         android->mouse_wu = 0;
+         break;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         val = android->mouse_wd;
+         android->mouse_wd = 0;
          break;
    }
 
@@ -671,9 +683,17 @@ static INLINE int android_input_poll_event_type_motion(
       if (p_AMotionEvent_getButtonState)
       {
          btn = (int)AMotionEvent_getButtonState(event);
+
          android->mouse_l = (btn & AMOTION_EVENT_BUTTON_PRIMARY);
          android->mouse_r = (btn & AMOTION_EVENT_BUTTON_SECONDARY);
          android->mouse_m = (btn & AMOTION_EVENT_BUTTON_TERTIARY);
+
+         btn = (int)AMotionEvent_getAxisValue(event, AMOTION_EVENT_AXIS_VSCROLL, motion_ptr);
+
+         if (btn > 0)
+            android->mouse_wu = btn;
+         else if (btn < 0)
+            android->mouse_wd = btn;
       }
       else
       {
@@ -1383,7 +1403,8 @@ static int16_t android_input_state(void *data,
                   port, idx, id, binds[port]);
          break;
       case RETRO_DEVICE_MOUSE:
-         return android_mouse_state(android, id);
+         ret = android_mouse_state(android, id);
+         return ret;
       case RETRO_DEVICE_LIGHTGUN:
          return android_lightgun_device_state(android, id);
       case RETRO_DEVICE_POINTER:

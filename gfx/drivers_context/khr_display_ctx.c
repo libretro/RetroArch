@@ -105,7 +105,8 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
       return false;
    }
 
-   vulkan_acquire_next_image(&khr->vk);
+   if (khr->vk.created_new_swapchain)
+      vulkan_acquire_next_image(&khr->vk);
 
    khr->vk.context.invalid_swapchain = true;
    khr->vk.need_new_swapchain = false;
@@ -126,8 +127,9 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
       height = 0;
    }
 
-   info.width  = width;
-   info.height = height;
+   info.width         = width;
+   info.height        = height;
+   info.monitor_index = video_info->monitor_index;
 
    if (!vulkan_surface_create(&khr->vk, VULKAN_WSI_DISPLAY, &info, NULL,
             0, 0, khr->swap_interval))

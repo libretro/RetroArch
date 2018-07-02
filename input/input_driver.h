@@ -767,7 +767,7 @@ void input_config_clear_device_display_name(unsigned port);
 
 void input_config_clear_device_config_name(unsigned port);
 
-unsigned input_config_get_device_count();
+unsigned input_config_get_device_count(void);
 
 unsigned *input_config_get_device_ptr(unsigned port);
 

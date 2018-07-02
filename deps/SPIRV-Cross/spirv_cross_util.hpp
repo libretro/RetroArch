@@ -23,6 +23,7 @@ namespace spirv_cross_util
 {
 void rename_interface_variable(spirv_cross::Compiler &compiler, const std::vector<spirv_cross::Resource> &resources,
                                uint32_t location, const std::string &name);
-}
+void inherit_combined_sampler_bindings(spirv_cross::Compiler &compiler);
+} // namespace spirv_cross_util
 
 #endif

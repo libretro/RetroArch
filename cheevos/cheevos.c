@@ -1289,62 +1289,31 @@ static int cheevos_test_condition(cheevos_cond_t *cond)
    return 1;
 }
 
-static int cheevos_test_cond_set(const cheevos_condset_t *condset,
-      int *dirty_conds, int *reset_conds, int match_any)
+static int cheevos_test_pause_cond_set(const cheevos_condset_t *condset,
+      int *dirty_conds, int *reset_conds, int process_pause)
 {
    int cond_valid            = 0;
-   int set_valid             = 1;
-   const cheevos_cond_t *end = NULL;
+   int set_valid             = 1; /* must start true so AND logic works */
    cheevos_cond_t *cond      = NULL;
-
-   if (!condset)
-      return 0;
-
-   end                       = condset->conds + condset->count;
+   const cheevos_cond_t *end = condset->conds + condset->count;
 
    cheevos_locals.add_buffer = 0;
    cheevos_locals.add_hits   = 0;
 
-   /* Now, read all Pause conditions, and if any are true,
-    * do not process further (retain old state). */
-
    for (cond = condset->conds; cond < end; cond++)
    {
-      if (cond->type != CHEEVOS_COND_TYPE_PAUSE_IF)
-         continue;
-
-      /* Reset by default, set to 1 if hit! */
-      cond->curr_hits = 0;
-
-      if (cheevos_test_condition(cond))
-      {
-         cond->curr_hits = 1;
-         *dirty_conds    = 1;
-
-         /* Early out: this achievement is paused,
-          * do not process any further! */
-         return 0;
-      }
-   }
-
-   /* Read all standard conditions, and process as normal: */
-   for (cond = condset->conds; cond < end; cond++)
-   {
-      if (  cond->type == CHEEVOS_COND_TYPE_PAUSE_IF ||
-            cond->type == CHEEVOS_COND_TYPE_RESET_IF)
+      if (cond->pause != process_pause)
          continue;
 
       if (cond->type == CHEEVOS_COND_TYPE_ADD_SOURCE)
       {
          cheevos_locals.add_buffer += cheevos_var_get_value(&cond->source);
-         set_valid &= 1;
          continue;
       }
 
       if (cond->type == CHEEVOS_COND_TYPE_SUB_SOURCE)
       {
          cheevos_locals.add_buffer -= cheevos_var_get_value(&cond->source);
-         set_valid &= 1;
          continue;
       }
 
@@ -1360,17 +1329,17 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
          continue;
       }
 
-      if (  (cond->req_hits != 0) &&
-            (cond->curr_hits + cheevos_locals.add_hits) >= cond->req_hits)
-         {
-            cheevos_locals.add_buffer = 0;
-            cheevos_locals.add_hits   = 0;
-            continue;
-         }
-
+      /* always evaluate the condition to ensure delta values get tracked correctly */
       cond_valid = cheevos_test_condition(cond);
 
-      if (cond_valid)
+      /* if the condition has a target hit count that has already been met,
+       * it's automatically true, even if not currently true. */
+      if (  (cond->req_hits != 0) &&
+            (cond->curr_hits + cheevos_locals.add_hits) >= cond->req_hits)
+      {
+            cond_valid = 1;
+      }
+      else if (cond_valid)
       {
          cond->curr_hits++;
          *dirty_conds = 1;
@@ -1379,36 +1348,98 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
          if (cond->req_hits == 0)
             ; /* Not a hit-based requirement: ignore any additional logic! */
          else if ((cond->curr_hits + cheevos_locals.add_hits) < cond->req_hits)
-            cond_valid = 0; /* Not entirely valid yet! */
-
-         if (match_any)
-            break;
+            cond_valid = 0; /* HitCount target has not yet been met, condition is not yet valid. */
       }
 
       cheevos_locals.add_buffer = 0;
       cheevos_locals.add_hits   = 0;
 
-      /* Sequential or non-sequential? */
-      set_valid &= cond_valid;
-   }
-
-   /* Now, ONLY read reset conditions! */
-   for (cond = condset->conds; cond < end; cond++)
-   {
-      if (cond->type != CHEEVOS_COND_TYPE_RESET_IF)
-         continue;
-
-      cond_valid = cheevos_test_condition(cond);
-
-      if (cond_valid)
+      if (cond->type == CHEEVOS_COND_TYPE_PAUSE_IF)
       {
-         *reset_conds = 1; /* Resets all hits found so far */
-         set_valid    = 0; /* Cannot be valid if we've hit a reset condition. */
-         break;            /* No point processing any further reset conditions. */
+         /* as soon as we find a PauseIf that evaluates to true,
+          * stop processing the rest of the group. */
+         if (cond_valid)
+            return 1;
+
+         /* if we make it to the end of the function, make sure we are
+          * indicating nothing matched. if we do find a later PauseIf match,
+          * it'll automatically return true via the previous condition. */
+         set_valid = 0;
+
+         if (cond->req_hits == 0)
+         {
+            /* PauseIf didn't evaluate true, and doesn't have a HitCount,
+             * reset the HitCount to indicate the condition didn't match. */
+            if (cond->curr_hits != 0)
+            {
+               cond->curr_hits = 0;
+               *dirty_conds = 1;
+            }
+         }
+         else
+         {
+            /* PauseIf has a HitCount that hasn't been met, ignore it for now. */
+         }
       }
+      else if (cond->type == CHEEVOS_COND_TYPE_RESET_IF)
+      {
+         if (cond_valid)
+         {
+            *reset_conds = 1; /* Resets all hits found so far */
+            set_valid    = 0; /* Cannot be valid if we've hit a reset condition. */
+         }
+      }
+      else /* Sequential or non-sequential? */
+         set_valid &= cond_valid;
    }
 
    return set_valid;
+}
+
+static int cheevos_test_cond_set(const cheevos_condset_t *condset,
+      int *dirty_conds, int *reset_conds)
+{
+   int in_pause              = 0;
+   int has_pause             = 0;
+   cheevos_cond_t *cond      = NULL;
+
+   if (!condset)
+      return 1; /* important: empty group must evaluate true */
+
+   /* the ints below are used for Pause conditions and their dependent AddSource/AddHits. */
+
+   /* this loop needs to go backwards to check AddSource/AddHits */
+   cond = condset->conds + condset->count - 1;
+   for (; cond >= condset->conds; cond--)
+   {
+      if (cond->type == CHEEVOS_COND_TYPE_PAUSE_IF)
+      {
+         has_pause = 1;
+         in_pause = 1;
+         cond->pause = 1;
+      }
+      else if (cond->type == CHEEVOS_COND_TYPE_ADD_SOURCE ||
+               cond->type == CHEEVOS_COND_TYPE_SUB_SOURCE ||
+               cond->type == CHEEVOS_COND_TYPE_ADD_HITS)
+      {
+         cond->pause = in_pause;
+      }
+      else
+      {
+         in_pause = 0;
+         cond->pause = 0;
+      }
+   }
+
+   if (has_pause)
+   {  /* one or more Pause conditions exists, if any of them are true,
+       * stop processing this group. */
+      if (cheevos_test_pause_cond_set(condset, dirty_conds, reset_conds, 1))
+         return 0;
+   }
+
+   /* process the non-Pause conditions to see if the group is true */
+   return cheevos_test_pause_cond_set(condset, dirty_conds, reset_conds, 0);
 }
 
 static int cheevos_reset_cond_set(cheevos_condset_t *condset, int deltas)
@@ -1469,14 +1500,14 @@ static int cheevos_test_cheevo(cheevo_t *cheevo)
 
    if (condset < end)
    {
-      ret_val = cheevos_test_cond_set(condset, &dirty_conds, &reset_conds, 0);
+      ret_val = cheevos_test_cond_set(condset, &dirty_conds, &reset_conds);
       condset++;
    }
 
    while (condset < end)
    {
       ret_val_sub_cond |= cheevos_test_cond_set(
-            condset, &dirty_conds, &reset_conds, 0);
+            condset, &dirty_conds, &reset_conds);
       condset++;
    }
 
@@ -1674,14 +1705,14 @@ static int cheevos_test_lboard_condition(const cheevos_condition_t* condition)
    if (condset < end)
    {
       ret_val = cheevos_test_cond_set(
-            condset, &dirty_conds, &reset_conds, 0);
+            condset, &dirty_conds, &reset_conds);
       condset++;
    }
 
    while (condset < end)
    {
       ret_val_sub_cond |= cheevos_test_cond_set(
-            condset, &dirty_conds, &reset_conds, 0);
+            condset, &dirty_conds, &reset_conds);
       condset++;
    }
 

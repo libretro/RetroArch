@@ -93,7 +93,7 @@ static slang_texture_semantic slang_name_to_texture_semantic_array(const string 
 
          if (cmp == 0)
          {
-            *index = strtoul(name.c_str() + baselen, nullptr, 0);
+            *index = (unsigned)strtoul(name.c_str() + baselen, nullptr, 0);
             return semantic;
          }
       }

@@ -267,6 +267,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL
    &video_gl,
 #endif
+#ifdef HAVE_METAL
+   &video_metal,
+#endif
 #ifdef XENON
    &video_xenon360,
 #endif
@@ -3364,6 +3367,8 @@ enum gfx_ctx_api video_context_driver_get_api(void)
          return GFX_CTX_OPENGL_API;
       else if (string_is_equal(video_driver, "vulkan"))
          return GFX_CTX_VULKAN_API;
+      else if (string_is_equal(video_driver, "metal"))
+         return GFX_CTX_METAL_API;
 
       return GFX_CTX_NONE;
    }

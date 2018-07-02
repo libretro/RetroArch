@@ -48,4 +48,23 @@ void rename_interface_variable(spirv_cross::Compiler &compiler, const std::vecto
 		compiler.set_name(v.id, name);
 	}
 }
+
+void inherit_combined_sampler_bindings(spirv_cross::Compiler &compiler)
+{
+	auto &samplers = compiler.get_combined_image_samplers();
+	for (auto &s : samplers)
+	{
+		if (compiler.has_decoration(s.image_id, spv::DecorationDescriptorSet))
+		{
+			uint32_t set = compiler.get_decoration(s.image_id, spv::DecorationDescriptorSet);
+			compiler.set_decoration(s.combined_id, spv::DecorationDescriptorSet, set);
+		}
+
+		if (compiler.has_decoration(s.image_id, spv::DecorationBinding))
+		{
+			uint32_t binding = compiler.get_decoration(s.image_id, spv::DecorationBinding);
+			compiler.set_decoration(s.combined_id, spv::DecorationBinding, binding);
+		}
+	}
 }
+} // namespace spirv_cross_util

@@ -109,7 +109,10 @@ char *string_trim_whitespace_left(char *const s)
       char *cur  = s;
 
       while(*cur && isspace((unsigned char)*cur))
-         ++cur, --len;
+      {
+         ++cur;
+         --len;
+      }
 
       if(s != cur)
          memmove(s, cur, len + 1);
@@ -128,7 +131,10 @@ char *string_trim_whitespace_right(char *const s)
       char  *cur = s + len - 1;
 
       while(cur != s && isspace((unsigned char)*cur))
-         --cur, --len;
+      {
+         --cur;
+         --len;
+      }
 
       cur[isspace((unsigned char)*cur) ? 0 : 1] = '\0';
    }

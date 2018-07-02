@@ -697,7 +697,8 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
          {
             wl->vk.context.invalid_swapchain = true;
-            vulkan_acquire_next_image(&wl->vk);
+            if (wl->vk.created_new_swapchain)
+               vulkan_acquire_next_image(&wl->vk);
          }
          else
          {

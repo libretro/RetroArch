@@ -231,7 +231,7 @@ void filebrowser_parse(void *data, unsigned type_data)
             switch (path_is_media_type(path))
             {
                case RARCH_CONTENT_MOVIE:
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
                   if (settings->bools.multimedia_builtin_mediaplayer_enable)
                      file_type = FILE_TYPE_MOVIE;
 #endif

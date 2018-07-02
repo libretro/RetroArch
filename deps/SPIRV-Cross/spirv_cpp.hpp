@@ -51,7 +51,7 @@ public:
 private:
 	void emit_header() override;
 	void emit_c_linkage();
-	void emit_function_prototype(SPIRFunction &func, uint64_t return_flags) override;
+	void emit_function_prototype(SPIRFunction &func, const Bitset &return_flags) override;
 
 	void emit_resources();
 	void emit_buffer_block(const SPIRVariable &type) override;
@@ -72,6 +72,6 @@ private:
 
 	std::string interface_name;
 };
-}
+} // namespace spirv_cross
 
 #endif

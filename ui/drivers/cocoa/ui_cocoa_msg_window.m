@@ -25,12 +25,14 @@
 
 #include "../../ui_companion_driver.h"
 
-extern id apple_platform;
-
 static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_state *state, enum ui_msg_window_type type)
 {
     NSInteger response;
+#if __has_feature(objc_arc)
+    NSAlert* alert = [NSAlert new];
+#else
     NSAlert* alert = [[NSAlert new] autorelease];
+#endif
     
     if (!string_is_empty(state->title))
         [alert setMessageText:BOXSTRING(state->title)];
@@ -72,7 +74,7 @@ static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_stat
             break;
     }
     
-    [alert beginSheetModalForWindow:ui_companion_driver_get_main_window()
+    [alert beginSheetModalForWindow:(BRIDGE NSWindow *)ui_companion_driver_get_main_window()
                       modalDelegate:apple_platform
                      didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
                         contextInfo:nil];

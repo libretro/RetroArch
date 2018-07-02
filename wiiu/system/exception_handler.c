@@ -23,8 +23,9 @@
 #include "wiiu_dbg.h"
 #include "exception_handler.h"
 #include "version.h"
+#ifdef HAVE_GIT_VERSION
 #include "version_git.h"
-
+#endif
 /*	Settings */
 #define NUM_STACK_TRACE_LINES 5
 

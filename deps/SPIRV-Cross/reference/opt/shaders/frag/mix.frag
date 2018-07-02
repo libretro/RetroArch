@@ -10,9 +10,9 @@ layout(location = 3) in float vIn3;
 
 void main()
 {
-    FragColor = mix(vIn0, vIn1, bvec4(false, true, false, false));
-    FragColor = vec4(true ? vIn3 : vIn2);
-    FragColor = mix(vIn1, vIn0, bvec4(true));
-    FragColor = vec4(true ? vIn2 : vIn3);
+    FragColor = vec4(vIn0.x, vIn1.y, vIn0.z, vIn0.w);
+    FragColor = vec4(vIn3);
+    FragColor = vIn0.xyzw;
+    FragColor = vec4(vIn2);
 }
 

@@ -292,23 +292,29 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
    get_ios_version(major, minor);
    strlcpy(s, "iOS", len);
 #elif defined(OSX)
-    if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
-    {
-        typedef struct
-        {
-            NSInteger majorVersion;
-            NSInteger minorVersion;
-            NSInteger patchVersion;
-        } NSMyOSVersion;
-        NSMyOSVersion version = ((NSMyOSVersion(*)(id, SEL))objc_msgSend_stret)([NSProcessInfo processInfo], @selector(operatingSystemVersion));
-        *major = version.majorVersion;
-        *minor = version.minorVersion;
-    }
-    else
-    {
-        Gestalt(gestaltSystemVersionMinor, (SInt32*)minor);
-        Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
-    }
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
+   NSOperatingSystemVersion version =  [[NSProcessInfo processInfo] operatingSystemVersion];
+   *major = (int)version.majorVersion;
+   *minor = (int)version.minorVersion;
+#else
+   if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
+   {
+      typedef struct
+      {
+         NSInteger majorVersion;
+         NSInteger minorVersion;
+         NSInteger patchVersion;
+      } NSMyOSVersion;
+      NSMyOSVersion version = ((NSMyOSVersion(*)(id, SEL))objc_msgSend_stret)([NSProcessInfo processInfo], @selector(operatingSystemVersion));
+      *major = (int)version.majorVersion;
+      *minor = (int)version.minorVersion;
+   }
+   else
+   {
+      Gestalt(gestaltSystemVersionMinor, (SInt32*)minor);
+      Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
+   }
+#endif
    strlcpy(s, "OSX", len);
 #endif
 }
@@ -743,5 +749,6 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                         /* detach_console */
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
+   NULL,                         /* set_sustained_performance_mode */
    "darwin",
 };

@@ -43,9 +43,14 @@ static void ui_application_cocoa_process_events(void)
         NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
         if (!event)
             break;
+#if __has_feature(objc_arc)
+        [NSApp sendEvent: event];
+       
+#else
         [event retain];
         [NSApp sendEvent: event];
         [event release];
+#endif
     }
 }
 

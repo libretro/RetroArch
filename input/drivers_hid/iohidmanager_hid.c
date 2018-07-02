@@ -245,7 +245,7 @@ static void iohidmanager_hid_device_report(void *data,
 
    if (hid && adapter)
       pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
-            adapter->data, reportLength + 1);
+            adapter->data, (uint32_t)(reportLength + 1));
 }
 
 /* NOTE: I pieced this together through trial and error,

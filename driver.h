@@ -35,7 +35,8 @@ RETRO_BEGIN_DECLS
       | DRIVER_MENU_MASK \
       | DRIVERS_VIDEO_INPUT_MASK \
       | DRIVER_WIFI_MASK \
-      | DRIVER_LED_MASK )
+      | DRIVER_LED_MASK \
+      | DRIVER_MIDI_MASK )
 
 #define DRIVERS_CMD_ALL_BUT_MENU \
       ( DRIVER_AUDIO_MASK \
@@ -45,7 +46,8 @@ RETRO_BEGIN_DECLS
       | DRIVER_LOCATION_MASK \
       | DRIVERS_VIDEO_INPUT_MASK \
       | DRIVER_WIFI_MASK \
-      | DRIVER_LED_MASK )
+      | DRIVER_LED_MASK \
+      | DRIVER_MIDI_MASK )
 
 enum
 {
@@ -57,7 +59,8 @@ enum
    DRIVER_MENU,
    DRIVERS_VIDEO_INPUT,
    DRIVER_WIFI,
-   DRIVER_LED
+   DRIVER_LED,
+   DRIVER_MIDI
 };
 
 enum
@@ -70,7 +73,8 @@ enum
    DRIVER_MENU_MASK         = 1 << DRIVER_MENU,
    DRIVERS_VIDEO_INPUT_MASK = 1 << DRIVERS_VIDEO_INPUT,
    DRIVER_WIFI_MASK         = 1 << DRIVER_WIFI,
-   DRIVER_LED_MASK          = 1 << DRIVER_LED
+   DRIVER_LED_MASK          = 1 << DRIVER_LED,
+   DRIVER_MIDI_MASK         = 1 << DRIVER_MIDI
 };
 
 enum driver_ctl_state

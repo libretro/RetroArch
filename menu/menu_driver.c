@@ -118,6 +118,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_VULKAN
    &menu_display_ctx_vulkan,
 #endif
+#ifdef HAVE_METAL
+   &menu_display_ctx_metal,
+#endif
 #ifdef HAVE_VITA2D
    &menu_display_ctx_vita2d,
 #endif
@@ -258,6 +261,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_VULKAN:
          if (string_is_equal(video_driver, "vulkan"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_METAL:
+         if (string_is_equal(video_driver, "metal"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D8:

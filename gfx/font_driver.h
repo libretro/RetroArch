@@ -163,6 +163,7 @@ extern font_renderer_t vita2d_vita_font;
 extern font_renderer_t ctr_font;
 extern font_renderer_t wiiu_font;
 extern font_renderer_t vulkan_raster_font;
+extern font_renderer_t metal_raster_font;
 extern font_renderer_t d3d10_font;
 extern font_renderer_t d3d11_font;
 extern font_renderer_t d3d12_font;

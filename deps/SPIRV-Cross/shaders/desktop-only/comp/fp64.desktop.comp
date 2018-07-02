@@ -72,7 +72,7 @@ void main()
 	dvec3 e = cross(a.xyz, a.yzw);
 	a = faceforward(a, a, a);
 	a = reflect(a, a);
-	a = refract(a, a, a.x);
+	//a = refract(a, a, 1.45);
 
 	dmat4 l = matrixCompMult(amat, amat);
 	l = outerProduct(a, a);

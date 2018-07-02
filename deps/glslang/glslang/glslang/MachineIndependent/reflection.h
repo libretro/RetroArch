@@ -1,11 +1,11 @@
 //
-//Copyright (C) 2013-2016 LunarG, Inc.
+// Copyright (C) 2013-2016 LunarG, Inc.
 //
-//All rights reserved.
+// All rights reserved.
 //
-//Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions
-//are met:
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
 //
 //    Redistributions of source code must retain the above copyright
 //    notice, this list of conditions and the following disclaimer.
@@ -19,18 +19,18 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-//"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-//LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-//FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-//COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-//INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-//BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-//LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-//CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-//LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-//ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-//POSSIBILITY OF SUCH DAMAGE.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 //
 
 #ifndef _REFLECTION_INCLUDED
@@ -56,32 +56,37 @@ class TReflectionTraverser;
 class TObjectReflection {
 public:
     TObjectReflection(const TString& pName, const TType& pType, int pOffset, int pGLDefineType, int pSize, int pIndex) :
-        name(pName), type(pType.clone()),
-        offset(pOffset), glDefineType(pGLDefineType), size(pSize), index(pIndex) { }
-
-    void dump() const {
-        printf("%s: offset %d, type %x, size %d, index %d, binding %d\n",
-               name.c_str(), offset, glDefineType, size, index, getBinding() );
-    }
+        name(pName), offset(pOffset),
+        glDefineType(pGLDefineType), size(pSize), index(pIndex), counterIndex(-1), type(pType.clone()) { }
 
     const TType* const getType() const { return type; }
+    int getBinding() const
+    {
+        if (type == nullptr || !type->getQualifier().hasBinding())
+            return -1;
+        return type->getQualifier().layoutBinding;
+    }
+    void dump() const
+    {
+        printf("%s: offset %d, type %x, size %d, index %d, binding %d",
+               name.c_str(), offset, glDefineType, size, index, getBinding() );
+
+        if (counterIndex != -1)
+            printf(", counter %d", counterIndex);
+
+        printf("\n");
+    }
+    static TObjectReflection badReflection() { return TObjectReflection(); }
 
     TString name;
     int offset;
     int glDefineType;
     int size;         // data size in bytes for a block, array size for a (non-block) object that's an array
     int index;
-
-    static TObjectReflection badReflection() { return TObjectReflection(); }
+    int counterIndex;
 
 protected:
-    int getBinding() const {
-        if (type == nullptr || type->getQualifier().layoutBinding == TQualifier::layoutBindingEnd)
-            return -1;
-        return type->getQualifier().layoutBinding;
-    }
-
-    TObjectReflection() : type(nullptr), offset(-1), glDefineType(-1), size(-1), index(-1) { }
+    TObjectReflection() : offset(-1), glDefineType(-1), size(-1), index(-1), type(nullptr) { }
 
     const TType* type;
 };
@@ -89,7 +94,12 @@ protected:
 // The full reflection database
 class TReflection {
 public:
-    TReflection() : badReflection(TObjectReflection::badReflection()) { }
+    TReflection() : badReflection(TObjectReflection::badReflection())
+    { 
+        for (int dim=0; dim<3; ++dim)
+            localSize[dim] = 0;
+    }
+
     virtual ~TReflection() {}
 
     // grow the reflection stage by stage
@@ -135,10 +145,19 @@ public:
             return it->second;
     }
 
+    // see getIndex(const char*)
+    int getIndex(const TString& name) const { return getIndex(name.c_str()); }
+
+    // Thread local size
+    unsigned getLocalSize(int dim) const { return dim <= 2 ? localSize[dim] : 0; }
+
     void dump();
 
 protected:
     friend class glslang::TReflectionTraverser;
+
+    void buildCounterIndices(const TIntermediate&);
+    void buildAttributeReflection(EShLanguage, const TIntermediate&);
 
     // Need a TString hash: typedef std::unordered_map<TString, int> TNameToIndex;
     typedef std::map<TString, int> TNameToIndex;
@@ -149,6 +168,8 @@ protected:
     TMapIndexToReflection indexToUniform;
     TMapIndexToReflection indexToUniformBlock;
     TMapIndexToReflection indexToAttribute;
+
+    unsigned int localSize[3];
 };
 
 } // end namespace glslang

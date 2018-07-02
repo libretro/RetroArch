@@ -305,7 +305,7 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
          return FILE_TYPE_SHA1;
       case MENU_VALUE_MD5:
          return FILE_TYPE_MD5;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case MENU_VALUE_FILE_OGM:
          return FILE_TYPE_OGM;
       case MENU_VALUE_FILE_MKV:

@@ -1,11 +1,11 @@
 //
-//Copyright (C) 2015 LunarG, Inc.
+// Copyright (C) 2015 LunarG, Inc.
 //
-//All rights reserved.
+// All rights reserved.
 //
-//Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions
-//are met:
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
 //
 //    Redistributions of source code must retain the above copyright
 //    notice, this list of conditions and the following disclaimer.
@@ -19,18 +19,18 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-//"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-//LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-//FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-//COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-//INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-//BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-//LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-//CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-//LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-//ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-//POSSIBILITY OF SUCH DAMAGE.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 //
 
 #ifndef SPIRVREMAPPER_H
@@ -39,6 +39,7 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+#include <exception>
 
 namespace spv {
 
@@ -111,7 +112,10 @@ namespace spv {
 class spirvbin_t : public spirvbin_base_t
 {
 public:
-   spirvbin_t(int verbose = 0) : entryPoint(spv::NoResult), largestNewId(0), verbose(verbose) { }
+   spirvbin_t(int verbose = 0) : entryPoint(spv::NoResult), largestNewId(0), verbose(verbose), errorLatch(false)
+   { }
+
+   virtual ~spirvbin_t() { }
 
    // remap on an existing binary in memory
    void remap(std::vector<std::uint32_t>& spv, std::uint32_t opts = DO_EVERYTHING);
@@ -164,7 +168,7 @@ private:
    typedef std::unordered_map<spv::Id, unsigned> typesize_map_t;
 
    // handle error
-   void error(const std::string& txt) const { errorHandler(txt); }
+   void error(const std::string& txt) const { errorLatch = true; errorHandler(txt); }
 
    bool     isConstOp(spv::Op opCode)      const;
    bool     isTypeOp(spv::Op opCode)       const;
@@ -239,7 +243,8 @@ private:
 
    void        applyMap();            // remap per local name map
    void        mapRemainder();        // map any IDs we haven't touched yet
-   void        stripDebug();          // strip debug info
+   void        stripDebug();          // strip all debug info
+   void        stripDeadRefs();       // strips debug info for now-dead references after DCE
    void        strip();               // remove debug symbols
 
    std::vector<spirword_t> spv;      // SPIR words
@@ -264,7 +269,6 @@ private:
    // Function start and end.  use unordered_map because we'll have
    // many fewer functions than IDs.
    std::unordered_map<spv::Id, range_t> fnPos;
-   std::unordered_map<spv::Id, range_t> fnPosDCE; // deleted functions
 
    // Which functions are called, anywhere in the module, with a call count
    std::unordered_map<spv::Id, int> fnCalls;
@@ -284,6 +288,11 @@ private:
    // processing options:
    std::uint32_t options;
    int           verbose;     // verbosity level
+
+   // Error latch: this is set if the error handler is ever executed.  It would be better to
+   // use a try/catch block and throw, but that's not desired for certain environments, so
+   // this is the alternative.
+   mutable bool errorLatch;
 
    static errorfn_t errorHandler;
    static logfn_t   logHandler;

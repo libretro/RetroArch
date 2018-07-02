@@ -6,6 +6,7 @@ layout(binding = 1, rgba8) uniform writeonly mediump image2D uImageOut;
 
 void main()
 {
-    imageStore(uImageOut, ivec2(gl_GlobalInvocationID.xy), imageLoad(uImageIn, ivec2(gl_GlobalInvocationID.xy) + imageSize(uImageIn)));
+    ivec2 _23 = ivec2(gl_GlobalInvocationID.xy);
+    imageStore(uImageOut, _23, imageLoad(uImageIn, _23 + imageSize(uImageIn)));
 }
 

@@ -14,6 +14,7 @@ set(HEADERS
     bitutils.h
     spirv.hpp
     GLSL.std.450.h
+    GLSL.ext.EXT.h
     GLSL.ext.KHR.h
     GlslangToSpv.h
     hex_float.h
@@ -33,16 +34,50 @@ if(ENABLE_AMD_EXTENSIONS)
          GLSL.ext.AMD.h)
 endif(ENABLE_AMD_EXTENSIONS)
 
-add_library(SPIRV STATIC ${SOURCES} ${HEADERS})
-set_property(TARGET SPIRV PROPERTY FOLDER glslang)
+if(ENABLE_NV_EXTENSIONS)
+    list(APPEND
+         HEADERS
+         GLSL.ext.NV.h)
+endif(ENABLE_NV_EXTENSIONS)
 
-add_library(SPVRemapper STATIC ${SPVREMAP_SOURCES} ${SPVREMAP_HEADERS})
+add_library(SPIRV ${LIB_TYPE} ${SOURCES} ${HEADERS})
+set_property(TARGET SPIRV PROPERTY FOLDER glslang)
+set_property(TARGET SPIRV PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_include_directories(SPIRV PUBLIC ..)
+
+add_library(SPVRemapper ${LIB_TYPE} ${SPVREMAP_SOURCES} ${SPVREMAP_HEADERS})
 set_property(TARGET SPVRemapper PROPERTY FOLDER glslang)
+set_property(TARGET SPVRemapper PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+if(WIN32 AND BUILD_SHARED_LIBS)
+    set_target_properties(SPIRV PROPERTIES PREFIX "")
+    set_target_properties(SPVRemapper PROPERTIES PREFIX "")
+endif()
+
+if(ENABLE_OPT)
+    target_include_directories(SPIRV
+        PRIVATE ${spirv-tools_SOURCE_DIR}/include
+        PRIVATE ${spirv-tools_SOURCE_DIR}/source
+    )
+    target_link_libraries(SPIRV glslang SPIRV-Tools-opt)
+else()
+    target_link_libraries(SPIRV glslang)
+endif(ENABLE_OPT)
 
 if(WIN32)
     source_group("Source" FILES ${SOURCES} ${HEADERS})
     source_group("Source" FILES ${SPVREMAP_SOURCES} ${SPVREMAP_HEADERS})
 endif(WIN32)
 
-install(TARGETS SPIRV SPVRemapper
-        ARCHIVE DESTINATION lib)
+if(ENABLE_GLSLANG_INSTALL)
+    if(BUILD_SHARED_LIBS)
+        install(TARGETS SPIRV SPVRemapper
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    else()
+        install(TARGETS SPIRV SPVRemapper
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    endif()
+
+    install(FILES ${HEADERS} ${SPVREMAP_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/SPIRV/)
+endif(ENABLE_GLSLANG_INSTALL)

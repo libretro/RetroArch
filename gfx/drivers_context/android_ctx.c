@@ -281,7 +281,8 @@ static bool android_gfx_ctx_set_resize(void *data,
             return false;
          }
 
-         vulkan_acquire_next_image(&and->vk);
+         if (and->vk.created_new_swapchain)
+            vulkan_acquire_next_image(&and->vk);
          and->vk.context.invalid_swapchain = true;
          and->vk.need_new_swapchain        = false;
 #endif

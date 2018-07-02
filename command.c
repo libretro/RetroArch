@@ -48,6 +48,8 @@
 #include "discord/discord.h"
 #endif
 
+#include "midi/midi_driver.h"
+
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_content.h"
@@ -2040,6 +2042,7 @@ TODO: Add a setting for these tweaks */
          command_event_save_auto_state();
          break;
       case CMD_EVENT_AUDIO_STOP:
+         midi_driver_set_all_sounds_off();
          return audio_driver_stop();
       case CMD_EVENT_AUDIO_START:
          return audio_driver_start(rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL));
@@ -2131,7 +2134,7 @@ TODO: Add a setting for these tweaks */
          }
          g_defaults.music_history = NULL;
 
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
          if (g_defaults.video_history)
          {
             playlist_write_file(g_defaults.video_history);
@@ -2181,7 +2184,7 @@ TODO: Add a setting for these tweaks */
                   settings->paths.path_content_music_history,
                   content_history_size);
 
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   settings->paths.path_content_video_history);
@@ -2513,17 +2516,18 @@ TODO: Add a setting for these tweaks */
             /* buf is expected to be address|port */
             char *buf = (char *)data;
             static struct string_list *hostname = NULL;
+            settings_t *settings = config_get_ptr();
             hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             RARCH_LOG("[netplay] connecting to %s:%d\n",
                hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : 55435);
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
             if (!init_netplay(NULL, hostname->elems[0].data,
                !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : 55435))
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
@@ -2546,17 +2550,18 @@ TODO: Add a setting for these tweaks */
             /* buf is expected to be address|port */
             char *buf = (char *)data;
             static struct string_list *hostname = NULL;
+            settings_t *settings = config_get_ptr();
             hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             RARCH_LOG("[netplay] connecting to %s:%d\n",
                hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : 55435);
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
             if (!init_netplay_deferred(hostname->elems[0].data,
                !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : 55435))
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);

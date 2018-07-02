@@ -15,9 +15,9 @@
                OpDecorate %22044 DescriptorSet 0
                OpDecorate %22044 Binding 0
                OpDecorate %5785 DescriptorSet 0
-               OpDecorate %5785 Binding 140
+               OpDecorate %5785 Binding 14
                OpDecorate %5688 DescriptorSet 0
-               OpDecorate %5688 Binding 60
+               OpDecorate %5688 Binding 6
                OpMemberDecorate %_struct_994 0 Offset 0
                OpMemberDecorate %_struct_994 1 Offset 16
                OpMemberDecorate %_struct_994 2 Offset 28
@@ -49,13 +49,13 @@
                OpDecorate %12348 DescriptorSet 0
                OpDecorate %12348 Binding 2
                OpDecorate %3312 DescriptorSet 0
-               OpDecorate %3312 Binding 142
+               OpDecorate %3312 Binding 13
                OpDecorate %4646 DescriptorSet 0
-               OpDecorate %4646 Binding 62
+               OpDecorate %4646 Binding 5
                OpDecorate %4862 DescriptorSet 0
-               OpDecorate %4862 Binding 141
+               OpDecorate %4862 Binding 4
                OpDecorate %3594 DescriptorSet 0
-               OpDecorate %3594 Binding 61
+               OpDecorate %3594 Binding 3
                OpDecorate %_arr_mat4v4float_uint_2 ArrayStride 64
                OpDecorate %_arr_v4float_uint_2 ArrayStride 16
                OpMemberDecorate %_struct_408 0 RowMajor

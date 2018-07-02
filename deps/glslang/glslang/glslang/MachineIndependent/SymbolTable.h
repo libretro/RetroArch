@@ -1,12 +1,12 @@
 //
-//Copyright (C) 2002-2005  3Dlabs Inc. Ltd.
-//Copyright (C) 2013 LunarG, Inc.
+// Copyright (C) 2002-2005  3Dlabs Inc. Ltd.
+// Copyright (C) 2013 LunarG, Inc.
 //
-//All rights reserved.
+// All rights reserved.
 //
-//Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions
-//are met:
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
 //
 //    Redistributions of source code must retain the above copyright
 //    notice, this list of conditions and the following disclaimer.
@@ -20,18 +20,18 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-//"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-//LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-//FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-//COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-//INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-//BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-//LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-//CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-//LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-//ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-//POSSIBILITY OF SUCH DAMAGE.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 //
 
 #ifndef _SYMBOL_TABLE_INCLUDED_
@@ -87,6 +87,12 @@ public:
 
     virtual const TString& getName() const { return *name; }
     virtual void changeName(const TString* newName) { name = newName; }
+    virtual void addPrefix(const char* prefix)
+    {
+        TString newName(prefix);
+        newName.append(*name);
+        changeName(NewPoolTString(newName.c_str()));
+    }
     virtual const TString& getMangledName() const { return getName(); }
     virtual TFunction* getAsFunction() { return 0; }
     virtual const TFunction* getAsFunction() const { return 0; }
@@ -191,6 +197,7 @@ protected:
 struct TParameter {
     TString *name;
     TType* type;
+    TIntermTyped* defaultValue;
     void copyParam(const TParameter& param)
     {
         if (param.name)
@@ -198,7 +205,9 @@ struct TParameter {
         else
             name = 0;
         type = param.type->clone();
+        defaultValue = param.defaultValue;
     }
+    TBuiltInVariable getDeclaredBuiltIn() const { return type->getQualifier().declaredBuiltIn; }
 };
 
 //
@@ -209,40 +218,82 @@ public:
     explicit TFunction(TOperator o) :
         TSymbol(0),
         op(o),
-        defined(false), prototyped(false) { }
+        defined(false), prototyped(false), implicitThis(false), illegalImplicitThis(false), defaultParamCount(0) { }
     TFunction(const TString *name, const TType& retType, TOperator tOp = EOpNull) :
         TSymbol(name),
         mangledName(*name + '('),
         op(tOp),
-        defined(false), prototyped(false) { returnType.shallowCopy(retType); }
-    virtual TFunction* clone() const;
+        defined(false), prototyped(false), implicitThis(false), illegalImplicitThis(false), defaultParamCount(0)
+    {
+        returnType.shallowCopy(retType);
+        declaredBuiltIn = retType.getQualifier().builtIn;
+    }
+    virtual TFunction* clone() const override;
     virtual ~TFunction();
 
-    virtual TFunction* getAsFunction() { return this; }
-    virtual const TFunction* getAsFunction() const { return this; }
+    virtual TFunction* getAsFunction() override { return this; }
+    virtual const TFunction* getAsFunction() const override { return this; }
 
+    // Install 'p' as the (non-'this') last parameter.
+    // Non-'this' parameters are reflected in both the list of parameters and the
+    // mangled name.
     virtual void addParameter(TParameter& p)
     {
         assert(writable);
         parameters.push_back(p);
         p.type->appendMangledName(mangledName);
+
+        if (p.defaultValue != nullptr)
+            defaultParamCount++;
     }
 
-    virtual const TString& getMangledName() const { return mangledName; }
-    virtual const TType& getType() const { return returnType; }
-    virtual TType& getWritableType() { return returnType; }
+    // Install 'this' as the first parameter.
+    // 'this' is reflected in the list of parameters, but not the mangled name.
+    virtual void addThisParameter(TType& type, const char* name)
+    {
+        TParameter p = { NewPoolTString(name), new TType, nullptr };
+        p.type->shallowCopy(type);
+        parameters.insert(parameters.begin(), p);
+    }
+
+    virtual void addPrefix(const char* prefix) override
+    {
+        TSymbol::addPrefix(prefix);
+        mangledName.insert(0, prefix);
+    }
+
+    virtual void removePrefix(const TString& prefix)
+    {
+        assert(mangledName.compare(0, prefix.size(), prefix) == 0);
+        mangledName.erase(0, prefix.size());
+    }
+
+    virtual const TString& getMangledName() const override { return mangledName; }
+    virtual const TType& getType() const override { return returnType; }
+    virtual TBuiltInVariable getDeclaredBuiltInType() const { return declaredBuiltIn; }
+    virtual TType& getWritableType() override { return returnType; }
     virtual void relateToOperator(TOperator o) { assert(writable); op = o; }
     virtual TOperator getBuiltInOp() const { return op; }
     virtual void setDefined() { assert(writable); defined = true; }
     virtual bool isDefined() const { return defined; }
     virtual void setPrototyped() { assert(writable); prototyped = true; }
     virtual bool isPrototyped() const { return prototyped; }
+    virtual void setImplicitThis() { assert(writable); implicitThis = true; }
+    virtual bool hasImplicitThis() const { return implicitThis; }
+    virtual void setIllegalImplicitThis() { assert(writable); illegalImplicitThis = true; }
+    virtual bool hasIllegalImplicitThis() const { return illegalImplicitThis; }
 
+    // Return total number of parameters
     virtual int getParamCount() const { return static_cast<int>(parameters.size()); }
+    // Return number of parameters with default values.
+    virtual int getDefaultParamCount() const { return defaultParamCount; }
+    // Return number of fixed parameters (without default values)
+    virtual int getFixedParamCount() const { return getParamCount() - getDefaultParamCount(); }
+
     virtual TParameter& operator[](int i) { assert(writable); return parameters[i]; }
     virtual const TParameter& operator[](int i) const { return parameters[i]; }
 
-    virtual void dump(TInfoSink &infoSink) const;
+    virtual void dump(TInfoSink &infoSink) const override;
 
 protected:
     explicit TFunction(const TFunction&);
@@ -251,10 +302,18 @@ protected:
     typedef TVector<TParameter> TParamList;
     TParamList parameters;
     TType returnType;
+    TBuiltInVariable declaredBuiltIn;
+
     TString mangledName;
     TOperator op;
     bool defined;
     bool prototyped;
+    bool implicitThis;         // True if this function is allowed to see all members of 'this'
+    bool illegalImplicitThis;  // True if this function is not supposed to have access to dynamic members of 'this',
+                               // even if it finds member variables in the symbol table.
+                               // This is important for a static member function that has member variables in scope,
+                               // but is not allowed to use them, or see hidden symbols instead.
+    int  defaultParamCount;
 };
 
 //
@@ -301,7 +360,7 @@ protected:
 class TSymbolTableLevel {
 public:
     POOL_ALLOCATOR_NEW_DELETE(GetThreadPoolAllocator())
-    TSymbolTableLevel() : defaultPrecision(0), anonId(0) { }
+    TSymbolTableLevel() : defaultPrecision(0), anonId(0), thisLevel(false) { }
     ~TSymbolTableLevel();
 
     bool insert(TSymbol& symbol, bool separateNameSpaces)
@@ -459,6 +518,9 @@ public:
     TSymbolTableLevel* clone() const;
     void readOnly();
 
+    void setThisLevel() { thisLevel = true; }
+    bool isThisLevel() const { return thisLevel; }
+
 protected:
     explicit TSymbolTableLevel(TSymbolTableLevel&);
     TSymbolTableLevel& operator=(TSymbolTableLevel&);
@@ -470,6 +532,8 @@ protected:
     tLevel level;  // named mappings
     TPrecisionQualifier *defaultPrecision;
     int anonId;
+    bool thisLevel;  // True if this level of the symbol table is a structure scope containing member function
+                     // that are supposed to see anonymous access to member variables.
 };
 
 class TSymbolTable {
@@ -524,6 +588,20 @@ public:
     void push()
     {
         table.push_back(new TSymbolTableLevel);
+    }
+
+    // Make a new symbol-table level to represent the scope introduced by a structure
+    // containing member functions, such that the member functions can find anonymous
+    // references to member variables.
+    //
+    // 'thisSymbol' should have a name of "" to trigger anonymous structure-member
+    // symbol finds.
+    void pushThis(TSymbol& thisSymbol)
+    {
+        assert(thisSymbol.getName().size() == 0);
+        table.push_back(new TSymbolTableLevel);
+        table.back()->setThisLevel();
+        insert(thisSymbol);
     }
 
     void pop(TPrecisionQualifier *p)
@@ -612,19 +690,50 @@ public:
         }
     }
 
-    TSymbol* find(const TString& name, bool* builtIn = 0, bool *currentScope = 0)
+    // Normal find of a symbol, that can optionally say whether the symbol was found
+    // at a built-in level or the current top-scope level.
+    TSymbol* find(const TString& name, bool* builtIn = 0, bool* currentScope = 0, int* thisDepthP = 0)
     {
         int level = currentLevel();
         TSymbol* symbol;
+        int thisDepth = 0;
         do {
+            if (table[level]->isThisLevel())
+                ++thisDepth;
             symbol = table[level]->find(name);
             --level;
-        } while (symbol == 0 && level >= 0);
+        } while (symbol == nullptr && level >= 0);
         level++;
         if (builtIn)
             *builtIn = isBuiltInLevel(level);
         if (currentScope)
             *currentScope = isGlobalLevel(currentLevel()) || level == currentLevel();  // consider shared levels as "current scope" WRT user globals
+        if (thisDepthP != nullptr) {
+            if (! table[level]->isThisLevel())
+                thisDepth = 0;
+            *thisDepthP = thisDepth;
+        }
+
+        return symbol;
+    }
+
+    // Find of a symbol that returns how many layers deep of nested
+    // structures-with-member-functions ('this' scopes) deep the symbol was
+    // found in.
+    TSymbol* find(const TString& name, int& thisDepth)
+    {
+        int level = currentLevel();
+        TSymbol* symbol;
+        thisDepth = 0;
+        do {
+            if (table[level]->isThisLevel())
+                ++thisDepth;
+            symbol = table[level]->find(name);
+            --level;
+        } while (symbol == 0 && level >= 0);
+
+        if (! table[level + 1]->isThisLevel())
+            thisDepth = 0;
 
         return symbol;
     }

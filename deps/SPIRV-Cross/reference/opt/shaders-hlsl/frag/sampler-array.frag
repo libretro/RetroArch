@@ -17,7 +17,8 @@ struct SPIRV_Cross_Input
 
 void frag_main()
 {
-    uImage[vIndex][int2(gl_FragCoord.xy)] = ((uCombined[vIndex].Sample(_uCombined_sampler[vIndex], vTex) + uTex[vIndex].Sample(uSampler[vIndex], vTex)) + (uCombined[vIndex + 1].Sample(_uCombined_sampler[vIndex + 1], vTex))) + (uTex[vIndex + 1].Sample(uSampler[vIndex + 1], vTex));
+    int _72 = vIndex + 1;
+    uImage[vIndex][int2(gl_FragCoord.xy)] = ((uCombined[vIndex].Sample(_uCombined_sampler[vIndex], vTex) + uTex[vIndex].Sample(uSampler[vIndex], vTex)) + uCombined[_72].Sample(_uCombined_sampler[_72], vTex)) + uTex[_72].Sample(uSampler[_72], vTex);
 }
 
 void main(SPIRV_Cross_Input stage_input)

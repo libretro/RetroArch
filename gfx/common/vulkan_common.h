@@ -48,6 +48,10 @@
 #include "../font_driver.h"
 #include "../video_driver.h"
 #include "../drivers_shader/shader_vulkan.h"
+#include "../../libretro-common/include/gfx/math/matrix_4x4.h"
+#include "../include/vulkan/vulkan.h"
+#include "../../libretro-common/include/gfx/scaler/scaler.h"
+#include "../../libretro-common/include/libretro_vulkan.h"
 
 RETRO_BEGIN_DECLS
 
@@ -126,6 +130,7 @@ typedef struct vulkan_context
 typedef struct gfx_ctx_vulkan_data
 {
    bool need_new_swapchain;
+   bool created_new_swapchain;
    vulkan_context_t context;
    VkSurfaceKHR vk_surface;
    VkSwapchainKHR swapchain;
@@ -135,6 +140,7 @@ struct vulkan_display_surface_info
 {
    unsigned width;
    unsigned height;
+   unsigned monitor_index;
 };
 
 struct vk_color

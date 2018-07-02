@@ -52,6 +52,8 @@
 
 #include "tasks/tasks_internal.h"
 
+#include "../list_special.h"
+
 static const char* invalid_filename_chars[] = {
    /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
    "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
@@ -281,6 +283,11 @@ enum record_driver_enum
    RECORD_NULL
 };
 
+enum midi_driver_enum
+{
+   MIDI_WINMM               = RECORD_NULL + 1,
+   MIDI_NULL
+};
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
@@ -384,6 +391,12 @@ static enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_R
 static enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_FFMPEG;
 #else
 static enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_NULL;
+#endif
+
+#ifdef HAVE_WINMM
+static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_WINMM;
+#else
+static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
 #endif
 
 #if defined(XENON)
@@ -1005,6 +1018,26 @@ const char *config_get_default_menu(void)
    return "null";
 }
 
+const char *config_get_default_midi(void)
+{
+   enum midi_driver_enum default_driver = MIDI_DEFAULT_DRIVER;
+
+   switch (default_driver)
+   {
+      case MIDI_WINMM:
+         return "winmm";
+      case MIDI_NULL:
+         break;
+   }
+
+   return "null";
+}
+
+const char *config_get_midi_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_MIDI_DRIVERS, NULL);
+}
+
 bool config_overlay_enable_default(void)
 {
    if (g_defaults.overlay.set)
@@ -1046,6 +1079,9 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("bundle_assets_dst_path_subdir", settings->arrays.bundle_assets_dst_subdir, false, NULL, true);
    SETTING_ARRAY("led_driver",               settings->arrays.led_driver, false, NULL, true);
    SETTING_ARRAY("netplay_mitm_server",      settings->arrays.netplay_mitm_server, false, NULL, true);
+   SETTING_ARRAY("midi_driver",              settings->arrays.midi_driver, false, NULL, true);
+   SETTING_ARRAY("midi_input",               settings->arrays.midi_input, true, midi_input, true);
+   SETTING_ARRAY("midi_output",              settings->arrays.midi_output, true, midi_output, true);
    *size = count;
 
    return tmp;
@@ -1309,7 +1345,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("content_show_images",           &settings->bools.menu_content_show_images, true, content_show_images, false);
 #endif
    SETTING_BOOL("content_show_music",            &settings->bools.menu_content_show_music, true, content_show_music, false);
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    SETTING_BOOL("content_show_video",            &settings->bools.menu_content_show_video, true, content_show_video, false);
 #endif
 #ifdef HAVE_NETWORKING
@@ -1330,6 +1366,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_show_help",                &settings->bools.menu_show_help, true, menu_show_help, false);
    SETTING_BOOL("menu_show_quit_retroarch",      &settings->bools.menu_show_quit_retroarch, true, menu_show_quit_retroarch, false);
    SETTING_BOOL("menu_show_reboot",              &settings->bools.menu_show_reboot, true, menu_show_reboot, false);
+   SETTING_BOOL("menu_show_shutdown",            &settings->bools.menu_show_shutdown, true, menu_show_shutdown, false);
    SETTING_BOOL("menu_show_online_updater",      &settings->bools.menu_show_online_updater, true, menu_show_online_updater, false);
    SETTING_BOOL("menu_show_core_updater",        &settings->bools.menu_show_core_updater, true, menu_show_core_updater, false);
    SETTING_BOOL("filter_by_current_core",        &settings->bools.filter_by_current_core, false, false /* TODO */, false);
@@ -1409,6 +1446,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("video_msg_bgcolor_enable",      &settings->bools.video_msg_bgcolor_enable, true, message_bgcolor_enable, false);
    SETTING_BOOL("video_window_show_decorations", &settings->bools.video_window_show_decorations, true, window_decorations, false);
 
+   SETTING_BOOL("sustained_performance_mode",    &settings->bools.sustained_performance_mode, true, sustained_performance_mode, false);
+
    *size = count;
 
    return tmp;
@@ -1455,6 +1494,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    struct config_uint_setting  *tmp   = (struct config_uint_setting*)malloc((*size + 1) * sizeof(struct config_uint_setting));
 
    SETTING_UINT("input_bind_timeout",           &settings->uints.input_bind_timeout,     true, input_bind_timeout, false);
+   SETTING_UINT("input_bind_hold",              &settings->uints.input_bind_hold,        true, input_bind_hold, false);
    SETTING_UINT("input_turbo_period",           &settings->uints.input_turbo_period,     true, turbo_period, false);
    SETTING_UINT("input_duty_cycle",             &settings->uints.input_turbo_duty_cycle, true, turbo_duty_cycle, false);
    SETTING_UINT("input_max_users",              input_driver_get_uint(INPUT_ACTION_MAX_USERS),        true, input_max_users, false);
@@ -1532,6 +1572,8 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 
    SETTING_UINT("run_ahead_frames",           &settings->uints.run_ahead_frames, true, 1,  false);
 
+   SETTING_UINT("midi_volume",                  &settings->uints.midi_volume, true, midi_volume, false);
+
    *size = count;
 
    return tmp;
@@ -1585,6 +1627,7 @@ static void config_set_defaults(void)
    const char *def_led             = config_get_default_led();
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
+   const char *def_midi            = config_get_default_midi();
    const char *def_mitm            = netplay_mitm_server;
    struct config_float_setting      *float_settings = populate_settings_float  (settings, &float_settings_size);
    struct config_bool_setting       *bool_settings  = populate_settings_bool  (settings, &bool_settings_size);
@@ -1665,6 +1708,9 @@ static void config_set_defaults(void)
    if (def_record)
       strlcpy(settings->arrays.record_driver,
             def_record, sizeof(settings->arrays.record_driver));
+   if (def_midi)
+      strlcpy(settings->arrays.midi_driver,
+            def_midi, sizeof(settings->arrays.midi_driver));
    if (def_mitm)
       strlcpy(settings->arrays.netplay_mitm_server,
             def_mitm, sizeof(settings->arrays.netplay_mitm_server));
@@ -1682,7 +1728,7 @@ static void config_set_defaults(void)
 #endif
 #endif
 
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    configuration_set_bool(settings, settings->bools.multimedia_builtin_mediaplayer_enable, true);
 #else
    configuration_set_bool(settings, settings->bools.multimedia_builtin_mediaplayer_enable, false);
@@ -1981,6 +2027,13 @@ static void config_set_defaults(void)
       path_set(RARCH_PATH_CONFIG, temp_str);
       free(temp_str);
    }
+
+   if (midi_input)
+      strlcpy(settings->arrays.midi_input,
+            midi_input, sizeof(settings->arrays.midi_input));
+   if (midi_output)
+      strlcpy(settings->arrays.midi_output,
+            midi_output, sizeof(settings->arrays.midi_output));
 
    /* Avoid reloading config on every content load */
    if (default_block_config_read)
@@ -2892,8 +2945,10 @@ static bool config_load_file(const char *path, bool set_defaults,
                settings->arrays.video_driver);
          settings->paths.path_shader[0] = '\0';
          break;
+      }
    }
-}
+
+   frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
 
    ret = true;
 

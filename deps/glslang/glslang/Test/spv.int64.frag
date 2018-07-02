@@ -1,6 +1,7 @@
 #version 450
 
 #extension GL_ARB_gpu_shader_int64: enable
+#extension GL_KHX_shader_explicit_arithmetic_types_int64: require
 
 layout(binding = 0) uniform Uniforms
 {
@@ -115,6 +116,8 @@ void operators()
     i64  = i64 % i;
 
     // Shift
+    u64v = u64v << i;
+    i64 = i64 >> uv.y;
     u64v <<= i;
     i64  >>= uv.y;
 

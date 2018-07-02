@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <ctype.h>
 #include <errno.h>
 
 #ifdef HAVE_CONFIG_H
@@ -189,6 +190,102 @@ int filestream_getc(RFILE *stream)
    if(filestream_read(stream, &c, 1) == 1)
       return (int)c;
    return EOF;
+}
+
+int filestream_scanf(RFILE *stream, const char* format, ...)
+{
+   char buf[4096];
+   char subfmt[64];
+   
+   const char * bufiter = buf;
+   
+   int64_t startpos = filestream_tell(stream);
+   
+   va_list args;
+   
+   int ret = 0;
+   
+   int maxlen = filestream_read(stream, buf, sizeof(buf)-1);
+   buf[maxlen] = '\0';
+   
+   va_start(args, format);
+   
+   while (*format)
+   {
+      if (*format == '%')
+      {
+         char* subfmtiter = subfmt;
+         
+         int subret;
+         int sublen;
+         
+         bool asterisk = false;
+         
+         *subfmtiter++ = *format++; /* '%' */
+         
+         /* %[*][width][length]specifier */
+         
+         if (*format == '*')
+         {
+            asterisk = true;
+            *subfmtiter++ = *format++;
+         }
+         
+         while (isdigit(*format)) *subfmtiter++ = *format++; /* width */
+         
+         /* length */
+         if (*format == 'h' || *format == 'l')
+         {
+            if (format[1] == format[0]) *subfmtiter++ = *format++;
+            *subfmtiter++ = *format++;
+         }
+         else if (*format == 'j' || *format == 'z' || *format == 't' || *format == 'L')
+         {
+            *subfmtiter++ = *format++;
+         }
+         
+         /* specifier - always a single character (except ]) */
+         if (*format == '[')
+         {
+            while (*format != ']') *subfmtiter++ = *format++;
+            *subfmtiter++ = *format++;
+         }
+         else *subfmtiter++ = *format++;
+         
+         *subfmtiter++ = '%';
+         *subfmtiter++ = 'n';
+         *subfmtiter++ = '\0';
+         
+         if (sizeof(void*) != sizeof(long*)) abort(); /* all pointers must have the same size */
+         if (asterisk)
+         {
+            if (sscanf(bufiter, subfmt, &sublen) != 0) break;
+         }
+         else
+         {
+            if (sscanf(bufiter, subfmt, va_arg(args, void*), &sublen) != 1) break;
+         }
+         
+         ret++;
+         bufiter += sublen;
+      }
+      else if (isspace(*format))
+      {
+         while (isspace(*bufiter)) bufiter++;
+         format++;
+      }
+      else
+      {
+         if (*bufiter != *format) break;
+         bufiter++;
+         format++;
+      }
+   }
+   
+   va_end(args);
+   filestream_seek(stream, startpos+(bufiter-buf), RETRO_VFS_SEEK_POSITION_START);
+   
+   return ret;
 }
 
 int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)

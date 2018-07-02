@@ -3,11 +3,6 @@
 
 using namespace metal;
 
-struct Structy
-{
-    float4 c;
-};
-
 struct main0_out
 {
     float4 FragColor [[color(0)]];

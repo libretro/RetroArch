@@ -50,11 +50,13 @@ VIDEO DRIVER
 #include "../gfx/drivers_shader/shader_vulkan.cpp"
 #endif
 
-#ifdef HAVE_SPIRV_CROSS
+#if defined(HAVE_SPIRV_CROSS)
+#if defined(ENABLE_HLSL)
+#include "../deps/SPIRV-Cross/spirv_hlsl.cpp"
+#endif
 #include "../deps/SPIRV-Cross/spirv_cross.cpp"
 #include "../deps/SPIRV-Cross/spirv_cfg.cpp"
 #include "../deps/SPIRV-Cross/spirv_glsl.cpp"
-#include "../deps/SPIRV-Cross/spirv_hlsl.cpp"
 #include "../deps/SPIRV-Cross/spirv_msl.cpp"
 #ifdef HAVE_SLANG
 #include "../gfx/drivers_shader/glslang_util.cpp"

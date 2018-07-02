@@ -1,6 +1,6 @@
 #version 310 es
 
-uniform sampler2D tex;
+layout(binding = 0) uniform sampler2D tex;
 
 void main()
 {

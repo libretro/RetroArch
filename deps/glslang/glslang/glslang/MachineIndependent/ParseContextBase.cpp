@@ -1,12 +1,12 @@
 //
-//Copyright (C) 2002-2005  3Dlabs Inc. Ltd.
-//Copyright (C) 2016 Google, Inc.
+// Copyright (C) 2002-2005  3Dlabs Inc. Ltd.
+// Copyright (C) 2016 Google, Inc.
 //
-//All rights reserved.
+// All rights reserved.
 //
-//Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions
-//are met:
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
 //
 //    Redistributions of source code must retain the above copyright
 //    notice, this list of conditions and the following disclaimer.
@@ -20,18 +20,18 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-//"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-//LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-//FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-//COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-//INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-//BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-//LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-//CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-//LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-//ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-//POSSIBILITY OF SUCH DAMAGE.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 //
 
 // Implement the TParseContextBase class.
@@ -129,6 +129,7 @@ bool TParseContextBase::lValueErrorCheck(const TSourceLoc& loc, const char* op, 
         case EOpIndexIndirect:     // fall through
         case EOpIndexDirectStruct: // fall through
         case EOpVectorSwizzle:
+        case EOpMatrixSwizzle:
             return lValueErrorCheck(loc, op, binaryNode->getLeft());
         default:
             break;
@@ -208,6 +209,7 @@ void TParseContextBase::rValueErrorCheck(const TSourceLoc& loc, const char* op, 
         case EOpIndexIndirect:
         case EOpIndexDirectStruct:
         case EOpVectorSwizzle:
+        case EOpMatrixSwizzle:
             rValueErrorCheck(loc, op, binaryNode->getLeft());
         default:
             break;
@@ -221,26 +223,44 @@ void TParseContextBase::rValueErrorCheck(const TSourceLoc& loc, const char* op, 
         error(loc, "can't read from writeonly object: ", op, symNode->getName().c_str());
 }
 
-// Add a linkage symbol node for 'symbol', which
-// must have its type fully edited, as this will snapshot the type.
-// It is okay if symbol becomes invalid before finish().
-void TParseContextBase::trackLinkage(TSymbol& symbol)
-{
-    if (!parsingBuiltins)
-        intermediate.addSymbolLinkageNode(linkage, symbol);
-}
-
 // Add 'symbol' to the list of deferred linkage symbols, which
 // are later processed in finish(), at which point the symbol
 // must still be valid.
-// It is okay if the symbol's type will be subsequently edited.
-void TParseContextBase::trackLinkageDeferred(TSymbol& symbol)
+// It is okay if the symbol's type will be subsequently edited;
+// the modifications will be tracked.
+// Order is preserved, to avoid creating novel forward references.
+void TParseContextBase::trackLinkage(TSymbol& symbol)
 {
     if (!parsingBuiltins)
         linkageSymbols.push_back(&symbol);
 }
 
-// Make a shared symbol have a non-shared version that can be edited by the current 
+// Ensure index is in bounds, correct if necessary.
+// Give an error if not.
+void TParseContextBase::checkIndex(const TSourceLoc& loc, const TType& type, int& index)
+{
+    if (index < 0) {
+        error(loc, "", "[", "index out of range '%d'", index);
+        index = 0;
+    } else if (type.isArray()) {
+        if (type.isSizedArray() && index >= type.getOuterArraySize()) {
+            error(loc, "", "[", "array index out of range '%d'", index);
+            index = type.getOuterArraySize() - 1;
+        }
+    } else if (type.isVector()) {
+        if (index >= type.getVectorSize()) {
+            error(loc, "", "[", "vector index out of range '%d'", index);
+            index = type.getVectorSize() - 1;
+        }
+    } else if (type.isMatrix()) {
+        if (index >= type.getMatrixCols()) {
+            error(loc, "", "[", "matrix index out of range '%d'", index);
+            index = type.getMatrixCols() - 1;
+        }
+    }
+}
+
+// Make a shared symbol have a non-shared version that can be edited by the current
 // compile, such that editing its type will not change the shared version and will
 // effect all nodes already sharing it (non-shallow type),
 // or adopting its full type after being edited (shallow type).
@@ -251,7 +271,7 @@ void TParseContextBase::makeEditable(TSymbol*& symbol)
 
     // Save it (deferred, so it can be edited first) in the AST for linker use.
     if (symbol)
-        trackLinkageDeferred(*symbol);
+        trackLinkage(*symbol);
 }
 
 // Return a writable version of the variable 'name'.
@@ -308,20 +328,20 @@ const TFunction* TParseContextBase::selectFunction(
     std::function<bool(const TType& from, const TType& to1, const TType& to2)> better,
     /* output */ bool& tie)
 {
-// 
+//
 // Operation
-// 
+//
 // 1. Prune the input list of candidates down to a list of viable candidates,
 // where each viable candidate has
-// 
+//
 //  * at least as many parameters as there are calling arguments, with any
 //    remaining parameters being optional or having default values
 //  * each parameter is true under convertible(A, B), where A is the calling
 //    type for in and B is the formal type, and in addition, for out B is the
 //    calling type and A is the formal type
-// 
+//
 // 2. If there are no viable candidates, return with no match.
-// 
+//
 // 3. If there is only one viable candidate, it is the best match.
 //
 // 4. If there are multiple viable candidates, select the first viable candidate
@@ -329,7 +349,7 @@ const TFunction* TParseContextBase::selectFunction(
 // that candidate is better (bullets below), make it the incumbent. Repeat, with
 // a linear walk through the viable candidate list. The final incumbent will be
 // returned as the best match. A viable candidate is better than the incumbent if
-// 
+//
 //  * it has a function argument with a better(...) conversion than the incumbent,
 //    for all directions needed by in and out
 //  * the incumbent has no argument with a better(...) conversion then the
@@ -348,13 +368,18 @@ const TFunction* TParseContextBase::selectFunction(
     for (auto it = candidateList.begin(); it != candidateList.end(); ++it) {
         const TFunction& candidate = *(*it);
 
-        // to even be a potential match, number of arguments has to match
-        if (call.getParamCount() != candidate.getParamCount())
+        // to even be a potential match, number of arguments must be >= the number of
+        // fixed (non-default) parameters, and <= the total (including parameter with defaults).
+        if (call.getParamCount() < candidate.getFixedParamCount() ||
+            call.getParamCount() > candidate.getParamCount())
             continue;
 
         // see if arguments are convertible
         bool viable = true;
-        for (int param = 0; param < candidate.getParamCount(); ++param) {
+
+        // The call can have fewer parameters than the candidate, if some have defaults.
+        const int paramCount = std::min(call.getParamCount(), candidate.getParamCount());
+        for (int param = 0; param < paramCount; ++param) {
             if (candidate[param].type->getQualifier().isParamInput()) {
                 if (! convertible(*call[param].type, *candidate[param].type, candidate.getBuiltInOp(), param)) {
                     viable = false;
@@ -382,7 +407,7 @@ const TFunction* TParseContextBase::selectFunction(
         return viableCandidates.front();
 
     // 4. find best...
-    auto betterParam = [&call, &better](const TFunction& can1, const TFunction& can2) -> bool {
+    const auto betterParam = [&call, &better](const TFunction& can1, const TFunction& can2) -> bool {
         // is call -> can2 better than call -> can1 for any parameter
         bool hasBetterParam = false;
         for (int param = 0; param < call.getParamCount(); ++param) {
@@ -392,6 +417,16 @@ const TFunction* TParseContextBase::selectFunction(
             }
         }
         return hasBetterParam;
+    };
+
+    const auto equivalentParams = [&call, &better](const TFunction& can1, const TFunction& can2) -> bool {
+        // is call -> can2 equivalent to call -> can1 for all the call parameters?
+        for (int param = 0; param < call.getParamCount(); ++param) {
+            if (better(*call[param].type, *can1[param].type, *can2[param].type) ||
+                better(*call[param].type, *can2[param].type, *can1[param].type))
+                return false;
+        }
+        return true;
     };
 
     const TFunction* incumbent = viableCandidates.front();
@@ -406,7 +441,10 @@ const TFunction* TParseContextBase::selectFunction(
         if (incumbent == *it)
             continue;
         const TFunction& candidate = *(*it);
-        if (betterParam(*incumbent, candidate))
+
+        // In the case of default parameters, it may have an identical initial set, which is
+        // also ambiguous
+        if (betterParam(*incumbent, candidate) || equivalentParams(*incumbent, candidate))
             tie = true;
     }
 
@@ -414,69 +452,162 @@ const TFunction* TParseContextBase::selectFunction(
 }
 
 //
-// Make the passed-in variable information become a member of the
-// global uniform block.  If this doesn't exist yet, make it.
+// Look at a '.' field selector string and change it into numerical selectors
+// for a vector or scalar.
 //
-void TParseContextBase::growGlobalUniformBlock(TSourceLoc& loc, TType& memberType, TString& memberName)
+// Always return some form of swizzle, so the result is always usable.
+//
+void TParseContextBase::parseSwizzleSelector(const TSourceLoc& loc, const TString& compString, int vecSize,
+                                             TSwizzleSelectors<TVectorSelector>& selector)
 {
-    // make the global block, if not yet made
-    if (globalUniformBlock == nullptr) {
-        TString& blockName = *NewPoolTString(getGlobalUniformBlockName());
-        TQualifier blockQualifier;
-        blockQualifier.clear();
-        blockQualifier.storage = EvqUniform;
-        TType blockType(new TTypeList, blockName, blockQualifier);
-        TString* instanceName = NewPoolTString("");
-        globalUniformBlock = new TVariable(instanceName, blockType, true);
-        firstNewMember = 0;
+    // Too long?
+    if (compString.size() > MaxSwizzleSelectors)
+        error(loc, "vector swizzle too long", compString.c_str(), "");
+
+    // Use this to test that all swizzle characters are from the same swizzle-namespace-set
+    enum {
+        exyzw,
+        ergba,
+        estpq,
+    } fieldSet[MaxSwizzleSelectors];
+
+    // Decode the swizzle string.
+    int size = std::min(MaxSwizzleSelectors, (int)compString.size());
+    for (int i = 0; i < size; ++i) {
+        switch (compString[i])  {
+        case 'x':
+            selector.push_back(0);
+            fieldSet[i] = exyzw;
+            break;
+        case 'r':
+            selector.push_back(0);
+            fieldSet[i] = ergba;
+            break;
+        case 's':
+            selector.push_back(0);
+            fieldSet[i] = estpq;
+            break;
+
+        case 'y':
+            selector.push_back(1);
+            fieldSet[i] = exyzw;
+            break;
+        case 'g':
+            selector.push_back(1);
+            fieldSet[i] = ergba;
+            break;
+        case 't':
+            selector.push_back(1);
+            fieldSet[i] = estpq;
+            break;
+
+        case 'z':
+            selector.push_back(2);
+            fieldSet[i] = exyzw;
+            break;
+        case 'b':
+            selector.push_back(2);
+            fieldSet[i] = ergba;
+            break;
+        case 'p':
+            selector.push_back(2);
+            fieldSet[i] = estpq;
+            break;
+
+        case 'w':
+            selector.push_back(3);
+            fieldSet[i] = exyzw;
+            break;
+        case 'a':
+            selector.push_back(3);
+            fieldSet[i] = ergba;
+            break;
+        case 'q':
+            selector.push_back(3);
+            fieldSet[i] = estpq;
+            break;
+
+        default:
+            error(loc, "unknown swizzle selection", compString.c_str(), "");
+            break;
+        }
     }
 
-    // add the requested member as a member to the block
-    TType* type = new TType;
-    type->shallowCopy(memberType);
-    type->setFieldName(memberName);
-    TTypeLoc typeLoc = {type, loc};
-    globalUniformBlock->getType().getWritableStruct()->push_back(typeLoc);
+    // Additional error checking.
+    for (int i = 0; i < selector.size(); ++i) {
+        if (selector[i] >= vecSize) {
+            error(loc, "vector swizzle selection out of range",  compString.c_str(), "");
+            selector.resize(i);
+            break;
+        }
+
+        if (i > 0 && fieldSet[i] != fieldSet[i-1]) {
+            error(loc, "vector swizzle selectors not from the same set", compString.c_str(), "");
+            selector.resize(i);
+            break;
+        }
+    }
+
+    // Ensure it is valid.
+    if (selector.size() == 0)
+        selector.push_back(0);
 }
 
 //
-// Insert into the symbol table the global uniform block created in
-// growGlobalUniformBlock(). The variables added as members won't be
-// found unless this is done.
+// Make the passed-in variable information become a member of the
+// global uniform block.  If this doesn't exist yet, make it.
 //
-bool TParseContextBase::insertGlobalUniformBlock()
+void TParseContextBase::growGlobalUniformBlock(const TSourceLoc& loc, TType& memberType, const TString& memberName, TTypeList* typeList)
 {
-    if (globalUniformBlock == nullptr)
-        return true;
+    // Make the global block, if not yet made.
+    if (globalUniformBlock == nullptr) {
+        TQualifier blockQualifier;
+        blockQualifier.clear();
+        blockQualifier.storage = EvqUniform;
+        TType blockType(new TTypeList, *NewPoolTString(getGlobalUniformBlockName()), blockQualifier);
+        setUniformBlockDefaults(blockType);
+        globalUniformBlock = new TVariable(NewPoolTString(""), blockType, true);
+        firstNewMember = 0;
+    }
 
-    int numMembers = (int)globalUniformBlock->getType().getStruct()->size();
-    bool inserted = false;
+    // Update with binding and set
+    globalUniformBlock->getWritableType().getQualifier().layoutBinding = globalUniformBinding;
+    globalUniformBlock->getWritableType().getQualifier().layoutSet = globalUniformSet;
+
+    // Add the requested member as a member to the global block.
+    TType* type = new TType;
+    type->shallowCopy(memberType);
+    type->setFieldName(memberName);
+    if (typeList)
+        type->setStruct(typeList);
+    TTypeLoc typeLoc = {type, loc};
+    globalUniformBlock->getType().getWritableStruct()->push_back(typeLoc);
+
+    // Insert into the symbol table.
     if (firstNewMember == 0) {
         // This is the first request; we need a normal symbol table insert
-        inserted = symbolTable.insert(*globalUniformBlock);
-        if (inserted)
-            trackLinkageDeferred(*globalUniformBlock);
-    } else if (firstNewMember <= numMembers) {
+        if (symbolTable.insert(*globalUniformBlock))
+            trackLinkage(*globalUniformBlock);
+        else
+            error(loc, "failed to insert the global constant buffer", "uniform", "");
+    } else {
         // This is a follow-on request; we need to amend the first insert
-        inserted = symbolTable.amend(*globalUniformBlock, firstNewMember);
+        symbolTable.amend(*globalUniformBlock, firstNewMember);
     }
 
-    if (inserted) {
-        finalizeGlobalUniformBlockLayout(*globalUniformBlock);
-        firstNewMember = numMembers;
-    }
-
-    return inserted;
+    ++firstNewMember;
 }
 
 void TParseContextBase::finish()
 {
-    if (!parsingBuiltins) {
-        // Transfer te linkage symbols to AST nodes
-        for (auto i = linkageSymbols.begin(); i != linkageSymbols.end(); ++i)
-            intermediate.addSymbolLinkageNode(linkage, **i);
-        intermediate.addSymbolLinkageNodes(linkage, getLanguage(), symbolTable);
-    }
+    if (parsingBuiltins)
+        return;
+
+    // Transfer the linkage symbols to AST nodes, preserving order.
+    TIntermAggregate* linkage = new TIntermAggregate;
+    for (auto i = linkageSymbols.begin(); i != linkageSymbols.end(); ++i)
+        intermediate.addSymbolLinkageNode(linkage, **i);
+    intermediate.addSymbolLinkageNodes(linkage, getLanguage(), symbolTable);
 }
 
 } // end namespace glslang

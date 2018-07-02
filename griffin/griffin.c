@@ -793,6 +793,17 @@ AUDIO
 #include "../audio/drivers/nullaudio.c"
 
 /*============================================================
+MIDI
+============================================================ */
+#include "../midi/midi_driver.c"
+
+#include "../midi/drivers/null_midi.c"
+
+#ifdef HAVE_WINMM
+#include "../midi/drivers/winmm_midi.c"
+#endif
+
+/*============================================================
 DRIVERS
 ============================================================ */
 #include "../gfx/video_driver.c"
@@ -853,6 +864,12 @@ CORES
 ============================================================ */
 #ifdef HAVE_FFMPEG
 #include "../cores/libretro-ffmpeg/ffmpeg_core.c"
+#endif
+
+#if defined(HAVE_MPV)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#include "../cores/libretro-mpv/mpv-libretro.c"
+#endif
 #endif
 
 #include "../cores/dynamic_dummy.c"

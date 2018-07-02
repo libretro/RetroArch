@@ -95,7 +95,9 @@ enum
    INTERNAL_STORAGE_NOT_WRITABLE
 };
 
-struct android_app *g_android;
+static void frontend_unix_set_sustained_performance_mode(bool on);
+
+struct android_app *g_android = NULL;
 
 static pthread_key_t thread_key;
 
@@ -1139,7 +1141,26 @@ static enum frontend_powerstate frontend_unix_get_powerstate(
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
 
-#ifndef ANDROID
+#ifdef ANDROID
+   jint powerstate = ret;
+   jint battery_level = 0;
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android)
+      return ret;
+
+   if (g_android->getPowerstate)
+      CALL_INT_METHOD(env, powerstate,
+            g_android->activity->clazz, g_android->getPowerstate);
+
+   if (g_android->getBatteryLevel)
+      CALL_INT_METHOD(env, battery_level,
+            g_android->activity->clazz, g_android->getBatteryLevel);
+
+   *percent = battery_level;
+
+   ret = (enum frontend_powerstate)powerstate;
+#else
    if (frontend_unix_powerstate_check_acpi_sysfs(&ret, seconds, percent))
       return ret;
 
@@ -1266,6 +1287,7 @@ static void frontend_unix_get_env(int *argc,
       return;
 
    env = jni_thread_getenv();
+
    if (!env)
       return;
 
@@ -1992,6 +2014,12 @@ static void frontend_unix_init(void *data)
          "onRetroArchExit", "()V");
    GET_METHOD_ID(env, android_app->isAndroidTV, class,
          "isAndroidTV", "()Z");
+   GET_METHOD_ID(env, android_app->getPowerstate, class,
+         "getPowerstate", "()I");
+   GET_METHOD_ID(env, android_app->getBatteryLevel, class,
+         "getBatteryLevel", "()I");
+   GET_METHOD_ID(env, android_app->setSustainedPerformanceMode, class,
+         "setSustainedPerformanceMode", "(Z)V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
 
@@ -2410,6 +2438,20 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
 #endif
 }
 
+static void frontend_unix_set_sustained_performance_mode(bool on)
+{
+#ifdef ANDROID
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android)
+      return;
+
+   if (g_android->setSustainedPerformanceMode)
+      CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+            g_android->setSustainedPerformanceMode, on);
+#endif
+}
+
 frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_env,       /* environment_get */
    frontend_unix_init,          /* init */
@@ -2453,6 +2495,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #endif
    frontend_unix_watch_path_for_changes,
    frontend_unix_check_for_path_changes,
+   frontend_unix_set_sustained_performance_mode,
 #ifdef ANDROID
    "android"
 #else

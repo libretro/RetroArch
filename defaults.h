@@ -107,7 +107,7 @@ struct defaults
    playlist_t *image_history;
 #endif
    playlist_t *music_history;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    playlist_t *video_history;
 #endif
 #endif

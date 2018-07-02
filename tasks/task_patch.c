@@ -528,9 +528,6 @@ static bool apply_patch_content(uint8_t **buf,
 
    if (err == PATCH_SUCCESS)
    {
-      RARCH_LOG("%s (%s).\n",
-            msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN),
-            patch_desc);
       free(ret_buf);
       *buf  = patched_content;
       *size = target_size;
