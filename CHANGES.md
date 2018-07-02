@@ -5,6 +5,7 @@
 - COMMON: Small Bugfix to not trigger savestate code when pressing Reset.
 - HID/OSX: Fix to set hid device registration deterministic (#6497), to address issue #6640 re-adding dynamic device registration.
 - LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Polish translation.
 - LOCALIZATION: Update Portuguese / Brazilian translation.
 - LOCALIZATION: Update Russian translation.
