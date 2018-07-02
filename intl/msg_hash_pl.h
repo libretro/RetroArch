@@ -769,6 +769,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
       "Wszystkie domyślne powiązania")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
       "Limit czasu powiązania")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
+      "Wiązanie")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
       "Ukryj niezwiązane podstawowe deskryptory wejściowe")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
@@ -1959,6 +1961,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
       "Zmień konto, nazwę użytkownika i ustawienia językowe.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
       "Zmień ustawienia prywatności.")
+ MSG_HASH(MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
+      "Zmień ustawienia MIDI.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
       "Zmień domyślne katalogi, w których znajdują się pliki.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
@@ -2488,6 +2492,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    "Ilość sekund oczekiwania na przejście do następnej więzi."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
+   "Ilość sekund do przechowywania danych wejściowych, aby je powiązać."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
@@ -3576,6 +3584,18 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
       "Włącz lub wyłącz wsparcie dla Discrod. Nie będzie działać z wersją przeglądarkową, jedynie z natywnym klientem."
       )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+      "Wejście")
+MSG_HASH(MENU_ENUM_SUBLABEL_MIDI_INPUT,
+      "Wybierz urządzenie wejściowe.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+      "wyjście")
+MSG_HASH(MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+      "Wybierz urządzenie wyjściowe.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
+      "Głośność")
+MSG_HASH(MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+      "Ustaw głośność wyjściową (%).")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
       "Zarządzanie energią")
 MSG_HASH(MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
