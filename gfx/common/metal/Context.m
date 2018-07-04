@@ -60,6 +60,7 @@
       _inflightSemaphore = dispatch_semaphore_create(MAX_INFLIGHT);
       _device = d;
       _layer = layer;
+      _layer.displaySyncEnabled = YES;
       _library = l;
       _commandQueue = [_device newCommandQueue];
       _clearColor = MTLClearColorMake(0, 0, 0, 1);
@@ -97,6 +98,16 @@
       }
    }
    return self;
+}
+
+- (void)setDisplaySyncEnabled:(bool)displaySyncEnabled
+{
+   _layer.displaySyncEnabled = displaySyncEnabled;
+}
+
+- (bool)displaySyncEnabled
+{
+   return _layer.displaySyncEnabled;
 }
 
 - (bool)_initMainState
