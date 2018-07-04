@@ -2857,6 +2857,10 @@ MSG_HASH(
       "Zapisz sterownik, którego chcesz użyć."
       )
 MSG_HASH(
+      MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+      "Sterownik MIDI do użycia."
+      )
+MSG_HASH(
       MENU_ENUM_SUBLABEL_WIFI_DRIVER,
       "Sterownik WiFi do użycia."
       )
@@ -3591,7 +3595,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
 MSG_HASH(MENU_ENUM_SUBLABEL_MIDI_INPUT,
       "Wybierz urządzenie wejściowe.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-      "wyjście")
+      "Wyjście")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
       "Wybierz urządzenie wyjściowe.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
