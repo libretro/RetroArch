@@ -49,6 +49,7 @@ typedef struct
                        library:(id<MTLLibrary>)l;
 
 - (Texture *)newTexture:(struct texture_image)image filter:(enum texture_filter_type)filter;
+- (id<MTLTexture>)newTexture:(struct texture_image)image mipmapped:(bool)mipmapped;
 - (void)convertFormat:(RPixelFormat)fmt from:(id<MTLBuffer>)src to:(id<MTLTexture>)dst;
 
 - (bool)allocRange:(BufferRange *)range length:(NSUInteger)length;

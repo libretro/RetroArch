@@ -92,12 +92,10 @@ static bool metal_focus(void *data)
    return apple_platform.hasFocus;
 }
 
-static bool metal_suppress_screensaver(void *data, bool enable)
+static bool metal_suppress_screensaver(void *data, bool disable)
 {
-   bool enabled = enable;
-   (void)data;
-   
-   return video_context_driver_suppress_screensaver(&enabled);
+   RARCH_LOG("[Metal]: suppress screen saver: %s\n", disable ? "YES" : "NO");
+   return [apple_platform setDisableDisplaySleep:disable];
 }
 
 static bool metal_set_shader(void *data,
@@ -148,26 +146,6 @@ static bool metal_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    return true;
 }
-
-#ifdef HAVE_OVERLAY
-
-static const video_overlay_interface_t metal_overlay_interface = {
-   //   metal_overlay_enable,
-   //   metal_overlay_load,
-   //   metal_overlay_tex_geom,
-   //   metal_overlay_vertex_geom,
-   //   metal_overlay_full_screen,
-   //   metal_overlay_set_alpha,
-};
-
-static void metal_get_overlay_interface(void *data,
-                                        const video_overlay_interface_t **iface)
-{
-   (void)data;
-   *iface = &metal_overlay_interface;
-}
-
-#endif
 
 static uintptr_t metal_load_texture(void *video_data, void *data,
                                     bool threaded, enum texture_filter_type filter_type)
@@ -336,6 +314,82 @@ static void metal_get_poke_interface(void *data,
    (void)data;
    *iface = &metal_poke_interface;
 }
+
+#ifdef HAVE_OVERLAY
+
+static void metal_overlay_enable(void *data, bool state)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return;
+   md.overlay.enabled = state;
+}
+
+static bool metal_overlay_load(void *data,
+                               const void *images, unsigned num_images)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return NO;
+   
+   return [md.overlay loadImages:(const struct texture_image *)images count:num_images];
+}
+
+static void metal_overlay_tex_geom(void *data, unsigned index,
+                                   float x, float y, float w, float h)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return;
+   
+   [md.overlay updateTextureCoordsX:x y:y w:w h:h index:index];
+}
+
+static void metal_overlay_vertex_geom(void *data, unsigned index,
+                                      float x, float y, float w, float h)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return;
+   
+   [md.overlay updateVertexX:x y:y w:w h:h index:index];
+}
+
+static void metal_overlay_full_screen(void *data, bool enable)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return;
+   
+   md.overlay.fullscreen = enable;
+}
+
+static void metal_overlay_set_alpha(void *data, unsigned index, float mod)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return;
+   
+   [md.overlay updateAlpha:mod index:index];
+}
+
+static const video_overlay_interface_t metal_overlay_interface = {
+   .enable        = metal_overlay_enable,
+   .load          = metal_overlay_load,
+   .tex_geom      = metal_overlay_tex_geom,
+   .vertex_geom   = metal_overlay_vertex_geom,
+   .full_screen   = metal_overlay_full_screen,
+   .set_alpha     = metal_overlay_set_alpha,
+};
+
+static void metal_get_overlay_interface(void *data,
+                                        const video_overlay_interface_t **iface)
+{
+   (void)data;
+   *iface = &metal_overlay_interface;
+}
+
+#endif
 
 
 video_driver_t video_metal = {

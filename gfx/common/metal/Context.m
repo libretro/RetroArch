@@ -170,9 +170,17 @@
       image.height = 8;
    }
    
-   // TODO(sgc): mipmapping is not working
    BOOL mipmapped = filter == TEXTURE_FILTER_MIPMAP_LINEAR || filter == TEXTURE_FILTER_MIPMAP_NEAREST;
    
+   Texture *tex = [Texture new];
+   tex.texture = [self newTexture:image mipmapped:mipmapped];
+   tex.sampler = _samplers[filter];
+   
+   return tex;
+}
+
+- (id<MTLTexture>)newTexture:(struct texture_image)image mipmapped:(bool)mipmapped
+{
    MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
                                                                                  width:image.width
                                                                                 height:image.height
@@ -192,11 +200,7 @@
       [bce endEncoding];
    }
    
-   Texture *tex = [Texture new];
-   tex.texture = t;
-   tex.sampler = _samplers[filter];
-   
-   return tex;
+   return t;
 }
 
 - (id<CAMetalDrawable>)nextDrawable

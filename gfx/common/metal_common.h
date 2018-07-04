@@ -58,6 +58,17 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
              filter:(RTextureFilter)filter;
 @end
 
+
+@interface Overlay : NSObject
+@property (nonatomic, readwrite) bool enabled;
+@property (nonatomic, readwrite) bool fullscreen;
+
+- (bool)loadImages:(const struct texture_image *)images count:(NSUInteger)count;
+- (void)updateVertexX:(float)x y:(float)y w:(float)w h:(float)h index:(NSUInteger)index;
+- (void)updateTextureCoordsX:(float)x y:(float)y w:(float)w h:(float)h index:(NSUInteger)index;
+- (void)updateAlpha:(float)alpha index:(NSUInteger)index;
+@end
+
 @interface MetalDriver : NSObject<MTKViewDelegate>
 
 @property (nonatomic, readonly) video_viewport_t *viewport;
@@ -65,6 +76,7 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 @property (nonatomic, readonly) MetalMenu *menu;
 @property (nonatomic, readonly) FrameView *frameView;
 @property (nonatomic, readonly) MenuDisplay *display;
+@property (nonatomic, readonly) Overlay *overlay;
 @property (nonatomic, readonly) Context *context;
 @property (nonatomic, readonly) Uniforms *viewportMVP;
 @property (nonatomic, readonly) Uniforms *viewportMVPNormalized;
