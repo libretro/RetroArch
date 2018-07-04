@@ -11,45 +11,56 @@
 
 NSUInteger RPixelFormatToBPP(RPixelFormat format)
 {
-    switch (format)
-    {
-        case RPixelFormatBGRA8Unorm:
-        case RPixelFormatBGRX8Unorm:
-            return 4;
-            
-        case RPixelFormatB5G6R5Unorm:
-        case RPixelFormatBGRA4Unorm:
-            return 2;
-            
-        default:
-            NSLog(@"Unknown format %ld", format);
-            abort();
-    }
+   switch (format)
+   {
+      case RPixelFormatBGRA8Unorm:
+      case RPixelFormatBGRX8Unorm:
+         return 4;
+      
+      case RPixelFormatB5G6R5Unorm:
+      case RPixelFormatBGRA4Unorm:
+         return 2;
+      
+      default:
+         RARCH_ERR("[Metal]: unknown RPixel format: %d\n", format);
+         return 4;
+   }
 }
 
-static NSString * RPixelStrings[RPixelFormatCount];
+static NSString *RPixelStrings[RPixelFormatCount];
 
 NSString *NSStringFromRPixelFormat(RPixelFormat format)
 {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        
+   static dispatch_once_t onceToken;
+   dispatch_once(&onceToken, ^{
+
 #define STRING(literal) RPixelStrings[literal] = @#literal
-        STRING(RPixelFormatInvalid);
-        STRING(RPixelFormatB5G6R5Unorm);
-        STRING(RPixelFormatBGRA4Unorm);
-        STRING(RPixelFormatBGRA8Unorm);
-        STRING(RPixelFormatBGRX8Unorm);
+      STRING(RPixelFormatInvalid);
+      STRING(RPixelFormatB5G6R5Unorm);
+      STRING(RPixelFormatBGRA4Unorm);
+      STRING(RPixelFormatBGRA8Unorm);
+      STRING(RPixelFormatBGRX8Unorm);
 #undef STRING
-        
-    });
-    
-    if (format >= RPixelFormatCount)
-    {
-        format = 0;
-    }
-    
-    return RPixelStrings[format];
+   
+   });
+   
+   if (format >= RPixelFormatCount)
+   {
+      format = RPixelFormatInvalid;
+   }
+   
+   return RPixelStrings[format];
+}
+
+matrix_float4x4 make_matrix_float4x4(const float *v)
+{
+   simd_float4 P = simd_make_float4(*v++, *v++, *v++, *v++);
+   simd_float4 Q = simd_make_float4(*v++, *v++, *v++, *v++);
+   simd_float4 R = simd_make_float4(*v++, *v++, *v++, *v++);
+   simd_float4 S = simd_make_float4(*v++, *v++, *v++, *v++);
+   
+   matrix_float4x4 mat = {P, Q, R, S};
+   return mat;
 }
 
 matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bottom)
@@ -64,10 +75,10 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    float ty = (top + bottom) / (bottom - top);
    float tz = near / (far - near);
    
-   vector_float4 P = {sx, 0, 0, 0};
-   vector_float4 Q = {0, sy, 0, 0};
-   vector_float4 R = {0, 0, sz, 0};
-   vector_float4 S = {tx, ty, tz, 1};
+   simd_float4 P = simd_make_float4(sx, 0, 0, 0);
+   simd_float4 Q = simd_make_float4(0, sy, 0, 0);
+   simd_float4 R = simd_make_float4(0, 0, sz, 0);
+   simd_float4 S = simd_make_float4(tx, ty, tz, 1);
    
    matrix_float4x4 mat = {P, Q, R, S};
    return mat;

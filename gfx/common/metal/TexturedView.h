@@ -4,18 +4,16 @@
 
 #import "View.h"
 
-@class Renderer;
+@interface TexturedView : NSObject
 
-@interface TexturedView : NSObject<View>
+@property (nonatomic, readonly) RPixelFormat format;
+@property (nonatomic, readonly) RTextureFilter filter;
+@property (nonatomic, readwrite) BOOL visible;
+@property (nonatomic, readwrite) CGRect frame;
+@property (nonatomic, readwrite) CGSize size;
+@property (nonatomic, readonly) ViewDrawState drawState;
 
-@property (readonly) RPixelFormat format;
-@property (readonly) RTextureFilter filter;
-@property (readwrite) BOOL visible;
-@property (readwrite) CGRect frame;
-@property (readwrite) CGSize size;
-@property (readonly) ViewDrawState drawState;
-
-- (instancetype)initWithDescriptor:(ViewDescriptor *)td renderer:(Renderer *)renderer;
+- (instancetype)initWithDescriptor:(ViewDescriptor *)td context:(Context *)c;
 
 - (void)drawWithContext:(Context *)ctx;
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce;

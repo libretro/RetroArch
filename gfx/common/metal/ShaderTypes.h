@@ -13,49 +13,44 @@
 #define ShaderTypes_h
 
 #ifdef __METAL_VERSION__
-
 #define NS_ENUM(_type, _name) enum _name : _type _name; enum _name : _type
 #define NSInteger metal::int32_t
 
 #define METAL_ATTRIBUTE(x) [[attribute(x)]]
 #define METAL_POSITION [[position]]
-
 #else
-
 #import <Foundation/Foundation.h>
-
 #define METAL_ATTRIBUTE(x)
 #define METAL_POSITION
-
 #endif
 
 #include <simd/simd.h>
 
 typedef NS_ENUM(NSInteger, BufferIndex)
 {
-    BufferIndexPositions = 0,
-    BufferIndexUniforms  = 1
+   BufferIndexPositions = 0,
+   BufferIndexUniforms = 1
 };
 
 typedef NS_ENUM(NSInteger, VertexAttribute)
 {
-    VertexAttributePosition = 0,
-    VertexAttributeTexcoord = 1,
-    VertexAttributeColor    = 2,
+   VertexAttributePosition = 0,
+   VertexAttributeTexcoord = 1,
+   VertexAttributeColor = 2,
 };
 
 typedef NS_ENUM(NSInteger, TextureIndex)
 {
-    TextureIndexColor = 0,
+   TextureIndexColor = 0,
 };
-
 
 typedef NS_ENUM(NSInteger, SamplerIndex)
 {
-    SamplerIndexDraw = 0,
+   SamplerIndexDraw = 0,
 };
 
-typedef struct {
+typedef struct
+{
    vector_float3 position METAL_ATTRIBUTE(VertexAttributePosition);
    vector_float2 texCoord METAL_ATTRIBUTE(VertexAttributeTexcoord);
 } Vertex;
@@ -68,16 +63,20 @@ typedef struct
 
 typedef struct
 {
-    matrix_float4x4 projectionMatrix;
+   matrix_float4x4 projectionMatrix;
+   vector_float2 outputSize;
+   float time;
 } Uniforms;
 
-typedef struct {
+typedef struct
+{
    vector_float2 position  METAL_ATTRIBUTE(VertexAttributePosition);
    vector_float2 texCoord  METAL_ATTRIBUTE(VertexAttributeTexcoord);
    vector_float4 color     METAL_ATTRIBUTE(VertexAttributeColor);
-} FontVertex;
+} SpriteVertex;
 
-typedef struct {
+typedef struct
+{
    vector_float4 position METAL_POSITION;
    vector_float2 texCoord;
    vector_float4 color;

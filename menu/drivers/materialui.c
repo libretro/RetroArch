@@ -355,6 +355,8 @@ static void materialui_draw_icon(
    draw.y               = height - y - icon_size;
    draw.width           = icon_size;
    draw.height          = icon_size;
+   draw.scale_factor    = scale_factor;
+   draw.rotation        = rotation;
    draw.coords          = &coords;
    draw.matrix_data     = &mymat;
    draw.texture         = texture;

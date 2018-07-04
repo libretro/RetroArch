@@ -8,23 +8,47 @@
 
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
+#import "RendererCommon.h"
 
-NS_ASSUME_NONNULL_BEGIN
+@interface Texture : NSObject
+@property (nonatomic, readonly) id<MTLTexture> texture;
+@property (nonatomic, readonly) id<MTLSamplerState> sampler;
+@end
 
+typedef struct
+{
+   void *data;
+   NSUInteger offset;
+   __unsafe_unretained id<MTLBuffer> buffer;
+} BufferRange;
+
+/*! @brief Context contains the render state used by various components */
 @interface Context : NSObject
 
-@property (readonly) id<MTLDevice>        device;
-@property (readonly) id<MTLLibrary>       library;
-@property (readonly) id<MTLCommandQueue>  commandQueue;
-/*! @brief Returns the command buffer for the current frame */
-@property (readonly) id<MTLCommandBuffer> commandBuffer;
-@property (readonly) id<CAMetalDrawable>  nextDrawable;
-@property (readonly) id<MTLTexture>       renderTexture;
+@property (nonatomic, readonly) id<MTLDevice> device;
+@property (nonatomic, readonly) id<MTLLibrary> library;
+@property (nonatomic, readwrite) MTLClearColor clearColor;
 
-+ (instancetype)newContextWithDevice:(id<MTLDevice>)d
-                               layer:(CAMetalLayer *)layer
-                             library:(id<MTLLibrary>)l
-                        commandQueue:(id<MTLCommandQueue>)q;
+/*! @brief Returns the command buffer used for pre-render work,
+ * such as mip maps for applying filters
+ * */
+@property (nonatomic, readonly) id<MTLCommandBuffer> blitCommandBuffer;
+
+/*! @brief Returns the command buffer for the current frame */
+@property (nonatomic, readonly) id<MTLCommandBuffer> commandBuffer;
+@property (nonatomic, readonly) id<CAMetalDrawable> nextDrawable;
+
+/*! @brief Main render encoder to back buffer */
+@property (nonatomic, readonly) id<MTLRenderCommandEncoder> rce;
+
+- (instancetype)initWithDevice:(id<MTLDevice>)d
+                         layer:(CAMetalLayer *)layer
+                       library:(id<MTLLibrary>)l;
+
+- (Texture *)newTexture:(struct texture_image)image filter:(enum texture_filter_type)filter;
+- (void)convertFormat:(RPixelFormat)fmt from:(id<MTLBuffer>)src to:(id<MTLTexture>)dst;
+
+- (bool)allocRange:(BufferRange *)range length:(NSUInteger)length;
 
 /*! @brief begin marks the beginning of a frame */
 - (void)begin;
@@ -33,5 +57,3 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)end;
 
 @end
-
-NS_ASSUME_NONNULL_END

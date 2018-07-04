@@ -6,6 +6,7 @@
 //  Copyright © 2018 Stuart Carnie. All rights reserved.
 //
 
+#import "View.h"
 #import "RendererCommon.h"
 
 @implementation ViewDescriptor
@@ -13,7 +14,8 @@
 - (instancetype)init
 {
    self = [super init];
-   if (self) {
+   if (self)
+   {
       _format = RPixelFormatBGRA8Unorm;
    }
    return self;
