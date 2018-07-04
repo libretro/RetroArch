@@ -14,7 +14,8 @@
 - MIDI: Add a Windows driver for MIDI, based on winmm.
 - MENU/QT/WIMP: QT QSlider styling for Dark Theme.
 - MENU/QT/WIMP: Remove button ghostly inside highlighting.
-- METAL: Initial work-in-progress video driver for Metal. macOS-only right now, and currently requires macOS 10.13. Works with RGUI right now.
+- METAL: Initial work-in-progress video driver for Metal. macOS-only right now, and currently requires macOS 10.13.
+- METAL: Supports XMB/MaterialUI, has a menu display driver. Has a font rendering driver.
 - METAL/SLANG: Slang shaders should be compatible with Metal video driver.
 - PS3: Add audio mixer support for FLAC and MP3.
 - PSP: Use proper button labels, fix inverted R-Stick Y axis.
