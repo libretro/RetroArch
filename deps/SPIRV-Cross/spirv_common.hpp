@@ -578,6 +578,15 @@ struct SPIRBlock : IVariant
 		MergeSelection
 	};
 
+	enum Hints
+	{
+		HintNone,
+		HintUnroll,
+		HintDontUnroll,
+		HintFlatten,
+		HintDontFlatten
+	};
+
 	enum Method
 	{
 		MergeToSelectForLoop,
@@ -610,6 +619,7 @@ struct SPIRBlock : IVariant
 
 	Terminator terminator = Unknown;
 	Merge merge = MergeNone;
+	Hints hint = HintNone;
 	uint32_t next_block = 0;
 	uint32_t merge_block = 0;
 	uint32_t continue_block = 0;

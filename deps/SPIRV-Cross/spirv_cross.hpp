@@ -170,6 +170,15 @@ public:
 	// Gets the SPIR-V type of a variable.
 	const SPIRType &get_type_from_variable(uint32_t id) const;
 
+	// Gets the id of SPIR-V type underlying the given type_id, which might be a pointer.
+	uint32_t get_non_pointer_type_id(uint32_t type_id) const;
+
+	// Gets the SPIR-V type underlying the given type, which might be a pointer.
+	const SPIRType &get_non_pointer_type(const SPIRType &type) const;
+
+	// Gets the SPIR-V type underlying the given type_id, which might be a pointer.
+	const SPIRType &get_non_pointer_type(uint32_t type_id) const;
+
 	// Gets the underlying storage class for an OpVariable.
 	spv::StorageClass get_storage_class(uint32_t id) const;
 
@@ -817,8 +826,7 @@ protected:
 	// There might be unrelated IDs found in this set which do not correspond to actual variables.
 	// This set should only be queried for the existence of samplers which are already known to be variables or parameter IDs.
 	// Similar is implemented for images, as well as if subpass inputs are needed.
-	std::unordered_set<uint32_t> comparison_samplers;
-	std::unordered_set<uint32_t> comparison_images;
+	std::unordered_set<uint32_t> comparison_ids;
 	bool need_subpass_input = false;
 
 	// In certain backends, we will need to use a dummy sampler to be able to emit code.
@@ -827,23 +835,37 @@ protected:
 	uint32_t dummy_sampler_id = 0;
 
 	void analyze_image_and_sampler_usage();
+
+	struct CombinedImageSamplerDrefHandler : OpcodeHandler
+	{
+		CombinedImageSamplerDrefHandler(Compiler &compiler_)
+		    : compiler(compiler_)
+		{
+		}
+		bool handle(spv::Op opcode, const uint32_t *args, uint32_t length) override;
+
+		Compiler &compiler;
+		std::unordered_set<uint32_t> dref_combined_samplers;
+	};
+
 	struct CombinedImageSamplerUsageHandler : OpcodeHandler
 	{
-		CombinedImageSamplerUsageHandler(Compiler &compiler_)
+		CombinedImageSamplerUsageHandler(Compiler &compiler_,
+		                                 const std::unordered_set<uint32_t> &dref_combined_samplers_)
 		    : compiler(compiler_)
+		    , dref_combined_samplers(dref_combined_samplers_)
 		{
 		}
 
 		bool begin_function_scope(const uint32_t *args, uint32_t length) override;
 		bool handle(spv::Op opcode, const uint32_t *args, uint32_t length) override;
 		Compiler &compiler;
+		const std::unordered_set<uint32_t> &dref_combined_samplers;
 
 		std::unordered_map<uint32_t, std::unordered_set<uint32_t>> dependency_hierarchy;
-		std::unordered_set<uint32_t> comparison_images;
-		std::unordered_set<uint32_t> comparison_samplers;
+		std::unordered_set<uint32_t> comparison_ids;
 
-		void add_hierarchy_to_comparison_samplers(uint32_t sampler);
-		void add_hierarchy_to_comparison_images(uint32_t sampler);
+		void add_hierarchy_to_comparison_ids(uint32_t ids);
 		bool need_subpass_input = false;
 	};
 
@@ -855,6 +877,11 @@ protected:
 
 	bool instruction_to_result_type(uint32_t &result_type, uint32_t &result_id, spv::Op op, const uint32_t *args,
 	                                uint32_t length);
+
+	Bitset combined_decoration_for_member(const SPIRType &type, uint32_t index) const;
+	static bool is_desktop_only_format(spv::ImageFormat format);
+
+	bool image_is_comparison(const SPIRType &type, uint32_t id) const;
 
 private:
 	// Used only to implement the old deprecated get_entry_point() interface.

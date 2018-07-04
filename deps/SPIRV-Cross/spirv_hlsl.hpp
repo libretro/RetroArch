@@ -118,9 +118,9 @@ public:
 
 private:
 	std::string type_to_glsl(const SPIRType &type, uint32_t id = 0) override;
-	std::string image_type_hlsl(const SPIRType &type);
-	std::string image_type_hlsl_modern(const SPIRType &type);
-	std::string image_type_hlsl_legacy(const SPIRType &type);
+	std::string image_type_hlsl(const SPIRType &type, uint32_t id);
+	std::string image_type_hlsl_modern(const SPIRType &type, uint32_t id);
+	std::string image_type_hlsl_legacy(const SPIRType &type, uint32_t id);
 	void emit_function_prototype(SPIRFunction &func, const Bitset &return_flags) override;
 	void emit_hlsl_entry_point();
 	void emit_header() override;
@@ -158,6 +158,7 @@ private:
 	void emit_store(const Instruction &instruction);
 	void emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op);
 	void emit_subgroup_op(const Instruction &i) override;
+	void emit_block_hints(const SPIRBlock &block) override;
 
 	void emit_struct_member(const SPIRType &type, uint32_t member_type_id, uint32_t index, const std::string &qualifier,
 	                        uint32_t base_offset = 0) override;
