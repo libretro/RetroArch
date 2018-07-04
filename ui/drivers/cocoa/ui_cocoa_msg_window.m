@@ -25,10 +25,10 @@
 
 #include "../../ui_companion_driver.h"
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
-static const NSAlertStyle NSAlertStyleCritical      = NSCriticalAlertStyle;
-static const NSAlertStyle NSAlertStyleWarning       = NSWarningAlertStyle;
-static const NSAlertStyle NSAlertStyleInformational = NSInformationalAlertStyle;
+#if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
+#define NSAlertStyleCritical        NSCriticalAlertStyle
+#define NSAlertStyleWarning         NSWarningAlertStyle
+#define NSAlertStyleInformational   NSInformationalAlertStyle
 #endif
 
 static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_state *state, enum ui_msg_window_type type)
