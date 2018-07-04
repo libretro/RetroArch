@@ -53,6 +53,8 @@ id<ApplePlatform> apple_platform;
    NSWindow* _window;
    apple_view_type_t _vt;
    NSView* _renderView;
+   id _sleepActivity;
+   
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
@@ -336,6 +338,26 @@ static char** waiting_argv;
    else
       [NSCursor hide];
 }
+
+- (bool)setDisableDisplaySleep:(bool)disable
+{
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
+   if (disable && _sleepActivity == nil)
+   {
+      _sleepActivity = [NSProcessInfo.processInfo beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled reason:@"disable screen saver"];
+   }
+   else if (!disable && _sleepActivity != nil)
+   {
+      [NSProcessInfo.processInfo endActivity:_sleepActivity];
+      _sleepActivity = nil;
+   }
+   return YES;
+#else
+   return NO;
+#endif
+
+}
+
 
 - (void) rarch_main
 {
