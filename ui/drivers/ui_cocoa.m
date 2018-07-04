@@ -71,7 +71,7 @@ static void app_terminate(void)
 
 @implementation RApplication
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 101200
 #define NSEventTypeKeyDown             NSKeyDown
 #define NSEventTypeKeyUp               NSKeyUp
 #define NSEventTypeFlagsChanged        NSFlagsChanged
