@@ -45,10 +45,16 @@
 - (instancetype)initWithContext:(Context *)context;
 @end
 
+@interface Overlay()
+- (instancetype)initWithContext:(Context *)context;
+- (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce;
+@end
+
 @implementation MetalDriver
 {
    FrameView *_frameView;
    MetalMenu *_menu;
+   Overlay *_overlay;
    
    video_info_t _video;
    
@@ -127,6 +133,9 @@
          _frameView.viewport = _viewport;
          [_frameView setFilteringIndex:0 smooth:video->smooth];
       }
+      
+      // overlay view
+      _overlay = [[Overlay alloc] initWithContext:_context];
       
       font_driver_init_osd((__bridge void *)self, false, video->is_threaded, FONT_DRIVER_RENDER_METAL_API);
    }
@@ -440,6 +449,19 @@
             font_driver_render_msg(video_info, NULL, video_info->stat_text, osd_params);
          }
       }
+
+#ifdef HAVE_OVERLAY
+      if (_overlay.enabled)
+      {
+         id<MTLRenderCommandEncoder> rce = _context.rce;
+         [rce pushDebugGroup:@"overlay"];
+         [rce setRenderPipelineState:[self getStockShader:VIDEO_SHADER_STOCK_BLEND blend:YES]];
+         [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
+         [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
+         [_overlay drawWithEncoder:rce];
+         [rce popDebugGroup];
+      }
+#endif
       
       if (msg && *msg)
       {
@@ -1458,6 +1480,115 @@ static vertex_t vertex_bytes[] = {
    init_history = YES;
    
    return YES;
+}
+
+@end
+
+@implementation Overlay
+{
+   Context *_context;
+   NSMutableArray<id<MTLTexture>> *_images;
+   id<MTLBuffer> _vert;
+   bool _vertDirty;
+}
+
+- (instancetype)initWithContext:(Context *)context
+{
+   if (self = [super init])
+   {
+      _context = context;
+   }
+   return self;
+}
+
+- (bool)loadImages:(const struct texture_image *)images count:(NSUInteger)count
+{
+   [self _freeImages];
+   
+   _images = [NSMutableArray arrayWithCapacity:count];
+   
+   NSUInteger needed = sizeof(SpriteVertex) * count * 4;
+   if (!_vert || _vert.length < needed)
+   {
+      _vert = [_context.device newBufferWithLength:needed options:MTLResourceStorageModeManaged];
+   }
+   
+   for (NSUInteger i = 0; i < count; i++)
+   {
+      _images[i] = [_context newTexture:images[i] mipmapped:NO];
+      [self updateVertexX:0 y:0 w:1 h:1 index:i];
+      [self updateTextureCoordsX:0 y:0 w:1 h:1 index:i];
+      [self _updateColorRed:1.0 green:1.0 blue:1.0 alpha:1.0 index:i];
+   }
+   
+   _vertDirty = YES;
+   
+   return YES;
+}
+
+- (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce
+{
+   if (_vertDirty)
+   {
+      [_vert didModifyRange:NSMakeRange(0, _vert.length)];
+      _vertDirty = NO;
+   }
+   
+   NSUInteger count = _images.count;
+   for (NSUInteger i = 0; i < count; ++i)
+   {
+      NSUInteger offset = sizeof(SpriteVertex) * 4 * i;
+      [rce setVertexBuffer:_vert offset:offset atIndex:BufferIndexPositions];
+      [rce setFragmentTexture:_images[i] atIndex:TextureIndexColor];
+      [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+   }
+}
+
+- (SpriteVertex *)_getForIndex:(NSUInteger)index
+{
+   SpriteVertex *pv = (SpriteVertex *)_vert.contents;
+   return &pv[index * 4];
+}
+
+- (void)_updateColorRed:(float)r green:(float)g blue:(float)b alpha:(float)a index:(NSUInteger)index
+{
+   simd_float4 color = simd_make_float4(r, g, b, a);
+   SpriteVertex *pv = [self _getForIndex:index];
+   pv[0].color = color;
+   pv[1].color = color;
+   pv[2].color = color;
+   pv[3].color = color;
+   _vertDirty = YES;
+}
+
+- (void)updateAlpha:(float)alpha index:(NSUInteger)index
+{
+   [self _updateColorRed:1.0 green:1.0 blue:1.0 alpha:alpha index:index];
+}
+
+- (void)updateVertexX:(float)x y:(float)y w:(float)w h:(float)h index:(NSUInteger)index
+{
+   SpriteVertex *pv = [self _getForIndex:index];
+   pv[0].position = simd_make_float2(x, y);
+   pv[1].position = simd_make_float2(x + w, y);
+   pv[2].position = simd_make_float2(x, y + h);
+   pv[3].position = simd_make_float2(x + w, y + h);
+   _vertDirty = YES;
+}
+
+- (void)updateTextureCoordsX:(float)x y:(float)y w:(float)w h:(float)h index:(NSUInteger)index
+{
+   SpriteVertex *pv = [self _getForIndex:index];
+   pv[0].texCoord = simd_make_float2(x, y);
+   pv[1].texCoord = simd_make_float2(x + w, y);
+   pv[2].texCoord = simd_make_float2(x, y + h);
+   pv[3].texCoord = simd_make_float2(x + w, y + h);
+   _vertDirty = YES;
+}
+
+- (void)_freeImages
+{
+   _images = nil;
 }
 
 @end
