@@ -131,7 +131,6 @@
 
 - (void)draw:(menu_display_ctx_draw_t *)draw video:(video_frame_info_t *)video
 {
-   Texture *tex = (__bridge Texture *)(void *)draw->texture;
    const float *vertex = draw->coords->vertex ?: MenuDisplay.defaultVertices;
    const float *tex_coord = draw->coords->tex_coord ?: MenuDisplay.defaultTexCoords;
    const float *color = draw->coords->color ?: MenuDisplay.defaultColor;
@@ -178,37 +177,37 @@
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-      {
          [rce setRenderPipelineState:[_driver getStockShader:draw->pipeline.id blend:_blend]];
          [rce setVertexBytes:draw->pipeline.backend_data length:draw->pipeline.backend_data_size atIndex:BufferIndexUniforms];
          [rce setVertexBuffer:range.buffer offset:range.offset atIndex:BufferIndexPositions];
          [rce setFragmentBytes:draw->pipeline.backend_data length:draw->pipeline.backend_data_size atIndex:BufferIndexUniforms];
          [rce drawPrimitives:[self _toPrimitiveType:draw->prim_type] vertexStart:0 vertexCount:vertexCount];
-         break;
-      }
+         return;
 #endif
       default:
-      {
-         if (_clearNextRender)
-         {
-            // TODO(sgc): draw quad to clear
-            _clearNextRender = NO;
-         }
-         
-         [rce setRenderPipelineState:[_driver getStockShader:VIDEO_SHADER_STOCK_BLEND blend:_blend]];
-         
-         Uniforms uniforms = {
-            .projectionMatrix = draw->matrix_data ? make_matrix_float4x4((const float *)draw->matrix_data)
-                                                  : _uniforms.projectionMatrix
-         };
-         [rce setVertexBytes:&uniforms length:sizeof(uniforms) atIndex:BufferIndexUniforms];
-         [rce setVertexBuffer:range.buffer offset:range.offset atIndex:BufferIndexPositions];
-         [rce setFragmentTexture:tex.texture atIndex:TextureIndexColor];
-         [rce setFragmentSamplerState:tex.sampler atIndex:SamplerIndexDraw];
-         [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:vertexCount];
-         
          break;
-      }
    }
+   
+   Texture *tex = (__bridge Texture *)(void *)draw->texture;
+   if (tex == nil)
+      return;
+   
+   if (_clearNextRender)
+   {
+      // TODO(sgc): draw quad to clear
+      _clearNextRender = NO;
+   }
+   
+   [rce setRenderPipelineState:[_driver getStockShader:VIDEO_SHADER_STOCK_BLEND blend:_blend]];
+   
+   Uniforms uniforms = {
+      .projectionMatrix = draw->matrix_data ? make_matrix_float4x4((const float *)draw->matrix_data)
+                                            : _uniforms.projectionMatrix
+   };
+   [rce setVertexBytes:&uniforms length:sizeof(uniforms) atIndex:BufferIndexUniforms];
+   [rce setVertexBuffer:range.buffer offset:range.offset atIndex:BufferIndexPositions];
+   [rce setFragmentTexture:tex.texture atIndex:TextureIndexColor];
+   [rce setFragmentSamplerState:tex.sampler atIndex:SamplerIndexDraw];
+   [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:vertexCount];
 }
 @end

@@ -54,10 +54,13 @@ NSString *NSStringFromRPixelFormat(RPixelFormat format)
 
 matrix_float4x4 make_matrix_float4x4(const float *v)
 {
-   simd_float4 P = simd_make_float4(*v++, *v++, *v++, *v++);
-   simd_float4 Q = simd_make_float4(*v++, *v++, *v++, *v++);
-   simd_float4 R = simd_make_float4(*v++, *v++, *v++, *v++);
-   simd_float4 S = simd_make_float4(*v++, *v++, *v++, *v++);
+   simd_float4 P = simd_make_float4(v[0], v[1], v[2], v[3]);
+   v+=4;
+   simd_float4 Q = simd_make_float4(v[0], v[1], v[2], v[3]);
+   v+=4;
+   simd_float4 R = simd_make_float4(v[0], v[1], v[2], v[3]);
+   v+=4;
+   simd_float4 S = simd_make_float4(v[0], v[1], v[2], v[3]);
    
    matrix_float4x4 mat = {P, Q, R, S};
    return mat;
