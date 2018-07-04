@@ -23,8 +23,8 @@
 #include "cocoa_common.h"
 #include "../../ui_companion_driver.h"
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
-static const NSEventMask NSEventMaskAny = NSAnyEventMask;
+#if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
+#define NSEventMaskAny NSAnyEventMask
 #endif
 
 static void* ui_application_cocoa_initialize(void)

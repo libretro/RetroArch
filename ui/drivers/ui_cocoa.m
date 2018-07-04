@@ -71,29 +71,29 @@ static void app_terminate(void)
 
 @implementation RApplication
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
-static const NSEventType NSEventTypeKeyDown           = NSKeyDown;
-static const NSEventType NSEventTypeKeyUp             = NSKeyUp;
-static const NSEventType NSEventTypeFlagsChanged      = NSFlagsChanged;
-static const NSEventType NSEventTypeMouseMoved        = NSMouseMoved;
-static const NSEventType NSEventTypeLeftMouseDragged  = NSLeftMouseDragged;
-static const NSEventType NSEventTypeRightMouseDragged = NSRightMouseDragged;
-static const NSEventType NSEventTypeOtherMouseDragged = NSOtherMouseDragged;
-static const NSEventType NSEventTypeLeftMouseDown     = NSLeftMouseDown;
-static const NSEventType NSEventTypeRightMouseDown    = NSRightMouseDown;
-static const NSEventType NSEventTypeOtherMouseDown    = NSOtherMouseDown;
-static const NSEventType NSEventTypeLeftMouseUp       = NSLeftMouseUp;
-static const NSEventType NSEventTypeRightMouseUp      = NSRightMouseUp;
-static const NSEventType NSEventTypeOtherMouseUp      = NSOtherMouseUp;
-static const NSEventType NSEventTypeScrollWheel       = NSScrollWheel;
+#if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
+#define NSEventTypeKeyDown             NSKeyDown
+#define NSEventTypeKeyUp               NSKeyUp
+#define NSEventTypeFlagsChanged        NSFlagsChanged
+#define NSEventTypeMouseMoved          NSMouseMoved
+#define NSEventTypeLeftMouseDragged    NSLeftMouseDragged
+#define NSEventTypeRightMouseDragged   NSRightMouseDragged
+#define NSEventTypeOtherMouseDragged   NSOtherMouseDragged
+#define NSEventTypeLeftMouseDown       NSLeftMouseDown
+#define NSEventTypeRightMouseDown      NSRightMouseDown
+#define NSEventTypeOtherMouseDown      NSOtherMouseDown
+#define NSEventTypeLeftMouseUp         NSLeftMouseUp
+#define NSEventTypeRightMouseUp        NSRightMouseUp
+#define NSEventTypeOtherMouseUp        NSOtherMouseUp
+#define NSEventTypeScrollWheel         NSScrollWheel
 
 // modifier flags
-static const NSEventModifierFlags NSEventModifierFlagCapsLock  = NSAlphaShiftKeyMask;
-static const NSEventModifierFlags NSEventModifierFlagShift     = NSShiftKeyMask;
-static const NSEventModifierFlags NSEventModifierFlagControl   = NSControlKeyMask;
-static const NSEventModifierFlags NSEventModifierFlagOption    = NSAlternateKeyMask;
-static const NSEventModifierFlags NSEventModifierFlagCommand   = NSCommandKeyMask;
-static const NSEventModifierFlags NSEventModifierFlagNumericPad= NSNumericPadKeyMask;
+#define NSEventModifierFlagCapsLock    NSAlphaShiftKeyMask
+#define NSEventModifierFlagShift       NSShiftKeyMask
+#define NSEventModifierFlagControl     NSControlKeyMask
+#define NSEventModifierFlagOption      NSAlternateKeyMask
+#define NSEventModifierFlagCommand     NSCommandKeyMask
+#define NSEventModifierFlagNumericPad  NSNumericPadKeyMask
 #endif
 
 - (void)sendEvent:(NSEvent *)event
