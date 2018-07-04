@@ -622,7 +622,7 @@
 
 #pragma mark - FrameView
 
-#define ALIGN(x) __attribute__((aligned(x)))
+#define MTLALIGN(x) __attribute__((aligned(x)))
 
 typedef struct
 {
@@ -638,7 +638,7 @@ typedef struct texture
    float4_t size_data;
 } texture_t;
 
-typedef struct ALIGN(16)
+typedef struct MTLALIGN(16)
 {
    matrix_float4x4 mvp;
    

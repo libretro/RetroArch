@@ -52,6 +52,17 @@ NSString *NSStringFromRPixelFormat(RPixelFormat format)
    return RPixelStrings[format];
 }
 
+matrix_float4x4 make_matrix_float4x4(const float *v)
+{
+   simd_float4 P = simd_make_float4(*v++, *v++, *v++, *v++);
+   simd_float4 Q = simd_make_float4(*v++, *v++, *v++, *v++);
+   simd_float4 R = simd_make_float4(*v++, *v++, *v++, *v++);
+   simd_float4 S = simd_make_float4(*v++, *v++, *v++, *v++);
+   
+   matrix_float4x4 mat = {P, Q, R, S};
+   return mat;
+}
+
 matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bottom)
 {
    float near = 0;

@@ -148,7 +148,7 @@
    SpriteVertex *pv = (SpriteVertex *)range.data;
    for (unsigned i = 0; i < draw->coords->vertices; i++, pv++)
    {
-      pv->position = simd_make_float2(vertex[0], 1.0 - vertex[1]);
+      pv->position = simd_make_float2(vertex[0], 1.0f - vertex[1]);
       vertex += 2;
       
       pv->texCoord = simd_make_float2(tex_coord[0], tex_coord[1]);
@@ -196,8 +196,9 @@
          }
          
          [rce setRenderPipelineState:[_driver getStockShader:VIDEO_SHADER_STOCK_BLEND blend:_blend]];
+         
          Uniforms uniforms = {
-            .projectionMatrix = draw->matrix_data ? *(matrix_float4x4 *)draw->matrix_data
+            .projectionMatrix = draw->matrix_data ? make_matrix_float4x4((const float *)draw->matrix_data)
                                                   : _uniforms.projectionMatrix
          };
          [rce setVertexBytes:&uniforms length:sizeof(uniforms) atIndex:BufferIndexUniforms];
