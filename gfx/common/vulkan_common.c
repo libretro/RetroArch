@@ -62,7 +62,7 @@ static void trigger_spurious_error_vkresult(VkResult *res)
 static bool trigger_spurious_error(void)
 {
    ++wsi_harden_counter2;
-   return (wsi_harden_counter2 & 15) == 9;
+   return ((wsi_harden_counter2 & 15) == 9) || ((wsi_harden_counter2 & 15) == 10);
 }
 #endif
 
@@ -2482,6 +2482,7 @@ retry:
          vk->context.current_swapchain_index = 0;
          vulkan_acquire_clear_fences(vk);
          vulkan_acquire_wait_fences(vk);
+         vk->context.invalid_swapchain = true;
          return;
       }
    }
