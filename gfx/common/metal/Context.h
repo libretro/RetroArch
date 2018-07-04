@@ -29,6 +29,9 @@ typedef struct
 @property (nonatomic, readonly) id<MTLLibrary> library;
 @property (nonatomic, readwrite) MTLClearColor clearColor;
 
+/*! @brief Specifies whether rendering is synchronized with the display */
+@property (nonatomic, readwrite) bool displaySyncEnabled;
+
 /*! @brief Returns the command buffer used for pre-render work,
  * such as mip maps for applying filters
  * */

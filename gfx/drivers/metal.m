@@ -75,8 +75,11 @@ static bool metal_frame(void *data, const void *frame,
                      info:video_info];
 }
 
-static void metal_set_nonblock_state(void *data, bool state)
+static void metal_set_nonblock_state(void *data, bool non_block)
 {
+   RARCH_LOG("[Metal]: set non block: %s\n", non_block ? "ON" : "OFF");
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   md.context.displaySyncEnabled = !non_block;
 }
 
 static bool metal_alive(void *data)
