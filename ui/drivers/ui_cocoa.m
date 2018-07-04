@@ -69,6 +69,31 @@ static void app_terminate(void)
 
 @implementation RApplication
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
+static const NSEventType NSEventTypeKeyDown           = NSKeyDown;
+static const NSEventType NSEventTypeKeyUp             = NSKeyUp;
+static const NSEventType NSEventTypeFlagsChanged      = NSFlagsChanged;
+static const NSEventType NSEventTypeMouseMoved        = NSMouseMoved;
+static const NSEventType NSEventTypeLeftMouseDragged  = NSLeftMouseDragged;
+static const NSEventType NSEventTypeRightMouseDragged = NSRightMouseDragged;
+static const NSEventType NSEventTypeOtherMouseDragged = NSOtherMouseDragged;
+static const NSEventType NSEventTypeLeftMouseDown     = NSLeftMouseDown;
+static const NSEventType NSEventTypeRightMouseDown    = NSRightMouseDown;
+static const NSEventType NSEventTypeOtherMouseDown    = NSOtherMouseDown;
+static const NSEventType NSEventTypeLeftMouseUp       = NSLeftMouseUp;
+static const NSEventType NSEventTypeRightMouseUp      = NSRightMouseUp;
+static const NSEventType NSEventTypeOtherMouseUp      = NSOtherMouseUp;
+static const NSEventType NSEventTypeScrollWheel       = NSScrollWheel;
+
+// modifier flags
+static const NSEventModifierFlags NSEventModifierFlagCapsLock  = NSAlphaShiftKeyMask;
+static const NSEventModifierFlags NSEventModifierFlagShift     = NSShiftKeyMask;
+static const NSEventModifierFlags NSEventModifierFlagControl   = NSControlKeyMask;
+static const NSEventModifierFlags NSEventModifierFlagOption    = NSAlternateKeyMask;
+static const NSEventModifierFlags NSEventModifierFlagCommand   = NSCommandKeyMask;
+static const NSEventModifierFlags NSEventModifierFlagNumericPad= NSNumericPadKeyMask;
+#endif
+
 - (void)sendEvent:(NSEvent *)event
 {
    NSEventType event_type;
@@ -77,10 +102,10 @@ static void app_terminate(void)
 
    event_type = event.type;
 
-   switch ((int32_t)event_type)
+   switch (event_type)
    {
-      case NSKeyDown:
-        case NSKeyUp:
+      case NSEventTypeKeyDown:
+      case NSEventTypeKeyUp:
          {
             NSString* ch = (NSString*)event.characters;
             uint32_t character = 0;
@@ -91,29 +116,29 @@ static void app_terminate(void)
                uint32_t i;
                character = [ch characterAtIndex:0];
 
-               if (event.modifierFlags & NSAlphaShiftKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagCapsLock)
                   mod |= RETROKMOD_CAPSLOCK;
-               if (event.modifierFlags & NSShiftKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagShift)
                   mod |=  RETROKMOD_SHIFT;
-               if (event.modifierFlags & NSControlKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagControl)
                   mod |=  RETROKMOD_CTRL;
-               if (event.modifierFlags & NSAlternateKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagOption)
                   mod |= RETROKMOD_ALT;
-               if (event.modifierFlags & NSCommandKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagCommand)
                   mod |= RETROKMOD_META;
-               if (event.modifierFlags & NSNumericPadKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagNumericPad)
                   mod |=  RETROKMOD_NUMLOCK;
 
                for (i = 1; i < ch.length; i++)
-                  apple_input_keyboard_event(event_type == NSKeyDown,
+                  apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
                         0, [ch characterAtIndex:i], mod, RETRO_DEVICE_KEYBOARD);
             }
 
-            apple_input_keyboard_event(event_type == NSKeyDown,
+            apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
                   event.keyCode, character, mod, RETRO_DEVICE_KEYBOARD);
          }
          break;
-        case NSFlagsChanged:
+        case NSEventTypeFlagsChanged:
          {
             static uint32_t old_flags = 0;
             uint32_t new_flags        = event.modifierFlags;
@@ -125,10 +150,10 @@ static void app_terminate(void)
                   0, event.modifierFlags, RETRO_DEVICE_KEYBOARD);
          }
          break;
-        case NSMouseMoved:
-        case NSLeftMouseDragged:
-        case NSRightMouseDragged:
-        case NSOtherMouseDragged:
+        case NSEventTypeMouseMoved:
+        case NSEventTypeLeftMouseDragged:
+        case NSEventTypeRightMouseDragged:
+        case NSEventTypeOtherMouseDragged:
          {
             NSPoint pos;
             NSPoint mouse_pos;
@@ -150,12 +175,12 @@ static void app_terminate(void)
             apple->window_pos_y = (int16_t)mouse_pos.y;
          }
          break;
-        case NSScrollWheel:
+        case NSEventTypeScrollWheel:
          /* TODO/FIXME - properly implement. */
          break;
-        case NSLeftMouseDown:
-        case NSRightMouseDown:
-        case NSOtherMouseDown:
+        case NSEventTypeLeftMouseDown:
+        case NSEventTypeRightMouseDown:
+        case NSEventTypeOtherMouseDown:
          {
             NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
             apple = (cocoa_input_data_t*)input_driver_get_data();
@@ -166,9 +191,9 @@ static void app_terminate(void)
             apple->touch_count = 1;
          }
          break;
-      case NSLeftMouseUp:
-      case NSRightMouseUp:
-      case NSOtherMouseUp:
+      case NSEventTypeLeftMouseUp:
+      case NSEventTypeRightMouseUp:
+      case NSEventTypeOtherMouseUp:
          {
             NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
             apple = (cocoa_input_data_t*)input_driver_get_data();
@@ -177,6 +202,8 @@ static void app_terminate(void)
             apple->mouse_buttons &= ~(1 << event.buttonNumber);
             apple->touch_count = 0;
          }
+         break;
+      default:
          break;
    }
 }

@@ -371,7 +371,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
       /* Draw the line */
       if (delim)
       {
-         unsigned msg_len = delim - msg;
+         NSUInteger msg_len = delim - msg;
          [self _renderLine:msg
                      video:video
                     length:msg_len

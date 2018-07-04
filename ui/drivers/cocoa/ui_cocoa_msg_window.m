@@ -25,6 +25,12 @@
 
 #include "../../ui_companion_driver.h"
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_12
+static const NSAlertStyle NSAlertStyleCritical      = NSCriticalAlertStyle;
+static const NSAlertStyle NSAlertStyleWarning       = NSWarningAlertStyle;
+static const NSAlertStyle NSAlertStyleInformational = NSInformationalAlertStyle;
+#endif
+
 static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_state *state, enum ui_msg_window_type type)
 {
     NSInteger response;
@@ -61,24 +67,32 @@ static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_stat
     switch (type)
     {
         case UI_MSG_WINDOW_TYPE_ERROR:
-            [alert setAlertStyle:NSCriticalAlertStyle];
+            [alert setAlertStyle:NSAlertStyleCritical];
             break;
         case UI_MSG_WINDOW_TYPE_WARNING:
-            [alert setAlertStyle:NSWarningAlertStyle];
+            [alert setAlertStyle:NSAlertStyleWarning];
             break;
         case UI_MSG_WINDOW_TYPE_QUESTION:
-            [alert setAlertStyle:NSInformationalAlertStyle];
+            [alert setAlertStyle:NSAlertStyleInformational];
             break;
         case UI_MSG_WINDOW_TYPE_INFORMATION:
-            [alert setAlertStyle:NSInformationalAlertStyle];
+            [alert setAlertStyle:NSAlertStyleInformational];
             break;
     }
-    
+
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
+    [alert beginSheetModalForWindow:(BRIDGE NSWindow *)ui_companion_driver_get_main_window()
+                  completionHandler:^(NSModalResponse returnCode) {
+                     [[NSApplication sharedApplication] stopModalWithCode:returnCode];
+                  }];
+    response = [alert runModal];
+#else
     [alert beginSheetModalForWindow:(BRIDGE NSWindow *)ui_companion_driver_get_main_window()
                       modalDelegate:apple_platform
                      didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
                         contextInfo:nil];
     response = [[NSApplication sharedApplication] runModalForWindow:[alert window]];
+#endif
     
     switch (state->buttons)
     {
