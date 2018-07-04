@@ -11,15 +11,16 @@
 
 NSUInteger RPixelFormatToBPP(RPixelFormat format)
 {
-   switch (format) {
+   switch (format)
+   {
       case RPixelFormatBGRA8Unorm:
       case RPixelFormatBGRX8Unorm:
          return 4;
-
+      
       case RPixelFormatB5G6R5Unorm:
       case RPixelFormatBGRA4Unorm:
          return 2;
-
+      
       default:
          RARCH_ERR("[Metal]: unknown RPixel format: %d\n", format);
          return 4;
@@ -40,13 +41,14 @@ NSString *NSStringFromRPixelFormat(RPixelFormat format)
       STRING(RPixelFormatBGRA8Unorm);
       STRING(RPixelFormatBGRX8Unorm);
 #undef STRING
-
+   
    });
-
-   if (format >= RPixelFormatCount) {
+   
+   if (format >= RPixelFormatCount)
+   {
       format = RPixelFormatInvalid;
    }
-
+   
    return RPixelStrings[format];
 }
 
@@ -54,19 +56,19 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 {
    float near = 0;
    float far = 1;
-
+   
    float sx = 2 / (right - left);
    float sy = 2 / (top - bottom);
    float sz = 1 / (far - near);
    float tx = (right + left) / (left - right);
    float ty = (top + bottom) / (bottom - top);
    float tz = near / (far - near);
-
+   
    simd_float4 P = simd_make_float4(sx, 0, 0, 0);
    simd_float4 Q = simd_make_float4(0, sy, 0, 0);
    simd_float4 R = simd_make_float4(0, 0, sz, 0);
    simd_float4 S = simd_make_float4(tx, ty, tz, 1);
-
+   
    matrix_float4x4 mat = {P, Q, R, S};
    return mat;
 }

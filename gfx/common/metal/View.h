@@ -12,11 +12,11 @@
 
 typedef NS_ENUM(NSInteger, ViewDrawState)
 {
-   ViewDrawStateNone    = 0x00,
+   ViewDrawStateNone = 0x00,
    ViewDrawStateContext = 0x01,
    ViewDrawStateEncoder = 0x02,
    
-   ViewDrawStateAll     = 0x03,
+   ViewDrawStateAll = 0x03,
 };
 
 @interface ViewDescriptor : NSObject

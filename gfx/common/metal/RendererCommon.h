@@ -27,7 +27,8 @@
 
 #pragma mark - Pixel Formats
 
-typedef NS_ENUM(NSUInteger, RPixelFormat) {
+typedef NS_ENUM(NSUInteger, RPixelFormat)
+{
    
    RPixelFormatInvalid,
    
@@ -44,7 +45,8 @@ typedef NS_ENUM(NSUInteger, RPixelFormat) {
 extern NSUInteger RPixelFormatToBPP(RPixelFormat format);
 extern NSString *NSStringFromRPixelFormat(RPixelFormat format);
 
-typedef NS_ENUM(NSUInteger, RTextureFilter) {
+typedef NS_ENUM(NSUInteger, RTextureFilter)
+{
    RTextureFilterNearest,
    RTextureFilterLinear,
    

@@ -249,9 +249,9 @@
          RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
          return NO;
       }
-   
+      
       MTLFunctionConstantValues *vals;
-
+      
       psd.label = @"snow_simple";
       ca.blendingEnabled = YES;
       {
@@ -272,7 +272,7 @@
          RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
          return NO;
       }
-
+      
       psd.label = @"snow";
       ca.blendingEnabled = YES;
       {
@@ -293,7 +293,7 @@
          RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
          return NO;
       }
-   
+      
       psd.label = @"bokeh";
       ca.blendingEnabled = YES;
       psd.fragmentFunction = [_library newFunctionWithName:@"bokeh_fragment"];
@@ -303,7 +303,7 @@
          RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
          return NO;
       }
-   
+      
       psd.label = @"snowflake";
       ca.blendingEnabled = YES;
       psd.fragmentFunction = [_library newFunctionWithName:@"snowflake_fragment"];
@@ -313,7 +313,7 @@
          RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
          return NO;
       }
-   
+      
       psd.label = @"ribbon";
       ca.blendingEnabled = NO;
       psd.vertexFunction = [_library newFunctionWithName:@"ribbon_vertex"];

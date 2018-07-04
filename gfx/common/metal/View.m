@@ -14,7 +14,8 @@
 - (instancetype)init
 {
    self = [super init];
-   if (self) {
+   if (self)
+   {
       _format = RPixelFormatBGRA8Unorm;
    }
    return self;

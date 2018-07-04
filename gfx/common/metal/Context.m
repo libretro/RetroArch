@@ -63,28 +63,28 @@
       _library = l;
       _commandQueue = [_device newCommandQueue];
       _clearColor = MTLClearColorMake(0, 0, 0, 1);
-   
+      
       {
          MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];
-      
+         
          sd.label = @"NEAREST";
          _samplers[TEXTURE_FILTER_NEAREST] = [d newSamplerStateWithDescriptor:sd];
-      
+         
          sd.mipFilter = MTLSamplerMipFilterNearest;
          sd.label = @"MIPMAP_NEAREST";
          _samplers[TEXTURE_FILTER_MIPMAP_NEAREST] = [d newSamplerStateWithDescriptor:sd];
-      
+         
          sd.mipFilter = MTLSamplerMipFilterNotMipmapped;
          sd.minFilter = MTLSamplerMinMagFilterLinear;
          sd.magFilter = MTLSamplerMinMagFilterLinear;
          sd.label = @"LINEAR";
          _samplers[TEXTURE_FILTER_LINEAR] = [d newSamplerStateWithDescriptor:sd];
-      
+         
          sd.mipFilter = MTLSamplerMipFilterLinear;
          sd.label = @"MIPMAP_LINEAR";
          _samplers[TEXTURE_FILTER_MIPMAP_LINEAR] = [d newSamplerStateWithDescriptor:sd];
       }
-   
+      
       if (![self _initConversionFilters])
          return nil;
       
