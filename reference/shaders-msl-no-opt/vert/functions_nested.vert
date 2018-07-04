@@ -36,6 +36,12 @@ struct main0_out
     float4 gl_Position [[position]];
 };
 
+// Returns 2D texture coords corresponding to 1D texel buffer coords
+uint2 spvTexelBufferCoord(uint tc)
+{
+    return uint2(tc % 4096, tc / 4096);
+}
+
 attr_desc fetch_desc(thread const int& location, constant VertexBuffer& v_227)
 {
     int attribute_flags = v_227.input_attributes[location].w;
@@ -76,10 +82,10 @@ float4 fetch_attr(thread const attr_desc& desc, thread const int& vertex_id, thr
             {
                 int _131 = first_byte;
                 first_byte = _131 + 1;
-                tmp.x = input_stream.read(uint2(_131, 0)).x;
+                tmp.x = input_stream.read(spvTexelBufferCoord(_131)).x;
                 int _138 = first_byte;
                 first_byte = _138 + 1;
-                tmp.y = input_stream.read(uint2(_138, 0)).x;
+                tmp.y = input_stream.read(spvTexelBufferCoord(_138)).x;
                 uint4 param = tmp;
                 int param_1 = desc.swap_bytes;
                 result[n] = float(get_bits(param, param_1));
@@ -89,16 +95,16 @@ float4 fetch_attr(thread const attr_desc& desc, thread const int& vertex_id, thr
             {
                 int _156 = first_byte;
                 first_byte = _156 + 1;
-                tmp.x = input_stream.read(uint2(_156, 0)).x;
+                tmp.x = input_stream.read(spvTexelBufferCoord(_156)).x;
                 int _163 = first_byte;
                 first_byte = _163 + 1;
-                tmp.y = input_stream.read(uint2(_163, 0)).x;
+                tmp.y = input_stream.read(spvTexelBufferCoord(_163)).x;
                 int _170 = first_byte;
                 first_byte = _170 + 1;
-                tmp.z = input_stream.read(uint2(_170, 0)).x;
+                tmp.z = input_stream.read(spvTexelBufferCoord(_170)).x;
                 int _177 = first_byte;
                 first_byte = _177 + 1;
-                tmp.w = input_stream.read(uint2(_177, 0)).x;
+                tmp.w = input_stream.read(spvTexelBufferCoord(_177)).x;
                 uint4 param_2 = tmp;
                 int param_3 = desc.swap_bytes;
                 result[n] = as_type<float>(get_bits(param_2, param_3));
@@ -108,7 +114,7 @@ float4 fetch_attr(thread const attr_desc& desc, thread const int& vertex_id, thr
             {
                 int _195 = first_byte;
                 first_byte = _195 + 1;
-                result[n] = float(input_stream.read(uint2(_195, 0)).x);
+                result[n] = float(input_stream.read(spvTexelBufferCoord(_195)).x);
                 reverse_order = desc.swap_bytes != 0;
                 break;
             }

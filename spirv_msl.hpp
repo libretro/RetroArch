@@ -152,6 +152,7 @@ public:
 
 		Platform platform = macOS;
 		uint32_t msl_version = make_msl_version(1, 2);
+		uint32_t texel_buffer_texture_width = 4096; // Width of 2D Metal textures used as 1D texel buffers
 		bool enable_point_size_builtin = true;
 		bool resolve_specialized_array_lengths = true;
 
@@ -215,6 +216,7 @@ public:
 		SPVFuncImplFindSMsb,
 		SPVFuncImplFindUMsb,
 		SPVFuncImplArrayCopy,
+		SPVFuncImplTexelBufferCoords,
 		SPVFuncImplInverse4x4,
 		SPVFuncImplInverse3x3,
 		SPVFuncImplInverse2x2,
@@ -355,6 +357,9 @@ protected:
 	void build_implicit_builtins();
 	void emit_entry_point_declarations() override;
 	uint32_t builtin_frag_coord_id = 0;
+
+	void bitcast_to_builtin_store(uint32_t target_id, std::string &expr, const SPIRType &expr_type) override;
+	void bitcast_from_builtin_load(uint32_t source_id, std::string &expr, const SPIRType &expr_type) override;
 
 	Options msl_options;
 	std::set<SPVFuncImpl> spv_function_implementations;

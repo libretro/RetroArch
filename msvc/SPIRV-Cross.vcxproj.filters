@@ -24,6 +24,9 @@
     <ClCompile Include="..\spirv_glsl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\spirv_reflect.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\spirv_cpp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -48,6 +51,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\spirv_glsl.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\spirv_reflect.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\spirv.hpp">

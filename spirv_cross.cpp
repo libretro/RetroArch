@@ -1063,6 +1063,34 @@ const SPIRType &Compiler::get_type_from_variable(uint32_t id) const
 	return get<SPIRType>(get<SPIRVariable>(id).basetype);
 }
 
+uint32_t Compiler::get_non_pointer_type_id(uint32_t type_id) const
+{
+	auto *p_type = &get<SPIRType>(type_id);
+	while (p_type->pointer)
+	{
+		assert(p_type->parent_type);
+		type_id = p_type->parent_type;
+		p_type = &get<SPIRType>(type_id);
+	}
+	return type_id;
+}
+
+const SPIRType &Compiler::get_non_pointer_type(const SPIRType &type) const
+{
+	auto *p_type = &type;
+	while (p_type->pointer)
+	{
+		assert(p_type->parent_type);
+		p_type = &get<SPIRType>(p_type->parent_type);
+	}
+	return *p_type;
+}
+
+const SPIRType &Compiler::get_non_pointer_type(uint32_t type_id) const
+{
+	return get_non_pointer_type(get<SPIRType>(type_id));
+}
+
 void Compiler::set_member_decoration_string(uint32_t id, uint32_t index, spv::Decoration decoration,
                                             const std::string &argument)
 {
@@ -1814,7 +1842,7 @@ void Compiler::parse(const Instruction &instruction)
 		type.basetype = SPIRType::Image;
 		type.image.type = ops[1];
 		type.image.dim = static_cast<Dim>(ops[2]);
-		type.image.depth = ops[3] != 0;
+		type.image.depth = ops[3] == 1;
 		type.image.arrayed = ops[4] != 0;
 		type.image.ms = ops[5] != 0;
 		type.image.sampled = ops[6];
@@ -2221,6 +2249,14 @@ void Compiler::parse(const Instruction &instruction)
 		current_block->next_block = ops[0];
 		current_block->merge = SPIRBlock::MergeSelection;
 		selection_merge_targets.insert(current_block->next_block);
+
+		if (length >= 2)
+		{
+			if (ops[1] & SelectionControlFlattenMask)
+				current_block->hint = SPIRBlock::HintFlatten;
+			else if (ops[1] & SelectionControlDontFlattenMask)
+				current_block->hint = SPIRBlock::HintDontFlatten;
+		}
 		break;
 	}
 
@@ -2243,6 +2279,14 @@ void Compiler::parse(const Instruction &instruction)
 		// they are treated as continues.
 		if (current_block->continue_block != current_block->self)
 			continue_blocks.insert(current_block->continue_block);
+
+		if (length >= 3)
+		{
+			if (ops[2] & LoopControlUnrollMask)
+				current_block->hint = SPIRBlock::HintUnroll;
+			else if (ops[2] & LoopControlDontUnrollMask)
+				current_block->hint = SPIRBlock::HintDontUnroll;
+		}
 		break;
 	}
 
@@ -4243,14 +4287,8 @@ bool Compiler::ActiveBuiltinHandler::handle(spv::Op opcode, const uint32_t *args
 		// Required if we access chain into builtins like gl_GlobalInvocationID.
 		add_if_builtin(args[2]);
 
-		auto *type = &compiler.get<SPIRType>(var->basetype);
-
 		// Start traversing type hierarchy at the proper non-pointer types.
-		while (type->pointer)
-		{
-			assert(type->parent_type);
-			type = &compiler.get<SPIRType>(type->parent_type);
-		}
+		auto *type = &compiler.get_non_pointer_type(var->basetype);
 
 		auto &flags =
 		    type->storage == StorageClassInput ? compiler.active_input_builtins : compiler.active_output_builtins;
@@ -4329,11 +4367,43 @@ bool Compiler::has_active_builtin(BuiltIn builtin, StorageClass storage)
 
 void Compiler::analyze_image_and_sampler_usage()
 {
-	CombinedImageSamplerUsageHandler handler(*this);
+	CombinedImageSamplerDrefHandler dref_handler(*this);
+	traverse_all_reachable_opcodes(get<SPIRFunction>(entry_point), dref_handler);
+
+	CombinedImageSamplerUsageHandler handler(*this, dref_handler.dref_combined_samplers);
 	traverse_all_reachable_opcodes(get<SPIRFunction>(entry_point), handler);
-	comparison_samplers = move(handler.comparison_samplers);
-	comparison_images = move(handler.comparison_images);
+	comparison_ids = move(handler.comparison_ids);
 	need_subpass_input = handler.need_subpass_input;
+
+	// Forward information from separate images and samplers into combined image samplers.
+	for (auto &combined : combined_image_samplers)
+		if (comparison_ids.count(combined.sampler_id))
+			comparison_ids.insert(combined.combined_id);
+}
+
+bool Compiler::CombinedImageSamplerDrefHandler::handle(spv::Op opcode, const uint32_t *args, uint32_t)
+{
+	// Mark all sampled images which are used with Dref.
+	switch (opcode)
+	{
+	case OpImageSampleDrefExplicitLod:
+	case OpImageSampleDrefImplicitLod:
+	case OpImageSampleProjDrefExplicitLod:
+	case OpImageSampleProjDrefImplicitLod:
+	case OpImageSparseSampleProjDrefImplicitLod:
+	case OpImageSparseSampleDrefImplicitLod:
+	case OpImageSparseSampleProjDrefExplicitLod:
+	case OpImageSparseSampleDrefExplicitLod:
+	case OpImageDrefGather:
+	case OpImageSparseDrefGather:
+		dref_combined_samplers.insert(args[2]);
+		return true;
+
+	default:
+		break;
+	}
+
+	return true;
 }
 
 bool Compiler::CombinedImageSamplerUsageHandler::begin_function_scope(const uint32_t *args, uint32_t length)
@@ -4354,20 +4424,12 @@ bool Compiler::CombinedImageSamplerUsageHandler::begin_function_scope(const uint
 	return true;
 }
 
-void Compiler::CombinedImageSamplerUsageHandler::add_hierarchy_to_comparison_images(uint32_t image)
+void Compiler::CombinedImageSamplerUsageHandler::add_hierarchy_to_comparison_ids(uint32_t id)
 {
-	// Traverse the variable dependency hierarchy and tag everything in its path with comparison images.
-	comparison_images.insert(image);
-	for (auto &img : dependency_hierarchy[image])
-		add_hierarchy_to_comparison_images(img);
-}
-
-void Compiler::CombinedImageSamplerUsageHandler::add_hierarchy_to_comparison_samplers(uint32_t sampler)
-{
-	// Traverse the variable dependency hierarchy and tag everything in its path with comparison samplers.
-	comparison_samplers.insert(sampler);
-	for (auto &samp : dependency_hierarchy[sampler])
-		add_hierarchy_to_comparison_samplers(samp);
+	// Traverse the variable dependency hierarchy and tag everything in its path with comparison ids.
+	comparison_ids.insert(id);
+	for (auto &dep_id : dependency_hierarchy[id])
+		add_hierarchy_to_comparison_ids(dep_id);
 }
 
 bool Compiler::CombinedImageSamplerUsageHandler::handle(Op opcode, const uint32_t *args, uint32_t length)
@@ -4387,6 +4449,10 @@ bool Compiler::CombinedImageSamplerUsageHandler::handle(Op opcode, const uint32_
 		auto &type = compiler.get<SPIRType>(args[0]);
 		if (type.image.dim == DimSubpassData)
 			need_subpass_input = true;
+
+		// If we load a SampledImage and it will be used with Dref, propagate the state up.
+		if (dref_combined_samplers.count(args[1]) != 0)
+			add_hierarchy_to_comparison_ids(args[1]);
 		break;
 	}
 
@@ -4396,16 +4462,20 @@ bool Compiler::CombinedImageSamplerUsageHandler::handle(Op opcode, const uint32_
 			return false;
 
 		uint32_t result_type = args[0];
+		uint32_t result_id = args[1];
 		auto &type = compiler.get<SPIRType>(result_type);
-		if (type.image.depth)
+		if (type.image.depth || dref_combined_samplers.count(result_id) != 0)
 		{
 			// This image must be a depth image.
 			uint32_t image = args[2];
-			add_hierarchy_to_comparison_images(image);
+			add_hierarchy_to_comparison_ids(image);
 
-			// This sampler must be a SamplerComparisionState, and not a regular SamplerState.
+			// This sampler must be a SamplerComparisonState, and not a regular SamplerState.
 			uint32_t sampler = args[3];
-			add_hierarchy_to_comparison_samplers(sampler);
+			add_hierarchy_to_comparison_ids(sampler);
+
+			// Mark the OpSampledImage itself as being comparison state.
+			comparison_ids.insert(result_id);
 		}
 		return true;
 	}
@@ -4566,4 +4636,58 @@ bool Compiler::instruction_to_result_type(uint32_t &result_type, uint32_t &resul
 		else
 			return false;
 	}
+}
+
+Bitset Compiler::combined_decoration_for_member(const SPIRType &type, uint32_t index) const
+{
+	Bitset flags;
+	auto &memb = meta[type.self].members;
+	if (index >= memb.size())
+		return flags;
+	auto &dec = memb[index];
+
+	// If our type is a struct, traverse all the members as well recursively.
+	flags.merge_or(dec.decoration_flags);
+	for (uint32_t i = 0; i < type.member_types.size(); i++)
+		flags.merge_or(combined_decoration_for_member(get<SPIRType>(type.member_types[i]), i));
+
+	return flags;
+}
+
+bool Compiler::is_desktop_only_format(spv::ImageFormat format)
+{
+	switch (format)
+	{
+	// Desktop-only formats
+	case ImageFormatR11fG11fB10f:
+	case ImageFormatR16f:
+	case ImageFormatRgb10A2:
+	case ImageFormatR8:
+	case ImageFormatRg8:
+	case ImageFormatR16:
+	case ImageFormatRg16:
+	case ImageFormatRgba16:
+	case ImageFormatR16Snorm:
+	case ImageFormatRg16Snorm:
+	case ImageFormatRgba16Snorm:
+	case ImageFormatR8Snorm:
+	case ImageFormatRg8Snorm:
+	case ImageFormatR8ui:
+	case ImageFormatRg8ui:
+	case ImageFormatR16ui:
+	case ImageFormatRgb10a2ui:
+	case ImageFormatR8i:
+	case ImageFormatRg8i:
+	case ImageFormatR16i:
+		return true;
+	default:
+		break;
+	}
+
+	return false;
+}
+
+bool Compiler::image_is_comparison(const spirv_cross::SPIRType &type, uint32_t id) const
+{
+	return type.image.depth || (comparison_ids.count(id) != 0);
 }

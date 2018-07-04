@@ -224,7 +224,7 @@ static bool hlsl_opcode_is_sign_invariant(Op opcode)
 	}
 }
 
-string CompilerHLSL::image_type_hlsl_modern(const SPIRType &type)
+string CompilerHLSL::image_type_hlsl_modern(const SPIRType &type, uint32_t)
 {
 	auto &imagetype = get<SPIRType>(type.image.type);
 	const char *dim = nullptr;
@@ -275,7 +275,7 @@ string CompilerHLSL::image_type_hlsl_modern(const SPIRType &type)
 	            ">");
 }
 
-string CompilerHLSL::image_type_hlsl_legacy(const SPIRType &type)
+string CompilerHLSL::image_type_hlsl_legacy(const SPIRType &type, uint32_t id)
 {
 	auto &imagetype = get<SPIRType>(type.image.type);
 	string res;
@@ -338,18 +338,18 @@ string CompilerHLSL::image_type_hlsl_legacy(const SPIRType &type)
 		res += "MS";
 	if (type.image.arrayed)
 		res += "Array";
-	if (type.image.depth)
+	if (image_is_comparison(type, id))
 		res += "Shadow";
 
 	return res;
 }
 
-string CompilerHLSL::image_type_hlsl(const SPIRType &type)
+string CompilerHLSL::image_type_hlsl(const SPIRType &type, uint32_t id)
 {
 	if (hlsl_options.shader_model <= 30)
-		return image_type_hlsl_legacy(type);
+		return image_type_hlsl_legacy(type, id);
 	else
-		return image_type_hlsl_modern(type);
+		return image_type_hlsl_modern(type, id);
 }
 
 // The optional id parameter indicates the object whose type we are trying
@@ -370,10 +370,10 @@ string CompilerHLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 
 	case SPIRType::Image:
 	case SPIRType::SampledImage:
-		return image_type_hlsl(type);
+		return image_type_hlsl(type, id);
 
 	case SPIRType::Sampler:
-		return comparison_samplers.count(id) ? "SamplerComparisonState" : "SamplerState";
+		return comparison_ids.count(id) ? "SamplerComparisonState" : "SamplerState";
 
 	case SPIRType::Void:
 		return "void";
@@ -1838,9 +1838,10 @@ void CompilerHLSL::emit_buffer_block(const SPIRVariable &var)
 	{
 		Bitset flags = get_buffer_block_flags(var);
 		bool is_readonly = flags.get(DecorationNonWritable);
+		bool is_coherent = flags.get(DecorationCoherent);
 		add_resource_name(var.self);
-		statement(is_readonly ? "ByteAddressBuffer " : "RWByteAddressBuffer ", to_name(var.self),
-		          type_to_array_glsl(type), to_resource_binding(var), ";");
+		statement(is_coherent ? "globallycoherent " : "", is_readonly ? "ByteAddressBuffer " : "RWByteAddressBuffer ",
+		          to_name(var.self), type_to_array_glsl(type), to_resource_binding(var), ";");
 	}
 	else
 	{
@@ -2059,7 +2060,7 @@ void CompilerHLSL::emit_function_prototype(SPIRFunction &func, const Bitset &ret
 		{
 			// Manufacture automatic sampler arg for SampledImage texture
 			decl += ", ";
-			decl += join(arg_type.image.depth ? "SamplerComparisonState " : "SamplerState ",
+			decl += join(image_is_comparison(arg_type, arg.id) ? "SamplerComparisonState " : "SamplerState ",
 			             to_sampler_expression(arg.id), type_to_array_glsl(arg_type));
 		}
 
@@ -2574,7 +2575,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i)
 		{
 			texop += img_expr;
 
-			if (imgtype.image.depth)
+			if (image_is_comparison(imgtype, img))
 			{
 				if (gather)
 				{
@@ -2922,13 +2923,17 @@ void CompilerHLSL::emit_modern_uniform(const SPIRVariable &var)
 	case SPIRType::SampledImage:
 	case SPIRType::Image:
 	{
-		statement(image_type_hlsl_modern(type), " ", to_name(var.self), type_to_array_glsl(type),
-		          to_resource_binding(var), ";");
+		bool is_coherent = false;
+		if (type.basetype == SPIRType::Image && type.image.sampled == 2)
+			is_coherent = has_decoration(var.self, DecorationCoherent);
+
+		statement(is_coherent ? "globallycoherent " : "", image_type_hlsl_modern(type, var.self), " ",
+		          to_name(var.self), type_to_array_glsl(type), to_resource_binding(var), ";");
 
 		if (type.basetype == SPIRType::SampledImage && type.image.dim != DimBuffer)
 		{
 			// For combined image samplers, also emit a combined image sampler.
-			if (type.image.depth)
+			if (image_is_comparison(type, var.self))
 				statement("SamplerComparisonState ", to_sampler_expression(var.self), type_to_array_glsl(type),
 				          to_resource_binding_sampler(var), ";");
 			else
@@ -2939,7 +2944,7 @@ void CompilerHLSL::emit_modern_uniform(const SPIRVariable &var)
 	}
 
 	case SPIRType::Sampler:
-		if (comparison_samplers.count(var.self))
+		if (comparison_ids.count(var.self))
 			statement("SamplerComparisonState ", to_name(var.self), type_to_array_glsl(type), to_resource_binding(var),
 			          ";");
 		else
@@ -3524,14 +3529,8 @@ void CompilerHLSL::emit_access_chain(const Instruction &instruction)
 		else
 			base = to_expression(ops[2]);
 
-		auto *basetype = &type;
-
 		// Start traversing type hierarchy at the proper non-pointer types.
-		while (basetype->pointer)
-		{
-			assert(basetype->parent_type);
-			basetype = &get<SPIRType>(basetype->parent_type);
-		}
+		auto *basetype = &get_non_pointer_type(type);
 
 		// Traverse the type hierarchy down to the actual buffer types.
 		for (uint32_t i = 0; i < to_plain_buffer_length; i++)
@@ -3767,7 +3766,7 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 	}
 
 	// clang-format off
-#define GROUP_OP(op, hlsl_op, supports_scan) \
+#define HLSL_GROUP_OP(op, hlsl_op, supports_scan) \
 case OpGroupNonUniform##op: \
 	{ \
 		auto operation = static_cast<GroupOperation>(ops[3]); \
@@ -3787,20 +3786,20 @@ case OpGroupNonUniform##op: \
 			SPIRV_CROSS_THROW("Invalid group operation."); \
 		break; \
 	}
-	GROUP_OP(FAdd, Sum, true)
-	GROUP_OP(FMul, Product, true)
-	GROUP_OP(FMin, Min, false)
-	GROUP_OP(FMax, Max, false)
-	GROUP_OP(IAdd, Sum, true)
-	GROUP_OP(IMul, Product, true)
-	GROUP_OP(SMin, Min, false)
-	GROUP_OP(SMax, Max, false)
-	GROUP_OP(UMin, Min, false)
-	GROUP_OP(UMax, Max, false)
-	GROUP_OP(BitwiseAnd, BitAnd, false)
-	GROUP_OP(BitwiseOr, BitOr, false)
-	GROUP_OP(BitwiseXor, BitXor, false)
-#undef GROUP_OP
+	HLSL_GROUP_OP(FAdd, Sum, true)
+	HLSL_GROUP_OP(FMul, Product, true)
+	HLSL_GROUP_OP(FMin, Min, false)
+	HLSL_GROUP_OP(FMax, Max, false)
+	HLSL_GROUP_OP(IAdd, Sum, true)
+	HLSL_GROUP_OP(IMul, Product, true)
+	HLSL_GROUP_OP(SMin, Min, false)
+	HLSL_GROUP_OP(SMax, Max, false)
+	HLSL_GROUP_OP(UMin, Min, false)
+	HLSL_GROUP_OP(UMax, Max, false)
+	HLSL_GROUP_OP(BitwiseAnd, BitAnd, false)
+	HLSL_GROUP_OP(BitwiseOr, BitOr, false)
+	HLSL_GROUP_OP(BitwiseXor, BitXor, false)
+#undef HLSL_GROUP_OP
 		// clang-format on
 
 	case OpGroupNonUniformQuadSwap:
@@ -3835,17 +3834,17 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 	auto ops = stream(instruction);
 	auto opcode = static_cast<Op>(instruction.op);
 
-#define BOP(op) emit_binary_op(ops[0], ops[1], ops[2], ops[3], #op)
-#define BOP_CAST(op, type) \
+#define HLSL_BOP(op) emit_binary_op(ops[0], ops[1], ops[2], ops[3], #op)
+#define HLSL_BOP_CAST(op, type) \
 	emit_binary_op_cast(ops[0], ops[1], ops[2], ops[3], #op, type, hlsl_opcode_is_sign_invariant(opcode))
-#define UOP(op) emit_unary_op(ops[0], ops[1], ops[2], #op)
-#define QFOP(op) emit_quaternary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], ops[5], #op)
-#define TFOP(op) emit_trinary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], #op)
-#define BFOP(op) emit_binary_func_op(ops[0], ops[1], ops[2], ops[3], #op)
-#define BFOP_CAST(op, type) \
+#define HLSL_UOP(op) emit_unary_op(ops[0], ops[1], ops[2], #op)
+#define HLSL_QFOP(op) emit_quaternary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], ops[5], #op)
+#define HLSL_TFOP(op) emit_trinary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], #op)
+#define HLSL_BFOP(op) emit_binary_func_op(ops[0], ops[1], ops[2], ops[3], #op)
+#define HLSL_BFOP_CAST(op, type) \
 	emit_binary_func_op_cast(ops[0], ops[1], ops[2], ops[3], #op, type, hlsl_opcode_is_sign_invariant(opcode))
-#define BFOP(op) emit_binary_func_op(ops[0], ops[1], ops[2], ops[3], #op)
-#define UFOP(op) emit_unary_func_op(ops[0], ops[1], ops[2], #op)
+#define HLSL_BFOP(op) emit_binary_func_op(ops[0], ops[1], ops[2], ops[3], #op)
+#define HLSL_UFOP(op) emit_unary_func_op(ops[0], ops[1], ops[2], #op)
 
 	switch (opcode)
 	{
@@ -3914,39 +3913,39 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 	}
 
 	case OpDPdx:
-		UFOP(ddx);
+		HLSL_UFOP(ddx);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpDPdy:
-		UFOP(ddy);
+		HLSL_UFOP(ddy);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpDPdxFine:
-		UFOP(ddx_fine);
+		HLSL_UFOP(ddx_fine);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpDPdyFine:
-		UFOP(ddy_fine);
+		HLSL_UFOP(ddy_fine);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpDPdxCoarse:
-		UFOP(ddx_coarse);
+		HLSL_UFOP(ddx_coarse);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpDPdyCoarse:
-		UFOP(ddy_coarse);
+		HLSL_UFOP(ddy_coarse);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpFwidth:
 	case OpFwidthCoarse:
 	case OpFwidthFine:
-		UFOP(fwidth);
+		HLSL_UFOP(fwidth);
 		register_control_dependent_expression(ops[1]);
 		break;
 
@@ -3959,7 +3958,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (type.vecsize > 1)
 			emit_unrolled_unary_op(result_type, id, ops[2], "!");
 		else
-			UOP(!);
+			HLSL_UOP(!);
 		break;
 	}
 
@@ -3971,7 +3970,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "==");
 		else
-			BOP_CAST(==, SPIRType::Int);
+			HLSL_BOP_CAST(==, SPIRType::Int);
 		break;
 	}
 
@@ -3984,7 +3983,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "==");
 		else
-			BOP(==);
+			HLSL_BOP(==);
 		break;
 	}
 
@@ -3996,7 +3995,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "!=");
 		else
-			BOP_CAST(!=, SPIRType::Int);
+			HLSL_BOP_CAST(!=, SPIRType::Int);
 		break;
 	}
 
@@ -4009,7 +4008,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "!=");
 		else
-			BOP(!=);
+			HLSL_BOP(!=);
 		break;
 	}
 
@@ -4023,7 +4022,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], ">");
 		else
-			BOP_CAST(>, type);
+			HLSL_BOP_CAST(>, type);
 		break;
 	}
 
@@ -4035,7 +4034,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], ">");
 		else
-			BOP(>);
+			HLSL_BOP(>);
 		break;
 	}
 
@@ -4049,7 +4048,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], ">=");
 		else
-			BOP_CAST(>=, type);
+			HLSL_BOP_CAST(>=, type);
 		break;
 	}
 
@@ -4061,7 +4060,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], ">=");
 		else
-			BOP(>=);
+			HLSL_BOP(>=);
 		break;
 	}
 
@@ -4075,7 +4074,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "<");
 		else
-			BOP_CAST(<, type);
+			HLSL_BOP_CAST(<, type);
 		break;
 	}
 
@@ -4087,7 +4086,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "<");
 		else
-			BOP(<);
+			HLSL_BOP(<);
 		break;
 	}
 
@@ -4101,7 +4100,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "<=");
 		else
-			BOP_CAST(<=, type);
+			HLSL_BOP_CAST(<=, type);
 		break;
 	}
 
@@ -4113,7 +4112,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "<=");
 		else
-			BOP(<=);
+			HLSL_BOP(<=);
 		break;
 	}
 
@@ -4418,18 +4417,18 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		}
 
 		if (opcode == OpBitFieldSExtract)
-			TFOP(SPIRV_Cross_bitfieldSExtract);
+			HLSL_TFOP(SPIRV_Cross_bitfieldSExtract);
 		else
-			TFOP(SPIRV_Cross_bitfieldUExtract);
+			HLSL_TFOP(SPIRV_Cross_bitfieldUExtract);
 		break;
 	}
 
 	case OpBitCount:
-		UFOP(countbits);
+		HLSL_UFOP(countbits);
 		break;
 
 	case OpBitReverse:
-		UFOP(reversebits);
+		HLSL_UFOP(reversebits);
 		break;
 
 	default:
@@ -4604,4 +4603,25 @@ string CompilerHLSL::compile()
 	get_entry_point().name = "main";
 
 	return buffer->str();
+}
+
+void CompilerHLSL::emit_block_hints(const SPIRBlock &block)
+{
+	switch (block.hint)
+	{
+	case SPIRBlock::HintFlatten:
+		statement("[flatten]");
+		break;
+	case SPIRBlock::HintDontFlatten:
+		statement("[branch]");
+		break;
+	case SPIRBlock::HintUnroll:
+		statement("[unroll]");
+		break;
+	case SPIRBlock::HintDontUnroll:
+		statement("[loop]");
+		break;
+	default:
+		break;
+	}
 }
