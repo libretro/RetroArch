@@ -23,7 +23,7 @@
 #include "cocoa_common.h"
 #include "../../ui_companion_driver.h"
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 101200
 #define NSEventMaskAny NSAnyEventMask
 #endif
 
