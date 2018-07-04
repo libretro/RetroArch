@@ -134,6 +134,8 @@
 
 - (Texture *)newTexture:(struct texture_image)image filter:(enum texture_filter_type)filter
 {
+   assert(filter >= TEXTURE_FILTER_LINEAR && filter <= TEXTURE_FILTER_MIPMAP_NEAREST);
+   
    if (!image.pixels && !image.width && !image.height)
    {
       /* Create a dummy texture instead. */

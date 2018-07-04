@@ -901,7 +901,7 @@ typedef struct MTLALIGN(16)
       id<MTLTexture> tex = _engine.frame.texture[0].view;
       [tex replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
              mipmapLevel:0 withBytes:src
-             bytesPerRow:(NSUInteger)(4 * pitch)];
+             bytesPerRow:pitch];
    }
    else
    {
