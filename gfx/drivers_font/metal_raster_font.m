@@ -24,6 +24,7 @@
 
 @interface MetalRaster : NSObject
 {
+   __weak MetalDriver *_driver;
    const font_renderer_driver_t *_font_driver;
    void *_font_data;
    struct font_atlas *_atlas;
@@ -44,36 +45,25 @@
    unsigned _vertices;
 }
 
-@property (weak, readwrite) MetalDriver *metal;
 @property (readonly) struct font_atlas *atlas;
-@property (readwrite) bool needsUpdate;
 
-- (instancetype)initWithDriver:(MetalDriver *)metal fontPath:(const char *)font_path fontSize:(unsigned)font_size;
+- (instancetype)initWithDriver:(MetalDriver *)driver fontPath:(const char *)font_path fontSize:(unsigned)font_size;
 
-- (int)getWidthForMessage:(const char *)msg length:(unsigned int)length scale:(float)scale;
+- (int)getWidthForMessage:(const char *)msg length:(NSUInteger)length scale:(float)scale;
 - (const struct font_glyph *)getGlyph:(uint32_t)code;
 @end
 
 @implementation MetalRaster
 
-/* macOS requires constants in a buffer to have a 256 byte alignment. */
-#ifdef TARGET_OS_MAC
-static const NSUInteger kConstantAlignment = 256;
-#else
-static const NSUInteger kConstantAlignment = 4;
-#endif
-
-#define ALIGN_CONSTANTS(size) ((size + kConstantAlignment - 1) & (~(kConstantAlignment - 1)))
-
-- (instancetype)initWithDriver:(MetalDriver *)metal fontPath:(const char *)font_path fontSize:(unsigned)font_size
+- (instancetype)initWithDriver:(MetalDriver *)driver fontPath:(const char *)font_path fontSize:(unsigned)font_size
 {
    if (self = [super init])
    {
-      if (metal == nil)
+      if (driver == nil)
          return nil;
       
-      _metal = metal;
-      _context = metal.context;
+      _driver = driver;
+      _context = driver.context;
       if (!font_renderer_create_default((const void **)&_font_driver,
                                         &_font_data, font_path, font_size))
       {
@@ -83,7 +73,7 @@ static const NSUInteger kConstantAlignment = 4;
       
       _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
       _atlas = _font_driver->get_atlas(_font_data);
-      _stride = ALIGN_CONSTANTS(_atlas->width);
+      _stride = MTL_ALIGN_BUFFER(_atlas->width);
       if (_stride == _atlas->width)
       {
          _buffer = [_context.device newBufferWithBytes:_atlas->buffer
@@ -115,7 +105,6 @@ static const NSUInteger kConstantAlignment = 4;
       _capacity = 12000;
       _vert = [_context.device newBufferWithLength:sizeof(SpriteVertex) *
                                                    _capacity options:MTLResourceStorageModeManaged];
-      _needsUpdate = true;
       if (![self _initializeState])
       {
          return nil;
@@ -188,15 +177,14 @@ static const NSUInteger kConstantAlignment = 4;
       [_buffer didModifyRange:NSMakeRange(offset, len)];
       
       _atlas->dirty = false;
-      _needsUpdate = true;
    }
 }
 
-- (int)getWidthForMessage:(const char *)msg length:(unsigned int)length scale:(float)scale
+- (int)getWidthForMessage:(const char *)msg length:(NSUInteger)length scale:(float)scale
 {
    int delta_x = 0;
    
-   for (unsigned i = 0; i < length; i++)
+   for (NSUInteger i = 0; i < length; i++)
    {
       const struct font_glyph *glyph = _font_driver->get_glyph(_font_data, (uint8_t)msg[i]);
       if (!glyph) /* Do something smarter here ... */
@@ -262,14 +250,14 @@ static INLINE void write_quad6(SpriteVertex *pv,
             aligned:(unsigned)aligned
 {
    const char *msg_end = msg + length;
-   int x = roundf(posX * _metal.viewport->width);
-   int y = roundf((1.0f - posY) * _metal.viewport->height);
+   int x = (int)roundf(posX * _driver.viewport->full_width);
+   int y = (int)roundf((1.0f - posY) * _driver.viewport->full_height);
    int delta_x = 0;
    int delta_y = 0;
    float inv_tex_size_x = 1.0f / _texture.width;
    float inv_tex_size_y = 1.0f / _texture.height;
-   float inv_win_width = 1.0f / _metal.viewport->width;
-   float inv_win_height = 1.0f / _metal.viewport->height;
+   float inv_win_width = 1.0f / _driver.viewport->full_width;
+   float inv_win_height = 1.0f / _driver.viewport->full_height;
    
    switch (aligned)
    {
@@ -335,8 +323,19 @@ static INLINE void write_quad6(SpriteVertex *pv,
    
    id<MTLRenderCommandEncoder> rce = _context.rce;
    [rce pushDebugGroup:@"render fonts"];
+   
+   MTLViewport vp = {
+      .originX = 0,
+      .originY = 0,
+      .width   = _driver.viewport->full_width,
+      .height  = _driver.viewport->full_height,
+      .znear   = 0,
+      .zfar    = 1,
+   };
+   [rce setViewport:vp];
+   
    [rce setRenderPipelineState:_state];
-   [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
+   [rce setVertexBytes:&_uniforms length:sizeof(Uniforms) atIndex:BufferIndexUniforms];
    [rce setVertexBuffer:_vert offset:start atIndex:BufferIndexPositions];
    [rce setFragmentTexture:_texture atIndex:TextureIndexColor];
    [rce setFragmentSamplerState:_sampler atIndex:SamplerIndexDraw];
@@ -386,7 +385,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
       }
       else
       {
-         unsigned msg_len = strlen(msg);
+         NSUInteger msg_len = strlen(msg);
          [self _renderLine:msg
                      video:video
                     length:msg_len

@@ -10,9 +10,22 @@
 #import "Filter.h"
 #import <QuartzCore/QuartzCore.h>
 
+@interface BufferNode : NSObject
+@property (nonatomic, readonly) id<MTLBuffer> src;
+@property (nonatomic, readwrite) NSUInteger allocated;
+@property (nonatomic, readwrite) BufferNode *next;
+@end
+
+@interface BufferChain : NSObject
+- (instancetype)initWithDevice:(id<MTLDevice>)device blockLen:(NSUInteger)blockLen;
+- (bool)allocRange:(BufferRange *)range length:(NSUInteger)length;
+- (void)commitRanges;
+- (void)discard;
+@end
+
 @interface Texture()
-@property (readwrite) id<MTLTexture> texture;
-@property (readwrite) id<MTLSamplerState> sampler;
+@property (nonatomic, readwrite) id<MTLTexture> texture;
+@property (nonatomic, readwrite) id<MTLSamplerState> sampler;
 @end
 
 @interface Context()
@@ -32,6 +45,10 @@
    id<MTLRenderCommandEncoder> _rce;
    
    id<MTLCommandBuffer> _blitCommandBuffer;
+   
+   NSUInteger _currentChain;
+   BufferChain *_chain[CHAIN_LENGTH];
+   MTLClearColor _clearColor;
 }
 
 - (instancetype)initWithDevice:(id<MTLDevice>)d
@@ -45,31 +62,39 @@
       _layer = layer;
       _library = l;
       _commandQueue = [_device newCommandQueue];
+      _clearColor = MTLClearColorMake(0, 0, 0, 1);
+   
+      {
+         MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];
       
-      MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];
+         sd.label = @"NEAREST";
+         _samplers[TEXTURE_FILTER_NEAREST] = [d newSamplerStateWithDescriptor:sd];
       
-      sd.label = @"NEAREST";
-      _samplers[TEXTURE_FILTER_NEAREST] = [d newSamplerStateWithDescriptor:sd];
+         sd.mipFilter = MTLSamplerMipFilterNearest;
+         sd.label = @"MIPMAP_NEAREST";
+         _samplers[TEXTURE_FILTER_MIPMAP_NEAREST] = [d newSamplerStateWithDescriptor:sd];
       
-      sd.mipFilter = MTLSamplerMipFilterNearest;
-      sd.label = @"MIPMAP_NEAREST";
-      _samplers[TEXTURE_FILTER_MIPMAP_NEAREST] = [d newSamplerStateWithDescriptor:sd];
+         sd.mipFilter = MTLSamplerMipFilterNotMipmapped;
+         sd.minFilter = MTLSamplerMinMagFilterLinear;
+         sd.magFilter = MTLSamplerMinMagFilterLinear;
+         sd.label = @"LINEAR";
+         _samplers[TEXTURE_FILTER_LINEAR] = [d newSamplerStateWithDescriptor:sd];
       
-      sd.mipFilter = MTLSamplerMipFilterNotMipmapped;
-      sd.minFilter = MTLSamplerMinMagFilterLinear;
-      sd.magFilter = MTLSamplerMinMagFilterLinear;
-      sd.label = @"LINEAR";
-      _samplers[TEXTURE_FILTER_LINEAR] = [d newSamplerStateWithDescriptor:sd];
-      
-      sd.mipFilter = MTLSamplerMipFilterLinear;
-      sd.label = @"MIPMAP_LINEAR";
-      _samplers[TEXTURE_FILTER_MIPMAP_LINEAR] = [d newSamplerStateWithDescriptor:sd];
-      
+         sd.mipFilter = MTLSamplerMipFilterLinear;
+         sd.label = @"MIPMAP_LINEAR";
+         _samplers[TEXTURE_FILTER_MIPMAP_LINEAR] = [d newSamplerStateWithDescriptor:sd];
+      }
+   
       if (![self _initConversionFilters])
          return nil;
       
       if (![self _initMainState])
          return nil;
+      
+      for (int i = 0; i < CHAIN_LENGTH; i++)
+      {
+         _chain[i] = [[BufferChain alloc] initWithDevice:_device blockLen:65536];
+      }
    }
    return self;
 }
@@ -186,6 +211,12 @@
    return _blitCommandBuffer;
 }
 
+- (void)_nextChain
+{
+   _currentChain = (_currentChain + 1) % CHAIN_LENGTH;
+   [_chain[_currentChain] discard];
+}
+
 - (void)begin
 {
    assert(_commandBuffer == nil);
@@ -199,6 +230,8 @@
    if (_rce == nil)
    {
       MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
+      rpd.colorAttachments[0].clearColor = _clearColor;
+      rpd.colorAttachments[0].loadAction = MTLLoadActionClear;
       rpd.colorAttachments[0].texture = self.nextDrawable.texture;
       _rce = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
    }
@@ -207,7 +240,9 @@
 
 - (void)end
 {
-   assert(self->_commandBuffer != nil);
+   assert(_commandBuffer != nil);
+   
+   [_chain[_currentChain] commitRanges];
    
    if (_blitCommandBuffer)
    {
@@ -233,9 +268,144 @@
    
    _commandBuffer = nil;
    _drawable = nil;
+   [self _nextChain];
+}
+
+- (bool)allocRange:(BufferRange *)range length:(NSUInteger)length
+{
+   return [_chain[_currentChain] allocRange:range length:length];
 }
 
 @end
 
 @implementation Texture
+@end
+
+@implementation BufferNode
+
+- (instancetype)initWithBuffer:(id<MTLBuffer>)src
+{
+   if (self = [super init])
+   {
+      _src = src;
+   }
+   return self;
+}
+
+@end
+
+@implementation BufferChain
+{
+   id<MTLDevice> _device;
+   NSUInteger _blockLen;
+   BufferNode *_head;
+   NSUInteger _offset; // offset into _current
+   BufferNode *_current;
+   NSUInteger _length;
+   NSUInteger _allocated;
+}
+
+/* macOS requires constants in a buffer to have a 256 byte alignment. */
+#ifdef TARGET_OS_MAC
+static const NSUInteger kConstantAlignment = 256;
+#else
+static const NSUInteger kConstantAlignment = 4;
+#endif
+
+
+- (instancetype)initWithDevice:(id<MTLDevice>)device blockLen:(NSUInteger)blockLen
+{
+   if (self = [super init])
+   {
+      _device = device;
+      _blockLen = blockLen;
+   }
+   return self;
+}
+
+- (NSString *)debugDescription
+{
+   return [NSString stringWithFormat:@"length=%ld, allocated=%ld", _length, _allocated];
+}
+
+- (void)commitRanges
+{
+   for (BufferNode *n = _head; n != nil; n = n.next)
+   {
+      if (n.allocated > 0)
+      {
+         [n.src didModifyRange:NSMakeRange(0, n.allocated)];
+      }
+   }
+}
+
+- (void)discard
+{
+   _current = _head;
+   _offset = 0;
+   _allocated = 0;
+}
+
+- (bool)allocRange:(BufferRange *)range length:(NSUInteger)length
+{
+   bzero(range, sizeof(*range));
+   
+   if (!_head)
+   {
+      _head = [[BufferNode alloc] initWithBuffer:[_device newBufferWithLength:_blockLen options:MTLResourceStorageModeManaged]];
+      _length += _blockLen;
+      _current = _head;
+      _offset = 0;
+   }
+   
+   if ([self _subAllocRange:range length:length])
+      return YES;
+   
+   while (_current.next)
+   {
+      [self _nextNode];
+      if ([self _subAllocRange:range length:length])
+         return YES;
+   }
+   
+   NSUInteger blockLen = _blockLen;
+   if (length > blockLen)
+   {
+      blockLen = length;
+   }
+   
+   _current.next = [[BufferNode alloc] initWithBuffer:[_device newBufferWithLength:blockLen options:MTLResourceStorageModeManaged]];
+   if (!_current.next)
+      return NO;
+   
+   _length += blockLen;
+   
+   [self _nextNode];
+   retro_assert([self _subAllocRange:range length:length]);
+   return YES;
+}
+
+- (void)_nextNode
+{
+   _current = _current.next;
+   _offset = 0;
+}
+
+- (BOOL)_subAllocRange:(BufferRange *)range length:(NSUInteger)length
+{
+   NSUInteger nextOffset = _offset + length;
+   if (nextOffset <= _current.src.length)
+   {
+      _current.allocated = nextOffset;
+      _allocated += length;
+      range->data = _current.src.contents + _offset;
+      range->buffer = _current.src;
+      range->offset = _offset;
+      _offset = MTL_ALIGN_BUFFER(nextOffset);
+      return YES;
+   }
+   return NO;
+}
+
+
 @end

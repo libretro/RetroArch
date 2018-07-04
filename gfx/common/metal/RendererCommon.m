@@ -62,10 +62,10 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    float ty = (top + bottom) / (bottom - top);
    float tz = near / (far - near);
 
-   simd_float4 P = {sx, 0, 0, 0};
-   simd_float4 Q = {0, sy, 0, 0};
-   simd_float4 R = {0, 0, sz, 0};
-   simd_float4 S = {tx, ty, tz, 1};
+   simd_float4 P = simd_make_float4(sx, 0, 0, 0);
+   simd_float4 Q = simd_make_float4(0, sy, 0, 0);
+   simd_float4 R = simd_make_float4(0, 0, sz, 0);
+   simd_float4 S = simd_make_float4(tx, ty, tz, 1);
 
    matrix_float4x4 mat = {P, Q, R, S};
    return mat;

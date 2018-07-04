@@ -32,7 +32,7 @@
 
 @interface FrameView()
 
-@property (readwrite) video_viewport_t *viewport;
+@property (nonatomic, readwrite) video_viewport_t *viewport;
 
 - (instancetype)initWithDescriptor:(ViewDescriptor *)td context:(Context *)context;
 - (void)drawWithContext:(Context *)ctx;
@@ -41,7 +41,7 @@
 @end
 
 @interface MetalMenu()
-@property (readonly) TexturedView *view;
+@property (nonatomic, readonly) TexturedView *view;
 - (instancetype)initWithContext:(Context *)context;
 @end
 
@@ -71,7 +71,7 @@
    // other state
    Uniforms _uniforms;
    Uniforms _viewportMVP;
-   BOOL _begin, _end;
+   Uniforms _viewportMVPNormalized;
 }
 
 - (instancetype)initWithVideo:(const video_info_t *)video
@@ -95,9 +95,6 @@
       {
          return nil;
       }
-      
-      _begin = NO;
-      _end = NO;
       
       _video = *video;
       _viewport = (video_viewport_t *)calloc(1, sizeof(video_viewport_t));
@@ -221,15 +218,15 @@
    
    {
       MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
-      psd.label = @"stock_no_blend";
+      psd.label = @"stock";
       
       MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
       ca.pixelFormat = _layer.pixelFormat;
       ca.blendingEnabled = NO;
-      ca.sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
       ca.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-      ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
       ca.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+      ca.sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
+      ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
       
       psd.sampleCount = 1;
       psd.vertexDescriptor = vd;
@@ -243,10 +240,118 @@
          RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
          return NO;
       }
-   
+      
       psd.label = @"stock_blend";
       ca.blendingEnabled = YES;
       _states[VIDEO_SHADER_STOCK_BLEND][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      if (err != nil)
+      {
+         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+         return NO;
+      }
+   
+      MTLFunctionConstantValues *vals;
+
+      psd.label = @"snow_simple";
+      ca.blendingEnabled = YES;
+      {
+         vals = [MTLFunctionConstantValues new];
+         float values[3] = {
+            1.25f,   // baseScale
+            0.50f,   // density
+            0.15f,   // speed
+         };
+         [vals setConstantValue:&values[0] type:MTLDataTypeFloat withName:@"snowBaseScale"];
+         [vals setConstantValue:&values[1] type:MTLDataTypeFloat withName:@"snowDensity"];
+         [vals setConstantValue:&values[2] type:MTLDataTypeFloat withName:@"snowSpeed"];
+      }
+      psd.fragmentFunction = [_library newFunctionWithName:@"snow_fragment" constantValues:vals error:&err];
+      _states[VIDEO_SHADER_MENU_3][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      if (err != nil)
+      {
+         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+         return NO;
+      }
+
+      psd.label = @"snow";
+      ca.blendingEnabled = YES;
+      {
+         vals = [MTLFunctionConstantValues new];
+         float values[3] = {
+            3.50f,   // baseScale
+            0.70f,   // density
+            0.25f,   // speed
+         };
+         [vals setConstantValue:&values[0] type:MTLDataTypeFloat withName:@"snowBaseScale"];
+         [vals setConstantValue:&values[1] type:MTLDataTypeFloat withName:@"snowDensity"];
+         [vals setConstantValue:&values[2] type:MTLDataTypeFloat withName:@"snowSpeed"];
+      }
+      psd.fragmentFunction = [_library newFunctionWithName:@"snow_fragment" constantValues:vals error:&err];
+      _states[VIDEO_SHADER_MENU_4][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      if (err != nil)
+      {
+         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+         return NO;
+      }
+   
+      psd.label = @"bokeh";
+      ca.blendingEnabled = YES;
+      psd.fragmentFunction = [_library newFunctionWithName:@"bokeh_fragment"];
+      _states[VIDEO_SHADER_MENU_5][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      if (err != nil)
+      {
+         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+         return NO;
+      }
+   
+      psd.label = @"snowflake";
+      ca.blendingEnabled = YES;
+      psd.fragmentFunction = [_library newFunctionWithName:@"snowflake_fragment"];
+      _states[VIDEO_SHADER_MENU_6][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      if (err != nil)
+      {
+         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+         return NO;
+      }
+   
+      psd.label = @"ribbon";
+      ca.blendingEnabled = NO;
+      psd.vertexFunction = [_library newFunctionWithName:@"ribbon_vertex"];
+      psd.fragmentFunction = [_library newFunctionWithName:@"ribbon_fragment"];
+      _states[VIDEO_SHADER_MENU][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      if (err != nil)
+      {
+         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+         return NO;
+      }
+      
+      psd.label = @"ribbon_blend";
+      ca.blendingEnabled = YES;
+      ca.sourceRGBBlendFactor = MTLBlendFactorOne;
+      ca.destinationRGBBlendFactor = MTLBlendFactorOne;
+      _states[VIDEO_SHADER_MENU][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      if (err != nil)
+      {
+         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+         return NO;
+      }
+      
+      psd.label = @"ribbon_simple";
+      ca.blendingEnabled = NO;
+      psd.vertexFunction = [_library newFunctionWithName:@"ribbon_simple_vertex"];
+      psd.fragmentFunction = [_library newFunctionWithName:@"ribbon_simple_fragment"];
+      _states[VIDEO_SHADER_MENU_2][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      if (err != nil)
+      {
+         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+         return NO;
+      }
+      
+      psd.label = @"ribbon_simple_blend";
+      ca.blendingEnabled = YES;
+      ca.sourceRGBBlendFactor = MTLBlendFactorOne;
+      ca.destinationRGBBlendFactor = MTLBlendFactorOne;
+      _states[VIDEO_SHADER_MENU_2][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
       if (err != nil)
       {
          RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
@@ -261,18 +366,44 @@
    _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
 }
 
+- (void)_updateViewport:(CGSize)size
+{
+   _viewport->full_width = (unsigned int)size.width;
+   _viewport->full_height = (unsigned int)size.height;
+   video_driver_set_size(&_viewport->full_width, &_viewport->full_height);
+   _layer.drawableSize = size;
+   video_driver_update_viewport(_viewport, NO, _keepAspect);
+   
+   _viewportMVP.outputSize = simd_make_float2(_viewport->full_width, _viewport->full_height);
+   _viewportMVP.projectionMatrix = matrix_proj_ortho(0, _viewport->full_width, _viewport->full_height, 0);
+   _viewportMVP.projectionMatrix = matrix_proj_ortho(0, _viewport->full_width, 0, _viewport->full_height);
+   
+   _viewportMVPNormalized.outputSize = simd_make_float2(_viewport->full_width, _viewport->full_height);
+   _viewportMVPNormalized.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
+}
+
 #pragma mark - shaders
 
 - (id<MTLRenderPipelineState>)getStockShader:(int)index blend:(bool)blend
 {
    assert(index > 0 && index < GFX_MAX_SHADERS);
    
-   return _states[index][blend ? 1 : 0];
-}
-
-- (void)setShaderIndex:(NSUInteger)index
-{
+   switch (index)
+   {
+      case VIDEO_SHADER_STOCK_BLEND:
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_2:
+      case VIDEO_SHADER_MENU_3:
+      case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
+         break;
+      default:
+         index = VIDEO_SHADER_STOCK_BLEND;
+         break;
+   }
    
+   return _states[index][blend ? 1 : 0];
 }
 
 #pragma mark - video
@@ -324,19 +455,12 @@
 - (void)_beginFrame
 {
    video_driver_update_viewport(_viewport, NO, _keepAspect);
-   
-   assert(!_begin && !_end);
-   _begin = YES;
    [_context begin];
    [self _updateUniforms];
 }
 
 - (void)_drawViews:(video_frame_info_t *)video_info
 {
-   assert(_begin && !_end);
-   _begin = NO;
-   _end = YES;
-   
    id<MTLRenderCommandEncoder> rce = _context.rce;
    
    // draw back buffer
@@ -358,28 +482,37 @@
       [_frameView drawWithEncoder:rce];
    }
    [rce popDebugGroup];
+   
+   if (_menu.enabled && _menu.hasFrame)
+   {
+      [_menu.view drawWithContext:_context];
+      [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
+      [rce setRenderPipelineState:_t_pipelineState];
+      if (_menu.view.filter == RTextureFilterNearest)
+      {
+         [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
+      }
+      else
+      {
+         [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
+      }
+      [_menu.view drawWithEncoder:rce];
+   }
 
 #if defined(HAVE_MENU)
    if (_menu.enabled)
    {
+      MTLViewport viewport = {
+         .originX = 0.0f,
+         .originY = 0.0f,
+         .width = _viewport->full_width,
+         .height = _viewport->full_height,
+         .znear = 0.0f,
+         .zfar = 1.0,
+      };
+      [rce setViewport:viewport];
       [rce pushDebugGroup:@"menu"];
       menu_driver_frame(video_info);
-      
-      if (_menu.hasFrame)
-      {
-         [_menu.view drawWithContext:_context];
-         [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
-         [rce setRenderPipelineState:_t_pipelineState];
-         if (_menu.view.filter == RTextureFilterNearest)
-         {
-            [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
-         }
-         else
-         {
-            [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
-         }
-         [_menu.view drawWithEncoder:rce];
-      }
       [rce popDebugGroup];
    }
 #endif
@@ -387,8 +520,6 @@
 
 - (void)_endFrame
 {
-   assert(!_begin && _end);
-   _end = NO;
    [_context end];
 }
 
@@ -402,18 +533,16 @@
    return &_viewportMVP;
 }
 
+- (Uniforms *)viewportMVPNormalized
+{
+   return &_viewportMVPNormalized;
+}
+
 #pragma mark - MTKViewDelegate
 
 - (void)mtkView:(MTKView *)view drawableSizeWillChange:(CGSize)size
 {
-   _viewport->full_width = (unsigned int)size.width;
-   _viewport->full_height = (unsigned int)size.height;
-   video_driver_set_size(&_viewport->full_width, &_viewport->full_height);
-   _layer.drawableSize = size;
-   video_driver_update_viewport(_viewport, NO, _keepAspect);
-   
-   _viewportMVP.outputSize = simd_make_float2(_viewport->full_width, _viewport->full_height);
-   _viewportMVP.projectionMatrix = matrix_proj_ortho(0, _viewport->full_width, _viewport->full_height, 0);
+   [self _updateViewport:size];
 }
 
 - (void)drawInMTKView:(MTKView *)view
@@ -870,7 +999,6 @@ static vertex_t vertex_bytes[] = {
    id<MTLCommandBuffer> cb = ctx.blitCommandBuffer;
    
    MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
-   // rpd.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1.0);
    rpd.colorAttachments[0].loadAction = MTLLoadActionDontCare;
    rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
    

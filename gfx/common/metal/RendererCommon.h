@@ -14,6 +14,16 @@
 // TODO(sgc): implement triple buffering
 /*! @brief maximum inflight frames */
 #define MAX_INFLIGHT 1
+#define CHAIN_LENGTH 3
+
+/* macOS requires constants in a buffer to have a 256 byte alignment. */
+#ifdef TARGET_OS_MAC
+#define kMetalBufferAlignment 256
+#else
+#define kMetalBufferAlignment 4
+#endif
+
+#define MTL_ALIGN_BUFFER(size) ((size + kMetalBufferAlignment - 1) & (~(kMetalBufferAlignment - 1)))
 
 #pragma mark - Pixel Formats
 

@@ -10,8 +10,8 @@
 
 @interface MenuDisplay : NSObject
 
-@property (readwrite) BOOL blend;
-@property (readwrite) MTLClearColor clearColor;
+@property (nonatomic, readwrite) BOOL blend;
+@property (nonatomic, readwrite) MTLClearColor clearColor;
 
 - (instancetype)initWithDriver:(MetalDriver *)driver;
 - (void)drawPipeline:(menu_display_ctx_draw_t *)draw video:(video_frame_info_t *)video;
@@ -22,7 +22,6 @@
 + (const float *)defaultVertices;
 + (const float *)defaultTexCoords;
 + (const float *)defaultColor;
-+ (const float *)defaultMatrix;
 
 
 @end

@@ -15,8 +15,8 @@
 
 @interface Filter : NSObject
 
-@property (readwrite) id<FilterDelegate> delegate;
-@property (readonly) id<MTLSamplerState> sampler;
+@property (nonatomic, readwrite) id<FilterDelegate> delegate;
+@property (nonatomic, readonly) id<MTLSamplerState> sampler;
 
 -(void)apply:(id<MTLCommandBuffer>)cb in:(id<MTLTexture>)tin out:(id<MTLTexture>)tout;
 -(void)apply:(id<MTLCommandBuffer>)cb inBuf:(id<MTLBuffer>)tin outTex:(id<MTLTexture>)tout;

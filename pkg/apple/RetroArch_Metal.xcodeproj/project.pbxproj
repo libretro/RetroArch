@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		05269A6220ABF20500C29F1E /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05269A6120ABF20500C29F1E /* MetalKit.framework */; };
+		05770B9920E805160013DABC /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
 		05A8C7B420DB75A500FF7857 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05A8C74E20DB72F100FF7857 /* Shaders.metal */; };
 		05A8E23820A63CB40084ABDA /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23720A63CB40084ABDA /* Metal.framework */; };
 		05A8E23A20A63CED0084ABDA /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23920A63CED0084ABDA /* IOSurface.framework */; };
@@ -70,6 +71,7 @@
 		0566C78E20E49E6800BC768F /* scaler_int.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = scaler_int.h; sourceTree = "<group>"; };
 		0566C78F20E49E6800BC768F /* filter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = filter.h; sourceTree = "<group>"; };
 		0566C79020E49E6800BC768F /* gl_capabilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gl_capabilities.h; sourceTree = "<group>"; };
+		05770B9820E805160013DABC /* menu_pipeline.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = menu_pipeline.metal; sourceTree = "<group>"; };
 		05A8C51B20DB72F000FF7857 /* menu_shader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_shader.h; sourceTree = "<group>"; };
 		05A8C51D20DB72F000FF7857 /* menu_cbs_get_value.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs_get_value.c; sourceTree = "<group>"; };
 		05A8C51E20DB72F000FF7857 /* menu_cbs_sublabel.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs_sublabel.c; sourceTree = "<group>"; };
@@ -826,7 +828,6 @@
 			children = (
 				05A8C64120DB72F000FF7857 /* d3d_shaders */,
 				05A8C60020DB72F000FF7857 /* gl_shaders */,
-				05A8C7B320DB756F00FF7857 /* metal_shaders */,
 				05A8C62220DB72F000FF7857 /* vulkan_shaders */,
 				05A8C63E20DB72F000FF7857 /* d3d10.c */,
 				05A8C5F020DB72F000FF7857 /* gl.c */,
@@ -876,33 +877,33 @@
 		05A8C62220DB72F000FF7857 /* vulkan_shaders */ = {
 			isa = PBXGroup;
 			children = (
-				05A8C62320DB72F000FF7857 /* pipeline_snow_simple.vert */,
-				05A8C62420DB72F000FF7857 /* opaque.vert */,
-				05A8C62520DB72F000FF7857 /* alpha_blend.frag */,
-				05A8C62620DB72F000FF7857 /* pipeline_snow.frag */,
-				05A8C62720DB72F000FF7857 /* pipeline_ribbon.vert */,
-				05A8C62820DB72F000FF7857 /* opaque.vert.inc */,
-				05A8C62920DB72F000FF7857 /* alpha_blend.frag.inc */,
-				05A8C62A20DB72F000FF7857 /* pipeline_ribbon.frag.inc */,
 				05A8C62B20DB72F000FF7857 /* Makefile */,
-				05A8C62C20DB72F000FF7857 /* pipeline_bokeh.frag.inc */,
-				05A8C62D20DB72F000FF7857 /* font.frag.inc */,
-				05A8C62E20DB72F000FF7857 /* pipeline_snow.frag.inc */,
-				05A8C62F20DB72F000FF7857 /* pipeline_ribbon_simple.vert */,
-				05A8C63020DB72F000FF7857 /* pipeline_snow_simple.frag.inc */,
-				05A8C63120DB72F000FF7857 /* pipeline_ribbon_simple.frag.inc */,
-				05A8C63220DB72F000FF7857 /* pipeline_ribbon_simple.vert.inc */,
-				05A8C63320DB72F000FF7857 /* pipeline_ribbon.frag */,
-				05A8C63420DB72F000FF7857 /* pipeline_snow_simple.vert.inc */,
+				05A8C62520DB72F000FF7857 /* alpha_blend.frag */,
 				05A8C63520DB72F000FF7857 /* font.frag */,
-				05A8C63620DB72F000FF7857 /* alpha_blend.vert */,
-				05A8C63720DB72F000FF7857 /* pipeline_snow_simple.frag */,
 				05A8C63820DB72F000FF7857 /* opaque.frag */,
-				05A8C63920DB72F000FF7857 /* pipeline_ribbon.vert.inc */,
-				05A8C63A20DB72F000FF7857 /* alpha_blend.vert.inc */,
-				05A8C63B20DB72F000FF7857 /* opaque.frag.inc */,
 				05A8C63C20DB72F000FF7857 /* pipeline_bokeh.frag */,
 				05A8C63D20DB72F000FF7857 /* pipeline_ribbon_simple.frag */,
+				05A8C63320DB72F000FF7857 /* pipeline_ribbon.frag */,
+				05A8C63720DB72F000FF7857 /* pipeline_snow_simple.frag */,
+				05A8C62620DB72F000FF7857 /* pipeline_snow.frag */,
+				05A8C62920DB72F000FF7857 /* alpha_blend.frag.inc */,
+				05A8C63A20DB72F000FF7857 /* alpha_blend.vert.inc */,
+				05A8C62D20DB72F000FF7857 /* font.frag.inc */,
+				05A8C63B20DB72F000FF7857 /* opaque.frag.inc */,
+				05A8C62820DB72F000FF7857 /* opaque.vert.inc */,
+				05A8C62C20DB72F000FF7857 /* pipeline_bokeh.frag.inc */,
+				05A8C63120DB72F000FF7857 /* pipeline_ribbon_simple.frag.inc */,
+				05A8C63220DB72F000FF7857 /* pipeline_ribbon_simple.vert.inc */,
+				05A8C62A20DB72F000FF7857 /* pipeline_ribbon.frag.inc */,
+				05A8C63920DB72F000FF7857 /* pipeline_ribbon.vert.inc */,
+				05A8C63020DB72F000FF7857 /* pipeline_snow_simple.frag.inc */,
+				05A8C63420DB72F000FF7857 /* pipeline_snow_simple.vert.inc */,
+				05A8C62E20DB72F000FF7857 /* pipeline_snow.frag.inc */,
+				05A8C63620DB72F000FF7857 /* alpha_blend.vert */,
+				05A8C62420DB72F000FF7857 /* opaque.vert */,
+				05A8C62F20DB72F000FF7857 /* pipeline_ribbon_simple.vert */,
+				05A8C62720DB72F000FF7857 /* pipeline_ribbon.vert */,
+				05A8C62320DB72F000FF7857 /* pipeline_snow_simple.vert */,
 			);
 			path = vulkan_shaders;
 			sourceTree = "<group>";
@@ -960,6 +961,7 @@
 				05A8C74C20DB72F100FF7857 /* RendererCommon.h */,
 				05A8C75420DB72F100FF7857 /* RendererCommon.m */,
 				05A8C74E20DB72F100FF7857 /* Shaders.metal */,
+				05770B9820E805160013DABC /* menu_pipeline.metal */,
 				05A8C75120DB72F100FF7857 /* ShaderTypes.h */,
 				05A8C74920DB72F100FF7857 /* TexturedView.h */,
 				05A8C75620DB72F100FF7857 /* TexturedView.m */,
@@ -1027,13 +1029,6 @@
 				05A8C7B220DB72F100FF7857 /* stb.c */,
 			);
 			path = drivers_font_renderer;
-			sourceTree = "<group>";
-		};
-		05A8C7B320DB756F00FF7857 /* metal_shaders */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = metal_shaders;
 			sourceTree = "<group>";
 		};
 		05C5D53220E3DD0900654EE4 /* input */ = {
@@ -1318,6 +1313,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				05D7753720A567A700646447 /* griffin_glslang.cpp in Sources */,
+				05770B9920E805160013DABC /* menu_pipeline.metal in Sources */,
 				05D7753520A567A400646447 /* griffin_cpp.cpp in Sources */,
 				509F0C9D1AA23AFC00619ECC /* griffin_objc.m in Sources */,
 				840222FC1A889EE2009AB261 /* griffin.c in Sources */,

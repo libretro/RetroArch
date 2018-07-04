@@ -28,14 +28,14 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 
 @interface FrameView : NSObject
 
-@property (readonly) RPixelFormat format;
-@property (readonly) RTextureFilter filter;
-@property (readwrite) BOOL visible;
-@property (readwrite) CGRect frame;
-@property (readwrite) CGSize size;
-@property (readonly) ViewDrawState drawState;
-@property (readonly) struct video_shader* shader;
-@property (readwrite) uint64_t         frameCount;
+@property (nonatomic, readonly) RPixelFormat format;
+@property (nonatomic, readonly) RTextureFilter filter;
+@property (nonatomic, readwrite) BOOL visible;
+@property (nonatomic, readwrite) CGRect frame;
+@property (nonatomic, readwrite) CGSize size;
+@property (nonatomic, readonly) ViewDrawState drawState;
+@property (nonatomic, readonly) struct video_shader* shader;
+@property (nonatomic, readwrite) uint64_t         frameCount;
 
 - (void)setFilteringIndex:(int)index smooth:(bool)smooth;
 - (BOOL)setShaderFromPath:(NSString *)path;
@@ -46,9 +46,9 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 
 @interface MetalMenu : NSObject
 
-@property (readonly) bool hasFrame;
-@property (readwrite) bool enabled;
-@property (readwrite) float alpha;
+@property (nonatomic, readonly) bool hasFrame;
+@property (nonatomic, readwrite) bool enabled;
+@property (nonatomic, readwrite) float alpha;
 
 - (void)updateFrame:(void const *)source;
 
@@ -60,20 +60,20 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 
 @interface MetalDriver : NSObject<MTKViewDelegate>
 
-@property (readonly) video_viewport_t* viewport;
-@property (readwrite) bool             keepAspect;
-@property (readonly) MetalMenu*        menu;
-@property (readonly) FrameView*        frameView;
-@property (readonly) MenuDisplay*      display;
-@property (readonly) Context*          context;
-@property (readonly) Uniforms*         viewportMVP;
+@property (nonatomic, readonly) video_viewport_t* viewport;
+@property (nonatomic, readwrite) bool             keepAspect;
+@property (nonatomic, readonly) MetalMenu*        menu;
+@property (nonatomic, readonly) FrameView*        frameView;
+@property (nonatomic, readonly) MenuDisplay*      display;
+@property (nonatomic, readonly) Context*          context;
+@property (nonatomic, readonly) Uniforms*         viewportMVP;
+@property (nonatomic, readonly) Uniforms*         viewportMVPNormalized;
 
 - (instancetype)initWithVideo:(const video_info_t *)video
                         input:(const input_driver_t **)input
                     inputData:(void **)inputData;
 
 - (void)setVideo:(const video_info_t *)video;
-- (void)setShaderIndex:(NSUInteger)index;
 - (bool)renderFrame:(const void *)data
               width:(unsigned)width
              height:(unsigned)height

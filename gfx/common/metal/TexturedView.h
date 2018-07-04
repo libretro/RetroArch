@@ -6,12 +6,12 @@
 
 @interface TexturedView : NSObject
 
-@property (readonly) RPixelFormat format;
-@property (readonly) RTextureFilter filter;
-@property (readwrite) BOOL visible;
-@property (readwrite) CGRect frame;
-@property (readwrite) CGSize size;
-@property (readonly) ViewDrawState drawState;
+@property (nonatomic, readonly) RPixelFormat format;
+@property (nonatomic, readonly) RTextureFilter filter;
+@property (nonatomic, readwrite) BOOL visible;
+@property (nonatomic, readwrite) CGRect frame;
+@property (nonatomic, readwrite) CGSize size;
+@property (nonatomic, readonly) ViewDrawState drawState;
 
 - (instancetype)initWithDescriptor:(ViewDescriptor *)td context:(Context *)c;
 

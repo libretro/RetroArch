@@ -297,7 +297,9 @@ static char** waiting_argv;
 }
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode {
-   // TODO(sgc): handle full screen
+   // TODO(sgc): handle full screen?
+   // cheap hack to ensure MTKView posts triggers a drawable resize event
+   [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
    [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
 }
 

@@ -20,9 +20,9 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 };
 
 @interface ViewDescriptor : NSObject
-@property (readwrite) RPixelFormat format;
-@property (readwrite) RTextureFilter filter;
-@property (readwrite) CGSize size;
+@property (nonatomic, readwrite) RPixelFormat format;
+@property (nonatomic, readwrite) RTextureFilter filter;
+@property (nonatomic, readwrite) CGSize size;
 
 - (instancetype)init;
 @end
