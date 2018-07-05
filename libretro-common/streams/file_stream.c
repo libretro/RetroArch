@@ -196,16 +196,13 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
 {
    char buf[4096];
    char subfmt[64];
-   
-   const char * bufiter = buf;
-   
-   int64_t startpos = filestream_tell(stream);
-   
    va_list args;
    
-   int ret = 0;
-   
-   int maxlen = filestream_read(stream, buf, sizeof(buf)-1);
+   const char * bufiter = buf;
+   int64_t startpos     = filestream_tell(stream);
+   int        ret       = 0;
+   int64_t maxlen       = filestream_read(stream, buf, sizeof(buf)-1);
+
    buf[maxlen] = '\0';
    
    va_start(args, format);
@@ -214,14 +211,12 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
    {
       if (*format == '%')
       {
-         char* subfmtiter = subfmt;
-         
-         int subret;
          int sublen;
          
-         bool asterisk = false;
+         char* subfmtiter = subfmt;
+         bool asterisk    = false;
          
-         *subfmtiter++ = *format++; /* '%' */
+         *subfmtiter++    = *format++; /* '%' */
          
          /* %[*][width][length]specifier */
          
@@ -276,7 +271,8 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
       }
       else
       {
-         if (*bufiter != *format) break;
+         if (*bufiter != *format)
+            break;
          bufiter++;
          format++;
       }
