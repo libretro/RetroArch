@@ -138,12 +138,7 @@ int rarch_main(int argc, char *argv[], void *data)
    do
    {
       unsigned sleep_ms = 0;
-      int ret;
-      const ui_application_t *application =
-         ui_companion_driver_get_application_ptr();
-      if (application)
-         application->process_events();
-      ret = runloop_iterate(&sleep_ms);
+      int           ret = runloop_iterate(&sleep_ms);
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
