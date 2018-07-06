@@ -1595,6 +1595,7 @@ void video_driver_destroy(void)
    video_driver_cache_context_ack = false;
    video_driver_record_gpu_buffer = NULL;
    current_video                  = NULL;
+   video_driver_set_cached_frame_ptr(NULL);
 }
 
 void video_driver_set_cached_frame_ptr(const void *data)
@@ -1779,6 +1780,7 @@ bool video_driver_init(bool *video_is_threaded)
 {
    video_driver_lock_new();
    video_driver_filter_free();
+   video_driver_set_cached_frame_ptr(NULL);
    return video_driver_init_internal(video_is_threaded);
 }
 
@@ -1792,6 +1794,7 @@ void video_driver_free(void)
    video_driver_free_internal();
    video_driver_lock_free();
    video_driver_data = NULL;
+   video_driver_set_cached_frame_ptr(NULL);
 }
 
 void video_driver_monitor_reset(void)

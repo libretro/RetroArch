@@ -290,6 +290,8 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    bool contentless = false;
    bool is_inited   = false;
 
+   video_driver_set_cached_frame_ptr(NULL);
+
 #ifdef HAVE_RUNAHEAD
    set_load_content_info(load_info);
    clear_controller_port_map();
@@ -373,12 +375,16 @@ bool core_get_system_av_info(struct retro_system_av_info *av_info)
 
 bool core_reset(void)
 {
+   video_driver_set_cached_frame_ptr(NULL);
+
    current_core.retro_reset();
    return true;
 }
 
 bool core_init(void)
 {
+   video_driver_set_cached_frame_ptr(NULL);
+
    current_core.retro_init();
    current_core.inited          = true;
    return true;
@@ -386,6 +392,8 @@ bool core_init(void)
 
 bool core_unload(void)
 {
+   video_driver_set_cached_frame_ptr(NULL);
+
    current_core.retro_deinit();
    return true;
 }
@@ -396,9 +404,12 @@ bool core_unload_game(void)
    video_driver_free_hw_context();
    audio_driver_stop();
 
+   video_driver_set_cached_frame_ptr(NULL);
+
    current_core.retro_unload_game();
 
    current_core.game_loaded = false;
+
    return true;
 }
 
