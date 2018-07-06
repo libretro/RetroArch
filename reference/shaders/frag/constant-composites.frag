@@ -18,6 +18,6 @@ void main()
     lut = float[](1.0, 4.0, 3.0, 2.0);
     foos = Foo[](Foo(10.0, 20.0), Foo(30.0, 40.0));
     FragColor = vec4(lut[line]);
-    FragColor += vec4(foos[line].a * (foos[1 - line].a));
+    FragColor += vec4(foos[line].a * foos[1 - line].a);
 }
 

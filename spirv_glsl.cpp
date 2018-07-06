@@ -418,6 +418,7 @@ string CompilerGLSL::compile()
 	backend.supports_extensions = true;
 
 	// Scan the SPIR-V to find trivial uses of extensions.
+	build_function_control_flow_graphs_and_analyze();
 	find_static_extensions();
 	fixup_image_load_store_access();
 	update_active_builtins();
@@ -1650,7 +1651,7 @@ void CompilerGLSL::emit_specialization_constant_op(const SPIRConstantOp &constan
 	statement("const ", variable_decl(type, name), " = ", constant_op_expression(constant), ";");
 }
 
-void CompilerGLSL::emit_specialization_constant(const SPIRConstant &constant)
+void CompilerGLSL::emit_constant(const SPIRConstant &constant)
 {
 	auto &type = get<SPIRType>(constant.constant_type);
 	auto name = to_name(constant.self);
@@ -2071,24 +2072,24 @@ void CompilerGLSL::emit_resources()
 	//
 	// TODO: If we have the fringe case that we create a spec constant which depends on a struct type,
 	// we'll have to deal with that, but there's currently no known way to express that.
-	if (options.vulkan_semantics)
+	for (auto &id : ids)
 	{
-		for (auto &id : ids)
+		if (id.get_type() == TypeConstant)
 		{
-			if (id.get_type() == TypeConstant)
-			{
-				auto &c = id.get<SPIRConstant>();
-				if (!c.specialization)
-					continue;
+			auto &c = id.get<SPIRConstant>();
 
-				emit_specialization_constant(c);
-				emitted = true;
-			}
-			else if (id.get_type() == TypeConstantOp)
+			bool needs_declaration = (c.specialization && options.vulkan_semantics) || c.is_used_as_lut;
+
+			if (needs_declaration)
 			{
-				emit_specialization_constant_op(id.get<SPIRConstantOp>());
+				emit_constant(c);
 				emitted = true;
 			}
+		}
+		else if (options.vulkan_semantics && id.get_type() == TypeConstantOp)
+		{
+			emit_specialization_constant_op(id.get<SPIRConstantOp>());
+			emitted = true;
 		}
 	}
 
@@ -2298,9 +2299,9 @@ string CompilerGLSL::enclose_expression(const string &expr)
 		uint32_t paren_count = 0;
 		for (auto c : expr)
 		{
-			if (c == '(')
+			if (c == '(' || c == '[')
 				paren_count++;
-			else if (c == ')')
+			else if (c == ')' || c == ']')
 			{
 				assert(paren_count);
 				paren_count--;
@@ -2423,6 +2424,8 @@ string CompilerGLSL::to_expression(uint32_t id)
 		if (dec.builtin)
 			return builtin_to_glsl(dec.builtin_type, StorageClassGeneric);
 		else if (c.specialization && options.vulkan_semantics)
+			return to_name(id);
+		else if (c.is_used_as_lut)
 			return to_name(id);
 		else if (type.basetype == SPIRType::Struct && !backend.can_declare_struct_inline)
 			return to_name(id);
@@ -6190,6 +6193,10 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			var->static_expression = ops[1];
 		else if (var && var->loop_variable && !var->loop_variable_enable)
 			var->static_expression = ops[1];
+		else if (var && var->remapped_variable)
+		{
+			// Skip the write.
+		}
 		else if (var && flattened_structs.count(ops[0]))
 		{
 			store_flattened_struct(*var, ops[1]);
@@ -8289,6 +8296,11 @@ string CompilerGLSL::argument_decl(const SPIRFunction::Parameter &arg)
 	return join(direction, to_qualifiers_glsl(arg.id), variable_decl(type, to_name(arg.id), arg.id));
 }
 
+string CompilerGLSL::to_initializer_expression(const SPIRVariable &var)
+{
+	return to_expression(var.initializer);
+}
+
 string CompilerGLSL::variable_decl(const SPIRVariable &variable)
 {
 	// Ignore the pointer type since GLSL doesn't have pointers.
@@ -8306,7 +8318,7 @@ string CompilerGLSL::variable_decl(const SPIRVariable &variable)
 	{
 		uint32_t expr = variable.initializer;
 		if (ids[expr].get_type() != TypeUndef)
-			res += join(" = ", to_expression(variable.initializer));
+			res += join(" = ", to_initializer_expression(variable));
 	}
 	return res;
 }
@@ -8908,41 +8920,6 @@ void CompilerGLSL::emit_function(SPIRFunction &func, const Bitset &return_flags)
 	current_function = &func;
 	auto &entry_block = get<SPIRBlock>(func.entry_block);
 
-	if (!func.analyzed_variable_scope)
-	{
-		analyze_variable_scope(func);
-
-		// Check if we can actually use the loop variables we found in analyze_variable_scope.
-		// To use multiple initializers, we need the same type and qualifiers.
-		for (auto block : func.blocks)
-		{
-			auto &b = get<SPIRBlock>(block);
-			if (b.loop_variables.size() < 2)
-				continue;
-
-			auto &flags = get_decoration_bitset(b.loop_variables.front());
-			uint32_t type = get<SPIRVariable>(b.loop_variables.front()).basetype;
-			bool invalid_initializers = false;
-			for (auto loop_variable : b.loop_variables)
-			{
-				if (flags != get_decoration_bitset(loop_variable) ||
-				    type != get<SPIRVariable>(b.loop_variables.front()).basetype)
-				{
-					invalid_initializers = true;
-					break;
-				}
-			}
-
-			if (invalid_initializers)
-			{
-				for (auto loop_variable : b.loop_variables)
-					get<SPIRVariable>(loop_variable).loop_variable = false;
-				b.loop_variables.clear();
-			}
-		}
-		func.analyzed_variable_scope = true;
-	}
-
 	for (auto &v : func.local_variables)
 	{
 		auto &var = get<SPIRVariable>(v);
@@ -8968,6 +8945,11 @@ void CompilerGLSL::emit_function(SPIRFunction &func, const Bitset &return_flags)
 			if (find(begin(dominated), end(dominated), var.self) == end(dominated))
 				entry_block.dominated_variables.push_back(var.self);
 			var.deferred_declaration = true;
+		}
+		else if (var.storage == StorageClassFunction && var.remapped_variable && var.static_expression)
+		{
+			// No need to declare this variable, it has a static expression.
+			var.deferred_declaration = false;
 		}
 		else if (expression_is_lvalue(v))
 		{

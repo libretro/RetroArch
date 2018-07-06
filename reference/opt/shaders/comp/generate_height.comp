@@ -48,8 +48,8 @@ void main()
     vec2 _387 = _316.xx;
     vec2 _392 = _316.yy;
     vec2 _395 = _392 * _137.distribution[_280].yx;
-    vec2 _421 = _392 * (_137.distribution[(_476 * _448) + _475]).yx;
-    vec2 _429 = ((_137.distribution[(_476 * _448) + _475]) * _387) + vec2(-_421.x, _421.y);
+    vec2 _421 = _392 * _137.distribution[(_476 * _448) + _475].yx;
+    vec2 _429 = (_137.distribution[(_476 * _448) + _475] * _387) + vec2(-_421.x, _421.y);
     _225.heights[_280] = packHalf2x16(((_137.distribution[_280] * _387) + vec2(-_395.x, _395.y)) + vec2(_429.x, -_429.y));
 }
 

@@ -15,8 +15,7 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    float lut[5] = _17;
-    for (int i = 0; i < 4; i++, FragColor += lut[i].xxxx)
+    for (int i = 0; i < 4; i++, FragColor += _17[i].xxxx)
     {
     }
 }
