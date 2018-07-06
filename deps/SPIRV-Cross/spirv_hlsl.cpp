@@ -4572,6 +4572,7 @@ string CompilerHLSL::compile()
 	backend.can_declare_arrays_inline = false;
 	backend.can_return_array = false;
 
+	build_function_control_flow_graphs_and_analyze();
 	update_active_builtins();
 	analyze_image_and_sampler_usage();
 

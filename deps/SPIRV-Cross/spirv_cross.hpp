@@ -18,11 +18,11 @@
 #define SPIRV_CROSS_HPP
 
 #include "spirv.hpp"
+#include "spirv_cfg.hpp"
 #include "spirv_common.hpp"
 
 namespace spirv_cross
 {
-class CFG;
 struct Resource
 {
 	// Resources are identified with their SPIR-V ID.
@@ -676,8 +676,6 @@ protected:
 			variable_remap_callback(type, var_name, type_name);
 	}
 
-	void analyze_variable_scope(SPIRFunction &function);
-
 	void parse();
 	void parse(const Instruction &i);
 
@@ -868,6 +866,55 @@ protected:
 		void add_hierarchy_to_comparison_ids(uint32_t ids);
 		bool need_subpass_input = false;
 	};
+
+	void build_function_control_flow_graphs_and_analyze();
+	std::unordered_map<uint32_t, std::unique_ptr<CFG>> function_cfgs;
+	struct CFGBuilder : OpcodeHandler
+	{
+		CFGBuilder(Compiler &compiler_);
+
+		bool follow_function_call(const SPIRFunction &func) override;
+		bool handle(spv::Op op, const uint32_t *args, uint32_t length) override;
+		Compiler &compiler;
+		std::unordered_map<uint32_t, std::unique_ptr<CFG>> function_cfgs;
+	};
+
+	struct AnalyzeVariableScopeAccessHandler : OpcodeHandler
+	{
+		AnalyzeVariableScopeAccessHandler(Compiler &compiler_, SPIRFunction &entry_);
+
+		bool follow_function_call(const SPIRFunction &) override;
+		void set_current_block(const SPIRBlock &block) override;
+
+		void notify_variable_access(uint32_t id, uint32_t block);
+		bool id_is_phi_variable(uint32_t id) const;
+		bool id_is_potential_temporary(uint32_t id) const;
+		bool handle(spv::Op op, const uint32_t *args, uint32_t length) override;
+
+		Compiler &compiler;
+		SPIRFunction &entry;
+		std::unordered_map<uint32_t, std::unordered_set<uint32_t>> accessed_variables_to_block;
+		std::unordered_map<uint32_t, std::unordered_set<uint32_t>> accessed_temporaries_to_block;
+		std::unordered_map<uint32_t, uint32_t> result_id_to_type;
+		std::unordered_map<uint32_t, std::unordered_set<uint32_t>> complete_write_variables_to_block;
+		std::unordered_map<uint32_t, std::unordered_set<uint32_t>> partial_write_variables_to_block;
+		const SPIRBlock *current_block = nullptr;
+	};
+
+	struct StaticExpressionAccessHandler : OpcodeHandler
+	{
+		StaticExpressionAccessHandler(Compiler &compiler_, uint32_t variable_id_);
+		bool follow_function_call(const SPIRFunction &) override;
+		bool handle(spv::Op op, const uint32_t *args, uint32_t length) override;
+
+		Compiler &compiler;
+		uint32_t variable_id;
+		uint32_t static_expression = 0;
+		uint32_t write_count = 0;
+	};
+
+	void analyze_variable_scope(SPIRFunction &function, AnalyzeVariableScopeAccessHandler &handler);
+	void find_function_local_luts(SPIRFunction &function, const AnalyzeVariableScopeAccessHandler &handler);
 
 	void make_constant_null(uint32_t id, uint32_t type);
 

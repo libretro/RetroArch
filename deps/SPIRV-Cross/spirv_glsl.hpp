@@ -375,7 +375,7 @@ protected:
 	void emit_flattened_io_block(const SPIRVariable &var, const char *qual);
 	void emit_block_chain(SPIRBlock &block);
 	void emit_hoisted_temporaries(std::vector<std::pair<uint32_t, uint32_t>> &temporaries);
-	void emit_specialization_constant(const SPIRConstant &constant);
+	void emit_constant(const SPIRConstant &constant);
 	void emit_specialization_constant_op(const SPIRConstantOp &constant);
 	std::string emit_continue_block(uint32_t continue_block);
 	bool attempt_emit_loop_header(SPIRBlock &block, SPIRBlock::Method method);
@@ -464,6 +464,7 @@ protected:
 	virtual bool skip_argument(uint32_t id) const;
 	virtual void emit_array_copy(const std::string &lhs, uint32_t rhs_id);
 	virtual void emit_block_hints(const SPIRBlock &block);
+	virtual std::string to_initializer_expression(const SPIRVariable &var);
 
 	bool buffer_is_packing_standard(const SPIRType &type, BufferPackingStandard packing, uint32_t start_offset = 0,
 	                                uint32_t end_offset = UINT32_MAX);
