@@ -151,7 +151,9 @@ static struct retro_system_av_info video_driver_av_info;
 
 static enum retro_pixel_format video_driver_pix_fmt      = RETRO_PIXEL_FORMAT_0RGB1555;
 
+/*
 static const void *frame_cache_data                      = NULL;
+*/
 static unsigned frame_cache_width                        = 0;
 static unsigned frame_cache_height                       = 0;
 static size_t frame_cache_pitch                          = 0;
@@ -1215,8 +1217,10 @@ void video_driver_set_filtering(unsigned index, bool smooth)
 void video_driver_cached_frame_set(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
+/*
    if (data)
       frame_cache_data = data;
+*/
    frame_cache_width   = width;
    frame_cache_height  = height;
    frame_cache_pitch   = pitch;
@@ -1225,8 +1229,10 @@ void video_driver_cached_frame_set(const void *data, unsigned width,
 void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch)
 {
+/*
    if (data)
       *data    = frame_cache_data;
+*/
    if (width)
       *width   = frame_cache_width;
    if (height)
@@ -1414,8 +1420,11 @@ bool video_driver_cached_frame(void)
    recording_data   = NULL;
 
    retro_ctx.frame_cb(
+/*
          (frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
          ? frame_cache_data : NULL,
+*/
+         NULL,
          frame_cache_width,
          frame_cache_height, frame_cache_pitch);
 
@@ -1599,8 +1608,10 @@ void video_driver_destroy(void)
 
 void video_driver_set_cached_frame_ptr(const void *data)
 {
+/*
    if (data)
       frame_cache_data = data;
+*/
 }
 
 void video_driver_set_stub_frame(void)
@@ -2414,8 +2425,10 @@ void video_driver_frame(const void *data, unsigned width,
    }
 
 
+/*
    if (data)
       frame_cache_data = data;
+*/
    frame_cache_width   = width;
    frame_cache_height  = height;
    frame_cache_pitch   = pitch;
@@ -3391,9 +3404,12 @@ bool video_driver_has_windowed(void)
 
 bool video_driver_cached_frame_has_valid_framebuffer(void)
 {
+/*
    if (frame_cache_data)
       return (frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID);
    return false;
+*/
+   return true;
 }
 
 static const shader_backend_t *video_shader_set_backend(

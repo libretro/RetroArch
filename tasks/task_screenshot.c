@@ -301,6 +301,11 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf,
 
    video_driver_cached_frame_get(&data, &width, &height, &pitch);
 
+   if (data == NULL)
+   {
+      data = userbuf;
+   }
+
    /* Negative pitch is needed as screenshot takes bottom-up,
     * but we use top-down.
     */
