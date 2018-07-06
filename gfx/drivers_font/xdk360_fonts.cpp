@@ -459,7 +459,7 @@ static void xdk360_render_msg_post(xdk360_video_font_t * font)
 
    d3d9_set_texture(dev, 0, NULL);
    d3d9_set_vertex_declaration(dev, NULL);
-   d3d9_set_vertex_shader(dev, 0, NULL);
+   d3d9_set_vertex_shader(dev, NULL);
    d3d9_set_pixel_shader(dev, NULL);
    d3d9_set_render_state(dev, D3DRS_VIEWPORTENABLE, font->m_dwSavedState);
 }
@@ -496,7 +496,7 @@ static void xdk360_render_msg_pre(xdk360_video_font_t * font)
 
    d3d9_set_render_state(dev, D3DRS_VIEWPORTENABLE, FALSE);
    d3d9_set_vertex_declaration(dev, font->s_FontLocals.m_pFontVertexDecl);
-   d3d9_set_vertex_shader(dev, 0, font->s_FontLocals.m_pFontVertexShader);
+   d3d9_set_vertex_shader(dev, font->s_FontLocals.m_pFontVertexShader);
    d3d9_set_pixel_shader(dev, font->s_FontLocals.m_pFontPixelShader);
    d3d9_set_vertex_shader_constantf(dev, 2, vTexScale, 1);
 }
