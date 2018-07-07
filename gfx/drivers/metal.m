@@ -46,6 +46,9 @@
 
 #import "../video_coord_array.h"
 
+static bool metal_set_shader(void *data,
+                             enum rarch_shader_type type, const char *path);
+
 static void *metal_init(const video_info_t *video,
                         const input_driver_t **input,
                         void **input_data)
@@ -57,6 +60,15 @@ static void *metal_init(const video_info_t *video,
    {
       return NULL;
    }
+   
+   const char *shader_path = retroarch_get_shader_preset();
+   
+   if (shader_path)
+   {
+      enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_SLANG);
+      metal_set_shader(((__bridge void *)md), type, shader_path);
+   }
+   
    return (__bridge_retained void *)md;
 }
 
