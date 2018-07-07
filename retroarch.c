@@ -194,7 +194,7 @@ static char runtime_shader_preset[255]                          = {0};
 
 #ifdef HAVE_THREAD_STORAGE
 static sthread_tls_t rarch_tls;
-const void *MAGIC_POINTER                               = (void*)(uintptr_t)0xB16B00B5;
+const void *MAGIC_POINTER                               = (void*)(uintptr_t)0x0DEFACED;
 #endif
 
 static retro_bits_t has_set_libretro_device;
