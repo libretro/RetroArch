@@ -357,6 +357,21 @@
 		05A8E23720A63CB40084ABDA /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		05A8E23920A63CED0084ABDA /* IOSurface.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOSurface.framework; path = System/Library/Frameworks/IOSurface.framework; sourceTree = SDKROOT; };
 		05A8E23B20A63CF50084ABDA /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		05B5F90D20ED6A03009C521F /* content.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = content.h; path = ../../content.h; sourceTree = "<group>"; };
+		05B5F90E20ED6A03009C521F /* core_type.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = core_type.h; path = ../../core_type.h; sourceTree = "<group>"; };
+		05B5F90F20ED6A03009C521F /* command.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = command.c; path = ../../command.c; sourceTree = "<group>"; };
+		05B5F91120ED6AAE009C521F /* retroarch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = retroarch.c; path = ../../retroarch.c; sourceTree = "<group>"; };
+		05B5F91220ED6AAF009C521F /* retroarch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = retroarch.h; path = ../../retroarch.h; sourceTree = "<group>"; };
+		05BF821420ED69D100D95B19 /* config.def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = config.def.h; path = ../../config.def.h; sourceTree = "<group>"; };
+		05BF821520ED69D100D95B19 /* core_impl.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = core_impl.c; path = ../../core_impl.c; sourceTree = "<group>"; };
+		05BF821620ED69D100D95B19 /* config.features.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = config.features.h; path = ../../config.features.h; sourceTree = "<group>"; };
+		05BF821720ED69D100D95B19 /* command.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = command.h; path = ../../command.h; sourceTree = "<group>"; };
+		05BF821820ED69D100D95B19 /* core_info.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = core_info.c; path = ../../core_info.c; sourceTree = "<group>"; };
+		05BF821920ED69D100D95B19 /* core.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = core.h; path = ../../core.h; sourceTree = "<group>"; };
+		05BF821A20ED69D100D95B19 /* configuration.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = configuration.c; path = ../../configuration.c; sourceTree = "<group>"; };
+		05BF821B20ED69D100D95B19 /* core_info.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = core_info.h; path = ../../core_info.h; sourceTree = "<group>"; };
+		05BF821C20ED69D100D95B19 /* config.def.keybinds.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = config.def.keybinds.h; path = ../../config.def.keybinds.h; sourceTree = "<group>"; };
+		05BF821D20ED69D100D95B19 /* configuration.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = configuration.h; path = ../../configuration.h; sourceTree = "<group>"; };
 		05C5D53320E3DD0900654EE4 /* input_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_types.h; sourceTree = "<group>"; };
 		05C5D53420E3DD0900654EE4 /* input_remote.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_remote.c; sourceTree = "<group>"; };
 		05C5D53720E3DD0900654EE4 /* nullinput.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = nullinput.c; sourceTree = "<group>"; };
@@ -542,6 +557,7 @@
 			isa = PBXGroup;
 			children = (
 				0538874F20DE117B00769232 /* libretro-common */,
+				05BF821320ED69A500D95B19 /* core */,
 				05A8C59520DB72F000FF7857 /* frontend */,
 				05A8C5D420DB72F000FF7857 /* gfx */,
 				05A8C57120DB72F000FF7857 /* intl */,
@@ -1029,6 +1045,28 @@
 				05A8C7B220DB72F100FF7857 /* stb.c */,
 			);
 			path = drivers_font_renderer;
+			sourceTree = "<group>";
+		};
+		05BF821320ED69A500D95B19 /* core */ = {
+			isa = PBXGroup;
+			children = (
+				05B5F91120ED6AAE009C521F /* retroarch.c */,
+				05B5F91220ED6AAF009C521F /* retroarch.h */,
+				05B5F90F20ED6A03009C521F /* command.c */,
+				05BF821720ED69D100D95B19 /* command.h */,
+				05BF821420ED69D100D95B19 /* config.def.h */,
+				05BF821C20ED69D100D95B19 /* config.def.keybinds.h */,
+				05BF821620ED69D100D95B19 /* config.features.h */,
+				05BF821A20ED69D100D95B19 /* configuration.c */,
+				05BF821D20ED69D100D95B19 /* configuration.h */,
+				05B5F90D20ED6A03009C521F /* content.h */,
+				05BF821520ED69D100D95B19 /* core_impl.c */,
+				05BF821820ED69D100D95B19 /* core_info.c */,
+				05BF821B20ED69D100D95B19 /* core_info.h */,
+				05B5F90E20ED6A03009C521F /* core_type.h */,
+				05BF821920ED69D100D95B19 /* core.h */,
+			);
+			name = core;
 			sourceTree = "<group>";
 		};
 		05C5D53220E3DD0900654EE4 /* input */ = {
