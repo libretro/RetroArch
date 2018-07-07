@@ -60,6 +60,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#include "../../msg_hash.h"
+#include "../../ui/drivers/ui_win32_resource.h"
+#include "../../input/input_defines.h"
 #endif
 
 #include <encodings/utf.h>
@@ -1246,6 +1249,199 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 #endif
 }
 
+#ifdef HAVE_MENU
+
+enum msg_hash_enums menu_id_to_label_enum(unsigned int menuId)
+{
+   switch (menuId)
+   {
+   case ID_M_LOAD_CONTENT: return MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST;
+   case ID_M_RESET: return MENU_ENUM_LABEL_VALUE_RESTART_CONTENT;
+   case ID_M_QUIT: return MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY;
+   case ID_M_MENU_TOGGLE: return MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE;
+   case ID_M_PAUSE_TOGGLE: return MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE;
+   case ID_M_LOAD_CORE: return MENU_ENUM_LABEL_VALUE_CORE_LIST;
+   case ID_M_LOAD_STATE: return MENU_ENUM_LABEL_VALUE_LOAD_STATE;
+   case ID_M_SAVE_STATE: return MENU_ENUM_LABEL_VALUE_SAVE_STATE;
+   case ID_M_DISK_CYCLE: return MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE;
+   case ID_M_DISK_NEXT: return MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT;
+   case ID_M_DISK_PREV: return MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV;
+   case ID_M_WINDOW_SCALE_1X: return MSG_UNKNOWN;
+   case ID_M_WINDOW_SCALE_2X: return MSG_UNKNOWN;
+   case ID_M_WINDOW_SCALE_3X: return MSG_UNKNOWN;
+   case ID_M_WINDOW_SCALE_4X: return MSG_UNKNOWN;
+   case ID_M_WINDOW_SCALE_5X: return MSG_UNKNOWN;
+   case ID_M_WINDOW_SCALE_6X: return MSG_UNKNOWN;
+   case ID_M_WINDOW_SCALE_7X: return MSG_UNKNOWN;
+   case ID_M_WINDOW_SCALE_8X: return MSG_UNKNOWN;
+   case ID_M_WINDOW_SCALE_9X: return MSG_UNKNOWN;
+   case ID_M_WINDOW_SCALE_10X: return MSG_UNKNOWN;
+   case ID_M_FULL_SCREEN: return MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY;
+   case ID_M_MOUSE_GRAB: return MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE;
+   case ID_M_STATE_INDEX_AUTO: return MSG_UNKNOWN;
+   case ID_M_TAKE_SCREENSHOT: return MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT;
+   case ID_M_MUTE_TOGGLE: return MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE;
+   case ID_M_SHADER_PARAMETERS: return MSG_UNKNOWN;
+   default: return MSG_UNKNOWN;
+   }
+}
+
+unsigned int menu_id_to_meta_key(unsigned int menuId)
+{
+   switch (menuId)
+   {
+   case ID_M_LOAD_CONTENT: return 0;
+   case ID_M_RESET: return RARCH_RESET;
+   case ID_M_QUIT: return RARCH_QUIT_KEY;
+   case ID_M_MENU_TOGGLE: return RARCH_MENU_TOGGLE;
+   case ID_M_PAUSE_TOGGLE: return RARCH_PAUSE_TOGGLE;
+   case ID_M_LOAD_CORE: return 0;
+   case ID_M_LOAD_STATE: return RARCH_LOAD_STATE_KEY;
+   case ID_M_SAVE_STATE: return RARCH_SAVE_STATE_KEY;
+   case ID_M_DISK_CYCLE: return RARCH_DISK_EJECT_TOGGLE;
+   case ID_M_DISK_NEXT: return RARCH_DISK_NEXT;
+   case ID_M_DISK_PREV: return RARCH_DISK_PREV;
+   case ID_M_WINDOW_SCALE_1X: return 0;
+   case ID_M_WINDOW_SCALE_2X: return 0;
+   case ID_M_WINDOW_SCALE_3X: return 0;
+   case ID_M_WINDOW_SCALE_4X: return 0;
+   case ID_M_WINDOW_SCALE_5X: return 0;
+   case ID_M_WINDOW_SCALE_6X: return 0;
+   case ID_M_WINDOW_SCALE_7X: return 0;
+   case ID_M_WINDOW_SCALE_8X: return 0;
+   case ID_M_WINDOW_SCALE_9X: return 0;
+   case ID_M_WINDOW_SCALE_10X: return 0;
+   case ID_M_FULL_SCREEN: return RARCH_FULLSCREEN_TOGGLE_KEY;
+   case ID_M_MOUSE_GRAB: return RARCH_GRAB_MOUSE_TOGGLE;
+   case ID_M_STATE_INDEX_AUTO: return 0;
+   case ID_M_TAKE_SCREENSHOT: return RARCH_SCREENSHOT;
+   case ID_M_MUTE_TOGGLE: return RARCH_MUTE;
+   case ID_M_SHADER_PARAMETERS: return 0;
+   default: return 0;
+   }
+}
+
+const char *meta_key_to_name(unsigned int metaKey)
+{
+   if (metaKey == 0)
+   {
+      return NULL;
+   }
+   else
+   {
+      int i = 0;
+      const struct retro_keybind *key = &input_config_binds[0][metaKey];
+      int keyCode = key->key;
+      while (true)
+      {
+         const struct input_key_map *entry = &input_config_key_map[i];
+         if (entry->str == NULL) break;
+         if (entry->key == keyCode)
+         {
+            return entry->str;
+         }
+         i++;
+      }
+      if (keyCode >= 32 && keyCode < 127)
+      {
+         static char singleChar[2] = "A";
+         singleChar[0] = keyCode;
+         return singleChar;
+      }
+      return NULL;
+   }
+}
+
+void win32_localize_menu(HMENU menu)
+{
+   int index = 0;
+#ifndef LEGACY_WIN32
+   MENUITEMINFOW menuItemInfo;
+#else
+   MENUITEMINFOA menuItemInfo;
+#endif
+   while (true)
+   {
+      BOOL okay;
+      enum msg_hash_enums labelEnum;
+      memset(&menuItemInfo, 0, sizeof(menuItemInfo));
+      menuItemInfo.cbSize = sizeof(menuItemInfo);
+      menuItemInfo.dwTypeData = NULL;
+      menuItemInfo.fMask = MIIM_STRING | MIIM_FTYPE | MIIM_ID | MIIM_STATE | MIIM_SUBMENU;
+
+#ifndef LEGACY_WIN32
+      okay = GetMenuItemInfoW(menu, index, true, &menuItemInfo);
+#else
+      okay = GetMenuItemInfoA(menu, index, true, &menuItemInfo);
+#endif
+      if (!okay) break;
+
+      if (menuItemInfo.hSubMenu != NULL)
+      {
+         win32_localize_menu(menuItemInfo.hSubMenu);
+      }
+
+      labelEnum = menu_id_to_label_enum(menuItemInfo.wID);
+      if (labelEnum != MSG_UNKNOWN)
+      {
+         const char *newLabel = msg_hash_to_str(labelEnum);
+         unsigned int metaKey = menu_id_to_meta_key(menuItemInfo.wID);
+         const char *metaKeyName = meta_key_to_name(metaKey);
+         const char *newLabel2 = newLabel;
+         char *newLabelText = NULL;
+#ifndef LEGACY_WIN32
+         wchar_t *newLabel_unicode;
+#else
+         char *newLabel_ansi;
+#endif
+         int len;
+
+         if (metaKeyName != NULL && 0 != strcmp(metaKeyName, "nul"))
+         {
+            int len1 = strlen(newLabel);
+            int len2 = strlen(metaKeyName);
+            int bufSize = len1 + len2 + 2;
+            newLabelText = (char*)malloc(bufSize);
+            newLabel2 = newLabelText;
+            strcpy(newLabelText, newLabel);
+            strcat(newLabelText, "\t");
+            strcat(newLabelText, metaKeyName);
+            newLabelText[len1 + 1] = toupper(newLabelText[len1 + 1]);
+         }
+
+#ifndef LEGACY_WIN32
+         newLabel_unicode = utf8_to_utf16_string_alloc(newLabel2);
+         len = wcslen(newLabel_unicode);
+         menuItemInfo.cch = len;
+         menuItemInfo.dwTypeData = newLabel_unicode;
+         SetMenuItemInfoW(menu, index, true, &menuItemInfo);
+         free(newLabel_unicode);
+#else
+         newLabel_ansi = utf8_to_local_string_alloc(newLabel2);
+         len = strlen(newLabel_ansi);
+         menuItemInfo.cch = len;
+         menuItemInfo.dwTypeData = newLabel_ansi;
+         SetMenuItemInfoA(menu, index, true, &menuItemInfo);
+         free(newLabel_ansi);
+#endif
+         if (newLabelText)
+         {
+            free(newLabelText);
+         }
+      }
+      index++;
+   }
+}
+
+#else
+
+void win32_localize_menu(HMENU menu)
+{
+
+}
+
+#endif
+
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data)
 {
@@ -1259,14 +1455,17 @@ void win32_set_window(unsigned *width, unsigned *height,
 
       if (!fullscreen && settings->bools.ui_menubar_enable)
       {
+         HMENU menuItem;
          RECT rc_temp;
          rc_temp.left   = 0;
          rc_temp.top    = 0;
          rc_temp.right  = (LONG)*height;
          rc_temp.bottom = 0x7FFF;
 
-         SetMenu(main_window.hwnd,
-               LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
+         menuItem = LoadMenuA(GetModuleHandle(NULL), MAKEINTRESOURCE(IDR_MENU));
+         win32_localize_menu(menuItem);
+
+         SetMenu(main_window.hwnd, menuItem);
          SendMessage(main_window.hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
          g_win32_resize_height = *height += rc_temp.top + rect->top;
          SetWindowPos(main_window.hwnd, NULL, 0, 0, *width, *height, SWP_NOMOVE);
