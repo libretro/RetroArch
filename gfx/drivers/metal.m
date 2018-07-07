@@ -46,6 +46,9 @@
 
 #import "../video_coord_array.h"
 
+static bool metal_set_shader(void *data,
+                             enum rarch_shader_type type, const char *path);
+
 static void *metal_init(const video_info_t *video,
                         const input_driver_t **input,
                         void **input_data)
@@ -57,6 +60,15 @@ static void *metal_init(const video_info_t *video,
    {
       return NULL;
    }
+   
+   const char *shader_path = retroarch_get_shader_preset();
+   
+   if (shader_path)
+   {
+      enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_SLANG);
+      metal_set_shader(((__bridge void *)md), type, shader_path);
+   }
+   
    return (__bridge_retained void *)md;
 }
 
@@ -77,12 +89,16 @@ static bool metal_frame(void *data, const void *frame,
 
 static void metal_set_nonblock_state(void *data, bool non_block)
 {
-   RARCH_LOG("[Metal]: set non block: %s\n", non_block ? "ON" : "OFF");
    MetalDriver *md = (__bridge MetalDriver *)data;
    md.context.displaySyncEnabled = !non_block;
 }
 
 static bool metal_alive(void *data)
+{
+   return true;
+}
+
+static bool metal_has_windowed(void *data)
 {
    return true;
 }
@@ -129,7 +145,10 @@ static void metal_free(void *data)
 static void metal_set_viewport(void *data, unsigned viewport_width,
                                unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-   //RARCH_LOG("[Metal]: set_viewport %dx%d\n", viewport_width, viewport_height);
+//   RARCH_LOG("[Metal]: set_viewport size: %dx%d full: %s rotate: %s\n",
+//             viewport_width, viewport_height,
+//             force_full ? "YES" : "NO",
+//             allow_rotate ? "YES" : "NO");
 }
 
 static void metal_set_rotation(void *data, unsigned rotation)
@@ -174,6 +193,9 @@ static void metal_set_video_mode(void *data,
                                  unsigned width, unsigned height,
                                  bool fullscreen)
 {
+   RARCH_LOG("[Metal]: set_video_mode res=%dx%d fullscreen=%s\n",
+             width, height,
+             fullscreen ? "YES" : "NO");
    MetalDriver *md = (__bridge MetalDriver *)data;
    gfx_ctx_mode_t mode = {
       .width      = width,
@@ -397,6 +419,7 @@ video_driver_t video_metal = {
    .frame                  = metal_frame,
    .set_nonblock_state     = metal_set_nonblock_state,
    .alive                  = metal_alive,
+   .has_windowed           = metal_has_windowed,
    .focus                  = metal_focus,
    .suppress_screensaver   = metal_suppress_screensaver,
    .set_shader             = metal_set_shader,

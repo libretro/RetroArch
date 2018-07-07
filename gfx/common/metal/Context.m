@@ -280,7 +280,11 @@
       dispatch_semaphore_signal(inflight);
    }];
    
-   [_commandBuffer presentDrawable:self.nextDrawable];
+   if (self.nextDrawable)
+   {
+      [_commandBuffer presentDrawable:self.nextDrawable];
+   }
+   
    [_commandBuffer commit];
    
    _commandBuffer = nil;
