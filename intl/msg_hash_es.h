@@ -7382,3 +7382,43 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER,
     "Restablecer parámetro"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
+    "Descargar miniatura"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
+    "Ya hay un descarga en progreso"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
+    "Empezar en esta Playlist:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
+    "Descargar todas las miniaturas"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
+    "Sistema completo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
+    "Esta Playlist"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
+    "Miniaturas descargadas correctamente"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
+    "Exitos: %1 Fallos: %2"
+    )
+MSG_HASH(
+    MSG_DEVICE_CONFIGURED_IN_PORT,
+    "Configurado en puerto:"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SET_DISK,
+    "Fallo al establecer disco"
+    )
