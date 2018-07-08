@@ -29,6 +29,8 @@
                OpName %param_1 "param"
                OpDecorate %ShadowMap DescriptorSet 0
                OpDecorate %ShadowSamplerPCF DescriptorSet 0
+               OpDecorate %ShadowMap Binding 0
+               OpDecorate %ShadowSamplerPCF Binding 1
                OpDecorate %texCoords_1 Location 0
                OpDecorate %cascadeIndex_1 Location 1
                OpDecorate %fragDepth_1 Location 2

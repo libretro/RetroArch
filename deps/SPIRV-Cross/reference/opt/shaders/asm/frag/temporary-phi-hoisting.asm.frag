@@ -16,10 +16,11 @@ void main()
 {
     vec3 _28;
     _28 = vec3(0.0);
-    vec3 _29;
-    for (int _31 = 0; _31 < 4; _28 = _29, _31++)
+    for (int _31 = 0; _31 < 4; )
     {
-        _29 = _28 + _6.g_MyStruct[_31].color.xyz;
+        _28 += _6.g_MyStruct[_31].color.xyz;
+        _31++;
+        continue;
     }
     _entryPointOutput = vec4(_28, 1.0);
 }

@@ -28,6 +28,46 @@
 #include <CoreLocation/CoreLocation.h>
 #endif
 
+typedef enum apple_view_type {
+   APPLE_VIEW_TYPE_NONE,
+   APPLE_VIEW_TYPE_OPENGL_ES,
+   APPLE_VIEW_TYPE_OPENGL,
+   APPLE_VIEW_TYPE_VULKAN,
+   APPLE_VIEW_TYPE_METAL,
+} apple_view_type_t;
+
+#ifdef HAVE_METAL
+#import <MetalKit/MetalKit.h>
+
+@interface MetalView : MTKView
+@end
+
+#endif
+
+@protocol ApplePlatform
+
+/*! @brief renderView returns the current render view based on the viewType */
+@property (readonly) id renderView;
+
+/*! @brief isActive returns true if the application has focus */
+@property (readonly) bool hasFocus;
+
+@property (readwrite) apple_view_type_t viewType;
+
+/*! @brief setVideoMode adjusts the video display to the specified mode */
+- (void)setVideoMode:(gfx_ctx_mode_t)mode;
+
+/*! @brief setCursorVisible specifies whether the cursor is visible */
+- (void)setCursorVisible:(bool)v;
+
+/*! @brief controls whether the screen saver should be disabled and
+ * the displays should not sleep.
+ */
+- (bool)setDisableDisplaySleep:(bool)disable;
+@end
+
+extern id<ApplePlatform> apple_platform;
+
 #if defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
 
@@ -66,7 +106,7 @@ AVCaptureAudioDataOutputSampleBufferDelegate>
 @end
 
 @interface RetroArch_iOS : UINavigationController<UIApplicationDelegate,
-UINavigationControllerDelegate>
+UINavigationControllerDelegate, ApplePlatform>
 
 @property (nonatomic) UIWindow* window;
 @property (nonatomic) NSString* documentsDirectory;
@@ -101,13 +141,22 @@ void get_ios_version(int *major, int *minor);
 
 @end
 
-CocoaView* recreate_cocoa_view();
-
 #endif
 
 #define BOXSTRING(x) [NSString stringWithUTF8String:x]
 #define BOXINT(x)    [NSNumber numberWithInt:x]
 #define BOXUINT(x)   [NSNumber numberWithUnsignedInt:x]
 #define BOXFLOAT(x)  [NSNumber numberWithDouble:x]
+
+#if __has_feature(objc_arc)
+#define RELEASE(x)   x = nil
+#define BRIDGE       __bridge
+#define UNSAFE_UNRETAINED __unsafe_unretained
+#else
+#define RELEASE(x)   [x release]; \
+   x = nil
+#define BRIDGE
+#define UNSAFE_UNRETAINED
+#endif
 
 #endif

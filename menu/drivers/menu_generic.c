@@ -40,7 +40,8 @@ static enum action_iterate_type action_iterate_type(const char *label)
          string_is_equal(label, "help_loading_content") ||
          string_is_equal(label, "help_scanning_content") ||
          string_is_equal(label, "help_change_virtual_gamepad") ||
-         string_is_equal(label, "help_audio_video_troubleshooting")
+         string_is_equal(label, "help_audio_video_troubleshooting") ||
+         string_is_equal(label, "cheevos_description")
          )
       return ITERATE_TYPE_HELP;
    if (

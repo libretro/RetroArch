@@ -1,11 +1,11 @@
 //
-//Copyright (C) 2013-2016 LunarG, Inc.
+// Copyright (C) 2013-2016 LunarG, Inc.
 //
-//All rights reserved.
+// All rights reserved.
 //
-//Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions
-//are met:
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
 //
 //    Redistributions of source code must retain the above copyright
 //    notice, this list of conditions and the following disclaimer.
@@ -19,18 +19,18 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-//"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-//LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-//FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-//COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-//INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-//BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-//LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-//CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-//LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-//ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-//POSSIBILITY OF SUCH DAMAGE.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 //
 
 #include "../Include/Common.h"
@@ -63,7 +63,6 @@
 // there wasn't exactly one entry point.
 //
 
-   
 namespace glslang {
 
 //
@@ -132,8 +131,11 @@ public:
         for (int m = 0; m <= index; ++m) {
             // modify just the children's view of matrix layout, if there is one for this member
             TLayoutMatrix subMatrixLayout = memberList[m].type->getQualifier().layoutMatrix;
-            int memberAlignment = intermediate.getBaseAlignment(*memberList[m].type, memberSize, dummyStride, type.getQualifier().layoutPacking == ElpStd140,
-                                                                subMatrixLayout != ElmNone ? subMatrixLayout == ElmRowMajor : type.getQualifier().layoutMatrix == ElmRowMajor);
+            int memberAlignment = intermediate.getBaseAlignment(*memberList[m].type, memberSize, dummyStride,
+                                                                type.getQualifier().layoutPacking == ElpStd140,
+                                                                subMatrixLayout != ElmNone
+                                                                    ? subMatrixLayout == ElmRowMajor
+                                                                    : type.getQualifier().layoutMatrix == ElmRowMajor);
             RoundToPow2(offset, memberAlignment);
             if (m < index)
                 offset += memberSize;
@@ -152,7 +154,8 @@ public:
 
         int lastMemberSize;
         int dummyStride;
-        intermediate.getBaseAlignment(*memberList[lastIndex].type, lastMemberSize, dummyStride, blockType.getQualifier().layoutPacking == ElpStd140,
+        intermediate.getBaseAlignment(*memberList[lastIndex].type, lastMemberSize, dummyStride,
+                                      blockType.getQualifier().layoutPacking == ElpStd140,
                                       blockType.getQualifier().layoutMatrix == ElmRowMajor);
 
         return lastOffset + lastMemberSize;
@@ -168,7 +171,7 @@ public:
     void blowUpActiveAggregate(const TType& baseType, const TString& baseName, const TList<TIntermBinary*>& derefs,
                                TList<TIntermBinary*>::const_iterator deref, int offset, int blockIndex, int arraySize)
     {
-        // process the part of the derefence chain that was explicit in the shader
+        // process the part of the dereference chain that was explicit in the shader
         TString name = baseName;
         const TType* terminalType = &baseType;
         for (; deref != derefs.end(); ++deref) {
@@ -178,7 +181,7 @@ public:
             switch (visitNode->getOp()) {
             case EOpIndexIndirect:
                 // Visit all the indices of this array, and for each one add on the remaining dereferencing
-                for (int i = 0; i < visitNode->getLeft()->getType().getOuterArraySize(); ++i) {
+                for (int i = 0; i < std::max(visitNode->getLeft()->getType().getOuterArraySize(), 1); ++i) {
                     TString newBaseName = name;
                     if (baseType.getBasicType() != EbtBlock)
                         newBaseName.append(TString("[") + String(i) + "]");
@@ -213,7 +216,7 @@ public:
             if (terminalType->isArray()) {
                 // Visit all the indices of this array, and for each one,
                 // fully explode the remaining aggregate to dereference
-                for (int i = 0; i < terminalType->getOuterArraySize(); ++i) {
+                for (int i = 0; i < std::max(terminalType->getOuterArraySize(), 1); ++i) {
                     TString newBaseName = name;
                     newBaseName.append(TString("[") + String(i) + "]");
                     TType derefType(*terminalType, 0);
@@ -236,7 +239,7 @@ public:
         }
 
         // Finally, add a full string to the reflection database, and update the array size if necessary.
-        // If the derefenced entity to record is an array, compute the size and update the maximum size.
+        // If the dereferenced entity to record is an array, compute the size and update the maximum size.
 
         // there might not be a final array dereference, it could have been copied as an array object
         if (arraySize == 0)
@@ -245,7 +248,8 @@ public:
         TReflection::TNameToIndex::const_iterator it = reflection.nameToIndex.find(name);
         if (it == reflection.nameToIndex.end()) {
             reflection.nameToIndex[name] = (int)reflection.indexToUniform.size();
-            reflection.indexToUniform.push_back(TObjectReflection(name, *terminalType, offset, mapToGlType(*terminalType),
+            reflection.indexToUniform.push_back(TObjectReflection(name, *terminalType, offset,
+                                                                  mapToGlType(*terminalType),
                                                                   arraySize, blockIndex));
         } else if (arraySize > 1) {
             int& reflectedArraySize = reflection.indexToUniform[it->second].size;
@@ -355,7 +359,6 @@ public:
         return blockIndex;
     }
 
-
     // Are we at a level in a dereference chain at which individual active uniform queries are made?
     bool isReflectionGranularity(const TType& type)
     {
@@ -412,6 +415,36 @@ public:
                 case EsdBuffer:
                     return GL_SAMPLER_BUFFER;
                 }
+#ifdef AMD_EXTENSIONS
+            case EbtFloat16:
+                switch ((int)sampler.dim) {
+                case Esd1D:
+                    switch ((int)sampler.shadow) {
+                    case false: return sampler.arrayed ? GL_FLOAT16_SAMPLER_1D_ARRAY_AMD : GL_FLOAT16_SAMPLER_1D_AMD;
+                    case true:  return sampler.arrayed ? GL_FLOAT16_SAMPLER_1D_ARRAY_SHADOW_AMD : GL_FLOAT16_SAMPLER_1D_SHADOW_AMD;
+                    }
+                case Esd2D:
+                    switch ((int)sampler.ms) {
+                    case false:
+                        switch ((int)sampler.shadow) {
+                        case false: return sampler.arrayed ? GL_FLOAT16_SAMPLER_2D_ARRAY_AMD : GL_FLOAT16_SAMPLER_2D_AMD;
+                        case true:  return sampler.arrayed ? GL_FLOAT16_SAMPLER_2D_ARRAY_SHADOW_AMD : GL_FLOAT16_SAMPLER_2D_SHADOW_AMD;
+                        }
+                    case true:      return sampler.arrayed ? GL_FLOAT16_SAMPLER_2D_MULTISAMPLE_ARRAY_AMD : GL_FLOAT16_SAMPLER_2D_MULTISAMPLE_AMD;
+                    }
+                case Esd3D:
+                    return GL_FLOAT16_SAMPLER_3D_AMD;
+                case EsdCube:
+                    switch ((int)sampler.shadow) {
+                    case false: return sampler.arrayed ? GL_FLOAT16_SAMPLER_CUBE_MAP_ARRAY_AMD : GL_FLOAT16_SAMPLER_CUBE_AMD;
+                    case true:  return sampler.arrayed ? GL_FLOAT16_SAMPLER_CUBE_MAP_ARRAY_SHADOW_AMD : GL_FLOAT16_SAMPLER_CUBE_SHADOW_AMD;
+                    }
+                case EsdRect:
+                    return sampler.shadow ? GL_FLOAT16_SAMPLER_2D_RECT_SHADOW_AMD : GL_FLOAT16_SAMPLER_2D_RECT_AMD;
+                case EsdBuffer:
+                    return GL_FLOAT16_SAMPLER_BUFFER_AMD;
+                }
+#endif
             case EbtInt:
                 switch ((int)sampler.dim) {
                 case Esd1D:
@@ -419,7 +452,8 @@ public:
                 case Esd2D:
                     switch ((int)sampler.ms) {
                     case false:  return sampler.arrayed ? GL_INT_SAMPLER_2D_ARRAY : GL_INT_SAMPLER_2D;
-                    case true:   return sampler.arrayed ? GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY : GL_INT_SAMPLER_2D_MULTISAMPLE;
+                    case true:   return sampler.arrayed ? GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY
+                                                        : GL_INT_SAMPLER_2D_MULTISAMPLE;
                     }
                 case Esd3D:
                     return GL_INT_SAMPLER_3D;
@@ -437,7 +471,8 @@ public:
                 case Esd2D:
                     switch ((int)sampler.ms) {
                     case false:  return sampler.arrayed ? GL_UNSIGNED_INT_SAMPLER_2D_ARRAY : GL_UNSIGNED_INT_SAMPLER_2D;
-                    case true:   return sampler.arrayed ? GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY : GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE;
+                    case true:   return sampler.arrayed ? GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY
+                                                        : GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE;
                     }
                 case Esd3D:
                     return GL_UNSIGNED_INT_SAMPLER_3D;
@@ -472,6 +507,26 @@ public:
                 case EsdBuffer:
                     return GL_IMAGE_BUFFER;
                 }
+#ifdef AMD_EXTENSIONS
+            case EbtFloat16:
+                switch ((int)sampler.dim) {
+                case Esd1D:
+                    return sampler.arrayed ? GL_FLOAT16_IMAGE_1D_ARRAY_AMD : GL_FLOAT16_IMAGE_1D_AMD;
+                case Esd2D:
+                    switch ((int)sampler.ms) {
+                    case false:     return sampler.arrayed ? GL_FLOAT16_IMAGE_2D_ARRAY_AMD : GL_FLOAT16_IMAGE_2D_AMD;
+                    case true:      return sampler.arrayed ? GL_FLOAT16_IMAGE_2D_MULTISAMPLE_ARRAY_AMD : GL_FLOAT16_IMAGE_2D_MULTISAMPLE_AMD;
+                    }
+                case Esd3D:
+                    return GL_FLOAT16_IMAGE_3D_AMD;
+                case EsdCube:
+                    return sampler.arrayed ? GL_FLOAT16_IMAGE_CUBE_MAP_ARRAY_AMD : GL_FLOAT16_IMAGE_CUBE_AMD;
+                case EsdRect:
+                    return GL_FLOAT16_IMAGE_2D_RECT_AMD;
+                case EsdBuffer:
+                    return GL_FLOAT16_IMAGE_BUFFER_AMD;
+                }
+#endif
             case EbtInt:
                 switch ((int)sampler.dim) {
                 case Esd1D:
@@ -497,7 +552,8 @@ public:
                 case Esd2D:
                     switch ((int)sampler.ms) {
                     case false:  return sampler.arrayed ? GL_UNSIGNED_INT_IMAGE_2D_ARRAY : GL_UNSIGNED_INT_IMAGE_2D;
-                    case true:   return sampler.arrayed ? GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY : GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE;
+                    case true:   return sampler.arrayed ? GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY
+                                                        : GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE;
                     }
                 case Esd3D:
                     return GL_UNSIGNED_INT_IMAGE_3D;
@@ -694,18 +750,45 @@ void TReflectionTraverser::visitSymbol(TIntermSymbol* base)
         addAttribute(*base);
 }
 
-
 //
 // Implement TReflection methods.
 //
 
+// Track any required attribute reflection, such as compute shader numthreads.
+//
+void TReflection::buildAttributeReflection(EShLanguage stage, const TIntermediate& intermediate)
+{
+    if (stage == EShLangCompute) {
+        // Remember thread dimensions
+        for (int dim=0; dim<3; ++dim)
+            localSize[dim] = intermediate.getLocalSize(dim);
+    }
+}
+
+// build counter block index associations for buffers
+void TReflection::buildCounterIndices(const TIntermediate& intermediate)
+{
+    // search for ones that have counters
+    for (int i = 0; i < int(indexToUniformBlock.size()); ++i) {
+        const TString counterName(intermediate.addCounterBufferName(indexToUniformBlock[i].name));
+        const int index = getIndex(counterName);
+
+        if (index >= 0)
+            indexToUniformBlock[i].counterIndex = index;
+    }
+}
+
 // Merge live symbols from 'intermediate' into the existing reflection database.
 //
 // Returns false if the input is too malformed to do this.
-bool TReflection::addStage(EShLanguage, const TIntermediate& intermediate)
+bool TReflection::addStage(EShLanguage stage, const TIntermediate& intermediate)
 {
-    if (intermediate.getNumEntryPoints() != 1 || intermediate.isRecursive())
+    if (intermediate.getTreeRoot() == nullptr ||
+        intermediate.getNumEntryPoints() != 1 ||
+        intermediate.isRecursive())
         return false;
+
+    buildAttributeReflection(stage, intermediate);
 
     TReflectionTraverser it(intermediate, *this);
 
@@ -718,6 +801,8 @@ bool TReflection::addStage(EShLanguage, const TIntermediate& intermediate)
         it.functions.pop_back();
         function->traverse(&it);
     }
+
+    buildCounterIndices(intermediate);
 
     return true;
 }
@@ -739,10 +824,20 @@ void TReflection::dump()
         indexToAttribute[i].dump();
     printf("\n");
 
-    //printf("Live names\n");
-    //for (TNameToIndex::const_iterator it = nameToIndex.begin(); it != nameToIndex.end(); ++it)
+    if (getLocalSize(0) > 1) {
+        static const char* axis[] = { "X", "Y", "Z" };
+
+        for (int dim=0; dim<3; ++dim)
+            if (getLocalSize(dim) > 1)
+                printf("Local size %s: %d\n", axis[dim], getLocalSize(dim));
+
+        printf("\n");
+    }
+
+    // printf("Live names\n");
+    // for (TNameToIndex::const_iterator it = nameToIndex.begin(); it != nameToIndex.end(); ++it)
     //    printf("%s: %d\n", it->first.c_str(), it->second);
-    //printf("\n");
+    // printf("\n");
 }
 
 } // end namespace glslang

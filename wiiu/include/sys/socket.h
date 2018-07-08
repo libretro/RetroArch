@@ -22,12 +22,16 @@ extern "C" {
 
 #define SO_REUSEADDR    0x0004
 #define SO_NBIO         0x1014
+#define SO_NONBLOCK     0x1016
 
 
 /* return codes */
 #define SO_SUCCESS      0
 #define SO_EWOULDBLOCK  6
 
+#define EWOULDBLOCK SO_EWOULDBLOCK
+#define EAGAIN SO_EWOULDBLOCK
+#define ENOBUFS 105 /* No buffer space available */
 
 typedef uint32_t socklen_t;
 typedef uint16_t sa_family_t;

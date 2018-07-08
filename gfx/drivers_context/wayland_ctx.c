@@ -42,6 +42,10 @@
 #include "../common/gl_common.h"
 #endif
 
+#ifdef HAVE_DBUS
+#include "../common/dbus_common.h"
+#endif
+
 #include "../common/wayland_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
@@ -601,6 +605,11 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 
    wl->width      = 0;
    wl->height     = 0;
+
+#ifdef HAVE_DBUS
+   dbus_screensaver_uninhibit();
+   dbus_close_connection();
+#endif
 }
 
 void flush_wayland_fd(void *data)
@@ -688,7 +697,8 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
          {
             wl->vk.context.invalid_swapchain = true;
-            vulkan_acquire_next_image(&wl->vk);
+            if (wl->vk.created_new_swapchain)
+               vulkan_acquire_next_image(&wl->vk);
          }
          else
          {
@@ -921,6 +931,10 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    wl->cursor.theme = wl_cursor_theme_load(NULL, 16, wl->shm);
    wl->cursor.default_cursor = wl_cursor_theme_get_cursor(wl->cursor.theme, "left_ptr");
    flush_wayland_fd(&wl->input);
+
+#ifdef HAVE_DBUS
+   dbus_ensure_connection();
+#endif
 
    return wl;
 
@@ -1191,6 +1205,11 @@ static bool gfx_ctx_wl_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
    (void)enable;
+
+#ifdef HAVE_DBUS
+   return dbus_suspend_screensaver(enable);
+#endif
+
    return true;
 }
 

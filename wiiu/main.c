@@ -50,7 +50,8 @@ void __init(void);
 static void fsdev_init(void);
 static void fsdev_exit(void);
 
-static int iosuhaxMount = 0;
+bool iosuhaxMount = 0;
+
 static int mcp_hook_fd = -1;
 
 /* HBL elf entry point */
@@ -163,35 +164,69 @@ void MCPHookClose(void)
    mcp_hook_fd = -1;
 }
 
+static bool try_init_iosuhax(void)
+{
+   int result = IOSUHAX_Open(NULL);
+   if(result < 0)
+      result = MCPHookOpen();
+
+   return (result < 0) ? false : true;
+}
+
+static void try_shutdown_iosuhax(void)
+{
+  if(!iosuhaxMount)
+    return;
+
+  if (mcp_hook_fd >= 0)
+    MCPHookClose();
+  else
+    IOSUHAX_Close();
+
+  iosuhaxMount = false;
+}
+
+/**
+ * Mount the filesystem(s) needed by the application. By default, we
+ * mount the SD card to /sd.
+ *
+ * The 'iosuhaxMount' symbol used here is public and can be referenced
+ * in overriding implementations.
+ */
+__attribute__((weak))
+void __mount_filesystems(void)
+{
+   if(iosuhaxMount)
+      fatInitDefault();
+   else
+      mount_sd_fat("sd");
+}
+
+/**
+ * Unmount filesystems. Implementing applications should be careful to
+ * clean up anything mounted in __mount_filesystems() here.
+ */
+__attribute__((weak))
+void __unmount_filesystems(void)
+{
+  if (iosuhaxMount)
+  {
+    fatUnmount("sd:");
+    fatUnmount("usb:");
+  }
+  else
+    unmount_sd_fat("sd");
+}
+
 static void fsdev_init(void)
 {
-   iosuhaxMount = 0;
-   int res = IOSUHAX_Open(NULL);
+   iosuhaxMount = try_init_iosuhax();
 
-   if (res < 0)
-      res = MCPHookOpen();
-
-   if (res < 0)
-      mount_sd_fat("sd");
-   else
-   {
-      iosuhaxMount = 1;
-      fatInitDefault();
-   }
+   __mount_filesystems();
 }
 
 static void fsdev_exit(void)
 {
-   if (iosuhaxMount)
-   {
-      fatUnmount("sd:");
-      fatUnmount("usb:");
-
-      if (mcp_hook_fd >= 0)
-         MCPHookClose();
-      else
-         IOSUHAX_Close();
-   }
-   else
-      unmount_sd_fat("sd");
+   __unmount_filesystems();
+   try_shutdown_iosuhax();
 }

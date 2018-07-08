@@ -205,13 +205,13 @@ void input_mapper_poll(input_mapper_t *handle)
                   settings->uints.input_remap_ids[i][k];
 
                if (
-                     (abs(current_axis_value) > 
-                     *input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD) * 32767) && 
-                     (k != remap_axis)         &&
+                     (abs(current_axis_value) > 0 &&
+                     (k != remap_axis)            &&
                      (remap_axis != RARCH_UNMAPPED)
-                  )
+                  ))
                {
-                  if (remap_axis < RARCH_FIRST_CUSTOM_BIND)
+                  if (remap_axis < RARCH_FIRST_CUSTOM_BIND && 
+                     abs(current_axis_value) > *input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD) * 32767)
                   {
                      BIT256_SET(handle->buttons[i], remap_axis);
                   }

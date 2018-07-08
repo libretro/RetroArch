@@ -3,15 +3,15 @@
 
 using namespace metal;
 
-struct main0_in
-{
-    float2 vUV [[user(locn2)]];
-    float3 vNormal [[user(locn1)]];
-};
-
 struct main0_out
 {
     float4 FragColor [[color(0)]];
+};
+
+struct main0_in
+{
+    float3 vNormal [[user(locn1)]];
+    float2 vUV [[user(locn2)]];
 };
 
 fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> samp [[texture(0)]], sampler sampSmplr [[sampler(0)]])

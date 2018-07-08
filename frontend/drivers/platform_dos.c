@@ -70,5 +70,6 @@ frontend_ctx_driver_t frontend_ctx_dos = {
    NULL,                         /* detach_console */
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
+   NULL,                         /* set_sustained_performance_mode */
    "dos",
 };

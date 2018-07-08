@@ -39,7 +39,7 @@ vertex main0_out main0(constant UBO& _22 [[buffer(0)]])
     out.oA = _22.A;
     out.oB = float4(_22.B0, _22.B1);
     out.oC = float4(_22.C0, _22.C1) + float4(_22.C1.xy, _22.C1.z, _22.C0);
-    out.oD = float4(_22.D0, _22.D1) + float4(float3(_22.D0).xy, float3(_22.D0).z, _22.D1);
+    out.oD = float4(_22.D0[0], _22.D0[1], _22.D0[2], _22.D1) + float4(_22.D0[0], _22.D0[1], _22.D0[2u], _22.D1);
     out.oE = float4(_22.E0, _22.E1, _22.E2, _22.E3);
     out.oF = float4(_22.F0, _22.F1, _22.F2);
     return out;

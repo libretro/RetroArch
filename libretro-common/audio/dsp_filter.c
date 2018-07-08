@@ -178,8 +178,8 @@ static bool append_plugs(retro_dsp_filter_t *dsp, struct string_list *list)
 static bool append_plugs(retro_dsp_filter_t *dsp, struct string_list *list)
 {
    unsigned i;
-   dspfilter_simd_mask_t mask = cpu_features_get();
-   unsigned list_size         = list ? list->size : 0;
+   dspfilter_simd_mask_t mask = (dspfilter_simd_mask_t)cpu_features_get();
+   unsigned list_size         = list ? (unsigned)list->size : 0;
 
    for (i = 0; i < list_size; i++)
    {

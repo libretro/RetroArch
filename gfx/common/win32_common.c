@@ -741,9 +741,13 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          if (  wparam != SIZE_MAXHIDE && 
                wparam != SIZE_MINIMIZED)
          {
-            g_win32_resize_width  = LOWORD(lparam);
-            g_win32_resize_height = HIWORD(lparam);
-            g_win32_resized       = true;
+            if (LOWORD(lparam) != g_win32_resize_width ||
+                  HIWORD(lparam) != g_win32_resize_height)
+            {
+               g_win32_resize_width  = LOWORD(lparam);
+               g_win32_resize_height = HIWORD(lparam);
+               g_win32_resized       = true;
+            }
          }
          *quit = true;
          break;
@@ -1113,12 +1117,7 @@ void win32_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
 #if !defined(_XBOX)
-   const ui_application_t *application =
-      ui_companion_driver_get_application_ptr();
-   if (application)
-      application->process_events();
    *quit            = g_win32_quit;
-#endif
 
    if (g_win32_resized)
    {
@@ -1127,6 +1126,7 @@ void win32_check_window(bool *quit, bool *resize,
       *height             = g_win32_resize_height;
       g_win32_resized     = false;
    }
+#endif
 }
 
 bool win32_suppress_screensaver(void *data, bool enable)

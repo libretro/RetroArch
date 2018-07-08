@@ -16,6 +16,8 @@
                OpName %_entryPointOutput "@entryPointOutput"
                OpDecorate %pointLightShadowMap DescriptorSet 0
                OpDecorate %shadowSamplerPCF DescriptorSet 0
+               OpDecorate %pointLightShadowMap Binding 0
+               OpDecorate %shadowSamplerPCF Binding 1
                OpDecorate %_entryPointOutput Location 0
        %void = OpTypeVoid
           %3 = OpTypeFunction %void

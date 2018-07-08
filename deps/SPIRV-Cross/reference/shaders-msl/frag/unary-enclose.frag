@@ -3,15 +3,15 @@
 
 using namespace metal;
 
-struct main0_in
-{
-    int4 vIn1 [[user(locn1)]];
-    float4 vIn [[user(locn0)]];
-};
-
 struct main0_out
 {
     float4 FragColor [[color(0)]];
+};
+
+struct main0_in
+{
+    float4 vIn [[user(locn0)]];
+    int4 vIn1 [[user(locn1)]];
 };
 
 fragment main0_out main0(main0_in in [[stage_in]])

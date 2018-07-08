@@ -66,14 +66,26 @@ public:
 	{
 	}
 
+	SPIRV_CROSS_DEPRECATED("CompilerHLSL::get_options() is obsolete, use get_hlsl_options() instead.")
 	const Options &get_options() const
 	{
-		return options;
+		return hlsl_options;
 	}
 
+	const Options &get_hlsl_options() const
+	{
+		return hlsl_options;
+	}
+
+	SPIRV_CROSS_DEPRECATED("CompilerHLSL::get_options() is obsolete, use set_hlsl_options() instead.")
 	void set_options(Options &opts)
 	{
-		options = opts;
+		hlsl_options = opts;
+	}
+
+	void set_hlsl_options(const Options &opts)
+	{
+		hlsl_options = opts;
 	}
 
 	// Optionally specify a custom root constant layout.
@@ -106,10 +118,10 @@ public:
 
 private:
 	std::string type_to_glsl(const SPIRType &type, uint32_t id = 0) override;
-	std::string image_type_hlsl(const SPIRType &type);
-	std::string image_type_hlsl_modern(const SPIRType &type);
-	std::string image_type_hlsl_legacy(const SPIRType &type);
-	void emit_function_prototype(SPIRFunction &func, uint64_t return_flags) override;
+	std::string image_type_hlsl(const SPIRType &type, uint32_t id);
+	std::string image_type_hlsl_modern(const SPIRType &type, uint32_t id);
+	std::string image_type_hlsl_legacy(const SPIRType &type, uint32_t id);
+	void emit_function_prototype(SPIRFunction &func, const Bitset &return_flags) override;
 	void emit_hlsl_entry_point();
 	void emit_header() override;
 	void emit_resources();
@@ -131,7 +143,7 @@ private:
 	void emit_fixup() override;
 	std::string builtin_to_glsl(spv::BuiltIn builtin, spv::StorageClass storage) override;
 	std::string layout_for_member(const SPIRType &type, uint32_t index) override;
-	std::string to_interpolation_qualifiers(uint64_t flags) override;
+	std::string to_interpolation_qualifiers(const Bitset &flags) override;
 	std::string bitcast_glsl_op(const SPIRType &result_type, const SPIRType &argument_type) override;
 	std::string to_func_call_arg(uint32_t id) override;
 	std::string to_sampler_expression(uint32_t id);
@@ -145,16 +157,20 @@ private:
 	void write_access_chain(const SPIRAccessChain &chain, uint32_t value);
 	void emit_store(const Instruction &instruction);
 	void emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op);
+	void emit_subgroup_op(const Instruction &i) override;
+	void emit_block_hints(const SPIRBlock &block) override;
 
 	void emit_struct_member(const SPIRType &type, uint32_t member_type_id, uint32_t index, const std::string &qualifier,
 	                        uint32_t base_offset = 0) override;
 
 	const char *to_storage_qualifiers_glsl(const SPIRVariable &var) override;
+	void replace_illegal_names() override;
 
-	Options options;
+	Options hlsl_options;
 	bool requires_op_fmod = false;
 	bool requires_textureProj = false;
 	bool requires_fp16_packing = false;
+	bool requires_explicit_fp16_packing = false;
 	bool requires_unorm8_packing = false;
 	bool requires_snorm8_packing = false;
 	bool requires_unorm16_packing = false;
@@ -206,6 +222,6 @@ private:
 	// when translating push constant ranges.
 	std::vector<RootConstants> root_constants_layout;
 };
-}
+} // namespace spirv_cross
 
 #endif

@@ -541,8 +541,8 @@ struct netplay
    int frame_run_time_ptr;
    retro_time_t frame_run_time_sum, frame_run_time_avg;
 
-   /* Latency frames and limits */
-   unsigned input_latency_frames;
+   /* Latency frames; positive to hide network latency, negative to hide input latency */
+   int input_latency_frames;
 
    /* Are we stalled? */
    enum rarch_netplay_stall_reason stall;

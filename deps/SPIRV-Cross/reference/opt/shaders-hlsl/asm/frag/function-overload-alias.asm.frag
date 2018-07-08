@@ -7,7 +7,7 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    FragColor = (((1.0f.xxxx + 1.0f.xxxx) + (1.0f.xxx.xyzz + 1.0f.xxxx)) + (1.0f.xxxx + 2.0f.xxxx)) + (1.0f.xx.xyxy + 2.0f.xxxx);
+    FragColor = 10.0f.xxxx;
 }
 
 SPIRV_Cross_Output main()

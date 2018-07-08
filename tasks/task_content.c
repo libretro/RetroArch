@@ -796,8 +796,9 @@ static bool content_file_init(
          !content_file_init_set_attribs(content, special, content_ctx, error_string))
       return false;
 
-   info                   = (struct retro_game_info*)
-      calloc(content->size, sizeof(*info));
+   if (content->size > 0)
+      info                   = (struct retro_game_info*)
+         calloc(content->size, sizeof(*info));
 
    if (info)
    {
@@ -1767,7 +1768,7 @@ void content_set_subsystem(unsigned idx)
 {
    rarch_system_info_t                  *system = runloop_get_system_info();
    const struct retro_subsystem_info *subsystem = system ?
-	   system->subsystem.data + pending_subsystem_id : NULL;
+	   system->subsystem.data + idx : NULL;
 
    pending_subsystem_id                         = idx;
 

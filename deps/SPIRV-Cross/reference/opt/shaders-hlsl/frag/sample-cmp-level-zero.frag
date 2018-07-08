@@ -41,9 +41,7 @@ void frag_main()
 {
     float4 _80 = vDirRef;
     _80.z = vDirRef.w;
-    float4 _87 = vDirRef;
-    _87.z = vDirRef.w;
-    FragColor = (((((((uSampler2D.SampleCmp(_uSampler2D_sampler, vUVRef.xy, vUVRef.z, int2(-1, -1)) + uSampler2DArray.SampleCmp(_uSampler2DArray_sampler, vDirRef.xyz, vDirRef.w, int2(-1, -1))) + uSamplerCube.SampleCmp(_uSamplerCube_sampler, vDirRef.xyz, vDirRef.w)) + uSamplerCubeArray.SampleCmp(_uSamplerCubeArray_sampler, vDirRef, 0.5f)) + uSampler2D.SampleCmpLevelZero(_uSampler2D_sampler, vUVRef.xy, vUVRef.z, int2(-1, -1))) + uSampler2DArray.SampleCmpLevelZero(_uSampler2DArray_sampler, vDirRef.xyz, vDirRef.w, int2(-1, -1))) + uSamplerCube.SampleCmpLevelZero(_uSamplerCube_sampler, vDirRef.xyz, vDirRef.w)) + uSampler2D.SampleCmp(_uSampler2D_sampler, SPIRV_Cross_projectTextureCoordinate(_80.xyz), vDirRef.z, int2(1, 1))) + uSampler2D.SampleCmpLevelZero(_uSampler2D_sampler, SPIRV_Cross_projectTextureCoordinate(_87.xyz), vDirRef.z, int2(1, 1));
+    FragColor = (((((((uSampler2D.SampleCmp(_uSampler2D_sampler, vUVRef.xy, vUVRef.z, int2(-1, -1)) + uSampler2DArray.SampleCmp(_uSampler2DArray_sampler, vDirRef.xyz, vDirRef.w, int2(-1, -1))) + uSamplerCube.SampleCmp(_uSamplerCube_sampler, vDirRef.xyz, vDirRef.w)) + uSamplerCubeArray.SampleCmp(_uSamplerCubeArray_sampler, vDirRef, 0.5f)) + uSampler2D.SampleCmpLevelZero(_uSampler2D_sampler, vUVRef.xy, vUVRef.z, int2(-1, -1))) + uSampler2DArray.SampleCmpLevelZero(_uSampler2DArray_sampler, vDirRef.xyz, vDirRef.w, int2(-1, -1))) + uSamplerCube.SampleCmpLevelZero(_uSamplerCube_sampler, vDirRef.xyz, vDirRef.w)) + uSampler2D.SampleCmp(_uSampler2D_sampler, SPIRV_Cross_projectTextureCoordinate(_80.xyz), vDirRef.z, int2(1, 1))) + uSampler2D.SampleCmpLevelZero(_uSampler2D_sampler, SPIRV_Cross_projectTextureCoordinate(_80.xyz), vDirRef.z, int2(1, 1));
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)

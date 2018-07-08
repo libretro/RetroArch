@@ -76,6 +76,7 @@
 #include "../record/record_driver.h"
 #include "../audio/audio_driver.h"
 #include "../input/input_driver.h"
+#include "../midi/midi_driver.h"
 #include "../tasks/tasks_internal.h"
 #include "../config.def.h"
 #include "../ui/ui_companion_driver.h"
@@ -113,6 +114,7 @@ enum settings_list_type
    SETTINGS_LIST_MENU_FILE_BROWSER,
    SETTINGS_LIST_MULTIMEDIA,
    SETTINGS_LIST_USER_INTERFACE,
+   SETTINGS_LIST_POWER_MANAGEMENT,
    SETTINGS_LIST_PLAYLIST,
    SETTINGS_LIST_CHEEVOS,
    SETTINGS_LIST_CORE_UPDATER,
@@ -122,7 +124,8 @@ enum settings_list_type
    SETTINGS_LIST_USER_ACCOUNTS,
    SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
    SETTINGS_LIST_DIRECTORY,
-   SETTINGS_LIST_PRIVACY
+   SETTINGS_LIST_PRIVACY,
+   SETTINGS_LIST_MIDI
 };
 
 struct bool_entry
@@ -345,6 +348,90 @@ static int setting_string_action_right_driver(void *data,
       setting->change_handler(setting);
 
    return 0;
+}
+
+int setting_string_action_left_midi_input(void *data, bool wraparound)
+{
+   struct string_list *list = midi_driver_get_avail_inputs();
+
+   if (list && list->size > 1)
+   {
+      rarch_setting_t *setting = (rarch_setting_t*)data;
+      int i = string_list_find_elem(list, setting->value.target.string) - 2;
+
+      if (wraparound && i == -1)
+         i = (int)list->size - 1;
+      if (i >= 0)
+      {
+         strlcpy(setting->value.target.string, list->elems[i].data, setting->size);
+         return 0;
+      }
+   }
+
+   return -1;
+}
+
+int setting_string_action_right_midi_input(void *data, bool wraparound)
+{
+   struct string_list *list = midi_driver_get_avail_inputs();
+
+   if (list && list->size > 1)
+   {
+      rarch_setting_t *setting = (rarch_setting_t*)data;
+      int i = string_list_find_elem(list, setting->value.target.string);
+
+      if (wraparound && i == (int)list->size)
+         i = 0;
+      if (i >= 0 && i < (int)list->size)
+      {
+         strlcpy(setting->value.target.string, list->elems[i].data, setting->size);
+         return 0;
+      }
+   }
+
+   return -1;
+}
+
+int setting_string_action_left_midi_output(void *data, bool wraparound)
+{
+   struct string_list *list = midi_driver_get_avail_outputs();
+
+   if (list && list->size > 1)
+   {
+      rarch_setting_t *setting = (rarch_setting_t*)data;
+      int i = string_list_find_elem(list, setting->value.target.string) - 2;
+
+      if (wraparound && i == -1)
+         i = (int)list->size - 1;
+      if (i >= 0)
+      {
+         strlcpy(setting->value.target.string, list->elems[i].data, setting->size);
+         return 0;
+      }
+   }
+
+   return -1;
+}
+
+int setting_string_action_right_midi_output(void *data, bool wraparound)
+{
+   struct string_list *list = midi_driver_get_avail_outputs();
+
+   if (list && list->size > 1)
+   {
+      rarch_setting_t *setting = (rarch_setting_t*)data;
+      int i = string_list_find_elem(list, setting->value.target.string);
+
+      if (wraparound && i == (int)list->size)
+         i = 0;
+      if (i >= 0 && i < (int)list->size)
+      {
+         strlcpy(setting->value.target.string, list->elems[i].data, setting->size);
+         return 0;
+      }
+   }
+
+   return -1;
 }
 
 static void setting_get_string_representation_uint_video_rotation(void *data,
@@ -1537,6 +1624,18 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS:
          video_display_server_set_window_decorations(settings->bools.video_window_show_decorations);
          break;
+      case MENU_ENUM_LABEL_MIDI_INPUT:
+         midi_driver_set_input(settings->arrays.midi_input);
+         break;
+      case MENU_ENUM_LABEL_MIDI_OUTPUT:
+         midi_driver_set_output(settings->arrays.midi_output);
+         break;
+      case MENU_ENUM_LABEL_MIDI_VOLUME:
+         midi_driver_set_volume(settings->uints.midi_volume);
+         break;
+      case MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE:
+         frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
+         break;
       default:
          break;
    }
@@ -2260,6 +2359,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2276,6 +2376,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2403,6 +2504,15 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
                MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
                &group_info,
@@ -2495,6 +2605,15 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_MIDI_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
          for (user = 0; user < MAX_USERS; user++)
             setting_append_list_input_player_options(list, list_info, parent_group, user);
 
@@ -2504,7 +2623,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_DRIVERS:
          {
             unsigned i;
-            struct string_options_entry string_options_entries[10];
+            struct string_options_entry string_options_entries[11];
 
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DRIVER_SETTINGS);
@@ -2583,6 +2702,13 @@ static bool setting_append_list(
             string_options_entries[9].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_RECORD_DRIVER;
             string_options_entries[9].default_value  = config_get_default_record();
             string_options_entries[9].values         = config_get_record_driver_options();
+
+            string_options_entries[10].target         = settings->arrays.midi_driver;
+            string_options_entries[10].len            = sizeof(settings->arrays.midi_driver);
+            string_options_entries[10].name_enum_idx  = MENU_ENUM_LABEL_MIDI_DRIVER;
+            string_options_entries[10].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_MIDI_DRIVER;
+            string_options_entries[10].default_value  = config_get_default_midi();
+            string_options_entries[10].values         = config_get_midi_driver_options();
 
             for (i = 0; i < ARRAY_SIZE(string_options_entries); i++)
             {
@@ -4422,6 +4548,20 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
+                  &settings->uints.input_bind_hold,
+                  MENU_ENUM_LABEL_INPUT_BIND_HOLD,
+                  MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
+                  input_bind_hold,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 1, 0, 1, true, false);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_UINT(
+                  list, list_info,
                   &settings->uints.input_turbo_period,
                   MENU_ENUM_LABEL_INPUT_TURBO_PERIOD,
                   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
@@ -5811,6 +5951,21 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_show_shutdown,
+                  MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN,
+                  MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
+                  menu_show_shutdown,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 #endif
 
 #ifdef HAVE_XMB
@@ -5895,7 +6050,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_content_show_video,
@@ -6247,6 +6402,34 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
+      case SETTINGS_LIST_POWER_MANAGEMENT:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS),
+               parent_group);
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+#ifdef ANDROID
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.sustained_performance_mode,
+               MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE,
+               MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
+               sustained_performance_mode,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -7872,6 +8055,23 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
+#ifdef HAVE_DISCORD
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.discord_enable,
+               MENU_ENUM_LABEL_DISCORD_ALLOW,
+               MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
+
          if (string_is_not_equal(settings->arrays.location_driver, "null"))
          {
             CONFIG_BOOL(
@@ -7889,6 +8089,63 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
          }
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
+      case SETTINGS_LIST_MIDI:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS), parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_MIDI_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State",
+               &group_info, &subgroup_info, parent_group);
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.midi_input,
+               sizeof(settings->arrays.midi_input),
+               MENU_ENUM_LABEL_MIDI_INPUT,
+               MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+               midi_input,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_midi_input;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_midi_input;
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.midi_output,
+               sizeof(settings->arrays.midi_output),
+               MENU_ENUM_LABEL_MIDI_OUTPUT,
+               MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+               midi_output,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_midi_output;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_midi_output;
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.midi_volume,
+               MENU_ENUM_LABEL_MIDI_VOLUME,
+               MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
+               midi_volume,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 0.0f, 100.0f, 1.0f, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -8002,6 +8259,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_MENU_FILE_BROWSER,
       SETTINGS_LIST_MULTIMEDIA,
       SETTINGS_LIST_USER_INTERFACE,
+      SETTINGS_LIST_POWER_MANAGEMENT,
       SETTINGS_LIST_PLAYLIST,
       SETTINGS_LIST_CHEEVOS,
       SETTINGS_LIST_CORE_UPDATER,
@@ -8011,7 +8269,8 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_USER_ACCOUNTS,
       SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
       SETTINGS_LIST_DIRECTORY,
-      SETTINGS_LIST_PRIVACY
+      SETTINGS_LIST_PRIVACY,
+      SETTINGS_LIST_MIDI
    };
    const char *root                     = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
    rarch_setting_t *list                = (rarch_setting_t*)calloc(

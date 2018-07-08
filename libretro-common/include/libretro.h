@@ -857,26 +857,39 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_SET_CONTROLLER_INFO 35
                                            /* const struct retro_controller_info * --
                                             * This environment call lets a libretro core tell the frontend
-                                            * which controller types are recognized in calls to
+                                            * which controller subclasses are recognized in calls to
                                             * retro_set_controller_port_device().
                                             *
-                                            * Some emulators such as Super Nintendo
-                                            * support multiple lightgun types which must be specifically
-                                            * selected from.
-                                            * It is therefore sometimes necessary for a frontend to be able
-                                            * to tell the core about a special kind of input device which is
-                                            * not covered by the libretro input API.
+                                            * Some emulators such as Super Nintendo support multiple lightgun
+                                            * types which must be specifically selected from. It is therefore
+                                            * sometimes necessary for a frontend to be able to tell the core
+                                            * about a special kind of input device which is not specifcally
+                                            * provided by the Libretro API.
                                             *
-                                            * In order for a frontend to understand the workings of an input device,
-                                            * it must be a specialized type
-                                            * of the generic device types already defined in the libretro API.
+                                            * In order for a frontend to understand the workings of those devices,
+                                            * they must be defined as a specialized subclass of the generic device
+                                            * types already defined in the libretro API.
                                             *
-                                            * Which devices are supported can vary per input port.
                                             * The core must pass an array of const struct retro_controller_info which
-                                            * is terminated with a blanked out struct. Each element of the struct
-                                            * corresponds to an ascending port index to
-                                            * retro_set_controller_port_device().
-                                            * Even if special device types are set in the libretro core,
+                                            * is terminated with a blanked out struct. Each element of the 
+                                            * retro_controller_info struct corresponds to the ascending port index
+                                            * that is passed to retro_set_controller_port_device() when that function
+                                            * is called to indicate to the core that the frontend has changed the
+                                            * active device subclass. SEE ALSO: retro_set_controller_port_device()
+                                            * 
+                                            * The ascending input port indexes provided by the core in the struct
+                                            * are generally presented by frontends as ascending User # or Player #,
+                                            * such as Player 1, Player 2, Player 3, etc. Which device subclasses are
+                                            * supported can vary per input port.
+                                            *
+                                            * The first inner element of each entry in the retro_controller_info array
+                                            * is a retro_controller_description struct that specifies the names and
+                                            * codes of all device subclasses that are available for the corresponding
+                                            * User or Player, beginning with the generic Libretro device that the
+                                            * subclasses are derived from. The second inner element of each entry is the
+                                            * total number of subclasses that are listed in the retro_controller_description.
+                                            * 
+                                            * NOTE: Even if special device types are set in the libretro core,
                                             * libretro should only poll input based on the base input device types.
                                             */
 #define RETRO_ENVIRONMENT_SET_MEMORY_MAPS (36 | RETRO_ENVIRONMENT_EXPERIMENTAL)
@@ -1162,6 +1175,41 @@ struct retro_led_interface
                                             *   never need an accurate audio state in the future.
                                             * * State will never be saved when using Hard Disable Audio.
                                             */
+
+#define RETRO_ENVIRONMENT_GET_MIDI_INTERFACE (48 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* struct retro_midi_interface ** --
+                                            * Returns a MIDI interface that can be used for raw data I/O.
+                                            */
+
+/* Retrieves the current state of the MIDI input.
+ * Returns true if it's enabled, false otherwise. */
+typedef bool (RETRO_CALLCONV *retro_midi_input_enabled_t)(void);
+
+/* Retrieves the current state of the MIDI output.
+ * Returns true if it's enabled, false otherwise */
+typedef bool (RETRO_CALLCONV *retro_midi_output_enabled_t)(void);
+
+/* Reads next byte from the input stream.
+ * Returns true if byte is read, false otherwise. */
+typedef bool (RETRO_CALLCONV *retro_midi_read_t)(uint8_t *byte);
+
+/* Writes byte to the output stream.
+ * 'delta_time' is in microseconds and represent time elapsed since previous write.
+ * Returns true if byte is written, false otherwise. */
+typedef bool (RETRO_CALLCONV *retro_midi_write_t)(uint8_t byte, uint32_t delta_time);
+
+/* Flushes previously written data.
+ * Returns true if successful, false otherwise. */
+typedef bool (RETRO_CALLCONV *retro_midi_flush_t)(void);
+
+struct retro_midi_interface
+{
+   retro_midi_input_enabled_t input_enabled;
+   retro_midi_output_enabled_t output_enabled;
+   retro_midi_read_t read;
+   retro_midi_write_t write;
+   retro_midi_flush_t flush;
+};
 
 #define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE (41 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* const struct retro_hw_render_interface ** --
@@ -2337,7 +2385,13 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info);
  * will only poll input based on that particular device type. It is only a
  * hint to the libretro core when a core cannot automatically detect the
  * appropriate input device type on its own. It is also relevant when a
- * core can change its behavior depending on device type. */
+ * core can change its behavior depending on device type.
+ *
+ * As part of the core's implementation of retro_set_controller_port_device,
+ * the core should call RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS to notify the
+ * frontend if the descriptions for any controls have changed as a
+ * result of changing the device type.
+ */
 RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device);
 
 /* Resets the current game. */

@@ -62,7 +62,7 @@ static void *d3d9_hlsl_get_constant_by_name(void *data, const char *name)
 static INLINE void d3d9_hlsl_set_param_2f(void *data, void *userdata, const char *name, const void *values)
 {
    LPD3DXCONSTANTTABLE prog = (LPD3DXCONSTANTTABLE)data;
-   D3DXHANDLE param         = d3d9_hlsl_get_constant_by_name(prog, name);
+   D3DXHANDLE param         = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(prog, name);
    if (param)
       d3d9x_constant_table_set_float_array((LPDIRECT3DDEVICE9)userdata, prog, (void*)param, values, 2);
 }
@@ -70,7 +70,7 @@ static INLINE void d3d9_hlsl_set_param_2f(void *data, void *userdata, const char
 static INLINE void d3d9_hlsl_set_param_1f(void *data, void *userdata, const char *name, const void *value)
 {
    LPD3DXCONSTANTTABLE prog = (LPD3DXCONSTANTTABLE)data;
-   D3DXHANDLE param         = d3d9_hlsl_get_constant_by_name(prog, name);
+   D3DXHANDLE param         = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(prog, name);
    float *val               = (float*)value;
    if (param)
       d3d9x_constant_table_set_float(prog, (LPDIRECT3DDEVICE9)userdata, (void*)param, *val);
@@ -90,7 +90,7 @@ static INLINE void d3d9_hlsl_set_param_matrix(void *data, void *userdata,
       const char *name, const void *values)
 {
    LPD3DXCONSTANTTABLE prog = (LPD3DXCONSTANTTABLE)data;
-   D3DXHANDLE param         = d3d9_hlsl_get_constant_by_name(prog, name);
+   D3DXHANDLE param         = (D3DXHANDLE)d3d9_hlsl_get_constant_by_name(prog, name);
    if (param)
       d3d9x_constant_table_set_matrix((LPDIRECT3DDEVICE9)userdata, prog, 
             (void*)param, (D3DMATRIX*)values);
@@ -390,7 +390,6 @@ static void d3d9_hlsl_destroy_resources(hlsl_renderchain_t *chain)
 
 static void hlsl_d3d9_renderchain_free(void *data)
 {
-   unsigned i;
    hlsl_renderchain_t *chain = (hlsl_renderchain_t*)data;
 
    if (!chain)

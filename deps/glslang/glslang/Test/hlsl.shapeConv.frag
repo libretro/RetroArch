@@ -28,5 +28,22 @@ float4 PixelShaderFunction(float4 input, float f) : COLOR0
     f1.x;
     f1.xxx;
 
-    return input;
+    const float4 f4 = 3.0;
+
+    uint ui;
+    uint3 ui3;
+
+    ui >> ui3;
+    ui3 >> ui;
+
+    v *= f1;
+    f1 *= v;
+
+    float3 mixed = u * v;
+    f = u;
+    f1 = u;
+    float sf = v;
+    float1 sf1 = v;
+
+    return input * f4;
 }

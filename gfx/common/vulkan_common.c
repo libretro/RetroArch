@@ -30,11 +30,41 @@
 #include "vulkan_common.h"
 #include "../../libretro-common/include/retro_timers.h"
 #include "../../configuration.h"
+#include "../include/vulkan/vulkan.h"
+#include "../../libretro-common/include/retro_assert.h"
+#include "vksym.h"
+#include "../../libretro-common/include/dynamic/dylib.h"
+#include "../../libretro-common/include/libretro_vulkan.h"
+#include "../../libretro-common/include/retro_math.h"
+#include "../../libretro-common/include/string/stdstring.h"
 
 static dylib_t                       vulkan_library;
 static VkInstance                    cached_instance_vk;
 static VkDevice                      cached_device_vk;
 static retro_vulkan_destroy_device_t cached_destroy_device_vk;
+
+//#define WSI_HARDENING_TEST
+#ifdef WSI_HARDENING_TEST
+static unsigned wsi_harden_counter = 0;
+static unsigned wsi_harden_counter2 = 0;
+
+static void trigger_spurious_error_vkresult(VkResult *res)
+{
+   ++wsi_harden_counter;
+   if ((wsi_harden_counter & 15) == 12)
+      *res = VK_ERROR_OUT_OF_DATE_KHR;
+   else if ((wsi_harden_counter & 31) == 13)
+      *res = VK_ERROR_OUT_OF_DATE_KHR;
+   else if ((wsi_harden_counter & 15) == 6)
+      *res = VK_ERROR_SURFACE_LOST_KHR;
+}
+
+static bool trigger_spurious_error(void)
+{
+   ++wsi_harden_counter2;
+   return ((wsi_harden_counter2 & 15) == 9) || ((wsi_harden_counter2 & 15) == 10);
+}
+#endif
 
 #ifdef VULKAN_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
@@ -950,8 +980,8 @@ void vulkan_image_layout_transition(
    barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
    barrier.image                       = image;
    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   barrier.subresourceRange.levelCount = 1;
-   barrier.subresourceRange.layerCount = 1;
+   barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+   barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
    vkCmdPipelineBarrier(cmd,
          srcStages,
@@ -1885,6 +1915,10 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
    VkDisplayPlaneAlphaFlagBitsKHR alpha_mode = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
    VkDisplaySurfaceCreateInfoKHR create_info = { VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR };
    VkDisplayModeKHR best_mode = VK_NULL_HANDLE;
+   /* Monitor index starts on 1, 0 is auto. */
+   unsigned monitor_index = info->monitor_index;
+   unsigned saved_width = *width;
+   unsigned saved_height = *height;
 
    /* We need to decide on GPU here to be able to query support. */
    if (!vulkan_context_init_gpu(vk))
@@ -1926,8 +1960,18 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
    if (vkGetPhysicalDeviceDisplayPlanePropertiesKHR(vk->context.gpu, &plane_count, planes) != VK_SUCCESS)
       GOTO_FAIL();
 
+   if (monitor_index > display_count)
+   {
+      RARCH_WARN("Monitor index is out of range, using automatic display.\n");
+      monitor_index = 0;
+   }
+
+retry:
    for (dpy = 0; dpy < display_count; dpy++)
    {
+      if (monitor_index != 0 && (monitor_index - 1) != dpy)
+         continue;
+
       VkDisplayKHR display = displays[dpy].display;
       best_mode = VK_NULL_HANDLE;
       best_plane = UINT32_MAX;
@@ -2008,6 +2052,18 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
       }
    }
 out:
+
+   if (best_plane == UINT32_MAX && monitor_index != 0)
+   {
+      RARCH_WARN("Could not find suitable surface for monitor index: %u.\n",
+            monitor_index);
+      RARCH_WARN("Retrying first suitable monitor.\n");
+      monitor_index = 0;
+      best_mode = VK_NULL_HANDLE;
+      *width = saved_width;
+      *height = saved_height;
+      goto retry;
+   }
 
    if (best_mode == VK_NULL_HANDLE)
       GOTO_FAIL();
@@ -2245,6 +2301,32 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
    return true;
 }
 
+static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
+{
+   unsigned i;
+
+   if (vk->swapchain != VK_NULL_HANDLE)
+   {
+      vkDeviceWaitIdle(vk->context.device);
+      vkDestroySwapchainKHR(vk->context.device, vk->swapchain, NULL);
+      memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));
+      vk->swapchain = VK_NULL_HANDLE;
+   }
+
+   for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
+   {
+      if (vk->context.swapchain_semaphores[i] != VK_NULL_HANDLE)
+         vkDestroySemaphore(vk->context.device,
+               vk->context.swapchain_semaphores[i], NULL);
+      if (vk->context.swapchain_fences[i] != VK_NULL_HANDLE)
+         vkDestroyFence(vk->context.device,
+               vk->context.swapchain_fences[i], NULL);
+   }
+
+   memset(vk->context.swapchain_semaphores, 0, sizeof(vk->context.swapchain_semaphores));
+   memset(vk->context.swapchain_fences, 0, sizeof(vk->context.swapchain_fences));
+}
+
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 {
    VkPresentInfoKHR present        = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
@@ -2271,10 +2353,14 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 #endif
    err = vkQueuePresentKHR(vk->context.queue, &present);
 
+#ifdef WSI_HARDENING_TEST
+   trigger_spurious_error_vkresult(&err);
+#endif
+
    if (err != VK_SUCCESS || result != VK_SUCCESS)
    {
-      RARCH_LOG("[Vulkan]: QueuePresent failed, invalidating swapchain.\n");
-      vk->context.invalid_swapchain = true;
+      RARCH_LOG("[Vulkan]: QueuePresent failed, destroying swapchain.\n");
+      vulkan_destroy_swapchain(vk);
    }
 
 #ifdef HAVE_THREADS
@@ -2292,22 +2378,14 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
    if (vk->context.device)
       vkDeviceWaitIdle(vk->context.device);
-   if (vk->swapchain)
-      vkDestroySwapchainKHR(vk->context.device,
-            vk->swapchain, NULL);
+
+   vulkan_destroy_swapchain(vk);
 
    if (destroy_surface && vk->vk_surface != VK_NULL_HANDLE)
+   {
       vkDestroySurfaceKHR(vk->context.instance,
             vk->vk_surface, NULL);
-
-   for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
-   {
-      if (vk->context.swapchain_semaphores[i] != VK_NULL_HANDLE)
-         vkDestroySemaphore(vk->context.device,
-               vk->context.swapchain_semaphores[i], NULL);
-      if (vk->context.swapchain_fences[i] != VK_NULL_HANDLE)
-         vkDestroyFence(vk->context.device,
-               vk->context.swapchain_fences[i], NULL);
+      vk->vk_surface = VK_NULL_HANDLE;
    }
 
 #ifdef VULKAN_DEBUG
@@ -2384,8 +2462,10 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
    VkSemaphoreCreateInfo sem_info =
    { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-   bool is_retrying                = false;
 
+   bool is_retrying = false;
+
+retry:
    if (vk->swapchain == VK_NULL_HANDLE)
    {
       /* We don't have a swapchain, try to create one now. */
@@ -2402,52 +2482,63 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
          vk->context.current_swapchain_index = 0;
          vulkan_acquire_clear_fences(vk);
          vulkan_acquire_wait_fences(vk);
+         vk->context.invalid_swapchain = true;
          return;
       }
    }
 
-retry:
    vkCreateFence(vk->context.device, &fence_info, NULL, &fence);
 
    err = vkAcquireNextImageKHR(vk->context.device,
          vk->swapchain, UINT64_MAX,
          VK_NULL_HANDLE, fence, &vk->context.current_swapchain_index);
 
-   index = vk->context.current_swapchain_index;
-   if (vk->context.swapchain_semaphores[index] == VK_NULL_HANDLE)
-      vkCreateSemaphore(vk->context.device, &sem_info,
-            NULL, &vk->context.swapchain_semaphores[index]);
-
    if (err == VK_SUCCESS)
       vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
+
+#ifdef WSI_HARDENING_TEST
+   trigger_spurious_error_vkresult(&err);
+#endif
+
    vkDestroyFence(vk->context.device, fence, NULL);
 
-   vulkan_acquire_wait_fences(vk);
-
-   if (err != VK_SUCCESS)
+   if (err == VK_ERROR_OUT_OF_DATE_KHR)
    {
+      /* Throw away the old swapchain and try again. */
+      vulkan_destroy_swapchain(vk);
+
       if (is_retrying)
       {
-         RARCH_ERR("[Vulkan]: Tried acquring next swapchain image after creating new one, but failed ...\n");
+         RARCH_ERR("[Vulkan]: Swapchain is out of date, trying to create new one. Have tried multiple times ...\n");
+         retro_sleep(10);
       }
       else
-      {
-         RARCH_LOG("[Vulkan]: AcquireNextImage failed, invalidating swapchain.\n");
-         vk->context.invalid_swapchain = true;
-
-         RARCH_LOG("[Vulkan]: AcquireNextImage failed, so trying to recreate swapchain.\n");
-         if (!vulkan_create_swapchain(vk, vk->context.swapchain_width,
-                  vk->context.swapchain_height, vk->context.swap_interval))
-         {
-            RARCH_ERR("[Vulkan]: Failed to create new swapchain.\n");
-         }
-         else
-         {
-            is_retrying = true;
-            goto retry;
-         }
-      }
+         RARCH_ERR("[Vulkan]: Swapchain is out of date, trying to create new one.\n");
+      is_retrying = true;
+      vulkan_acquire_clear_fences(vk);
+      goto retry;
    }
+   else if (err != VK_SUCCESS)
+   {
+      /* We are screwed, don't try anymore. Maybe it will work later. */
+      vulkan_destroy_swapchain(vk);
+      RARCH_ERR("[Vulkan]: Failed to acquire from swapchain (err = %d).\n",
+            (int)err);
+      if (err == VK_ERROR_SURFACE_LOST_KHR)
+         RARCH_ERR("[Vulkan]: Got VK_ERROR_SURFACE_LOST_KHR.\n");
+      /* Force driver to reset swapchain image handles. */
+      vk->context.invalid_swapchain = true;
+      vulkan_acquire_clear_fences(vk);
+      return;
+   }
+
+   index = vk->context.current_swapchain_index;
+   if (vk->context.swapchain_semaphores[index] == VK_NULL_HANDLE)
+   {
+      vkCreateSemaphore(vk->context.device, &sem_info,
+            NULL, &vk->context.swapchain_semaphores[index]);
+   }
+   vulkan_acquire_wait_fences(vk);
 }
 
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
@@ -2472,6 +2563,20 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
    vkDeviceWaitIdle(vk->context.device);
+   vulkan_acquire_clear_fences(vk);
+
+   vk->created_new_swapchain = true;
+   if (vk->swapchain != VK_NULL_HANDLE &&
+         !vk->context.invalid_swapchain &&
+         vk->context.swapchain_width == width &&
+         vk->context.swapchain_height == height &&
+         vk->context.swap_interval == swap_interval)
+   {
+      /* Do not bother creating a swapchain redundantly. */
+      RARCH_LOG("[Vulkan]: Do not need to re-create swapchain.\n");
+      vk->created_new_swapchain = false;
+      return true;
+   }
 
    present_mode_count = 0;
    vkGetPhysicalDeviceSurfacePresentModesKHR(
@@ -2561,10 +2666,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    else
       swapchain_size           = surface_properties.currentExtent;
 
-#if 0
-   /* Tests for deferred creation. */
-   static unsigned retry_count = 0;
-   if (++retry_count < 50)
+#ifdef WSI_HARDENING_TEST
+   if (trigger_spurious_error())
    {
       surface_properties.maxImageExtent.width = 0;
       surface_properties.maxImageExtent.height = 0;
@@ -2601,12 +2704,13 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    RARCH_LOG("[Vulkan]: Using swapchain size %u x %u.\n",
          swapchain_size.width, swapchain_size.height);
 
-   desired_swapchain_images = surface_properties.minImageCount + 1;
+   /* Unless we have other reasons to clamp, we should prefer 3 images.
+    * We hard sync against the swapchain, so if we have 2 images,
+    * we would be unable to overlap CPU and GPU, which can get very slow
+    * for GPU-rendered cores. */
+   desired_swapchain_images = settings->uints.video_max_swapchain_images;
 
-   /* Limit latency. */
-   if (desired_swapchain_images > settings->uints.video_max_swapchain_images)
-      desired_swapchain_images = settings->uints.video_max_swapchain_images;
-
+   /* Clamp images requested to what is supported by the implementation. */
    if (desired_swapchain_images < surface_properties.minImageCount)
       desired_swapchain_images = surface_properties.minImageCount;
 
@@ -2647,12 +2751,25 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
       | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
+#ifdef _WIN32
+   /* On Windows, do not try to reuse the swapchain.
+    * It causes a lot of issues on nVidia for some reason. */
+   info.oldSwapchain = VK_NULL_HANDLE;
+   if (old_swapchain != VK_NULL_HANDLE)
+      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+#endif
+
    if (vkCreateSwapchainKHR(vk->context.device,
             &info, NULL, &vk->swapchain) != VK_SUCCESS)
    {
       RARCH_ERR("[Vulkan]: Failed to create swapchain.\n");
       return false;
    }
+
+#ifndef _WIN32
+   if (old_swapchain != VK_NULL_HANDLE)
+      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+#endif
 
    vk->context.swapchain_width  = swapchain_size.width;
    vk->context.swapchain_height = swapchain_size.height;
@@ -2693,8 +2810,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    RARCH_LOG("[Vulkan]: Got %u swapchain images.\n",
          vk->context.num_swapchain_images);
 
-   vulkan_acquire_clear_fences(vk);
+   /* Force driver to reset swapchain image handles. */
    vk->context.invalid_swapchain = true;
-
    return true;
 }

@@ -161,7 +161,8 @@ static void ui_application_qt_process_events(void)
 
 static void ui_application_qt_quit(void)
 {
-   appHandler->exit();
+   if (appHandler)
+      appHandler->exit();
 }
 
 static void ui_application_qt_run(void *args)

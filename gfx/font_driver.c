@@ -310,6 +310,37 @@ static bool vulkan_font_init_first(
 }
 #endif
 
+#ifdef HAVE_METAL
+static const font_renderer_t *metal_font_backends[] = {
+   &metal_raster_font,
+   NULL,
+};
+
+static bool metal_font_init_first(
+   const void **font_driver, void **font_handle,
+   void *video_data, const char *font_path,
+   float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; metal_font_backends[i]; i++)
+   {
+      void *data = metal_font_backends[i]->init(video_data,
+                                                 font_path, font_size,
+                                                 is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = metal_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 #ifdef HAVE_D3D10
 static const font_renderer_t *d3d10_font_backends[] = {
    &d3d10_font,
@@ -512,6 +543,11 @@ static bool font_init_first(
 #ifdef HAVE_VULKAN
       case FONT_DRIVER_RENDER_VULKAN_API:
          return vulkan_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
+#ifdef HAVE_METAL
+   case FONT_DRIVER_RENDER_METAL_API:
+      return metal_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_D3D8

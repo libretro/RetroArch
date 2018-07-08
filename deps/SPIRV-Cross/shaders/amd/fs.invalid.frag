@@ -2,8 +2,8 @@
 #extension GL_AMD_shader_fragment_mask : require
 #extension GL_AMD_shader_explicit_vertex_parameter : require
 
-uniform sampler2DMS texture1;
-layout(location = 0) in vec4 vary;
+layout(binding = 0) uniform sampler2DMS texture1;
+layout(location = 0) __explicitInterpAMD in vec4 vary;
 
 void main()
 {

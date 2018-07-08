@@ -3,6 +3,7 @@
 SPIRV-Cross is a tool designed for parsing and converting SPIR-V to other shader languages.
 
 [![Build Status](https://travis-ci.org/KhronosGroup/SPIRV-Cross.svg?branch=master)](https://travis-ci.org/KhronosGroup/SPIRV-Cross)
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/KhronosGroup/SPIRV-Cross?svg=true&branch=master)](https://ci.appveyor.com/project/HansKristian-ARM/SPIRV-Cross)
 
 ## Features
 
@@ -10,6 +11,7 @@ SPIRV-Cross is a tool designed for parsing and converting SPIR-V to other shader
   - Convert SPIR-V to readable, usable and efficient Metal Shading Language (MSL)
   - Convert SPIR-V to readable, usable and efficient HLSL
   - Convert SPIR-V to debuggable C++ [EXPERIMENTAL]
+  - Convert SPIR-V to a JSON reflection format [EXPERIMENTAL]
   - Reflection API to simplify the creation of Vulkan pipeline layouts
   - Reflection API to modify and tweak OpDecorations
   - Supports "all" of vertex, fragment, tessellation, geometry and compute shaders.
@@ -24,7 +26,7 @@ However, most missing features are expected to be "trivial" improvements at this
 
 SPIRV-Cross has been tested on Linux, OSX and Windows.
 
-The make and CMake build flavors offer the option to treat exceptions as assertions. To disable exceptions for make just append SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS=1 to the command line. For CMake append -DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS=ON. By default exceptions are enabled.
+The make and CMake build flavors offer the option to treat exceptions as assertions. To disable exceptions for make just append `SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS=1` to the command line. For CMake append `-DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS=ON`. By default exceptions are enabled.
 
 ### Linux and macOS
 
@@ -37,6 +39,8 @@ MinGW-w64 based compilation works with `make`, and an MSVC 2013 solution is also
 ## Usage
 
 ### Using the C++ API
+
+For more in-depth documentation than what's provided in this README, please have a look at the [Wiki](https://github.com/KhronosGroup/SPIRV-Cross/wiki).
 
 To perform reflection and convert to other shader languages you can use the SPIRV-Cross API.
 For example:
@@ -279,6 +283,7 @@ although there are a couple of convenience script for doing this:
 
 ```
 ./checkout_glslang_spirv_tools.sh # Checks out glslang and SPIRV-Tools at a fixed revision which matches the reference output.
+./build_glslang_spirv_tools.sh    # Builds glslang and SPIRV-Tools.
 ./test_shaders.sh                 # Runs over all changes and makes sure that there are no deltas compared to reference files.
 ```
 

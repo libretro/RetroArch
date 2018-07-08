@@ -13,12 +13,6 @@ struct UBO
     int2 bits;
 };
 
-struct main0_in
-{
-    float3 aNormal [[attribute(1)]];
-    float4 aVertex [[attribute(0)]];
-};
-
 struct main0_out
 {
     float3 vNormal [[user(locn0)]];
@@ -29,18 +23,24 @@ struct main0_out
     float4 gl_Position [[position]];
 };
 
+struct main0_in
+{
+    float4 aVertex [[attribute(0)]];
+    float3 aNormal [[attribute(1)]];
+};
+
 // Implementation of the GLSL radians() function
 template<typename T>
 T radians(T d)
 {
-    return d * 0.01745329251;
+    return d * T(0.01745329251);
 }
 
 // Implementation of the GLSL degrees() function
 template<typename T>
 T degrees(T r)
 {
-    return r * 57.2957795131;
+    return r * T(57.2957795131);
 }
 
 // Implementation of the GLSL findLSB() function

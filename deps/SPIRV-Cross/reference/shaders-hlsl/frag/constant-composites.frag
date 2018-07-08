@@ -30,7 +30,7 @@ void frag_main()
     lut = _16;
     foos = _28;
     FragColor = lut[_line].xxxx;
-    FragColor += (foos[_line].a * (foos[1 - _line].a)).xxxx;
+    FragColor += (foos[_line].a * foos[1 - _line].a).xxxx;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)

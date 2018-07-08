@@ -264,6 +264,8 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o \
+       midi/midi_driver.o \
+       midi/drivers/null_midi.o
 
 ifeq ($(HAVE_RUNAHEAD), 1)
 DEFINES += -DHAVE_RUNAHEAD
@@ -686,6 +688,12 @@ ifeq ($(HAVE_XAUDIO), 1)
    LIBS += -lole32
 endif
 
+ifeq ($(HAVE_WINMM), 1)
+   OBJ += midi/drivers/winmm_midi.o
+   DEFINES += -DHAVE_WINMM
+   LIBS += -lwinmm
+endif
+
 # Audio Resamplers
 
 ifeq ($(HAVE_NEON),1)
@@ -1093,9 +1101,14 @@ ifneq ($(C89_BUILD), 1)
 ifneq ($(HAVE_OPENGLES), 1)
    OBJ += cores/libretro-ffmpeg/ffmpeg_fft.o
    DEFINES += -I$(DEPS_DIR) -DHAVE_GL_FFT
-   NEED_CXX_LINKER=1
 endif
 endif
+endif
+
+ifeq ($(HAVE_MPV), 1)
+   OBJ += cores/libretro-mpv/mpv-libretro.o
+   DEFINES += -I$(DEPS_DIR) -DHAVE_MPV
+	LIBS += -lmpv
 endif
 
    ifeq ($(HAVE_OPENGLES), 1)
@@ -1379,8 +1392,13 @@ ifeq ($(HAVE_GLSLANG), 1)
       $(wildcard $(DEPS_DIR)/glslang/glslang/OGLCompilersDLL/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
+
+ifneq ($(findstring Win32,$(OS)),)
+DEFINES += -DENABLE_HLSL
+GLSLANG_SOURCES += $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp)
+endif
+
 
    OBJ += $(GLSLANG_SOURCES:.cpp=.o)
 endif
@@ -1621,6 +1639,29 @@ ifeq ($(HAVE_NETWORKING), 1)
          cheevos/cond.o \
          cheevos/badges.o \
          $(LIBRETRO_COMM_DIR)/utils/md5.o
+   endif
+
+   ifeq ($(HAVE_DISCORD), 1)
+      DEFINES += -DHAVE_DISCORD
+      DEFINES += -Ideps/discord-rpc/include/ -Ideps/discord-rpc/thirdparty/rapidjson-1.1.0/include/
+      OBJ     += deps/discord-rpc/src/discord_rpc.o \
+					  deps/discord-rpc/src/rpc_connection.o \
+					  deps/discord-rpc/src/serialization.o \
+					  discord/discord.o
+ifneq ($(findstring Win32,$(OS)),)
+      OBJ  += deps/discord-rpc/src/discord_register_win.o \
+				  deps/discord-rpc/src/connection_win.o
+      LIBS += -lpsapi -ladvapi32
+endif
+ifneq ($(findstring Linux,$(OS)),)
+		OBJ  += deps/discord-rpc/src/discord_register_linux.o \
+				  deps/discord-rpc/src/connection_unix.o
+endif
+ifneq ($(findstring Darwin,$(OS)),)
+		OBJ  += deps/discord-rpc/src/discord_register_osx.o \
+				  deps/discord-rpc/src/connection_unix.o
+endif
+
    endif
 
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)

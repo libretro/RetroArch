@@ -5,6 +5,7 @@
 ; Schema: 0
                OpCapability Shader
                OpCapability SampledBuffer
+               OpCapability ImageBuffer
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %main "main" %_entryPointOutput
@@ -17,6 +18,8 @@
                OpName %_entryPointOutput "@entryPointOutput"
                OpDecorate %RWTex DescriptorSet 0
                OpDecorate %Tex DescriptorSet 0
+               OpDecorate %RWTex Binding 0
+               OpDecorate %Tex Binding 1
                OpDecorate %_entryPointOutput Location 0
        %void = OpTypeVoid
           %3 = OpTypeFunction %void

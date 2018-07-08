@@ -723,7 +723,7 @@ enum rarch_content_type path_is_media_type(const char *path)
 
    switch (msg_hash_to_file_type(msg_hash_calculate(ext_lower)))
    {
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case FILE_TYPE_OGM:
       case FILE_TYPE_MKV:
       case FILE_TYPE_AVI:

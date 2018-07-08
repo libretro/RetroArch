@@ -1,0 +1,29 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "Discord RPC",
+	"Description": "Wrap the Discord RPC library.",
+	"Category": "Messaging",
+	"CreatedBy": "Chris Marsh <chris@discordapp.com>",
+	"CreatedByURL": "https://discordapp.com/",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "DiscordRpc",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"WhitelistPlatforms" :
+			[
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		}
+	]
+}

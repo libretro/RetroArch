@@ -97,7 +97,7 @@ void driver_wifi_stop(void);
 
 bool driver_wifi_start(void);
 
-void driver_wifi_scan();
+void driver_wifi_scan(void);
 
 void driver_wifi_get_ssids(struct string_list *list);
 

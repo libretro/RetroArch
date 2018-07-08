@@ -72,7 +72,6 @@ CONSOLE EXTENSIONS
 #endif
 
 #ifdef INTERNAL_LIBOGC
-#ifdef HW_RVL
 #include "../wii/libogc/libfat/cache.c"
 #include "../wii/libogc/libfat/directory.c"
 #include "../wii/libogc/libfat/disc.c"
@@ -83,7 +82,6 @@ CONSOLE EXTENSIONS
 #include "../wii/libogc/libfat/libfat.c"
 #include "../wii/libogc/libfat/lock.c"
 #include "../wii/libogc/libfat/partition.c"
-#endif
 #endif
 
 #endif
@@ -795,6 +793,17 @@ AUDIO
 #include "../audio/drivers/nullaudio.c"
 
 /*============================================================
+MIDI
+============================================================ */
+#include "../midi/midi_driver.c"
+
+#include "../midi/drivers/null_midi.c"
+
+#ifdef HAVE_WINMM
+#include "../midi/drivers/winmm_midi.c"
+#endif
+
+/*============================================================
 DRIVERS
 ============================================================ */
 #include "../gfx/video_driver.c"
@@ -855,6 +864,12 @@ CORES
 ============================================================ */
 #ifdef HAVE_FFMPEG
 #include "../cores/libretro-ffmpeg/ffmpeg_core.c"
+#endif
+
+#if defined(HAVE_MPV)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#include "../cores/libretro-mpv/mpv-libretro.c"
+#endif
 #endif
 
 #include "../cores/dynamic_dummy.c"
@@ -1393,4 +1408,8 @@ HTTP SERVER
 #if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
 #include "../deps/civetweb/civetweb.c"
 #include "network/httpserver/httpserver.c"
+#endif
+
+#if defined(HAVE_DISCORD)
+#include "../discord/discord.c"
 #endif

@@ -99,7 +99,7 @@ enum
    XMB_TEXTURE_HISTORY,
    XMB_TEXTURE_FAVORITES,
    XMB_TEXTURE_MUSICS,
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    XMB_TEXTURE_MOVIES,
 #endif
 #ifdef HAVE_NETWORKING
@@ -165,7 +165,7 @@ enum
    XMB_SYSTEM_TAB_HISTORY,
    XMB_SYSTEM_TAB_FAVORITES,
    XMB_SYSTEM_TAB_MUSIC,
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    XMB_SYSTEM_TAB_VIDEO,
 #endif
 #ifdef HAVE_IMAGEVIEWER
@@ -267,7 +267,7 @@ typedef struct xmb_handle
    xmb_node_t images_tab_node;
 #endif
    xmb_node_t music_tab_node;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    xmb_node_t video_tab_node;
 #endif
    xmb_node_t settings_tab_node;
@@ -287,34 +287,30 @@ float scale_mod[8] = {
 };
 
 static float coord_shadow[] = {
-   0, 0, 0,
-   0, 0, 0,
-   0, 0, 0,
-   0, 0, 0,
+   0, 0, 0, 0,
+   0, 0, 0, 0,
+   0, 0, 0, 0,
    0, 0, 0, 0
 };
 
 static float coord_black[] = {
-   0, 0, 0,
-   0, 0, 0,
-   0, 0, 0,
-   0, 0, 0,
+   0, 0, 0, 0,
+   0, 0, 0, 0,
+   0, 0, 0, 0,
    0, 0, 0, 0
 };
 
 static float coord_white[] = {
-   1, 1, 1,
-   1, 1, 1,
-   1, 1, 1,
-   1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
    1, 1, 1, 1
 };
 
 static float item_color[] = {
-   1, 1, 1,
-   1, 1, 1,
-   1, 1, 1,
-   1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
    1, 1, 1, 1
 };
 
@@ -1692,7 +1688,7 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
 #endif
       case XMB_SYSTEM_TAB_MUSIC:
          return &xmb->music_tab_node;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case XMB_SYSTEM_TAB_VIDEO:
          return &xmb->video_tab_node;
 #endif
@@ -2163,12 +2159,18 @@ static void xmb_populate_entries(void *data,
       xmb_selection_pointer_changed(xmb, false);
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
       if (!string_is_equal(xmb_thumbnails_ident('R'),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      {
+         xmb_update_thumbnail_path(xmb, 0, 'R');
          xmb_update_thumbnail_image(xmb);
+      }
       xmb_update_savestate_thumbnail_image(xmb);
       if (!string_is_equal(xmb_thumbnails_ident('L'),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      {
+         xmb_update_thumbnail_path(xmb, 0, 'L');
          xmb_update_thumbnail_image(xmb);
+      }
       return;
    }
 
@@ -2259,7 +2261,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             case XMB_SYSTEM_TAB_IMAGES:
                return xmb->textures.list[XMB_TEXTURE_IMAGE];
 #endif
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             case XMB_SYSTEM_TAB_VIDEO:
                return xmb->textures.list[XMB_TEXTURE_MOVIE];
 #endif
@@ -2975,6 +2977,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    float pseudo_font_length                = 0.0f;
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
    settings_t *settings                    = config_get_ptr();
+   unsigned xmb_system_tab                 = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
+   bool hide_thumbnails                    = false;
 
    if (!xmb)
       return;
@@ -3065,8 +3069,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->savestate_thumbnail);
    }
 
+   /* This is used for hiding thumbnails when going into sub-levels in the
+    * Quick Menu as well as when selecting "Information" for a playlist entry.
+    * NOTE: This is currently a pretty crude check, simply going by menu depth 
+    * and not specifically identifying which menu we're actually in. */
+   hide_thumbnails = xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && xmb->depth > 2;
+
    /* Right thumbnail big size */
-   if (xmb->use_ps3_layout &&
+   if (!hide_thumbnails && !xmb->savestate_thumbnail && xmb->use_ps3_layout &&
          (!settings->bools.menu_xmb_vertical_thumbnails || 
          (settings->bools.menu_xmb_vertical_thumbnails && !xmb->left_thumbnail)))
    {
@@ -3137,7 +3147,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Left thumbnail in the left margin */
    /* Do not draw the left thumbnail if there is no space available */
-   if (xmb->use_ps3_layout &&
+   if (!hide_thumbnails && xmb->use_ps3_layout &&
          !settings->bools.menu_xmb_vertical_thumbnails &&
          (xmb->margins_screen_top + xmb->icon_size *
          (!(xmb->depth == 1)? 2.1 : 1) + min_thumb_size)
@@ -3205,7 +3215,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* No Right Thumbnail, draw only the left one big size */
-   if (xmb->use_ps3_layout &&
+   if (!hide_thumbnails && !xmb->savestate_thumbnail && xmb->use_ps3_layout &&
       settings->bools.menu_xmb_vertical_thumbnails && !xmb->thumbnail)
    {
       /* Do not draw the left thumbnail if there is no space available */
@@ -3275,7 +3285,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* PSP Layout Only - Left thumbnail in the left margin */
    /* Do not draw the left thumbnail if there is no space available */
-   if (!xmb->use_ps3_layout &&
+   if (!hide_thumbnails && !xmb->use_ps3_layout &&
          (xmb->margins_screen_top + xmb->icon_size * 1.5)
          <= (float)height)
    {
@@ -3514,7 +3524,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Right side 2 thumbnails on top of each other */
    /* here to be displayed above the horizontal icons */
-   if (xmb->use_ps3_layout &&
+   if (!hide_thumbnails && !xmb->savestate_thumbnail && xmb->use_ps3_layout && 
       xmb->left_thumbnail && xmb->thumbnail &&
       settings->bools.menu_xmb_vertical_thumbnails)
    {
@@ -4074,7 +4084,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 #endif
    if (settings->bools.menu_content_show_music)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    if (settings->bools.menu_content_show_video)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
@@ -4251,7 +4261,7 @@ static const char *xmb_texture_path(unsigned id)
          return "add-favorite.png";
       case XMB_TEXTURE_MUSICS:
          return "musics.png";
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case XMB_TEXTURE_MOVIES:
          return "movies.png";
 #endif
@@ -4388,7 +4398,7 @@ static void xmb_context_reset_textures(
    xmb->music_tab_node.alpha    = xmb->categories_active_alpha;
    xmb->music_tab_node.zoom     = xmb->categories_active_zoom;
 
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    xmb->video_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_MOVIES];
    xmb->video_tab_node.alpha    = xmb->categories_active_alpha;
    xmb->video_tab_node.zoom     = xmb->categories_active_zoom;
@@ -4472,11 +4482,17 @@ static void xmb_context_reset(void *data, bool is_threaded)
       xmb_context_reset_horizontal_list(xmb);
 
       if (!string_is_equal(xmb_thumbnails_ident('R'),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      {
+         xmb_update_thumbnail_path(xmb, 0, 'R');
          xmb_update_thumbnail_image(xmb);
-      if (!string_is_equal(xmb_thumbnails_ident('R'),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      }
+      if (!string_is_equal(xmb_thumbnails_ident('L'),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      {
+         xmb_update_thumbnail_path(xmb, 0, 'L');
          xmb_update_thumbnail_image(xmb);
+      }
       xmb_update_savestate_thumbnail_image(xmb);
 
       free(iconpath);
@@ -4722,7 +4738,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                menu_stack->list[stack_size - 1].type =
                   MENU_MUSIC_TAB;
                break;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             case XMB_SYSTEM_TAB_VIDEO:
                menu_stack->list[stack_size - 1].label =
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB));
@@ -5086,8 +5102,12 @@ static int xmb_list_push(void *data, void *userdata,
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
-            entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_shutdown)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
+
             info->need_push    = true;
             ret = 0;
          }

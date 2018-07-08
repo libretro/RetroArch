@@ -4,9 +4,10 @@ import android.view.View;
 import android.view.WindowManager;
 import android.content.Intent;
 import android.content.Context;
+import android.hardware.input.InputManager;
+import android.os.Build;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import android.hardware.input.InputManager;
 
 public final class RetroActivityFuture extends RetroActivityCamera {
 
@@ -17,7 +18,9 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 	public void onResume() {
 		super.onResume();
 
-		if (android.os.Build.VERSION.SDK_INT >= 19) {
+		setSustainedPerformanceMode(sustainedPerformanceMode);
+
+		if (Build.VERSION.SDK_INT >= 19) {
 			// Immersive mode
 
 			// Constants from API > 14

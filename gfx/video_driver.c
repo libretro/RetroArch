@@ -267,6 +267,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL
    &video_gl,
 #endif
+#ifdef HAVE_METAL
+   &video_metal,
+#endif
 #ifdef XENON
    &video_xenon360,
 #endif
@@ -1592,6 +1595,7 @@ void video_driver_destroy(void)
    video_driver_cache_context_ack = false;
    video_driver_record_gpu_buffer = NULL;
    current_video                  = NULL;
+   video_driver_set_cached_frame_ptr(NULL);
 }
 
 void video_driver_set_cached_frame_ptr(const void *data)
@@ -1776,6 +1780,7 @@ bool video_driver_init(bool *video_is_threaded)
 {
    video_driver_lock_new();
    video_driver_filter_free();
+   video_driver_set_cached_frame_ptr(NULL);
    return video_driver_init_internal(video_is_threaded);
 }
 
@@ -1789,6 +1794,7 @@ void video_driver_free(void)
    video_driver_free_internal();
    video_driver_lock_free();
    video_driver_data = NULL;
+   video_driver_set_cached_frame_ptr(NULL);
 }
 
 void video_driver_monitor_reset(void)
@@ -3364,6 +3370,8 @@ enum gfx_ctx_api video_context_driver_get_api(void)
          return GFX_CTX_OPENGL_API;
       else if (string_is_equal(video_driver, "vulkan"))
          return GFX_CTX_VULKAN_API;
+      else if (string_is_equal(video_driver, "metal"))
+         return GFX_CTX_METAL_API;
 
       return GFX_CTX_NONE;
    }

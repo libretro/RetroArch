@@ -19,6 +19,6 @@ void main()
             }
         }
     }
-    FragColor = ((values3[1 * 3 * 1 + 2 * 1 + 0]) + (values3[0 * 3 * 1 + 2 * 1 + 0])) + (values3[(vIndex + 1) * 3 * 1 + 2 * 1 + vIndex]);
+    FragColor = (values3[1 * 3 * 1 + 2 * 1 + 0] + values3[0 * 3 * 1 + 2 * 1 + 0]) + values3[(vIndex + 1) * 3 * 1 + 2 * 1 + vIndex];
 }
 

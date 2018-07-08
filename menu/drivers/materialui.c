@@ -355,6 +355,8 @@ static void materialui_draw_icon(
    draw.y               = height - y - icon_size;
    draw.width           = icon_size;
    draw.height          = icon_size;
+   draw.scale_factor    = scale_factor;
+   draw.rotation        = rotation;
    draw.coords          = &coords;
    draw.matrix_data     = &mymat;
    draw.texture         = texture;
@@ -2153,8 +2155,11 @@ static int materialui_list_push(void *data, void *userdata,
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
-            entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_shutdown)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 #endif
             info->need_push    = true;
             ret = 0;
@@ -2678,6 +2683,8 @@ static void materialui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DIRECTORY_SETTINGS))
                   ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PRIVACY_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MIDI_SETTINGS))
                   ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS))
                   ||

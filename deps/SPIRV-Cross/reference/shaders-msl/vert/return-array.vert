@@ -7,15 +7,15 @@ using namespace metal;
 
 constant float4 _20[2] = {float4(10.0), float4(20.0)};
 
-struct main0_in
-{
-    float4 vInput1 [[attribute(1)]];
-    float4 vInput0 [[attribute(0)]];
-};
-
 struct main0_out
 {
     float4 gl_Position [[position]];
+};
+
+struct main0_in
+{
+    float4 vInput0 [[attribute(0)]];
+    float4 vInput1 [[attribute(1)]];
 };
 
 // Implementation of an array copy function to cover GLSL's ability to copy an array via assignment.

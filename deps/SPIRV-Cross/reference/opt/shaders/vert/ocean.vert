@@ -50,7 +50,7 @@ layout(location = 0) in vec4 Position;
 layout(location = 0) out vec3 EyeVec;
 layout(location = 1) out vec4 TexCoord;
 
-uvec4 _483;
+uvec4 _484;
 
 void main()
 {
@@ -59,8 +59,9 @@ void main()
     uint _357 = uint(_352);
     uvec4 _359 = uvec4(Position);
     uvec2 _366 = (uvec2(1u) << uvec2(_357, _357 + 1u)) - uvec2(1u);
+    bool _369 = _359.x < 32u;
     uint _482;
-    if (_359.x < 32u)
+    if (_369)
     {
         _482 = _366.x;
     }
@@ -68,41 +69,42 @@ void main()
     {
         _482 = 0u;
     }
-    uvec4 _445 = _483;
+    uvec4 _445 = _484;
     _445.x = _482;
-    uint _484;
-    if (_359.y < 32u)
-    {
-        _484 = _366.x;
-    }
-    else
-    {
-        _484 = 0u;
-    }
-    uvec4 _451 = _445;
-    _451.y = _484;
+    bool _379 = _359.y < 32u;
     uint _485;
-    if (_359.x < 32u)
+    if (_379)
     {
-        _485 = _366.y;
+        _485 = _366.x;
     }
     else
     {
         _485 = 0u;
     }
-    uvec4 _457 = _451;
-    _457.z = _485;
-    uint _486;
-    if (_359.y < 32u)
+    uvec4 _451 = _445;
+    _451.y = _485;
+    uint _487;
+    if (_369)
     {
-        _486 = _366.y;
+        _487 = _366.y;
     }
     else
     {
-        _486 = 0u;
+        _487 = 0u;
+    }
+    uvec4 _457 = _451;
+    _457.z = _487;
+    uint _489;
+    if (_379)
+    {
+        _489 = _366.y;
+    }
+    else
+    {
+        _489 = 0u;
     }
     uvec4 _463 = _457;
-    _463.w = _486;
+    _463.w = _489;
     vec4 _415 = vec4((_359.xyxy + _463) & (~_366).xxyy);
     vec2 _197 = ((_53.Patches[(gl_InstanceID + SPIRV_Cross_BaseInstance)].Position.xz * _180.InvOceanSize_PatchScale.zw) + mix(_415.xy, _415.zw, vec2(_350 - _352))) * _180.InvOceanSize_PatchScale.xy;
     vec2 _204 = _197 * _180.NormalTexCoordScale.zw;

@@ -70,6 +70,10 @@
 #include "cheevos/cheevos.h"
 #endif
 
+#ifdef HAVE_DISCORD
+#include "discord/discord.h"
+#endif
+
 #ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
 #endif
@@ -190,13 +194,16 @@ static char runtime_shader_preset[255]                          = {0};
 
 #ifdef HAVE_THREAD_STORAGE
 static sthread_tls_t rarch_tls;
-const void *MAGIC_POINTER                               = (void*)(uintptr_t)0xB16B00B5;
+const void *MAGIC_POINTER                               = (void*)(uintptr_t)0x0DEFACED;
 #endif
 
 static retro_bits_t has_set_libretro_device;
 
 static bool has_set_core                                   = false;
 static bool has_set_username                               = false;
+#ifdef HAVE_DISCORD
+static bool discord_is_inited                              = false;
+#endif
 static bool rarch_is_inited                                = false;
 static bool rarch_error_on_init                            = false;
 static bool rarch_block_config_read                        = false;
@@ -382,6 +389,7 @@ static void retroarch_print_features(void)
    _PSUPP(thread,          "Threads",         "Threading support");
 
    _PSUPP(vulkan,          "Vulkan",          "Vulkan video driver");
+   _PSUPP(metal,           "Metal",           "Metal video driver");
    _PSUPP(opengl,          "OpenGL",          "OpenGL   video driver support");
    _PSUPP(opengles,        "OpenGL ES",       "OpenGLES video driver support");
    _PSUPP(xvideo,          "XVideo",          "Video driver");
@@ -1255,7 +1263,11 @@ static void retroarch_main_init_media(void)
       case RARCH_CONTENT_MUSIC:
          if (builtin_mediaplayer)
          {
-#ifdef HAVE_FFMPEG
+            /* TODO/FIXME - it needs to become possible to switch between FFmpeg and MPV at runtime */
+#if defined(HAVE_MPV)
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+            retroarch_set_current_core_type(CORE_TYPE_MPV, false);
+#elif defined(HAVE_FFMPEG)
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
             retroarch_set_current_core_type(CORE_TYPE_FFMPEG, false);
 #endif
@@ -1374,9 +1386,21 @@ bool retroarch_main_init(int argc, char *argv[])
    rarch_error_on_init     = false;
    rarch_is_inited         = true;
 
+#ifdef HAVE_DISCORD
+   if (command_event(CMD_EVENT_DISCORD_INIT, NULL))
+      discord_is_inited = true;
+
+   if (discord_is_inited)
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_MENU;
+
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+   }
+#endif
+
    if (rarch_first_start)
       rarch_first_start = false;
-
    return true;
 
 error:
@@ -1384,7 +1408,7 @@ error:
    rarch_is_inited         = false;
 
    if (rarch_first_start)
-      rarch_first_start = false;
+         rarch_first_start = false;
 
    return false;
 }
@@ -2322,6 +2346,11 @@ bool retroarch_main_quit(void)
    runloop_shutdown_initiated = true;
    rarch_menu_running_finished();
 
+#ifdef HAVE_DISCORD
+   command_event(CMD_EVENT_DISCORD_DEINIT, NULL);
+   discord_is_inited          = false;
+#endif
+
    return true;
 }
 
@@ -2506,6 +2535,13 @@ static enum runloop_state runloop_check_state(
       }
    }
 
+   {
+      const ui_application_t *application =
+         ui_companion_driver_get_application_ptr();
+      if (application)
+         application->process_events();
+   }
+
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
 
 #ifdef HAVE_MENU
@@ -2658,7 +2694,7 @@ static enum runloop_state runloop_check_state(
          if (focused || !runloop_idle)
          {
             bool libretro_running = menu_display_libretro_running(
-                  rarch_is_inited, 
+                  rarch_is_inited,
                   (current_core_type == CORE_TYPE_DUMMY));
 
             menu_driver_render(runloop_idle, rarch_is_inited,
@@ -3180,7 +3216,7 @@ static enum runloop_state runloop_check_state(
       {
          /* rarch_timer_tick */
          timer.current = cpu_features_get_time_usec();
-         timer.timeout = (timer.timeout_end - timer.current) / 1000;
+         timer.timeout_us = (timer.timeout_end - timer.current);
 
          if (!timer.timer_end && rarch_timer_has_expired(&timer))
          {
@@ -3315,7 +3351,11 @@ int runloop_iterate(unsigned *sleep_ms)
 
 #ifdef HAVE_RUNAHEAD
    /* Run Ahead Feature replaces the call to core_run in this loop */
-   if (settings->bools.run_ahead_enabled && settings->uints.run_ahead_frames > 0)
+   if (settings->bools.run_ahead_enabled && settings->uints.run_ahead_frames > 0
+#ifdef HAVE_NETWORKING
+      && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
+#endif
+      )
       run_ahead(settings->uints.run_ahead_frames, settings->bools.run_ahead_secondary_instance);
    else
 #endif
@@ -3324,6 +3364,16 @@ int runloop_iterate(unsigned *sleep_ms)
 #ifdef HAVE_CHEEVOS
    if (runloop_check_cheevos())
       cheevos_test();
+#endif
+
+#ifdef HAVE_DISCORD
+   if (discord_is_inited)
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_GAME;
+
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+   }
 #endif
 
    for (i = 0; i < max_users; i++)

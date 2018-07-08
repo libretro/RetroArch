@@ -96,7 +96,7 @@ typedef struct settings
       bool video_statistics_show;
       bool video_framecount_show;
       bool video_msg_bgcolor_enable;
-      bool crt_switch_resolution;  
+      bool crt_switch_resolution;
 
       /* Audio */
       bool audio_enable;
@@ -149,6 +149,7 @@ typedef struct settings
       bool menu_show_help;
       bool menu_show_quit_retroarch;
       bool menu_show_reboot;
+      bool menu_show_shutdown;
       bool menu_show_latency;
       bool menu_show_rewind;
       bool menu_show_overlays;
@@ -230,6 +231,7 @@ typedef struct settings
       bool bundle_assets_extract_enable;
 
       /* Misc. */
+      bool discord_enable;
       bool threaded_data_runloop_enable;
       bool set_supports_no_game_enable;
       bool auto_screenshot_filename;
@@ -274,6 +276,8 @@ typedef struct settings
 
       bool automatically_add_content_to_playlist;
       bool video_window_show_decorations;
+
+      bool sustained_performance_mode;
    } bools;
 
    struct
@@ -329,6 +333,7 @@ typedef struct settings
       unsigned input_turbo_duty_cycle;
 
       unsigned input_bind_timeout;
+      unsigned input_bind_hold;
 
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
@@ -350,7 +355,7 @@ typedef struct settings
       unsigned video_window_x;
       unsigned video_window_y;
       unsigned video_window_opacity;
-      unsigned crt_switch_resolution_super;  
+      unsigned crt_switch_resolution_super;
       unsigned video_monitor_index;
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;
@@ -402,6 +407,8 @@ typedef struct settings
       unsigned led_map[MAX_LEDS];
 
       unsigned run_ahead_frames;
+
+      unsigned midi_volume;
    } uints;
 
    struct
@@ -423,6 +430,7 @@ typedef struct settings
       char audio_resampler[32];
       char input_driver[32];
       char input_joypad_driver[32];
+      char midi_driver[32];
 
       char input_keyboard_layout[64];
 
@@ -436,6 +444,9 @@ typedef struct settings
       char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
 
       char netplay_mitm_server[255];
+
+      char midi_input[32];
+      char midi_output[32];
    } arrays;
 
    struct
@@ -581,6 +592,9 @@ const char *config_get_default_joypad(void);
  * Returns: Default menu driver.
  **/
 const char *config_get_default_menu(void);
+
+const char *config_get_default_midi(void);
+const char *config_get_midi_driver_options(void);
 
 const char *config_get_default_record(void);
 
