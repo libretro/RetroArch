@@ -84,7 +84,7 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency,
    u16 setup_buf[0x30] = {0};
    setup_buf[0x25]     = 2; /* we request 2 channels */
    AXInitParams init   = {AX_INIT_RENDERER_48KHZ, 0, 0};
-   AXVoiceVeData ve    = {0xF000, 0};
+   AXVoiceVeData ve    = {0x8000, 0};
    ax_audio_t* ax      = (ax_audio_t*)calloc(1, sizeof(ax_audio_t));
 
    if (!ax)
