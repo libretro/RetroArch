@@ -28,6 +28,7 @@
 - WII: Change deflicker setting to work in 480p or higher, and always enables vfilter so that the user can easily change brightness.
 - WIIU: Fix out-of-bounds rendering bug
 - WIIU: Implement UDP broadcast network logging on Wii U.
+- WIIU: Audio should no longer clip.
 
 # 1.7.3
 - AUDIO: Audio mixer supports FLAC/MP3 file types now!
