@@ -59,18 +59,6 @@ static void menu_display_gdi_viewport(menu_display_ctx_draw_t *draw,
 
 static void menu_display_gdi_restore_clear_color(void)
 {
-   /*HBRUSH brush = CreateSolidBrush(GetSysColor(COLOR_WINDOW));
-   RECT rect;
-   HWND hwnd = win32_get_window();
-   HDC hdc = GetDC(hwnd);
-
-   GetClientRect(hwnd, &rect);
-
-   FillRect(hdc, &rect, brush);
-
-   DeleteObject(brush);
-
-   ReleaseDC(hwnd, hdc);*/
 }
 
 static void menu_display_gdi_clear_color(

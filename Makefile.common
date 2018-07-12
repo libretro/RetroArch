@@ -1044,6 +1044,18 @@ ifeq ($(HAVE_CACA), 1)
    endif
 endif
 
+ifeq ($(HAVE_SIXEL), 1)
+   DEFINES += -DHAVE_SIXEL
+   CFLAGS += -I/usr/include/sixel
+   OBJ += gfx/drivers/sixel_gfx.o gfx/drivers_font/sixel_font.o \
+          gfx/drivers_context/sixel_ctx.o
+   LIBS += -lsixel
+
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_sixel.o
+   endif
+endif
+
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
    CFLAGS += -I/usr/include/libdrm

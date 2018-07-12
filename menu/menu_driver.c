@@ -130,14 +130,17 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef WIIU
    &menu_display_ctx_wiiu,
 #endif
-#ifdef HAVE_CACA
-   &menu_display_ctx_caca,
-#endif
 #if defined(_WIN32) && !defined(_XBOX)
    &menu_display_ctx_gdi,
 #endif
 #ifdef DJGPP
    &menu_display_ctx_vga,
+#endif
+#ifdef HAVE_SIXEL
+   &menu_display_ctx_sixel,
+#endif
+#ifdef HAVE_CACA
+   &menu_display_ctx_caca,
 #endif
    &menu_display_ctx_null,
    NULL,
@@ -297,6 +300,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_WIIU:
          if (string_is_equal(video_driver, "gx2"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_SIXEL:
+         if (string_is_equal(video_driver, "sixel"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_CACA:
