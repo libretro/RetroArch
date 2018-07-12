@@ -3,6 +3,7 @@
 - ANDROID: Powerstate/battery level support.
 - COMMON: Automatically hide "Configuration Override options" in Quick Menu.
 - COMMON: Small Bugfix to not trigger savestate code when pressing Reset.
+- COMMON: Added libsixel video driver.
 - HID/OSX: Fix to set hid device registration deterministic (#6497), to address issue #6640 re-adding dynamic device registration.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
