@@ -217,6 +217,37 @@ static bool caca_font_init_first(
 }
 #endif
 
+#ifdef HAVE_SIXEL
+static const font_renderer_t *sixel_font_backends[] = {
+   &sixel_font,
+   NULL,
+};
+
+static bool sixel_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; sixel_font_backends[i]; i++)
+   {
+      void *data = sixel_font_backends[i]->init(
+            video_data, font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = sixel_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 #ifdef DJGPP
 static const font_renderer_t *vga_font_backends[] = {
    &vga_font,
@@ -593,6 +624,11 @@ static bool font_init_first(
 #ifdef HAVE_CACA
       case FONT_DRIVER_RENDER_CACA:
          return caca_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
+#ifdef HAVE_SIXEL
+      case FONT_DRIVER_RENDER_SIXEL:
+         return sixel_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
 #if defined(_WIN32) && !defined(_XBOX)

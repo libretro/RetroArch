@@ -339,11 +339,14 @@ static const video_driver_t *video_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX)
    &video_gdi,
 #endif
-#ifdef HAVE_CACA
-   &video_caca,
-#endif
 #ifdef DJGPP
    &video_vga,
+#endif
+#ifdef HAVE_SIXEL
+   &video_sixel,
+#endif
+#ifdef HAVE_CACA
+   &video_caca,
 #endif
    &video_null,
    NULL,
@@ -408,6 +411,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #endif
 #if defined(_WIN32) && !defined(_XBOX)
    &gfx_ctx_gdi,
+#endif
+#ifdef HAVE_SIXEL
+   &gfx_ctx_sixel,
 #endif
    &gfx_ctx_null,
    NULL

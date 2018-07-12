@@ -233,6 +233,7 @@ fi
 check_pkgconf ALSA alsa
 check_val '' ALSA -lasound alsa
 check_lib '' CACA -lcaca
+check_lib '' SIXEL -lsixel
 
 if [ "$HAVE_OSS" != 'no' ]; then
    check_header OSS sys/soundcard.h
@@ -516,7 +517,7 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
          HAVE_SHADERPIPELINE=no
          HAVE_VULKAN=no
          die : 'Notice: Hardware rendering context not available.'
-      elif [ "$HAVE_CACA" = 'yes' ]; then
+      elif [ "$HAVE_CACA" = 'yes' ] || [ "$HAVE_SIXEL" = 'yes' ]; then
          die : 'Notice: Hardware rendering context not available.'
       else
          HAVE_MATERIALUI=no

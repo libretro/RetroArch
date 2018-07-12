@@ -5,6 +5,7 @@ HAVE_MAN_DIR=              # Manpage install directory (Deprecated)
 HAVE_OPENGLES_LIBS=        # Link flags for custom GLES library
 HAVE_OPENGLES_CFLAGS=      # C-flags for custom GLES library
 HAVE_CACA=no               # Libcaca support
+HAVE_SIXEL=no              # Libsixel support
 HAVE_LIBRETRODB=yes        # Libretrodb support
 HAVE_RGUI=yes              # RGUI menu
 HAVE_MATERIALUI=auto       # MaterialUI menu
