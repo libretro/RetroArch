@@ -118,6 +118,7 @@ static const char *glsl_prefixes[] = {
 
 #ifdef HAVE_SHADERPIPELINE
 #include "../drivers/gl_shaders/core_pipeline_xmb_ribbon.glsl.frag.h"
+#include "../drivers/gl_shaders/core_pipeline_xmb_ribbon_simple.glsl.frag.h"
 #include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon_simple.glsl.vert.h"
 #include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon_simple.glsl.vert.h"
 #include "../drivers/gl_shaders/modern_pipeline_snow.glsl.vert.h"
@@ -826,7 +827,7 @@ static void gl_glsl_init_menu_shaders(void *data)
          &glsl->uniforms[VIDEO_SHADER_MENU]);
 
    shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_simple_modern : stock_vertex_xmb_ribbon_simple_legacy;
-   shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
+   shader_prog_info.fragment = glsl_core ? stock_fragment_xmb_ribbon_simple_core : stock_fragment_xmb_ribbon_simple;
 
    RARCH_LOG("[GLSL]: Compiling simple ribbon shader..\n");
    gl_glsl_compile_program(
