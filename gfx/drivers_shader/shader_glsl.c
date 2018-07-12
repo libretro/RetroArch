@@ -816,6 +816,7 @@ static void gl_glsl_init_menu_shaders(void *data)
 #endif
    shader_prog_info.is_file = false;
 
+   RARCH_LOG("[GLSL]: Compiling ribbon shader..\n");
    gl_glsl_compile_program(
          glsl,
          VIDEO_SHADER_MENU,
@@ -827,6 +828,7 @@ static void gl_glsl_init_menu_shaders(void *data)
    shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_simple_modern : stock_vertex_xmb_ribbon_simple_legacy;
    shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
 
+   RARCH_LOG("[GLSL]: Compiling simple ribbon shader..\n");
    gl_glsl_compile_program(
          glsl,
          VIDEO_SHADER_MENU_2,
@@ -842,6 +844,7 @@ static void gl_glsl_init_menu_shaders(void *data)
 #endif
    shader_prog_info.fragment = stock_fragment_xmb_simple_snow;
 
+   RARCH_LOG("[GLSL]: Compiling snow shader..\n");
    gl_glsl_compile_program(
          glsl,
          VIDEO_SHADER_MENU_3,
@@ -857,6 +860,7 @@ static void gl_glsl_init_menu_shaders(void *data)
 #endif
    shader_prog_info.fragment = stock_fragment_xmb_snow;
 
+   RARCH_LOG("[GLSL]: Compiling modern snow shader..\n");
    gl_glsl_compile_program(
          glsl,
          VIDEO_SHADER_MENU_4,
@@ -872,6 +876,7 @@ static void gl_glsl_init_menu_shaders(void *data)
 #endif
    shader_prog_info.fragment = stock_fragment_xmb_bokeh;
 
+   RARCH_LOG("[GLSL]: Compiling bokeh shader..\n");
    gl_glsl_compile_program(
          glsl,
          VIDEO_SHADER_MENU_5,
@@ -887,6 +892,7 @@ static void gl_glsl_init_menu_shaders(void *data)
 #endif
    shader_prog_info.fragment = stock_fragment_xmb_snowflake;
 
+   RARCH_LOG("[GLSL]: Compiling snowflake shader..\n");
    gl_glsl_compile_program(
          glsl,
          VIDEO_SHADER_MENU_6,
