@@ -109,7 +109,7 @@ extern bool g_xinput_block_pads;
 
 #ifdef HAVE_DYNAMIC
 /* For xinput1_n.dll */
-static dylib_t g_xinput_dll;
+static dylib_t g_xinput_dll = NULL;
 #endif
 
 /* Function pointer, to be assigned with dylib_proc */
@@ -173,16 +173,10 @@ const char *xinput_joypad_name(unsigned pad)
    return XBOX_CONTROLLER_NAMES[xuser];
 }
 
-static bool xinput_joypad_init(void *data)
-{
-   unsigned i, j;
-   XINPUT_STATE dummy_state;
-   const char *version = "1.4";
-
-   (void)data;
 #ifdef HAVE_DYNAMIC
-   g_xinput_dll = NULL;
-
+static bool load_xinput_dll(void)
+{
+   const char *version = "1.4";
    /* Find the correct path to load the DLL from.
     * Usually this will be from the system directory,
     * but occasionally a user may wish to use a third-party
@@ -207,6 +201,19 @@ static bool xinput_joypad_init(void *data)
    }
 
    RARCH_LOG("[XInput]: Found XInput v%s.\n", version);
+   return true;
+}
+#endif
+
+static bool xinput_joypad_init(void *data)
+{
+   unsigned i, j;
+   XINPUT_STATE dummy_state;
+
+#ifdef HAVE_DYNAMIC
+   if (!g_xinput_dll)
+      if (!load_xinput_dll())
+         return false;
 
    /* If we get here then an xinput DLL is correctly loaded.
     * First try to load ordinal 100 (XInputGetStateEx).
