@@ -599,8 +599,9 @@ bool config_get_size_t(config_file_t *conf, const char *key, size_t *in)
 
    if (entry)
    {
-      size_t val = 0 ;
-      if (1 == sscanf(entry->value, "%" PRI_SIZET, &val)) {
+      size_t val = 0;
+      if (sscanf(entry->value, "%" PRI_SIZET, &val) == 1)
+      {
          *in = val;
          return true;
       }
