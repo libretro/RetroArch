@@ -25,7 +25,6 @@
 #include <streams/file_stream.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
-#include "../../configuration.h"
 
 #ifdef WIIU
 #include <wiiu/os.h>

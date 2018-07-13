@@ -383,40 +383,28 @@ void menu_display_font_free(font_data_t *font)
 
 /* Setup: Initializes the font associated
  * to the menu driver */
-static font_data_t *menu_display_font_main_init(
-      menu_display_ctx_font_t *font,
-      bool is_threaded)
-{
-   font_data_t *font_data = NULL;
-
-   if (!font || !menu_disp)
-      return NULL;
-
-   if (!menu_disp->font_init_first((void**)&font_data,
-            video_driver_get_ptr(false),
-            font->path, font->size, is_threaded))
-      return NULL;
-
-   return font_data;
-}
-
 font_data_t *menu_display_font(
       enum application_special_type type,
       float font_size,
       bool is_threaded)
 {
-   menu_display_ctx_font_t font_info;
    char fontpath[PATH_MAX_LENGTH];
+   font_data_t *font_data = NULL;
+
+   if (!menu_disp)
+      return NULL;
 
    fontpath[0] = '\0';
 
    fill_pathname_application_special(
          fontpath, sizeof(fontpath), type);
 
-   font_info.path = fontpath;
-   font_info.size = font_size;
+   if (!menu_disp->font_init_first((void**)&font_data,
+            video_driver_get_ptr(false),
+            fontpath, font_size, is_threaded))
+      return NULL;
 
-   return menu_display_font_main_init(&font_info, is_threaded);
+   return font_data;
 }
 
 /* Reset the menu's coordinate array vertices.

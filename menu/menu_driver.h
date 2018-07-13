@@ -455,12 +455,6 @@ typedef struct menu_display_ctx_datetime
    unsigned time_mode;
 } menu_display_ctx_datetime_t;
 
-typedef struct menu_display_ctx_font
-{
-   const char *path;
-   float size;
-} menu_display_ctx_font_t;
-
 typedef struct menu_ctx_driver
 {
    /* Set a framebuffer texture. This is used for instance by RGUI. */
