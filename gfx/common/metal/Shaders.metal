@@ -74,6 +74,11 @@ fragment float4 stock_fragment(FontFragmentIn  in  [[ stage_in ]],
     return colorSample * in.color;
 }
 
+fragment half4 stock_fragment_color(FontFragmentIn in [[ stage_in ]])
+{
+    return half4(in.color);
+}
+
 #pragma mark - filter kernels
 
 kernel void convert_bgra4444_to_bgra8888(device uint16_t *              in  [[ buffer(0) ]],

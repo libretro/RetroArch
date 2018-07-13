@@ -35,7 +35,7 @@ static void *menu_display_metal_get_default_mvp(video_frame_info_t *video_info)
    if (!md)
       return NULL;
    
-   return (void *)&md.viewportMVPNormalized->projectionMatrix;
+   return (void *)&md.viewportMVP->projectionMatrix;
 }
 
 static void menu_display_metal_blend_begin(video_frame_info_t *video_info)

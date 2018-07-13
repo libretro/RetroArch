@@ -428,6 +428,25 @@
 		05D7753120A55D2700646447 /* BaseConfig.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = BaseConfig.xcconfig; sourceTree = "<group>"; };
 		05D7753320A5678300646447 /* griffin_cpp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_cpp.cpp; path = ../../griffin/griffin_cpp.cpp; sourceTree = "<group>"; };
 		05D7753420A5678400646447 /* griffin_glslang.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_glslang.cpp; path = ../../griffin/griffin_glslang.cpp; sourceTree = "<group>"; };
+		05F2872F20F2BEEA00632D47 /* task_autodetect.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_autodetect.c; sourceTree = "<group>"; };
+		05F2873020F2BEEA00632D47 /* task_netplay_find_content.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_netplay_find_content.c; sourceTree = "<group>"; };
+		05F2873120F2BEEA00632D47 /* task_netplay_nat_traversal.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_netplay_nat_traversal.c; sourceTree = "<group>"; };
+		05F2873220F2BEEA00632D47 /* task_screenshot.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_screenshot.c; sourceTree = "<group>"; };
+		05F2873320F2BEEA00632D47 /* task_file_transfer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_file_transfer.c; sourceTree = "<group>"; };
+		05F2873420F2BEEA00632D47 /* task_database.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_database.c; sourceTree = "<group>"; };
+		05F2873520F2BEEA00632D47 /* task_save.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_save.c; sourceTree = "<group>"; };
+		05F2873620F2BEEA00632D47 /* task_powerstate.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_powerstate.c; sourceTree = "<group>"; };
+		05F2873720F2BEEA00632D47 /* task_image.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_image.c; sourceTree = "<group>"; };
+		05F2873820F2BEEA00632D47 /* tasks_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tasks_internal.h; sourceTree = "<group>"; };
+		05F2873920F2BEEA00632D47 /* task_overlay.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_overlay.c; sourceTree = "<group>"; };
+		05F2873A20F2BEEA00632D47 /* task_audio_mixer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_audio_mixer.c; sourceTree = "<group>"; };
+		05F2873B20F2BEEA00632D47 /* task_decompress.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_decompress.c; sourceTree = "<group>"; };
+		05F2873C20F2BEEA00632D47 /* task_netplay_lan_scan.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_netplay_lan_scan.c; sourceTree = "<group>"; };
+		05F2873D20F2BEEA00632D47 /* task_wifi.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_wifi.c; sourceTree = "<group>"; };
+		05F2873E20F2BEEA00632D47 /* task_database_cue.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_database_cue.c; sourceTree = "<group>"; };
+		05F2873F20F2BEEA00632D47 /* task_content.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_content.c; sourceTree = "<group>"; };
+		05F2874020F2BEEA00632D47 /* task_http.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_http.c; sourceTree = "<group>"; };
+		05F2874120F2BEEA00632D47 /* task_patch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_patch.c; sourceTree = "<group>"; };
 		05FA11A120CC6684008C5D0A /* MetalRenderer.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = MetalRenderer.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1DDD58150DA1D0A300B32029 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = MainMenu.xib; path = OSX/en.lproj/MainMenu.xib; sourceTree = "<group>"; };
@@ -563,6 +582,7 @@
 				05A8C57120DB72F000FF7857 /* intl */,
 				05C5D53220E3DD0900654EE4 /* input */,
 				05A8C51A20DB72F000FF7857 /* menu */,
+				05F2872E20F2BEEA00632D47 /* tasks */,
 				05A8C5AD20DB72F000FF7857 /* ui */,
 			);
 			name = Sources;
@@ -1192,6 +1212,33 @@
 				05C5D58720E3DD0900654EE4 /* sdl_joypad.c */,
 			);
 			path = drivers_joypad;
+			sourceTree = "<group>";
+		};
+		05F2872E20F2BEEA00632D47 /* tasks */ = {
+			isa = PBXGroup;
+			children = (
+				05F2872F20F2BEEA00632D47 /* task_autodetect.c */,
+				05F2873020F2BEEA00632D47 /* task_netplay_find_content.c */,
+				05F2873120F2BEEA00632D47 /* task_netplay_nat_traversal.c */,
+				05F2873220F2BEEA00632D47 /* task_screenshot.c */,
+				05F2873320F2BEEA00632D47 /* task_file_transfer.c */,
+				05F2873420F2BEEA00632D47 /* task_database.c */,
+				05F2873520F2BEEA00632D47 /* task_save.c */,
+				05F2873620F2BEEA00632D47 /* task_powerstate.c */,
+				05F2873720F2BEEA00632D47 /* task_image.c */,
+				05F2873820F2BEEA00632D47 /* tasks_internal.h */,
+				05F2873920F2BEEA00632D47 /* task_overlay.c */,
+				05F2873A20F2BEEA00632D47 /* task_audio_mixer.c */,
+				05F2873B20F2BEEA00632D47 /* task_decompress.c */,
+				05F2873C20F2BEEA00632D47 /* task_netplay_lan_scan.c */,
+				05F2873D20F2BEEA00632D47 /* task_wifi.c */,
+				05F2873E20F2BEEA00632D47 /* task_database_cue.c */,
+				05F2873F20F2BEEA00632D47 /* task_content.c */,
+				05F2874020F2BEEA00632D47 /* task_http.c */,
+				05F2874120F2BEEA00632D47 /* task_patch.c */,
+			);
+			name = tasks;
+			path = ../../tasks;
 			sourceTree = "<group>";
 		};
 		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {

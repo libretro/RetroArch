@@ -4,6 +4,7 @@
     <option name="INDENT_C_STRUCT_MEMBERS" value="3" />
     <option name="INDENT_CLASS_MEMBERS" value="3" />
     <option name="INDENT_INSIDE_CODE_BLOCK" value="3" />
+    <option name="METHOD_BRACE_PLACEMENT" value="2" />
     <option name="FUNCTION_BRACE_PLACEMENT" value="2" />
     <option name="FUNCTION_NON_TOP_AFTER_RETURN_TYPE_WRAP" value="1" />
     <option name="FUNCTION_TOP_AFTER_RETURN_TYPE_WRAP" value="1" />
@@ -46,14 +47,15 @@
     </extensions>
   </Objective-C-extensions>
   <codeStyleSettings language="ObjectiveC">
+    <option name="BLANK_LINES_BEFORE_IMPORTS" value="0" />
+    <option name="BLANK_LINES_AFTER_IMPORTS" value="0" />
     <option name="BLANK_LINES_AROUND_METHOD_IN_INTERFACE" value="0" />
     <option name="BRACE_STYLE" value="2" />
+    <option name="CLASS_BRACE_STYLE" value="2" />
     <option name="ELSE_ON_NEW_LINE" value="true" />
     <option name="ALIGN_MULTILINE_BINARY_OPERATION" value="true" />
-    <option name="ALIGN_MULTILINE_ASSIGNMENT" value="true" />
     <option name="ALIGN_MULTILINE_TERNARY_OPERATION" value="true" />
     <option name="ALIGN_MULTILINE_ARRAY_INITIALIZER_EXPRESSION" value="true" />
-    <option name="ALIGN_GROUP_FIELD_DECLARATIONS" value="true" />
     <option name="SPACE_WITHIN_BRACES" value="true" />
     <option name="SPACE_AFTER_TYPE_CAST" value="false" />
     <option name="BINARY_OPERATION_WRAP" value="1" />
@@ -67,6 +69,8 @@
       <option name="INDENT_SIZE" value="3" />
       <option name="CONTINUATION_INDENT_SIZE" value="3" />
       <option name="TAB_SIZE" value="3" />
+      <option name="LABEL_INDENT_ABSOLUTE" value="true" />
+      <option name="KEEP_INDENTS_ON_EMPTY_LINES" value="true" />
     </indentOptions>
   </codeStyleSettings>
 </code_scheme>
