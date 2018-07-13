@@ -32,10 +32,10 @@
 + (const float *)defaultVertices
 {
    static float dummy[] = {
-      0.0f, 1.0f,
-      1.0f, 1.0f,
       0.0f, 0.0f,
       1.0f, 0.0f,
+      0.0f, 1.0f,
+      1.0f, 1.0f,
    };
    return &dummy[0];
 }
@@ -145,7 +145,7 @@
    SpriteVertex *pv = (SpriteVertex *)range.data;
    for (unsigned i = 0; i < draw->coords->vertices; i++, pv++)
    {
-      pv->position = simd_make_float2(vertex[0], vertex[1]);
+      pv->position = simd_make_float2(vertex[0], 1.0f - vertex[1]);
       vertex += 2;
       
       pv->texCoord = simd_make_float2(tex_coord[0], tex_coord[1]);
