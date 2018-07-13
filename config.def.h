@@ -701,12 +701,16 @@ static const unsigned midi_volume = 100;
 static const bool sustained_performance_mode = false;
 
 #if defined(ANDROID)
-#if defined(ANDROID_ARM)
+#if defined(ANDROID_ARM_V7)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/";
+#elif defined(ANDROID_ARM)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi/";
 #elif defined(ANDROID_AARCH64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/arm64-v8a/";
 #elif defined(ANDROID_X86)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86/";
+#elif defined(ANDROID_X64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86_64/";
 #else
 static char buildbot_server_url[] = "";
 #endif
