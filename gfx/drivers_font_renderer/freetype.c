@@ -299,17 +299,21 @@ static const char *font_renderer_ft_get_default_font(void)
    return "";
 #else
    size_t i;
+#if 0
    settings_t *settings = config_get_ptr();
    char asset_path[PATH_MAX_LENGTH];
+#endif
 
    for (i = 0; i < ARRAY_SIZE(font_paths); i++)
    {
+#if 0
       /* Check if we are getting the font from the assets directory. */
       if (string_is_equal(font_paths[i], "assets://pkg/osd-font.ttf"))
       {
          fill_pathname_join(asset_path, settings->paths.directory_assets, "pkg/osd-font.ttf", PATH_MAX_LENGTH);
          font_paths[i] = asset_path;
       }
+#endif
 
       if (filestream_exists(font_paths[i]))
          return font_paths[i];
