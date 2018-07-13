@@ -31,6 +31,8 @@
 #include "../common/win32_common.h"
 #endif
 
+static enum gfx_ctx_api sixel_ctx_api = GFX_CTX_NONE;
+
 static void gfx_ctx_sixel_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
@@ -131,6 +133,11 @@ static bool gfx_ctx_sixel_get_metrics(void *data,
    return false;
 }
 
+static enum gfx_ctx_api gfx_ctx_sixel_get_api(void *data)
+{
+   return sixel_ctx_api;
+}
+
 static bool gfx_ctx_sixel_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -171,10 +178,12 @@ static void gfx_ctx_sixel_swap_buffers(void *data, void *data2)
 const gfx_ctx_driver_t gfx_ctx_sixel = {
    gfx_ctx_sixel_init,
    gfx_ctx_sixel_destroy,
+   gfx_ctx_sixel_get_api,
    gfx_ctx_sixel_bind_api,
    gfx_ctx_sixel_swap_interval,
    gfx_ctx_sixel_set_video_mode,
    gfx_ctx_sixel_get_video_size,
+   NULL, /* get_refresh_rate */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
