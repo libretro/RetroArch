@@ -10,6 +10,7 @@
 #define RendererCommon_h
 
 #import <Foundation/Foundation.h>
+#import "ShaderTypes.h"
 
 // TODO(sgc): implement triple buffering
 /*! @brief maximum inflight frames */

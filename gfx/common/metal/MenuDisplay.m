@@ -12,19 +12,17 @@
 
 @implementation MenuDisplay
 {
-   __weak MetalDriver *_driver;
    Context *_context;
    MTLClearColor _clearColor;
    bool _clearNextRender;
    Uniforms _uniforms;
 }
 
-- (instancetype)initWithDriver:(MetalDriver *)driver
+- (instancetype)initWithContext:(Context *)context
 {
    if (self = [super init])
    {
-      _driver = driver;
-      _context = driver.context;
+      _context = context;
       _clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0);
       _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
    }
@@ -45,10 +43,10 @@
 + (const float *)defaultTexCoords
 {
    static float dummy[] = {
-      0.0f, 0.0f,
-      1.0f, 0.0f,
       0.0f, 1.0f,
       1.0f, 1.0f,
+      0.0f, 0.0f,
+      1.0f, 0.0f,
    };
    return &dummy[0];
 }
@@ -97,7 +95,7 @@
    draw->y = 0;
    draw->matrix_data = NULL;
    
-   _uniforms.outputSize = simd_make_float2(_driver.viewport->full_width, _driver.viewport->full_height);
+   _uniforms.outputSize = simd_make_float2(_context.viewport->full_width, _context.viewport->full_height);
    
    draw->pipeline.backend_data = &_uniforms;
    draw->pipeline.backend_data_size = sizeof(_uniforms);
@@ -147,7 +145,7 @@
    SpriteVertex *pv = (SpriteVertex *)range.data;
    for (unsigned i = 0; i < draw->coords->vertices; i++, pv++)
    {
-      pv->position = simd_make_float2(vertex[0], 1.0f - vertex[1]);
+      pv->position = simd_make_float2(vertex[0], vertex[1]);
       vertex += 2;
       
       pv->texCoord = simd_make_float2(tex_coord[0], tex_coord[1]);
@@ -158,9 +156,24 @@
    }
    
    id<MTLRenderCommandEncoder> rce = _context.rce;
+   if (_clearNextRender)
+   {
+      [_context resetRenderViewport];
+      [_context drawQuadX:0
+                        y:0
+                        w:1
+                        h:1
+                        r:(float)_clearColor.red
+                        g:(float)_clearColor.green
+                        b:(float)_clearColor.blue
+                        a:(float)_clearColor.alpha
+      ];
+      _clearNextRender = NO;
+   }
+   
    MTLViewport vp = {
       .originX = draw->x,
-      .originY = _driver.viewport->full_height - draw->y - draw->height,
+      .originY = _context.viewport->full_height - draw->y - draw->height,
       .width   = draw->width,
       .height  = draw->height,
       .znear   = 0,
@@ -177,7 +190,7 @@
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         [rce setRenderPipelineState:[_driver getStockShader:draw->pipeline.id blend:_blend]];
+         [rce setRenderPipelineState:[_context getStockShader:draw->pipeline.id blend:_blend]];
          [rce setVertexBytes:draw->pipeline.backend_data length:draw->pipeline.backend_data_size atIndex:BufferIndexUniforms];
          [rce setVertexBuffer:range.buffer offset:range.offset atIndex:BufferIndexPositions];
          [rce setFragmentBytes:draw->pipeline.backend_data length:draw->pipeline.backend_data_size atIndex:BufferIndexUniforms];
@@ -192,13 +205,7 @@
    if (tex == nil)
       return;
    
-   if (_clearNextRender)
-   {
-      // TODO(sgc): draw quad to clear
-      _clearNextRender = NO;
-   }
-   
-   [rce setRenderPipelineState:[_driver getStockShader:VIDEO_SHADER_STOCK_BLEND blend:_blend]];
+   [rce setRenderPipelineState:[_context getStockShader:VIDEO_SHADER_STOCK_BLEND blend:_blend]];
    
    Uniforms uniforms = {
       .projectionMatrix = draw->matrix_data ? make_matrix_float4x4((const float *)draw->matrix_data)

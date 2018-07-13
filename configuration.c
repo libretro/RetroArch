@@ -125,6 +125,7 @@ enum video_driver_enum
 {
    VIDEO_GL                 = 0,
    VIDEO_VULKAN,
+   VIDEO_METAL,
    VIDEO_DRM,
    VIDEO_XVIDEO,
    VIDEO_SDL,
@@ -291,6 +292,8 @@ enum midi_driver_enum
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
+#elif defined(HAVE_METAL)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 #elif defined(GEKKO)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WII;
 #elif defined(WIIU)
@@ -711,6 +714,8 @@ const char *config_get_default_video(void)
          return "gl";
       case VIDEO_VULKAN:
          return "vulkan";
+      case VIDEO_METAL:
+         return "metal";
       case VIDEO_DRM:
          return "drm";
       case VIDEO_WII:
@@ -2357,6 +2362,7 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
    settings_t *settings = config_get_ptr();
 
    if (string_is_equal(settings->arrays.video_driver, "vulkan") ||
+       string_is_equal(settings->arrays.video_driver, "metal") ||
        string_is_equal(settings->arrays.video_driver, "d3d11") ||
        string_is_equal(settings->arrays.video_driver, "d3d12") ||
        string_is_equal(settings->arrays.video_driver, "gx2"))

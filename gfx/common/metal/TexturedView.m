@@ -7,8 +7,6 @@
 #import "View.h"
 #import "Filter.h"
 
-#import "ShaderTypes.h"
-
 @implementation TexturedView
 {
    Context *_context;
