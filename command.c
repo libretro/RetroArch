@@ -1997,7 +1997,7 @@ TODO: Add a setting for these tweaks */
                if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
                {
-                  state_manager_event_init((unsigned)settings->rewind_buffer_size);
+                  state_manager_event_init((unsigned)settings->sizes.rewind_buffer_size);
                }
             }
          }

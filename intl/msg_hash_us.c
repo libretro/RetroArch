@@ -1386,6 +1386,22 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "at a time, increasing the rewinding \n"
                              "speed.");
             break;
+        case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE:
+            snprintf(s, len,
+                     "Rewind buffer size (MB).\n"
+                             " \n"
+                             " The amount of memory in MB to reserve \n"
+                             "for rewinding.  Increasing this value \n"
+                             "increases the rewind history length.\n");
+            break;
+        case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
+            snprintf(s, len,
+                     "Rewind buffer size step (MB).\n"
+                             " \n"
+                             " Each time you increase or decrease \n"
+                             "the rewind buffer size value via this \n"
+                             "UI it will change by this amount.\n");
+            break;
         case MENU_ENUM_LABEL_SCREENSHOT:
             snprintf(s, len,
                      "Take screenshot.");

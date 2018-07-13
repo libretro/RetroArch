@@ -592,6 +592,23 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
    return false;
 }
 
+bool config_get_size_t(config_file_t *conf, const char *key, size_t *in)
+{
+   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
+   errno = 0;
+
+   if (entry)
+   {
+      size_t val = 0 ;
+      if (1 == sscanf(entry->value, "%" PRI_SIZET, &val)) {
+         *in = val;
+         return true;
+      }
+   }
+
+   return false;
+}
+
 #if defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
 bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 {
