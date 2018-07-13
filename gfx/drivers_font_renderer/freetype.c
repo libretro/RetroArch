@@ -84,13 +84,13 @@ static freetype_atlas_slot_t* font_renderer_get_slot(ft_font_renderer_t *handle)
    unsigned oldest = 0;
 
    for (i = 1; i < FT_ATLAS_SIZE; i++)
-      if((handle->usage_counter - handle->atlas_slots[i].last_used) >
+      if ((handle->usage_counter - handle->atlas_slots[i].last_used) >
          (handle->usage_counter - handle->atlas_slots[oldest].last_used))
          oldest = i;
 
    /* remove from map */
    map_id = handle->atlas_slots[oldest].charcode & 0xFF;
-   if(handle->uc_map[map_id] == &handle->atlas_slots[oldest])
+   if (handle->uc_map[map_id] == &handle->atlas_slots[oldest])
       handle->uc_map[map_id] = handle->atlas_slots[oldest].next;
    else if (handle->uc_map[map_id])
    {
@@ -120,7 +120,7 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
 
    while(atlas_slot)
    {
-      if(atlas_slot->charcode == charcode)
+      if (atlas_slot->charcode == charcode)
       {
          atlas_slot->last_used = handle->usage_counter++;
          return &atlas_slot->glyph;
@@ -203,7 +203,7 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
       font_renderer_ft_get_glyph(handle, i);
 
    for (i = 0; i < 256; i++)
-      if(isalnum(i))
+      if (isalnum(i))
          font_renderer_ft_get_glyph(handle, i);
 
    return true;
@@ -227,12 +227,12 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       goto error;
 
 #ifdef WIIU
-   if(!*font_path)
+   if (!*font_path)
    {
-      void* font_data = NULL;
+      void* font_data    = NULL;
       uint32_t font_size = 0;
 
-      if(!OSGetSharedData(SHARED_FONT_DEFAULT, 0, &font_data, &font_size))
+      if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0, &font_data, &font_size))
          goto error;
 
       err = FT_New_Memory_Face(handle->lib, font_data, font_size, 0, &handle->face);
@@ -299,7 +299,6 @@ static const char *font_renderer_ft_get_default_font(void)
 #else
    size_t i;
 #if 0
-   settings_t *settings = config_get_ptr();
    char asset_path[PATH_MAX_LENGTH];
 #endif
 
@@ -309,7 +308,9 @@ static const char *font_renderer_ft_get_default_font(void)
       /* Check if we are getting the font from the assets directory. */
       if (string_is_equal(font_paths[i], "assets://pkg/osd-font.ttf"))
       {
-         fill_pathname_join(asset_path, settings->paths.directory_assets, "pkg/osd-font.ttf", PATH_MAX_LENGTH);
+         settings_t *settings = config_get_ptr();
+         fill_pathname_join(asset_path,
+               settings->paths.directory_assets, "pkg/osd-font.ttf", PATH_MAX_LENGTH);
          font_paths[i] = asset_path;
       }
 #endif

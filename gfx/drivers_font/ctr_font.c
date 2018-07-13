@@ -58,8 +58,9 @@ static void* ctr_font_init_font(void* data, const char* font_path,
       return NULL;
 
    font_size = 10;
-   if (!font_renderer_create_default((const void**)&font->font_driver,
-                                     &font->font_data, font_path, font_size))
+   if (!font_renderer_create_default(
+            &font->font_driver,
+            &font->font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");
       free(font);

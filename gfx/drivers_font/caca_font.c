@@ -45,7 +45,8 @@ static void *caca_init_font(void *data,
 
    font->caca = (caca_t*)data;
 
-   if (!font_renderer_create_default((const void**)&font->caca_font_driver,
+   if (!font_renderer_create_default(
+            &font->caca_font_driver,
             &font->caca_font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");

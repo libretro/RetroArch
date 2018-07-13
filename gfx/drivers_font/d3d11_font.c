@@ -45,7 +45,7 @@ d3d11_font_init_font(void* data, const char* font_path, float font_size, bool is
       return NULL;
 
    if (!font_renderer_create_default(
-             (const void**)&font->font_driver, &font->font_data, font_path, font_size))
+             &font->font_driver, &font->font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");
       free(font);

@@ -96,7 +96,8 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
    if (!settings->bools.video_font_enable)
       return;
 
-   if (!font_renderer_create_default((const void**)&vid->font_driver, &vid->font,
+   if (!font_renderer_create_default(
+            &vid->font_driver, &vid->font,
             *settings->paths.path_font ? settings->paths.path_font : NULL,
             settings->floats.video_font_size))
    {

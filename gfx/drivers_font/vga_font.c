@@ -46,7 +46,8 @@ static void *vga_init_font(void *data,
 
    font_size = 1;
 
-   if (!font_renderer_create_default((const void**)&font->vga_font_driver,
+   if (!font_renderer_create_default(
+            &font->vga_font_driver,
             &font->vga_font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");

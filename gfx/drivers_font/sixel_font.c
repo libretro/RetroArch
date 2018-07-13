@@ -45,7 +45,8 @@ static void *sixel_init_font(void *data,
 
    font->sixel = (sixel_t*)data;
 
-   if (!font_renderer_create_default((const void**)&font->sixel_font_driver,
+   if (!font_renderer_create_default(
+            &font->sixel_font_driver,
             &font->sixel_font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");

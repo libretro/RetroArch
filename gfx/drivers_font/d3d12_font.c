@@ -46,7 +46,7 @@ d3d12_font_init_font(void* data, const char* font_path,
       return NULL;
 
    if (!font_renderer_create_default(
-             (const void**)&font->font_driver,
+             &font->font_driver,
              &font->font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");

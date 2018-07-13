@@ -46,13 +46,12 @@ static const font_renderer_driver_t *font_backends[] = {
 
 static void *video_font_driver = NULL;
 
-int font_renderer_create_default(const void **data, void **handle,
+int font_renderer_create_default(
+      const font_renderer_driver_t **drv,
+      void **handle,
       const char *font_path, unsigned font_size)
 {
-
    unsigned i;
-   const font_renderer_driver_t **drv =
-      (const font_renderer_driver_t**)data;
 
    for (i = 0; font_backends[i]; i++)
    {
@@ -76,7 +75,7 @@ int font_renderer_create_default(const void **data, void **handle,
                font_backends[i]->ident);
    }
 
-   *drv = NULL;
+   *drv    = NULL;
    *handle = NULL;
 
    return 0;

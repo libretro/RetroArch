@@ -48,7 +48,8 @@ static void *vita2d_font_init_font(void *data,
 
    font->vita                     = (vita_video_t*)data;
 
-   if (!font_renderer_create_default((const void**)&font->font_driver,
+   if (!font_renderer_create_default(
+            &font->font_driver,
             &font->font_data, font_path, font_size))
       goto error;
 

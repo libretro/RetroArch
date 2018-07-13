@@ -64,8 +64,9 @@
       
       _driver = driver;
       _context = driver.context;
-      if (!font_renderer_create_default((const void **)&_font_driver,
-                                        &_font_data, font_path, font_size))
+      if (!font_renderer_create_default(
+               &_font_driver,
+               &_font_data, font_path, font_size))
       {
          RARCH_WARN("Couldn't initialize font renderer.\n");
          return nil;

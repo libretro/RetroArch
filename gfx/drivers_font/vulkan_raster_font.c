@@ -60,7 +60,8 @@ static void *vulkan_raster_font_init_font(void *data,
 
    font->vk = (vk_t*)data;
 
-   if (!font_renderer_create_default((const void**)&font->font_driver,
+   if (!font_renderer_create_default(
+            &font->font_driver,
             &font->font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");
