@@ -155,4 +155,14 @@ typedef struct
    uint32_t data[8];
 } retro_bits_t;
 
+#ifdef _WIN32
+#  ifdef _WIN64
+#    define PRI_SIZET PRIu64
+#  else
+#    define PRI_SIZET PRIu32
+#  endif
+#else
+#  define PRI_SIZET "zu"
+#endif
+
 #endif

@@ -348,6 +348,7 @@ typedef struct settings
       unsigned content_history_size;
       unsigned libretro_log_level;
       unsigned rewind_granularity;
+      unsigned rewind_buffer_size_step;
       unsigned autosave_interval;
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
@@ -410,6 +411,12 @@ typedef struct settings
 
       unsigned midi_volume;
    } uints;
+
+   struct
+   {
+      size_t placeholder;
+      size_t rewind_buffer_size;
+   } sizes;
 
    struct
    {
@@ -509,7 +516,6 @@ typedef struct settings
 
    video_viewport_t video_viewport_custom;
 
-   size_t rewind_buffer_size;
 } settings_t;
 
 /**

@@ -524,6 +524,9 @@ static const bool rewind_enable = false;
  * 15-20MB per minute. Very game dependant. */
 static const unsigned rewind_buffer_size = 20 << 20; /* 20MiB */
 
+/* The amount of MB to increase/decrease the rewind_buffer_size when it is changed via the UI. */
+static const unsigned rewind_buffer_size_step = 10; /* 10MB */
+
 /* How many frames to rewind at a time. */
 static const unsigned rewind_granularity = 1;
 

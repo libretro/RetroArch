@@ -1381,6 +1381,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
       "Rewind Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
       "Rewind Granularity")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
+      "Rewind Buffer Size (MB)")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
+      "Rewind Buffer Size Step (MB)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
       "Rewind")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
@@ -2801,6 +2805,14 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
       "When rewinding a defined number of frames, you can rewind several frames at a time, increasing the rewind speed."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
+      "The amount of memory (in MB) to reserve for the rewind buffer.  Increasing this will increase the amount of rewind history."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
+      "Each time you increase or decrease the rewind buffer size value via this UI it will change by this amount"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
