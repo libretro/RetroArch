@@ -1,6 +1,8 @@
 # 1.7.4 (future)
 - ANDROID: Add sustained performance mode, can be turned on/off in Power Management settings menu.
 - ANDROID: Powerstate/battery level support.
+- CHEEVOS: Fix crash when scrolling Achievement List while Unofficial Achievements enabled (#6732).
+- CHEEVOS: Added hitcounts support for PauseIf/ResetIf (#6817).
 - COMMON: Automatically hide "Configuration Override options" in Quick Menu.
 - COMMON: Small Bugfix to not trigger savestate code when pressing Reset.
 - COMMON: Added libsixel video driver.
