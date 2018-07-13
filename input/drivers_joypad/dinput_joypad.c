@@ -44,6 +44,8 @@ struct dinput_joypad
    char* joy_friendly_name;
    int32_t vid;
    int32_t pid;
+   LPDIRECTINPUTEFFECT rumble_iface[2];
+   DIEFFECT rumble_props;
 };
 
 static struct dinput_joypad g_pads[MAX_USERS];
@@ -98,6 +100,17 @@ static void dinput_joypad_destroy(void)
    {
       if (g_pads[i].joypad)
       {
+         if (g_pads[i].rumble_iface[0])
+         {
+            IDirectInputEffect_Stop(g_pads[i].rumble_iface[0]);
+            IDirectInputEffect_Release(g_pads[i].rumble_iface[0]);
+         }
+         if (g_pads[i].rumble_iface[1])
+         {
+            IDirectInputEffect_Stop(g_pads[i].rumble_iface[1]);
+            IDirectInputEffect_Release(g_pads[i].rumble_iface[1]);
+         }
+
          IDirectInputDevice8_Unacquire(g_pads[i].joypad);
          IDirectInputDevice8_Release(g_pads[i].joypad);
       }
@@ -115,6 +128,49 @@ static void dinput_joypad_destroy(void)
 
    /* Can be blocked by global Dinput context. */
    dinput_destroy_context();
+}
+
+static void dinput_create_rumble_effects(struct dinput_joypad *pad)
+{
+   LONG direction = 0;
+   DWORD axis     = DIJOFS_X;
+   DICONSTANTFORCE dicf;
+   DIENVELOPE dienv;
+   HRESULT hr;
+
+   dicf.lMagnitude = 0;
+
+   dienv.dwSize = sizeof(DIENVELOPE);
+   dienv.dwAttackLevel = 5000;
+   dienv.dwAttackTime = 250000;
+   dienv.dwFadeLevel = 0;
+   dienv.dwFadeTime = 250000;
+
+   pad->rumble_props.cAxes = 1;
+   pad->rumble_props.dwTriggerButton = DIEB_NOTRIGGER;
+   pad->rumble_props.dwTriggerRepeatInterval = 0;
+   pad->rumble_props.cbTypeSpecificParams = sizeof(DICONSTANTFORCE);
+   pad->rumble_props.dwDuration = INFINITE;
+   pad->rumble_props.dwFlags = DIEFF_CARTESIAN | DIEFF_OBJECTOFFSETS;
+   pad->rumble_props.dwGain = 0;
+   pad->rumble_props.dwSize = sizeof(DIEFFECT);
+   pad->rumble_props.dwStartDelay = 0;
+   pad->rumble_props.lpEnvelope = &dienv;
+   pad->rumble_props.lpvTypeSpecificParams = &dicf;
+   pad->rumble_props.rgdwAxes = &axis;
+   pad->rumble_props.rglDirection = &direction;
+
+   hr = IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
+         &pad->rumble_props, &pad->rumble_iface[0], NULL);
+   if (hr != DI_OK)
+      RARCH_WARN("[DINPUT]: Strong rumble unavailable.\n");
+
+   axis = DIJOFS_Y;
+
+   hr = IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
+         &pad->rumble_props, &pad->rumble_iface[1], NULL);
+   if (hr != DI_OK)
+      RARCH_WARN("[DINPUT]: Weak rumble unavailable.\n");
 }
 
 static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
@@ -281,10 +337,12 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 
    IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
    IDirectInputDevice8_SetCooperativeLevel(*pad, (HWND)video_driver_window_get(),
-         DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
+         DISCL_EXCLUSIVE | DISCL_BACKGROUND);
 
    IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb,
          *pad, DIDFT_ABSAXIS);
+
+   dinput_create_rumble_effects(&g_pads[g_joypad_cnt]);
 
 #ifdef HAVE_XINPUT
    if (!is_xinput_pad)
@@ -486,6 +544,26 @@ static bool dinput_joypad_query_pad(unsigned pad)
    return pad < MAX_USERS && g_pads[pad].joypad;
 }
 
+bool dinput_joypad_set_rumble(unsigned pad,
+      enum retro_rumble_effect type, uint16_t strenght)
+{
+   int i = type == RETRO_RUMBLE_STRONG ? 1 : 0;
+
+   if (pad >= g_joypad_cnt || !g_pads[pad].rumble_iface[i])
+      return false;
+
+   if (strenght)
+   {
+      g_pads[pad].rumble_props.dwGain =
+            (DWORD)((double)strenght / 65535.0 * (double)DI_FFNOMINALMAX);
+      IDirectInputEffect_SetParameters(g_pads[pad].rumble_iface[i],
+            &g_pads[pad].rumble_props, DIEP_GAIN | DIEP_START);
+   }
+   else
+      IDirectInputEffect_Stop(g_pads[pad].rumble_iface[i]);
+
+   return true;
+}
 
 input_device_driver_t dinput_joypad = {
    dinput_joypad_init,
@@ -495,7 +573,7 @@ input_device_driver_t dinput_joypad = {
    NULL,
    dinput_joypad_axis,
    dinput_joypad_poll,
-   NULL,
+   dinput_joypad_set_rumble,
    dinput_joypad_name,
    "dinput",
 };
