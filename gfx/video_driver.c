@@ -74,9 +74,9 @@
 #define FPS_UPDATE_INTERVAL 256
 
 #ifdef HAVE_THREADS
-#define video_driver_is_threaded() ((!video_driver_is_hw_context() && video_driver_threaded) ? true : false)
+#define video_driver_is_threaded_internal() ((!video_driver_is_hw_context() && video_driver_threaded) ? true : false)
 #else
-#define video_driver_is_threaded() (false)
+#define video_driver_is_threaded_internal() (false)
 #endif
 
 #ifdef HAVE_THREADS
@@ -503,6 +503,11 @@ const char *video_driver_find_ident(int idx)
 const char* config_get_video_driver_options(void)
 {
    return char_list_new_special(STRING_LIST_VIDEO_DRIVERS, NULL);
+}
+
+bool video_driver_is_threaded(void)
+{
+   return video_driver_is_threaded_internal();
 }
 
 #ifdef HAVE_VULKAN

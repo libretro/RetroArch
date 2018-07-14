@@ -1246,6 +1246,8 @@ extern bool (*video_driver_cb_has_focus)(void);
 
 bool video_driver_started_fullscreen(void);
 
+bool video_driver_is_threaded(void);
+
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;
 extern video_driver_t video_metal;
