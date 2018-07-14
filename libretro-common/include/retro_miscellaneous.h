@@ -159,7 +159,11 @@ typedef struct
 #  ifdef _WIN64
 #    define PRI_SIZET PRIu64
 #  else
+#if _MSC_VER == 1800
 #    define PRI_SIZET PRIu32
+#else
+#    define PRI_SIZET "u"
+#endif
 #  endif
 #else
 #  define PRI_SIZET "zu"
