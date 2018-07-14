@@ -557,7 +557,7 @@ void video_driver_set_threaded(bool val)
 void *video_driver_get_ptr(bool force_nonthreaded_data)
 {
 #ifdef HAVE_THREADS
-   if (video_driver_is_threaded() && !force_nonthreaded_data)
+   if (video_driver_is_threaded_internal() && !force_nonthreaded_data)
       return video_thread_get_ptr(NULL);
 #endif
 
@@ -846,7 +846,7 @@ static void video_driver_pixel_converter_free(void)
 static void video_driver_free_internal(void)
 {
 #ifdef HAVE_THREADS
-   bool is_threaded     = video_driver_is_threaded();
+   bool is_threaded     = video_driver_is_threaded_internal();
 #endif
 
    command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
@@ -1050,7 +1050,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video_driver_find_driver();
 
 #ifdef HAVE_THREADS
-   video.is_threaded   = video_driver_is_threaded();
+   video.is_threaded   = video_driver_is_threaded_internal();
    *video_is_threaded  = video.is_threaded;
 
    if (video.is_threaded)
@@ -1250,7 +1250,7 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
 void video_driver_get_size(unsigned *width, unsigned *height)
 {
 #ifdef HAVE_THREADS
-   bool is_threaded = video_driver_is_threaded();
+   bool is_threaded = video_driver_is_threaded_internal();
    video_driver_threaded_lock(is_threaded);
 #endif
    if (width)
@@ -1265,7 +1265,7 @@ void video_driver_get_size(unsigned *width, unsigned *height)
 void video_driver_set_size(unsigned *width, unsigned *height)
 {
 #ifdef HAVE_THREADS
-   bool is_threaded = video_driver_is_threaded();
+   bool is_threaded = video_driver_is_threaded_internal();
    video_driver_threaded_lock(is_threaded);
 #endif
    if (width)
@@ -1323,7 +1323,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    unsigned samples       = 0;
 
 #ifdef HAVE_THREADS
-   if (video_driver_is_threaded())
+   if (video_driver_is_threaded_internal())
       return false;
 #endif
 
@@ -2686,7 +2686,7 @@ bool video_driver_texture_load(void *data,
       return false;
 
    *id = video_driver_poke->load_texture(video_driver_data, data,
-         video_driver_is_threaded(),
+         video_driver_is_threaded_internal(),
          filter_type);
 
    return true;
@@ -2732,7 +2732,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context();
 #ifdef HAVE_THREADS
-   bool is_threaded                  = video_driver_is_threaded();
+   bool is_threaded                  = video_driver_is_threaded_internal();
    video_driver_threaded_lock(is_threaded);
 #endif
    settings                          = config_get_ptr();
