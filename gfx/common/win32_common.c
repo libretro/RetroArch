@@ -56,6 +56,7 @@
 #include "../../input/input_keymaps.h"
 #include "../video_thread_wrapper.h"
 #include "../video_display_server.h"
+#include "../../gfx/video_driver.h"
 #include <shellapi.h>
 
 #ifdef HAVE_MENU
@@ -1045,12 +1046,14 @@ void win32_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
 #if !defined(_XBOX)
-   const ui_application_t *application =
-      ui_companion_driver_get_application_ptr();
-   if (application)
-      application->process_events();
+   if (video_driver_is_threaded())
+   {
+      const ui_application_t *application =
+         ui_companion_driver_get_application_ptr();
+      if (application)
+         application->process_events();
+   }
    *quit            = g_win32_quit;
-#endif
 
    if (g_win32_resized)
    {
@@ -1059,6 +1062,7 @@ void win32_check_window(bool *quit, bool *resize,
       *height             = g_win32_resize_height;
       g_win32_resized     = false;
    }
+#endif
 }
 
 bool win32_suppress_screensaver(void *data, bool enable)
@@ -1189,7 +1193,7 @@ void win32_set_window(unsigned *width, unsigned *height,
       settings_t *settings      = config_get_ptr();
       const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
-      if (!fullscreen && settings->bools.ui_menubar_enable)
+      if (!fullscreen && settings->bools.ui_menubar_enable && !video_driver_is_threaded())
       {
          RECT rc_temp;
          rc_temp.left   = 0;

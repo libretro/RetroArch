@@ -2535,6 +2535,14 @@ static enum runloop_state runloop_check_state(
       }
    }
 
+   if (!video_driver_is_threaded())
+   {
+      const ui_application_t *application =
+         ui_companion_driver_get_application_ptr();
+      if (application)
+         application->process_events();
+   }
+
    video_driver_get_status(&frame_count, &is_alive, &is_focused);
 
 #ifdef HAVE_MENU
@@ -2687,7 +2695,7 @@ static enum runloop_state runloop_check_state(
          if (focused || !runloop_idle)
          {
             bool libretro_running = menu_display_libretro_running(
-                  rarch_is_inited, 
+                  rarch_is_inited,
                   (current_core_type == CORE_TYPE_DUMMY));
 
             menu_driver_render(runloop_idle, rarch_is_inited,
