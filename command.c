@@ -1835,14 +1835,21 @@ bool command_event(enum event_command cmd, void *data)
          if (cheevos_hardcore_active)
             return false;
 #endif
-
-         return command_event_main_state(cmd);
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_UNDO_LOAD_STATE:
-         return command_event_main_state(cmd);
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_UNDO_SAVE_STATE:
-         return command_event_main_state(cmd);
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
-         return command_event_resize_windowed_scale();
+         if (!command_event_resize_windowed_scale())
+            return false;
+         break;
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
          if (menu_driver_is_alive())
@@ -1883,7 +1890,9 @@ bool command_event(enum event_command cmd, void *data)
                configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
             }
          }
-         return command_event_main_state(cmd);
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_SAVE_STATE_DECREMENT:
          {
             settings_t *settings      = config_get_ptr();
@@ -1933,7 +1942,9 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_QUIT:
-         return retroarch_main_quit();
+         if (!retroarch_main_quit())
+            return false;
+         break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS
          cheevos_toggle_hardcore_mode();
@@ -2043,9 +2054,13 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_AUDIO_STOP:
          midi_driver_set_all_sounds_off();
-         return audio_driver_stop();
+         if (!audio_driver_stop())
+            return false;
+         break;
       case CMD_EVENT_AUDIO_START:
-         return audio_driver_start(rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL));
+         if (!audio_driver_start(rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL)))
+            return false;
+         break;
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
             bool audio_mute_enable    = *(audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE));
@@ -2630,14 +2645,13 @@ TODO: Add a setting for these tweaks */
          command_event(CMD_EVENT_REMOTE_DEINIT, NULL);
          input_driver_init_remote();
          break;
-
       case CMD_EVENT_MAPPER_DEINIT:
          input_driver_deinit_mapper();
          break;
       case CMD_EVENT_MAPPER_INIT:
          command_event(CMD_EVENT_MAPPER_DEINIT, NULL);
          input_driver_init_mapper();
-      break;
+         break;
       case CMD_EVENT_LOG_FILE_DEINIT:
          retro_main_log_file_deinit();
          break;
@@ -2646,8 +2660,10 @@ TODO: Add a setting for these tweaks */
             const char *path = (const char*)data;
             if (string_is_empty(path))
                return false;
-            return command_event_disk_control_append_image(path);
+            if (!command_event_disk_control_append_image(path))
+               return false;
          }
+         break;
       case CMD_EVENT_DISK_EJECT_TOGGLE:
          {
             rarch_system_info_t *info = runloop_get_system_info();
@@ -2754,10 +2770,8 @@ TODO: Add a setting for these tweaks */
          }
          break;
       case CMD_EVENT_UI_COMPANION_TOGGLE:
-         {
-            ui_companion_driver_toggle(true);
-            break;
-         }
+         ui_companion_driver_toggle(true);
+         break;
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
             static bool game_focus_state  = false;
