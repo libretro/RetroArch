@@ -1204,7 +1204,7 @@ static vertex_t vertex_bytes[] = {
                if (lib == nil)
                {
                   save_msl = true;
-                  RARCH_ERR("Metal]: unable to compile vertex shader: %s\n", err.localizedDescription.UTF8String);
+                  RARCH_ERR("[Metal]: unable to compile vertex shader: %s\n", err.localizedDescription.UTF8String);
                   return NO;
                }
 #if DEBUG
@@ -1220,7 +1220,7 @@ static vertex_t vertex_bytes[] = {
                if (lib == nil)
                {
                   save_msl = true;
-                  RARCH_ERR("Metal]: unable to compile fragment shader: %s\n", err.localizedDescription.UTF8String);
+                  RARCH_ERR("[Metal]: unable to compile fragment shader: %s\n", err.localizedDescription.UTF8String);
                   return NO;
                }
 #if DEBUG
@@ -1234,7 +1234,8 @@ static vertex_t vertex_bytes[] = {
             if (err != nil)
             {
                save_msl = true;
-               RARCH_ERR("error creating pipeline state: %s", err.localizedDescription.UTF8String);
+               RARCH_ERR("[Metal]: error creating pipeline state for pass %d: %s\n", i,
+                         err.localizedDescription.UTF8String);
                return NO;
             }
             
@@ -1253,10 +1254,11 @@ static vertex_t vertex_bytes[] = {
          {
             if (save_msl)
             {
-               RARCH_LOG("[Metal]: saving metal shader files\n");
+               NSString *basePath = [[NSString stringWithUTF8String:shader->pass[i].source.path] stringByDeletingPathExtension];
+               
+               RARCH_LOG("[Metal]: saving metal shader files to %s\n", basePath.UTF8String);
                
                NSError *err = nil;
-               NSString *basePath = [[NSString stringWithUTF8String:shader->pass[i].source.path] stringByDeletingPathExtension];
                [vs_src writeToFile:[basePath stringByAppendingPathExtension:@"vs.metal"]
                         atomically:NO
                           encoding:NSStringEncodingConversionAllowLossy
