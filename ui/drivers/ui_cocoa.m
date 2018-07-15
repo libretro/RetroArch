@@ -42,6 +42,24 @@
 #import <MetalKit/MetalKit.h>
 #endif
 
+@interface WindowListener : NSResponder<NSWindowDelegate>
+@end
+
+@implementation WindowListener
+
+/* Similarly to SDL, we'll respond to key events by doing nothing so we don't beep.
+ */
+- (void)flagsChanged:(NSEvent *)event
+{}
+
+- (void)keyDown:(NSEvent *)event
+{}
+
+- (void)keyUp:(NSEvent *)event
+{}
+
+@end
+
 id<ApplePlatform> apple_platform;
 
 #if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
@@ -54,7 +72,7 @@ id<ApplePlatform> apple_platform;
    apple_view_type_t _vt;
    NSView* _renderView;
    id _sleepActivity;
-   
+   WindowListener *_listener;
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
@@ -109,7 +127,7 @@ static void app_terminate(void)
       case NSEventTypeKeyDown:
       case NSEventTypeKeyUp:
          {
-            NSString* ch = (NSString*)event.characters;
+            NSString* ch = event.characters;
             uint32_t character = 0;
             uint32_t mod = 0;
 
@@ -164,13 +182,13 @@ static void app_terminate(void)
                return;
 
             /* Relative */
-            apple->mouse_rel_x = event.deltaX;
-            apple->mouse_rel_y = event.deltaY;
+            apple->mouse_rel_x = (int16_t)event.deltaX;
+            apple->mouse_rel_y = (int16_t)event.deltaY;
 
             /* Absolute */
             pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
-            apple->touches[0].screen_x = pos.x;
-            apple->touches[0].screen_y = pos.y;
+            apple->touches[0].screen_x = (int16_t)pos.x;
+            apple->touches[0].screen_y = (int16_t)pos.y;
 
             mouse_pos = [apple_platform.renderView convertPoint:[event locationInWindow]  fromView:nil];
             apple->window_pos_x = (int16_t)mouse_pos.x;
@@ -245,8 +263,13 @@ static char** waiting_argv;
           [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
    }
 #endif
+   
+   _listener = [WindowListener new];
+   
    [self.window setAcceptsMouseMovedEvents: YES];
-
+   [self.window setNextResponder:_listener];
+   self.window.delegate = _listener;
+   
    [[self.window contentView] setAutoresizesSubviews:YES];
 
     for (i = 0; i < waiting_argc; i++)
@@ -262,7 +285,10 @@ static char** waiting_argv;
       app_terminate();
 
    waiting_argc = 0;
-
+   
+   [self.window makeMainWindow];
+   [self.window makeKeyWindow];
+   
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
@@ -271,7 +297,7 @@ static char** waiting_argv;
       return;
    }
    
-   RARCH_LOG("[Cocoa] change view type: %d → %d\n", _vt, vt);
+   RARCH_LOG("[Cocoa]: change view type: %d → %d\n", _vt, vt);
    
    _vt = vt;
    if (_renderView != nil)
@@ -279,6 +305,7 @@ static char** waiting_argv;
       _renderView.wantsLayer = NO;
       _renderView.layer = nil;
       [_renderView removeFromSuperview];
+      self.window.contentView = nil;
       _renderView = nil;
    }
    
@@ -294,7 +321,7 @@ static char** waiting_argv;
       }
 #endif
       break;
-         
+      
       case APPLE_VIEW_TYPE_OPENGL:
       {
          _renderView = [CocoaView get];
@@ -308,9 +335,9 @@ static char** waiting_argv;
    
    _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
    _renderView.frame = self.window.contentView.bounds;
-
-   [self.window.contentView addSubview:_renderView];
-   [self.window makeFirstResponder:_renderView];
+   
+   self.window.contentView = _renderView;
+   [self.window.contentView setNextResponder:_listener];
 }
 
 - (apple_view_type_t)viewType {
