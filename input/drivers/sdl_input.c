@@ -31,6 +31,9 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
+/* TODO/FIXME - 
+ * fix game focus toggle */
+
 typedef struct sdl_input
 {
    bool blocked;

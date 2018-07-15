@@ -68,6 +68,9 @@ enum {
 /* Use this to enable/disable using the touch screen as mouse */
 #define ENABLE_TOUCH_SCREEN_MOUSE 1
 
+/* TODO/FIXME - 
+ * fix game focus toggle */
+
 typedef struct
 {
    float x;

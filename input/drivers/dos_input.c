@@ -21,6 +21,9 @@
 #include "../input_keymaps.h"
 #include "../drivers_keyboard/keyboard_event_dos.h"
 
+/* TODO/FIXME - 
+ * fix game focus toggle */
+
 typedef struct dos_input
 {
    const input_device_driver_t *joypad;
