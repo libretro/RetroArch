@@ -328,8 +328,10 @@ static bool dinput_is_pressed(struct dinput_input *di,
 {
    const struct retro_keybind *bind = &binds[id];
 
-   if (!di->blocked && (bind->key < RETROK_LAST) && dinput_keyboard_pressed(di, bind->key))
-      return true;
+   if ((bind->key < RETROK_LAST) && dinput_keyboard_pressed(di, bind->key))
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !di->blocked)
+         return true;
+
    if (binds && binds[id].valid)
    {
      if (dinput_mbutton_pressed(di, port, bind->mbutton))
