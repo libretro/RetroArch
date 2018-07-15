@@ -1395,7 +1395,6 @@ static bool command_event_save_config(
 static bool command_event_save_core_config(void)
 {
    char msg[128];
-   bool ret                        = false;
    bool found_path                 = false;
    bool overrides_active           = false;
    const char *core_path           = NULL;
@@ -1502,7 +1501,7 @@ static bool command_event_save_core_config(void)
    free(config_dir);
    free(config_name);
    free(config_path);
-   return ret;
+   return true;
 }
 
 /**
