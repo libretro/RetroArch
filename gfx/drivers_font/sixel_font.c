@@ -127,24 +127,13 @@ static void sixel_render_msg(video_frame_info_t *video_info,
    /* FIXME: add text drawing support */
 }
 
-static void sixel_font_flush_block(unsigned width, unsigned height,
-      void* data)
-{
-   (void)data;
-}
-
-static void sixel_font_bind_block(void* data, void* userdata)
-{
-   (void)data;
-}
-
 font_renderer_t sixel_font = {
    sixel_init_font,
    sixel_render_free_font,
    sixel_render_msg,
    "sixel font",
    sixel_font_get_glyph,       /* get_glyph */
-   sixel_font_bind_block,      /* bind_block */
-   sixel_font_flush_block,     /* flush */
+   NULL,                       /* bind_block */
+   NULL,                       /* flush */
    sixel_get_message_width     /* get_message_width */
 };

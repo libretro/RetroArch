@@ -376,18 +376,13 @@ static const struct font_glyph* d3d12_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
-static void d3d12_font_bind_block(void* data, void* userdata)
-{
-   (void)data;
-}
-
 font_renderer_t d3d12_font = {
    d3d12_font_init_font,
    d3d12_font_free_font,
    d3d12_font_render_msg,
    "d3d12font",
    d3d12_font_get_glyph,
-   d3d12_font_bind_block,
+   NULL, /* bind_block */
    NULL, /* flush */
    d3d12_font_get_message_width,
 };
