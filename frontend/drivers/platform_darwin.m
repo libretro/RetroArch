@@ -347,9 +347,15 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 #endif
 
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
+#ifdef HAVE_METAL
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER],
+                      home_dir_buf, "shaders_slang",
+                      sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+#else
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER],
          home_dir_buf, "shaders_glsl",
          sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+#endif
 #if TARGET_OS_IPHONE
     int major, minor;
     get_ios_version(&major, &minor);
