@@ -136,9 +136,9 @@ static struct config_entry_list* merge_sort_linked_list(struct config_entry_list
       }
 
       if (!result)
-         result=next;
+         result = next;
       else
-         tail->next=next;
+         tail->next = next;
 
       tail = next;
    }
@@ -989,9 +989,7 @@ void config_file_dump(config_file_t *conf, FILE *file)
       includes = includes->next;
    }
 
-   list = (struct config_entry_list*)conf->entries;
-
-   merge_sort_linked_list(list, config_sort_compare_func);
+   list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
 
    while (list)
    {
