@@ -81,38 +81,32 @@ fragment half4 stock_fragment_color(FontFragmentIn in [[ stage_in ]])
 
 #pragma mark - filter kernels
 
-kernel void convert_bgra4444_to_bgra8888(device uint16_t *              in  [[ buffer(0) ]],
-                                         texture2d<half, access::write> out [[ texture(0) ]],
-                                         uint                           id  [[ thread_position_in_grid ]])
+kernel void convert_bgra4444_to_bgra8888(texture2d<ushort, access::read> in  [[ texture(0) ]],
+                                         texture2d<half, access::write>  out [[ texture(1) ]],
+                                         uint2                           gid [[ thread_position_in_grid ]])
 {
-    uint16_t pix = in[id];
-    uchar4 pix2 = uchar4(
-                         extract_bits(pix,  4, 4),
-                         extract_bits(pix,  8, 4),
-                         extract_bits(pix, 12, 4),
-                         extract_bits(pix,  0, 4)
-                         );
-
-    uint ypos = id / out.get_width();
-    uint xpos = id % out.get_width();
-
-    out.write(half4(pix2) / 15.0, uint2(xpos, ypos));
+   ushort pix  = in.read(gid).r;
+   uchar4 pix2 = uchar4(
+                        extract_bits(pix,  4, 4),
+                        extract_bits(pix,  8, 4),
+                        extract_bits(pix, 12, 4),
+                        extract_bits(pix,  0, 4)
+                        );
+   
+   out.write(half4(pix2) / 15.0, gid);
 }
 
-kernel void convert_rgb565_to_bgra8888(device uint16_t *                in  [[ buffer(0) ]],
-                                         texture2d<half, access::write> out [[ texture(0) ]],
-                                         uint                           id  [[ thread_position_in_grid ]])
+kernel void convert_rgb565_to_bgra8888(texture2d<ushort, access::read> in  [[ texture(0) ]],
+                                       texture2d<half, access::write>  out [[ texture(1) ]],
+                                       uint2                           gid [[ thread_position_in_grid ]])
 {
-    uint16_t pix = in[id];
-    uchar4 pix2 = uchar4(
-                         extract_bits(pix, 11, 5),
-                         extract_bits(pix,  5, 6),
-                         extract_bits(pix,  0, 5),
-                         0xf
-                         );
-
-    uint ypos = id / out.get_width();
-    uint xpos = id % out.get_width();
-
-    out.write(half4(pix2) / half4(0x1f, 0x3f, 0x1f, 0xf), uint2(xpos, ypos));
+   ushort pix  = in.read(gid).r;
+   uchar4 pix2 = uchar4(
+                        extract_bits(pix, 11, 5),
+                        extract_bits(pix,  5, 6),
+                        extract_bits(pix,  0, 5),
+                        0xf
+                        );
+   
+   out.write(half4(pix2) / half4(0x1f, 0x3f, 0x1f, 0xf), gid);
 }

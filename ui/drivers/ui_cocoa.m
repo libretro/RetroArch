@@ -297,6 +297,8 @@ static char** waiting_argv;
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
+#pragma mark - ApplePlatform
+
 - (void)setViewType:(apple_view_type_t)vt {
    if (vt == _vt) {
       return;

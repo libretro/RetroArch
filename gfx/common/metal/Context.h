@@ -52,7 +52,7 @@ typedef struct
 
 - (Texture *)newTexture:(struct texture_image)image filter:(enum texture_filter_type)filter;
 - (id<MTLTexture>)newTexture:(struct texture_image)image mipmapped:(bool)mipmapped;
-- (void)convertFormat:(RPixelFormat)fmt from:(id<MTLBuffer>)src to:(id<MTLTexture>)dst;
+- (void)convertFormat:(RPixelFormat)fmt from:(id<MTLTexture>)src to:(id<MTLTexture>)dst;
 - (id<MTLRenderPipelineState>)getStockShader:(int)index blend:(bool)blend;
 
 /*! @brief resets the viewport for the main render encoder to the drawable size */
