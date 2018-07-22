@@ -38,6 +38,20 @@ End of setup
 
 #define CHEEVOS_TAG "[CHEEVOS]: "
 
+#ifdef CHEEVOS_VERBOSE
+
+#define CHEEVOS_LOG RARCH_LOG
+#define CHEEVOS_ERR RARCH_ERR
+
+#else
+
+void cheevos_log(const char *fmt, ...);
+
+#define CHEEVOS_LOG cheevos_log
+#define CHEEVOS_ERR cheevos_log
+
+#endif
+
 typedef struct cheevos_ctx_desc
 {
    unsigned idx;
@@ -139,6 +153,8 @@ bool cheevos_get_support_cheevos(void);
 cheevos_console_t cheevos_get_console(void);
 
 extern bool cheevos_loaded;
+extern bool cheevos_hardcore_active;
+extern bool cheevos_hardcore_paused;
 extern int cheats_are_enabled;
 extern int cheats_were_enabled;
 

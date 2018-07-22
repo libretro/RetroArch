@@ -4,7 +4,7 @@ include version.all
 #set to GCC for debug builds for use with debugger
 CELL_BUILD_TOOLS	= SNC
 CELL_GPU_TYPE	   	= RSX
-CELL_PSGL_VERSION	= ultra-opt
+CELL_PSGL_VERSION	= opt
 
 ASSETS_DIR  := media/assets
 
@@ -63,7 +63,7 @@ endif
 
 PPU_SRCS		= griffin/griffin.c
 
-DEFINES += -DHAVE_MENU -DHAVE_RGUI -DHAVE_XMB -DHAVE_LIBRETRODB -DHAVE_MATERIALUI -DHAVE_SHADERPIPELINE -DRARCH_INTERNAL -DMSB_FIRST -DHAVE_OVERLAY -DHAVE_CC_RESAMPLER -DHAVE_STB_VORBIS -DHAVE_STB_FONT -DHAVE_RUNAHEAD
+DEFINES += -DHAVE_MENU -DHAVE_RGUI -DHAVE_XMB -DHAVE_LIBRETRODB -DHAVE_MATERIALUI -DHAVE_SHADERPIPELINE -DRARCH_INTERNAL -DMSB_FIRST -DHAVE_OVERLAY -DHAVE_CC_RESAMPLER -DHAVE_STB_VORBIS -DHAVE_STB_FONT -DHAVE_RUNAHEAD -DHAVE_DR_MP3 -DHAVE_DR_FLAC
 
 ifeq ($(DEX_BUILD), 1)
 DEFINES += -DDEX_BUILD
@@ -96,7 +96,7 @@ ifeq ($(CELL_BUILD_TOOLS), SNC)
 	PPU_CXXLD = $(CELL_SDK)/host-win32/sn/bin/ps3ppuld.exe
 	PPU_CXX	= $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
 	PPU_CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
-else ifneq($(system_platform), win)
+else ifneq ($(system_platform), win)
 	PPU_CXX	= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-g++.exe
 	PPU_CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
 	PPU_CXXLD = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ld.exe
@@ -119,7 +119,7 @@ DEFINES += -DHAVE_THREADS -DRARCH_CONSOLE -DHAVE_OPENGL -DHAVE_HEADSET -DHAVE_LA
 ifeq ($(DEBUG), 1)
    PPU_OPTIMIZE_LV	:= -O0 -g
 else
-   PPU_OPTIMIZE_LV	:= -O3 -g
+   PPU_OPTIMIZE_LV	:= -O2 -g
 endif
 
 ifeq ($(HAVE_LOGGER), 1)

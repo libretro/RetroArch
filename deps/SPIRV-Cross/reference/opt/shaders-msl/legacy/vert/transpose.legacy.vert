@@ -10,14 +10,14 @@ struct Buffer
     float4x4 M;
 };
 
-struct main0_in
-{
-    float4 Position [[attribute(0)]];
-};
-
 struct main0_out
 {
     float4 gl_Position [[position]];
+};
+
+struct main0_in
+{
+    float4 Position [[attribute(0)]];
 };
 
 vertex main0_out main0(main0_in in [[stage_in]], constant Buffer& _13 [[buffer(0)]])

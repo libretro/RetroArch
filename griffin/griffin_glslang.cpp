@@ -1,5 +1,6 @@
 ﻿
 #ifdef WANT_GLSLANG
+
 #ifdef _MSC_VER
 #include <compat/msvc.h>
 #ifdef strtoull
@@ -21,6 +22,7 @@
 
 #include "../deps/glslang/glslang/OGLCompilersDLL/InitializeDll.cpp"
 
+#include "../deps/glslang/glslang/glslang/MachineIndependent/attribute.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/Constant.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/glslang_tab.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/InfoSink.cpp"
@@ -46,11 +48,14 @@
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/Pp.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpAtom.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpContext.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpMemory.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpScanner.cpp"
-#include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpSymbols.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpTokens.cpp"
 
+#ifdef __APPLE__
+#include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp"
+#endif
+
+#if defined(ENABLE_HLSL)
 #include "../deps/glslang/glslang/hlsl/hlslAttributes.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslGrammar.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslOpMap.cpp"
@@ -58,4 +63,6 @@
 #include "../deps/glslang/glslang/hlsl/hlslParseHelper.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslScanContext.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslTokenStream.cpp"
+#endif
+
 #endif

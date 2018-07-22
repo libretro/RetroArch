@@ -41,7 +41,7 @@
 #endif
 
 static char msg_old[PATH_MAX_LENGTH];
-static id apple_platform;
+id<ApplePlatform> apple_platform;
 static CFRunLoopObserverRef iterate_observer;
 
 /* forward declaration */
@@ -698,7 +698,7 @@ static void ui_companion_cocoatouch_msg_queue_push(const char *msg,
    }
 }
 
-const ui_companion_driver_t ui_companion_cocoatouch = {
+ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_init,
    ui_companion_cocoatouch_deinit,
    ui_companion_cocoatouch_iterate,

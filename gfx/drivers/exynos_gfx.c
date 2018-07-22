@@ -663,6 +663,7 @@ static void exynos_deinit(struct exynos_data *pdata)
 {
    drm_restore_crtc();
 
+   g_drm_mode       = NULL;
    pdata->width     = 0;
    pdata->height    = 0;
    pdata->num_pages = 0;
@@ -1489,11 +1490,13 @@ static void exynos_show_mouse(void *data, bool state)
 }
 
 static const video_poke_interface_t exynos_poke_interface = {
+   NULL, /* get_flags */
    NULL, /* set_coords */
    NULL, /* set_mvp */
    NULL,
    NULL,
    NULL, /* set_video_mode */
+   drm_get_refresh_rate,
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

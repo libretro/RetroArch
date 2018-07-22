@@ -310,9 +310,7 @@ static void frontend_gx_init(void *data)
    __exception_setreload(8);
 #endif
 
-#ifdef HW_RVL
    fatInitDefault();
-#endif
 
 #ifdef HAVE_LOGGER
    devoptab_list[STD_OUT] = &dotab_stdout;
@@ -561,5 +559,6 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* detach_console */
    NULL,                            /* watch_path_for_changes */
    NULL,                            /* check_for_path_changes */
+   NULL,                            /* set_sustained_performance_mode */
    "gx",
 };

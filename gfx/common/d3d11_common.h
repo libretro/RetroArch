@@ -237,6 +237,7 @@ static INLINE void D3D11SetPShaderSamplers(
    device_context->lpVtbl->PSSetSamplers(
          device_context, start_slot, num_samplers, samplers);
 }
+
 static INLINE void D3D11SetVShader(
       D3D11DeviceContext        device_context,
       D3D11VertexShader         vertex_shader,

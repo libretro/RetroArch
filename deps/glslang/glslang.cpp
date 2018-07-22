@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -143,7 +143,7 @@ SlangProcess::SlangProcess()
    while (token)
    {
       const char *value_str = strtok(0, delims);
-      int value = strtoul(value_str, nullptr, 0);
+      int             value = (int)strtoul(value_str, nullptr, 0);
 
       if (strcmp(token, "MaxLights") == 0)
          Resources.maxLights = value;
@@ -358,7 +358,7 @@ bool glslang::compile_spirv(const string &source, Stage stage, std::vector<uint3
    EShMessages messages = static_cast<EShMessages>(EShMsgDefault | EShMsgVulkanRules | EShMsgSpvRules);
 
    string msg;
-   auto forbid_include = TShader::ForbidInclude();
+   auto forbid_include = glslang::TShader::ForbidIncluder();
    if (!shader.preprocess(&process.GetResources(), 100, ENoProfile, false, false,
             messages, &msg, forbid_include))
    {

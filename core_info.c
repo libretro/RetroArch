@@ -17,6 +17,7 @@
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <file/config_file.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <file/archive_file.h>
@@ -26,14 +27,10 @@
 #include "config.h"
 #endif
 
-#include "retroarch.h"
 #include "verbosity.h"
 
-#include "config.def.h"
 #include "core_info.h"
-#include "configuration.h"
 #include "file_path_special.h"
-#include "list_special.h"
 
 static const char *core_info_tmp_path               = NULL;
 static const struct string_list *core_info_tmp_list = NULL;
@@ -154,6 +151,7 @@ static void core_info_list_free(core_info_list_t *core_info_list)
       free(info->systemname);
       free(info->system_manufacturer);
       free(info->display_name);
+      free(info->display_version);
       free(info->supported_extensions);
       free(info->authors);
       free(info->permissions);
@@ -224,20 +222,22 @@ static bool core_info_list_iterate(
    return true;
 }
 
-static core_info_list_t *core_info_list_new(const char *path)
+static core_info_list_t *core_info_list_new(const char *path,
+      const char *libretro_info_dir,
+      const char *exts,
+      bool show_hidden_files)
 {
    size_t i;
    core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
-   struct string_list *contents     = dir_list_new_special(
-                                      path, DIR_LIST_CORES, NULL);
-   settings_t             *settings = config_get_ptr();
-   const char       *path_basedir   = !string_is_empty(settings->paths.path_libretro_info) ?
-      settings->paths.path_libretro_info : settings->paths.directory_libretro;
-
+   const char       *path_basedir   = libretro_info_dir;
+   struct string_list *contents     = dir_list_new(
+                                      path, exts,
+                                      false,
+                                      show_hidden_files,
+                                      false, false);
    if (!contents)
       return NULL;
-
 
    core_info_list = (core_info_list_t*)calloc(1, sizeof(*core_info_list));
    if (!core_info_list)
@@ -276,6 +276,13 @@ static core_info_list_t *core_info_list_new(const char *path)
                && !string_is_empty(tmp))
          {
             core_info[i].display_name = strdup(tmp);
+            free(tmp);
+            tmp = NULL;
+         }
+         if (config_get_string(conf, "display_version", &tmp)
+               && !string_is_empty(tmp))
+         {
+            core_info[i].display_version = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
@@ -518,7 +525,8 @@ static core_info_t *core_info_find_internal(
 static bool core_info_list_update_missing_firmware_internal(
       core_info_list_t *core_info_list,
       const char *core,
-      const char *systemdir)
+      const char *systemdir,
+      bool *set_missing_bios)
 {
    size_t i;
    core_info_t      *info = NULL;
@@ -535,7 +543,6 @@ static bool core_info_list_update_missing_firmware_internal(
 
    path                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    path[0]                = '\0';
-   rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
 
    for (i = 0; i < info->firmware_count; i++)
    {
@@ -547,7 +554,7 @@ static bool core_info_list_update_missing_firmware_internal(
       info->firmware[i].missing = !filestream_exists(path);
       if (info->firmware[i].missing && !info->firmware[i].optional)
       {
-         rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+         *set_missing_bios = true;
          RARCH_WARN("Firmware missing: %s\n", info->firmware[i].path);
       }
    }
@@ -635,14 +642,13 @@ void core_info_deinit_list(void)
    core_info_curr_list = NULL;
 }
 
-bool core_info_init_list(void)
+bool core_info_init_list(const char *path_info, const char *dir_cores,
+      const char *exts, bool show_hidden_files)
 {
-   settings_t *settings = config_get_ptr();
-
-   if (settings)
-      core_info_curr_list = core_info_list_new(settings->paths.directory_libretro);
-
-   if (!core_info_curr_list)
+   if (!(core_info_curr_list = core_info_list_new(dir_cores,
+               !string_is_empty(path_info) ? path_info : dir_cores,
+               exts,
+               show_hidden_files)))
       return false;
    return true;
 }
@@ -655,13 +661,15 @@ bool core_info_get_list(core_info_list_t **core)
    return true;
 }
 
-bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info)
+bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
+      bool *set_missing_bios)
 {
    if (!info)
       return false;
    return core_info_list_update_missing_firmware_internal(
          core_info_curr_list,
-         info->path, info->directory.system);
+         info->path, info->directory.system,
+         set_missing_bios);
 }
 
 bool core_info_load(core_info_ctx_find_t *info)
@@ -751,16 +759,15 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    *num_infos = supported;
 }
 
-void core_info_get_name(const char *path, char *s, size_t len)
+void core_info_get_name(const char *path, char *s, size_t len,
+      const char *path_info, const char *dir_cores,
+      const char *exts, bool show_hidden_files)
 {
    size_t i;
-   settings_t             *settings = config_get_ptr();
-   struct string_list *contents     = dir_list_new_special(
-         settings->paths.directory_libretro,
-         DIR_LIST_CORES, NULL);
-   const char       *path_basedir   = !string_is_empty(settings->paths.path_libretro_info) ?
-      settings->paths.path_libretro_info : settings->paths.directory_libretro;
-
+   const char       *path_basedir   = !string_is_empty(path_info) ?
+      path_info : dir_cores;
+   struct string_list *contents     = dir_list_new(
+         dir_cores, exts, false, show_hidden_files, false, false);
    if (!contents)
       return;
 
@@ -786,7 +793,7 @@ void core_info_get_name(const char *path, char *s, size_t len)
          continue;
       }
 
-      conf = config_file_new(info_path);
+      conf                            = config_file_new(info_path);
 
       if (!conf)
       {

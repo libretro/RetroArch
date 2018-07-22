@@ -42,6 +42,10 @@
 #include "../common/gl_common.h"
 #endif
 
+#ifdef HAVE_DBUS
+#include "../common/dbus_common.h"
+#endif
+
 #include "../common/wayland_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
@@ -58,6 +62,7 @@ typedef struct gfx_ctx_wayland_data
    unsigned height;
    unsigned physical_width;
    unsigned physical_height;
+   int refresh_rate;
    struct wl_registry *registry;
    struct wl_compositor *compositor;
    struct wl_surface *surface;
@@ -440,6 +445,7 @@ static void display_handle_mode(void *data,
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    wl->width                  = width;
    wl->height                 = height;
+   wl->refresh_rate           = refresh;
 
    /* Certain older Wayland implementations report in Hz,
     * but it should be mHz. */
@@ -599,6 +605,11 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 
    wl->width      = 0;
    wl->height     = 0;
+
+#ifdef HAVE_DBUS
+   dbus_screensaver_uninhibit();
+   dbus_close_connection();
+#endif
 }
 
 void flush_wayland_fd(void *data)
@@ -686,7 +697,8 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
          {
             wl->vk.context.invalid_swapchain = true;
-            vulkan_acquire_next_image(&wl->vk);
+            if (wl->vk.created_new_swapchain)
+               vulkan_acquire_next_image(&wl->vk);
          }
          else
          {
@@ -919,6 +931,10 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    wl->cursor.theme = wl_cursor_theme_load(NULL, 16, wl->shm);
    wl->cursor.default_cursor = wl_cursor_theme_get_cursor(wl->cursor.theme, "left_ptr");
    flush_wayland_fd(&wl->input);
+
+#ifdef HAVE_DBUS
+   dbus_ensure_connection();
+#endif
 
    return wl;
 
@@ -1189,6 +1205,11 @@ static bool gfx_ctx_wl_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
    (void)enable;
+
+#ifdef HAVE_DBUS
+   return dbus_suspend_screensaver(enable);
+#endif
+
    return true;
 }
 
@@ -1369,6 +1390,13 @@ static void gfx_ctx_wl_show_mouse(void *data, bool state)
    wl->cursor.visible = state;
 }
 
+static float gfx_ctx_wl_get_refresh_rate(void *data)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   return (float) wl->refresh_rate / 1000.0f;
+}
+
 const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_init,
    gfx_ctx_wl_destroy,
@@ -1377,6 +1405,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_set_swap_interval,
    gfx_ctx_wl_set_video_mode,
    gfx_ctx_wl_get_video_size,
+   gfx_ctx_wl_get_refresh_rate,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

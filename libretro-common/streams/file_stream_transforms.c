@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
 *
 * ---------------------------------------------------------------------------------------
 * The following license statement only applies to this file (file_stream_transforms.c).
@@ -72,12 +72,12 @@ int rfclose(RFILE* stream)
    return filestream_close(stream);
 }
 
-long rftell(RFILE* stream)
+int64_t rftell(RFILE* stream)
 {
    return filestream_tell(stream);
 }
 
-int rfseek(RFILE* stream, long offset, int origin)
+int64_t rfseek(RFILE* stream, int64_t offset, int origin)
 {
    int seek_position = -1;
    switch (origin)
@@ -96,7 +96,7 @@ int rfseek(RFILE* stream, long offset, int origin)
    return filestream_seek(stream, offset, seek_position);
 }
 
-size_t rfread(void* buffer,
+int64_t rfread(void* buffer,
    size_t elem_size, size_t elem_count, RFILE* stream)
 {
    return filestream_read(stream, buffer, elem_size * elem_count);
@@ -112,7 +112,7 @@ int rfgetc(RFILE* stream)
 	return filestream_getc(stream);
 }
 
-size_t rfwrite(void const* buffer,
+int64_t rfwrite(void const* buffer,
    size_t elem_size, size_t elem_count, RFILE* stream)
 {
    return filestream_write(stream, buffer, elem_size * elem_count);

@@ -4,8 +4,9 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <retro_common_api.h>
 #include <boolean.h>
+
+#include <retro_common_api.h>
 
 #define FREE(xxxx) if ((xxxx) != NULL) { free((void*)(xxxx)); } (xxxx) = NULL
 

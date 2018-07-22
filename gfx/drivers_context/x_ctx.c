@@ -124,7 +124,7 @@ typedef struct Hints
 } Hints;
 
 /* We use long because X11 wants 32-bit pixels for 32-bit systems and 64 for 64... */
-const unsigned long retroarch_icon_data[] = {
+static const unsigned long retroarch_icon_data[] = {
    16, 16,
    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
@@ -460,7 +460,8 @@ static bool gfx_ctx_x_set_resize(void *data,
                return false;
             }
 
-            vulkan_acquire_next_image(&x->vk);
+            if (x->vk.created_new_swapchain)
+               vulkan_acquire_next_image(&x->vk);
             x->vk.context.invalid_swapchain = true;
             x->vk.need_new_swapchain        = false;
          }
@@ -1225,6 +1226,7 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    gfx_ctx_x_swap_interval,
    gfx_ctx_x_set_video_mode,
    x11_get_video_size,
+   x11_get_refresh_rate,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

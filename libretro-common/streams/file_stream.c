@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (file_stream.c).
@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <ctype.h>
 #include <errno.h>
 
 #ifdef HAVE_CONFIG_H
@@ -111,9 +112,9 @@ bool filestream_exists(const char *path)
    return true;
 }
 
-ssize_t filestream_get_size(RFILE *stream)
+int64_t filestream_get_size(RFILE *stream)
 {
-   ssize_t output;
+   int64_t output;
 
    if (filestream_size_cb != NULL)
       output = filestream_size_cb(stream->hfile);
@@ -191,7 +192,99 @@ int filestream_getc(RFILE *stream)
    return EOF;
 }
 
-ssize_t filestream_seek(RFILE *stream, ssize_t offset, int seek_position)
+int filestream_scanf(RFILE *stream, const char* format, ...)
+{
+   char buf[4096];
+   char subfmt[64];
+   va_list args;
+   
+   const char * bufiter = buf;
+   int64_t startpos     = filestream_tell(stream);
+   int        ret       = 0;
+   int64_t maxlen       = filestream_read(stream, buf, sizeof(buf)-1);
+
+   buf[maxlen] = '\0';
+   
+   va_start(args, format);
+   
+   while (*format)
+   {
+      if (*format == '%')
+      {
+         int sublen;
+         
+         char* subfmtiter = subfmt;
+         bool asterisk    = false;
+         
+         *subfmtiter++    = *format++; /* '%' */
+         
+         /* %[*][width][length]specifier */
+         
+         if (*format == '*')
+         {
+            asterisk = true;
+            *subfmtiter++ = *format++;
+         }
+         
+         while (isdigit(*format)) *subfmtiter++ = *format++; /* width */
+         
+         /* length */
+         if (*format == 'h' || *format == 'l')
+         {
+            if (format[1] == format[0]) *subfmtiter++ = *format++;
+            *subfmtiter++ = *format++;
+         }
+         else if (*format == 'j' || *format == 'z' || *format == 't' || *format == 'L')
+         {
+            *subfmtiter++ = *format++;
+         }
+         
+         /* specifier - always a single character (except ]) */
+         if (*format == '[')
+         {
+            while (*format != ']') *subfmtiter++ = *format++;
+            *subfmtiter++ = *format++;
+         }
+         else *subfmtiter++ = *format++;
+         
+         *subfmtiter++ = '%';
+         *subfmtiter++ = 'n';
+         *subfmtiter++ = '\0';
+         
+         if (sizeof(void*) != sizeof(long*)) abort(); /* all pointers must have the same size */
+         if (asterisk)
+         {
+            if (sscanf(bufiter, subfmt, &sublen) != 0) break;
+         }
+         else
+         {
+            if (sscanf(bufiter, subfmt, va_arg(args, void*), &sublen) != 1) break;
+         }
+         
+         ret++;
+         bufiter += sublen;
+      }
+      else if (isspace(*format))
+      {
+         while (isspace(*bufiter)) bufiter++;
+         format++;
+      }
+      else
+      {
+         if (*bufiter != *format)
+            break;
+         bufiter++;
+         format++;
+      }
+   }
+   
+   va_end(args);
+   filestream_seek(stream, startpos+(bufiter-buf), RETRO_VFS_SEEK_POSITION_START);
+   
+   return ret;
+}
+
+int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
 {
    int64_t output;
 
@@ -213,9 +306,9 @@ int filestream_eof(RFILE *stream)
 }
 
 
-ssize_t filestream_tell(RFILE *stream)
+int64_t filestream_tell(RFILE *stream)
 {
-   ssize_t output;
+   int64_t output;
 
    if (filestream_size_cb != NULL)
       output = filestream_tell_cb(stream->hfile);
@@ -237,7 +330,7 @@ void filestream_rewind(RFILE *stream)
    stream->eof_flag = false;
 }
 
-ssize_t filestream_read(RFILE *stream, void *s, int64_t len)
+int64_t filestream_read(RFILE *stream, void *s, int64_t len)
 {
    int64_t output;
 
@@ -294,7 +387,7 @@ const char *filestream_get_path(RFILE *stream)
    return retro_vfs_file_get_path_impl((libretro_vfs_implementation_file*)stream->hfile);
 }
 
-ssize_t filestream_write(RFILE *stream, const void *s, int64_t len)
+int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
 {
    int64_t output;
 
@@ -320,14 +413,14 @@ int filestream_putc(RFILE *stream, int c)
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
 {
    static char buffer[8 * 1024];
-   int num_chars = vsprintf(buffer, format, args);
+   int64_t num_chars = vsprintf(buffer, format, args);
 
    if (num_chars < 0)
       return -1;
    else if (num_chars == 0)
       return 0;
 
-   return filestream_write(stream, buffer, num_chars);
+   return (int)filestream_write(stream, buffer, num_chars);
 }
 
 int filestream_printf(RFILE *stream, const char* format, ...)
@@ -373,9 +466,9 @@ int filestream_close(RFILE *stream)
  *
  * Returns: number of items read, -1 on error.
  */
-int filestream_read_file(const char *path, void **buf, ssize_t *len)
+int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 {
-   ssize_t ret              = 0;
+   int64_t ret              = 0;
    int64_t content_buf_size = 0;
    void *content_buf        = NULL;
    RFILE *file              = filestream_open(path,
@@ -397,7 +490,7 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
 
    if (!content_buf)
       goto error;
-   if ((int64_t)(size_t)(content_buf_size + 1) != (content_buf_size + 1))
+   if ((int64_t)(uint64_t)(content_buf_size + 1) != (content_buf_size + 1))
       goto error;
 
    ret = filestream_read(file, content_buf, (int64_t)content_buf_size);
@@ -441,9 +534,9 @@ error:
  *
  * Returns: true (1) on success, false (0) otherwise.
  */
-bool filestream_write_file(const char *path, const void *data, ssize_t size)
+bool filestream_write_file(const char *path, const void *data, int64_t size)
 {
-   ssize_t ret   = 0;
+   int64_t ret   = 0;
    RFILE *file   = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);

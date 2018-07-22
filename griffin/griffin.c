@@ -13,15 +13,19 @@
 * You should have received a copy of the GNU General Public License along with RetroArch.
 * If not, see <http://www.gnu.org/licenses/>.
 */
+#include <retro_environment.h>
 
 #define CINTERFACE
+
+#if !defined(__WINRT__)
 #define HAVE_IBXM 1
+#endif
 
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
 #define HAVE_COMPRESSION 1
 #endif
 
-#if _MSC_VER
+#if _MSC_VER && !defined(__WINRT__)
 #include "../libretro-common/compat/compat_snprintf.c"
 #endif
 
@@ -68,7 +72,6 @@ CONSOLE EXTENSIONS
 #endif
 
 #ifdef INTERNAL_LIBOGC
-#ifdef HW_RVL
 #include "../wii/libogc/libfat/cache.c"
 #include "../wii/libogc/libfat/directory.c"
 #include "../wii/libogc/libfat/disc.c"
@@ -79,7 +82,6 @@ CONSOLE EXTENSIONS
 #include "../wii/libogc/libfat/libfat.c"
 #include "../wii/libogc/libfat/lock.c"
 #include "../wii/libogc/libfat/partition.c"
-#endif
 #endif
 
 #endif
@@ -170,7 +172,7 @@ CHEATS
 /*============================================================
 UI COMMON CONTEXT
 ============================================================ */
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../gfx/common/win32_common.c"
 #endif
 
@@ -179,7 +181,7 @@ VIDEO CONTEXT
 ============================================================ */
 #include "../gfx/drivers_context/gfx_null_ctx.c"
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 
 #if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/wgl_ctx.c"
@@ -278,13 +280,6 @@ VIDEO SHADERS
 
 #ifdef HAVE_GLSL
 #include "../gfx/drivers_shader/shader_glsl.c"
-#endif
-
-#if defined(HAVE_D3D)
-
-#ifdef HAVE_HLSL
-#include "../gfx/drivers_shader/shader_hlsl.c"
-#endif
 #endif
 
 /*============================================================
@@ -394,7 +389,6 @@ VIDEO DRIVER
 #include "../gfx/drivers/drm_gfx.c"
 #endif
 
-#include "../gfx/drivers_renderchain/null_renderchain.c"
 #include "../gfx/display_servers/dispserv_null.c"
 
 #ifdef HAVE_OPENGL
@@ -440,7 +434,7 @@ VIDEO DRIVER
 #endif
 #include "../gfx/drivers/nullgfx.c"
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../gfx/drivers/gdi_gfx.c"
 #endif
 
@@ -502,12 +496,16 @@ FONTS
 #include "../gfx/drivers_font/vga_font.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../gfx/drivers_font/gdi_font.c"
 #endif
 
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_font/vulkan_raster_font.c"
+#endif
+
+#if defined(HAVE_D3D10)
+#include "../gfx/drivers_font/d3d10_font.c"
 #endif
 
 #if defined(HAVE_D3D11)
@@ -536,7 +534,7 @@ INPUT
 #include "../input/common/x11_input_common.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501
+#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
 /* winraw only available since XP */
 #include "../input/drivers/winraw_input.c"
 #endif
@@ -795,9 +793,21 @@ AUDIO
 #include "../audio/drivers/nullaudio.c"
 
 /*============================================================
+MIDI
+============================================================ */
+#include "../midi/midi_driver.c"
+
+#include "../midi/drivers/null_midi.c"
+
+#ifdef HAVE_WINMM
+#include "../midi/drivers/winmm_midi.c"
+#endif
+
+/*============================================================
 DRIVERS
 ============================================================ */
 #include "../gfx/video_driver.c"
+#include "../gfx/video_crt_switch.c"
 #include "../gfx/video_display_server.c"
 #include "../gfx/video_coord_array.c"
 #include "../input/input_driver.c"
@@ -856,6 +866,12 @@ CORES
 #include "../cores/libretro-ffmpeg/ffmpeg_core.c"
 #endif
 
+#if defined(HAVE_MPV)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#include "../cores/libretro-mpv/mpv-libretro.c"
+#endif
+#endif
+
 #include "../cores/dynamic_dummy.c"
 
 /*============================================================
@@ -903,7 +919,7 @@ FRONTEND
 
 #include "../frontend/frontend_driver.c"
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../frontend/drivers/platform_win32.c"
 #endif
 
@@ -948,7 +964,7 @@ UI
 #include "../ui/drivers/null/ui_null_msg_window.c"
 #include "../ui/drivers/null/ui_null_application.c"
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../ui/drivers/ui_win32.c"
 #include "../ui/drivers/win32/ui_win32_window.c"
 #include "../ui/drivers/win32/ui_win32_browser_window.c"
@@ -1168,6 +1184,10 @@ MENU
 #include "../menu/drivers_display/menu_display_d3d9.c"
 #endif
 
+#if defined(HAVE_D3D10)
+#include "../menu/drivers_display/menu_display_d3d10.c"
+#endif
+
 #if defined(HAVE_D3D11)
 #include "../menu/drivers_display/menu_display_d3d11.c"
 #endif
@@ -1215,7 +1235,7 @@ MENU
 #include "../menu/drivers/rgui.c"
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_VITA2D) || defined(_3DS) || defined(_MSC_VER) || defined(__wiiu__)
+#if defined(HAVE_OPENGL) || defined(HAVE_VITA2D) || defined(_3DS) || defined(_MSC_VER) || defined(__wiiu__) || defined(HAVE_METAL)
 #ifdef HAVE_XMB
 #include "../menu/drivers/xmb.c"
 #endif
@@ -1246,9 +1266,7 @@ MENU
 #include "../cores/libretro-net-retropad/net_retropad_core.c"
 #endif
 
-#ifdef HAVE_KEYMAPPER
 #include "../input/input_mapper.c"
-#endif
 
 #include "../command.c"
 
@@ -1271,7 +1289,7 @@ DEPENDENCIES
 #ifdef WANT_ZLIB
 #include "../deps/libz/adler32.c"
 #include "../deps/libz/compress.c"
-#include "../deps/libz/crc32.c"
+#include "../deps/libz/libz-crc32.c"
 #include "../deps/libz/deflate.c"
 #include "../deps/libz/gzclose.c"
 #include "../deps/libz/gzlib.c"
@@ -1304,11 +1322,24 @@ DEPENDENCIES
 #endif
 
 #ifdef HAVE_CHD
-#include "../libretro-common/formats/libchdr/bitstream.c"
-#include "../libretro-common/formats/libchdr/cdrom.c"
-#include "../libretro-common/formats/libchdr/chd.c"
-#include "../libretro-common/formats/libchdr/flac.c"
-#include "../libretro-common/formats/libchdr/huffman.c"
+#include "../libretro-common/formats/libchdr/libchdr_bitstream.c"
+#include "../libretro-common/formats/libchdr/libchdr_cdrom.c"
+#include "../libretro-common/formats/libchdr/libchdr_chd.c"
+
+#ifdef HAVE_FLAC
+#include "../libretro-common/formats/libchdr/libchdr_flac.c"
+#include "../libretro-common/formats/libchdr/libchdr_flac_codec.c"
+#endif
+
+#ifdef HAVE_ZLIB
+#include "../libretro-common/formats/libchdr/libchdr_zlib.c"
+#endif
+
+#ifdef HAVE_7ZIP
+#include "../libretro-common/formats/libchdr/libchdr_lzma.c"
+#endif
+
+#include "../libretro-common/formats/libchdr/libchdr_huffman.c"
 
 #include "../libretro-common/streams/chd_stream.c"
 #endif
@@ -1381,4 +1412,8 @@ HTTP SERVER
 #if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
 #include "../deps/civetweb/civetweb.c"
 #include "network/httpserver/httpserver.c"
+#endif
+
+#if defined(HAVE_DISCORD)
+#include "../discord/discord.c"
 #endif

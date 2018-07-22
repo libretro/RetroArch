@@ -47,6 +47,7 @@ typedef struct
    cheevos_cond_type_t type;
    unsigned            req_hits;
    unsigned            curr_hits;
+   char                pause;
 
    cheevos_var_t       source;
    cheevos_cond_op_t   op;

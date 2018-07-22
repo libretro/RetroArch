@@ -48,6 +48,10 @@
 #include "../font_driver.h"
 #include "../video_driver.h"
 #include "../drivers_shader/shader_vulkan.h"
+#include "../../libretro-common/include/gfx/math/matrix_4x4.h"
+#include "../include/vulkan/vulkan.h"
+#include "../../libretro-common/include/gfx/scaler/scaler.h"
+#include "../../libretro-common/include/libretro_vulkan.h"
 
 RETRO_BEGIN_DECLS
 
@@ -81,7 +85,9 @@ enum vulkan_wsi_type
    VULKAN_WSI_WIN32,
    VULKAN_WSI_XCB,
    VULKAN_WSI_XLIB,
-   VULKAN_WSI_DISPLAY
+   VULKAN_WSI_DISPLAY,
+   VULKAN_WSI_MVK_MACOS,
+   VULKAN_WSI_MVK_IOS,
 };
 
 typedef struct vulkan_context
@@ -124,6 +130,7 @@ typedef struct vulkan_context
 typedef struct gfx_ctx_vulkan_data
 {
    bool need_new_swapchain;
+   bool created_new_swapchain;
    vulkan_context_t context;
    VkSurfaceKHR vk_surface;
    VkSwapchainKHR swapchain;
@@ -133,6 +140,7 @@ struct vulkan_display_surface_info
 {
    unsigned width;
    unsigned height;
+   unsigned monitor_index;
 };
 
 struct vk_color
@@ -445,6 +453,12 @@ void vulkan_image_layout_transition(vk_t *vk,
       VkImageLayout old_layout, VkImageLayout new_layout,
       VkAccessFlags srcAccess, VkAccessFlags dstAccess,
       VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages);
+
+void vulkan_image_layout_transition_levels(
+      VkCommandBuffer cmd, VkImage image, uint32_t levels,
+      VkImageLayout old_layout, VkImageLayout new_layout,
+      VkAccessFlags src_access, VkAccessFlags dst_access,
+      VkPipelineStageFlags src_stages, VkPipelineStageFlags dst_stages);
 
 static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
 {

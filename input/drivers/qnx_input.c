@@ -736,12 +736,14 @@ static bool qnx_is_pressed(qnx_input_t *qnx,
       unsigned port, unsigned id)
 {
    const struct retro_keybind *bind = &binds[id];
+   int key                          = bind->key;
 
    if (id >= RARCH_BIND_LIST_END)
       return false;
 
-   if (!qnx->blocked && qnx_keyboard_pressed(qnx, bind->key))
-      return true;
+   if (qnx_keyboard_pressed(qnx, key))
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !qnx->blocked)
+         return true;
    if (binds && binds[id].valid && input_joypad_pressed(qnx->joypad, joypad_info, port, binds, id))
       return true;
 

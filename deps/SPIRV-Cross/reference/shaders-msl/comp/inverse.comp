@@ -114,7 +114,7 @@ float2x2 spvInverse2x2(float2x2 m)
     return (det != 0.0f) ? (adj * (1.0f / det)) : m;
 }
 
-kernel void main0(device MatrixOut& _15 [[buffer(0)]], device MatrixIn& _20 [[buffer(1)]])
+kernel void main0(device MatrixOut& _15 [[buffer(0)]], const device MatrixIn& _20 [[buffer(1)]])
 {
     _15.m2out = spvInverse2x2(_20.m2in);
     _15.m3out = spvInverse3x3(_20.m3in);

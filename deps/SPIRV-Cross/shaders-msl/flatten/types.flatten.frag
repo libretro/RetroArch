@@ -7,13 +7,13 @@ layout(std140, binding = 0) uniform UBO0
    vec4 b;
 };
 
-layout(std140, binding = 0) uniform UBO1
+layout(std140, binding = 1) uniform UBO1
 {
    ivec4 c;
    ivec4 d;
 };
 
-layout(std140, binding = 0) uniform UBO2
+layout(std140, binding = 2) uniform UBO2
 {
    uvec4 e;
    uvec4 f;

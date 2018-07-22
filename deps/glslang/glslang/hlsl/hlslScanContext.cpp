@@ -1,12 +1,12 @@
 //
-//Copyright (C) 2016 Google, Inc.
-//Copyright (C) 2016 LunarG, Inc.
+// Copyright (C) 2016 Google, Inc.
+// Copyright (C) 2016 LunarG, Inc.
 //
-//All rights reserved.
+// All rights reserved.
 //
-//Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions
-//are met:
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
 //
 //    Redistributions of source code must retain the above copyright
 //    notice, this list of conditions and the following disclaimer.
@@ -20,18 +20,18 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-//"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-//LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-//FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-//COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-//INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-//BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-//LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-//CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-//LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-//ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-//POSSIBILITY OF SUCH DAMAGE.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 //
 
 //
@@ -47,19 +47,20 @@
 #include "../glslang/MachineIndependent/ParseHelper.h"
 #include "hlslScanContext.h"
 #include "hlslTokens.h"
-//#include "Scan.h"
 
 // preprocessor includes
 #include "../glslang/MachineIndependent/preprocessor/PpContext.h"
 #include "../glslang/MachineIndependent/preprocessor/PpTokens.h"
 #include "../glslang/MachineIndependent/preprocessor/Compare.h"
-    
+
 namespace {
 
 // A single global usable by all threads, by all versions, by all languages.
 // After a single process-level initialization, this is read only and thread safe
 std::unordered_map<const char*, glslang::EHlslTokenClass, str_hash, str_eq>* hlslKeywordMap = nullptr;
 std::unordered_set<const char*, str_hash, str_eq>* hlslReservedSet = nullptr;
+std::unordered_map<const char*, glslang::TBuiltInVariable, str_hash, str_eq>* hlslSemanticMap = nullptr;
+
 };
 
 namespace glslang {
@@ -95,6 +96,8 @@ void HlslScanContext::fillInKeywordMap()
     (*hlslKeywordMap)["out"] =                     EHTokOut;
     (*hlslKeywordMap)["inout"] =                   EHTokInOut;
     (*hlslKeywordMap)["layout"] =                  EHTokLayout;
+    (*hlslKeywordMap)["globallycoherent"] =        EHTokGloballyCoherent;
+    (*hlslKeywordMap)["inline"] =                  EHTokInline;
 
     (*hlslKeywordMap)["point"] =                   EHTokPoint;
     (*hlslKeywordMap)["line"] =                    EHTokLine;
@@ -106,6 +109,9 @@ void HlslScanContext::fillInKeywordMap()
     (*hlslKeywordMap)["LineStream"] =              EHTokLineStream;
     (*hlslKeywordMap)["TriangleStream"] =          EHTokTriangleStream;
 
+    (*hlslKeywordMap)["InputPatch"] =              EHTokInputPatch;
+    (*hlslKeywordMap)["OutputPatch"] =             EHTokOutputPatch;
+
     (*hlslKeywordMap)["Buffer"] =                  EHTokBuffer;
     (*hlslKeywordMap)["vector"] =                  EHTokVector;
     (*hlslKeywordMap)["matrix"] =                  EHTokMatrix;
@@ -115,11 +121,12 @@ void HlslScanContext::fillInKeywordMap()
     (*hlslKeywordMap)["bool"] =                    EHTokBool;
     (*hlslKeywordMap)["int"] =                     EHTokInt;
     (*hlslKeywordMap)["uint"] =                    EHTokUint;
+    (*hlslKeywordMap)["uint64_t"] =                EHTokUint64;
     (*hlslKeywordMap)["dword"] =                   EHTokDword;
     (*hlslKeywordMap)["half"] =                    EHTokHalf;
     (*hlslKeywordMap)["float"] =                   EHTokFloat;
     (*hlslKeywordMap)["double"] =                  EHTokDouble;
-    (*hlslKeywordMap)["min16float"] =              EHTokMin16float; 
+    (*hlslKeywordMap)["min16float"] =              EHTokMin16float;
     (*hlslKeywordMap)["min10float"] =              EHTokMin10float;
     (*hlslKeywordMap)["min16int"] =                EHTokMin16int;
     (*hlslKeywordMap)["min12int"] =                EHTokMin12int;
@@ -146,6 +153,10 @@ void HlslScanContext::fillInKeywordMap()
     (*hlslKeywordMap)["uint3"] =                   EHTokUint3;
     (*hlslKeywordMap)["uint4"] =                   EHTokUint4;
 
+    (*hlslKeywordMap)["half1"] =                   EHTokHalf1;
+    (*hlslKeywordMap)["half2"] =                   EHTokHalf2;
+    (*hlslKeywordMap)["half3"] =                   EHTokHalf3;
+    (*hlslKeywordMap)["half4"] =                   EHTokHalf4;
     (*hlslKeywordMap)["min16float1"] =             EHTokMin16float1;
     (*hlslKeywordMap)["min16float2"] =             EHTokMin16float2;
     (*hlslKeywordMap)["min16float3"] =             EHTokMin16float3;
@@ -247,6 +258,22 @@ void HlslScanContext::fillInKeywordMap()
     (*hlslKeywordMap)["float4x2"] =                EHTokFloat4x2;
     (*hlslKeywordMap)["float4x3"] =                EHTokFloat4x3;
     (*hlslKeywordMap)["float4x4"] =                EHTokFloat4x4;
+    (*hlslKeywordMap)["half1x1"] =                 EHTokHalf1x1;
+    (*hlslKeywordMap)["half1x2"] =                 EHTokHalf1x2;
+    (*hlslKeywordMap)["half1x3"] =                 EHTokHalf1x3;
+    (*hlslKeywordMap)["half1x4"] =                 EHTokHalf1x4;
+    (*hlslKeywordMap)["half2x1"] =                 EHTokHalf2x1;
+    (*hlslKeywordMap)["half2x2"] =                 EHTokHalf2x2;
+    (*hlslKeywordMap)["half2x3"] =                 EHTokHalf2x3;
+    (*hlslKeywordMap)["half2x4"] =                 EHTokHalf2x4;
+    (*hlslKeywordMap)["half3x1"] =                 EHTokHalf3x1;
+    (*hlslKeywordMap)["half3x2"] =                 EHTokHalf3x2;
+    (*hlslKeywordMap)["half3x3"] =                 EHTokHalf3x3;
+    (*hlslKeywordMap)["half3x4"] =                 EHTokHalf3x4;
+    (*hlslKeywordMap)["half4x1"] =                 EHTokHalf4x1;
+    (*hlslKeywordMap)["half4x2"] =                 EHTokHalf4x2;
+    (*hlslKeywordMap)["half4x3"] =                 EHTokHalf4x3;
+    (*hlslKeywordMap)["half4x4"] =                 EHTokHalf4x4;
     (*hlslKeywordMap)["double1x1"] =               EHTokDouble1x1;
     (*hlslKeywordMap)["double1x2"] =               EHTokDouble1x2;
     (*hlslKeywordMap)["double1x3"] =               EHTokDouble1x3;
@@ -288,12 +315,25 @@ void HlslScanContext::fillInKeywordMap()
     (*hlslKeywordMap)["RWTexture2DArray"] =        EHTokRWTexture2darray;
     (*hlslKeywordMap)["RWTexture3D"] =             EHTokRWTexture3d;
     (*hlslKeywordMap)["RWBuffer"] =                EHTokRWBuffer;
+    (*hlslKeywordMap)["SubpassInput"] =            EHTokSubpassInput;
+    (*hlslKeywordMap)["SubpassInputMS"] =          EHTokSubpassInputMS;
 
+    (*hlslKeywordMap)["AppendStructuredBuffer"] =  EHTokAppendStructuredBuffer;
+    (*hlslKeywordMap)["ByteAddressBuffer"] =       EHTokByteAddressBuffer;
+    (*hlslKeywordMap)["ConsumeStructuredBuffer"] = EHTokConsumeStructuredBuffer;
+    (*hlslKeywordMap)["RWByteAddressBuffer"] =     EHTokRWByteAddressBuffer;
+    (*hlslKeywordMap)["RWStructuredBuffer"] =      EHTokRWStructuredBuffer;
+    (*hlslKeywordMap)["StructuredBuffer"] =        EHTokStructuredBuffer;
+    (*hlslKeywordMap)["TextureBuffer"] =           EHTokTextureBuffer;
 
+    (*hlslKeywordMap)["class"] =                   EHTokClass;
     (*hlslKeywordMap)["struct"] =                  EHTokStruct;
     (*hlslKeywordMap)["cbuffer"] =                 EHTokCBuffer;
+    (*hlslKeywordMap)["ConstantBuffer"] =          EHTokConstantBuffer;
     (*hlslKeywordMap)["tbuffer"] =                 EHTokTBuffer;
     (*hlslKeywordMap)["typedef"] =                 EHTokTypedef;
+    (*hlslKeywordMap)["this"] =                    EHTokThis;
+    (*hlslKeywordMap)["namespace"] =               EHTokNamespace;
 
     (*hlslKeywordMap)["true"] =                    EHTokBoolConstant;
     (*hlslKeywordMap)["false"] =                   EHTokBoolConstant;
@@ -313,11 +353,10 @@ void HlslScanContext::fillInKeywordMap()
 
     // TODO: get correct set here
     hlslReservedSet = new std::unordered_set<const char*, str_hash, str_eq>;
-    
+
     hlslReservedSet->insert("auto");
     hlslReservedSet->insert("catch");
     hlslReservedSet->insert("char");
-    hlslReservedSet->insert("class");
     hlslReservedSet->insert("const_cast");
     hlslReservedSet->insert("enum");
     hlslReservedSet->insert("explicit");
@@ -336,7 +375,6 @@ void HlslScanContext::fillInKeywordMap()
     hlslReservedSet->insert("sizeof");
     hlslReservedSet->insert("static_cast");
     hlslReservedSet->insert("template");
-    hlslReservedSet->insert("this");
     hlslReservedSet->insert("throw");
     hlslReservedSet->insert("try");
     hlslReservedSet->insert("typename");
@@ -344,6 +382,47 @@ void HlslScanContext::fillInKeywordMap()
     hlslReservedSet->insert("unsigned");
     hlslReservedSet->insert("using");
     hlslReservedSet->insert("virtual");
+
+    hlslSemanticMap = new std::unordered_map<const char*, glslang::TBuiltInVariable, str_hash, str_eq>;
+
+    // in DX9, all outputs had to have a semantic associated with them, that was either consumed
+    // by the system or was a specific register assignment
+    // in DX10+, only semantics with the SV_ prefix have any meaning beyond decoration
+    // Fxc will only accept DX9 style semantics in compat mode
+    // Also, in DX10 if a SV value is present as the input of a stage, but isn't appropriate for that
+    // stage, it would just be ignored as it is likely there as part of an output struct from one stage
+    // to the next
+    bool bParseDX9 = false;
+    if (bParseDX9) {
+        (*hlslSemanticMap)["PSIZE"] = EbvPointSize;
+        (*hlslSemanticMap)["FOG"] =   EbvFogFragCoord;
+        (*hlslSemanticMap)["DEPTH"] = EbvFragDepth;
+        (*hlslSemanticMap)["VFACE"] = EbvFace;
+        (*hlslSemanticMap)["VPOS"] =  EbvFragCoord;
+    }
+
+    (*hlslSemanticMap)["SV_POSITION"] =               EbvPosition;
+    (*hlslSemanticMap)["SV_VERTEXID"] =               EbvVertexIndex;
+    (*hlslSemanticMap)["SV_VIEWPORTARRAYINDEX"] =     EbvViewportIndex;
+    (*hlslSemanticMap)["SV_TESSFACTOR"] =             EbvTessLevelOuter;
+    (*hlslSemanticMap)["SV_SAMPLEINDEX"] =            EbvSampleId;
+    (*hlslSemanticMap)["SV_RENDERTARGETARRAYINDEX"] = EbvLayer;
+    (*hlslSemanticMap)["SV_PRIMITIVEID"] =            EbvPrimitiveId;
+    (*hlslSemanticMap)["SV_OUTPUTCONTROLPOINTID"] =   EbvInvocationId;
+    (*hlslSemanticMap)["SV_ISFRONTFACE"] =            EbvFace;
+    (*hlslSemanticMap)["SV_INSTANCEID"] =             EbvInstanceIndex;
+    (*hlslSemanticMap)["SV_INSIDETESSFACTOR"] =       EbvTessLevelInner;
+    (*hlslSemanticMap)["SV_GSINSTANCEID"] =           EbvInvocationId;
+    (*hlslSemanticMap)["SV_DISPATCHTHREADID"] =       EbvGlobalInvocationId;
+    (*hlslSemanticMap)["SV_GROUPTHREADID"] =          EbvLocalInvocationId;
+    (*hlslSemanticMap)["SV_GROUPINDEX"] =             EbvLocalInvocationIndex;
+    (*hlslSemanticMap)["SV_GROUPID"] =                EbvWorkGroupId;
+    (*hlslSemanticMap)["SV_DOMAINLOCATION"] =         EbvTessCoord;
+    (*hlslSemanticMap)["SV_DEPTH"] =                  EbvFragDepth;
+    (*hlslSemanticMap)["SV_COVERAGE"] =               EbvSampleMask;
+    (*hlslSemanticMap)["SV_DEPTHGREATEREQUAL"] =      EbvFragDepthGreater;
+    (*hlslSemanticMap)["SV_DEPTHLESSEQUAL"] =         EbvFragDepthLesser;
+    (*hlslSemanticMap)["SV_STENCILREF"] =             EbvFragStencilRef;
 }
 
 void HlslScanContext::deleteKeywordMap()
@@ -352,13 +431,24 @@ void HlslScanContext::deleteKeywordMap()
     hlslKeywordMap = nullptr;
     delete hlslReservedSet;
     hlslReservedSet = nullptr;
+    delete hlslSemanticMap;
+    hlslSemanticMap = nullptr;
 }
 
-// Wrapper for tokenizeClass()"] =  to get everything inside the token.
+// Wrapper for tokenizeClass() to get everything inside the token.
 void HlslScanContext::tokenize(HlslToken& token)
 {
     EHlslTokenClass tokenClass = tokenizeClass(token);
     token.tokenClass = tokenClass;
+}
+
+glslang::TBuiltInVariable HlslScanContext::mapSemantic(const char* upperCase)
+{
+    auto it = hlslSemanticMap->find(upperCase);
+    if (it != hlslSemanticMap->end())
+        return it->second;
+    else
+        return glslang::EbvNone;
 }
 
 //
@@ -371,13 +461,14 @@ EHlslTokenClass HlslScanContext::tokenizeClass(HlslToken& token)
     do {
         parserToken = &token;
         TPpToken ppToken;
-        tokenText = ppContext.tokenize(&ppToken);
-        if (tokenText == nullptr)
+        int token = ppContext.tokenize(ppToken);
+        if (token == EndOfInput)
             return EHTokNone;
 
+        tokenText = ppToken.name;
         loc = ppToken.loc;
         parserToken->loc = loc;
-        switch (ppToken.token) {
+        switch (token) {
         case ';':                       return EHTokSemicolon;
         case ',':                       return EHTokComma;
         case ':':                       return EHTokColon;
@@ -406,11 +497,11 @@ EHlslTokenClass HlslScanContext::tokenizeClass(HlslToken& token)
             _parseContext.error(loc, "illegal use of escape character", "\\", "");
             break;
 
-        case PpAtomAdd:                return EHTokAddAssign;
-        case PpAtomSub:                return EHTokSubAssign;
-        case PpAtomMul:                return EHTokMulAssign;
-        case PpAtomDiv:                return EHTokDivAssign;
-        case PpAtomMod:                return EHTokModAssign;
+        case PPAtomAddAssign:          return EHTokAddAssign;
+        case PPAtomSubAssign:          return EHTokSubAssign;
+        case PPAtomMulAssign:          return EHTokMulAssign;
+        case PPAtomDivAssign:          return EHTokDivAssign;
+        case PPAtomModAssign:          return EHTokModAssign;
 
         case PpAtomRight:              return EHTokRightOp;
         case PpAtomLeft:               return EHTokLeftOp;
@@ -433,8 +524,11 @@ EHlslTokenClass HlslScanContext::tokenizeClass(HlslToken& token)
         case PpAtomDecrement:          return EHTokDecOp;
         case PpAtomIncrement:          return EHTokIncOp;
 
+        case PpAtomColonColon:         return EHTokColonColon;
+
         case PpAtomConstInt:           parserToken->i = ppToken.ival;       return EHTokIntConstant;
         case PpAtomConstUint:          parserToken->i = ppToken.ival;       return EHTokUintConstant;
+        case PpAtomConstFloat16:       parserToken->d = ppToken.dval;       return EHTokFloat16Constant;
         case PpAtomConstFloat:         parserToken->d = ppToken.dval;       return EHTokFloatConstant;
         case PpAtomConstDouble:        parserToken->d = ppToken.dval;       return EHTokDoubleConstant;
         case PpAtomIdentifier:
@@ -444,17 +538,22 @@ EHlslTokenClass HlslScanContext::tokenizeClass(HlslToken& token)
         }
 
         case PpAtomConstString: {
-            parserToken->string = NewPoolTString(ppToken.name);
+            parserToken->string = NewPoolTString(tokenText);
             return EHTokStringConstant;
         }
 
         case EndOfInput:               return EHTokNone;
 
         default:
-            char buf[2];
-            buf[0] = (char)ppToken.token;
-            buf[1] = 0;
-            _parseContext.error(loc, "unexpected token", buf, "");
+            if (token < PpAtomMaxSingle) {
+                char buf[2];
+                buf[0] = (char)token;
+                buf[1] = 0;
+                _parseContext.error(loc, "unexpected token", buf, "");
+            } else if (tokenText[0] != 0)
+                _parseContext.error(loc, "unexpected token", tokenText, "");
+            else
+                _parseContext.error(loc, "unexpected token", "", "");
             break;
         }
     } while (true);
@@ -497,6 +596,8 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokInOut:
     case EHTokPrecise:
     case EHTokLayout:
+    case EHTokGloballyCoherent:
+    case EHTokInline:
         return keyword;
 
     // primitive types
@@ -513,6 +614,11 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokTriangleStream:
         return keyword;
 
+    // Tessellation patches
+    case EHTokInputPatch:
+    case EHTokOutputPatch:
+        return keyword;
+
     case EHTokBuffer:
     case EHTokVector:
     case EHTokMatrix:
@@ -524,6 +630,7 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokBool:
     case EHTokInt:
     case EHTokUint:
+    case EHTokUint64:
     case EHTokDword:
     case EHTokHalf:
     case EHTokFloat:
@@ -555,6 +662,10 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokUint2:
     case EHTokUint3:
     case EHTokUint4:
+    case EHTokHalf1:
+    case EHTokHalf2:
+    case EHTokHalf3:
+    case EHTokHalf4:
     case EHTokMin16float1:
     case EHTokMin16float2:
     case EHTokMin16float3:
@@ -641,6 +752,22 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokFloat4x2:
     case EHTokFloat4x3:
     case EHTokFloat4x4:
+    case EHTokHalf1x1:
+    case EHTokHalf1x2:
+    case EHTokHalf1x3:
+    case EHTokHalf1x4:
+    case EHTokHalf2x1:
+    case EHTokHalf2x2:
+    case EHTokHalf2x3:
+    case EHTokHalf2x4:
+    case EHTokHalf3x1:
+    case EHTokHalf3x2:
+    case EHTokHalf3x3:
+    case EHTokHalf3x4:
+    case EHTokHalf4x1:
+    case EHTokHalf4x2:
+    case EHTokHalf4x3:
+    case EHTokHalf4x4:
     case EHTokDouble1x1:
     case EHTokDouble1x2:
     case EHTokDouble1x3:
@@ -683,13 +810,26 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokRWTexture2darray:
     case EHTokRWTexture3d:
     case EHTokRWBuffer:
+    case EHTokAppendStructuredBuffer:
+    case EHTokByteAddressBuffer:
+    case EHTokConsumeStructuredBuffer:
+    case EHTokRWByteAddressBuffer:
+    case EHTokRWStructuredBuffer:
+    case EHTokStructuredBuffer:
+    case EHTokTextureBuffer:
+    case EHTokSubpassInput:
+    case EHTokSubpassInputMS:
         return keyword;
 
     // variable, user type, ...
+    case EHTokClass:
     case EHTokStruct:
     case EHTokTypedef:
     case EHTokCBuffer:
+    case EHTokConstantBuffer:
     case EHTokTBuffer:
+    case EHTokThis:
+    case EHTokNamespace:
         return keyword;
 
     case EHTokBoolConstant:
@@ -732,34 +872,10 @@ EHlslTokenClass HlslScanContext::identifierOrType()
 // extension support before the extension is enabled.
 EHlslTokenClass HlslScanContext::reservedWord()
 {
-    if (!_parseContext.symbolTable.atBuiltInLevel())
+    if (! _parseContext.symbolTable.atBuiltInLevel())
         _parseContext.error(loc, "Reserved word.", tokenText, "", "");
 
     return EHTokNone;
-}
-
-EHlslTokenClass HlslScanContext::identifierOrReserved(bool reserved)
-{
-    if (reserved) {
-        reservedWord();
-
-        return EHTokNone;
-    }
-
-    if (_parseContext.forwardCompatible)
-        _parseContext.warn(loc, "using future reserved keyword", tokenText, "");
-
-    return identifierOrType();
-}
-
-// For a keyword that was never reserved, until it suddenly
-// showed up.
-EHlslTokenClass HlslScanContext::nonreservedKeyword(int version)
-{
-    if (_parseContext.version < version)
-        return identifierOrType();
-
-    return keyword;
 }
 
 } // end namespace glslang

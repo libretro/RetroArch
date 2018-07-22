@@ -104,8 +104,9 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
    if (!settings->bools.video_font_enable)
       return;
 
-   if (!font_renderer_create_default((const void**)&vid->font_driver, &vid->font_data,
-                                    *font_path ? font_path : NULL, font_size))
+   if (!font_renderer_create_default(
+            &vid->font_driver, &vid->font_data,
+            *font_path ? font_path : NULL, font_size))
    {
       RARCH_WARN("[SDL]: Could not initialize fonts.\n");
       return;
@@ -721,11 +722,13 @@ static void sdl2_grab_mouse_toggle(void *data)
 }
 
 static video_poke_interface_t sdl2_video_poke_interface = {
+   NULL, /* get_flags */
    NULL,       /* set_coords */
    NULL,       /* set_mvp */
    NULL,
    NULL,
    NULL,
+   NULL, /* get_refresh_rate */
    sdl2_poke_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

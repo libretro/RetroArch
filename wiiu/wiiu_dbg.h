@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-#ifdef WIIU
+#ifdef __wiiu__
 #include <wiiu/types.h>
 
 #ifdef __cplusplus

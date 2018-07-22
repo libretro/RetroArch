@@ -900,7 +900,8 @@ static bool udev_is_pressed(udev_input_t *udev,
    const struct retro_keybind *bind = &binds[id];
 
    if ( (bind->key < RETROK_LAST) && udev_keyboard_pressed(udev, bind->key) )
-      return true;
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !udev->blocked)
+         return true;
 
    if (binds && binds[id].valid)
    {

@@ -139,7 +139,7 @@ enum event_command
    /* Add a playlist entry to favorites. */
    CMD_EVENT_ADD_TO_FAVORITES,
    /* Reset playlist entry associated core to DETECT */
-   CMD_EVENT_RESET_CORE_ASSOCIATION,   
+   CMD_EVENT_RESET_CORE_ASSOCIATION,
    /* Toggles pause. */
    CMD_EVENT_PAUSE_TOGGLE,
    /* Pauses RetroArch. */
@@ -149,6 +149,7 @@ enum event_command
    CMD_EVENT_PAUSE_CHECKS,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
    CMD_EVENT_MENU_SAVE_CONFIG,
    CMD_EVENT_MENU_PAUSE_LIBRETRO,
@@ -218,6 +219,8 @@ enum event_command
    CMD_EVENT_GRAB_MOUSE_TOGGLE,
    /* Toggles game focus. */
    CMD_EVENT_GAME_FOCUS_TOGGLE,
+   /* Toggles desktop menu. */
+   CMD_EVENT_UI_COMPANION_TOGGLE,
    /* Toggles fullscreen mode. */
    CMD_EVENT_FULLSCREEN_TOGGLE,
    CMD_EVENT_PERFCNT_REPORT_FRONTEND_LOG,
@@ -228,6 +231,9 @@ enum event_command
    CMD_EVENT_DISABLE_OVERRIDES,
    CMD_EVENT_RESTORE_REMAPS,
    CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET,
+   CMD_EVENT_DISCORD_INIT,
+   CMD_EVENT_DISCORD_DEINIT,
+   CMD_EVENT_DISCORD_UPDATE,
    CMD_EVENT_LIBUI_TEST
 };
 
@@ -271,7 +277,7 @@ void command_playlist_push_write(
 void command_playlist_update_write(
       void *data,
       size_t idx,
-      const char *path,      
+      const char *path,
       const char *label,
       const char *core_path,
       const char *core_display_name,

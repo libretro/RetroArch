@@ -19,6 +19,7 @@
 
 #include "spirv.hpp"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <functional>
@@ -27,6 +28,7 @@
 #include <sstream>
 #include <stack>
 #include <stdexcept>
+#include <stdint.h>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -90,7 +92,126 @@ void join_helper(std::ostringstream &stream, T &&t, Ts &&... ts)
 	stream << std::forward<T>(t);
 	join_helper(stream, std::forward<Ts>(ts)...);
 }
-}
+} // namespace inner
+
+class Bitset
+{
+public:
+	Bitset() = default;
+	explicit inline Bitset(uint64_t lower_)
+	    : lower(lower_)
+	{
+	}
+
+	inline bool get(uint32_t bit) const
+	{
+		if (bit < 64)
+			return (lower & (1ull << bit)) != 0;
+		else
+			return higher.count(bit) != 0;
+	}
+
+	inline void set(uint32_t bit)
+	{
+		if (bit < 64)
+			lower |= 1ull << bit;
+		else
+			higher.insert(bit);
+	}
+
+	inline void clear(uint32_t bit)
+	{
+		if (bit < 64)
+			lower &= ~(1ull << bit);
+		else
+			higher.erase(bit);
+	}
+
+	inline uint64_t get_lower() const
+	{
+		return lower;
+	}
+
+	inline void reset()
+	{
+		lower = 0;
+		higher.clear();
+	}
+
+	inline void merge_and(const Bitset &other)
+	{
+		lower &= other.lower;
+		std::unordered_set<uint32_t> tmp_set;
+		for (auto &v : higher)
+			if (other.higher.count(v) != 0)
+				tmp_set.insert(v);
+		higher = std::move(tmp_set);
+	}
+
+	inline void merge_or(const Bitset &other)
+	{
+		lower |= other.lower;
+		for (auto &v : other.higher)
+			higher.insert(v);
+	}
+
+	inline bool operator==(const Bitset &other) const
+	{
+		if (lower != other.lower)
+			return false;
+
+		if (higher.size() != other.higher.size())
+			return false;
+
+		for (auto &v : higher)
+			if (other.higher.count(v) == 0)
+				return false;
+
+		return true;
+	}
+
+	inline bool operator!=(const Bitset &other) const
+	{
+		return !(*this == other);
+	}
+
+	template <typename Op>
+	void for_each_bit(const Op &op) const
+	{
+		// TODO: Add ctz-based iteration.
+		for (uint32_t i = 0; i < 64; i++)
+		{
+			if (lower & (1ull << i))
+				op(i);
+		}
+
+		if (higher.empty())
+			return;
+
+		// Need to enforce an order here for reproducible results,
+		// but hitting this path should happen extremely rarely, so having this slow path is fine.
+		std::vector<uint32_t> bits;
+		bits.reserve(higher.size());
+		for (auto &v : higher)
+			bits.push_back(v);
+		std::sort(std::begin(bits), std::end(bits));
+
+		for (auto &v : bits)
+			op(v);
+	}
+
+	inline bool empty() const
+	{
+		return lower == 0 && higher.empty();
+	}
+
+private:
+	// The most common bits to set are all lower than 64,
+	// so optimize for this case. Bits spilling outside 64 go into a slower data structure.
+	// In almost all cases, higher data structure will not be used.
+	uint64_t lower = 0;
+	std::unordered_set<uint32_t> higher;
+};
 
 // Helper template to avoid lots of nasty string temporary munging.
 template <typename... Ts>
@@ -263,6 +384,7 @@ struct SPIRType : IVariant
 		Int64,
 		UInt64,
 		AtomicCounter,
+		Half,
 		Float,
 		Double,
 		Struct,
@@ -361,7 +483,7 @@ struct SPIREntryPoint
 	std::string orig_name;
 	std::vector<uint32_t> interface_variables;
 
-	uint64_t flags = 0;
+	Bitset flags;
 	struct
 	{
 		uint32_t x = 0, y = 0, z = 0;
@@ -456,10 +578,20 @@ struct SPIRBlock : IVariant
 		MergeSelection
 	};
 
+	enum Hints
+	{
+		HintNone,
+		HintUnroll,
+		HintDontUnroll,
+		HintFlatten,
+		HintDontFlatten
+	};
+
 	enum Method
 	{
 		MergeToSelectForLoop,
-		MergeToDirectForLoop
+		MergeToDirectForLoop,
+		MergeToSelectContinueForLoop
 	};
 
 	enum ContinueBlockType
@@ -487,6 +619,7 @@ struct SPIRBlock : IVariant
 
 	Terminator terminator = Unknown;
 	Merge merge = MergeNone;
+	Hints hint = HintNone;
 	uint32_t next_block = 0;
 	uint32_t merge_block = 0;
 	uint32_t continue_block = 0;
@@ -512,6 +645,10 @@ struct SPIRBlock : IVariant
 	// Declare these temporaries before beginning the block.
 	// Used for handling complex continue blocks which have side effects.
 	std::vector<std::pair<uint32_t, uint32_t>> declare_temporary;
+
+	// Declare these temporaries, but only conditionally if this block turns out to be
+	// a complex loop header.
+	std::vector<std::pair<uint32_t, uint32_t>> potential_declare_temporary;
 
 	struct Case
 	{
@@ -539,6 +676,11 @@ struct SPIRBlock : IVariant
 	// fail to use a classic for-loop,
 	// we remove these variables, and fall back to regular variables outside the loop.
 	std::vector<uint32_t> loop_variables;
+
+	// Some expressions are control-flow dependent, i.e. any instruction which relies on derivatives or
+	// sub-group-like operations.
+	// Make sure that we only use these expressions in the original block.
+	std::vector<uint32_t> invalidate_expressions;
 };
 
 struct SPIRFunction : IVariant
@@ -611,10 +753,17 @@ struct SPIRFunction : IVariant
 		arguments.push_back({ parameter_type, id, 0u, 0u, alias_global_variable });
 	}
 
+	// Statements to be emitted when the function returns.
+	// Mostly used for lowering internal data structures onto flattened structures.
+	std::vector<std::string> fixup_statements_out;
+
+	// Statements to be emitted when the function begins.
+	// Mostly used for populating internal data structures from flattened structures.
+	std::vector<std::string> fixup_statements_in;
+
 	bool active = false;
 	bool flush_undeclared = true;
 	bool do_combined_parameters = true;
-	bool analyzed_variable_scope = false;
 };
 
 struct SPIRAccessChain : IVariant
@@ -731,6 +880,7 @@ struct SPIRConstant : IVariant
 		// Workaround for MSVC 2013, initializing an array breaks.
 		ConstantVector()
 		{
+			memset(r, 0, sizeof(r));
 			for (unsigned i = 0; i < 4; i++)
 				id[i] = 0;
 		}
@@ -751,6 +901,57 @@ struct SPIRConstant : IVariant
 		}
 	};
 
+	static inline float f16_to_f32(uint16_t u16_value)
+	{
+		// Based on the GLM implementation.
+		int s = (u16_value >> 15) & 0x1;
+		int e = (u16_value >> 10) & 0x1f;
+		int m = (u16_value >> 0) & 0x3ff;
+
+		union {
+			float f32;
+			uint32_t u32;
+		} u;
+
+		if (e == 0)
+		{
+			if (m == 0)
+			{
+				u.u32 = uint32_t(s) << 31;
+				return u.f32;
+			}
+			else
+			{
+				while ((m & 0x400) == 0)
+				{
+					m <<= 1;
+					e--;
+				}
+
+				e++;
+				m &= ~0x400;
+			}
+		}
+		else if (e == 31)
+		{
+			if (m == 0)
+			{
+				u.u32 = (uint32_t(s) << 31) | 0x7f800000u;
+				return u.f32;
+			}
+			else
+			{
+				u.u32 = (uint32_t(s) << 31) | 0x7f800000u | (m << 13);
+				return u.f32;
+			}
+		}
+
+		e += 127 - 15;
+		m <<= 13;
+		u.u32 = (uint32_t(s) << 31) | (e << 23) | m;
+		return u.f32;
+	}
+
 	inline uint32_t specialization_constant_id(uint32_t col, uint32_t row) const
 	{
 		return m.c[col].id[row];
@@ -764,6 +965,16 @@ struct SPIRConstant : IVariant
 	inline uint32_t scalar(uint32_t col = 0, uint32_t row = 0) const
 	{
 		return m.c[col].r[row].u32;
+	}
+
+	inline uint16_t scalar_u16(uint32_t col = 0, uint32_t row = 0) const
+	{
+		return uint16_t(m.c[col].r[row].u32 & 0xffffu);
+	}
+
+	inline float scalar_f16(uint32_t col = 0, uint32_t row = 0) const
+	{
+		return f16_to_f32(scalar_u16(col, row));
 	}
 
 	inline float scalar_f32(uint32_t col = 0, uint32_t row = 0) const
@@ -808,7 +1019,7 @@ struct SPIRConstant : IVariant
 
 	inline void make_null(const SPIRType &constant_type_)
 	{
-		std::memset(&m, 0, sizeof(m));
+		m = {};
 		m.columns = constant_type_.columns;
 		for (auto &c : m.c)
 			c.vecsize = constant_type_.vecsize;
@@ -818,6 +1029,8 @@ struct SPIRConstant : IVariant
 	    : constant_type(constant_type_)
 	{
 	}
+
+	SPIRConstant() = default;
 
 	SPIRConstant(uint32_t constant_type_, const uint32_t *elements, uint32_t num_elements, bool specialized)
 	    : constant_type(constant_type_)
@@ -882,9 +1095,14 @@ struct SPIRConstant : IVariant
 
 	uint32_t constant_type;
 	ConstantMatrix m;
-	bool specialization = false; // If this constant is a specialization constant (i.e. created with OpSpecConstant*).
-	bool is_used_as_array_length =
-	    false; // If this constant is used as an array length which creates specialization restrictions on some backends.
+
+	// If this constant is a specialization constant (i.e. created with OpSpecConstant*).
+	bool specialization = false;
+	// If this constant is used as an array length which creates specialization restrictions on some backends.
+	bool is_used_as_array_length = false;
+
+	// If true, this is a LUT, and should always be declared in the outer scope.
+	bool is_used_as_lut = false;
 
 	// For composites which are constant arrays, etc.
 	std::vector<uint32_t> subconstants;
@@ -913,9 +1131,10 @@ public:
 	void set(std::unique_ptr<IVariant> val, uint32_t new_type)
 	{
 		holder = std::move(val);
-		if (type != TypeNone && type != new_type)
+		if (!allow_type_rewrite && type != TypeNone && type != new_type)
 			SPIRV_CROSS_THROW("Overwriting a variant with new type.");
 		type = new_type;
+		allow_type_rewrite = false;
 	}
 
 	template <typename T>
@@ -956,9 +1175,15 @@ public:
 		type = TypeNone;
 	}
 
+	void set_allow_type_rewrite()
+	{
+		allow_type_rewrite = true;
+	}
+
 private:
 	std::unique_ptr<IVariant> holder;
 	uint32_t type = TypeNone;
+	bool allow_type_rewrite = false;
 };
 
 template <typename T>
@@ -988,7 +1213,8 @@ struct Meta
 	{
 		std::string alias;
 		std::string qualified_alias;
-		uint64_t decoration_flags = 0;
+		std::string hlsl_semantic;
+		Bitset decoration_flags;
 		spv::BuiltIn builtin_type;
 		uint32_t location = 0;
 		uint32_t set = 0;
@@ -998,6 +1224,7 @@ struct Meta
 		uint32_t matrix_stride = 0;
 		uint32_t input_attachment = 0;
 		uint32_t spec_id = 0;
+		uint32_t index = 0;
 		bool builtin = false;
 	};
 
@@ -1014,6 +1241,11 @@ struct Meta
 	// is not a valid identifier in any high-level language.
 	std::string hlsl_magic_counter_buffer_name;
 	bool hlsl_magic_counter_buffer_candidate = false;
+
+	// For SPV_GOOGLE_hlsl_functionality1, this avoids the workaround.
+	bool hlsl_is_magic_counter_buffer = false;
+	// ID for the sibling counter buffer.
+	uint32_t hlsl_magic_counter_buffer = 0;
 };
 
 // A user callback that remaps the type of any variable.
@@ -1054,6 +1286,11 @@ public:
 private:
 	uint64_t h = 0xcbf29ce484222325ull;
 };
+
+static inline bool type_is_floating_point(const SPIRType &type)
+{
+	return type.basetype == SPIRType::Half || type.basetype == SPIRType::Float || type.basetype == SPIRType::Double;
 }
+} // namespace spirv_cross
 
 #endif

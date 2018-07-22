@@ -40,7 +40,8 @@ enum menu_entry_type
    MENU_ENTRY_STRING,
    MENU_ENTRY_HEX,
    MENU_ENTRY_BIND,
-   MENU_ENTRY_ENUM
+   MENU_ENTRY_ENUM,
+   MENU_ENTRY_SIZE
 };
 
 typedef struct menu_entry

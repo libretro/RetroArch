@@ -33,6 +33,9 @@
 
 #include "../drivers_keyboard/keyboard_event_apple.h"
 
+/* TODO/FIXME - 
+ * fix game focus toggle */
+
 /* Forward declarations */
 float get_backing_scale_factor(void);
 
@@ -53,7 +56,7 @@ int32_t cocoa_input_find_any_key(void)
 }
 
 static int cocoa_input_find_any_button_ret(cocoa_input_data_t *apple,
-   retro_bits_t * state, unsigned port)
+   input_bits_t * state, unsigned port)
 {
    unsigned i;
 
@@ -78,7 +81,7 @@ int32_t cocoa_input_find_any_button(uint32_t port)
 
        if (apple->joypad->get_buttons)
        {
-          retro_bits_t state;
+          input_bits_t state;
           apple->joypad->get_buttons(port,&state);
           ret = cocoa_input_find_any_button_ret(apple, &state, port);
        }
@@ -93,7 +96,7 @@ int32_t cocoa_input_find_any_button(uint32_t port)
 
        if (apple->sec_joypad->get_buttons)
        {
-          retro_bits_t state;
+          input_bits_t state;
           apple->sec_joypad->poll();
           apple->sec_joypad->get_buttons(port,&state);
           ret = cocoa_input_find_any_button_ret(apple, &state, port);

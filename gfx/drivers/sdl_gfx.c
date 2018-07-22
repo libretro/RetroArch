@@ -96,7 +96,8 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
    if (!settings->bools.video_font_enable)
       return;
 
-   if (!font_renderer_create_default((const void**)&vid->font_driver, &vid->font,
+   if (!font_renderer_create_default(
+            &vid->font_driver, &vid->font,
             *settings->paths.path_font ? settings->paths.path_font : NULL,
             settings->floats.video_font_size))
    {
@@ -517,11 +518,13 @@ static void sdl_grab_mouse_toggle(void *data)
 }
 
 static const video_poke_interface_t sdl_poke_interface = {
+   NULL, /* get_flags */
    NULL,                /* set_coords */
    NULL,                /* set_mvp */
    NULL,
    NULL,
    NULL,
+   NULL, /* get_refresh_rate */
    sdl_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

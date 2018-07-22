@@ -15,10 +15,12 @@ layout(binding = 1, std430) buffer _4_6
 
 void main()
 {
-    bvec4 _34 = equal(ivec4(_5._m1), _5._m0);
-    bvec4 _35 = equal(_5._m0, ivec4(_5._m1));
-    bvec4 _36 = equal(_5._m1, _5._m1);
-    bvec4 _37 = equal(_5._m0, _5._m0);
+    ivec4 _30 = _5._m0;
+    uvec4 _31 = _5._m1;
+    bvec4 _34 = equal(ivec4(_31), _30);
+    bvec4 _35 = equal(_30, ivec4(_31));
+    bvec4 _36 = equal(_31, _31);
+    bvec4 _37 = equal(_30, _30);
     _6._m0 = mix(uvec4(0u), uvec4(1u), _34);
     _6._m0 = mix(uvec4(0u), uvec4(1u), _35);
     _6._m0 = mix(uvec4(0u), uvec4(1u), _36);

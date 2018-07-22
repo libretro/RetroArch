@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (file_stream.h).
@@ -47,7 +47,7 @@ typedef struct RFILE RFILE;
 
 void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 
-ssize_t filestream_get_size(RFILE *stream);
+int64_t filestream_get_size(RFILE *stream);
 
 /**
  * filestream_open:
@@ -60,27 +60,29 @@ ssize_t filestream_get_size(RFILE *stream);
  **/
 RFILE *filestream_open(const char *path, unsigned mode, unsigned hints);
 
-ssize_t filestream_seek(RFILE *stream, ssize_t offset, int seek_position);
+int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position);
 
-ssize_t filestream_read(RFILE *stream, void *data, int64_t len);
+int64_t filestream_read(RFILE *stream, void *data, int64_t len);
 
-ssize_t filestream_write(RFILE *stream, const void *data, int64_t len);
+int64_t filestream_write(RFILE *stream, const void *data, int64_t len);
 
-ssize_t filestream_tell(RFILE *stream);
+int64_t filestream_tell(RFILE *stream);
 
 void filestream_rewind(RFILE *stream);
 
 int filestream_close(RFILE *stream);
 
-int filestream_read_file(const char *path, void **buf, ssize_t *len);
+int64_t filestream_read_file(const char *path, void **buf, int64_t *len);
 
 char *filestream_gets(RFILE *stream, char *s, size_t len);
 
 int filestream_getc(RFILE *stream);
 
+int filestream_scanf(RFILE *stream, const char* format, ...);
+
 int filestream_eof(RFILE *stream);
 
-bool filestream_write_file(const char *path, const void *data, ssize_t size);
+bool filestream_write_file(const char *path, const void *data, int64_t size);
 
 int filestream_putc(RFILE *stream, int c);
 

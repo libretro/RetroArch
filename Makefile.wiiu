@@ -6,10 +6,10 @@ DEBUG                      = 0
 GRIFFIN_BUILD              = 0
 SALAMANDER_BUILD           = 0
 WHOLE_ARCHIVE_LINK         = 0
-WIIU_HID                   = 0
+WIIU_HID                   = 1
+HAVE_RUNAHEAD              = 1
 WIIU_LOG_RPX               = 0
 BUILD_DIR                  = objs/wiiu
-PC_DEVELOPMENT_IP_ADDRESS  ?=
 PC_DEVELOPMENT_TCP_PORT	   ?=
 
 ifeq ($(SALAMANDER_BUILD),1)
@@ -28,11 +28,11 @@ ifneq ($(V), 1)
 endif
 
 OBJ :=
-OBJ += wiiu/input/wpad_driver.o
-OBJ += wiiu/input/kpad_driver.o
-OBJ += wiiu/input/pad_functions.o
+OBJ += wiiu/main.o
 OBJ += wiiu/system/memory.o
+OBJ += wiiu/system/atomic.o
 OBJ += wiiu/system/exception_handler.o
+OBJ += wiiu/system/missing_libc_functions.o
 OBJ += wiiu/fs/sd_fat_devoptab.o
 OBJ += wiiu/fs/fs_utils.o
 OBJ += wiiu/hbl.o
@@ -45,18 +45,14 @@ endif
 
 ifeq ($(WIIU_HID),1)
    DEFINES += -DWIIU_HID
-   OBJ += wiiu/input/hidpad_driver.o
-   OBJ += wiiu/input/wiiu_hid.o
+   OBJ += input/drivers_joypad/wiiu/hidpad_driver.o
+   OBJ += input/drivers_hid/wiiu_hid.o
    OBJ += input/connect/joypad_connection.o \
-          input/connect/connect_ps2adapter.o \
-          input/connect/connect_psxadapter.o \
-          input/connect/connect_ps3.o \
-          input/connect/connect_ps4.o \
-          input/connect/connect_wii.o \
-          input/connect/connect_nesusb.o \
-          input/connect/connect_snesusb.o \
-          input/connect/connect_wiiupro.o \
-          input/connect/connect_wiiugca.o
+          input/common/hid/hid_device_driver.o \
+          input/common/hid/device_wiiu_gca.o \
+          input/common/hid/device_ds3.o \
+          input/common/hid/device_ds4.o \
+          input/common/hid/device_null.o
 endif
 
 ifeq ($(SALAMANDER_BUILD),1)
@@ -83,13 +79,15 @@ ifeq ($(SALAMANDER_BUILD),1)
 else
    DEFINES += -DRARCH_INTERNAL
    DEFINES += -DHAVE_KEYMAPPER
-   DEFINES += -DHAVE_RUNAHEAD
    DEFINES += -DHAVE_UPDATE_ASSETS
    DEFINES += -DHAVE_FILTERS_BUILTIN
    DEFINES += -DHAVE_SLANG
    DEFINES += -DHAVE_SHADERPIPELINE
 
-   OBJ += wiiu/system/missing_libc_functions.o
+ifeq ($(HAVE_RUNAHEAD),1)
+	DEFINES += -DHAVE_RUNAHEAD
+endif
+
    OBJ += wiiu/shader_utils.o
    OBJ += gfx/drivers/gx2_shaders/tex.o
    OBJ += gfx/drivers/gx2_shaders/sprite.o
@@ -120,8 +118,7 @@ else
    	HAVE_RGUI = 1
    	HAVE_ZLIB = 1
    	HAVE_7ZIP = 1
-   	HAVE_BUILTINZLIB = 1
-   	HAVE_KEYMAPPER = 1
+	HAVE_BUILTINZLIB = 0
    	HAVE_LIBRETRODB = 1
    	HAVE_ZARCH = 0
    	HAVE_MATERIALUI = 1
@@ -148,6 +145,10 @@ else
    	OBJ += menu/drivers_display/menu_display_wiiu.o
    	OBJ += input/drivers/wiiu_input.o
    	OBJ += input/drivers_joypad/wiiu_joypad.o
+        OBJ += input/drivers_joypad/wiiu/wpad_driver.o
+        OBJ += input/drivers_joypad/wiiu/kpad_driver.o
+        OBJ += input/drivers_joypad/wiiu/pad_functions.o
+
    	OBJ += audio/drivers/wiiu_audio.o
    	OBJ += frontend/drivers/platform_wiiu.o
    endif
@@ -160,10 +161,6 @@ DEFINES += -DWIIU -DMSB_FIRST -D__WUT__
 #DEFINES += -D_GNU_SOURCE
 DEFINES += -DHAVE_MAIN
 DEFINES += -DRARCH_CONSOLE
-
-ifneq ($(PC_DEVELOPMENT_IP_ADDRESS),)
-   DEFINES += -DPC_DEVELOPMENT_IP_ADDRESS='"$(PC_DEVELOPMENT_IP_ADDRESS)"'
-endif
 
 ifneq ($(PC_DEVELOPMENT_TCP_PORT),)
    DEFINES += -DPC_DEVELOPMENT_TCP_PORT=$(PC_DEVELOPMENT_TCP_PORT)
@@ -197,7 +194,16 @@ else
    ELF2RPL   := $(ELF2RPL).exe
 endif
 
-INCDIRS := -I. -Ideps -Ideps/stb -Ideps/libz -Ideps/7zip -Ilibretro-common/include -Iwiiu -Iwiiu/include -I$(DEVKITPRO)/portlibs/ppc/include
+INCDIRS := -I.
+INCDIRS += -Ideps
+INCDIRS += -Ideps/stb
+INCDIRS += -Ideps/libz
+INCDIRS += -Ideps/7zip
+INCDIRS += -Ilibretro-common/include
+INCDIRS += -Iinput/include
+INCDIRS += -Iwiiu
+INCDIRS += -Iwiiu/include
+INCDIRS += -I$(DEVKITPRO)/portlibs/ppc/include
 LIBDIRS := -L. -L$(DEVKITPRO)/portlibs/ppc/lib
 
 CFLAGS  := -mwup -mcpu=750 -meabi -mhard-float
@@ -226,7 +232,7 @@ CXXFLAGS = $(CFLAGS) -fno-rtti -fno-exceptions
 
 LDFLAGS  += -Wl,--gc-sections
 
-LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm
+LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm -lpng -lz
 
 ifneq ($(WANT_LIBFAT), 1)
 LIBS += -lfat

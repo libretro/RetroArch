@@ -232,13 +232,14 @@ static bool switch_frame(void *data, const void *frame,
       RARCH_LOG("message: %s\n", msg);
 
    r = surface_dequeue_buffer(&sw->surface, &out_buffer);
-   if (sw->vsync)
-	   switch_wait_vsync(sw);
-   svcSleepThread(10000);
    if(r != RESULT_OK) {
 	   return true; // just skip the frame
    }
-   
+
+   r = surface_wait_buffer(&sw->surface);
+   if(r != RESULT_OK) {
+	   return true;
+   }
    gfx_slow_swizzling_blit(out_buffer, sw->image, 1280, 720, 0, 0);
    
    r = surface_queue_buffer(&sw->surface);
@@ -387,11 +388,13 @@ static void switch_set_texture_enable(void *data, bool enable, bool full_screen)
 }
 
 static const video_poke_interface_t switch_poke_interface = {
+   NULL, /* get_flags */
 	NULL, /* set_coords */
 	NULL, /* set_mvp */
 	NULL, /* load_texture */
 	NULL, /* unload_texture */
 	NULL, /* set_video_mode */
+	NULL, /* get_refresh_rate */
 	NULL, /* set_filtering */
 	NULL, /* get_video_output_size */
 	NULL, /* get_video_output_prev */

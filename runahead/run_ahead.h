@@ -1,7 +1,9 @@
 #ifndef __RUN_AHEAD_H__
 #define __RUN_AHEAD_H__
 
+#include <stddef.h>
 #include <boolean.h>
+
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS

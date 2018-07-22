@@ -621,6 +621,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    gfx_ctx_xegl_set_swap_interval,
    gfx_ctx_xegl_set_video_mode,
    x11_get_video_size,
+   x11_get_refresh_rate,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

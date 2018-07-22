@@ -1296,7 +1296,7 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
    }
 
    GX2SetViewport(wiiu->vp.x, wiiu->vp.y, wiiu->vp.width, wiiu->vp.height, 0.0f, 1.0f);
-   GX2SetScissor(wiiu->vp.x, wiiu->vp.y, wiiu->vp.width, wiiu->vp.height);
+   GX2SetScissor(0, 0, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height);
    GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
 
    GX2SetShaderMode(GX2_SHADER_MODE_GEOMETRY_SHADER);
@@ -1311,7 +1311,6 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
                             wiiu->ubo_tex);
    GX2SetViewport(0.0f, 0.0f, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height,
                   0.0f, 1.0f);
-   GX2SetScissor(0, 0, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height);
 
 #ifdef HAVE_OVERLAY
 
@@ -1711,13 +1710,14 @@ static void wiiu_gfx_set_osd_msg(void *data,
 
 }
 
-static const video_poke_interface_t wiiu_poke_interface =
-{
+static const video_poke_interface_t wiiu_poke_interface = {
+   NULL, /* get_flags */
    NULL,                      /* set_coords */
    NULL,                      /* set_mvp */
    wiiu_gfx_load_texture,
    wiiu_gfx_unload_texture,
    NULL, /* set_video_mode */
+   NULL, /* get_refresh_rate */
    wiiu_gfx_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

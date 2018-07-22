@@ -59,9 +59,11 @@ static void hidpad_psxadapter_deinit(void *data)
       free(device);
 }
 
-static void hidpad_psxadapter_get_buttons(void *data, retro_bits_t *state)
+static void hidpad_psxadapter_get_buttons(void *data, input_bits_t *state)
 {
-	struct hidpad_psxadapter_data *device = (struct hidpad_psxadapter_data*)data;
+	struct hidpad_psxadapter_data *device = (struct hidpad_psxadapter_data*)
+      data;
+
 	if (device)
    {
 		BITS_COPY16_PTR(state, device->buttons);

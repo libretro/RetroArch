@@ -1,6 +1,13 @@
 /* coreinit */
 IMPORT_BEGIN(coreinit);
 
+IMPORT(OSScreenInit);
+IMPORT(OSScreenGetBufferSizeEx);
+IMPORT(OSScreenSetBufferEx);
+IMPORT(OSScreenEnableEx);
+IMPORT(OSScreenFlipBuffersEx);
+IMPORT(OSScreenClearBufferEx);
+IMPORT(OSScreenPutFontEx);
 IMPORT(OSFatal);
 IMPORT(OSDynLoad_Acquire);
 IMPORT(OSDynLoad_FindExport);
@@ -203,6 +210,16 @@ IMPORT(GX2GetSwapStatus);
 
 IMPORT_END();
 
+/* nn_ac */
+IMPORT_BEGIN(nn_ac);
+IMPORT(ACInitialize);
+IMPORT(ACFinalize);
+IMPORT(ACConnect);
+IMPORT(ACClose);
+IMPORT(ACGetAssignedAddress);
+IMPORT(ACGetAssignedSubnet);
+IMPORT_END();
+
 /* proc_ui */
 IMPORT_BEGIN(proc_ui);
 
@@ -249,16 +266,17 @@ IMPORT_END();
 
 /* padscore */
 IMPORT_BEGIN(padscore);
-
 IMPORT(KPADInit);
 IMPORT(WPADProbe);
+IMPORT(KPADSetConnectCallback);
+
 IMPORT(WPADSetDataFormat);
 IMPORT(WPADEnableURCC);
 IMPORT(WPADEnableWiiRemote);
 IMPORT(WPADRead);
 IMPORT(KPADRead);
 IMPORT(KPADReadEx);
-
+IMPORT(KPADShutdown);
 IMPORT_END();
 
 /* nsyskbd */

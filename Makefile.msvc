@@ -25,6 +25,7 @@ HAVE_XAUDIO              := 1
 HAVE_XINPUT              := 1
 HAVE_WASAPI              := 0
 HAVE_THREAD_STORAGE      := 1
+HAVE_WINMM               := 1
 
 HAVE_RPNG                := 1
 HAVE_ZLIB                := 1
@@ -53,7 +54,6 @@ HAVE_NETWORK_CMD         := 1
 HAVE_OVERLAY             := 1
 HAVE_LANGEXTRA           := 1
 HAVE_CHEEVOS             := 1
-HAVE_KEYMAPPER           := 1
 HAVE_SHADERPIPELINE      := 1
 HAVE_IMAGEVIEWER         := 1
 

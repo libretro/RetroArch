@@ -6,6 +6,7 @@
 
 #include "../core.h"
 #include "mem_util.h"
+#include "copy_load_info.h"
 
 retro_ctx_load_content_info_t *load_content_info;
 enum rarch_core_type last_core_type;
@@ -36,12 +37,15 @@ static struct retro_game_info* clone_retro_game_info(const
    dest->data    = NULL;
    dest->path    = strcpy_alloc(src->path);
 
-   data          = malloc(src->size);
-
-   if (data)
+   if (src->size && src->data)
    {
-      memcpy(data, src->data, src->size);
-      dest->data = data;
+      data = malloc(src->size);
+
+      if (data)
+      {
+         memcpy(data, src->data, src->size);
+         dest->data = data;
+      }
    }
 
    dest->size    = src->size;
@@ -76,9 +80,13 @@ static struct string_list *string_list_clone(
 
    dest->size      = src->size;
    dest->cap       = src->cap;
+   if (dest->cap < dest->size)
+   {
+      dest->cap = dest->size;
+   }
 
    elems           = (struct string_list_elem*)
-      calloc(dest->size, sizeof(struct string_list_elem));
+      calloc(dest->cap, sizeof(struct string_list_elem));
 
    if (!elems)
    {

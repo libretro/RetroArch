@@ -10,14 +10,14 @@ struct UBO
     float2x4 uMVP;
 };
 
-struct main0_in
-{
-    float4 aVertex [[attribute(0)]];
-};
-
 struct main0_out
 {
     float4 gl_Position [[position]];
+};
+
+struct main0_in
+{
+    float4 aVertex [[attribute(0)]];
 };
 
 vertex main0_out main0(main0_in in [[stage_in]], constant UBO& _18 [[buffer(0)]])

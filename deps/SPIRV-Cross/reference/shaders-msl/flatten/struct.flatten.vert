@@ -16,16 +16,16 @@ struct UBO
     Light light;
 };
 
-struct main0_in
-{
-    float3 aNormal [[attribute(1)]];
-    float4 aVertex [[attribute(0)]];
-};
-
 struct main0_out
 {
     float4 vColor [[user(locn0)]];
     float4 gl_Position [[position]];
+};
+
+struct main0_in
+{
+    float4 aVertex [[attribute(0)]];
+    float3 aNormal [[attribute(1)]];
 };
 
 vertex main0_out main0(main0_in in [[stage_in]], constant UBO& _18 [[buffer(0)]])
@@ -33,7 +33,7 @@ vertex main0_out main0(main0_in in [[stage_in]], constant UBO& _18 [[buffer(0)]]
     main0_out out = {};
     out.gl_Position = _18.uMVP * in.aVertex;
     out.vColor = float4(0.0);
-    float3 L = in.aVertex.xyz - _18.light.Position;
+    float3 L = in.aVertex.xyz - float3(_18.light.Position);
     out.vColor += ((_18.light.Color * clamp(1.0 - (length(L) / _18.light.Radius), 0.0, 1.0)) * dot(in.aNormal, normalize(L)));
     return out;
 }

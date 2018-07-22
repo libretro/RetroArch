@@ -44,6 +44,12 @@
 #include "cheevos/var.h"
 #endif
 
+#ifdef HAVE_DISCORD
+#include "discord/discord.h"
+#endif
+
+#include "midi/midi_driver.h"
+
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_content.h"
@@ -169,6 +175,7 @@ static const struct cmd_map map[] = {
    { "DISK_NEXT",              RARCH_DISK_NEXT },
    { "DISK_PREV",              RARCH_DISK_PREV },
    { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
+   { "UI_COMPANION_TOGGLE",    RARCH_UI_COMPANION_TOGGLE },
    { "GAME_FOCUS_TOGGLE",      RARCH_GAME_FOCUS_TOGGLE },
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
    { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
@@ -1015,7 +1022,7 @@ static void command_event_init_controllers(void)
             /* Ideally these checks shouldn't be required but if we always
              * call core_set_controller_port_device input won't work on
              * cores that don't set port information properly */
-            if (info && info->ports.size != 0 && i < info->ports.size)
+            if (info && info->ports.size != 0)
                set_controller = true;
             break;
          default:
@@ -1029,7 +1036,7 @@ static void command_event_init_controllers(void)
             break;
       }
 
-      if (set_controller)
+      if (set_controller && i < info->ports.size)
       {
          pad.device     = device;
          pad.port       = i;
@@ -1087,7 +1094,7 @@ static void command_event_load_auto_state(void)
 #endif
 
 #ifdef HAVE_CHEEVOS
-   if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
+   if (cheevos_hardcore_active)
       goto error;
 #endif
 
@@ -1274,8 +1281,8 @@ static bool command_event_init_core(enum rarch_core_type *data)
    if (!core_load(settings->uints.input_poll_type_behavior))
       return false;
 
-   rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
 
+   rarch_ctl(RARCH_CTL_SET_FRAME_LIMIT, NULL);
    return true;
 }
 
@@ -1296,7 +1303,9 @@ static void command_event_restore_default_shader_preset(void)
 
 static void command_event_restore_remaps(void)
 {
-   if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) || 
+       rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) || 
+       rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
       input_remapping_set_defaults(true);
 }
 
@@ -1325,7 +1334,7 @@ static bool command_event_save_auto_state(void)
       goto error;
 
 #ifdef HAVE_CHEEVOS
-   if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
+   if (cheevos_hardcore_active)
       goto error;
 #endif
 
@@ -1386,7 +1395,6 @@ static bool command_event_save_config(
 static bool command_event_save_core_config(void)
 {
    char msg[128];
-   bool ret                        = false;
    bool found_path                 = false;
    bool overrides_active           = false;
    const char *core_path           = NULL;
@@ -1493,7 +1501,7 @@ static bool command_event_save_core_config(void)
    free(config_dir);
    free(config_name);
    free(config_path);
-   return ret;
+   return true;
 }
 
 /**
@@ -1519,6 +1527,7 @@ static void command_event_save_current_config(enum override_type type)
          break;
       case OVERRIDE_GAME:
       case OVERRIDE_CORE:
+      case OVERRIDE_CONTENT_DIR:
          if (config_save_overrides(type))
          {
             strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
@@ -1705,17 +1714,11 @@ void command_playlist_update_write(
       const char *core_path,
       const char *core_display_name,
       const char *crc32,
-      const char *db_name)    
+      const char *db_name)
 {
    playlist_t *plist    = (playlist_t*)data;
-   playlist_t *playlist = NULL;
+   playlist_t *playlist = plist ? plist : playlist_get_cached();
 
-   if (plist)
-      playlist          = plist;
-#ifdef HAVE_MENU
-   else
-      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
-#endif
    if (!playlist)
       return;
 
@@ -1742,8 +1745,8 @@ void command_playlist_update_write(
  **/
 bool command_event(enum event_command cmd, void *data)
 {
-   settings_t *settings      = config_get_ptr();
-   bool boolean              = false;
+   static bool discord_inited = false;
+   bool boolean               = false;
 
    switch (cmd)
    {
@@ -1793,10 +1796,11 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 #endif
 
-            libretro_get_system_info(
+            if (!libretro_get_system_info(
                   core_path,
                   system,
-                  &system_info->load_no_content);
+                  &system_info->load_no_content))
+               return false;
             info_find.path = core_path;
 
             if (!core_info_load(&info_find))
@@ -1809,11 +1813,17 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_LOAD_CORE:
-         command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+      {
+         bool success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+
 #ifndef HAVE_DYNAMIC
          command_event(CMD_EVENT_QUIT, NULL);
+#else
+         if (!success)
+            return false;
 #endif
          break;
+      }
       case CMD_EVENT_LOAD_STATE:
          /* Immutable - disallow savestate load when
           * we absolutely cannot change game state. */
@@ -1821,20 +1831,24 @@ bool command_event(enum event_command cmd, void *data)
             return false;
 
 #ifdef HAVE_CHEEVOS
-         {
-            settings_t *settings      = config_get_ptr();
-            if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
-               return false;
-         }
+         if (cheevos_hardcore_active)
+            return false;
 #endif
-
-         return command_event_main_state(cmd);
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_UNDO_LOAD_STATE:
-         return command_event_main_state(cmd);
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_UNDO_SAVE_STATE:
-         return command_event_main_state(cmd);
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
-         return command_event_resize_windowed_scale();
+         if (!command_event_resize_windowed_scale())
+            return false;
+         break;
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
          if (menu_driver_is_alive())
@@ -1860,12 +1874,12 @@ bool command_event(enum event_command cmd, void *data)
 #if HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
 #endif
-         return command_event_main_state(cmd);
+         return false;
       case CMD_EVENT_SAVE_STATE:
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-            if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
+            if (cheevos_hardcore_active)
                return false;
 #endif
 
@@ -1875,7 +1889,9 @@ bool command_event(enum event_command cmd, void *data)
                configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
             }
          }
-         return command_event_main_state(cmd);
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_SAVE_STATE_DECREMENT:
          {
             settings_t *settings      = config_get_ptr();
@@ -1925,36 +1941,39 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_QUIT:
-         return retroarch_main_quit();
+         if (!retroarch_main_quit())
+            return false;
+         break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS
          cheevos_toggle_hardcore_mode();
 #endif
          break;
-      /* this fallthrough is on purpose, it should do 
+      /* this fallthrough is on purpose, it should do
          a CMD_EVENT_REINIT too */
       case CMD_EVENT_REINIT_FROM_TOGGLE:
          retroarch_unset_forced_fullscreen();
       case CMD_EVENT_REINIT:
+         video_driver_reinit();
          {
-            video_driver_reinit();
-            {
-               const input_driver_t *input_drv = input_get_ptr();
-               void *input_data                = input_get_data();
-               /* Poll input to avoid possibly stale data to corrupt things. */
-               if (input_drv && input_drv->poll)
-                  input_drv->poll(input_data);
-            }
-            command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
+            const input_driver_t *input_drv = input_get_ptr();
+            void *input_data                = input_get_data();
+            /* Poll input to avoid possibly stale data to corrupt things. */
+            if (input_drv && input_drv->poll)
+               input_drv->poll(input_data);
+         }
+         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
 #ifdef HAVE_MENU
+         {
+            settings_t *settings      = config_get_ptr();
             menu_display_set_framebuffer_dirty_flag();
             if (settings->bools.video_fullscreen)
                video_driver_hide_mouse();
 
             if (menu_driver_is_alive())
                command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
-#endif
          }
+#endif
          break;
       case CMD_EVENT_CHEATS_DEINIT:
          cheat_manager_state_free();
@@ -1967,21 +1986,17 @@ bool command_event(enum event_command cmd, void *data)
          cheat_manager_apply_cheats();
          break;
       case CMD_EVENT_REWIND_DEINIT:
-         {
 #ifdef HAVE_CHEEVOS
-            settings_t *settings      = config_get_ptr();
-            if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
-               return false;
+         if (cheevos_hardcore_active)
+            return false;
 #endif
-
-            state_manager_event_deinit();
-         }
+         state_manager_event_deinit();
          break;
       case CMD_EVENT_REWIND_INIT:
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-            if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
+               if (cheevos_hardcore_active)
                return false;
 #endif
             if (settings->bools.rewind_enable)
@@ -1992,7 +2007,7 @@ TODO: Add a setting for these tweaks */
                if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
                {
-                  state_manager_event_init((unsigned)settings->rewind_buffer_size);
+                  state_manager_event_init((unsigned)settings->sizes.rewind_buffer_size);
                }
             }
          }
@@ -2016,7 +2031,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_AUTOSAVE_INIT:
          command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 #ifdef HAVE_THREADS
-	 {
+    {
 #ifdef HAVE_NETWORKING
          /* Only enable state manager if netplay is not underway
             TODO: Add a setting for these tweaks */
@@ -2030,16 +2045,21 @@ TODO: Add a setting for these tweaks */
             else
                runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
          }
-	 }
+    }
 #endif
          break;
       case CMD_EVENT_AUTOSAVE_STATE:
          command_event_save_auto_state();
          break;
       case CMD_EVENT_AUDIO_STOP:
-         return audio_driver_stop();
+         midi_driver_set_all_sounds_off();
+         if (!audio_driver_stop())
+            return false;
+         break;
       case CMD_EVENT_AUDIO_START:
-         return audio_driver_start(rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL));
+         if (!audio_driver_start(rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL)))
+            return false;
+         break;
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
             bool audio_mute_enable    = *(audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE));
@@ -2128,7 +2148,7 @@ TODO: Add a setting for these tweaks */
          }
          g_defaults.music_history = NULL;
 
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
          if (g_defaults.video_history)
          {
             playlist_write_file(g_defaults.video_history);
@@ -2178,7 +2198,7 @@ TODO: Add a setting for these tweaks */
                   settings->paths.path_content_music_history,
                   content_history_size);
 
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   settings->paths.path_content_video_history);
@@ -2202,11 +2222,22 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_CORE_INFO_INIT:
          {
+            char ext_name[255];
             settings_t *settings      = config_get_ptr();
+
+            ext_name[0]               = '\0';
+
             command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
 
+            if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+               return false;
+
             if (!string_is_empty(settings->paths.directory_libretro))
-               core_info_init_list();
+               core_info_init_list(settings->paths.path_libretro_info,
+                     settings->paths.directory_libretro,
+                     ext_name,
+                     settings->bools.show_hidden_files
+                     );
          }
          break;
       case CMD_EVENT_CORE_DEINIT:
@@ -2301,7 +2332,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_RESUME:
          rarch_menu_running_finished();
          if (ui_companion_is_on_foreground())
-            ui_companion_driver_toggle();
+            ui_companion_driver_toggle(false);
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
       {
@@ -2350,7 +2381,7 @@ TODO: Add a setting for these tweaks */
          runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true);
          break;
 
-      }      
+      }
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
             return false;
@@ -2363,6 +2394,9 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
          command_event_save_current_config(OVERRIDE_CORE);
+         break;
+      case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+         command_event_save_current_config(OVERRIDE_CONTENT_DIR);
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
          command_event_save_current_config(OVERRIDE_GAME);
@@ -2496,17 +2530,18 @@ TODO: Add a setting for these tweaks */
             /* buf is expected to be address|port */
             char *buf = (char *)data;
             static struct string_list *hostname = NULL;
+            settings_t *settings = config_get_ptr();
             hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             RARCH_LOG("[netplay] connecting to %s:%d\n",
                hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : 55435);
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
             if (!init_netplay(NULL, hostname->elems[0].data,
                !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : 55435))
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
@@ -2529,17 +2564,18 @@ TODO: Add a setting for these tweaks */
             /* buf is expected to be address|port */
             char *buf = (char *)data;
             static struct string_list *hostname = NULL;
+            settings_t *settings = config_get_ptr();
             hostname = string_split(buf, "|");
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             RARCH_LOG("[netplay] connecting to %s:%d\n",
                hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : 55435);
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
 
             if (!init_netplay_deferred(hostname->elems[0].data,
                !string_is_empty(hostname->elems[1].data)
-               ? atoi(hostname->elems[1].data) : 55435))
+               ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
@@ -2572,7 +2608,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_FULLSCREEN_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();
-            bool new_fullscreen_state = !settings->bools.video_fullscreen 
+            bool new_fullscreen_state = !settings->bools.video_fullscreen
                && !retroarch_is_forced_fullscreen();
             if (!video_driver_has_windowed())
                return false;
@@ -2608,14 +2644,13 @@ TODO: Add a setting for these tweaks */
          command_event(CMD_EVENT_REMOTE_DEINIT, NULL);
          input_driver_init_remote();
          break;
-
       case CMD_EVENT_MAPPER_DEINIT:
          input_driver_deinit_mapper();
          break;
       case CMD_EVENT_MAPPER_INIT:
          command_event(CMD_EVENT_MAPPER_DEINIT, NULL);
          input_driver_init_mapper();
-      break;
+         break;
       case CMD_EVENT_LOG_FILE_DEINIT:
          retro_main_log_file_deinit();
          break;
@@ -2624,8 +2659,10 @@ TODO: Add a setting for these tweaks */
             const char *path = (const char*)data;
             if (string_is_empty(path))
                return false;
-            return command_event_disk_control_append_image(path);
+            if (!command_event_disk_control_append_image(path))
+               return false;
          }
+         break;
       case CMD_EVENT_DISK_EJECT_TOGGLE:
          {
             rarch_system_info_t *info = runloop_get_system_info();
@@ -2731,6 +2768,9 @@ TODO: Add a setting for these tweaks */
                video_driver_show_mouse();
          }
          break;
+      case CMD_EVENT_UI_COMPANION_TOGGLE:
+         ui_companion_driver_toggle(true);
+         break;
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
             static bool game_focus_state  = false;
@@ -2803,6 +2843,41 @@ TODO: Add a setting for these tweaks */
 #if HAVE_LIBUI
          extern int libui_main(void);
          libui_main();
+#endif
+         break;
+      case CMD_EVENT_DISCORD_INIT:
+#ifdef HAVE_DISCORD
+         {
+            settings_t *settings      = config_get_ptr();
+
+            if (!settings->bools.discord_enable)
+               return false;
+            if (discord_inited)
+               return true;
+
+            discord_init();
+            discord_inited = true;
+         }
+#endif
+         break;
+      case CMD_EVENT_DISCORD_DEINIT:
+#ifdef HAVE_DISCORD
+         if (!discord_inited)
+            return false;
+
+         discord_shutdown();
+         discord_inited = false;
+#endif
+         break;
+      case CMD_EVENT_DISCORD_UPDATE:
+#ifdef HAVE_DISCORD
+         if (!data || !discord_inited)
+            return false;
+
+         {
+            discord_userdata_t *userdata = (discord_userdata_t*)data;
+            discord_update(userdata->status);
+         }
 #endif
          break;
       case CMD_EVENT_NONE:

@@ -1,5 +1,3 @@
-static const float4 _20[2] = { 10.0f.xxxx, 20.0f.xxxx };
-
 static float4 gl_Position;
 static float4 vInput0;
 static float4 vInput1;

@@ -37,15 +37,42 @@
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
-id apple_platform;
+#if HAVE_METAL
+#import <Metal/Metal.h>
+#import <MetalKit/MetalKit.h>
+#endif
+
+@interface WindowListener : NSResponder<NSWindowDelegate>
+@end
+
+@implementation WindowListener
+
+/* Similarly to SDL, we'll respond to key events by doing nothing so we don't beep.
+ */
+- (void)flagsChanged:(NSEvent *)event
+{}
+
+- (void)keyDown:(NSEvent *)event
+{}
+
+- (void)keyUp:(NSEvent *)event
+{}
+
+@end
+
+id<ApplePlatform> apple_platform;
 
 #if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
-@interface RetroArch_OSX : NSObject
+@interface RetroArch_OSX : NSObject <ApplePlatform>
 #else
-@interface RetroArch_OSX : NSObject <NSApplicationDelegate>
+@interface RetroArch_OSX : NSObject <ApplePlatform, NSApplicationDelegate>
 #endif
 {
-    NSWindow* _window;
+   NSWindow* _window;
+   apple_view_type_t _vt;
+   NSView* _renderView;
+   id _sleepActivity;
+   WindowListener *_listener;
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
@@ -62,6 +89,31 @@ static void app_terminate(void)
 
 @implementation RApplication
 
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 101200
+#define NSEventTypeKeyDown             NSKeyDown
+#define NSEventTypeKeyUp               NSKeyUp
+#define NSEventTypeFlagsChanged        NSFlagsChanged
+#define NSEventTypeMouseMoved          NSMouseMoved
+#define NSEventTypeLeftMouseDragged    NSLeftMouseDragged
+#define NSEventTypeRightMouseDragged   NSRightMouseDragged
+#define NSEventTypeOtherMouseDragged   NSOtherMouseDragged
+#define NSEventTypeLeftMouseDown       NSLeftMouseDown
+#define NSEventTypeRightMouseDown      NSRightMouseDown
+#define NSEventTypeOtherMouseDown      NSOtherMouseDown
+#define NSEventTypeLeftMouseUp         NSLeftMouseUp
+#define NSEventTypeRightMouseUp        NSRightMouseUp
+#define NSEventTypeOtherMouseUp        NSOtherMouseUp
+#define NSEventTypeScrollWheel         NSScrollWheel
+
+// modifier flags
+#define NSEventModifierFlagCapsLock    NSAlphaShiftKeyMask
+#define NSEventModifierFlagShift       NSShiftKeyMask
+#define NSEventModifierFlagControl     NSControlKeyMask
+#define NSEventModifierFlagOption      NSAlternateKeyMask
+#define NSEventModifierFlagCommand     NSCommandKeyMask
+#define NSEventModifierFlagNumericPad  NSNumericPadKeyMask
+#endif
+
 - (void)sendEvent:(NSEvent *)event
 {
    NSEventType event_type;
@@ -70,12 +122,12 @@ static void app_terminate(void)
 
    event_type = event.type;
 
-   switch ((int32_t)event_type)
+   switch (event_type)
    {
-      case NSKeyDown:
-        case NSKeyUp:
+      case NSEventTypeKeyDown:
+      case NSEventTypeKeyUp:
          {
-            NSString* ch = (NSString*)event.characters;
+            NSString* ch = event.characters;
             uint32_t character = 0;
             uint32_t mod = 0;
 
@@ -84,29 +136,29 @@ static void app_terminate(void)
                uint32_t i;
                character = [ch characterAtIndex:0];
 
-               if (event.modifierFlags & NSAlphaShiftKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagCapsLock)
                   mod |= RETROKMOD_CAPSLOCK;
-               if (event.modifierFlags & NSShiftKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagShift)
                   mod |=  RETROKMOD_SHIFT;
-               if (event.modifierFlags & NSControlKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagControl)
                   mod |=  RETROKMOD_CTRL;
-               if (event.modifierFlags & NSAlternateKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagOption)
                   mod |= RETROKMOD_ALT;
-               if (event.modifierFlags & NSCommandKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagCommand)
                   mod |= RETROKMOD_META;
-               if (event.modifierFlags & NSNumericPadKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagNumericPad)
                   mod |=  RETROKMOD_NUMLOCK;
 
                for (i = 1; i < ch.length; i++)
-                  apple_input_keyboard_event(event_type == NSKeyDown,
+                  apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
                         0, [ch characterAtIndex:i], mod, RETRO_DEVICE_KEYBOARD);
             }
 
-            apple_input_keyboard_event(event_type == NSKeyDown,
+            apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
                   event.keyCode, character, mod, RETRO_DEVICE_KEYBOARD);
          }
          break;
-        case NSFlagsChanged:
+        case NSEventTypeFlagsChanged:
          {
             static uint32_t old_flags = 0;
             uint32_t new_flags        = event.modifierFlags;
@@ -118,10 +170,10 @@ static void app_terminate(void)
                   0, event.modifierFlags, RETRO_DEVICE_KEYBOARD);
          }
          break;
-        case NSMouseMoved:
-        case NSLeftMouseDragged:
-        case NSRightMouseDragged:
-        case NSOtherMouseDragged:
+        case NSEventTypeMouseMoved:
+        case NSEventTypeLeftMouseDragged:
+        case NSEventTypeRightMouseDragged:
+        case NSEventTypeOtherMouseDragged:
          {
             NSPoint pos;
             NSPoint mouse_pos;
@@ -130,27 +182,27 @@ static void app_terminate(void)
                return;
 
             /* Relative */
-            apple->mouse_rel_x = event.deltaX;
-            apple->mouse_rel_y = event.deltaY;
+            apple->mouse_rel_x = (int16_t)event.deltaX;
+            apple->mouse_rel_y = (int16_t)event.deltaY;
 
             /* Absolute */
-            pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-            apple->touches[0].screen_x = pos.x;
-            apple->touches[0].screen_y = pos.y;
+            pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
+            apple->touches[0].screen_x = (int16_t)pos.x;
+            apple->touches[0].screen_y = (int16_t)pos.y;
 
-            mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow]  fromView:nil];
+            mouse_pos = [apple_platform.renderView convertPoint:[event locationInWindow]  fromView:nil];
             apple->window_pos_x = (int16_t)mouse_pos.x;
             apple->window_pos_y = (int16_t)mouse_pos.y;
          }
          break;
-        case NSScrollWheel:
+        case NSEventTypeScrollWheel:
          /* TODO/FIXME - properly implement. */
          break;
-        case NSLeftMouseDown:
-        case NSRightMouseDown:
-        case NSOtherMouseDown:
+        case NSEventTypeLeftMouseDown:
+        case NSEventTypeRightMouseDown:
+        case NSEventTypeOtherMouseDown:
          {
-            NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+            NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
             apple = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple || pos.y < 0)
                return;
@@ -159,17 +211,19 @@ static void app_terminate(void)
             apple->touch_count = 1;
          }
          break;
-      case NSLeftMouseUp:
-      case NSRightMouseUp:
-      case NSOtherMouseUp:
+      case NSEventTypeLeftMouseUp:
+      case NSEventTypeRightMouseUp:
+      case NSEventTypeOtherMouseUp:
          {
-            NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
+            NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
             apple = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple || pos.y < 0)
                return;
             apple->mouse_buttons &= ~(1 << event.buttonNumber);
             apple->touch_count = 0;
          }
+         break;
+      default:
          break;
    }
 }
@@ -183,33 +237,40 @@ static char** waiting_argv;
 
 @synthesize window = _window;
 
+#if !__has_feature(objc_arc)
 - (void)dealloc
 {
    [_window release];
    [super dealloc];
 }
+#endif
 
 #define NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY (1 << 17)
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    unsigned i;
+   apple_platform   = self;
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
+   self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
+#else
    SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
    SEL fsselector   = NSSelectorFromString(BOXSTRING("toggleFullScreen:"));
-   apple_platform   = self;
-    
+
    if ([self.window respondsToSelector:selector])
    {
        if ([self.window respondsToSelector:fsselector])
           [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
    }
+#endif
+   
+   _listener = [WindowListener new];
    
    [self.window setAcceptsMouseMovedEvents: YES];
-
-   [[CocoaView get] setFrame: [[self.window contentView] bounds]];
+   [self.window setNextResponder:_listener];
+   self.window.delegate = _listener;
+   
    [[self.window contentView] setAutoresizesSubviews:YES];
-   [[self.window contentView] addSubview:[CocoaView get]];
-   [self.window makeFirstResponder:[CocoaView get]];
 
     for (i = 0; i < waiting_argc; i++)
     {
@@ -224,9 +285,120 @@ static char** waiting_argv;
       app_terminate();
 
    waiting_argc = 0;
-
+   
+   [self.window makeMainWindow];
+   [self.window makeKeyWindow];
+   
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
+
+- (void)setViewType:(apple_view_type_t)vt {
+   if (vt == _vt) {
+      return;
+   }
+   
+   RARCH_LOG("[Cocoa]: change view type: %d → %d\n", _vt, vt);
+   
+   _vt = vt;
+   if (_renderView != nil)
+   {
+      _renderView.wantsLayer = NO;
+      _renderView.layer = nil;
+      [_renderView removeFromSuperview];
+      self.window.contentView = nil;
+      _renderView = nil;
+   }
+   
+   switch (vt) {
+      case APPLE_VIEW_TYPE_VULKAN:
+      case APPLE_VIEW_TYPE_METAL:
+#if defined(HAVE_METAL) || defined(HAVE_VULKAN)
+      {
+         MetalView *v = [MetalView new];
+         v.paused = YES;
+         v.enableSetNeedsDisplay = NO;
+         _renderView = v;
+      }
+#endif
+      break;
+      
+      case APPLE_VIEW_TYPE_OPENGL:
+      {
+         _renderView = [CocoaView get];
+         break;
+      }
+      
+      case APPLE_VIEW_TYPE_NONE:
+      default:
+         return;
+   }
+   
+   _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+   _renderView.frame = self.window.contentView.bounds;
+   
+   self.window.contentView = _renderView;
+   [self.window.contentView setNextResponder:_listener];
+}
+
+- (apple_view_type_t)viewType {
+   return _vt;
+}
+
+- (id)renderView {
+   return _renderView;
+}
+
+- (bool)hasFocus {
+   return [NSApp isActive];
+}
+
+- (void)setVideoMode:(gfx_ctx_mode_t)mode {
+   BOOL isFullScreen = (self.window.styleMask & NSFullScreenWindowMask) == NSFullScreenWindowMask;
+   if (mode.fullscreen && !isFullScreen)
+   {
+      [self.window toggleFullScreen:self];
+      return;
+   }
+   
+   if (!mode.fullscreen && isFullScreen)
+   {
+      [self.window toggleFullScreen:self];
+   }
+   
+   if (mode.width > 0)
+   {
+      // HACK(sgc): ensure MTKView posts a drawable resize event
+      [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
+   }
+   [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
+}
+
+- (void)setCursorVisible:(bool)v {
+   if (v)
+      [NSCursor unhide];
+   else
+      [NSCursor hide];
+}
+
+- (bool)setDisableDisplaySleep:(bool)disable
+{
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
+   if (disable && _sleepActivity == nil)
+   {
+      _sleepActivity = [NSProcessInfo.processInfo beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled reason:@"disable screen saver"];
+   }
+   else if (!disable && _sleepActivity != nil)
+   {
+      [NSProcessInfo.processInfo endActivity:_sleepActivity];
+      _sleepActivity = nil;
+   }
+   return YES;
+#else
+   return NO;
+#endif
+
+}
+
 
 - (void) rarch_main
 {
@@ -245,7 +417,7 @@ static char** waiting_argv;
        if (ret == -1)
           break;
     }while(1);
-    
+
     main_exit(NULL);
 }
 
@@ -286,7 +458,7 @@ static char** waiting_argv;
 
       if (system)
          core_name = system->library_name;
-		
+
       if (core_name)
       {
          content_ctx_info_t content_info = {0};
@@ -329,10 +501,10 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
         return;
 
     settings_t *settings = config_get_ptr();
-                
+
     rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, (void*)state->result);
     ui_companion_event_command(CMD_EVENT_LOAD_CORE);
-                
+
     if (info && info->load_no_content
           && settings->bools.set_supports_no_game_enable)
     {
@@ -354,16 +526,16 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
         return;
     if (!result)
         return;
-    
+
     rarch_system_info_t *info        = runloop_get_system_info();
     struct retro_system_info *system = &info->info;
     const char            *core_name = NULL;
-                
+
     if (system)
         core_name = system->library_name;
-                
+
     path_set(RARCH_PATH_CONTENT, state->result);
-                
+
     if (core_name)
     {
         content_ctx_info_t content_info = {0};
@@ -377,20 +549,20 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
 
 - (IBAction)openCore:(id)sender {
     const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
-    
+
     if (browser)
     {
         ui_browser_window_state_t browser_state;
         settings_t *settings        = config_get_ptr();
-        
+
         browser_state.filters       = strdup("dylib");
         browser_state.filters_title = strdup("Core");
         browser_state.title         = strdup("Load Core");
         browser_state.startdir      = strdup(settings->paths.directory_libretro);
-        
+
         bool result = browser->open(&browser_state);
         open_core_handler(&browser_state, result);
-        
+
         free(browser_state.filters);
         free(browser_state.filters_title);
         free(browser_state.title);
@@ -401,22 +573,22 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
 - (void)openDocument:(id)sender
 {
    const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
-    
+
     if (browser)
     {
         ui_browser_window_state_t browser_state = {{0}};
         settings_t *settings  = config_get_ptr();
         NSString *startdir    = BOXSTRING(settings->paths.directory_menu_content);
-        
+
         if (!startdir.length)
             startdir           = BOXSTRING("/");
-        
+
         browser_state.title = strdup("Load Content");
         browser_state.startdir = strdup([startdir UTF8String]);
-        
+
         bool result = browser->open(&browser_state);
         open_document_handler(&browser_state, result);
-        
+
         free(browser_state.startdir);
         free(browser_state.title);
     }
@@ -440,7 +612,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
 {
    enum event_command cmd;
    unsigned sender_tag = (unsigned)[sender tag];
-   
+
    switch (sender_tag)
    {
       case 1:
@@ -477,7 +649,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
          cmd = CMD_EVENT_NONE;
          break;
    }
-   
+
    if (sender_tag >= 10 && sender_tag <= 19)
    {
       unsigned idx = (sender_tag - (10-1));
@@ -503,7 +675,7 @@ int main(int argc, char *argv[])
            if (!strncmp(argv[1], "-psn", 4))
                argc = 1;
    }
-    
+
    waiting_argc = argc;
    waiting_argv = argv;
 
@@ -520,9 +692,10 @@ static void ui_companion_cocoa_notify_content_loaded(void *data)
     (void)data;
 }
 
-static void ui_companion_cocoa_toggle(void *data)
+static void ui_companion_cocoa_toggle(void *data, bool force)
 {
    (void)data;
+   (void)force;
 }
 
 static int ui_companion_cocoa_iterate(void *data, unsigned action)
@@ -568,10 +741,10 @@ static void ui_companion_cocoa_notify_list_pushed(void *data,
 
 static void *ui_companion_cocoa_get_main_window(void *data)
 {
-    return ((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
+    return (BRIDGE void *)((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
 }
 
-const ui_companion_driver_t ui_companion_cocoa = {
+ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_init,
    ui_companion_cocoa_deinit,
    ui_companion_cocoa_iterate,
@@ -583,6 +756,7 @@ const ui_companion_driver_t ui_companion_cocoa = {
    NULL,
    NULL,
    ui_companion_cocoa_get_main_window,
+   NULL,
    &ui_browser_window_cocoa,
    &ui_msg_window_cocoa,
    &ui_window_cocoa,

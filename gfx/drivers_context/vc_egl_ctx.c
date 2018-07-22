@@ -695,7 +695,7 @@ static gfx_ctx_proc_t gfx_ctx_vc_get_proc_address(const char *symbol)
 static uint32_t gfx_ctx_vc_get_flags(void *data)
 {
    uint32_t flags = 0;
-   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
    return flags;
 }
 
@@ -712,6 +712,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_set_swap_interval,
    gfx_ctx_vc_set_video_mode,
    gfx_ctx_vc_get_video_size,
+   NULL, /* get_refresh_rate */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

@@ -28,7 +28,7 @@
 #endif
 
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA)
-#include "../gfx/drivers_context/cocoa_gl_ctx.m"
+#include "../gfx/drivers_context/macos_ctx.m"
 #include "../ui/drivers/cocoa/cocoa_common.m"
 
 #if defined(HAVE_COCOATOUCH)
@@ -51,4 +51,21 @@
 
 #ifdef HAVE_MFI
 #include "../input/drivers_joypad/mfi_joypad.m"
+#endif
+
+#if defined(HAVE_DISCORD)
+#include "../deps/discord-rpc/src/discord_register_osx.m"
+#endif
+
+#ifdef HAVE_METAL
+#import "../gfx/common/metal/Context.m"
+#import "../gfx/common/metal/Filter.m"
+#import "../gfx/common/metal/RendererCommon.m"
+#import "../gfx/common/metal/View.m"
+#import "../gfx/common/metal/TexturedView.m"
+#import "../gfx/common/metal/MenuDisplay.m"
+#import "../gfx/common/metal_common.m"
+#import "../gfx/drivers/metal.m"
+#import "../menu/drivers_display/menu_display_metal.m"
+#import "../gfx/drivers_font/metal_raster_font.m"
 #endif

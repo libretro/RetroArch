@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (retro_timers.h).
@@ -91,6 +91,8 @@ static INLINE void retro_sleep(unsigned msec)
    sceKernelDelayThread(1000 * msec);
 #elif defined(_3DS)
    svcSleepThread(1000000 * (s64)msec);
+#elif defined(__WINRT__)
+	/* TODO/FIXME */
 #elif defined(_WIN32)
    Sleep(msec);
 #elif defined(XENON)

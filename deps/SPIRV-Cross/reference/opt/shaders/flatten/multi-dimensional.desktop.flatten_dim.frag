@@ -6,29 +6,25 @@ layout(location = 1) in vec2 vUV;
 layout(location = 0) out vec4 FragColor;
 layout(location = 0) flat in int vIndex;
 
-int _93;
-
 void main()
 {
+    int _92;
+    _92 = 0;
     vec4 values3[2 * 3 * 1];
-    int _96;
-    int _97;
-    int _94;
-    int _95;
-    for (int _92 = 0; _92 < 2; _92++, _94 = _96, _95 = _97)
+    for (; _92 < 2; _92++)
     {
-        _96 = 0;
-        _97 = _95;
-        int _98;
-        for (; _96 < 3; _96++, _97 = _98)
+        int _93;
+        _93 = 0;
+        for (; _93 < 3; _93++)
         {
-            _98 = 0;
-            for (; _98 < 1; _98++)
+            for (int _95 = 0; _95 < 1; )
             {
-                values3[_92 * 3 * 1 + _96 * 1 + _98] = texture(uTextures[_92 * 3 * 1 + _96 * 1 + _98], vUV);
+                values3[_92 * 3 * 1 + _93 * 1 + _95] = texture(uTextures[_92 * 3 * 1 + _93 * 1 + _95], vUV);
+                _95++;
+                continue;
             }
         }
     }
-    FragColor = ((values3[1 * 3 * 1 + 2 * 1 + 0]) + (values3[0 * 3 * 1 + 2 * 1 + 0])) + (values3[(vIndex + 1) * 3 * 1 + 2 * 1 + vIndex]);
+    FragColor = (values3[1 * 3 * 1 + 2 * 1 + 0] + values3[0 * 3 * 1 + 2 * 1 + 0]) + values3[(vIndex + 1) * 3 * 1 + 2 * 1 + vIndex];
 }
 

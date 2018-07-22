@@ -139,7 +139,8 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
    if (!settings->bools.video_font_enable)
       return;
 
-   if (font_renderer_create_default((const void**)&xv->font_driver,
+   if (font_renderer_create_default(
+            &xv->font_driver,
             &xv->font, *settings->paths.path_font
             ? settings->paths.path_font : NULL,
             settings->floats.video_font_size))
@@ -423,7 +424,6 @@ static void *xv_init(const video_info_t *video,
    unsigned i;
    int ret;
    XWindowAttributes target;
-   char buf[128]                          = {0};
    char title[128]                        = {0};
    XSetWindowAttributes attributes        = {0};
    XVisualInfo visualtemplate             = {0};
@@ -934,11 +934,37 @@ static bool xv_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return true;
 }
 
+static video_poke_interface_t xv_video_poke_interface = {
+   NULL, /* get_flags */
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   x11_get_refresh_rate,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL
+};
+
 static void xv_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
    (void)data;
-   (void)iface;
+   *iface = &xv_video_poke_interface;
 }
 
 static bool xv_set_shader(void *data,

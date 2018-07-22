@@ -24,17 +24,6 @@
 #include "../core.h"
 #include "../verbosity.h"
 
-static void STUB_LOG(const char *fmt, ...)
-{
-   (void)fmt;
-}
-
-#ifdef CHEEVOS_VERBOSE
-#define CHEEVOS_LOG RARCH_LOG
-#else
-#define CHEEVOS_LOG STUB_LOG
-#endif
-
 /*****************************************************************************
 Parsing
 *****************************************************************************/
@@ -191,12 +180,6 @@ void cheevos_var_patch_addr(cheevos_var_t* var, cheevos_console_t console)
          var->value -= 0x2000;
       }
    }
-   else if (console == CHEEVOS_CONSOLE_NEOGEO_POCKET)
-   {
-      if (var->value >= 0x4000 && var->value <= 0x7fff)
-      CHEEVOS_LOG(CHEEVOS_TAG "NGP memory address %X adjusted to %X\n", var->value, var->value - 0x004000);
-      var->value -= 0x4000;
-   }
 
    if (system->mmaps.num_descriptors != 0)
    {
@@ -333,7 +316,7 @@ uint8_t* cheevos_var_get_memory(const cheevos_var_t* var)
                meminfo.id = RETRO_MEMORY_RTC;
                break;
             default:
-               RARCH_ERR(CHEEVOS_TAG "invalid bank id: %s\n", var->bank_id);
+               CHEEVOS_ERR(CHEEVOS_TAG "invalid bank id: %s\n", var->bank_id);
                break;
          }
 

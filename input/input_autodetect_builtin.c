@@ -29,7 +29,7 @@
 #endif
 
 #ifdef WIIU
-#include <wiiu/pad_driver.h>
+#include <wiiu/pad_strings.h>
 #endif
 
 #define DECL_BTN(btn, bind) "input_" #btn "_btn = " #bind "\n"
@@ -153,30 +153,30 @@ DECL_AXIS(r_y_minus, +3)
 #endif
 
 #define PSPINPUT_DEFAULT_BINDS \
-DECL_BTN(a, 8) \
-DECL_BTN(b, 0) \
-DECL_BTN(x, 9) \
-DECL_BTN(y, 1) \
-DECL_BTN(start, 3) \
-DECL_BTN(select, 2) \
-DECL_BTN(up, 4) \
-DECL_BTN(down, 5) \
-DECL_BTN(left, 6) \
-DECL_BTN(right, 7) \
-DECL_BTN(l, 10) \
-DECL_BTN(r, 11) \
-DECL_BTN(l2, 12) \
-DECL_BTN(r2, 13) \
-DECL_BTN(l3, 14) \
-DECL_BTN(r3, 15) \
-DECL_AXIS(l_x_plus,  +0) \
-DECL_AXIS(l_x_minus, -0) \
-DECL_AXIS(l_y_plus,  +1) \
-DECL_AXIS(l_y_minus, -1) \
-DECL_AXIS(r_x_plus,  +2) \
-DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
+DECL_BTN_EX(a, 8, "Circle") \
+DECL_BTN_EX(b, 0, "Cross") \
+DECL_BTN_EX(x, 9, "Triangle") \
+DECL_BTN_EX(y, 1, "Square") \
+DECL_BTN_EX(start, 3, "Start") \
+DECL_BTN_EX(select, 2, "Select") \
+DECL_BTN_EX(up, 4, "D-Pad up") \
+DECL_BTN_EX(down, 5, "D-Pad down") \
+DECL_BTN_EX(left, 6, "D-Pad left") \
+DECL_BTN_EX(right, 7, "D-Pad right") \
+DECL_BTN_EX(l, 10, "L1") \
+DECL_BTN_EX(r, 11, "R1") \
+DECL_BTN_EX(l2, 12, "L2") \
+DECL_BTN_EX(r2, 13, "R2") \
+DECL_BTN_EX(l3, 14, "L3") \
+DECL_BTN_EX(r3, 15, "R3") \
+DECL_AXIS_EX(l_x_plus,  +0, "L-Stick right") \
+DECL_AXIS_EX(l_x_minus, -0, "L-Stick left") \
+DECL_AXIS_EX(l_y_plus,  +1, "L-Stick down") \
+DECL_AXIS_EX(l_y_minus, -1, "L-Stick up") \
+DECL_AXIS_EX(r_x_plus,  +2, "R-Stick right") \
+DECL_AXIS_EX(r_x_minus, -2, "R-Stick left") \
+DECL_AXIS_EX(r_y_plus,  +3, "R-Stick down") \
+DECL_AXIS_EX(r_y_minus, -3, "R-Stick up")
 
 #define CTRINPUT_DEFAULT_BINDS \
 DECL_BTN(a, 8) \
@@ -227,6 +227,56 @@ DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3)
 
 #ifdef WIIU
+
+#define WIIUINPUT_GAMECUBE_DEFAULT_BINDS \
+DECL_BTN_EX(a,      8, "A") \
+DECL_BTN_EX(b,      0, "B") \
+DECL_BTN_EX(x,      9, "X") \
+DECL_BTN_EX(y,      1, "Y") \
+DECL_BTN_EX(left,   6, "D-Pad Left") \
+DECL_BTN_EX(right,  7, "D-Pad Right") \
+DECL_BTN_EX(down,   5, "D-Pad Down") \
+DECL_BTN_EX(up,     4, "D-Pad Up") \
+DECL_BTN_EX(start,  3, "Start/Pause") \
+DECL_BTN_EX(select, 2, "Z") \
+DECL_BTN_EX(r,      10, "R Trigger") \
+DECL_BTN_EX(l,      11, "L Trigger") \
+DECL_AXIS_EX(l_x_plus,  +1, "Analog right") \
+DECL_AXIS_EX(l_x_minus, -1, "Analog left") \
+DECL_AXIS_EX(l_y_plus,  +0, "Analog up") \
+DECL_AXIS_EX(l_y_minus, -0, "Analog down") \
+DECL_AXIS_EX(r_x_plus,  +3, "C-stick right") \
+DECL_AXIS_EX(r_x_minus, -3, "C-stick left") \
+DECL_AXIS_EX(r_y_plus,  +2, "C-stick up") \
+DECL_AXIS_EX(r_y_minus, -2, "C-stick down")
+
+#define WIIUINPUT_DS3_DEFAULT_BINDS \
+DECL_BTN_EX(menu_toggle, 16, "Playstation") \
+DECL_BTN_EX(select, 2, "Select") \
+DECL_BTN_EX(start,  3, "Start") \
+DECL_BTN_EX(a, 8, "Circle") \
+DECL_BTN_EX(y, 1, "Triangle") \
+DECL_BTN_EX(b, 0, "Cross") \
+DECL_BTN_EX(x, 9, "Square") \
+DECL_BTN_EX(r, 11, "R1") \
+DECL_BTN_EX(l, 10, "L1") \
+DECL_BTN_EX(r2, 13, "R2") \
+DECL_BTN_EX(l2, 12, "L2") \
+DECL_BTN_EX(up, 4, "D-Pad Up") \
+DECL_BTN_EX(down, 5, "D-Pad Down") \
+DECL_BTN_EX(left, 6, "D-Pad left") \
+DECL_BTN_EX(right, 7, "D-Pad Right") \
+DECL_BTN_EX(r3, 15, "R3") \
+DECL_BTN_EX(l3, 14, "L3") \
+DECL_AXIS_EX(l_x_plus,  +1, "L Analog right") \
+DECL_AXIS_EX(l_x_minus, -1, "L Analog left") \
+DECL_AXIS_EX(l_y_plus,  +0, "L Analog up") \
+DECL_AXIS_EX(l_y_minus, -0, "L Analog down") \
+DECL_AXIS_EX(r_x_plus,  +3, "R Analog right") \
+DECL_AXIS_EX(r_x_minus, -3, "R Analog left") \
+DECL_AXIS_EX(r_y_plus,  +2, "R Analog up") \
+DECL_AXIS_EX(r_y_minus, -2, "R Analog down")
+
 
 #define WIIUINPUT_GAMEPAD_DEFAULT_BINDS \
 DECL_BTN_EX(menu_toggle,  1, "Home") \
@@ -612,6 +662,8 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE(PAD_NAME_NUNCHUK, "wiiu", WIIUINPUT_NUNCHUK_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE(PAD_NAME_CLASSIC, "wiiu", WIIUINPUT_CLASSIC_CONTROLLER_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE(PAD_NAME_HID, "wiiu", WIIUINPUT_GAMEPAD_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("GameCube Controller", "wiiu", WIIUINPUT_GAMECUBE_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Sony DualShock 3", "wiiu", WIIUINPUT_DS3_DEFAULT_BINDS),
 #endif
 #ifdef __CELLOS_LV2__
    DECL_AUTOCONF_DEVICE("SixAxis Controller", "ps3", PS3INPUT_DEFAULT_BINDS),

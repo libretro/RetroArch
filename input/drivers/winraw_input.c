@@ -403,8 +403,9 @@ static bool winraw_is_pressed(winraw_input_t *wr,
 {
    const struct retro_keybind *bind = &binds[id];
 
-   if (!wr->kbd_mapp_block && (bind->key < RETROK_LAST) && winraw_keyboard_pressed(wr, bind->key))
-      return true;
+   if ((bind->key < RETROK_LAST) && winraw_keyboard_pressed(wr, bind->key))
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !wr->kbd_mapp_block)
+         return true;
    if (binds && binds[id].valid)
    {
      if (winraw_mbutton_pressed(wr, port, bind->mbutton))

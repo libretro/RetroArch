@@ -124,8 +124,10 @@ typedef struct
 } font_data_t;
 
 /* font_path can be NULL for default font. */
-int font_renderer_create_default(const void **driver,
-      void **handle, const char *font_path, unsigned font_size);
+int font_renderer_create_default(
+      const font_renderer_driver_t **drv,
+      void **handle,
+      const char *font_path, unsigned font_size);
 
 void font_driver_render_msg(video_frame_info_t *video_info,
       void *font_data, const char *msg, const struct font_params *params);
@@ -163,11 +165,14 @@ extern font_renderer_t vita2d_vita_font;
 extern font_renderer_t ctr_font;
 extern font_renderer_t wiiu_font;
 extern font_renderer_t vulkan_raster_font;
+extern font_renderer_t metal_raster_font;
+extern font_renderer_t d3d10_font;
 extern font_renderer_t d3d11_font;
 extern font_renderer_t d3d12_font;
 extern font_renderer_t caca_font;
 extern font_renderer_t gdi_font;
 extern font_renderer_t vga_font;
+extern font_renderer_t sixel_font;
 
 extern font_renderer_driver_t stb_font_renderer;
 extern font_renderer_driver_t stb_unicode_font_renderer;

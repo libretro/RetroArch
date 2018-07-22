@@ -60,6 +60,73 @@ struct MSLResourceBinding
 	bool used_by_shader = false;
 };
 
+enum MSLSamplerCoord
+{
+	MSL_SAMPLER_COORD_NORMALIZED,
+	MSL_SAMPLER_COORD_PIXEL
+};
+
+enum MSLSamplerFilter
+{
+	MSL_SAMPLER_FILTER_NEAREST,
+	MSL_SAMPLER_FILTER_LINEAR
+};
+
+enum MSLSamplerMipFilter
+{
+	MSL_SAMPLER_MIP_FILTER_NONE,
+	MSL_SAMPLER_MIP_FILTER_NEAREST,
+	MSL_SAMPLER_MIP_FILTER_LINEAR,
+};
+
+enum MSLSamplerAddress
+{
+	MSL_SAMPLER_ADDRESS_CLAMP_TO_ZERO,
+	MSL_SAMPLER_ADDRESS_CLAMP_TO_EDGE,
+	MSL_SAMPLER_ADDRESS_CLAMP_TO_BORDER,
+	MSL_SAMPLER_ADDRESS_REPEAT,
+	MSL_SAMPLER_ADDRESS_MIRRORED_REPEAT
+};
+
+enum MSLSamplerCompareFunc
+{
+	MSL_SAMPLER_COMPARE_FUNC_NEVER,
+	MSL_SAMPLER_COMPARE_FUNC_LESS,
+	MSL_SAMPLER_COMPARE_FUNC_LESS_EQUAL,
+	MSL_SAMPLER_COMPARE_FUNC_GREATER,
+	MSL_SAMPLER_COMPARE_FUNC_GREATER_EQUAL,
+	MSL_SAMPLER_COMPARE_FUNC_EQUAL,
+	MSL_SAMPLER_COMPARE_FUNC_NOT_EQUAL,
+	MSL_SAMPLER_COMPARE_FUNC_ALWAYS
+};
+
+enum MSLSamplerBorderColor
+{
+	MSL_SAMPLER_BORDER_COLOR_TRANSPARENT_BLACK,
+	MSL_SAMPLER_BORDER_COLOR_OPAQUE_BLACK,
+	MSL_SAMPLER_BORDER_COLOR_OPAQUE_WHITE
+};
+
+struct MSLConstexprSampler
+{
+	MSLSamplerCoord coord = MSL_SAMPLER_COORD_NORMALIZED;
+	MSLSamplerFilter min_filter = MSL_SAMPLER_FILTER_NEAREST;
+	MSLSamplerFilter mag_filter = MSL_SAMPLER_FILTER_NEAREST;
+	MSLSamplerMipFilter mip_filter = MSL_SAMPLER_MIP_FILTER_NONE;
+	MSLSamplerAddress s_address = MSL_SAMPLER_ADDRESS_CLAMP_TO_EDGE;
+	MSLSamplerAddress t_address = MSL_SAMPLER_ADDRESS_CLAMP_TO_EDGE;
+	MSLSamplerAddress r_address = MSL_SAMPLER_ADDRESS_CLAMP_TO_EDGE;
+	MSLSamplerCompareFunc compare_func = MSL_SAMPLER_COMPARE_FUNC_NEVER;
+	MSLSamplerBorderColor border_color = MSL_SAMPLER_BORDER_COLOR_TRANSPARENT_BLACK;
+	float lod_clamp_min = 0.0f;
+	float lod_clamp_max = 1000.0f;
+	int max_anisotropy = 1;
+
+	bool compare_enable = false;
+	bool lod_clamp_enable = false;
+	bool anisotropy_enable = false;
+};
+
 // Tracks the type ID and member index of a struct member
 using MSLStructMemberKey = uint64_t;
 
@@ -78,13 +145,15 @@ public:
 	// Options for compiling to Metal Shading Language
 	struct Options
 	{
-		typedef enum {
+		typedef enum
+		{
 			iOS,
 			macOS,
 		} Platform;
 
 		Platform platform = macOS;
 		uint32_t msl_version = make_msl_version(1, 2);
+		uint32_t texel_buffer_texture_width = 4096; // Width of 2D Metal textures used as 1D texel buffers
 		bool enable_point_size_builtin = true;
 		bool resolve_specialized_array_lengths = true;
 
@@ -114,14 +183,26 @@ public:
 		}
 	};
 
+	SPIRV_CROSS_DEPRECATED("CompilerMSL::get_options() is obsolete, use get_msl_options() instead.")
 	const Options &get_options() const
 	{
-		return options;
+		return msl_options;
 	}
 
+	const Options &get_msl_options() const
+	{
+		return msl_options;
+	}
+
+	SPIRV_CROSS_DEPRECATED("CompilerMSL::set_options() is obsolete, use set_msl_options() instead.")
 	void set_options(Options &opts)
 	{
-		options = opts;
+		msl_options = opts;
+	}
+
+	void set_msl_options(const Options &opts)
+	{
+		msl_options = opts;
 	}
 
 	// An enum of SPIR-V functions that are implemented in additional
@@ -136,6 +217,7 @@ public:
 		SPVFuncImplFindSMsb,
 		SPVFuncImplFindUMsb,
 		SPVFuncImplArrayCopy,
+		SPVFuncImplTexelBufferCoords,
 		SPVFuncImplInverse4x4,
 		SPVFuncImplInverse3x3,
 		SPVFuncImplInverse2x2,
@@ -175,22 +257,31 @@ public:
 
 	// This legacy method is deprecated.
 	typedef Options MSLConfiguration;
-	SPIRV_CROSS_DEPRECATED("Please use get_options() and set_options() instead.")
+	SPIRV_CROSS_DEPRECATED("Please use get_msl_options() and set_msl_options() instead.")
 	std::string compile(MSLConfiguration &msl_cfg, std::vector<MSLVertexAttr> *p_vtx_attrs = nullptr,
 	                    std::vector<MSLResourceBinding> *p_res_bindings = nullptr);
+
+	// Remap a sampler with ID to a constexpr sampler.
+	// Older iOS targets must use constexpr samplers in certain cases (PCF),
+	// so a static sampler must be used.
+	// The sampler will not consume a binding, but be declared in the entry point as a constexpr sampler.
+	// This can be used on both combined image/samplers (sampler2D) or standalone samplers.
+	// The remapped sampler must not be an array of samplers.
+	void remap_constexpr_sampler(uint32_t id, const MSLConstexprSampler &sampler);
 
 protected:
 	void emit_instruction(const Instruction &instr) override;
 	void emit_glsl_op(uint32_t result_type, uint32_t result_id, uint32_t op, const uint32_t *args,
 	                  uint32_t count) override;
 	void emit_header() override;
-	void emit_function_prototype(SPIRFunction &func, uint64_t return_flags) override;
+	void emit_function_prototype(SPIRFunction &func, const Bitset &return_flags) override;
 	void emit_sampled_image_op(uint32_t result_type, uint32_t result_id, uint32_t image_id, uint32_t samp_id) override;
 	void emit_fixup() override;
 	void emit_struct_member(const SPIRType &type, uint32_t member_type_id, uint32_t index,
 	                        const std::string &qualifier = "", uint32_t base_offset = 0) override;
 	std::string type_to_glsl(const SPIRType &type, uint32_t id = 0) override;
 	std::string image_type_glsl(const SPIRType &type, uint32_t id = 0) override;
+	std::string sampler_type(const SPIRType &type);
 	std::string builtin_to_glsl(spv::BuiltIn builtin, spv::StorageClass storage) override;
 	std::string constant_expression(const SPIRConstant &c) override;
 	size_t get_declared_struct_member_size(const SPIRType &struct_type, uint32_t index) const override;
@@ -203,6 +294,7 @@ protected:
 	                             uint32_t coord, uint32_t coord_components, uint32_t dref, uint32_t grad_x,
 	                             uint32_t grad_y, uint32_t lod, uint32_t coffset, uint32_t offset, uint32_t bias,
 	                             uint32_t comp, uint32_t sample, bool *p_forward) override;
+	std::string to_initializer_expression(const SPIRVariable &var) override;
 	std::string unpack_expression_type(std::string expr_str, const SPIRType &type) override;
 	std::string bitcast_glsl_op(const SPIRType &result_type, const SPIRType &argument_type) override;
 	bool skip_argument(uint32_t id) const override;
@@ -239,7 +331,6 @@ protected:
 
 	std::string func_type_decl(SPIRType &type);
 	std::string entry_point_args(bool append_comma);
-	std::string get_entry_point_name();
 	std::string to_qualified_member_name(const SPIRType &type, uint32_t index);
 	std::string ensure_valid_name(std::string name, std::string pfx);
 	std::string to_sampler_expression(uint32_t id);
@@ -253,11 +344,6 @@ protected:
 	uint32_t get_ordered_member_location(uint32_t type_id, uint32_t index);
 	size_t get_declared_struct_member_alignment(const SPIRType &struct_type, uint32_t index) const;
 	std::string to_component_argument(uint32_t id);
-	bool should_move_to_input_buffer(uint32_t type_id, bool is_builtin, spv::StorageClass storage);
-	void move_to_input_buffer(SPIRVariable &var);
-	void move_member_to_input_buffer(const SPIRType &type, uint32_t index);
-	std::string add_input_buffer_block_member(uint32_t mbr_type_id, std::string mbr_name, uint32_t mbr_locn);
-	uint32_t get_input_buffer_block_var_id(uint32_t msl_buffer);
 	void align_struct(SPIRType &ib_type);
 	bool is_member_packable(SPIRType &ib_type, uint32_t index);
 	MSLStructMemberKey get_struct_member_key(uint32_t type_id, uint32_t index);
@@ -271,15 +357,19 @@ protected:
 	void emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uint32_t id_mem_sem);
 	void emit_array_copy(const std::string &lhs, uint32_t rhs_id) override;
 	void build_implicit_builtins();
+	void emit_entry_point_declarations() override;
 	uint32_t builtin_frag_coord_id = 0;
 
-	Options options;
+	void bitcast_to_builtin_store(uint32_t target_id, std::string &expr, const SPIRType &expr_type) override;
+	void bitcast_from_builtin_load(uint32_t source_id, std::string &expr, const SPIRType &expr_type) override;
+
+	Options msl_options;
 	std::set<SPVFuncImpl> spv_function_implementations;
 	std::unordered_map<uint32_t, MSLVertexAttr *> vtx_attrs_by_location;
-	std::map<uint32_t, uint32_t> non_stage_in_input_var_ids;
 	std::unordered_map<MSLStructMemberKey, uint32_t> struct_member_padding;
 	std::set<std::string> pragma_lines;
 	std::set<std::string> typedef_lines;
+	std::vector<uint32_t> vars_needing_early_declaration;
 	std::vector<MSLResourceBinding *> resource_bindings;
 	MSLResourceBinding next_metal_resource_index;
 	uint32_t stage_in_var_id = 0;
@@ -293,6 +383,8 @@ protected:
 	std::string stage_uniform_var_name = "uniforms";
 	std::string sampler_name_suffix = "Smplr";
 	spv::Op previous_instruction_opcode = spv::OpNop;
+
+	std::unordered_map<uint32_t, MSLConstexprSampler> constexpr_samplers;
 
 	// OpcodeHandler that handles several MSL preprocessing operations.
 	struct OpCodePreprocessor : OpcodeHandler
@@ -334,6 +426,6 @@ protected:
 		SortAspect sort_aspect;
 	};
 };
-}
+} // namespace spirv_cross
 
 #endif

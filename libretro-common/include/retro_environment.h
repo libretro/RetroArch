@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (retro_environment.h).
@@ -73,6 +73,34 @@ printf("This is C++, version %d.\n", __cplusplus);
 /* This is not standard C. __STDC__ is not defined. */
 #endif
 
+#if defined(WIN32) || defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)
+/* Try to find out if we're compiling for WinRT or non-WinRT */
+#if defined(_MSC_VER) && defined(__has_include)
+#if __has_include(<winapifamily.h>)
+#define HAVE_WINAPIFAMILY_H 1
+#else
+#define HAVE_WINAPIFAMILY_H 0
+#endif
 
+/* If _USING_V110_SDK71_ is defined it means we are using the Windows XP toolset. */
+#elif defined(_MSC_VER) && (_MSC_VER >= 1700 && !_USING_V110_SDK71_)    /* _MSC_VER == 1700 for Visual Studio 2012 */
+#define HAVE_WINAPIFAMILY_H 1
+#else
+#define HAVE_WINAPIFAMILY_H 0
+#endif
+
+#if HAVE_WINAPIFAMILY_H
+#include <winapifamily.h>
+#define WINAPI_FAMILY_WINRT (!WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) && WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP))
+#else
+#define WINAPI_FAMILY_WINRT 0
+#endif /* HAVE_WINAPIFAMILY_H */
+
+#if WINAPI_FAMILY_WINRT
+#undef __WINRT__
+#define __WINRT__ 1
+#endif
+
+#endif
 
 #endif

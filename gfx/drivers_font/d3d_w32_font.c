@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <tchar.h>
 
 #include <compat/strl.h>
@@ -22,7 +24,6 @@
 #include "../../config.h"
 #endif
 
-#include "../drivers/d3d.h"
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
 #include "../font_driver.h"
@@ -46,7 +47,7 @@ typedef struct d3dx_font_desc
 
 typedef struct
 {
-   d3d_video_t *d3d;
+   d3d9_video_t *d3d;
    void *font;
    uint32_t font_size;
    uint32_t ascent;
@@ -78,7 +79,7 @@ static void *d3dfonts_w32_init_font(void *video_data,
 #endif
 
    d3dfonts->font_size  = font_size * 1.2; /* to match the other font drivers */
-   d3dfonts->d3d        = (d3d_video_t*)video_data;
+   d3dfonts->d3d        = (d3d9_video_t*)video_data;
 
    desc.Height          = d3dfonts->font_size;
 

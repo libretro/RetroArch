@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (file_path.h).
@@ -100,11 +100,15 @@ const char *path_get_extension(const char *path);
  * path_remove_extension:
  * @path               : path
  *
- * Removes the extension from the path and returns the result.
- * Removes all text after and including the last '.'.
+ * Mutates path by removing its extension. Removes all
+ * text after and including the last '.'.
  * Only '.'s after the last slash are considered.
  *
- * Returns: path with the extension part removed.
+ * Returns: 
+ * 1) If path has an extension, returns path with the
+ *    extension removed.
+ * 2) If there is no extension, returns NULL.
+ * 3) If path is empty or NULL, returns NULL
  */
 char *path_remove_extension(char *path);
 
@@ -432,7 +436,7 @@ void path_basedir_wrapper(char *path);
 #endif
 
 /**
- * path_default_slash:
+ * path_default_slash and path_default_slash_c:
  *
  * Gets the default slash separator.
  *
@@ -440,8 +444,10 @@ void path_basedir_wrapper(char *path);
  */
 #ifdef _WIN32
 #define path_default_slash() "\\"
+#define path_default_slash_c() '\\'
 #else
 #define path_default_slash() "/"
+#define path_default_slash_c() '/'
 #endif
 
 /**

@@ -67,6 +67,10 @@ static bool bundle_assets_extract_enable = false;
 static bool materialui_icons_enable      = true;
 #endif
 
+static const bool crt_switch_resolution = false; 	
+static const int crt_switch_resolution_super = 2560; 
+
+
 static const bool def_history_list_enable = true;
 static const bool def_playlist_entry_remove = true;
 static const bool def_playlist_entry_rename = true;
@@ -177,7 +181,7 @@ static unsigned swap_interval = 1;
 static const bool video_threaded = false;
 
 #if defined(HAVE_THREADS)
-#if defined(GEKKO) || defined(PSP) || defined(_3DS)
+#if defined(GEKKO) || defined(PSP)
 /* For single-core consoles right now it's better to have this be disabled. */
 static const bool threaded_data_runloop_enable = false;
 #else
@@ -257,9 +261,11 @@ static bool quick_menu_show_options              = true;
 static bool quick_menu_show_controls             = true;
 static bool quick_menu_show_cheats               = true;
 static bool quick_menu_show_shaders              = true;
-static bool quick_menu_show_save_core_overrides  = true;
-static bool quick_menu_show_save_game_overrides  = true;
 static bool quick_menu_show_information          = true;
+
+static bool quick_menu_show_save_core_overrides         = true;
+static bool quick_menu_show_save_game_overrides         = true;
+static bool quick_menu_show_save_content_dir_overrides  = true;
 
 static bool kiosk_mode_enable            = false;
 
@@ -271,6 +277,7 @@ static bool menu_show_configurations     = true;
 static bool menu_show_help               = true;
 static bool menu_show_quit_retroarch     = true;
 static bool menu_show_reboot             = true;
+static bool menu_show_shutdown           = true;
 #if defined(HAVE_LAKKA) || defined(VITA) || defined(_3DS)
 static bool menu_show_core_updater       = false;
 #else
@@ -283,7 +290,7 @@ static bool content_show_favorites   = true;
 static bool content_show_images      = true;
 #endif
 static bool content_show_music       = true;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
 static bool content_show_video       = true;
 #endif
 #ifdef HAVE_NETWORKING
@@ -293,6 +300,7 @@ static bool content_show_history     = true;
 #ifdef HAVE_LIBRETRODB
 static bool content_show_add     	 = true;
 #endif
+static bool content_show_playlists   = true;
 
 #ifdef HAVE_XMB
 static unsigned xmb_scale_factor = 100;
@@ -300,6 +308,7 @@ static unsigned xmb_alpha_factor = 75;
 static unsigned menu_font_color_red = 255;
 static unsigned menu_font_color_green = 255;
 static unsigned menu_font_color_blue = 255;
+static unsigned xmb_menu_layout  = 0;
 static unsigned xmb_icon_theme   = XMB_ICON_THEME_MONOCHROME;
 static unsigned xmb_theme        = XMB_THEME_ELECTRIC_BLUE;
 #if defined(HAVE_LAKKA) || defined(__arm__) || defined(__PPC64__) || defined(__ppc64__) || defined(__powerpc64__) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
@@ -515,6 +524,9 @@ static const bool rewind_enable = false;
  * 15-20MB per minute. Very game dependant. */
 static const unsigned rewind_buffer_size = 20 << 20; /* 20MiB */
 
+/* The amount of MB to increase/decrease the rewind_buffer_size when it is changed via the UI. */
+static const unsigned rewind_buffer_size_step = 10; /* 10MB */
+
 /* How many frames to rewind at a time. */
 static const unsigned rewind_granularity = 1;
 
@@ -595,6 +607,9 @@ static const unsigned run_ahead_frames = 1;
 /* When using the Run Ahead feature, use a secondary instance of the core. */
 static const bool run_ahead_secondary_instance = true;
 
+/* Hide warning messages when using the Run Ahead feature. */
+static const bool run_ahead_hide_warnings = false;
+
 /* Enable stdin/network command interface. */
 static const bool network_cmd_enable = false;
 static const uint16_t network_cmd_port = 55355;
@@ -650,6 +665,8 @@ static const unsigned input_poll_type_behavior = 2;
 
 static const unsigned input_bind_timeout = 5;
 
+static const unsigned input_bind_hold = 2;
+
 static const unsigned menu_thumbnails_default = 3;
 
 static const unsigned menu_left_thumbnails_default = 0;
@@ -664,6 +681,12 @@ static const bool ui_companion_start_on_boot = true;
 
 static const bool ui_companion_enable = false;
 
+/* Currently only used to show the WIMP UI on startup */
+static const bool ui_companion_toggle = false;
+
+/* Only init the WIMP UI for this session if this is enabled */
+static const bool desktop_menu_enable = true;
+
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;
 #elif defined(PSP) || defined(_3DS) || defined(VITA)
@@ -672,13 +695,25 @@ static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_NORMAL;
 #endif
 
+/* MIDI */
+static const char *midi_input     = "Off";
+static const char *midi_output    = "Off";
+static const unsigned midi_volume = 100;
+
+/* Only applies to Android 7.0 (API 24) and up */
+static const bool sustained_performance_mode = false;
+
 #if defined(ANDROID)
-#if defined(ANDROID_ARM)
+#if defined(ANDROID_ARM_V7)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/";
+#elif defined(ANDROID_ARM)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi/";
 #elif defined(ANDROID_AARCH64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/arm64-v8a/";
 #elif defined(ANDROID_X86)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86/";
+#elif defined(ANDROID_X64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86_64/";
 #else
 static char buildbot_server_url[] = "";
 #endif

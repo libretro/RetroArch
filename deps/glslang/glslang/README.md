@@ -17,7 +17,7 @@ There are several components:
 
 1. A GLSL/ESSL front-end for reference validation and translation of GLSL/ESSL into an AST.
 
-2. An HLSL front-end for translation of a broad generic HLL into the AST.
+2. An HLSL front-end for translation of a broad generic HLL into the AST. See [issue 362](https://github.com/KhronosGroup/glslang/issues/362) and [issue 701](https://github.com/KhronosGroup/glslang/issues/701) for current status.
 
 3. A SPIR-V back end for translating the AST to SPIR-V.
 
@@ -49,21 +49,31 @@ There is also a non-shader extension
 Building
 --------
 
+Instead of building manually, you can also download the binaries for your
+platform directly from the [master-tot release][master-tot-release] on GitHub.
+Those binaries are automatically uploaded by the buildbots after successful
+testing and they always reflect the current top of the tree of the master
+branch.
+
 ### Dependencies
 
+* A C++11 compiler.
+  (For MSVS: 2015 is recommended, 2013 is fully supported/tested, and 2010 support is attempted, but not tested.)
 * [CMake][cmake]: for generating compilation targets.
+* make: _Linux_, ninja is an alternative, if configured.
+* [Python 2.7][python]: for executing SPIRV-Tools scripts. (Optional if not using SPIRV-Tools.)
 * [bison][bison]: _optional_, but needed when changing the grammar (glslang.y).
 * [googletest][googletest]: _optional_, but should use if making any changes to glslang.
 
 ### Build steps
 
+The following steps assume a Bash shell. On Windows, that could be the Git Bash
+shell or some other shell of your choosing.
+
 #### 1) Check-Out this project 
 
 ```bash
 cd <parent of where you want glslang to be>
-# If using SSH
-git clone git@github.com:KhronosGroup/glslang.git
-# Or if using HTTPS
 git clone https://github.com/KhronosGroup/glslang.git
 ```
 
@@ -74,24 +84,35 @@ cd <the directory glslang was cloned to, "External" will be a subdirectory>
 git clone https://github.com/google/googletest.git External/googletest
 ```
 
-#### 3) Configure
-
-Assume the source directory is `$SOURCE_DIR` and
-the build directory is `$BUILD_DIR`:
-
-For building on Linux (assuming using the Ninja generator):
+If you wish to assure that SPIR-V generated from HLSL is legal for Vulkan,
+or wish to invoke -Os to reduce SPIR-V size from HLSL or GLSL, install
+spirv-tools with this:
 
 ```bash
-cd $BUILD_DIR
+./update_glslang_sources.py
+```
 
-cmake -GNinja -DCMAKE_BUILD_TYPE={Debug|Release|RelWithDebInfo} \
-      -DCMAKE_INSTALL_PREFIX=`pwd`/install $SOURCE_DIR
+#### 3) Configure
+
+Assume the source directory is `$SOURCE_DIR` and the build directory is
+`$BUILD_DIR`. First ensure the build directory exists, then navigate to it:
+
+```bash
+mkdir -p $BUILD_DIR
+cd $BUILD_DIR
+```
+
+For building on Linux:
+
+```bash
+cmake -DCMAKE_BUILD_TYPE={Debug|Release|RelWithDebInfo} \
+      -DCMAKE_INSTALL_PREFIX="$(pwd)/install" $SOURCE_DIR
 ```
 
 For building on Windows:
 
 ```bash
-cmake $SOURCE_DIR -DCMAKE_INSTALL_PREFIX=`pwd`/install
+cmake $SOURCE_DIR -DCMAKE_INSTALL_PREFIX="$(pwd)/install"
 # The CMAKE_INSTALL_PREFIX part is for testing (explained later).
 ```
 
@@ -101,7 +122,7 @@ The CMake GUI also works for Windows (version 3.4.1 tested).
 
 ```bash
 # for Linux:
-ninja install
+make -j4 install
 
 # for Windows:
 cmake --build . --config {Release|Debug|MinSizeRel|RelWithDebInfo} \
@@ -220,8 +241,11 @@ bool InitializeProcess();
 void FinalizeProcess();
 
 class TShader
+    setStrings(...);
+    setEnvInput(EShSourceHlsl or EShSourceGlsl, stage,  EShClientVulkan or EShClientOpenGL, 100);
+    setEnvClient(EShClientVulkan or EShClientOpenGL, EShTargetVulkan_1_0 or EShTargetVulkan_1_1 or EShTargetOpenGL_450);
+    setEnvTarget(EShTargetSpv, EShTargetSpv_1_0 or EShTargetSpv_1_3);
     bool parse(...);
-    void setStrings(...);
     const char* getInfoLog();
 
 class TProgram
@@ -301,6 +325,8 @@ Basic Internal Operation
 
 
 [cmake]: https://cmake.org/
+[python]: https://www.python.org/
 [bison]: https://www.gnu.org/software/bison/
 [googletest]: https://github.com/google/googletest
 [bison-gnu-win32]: http://gnuwin32.sourceforge.net/packages/bison.htm
+[master-tot-release]: https://github.com/KhronosGroup/glslang/releases/tag/master-tot

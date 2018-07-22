@@ -11,7 +11,7 @@ struct main0_out
 fragment main0_out main0()
 {
     main0_out out = {};
-    out.FragColor = (((float4(1.0) + float4(1.0)) + (float3(1.0).xyzz + float4(1.0))) + (float4(1.0) + float4(2.0))) + (float2(1.0).xyxy + float4(2.0));
+    out.FragColor = float4(10.0);
     return out;
 }
 

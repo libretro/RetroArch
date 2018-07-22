@@ -18,6 +18,7 @@
 
 #include "../input_defines.h"
 #include "../input_driver.h"
+#include "../include/hid_driver.h"
 
 typedef struct null_hid
 {
@@ -38,7 +39,8 @@ static const char *null_hid_joypad_name(void *data, unsigned pad)
    return NULL;
 }
 
-static void null_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
+static void null_hid_joypad_get_buttons(void *data,
+      unsigned port, input_bits_t *state)
 {
    (void)data;
    (void)port;

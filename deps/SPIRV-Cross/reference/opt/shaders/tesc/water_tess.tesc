@@ -22,13 +22,13 @@ void main()
     vec2 _440 = ((vPatchPosBase[0] + _41.uPatchSize) + vec2(10.0)) * _41.uScale.xy;
     vec3 _445 = vec3(_430.x, -10.0, _430.y);
     vec3 _450 = vec3(_440.x, 10.0, _440.y);
-    vec3 _454 = (_445 + _450) * 0.5;
-    float _459 = 0.5 * length(_450 - _445);
-    bool _515 = any(lessThanEqual(vec3(dot(_41.uFrustum[0], vec4(_454, 1.0)), dot(_41.uFrustum[1], vec4(_454, 1.0)), dot(_41.uFrustum[2], vec4(_454, 1.0))), vec3(-_459)));
+    vec4 _466 = vec4((_445 + _450) * 0.5, 1.0);
+    vec3 _513 = vec3(length(_450 - _445) * (-0.5));
+    bool _515 = any(lessThanEqual(vec3(dot(_41.uFrustum[0], _466), dot(_41.uFrustum[1], _466), dot(_41.uFrustum[2], _466)), _513));
     bool _525;
     if (!_515)
     {
-        _525 = any(lessThanEqual(vec3(dot(_41.uFrustum[3], vec4(_454, 1.0)), dot(_41.uFrustum[4], vec4(_454, 1.0)), dot(_41.uFrustum[5], vec4(_454, 1.0))), vec3(-_459)));
+        _525 = any(lessThanEqual(vec3(dot(_41.uFrustum[3], _466), dot(_41.uFrustum[4], _466), dot(_41.uFrustum[5], _466)), _513));
     }
     else
     {

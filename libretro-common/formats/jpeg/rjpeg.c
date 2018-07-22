@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (rjpeg.c).
@@ -2523,7 +2523,10 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z,
                out[i] = y[i];
          else
             for (i=0; i < z->s->img_x; ++i)
-               *out++ = y[i], *out++ = 255;
+            {
+               *out++ = y[i];
+               *out++ = 255;
+            }
       }
    }
 

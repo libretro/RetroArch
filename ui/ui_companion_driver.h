@@ -104,14 +104,17 @@ typedef struct ui_msg_window
 
 typedef struct ui_application
 {
-   bool (*initialize)(void);
+   void* (*initialize)(void);
    bool (*pending_events)(void);
    void (*process_events)(void);
+   void (*run)(void *args);
+   void (*quit)(void);
    const char *ident;
 } ui_application_t;
 
 typedef struct ui_window
 {
+   void* (*init)(void);
    void (*destroy)(void *data);
    void (*set_focused)(void *data);
    void (*set_visible)(void *data, bool visible);
@@ -126,46 +129,47 @@ typedef struct ui_companion_driver
    void *(*init)(void);
    void (*deinit)(void *data);
    int  (*iterate)(void *data, unsigned action);
-   void (*toggle)(void *data);
+   void (*toggle)(void *data, bool force);
    void (*event_command)(void *data, enum event_command action);
    void (*notify_content_loaded)(void *data);
    void (*notify_list_loaded)(void *data, file_list_t *list, file_list_t *menu_list);
    void (*notify_refresh)(void *data);
-   void (*msg_queue_push)(const char *msg, unsigned priority, unsigned duration, bool flush);
+   void (*msg_queue_push)(void *data, const char *msg, unsigned priority, unsigned duration, bool flush);
    void (*render_messagebox)(const char *msg);
    void *(*get_main_window)(void *data);
-   const ui_browser_window_t *browser_window;
-   const ui_msg_window_t     *msg_window;
-   const ui_window_t         *window;
-   const ui_application_t    *application;
+   void (*log_msg)(void *data, const char *msg);
+   ui_browser_window_t *browser_window;
+   ui_msg_window_t     *msg_window;
+   ui_window_t         *window;
+   ui_application_t    *application;
    const char        *ident;
 } ui_companion_driver_t;
 
-extern const ui_browser_window_t   ui_browser_window_null;
-extern const ui_browser_window_t   ui_browser_window_cocoa;
-extern const ui_browser_window_t   ui_browser_window_qt;
-extern const ui_browser_window_t   ui_browser_window_win32;
+extern ui_browser_window_t   ui_browser_window_null;
+extern ui_browser_window_t   ui_browser_window_cocoa;
+extern ui_browser_window_t   ui_browser_window_qt;
+extern ui_browser_window_t   ui_browser_window_win32;
 
-extern const ui_window_t           ui_window_null;
-extern const ui_window_t           ui_window_cocoa;
-extern const ui_window_t           ui_window_qt;
-extern const ui_window_t           ui_window_win32;
+extern ui_window_t           ui_window_null;
+extern ui_window_t           ui_window_cocoa;
+extern ui_window_t           ui_window_qt;
+extern ui_window_t           ui_window_win32;
 
-extern const ui_msg_window_t       ui_msg_window_null;
-extern const ui_msg_window_t       ui_msg_window_win32;
-extern const ui_msg_window_t       ui_msg_window_qt;
-extern const ui_msg_window_t       ui_msg_window_cocoa;
+extern ui_msg_window_t       ui_msg_window_null;
+extern ui_msg_window_t       ui_msg_window_win32;
+extern ui_msg_window_t       ui_msg_window_qt;
+extern ui_msg_window_t       ui_msg_window_cocoa;
 
-extern const ui_application_t      ui_application_null;
-extern const ui_application_t      ui_application_cocoa;
-extern const ui_application_t      ui_application_qt;
-extern const ui_application_t      ui_application_win32;
+extern ui_application_t      ui_application_null;
+extern ui_application_t      ui_application_cocoa;
+extern ui_application_t      ui_application_qt;
+extern ui_application_t      ui_application_win32;
 
-extern const ui_companion_driver_t ui_companion_null;
-extern const ui_companion_driver_t ui_companion_cocoa;
-extern const ui_companion_driver_t ui_companion_cocoatouch;
-extern const ui_companion_driver_t ui_companion_qt;
-extern const ui_companion_driver_t ui_companion_win32;
+extern ui_companion_driver_t ui_companion_null;
+extern ui_companion_driver_t ui_companion_cocoa;
+extern ui_companion_driver_t ui_companion_cocoatouch;
+extern ui_companion_driver_t ui_companion_qt;
+extern ui_companion_driver_t ui_companion_win32;
 
 /**
  * ui_companion_find_driver:
@@ -204,7 +208,7 @@ void ui_companion_driver_notify_list_loaded(file_list_t *list, file_list_t *menu
 
 void ui_companion_driver_notify_content_loaded(void);
 
-void ui_companion_driver_toggle(void);
+void ui_companion_driver_toggle(bool force);
 
 void ui_companion_driver_free(void);
 
@@ -215,6 +219,14 @@ const ui_browser_window_t *ui_companion_driver_get_browser_window_ptr(void);
 const ui_window_t *ui_companion_driver_get_window_ptr(void);
 
 const ui_application_t *ui_companion_driver_get_application_ptr(void);
+
+#ifdef HAVE_QT
+const ui_application_t *ui_companion_driver_get_qt_application_ptr(void);
+#endif
+
+void ui_companion_driver_log_msg(const char *msg);
+
+void ui_companion_driver_msg_queue_push(const char *msg, unsigned priority, unsigned duration, bool flush);
 
 void *ui_companion_driver_get_main_window(void);
 

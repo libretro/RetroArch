@@ -139,13 +139,14 @@ void menu_event_kb_set(bool down, enum retro_key key)
  * entire button state either but do a separate event per button
  * state.
  */
-unsigned menu_event(retro_bits_t* p_input, retro_bits_t* p_trigger_input)
+unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
 {
    menu_animation_ctx_delta_t delta;
    float delta_time;
    /* Used for key repeat */
    static float delay_timer                = 0.0f;
    static float delay_count                = 0.0f;
+   static unsigned ok_old                  = 0;
    unsigned ret                            = MENU_ACTION_NOOP;
    static bool initial_held                = true;
    static bool first_held                  = false;
@@ -154,14 +155,14 @@ unsigned menu_event(retro_bits_t* p_input, retro_bits_t* p_trigger_input)
    size_t new_scroll_accel                 = 0;
    menu_input_t *menu_input                = NULL;
    settings_t *settings                    = config_get_ptr();
-   static unsigned ok_old                  = 0;
+   bool swap_ok_cancel_btns                = settings->bools.input_menu_swap_ok_cancel_buttons;
    bool input_swap_override                = 
       input_autoconfigure_get_swap_override();
    unsigned menu_ok_btn                    = (!input_swap_override &&
-      settings->bools.input_menu_swap_ok_cancel_buttons) ?
+      swap_ok_cancel_btns) ?
       RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
    unsigned menu_cancel_btn                = (!input_swap_override &&
-      settings->bools.input_menu_swap_ok_cancel_buttons) ?
+      swap_ok_cancel_btns) ?
       RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                     = BIT256_GET_PTR(p_input,
          menu_ok_btn );

@@ -7,6 +7,6 @@ layout(location = 0) in vec4 vIn;
 
 void main()
 {
-    FragColor = -(-vIn);
+    FragColor = vIn;
 }
 

@@ -21,6 +21,11 @@
 
 #include "../../ui_companion_driver.h"
 
+static void* ui_window_null_init(void)
+{
+   return NULL;
+}
+
 static void ui_window_null_destroy(void *data)
 {
 }
@@ -47,7 +52,8 @@ static bool ui_window_null_focused(void *data)
    return true;
 }
 
-const ui_window_t ui_window_null = {
+ui_window_t ui_window_null = {
+   ui_window_null_init,
    ui_window_null_destroy,
    ui_window_null_set_focused,
    ui_window_null_set_visible,

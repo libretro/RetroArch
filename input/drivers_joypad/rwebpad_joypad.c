@@ -130,12 +130,11 @@ static bool rwebpad_joypad_button(unsigned port_num, uint16_t joykey)
    return false;
 }
 
-static void rwebpad_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
+static void rwebpad_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
    EmscriptenGamepadEvent gamepad_state;
-   EMSCRIPTEN_RESULT r;
-
-   r = emscripten_get_gamepad_status(port_num, &gamepad_state);
+   EMSCRIPTEN_RESULT r = emscripten_get_gamepad_status(
+         port_num, &gamepad_state);
 
    if (r == EMSCRIPTEN_RESULT_SUCCESS)
    {

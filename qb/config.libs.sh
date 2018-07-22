@@ -210,10 +210,10 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
    check_lib '' MINIUPNPC '-lminiupnpc'
 else
    die : 'Warning: All networking features have been disabled.'
-   HAVE_KEYMAPPER='no'
    HAVE_NETWORK_CMD='no'
    HAVE_NETWORKGAMEPAD='no'
    HAVE_CHEEVOS='no'
+   HAVE_DISCORD='no'
 fi
 
 check_lib '' STDIN_CMD "$CLIB" fcntl
@@ -233,6 +233,7 @@ fi
 check_pkgconf ALSA alsa
 check_val '' ALSA -lasound alsa
 check_lib '' CACA -lcaca
+check_lib '' SIXEL -lsixel
 
 if [ "$HAVE_OSS" != 'no' ]; then
    check_header OSS sys/soundcard.h
@@ -271,6 +272,31 @@ check_val '' PULSE -lpulse
 check_val '' SDL -lSDL SDL
 check_val '' SDL2 -lSDL2 SDL2
 
+check_enabled QT 'Qt companion'
+
+if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
+   check_pkgconf QT5CORE Qt5Core 5.2
+   check_pkgconf QT5GUI Qt5Gui 5.2
+   check_pkgconf QT5WIDGETS Qt5Widgets 5.2
+   #check_pkgconf QT5WEBENGINE Qt5WebEngine 5.4
+
+   check_val '' QT5CORE -lQt5Core QT5CORE
+   check_val '' QT5GUI -lQt5Gui QT5GUI
+   check_val '' QT5WIDGETS -lQt5Widgets QT5WIDGETS
+   #check_val '' QT5WEBENGINE -lQt5WebEngine QT5WEBENGINE
+
+   if [ "$HAVE_QT5CORE" = "no" ] || [ "$HAVE_QT5GUI" = "no" ] || [ "$HAVE_QT5WIDGETS" = "no" ]; then
+      die : 'Notice: Not building Qt support, required libraries were not found.'
+      HAVE_QT=no
+   else
+      HAVE_QT=yes
+   fi
+
+   #if [ "$HAVE_QT5WEBENGINE" = "no" ]; then
+   #   die : 'Notice: Qt5WebEngine not found, disabling web browser support.'
+   #fi
+fi
+
 if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
    HAVE_SDL=no
@@ -297,6 +323,7 @@ if [ "$OS" = 'Win32' ]; then
 
    HAVE_WASAPI=yes
    HAVE_XAUDIO=yes
+   HAVE_WINMM=yes
 else
    HAVE_D3D9=no
    HAVE_D3D10=no
@@ -340,6 +367,10 @@ elif [ "$HAVE_BUILTINZLIB" = 'yes' ]; then
 else
    check_pkgconf ZLIB zlib
    check_val '' ZLIB '-lz'
+fi
+
+if [ "$HAVE_MPV" != 'no' ]; then
+   check_pkgconf MPV libmpv
 fi
 
 if [ "$HAVE_THREADS" != 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
@@ -465,6 +496,8 @@ fi
 check_lib '' STRCASESTR "$CLIB" strcasestr
 check_lib '' MMAP "$CLIB" mmap
 
+check_enabled VULKAN vulkan
+
 if [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Win32' ]; then
    HAVE_VULKAN=yes
 else
@@ -485,7 +518,7 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
          HAVE_SHADERPIPELINE=no
          HAVE_VULKAN=no
          die : 'Notice: Hardware rendering context not available.'
-      elif [ "$HAVE_CACA" = 'yes' ]; then
+      elif [ "$HAVE_CACA" = 'yes' ] || [ "$HAVE_SIXEL" = 'yes' ]; then
          die : 'Notice: Hardware rendering context not available.'
       else
          HAVE_MATERIALUI=no

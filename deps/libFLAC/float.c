@@ -34,9 +34,9 @@
 #  include <config.h>
 #endif
 
-#include "FLAC/assert.h"
-#include "share/compat.h"
-#include "private/float.h"
+#include "include/FLAC/assert.h"
+#include "include/share/compat.h"
+#include "include/private/float.h"
 
 #ifdef FLAC__INTEGER_ONLY_LIBRARY
 

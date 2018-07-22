@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (file_path.c).
@@ -378,11 +378,15 @@ const char *path_get_extension(const char *path)
  * path_remove_extension:
  * @path               : path
  *
- * Removes the extension from the path and returns the result.
- * Removes all text after and including the last '.'.
+ * Mutates path by removing its extension. Removes all
+ * text after and including the last '.'.
  * Only '.'s after the last slash are considered.
  *
- * Returns: path with the extension part removed.
+ * Returns: 
+ * 1) If path has an extension, returns path with the
+ *    extension removed.
+ * 2) If there is no extension, returns NULL.
+ * 3) If path is empty or NULL, returns NULL
  */
 char *path_remove_extension(char *path)
 {
@@ -392,7 +396,7 @@ char *path_remove_extension(char *path)
       return NULL;
    if (*last)
       *last = '\0';
-   return last;
+   return path;
 }
 
 /**
@@ -917,7 +921,12 @@ void fill_pathname_join_noext(char *out_path,
 void fill_pathname_join_delim(char *out_path, const char *dir,
       const char *path, const char delim, size_t size)
 {
-   size_t copied      = strlcpy(out_path, dir, size);
+   size_t copied;
+   // behavior of strlcpy is undefined if dst and src overlap
+   if (out_path == dir)
+      copied = strlen(dir);
+   else
+      copied = strlcpy(out_path, dir, size);
 
    out_path[copied]   = delim;
    out_path[copied+1] = '\0';

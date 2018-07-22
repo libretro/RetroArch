@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define CINTERFACE
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -45,8 +47,8 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
-#include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
+#include "../../gfx/common/d3d9_common.h"
 
 #define XUI_CONTROL_NAVIGATE_OK (XUI_CONTROL_NAVIGATE_RIGHT + 1)
 
@@ -236,7 +238,7 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
          D3DX_DEFAULT_NONPOW2,
          1,
          D3DUSAGE_CPU_CACHED_MEMORY,
-         (D3DFORMAT)d3d_get_argb8888_format(),
+         (D3DFORMAT)d3d9_get_argb8888_format(),
          D3DPOOL_DEFAULT,
          D3DX_FILTER_NONE,
          D3DX_FILTER_NONE,
@@ -276,7 +278,7 @@ void d3d9_make_d3dpp(void *data, const video_info_t *info, void *_d3dpp);
 static void* xui_init(void **userdata, bool video_is_threaded)
 {
    HRESULT hr;
-   d3d_video_t *d3d            = NULL;
+   d3d9_video_t *d3d           = NULL;
    D3DPRESENT_PARAMETERS d3dpp = {0};
    video_info_t video_info     = {0};
    TypefaceDescriptor typeface = {0};
@@ -286,7 +288,7 @@ static void* xui_init(void **userdata, bool video_is_threaded)
    if (!menu)
       return NULL;
 
-   d3d = (d3d_video_t*)video_driver_get_ptr(false);
+   d3d = (d3d9_video_t*)video_driver_get_ptr(false);
 
    if (d3d->resolution_hd_enable)
       RARCH_LOG("HD menus enabled.\n");
@@ -376,7 +378,7 @@ static void xui_render_message(const char *msg)
    size_t i                      = 0;
    size_t j                      = 0;
    struct string_list *list      = NULL;
-   d3d_video_t              *d3d = (d3d_video_t*)video_driver_get_ptr(false);
+   d3d9_video_t             *d3d = (d3d9_video_t*)video_driver_get_ptr(false);
 
    if (!d3d)
       return;
@@ -415,7 +417,7 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
    D3DXMATRIX matOrigView;
    const char *message   = NULL;
    D3DVIEWPORT9 vp_full  = {0};
-   d3d_video_t *d3d      = (d3d_video_t*)video_driver_get_ptr(false);
+   d3d9_video_t *d3d     = (d3d9_video_t*)video_driver_get_ptr(false);
 
    if (!d3d)
       return;

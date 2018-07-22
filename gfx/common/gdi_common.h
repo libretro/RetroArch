@@ -18,9 +18,13 @@
 #ifndef __GDI_COMMON_H
 #define __GDI_COMMON_H
 
+#include <retro_environment.h>
+
 typedef struct gdi
 {
+#ifndef __WINRT__
    WNDCLASSEX wndclass;
+#endif
    HDC winDC;
    HDC memDC;
    HBITMAP bmp;

@@ -16,41 +16,16 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
-#if defined(HAVE_D3D9)
-#include <d3d9.h>
-
-#ifdef HAVE_D3DX
-#ifdef _XBOX
-#include <d3dx9core.h>
-#include <d3dx9tex.h>
-#else
-#include "../include/d3d9/d3dx9tex.h"
-#endif
-
-#endif
-#endif
-
-#if defined(HAVE_D3D8)
-#include <d3d8.h>
-
-#ifdef HAVE_D3DX
-#ifdef _XBOX
-#include <d3dx8core.h>
-#include <d3dx8tex.h>
-#else
-#include "../include/d3d8/d3dx8tex.h"
-#endif
-#endif
-
-#endif
-
 #include "d3d_common.h"
+
+#define D3D_TEXTURE_FILTER_LINEAR 2
+#define D3D_TEXTURE_FILTER_POINT  1
 
 void *d3d_matrix_transpose(void *_pout, const void *_pm)
 {
    unsigned i,j;
-   D3DMATRIX     *pout = (D3DMATRIX*)_pout;
-   CONST D3DMATRIX *pm = (D3DMATRIX*)_pm;
+   struct d3d_matrix       *pout = (struct d3d_matrix*)_pout;
+   const struct d3d_matrix *pm   = (struct d3d_matrix*)_pm;
 
    for (i = 0; i < 4; i++)
    {
@@ -63,7 +38,7 @@ void *d3d_matrix_transpose(void *_pout, const void *_pm)
 
 void *d3d_matrix_identity(void *_pout)
 {
-   D3DMATRIX *pout = (D3DMATRIX*)_pout;
+   struct d3d_matrix *pout = (struct d3d_matrix*)_pout;
    if ( !pout )
       return NULL;
 
@@ -86,9 +61,10 @@ void *d3d_matrix_identity(void *_pout)
    return pout;
 }
 
-void *d3d_matrix_ortho_off_center_lh(void *_pout, float l, float r, float b, float t, float zn, float zf)
+void *d3d_matrix_ortho_off_center_lh(void *_pout,
+      float l, float r, float b, float t, float zn, float zf)
 {
-   D3DMATRIX *pout = (D3DMATRIX*)_pout;
+   struct d3d_matrix *pout = (struct d3d_matrix*)_pout;
 
    d3d_matrix_identity(pout);
 
@@ -101,16 +77,17 @@ void *d3d_matrix_ortho_off_center_lh(void *_pout, float l, float r, float b, flo
    return pout;
 }
 
-void *d3d_matrix_multiply(void *_pout, const void *_pm1, const void *_pm2)
+void *d3d_matrix_multiply(void *_pout,
+      const void *_pm1, const void *_pm2)
 {
    unsigned i,j;
-   D3DMATRIX      *pout = (D3DMATRIX*)_pout;
-   CONST D3DMATRIX *pm1 = (CONST D3DMATRIX*)_pm1;
-   CONST D3DMATRIX *pm2 = (CONST D3DMATRIX*)_pm2;
+   struct d3d_matrix      *pout = (struct d3d_matrix*)_pout;
+   const struct d3d_matrix *pm1 = (const struct d3d_matrix*)_pm1;
+   const struct d3d_matrix *pm2 = (const struct d3d_matrix*)_pm2;
 
-   for (i=0; i<4; i++)
+   for (i = 0; i < 4; i++)
    {
-      for (j=0; j<4; j++)
+      for (j = 0; j < 4; j++)
          pout->m[i][j] = pm1->m[i][0] * pm2->m[0][j] + pm1->m[i][1] * pm2->m[1][j] + 
                          pm1->m[i][2] * pm2->m[2][j] + pm1->m[i][3] * pm2->m[3][j];
    }
@@ -119,11 +96,32 @@ void *d3d_matrix_multiply(void *_pout, const void *_pm1, const void *_pm2)
 
 void *d3d_matrix_rotation_z(void *_pout, float angle)
 {
-   D3DMATRIX *pout = (D3DMATRIX*)_pout;
+   struct d3d_matrix *pout = (struct d3d_matrix*)_pout;
+
    d3d_matrix_identity(pout);
    pout->m[0][0] = cos(angle);
    pout->m[1][1] = cos(angle);
    pout->m[0][1] = sin(angle);
    pout->m[1][0] = -sin(angle);
    return pout;
+}
+
+int32_t d3d_translate_filter(unsigned type)
+{
+   switch (type)
+   {
+      case RARCH_FILTER_UNSPEC:
+         {
+            settings_t *settings = config_get_ptr();
+            if (!settings->bools.video_smooth)
+               break;
+         }
+         /* fall-through */
+      case RARCH_FILTER_LINEAR:
+         return (int32_t)D3D_TEXTURE_FILTER_LINEAR;
+      case RARCH_FILTER_NEAREST:
+         break;
+   }
+
+   return (int32_t)D3D_TEXTURE_FILTER_POINT;
 }

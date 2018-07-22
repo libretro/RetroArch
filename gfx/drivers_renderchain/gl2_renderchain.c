@@ -166,8 +166,6 @@ static void gl2_renderchain_bind_backbuffer(void *data,
 
 void context_bind_hw_render(bool enable);
 
-GLenum min_filter_to_mag(GLenum type);
-
 void gl_load_texture_data(
       uint32_t id_data,
       enum gfx_wrap_type wrap_type,
@@ -177,13 +175,12 @@ void gl_load_texture_data(
       const void *frame, unsigned base_size);
 
 void gl_set_viewport(
-      void *data, video_frame_info_t *video_info,
+      gl_t *gl, video_frame_info_t *video_info,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate);
 
 static void gl2_renderchain_convert_geometry(
-      void *data,
       struct video_fbo_rect *fbo_rect,
       struct gfx_fbo_scale *fbo_scale,
       unsigned last_width, unsigned last_max_width,
@@ -296,11 +293,10 @@ static void gl_check_fbo_dimension(gl_t *gl,
 /* On resize, we might have to recreate our FBOs
  * due to "Viewport" scale, and set a new viewport. */
 
-static void gl2_renderchain_check_fbo_dimensions(void *data,
-      void *chain_data)
+static void gl2_renderchain_check_fbo_dimensions(
+      gl_t *gl, void *chain_data)
 {
    int i;
-   gl_t *gl                 = (gl_t*)data;
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
    /* Check if we have to recreate our FBO textures. */
@@ -320,7 +316,7 @@ static void gl2_renderchain_check_fbo_dimensions(void *data,
 }
 
 static void gl2_renderchain_render(
-      void *data,
+      gl_t *gl,
       void *chain_data,
       video_frame_info_t *video_info,
       uint64_t frame_count,
@@ -331,7 +327,6 @@ static void gl2_renderchain_render(
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
-   gl_t *gl                               = (gl_t*)data;
    gl2_renderchain_t *chain               = (gl2_renderchain_t*)chain_data;
    static GLfloat fbo_tex_coords[8]       = {0.0f};
    struct video_tex_info fbo_tex_info[GFX_MAX_SHADERS];
@@ -498,40 +493,41 @@ static void gl2_renderchain_render(
    gl->coords.tex_coord = gl->tex_info.coord;
 }
 
-static void gl2_renderchain_deinit_fbo(void *data,
+static void gl2_renderchain_deinit_fbo(gl_t *gl,
       void *chain_data)
 {
-   gl_t *gl                 = (gl_t*)data;
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
-   if (!gl)
-      return;
+   if (gl)
+   {
+      if (gl->fbo_feedback)
+         gl2_delete_fb(1, &gl->fbo_feedback);
+      if (gl->fbo_feedback_texture)
+         glDeleteTextures(1, &gl->fbo_feedback_texture);
 
-   glDeleteTextures(chain->fbo_pass, chain->fbo_texture);
-   gl2_delete_fb(chain->fbo_pass, chain->fbo);
+      gl->fbo_inited           = false;
+      gl->fbo_feedback_enable  = false;
+      gl->fbo_feedback_pass    = 0;
+      gl->fbo_feedback_texture = 0;
+      gl->fbo_feedback         = 0;
+   }
 
-   memset(chain->fbo_texture, 0, sizeof(chain->fbo_texture));
-   memset(chain->fbo,         0, sizeof(chain->fbo));
+   if (chain)
+   {
+      gl2_delete_fb(chain->fbo_pass, chain->fbo);
+      glDeleteTextures(chain->fbo_pass, chain->fbo_texture);
 
-   if (gl->fbo_feedback)
-      gl2_delete_fb(1, &gl->fbo_feedback);
-   if (gl->fbo_feedback_texture)
-      glDeleteTextures(1, &gl->fbo_feedback_texture);
+      memset(chain->fbo_texture, 0, sizeof(chain->fbo_texture));
+      memset(chain->fbo,         0, sizeof(chain->fbo));
 
-   chain->fbo_pass          = 0;
-
-   gl->fbo_inited           = false;
-   gl->fbo_feedback_enable  = false;
-   gl->fbo_feedback_pass    = 0;
-   gl->fbo_feedback_texture = 0;
-   gl->fbo_feedback         = 0;
+      chain->fbo_pass          = 0;
+   }
 }
 
 static void gl2_renderchain_deinit_hw_render(
-      void *data,
+      gl_t *gl,
       void *chain_data)
 {
-   gl_t                 *gl = (gl_t*)data;
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
    if (!gl)
       return;
@@ -547,10 +543,8 @@ static void gl2_renderchain_deinit_hw_render(
    context_bind_hw_render(false);
 }
 
-static void gl2_renderchain_free(void *data, void *chain_data)
+static void gl2_renderchain_free(gl_t *gl, void *chain_data)
 {
-   gl_t *gl = (gl_t*)data;
-
    gl2_renderchain_deinit_fbo(gl, chain_data);
    gl2_renderchain_deinit_hw_render(gl, chain_data);
 }
@@ -633,7 +627,7 @@ static void gl_create_fbo_texture(gl_t *gl,
          : (smooth ? GL_LINEAR : GL_NEAREST);
    }
 
-   mag_filter = min_filter_to_mag(min_filter);
+   mag_filter = gl_min_filter_to_mag(min_filter);
    wrap.idx   = i + 2;
 
    video_shader_driver_wrap_type(&wrap);
@@ -711,10 +705,9 @@ static void gl_create_fbo_texture(gl_t *gl,
    }
 }
 
-static void gl_create_fbo_textures(gl_t *gl, void *chain_data)
+static void gl_create_fbo_textures(gl_t *gl, gl2_renderchain_t *chain)
 {
    int i;
-   gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
    glGenTextures(chain->fbo_pass, chain->fbo_texture);
 
@@ -738,13 +731,12 @@ static void gl_create_fbo_textures(gl_t *gl, void *chain_data)
  * we have to recalculate geometry of our FBO. */
 
 static void gl2_renderchain_recompute_pass_sizes(
-      void *data,
+      gl_t *gl,
       void *chain_data,
       unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
 {
    int i;
-   gl_t *gl                 = (gl_t*)data;
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
    bool size_modified       = false;
    GLint max_size           = 0;
@@ -762,7 +754,7 @@ static void gl2_renderchain_recompute_pass_sizes(
       struct gfx_fbo_scale *fbo_scale    = &chain->fbo_scale[i];
 
       gl2_renderchain_convert_geometry(
-            gl, fbo_rect, fbo_scale,
+            fbo_rect, fbo_scale,
             last_width, last_max_width,
             last_height, last_max_height,
             vp_width, vp_height
@@ -802,7 +794,8 @@ static void gl2_renderchain_recompute_pass_sizes(
    }
 }
 
-static void gl2_renderchain_start_render(void *data,
+static void gl2_renderchain_start_render(
+      gl_t *gl,
       void *chain_data,
       video_frame_info_t *video_info)
 {
@@ -815,7 +808,6 @@ static void gl2_renderchain_start_render(void *data,
       0, 1,
       1, 1
    };
-   gl_t                 *gl = (gl_t*)data;
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -839,7 +831,7 @@ static void gl2_renderchain_start_render(void *data,
 
 /* Set up render to texture. */
 void gl2_renderchain_init(
-      void *data, void *chain_data,
+      gl_t *gl, void *chain_data,
       unsigned fbo_width, unsigned fbo_height)
 {
    int i;
@@ -847,7 +839,6 @@ void gl2_renderchain_init(
    video_shader_ctx_scale_t scaler;
    video_shader_ctx_info_t shader_info;
    struct gfx_fbo_scale scale, scale_last;
-   gl_t                 *gl = (gl_t*)data;
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
    if (!video_shader_driver_info(&shader_info))
@@ -949,7 +940,7 @@ void gl2_renderchain_init(
 }
 
 static bool gl2_renderchain_init_hw_render(
-      void *data,
+      gl_t *gl,
       void *chain_data,
       unsigned width, unsigned height)
 {
@@ -961,7 +952,6 @@ static bool gl2_renderchain_init_hw_render(
    GLint max_renderbuffer_size          = 0;
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context();
-   gl_t *gl                             = (gl_t*)data;
    gl2_renderchain_t             *chain = (gl2_renderchain_t*)chain_data;
 
    /* We can only share texture objects through contexts.
@@ -1052,11 +1042,10 @@ static bool gl2_renderchain_init_hw_render(
 }
 
 static void gl2_renderchain_bind_prev_texture(
-      void *data,
+      gl_t *gl,
       void *chain_data,
       const struct video_tex_info *tex_info)
 {
-   gl_t                 *gl = (gl_t*)data;
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
    memmove(gl->prev_info + 1, gl->prev_info,
@@ -1077,33 +1066,12 @@ static void gl2_renderchain_bind_prev_texture(
    }
 }
 
-static void gl2_renderchain_viewport_info(
-      void *data, void *chain_data,
-      struct video_viewport *vp)
-{
-   unsigned width, height;
-   unsigned top_y, top_dist;
-   gl_t *gl         = (gl_t*)data;
-
-   video_driver_get_size(&width, &height);
-
-   *vp             = gl->vp;
-   vp->full_width  = width;
-   vp->full_height = height;
-
-   /* Adjust as GL viewport is bottom-up. */
-   top_y           = vp->y + vp->height;
-   top_dist        = height - top_y;
-   vp->y           = top_dist;
-}
-
 static bool gl2_renderchain_read_viewport(
-      void *data,
+      gl_t *gl,
       void *chain_data,
       uint8_t *buffer, bool is_idle)
 {
    unsigned                     num_pixels = 0;
-   gl_t                                *gl = (gl_t*)data;
 
    if (!gl)
       return false;
@@ -1256,10 +1224,9 @@ static void gl2_renderchain_free_vao(void *data,
 #endif
 
 static void gl2_renderchain_restore_default_state(
-      void *data,
+      gl_t *gl,
       void *chain_data)
 {
-   gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
 #ifndef HAVE_OPENGLES
@@ -1272,13 +1239,12 @@ static void gl2_renderchain_restore_default_state(
 }
 
 static void gl2_renderchain_copy_frame(
-      void *data,
+      gl_t *gl,
       void *chain_data,
       video_frame_info_t *video_info,
       const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-   gl_t                 *gl = (gl_t*)data;
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
    (void)chain;
@@ -1434,14 +1400,13 @@ static void gl2_renderchain_init_pbo(unsigned size,
 }
 #endif
 
-static void gl2_renderchain_readback(void *data,
+static void gl2_renderchain_readback(
+      gl_t *gl,
       void *chain_data,
       unsigned alignment,
       unsigned fmt, unsigned type,
       void *src)
 {
-   gl_t *gl = (gl_t*)data;
-
    glPixelStorei(GL_PACK_ALIGNMENT, alignment);
 #ifndef HAVE_OPENGLES
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
@@ -1497,11 +1462,10 @@ static void gl2_renderchain_fence_free(void *data,
 #endif
 
 static void gl2_renderchain_init_textures_reference(
-      void *data, void *chain_data, unsigned i,
+      gl_t *gl, void *chain_data, unsigned i,
       unsigned internal_fmt, unsigned texture_fmt,
       unsigned texture_type)
 {
-   gl_t                 *gl = (gl_t*)data;
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
    (void)chain;
@@ -1526,11 +1490,10 @@ static void gl2_renderchain_init_textures_reference(
 #endif
 }
 
-static void gl2_renderchain_resolve_extensions(void *data,
+static void gl2_renderchain_resolve_extensions(gl_t *gl,
       void *chain_data, const char *context_ident,
       const video_info_t *video)
 {
-   gl_t              *gl            = (gl_t*)data;
    gl2_renderchain_t *chain         = (gl2_renderchain_t*)chain_data;
    settings_t *settings             = config_get_ptr();
 
@@ -1589,7 +1552,6 @@ gl_renderchain_driver_t gl2_renderchain = {
    NULL,
    gl2_renderchain_bind_backbuffer,
    gl2_renderchain_deinit_fbo,
-   gl2_renderchain_viewport_info,
    gl2_renderchain_read_viewport,
    gl2_renderchain_bind_prev_texture,
    gl2_renderchain_free_internal,

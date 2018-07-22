@@ -7,6 +7,7 @@
 
 #include "mylist.h"
 #include "mem_util.h"
+#include "dirty_input.h"
 
 bool input_is_dirty             = false;
 static MyList *input_state_list = NULL;
@@ -39,7 +40,7 @@ static void* InputListElementConstructor(void)
    return ptr;
 }
 
-static void input_state_destory(void)
+static void input_state_destroy(void)
 {
    mylist_destroy(&input_state_list);
 }
@@ -49,17 +50,21 @@ static void input_state_set_last(unsigned port, unsigned device,
 {
    unsigned i;
    InputListElement *element = NULL;
+   const unsigned     MAX_ID = sizeof(element->state) / sizeof(int16_t);
 
    if (!input_state_list)
       mylist_create(&input_state_list, 16,
             InputListElementConstructor, free);
 
    /* find list item */
-   for (i = 0; i < input_state_list->size; i++)
+   for (i = 0; i < (unsigned)input_state_list->size; i++)
    {
       element = (InputListElement*)input_state_list->data[i];
-      if (     element->port == port 
-            && element->device == device && element->index == index)
+      if (  (element->port   == port)   &&
+            (element->device == device) &&
+            (element->index  == index)  &&
+            (id < MAX_ID)
+         )
       {
          element->state[id] = value;
          return;
@@ -71,7 +76,8 @@ static void input_state_set_last(unsigned port, unsigned device,
    element->port      = port;
    element->device    = device;
    element->index     = index;
-   element->state[id] = value;
+   if (id < MAX_ID)
+      element->state[id] = value;
 }
 
 static int16_t input_state_get_last(unsigned port,
@@ -83,14 +89,16 @@ static int16_t input_state_get_last(unsigned port,
       return 0;
 
    /* find list item */
-   for (i = 0; i < input_state_list->size; i++)
+   for (i = 0; i < (unsigned)input_state_list->size; i++)
    {
       InputListElement *element = 
          (InputListElement*)input_state_list->data[i];
+      const unsigned MAX_ID = sizeof(element->state) / sizeof(int16_t);
 
       if (  (element->port   == port)   && 
             (element->device == device) &&
-            (element->index  == index)
+            (element->index  == index)  &&
+            (id < MAX_ID)
          )
          return element->state[id];
    }
@@ -157,7 +165,7 @@ void remove_input_state_hook(void)
       retro_ctx.state_cb            = input_state_callback_original;
       current_core.retro_set_input_state(retro_ctx.state_cb);
       input_state_callback_original = NULL;
-      input_state_destory();
+      input_state_destroy();
    }
 
    if (retro_reset_callback_original)

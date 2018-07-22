@@ -43,12 +43,32 @@
 #include "../../../location/location_driver.h"
 #include "../../../camera/camera_driver.h"
 
+#ifdef HAVE_METAL
+@implementation MetalView
+
+- (void)keyDown:(NSEvent*)theEvent
+{
+}
+
+/* Stop the annoying sound when pressing a key. */
+- (BOOL)acceptsFirstResponder
+{
+   return YES;
+}
+
+- (BOOL)isFlipped
+{
+   return YES;
+}
+@end
+#endif
+
 static CocoaView* g_instance;
 
 #if defined(HAVE_COCOA)
 void *nsview_get_ptr(void)
 {
-    return g_instance;
+    return (BRIDGE void *)g_instance;
 }
 #endif
 
@@ -65,6 +85,7 @@ void *glkitview_init(void);
     cocoa_input_data_t *apple = (cocoa_input_data_t*)input_driver_get_data();
     (void)apple;
 }
+
 #endif
 
 + (CocoaView*)get
@@ -81,9 +102,6 @@ void *glkitview_init(void);
    
 #if defined(HAVE_COCOA)
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-   ui_window_cocoa_t cocoa_view;
-   cocoa_view.data = (CocoaView*)self;
-    
    [self registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
 #elif defined(HAVE_COCOATOUCH)
    self.view = (__bridge GLKView*)glkitview_init();
@@ -95,10 +113,13 @@ void *glkitview_init(void);
 }
 
 #if defined(HAVE_COCOA)
+- (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window {
+   return YES;
+}
+
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];
-
    cocoagl_gfx_ctx_update();
 }
 

@@ -201,8 +201,7 @@ static void vulkan_init_pipeline_layout(
          &layout_info, NULL, &vk->pipelines.layout);
 }
 
-static void vulkan_init_pipelines(
-      vk_t *vk)
+static void vulkan_init_pipelines(vk_t *vk)
 {
    static const uint32_t alpha_blend_vert[] =
 #include "vulkan_shaders/alpha_blend.vert.inc"
@@ -834,7 +833,11 @@ static bool vulkan_init_filter_chain(vk_t *vk)
 
 static void vulkan_init_resources(vk_t *vk)
 {
+   if (!vk)
+      return;
+
    vk->num_swapchain_images = vk->context->num_swapchain_images;
+
    vulkan_init_framebuffers(vk);
    vulkan_init_pipelines(vk);
    vulkan_init_descriptor_pool(vk);
@@ -2289,12 +2292,34 @@ static void vulkan_unload_texture(void *data, uintptr_t handle)
    free(texture);
 }
 
+static float vulkan_get_refresh_rate(void *data)
+{
+   float refresh_rate;
+
+   if (video_context_driver_get_refresh_rate(&refresh_rate))
+       return refresh_rate;
+
+   return 0.0f;
+}
+
+static uint32_t vulkan_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
+   BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
+
+   return flags;
+}
+
 static const video_poke_interface_t vulkan_poke_interface = {
+   vulkan_get_flags,
    NULL,                   /* set_coords */
    NULL,                   /* set_mvp */
    vulkan_load_texture,
    vulkan_unload_texture,
    vulkan_set_video_mode,
+   vulkan_get_refresh_rate, /* get_refresh_rate */
    NULL,
    NULL,
    NULL,

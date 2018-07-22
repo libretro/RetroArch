@@ -32,17 +32,10 @@
 #include "../content.h"
 #include "../core_type.h"
 #include "../msg_hash.h"
-#include "../frontend/frontend_driver.h"
 
 RETRO_BEGIN_DECLS
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
-
-typedef struct nbio_buf
-{
-   void *buf;
-   unsigned bufsize;
-} nbio_buf_t;
 
 enum content_mode_load
 {
@@ -74,6 +67,8 @@ enum nbio_type
    NBIO_TYPE_TGA,
    NBIO_TYPE_BMP,
    NBIO_TYPE_OGG,
+   NBIO_TYPE_FLAC,
+   NBIO_TYPE_MP3,
    NBIO_TYPE_MOD,
    NBIO_TYPE_WAV
 };
@@ -134,7 +129,8 @@ bool task_push_dbscan(
       const char *playlist_directory,
       const char *content_database,
       const char *fullpath,
-      bool directory, retro_task_callback_t cb);
+      bool directory, bool show_hidden_files,
+      retro_task_callback_t cb);
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -263,7 +259,11 @@ void task_push_get_powerstate(void);
 
 enum frontend_powerstate get_last_powerstate(int *percent);
 
-bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, void *user_data);
+bool task_push_audio_mixer_load_and_play(
+      const char *fullpath, retro_task_callback_t cb, void *user_data);
+
+bool task_push_audio_mixer_load(
+      const char *fullpath, retro_task_callback_t cb, void *user_data);
 
 extern const char* const input_builtin_autoconfs[];
 

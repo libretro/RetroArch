@@ -46,7 +46,8 @@ static void *vga_init_font(void *data,
 
    font_size = 1;
 
-   if (!font_renderer_create_default((const void**)&font->vga_font_driver,
+   if (!font_renderer_create_default(
+            &font->vga_font_driver,
             &font->vga_font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");
@@ -125,18 +126,13 @@ static void vga_render_msg(video_frame_info_t *video_info,
    }
 }
 
-static void vga_font_bind_block(void* data, void* userdata)
-{
-   (void)data;
-}
-
 font_renderer_t vga_font = {
    vga_init_font,
    vga_render_free_font,
    vga_render_msg,
    "vga font",
    vga_font_get_glyph,       /* get_glyph */
-   vga_font_bind_block,      /* bind_block */
+   NULL,                     /* bind_block */
    NULL,                     /* flush */
    vga_get_message_width     /* get_message_width */
 };

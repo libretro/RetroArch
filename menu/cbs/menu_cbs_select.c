@@ -65,6 +65,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
          case ST_BOOL:
          case ST_INT:
          case ST_UINT:
+         case ST_SIZE:
          case ST_FLOAT:
             action = MENU_ACTION_RIGHT;
             break;
@@ -146,14 +147,12 @@ static int action_select_input_desc(const char *path, const char *label, unsigne
    return action_right_input_desc(type, label, true);
 }
 
-#ifdef HAVE_KEYMAPPER
 static int action_select_input_desc_kbd(const char *path,
       const char *label, unsigned type,
    size_t idx)
 {
    return action_right_input_desc_kbd(type, label, true);
 }
-#endif
 
 #ifdef HAVE_NETWORKING
 static int action_select_netplay_connect_room(const char *path,
@@ -223,13 +222,11 @@ static int menu_cbs_init_bind_select_compare_type(
    {
       BIND_ACTION_SELECT(cbs, action_select_input_desc);
    }
-#ifdef HAVE_KEYMAPPER
    else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
       BIND_ACTION_SELECT(cbs, action_select_input_desc_kbd);
    }
-#endif
    else
    {
 

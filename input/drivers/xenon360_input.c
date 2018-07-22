@@ -27,6 +27,9 @@
 
 #define MAX_PADS 4
 
+/* TODO/FIXME - 
+ * fix game focus toggle */
+
 static uint64_t state[MAX_PADS];
 
 static void xenon360_input_poll(void *data)

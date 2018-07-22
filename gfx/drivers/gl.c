@@ -262,7 +262,8 @@ static void gl_set_projection(gl_t *gl,
    matrix_4x4_multiply(gl->mvp, rot, gl->mvp_no_rot);
 }
 
-void gl_set_viewport(void *data, video_frame_info_t *video_info,
+void gl_set_viewport(gl_t *gl,
+      video_frame_info_t *video_info,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
@@ -271,7 +272,6 @@ void gl_set_viewport(void *data, video_frame_info_t *video_info,
    int x                    = 0;
    int y                    = 0;
    float device_aspect      = (float)viewport_width / viewport_height;
-   gl_t           *gl       = (gl_t*)data;
    unsigned height          = video_info->height;
 
    aspect_data.aspect       = &device_aspect;
@@ -427,21 +427,6 @@ static bool gl_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    return video_shader_driver_init(&init_data);
 }
 
-GLenum min_filter_to_mag(GLenum type)
-{
-   switch (type)
-   {
-      case GL_LINEAR_MIPMAP_LINEAR:
-         return GL_LINEAR;
-      case GL_NEAREST_MIPMAP_NEAREST:
-         return GL_NEAREST;
-      default:
-         break;
-   }
-
-   return type;
-}
-
 static uintptr_t gl_get_current_framebuffer(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -476,8 +461,7 @@ static void gl_set_video_mode(void *data, unsigned width, unsigned height,
 static void gl_update_input_size(gl_t *gl, unsigned width,
       unsigned height, unsigned pitch, bool clear)
 {
-   GLfloat xamt, yamt;
-   bool set_coords = false;
+   float xamt, yamt;
 
    if ((width != gl->last_width[gl->tex_index] ||
             height != gl->last_height[gl->tex_index]) && gl->empty_buf)
@@ -502,24 +486,18 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
                gl->texture_fmt, gl->empty_buf);
 #endif
       }
-
-      set_coords = true;
    }
+   /* We might have used different texture coordinates
+    * last frame. Edge case if resolution changes very rapidly. */
    else if ((width !=
             gl->last_width[(gl->tex_index + gl->textures - 1) % gl->textures]) ||
          (height !=
-          gl->last_height[(gl->tex_index + gl->textures - 1) % gl->textures]))
-   {
-      /* We might have used different texture coordinates
-       * last frame. Edge case if resolution changes very rapidly. */
-      set_coords = true;
-   }
-
-   if (!set_coords)
+          gl->last_height[(gl->tex_index + gl->textures - 1) % gl->textures])) { }
+   else
       return;
 
-   xamt = (GLfloat)width  / gl->tex_w;
-   yamt = (GLfloat)height / gl->tex_h;
+   xamt = (float)width  / gl->tex_w;
+   yamt = (float)height / gl->tex_h;
    set_texture_coords(gl->tex_info.coord, xamt, yamt);
 }
 
@@ -601,25 +579,23 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
 static INLINE void gl_set_shader_viewports(gl_t *gl)
 {
-   unsigned width, height;
+   unsigned i, width, height;
    video_shader_ctx_info_t shader_info;
+   video_frame_info_t video_info;
 
+   video_driver_build_info(&video_info);
    video_driver_get_size(&width, &height);
 
    shader_info.data       = gl;
-   shader_info.idx        = 0;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
-
-   gl_set_viewport_wrapper(gl, width, height, false, true);
-
-   shader_info.data       = gl;
-   shader_info.idx        = 1;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(&shader_info);
-   gl_set_viewport_wrapper(gl, width, height, false, true);
+   for (i = 0; i < 2; i++)
+   {
+      shader_info.idx        = i;
+      video_shader_driver_use(&shader_info);
+      gl_set_viewport(gl, &video_info,
+            width, height, false, true);
+   }
 }
 
 void gl_load_texture_data(
@@ -747,7 +723,7 @@ static void gl_render_osd_background(
    float *verts            = (float*)malloc(2 * vertices_total * sizeof(float));
    settings_t *settings    = config_get_ptr();
    int msg_width           =
-      font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
+      font_driver_get_message_width(NULL, msg, (unsigned)strlen(msg), 1.0f);
 
    /* shader driver expects vertex coords as 0..1 */
    float x                 = video_info->font_msg_pos_x;
@@ -1226,8 +1202,11 @@ static bool gl_frame(void *data, const void *frame,
 
    video_info->cb_swap_buffers(video_info->context_data, video_info);
 
-   /* check if we are fast forwarding, if we are ignore hard sync */
-   if (gl->have_sync && video_info->hard_sync && !video_info->input_driver_nonblock_state)
+   /* check if we are fast forwarding or in menu, if we are ignore hard sync */
+   if (  gl->have_sync
+         && video_info->hard_sync
+         && !video_info->input_driver_nonblock_state
+         && !gl->menu_texture_enable)
    {
       glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1687,12 +1666,9 @@ static void gl_begin_debug(gl_t *gl)
 extern gl_renderchain_driver_t gl2_renderchain;
 
 static const gl_renderchain_driver_t *renderchain_gl_drivers[] = {
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    &gl2_renderchain,
-#endif
    NULL
 };
-
 
 static bool renderchain_gl_init_first(
       const gl_renderchain_driver_t **renderchain_driver,
@@ -1715,7 +1691,8 @@ static bool renderchain_gl_init_first(
    return false;
 }
 
-static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *gl_init(const video_info_t *video,
+      const input_driver_t **input, void **input_data)
 {
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
@@ -1952,7 +1929,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
          (video->smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
          : (video->smooth ? GL_LINEAR : GL_NEAREST);
 
-   gl->tex_mag_filter = min_filter_to_mag(gl->tex_min_filter);
+   gl->tex_mag_filter = gl_min_filter_to_mag(gl->tex_min_filter);
 
    wrap_info.idx      = 1;
 
@@ -2111,7 +2088,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
       return;
 
    gl->tex_min_filter    = new_filt;
-   gl->tex_mag_filter    = min_filter_to_mag(gl->tex_min_filter);
+   gl->tex_mag_filter    = gl_min_filter_to_mag(gl->tex_min_filter);
    gl->wrap_mode         = wrap_mode;
 
    for (i = 0; i < gl->textures; i++)
@@ -2239,10 +2216,20 @@ error:
 
 static void gl_viewport_info(void *data, struct video_viewport *vp)
 {
+   unsigned width, height;
+   unsigned top_y, top_dist;
    gl_t *gl             = (gl_t*)data;
-   if (!gl->renderchain_driver || !gl->renderchain_driver->viewport_info)
-      return;
-   gl->renderchain_driver->viewport_info(gl, gl->renderchain_data, vp);
+
+   video_driver_get_size(&width, &height);
+
+   *vp             = gl->vp;
+   vp->full_width  = width;
+   vp->full_height = height;
+
+   /* Adjust as GL viewport is bottom-up. */
+   top_y           = vp->y + vp->height;
+   top_dist        = height - top_y;
+   vp->y           = top_dist;
 }
 
 static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
@@ -2586,6 +2573,14 @@ static void gl_set_coords(void *handle_data, void *shader_data,
             shader_data, coords);
 }
 
+static float gl_get_refresh_rate(void *data)
+{
+   float refresh_rate = 0.0f;
+   if (video_context_driver_get_refresh_rate(&refresh_rate))
+      return refresh_rate;
+   return 0.0f;
+}
+
 static void gl_set_mvp(void *data, void *shader_data,
       const void *mat_data)
 {
@@ -2595,12 +2590,25 @@ static void gl_set_mvp(void *data, void *shader_data,
             shader_data, mat_data);
 }
 
+static uint32_t gl_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
+   BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
+   BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
+
+   return flags;
+}
+
 static const video_poke_interface_t gl_poke_interface = {
+   gl_get_flags,
    gl_set_coords,
    gl_set_mvp,
    gl_load_texture,
    gl_unload_texture,
    gl_set_video_mode,
+   gl_get_refresh_rate,
    NULL,
    gl_get_video_output_size,
    gl_get_video_output_prev,

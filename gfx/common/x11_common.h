@@ -48,6 +48,8 @@ void x11_destroy_input_context(XIM *xim, XIC *xic);
 bool x11_get_metrics(void *data,
       enum display_metric_types type, float *value);
 
+float x11_get_refresh_rate(void *data);
+
 void x11_check_window(void *data, bool *quit,
    bool *resize, unsigned *width, unsigned *height, bool is_shutdown);
 

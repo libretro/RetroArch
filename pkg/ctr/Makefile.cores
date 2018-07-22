@@ -75,9 +75,9 @@ else ifeq ($(LIBRETRO), freeintv)
 	APP_TITLE            = FreeIntv
 	APP_AUTHOR           = various
 	APP_PRODUCT_CODE     = RARCH-FREEINTV
-	APP_UNIQUE_ID        = 0xBAC1G
-	APP_ICON             = pkg/ctr/assets/default.png
-	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+	APP_UNIQUE_ID        = 0xBAC21
+	APP_ICON             = pkg/ctr/assets/freeintv.png
+	APP_BANNER           = pkg/ctr/assets/freeintv_banner.png
 
 else ifeq ($(LIBRETRO), fuse)
 	APP_TITLE            = Fuse
@@ -273,7 +273,7 @@ else ifeq ($(LIBRETRO), stella)
 	APP_UNIQUE_ID        = 0xBAC2C
 	APP_ICON             = pkg/ctr/assets/stella.png
 	APP_BANNER           = pkg/ctr/assets/stella_banner.png
-	
+
 else ifeq ($(LIBRETRO), pokemini)
 	APP_TITLE            = PokeMini
 	APP_AUTHOR           = justburn

@@ -68,6 +68,8 @@ enum
    ACTION_OK_DL_DRIVER_SETTINGS_LIST,
    ACTION_OK_DL_VIDEO_SETTINGS_LIST,
    ACTION_OK_DL_AUDIO_SETTINGS_LIST,
+   ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST,
+   ACTION_OK_DL_LATENCY_SETTINGS_LIST,
    ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST,
    ACTION_OK_DL_SAVING_SETTINGS_LIST,
    ACTION_OK_DL_LOGGING_SETTINGS_LIST,
@@ -106,13 +108,16 @@ enum
    ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST,
    ACTION_OK_DL_DEFERRED_CORE_LIST,
    ACTION_OK_DL_DEFERRED_CORE_LIST_SET,
+   ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST,
    ACTION_OK_DL_ONSCREEN_DISPLAY_SETTINGS_LIST,
    ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST,
    ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST,
    ACTION_OK_DL_MENU_VIEWS_SETTINGS_LIST,
    ACTION_OK_DL_QUICK_MENU_VIEWS_SETTINGS_LIST,
+   ACTION_OK_DL_QUICK_MENU_OVERRIDE_OPTIONS_LIST,
    ACTION_OK_DL_MENU_SETTINGS_LIST,
    ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST,
+   ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST,
    ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST,
    ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST,
    ACTION_OK_DL_UPDATER_SETTINGS_LIST,
@@ -123,6 +128,7 @@ enum
    ACTION_OK_DL_USER_SETTINGS_LIST,
    ACTION_OK_DL_DIRECTORY_SETTINGS_LIST,
    ACTION_OK_DL_PRIVACY_SETTINGS_LIST,
+   ACTION_OK_DL_MIDI_SETTINGS_LIST,
    ACTION_OK_DL_BROWSE_URL_START,
    ACTION_OK_DL_CONTENT_SETTINGS
 };
@@ -160,6 +166,38 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
 
 int action_right_cheat(unsigned type, const char *label,
       bool wraparound);
+
+int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound);
+
+int setting_action_ok_video_refresh_rate_polled(void *data, bool wraparound);
+
+int setting_action_ok_bind_all(void *data, bool wraparound);
+
+int setting_action_ok_bind_all_save_autoconfig(void *data,
+      bool wraparound);
+
+int setting_action_ok_bind_defaults(void *data, bool wraparound);
+
+int setting_action_left_analog_dpad_mode(void *data, bool wraparound);
+
+int setting_action_left_libretro_device_type(
+      void *data, bool wraparound);
+
+int setting_action_left_bind_device(void *data, bool wraparound);
+
+int setting_action_left_mouse_index(void *data, bool wraparound);
+
+int setting_uint_action_left_custom_viewport_width(
+      void *data, bool wraparound);
+
+int setting_uint_action_left_custom_viewport_height(
+      void *data, bool wraparound);
+
+int setting_string_action_left_driver(void *data,
+      bool wraparound);
+
+int setting_string_action_left_audio_device(
+      void *data, bool wraparound);
 
 /* End of function callbacks */
 

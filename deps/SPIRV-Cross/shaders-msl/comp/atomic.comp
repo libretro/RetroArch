@@ -10,6 +10,9 @@ layout(binding = 2, std430) buffer SSBO
     int  i32;
 } ssbo;
 
+shared uint shared_u32;
+shared int shared_i32;
+
 void main()
 {
     atomicAdd(ssbo.u32, 1u);
@@ -29,5 +32,25 @@ void main()
     atomicMax(ssbo.i32, 1);
     atomicExchange(ssbo.i32, 1);
     atomicCompSwap(ssbo.i32, 10, 2);
+
+	shared_u32 = 10u;
+	shared_i32 = 10;
+    atomicAdd(shared_u32, 1u);
+    atomicOr(shared_u32, 1u);
+    atomicXor(shared_u32, 1u);
+    atomicAnd(shared_u32, 1u);
+    atomicMin(shared_u32, 1u);
+    atomicMax(shared_u32, 1u);
+    atomicExchange(shared_u32, 1u);
+    atomicCompSwap(shared_u32, 10u, 2u);
+
+    atomicAdd(shared_i32, 1);
+    atomicOr(shared_i32, 1);
+    atomicXor(shared_i32, 1);
+    atomicAnd(shared_i32, 1);
+    atomicMin(shared_i32, 1);
+    atomicMax(shared_i32, 1);
+    atomicExchange(shared_i32, 1);
+    atomicCompSwap(shared_i32, 10, 2);
 }
 

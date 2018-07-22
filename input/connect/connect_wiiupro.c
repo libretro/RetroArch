@@ -23,6 +23,7 @@
 #include "joypad_connection.h"
 #include "../input_defines.h"
 #include "../../driver.h"
+#include "../common/hid/hid_device_driver.h"
 
 struct wiiupro_buttons
 {
@@ -118,7 +119,7 @@ static void hidpad_wiiupro_deinit(void *data)
       free(device);
 }
 
-static void hidpad_wiiupro_get_buttons(void *data, retro_bits_t *state)
+static void hidpad_wiiupro_get_buttons(void *data, input_bits_t *state)
 {
    struct hidpad_wiiupro_data *device = (struct hidpad_wiiupro_data*)data;
    struct wiiupro                *rpt = device ?

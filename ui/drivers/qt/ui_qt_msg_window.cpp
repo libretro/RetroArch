@@ -1,5 +1,6 @@
 /* RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2018 - Brad Parker
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -97,7 +98,7 @@ static enum ui_msg_window_response ui_msg_window_qt_warning(ui_msg_window_state 
    return ui_msg_window_qt_response(state, QMessageBox::warning((QWidget*)state->window, state->title, state->text, flags));
 }
 
-const ui_msg_window_t ui_msg_window_qt = {
+ui_msg_window_t ui_msg_window_qt = {
    ui_msg_window_qt_error,
    ui_msg_window_qt_information,
    ui_msg_window_qt_question,

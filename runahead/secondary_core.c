@@ -91,7 +91,7 @@ char* copy_core_to_temp_file(void)
    char *retroarchTempPath  = NULL;
    char *tempDllPath        = NULL;
    void *dllFileData        = NULL;
-   ssize_t dllFileSize      = 0;
+   int64_t dllFileSize      = 0;
    const char *corePath     = path_get(RARCH_PATH_CORE);
    const char *coreBaseName = path_basename(corePath);
 
@@ -139,6 +139,7 @@ failed:
 bool write_file_with_random_name(char **tempDllPath,
       const char *retroarchTempPath, const void* data, ssize_t dataSize)
 {
+   bool okay = false;
    unsigned i;
    char number_buf[32];
    const char *prefix       = "tmp";
@@ -146,7 +147,7 @@ bool write_file_with_random_name(char **tempDllPath,
    unsigned int number_value= (unsigned int)time_value;
    int number               = 0;
    char *ext                = strcpy_alloc_force(path_get_extension(*tempDllPath));
-   int ext_len              = strlen(ext);
+   int ext_len              = (int)strlen(ext);
 
    if (ext_len > 0)
    {
@@ -170,11 +171,14 @@ bool write_file_with_random_name(char **tempDllPath,
       strcat_alloc(tempDllPath, number_buf);
       strcat_alloc(tempDllPath, ext);
       if (filestream_write_file(*tempDllPath, data, dataSize))
+      {
+         okay = true;
          break;
+      }
    }
 
    FREE(ext);
-   return true;
+   return okay;
 }
 
 bool secondary_core_create(void)
@@ -259,7 +263,7 @@ bool secondary_core_create(void)
       {
          device = port_map[port];
          if (device >= 0)
-            secondary_core.retro_set_controller_port_device(port, device);
+            secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
       }
       clear_controller_port_map();
    }
@@ -274,12 +278,19 @@ static bool has_variable_update;
 static bool rarch_environment_secondary_core_hook(unsigned cmd, void *data)
 {
    bool result = rarch_environment_cb(cmd, data);
-   if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE && has_variable_update)
+   if (has_variable_update)
    {
-      bool *bool_p = (bool*)data;
-      *bool_p = true;
-      has_variable_update = false;
-      return true;
+      if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE)
+      {
+         bool *bool_p = (bool*)data;
+         *bool_p = true;
+         has_variable_update = false;
+         return true;
+      }
+      else if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE)
+      {
+         has_variable_update = false;
+      }
    }
    return result;
 }
@@ -291,16 +302,24 @@ void secondary_core_set_variable_update(void)
 
 bool secondary_core_run_no_input_polling(void)
 {
-   if (!secondary_module)
+   if (secondary_core_ensure_exists())
    {
-      if (!secondary_core_create())
-         return false;
+      secondary_core.retro_run();
+      return true;
    }
-   secondary_core.retro_run();
-   return true;
+   return false;
 }
 
 bool secondary_core_deserialize(const void *buffer, int size)
+{
+   if (secondary_core_ensure_exists())
+   {
+      return secondary_core.retro_unserialize(buffer, size);
+   }
+   return false;
+}
+
+bool secondary_core_ensure_exists(void)
 {
    if (!secondary_module)
    {
@@ -310,7 +329,7 @@ bool secondary_core_deserialize(const void *buffer, int size)
          return false;
       }
    }
-   return secondary_core.retro_unserialize(buffer, size);
+   return true;
 }
 
 void secondary_core_destroy(void)
@@ -335,9 +354,9 @@ void secondary_core_destroy(void)
 void remember_controller_port_device(long port, long device)
 {
    if (port >= 0 && port < 16)
-      port_map[port] = device;
+      port_map[port] = (int)device;
    if (secondary_module && secondary_core.retro_set_controller_port_device)
-      secondary_core.retro_set_controller_port_device(port, device);
+      secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
 }
 
 void clear_controller_port_map(void)

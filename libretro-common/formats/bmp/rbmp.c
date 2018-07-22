@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (rbmp.c).
@@ -113,7 +113,10 @@ static unsigned char *rbmp__convert_format(
       {
          case ((1)*8+(2)):
             for(i=x-1; i >= 0; --i, src += 1, dest += 2)
-               dest[0]=src[0], dest[1]=255;
+            {
+               dest[0]=src[0];
+               dest[1]=255;
+            }
             break;
          case ((1)*8+(3)):
             for(i=x-1; i >= 0; --i, src += 1, dest += 3)
@@ -121,7 +124,10 @@ static unsigned char *rbmp__convert_format(
             break;
          case ((1)*8+(4)):
             for(i=x-1; i >= 0; --i, src += 1, dest += 4)
-               dest[0]=dest[1]=dest[2]=src[0], dest[3]=255;
+            {
+               dest[0]=dest[1]=dest[2]=src[0];
+               dest[3]=255;
+            }
             break;
          case ((2)*8+(1)):
             for(i=x-1; i >= 0; --i, src += 2, dest += 1)
@@ -133,11 +139,19 @@ static unsigned char *rbmp__convert_format(
             break;
          case ((2)*8+(4)):
             for(i=x-1; i >= 0; --i, src += 2, dest += 4)
-               dest[0]=dest[1]=dest[2]=src[0], dest[3]=src[1];
+            {
+               dest[0]=dest[1]=dest[2]=src[0];
+               dest[3]=src[1];
+            }
             break;
          case ((3)*8+(4)):
             for(i=x-1; i >= 0; --i, src += 3, dest += 4)
-               dest[0]=src[0],dest[1]=src[1],dest[2]=src[2],dest[3]=255;
+            {
+               dest[0]=src[0];
+               dest[1]=src[1];
+               dest[2]=src[2];
+               dest[3]=255;
+            }
             break;
          case ((3)*8+(1)):
             for(i=x-1; i >= 0; --i, src += 3, dest += 1)
@@ -145,7 +159,10 @@ static unsigned char *rbmp__convert_format(
             break;
          case ((3)*8+(2)):
             for(i=x-1; i >= 0; --i, src += 3, dest += 2)
-               dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]), dest[1] = 255;
+            {
+               dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]);
+               dest[1] = 255;
+            }
             break;
          case ((4)*8+(1)):
             for(i=x-1; i >= 0; --i, src += 4, dest += 1)
@@ -153,11 +170,18 @@ static unsigned char *rbmp__convert_format(
             break;
          case ((4)*8+(2)):
             for(i=x-1; i >= 0; --i, src += 4, dest += 2)
-               dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]), dest[1] = src[3];
+            {
+               dest[0] = RBMP_COMPUTE_Y(src[0],src[1],src[2]);
+               dest[1] = src[3];
+            }
             break;
          case ((4)*8+(3)):
             for(i=x-1; i >= 0; --i, src += 4, dest += 3)
-               dest[0]=src[0],dest[1]=src[1],dest[2]=src[2];
+            {
+               dest[0]=src[0];
+               dest[1]=src[1];
+               dest[2]=src[2];
+            }
             break;
          default:
             break;
@@ -176,11 +200,31 @@ static int rbmp__high_bit(unsigned int z)
    int n=0;
    if (z == 0)
       return -1;
-   if (z >= 0x10000) n += 16, z >>= 16;
-   if (z >= 0x00100) n +=  8, z >>=  8;
-   if (z >= 0x00010) n +=  4, z >>=  4;
-   if (z >= 0x00004) n +=  2, z >>=  2;
-   if (z >= 0x00002) n +=  1, z >>=  1;
+   if (z >= 0x10000)
+   {
+      n += 16;
+      z >>= 16;
+   }
+   if (z >= 0x00100)
+   {
+      n +=  8;
+      z >>=  8;
+   }
+   if (z >= 0x00010)
+   {
+      n +=  4;
+      z >>=  4;
+   }
+   if (z >= 0x00004)
+   {
+      n +=  2;
+      z >>=  2;
+   }
+   if (z >= 0x00002)
+   {
+      n +=  1;
+      z >>=  1;
+   }
    return n;
 }
 
@@ -400,7 +444,8 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
       {
          for (i=0; i < (int) s->img_x; i += 2)
          {
-            int v=rbmp__get8(s),v2=0;
+            int v=rbmp__get8(s);
+            int v2=0;
             if (bpp == 4)
             {
                v2 = v & 15;
@@ -525,7 +570,9 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
          unsigned char *p2 = out + (s->img_y-1-j)*s->img_x*target;
          for (i=0; i < (int) s->img_x*target; ++i)
          {
-            t = p1[i], p1[i] = p2[i], p2[i] = t;
+            t     = p1[i];
+            p1[i] = p2[i];
+            p2[i] = t;
          }
       }
    }

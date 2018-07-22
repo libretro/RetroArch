@@ -155,10 +155,10 @@ netplay_input_state_t netplay_input_state_for(netplay_input_state_t *list,
    ret = (netplay_input_state_t)calloc(1, sizeof(struct netplay_input_state) + (size-1) * sizeof(uint32_t));
    if (!ret)
       return NULL;
-   *list = ret;
+   *list           = ret;
    ret->client_num = client_num;
-   ret->used = true;
-   ret->size = size;
+   ret->used       = true;
+   ret->size       = (uint32_t)size;
    return ret;
 }
 

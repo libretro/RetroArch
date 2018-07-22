@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (features_cpu.c).
@@ -470,7 +470,7 @@ static void cpulist_read_from(CpuList* list, const char* filename)
  **/
 unsigned cpu_features_get_core_amount(void)
 {
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    /* Win32 */
    SYSTEM_INFO sysinfo;
    GetSystemInfo(&sysinfo);

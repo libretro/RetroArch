@@ -74,6 +74,7 @@ typedef struct ui_companion_win32
    void *empty;
 } ui_companion_win32_t;
 
+#ifdef HAVE_SHADERPIPELINE
 enum shader_param_ctrl_type
 {
    SHADER_PARAM_CTRL_NONE = 0,
@@ -148,7 +149,7 @@ static void shader_dlg_params_refresh(void)
       {
          case SHADER_PARAM_CTRL_CHECKBOX:
             {
-			   bool checked;
+               bool checked;
 
                video_shader_ctx_t shader_info;
                video_shader_driver_get_current_shader(&shader_info);
@@ -221,6 +222,7 @@ static void shader_dlg_params_clear(void)
       control->type = SHADER_PARAM_CTRL_NONE;
    }
 }
+#endif
 
 void shader_dlg_params_reload(void)
 {
@@ -329,6 +331,7 @@ void shader_dlg_params_reload(void)
 #endif
 }
 
+#ifdef HAVE_SHADERPIPELINE
 static void shader_dlg_update_on_top_state(void)
 {
    bool on_top = SendMessage(g_shader_dlg.on_top_checkbox.hwnd,
@@ -339,7 +342,7 @@ static void shader_dlg_update_on_top_state(void)
          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
 
-void shader_dlg_show(HWND parent_hwnd)
+static void shader_dlg_show(HWND parent_hwnd)
 {
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
@@ -364,6 +367,7 @@ void shader_dlg_show(HWND parent_hwnd)
 
    window->set_focused(&g_shader_dlg.window);
 }
+#endif
 
 #if 0
 static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
@@ -443,7 +447,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-bool win32_shader_dlg_init(void)
+static bool win32_shader_dlg_init(void)
 {
    static bool inited = false;
    int pos_y;
@@ -641,18 +645,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                   cmd         = CMD_EVENT_LOAD_CORE;
                   break;
                case ID_M_LOAD_CONTENT:
-                  {
-                     content_ctx_info_t content_info = {0};
-
-                     path_set(RARCH_PATH_CONTENT, win32_file);
-
-                     do_wm_close = true;
-                     task_push_load_content_with_current_core_from_companion_ui(
-                           NULL,
-                           &content_info,
-                           CORE_TYPE_PLAIN,
-                           NULL, NULL);
-                  }
+                  win32_load_content_from_gui(win32_file);
                   break;
             }
          }
@@ -687,11 +680,11 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
       case ID_M_FULL_SCREEN:
          cmd = CMD_EVENT_FULLSCREEN_TOGGLE;
          break;
-#ifndef _XBOX
       case ID_M_SHADER_PARAMETERS:
+#if !defined(_XBOX) && defined(HAVE_SHADERPIPELINE)
          shader_dlg_show(owner);
-         break;
 #endif
+         break;
       case ID_M_MOUSE_GRAB:
          cmd = CMD_EVENT_GRAB_MOUSE_TOGGLE;
          break;
@@ -765,9 +758,10 @@ static void ui_companion_win32_notify_content_loaded(void *data)
    (void)data;
 }
 
-static void ui_companion_win32_toggle(void *data)
+static void ui_companion_win32_toggle(void *data, bool force)
 {
    (void)data;
+   (void)force;
 }
 
 static void ui_companion_win32_event_command(
@@ -785,7 +779,7 @@ static void ui_companion_win32_notify_list_pushed(void *data,
     (void)menu_list;
 }
 
-const ui_companion_driver_t ui_companion_win32 = {
+ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_init,
    ui_companion_win32_deinit,
    ui_companion_win32_iterate,
@@ -793,6 +787,7 @@ const ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_event_command,
    ui_companion_win32_notify_content_loaded,
    ui_companion_win32_notify_list_pushed,
+   NULL,
    NULL,
    NULL,
    NULL,

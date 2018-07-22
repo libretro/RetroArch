@@ -144,14 +144,14 @@ static uint32_t content_rom_crc                               = 0;
 static bool pending_subsystem_init                            = false;
 static int  pending_subsystem_rom_num                         = 0;
 static int  pending_subsystem_id                              = 0;
-static int  pending_subsystem_rom_id                          = 0;
+static unsigned  pending_subsystem_rom_id                     = 0;
 
 static char pending_subsystem_ident[255];
 static char pending_subsystem_extensions[PATH_MAX_LENGTH];
 static char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
 
 
-static int content_file_read(const char *path, void **buf, ssize_t *length)
+static int64_t content_file_read(const char *path, void **buf, int64_t *length)
 {
 #ifdef HAVE_COMPRESSION
    if (path_contains_compressed_file(path))
@@ -324,7 +324,7 @@ end:
 static bool load_content_into_memory(
       content_information_ctx_t *content_ctx,
       unsigned i, const char *path, void **buf,
-      ssize_t *length)
+      int64_t *length)
 {
    uint8_t *ret_buf          = NULL;
 
@@ -359,7 +359,7 @@ static bool load_content_into_memory(
                   (uint8_t**)&ret_buf,
                   (void*)length);
 
-         content_rom_crc = encoding_crc32(0, ret_buf, *length);
+         content_rom_crc = encoding_crc32(0, ret_buf, (size_t)*length);
 
          RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
       }
@@ -383,7 +383,7 @@ static bool load_content_from_compressed_archive(
       char **error_string)
 {
    union string_list_elem_attr attributes;
-   ssize_t new_path_len              = 0;
+   int64_t new_path_len              = 0;
    size_t path_size                  = PATH_MAX_LENGTH * sizeof(char);
    char *new_basedir                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *new_path                    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -582,7 +582,7 @@ static bool content_file_load(
       {
          /* Load the content into memory. */
 
-         ssize_t len = 0;
+         int64_t len = 0;
 
          if (!load_content_into_memory(
                   content_ctx,
@@ -796,8 +796,9 @@ static bool content_file_init(
          !content_file_init_set_attribs(content, special, content_ctx, error_string))
       return false;
 
-   info                   = (struct retro_game_info*)
-      calloc(content->size, sizeof(*info));
+   if (content->size > 0)
+      info                   = (struct retro_game_info*)
+         calloc(content->size, sizeof(*info));
 
    if (info)
    {
@@ -1009,6 +1010,7 @@ static bool firmware_update_status(
       content_information_ctx_t *content_ctx)
 {
    core_info_ctx_firmware_t firmware_info;
+   bool set_missing_firmware  = false;
    core_info_t *core_info     = NULL;
    size_t s_size              = PATH_MAX_LENGTH * sizeof(char);
    char *s                    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -1032,7 +1034,13 @@ static bool firmware_update_status(
    RARCH_LOG("Updating firmware status for: %s on %s\n",
          core_info->path,
          firmware_info.directory.system);
-   core_info_list_update_missing_firmware(&firmware_info);
+
+   rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+
+   core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
+
+   if (set_missing_firmware)
+      rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
 
    if(
          content_ctx->bios_is_missing &&
@@ -1734,9 +1742,11 @@ void content_get_status(
 /* Clears the pending subsystem rom buffer*/
 void content_clear_subsystem(void)
 {
-   int i;
+   unsigned i;
+
    pending_subsystem_rom_id = 0;
-   pending_subsystem_init = false;
+   pending_subsystem_init   = false;
+
    for (i = 0; i < RARCH_MAX_SUBSYSTEM_ROMS; i++)
    {
       if (pending_subsystem_roms[i])
@@ -1756,15 +1766,17 @@ int content_get_subsystem()
 /* Set the current subsystem*/
 void content_set_subsystem(unsigned idx)
 {
-   rarch_system_info_t *system = runloop_get_system_info();
-   const struct retro_subsystem_info* subsystem = NULL;
+   rarch_system_info_t                  *system = runloop_get_system_info();
+   const struct retro_subsystem_info *subsystem = system ?
+	   system->subsystem.data + idx : NULL;
 
-   subsystem = system->subsystem.data + pending_subsystem_id;
+   pending_subsystem_id                         = idx;
 
-   pending_subsystem_id = idx;
+   strlcpy(pending_subsystem_ident,
+	   subsystem->ident, sizeof(pending_subsystem_ident));
 
-   strlcpy(pending_subsystem_ident, subsystem->ident, sizeof(pending_subsystem_ident));
-   pending_subsystem_rom_num = subsystem->num_roms;
+   pending_subsystem_rom_num                    = subsystem->num_roms;
+
    RARCH_LOG("[subsystem] settings current subsytem to: %d(%s) roms: %d\n",
       pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_num);
 }
@@ -1783,7 +1795,7 @@ void content_add_subsystem(const char* path)
 }
 
 /* Get the current subsystem rom id */
-int content_get_subsystem_rom_id(void)
+unsigned content_get_subsystem_rom_id(void)
 {
    return pending_subsystem_rom_id;
 }

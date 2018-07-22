@@ -1,15 +1,6 @@
 #pragma once
 #include <wiiu/types.h>
 
-/*
- * Report types for the report_type parameter in HIDSetReport()
- */
-
-/*  what is 1? */
-#define HID_REPORT_OUTPUT  2
-#define HID_REPORT_FEATURE 3
-/* are there more? */
-
 typedef struct
 {
     uint32_t handle;

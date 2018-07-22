@@ -55,58 +55,11 @@ typedef struct gl1_renderchain
    void *empty;
 } gl1_renderchain_t;
 
-GLenum min_filter_to_mag(GLenum type);
-
-void gl1_renderchain_free(void *data, void *chain_data)
-{
-   (void)chain_data;
-   (void)data;
-}
-
-static void gl1_renderchain_bind_prev_texture(
-      void *data,
-      void *chain_data,
-      const struct video_tex_info *tex_info)
-{
-   gl_t *gl = (gl_t*)data;
-
-   memmove(gl->prev_info + 1, gl->prev_info,
-         sizeof(*tex_info) * (gl->textures - 1));
-   memcpy(&gl->prev_info[0], tex_info,
-         sizeof(*tex_info));
-}
-
-static void gl1_renderchain_viewport_info(
-      void *data, void *chain_data,
-      struct video_viewport *vp)
-{
-   unsigned width, height;
-   unsigned top_y, top_dist;
-   gl_t *gl         = (gl_t*)data;
-
-   video_driver_get_size(&width, &height);
-
-   *vp             = gl->vp;
-   vp->full_width  = width;
-   vp->full_height = height;
-
-   /* Adjust as GL viewport is bottom-up. */
-   top_y           = vp->y + vp->height;
-   top_dist        = height - top_y;
-   vp->y           = top_dist;
-}
-
 static bool gl1_renderchain_read_viewport(
-      void *data, void *chain_data,
+      gl_t *gl, void *chain_data,
       uint8_t *buffer, bool is_idle)
 {
-   unsigned                     num_pixels = 0;
-   gl_t                                *gl = (gl_t*)data;
-
-   if (!gl)
-      return false;
-
-   num_pixels = gl->vp.width * gl->vp.height;
+   unsigned num_pixels = gl->vp.width * gl->vp.height;
 
    /* Use slow synchronous readbacks. Use this with plain screenshots
       as we don't really care about performance in this case. */
@@ -139,12 +92,12 @@ static bool gl1_renderchain_read_viewport(
 
 void gl1_renderchain_free_internal(void *data, void *chain_data)
 {
-   gl1_renderchain_t *cg_data = (gl1_renderchain_t*)chain_data;
+   gl1_renderchain_t *chain = (gl1_renderchain_t*)chain_data;
 
-   if (!cg_data)
+   if (!chain)
       return;
 
-   free(cg_data);
+   free(chain);
 }
 
 static void *gl1_renderchain_new(void)
@@ -200,12 +153,12 @@ static void gl1_renderchain_disable_client_arrays(void *data,
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
-static void gl1_renderchain_restore_default_state(void *data,
+static void gl1_renderchain_restore_default_state(gl_t *gl,
       void *chain_data)
 {
-   gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
+
    glEnable(GL_TEXTURE_2D);
    glDisable(GL_DEPTH_TEST);
    glDisable(GL_CULL_FACE);
@@ -213,13 +166,12 @@ static void gl1_renderchain_restore_default_state(void *data,
 }
 
 static void gl1_renderchain_copy_frame(
-      void *data,
+      gl_t *gl,
       void *chain_data,
       video_frame_info_t *video_info,
       const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-   gl_t               *gl = (gl_t*)data;
    const GLvoid *data_buf = frame;
    glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(pitch));
 
@@ -249,14 +201,13 @@ static void gl1_renderchain_copy_frame(
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 }
 
-static void gl1_renderchain_readback(void *data,
+static void gl1_renderchain_readback(
+      gl_t *gl,
       void *chain_data,
       unsigned alignment,
       unsigned fmt, unsigned type,
       void *src)
 {
-   gl_t *gl = (gl_t*)data;
-
    glPixelStorei(GL_PACK_ALIGNMENT, alignment);
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
    glReadBuffer(GL_BACK);
@@ -298,7 +249,22 @@ static void gl1_renderchain_set_coords(void *handle_data,
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
-gl_renderchain_driver_t gl2_renderchain = {
+static void gl1_renderchain_render(
+      gl_t *gl,
+      void *chain_data,
+      video_frame_info_t *video_info,
+      uint64_t frame_count,
+      const struct video_tex_info *tex_info,
+      const struct video_tex_info *feedback_info)
+{
+   /* TODO/FIXME - implement 
+    * check this commit out to see how it looked like way back when -
+    *
+    * https://github.com/libretro/RetroArch/commit/af7819e5cc1f7e413ff100575ed01ce00dfa1509
+    * */
+}
+
+gl_renderchain_driver_t gl1_renderchain = {
    gl1_renderchain_set_coords,
    gl1_renderchain_set_mvp,
    NULL,                                  /* init_textures_reference */
@@ -319,19 +285,18 @@ gl_renderchain_driver_t gl2_renderchain = {
    gl1_renderchain_ff_matrix,
    NULL,                                  /* bind_backbuffer */
    NULL,                                  /* deinit_fbo */
-   gl1_renderchain_viewport_info,
    gl1_renderchain_read_viewport,
-   gl1_renderchain_bind_prev_texture,
+   NULL,                                  /* bind_prev_texture */
    gl1_renderchain_free_internal,
    gl1_renderchain_new,
    NULL,                                  /* renderchain_init */
    NULL,                                  /* init_hw_render */
-   gl1_renderchain_free,
+   NULL,                                  /* renderchain_free     */
    NULL,                                  /* deinit_hw_render     */
    NULL,                                  /* start_render         */
    NULL,                                  /* check_fbo_dimensions */
    NULL,                                  /* recompute_pass_sizes */
-   NULL,                                  /* renderchain_render   */
+   gl1_renderchain_render,
    NULL,                                  /* resolve_extensions   */
    "gl1",
 };

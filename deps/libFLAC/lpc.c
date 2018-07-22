@@ -36,12 +36,12 @@
 
 #include <math.h>
 
-#include "FLAC/assert.h"
-#include "FLAC/format.h"
-#include "share/compat.h"
-#include "private/bitmath.h"
-#include "private/lpc.h"
-#include "private/macros.h"
+#include "include/FLAC/assert.h"
+#include "include/FLAC/format.h"
+#include "include/share/compat.h"
+#include "include/private/bitmath.h"
+#include "include/private/lpc.h"
+#include "include/private/macros.h"
 #if defined DEBUG || defined FLAC__OVERFLOW_DETECT || defined FLAC__OVERFLOW_DETECT_VERBOSE
 #include <stdio.h>
 #endif
@@ -210,7 +210,7 @@ int FLAC__lpc_quantize_coefficients(const FLAC__real lp_coeff[], unsigned order,
 		FLAC__int32 q;
 		for(i = 0; i < order; i++) {
 			error += lp_coeff[i] * (1 << *shift);
-			q = lround(error);
+			q = (FLAC__int32)lround(error);
 
 #ifdef FLAC__OVERFLOW_DETECT
 			if(q > qmax+1) /* we expect q==qmax+1 occasionally due to rounding */
@@ -239,7 +239,7 @@ int FLAC__lpc_quantize_coefficients(const FLAC__real lp_coeff[], unsigned order,
 #endif
 		for(i = 0; i < order; i++) {
 			error += lp_coeff[i] / (1 << nshift);
-			q = lround(error);
+			q = (FLAC__int32)lround(error);
 #ifdef FLAC__OVERFLOW_DETECT
 			if(q > qmax+1) /* we expect q==qmax+1 occasionally due to rounding */
 				fprintf(stderr,"FLAC__lpc_quantize_coefficients: quantizer overflow: q>qmax %d>%d shift=%d cmax=%f precision=%u lpc[%u]=%f\n",q,qmax,*shift,cmax,precision+1,i,lp_coeff[i]);

@@ -46,7 +46,7 @@ endif
 include Makefile.common
 
 ifeq ($(shell $(CC) -v 2>&1 | grep -c "clang"),1)
-   DEFINES +=  -Wno-invalid-source-encoding
+   DEFINES +=  -Wno-invalid-source-encoding -Wno-incompatible-ms-struct
 endif
 
 ifeq ($(shell $(CC) -v 2>&1 | grep -c "tcc"),1)
@@ -92,21 +92,22 @@ APPEND_CFLAGS := $(CFLAGS)
 CXXFLAGS += $(APPEND_CFLAGS) -std=c++11 -D__STDC_CONSTANT_MACROS
 OBJCFLAGS :=  $(CFLAGS) -D__STDC_CONSTANT_MACROS
 
-ifeq ($(CXX_BUILD), 1)
-   LINK = $(CXX)
-   CFLAGS   := $(CXXFLAGS) -xc++
-   CFLAGS   += -DCXX_BUILD
-   CXXFLAGS += -DCXX_BUILD
-else
-   ifeq ($(NEED_CXX_LINKER),1)
+ifeq ($(HAVE_CXX), 1)
+   ifeq ($(CXX_BUILD), 1)
       LINK = $(CXX)
-   else ifeq ($(findstring Win32,$(OS)),)
-      LINK = $(CC)
+      CFLAGS   := $(CXXFLAGS) -xc++
+      CFLAGS   += -DCXX_BUILD
+      CXXFLAGS += -DCXX_BUILD
+   else ifeq ($(NEED_CXX_LINKER),1)
+      LINK = $(CXX)
    else
-      # directx-related code is c++
-      LINK = $(CXX)
+      LINK = $(CC)
    endif
+else
+   LINK = $(CC)
+endif
 
+ifneq ($(CXX_BUILD), 1)
    ifneq ($(GNU90_BUILD), 1)
       ifneq ($(findstring icc,$(CC)),)
          CFLAGS += -std=c99 -D_GNU_SOURCE
@@ -133,7 +134,7 @@ RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
 ifneq ($(X86),)
    CFLAGS += -m32
-   CXXLAGS += -m32
+   CXXFLAGS += -m32
    LDFLAGS += -m32
 endif
 
@@ -150,7 +151,28 @@ ifneq ($(findstring $(GPERFTOOLS),tcmalloc),)
    LIBS += -ltcmalloc
 endif
 
+# Qt MOC generation, required for QObject-derived classes
+ifneq ($(MOC_HEADERS),)
+    # prefix moc_ to base filename of paths and change extension from h to cpp, so a/b/foo.h becomes a/b/moc_foo.cpp
+    MOC_SRC := $(join $(addsuffix moc_,$(addprefix $(OBJDIR)/,$(dir $(MOC_HEADERS)))), $(notdir $(MOC_HEADERS:.h=.cpp)))
+    MOC_OBJ := $(patsubst %.cpp,%.o,$(MOC_SRC))
+    RARCH_OBJ += $(MOC_OBJ)
+endif
+
 all: $(TARGET) config.mk
+
+$(MOC_SRC):
+	@$(if $(Q), $(shell echo echo MOC $<),)
+	$(eval MOC_TMP := $(patsubst %.h,%_moc.cpp,$@))
+	$(Q)$(MOC) -o $(MOC_TMP) $<
+
+$(foreach x,$(join $(addsuffix :,$(MOC_SRC)),$(MOC_HEADERS)),$(eval $x))
+
+$(MOC_OBJ):
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
+
+$(foreach x,$(join $(addsuffix :,$(MOC_OBJ)),$(MOC_SRC)),$(eval $x))
 
 ifeq ($(MAKECMDGOALS),clean)
 config.mk:
@@ -250,3 +272,6 @@ clean:
 	rm -f *.d
 
 .PHONY: all install uninstall clean
+
+print-%:
+	@echo '$*=$($*)'

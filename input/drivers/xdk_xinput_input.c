@@ -32,6 +32,9 @@
 
 #define MAX_PADS 4
 
+/* TODO/FIXME - 
+ * fix game focus toggle */
+
 typedef struct xdk_input
 {
    bool blocked;

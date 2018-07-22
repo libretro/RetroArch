@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (memory_stream.c).
@@ -26,16 +26,16 @@
 
 #include <streams/memory_stream.h>
 
-static uint8_t* g_buffer     = NULL;
-static size_t g_size         = 0;
-static size_t last_file_size = 0;
+static uint8_t* g_buffer      = NULL;
+static uint64_t g_size         = 0;
+static uint64_t last_file_size = 0;
 
 struct memstream
 {
    uint8_t *buf;
-   size_t size;
-   size_t ptr;
-   size_t max_ptr;
+   uint64_t size;
+   uint64_t ptr;
+   uint64_t max_ptr;
    unsigned writing;
 };
 
@@ -45,19 +45,19 @@ static void memstream_update_pos(memstream_t *stream)
       stream->max_ptr = stream->ptr;
 }
 
-void memstream_set_buffer(uint8_t *buffer, size_t size)
+void memstream_set_buffer(uint8_t *buffer, uint64_t size)
 {
    g_buffer = buffer;
    g_size = size;
 }
 
-size_t memstream_get_last_size(void)
+uint64_t memstream_get_last_size(void)
 {
    return last_file_size;
 }
 
 static void memstream_init(memstream_t *stream,
-      uint8_t *buffer, size_t max_size, unsigned writing)
+      uint8_t *buffer, uint64_t max_size, unsigned writing)
 {
    if (!stream)
       return;
@@ -92,9 +92,9 @@ void memstream_close(memstream_t *stream)
    free(stream);
 }
 
-size_t memstream_read(memstream_t *stream, void *data, size_t bytes)
+uint64_t memstream_read(memstream_t *stream, void *data, uint64_t bytes)
 {
-   size_t avail = 0;
+   uint64_t avail = 0;
 
    if (!stream)
       return 0;
@@ -103,15 +103,15 @@ size_t memstream_read(memstream_t *stream, void *data, size_t bytes)
    if (bytes > avail)
       bytes = avail;
 
-   memcpy(data, stream->buf + stream->ptr, bytes);
+   memcpy(data, stream->buf + stream->ptr, (size_t)bytes);
    stream->ptr += bytes;
    memstream_update_pos(stream);
    return bytes;
 }
 
-size_t memstream_write(memstream_t *stream, const void *data, size_t bytes)
+uint64_t memstream_write(memstream_t *stream, const void *data, uint64_t bytes)
 {
-   size_t avail = 0;
+   uint64_t avail = 0;
 
    if (!stream)
       return 0;
@@ -120,15 +120,15 @@ size_t memstream_write(memstream_t *stream, const void *data, size_t bytes)
    if (bytes > avail)
       bytes = avail;
 
-   memcpy(stream->buf + stream->ptr, data, bytes);
+   memcpy(stream->buf + stream->ptr, data, (size_t)bytes);
    stream->ptr += bytes;
    memstream_update_pos(stream);
    return bytes;
 }
 
-int memstream_seek(memstream_t *stream, int offset, int whence)
+int64_t memstream_seek(memstream_t *stream, int64_t offset, int whence)
 {
-   size_t ptr;
+   uint64_t ptr;
 
    switch (whence)
    {
@@ -159,7 +159,7 @@ void memstream_rewind(memstream_t *stream)
    memstream_seek(stream, 0L, SEEK_SET);
 }
 
-size_t memstream_pos(memstream_t *stream)
+uint64_t memstream_pos(memstream_t *stream)
 {
    return stream->ptr;
 }

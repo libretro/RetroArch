@@ -23,14 +23,18 @@
 #include "cocoa_common.h"
 #include "../../ui_companion_driver.h"
 
-static bool ui_application_cocoa_initialize(void)
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 101200
+#define NSEventMaskAny NSAnyEventMask
+#endif
+
+static void* ui_application_cocoa_initialize(void)
 {
-   return true;
+   return NULL;
 }
 
 static bool ui_application_cocoa_pending_events(void)
 {
-   NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
+   NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
    if (!event)
       return false;
    return true;
@@ -40,18 +44,30 @@ static void ui_application_cocoa_process_events(void)
 {
     while (1)
     {
-        NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
+        NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
         if (!event)
             break;
+#if __has_feature(objc_arc)
+        [NSApp sendEvent: event];
+       
+#else
         [event retain];
         [NSApp sendEvent: event];
         [event release];
+#endif
     }
 }
 
-const ui_application_t ui_application_cocoa = {
+static void ui_application_cocoa_run(void *args)
+{
+   (void)args;
+}
+
+ui_application_t ui_application_cocoa = {
    ui_application_cocoa_initialize,
    ui_application_cocoa_pending_events,
    ui_application_cocoa_process_events,
+   ui_application_cocoa_run,
+   NULL,
    "cocoa"
 };

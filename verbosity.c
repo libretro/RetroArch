@@ -52,6 +52,10 @@
 #include "file_path_special.h"
 #include "verbosity.h"
 
+#ifdef HAVE_QT
+#include "ui/ui_companion_driver.h"
+#endif
+
 /* If this is non-NULL. RARCH_LOG and friends
  * will write to this file. */
 static FILE *log_file_fp         = NULL;
@@ -122,16 +126,11 @@ void retro_main_log_file_deinit(void)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
 #if TARGET_OS_IPHONE
-   static int asl_initialized = 0;
-#if !TARGET_IPHONE_SIMULATOR
-   static aslclient asl_client;
-#endif
-#endif
-
-#if TARGET_OS_IPHONE
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
 #else
+   static aslclient asl_client;
+   static int asl_initialized = 0;
    if (!asl_initialized)
    {
       asl_client      = asl_open(
@@ -179,18 +178,69 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #else
 
    {
+#ifdef HAVE_QT
+      char buffer[1024];
+#endif
 #ifdef HAVE_FILE_LOGGER
       FILE *fp = (FILE*)retro_main_log_file();
 #else
       FILE *fp = stderr;
 #endif
 
-      fprintf(fp, "%s ",
-            tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
-      vfprintf(fp, fmt, ap);
-      fflush(fp);
+#ifdef HAVE_QT
+      buffer[0] = '\0';
+      vsnprintf(buffer, sizeof(buffer), fmt, ap);
+
+      if (fp)
+      {
+         fprintf(fp, "%s %s", tag ? tag : file_path_str(FILE_PATH_LOG_INFO), buffer);
+         fflush(fp);
+      }
+
+      ui_companion_driver_log_msg(buffer);
+#else
+      if (fp)
+      {
+         fprintf(fp, "%s ",
+               tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
+         vfprintf(fp, fmt, ap);
+         fflush(fp);
+      }
+#endif
    }
 #endif
+}
+
+void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
+{
+   unsigned i, offset;
+   int padding = size % 16;
+   uint8_t buf[16];
+
+   RARCH_LOG("== %d-byte buffer ==================\n", size);
+
+   for(i = 0, offset = 0; i < size; i++)
+   {
+      buf[offset] = data[i];
+      offset++;
+
+      if (offset == 16)
+      {
+         offset = 0;
+         RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
+            buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
+            buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+      }
+   }
+   if(padding)
+   {
+      for(i = padding; i < 16; i++)
+         buf[i] = 0xff;
+      RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
+         buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
+         buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+   }
+   RARCH_LOG("==================================\n");
 }
 
 void RARCH_LOG(const char *fmt, ...)

@@ -281,7 +281,8 @@ static bool android_gfx_ctx_set_resize(void *data,
             return false;
          }
 
-         vulkan_acquire_next_image(&and->vk);
+         if (and->vk.created_new_swapchain)
+            vulkan_acquire_next_image(&and->vk);
          and->vk.context.invalid_swapchain = true;
          and->vk.need_new_swapchain        = false;
 #endif
@@ -602,6 +603,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_set_swap_interval,
    android_gfx_ctx_set_video_mode,
    android_gfx_ctx_get_video_size,
+   NULL, /* get_refresh_rate */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

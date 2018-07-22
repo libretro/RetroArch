@@ -36,25 +36,26 @@
 #include "../../driver.h"
 #include "../video_driver.h"
 
-#ifdef _XBOX
-#include "../../defines/xdk_defines.h"
-#else
+#ifndef _XBOX
 #include "../../ui/drivers/ui_win32_resource.h"
 #include "../../ui/drivers/ui_win32.h"
 #endif
 
 RETRO_BEGIN_DECLS
 
-#ifndef _XBOX
-extern unsigned g_resize_width;
-extern unsigned g_resize_height;
-extern bool g_inited;
-extern bool g_restore_desktop;
+#if !defined(_XBOX)
+extern unsigned g_win32_resize_width;
+extern unsigned g_win32_resize_height;
+extern bool g_win32_inited;
+extern bool g_win32_restore_desktop;
 extern ui_window_win32_t main_window;
 
 void win32_monitor_get_info(void);
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
+
+int win32_change_display_settings(const char *str, void *devmode_data,
+      unsigned flags);
 
 void create_graphics_context(HWND hwnd, bool *quit);
 
@@ -62,9 +63,13 @@ void create_gdi_context(HWND hwnd, bool *quit);
 
 bool gdi_has_menu_frame(void);
 
-bool win32_shader_dlg_init(void);
-void shader_dlg_show(HWND parent_hwnd);
 void shader_dlg_params_reload(void);
+
+bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name);
+
+void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
+	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
+	RECT *rect, RECT *mon_rect, DWORD *style);
 #endif
 
 void win32_monitor_from_window(void);
@@ -74,14 +79,6 @@ void win32_monitor_init(void);
 bool win32_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen);
-
-#ifndef _XBOX
-RETRO_BEGIN_DECLS
-
-bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name);
-
-RETRO_END_DECLS
-#endif
 
 bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
@@ -104,12 +101,6 @@ void win32_check_window(bool *quit,
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data);
 
-#ifndef _XBOX
-void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
-	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
-	RECT *rect, RECT *mon_rect, DWORD *style);
-#endif
-
 void win32_get_video_output_size(
       unsigned *width, unsigned *height);
 
@@ -126,6 +117,8 @@ void win32_destroy_window(void);
 bool win32_taskbar_is_created(void);
 
 void win32_set_taskbar_created(bool created);
+
+float win32_get_refresh_rate(void *data);
 
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
@@ -145,6 +138,8 @@ BOOL IsIconic(HWND hwnd);
 #endif
 
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
+
+bool win32_load_content_from_gui(const char *szFilename);
 
 RETRO_END_DECLS
 

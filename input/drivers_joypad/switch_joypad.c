@@ -60,7 +60,7 @@ static bool switch_joypad_button(unsigned port_num, uint16_t key)
    return (pad_state[port_num] & (1 << key));
 }
 
-static void switch_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
+static void switch_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
    if(port_num < MAX_PADS)
    {
@@ -136,11 +136,25 @@ static void switch_joypad_poll(void)
    hid_controller_state_entry_t ent  = cont->main.entries[cont->main.latest_idx];
    hid_controller_state_entry_t ent8 = (cont+8)->main.entries[(cont+8)->main.latest_idx];
    pad_state[0] = ent.button_state | ent8.button_state;
+
+   int16_t lsx, lsy, rsx, rsy;
+   lsx = ent.left_stick_x;
+   lsy = ent.left_stick_y;
+   rsx = ent.right_stick_x;
+   rsy = ent.right_stick_y;
+   if(ent8.left_stick_x != 0 || ent8.left_stick_y != 0) { // handheld overrides player 1
+	   lsx = ent8.left_stick_x;
+	   lsy = ent8.left_stick_y;
+   }
+   if(ent8.right_stick_x != 0 || ent8.right_stick_y != 0) { // handheld overrides player 1
+	   rsx = ent8.right_stick_x;
+	   rsy = ent8.right_stick_y;
+   }
    
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X]  = ent.left_stick_x / 0x20000;
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y]  = ent.left_stick_y / 0x20000;
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = ent.right_stick_x / 0x20000;
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = ent.right_stick_y / 0x20000;
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X]  = lsx;
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y]  = -lsy;
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rsx;
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = -rsy;
 }
 
 input_device_driver_t switch_joypad = {

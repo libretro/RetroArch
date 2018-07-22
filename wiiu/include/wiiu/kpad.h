@@ -65,8 +65,34 @@ typedef struct _KPADData
 
 
 void KPADInit (void);
+void KPADShutdown(void);
 s32 KPADRead(s32 chan, void * data, u32 size);
 s32 KPADReadEx(s32 chan, KPADData * data, u32 size, s32 *error);
+
+typedef s32 WPADChannel;
+/* legal values for WPADChannel */
+enum {
+   WPAD_CHAN0 = 0,
+   WPAD_CHAN1 = 1,
+   WPAD_CHAN2 = 2,
+   WPAD_CHAN3 = 3
+};
+
+typedef s8 WPADError;
+/* legal values for WPADError */
+enum {
+    WPAD_ERROR_NONE          =  0,
+    WPAD_ERROR_NO_CONTROLLER = -1,
+    WPAD_ERROR_BUSY          = -2,
+    WPAD_ERROR_TRANSFER      = -3,
+    WPAD_ERROR_INVALID       = -4,
+    WPAD_ERROR_NOPERM        = -5,
+    WPAD_ERROR_BROKEN        = -6,
+    WPAD_ERROR_CORRUPTED     = -7
+};
+
+typedef void (*WPADConnectCallback) (WPADChannel channel, WPADError reason);
+
 
 #ifdef __cplusplus
 }

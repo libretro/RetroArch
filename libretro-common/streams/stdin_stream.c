@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (stdin_stream.c).
@@ -35,10 +35,10 @@
 #endif
 
 #include <boolean.h>
-
+#include <retro_environment.h>
 #include <streams/stdin_stream.h>
 
-#if (defined(_WIN32) && defined(_XBOX)) || defined(__CELLOS_LV2__)
+#if (defined(_WIN32) && defined(_XBOX)) || defined(__CELLOS_LV2__) || defined(__WINRT__)
 size_t read_stdin(char *buf, size_t size)
 {
    /* Not implemented. */

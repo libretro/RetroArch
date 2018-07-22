@@ -148,15 +148,15 @@ static void gfx_set_dwm(void)
 
 static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 {
-   char buildStr[11] = {0};
-   bool server = false;
-   const char *arch = "";
-   bool serverR2 = false;
+   char buildStr[11]      = {0};
+   bool server            = false;
+   const char *arch       = "";
+   bool serverR2          = false;
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Windows 2000 and later */
-   SYSTEM_INFO si = {0};
-   OSVERSIONINFOEX vi = {0};
+   SYSTEM_INFO si         = {{0}};
+   OSVERSIONINFOEX vi     = {0};
    vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
 
    GetSystemInfo(&si);
@@ -359,7 +359,7 @@ enum frontend_architecture frontend_win32_get_architecture(void)
 {
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Windows 2000 and later */
-   SYSTEM_INFO si = {0};
+   SYSTEM_INFO si = {{0}};
 
    GetSystemInfo(&si);
 
@@ -587,5 +587,6 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_detach_console,   /* detach_console */
    NULL,                            /* watch_path_for_changes */
    NULL,                            /* check_for_path_changes */
+   NULL,                            /* set_sustained_performance_mode */
    "win32"
 };

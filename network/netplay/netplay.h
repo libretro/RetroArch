@@ -49,6 +49,7 @@ enum rarch_netplay_ctl_state
    RARCH_NETPLAY_CTL_ENABLE_CLIENT,
    RARCH_NETPLAY_CTL_DISABLE,
    RARCH_NETPLAY_CTL_IS_ENABLED,
+   RARCH_NETPLAY_CTL_IS_REPLAYING,
    RARCH_NETPLAY_CTL_IS_SERVER,
    RARCH_NETPLAY_CTL_IS_CONNECTED,
    RARCH_NETPLAY_CTL_IS_DATA_INITED,
@@ -117,9 +118,9 @@ int netplay_rooms_parse(const char *buf);
 
 struct netplay_room* netplay_room_get(int index);
 
-int netplay_rooms_get_count();
+int netplay_rooms_get_count(void);
 
-void netplay_rooms_free();
+void netplay_rooms_free(void);
 
 void netplay_get_architecture(char *frontend_architecture, size_t size);
 

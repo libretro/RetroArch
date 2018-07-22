@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (retro_dirent.h).
@@ -32,6 +32,16 @@ RETRO_BEGIN_DECLS
 
 typedef struct RDIR RDIR;
 
+/**
+ *
+ * retro_opendir:
+ * @name         : path to the directory to open.
+ *
+ * Opens a directory for reading. Tidy up with retro_closedir.
+ *
+ * Returns: RDIR pointer on success, NULL if name is not a
+ * valid directory, null itself or the empty string.
+ */
 struct RDIR *retro_opendir(const char *name);
 
 int retro_readdir(struct RDIR *rdir);

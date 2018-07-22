@@ -21,10 +21,7 @@
 #include <boolean.h>
 #include "joypad_connection.h"
 #include "../input_defines.h"
-
-#ifdef WIIU
-#include <wiiu/syshid.h>
-#endif
+#include "../common/hid/hid_device_driver.h"
 
 struct hidpad_ps3_data
 {
@@ -134,7 +131,7 @@ static void hidpad_ps3_deinit(void *data)
       free(device);
 }
 
-static void hidpad_ps3_get_buttons(void *data, retro_bits_t *state)
+static void hidpad_ps3_get_buttons(void *data, input_bits_t *state)
 {
 	struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
 	if ( device )

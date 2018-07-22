@@ -82,6 +82,7 @@ generic_deferred_push(deferred_push_video_shader_preset_parameters, DISPLAYLIST_
 generic_deferred_push(deferred_push_video_shader_parameters,        DISPLAYLIST_SHADER_PARAMETERS)
 generic_deferred_push(deferred_push_settings,                       DISPLAYLIST_SETTINGS_ALL)
 generic_deferred_push(deferred_push_shader_options,                 DISPLAYLIST_OPTIONS_SHADERS)
+generic_deferred_push(deferred_push_quick_menu_override_options,    DISPLAYLIST_OPTIONS_OVERRIDES)
 generic_deferred_push(deferred_push_options,                        DISPLAYLIST_OPTIONS)
 generic_deferred_push(deferred_push_netplay,                        DISPLAYLIST_NETPLAY_ROOM_LIST)
 generic_deferred_push(deferred_push_netplay_sublist,                DISPLAYLIST_NETPLAY)
@@ -134,6 +135,7 @@ generic_deferred_push(deferred_push_core_settings_list,             DISPLAYLIST_
 generic_deferred_push(deferred_push_video_settings_list,            DISPLAYLIST_VIDEO_SETTINGS_LIST)
 generic_deferred_push(deferred_push_configuration_settings_list,    DISPLAYLIST_CONFIGURATION_SETTINGS_LIST)
 generic_deferred_push(deferred_push_saving_settings_list,           DISPLAYLIST_SAVING_SETTINGS_LIST)
+generic_deferred_push(deferred_push_mixer_stream_settings_list,     DISPLAYLIST_MIXER_STREAM_SETTINGS_LIST)
 generic_deferred_push(deferred_push_logging_settings_list,          DISPLAYLIST_LOGGING_SETTINGS_LIST)
 generic_deferred_push(deferred_push_frame_throttle_settings_list,   DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST)
 generic_deferred_push(deferred_push_rewind_settings_list,           DISPLAYLIST_REWIND_SETTINGS_LIST)
@@ -145,6 +147,7 @@ generic_deferred_push(deferred_push_menu_views_settings_list,       DISPLAYLIST_
 generic_deferred_push(deferred_push_quick_menu_views_settings_list, DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST)
 generic_deferred_push(deferred_push_menu_settings_list,             DISPLAYLIST_MENU_SETTINGS_LIST)
 generic_deferred_push(deferred_push_user_interface_settings_list,   DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST)
+generic_deferred_push(deferred_push_power_management_settings_list,   DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST)
 generic_deferred_push(deferred_push_retro_achievements_settings_list,DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST)
 generic_deferred_push(deferred_push_updater_settings_list,          DISPLAYLIST_UPDATER_SETTINGS_LIST)
 generic_deferred_push(deferred_push_wifi_settings_list,             DISPLAYLIST_WIFI_SETTINGS_LIST)
@@ -153,8 +156,11 @@ generic_deferred_push(deferred_push_lakka_services_list,            DISPLAYLIST_
 generic_deferred_push(deferred_push_user_settings_list,             DISPLAYLIST_USER_SETTINGS_LIST)
 generic_deferred_push(deferred_push_directory_settings_list,        DISPLAYLIST_DIRECTORY_SETTINGS_LIST)
 generic_deferred_push(deferred_push_privacy_settings_list,          DISPLAYLIST_PRIVACY_SETTINGS_LIST)
+generic_deferred_push(deferred_push_midi_settings_list,             DISPLAYLIST_MIDI_SETTINGS_LIST)
 generic_deferred_push(deferred_push_audio_settings_list,            DISPLAYLIST_AUDIO_SETTINGS_LIST)
+generic_deferred_push(deferred_push_audio_mixer_settings_list,      DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST)
 generic_deferred_push(deferred_push_input_settings_list,            DISPLAYLIST_INPUT_SETTINGS_LIST)
+generic_deferred_push(deferred_push_latency_settings_list,          DISPLAYLIST_LATENCY_SETTINGS_LIST)
 generic_deferred_push(deferred_push_recording_settings_list,        DISPLAYLIST_RECORDING_SETTINGS_LIST)
 generic_deferred_push(deferred_push_playlist_settings_list,         DISPLAYLIST_PLAYLIST_SETTINGS_LIST)
 generic_deferred_push(deferred_push_input_hotkey_binds_list,        DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST)
@@ -202,12 +208,15 @@ static int deferred_push_cursor_manager_list_deferred(
 
    if (!string_is_empty(info->path_b))
       free(info->path_b);
+
    if (!string_is_empty(info->path_c))
       free(info->path_c);
+
+   info->path_b    = strdup(info->path);
+
    if (!string_is_empty(info->path))
       free(info->path);
 
-   info->path_b    = strdup(info->path);
    info->path_c    = strdup(query);
    info->path      = strdup(rdb_path);
 
@@ -530,10 +539,14 @@ static int general_push(menu_displaylist_info_t *info,
       struct retro_system_info sysinfo = {0};
 
       (void)sysinfo;
-#ifdef HAVE_FFMPEG
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       if (settings->bools.multimedia_builtin_mediaplayer_enable)
       {
+#if defined(HAVE_FFMPEG)
          libretro_ffmpeg_retro_get_system_info(&sysinfo);
+#elif defined(HAVE_MPV)
+         libretro_mpv_retro_get_system_info(&sysinfo);
+#endif
          strlcat(newstring2, "|", PATH_MAX_LENGTH * sizeof(char));
          strlcat(newstring2, sysinfo.valid_extensions,
                PATH_MAX_LENGTH * sizeof(char));
@@ -620,6 +633,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_saving_settings_list);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_mixer_stream_settings_list);
+      return 0;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LOGGING_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_logging_settings_list);
@@ -675,6 +693,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_user_interface_settings_list);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_POWER_MANAGEMENT_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_power_management_settings_list);
+      return 0;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_retro_achievements_settings_list);
@@ -716,6 +739,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PRIVACY_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_privacy_settings_list);
+      return 0;
+   }
+
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MIDI_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_midi_settings_list);
       return 0;
    }
 
@@ -806,6 +835,16 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
    }
    else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_mixer_settings_list);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_latency_settings_list);
+   }
+   else if (strstr(label,
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
@@ -881,6 +920,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_hotkey_binds_list);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_quick_menu_override_options);
    }
    else
    {
@@ -1154,6 +1198,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_latency_settings_list);
                break;
             case MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_settings_list);

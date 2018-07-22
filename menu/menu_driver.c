@@ -25,6 +25,10 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
+#ifdef WIIU
+#include <wiiu/os/energy.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -102,6 +106,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_D3D9
    &menu_display_ctx_d3d9,
 #endif
+#ifdef HAVE_D3D10
+   &menu_display_ctx_d3d10,
+#endif
 #ifdef HAVE_D3D11
    &menu_display_ctx_d3d11,
 #endif
@@ -114,6 +121,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_VULKAN
    &menu_display_ctx_vulkan,
 #endif
+#ifdef HAVE_METAL
+   &menu_display_ctx_metal,
+#endif
 #ifdef HAVE_VITA2D
    &menu_display_ctx_vita2d,
 #endif
@@ -123,14 +133,17 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef WIIU
    &menu_display_ctx_wiiu,
 #endif
-#ifdef HAVE_CACA
-   &menu_display_ctx_caca,
-#endif
 #if defined(_WIN32) && !defined(_XBOX)
    &menu_display_ctx_gdi,
 #endif
 #ifdef DJGPP
    &menu_display_ctx_vga,
+#endif
+#ifdef HAVE_SIXEL
+   &menu_display_ctx_sixel,
+#endif
+#ifdef HAVE_CACA
+   &menu_display_ctx_caca,
 #endif
    &menu_display_ctx_null,
    NULL,
@@ -185,9 +198,6 @@ static bool menu_driver_pending_shutdown        = false;
 /* Are we binding a button inside the menu? */
 static bool menu_driver_is_binding              = false;
 
-/* The currently active playlist that we are using inside the menu */
-static playlist_t *menu_driver_playlist         = NULL;
-
 static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata                      = NULL;
@@ -198,6 +208,31 @@ static size_t   scroll_index_list[SCROLL_INDEX_SIZE];
 static unsigned scroll_index_size               = 0;
 static unsigned scroll_acceleration             = 0;
 static size_t menu_driver_selection_ptr         = 0;
+
+/* Returns the OSK key at a given position */
+int menu_display_osk_ptr_at_pos(void *data, int x, int y,
+      unsigned width, unsigned height)
+{
+   unsigned i;
+   int ptr_width  = width / 11;
+   int ptr_height = height / 10;
+
+   if (ptr_width >= ptr_height)
+      ptr_width = ptr_height;
+
+   for (i = 0; i < 44; i++)
+   {
+      int line_y    = (i / 11)*height/10.0;
+      int ptr_x     = width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width;
+      int ptr_y     = height/2.0 + ptr_height*1.5 + line_y - ptr_height;
+
+      if (x > ptr_x && x < ptr_x + ptr_width
+       && y > ptr_y && y < ptr_y + ptr_height)
+         return i;
+   }
+
+   return -1;
+}
 
 enum menu_toggle_reason menu_display_toggle_get_reason(void)
 {
@@ -234,12 +269,20 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "vulkan"))
             return true;
          break;
+      case MENU_VIDEO_DRIVER_METAL:
+         if (string_is_equal(video_driver, "metal"))
+            return true;
+         break;
       case MENU_VIDEO_DRIVER_DIRECT3D8:
          if (string_is_equal(video_driver, "d3d8"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D9:
          if (string_is_equal(video_driver, "d3d9"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_DIRECT3D10:
+         if (string_is_equal(video_driver, "d3d10"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D11:
@@ -260,6 +303,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_WIIU:
          if (string_is_equal(video_driver, "gx2"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_SIXEL:
+         if (string_is_equal(video_driver, "sixel"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_CACA:
@@ -339,40 +386,28 @@ void menu_display_font_free(font_data_t *font)
 
 /* Setup: Initializes the font associated
  * to the menu driver */
-static font_data_t *menu_display_font_main_init(
-      menu_display_ctx_font_t *font,
-      bool is_threaded)
-{
-   font_data_t *font_data = NULL;
-
-   if (!font || !menu_disp)
-      return NULL;
-
-   if (!menu_disp->font_init_first((void**)&font_data,
-            video_driver_get_ptr(false),
-            font->path, font->size, is_threaded))
-      return NULL;
-
-   return font_data;
-}
-
 font_data_t *menu_display_font(
       enum application_special_type type,
       float font_size,
       bool is_threaded)
 {
-   menu_display_ctx_font_t font_info;
    char fontpath[PATH_MAX_LENGTH];
+   font_data_t *font_data = NULL;
+
+   if (!menu_disp)
+      return NULL;
 
    fontpath[0] = '\0';
 
    fill_pathname_application_special(
          fontpath, sizeof(fontpath), type);
 
-   font_info.path = fontpath;
-   font_info.size = font_size;
+   if (!menu_disp->font_init_first((void**)&font_data,
+            video_driver_get_ptr(false),
+            fontpath, font_size, is_threaded))
+      return NULL;
 
-   return menu_display_font_main_init(&font_info, is_threaded);
+   return font_data;
 }
 
 /* Reset the menu's coordinate array vertices.
@@ -397,7 +432,7 @@ void menu_display_set_font_framebuffer(const uint8_t *buffer)
    menu_display_font_framebuf = buffer;
 }
 
-static bool menu_display_libretro_running(
+bool menu_display_libretro_running(
       bool rarch_is_inited,
       bool rarch_is_dummy_core)
 {
@@ -1380,6 +1415,71 @@ void menu_display_snow(int width, int height)
    }
 }
 
+void menu_display_draw_keyboard(
+      uintptr_t hover_texture,
+      const font_data_t *font,
+      video_frame_info_t *video_info,
+      char *grid[], unsigned id)
+{
+   unsigned i;
+   int ptr_width, ptr_height;
+   unsigned width    = video_info->width;
+   unsigned height   = video_info->height;
+   float dark[16]    =  {
+      0.00, 0.00, 0.00, 0.85,
+      0.00, 0.00, 0.00, 0.85,
+      0.00, 0.00, 0.00, 0.85,
+      0.00, 0.00, 0.00, 0.85,
+   };
+
+   float white[16]=  {
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+   };
+
+   menu_display_draw_quad(
+         video_info,
+         0, height/2.0, width, height/2.0,
+         width, height,
+         &dark[0]);
+
+   ptr_width  = width  / 11;
+   ptr_height = height / 10;
+
+   if (ptr_width >= ptr_height)
+      ptr_width = ptr_height;
+
+   for (i = 0; i < 44; i++)
+   {
+      int line_y = (i / 11) * height / 10.0;
+
+      if (i == id)
+      {
+         menu_display_blend_begin(video_info);
+
+         menu_display_draw_texture(
+               video_info,
+               width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
+               height/2.0 + ptr_height*1.5 + line_y,
+               ptr_width, ptr_height,
+               width, height,
+               &white[0],
+               hover_texture);
+
+         menu_display_blend_end(video_info);
+      }
+
+      menu_display_draw_text(font, grid[i],
+            width/2.0 - (11*ptr_width)/2.0 + (i % 11) 
+            * ptr_width + ptr_width/2.0,
+            height/2.0 + ptr_height + line_y + font->size / 3,
+            width, height, 0xffffffff, TEXT_ALIGN_CENTER, 1.0f,
+            false, 0);
+   }
+}
+
 /* Draw text on top of the screen.
  */
 void menu_display_draw_text(
@@ -1615,6 +1715,8 @@ static void menu_driver_toggle(bool on)
    settings_t                 *settings       = config_get_ptr();
    bool pause_libretro                        = settings ?
       settings->bools.menu_pause_libretro : false;
+   bool enable_menu_sound                     = settings ?
+      settings->bools.audio_enable_menu : false;
 
    menu_driver_toggled = on;
 
@@ -1635,6 +1737,12 @@ static void menu_driver_toggle(bool on)
    if (menu_driver_alive)
    {
       bool refresh = false;
+
+#ifdef WIIU
+      /* Enable burn-in protection menu is running */
+      IMEnableDim();
+#endif
+
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
       /* Menu should always run with vsync on. */
@@ -1642,7 +1750,7 @@ static void menu_driver_toggle(bool on)
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
-      if (pause_libretro)
+      if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
       /* Override keyboard callback to redirect to menu instead.
@@ -1658,10 +1766,17 @@ static void menu_driver_toggle(bool on)
    }
    else
    {
+#ifdef WIIU
+      /* Disable burn-in protection while core is running; this is needed
+       * because HID inputs don't count for the purpose of Wii U
+       * power-saving. */
+      IMDisableDim();
+#endif
+
       if (!rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL))
          driver_set_nonblock_state();
 
-      if (pause_libretro)
+      if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_START, NULL);
 
       /* Restore libretro keyboard callback. */
@@ -1933,11 +2048,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_SET_PENDING_SHUTDOWN:
          menu_driver_pending_shutdown = true;
          break;
-      case RARCH_MENU_CTL_PLAYLIST_FREE:
-         if (menu_driver_playlist)
-            playlist_free(menu_driver_playlist);
-         menu_driver_playlist = NULL;
-         break;
       case RARCH_MENU_CTL_FIND_DRIVER:
          {
             int i;
@@ -1978,23 +2088,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
          }
          break;
-      case RARCH_MENU_CTL_PLAYLIST_INIT:
-         {
-            const char *path = (const char*)data;
-            if (string_is_empty(path))
-               return false;
-            menu_driver_playlist  = playlist_init(path,
-                  COLLECTION_SIZE);
-         }
-         break;
-      case RARCH_MENU_CTL_PLAYLIST_GET:
-         {
-            playlist_t **playlist = (playlist_t**)data;
-            if (!playlist)
-               return false;
-            *playlist = menu_driver_playlist;
-         }
-         break;
       case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
          menu_driver_prevent_populate = true;
          break;
@@ -2026,7 +2119,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (menu_driver_data_own)
             return true;
 
-         menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
+         playlist_free_cached();
          menu_shader_manager_free();
 
          if (menu_driver_data)

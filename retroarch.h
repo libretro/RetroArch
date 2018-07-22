@@ -100,6 +100,10 @@ enum rarch_ctl_state
    RARCH_CTL_SET_REMAPS_CORE_ACTIVE,
    RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE,
 
+   RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE,
+   RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE,
+   RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE,
+
    RARCH_CTL_IS_REMAPS_GAME_ACTIVE,
    RARCH_CTL_SET_REMAPS_GAME_ACTIVE,
    RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE,
@@ -355,6 +359,10 @@ rarch_system_info_t *runloop_get_system_info(void);
 void runloop_msg_queue_lock(void);
 
 void runloop_msg_queue_unlock(void);
+#endif
+
+#ifdef HAVE_DYNAMIC
+bool retroarch_core_set_on_cmdline(void);
 #endif
 
 RETRO_END_DECLS

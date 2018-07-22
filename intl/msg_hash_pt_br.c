@@ -618,6 +618,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              "Quantos segundos aguardar até prosseguir \n"
                              "para o próximo vínculo.");
             break;
+        case MENU_ENUM_LABEL_INPUT_BIND_HOLD:
+            snprintf(s, len,
+               "Input bind hold time (in seconds). \n"
+               "Amount of seconds to hold an input to bind it.");
+            break;
         case MENU_ENUM_LABEL_OVERLAY_SCALE:
             snprintf(s, len,
                      "Escala da Transparência.");
@@ -2049,6 +2054,38 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
             );
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE:
+            snprintf(s, len,
+                     "Ativa uma cor de fundo para a exibição da tela (OSD).");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED:
+            snprintf(s, len,
+                     "Define o valor vermelho da cor de fundo da exibição da tela (OSD). Valores válidos estão entre 0 e 255.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN:
+            snprintf(s, len,
+                     "Define o valor verde da cor de fundo da exibição da tela (OSD). Valores válidos estão entre 0 e 255.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE:
+            snprintf(s, len,
+                     "Define o valor azul da cor de fundo da exibição da tela (OSD). Valores válidos estão entre 0 e 255.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY:
+            snprintf(s, len,
+                     "Define a opacidade da cor de fundo da exibição da tela (OSD). Valores válidos estão entre 0.0 e 1.0.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED:
+            snprintf(s, len,
+                     "Define o valor vermelho da cor do texto da exibição da tela (OSD). Valores válidos estão entre 0 e 255.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN:
+            snprintf(s, len,
+                     "Define o valor verde da cor do texto da exibição da tela (OSD). Valores válidos estão entre 0 e 255.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE:
+            snprintf(s, len,
+                     "Define o valor azul da cor do texto da exibição da tela (OSD). Valores válidos estão entre 0 e 255.");
             break;
         default:
             if (string_is_empty(s))

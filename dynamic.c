@@ -55,6 +55,7 @@
 #include "performance_counters.h"
 #include "gfx/video_driver.h"
 #include "led/led_driver.h"
+#include "midi/midi_driver.h"
 
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
@@ -87,6 +88,10 @@ static dylib_t lib_handle;
 
 #ifdef HAVE_FFMPEG
 #define SYMBOL_FFMPEG(x) current_core->x = libretro_ffmpeg_##x
+#endif
+
+#ifdef HAVE_MPV
+#define SYMBOL_MPV(x) current_core->x = libretro_mpv_##x
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
@@ -390,8 +395,11 @@ bool libretro_get_system_info(const char *path,
  **/
 bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *current_core, const char *lib_path, dylib_t *lib_handle_p)
 {
+#ifdef HAVE_DYNAMIC
    /* the library handle for use with the SYMBOL macro */
    dylib_t lib_handle_local;
+#endif
+
    switch (type)
    {
       case CORE_TYPE_PLAIN:
@@ -524,6 +532,43 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
          SYMBOL_FFMPEG(retro_get_region);
          SYMBOL_FFMPEG(retro_get_memory_data);
          SYMBOL_FFMPEG(retro_get_memory_size);
+#endif
+         break;
+      case CORE_TYPE_MPV:
+#ifdef HAVE_MPV
+         SYMBOL_MPV(retro_init);
+         SYMBOL_MPV(retro_deinit);
+
+         SYMBOL_MPV(retro_api_version);
+         SYMBOL_MPV(retro_get_system_info);
+         SYMBOL_MPV(retro_get_system_av_info);
+
+         SYMBOL_MPV(retro_set_environment);
+         SYMBOL_MPV(retro_set_video_refresh);
+         SYMBOL_MPV(retro_set_audio_sample);
+         SYMBOL_MPV(retro_set_audio_sample_batch);
+         SYMBOL_MPV(retro_set_input_poll);
+         SYMBOL_MPV(retro_set_input_state);
+
+         SYMBOL_MPV(retro_set_controller_port_device);
+
+         SYMBOL_MPV(retro_reset);
+         SYMBOL_MPV(retro_run);
+
+         SYMBOL_MPV(retro_serialize_size);
+         SYMBOL_MPV(retro_serialize);
+         SYMBOL_MPV(retro_unserialize);
+
+         SYMBOL_MPV(retro_cheat_reset);
+         SYMBOL_MPV(retro_cheat_set);
+
+         SYMBOL_MPV(retro_load_game);
+         SYMBOL_MPV(retro_load_game_special);
+
+         SYMBOL_MPV(retro_unload_game);
+         SYMBOL_MPV(retro_get_region);
+         SYMBOL_MPV(retro_get_memory_data);
+         SYMBOL_MPV(retro_get_memory_size);
 #endif
          break;
       case CORE_TYPE_IMAGEVIEWER:
@@ -1759,27 +1804,39 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          int result = 0;
          if (!audio_driver_is_suspended() && audio_driver_is_active())
-         {
             result |= 2;
-         }
          if (video_driver_is_active() && !video_driver_is_stub_frame())
-         {
             result |= 1;
-         }
 #ifdef HAVE_RUNAHEAD
          if (want_fast_savestate())
-         {
             result |= 4;
-         }
          if (get_hard_disable_audio())
-         {
             result |= 8;
-         }
+#endif
+#ifdef HAVE_NETWORKING
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_REPLAYING, NULL))
+            result &= ~(1|2);
 #endif
          if (data != NULL)
          {
             int* result_p = (int*)data;
             *result_p = result;
+         }
+      }
+      break;
+
+      case RETRO_ENVIRONMENT_GET_MIDI_INTERFACE:
+      {
+         struct retro_midi_interface *midi_interface =
+               (struct retro_midi_interface *)data;
+
+         if (midi_interface)
+         {
+            midi_interface->input_enabled = midi_driver_input_enabled;
+            midi_interface->output_enabled = midi_driver_output_enabled;
+            midi_interface->read = midi_driver_read;
+            midi_interface->write = midi_driver_write;
+            midi_interface->flush = midi_driver_flush;
          }
       }
       break;
