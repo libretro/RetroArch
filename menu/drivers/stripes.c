@@ -681,9 +681,10 @@ static void stripes_messagebox(void *data, const char *message)
    stripes->box_message = strdup(message);
 }
 
-static void stripes_render_keyboard(stripes_handle_t *stripes,
+static void stripes_render_keyboard(
+      stripes_handle_t *stripes,
       video_frame_info_t *video_info,
-      const char *grid[], unsigned id)
+      char **grid, unsigned id)
 {
    unsigned i;
    int ptr_width, ptr_height;
@@ -900,7 +901,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
       goto end;
    }
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+   playlist = playlist_get_cached();
 
    if (playlist)
    {
