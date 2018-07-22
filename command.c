@@ -1051,8 +1051,11 @@ static void command_event_deinit_core(bool reinit)
    cheevos_unload();
 #endif
 
+   RARCH_LOG("Unloading game..\n");
    core_unload_game();
+   RARCH_LOG("Unloading core..\n");
    core_unload();
+   RARCH_LOG("Unloading core symbols..\n");
    core_uninit_symbols();
 
    if (reinit)
