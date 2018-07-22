@@ -85,6 +85,9 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_XMB)
    &menu_ctx_xmb,
 #endif
+#if defined(HAVE_STRIPES)
+   &menu_ctx_stripes,
+#endif
 #if defined(HAVE_RGUI)
    &menu_ctx_rgui,
 #endif
@@ -729,6 +732,56 @@ void menu_display_draw_quad(
    draw.y            = (int)height - y - (int)h;
    draw.width        = w;
    draw.height       = h;
+   draw.coords       = &coords;
+   draw.matrix_data  = NULL;
+   draw.texture      = menu_display_white_texture;
+   draw.prim_type    = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id  = 0;
+   draw.scale_factor = 1.0f;
+   draw.rotation     = 0.0f;
+
+   menu_display_draw(&draw, video_info);
+
+   if (menu_disp && menu_disp->blend_end)
+      menu_disp->blend_end(video_info);
+}
+
+void menu_display_draw_polygon(
+      video_frame_info_t *video_info,
+      int x1, int y1,
+      int x2, int y2,
+      int x3, int y3,
+      int x4, int y4,
+      unsigned width, unsigned height,
+      float *color)
+{
+   menu_display_ctx_draw_t draw;
+   struct video_coords coords;
+
+   float vertex[8];
+
+   vertex[0]             = x1 / (float)width;
+   vertex[1]             = y1 / (float)height;
+   vertex[2]             = x2 / (float)width;
+   vertex[3]             = y2 / (float)height;
+   vertex[4]             = x3 / (float)width;
+   vertex[5]             = y3 / (float)height;
+   vertex[6]             = x4 / (float)width;
+   vertex[7]             = y4 / (float)height;
+
+   coords.vertices      = 4;
+   coords.vertex        = &vertex[0];
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = color;
+
+   if (menu_disp && menu_disp->blend_begin)
+      menu_disp->blend_begin(video_info);
+
+   draw.x            = 0;
+   draw.y            = 0;
+   draw.width        = width;
+   draw.height       = height;
    draw.coords       = &coords;
    draw.matrix_data  = NULL;
    draw.texture      = menu_display_white_texture;
