@@ -3055,6 +3055,7 @@ void MainWindow::addPlaylistItemsToGrid(const QString &pathString, bool setProgr
       if (m_listWidget->currentItem() != currentItem)
       {
          /* user changed the current playlist before we finished loading... abort */
+         m_gridProgressWidget->hide();
          break;
       }
 
@@ -3117,7 +3118,7 @@ void MainWindow::addPlaylistItemsToGrid(const QString &pathString, bool setProgr
          m_gridProgressBar->setValue(i);
    }
 
-   if (!setProgress)
+   if (!setProgress && m_gridProgressBar->value() < m_gridProgressBar->maximum())
       m_gridProgressBar->setValue(m_gridProgressBar->value() + 1);
 
    /* If there's only one entry, a min/max/value of all zero would make an indeterminate progress bar that never ends... so just hide it when we are done. */
