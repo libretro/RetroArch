@@ -28,6 +28,11 @@
 #include <QRegularExpression>
 #include <QPalette>
 #include <QPlainTextEdit>
+#include <QFutureWatcher>
+#include <QPixmap>
+#include <QImage>
+#include <QPointer>
+#include <QProgressBar>
 
 extern "C" {
 #include <retro_common_api.h>
@@ -55,8 +60,26 @@ class QCheckBox;
 class QFormLayout;
 class QStyle;
 class QScrollArea;
+class QSlider;
 class LoadCoreWindow;
 class MainWindow;
+class ThumbnailWidget;
+class ThumbnailLabel;
+class FlowLayout;
+
+class GridItem : public QObject
+{
+   Q_OBJECT
+public:
+   GridItem();
+
+   QPointer<ThumbnailWidget> widget;
+   QPointer<ThumbnailLabel> label;
+   QHash<QString, QString> hash;
+   QImage image;
+   QPixmap pixmap;
+   QFutureWatcher<GridItem*> imageWatcher;
+};
 
 class ThumbnailWidget : public QWidget
 {
@@ -64,9 +87,17 @@ class ThumbnailWidget : public QWidget
 public:
    ThumbnailWidget(QWidget *parent = 0);
    QSize sizeHint() const;
+   void setSizeHint(QSize size);
+signals:
+   void mouseDoubleClicked();
+   void mousePressed();
+private:
+   QSize m_sizeHint;
 protected:
    void paintEvent(QPaintEvent *event);
    void resizeEvent(QResizeEvent *event);
+   void mouseDoubleClickEvent(QMouseEvent *event);
+   void mousePressEvent(QMouseEvent *event);
 };
 
 class ThumbnailLabel : public QWidget
@@ -204,6 +235,12 @@ class MainWindow : public QMainWindow
    Q_OBJECT
 
 public:
+   enum ViewType
+   {
+      VIEW_TYPE_ICONS,
+      VIEW_TYPE_LIST
+   };
+
    enum Theme
    {
       THEME_SYSTEM_DEFAULT,
@@ -223,6 +260,8 @@ public:
    TreeView* dirTreeView();
    QListWidget* playlistListWidget();
    TableWidget* contentTableWidget();
+   FlowLayout* contentGridLayout();
+   QWidget* contentGridWidget();
    QWidget* searchWidget();
    QLineEdit* searchLineEdit();
    QComboBox* launchWithComboBox();
@@ -231,10 +270,10 @@ public:
    QToolButton* runPushButton();
    QToolButton* stopPushButton();
    QTabWidget* browserAndPlaylistTabWidget();
-   QList<QHash<QString, QString> > getPlaylistDefaultCores();
+   QVector<QHash<QString, QString> > getPlaylistDefaultCores();
    ViewOptionsDialog* viewOptionsDialog();
    QSettings* settings();
-   QList<QHash<QString, QString> > getCoreInfo();
+   QVector<QHash<QString, QString> > getCoreInfo();
    void setTheme(Theme theme = THEME_SYSTEM_DEFAULT);
    Theme theme();
    Theme getThemeFromString(QString themeString);
@@ -245,6 +284,10 @@ public:
    bool setCustomThemeFile(QString filePath);
    void setCustomThemeString(QString qss);
    const QString& customThemeString() const;
+   GridItem* doDeferredImageLoad(GridItem *item, QString path);
+   void setCurrentViewType(ViewType viewType);
+   QString getCurrentViewTypeString();
+   ViewType getCurrentViewType();
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -259,10 +302,12 @@ public slots:
    void onBrowserUpClicked();
    void onBrowserStartClicked();
    void initContentTableWidget();
+   void initContentGridLayout();
    void onViewClosedDocksAboutToShow();
    void onShowHiddenDockWidgetAction();
    void setCoreActions();
    void onRunClicked();
+   void loadContent(const QHash<QString, QString> &contentHash);
    void onStartCoreClicked();
    void onTableWidgetEnterPressed();
    void selectBrowserDir(QString path);
@@ -277,6 +322,9 @@ public slots:
    void deferReloadPlaylists();
    void onGotReloadPlaylists();
    void showWelcomeScreen();
+   void onIconViewClicked();
+   void onListViewClicked();
+   void onTabWidgetIndexChanged(int index);
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
@@ -285,24 +333,36 @@ private slots:
    void onCoreLoaded();
    void onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
    void onCurrentTableItemChanged(QTableWidgetItem *current, QTableWidgetItem *previous);
+   void currentItemChanged(const QHash<QString, QString> &hash);
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
    void addPlaylistItemsToTable(QString path);
+   void addPlaylistItemsToGrid(const QString &path, bool setProgress = true);
    void onContentItemDoubleClicked(QTableWidgetItem *item);
    void onCoreLoadWindowClosed();
-   void onTabWidgetIndexChanged(int index);
    void onTreeViewItemsSelected(QModelIndexList selectedIndexes);
    void onSearchResetClicked();
    void onLaunchWithComboBoxIndexChanged(int index);
    void onFileBrowserTreeContextMenuRequested(const QPoint &pos);
    void onPlaylistWidgetContextMenuRequested(const QPoint &pos);
    void onStopClicked();
+   void onDeferredImageLoaded();
+   void onZoomValueChanged(int value);
+   void onContentGridInited();
+   void onUpdateGridItemPixmapFromImage(GridItem *item);
+   void onPendingItemUpdates();
+   void onGridItemDoubleClicked();
+   void onGridItemClicked();
 
 private:
    void setCurrentCoreLabel();
    void getPlaylistFiles();
    bool isCoreLoaded();
    bool isContentLessCore();
+   void removeGridItems();
+   void loadImageDeferred(GridItem *item, QString path);
+   void calcGridItemSize(GridItem *item, int zoomValue);
+   QVector<QHash<QString, QString> > getPlaylistItems(QString pathString);
 
    LoadCoreWindow *m_loadCoreWindow;
    QTimer *m_timer;
@@ -344,11 +404,26 @@ private:
    QListWidgetItem *m_historyPlaylistsItem;
    QIcon m_folderIcon;
    QString m_customThemeString;
+   FlowLayout *m_gridLayout;
+   QWidget *m_gridWidget;
+   QScrollArea *m_gridScrollArea;
+   QVector<QPointer<GridItem> > m_gridItems;
+   QWidget *m_gridLayoutWidget;
+   QSlider *m_zoomSlider;
+   int m_lastZoomSliderValue;
+   QList<GridItem*> m_pendingItemUpdates;
+   ViewType m_viewType;
+   QProgressBar *m_gridProgressBar;
+   QWidget *m_gridProgressWidget;
+   QHash<QString, QString> m_currentGridHash;
+   ViewType m_lastViewType;
 
 protected:
    void closeEvent(QCloseEvent *event);
    void keyPressEvent(QKeyEvent *event);
 };
+
+Q_DECLARE_METATYPE(QPointer<ThumbnailWidget>)
 
 RETRO_BEGIN_DECLS
 

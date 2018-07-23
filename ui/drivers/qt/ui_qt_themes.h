@@ -1,7 +1,15 @@
 #include <QString>
 
 /* %1 is a placeholder for palette(highlight) or the equivalent chosen by the user */
-static const QString qt_theme_default_stylesheet = QStringLiteral("");
+static const QString qt_theme_default_stylesheet = QStringLiteral(""
+   "QPushButton[flat=\"true\"] {\n"
+   "   min-height:20px;\n"
+   "   min-width:80px;\n"
+   "   padding:1px 3px 1px 3px;\n"
+   "   background-color: transparent;\n"
+   "   border: 1px solid #ddd;\n"
+   "}\n"
+);
 
 static const QString qt_theme_dark_stylesheet = QStringLiteral(""
    "QWidget {\n"
@@ -232,6 +240,10 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(""
    "   background-color:transparent;\n"
    "   border:1px solid %1;\n"
    "   border-radius:4px;\n"
+   "}\n"
+   "QPushButton[flat=\"true\"] {\n"
+   "   background-color: transparent;\n"
+   "   border: 1px solid #ddd;\n"
    "}\n"
    "QRadioButton::indicator {\n"
    "   width:18px;\n"

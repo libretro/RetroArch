@@ -334,14 +334,16 @@ OBJ += ui/drivers/ui_qt.o \
        ui/drivers/qt/ui_qt_window.o \
        ui/drivers/qt/ui_qt_browser_window.o \
        ui/drivers/qt/ui_qt_load_core_window.o \
-       ui/drivers/qt/ui_qt_msg_window.o
+       ui/drivers/qt/ui_qt_msg_window.o \
+       ui/drivers/qt/flowlayout.o
 
 MOC_HEADERS += ui/drivers/ui_qt.h \
-							 ui/drivers/qt/ui_qt_load_core_window.h
+							 ui/drivers/qt/ui_qt_load_core_window.h \
+							 ui/drivers/qt/flowlayout.h
 
-DEFINES += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) -DHAVE_MAIN
+DEFINES += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) $(QT5CONCURRENT_CFLAGS) -DHAVE_MAIN
 #DEFINES += $(QT5WEBENGINE_CFLAGS)
-LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS)
+LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS) $(QT5CONCURRENT_LIBS)
 #LIBS += $(QT5WEBENGINE_LIBS)
 NEED_CXX_LINKER = 1
 
