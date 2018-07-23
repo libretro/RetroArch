@@ -32,6 +32,7 @@
 #include <QPixmap>
 #include <QImage>
 #include <QPointer>
+#include <QProgressBar>
 
 extern "C" {
 #include <retro_common_api.h>
@@ -327,7 +328,7 @@ private slots:
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
    void addPlaylistItemsToTable(QString path);
-   void addPlaylistItemsToGrid(const QString &path);
+   void addPlaylistItemsToGrid(const QString &path, bool setProgress = true);
    void onContentItemDoubleClicked(QTableWidgetItem *item);
    void onCoreLoadWindowClosed();
    void onTreeViewItemsSelected(QModelIndexList selectedIndexes);
@@ -403,6 +404,8 @@ private:
    int m_lastZoomSliderValue;
    QList<GridItem*> m_pendingItemUpdates;
    ViewType m_viewType;
+   QProgressBar *m_gridProgressBar;
+   QWidget *m_gridProgressWidget;
 
 protected:
    void closeEvent(QCloseEvent *event);

@@ -532,6 +532,8 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_lastZoomSliderValue(0)
    ,m_pendingItemUpdates()
    ,m_viewType(VIEW_TYPE_LIST)
+   ,m_gridProgressBar(NULL)
+   ,m_gridProgressWidget(NULL)
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -544,9 +546,15 @@ MainWindow::MainWindow(QWidget *parent) :
    QMenu *viewTypeMenu = new QMenu(viewTypePushButton);
    QAction *viewTypeIconsAction = NULL;
    QAction *viewTypeListAction = NULL;
+   QHBoxLayout *gridProgressLayout = new QHBoxLayout();
+   QLabel *gridProgressLabel = NULL;
+   QHBoxLayout *gridFooterLayout = NULL;
    int i = 0;
 
    qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
+
+   m_gridProgressWidget = new QWidget();
+   gridProgressLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PROGRESS), m_gridProgressWidget);
 
    viewTypePushButton->setObjectName("viewTypePushButton");
    viewTypePushButton->setFlat(true);
@@ -556,6 +564,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
    viewTypePushButton->setMenu(viewTypeMenu);
 
+   gridProgressLabel->setObjectName("gridProgressLabel");
+
+   m_gridProgressBar = new QProgressBar(m_gridProgressWidget);
+
+   m_gridProgressBar->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred));
+
    zoomLabel->setObjectName("zoomLabel");
 
    m_zoomSlider = new QSlider(Qt::Horizontal, zoomWidget);
@@ -563,6 +577,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_zoomSlider->setMinimum(0);
    m_zoomSlider->setMaximum(100);
    m_zoomSlider->setValue(50);
+   m_zoomSlider->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred));
 
    m_lastZoomSliderValue = m_zoomSlider->value();
 
@@ -578,16 +593,28 @@ MainWindow::MainWindow(QWidget *parent) :
    m_gridWidget->layout()->addWidget(m_gridScrollArea);
    m_gridWidget->layout()->setAlignment(Qt::AlignCenter);
 
-   m_zoomSlider->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred));
+   m_gridProgressWidget->setLayout(gridProgressLayout);
+   gridProgressLayout->setContentsMargins(0, 0, 0, 0);
+   gridProgressLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
+   gridProgressLayout->addWidget(gridProgressLabel);
+   gridProgressLayout->addWidget(m_gridProgressBar);
+
+   m_gridWidget->layout()->addWidget(m_gridProgressWidget);
 
    zoomWidget->setLayout(zoomLayout);
    zoomLayout->setContentsMargins(0, 0, 0, 0);
-   zoomLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
    zoomLayout->addWidget(zoomLabel);
    zoomLayout->addWidget(m_zoomSlider);
    zoomLayout->addWidget(viewTypePushButton);
 
-   m_gridWidget->layout()->addWidget(zoomWidget);
+   gridFooterLayout = new QHBoxLayout();
+   gridFooterLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
+   gridFooterLayout->addWidget(m_gridProgressWidget);
+   gridFooterLayout->addWidget(zoomWidget);
+
+   static_cast<QVBoxLayout*>(m_gridWidget->layout())->addLayout(gridFooterLayout);
+
+   m_gridProgressWidget->hide();
 
    m_tableWidget->setAlternatingRowColors(true);
 
@@ -2994,7 +3021,7 @@ GridItem* MainWindow::doDeferredImageLoad(GridItem *item, QString path)
    return item;
 }
 
-void MainWindow::addPlaylistItemsToGrid(const QString &pathString)
+void MainWindow::addPlaylistItemsToGrid(const QString &pathString, bool setProgress)
 {
    QVector<QHash<QString, QString> > items = getPlaylistItems(pathString);
    QScreen *screen = qApp->primaryScreen();
@@ -3003,6 +3030,14 @@ void MainWindow::addPlaylistItemsToGrid(const QString &pathString)
    settings_t *settings = config_get_ptr();
    int i = 0;
    int zoomValue = m_zoomSlider->value();
+
+   /* setProgress means we are resetting the range of the progress bar as we are only loading a single playlist. If false, just increment by 1 since instead we're loading multiple playlists and we only track the progress of each entire playlist that is loaded, instead of every single entry. */
+   if (setProgress)
+   {
+      m_gridProgressBar->setMinimum(0);
+      m_gridProgressBar->setMaximum(items.count() - 1);
+      m_gridProgressBar->setValue(0);
+   }
 
    for (i = 0; i < items.count(); i++)
    {
@@ -3077,7 +3112,17 @@ void MainWindow::addPlaylistItemsToGrid(const QString &pathString)
 
       if (i % 25 == 0)
          qApp->processEvents();
+
+      if (setProgress)
+         m_gridProgressBar->setValue(i);
    }
+
+   if (!setProgress)
+      m_gridProgressBar->setValue(m_gridProgressBar->value() + 1);
+
+   /* If there's only one entry, a min/max/value of all zero would make an indeterminate progress bar that never ends... so just hide it when we are done. */
+   if (m_gridProgressBar->value() == m_gridProgressBar->maximum())
+      m_gridProgressWidget->hide();
 }
 
 void MainWindow::initContentGridLayout()
@@ -3087,6 +3132,11 @@ void MainWindow::initContentGridLayout()
 
    if (!item)
       return;
+
+   m_gridProgressBar->setMinimum(0);
+   m_gridProgressBar->setMaximum(0);
+   m_gridProgressBar->setValue(0);
+   m_gridProgressWidget->show();
 
    removeGridItems();
 
@@ -3098,10 +3148,15 @@ void MainWindow::initContentGridLayout()
       QDir playlistDir(settings->paths.directory_playlist);
       int i = 0;
 
+      m_gridProgressBar->setMinimum(0);
+      m_gridProgressBar->setMaximum(m_playlistFiles.count() - 1);
+      m_gridProgressBar->setValue(0);
+
       for (i = 0; i < m_playlistFiles.count() && m_playlistFiles.count() > 0; i++)
       {
          const QString &playlist = m_playlistFiles.at(i);
-         addPlaylistItemsToGrid(playlistDir.absoluteFilePath(playlist));
+         m_gridProgressBar->setValue(i);
+         addPlaylistItemsToGrid(playlistDir.absoluteFilePath(playlist), false);
       }
    }
    else
