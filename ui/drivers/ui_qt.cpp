@@ -61,17 +61,31 @@ ThumbnailWidget::ThumbnailWidget(QWidget *parent) :
 {
 }
 
+void ThumbnailWidget::mousePressEvent(QMouseEvent *event)
+{
+   QWidget::mousePressEvent(event);
+
+   emit mousePressed();
+}
+
+void ThumbnailWidget::mouseDoubleClickEvent(QMouseEvent *event)
+{
+   QWidget::mouseDoubleClickEvent(event);
+
+   emit mouseDoubleClicked();
+}
+
 void ThumbnailWidget::paintEvent(QPaintEvent *event)
 {
-  QStyleOption o;
-  QPainter p;
-  o.initFrom(this);
-  p.begin(this);
-  style()->drawPrimitive(
-    QStyle::PE_Widget, &o, &p, this);
-  p.end();
+   QStyleOption o;
+   QPainter p;
+   o.initFrom(this);
+   p.begin(this);
+   style()->drawPrimitive(
+      QStyle::PE_Widget, &o, &p, this);
+   p.end();
 
-  QWidget::paintEvent(event);
+   QWidget::paintEvent(event);
 }
 
 void ThumbnailWidget::resizeEvent(QResizeEvent *event)
@@ -497,6 +511,9 @@ static void* ui_companion_qt_init(void)
          mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_ICONS);
       else
          mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
+
+      /* we set it to the same thing a second time so that m_lastViewType is also equal to the startup view type */
+      mainwindow->setCurrentViewType(mainwindow->getCurrentViewType());
    }
    else
       mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);

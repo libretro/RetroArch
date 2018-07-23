@@ -534,6 +534,8 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_viewType(VIEW_TYPE_LIST)
    ,m_gridProgressBar(NULL)
    ,m_gridProgressWidget(NULL)
+   ,m_currentGridHash()
+   ,m_lastViewType(m_viewType)
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -774,6 +776,34 @@ MainWindow::~MainWindow()
       delete m_thumbnailPixmap3;
 
    removeGridItems();
+}
+
+void MainWindow::onGridItemClicked()
+{
+   QHash<QString, QString> hash;
+   ThumbnailWidget *w = static_cast<ThumbnailWidget*>(sender());
+
+   if (!w)
+      return;
+
+   hash = w->property("hash").value<QHash<QString, QString> >();
+
+   m_currentGridHash = hash;
+
+   currentItemChanged(hash);
+}
+
+void MainWindow::onGridItemDoubleClicked()
+{
+   QHash<QString, QString> hash;
+   ThumbnailWidget *w = static_cast<ThumbnailWidget*>(sender());
+
+   if (!w)
+      return;
+
+   hash = w->property("hash").value<QHash<QString, QString> >();
+
+   loadContent(hash);
 }
 
 void MainWindow::onIconViewClicked()
@@ -1896,9 +1926,12 @@ QHash<QString, QString> MainWindow::getSelectedCore()
    QHash<QString, QString> coreHash;
    QHash<QString, QString> contentHash;
    QTableWidgetItem *contentItem = m_tableWidget->currentItem();
+   ViewType viewType = getCurrentViewType();
 
-   if (contentItem)
+   if (viewType == VIEW_TYPE_LIST && contentItem)
       contentHash = contentItem->data(Qt::UserRole).value<QHash<QString, QString> >();
+   else if (viewType == VIEW_TYPE_ICONS)
+      contentHash = m_currentGridHash;
 
    switch(coreSelection)
    {
@@ -1949,12 +1982,19 @@ QHash<QString, QString> MainWindow::getSelectedCore()
    return coreHash;
 }
 
-void MainWindow::onRunClicked()
+/* the hash typically has the following keys:
+path - absolute path to the content file
+core_path - absolute path to the core, or "DETECT" to ask the user
+db_name - the display name of the rdb database this content is from
+label - the display name of the content, usually comes from the database
+crc32 - an upper-case, 8 byte string representation of the hex CRC32 checksum (e.g. ABCDEF12) followed by "|crc"
+core_name - the display name of the core, or "DETECT" if unknown
+label_noext - the display name of the content that is guaranteed not to contain a file extension
+*/
+void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
 {
 #ifdef HAVE_MENU
    content_ctx_info_t content_info;
-   QHash<QString, QString> contentHash;
-   QTableWidgetItem *item = m_tableWidget->currentItem();
    QByteArray corePathArray;
    QByteArray contentPathArray;
    QByteArray contentLabelArray;
@@ -1964,63 +2004,50 @@ void MainWindow::onRunClicked()
    QVariantMap coreMap = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
    CoreSelection coreSelection = static_cast<CoreSelection>(coreMap.value("core_selection").toInt());
 
-   if (!item)
-      return;
-
    if (m_pendingRun)
       coreSelection = CORE_SELECTION_CURRENT;
 
-   contentHash = item->data(Qt::UserRole).value<QHash<QString, QString> >();
-
    if (coreSelection == CORE_SELECTION_ASK)
    {
-      QTableWidgetItem *item = m_tableWidget->currentItem();
       QStringList extensionFilters;
 
-      if (item)
+      if (contentHash.contains("path"))
       {
-         QHash<QString, QString> hash;
+         int lastIndex = contentHash["path"].lastIndexOf('.');
+         QString extensionStr;
+         QByteArray pathArray = contentHash["path"].toUtf8();
+         const char *pathData = pathArray.constData();
 
-         hash = item->data(Qt::UserRole).value<QHash<QString, QString> >();
-
-         if (hash.contains("path"))
+         if (lastIndex >= 0)
          {
-            int lastIndex = hash["path"].lastIndexOf('.');
-            QString extensionStr;
-            QByteArray pathArray = hash["path"].toUtf8();
-            const char *pathData = pathArray.constData();
+            extensionStr = contentHash["path"].mid(lastIndex + 1);
 
-            if (lastIndex >= 0)
+            if (!extensionStr.isEmpty())
             {
-               extensionStr = hash["path"].mid(lastIndex + 1);
-
-               if (!extensionStr.isEmpty())
-               {
-                  extensionFilters.append(extensionStr.toLower());
-               }
+               extensionFilters.append(extensionStr.toLower());
             }
+         }
 
-            if (path_is_compressed_file(pathData))
+         if (path_is_compressed_file(pathData))
+         {
+            unsigned i = 0;
+            struct string_list *list = file_archive_get_file_list(pathData, NULL);
+
+            if (list)
             {
-               unsigned i = 0;
-               struct string_list *list = file_archive_get_file_list(pathData, NULL);
-
-               if (list)
+               if (list->size > 0)
                {
-                  if (list->size > 0)
+                  for (i = 0; i < list->size; i++)
                   {
-                     for (i = 0; i < list->size; i++)
-                     {
-                        const char *filePath = list->elems[i].data;
-                        const char *extension = path_get_extension(filePath);
+                     const char *filePath = list->elems[i].data;
+                     const char *extension = path_get_extension(filePath);
 
-                        if (!extensionFilters.contains(extension, Qt::CaseInsensitive))
-                           extensionFilters.append(extension);
-                     }
+                     if (!extensionFilters.contains(extension, Qt::CaseInsensitive))
+                        extensionFilters.append(extension);
                   }
-
-                  string_list_free(list);
                }
+
+               string_list_free(list);
             }
          }
       }
@@ -2096,6 +2123,25 @@ void MainWindow::onRunClicked()
 #endif
 }
 
+void MainWindow::onRunClicked()
+{
+#ifdef HAVE_MENU
+   QTableWidgetItem *item = m_tableWidget->currentItem();
+   ViewType viewType = getCurrentViewType();
+   QHash<QString, QString> contentHash;
+
+   if (!item)
+      return;
+
+   if (viewType == VIEW_TYPE_LIST)
+      contentHash = item->data(Qt::UserRole).value<QHash<QString, QString> >();
+   else if (viewType == VIEW_TYPE_ICONS)
+      contentHash = m_currentGridHash;
+
+   loadContent(contentHash);
+#endif
+}
+
 bool MainWindow::isContentLessCore()
 {
    rarch_system_info_t *system = runloop_get_system_info();
@@ -2164,6 +2210,7 @@ void MainWindow::setCoreActions()
 {
    QTableWidgetItem *currentContentItem = m_tableWidget->currentItem();
    QListWidgetItem *currentPlaylistItem = m_listWidget->currentItem();
+   ViewType viewType = getCurrentViewType();
    QHash<QString, QString> hash;
 
    m_launchWithComboBox->clear();
@@ -2182,8 +2229,10 @@ void MainWindow::setCoreActions()
       m_launchWithComboBox->addItem(m_currentCore, QVariant::fromValue(comboBoxMap));
    }
 
-   if (currentContentItem)
+   if (viewType == VIEW_TYPE_LIST && currentContentItem)
       hash = currentContentItem->data(Qt::UserRole).value<QHash<QString, QString> >();
+   else if (viewType == VIEW_TYPE_ICONS)
+      hash = m_currentGridHash;
 
    if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
    {
@@ -2341,6 +2390,9 @@ void MainWindow::onTabWidgetIndexChanged(int index)
    {
       QModelIndex index = m_dirTree->currentIndex();
 
+      /* force list view for file browser, will set it back to whatever the user had when switching back to playlist tab */
+      setCurrentViewType(VIEW_TYPE_LIST);
+
       m_tableWidget->clear();
       m_tableWidget->setColumnCount(0);
       m_tableWidget->setRowCount(0);
@@ -2354,6 +2406,9 @@ void MainWindow::onTabWidgetIndexChanged(int index)
    else if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
    {
       QListWidgetItem *item = m_listWidget->currentItem();
+
+      if (m_lastViewType != getCurrentViewType())
+         setCurrentViewType(m_lastViewType);
 
       m_tableWidget->clear();
       m_tableWidget->setColumnCount(0);
@@ -2544,18 +2599,24 @@ void MainWindow::onSearchEnterPressed()
 
 void MainWindow::onCurrentTableItemChanged(QTableWidgetItem *current, QTableWidgetItem *)
 {
-   settings_t *settings = config_get_ptr();
    QHash<QString, QString> hash;
-   QString label;
-   QString playlist_name;
-   QByteArray extension;
-   QString extensionStr;
-   int lastIndex = -1;
 
    if (!current)
       return;
 
    hash = current->data(Qt::UserRole).value<QHash<QString, QString> >();
+
+   currentItemChanged(hash);
+}
+
+void MainWindow::currentItemChanged(const QHash<QString, QString> &hash)
+{
+   settings_t *settings = config_get_ptr();
+   QString label;
+   QString playlist_name;
+   QByteArray extension;
+   QString extensionStr;
+   int lastIndex = -1;
 
    label = hash["label_noext"];
    label.replace(m_fileSanitizerRegex, "_");
@@ -2674,6 +2735,7 @@ void MainWindow::resizeThumbnails(bool one, bool two, bool three)
 
 void MainWindow::setCurrentViewType(ViewType viewType)
 {
+   m_lastViewType = m_viewType;
    m_viewType = viewType;
 
    switch (viewType)
@@ -3091,6 +3153,11 @@ void MainWindow::addPlaylistItemsToGrid(const QString &pathString, bool setProgr
       item->widget->setFixedSize(item->widget->sizeHint());
       item->widget->setLayout(new QVBoxLayout());
       item->widget->setStyleSheet("background-color: #555555");
+
+      item->widget->setProperty("hash", QVariant::fromValue<QHash<QString, QString> >(hash));
+
+      connect(item->widget, SIGNAL(mouseDoubleClicked()), this, SLOT(onGridItemDoubleClicked()));
+      connect(item->widget, SIGNAL(mousePressed()), this, SLOT(onGridItemClicked()));
 
       label = new ThumbnailLabel(item->widget);
 

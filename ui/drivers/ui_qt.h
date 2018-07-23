@@ -88,11 +88,16 @@ public:
    ThumbnailWidget(QWidget *parent = 0);
    QSize sizeHint() const;
    void setSizeHint(QSize size);
+signals:
+   void mouseDoubleClicked();
+   void mousePressed();
 private:
    QSize m_sizeHint;
 protected:
    void paintEvent(QPaintEvent *event);
    void resizeEvent(QResizeEvent *event);
+   void mouseDoubleClickEvent(QMouseEvent *event);
+   void mousePressEvent(QMouseEvent *event);
 };
 
 class ThumbnailLabel : public QWidget
@@ -281,6 +286,8 @@ public:
    const QString& customThemeString() const;
    GridItem* doDeferredImageLoad(GridItem *item, QString path);
    void setCurrentViewType(ViewType viewType);
+   QString getCurrentViewTypeString();
+   ViewType getCurrentViewType();
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -300,6 +307,7 @@ public slots:
    void onShowHiddenDockWidgetAction();
    void setCoreActions();
    void onRunClicked();
+   void loadContent(const QHash<QString, QString> &contentHash);
    void onStartCoreClicked();
    void onTableWidgetEnterPressed();
    void selectBrowserDir(QString path);
@@ -325,6 +333,7 @@ private slots:
    void onCoreLoaded();
    void onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
    void onCurrentTableItemChanged(QTableWidgetItem *current, QTableWidgetItem *previous);
+   void currentItemChanged(const QHash<QString, QString> &hash);
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
    void addPlaylistItemsToTable(QString path);
@@ -342,6 +351,8 @@ private slots:
    void onContentGridInited();
    void onUpdateGridItemPixmapFromImage(GridItem *item);
    void onPendingItemUpdates();
+   void onGridItemDoubleClicked();
+   void onGridItemClicked();
 
 private:
    void setCurrentCoreLabel();
@@ -352,8 +363,6 @@ private:
    void loadImageDeferred(GridItem *item, QString path);
    void calcGridItemSize(GridItem *item, int zoomValue);
    QVector<QHash<QString, QString> > getPlaylistItems(QString pathString);
-   QString getCurrentViewTypeString();
-   ViewType getCurrentViewType();
 
    LoadCoreWindow *m_loadCoreWindow;
    QTimer *m_timer;
@@ -406,6 +415,8 @@ private:
    ViewType m_viewType;
    QProgressBar *m_gridProgressBar;
    QWidget *m_gridProgressWidget;
+   QHash<QString, QString> m_currentGridHash;
+   ViewType m_lastViewType;
 
 protected:
    void closeEvent(QCloseEvent *event);
