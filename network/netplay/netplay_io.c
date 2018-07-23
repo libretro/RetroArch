@@ -90,7 +90,7 @@ static void remote_unpaused(netplay_t *netplay, struct netplay_connection *conne
  *
  * Disconnects an active Netplay connection due to an error
  */
-void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
+void netplay_hangup_helper(netplay_t *netplay, struct netplay_connection *connection, bool is_handshake_error)
 {
    char msg[512];
    const char *dmsg;
@@ -118,7 +118,9 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
       netplay->is_connected = false;
    }
    RARCH_LOG("%s\n", dmsg);
-   runloop_msg_queue_push(dmsg, 1, 180, false);
+
+   if(!is_handshake_error || !netplay->is_server)   
+      runloop_msg_queue_push(dmsg, 1, 180, false);
 
    socket_close(connection->fd);
    connection->active = false;
@@ -167,6 +169,11 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
    /* Unpause them */
    if (connection->paused)
       remote_unpaused(netplay, connection);
+}
+
+void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection) 
+{
+   netplay_hangup_helper(netplay, connection, false);
 }
 
 /**
@@ -1872,7 +1879,16 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
       {
          struct netplay_connection *connection = &netplay->connections[i];
          if (connection->active && !netplay_get_cmd(netplay, connection, &had_input))
-            netplay_hangup(netplay, connection);
+         {
+            if(connection->mode >= NETPLAY_CONNECTION_CONNECTED)
+            {
+               netplay_hangup(netplay, connection);
+            }
+            else
+            {
+               netplay_hangup_helper(netplay, connection,true);
+            }
+         }
       }
 
       if (block)
