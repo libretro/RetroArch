@@ -18,8 +18,8 @@ void main()
     vColor = vec4(0.0);
     for (int _82 = 0; _82 < 4; )
     {
-        vec3 _54 = aVertex.xyz - (UBO[_82 * 2 + 4].xyz);
-        vColor += (((UBO[_82 * 2 + 5]) * clamp(1.0 - (length(_54) / (UBO[_82 * 2 + 4].w)), 0.0, 1.0)) * dot(aNormal, normalize(_54)));
+        vec3 _54 = aVertex.xyz - UBO[_82 * 2 + 4].xyz;
+        vColor += ((UBO[_82 * 2 + 5] * clamp(1.0 - (length(_54) / UBO[_82 * 2 + 4].w), 0.0, 1.0)) * dot(aNormal, normalize(_54)));
         _82++;
         continue;
     }

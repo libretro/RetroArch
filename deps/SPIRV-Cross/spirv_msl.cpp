@@ -280,6 +280,7 @@ string CompilerMSL::compile()
 
 	struct_member_padding.clear();
 
+	build_function_control_flow_graphs_and_analyze();
 	update_active_builtins();
 	analyze_image_and_sampler_usage();
 	build_implicit_builtins();
@@ -534,19 +535,44 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 	// Add the global variables as arguments to the function
 	if (func_id != entry_point)
 	{
-		uint32_t next_id = increase_bound_by(uint32_t(added_arg_ids.size()));
 		for (uint32_t arg_id : added_arg_ids)
 		{
-			auto var = get<SPIRVariable>(arg_id);
+			auto &var = get<SPIRVariable>(arg_id);
 			uint32_t type_id = var.basetype;
-			func.add_parameter(type_id, next_id, true);
-			set<SPIRVariable>(next_id, type_id, StorageClassFunction, 0, arg_id);
+			auto *p_type = &get<SPIRType>(type_id);
 
-			// Ensure the existing variable has a valid name and the new variable has all the same meta info
-			set_name(arg_id, ensure_valid_name(to_name(arg_id), "v"));
-			meta[next_id] = meta[arg_id];
+			if (is_builtin_variable(var) && p_type->basetype == SPIRType::Struct)
+			{
+				// Get the non-pointer type
+				type_id = get_non_pointer_type_id(type_id);
+				p_type = &get<SPIRType>(type_id);
 
-			next_id++;
+				uint32_t mbr_idx = 0;
+				for (auto &mbr_type_id : p_type->member_types)
+				{
+					BuiltIn builtin;
+					bool is_builtin = is_member_builtin(*p_type, mbr_idx, &builtin);
+					if (is_builtin && has_active_builtin(builtin, var.storage))
+					{
+						// Add a arg variable with the same type and decorations as the member
+						uint32_t next_id = increase_bound_by(1);
+						func.add_parameter(mbr_type_id, next_id, true);
+						set<SPIRVariable>(next_id, mbr_type_id, StorageClassFunction);
+						meta[next_id].decoration = meta[type_id].members[mbr_idx];
+					}
+					mbr_idx++;
+				}
+			}
+			else
+			{
+				uint32_t next_id = increase_bound_by(1);
+				func.add_parameter(type_id, next_id, true);
+				set<SPIRVariable>(next_id, type_id, StorageClassFunction, 0, arg_id);
+
+				// Ensure the existing variable has a valid name and the new variable has all the same meta info
+				set_name(arg_id, ensure_valid_name(to_name(arg_id), "v"));
+				meta[next_id] = meta[arg_id];
+			}
 		}
 	}
 }
@@ -1148,6 +1174,18 @@ void CompilerMSL::emit_custom_functions()
 			statement("");
 			break;
 
+		case SPVFuncImplTexelBufferCoords:
+		{
+			string tex_width_str = convert_to_string(msl_options.texel_buffer_texture_width);
+			statement("// Returns 2D texture coords corresponding to 1D texel buffer coords");
+			statement("uint2 spvTexelBufferCoord(uint tc)");
+			begin_scope();
+			statement(join("return uint2(tc % ", tex_width_str, ", tc / ", tex_width_str, ");"));
+			end_scope();
+			statement("");
+			break;
+		}
+
 		case SPVFuncImplInverse4x4:
 			statement("// Returns the determinant of a 2x2 matrix.");
 			statement("inline float spvDet2x2(float a1, float a2, float b1, float b2)");
@@ -1505,23 +1543,17 @@ void CompilerMSL::emit_specialization_constants()
 // Override for MSL-specific syntax instructions
 void CompilerMSL::emit_instruction(const Instruction &instruction)
 {
-#undef BOP
-#undef BOP_CAST
-#undef UOP
-#undef QFOP
-#undef TFOP
-#undef BFOP
-#undef BFOP_CAST
-#define BOP(op) emit_binary_op(ops[0], ops[1], ops[2], ops[3], #op)
-#define BOP_CAST(op, type) \
+
+#define MSL_BOP(op) emit_binary_op(ops[0], ops[1], ops[2], ops[3], #op)
+#define MSL_BOP_CAST(op, type) \
 	emit_binary_op_cast(ops[0], ops[1], ops[2], ops[3], #op, type, opcode_is_sign_invariant(opcode))
-#define UOP(op) emit_unary_op(ops[0], ops[1], ops[2], #op)
-#define QFOP(op) emit_quaternary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], ops[5], #op)
-#define TFOP(op) emit_trinary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], #op)
-#define BFOP(op) emit_binary_func_op(ops[0], ops[1], ops[2], ops[3], #op)
-#define BFOP_CAST(op, type) \
+#define MSL_UOP(op) emit_unary_op(ops[0], ops[1], ops[2], #op)
+#define MSL_QFOP(op) emit_quaternary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], ops[5], #op)
+#define MSL_TFOP(op) emit_trinary_func_op(ops[0], ops[1], ops[2], ops[3], ops[4], #op)
+#define MSL_BFOP(op) emit_binary_func_op(ops[0], ops[1], ops[2], ops[3], #op)
+#define MSL_BFOP_CAST(op, type) \
 	emit_binary_func_op_cast(ops[0], ops[1], ops[2], ops[3], #op, type, opcode_is_sign_invariant(opcode))
-#define UFOP(op) emit_unary_func_op(ops[0], ops[1], ops[2], #op)
+#define MSL_UFOP(op) emit_unary_func_op(ops[0], ops[1], ops[2], #op)
 
 	auto ops = stream(instruction);
 	auto opcode = static_cast<Op>(instruction.op);
@@ -1533,81 +1565,81 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 	case OpIEqual:
 	case OpLogicalEqual:
 	case OpFOrdEqual:
-		BOP(==);
+		MSL_BOP(==);
 		break;
 
 	case OpINotEqual:
 	case OpLogicalNotEqual:
 	case OpFOrdNotEqual:
-		BOP(!=);
+		MSL_BOP(!=);
 		break;
 
 	case OpUGreaterThan:
 	case OpSGreaterThan:
 	case OpFOrdGreaterThan:
-		BOP(>);
+		MSL_BOP(>);
 		break;
 
 	case OpUGreaterThanEqual:
 	case OpSGreaterThanEqual:
 	case OpFOrdGreaterThanEqual:
-		BOP(>=);
+		MSL_BOP(>=);
 		break;
 
 	case OpULessThan:
 	case OpSLessThan:
 	case OpFOrdLessThan:
-		BOP(<);
+		MSL_BOP(<);
 		break;
 
 	case OpULessThanEqual:
 	case OpSLessThanEqual:
 	case OpFOrdLessThanEqual:
-		BOP(<=);
+		MSL_BOP(<=);
 		break;
 
 	// Derivatives
 	case OpDPdx:
 	case OpDPdxFine:
 	case OpDPdxCoarse:
-		UFOP(dfdx);
+		MSL_UFOP(dfdx);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpDPdy:
 	case OpDPdyFine:
 	case OpDPdyCoarse:
-		UFOP(dfdy);
+		MSL_UFOP(dfdy);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	case OpFwidth:
 	case OpFwidthCoarse:
 	case OpFwidthFine:
-		UFOP(fwidth);
+		MSL_UFOP(fwidth);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	// Bitfield
 	case OpBitFieldInsert:
-		QFOP(insert_bits);
+		MSL_QFOP(insert_bits);
 		break;
 
 	case OpBitFieldSExtract:
 	case OpBitFieldUExtract:
-		TFOP(extract_bits);
+		MSL_TFOP(extract_bits);
 		break;
 
 	case OpBitReverse:
-		UFOP(reverse_bits);
+		MSL_UFOP(reverse_bits);
 		break;
 
 	case OpBitCount:
-		UFOP(popcount);
+		MSL_UFOP(popcount);
 		break;
 
 	case OpFRem:
-		BFOP(fmod);
+		MSL_BFOP(fmod);
 		break;
 
 	// Atomics
@@ -1660,7 +1692,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-#define AFMOImpl(op, valsrc)                                                                                      \
+#define MSL_AFMO_IMPL(op, valsrc)                                                                                 \
 	do                                                                                                            \
 	{                                                                                                             \
 		uint32_t result_type = ops[0];                                                                            \
@@ -1671,45 +1703,45 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		emit_atomic_func_op(result_type, id, "atomic_fetch_" #op "_explicit", mem_sem, mem_sem, false, ptr, val); \
 	} while (false)
 
-#define AFMO(op) AFMOImpl(op, ops[5])
-#define AFMIO(op) AFMOImpl(op, 1)
+#define MSL_AFMO(op) MSL_AFMO_IMPL(op, ops[5])
+#define MSL_AFMIO(op) MSL_AFMO_IMPL(op, 1)
 
 	case OpAtomicIIncrement:
-		AFMIO(add);
+		MSL_AFMIO(add);
 		break;
 
 	case OpAtomicIDecrement:
-		AFMIO(sub);
+		MSL_AFMIO(sub);
 		break;
 
 	case OpAtomicIAdd:
-		AFMO(add);
+		MSL_AFMO(add);
 		break;
 
 	case OpAtomicISub:
-		AFMO(sub);
+		MSL_AFMO(sub);
 		break;
 
 	case OpAtomicSMin:
 	case OpAtomicUMin:
-		AFMO(min);
+		MSL_AFMO(min);
 		break;
 
 	case OpAtomicSMax:
 	case OpAtomicUMax:
-		AFMO(max);
+		MSL_AFMO(max);
 		break;
 
 	case OpAtomicAnd:
-		AFMO(and);
+		MSL_AFMO(and);
 		break;
 
 	case OpAtomicOr:
-		AFMO(or);
+		MSL_AFMO(or);
 		break;
 
 	case OpAtomicXor:
-		AFMO (xor);
+		MSL_AFMO (xor);
 		break;
 
 	// Images
@@ -1833,7 +1865,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-#define ImgQry(qrytype)                                                                     \
+#define MSL_ImgQry(qrytype)                                                                 \
 	do                                                                                      \
 	{                                                                                       \
 		uint32_t rslt_type_id = ops[0];                                                     \
@@ -1846,11 +1878,11 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 	} while (false)
 
 	case OpImageQueryLevels:
-		ImgQry(mip_levels);
+		MSL_ImgQry(mip_levels);
 		break;
 
 	case OpImageQuerySamples:
-		ImgQry(samples);
+		MSL_ImgQry(samples);
 		break;
 
 	// Casting
@@ -1932,7 +1964,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 			e->need_transpose = true;
 		}
 		else
-			BOP(*);
+			MSL_BOP(*);
 		break;
 	}
 
@@ -2078,6 +2110,11 @@ bool CompilerMSL::maybe_emit_array_assignment(uint32_t id_lhs, uint32_t id_rhs)
 		return false;
 
 	auto *var = maybe_get<SPIRVariable>(id_lhs);
+
+	// Is this a remapped, static constant? Don't do anything.
+	if (var->remapped_variable && var->statically_assigned)
+		return true;
+
 	if (ids[id_rhs].get_type() == TypeConstant && var && var->deferred_declaration)
 	{
 		// Special case, if we end up declaring a variable when assigning the constant array,
@@ -2435,8 +2472,9 @@ string CompilerMSL::to_function_args(uint32_t img, const SPIRType &imgtype, bool
 		if (coord_type.vecsize > 1)
 			tex_coords += ".x";
 
+		// Metal texel buffer textures are 2D, so convert 1D coord to 2D.
 		if (is_fetch)
-			tex_coords = "uint2(" + round_fp_tex_coords(tex_coords, coord_is_fp) + ", 0)"; // Metal textures are 2D
+			tex_coords = "spvTexelBufferCoord(" + round_fp_tex_coords(tex_coords, coord_is_fp) + ")";
 
 		alt_coord = ".y";
 
@@ -3559,17 +3597,13 @@ std::string CompilerMSL::sampler_type(const SPIRType &type)
 			SPIRV_CROSS_THROW("MSL 2.0 or greater is required for arrays of samplers.");
 
 		// Arrays of samplers in MSL must be declared with a special array<T, N> syntax ala C++11 std::array.
-		auto *parent = &type;
-		while (parent->pointer)
-			parent = &get<SPIRType>(parent->parent_type);
-		parent = &get<SPIRType>(parent->parent_type);
-
 		uint32_t array_size =
 		    type.array_size_literal.back() ? type.array.back() : get<SPIRConstant>(type.array.back()).scalar();
-
 		if (array_size == 0)
 			SPIRV_CROSS_THROW("Unsized array of samplers is not supported in MSL.");
-		return join("array<", sampler_type(*parent), ", ", array_size, ">");
+
+		auto &parent = get<SPIRType>(get_non_pointer_type(type).parent_type);
+		return join("array<", sampler_type(parent), ", ", array_size, ">");
 	}
 	else
 		return "sampler";
@@ -3592,25 +3626,20 @@ string CompilerMSL::image_type_glsl(const SPIRType &type, uint32_t id)
 			SPIRV_CROSS_THROW("MSL 2.0 or greater is required for arrays of textures.");
 
 		// Arrays of images in MSL must be declared with a special array<T, N> syntax ala C++11 std::array.
-		auto *parent = &type;
-		while (parent->pointer)
-			parent = &get<SPIRType>(parent->parent_type);
-		parent = &get<SPIRType>(parent->parent_type);
-
 		uint32_t array_size =
 		    type.array_size_literal.back() ? type.array.back() : get<SPIRConstant>(type.array.back()).scalar();
 		if (array_size == 0)
 			SPIRV_CROSS_THROW("Unsized array of images is not supported in MSL.");
-		return join("array<", image_type_glsl(*parent, id), ", ", array_size, ">");
+
+		auto &parent = get<SPIRType>(get_non_pointer_type(type).parent_type);
+		return join("array<", image_type_glsl(parent, id), ", ", array_size, ">");
 	}
 
 	string img_type_name;
 
 	// Bypass pointers because we need the real image struct
 	auto &img_type = get<SPIRType>(type.self).image;
-	bool shadow_image = comparison_images.count(id) != 0;
-
-	if (img_type.depth || shadow_image)
+	if (image_is_comparison(type, id))
 	{
 		switch (img_type.dim)
 		{
@@ -4041,14 +4070,15 @@ CompilerMSL::SPVFuncImpl CompilerMSL::OpCodePreprocessor::get_spv_func_impl(Op o
 		auto &return_type = compiler.get<SPIRType>(args[0]);
 		if (!return_type.array.empty())
 			return SPVFuncImplArrayCopy;
-		else
-			return SPVFuncImplNone;
+
+		break;
 	}
 
 	case OpStore:
 	{
 		// Get the result type of the RHS. Since this is run as a pre-processing stage,
 		// we must extract the result type directly from the Instruction, rather than the ID.
+		uint32_t id_lhs = args[0];
 		uint32_t id_rhs = args[1];
 
 		const SPIRType *type = nullptr;
@@ -4060,14 +4090,30 @@ CompilerMSL::SPVFuncImpl CompilerMSL::OpCodePreprocessor::get_spv_func_impl(Op o
 		else
 		{
 			// Or ... an expression.
-			if (result_types[id_rhs] != 0)
-				type = &compiler.get<SPIRType>(result_types[id_rhs]);
+			uint32_t tid = result_types[id_rhs];
+			if (tid)
+				type = &compiler.get<SPIRType>(tid);
 		}
 
-		if (type && compiler.is_array(*type))
+		auto *var = compiler.maybe_get<SPIRVariable>(id_lhs);
+
+		// Are we simply assigning to a statically assigned variable which takes a constant?
+		// Don't bother emitting this function.
+		bool static_expression_lhs =
+		    var && var->storage == StorageClassFunction && var->statically_assigned && var->remapped_variable;
+		if (type && compiler.is_array(*type) && !static_expression_lhs)
 			return SPVFuncImplArrayCopy;
-		else
-			return SPVFuncImplNone;
+
+		break;
+	}
+
+	case OpImageFetch:
+	{
+		// Retrieve the image type, and if it's a Buffer, emit a texel coordinate function
+		uint32_t tid = result_types[args[2]];
+		if (tid && compiler.get<SPIRType>(tid).image.dim == DimBuffer)
+			return SPVFuncImplTexelBufferCoords;
+
 		break;
 	}
 
@@ -4176,7 +4222,7 @@ CompilerMSL::MemberSorter::MemberSorter(SPIRType &t, Meta &m, SortAspect sa)
 	meta.members.resize(max(type.member_types.size(), meta.members.size()));
 }
 
-void CompilerMSL::remap_constexpr_sampler(uint32_t id, const spirv_cross::MSLConstexprSampler &sampler)
+void CompilerMSL::remap_constexpr_sampler(uint32_t id, const MSLConstexprSampler &sampler)
 {
 	auto &type = get<SPIRType>(get<SPIRVariable>(id).basetype);
 	if (type.basetype != SPIRType::SampledImage && type.basetype != SPIRType::Sampler)
@@ -4184,4 +4230,25 @@ void CompilerMSL::remap_constexpr_sampler(uint32_t id, const spirv_cross::MSLCon
 	if (!type.array.empty())
 		SPIRV_CROSS_THROW("Can not remap array of samplers.");
 	constexpr_samplers[id] = sampler;
+}
+
+// MSL always declares builtins with their SPIR-V type.
+void CompilerMSL::bitcast_from_builtin_load(uint32_t, std::string &, const SPIRType &)
+{
+}
+
+void CompilerMSL::bitcast_to_builtin_store(uint32_t, std::string &, const SPIRType &)
+{
+}
+
+std::string CompilerMSL::to_initializer_expression(const SPIRVariable &var)
+{
+	// We risk getting an array initializer here with MSL. If we have an array.
+	// FIXME: We cannot handle non-constant arrays being initialized.
+	// We will need to inject spvArrayCopy here somehow ...
+	auto &type = get<SPIRType>(var.basetype);
+	if (ids[var.initializer].get_type() == TypeConstant && (!type.array.empty() || type.basetype == SPIRType::Struct))
+		return constant_expression(get<SPIRConstant>(var.initializer));
+	else
+		return CompilerGLSL::to_initializer_expression(var);
 }

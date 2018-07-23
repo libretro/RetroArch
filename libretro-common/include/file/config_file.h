@@ -118,6 +118,9 @@ bool config_get_int(config_file_t *conf, const char *entry, int *in);
 /* Extracts an uint from config file. */
 bool config_get_uint(config_file_t *conf, const char *entry, unsigned *in);
 
+/* Extracts an size_t from config file. */
+bool config_get_size_t(config_file_t *conf, const char *key, size_t *in);
+
 #if defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
 /* Extracts an uint64 from config file. */
 bool config_get_uint64(config_file_t *conf, const char *entry, uint64_t *in);

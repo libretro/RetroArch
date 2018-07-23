@@ -127,6 +127,7 @@
     <ClCompile Include="..\spirv_cpp.cpp" />
     <ClCompile Include="..\spirv_cross.cpp" />
     <ClCompile Include="..\spirv_glsl.cpp" />
+    <ClCompile Include="..\spirv_reflect.cpp" />
     <ClCompile Include="..\spirv_hlsl.cpp" />
     <ClCompile Include="..\spirv_msl.cpp" />
     <ClCompile Include="..\spirv_cfg.cpp" />
@@ -138,6 +139,7 @@
     <ClInclude Include="..\spirv_cpp.hpp" />
     <ClInclude Include="..\spirv_cross.hpp" />
     <ClInclude Include="..\spirv_glsl.hpp" />
+    <ClInclude Include="..\spirv_reflect.hpp" />
     <ClInclude Include="..\spirv.hpp" />
     <ClInclude Include="..\spirv_hlsl.hpp" />
     <ClInclude Include="..\spirv_msl.hpp" />

@@ -68,6 +68,7 @@ be received by your application before it calls any ITaskbarList3 method.
 
 static unsigned win32_orig_width          = 0;
 static unsigned win32_orig_height         = 0;
+static unsigned win32_orig_refresh        = 0;
 
 static void* win32_display_server_init(void)
 {
@@ -106,7 +107,7 @@ static void win32_display_server_destroy(void *data)
    
    if (win32_orig_width > 0 && win32_orig_height > 0 )
       video_display_server_switch_resolution(win32_orig_width, win32_orig_height,
-         60, 60);
+         win32_orig_refresh , (float)win32_orig_refresh );
 
 #ifdef HAS_TASKBAR_EXT
    if (g_taskbarList && win32_taskbar_is_created())
@@ -214,13 +215,14 @@ static bool win32_display_server_set_resolution(void *data,
 
    if (!serv)
       return false;
+   
+   EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
   
    if (win32_orig_width == 0)
 	   win32_orig_width          = GetSystemMetrics(SM_CXSCREEN);
+      win32_orig_refresh        = curDevmode.dmDisplayFrequency;
    if (win32_orig_height == 0)
 	   win32_orig_height         = GetSystemMetrics(SM_CYSCREEN);
-
-   EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
 
    /* Used to stop super resolution bug */
    if (width == curDevmode.dmPelsWidth)

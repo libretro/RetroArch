@@ -775,6 +775,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_BOOL:
       case ST_INT:
       case ST_UINT:
+      case ST_SIZE:
       case ST_HEX:
       case ST_FLOAT:
       case ST_STRING:
@@ -931,6 +932,8 @@ void *setting_get_ptr(rarch_setting_t *setting)
          return setting->value.target.integer;
       case ST_UINT:
          return setting->value.target.unsigned_integer;
+      case ST_SIZE:
+         return setting->value.target.sizet;
       case ST_FLOAT:
          return setting->value.target.fraction;
       case ST_BIND:
@@ -1635,6 +1638,14 @@ void general_write_handler(void *data)
          break;
       case MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE:
          frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
+         break;
+      case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
+         {
+            rarch_setting_t *buffer_size_setting = menu_setting_find("rewind_buffer_size");
+            if ( buffer_size_setting ) {
+               buffer_size_setting->step = (*setting->value.target.unsigned_integer)*1024*1024 ;
+            }
+         }
          break;
       default:
          break;
@@ -3083,18 +3094,6 @@ static bool setting_append_list(
                SD_FLAG_CMD_APPLY_AUTO);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REWIND_TOGGLE);
 
-#if 0
-         CONFIG_SIZE(
-               settings->rewind_buffer_size,
-               "rewind_buffer_size",
-               "Rewind Buffer Size",
-               rewind_buffer_size,
-               group_info,
-               subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler)
-#endif
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.rewind_granularity,
@@ -3107,6 +3106,31 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 1, 32768, 1, true, true);
+            CONFIG_SIZE(
+                  list, list_info,
+                  &settings->sizes.rewind_buffer_size,
+                  MENU_ENUM_LABEL_REWIND_BUFFER_SIZE,
+                  MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
+                  rewind_buffer_size,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+				  &setting_get_string_representation_size_in_mb);
+            menu_settings_list_current_add_range(list, list_info, 1024*1024, 1024*1024*1024, settings->uints.rewind_buffer_size_step*1024*1024, true, true);
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.rewind_buffer_size_step,
+                  MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP,
+                  MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
+				  rewind_buffer_size_step,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

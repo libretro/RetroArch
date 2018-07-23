@@ -40,6 +40,8 @@
 	<string>1.7.2</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>YES</string>
 	<key>UIApplicationExitsOnSuspend</key>

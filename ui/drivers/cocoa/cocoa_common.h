@@ -60,6 +60,10 @@ typedef enum apple_view_type {
 /*! @brief setCursorVisible specifies whether the cursor is visible */
 - (void)setCursorVisible:(bool)v;
 
+/*! @brief controls whether the screen saver should be disabled and
+ * the displays should not sleep.
+ */
+- (bool)setDisableDisplaySleep:(bool)disable;
 @end
 
 extern id<ApplePlatform> apple_platform;

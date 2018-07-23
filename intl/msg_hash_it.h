@@ -2966,7 +2966,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Assicura che i fotogrammi siano attivi all'interno del menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,
-      "Select a different layout for the XMB interface.")
+      "Seleziona un layout diverso per l'interfaccia XMB.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_THEME,
       "Seleziona un tema diverso per l'icona. Le modifiche avranno effetto dopo il riavvio del programma.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
@@ -3236,9 +3236,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
       "Mostra/Nasconde l'opzione 'Riavvia'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
-      "Show Shutdown")
+      "Visualizza spegnimento")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
-      "Show/hide the 'Shutdown' option.")
+      "Mostra/Nasconde l'opzione 'Spegnimento'")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
       "Menu rapido")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,

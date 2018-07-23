@@ -13,6 +13,9 @@
 
 #define MAX_PADS 10
 
+/* TODO/FIXME - 
+ * fix game focus toggle */
+
 typedef struct switch_input
 {
    const input_device_driver_t *joypad;

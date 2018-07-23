@@ -36,27 +36,9 @@ fragment float4 basic_fragment_proj_tex(ColorInOut in [[stage_in]],
     return float4(colorSample);
 }
 
-#pragma mark - functions using normalized device coordinates
+#pragma mark - functions for rendering sprites
 
-vertex ColorInOut basic_vertex_ndc_tex(const Vertex in [[ stage_in ]])
-{
-    ColorInOut out;
-    out.position = float4(in.position, 1.0);
-    out.texCoord = in.texCoord;
-    return out;
-}
-
-fragment float4 basic_fragment_ndc_tex(ColorInOut in       [[stage_in]],
-                                       texture2d<half> tex [[ texture(TextureIndexColor) ]],
-                                       sampler samp        [[ sampler(SamplerIndexDraw) ]])
-{
-    half4 colorSample = tex.sample(samp, in.texCoord.xy);
-    return float4(colorSample);
-}
-
-#pragma mark - functions for rendering fonts
-
-vertex FontFragmentIn font_vertex(const FontVertex in [[ stage_in ]], const device Uniforms &uniforms [[ buffer(BufferIndexUniforms) ]])
+vertex FontFragmentIn sprite_vertex(const SpriteVertex in [[ stage_in ]], const device Uniforms &uniforms [[ buffer(BufferIndexUniforms) ]])
 {
     FontFragmentIn out;
     out.position = uniforms.projectionMatrix * float4(in.position, 0, 1);
@@ -65,10 +47,72 @@ vertex FontFragmentIn font_vertex(const FontVertex in [[ stage_in ]], const devi
     return out;
 }
 
-fragment float4 font_fragment(FontFragmentIn  in  [[ stage_in ]],
+fragment float4 sprite_fragment_a8(FontFragmentIn  in  [[ stage_in ]],
                               texture2d<half> tex [[ texture(TextureIndexColor) ]],
                               sampler samp        [[ sampler(SamplerIndexDraw) ]])
 {
     half4 colorSample = tex.sample(samp, in.texCoord.xy);
     return float4(in.color.rgb, in.color.a * colorSample.r);
+}
+
+#pragma mark - functions for rendering sprites
+
+vertex FontFragmentIn stock_vertex(const SpriteVertex in [[ stage_in ]], const device Uniforms &uniforms [[ buffer(BufferIndexUniforms) ]])
+{
+    FontFragmentIn out;
+    out.position = uniforms.projectionMatrix * float4(in.position, 0, 1);
+    out.texCoord = in.texCoord;
+    out.color    = in.color;
+    return out;
+}
+
+fragment float4 stock_fragment(FontFragmentIn  in  [[ stage_in ]],
+                              texture2d<float> tex [[ texture(TextureIndexColor) ]],
+                              sampler samp         [[ sampler(SamplerIndexDraw) ]])
+{
+    float4 colorSample = tex.sample(samp, in.texCoord.xy);
+    return colorSample * in.color;
+}
+
+fragment half4 stock_fragment_color(FontFragmentIn in [[ stage_in ]])
+{
+    return half4(in.color);
+}
+
+#pragma mark - filter kernels
+
+kernel void convert_bgra4444_to_bgra8888(device uint16_t *              in  [[ buffer(0) ]],
+                                         texture2d<half, access::write> out [[ texture(0) ]],
+                                         uint                           id  [[ thread_position_in_grid ]])
+{
+    uint16_t pix = in[id];
+    uchar4 pix2 = uchar4(
+                         extract_bits(pix,  4, 4),
+                         extract_bits(pix,  8, 4),
+                         extract_bits(pix, 12, 4),
+                         extract_bits(pix,  0, 4)
+                         );
+
+    uint ypos = id / out.get_width();
+    uint xpos = id % out.get_width();
+
+    out.write(half4(pix2) / 15.0, uint2(xpos, ypos));
+}
+
+kernel void convert_rgb565_to_bgra8888(device uint16_t *                in  [[ buffer(0) ]],
+                                         texture2d<half, access::write> out [[ texture(0) ]],
+                                         uint                           id  [[ thread_position_in_grid ]])
+{
+    uint16_t pix = in[id];
+    uchar4 pix2 = uchar4(
+                         extract_bits(pix, 11, 5),
+                         extract_bits(pix,  5, 6),
+                         extract_bits(pix,  0, 5),
+                         0xf
+                         );
+
+    uint ypos = id / out.get_width();
+    uint xpos = id % out.get_width();
+
+    out.write(half4(pix2) / half4(0x1f, 0x3f, 0x1f, 0xf), uint2(xpos, ypos));
 }

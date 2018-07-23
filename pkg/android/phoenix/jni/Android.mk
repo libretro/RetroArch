@@ -29,6 +29,10 @@ ifeq ($(TARGET_ARCH),x86)
    DEFINES += -DANDROID_X86 -DHAVE_SSSE3
 endif
 
+ifeq ($(TARGET_ARCH),x86_64)
+   DEFINES += -DANDROID_X64
+endif
+
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
 
 ifeq ($(HAVE_NEON),1)

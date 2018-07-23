@@ -74,9 +74,9 @@
 #define FPS_UPDATE_INTERVAL 256
 
 #ifdef HAVE_THREADS
-#define video_driver_is_threaded() ((!video_driver_is_hw_context() && video_driver_threaded) ? true : false)
+#define video_driver_is_threaded_internal() ((!video_driver_is_hw_context() && video_driver_threaded) ? true : false)
 #else
-#define video_driver_is_threaded() (false)
+#define video_driver_is_threaded_internal() (false)
 #endif
 
 #ifdef HAVE_THREADS
@@ -239,6 +239,7 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "16:9",          1.7778f },
    { "16:10",         1.6f },
    { "16:15",         16.0f / 15.0f },
+   { "21:9",          21.0f / 9.0f },
    { "1:1",           1.0f },
    { "2:1",           2.0f },
    { "3:2",           1.5f },
@@ -339,11 +340,14 @@ static const video_driver_t *video_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX)
    &video_gdi,
 #endif
-#ifdef HAVE_CACA
-   &video_caca,
-#endif
 #ifdef DJGPP
    &video_vga,
+#endif
+#ifdef HAVE_SIXEL
+   &video_sixel,
+#endif
+#ifdef HAVE_CACA
+   &video_caca,
 #endif
    &video_null,
    NULL,
@@ -408,6 +412,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #endif
 #if defined(_WIN32) && !defined(_XBOX)
    &gfx_ctx_gdi,
+#endif
+#ifdef HAVE_SIXEL
+   &gfx_ctx_sixel,
 #endif
    &gfx_ctx_null,
    NULL
@@ -498,6 +505,11 @@ const char* config_get_video_driver_options(void)
    return char_list_new_special(STRING_LIST_VIDEO_DRIVERS, NULL);
 }
 
+bool video_driver_is_threaded(void)
+{
+   return video_driver_is_threaded_internal();
+}
+
 #ifdef HAVE_VULKAN
 static bool hw_render_context_is_vulkan(enum retro_hw_context_type type)
 {
@@ -545,7 +557,7 @@ void video_driver_set_threaded(bool val)
 void *video_driver_get_ptr(bool force_nonthreaded_data)
 {
 #ifdef HAVE_THREADS
-   if (video_driver_is_threaded() && !force_nonthreaded_data)
+   if (video_driver_is_threaded_internal() && !force_nonthreaded_data)
       return video_thread_get_ptr(NULL);
 #endif
 
@@ -834,7 +846,7 @@ static void video_driver_pixel_converter_free(void)
 static void video_driver_free_internal(void)
 {
 #ifdef HAVE_THREADS
-   bool is_threaded     = video_driver_is_threaded();
+   bool is_threaded     = video_driver_is_threaded_internal();
 #endif
 
    command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
@@ -1038,7 +1050,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video_driver_find_driver();
 
 #ifdef HAVE_THREADS
-   video.is_threaded   = video_driver_is_threaded();
+   video.is_threaded   = video_driver_is_threaded_internal();
    *video_is_threaded  = video.is_threaded;
 
    if (video.is_threaded)
@@ -1238,7 +1250,7 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
 void video_driver_get_size(unsigned *width, unsigned *height)
 {
 #ifdef HAVE_THREADS
-   bool is_threaded = video_driver_is_threaded();
+   bool is_threaded = video_driver_is_threaded_internal();
    video_driver_threaded_lock(is_threaded);
 #endif
    if (width)
@@ -1253,7 +1265,7 @@ void video_driver_get_size(unsigned *width, unsigned *height)
 void video_driver_set_size(unsigned *width, unsigned *height)
 {
 #ifdef HAVE_THREADS
-   bool is_threaded = video_driver_is_threaded();
+   bool is_threaded = video_driver_is_threaded_internal();
    video_driver_threaded_lock(is_threaded);
 #endif
    if (width)
@@ -1311,7 +1323,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    unsigned samples       = 0;
 
 #ifdef HAVE_THREADS
-   if (video_driver_is_threaded())
+   if (video_driver_is_threaded_internal())
       return false;
 #endif
 
@@ -1595,6 +1607,7 @@ void video_driver_destroy(void)
    video_driver_cache_context_ack = false;
    video_driver_record_gpu_buffer = NULL;
    current_video                  = NULL;
+   video_driver_set_cached_frame_ptr(NULL);
 }
 
 void video_driver_set_cached_frame_ptr(const void *data)
@@ -1779,6 +1792,7 @@ bool video_driver_init(bool *video_is_threaded)
 {
    video_driver_lock_new();
    video_driver_filter_free();
+   video_driver_set_cached_frame_ptr(NULL);
    return video_driver_init_internal(video_is_threaded);
 }
 
@@ -1792,6 +1806,7 @@ void video_driver_free(void)
    video_driver_free_internal();
    video_driver_lock_free();
    video_driver_data = NULL;
+   video_driver_set_cached_frame_ptr(NULL);
 }
 
 void video_driver_monitor_reset(void)
@@ -2671,7 +2686,7 @@ bool video_driver_texture_load(void *data,
       return false;
 
    *id = video_driver_poke->load_texture(video_driver_data, data,
-         video_driver_is_threaded(),
+         video_driver_is_threaded_internal(),
          filter_type);
 
    return true;
@@ -2717,7 +2732,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context();
 #ifdef HAVE_THREADS
-   bool is_threaded                  = video_driver_is_threaded();
+   bool is_threaded                  = video_driver_is_threaded_internal();
    video_driver_threaded_lock(is_threaded);
 #endif
    settings                          = config_get_ptr();

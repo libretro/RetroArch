@@ -68,6 +68,10 @@ menu/driverspzarch.c
 .pc
 /media/shaders_glsl/
 /obj-w32/
+.cproject
+.settings
+libretro-super
+run.sh
 
 # Wii U
 *.depend

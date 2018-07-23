@@ -1,8 +1,12 @@
 # 1.7.4 (future)
 - ANDROID: Add sustained performance mode, can be turned on/off in Power Management settings menu.
 - ANDROID: Powerstate/battery level support.
+- CHEEVOS: Fix crash when scrolling Achievement List while Unofficial Achievements enabled (#6732).
+- CHEEVOS: Added hitcounts support for PauseIf/ResetIf (#6817).
 - COMMON: Automatically hide "Configuration Override options" in Quick Menu.
 - COMMON: Small Bugfix to not trigger savestate code when pressing Reset.
+- COMMON: Added libsixel video driver.
+- EMSCRIPTEN: Fix Game Focus Toggle.
 - HID/OSX: Fix to set hid device registration deterministic (#6497), to address issue #6640 re-adding dynamic device registration.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
@@ -14,8 +18,10 @@
 - MIDI: Add a Windows driver for MIDI, based on winmm.
 - MENU/QT/WIMP: QT QSlider styling for Dark Theme.
 - MENU/QT/WIMP: Remove button ghostly inside highlighting.
-- METAL: Initial work-in-progress video driver for Metal. macOS-only right now, and currently requires macOS 10.13. Works with RGUI right now.
+- METAL: Initial work-in-progress video driver for Metal. macOS-only right now, and currently requires macOS 10.13.
+- METAL: Supports XMB/MaterialUI, has a menu display driver. Has a font rendering driver.
 - METAL/SLANG: Slang shaders should be compatible with Metal video driver.
+- QNX: Fix Game Focus Toggle.
 - PS3: Add audio mixer support for FLAC and MP3.
 - PSP: Use proper button labels, fix inverted R-Stick Y axis.
 - REMAPS: Fix the way offsets are calculated for keyboard remapping.
@@ -24,9 +30,14 @@
 - VULKAN: Fix two validation errors.
 - VULKAN: Try to avoid creating swapchains redundantly. Should fix black screen and having to alt tab out of window again to get display working on Nvidia GPUs (Windows).
 - VULKAN/OSX: Initial MoltenVK support. Not enabled yet, several MoltenVK bugs should be fixed first before we can have it fully working.
+- WINDOWS/DINPUT: Add rumble support.
+- WINDOWS/DINPUT: Fix Game Focus Toggle.
+- WINDOWS/RAWINPUT: Fix Game Focus Toggle.
+- X11: Fix Game Focus Toggle.
 - WII: Change deflicker setting to work in 480p or higher, and always enables vfilter so that the user can easily change brightness.
 - WIIU: Fix out-of-bounds rendering bug
 - WIIU: Implement UDP broadcast network logging on Wii U.
+- WIIU: Audio should no longer clip.
 
 # 1.7.3
 - AUDIO: Audio mixer supports FLAC/MP3 file types now!

@@ -155,6 +155,24 @@ static void setting_get_string_representation_uint(void *data,
             *setting->value.target.unsigned_integer);
 }
 
+static void setting_get_string_representation_size(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (setting)
+      snprintf(s, len, "%" PRI_SIZET,
+            *setting->value.target.sizet);
+}
+
+void setting_get_string_representation_size_in_mb(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (setting)
+      snprintf(s, len, "%" PRI_SIZET,
+            (*setting->value.target.sizet)/(1024*1024));
+}
+
 static int setting_uint_action_left_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -222,6 +240,79 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
          else
 #endif
             *setting->value.target.unsigned_integer = max;
+      }
+   }
+
+   return 0;
+}
+
+static int setting_size_action_left_default(void *data, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   double               min = 0.0f;
+   bool                 overflowed = false;
+
+   if (!setting)
+      return -1;
+
+   min = setting->min;
+
+   (void)wraparound; /* TODO/FIXME - handle this */
+
+   overflowed = setting->step > *setting->value.target.sizet;
+
+   if (!overflowed)
+      *setting->value.target.sizet = *setting->value.target.sizet - setting->step;
+
+   if (setting->enforce_minrange)
+   {
+      if (overflowed || *setting->value.target.sizet < min)
+      {
+         settings_t *settings = config_get_ptr();
+
+#ifdef HAVE_MENU
+      double           max = setting->max;
+
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
+            *setting->value.target.sizet = max;
+         else
+#endif
+            *setting->value.target.sizet = min;
+      }
+   }
+
+   return 0;
+}
+
+static int setting_size_action_right_default(void *data, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   double               max = 0.0f;
+
+   if (!setting)
+      return -1;
+
+   max = setting->max;
+
+   (void)wraparound; /* TODO/FIXME - handle this */
+
+   *setting->value.target.sizet =
+      *setting->value.target.sizet + setting->step;
+
+   if (setting->enforce_maxrange)
+   {
+      if (*setting->value.target.sizet > max)
+      {
+         settings_t *settings = config_get_ptr();
+
+#ifdef HAVE_MENU
+         double           min = setting->min;
+
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
+            *setting->value.target.sizet = min;
+         else
+#endif
+            *setting->value.target.sizet = max;
       }
    }
 
@@ -307,6 +398,24 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
                else
 #endif
                   *setting->value.target.unsigned_integer = max;
+            }
+         }
+         break;
+      case ST_SIZE:
+         sscanf(value, "%" PRI_SIZET, setting->value.target.sizet);
+         if (flags & SD_FLAG_HAS_RANGE)
+         {
+            if (setting->enforce_minrange && *setting->value.target.sizet < min)
+               *setting->value.target.sizet = min;
+            if (setting->enforce_maxrange && *setting->value.target.sizet > max)
+            {
+#ifdef HAVE_MENU
+               settings_t *settings = config_get_ptr();
+               if (settings && settings->bools.menu_navigation_wraparound_enable)
+                  *setting->value.target.sizet = min;
+               else
+#endif
+                  *setting->value.target.sizet = max;
             }
          }
          break;
@@ -442,6 +551,9 @@ static void setting_reset_setting(rarch_setting_t* setting)
          break;
       case ST_UINT:
          *setting->value.target.unsigned_integer = setting->default_value.unsigned_integer;
+         break;
+      case ST_SIZE:
+         *setting->value.target.sizet            = setting->default_value.sizet;
          break;
       case ST_FLOAT:
          *setting->value.target.fraction         = setting->default_value.fraction;
@@ -866,6 +978,85 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.value.target.unsigned_integer   = target;
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
+
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
+   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+
+   return result;
+}
+
+/**
+ * setting_size_setting:
+ * @name                          : name of setting.
+ * @short_description             : Short description of setting.
+ * @target                        : Target of size_t setting.
+ * @default_value                 : Default value (in size_t format).
+ * @group                         : Group that the setting belongs to.
+ * @subgroup                      : Subgroup that the setting belongs to.
+ * @change_handler                : Function callback for change handler function pointer.
+ * @read_handler                  : Function callback for read handler function pointer.
+ * @dont_use_enum_idx             : Boolean indicating whether or not to use the enum idx
+ * @string_representation_handler : Function callback for converting the setting to a string
+ *
+ * Initializes a setting of type ST_SIZE.
+ *
+ * Returns: setting of type ST_SIZE.
+ **/
+static rarch_setting_t setting_size_setting(const char* name,
+      const char* short_description, size_t* target,
+      size_t default_value,
+      const char *group, const char *subgroup, const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler,
+      bool dont_use_enum_idx, get_string_representation_t string_representation_handler)
+{
+   rarch_setting_t result;
+
+   result.enum_idx                  = MSG_UNKNOWN;
+   result.type                      = ST_SIZE;
+
+   result.size                      = sizeof(size_t);
+
+   result.name                      = name;
+   result.short_description         = short_description;
+   result.group                     = group;
+   result.subgroup                  = subgroup;
+   result.parent_group              = parent_group;
+   result.values                    = NULL;
+
+   result.index                     = 0;
+   result.index_offset              = 0;
+
+   result.min                       = 0.0;
+   result.max                       = 0.0;
+
+   result.flags                     = 0;
+   result.free_flags                = 0;
+
+   result.change_handler            = change_handler;
+   result.read_handler              = read_handler;
+   result.action_start              = setting_generic_action_start_default;
+   result.action_left               = setting_size_action_left_default;
+   result.action_right              = setting_size_action_right_default;
+   result.action_up                 = NULL;
+   result.action_down               = NULL;
+   result.action_cancel             = NULL;
+   result.action_ok                 = setting_generic_action_ok_default;
+   result.action_select             = setting_generic_action_ok_default;
+   result.get_string_representation = &setting_get_string_representation_size;
+   result.get_string_representation = string_representation_handler;
+
+   result.bind_type                 = 0;
+   result.browser_selection_type    = ST_NONE;
+   result.step                      = 0.0f;
+   result.rounding_fraction         = NULL;
+   result.enforce_minrange          = false;
+   result.enforce_maxrange          = false;
+
+   result.value.target.sizet   = target;
+   result.original_value.sizet = *target;
+   result.default_value.sizet  = default_value;
 
    result.cmd_trigger.idx           = CMD_EVENT_NONE;
    result.cmd_trigger.triggered     = false;
@@ -1613,6 +1804,39 @@ bool CONFIG_UINT(
    return true;
 }
 
+bool CONFIG_SIZE(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      size_t *target,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
+      size_t default_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler,
+	  get_string_representation_t string_representation_handler)
+{
+   rarch_setting_t value = setting_size_setting  (
+         msg_hash_to_str(name_enum_idx),
+         msg_hash_to_str(SHORT_enum_idx),
+         target, default_value,
+         group_info->name,
+         subgroup_info->name, parent_group,
+         change_handler, read_handler,
+         false, string_representation_handler);
+   if (!(settings_list_append(list, list_info)))
+      return false;
+   (*list)[list_info->index++] = value;
+
+#ifdef HAVE_MENU
+   menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
+   menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
+#endif
+
+   return true;
+}
+
 bool CONFIG_FLOAT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -2014,6 +2238,7 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
 
    switch (setting_get_type(setting))
    {
+      case ST_SIZE:
       case ST_UINT:
          cb = menu_input_st_uint_cb;
          break;
@@ -2060,6 +2285,7 @@ static void setting_add_special_callbacks(
 
       switch ((*list)[idx].type)
       {
+         case ST_SIZE:
          case ST_UINT:
             (*list)[idx].action_cancel = NULL;
             break;

@@ -33,6 +33,9 @@
 
 #include "../drivers_keyboard/keyboard_event_apple.h"
 
+/* TODO/FIXME - 
+ * fix game focus toggle */
+
 /* Forward declarations */
 float get_backing_scale_factor(void);
 

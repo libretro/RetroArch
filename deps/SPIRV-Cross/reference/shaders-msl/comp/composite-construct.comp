@@ -42,8 +42,7 @@ kernel void main0(device SSBO0& _16 [[buffer(0)]], device SSBO1& _32 [[buffer(1)
     float4 _37[2] = { _16.as[gl_GlobalInvocationID.x], _32.bs[gl_GlobalInvocationID.x] };
     float4 values[2];
     spvArrayCopy(values, _37);
-    float4 copy_values[2] = {float4(20.0), float4(40.0)};
-    Composite c = Composite{ values[0], copy_values[1] };
+    Composite c = Composite{ values[0], _43[1] };
     _16.as[0] = values[gl_LocalInvocationIndex];
     _32.bs[1] = c.b;
 }

@@ -2091,6 +2091,9 @@ static int menu_displaylist_parse_settings_internal(void *data,
       case PARSE_ONLY_UINT:
          precond = ST_UINT;
          break;
+      case PARSE_ONLY_SIZE:
+         precond = ST_SIZE;
+         break;
       case PARSE_ONLY_BIND:
          precond = ST_BIND;
          break;
@@ -2160,6 +2163,10 @@ static int menu_displaylist_parse_settings_internal(void *data,
             goto loop;
          case PARSE_ONLY_UINT:
             if (type == ST_UINT)
+               break;
+            goto loop;
+         case PARSE_ONLY_SIZE:
+            if (type == ST_SIZE)
                break;
             goto loop;
          case PARSE_ONLY_BIND:
@@ -2226,6 +2233,7 @@ loop:
          case PARSE_ONLY_BOOL:
          case PARSE_ONLY_INT:
          case PARSE_ONLY_UINT:
+         case PARSE_ONLY_SIZE:
          case PARSE_ONLY_STRING:
          case PARSE_ONLY_PATH:
          case PARSE_ONLY_DIR:
@@ -2282,6 +2290,9 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
          break;
       case PARSE_ONLY_UINT:
          precond = ST_UINT;
+         break;
+      case PARSE_ONLY_SIZE:
+         precond = ST_SIZE;
          break;
       case PARSE_ONLY_BIND:
          precond = ST_BIND;
@@ -2352,6 +2363,10 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
             goto loop;
          case PARSE_ONLY_UINT:
             if (type == ST_UINT)
+               break;
+            goto loop;
+         case PARSE_ONLY_SIZE:
+            if (type == ST_SIZE)
                break;
             goto loop;
          case PARSE_ONLY_BIND:
@@ -2419,6 +2434,7 @@ loop:
          case PARSE_ONLY_BOOL:
          case PARSE_ONLY_INT:
          case PARSE_ONLY_UINT:
+         case PARSE_ONLY_SIZE:
          case PARSE_ONLY_PATH:
          case PARSE_ONLY_DIR:
          case PARSE_ONLY_STRING:
@@ -5105,6 +5121,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_REWIND_GRANULARITY,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_REWIND_BUFFER_SIZE,
+               PARSE_ONLY_SIZE, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP,
                PARSE_ONLY_UINT, false);
 
          info->need_refresh = true;

@@ -106,6 +106,11 @@ public:
 
 			// Inverts gl_Position.y or equivalent.
 			bool flip_vert_y = false;
+
+			// If true, the backend will assume that InstanceIndex will need to apply
+			// a base instance offset. Set to false if you know you will never use base instance
+			// functionality as it might remove some internal uniforms.
+			bool support_nonzero_base_instance = true;
 		} vertex;
 
 		struct
@@ -277,7 +282,6 @@ protected:
 		{
 			for (uint32_t i = 0; i < indent; i++)
 				(*buffer) << "    ";
-
 			statement_inner(std::forward<Ts>(ts)...);
 			(*buffer) << '\n';
 		}
@@ -371,7 +375,7 @@ protected:
 	void emit_flattened_io_block(const SPIRVariable &var, const char *qual);
 	void emit_block_chain(SPIRBlock &block);
 	void emit_hoisted_temporaries(std::vector<std::pair<uint32_t, uint32_t>> &temporaries);
-	void emit_specialization_constant(const SPIRConstant &constant);
+	void emit_constant(const SPIRConstant &constant);
 	void emit_specialization_constant_op(const SPIRConstantOp &constant);
 	std::string emit_continue_block(uint32_t continue_block);
 	bool attempt_emit_loop_header(SPIRBlock &block, SPIRBlock::Method method);
@@ -404,6 +408,9 @@ protected:
 
 	SPIRType binary_op_bitcast_helper(std::string &cast_op0, std::string &cast_op1, SPIRType::BaseType &input_type,
 	                                  uint32_t op0, uint32_t op1, bool skip_cast_if_equal_type);
+
+	std::string to_ternary_expression(const SPIRType &result_type, uint32_t select, uint32_t true_value,
+	                                  uint32_t false_value);
 
 	void emit_unary_op(uint32_t result_type, uint32_t result_id, uint32_t op0, const char *op);
 	bool expression_is_forwarded(uint32_t id);
@@ -452,11 +459,12 @@ protected:
 	const char *format_to_glsl(spv::ImageFormat format);
 	virtual std::string layout_for_member(const SPIRType &type, uint32_t index);
 	virtual std::string to_interpolation_qualifiers(const Bitset &flags);
-	Bitset combined_decoration_for_member(const SPIRType &type, uint32_t index);
 	std::string layout_for_variable(const SPIRVariable &variable);
 	std::string to_combined_image_sampler(uint32_t image_id, uint32_t samp_id);
 	virtual bool skip_argument(uint32_t id) const;
 	virtual void emit_array_copy(const std::string &lhs, uint32_t rhs_id);
+	virtual void emit_block_hints(const SPIRBlock &block);
+	virtual std::string to_initializer_expression(const SPIRVariable &var);
 
 	bool buffer_is_packing_standard(const SPIRType &type, BufferPackingStandard packing, uint32_t start_offset = 0,
 	                                uint32_t end_offset = UINT32_MAX);
@@ -485,7 +493,7 @@ protected:
 	void replace_fragment_output(SPIRVariable &var);
 	void replace_fragment_outputs();
 	bool check_explicit_lod_allowed(uint32_t lod);
-	std::string legacy_tex_op(const std::string &op, const SPIRType &imgtype, uint32_t lod);
+	std::string legacy_tex_op(const std::string &op, const SPIRType &imgtype, uint32_t lod, uint32_t id);
 
 	uint32_t indent = 0;
 
@@ -562,6 +570,12 @@ protected:
 	std::string convert_double_to_string(const SPIRConstant &value, uint32_t col, uint32_t row);
 
 	std::string convert_separate_image_to_combined(uint32_t id);
+
+	// Builtins in GLSL are always specific signedness, but the SPIR-V can declare them
+	// as either unsigned or signed.
+	// Sometimes we will need to automatically perform bitcasts on load and store to make this work.
+	virtual void bitcast_to_builtin_store(uint32_t target_id, std::string &expr, const SPIRType &expr_type);
+	virtual void bitcast_from_builtin_load(uint32_t source_id, std::string &expr, const SPIRType &expr_type);
 
 private:
 	void init()

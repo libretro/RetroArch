@@ -42,6 +42,24 @@
 #import <MetalKit/MetalKit.h>
 #endif
 
+@interface WindowListener : NSResponder<NSWindowDelegate>
+@end
+
+@implementation WindowListener
+
+/* Similarly to SDL, we'll respond to key events by doing nothing so we don't beep.
+ */
+- (void)flagsChanged:(NSEvent *)event
+{}
+
+- (void)keyDown:(NSEvent *)event
+{}
+
+- (void)keyUp:(NSEvent *)event
+{}
+
+@end
+
 id<ApplePlatform> apple_platform;
 
 #if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
@@ -53,6 +71,8 @@ id<ApplePlatform> apple_platform;
    NSWindow* _window;
    apple_view_type_t _vt;
    NSView* _renderView;
+   id _sleepActivity;
+   WindowListener *_listener;
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
@@ -69,6 +89,31 @@ static void app_terminate(void)
 
 @implementation RApplication
 
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 101200
+#define NSEventTypeKeyDown             NSKeyDown
+#define NSEventTypeKeyUp               NSKeyUp
+#define NSEventTypeFlagsChanged        NSFlagsChanged
+#define NSEventTypeMouseMoved          NSMouseMoved
+#define NSEventTypeLeftMouseDragged    NSLeftMouseDragged
+#define NSEventTypeRightMouseDragged   NSRightMouseDragged
+#define NSEventTypeOtherMouseDragged   NSOtherMouseDragged
+#define NSEventTypeLeftMouseDown       NSLeftMouseDown
+#define NSEventTypeRightMouseDown      NSRightMouseDown
+#define NSEventTypeOtherMouseDown      NSOtherMouseDown
+#define NSEventTypeLeftMouseUp         NSLeftMouseUp
+#define NSEventTypeRightMouseUp        NSRightMouseUp
+#define NSEventTypeOtherMouseUp        NSOtherMouseUp
+#define NSEventTypeScrollWheel         NSScrollWheel
+
+// modifier flags
+#define NSEventModifierFlagCapsLock    NSAlphaShiftKeyMask
+#define NSEventModifierFlagShift       NSShiftKeyMask
+#define NSEventModifierFlagControl     NSControlKeyMask
+#define NSEventModifierFlagOption      NSAlternateKeyMask
+#define NSEventModifierFlagCommand     NSCommandKeyMask
+#define NSEventModifierFlagNumericPad  NSNumericPadKeyMask
+#endif
+
 - (void)sendEvent:(NSEvent *)event
 {
    NSEventType event_type;
@@ -77,12 +122,12 @@ static void app_terminate(void)
 
    event_type = event.type;
 
-   switch ((int32_t)event_type)
+   switch (event_type)
    {
-      case NSKeyDown:
-        case NSKeyUp:
+      case NSEventTypeKeyDown:
+      case NSEventTypeKeyUp:
          {
-            NSString* ch = (NSString*)event.characters;
+            NSString* ch = event.characters;
             uint32_t character = 0;
             uint32_t mod = 0;
 
@@ -91,29 +136,29 @@ static void app_terminate(void)
                uint32_t i;
                character = [ch characterAtIndex:0];
 
-               if (event.modifierFlags & NSAlphaShiftKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagCapsLock)
                   mod |= RETROKMOD_CAPSLOCK;
-               if (event.modifierFlags & NSShiftKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagShift)
                   mod |=  RETROKMOD_SHIFT;
-               if (event.modifierFlags & NSControlKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagControl)
                   mod |=  RETROKMOD_CTRL;
-               if (event.modifierFlags & NSAlternateKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagOption)
                   mod |= RETROKMOD_ALT;
-               if (event.modifierFlags & NSCommandKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagCommand)
                   mod |= RETROKMOD_META;
-               if (event.modifierFlags & NSNumericPadKeyMask)
+               if (event.modifierFlags & NSEventModifierFlagNumericPad)
                   mod |=  RETROKMOD_NUMLOCK;
 
                for (i = 1; i < ch.length; i++)
-                  apple_input_keyboard_event(event_type == NSKeyDown,
+                  apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
                         0, [ch characterAtIndex:i], mod, RETRO_DEVICE_KEYBOARD);
             }
 
-            apple_input_keyboard_event(event_type == NSKeyDown,
+            apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
                   event.keyCode, character, mod, RETRO_DEVICE_KEYBOARD);
          }
          break;
-        case NSFlagsChanged:
+        case NSEventTypeFlagsChanged:
          {
             static uint32_t old_flags = 0;
             uint32_t new_flags        = event.modifierFlags;
@@ -125,10 +170,10 @@ static void app_terminate(void)
                   0, event.modifierFlags, RETRO_DEVICE_KEYBOARD);
          }
          break;
-        case NSMouseMoved:
-        case NSLeftMouseDragged:
-        case NSRightMouseDragged:
-        case NSOtherMouseDragged:
+        case NSEventTypeMouseMoved:
+        case NSEventTypeLeftMouseDragged:
+        case NSEventTypeRightMouseDragged:
+        case NSEventTypeOtherMouseDragged:
          {
             NSPoint pos;
             NSPoint mouse_pos;
@@ -137,25 +182,25 @@ static void app_terminate(void)
                return;
 
             /* Relative */
-            apple->mouse_rel_x = event.deltaX;
-            apple->mouse_rel_y = event.deltaY;
+            apple->mouse_rel_x = (int16_t)event.deltaX;
+            apple->mouse_rel_y = (int16_t)event.deltaY;
 
             /* Absolute */
             pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
-            apple->touches[0].screen_x = pos.x;
-            apple->touches[0].screen_y = pos.y;
+            apple->touches[0].screen_x = (int16_t)pos.x;
+            apple->touches[0].screen_y = (int16_t)pos.y;
 
             mouse_pos = [apple_platform.renderView convertPoint:[event locationInWindow]  fromView:nil];
             apple->window_pos_x = (int16_t)mouse_pos.x;
             apple->window_pos_y = (int16_t)mouse_pos.y;
          }
          break;
-        case NSScrollWheel:
+        case NSEventTypeScrollWheel:
          /* TODO/FIXME - properly implement. */
          break;
-        case NSLeftMouseDown:
-        case NSRightMouseDown:
-        case NSOtherMouseDown:
+        case NSEventTypeLeftMouseDown:
+        case NSEventTypeRightMouseDown:
+        case NSEventTypeOtherMouseDown:
          {
             NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
             apple = (cocoa_input_data_t*)input_driver_get_data();
@@ -166,9 +211,9 @@ static void app_terminate(void)
             apple->touch_count = 1;
          }
          break;
-      case NSLeftMouseUp:
-      case NSRightMouseUp:
-      case NSOtherMouseUp:
+      case NSEventTypeLeftMouseUp:
+      case NSEventTypeRightMouseUp:
+      case NSEventTypeOtherMouseUp:
          {
             NSPoint pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
             apple = (cocoa_input_data_t*)input_driver_get_data();
@@ -177,6 +222,8 @@ static void app_terminate(void)
             apple->mouse_buttons &= ~(1 << event.buttonNumber);
             apple->touch_count = 0;
          }
+         break;
+      default:
          break;
    }
 }
@@ -216,8 +263,13 @@ static char** waiting_argv;
           [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
    }
 #endif
+   
+   _listener = [WindowListener new];
+   
    [self.window setAcceptsMouseMovedEvents: YES];
-
+   [self.window setNextResponder:_listener];
+   self.window.delegate = _listener;
+   
    [[self.window contentView] setAutoresizesSubviews:YES];
 
     for (i = 0; i < waiting_argc; i++)
@@ -233,7 +285,10 @@ static char** waiting_argv;
       app_terminate();
 
    waiting_argc = 0;
-
+   
+   [self.window makeMainWindow];
+   [self.window makeKeyWindow];
+   
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
@@ -242,7 +297,7 @@ static char** waiting_argv;
       return;
    }
    
-   RARCH_LOG("[Cocoa] change view type: %d → %d\n", _vt, vt);
+   RARCH_LOG("[Cocoa]: change view type: %d → %d\n", _vt, vt);
    
    _vt = vt;
    if (_renderView != nil)
@@ -250,6 +305,7 @@ static char** waiting_argv;
       _renderView.wantsLayer = NO;
       _renderView.layer = nil;
       [_renderView removeFromSuperview];
+      self.window.contentView = nil;
       _renderView = nil;
    }
    
@@ -265,7 +321,7 @@ static char** waiting_argv;
       }
 #endif
       break;
-         
+      
       case APPLE_VIEW_TYPE_OPENGL:
       {
          _renderView = [CocoaView get];
@@ -279,9 +335,9 @@ static char** waiting_argv;
    
    _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
    _renderView.frame = self.window.contentView.bounds;
-
-   [self.window.contentView addSubview:_renderView];
-   [self.window makeFirstResponder:_renderView];
+   
+   self.window.contentView = _renderView;
+   [self.window.contentView setNextResponder:_listener];
 }
 
 - (apple_view_type_t)viewType {
@@ -297,7 +353,23 @@ static char** waiting_argv;
 }
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode {
-   // TODO(sgc): handle full screen
+   BOOL isFullScreen = (self.window.styleMask & NSFullScreenWindowMask) == NSFullScreenWindowMask;
+   if (mode.fullscreen && !isFullScreen)
+   {
+      [self.window toggleFullScreen:self];
+      return;
+   }
+   
+   if (!mode.fullscreen && isFullScreen)
+   {
+      [self.window toggleFullScreen:self];
+   }
+   
+   if (mode.width > 0)
+   {
+      // HACK(sgc): ensure MTKView posts a drawable resize event
+      [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
+   }
    [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
 }
 
@@ -307,6 +379,26 @@ static char** waiting_argv;
    else
       [NSCursor hide];
 }
+
+- (bool)setDisableDisplaySleep:(bool)disable
+{
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
+   if (disable && _sleepActivity == nil)
+   {
+      _sleepActivity = [NSProcessInfo.processInfo beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled reason:@"disable screen saver"];
+   }
+   else if (!disable && _sleepActivity != nil)
+   {
+      [NSProcessInfo.processInfo endActivity:_sleepActivity];
+      _sleepActivity = nil;
+   }
+   return YES;
+#else
+   return NO;
+#endif
+
+}
+
 
 - (void) rarch_main
 {

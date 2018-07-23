@@ -85,6 +85,9 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_XMB)
    &menu_ctx_xmb,
 #endif
+#if defined(HAVE_STRIPES)
+   &menu_ctx_stripes,
+#endif
 #if defined(HAVE_RGUI)
    &menu_ctx_rgui,
 #endif
@@ -130,14 +133,17 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef WIIU
    &menu_display_ctx_wiiu,
 #endif
-#ifdef HAVE_CACA
-   &menu_display_ctx_caca,
-#endif
 #if defined(_WIN32) && !defined(_XBOX)
    &menu_display_ctx_gdi,
 #endif
 #ifdef DJGPP
    &menu_display_ctx_vga,
+#endif
+#ifdef HAVE_SIXEL
+   &menu_display_ctx_sixel,
+#endif
+#ifdef HAVE_CACA
+   &menu_display_ctx_caca,
 #endif
    &menu_display_ctx_null,
    NULL,
@@ -299,6 +305,10 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "gx2"))
             return true;
          break;
+      case MENU_VIDEO_DRIVER_SIXEL:
+         if (string_is_equal(video_driver, "sixel"))
+            return true;
+         break;
       case MENU_VIDEO_DRIVER_CACA:
          if (string_is_equal(video_driver, "caca"))
             return true;
@@ -376,40 +386,28 @@ void menu_display_font_free(font_data_t *font)
 
 /* Setup: Initializes the font associated
  * to the menu driver */
-static font_data_t *menu_display_font_main_init(
-      menu_display_ctx_font_t *font,
-      bool is_threaded)
-{
-   font_data_t *font_data = NULL;
-
-   if (!font || !menu_disp)
-      return NULL;
-
-   if (!menu_disp->font_init_first((void**)&font_data,
-            video_driver_get_ptr(false),
-            font->path, font->size, is_threaded))
-      return NULL;
-
-   return font_data;
-}
-
 font_data_t *menu_display_font(
       enum application_special_type type,
       float font_size,
       bool is_threaded)
 {
-   menu_display_ctx_font_t font_info;
    char fontpath[PATH_MAX_LENGTH];
+   font_data_t *font_data = NULL;
+
+   if (!menu_disp)
+      return NULL;
 
    fontpath[0] = '\0';
 
    fill_pathname_application_special(
          fontpath, sizeof(fontpath), type);
 
-   font_info.path = fontpath;
-   font_info.size = font_size;
+   if (!menu_disp->font_init_first((void**)&font_data,
+            video_driver_get_ptr(false),
+            fontpath, font_size, is_threaded))
+      return NULL;
 
-   return menu_display_font_main_init(&font_info, is_threaded);
+   return font_data;
 }
 
 /* Reset the menu's coordinate array vertices.
@@ -734,6 +732,56 @@ void menu_display_draw_quad(
    draw.y            = (int)height - y - (int)h;
    draw.width        = w;
    draw.height       = h;
+   draw.coords       = &coords;
+   draw.matrix_data  = NULL;
+   draw.texture      = menu_display_white_texture;
+   draw.prim_type    = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id  = 0;
+   draw.scale_factor = 1.0f;
+   draw.rotation     = 0.0f;
+
+   menu_display_draw(&draw, video_info);
+
+   if (menu_disp && menu_disp->blend_end)
+      menu_disp->blend_end(video_info);
+}
+
+void menu_display_draw_polygon(
+      video_frame_info_t *video_info,
+      int x1, int y1,
+      int x2, int y2,
+      int x3, int y3,
+      int x4, int y4,
+      unsigned width, unsigned height,
+      float *color)
+{
+   menu_display_ctx_draw_t draw;
+   struct video_coords coords;
+
+   float vertex[8];
+
+   vertex[0]             = x1 / (float)width;
+   vertex[1]             = y1 / (float)height;
+   vertex[2]             = x2 / (float)width;
+   vertex[3]             = y2 / (float)height;
+   vertex[4]             = x3 / (float)width;
+   vertex[5]             = y3 / (float)height;
+   vertex[6]             = x4 / (float)width;
+   vertex[7]             = y4 / (float)height;
+
+   coords.vertices      = 4;
+   coords.vertex        = &vertex[0];
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = color;
+
+   if (menu_disp && menu_disp->blend_begin)
+      menu_disp->blend_begin(video_info);
+
+   draw.x            = 0;
+   draw.y            = 0;
+   draw.width        = width;
+   draw.height       = height;
    draw.coords       = &coords;
    draw.matrix_data  = NULL;
    draw.texture      = menu_display_white_texture;

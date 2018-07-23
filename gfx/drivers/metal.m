@@ -46,36 +46,29 @@
 
 #import "../video_coord_array.h"
 
+static bool metal_set_shader(void *data,
+                             enum rarch_shader_type type, const char *path);
+
 static void *metal_init(const video_info_t *video,
                         const input_driver_t **input,
                         void **input_data)
 {
-   gfx_ctx_mode_t mode;
-
    [apple_platform setViewType:APPLE_VIEW_TYPE_METAL];
-   MetalDriver *md = [MetalDriver new];
-   if (md == nil) {
+   
+   MetalDriver *md = [[MetalDriver alloc] initWithVideo:video input:input inputData:input_data];
+   if (md == nil)
+   {
       return NULL;
    }
-   MetalView *view = (MetalView *)apple_platform.renderView;
-   view.delegate = md;
-
-   md.keepAspect = video->force_aspect;
-
-   RARCH_LOG("[Metal]: Detecting screen resolution %ux%u.\n", video->width, video->height);
-
-   mode.width = video->width;
-   mode.height = video->height;
-   mode.fullscreen = video->fullscreen;
-
-   [md setVideo:video];
-   [apple_platform setVideoMode:mode];
-
-   *input = NULL;
-   *input_data = NULL;
    
-   font_driver_init_osd((__bridge_retained void *)md, false, video->is_threaded, FONT_DRIVER_RENDER_METAL_API);
-
+   const char *shader_path = retroarch_get_shader_preset();
+   
+   if (shader_path)
+   {
+      enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_SLANG);
+      metal_set_shader(((__bridge void *)md), type, shader_path);
+   }
+   
    return (__bridge_retained void *)md;
 }
 
@@ -85,49 +78,27 @@ static bool metal_frame(void *data, const void *frame,
                         unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
-   @autoreleasepool {
-      [md beginFrame];
-
-      FrameView *v = md.frameView;
-      v.frameCount = frame_count;
-      v.size = CGSizeMake(frame_width, frame_height);
-      [v updateFrame:frame pitch:pitch];
-
-   #if defined(HAVE_MENU)
-      if (md.menu.enabled) {
-         menu_driver_frame(video_info);
-      }
-   #endif
-      
-      [md drawViews];
-      
-      if (video_info->statistics_show)
-      {
-         struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
-         
-         if (osd_params)
-         {
-            font_driver_render_msg(video_info, NULL, video_info->stat_text,
-                                   (const struct font_params*)&video_info->osd_stat_params);
-         }
-      }
-      
-      if (msg && *msg)
-      {
-         font_driver_render_msg(video_info, NULL, msg, NULL);
-      }
-
-      [md endFrame];
-   }
-
-   return YES;
+   return [md renderFrame:frame
+                    width:frame_width
+                   height:frame_height
+               frameCount:frame_count
+                    pitch:pitch
+                      msg:msg
+                     info:video_info];
 }
 
-static void metal_set_nonblock_state(void *data, bool state)
+static void metal_set_nonblock_state(void *data, bool non_block)
 {
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   md.context.displaySyncEnabled = !non_block;
 }
 
 static bool metal_alive(void *data)
+{
+   return true;
+}
+
+static bool metal_has_windowed(void *data)
 {
    return true;
 }
@@ -137,12 +108,10 @@ static bool metal_focus(void *data)
    return apple_platform.hasFocus;
 }
 
-static bool metal_suppress_screensaver(void *data, bool enable)
+static bool metal_suppress_screensaver(void *data, bool disable)
 {
-   bool enabled = enable;
-   (void)data;
-
-   return video_context_driver_suppress_screensaver(&enabled);
+   RARCH_LOG("[Metal]: suppress screen saver: %s\n", disable ? "YES" : "NO");
+   return [apple_platform setDisableDisplaySleep:disable];
 }
 
 static bool metal_set_shader(void *data,
@@ -154,12 +123,13 @@ static bool metal_set_shader(void *data,
       return false;
    if (!path)
       return true;
-
-   if (type != RARCH_SHADER_SLANG) {
+   
+   if (type != RARCH_SHADER_SLANG)
+   {
       RARCH_WARN("[Metal] Only .slang or .slangp shaders are supported. Falling back to stock.\n");
       return false;
    }
-
+   
    return [md.frameView setShaderFromPath:[NSString stringWithUTF8String:path]];
 #else
    return false;
@@ -170,13 +140,15 @@ static void metal_free(void *data)
 {
    MetalDriver *md = (__bridge_transfer MetalDriver *)data;
    md = nil;
-   font_driver_free_osd();
 }
 
 static void metal_set_viewport(void *data, unsigned viewport_width,
                                unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-   RARCH_LOG("[Metal]: set_viewport\n");
+//   RARCH_LOG("[Metal]: set_viewport size: %dx%d full: %s rotate: %s\n",
+//             viewport_width, viewport_height,
+//             force_full ? "YES" : "NO",
+//             allow_rotate ? "YES" : "NO");
 }
 
 static void metal_set_rotation(void *data, unsigned rotation)
@@ -194,81 +166,43 @@ static bool metal_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return true;
 }
 
-#ifdef HAVE_OVERLAY
-
-static const video_overlay_interface_t metal_overlay_interface = {
-//   metal_overlay_enable,
-//   metal_overlay_load,
-//   metal_overlay_tex_geom,
-//   metal_overlay_vertex_geom,
-//   metal_overlay_full_screen,
-//   metal_overlay_set_alpha,
-};
-
-static void metal_get_overlay_interface(void *data,
-                                        const video_overlay_interface_t **iface)
-{
-   (void)data;
-   *iface = &metal_overlay_interface;
-}
-
-#endif
-
 static uintptr_t metal_load_texture(void *video_data, void *data,
                                     bool threaded, enum texture_filter_type filter_type)
 {
    MetalDriver *md = (__bridge MetalDriver *)video_data;
-   struct texture_image *image = (struct texture_image *)data;
-   if (!image)
+   struct texture_image *img = (struct texture_image *)data;
+   if (!img)
       return 0;
-
-   if (!image->pixels && !image->width && !image->height) {
-      /* Create a dummy texture instead. */
-#define T0 0xff000000u
-#define T1 0xffffffffu
-      static const uint32_t checkerboard[] = {
-         T0, T1, T0, T1, T0, T1, T0, T1,
-         T1, T0, T1, T0, T1, T0, T1, T0,
-         T0, T1, T0, T1, T0, T1, T0, T1,
-         T1, T0, T1, T0, T1, T0, T1, T0,
-         T0, T1, T0, T1, T0, T1, T0, T1,
-         T1, T0, T1, T0, T1, T0, T1, T0,
-         T0, T1, T0, T1, T0, T1, T0, T1,
-         T1, T0, T1, T0, T1, T0, T1, T0,
-      };
-#undef T0
-#undef T1
-
-   }
-   else {
-   }
-
-   return 0;
+   
+   struct texture_image image = *img;
+   Texture *t = [md.context newTexture:image filter:filter_type];
+   return (uintptr_t)(__bridge_retained void *)(t);
 }
 
 static void metal_unload_texture(void *data, uintptr_t handle)
 {
+   if (!handle)
+   {
+      return;
+   }
+   Texture *t = (__bridge_transfer Texture *)(void *)handle;
+   t = nil;
 }
 
 static void metal_set_video_mode(void *data,
                                  unsigned width, unsigned height,
                                  bool fullscreen)
 {
-   MetalDriver *md = (__bridge MetalDriver *)data;
-   gfx_ctx_mode_t mode = {
-      .width      = width,
-      .height     = height,
-      .fullscreen = fullscreen,
-   };
-
-   //[md setVideoMode:mode];
+   RARCH_LOG("[Metal]: set_video_mode res=%dx%d fullscreen=%s\n",
+             width, height,
+             fullscreen ? "YES" : "NO");
 }
 
 static float metal_get_refresh_rate(void *data)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    (void)md;
-
+   
    return 0.0f;
 }
 
@@ -281,27 +215,28 @@ static void metal_set_filtering(void *data, unsigned index, bool smooth)
 static void metal_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
-
-   switch (aspect_ratio_idx) {
+   
+   switch (aspect_ratio_idx)
+   {
       case ASPECT_RATIO_SQUARE:
          video_driver_set_viewport_square_pixel();
          break;
-
+      
       case ASPECT_RATIO_CORE:
          video_driver_set_viewport_core();
          break;
-
+      
       case ASPECT_RATIO_CONFIG:
          video_driver_set_viewport_config();
          break;
-
+      
       default:
          break;
    }
-
+   
    video_driver_set_aspect_ratio_value(
       aspectratio_lut[aspect_ratio_idx].value);
-
+   
    md.keepAspect = YES;
    [md setNeedsResize];
 }
@@ -318,7 +253,7 @@ static void metal_set_texture_frame(void *data, const void *frame,
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    settings_t *settings = config_get_ptr();
-
+   
    [md.menu updateWidth:width
                  height:height
                  format:rgb32 ? RPixelFormatBGRA8Unorm : RPixelFormatBGRA4Unorm
@@ -332,23 +267,30 @@ static void metal_set_texture_enable(void *data, bool state, bool full_screen)
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md)
       return;
-
+   
    md.menu.enabled = state;
    //md.menu.fullScreen = full_screen;
 }
 
+static void metal_set_osd_msg(void *data,
+                              video_frame_info_t *video_info,
+                              const char *msg,
+                              const void *params, void *font)
+{
+   font_driver_render_msg(video_info, font, msg, (const struct font_params *)params);
+}
 
 static void metal_show_mouse(void *data, bool state)
 {
    [apple_platform setCursorVisible:state];
 }
 
-static struct video_shader* metal_get_current_shader(void* data)
+static struct video_shader *metal_get_current_shader(void *data)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md)
       return NULL;
-
+   
    return md.frameView.shader;
 }
 
@@ -356,11 +298,11 @@ static struct video_shader* metal_get_current_shader(void* data)
 static uint32_t metal_get_flags(void *data)
 {
    uint32_t flags = 0;
-
+   
    BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
-
+   
    return flags;
 }
 
@@ -375,6 +317,7 @@ static const video_poke_interface_t metal_poke_interface = {
    .apply_state_changes = metal_apply_state_changes,
    .set_texture_frame   = metal_set_texture_frame,
    .set_texture_enable  = metal_set_texture_enable,
+   .set_osd_msg         = metal_set_osd_msg,
    .show_mouse          = metal_show_mouse,
    .get_current_shader  = metal_get_current_shader,
 };
@@ -386,12 +329,89 @@ static void metal_get_poke_interface(void *data,
    *iface = &metal_poke_interface;
 }
 
+#ifdef HAVE_OVERLAY
+
+static void metal_overlay_enable(void *data, bool state)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return;
+   md.overlay.enabled = state;
+}
+
+static bool metal_overlay_load(void *data,
+                               const void *images, unsigned num_images)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return NO;
+   
+   return [md.overlay loadImages:(const struct texture_image *)images count:num_images];
+}
+
+static void metal_overlay_tex_geom(void *data, unsigned index,
+                                   float x, float y, float w, float h)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return;
+   
+   [md.overlay updateTextureCoordsX:x y:y w:w h:h index:index];
+}
+
+static void metal_overlay_vertex_geom(void *data, unsigned index,
+                                      float x, float y, float w, float h)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return;
+   
+   [md.overlay updateVertexX:x y:y w:w h:h index:index];
+}
+
+static void metal_overlay_full_screen(void *data, bool enable)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return;
+   
+   md.overlay.fullscreen = enable;
+}
+
+static void metal_overlay_set_alpha(void *data, unsigned index, float mod)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return;
+   
+   [md.overlay updateAlpha:mod index:index];
+}
+
+static const video_overlay_interface_t metal_overlay_interface = {
+   .enable        = metal_overlay_enable,
+   .load          = metal_overlay_load,
+   .tex_geom      = metal_overlay_tex_geom,
+   .vertex_geom   = metal_overlay_vertex_geom,
+   .full_screen   = metal_overlay_full_screen,
+   .set_alpha     = metal_overlay_set_alpha,
+};
+
+static void metal_get_overlay_interface(void *data,
+                                        const video_overlay_interface_t **iface)
+{
+   (void)data;
+   *iface = &metal_overlay_interface;
+}
+
+#endif
+
 
 video_driver_t video_metal = {
    .init                   = metal_init,
    .frame                  = metal_frame,
    .set_nonblock_state     = metal_set_nonblock_state,
    .alive                  = metal_alive,
+   .has_windowed           = metal_has_windowed,
    .focus                  = metal_focus,
    .suppress_screensaver   = metal_suppress_screensaver,
    .set_shader             = metal_set_shader,

@@ -46,7 +46,7 @@ d3d10_font_init_font(void* data, const char* font_path, float font_size, bool is
       return NULL;
 
    if (!font_renderer_create_default(
-             (const void**)&font->font_driver, &font->font_data, font_path, font_size))
+             &font->font_driver, &font->font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");
       free(font);
@@ -362,18 +362,13 @@ static const struct font_glyph* d3d10_font_get_glyph(void *data, uint32_t code)
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
-static void d3d10_font_bind_block(void* data, void *userdata)
-{
-   (void)data;
-}
-
 font_renderer_t d3d10_font = {
    d3d10_font_init_font,
    d3d10_font_free_font,
    d3d10_font_render_msg,
    "d3d10font",
    d3d10_font_get_glyph,
-   d3d10_font_bind_block,
+   NULL, /* bind_block */
    NULL, /* flush */
    d3d10_font_get_message_width,
 };

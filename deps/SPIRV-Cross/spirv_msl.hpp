@@ -153,6 +153,7 @@ public:
 
 		Platform platform = macOS;
 		uint32_t msl_version = make_msl_version(1, 2);
+		uint32_t texel_buffer_texture_width = 4096; // Width of 2D Metal textures used as 1D texel buffers
 		bool enable_point_size_builtin = true;
 		bool resolve_specialized_array_lengths = true;
 
@@ -216,6 +217,7 @@ public:
 		SPVFuncImplFindSMsb,
 		SPVFuncImplFindUMsb,
 		SPVFuncImplArrayCopy,
+		SPVFuncImplTexelBufferCoords,
 		SPVFuncImplInverse4x4,
 		SPVFuncImplInverse3x3,
 		SPVFuncImplInverse2x2,
@@ -292,6 +294,7 @@ protected:
 	                             uint32_t coord, uint32_t coord_components, uint32_t dref, uint32_t grad_x,
 	                             uint32_t grad_y, uint32_t lod, uint32_t coffset, uint32_t offset, uint32_t bias,
 	                             uint32_t comp, uint32_t sample, bool *p_forward) override;
+	std::string to_initializer_expression(const SPIRVariable &var) override;
 	std::string unpack_expression_type(std::string expr_str, const SPIRType &type) override;
 	std::string bitcast_glsl_op(const SPIRType &result_type, const SPIRType &argument_type) override;
 	bool skip_argument(uint32_t id) const override;
@@ -356,6 +359,9 @@ protected:
 	void build_implicit_builtins();
 	void emit_entry_point_declarations() override;
 	uint32_t builtin_frag_coord_id = 0;
+
+	void bitcast_to_builtin_store(uint32_t target_id, std::string &expr, const SPIRType &expr_type) override;
+	void bitcast_from_builtin_load(uint32_t source_id, std::string &expr, const SPIRType &expr_type) override;
 
 	Options msl_options;
 	std::set<SPVFuncImpl> spv_function_implementations;
