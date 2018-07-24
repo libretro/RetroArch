@@ -1948,7 +1948,7 @@ QHash<QString, QString> MainWindow::getSelectedCore()
       }
       case CORE_SELECTION_PLAYLIST_SAVED:
       {
-         if (!contentItem || contentHash["core_path"].isEmpty())
+         if (contentHash.isEmpty() || contentHash["core_path"].isEmpty())
             break;
 
          coreHash["core_path"] = contentHash["core_path"];
@@ -1960,7 +1960,7 @@ QHash<QString, QString> MainWindow::getSelectedCore()
          QVector<QHash<QString, QString> > cores;
          int i = 0;
 
-         if (!contentItem || contentHash["db_name"].isEmpty())
+         if (contentHash.isEmpty() || contentHash["db_name"].isEmpty())
             break;
 
          cores = getPlaylistDefaultCores();
@@ -2241,7 +2241,7 @@ void MainWindow::setCoreActions()
 
    if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
    {
-      if (currentContentItem)
+      if (!hash.isEmpty())
       {
          QString coreName = hash["core_name"];
 
@@ -2293,7 +2293,6 @@ void MainWindow::setCoreActions()
       if (defaultCores.count() > 0)
       {
          QString currentPlaylistItemDataString;
-         QHash<QString, QString> hash;
          bool allPlaylists = false;
          int row = 0;
 
@@ -2302,9 +2301,6 @@ void MainWindow::setCoreActions()
             currentPlaylistItemDataString = currentPlaylistItem->data(Qt::UserRole).toString();
             allPlaylists = (currentPlaylistItemDataString == ALL_PLAYLISTS_TOKEN);
          }
-
-         if (currentContentItem)
-            hash = currentContentItem->data(Qt::UserRole).value<QHash<QString, QString> >();
 
          for (row = 0; row < m_listWidget->count(); row++)
          {
@@ -2461,22 +2457,13 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
 {
    int i = 0;
    QList<QTableWidgetItem*> items;
+   QVector<QPointer<GridItem> > gridItems;
    QVector<unsigned> textUnicode = text.toUcs4();
    QVector<unsigned> textHiraToKata;
    QVector<unsigned> textKataToHira;
+   ViewType viewType = getCurrentViewType();
    bool foundHira = false;
    bool foundKata = false;
-
-   if (text.isEmpty())
-   {
-      for (i = 0; i < m_tableWidget->rowCount(); i++)
-      {
-         m_tableWidget->setRowHidden(i, false);
-      }
-      return;
-   }
-
-   items.append(m_tableWidget->findItems(text, Qt::MatchContains));
 
    for (i = 0; i < textUnicode.size(); i++)
    {
@@ -2499,33 +2486,109 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
       }
    }
 
-   if (foundHira)
+   switch(viewType)
    {
-      items.append(m_tableWidget->findItems(QString::fromUcs4(textHiraToKata.constData(), textHiraToKata.size()), Qt::MatchContains));
-   }
-
-   if (foundKata)
-   {
-      items.append(m_tableWidget->findItems(QString::fromUcs4(textKataToHira.constData(), textKataToHira.size()), Qt::MatchContains));
-   }
-
-   if (items.isEmpty())
-   {
-      for (i = 0; i < m_tableWidget->rowCount(); i++)
+      case VIEW_TYPE_LIST:
       {
-         m_tableWidget->setRowHidden(i, true);
-      }
+         if (text.isEmpty())
+         {
+            for (i = 0; i < m_tableWidget->rowCount(); i++)
+            {
+               m_tableWidget->setRowHidden(i, false);
+            }
+            return;
+         }
 
-      return;
-   }
-   else
-   {
-      for (i = 0; i < m_tableWidget->rowCount(); i++)
-      {
-         if (items.contains(m_tableWidget->item(i, 0)))
-            m_tableWidget->setRowHidden(i, false);
+         items.append(m_tableWidget->findItems(text, Qt::MatchContains));
+
+         if (foundHira)
+         {
+            items.append(m_tableWidget->findItems(QString::fromUcs4(textHiraToKata.constData(), textHiraToKata.size()), Qt::MatchContains));
+         }
+
+         if (foundKata)
+         {
+            items.append(m_tableWidget->findItems(QString::fromUcs4(textKataToHira.constData(), textKataToHira.size()), Qt::MatchContains));
+         }
+
+         if (items.isEmpty())
+         {
+            for (i = 0; i < m_tableWidget->rowCount(); i++)
+            {
+               m_tableWidget->setRowHidden(i, true);
+            }
+
+            return;
+         }
          else
-            m_tableWidget->setRowHidden(i, true);
+         {
+            for (i = 0; i < m_tableWidget->rowCount(); i++)
+            {
+               if (items.contains(m_tableWidget->item(i, 0)))
+                  m_tableWidget->setRowHidden(i, false);
+               else
+                  m_tableWidget->setRowHidden(i, true);
+            }
+         }
+
+         break;
+      }
+      case VIEW_TYPE_ICONS:
+      {
+         int i;
+
+         if (text.isEmpty())
+         {
+            for (i = 0; i < m_gridItems.size(); i++)
+            {
+               m_gridItems.at(i)->widget->show();
+            }
+            return;
+         }
+
+         for (i = 0; i < m_gridItems.count(); i++)
+         {
+            const QPointer<GridItem> &item = m_gridItems.at(i);
+
+            if (item->hash.value("label").contains(text, Qt::CaseInsensitive))
+               gridItems.append(item);
+
+            if (foundHira)
+            {
+               if (item->hash.value("label").contains(QString::fromUcs4(textHiraToKata.constData(), textHiraToKata.size()), Qt::CaseInsensitive))
+                  gridItems.append(item);
+            }
+
+            if (foundKata)
+            {
+               if (item->hash.value("label").contains(QString::fromUcs4(textKataToHira.constData(), textKataToHira.size()), Qt::CaseInsensitive))
+                  gridItems.append(item);
+            }
+         }
+
+         if (gridItems.isEmpty())
+         {
+            for (i = 0; i < m_gridItems.size(); i++)
+            {
+               m_gridItems.at(i)->widget->hide();
+            }
+
+            return;
+         }
+         else
+         {
+            for (i = 0; i < m_gridItems.size(); i++)
+            {
+               const QPointer<GridItem> &item = m_gridItems.at(i);
+
+               if (gridItems.contains(item))
+                  item->widget->show();
+               else
+                  item->widget->hide();
+            }
+         }
+
+         break;
       }
    }
 }
@@ -3228,6 +3291,8 @@ void MainWindow::initContentGridLayout()
 
    removeGridItems();
 
+   m_currentGridHash.clear();
+
    path = item->data(Qt::UserRole).toString();
 
    if (path == ALL_PLAYLISTS_TOKEN)
@@ -3269,6 +3334,8 @@ void MainWindow::initContentTableWidget()
 
    if (!item)
       return;
+
+   m_currentGridHash.clear();
 
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
 
