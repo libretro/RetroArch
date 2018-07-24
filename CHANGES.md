@@ -28,6 +28,7 @@
 - RUNAHEAD: Fix full-screen mode change breaking Secondary Core's environment variables.
 - VITA: Use proper button labels, fix inverted R-Stick Y axis.
 - VITA: Add imc0: mount.
+- VITA: Use sceCtrlIsMultiControllerSupported to detect.
 - VULKAN: Fix two validation errors.
 - VULKAN: Try to avoid creating swapchains redundantly. Should fix black screen and having to alt tab out of window again to get display working on Nvidia GPUs (Windows).
 - VULKAN/OSX: Initial MoltenVK support. Not enabled yet, several MoltenVK bugs should be fixed first before we can have it fully working.
