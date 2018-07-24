@@ -80,6 +80,8 @@ struct udev_joypad
    char *path;
    int32_t vid;
    int32_t pid;
+   /* Deal with analog triggers that report -32767 to 32767 */
+   bool neg_trigger[NUM_AXES];
 };
 
 struct joypad_udev_entry
@@ -217,6 +219,14 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
          if (abs->maximum > abs->minimum)
          {
             pad->axes[axes]   = udev_compute_axis(abs, abs->value);
+            /* Deal with analog triggers that report -32767 to 32767
+               by testing if the axis initial value is negative, allowing for
+               for some slop (1300 =~ 4%)in an axis centred around 0.
+               The actual work is done in udev_joypad_axis.
+               All bets are off if you're sitting on it. Reinitailise it by unpluging 
+               and plugging back in. */
+            if (udev_compute_axis(abs, abs->value) < -1300)
+              pad->neg_trigger[i] = true;
             pad->axes_bind[i] = axes++;
          }
       }
@@ -662,12 +672,20 @@ static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
    if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
    {
       val = pad->axes[AXIS_NEG_GET(joyaxis)];
+      /* Deal with analog triggers that report -32767 to 32767 */
+      if (((AXIS_NEG_GET(joyaxis) == ABS_Z) || (AXIS_NEG_GET(joyaxis) == ABS_RZ))
+            && (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
+         val = (val + 0x7fff) / 2;
       if (val > 0)
          val = 0;
    }
    else if (AXIS_POS_GET(joyaxis) < NUM_AXES)
    {
       val = pad->axes[AXIS_POS_GET(joyaxis)];
+      /* Deal with analog triggers that report -32767 to 32767 */
+      if (((AXIS_POS_GET(joyaxis) == ABS_Z) || (AXIS_POS_GET(joyaxis) == ABS_RZ))
+            && (pad->neg_trigger[AXIS_POS_GET(joyaxis)]))
+         val = (val + 0x7fff) / 2;
       if (val < 0)
          val = 0;
    }
