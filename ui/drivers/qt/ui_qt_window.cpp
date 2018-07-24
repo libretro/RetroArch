@@ -125,6 +125,11 @@ static void scan_finished_handler(void *task_data, void *user_data, const char *
 }
 #endif
 
+inline static bool comp_hash_label_key(const QHash<QString, QString> &lhs, const QHash<QString, QString> &rhs)
+{
+   return lhs.value("label") < rhs.value("label");
+}
+
 GridItem::GridItem() :
    QObject()
    ,widget(NULL)
@@ -3083,9 +3088,32 @@ GridItem* MainWindow::doDeferredImageLoad(GridItem *item, QString path)
    return item;
 }
 
-void MainWindow::addPlaylistItemsToGrid(const QString &pathString, bool setProgress)
+void MainWindow::addPlaylistItemsToGrid(const QStringList &paths)
 {
-   QVector<QHash<QString, QString> > items = getPlaylistItems(pathString);
+   QVector<QHash<QString, QString> > items;
+   int i;
+
+   if (paths.isEmpty())
+      return;
+
+   for (i = 0; i < paths.size(); i++)
+   {
+      int j;
+      QVector<QHash<QString, QString> > vec = getPlaylistItems(paths.at(i));
+      /* QVector::append() wasn't added until 5.5, so just do it the old fashioned way */
+      for (j = 0; j < vec.size(); j++)
+      {
+         items.append(vec.at(j));
+      }
+   }
+
+   std::sort(items.begin(), items.end(), comp_hash_label_key);
+
+   addPlaylistHashToGrid(items);
+}
+
+void MainWindow::addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &items)
+{
    QScreen *screen = qApp->primaryScreen();
    QSize screenSize = screen->size();
    QListWidgetItem *currentItem = m_listWidget->currentItem();
@@ -3093,13 +3121,9 @@ void MainWindow::addPlaylistItemsToGrid(const QString &pathString, bool setProgr
    int i = 0;
    int zoomValue = m_zoomSlider->value();
 
-   /* setProgress means we are resetting the range of the progress bar as we are only loading a single playlist. If false, just increment by 1 since instead we're loading multiple playlists and we only track the progress of each entire playlist that is loaded, instead of every single entry. */
-   if (setProgress)
-   {
-      m_gridProgressBar->setMinimum(0);
-      m_gridProgressBar->setMaximum(items.count() - 1);
-      m_gridProgressBar->setValue(0);
-   }
+   m_gridProgressBar->setMinimum(0);
+   m_gridProgressBar->setMaximum(items.count() - 1);
+   m_gridProgressBar->setValue(0);
 
    for (i = 0; i < items.count(); i++)
    {
@@ -3181,12 +3205,8 @@ void MainWindow::addPlaylistItemsToGrid(const QString &pathString, bool setProgr
       if (i % 25 == 0)
          qApp->processEvents();
 
-      if (setProgress)
-         m_gridProgressBar->setValue(i);
+      m_gridProgressBar->setValue(i);
    }
-
-   if (!setProgress && m_gridProgressBar->value() < m_gridProgressBar->maximum())
-      m_gridProgressBar->setValue(m_gridProgressBar->value() + 1);
 
    /* If there's only one entry, a min/max/value of all zero would make an indeterminate progress bar that never ends... so just hide it when we are done. */
    if (m_gridProgressBar->value() == m_gridProgressBar->maximum())
@@ -3214,21 +3234,19 @@ void MainWindow::initContentGridLayout()
    {
       settings_t *settings = config_get_ptr();
       QDir playlistDir(settings->paths.directory_playlist);
+      QStringList playlists;
       int i = 0;
-
-      m_gridProgressBar->setMinimum(0);
-      m_gridProgressBar->setMaximum(m_playlistFiles.count() - 1);
-      m_gridProgressBar->setValue(0);
 
       for (i = 0; i < m_playlistFiles.count() && m_playlistFiles.count() > 0; i++)
       {
          const QString &playlist = m_playlistFiles.at(i);
-         m_gridProgressBar->setValue(i);
-         addPlaylistItemsToGrid(playlistDir.absoluteFilePath(playlist), false);
+         playlists.append(playlistDir.absoluteFilePath(playlist));
       }
+
+      addPlaylistItemsToGrid(playlists);
    }
    else
-      addPlaylistItemsToGrid(path);
+      addPlaylistItemsToGrid(QStringList() << path);
 
    QTimer::singleShot(0, this, SLOT(onContentGridInited()));
 }
@@ -3272,16 +3290,19 @@ void MainWindow::initContentTableWidget()
    {
       settings_t *settings = config_get_ptr();
       QDir playlistDir(settings->paths.directory_playlist);
+      QStringList playlists;
       int i = 0;
 
       for (i = 0; i < m_playlistFiles.count() && m_playlistFiles.count() > 0; i++)
       {
          const QString &playlist = m_playlistFiles.at(i);
-         addPlaylistItemsToTable(playlistDir.absoluteFilePath(playlist));
+         playlists.append(playlistDir.absoluteFilePath(playlist));
       }
+
+      addPlaylistItemsToTable(playlists);
    }
    else
-      addPlaylistItemsToTable(path);
+      addPlaylistItemsToTable(QStringList() << path);
 
    m_tableWidget->setSortingEnabled(true);
 
@@ -3372,9 +3393,30 @@ QVector<QHash<QString, QString> > MainWindow::getPlaylistItems(QString pathStrin
    return items;
 }
 
-void MainWindow::addPlaylistItemsToTable(QString pathString)
+void MainWindow::addPlaylistItemsToTable(const QStringList &paths)
 {
-   QVector<QHash<QString, QString> > items = getPlaylistItems(pathString);
+   QVector<QHash<QString, QString> > items;
+   int i;
+
+   if (paths.isEmpty())
+      return;
+
+   for (i = 0; i < paths.size(); i++)
+   {
+      int j;
+      QVector<QHash<QString, QString> > vec = getPlaylistItems(paths.at(i));
+      /* QVector::append() wasn't added until 5.5, so just do it the old fashioned way */
+      for (j = 0; j < vec.size(); j++)
+      {
+         items.append(vec.at(j));
+      }
+   }
+
+   addPlaylistHashToTable(items);
+}
+
+void MainWindow::addPlaylistHashToTable(const QVector<QHash<QString, QString> > &items)
+{
    int i = 0;
    int oldRowCount = m_tableWidget->rowCount();
 

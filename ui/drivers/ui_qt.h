@@ -336,8 +336,10 @@ private slots:
    void currentItemChanged(const QHash<QString, QString> &hash);
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
-   void addPlaylistItemsToTable(QString path);
-   void addPlaylistItemsToGrid(const QString &path, bool setProgress = true);
+   void addPlaylistItemsToTable(const QStringList &paths);
+   void addPlaylistHashToTable(const QVector<QHash<QString, QString> > &items);
+   void addPlaylistItemsToGrid(const QStringList &paths);
+   void addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &items);
    void onContentItemDoubleClicked(QTableWidgetItem *item);
    void onCoreLoadWindowClosed();
    void onTreeViewItemsSelected(QModelIndexList selectedIndexes);
