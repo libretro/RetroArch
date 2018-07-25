@@ -3306,6 +3306,7 @@ void MainWindow::addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &
       newLabel = new QLabel(item->labelText, item->widget);
       newLabel->setObjectName("thumbnailQLabel");
       newLabel->setAlignment(Qt::AlignCenter);
+      newLabel->setToolTip(item->labelText);
 
       calcGridItemSize(item, zoomValue);
 
