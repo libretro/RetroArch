@@ -22,6 +22,7 @@
 #include <QMainWindow>
 #include <QTreeView>
 #include <QTableWidget>
+#include <QFrame>
 #include <QWidget>
 #include <QDialog>
 #include <QLabel>
@@ -81,11 +82,13 @@ public:
    QFutureWatcher<GridItem*> imageWatcher;
 };
 
-class ThumbnailWidget : public QWidget
+class ThumbnailWidget : public QFrame
 {
    Q_OBJECT
 public:
    ThumbnailWidget(QWidget *parent = 0);
+   ThumbnailWidget(const ThumbnailWidget& other) { assert(false && "DONT EVER USE THIS"); }
+
    QSize sizeHint() const;
    void setSizeHint(QSize size);
 signals:
@@ -419,12 +422,14 @@ private:
    QWidget *m_gridProgressWidget;
    QHash<QString, QString> m_currentGridHash;
    ViewType m_lastViewType;
+   QPointer<ThumbnailWidget> m_currentGridWidget;
 
 protected:
    void closeEvent(QCloseEvent *event);
    void keyPressEvent(QKeyEvent *event);
 };
 
+Q_DECLARE_METATYPE(ThumbnailWidget)
 Q_DECLARE_METATYPE(QPointer<ThumbnailWidget>)
 
 RETRO_BEGIN_DECLS

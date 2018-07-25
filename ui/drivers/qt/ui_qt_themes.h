@@ -9,6 +9,9 @@ static const QString qt_theme_default_stylesheet = QStringLiteral(""
    "   background-color: transparent;\n"
    "   border: 1px solid #ddd;\n"
    "}\n"
+   "ThumbnailWidget, ThumbnailLabel, QLabel#thumbnailQLabel {\n"
+   "   background-color:#555555;\n"
+   "}\n"
 );
 
 static const QString qt_theme_dark_stylesheet = QStringLiteral(""
@@ -385,5 +388,8 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(""
    "}\n"
    "QSizeGrip {\n"
    "   background-color:solid;\n"
+   "}\n"
+   "ThumbnailWidget, ThumbnailLabel, QLabel#thumbnailQLabel {\n"
+   "   background-color:#555555;\n"
    "}\n"
 );

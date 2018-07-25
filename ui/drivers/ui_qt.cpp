@@ -56,7 +56,7 @@ typedef struct ui_companion_qt
 } ui_companion_qt_t;
 
 ThumbnailWidget::ThumbnailWidget(QWidget *parent) :
-   QWidget(parent)
+   QFrame(parent)
    ,m_sizeHint(QSize(256, 256))
 {
 }
@@ -85,7 +85,7 @@ void ThumbnailWidget::paintEvent(QPaintEvent *event)
       QStyle::PE_Widget, &o, &p, this);
    p.end();
 
-   QWidget::paintEvent(event);
+   QFrame::paintEvent(event);
 }
 
 void ThumbnailWidget::resizeEvent(QResizeEvent *event)

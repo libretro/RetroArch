@@ -541,6 +541,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_gridProgressWidget(NULL)
    ,m_currentGridHash()
    ,m_lastViewType(m_viewType)
+   ,m_currentGridWidget(NULL)
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -791,8 +792,18 @@ void MainWindow::onGridItemClicked()
    if (!w)
       return;
 
-   hash = w->property("hash").value<QHash<QString, QString> >();
+   if (m_currentGridWidget)
+   {
+      m_currentGridWidget->setObjectName("thumbnailWidget");
+      m_currentGridWidget->setFrameStyle(QFrame::Plain);
+   }
 
+   hash = w->property("hash").value<QHash<QString, QString> >();
+   w->setObjectName("thumbnailWidgetSelected");
+   w->setFrameStyle(QFrame::Box | QFrame::Plain);
+   w->setLineWidth(2);
+
+   m_currentGridWidget = w;
    m_currentGridHash = hash;
 
    currentItemChanged(hash);
@@ -3239,9 +3250,10 @@ void MainWindow::addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &
       item->widget->setSizeHint(thumbnailWidgetSizeHint);
       item->widget->setFixedSize(item->widget->sizeHint());
       item->widget->setLayout(new QVBoxLayout());
-      item->widget->setStyleSheet("background-color: #555555");
-
+      item->widget->setObjectName("thumbnailWidget");
       item->widget->setProperty("hash", QVariant::fromValue<QHash<QString, QString> >(hash));
+      item->widget->setFrameStyle(QFrame::Plain);
+      item->widget->setLineWidth(0);
 
       connect(item->widget, SIGNAL(mouseDoubleClicked()), this, SLOT(onGridItemDoubleClicked()));
       connect(item->widget, SIGNAL(mousePressed()), this, SLOT(onGridItemClicked()));
@@ -3255,6 +3267,7 @@ void MainWindow::addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &
       item->widget->layout()->addWidget(label);
 
       newLabel = new QLabel(hash.value("label"), item->widget);
+      newLabel->setObjectName("thumbnailQLabel");
       newLabel->setAlignment(Qt::AlignCenter);
 
       item->widget->layout()->addWidget(newLabel);
@@ -3292,6 +3305,15 @@ void MainWindow::initContentGridLayout()
    removeGridItems();
 
    m_currentGridHash.clear();
+
+   if (m_currentGridWidget)
+   {
+      m_currentGridWidget->setObjectName("thumbnailWidget");
+      m_currentGridWidget->setFrameStyle(QFrame::Plain);
+      m_currentGridWidget->setLineWidth(0);
+   }
+
+   m_currentGridWidget = NULL;
 
    path = item->data(Qt::UserRole).toString();
 
@@ -3336,6 +3358,15 @@ void MainWindow::initContentTableWidget()
       return;
 
    m_currentGridHash.clear();
+
+   if (m_currentGridWidget)
+   {
+      m_currentGridWidget->setObjectName("thumbnailWidget");
+      m_currentGridWidget->setFrameStyle(QFrame::Plain);
+      m_currentGridWidget->setLineWidth(0);
+   }
+
+   m_currentGridWidget = NULL;
 
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
 
