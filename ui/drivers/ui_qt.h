@@ -36,6 +36,7 @@
 #include <QProgressBar>
 
 extern "C" {
+#include <retro_assert.h>
 #include <retro_common_api.h>
 #include "../ui_companion_driver.h"
 }
