@@ -280,7 +280,8 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    ,m_highlightColorLabel(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR), this))
    ,m_customThemePath()
    ,m_suggestLoadedCoreFirstCheckBox(new QCheckBox(this))
-   ,m_allPlaylistsMaxCountSpinBox(new QSpinBox(this))
+   ,m_allPlaylistsListMaxCountSpinBox(new QSpinBox(this))
+   ,m_allPlaylistsGridMaxCountSpinBox(new QSpinBox(this))
 {
    QFormLayout *form = new QFormLayout();
    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -291,7 +292,8 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK), MainWindow::THEME_DARK);
    m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM), MainWindow::THEME_CUSTOM);
 
-   m_allPlaylistsMaxCountSpinBox->setRange(0, 99999);
+   m_allPlaylistsListMaxCountSpinBox->setRange(0, 99999);
+   m_allPlaylistsGridMaxCountSpinBox->setRange(0, 99999);
 
    form->setFormAlignment(Qt::AlignCenter);
    form->setLabelAlignment(Qt::AlignCenter);
@@ -309,7 +311,8 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB), m_saveLastTabCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES), m_showHiddenFilesCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST), m_suggestLoadedCoreFirstCheckBox);
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_MAX_COUNT), m_allPlaylistsMaxCountSpinBox);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT), m_allPlaylistsListMaxCountSpinBox);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT), m_allPlaylistsGridMaxCountSpinBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME), m_themeComboBox);
    form->addRow(m_highlightColorLabel, m_highlightColorPushButton);
 
@@ -385,7 +388,8 @@ void ViewOptionsDialog::loadViewOptions()
    m_saveLastTabCheckBox->setChecked(m_settings->value("save_last_tab", false).toBool());
    m_showHiddenFilesCheckBox->setChecked(m_settings->value("show_hidden_files", true).toBool());
    m_suggestLoadedCoreFirstCheckBox->setChecked(m_settings->value("suggest_loaded_core_first", false).toBool());
-   m_allPlaylistsMaxCountSpinBox->setValue(m_settings->value("all_playlists_max_count", 5000).toInt());
+   m_allPlaylistsListMaxCountSpinBox->setValue(m_settings->value("all_playlists_list_max_count", 0).toInt());
+   m_allPlaylistsGridMaxCountSpinBox->setValue(m_settings->value("all_playlists_grid_max_count", 5000).toInt());
 
    themeIndex = m_themeComboBox->findData(m_mainwindow->getThemeFromString(m_settings->value("theme", "default").toString()));
 
@@ -425,12 +429,14 @@ void ViewOptionsDialog::saveViewOptions()
    m_settings->setValue("show_hidden_files", m_showHiddenFilesCheckBox->isChecked());
    m_settings->setValue("highlight_color", m_highlightColor);
    m_settings->setValue("suggest_loaded_core_first", m_suggestLoadedCoreFirstCheckBox->isChecked());
-   m_settings->setValue("all_playlists_max_count", m_allPlaylistsMaxCountSpinBox->value());
+   m_settings->setValue("all_playlists_list_max_count", m_allPlaylistsListMaxCountSpinBox->value());
+   m_settings->setValue("all_playlists_grid_max_count", m_allPlaylistsGridMaxCountSpinBox->value());
 
    if (!m_mainwindow->customThemeString().isEmpty())
       m_settings->setValue("custom_theme", m_customThemePath);
 
-   m_mainwindow->setAllPlaylistsMaxCount(m_allPlaylistsMaxCountSpinBox->value());
+   m_mainwindow->setAllPlaylistsListMaxCount(m_allPlaylistsListMaxCountSpinBox->value());
+   m_mainwindow->setAllPlaylistsGridMaxCount(m_allPlaylistsGridMaxCountSpinBox->value());
 }
 
 void ViewOptionsDialog::onAccepted()
@@ -550,7 +556,8 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_currentGridHash()
    ,m_lastViewType(m_viewType)
    ,m_currentGridWidget(NULL)
-   ,m_allPlaylistsMaxCount(0)
+   ,m_allPlaylistsListMaxCount(0)
+   ,m_allPlaylistsGridMaxCount(0)
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -3190,7 +3197,7 @@ void MainWindow::addPlaylistItemsToGrid(const QStringList &paths, bool add)
       /* QVector::append() wasn't added until 5.5, so just do it the old fashioned way */
       for (j = 0; j < vec.size(); j++)
       {
-         if (add && items.size() >= m_allPlaylistsMaxCount)
+         if (add && m_allPlaylistsGridMaxCount > 0 && items.size() >= m_allPlaylistsGridMaxCount)
             goto finish;
 
          items.append(vec.at(j));
@@ -3527,7 +3534,7 @@ void MainWindow::addPlaylistItemsToTable(const QStringList &paths, bool add)
       /* QVector::append() wasn't added until 5.5, so just do it the old fashioned way */
       for (j = 0; j < vec.size(); j++)
       {
-         if (add && items.size() >= m_allPlaylistsMaxCount)
+         if (add && m_allPlaylistsListMaxCount > 0 && items.size() >= m_allPlaylistsListMaxCount)
             goto finish;
 
          items.append(vec.at(j));
@@ -3608,12 +3615,20 @@ void MainWindow::closeEvent(QCloseEvent *event)
    QMainWindow::closeEvent(event);
 }
 
-void MainWindow::setAllPlaylistsMaxCount(int count)
+void MainWindow::setAllPlaylistsListMaxCount(int count)
 {
    if (count < 1)
       count = 0;
 
-   m_allPlaylistsMaxCount = count;
+   m_allPlaylistsListMaxCount = count;
+}
+
+void MainWindow::setAllPlaylistsGridMaxCount(int count)
+{
+   if (count < 1)
+      count = 0;
+
+   m_allPlaylistsGridMaxCount = count;
 }
 
 static void* ui_window_qt_init(void)

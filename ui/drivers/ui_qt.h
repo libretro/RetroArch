@@ -192,7 +192,8 @@ private:
    QLabel *m_highlightColorLabel;
    QString m_customThemePath;
    QCheckBox *m_suggestLoadedCoreFirstCheckBox;
-   QSpinBox *m_allPlaylistsMaxCountSpinBox;
+   QSpinBox *m_allPlaylistsListMaxCountSpinBox;
+   QSpinBox *m_allPlaylistsGridMaxCountSpinBox;
 };
 
 class CoreInfoLabel : public QLabel
@@ -294,7 +295,8 @@ public:
    void setCurrentViewType(ViewType viewType);
    QString getCurrentViewTypeString();
    ViewType getCurrentViewType();
-   void setAllPlaylistsMaxCount(int count);
+   void setAllPlaylistsListMaxCount(int count);
+   void setAllPlaylistsGridMaxCount(int count);
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -427,7 +429,8 @@ private:
    QHash<QString, QString> m_currentGridHash;
    ViewType m_lastViewType;
    QPointer<ThumbnailWidget> m_currentGridWidget;
-   int m_allPlaylistsMaxCount;
+   int m_allPlaylistsListMaxCount;
+   int m_allPlaylistsGridMaxCount;
 
 protected:
    void closeEvent(QCloseEvent *event);
