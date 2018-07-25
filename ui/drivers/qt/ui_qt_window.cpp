@@ -280,6 +280,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    ,m_highlightColorLabel(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR), this))
    ,m_customThemePath()
    ,m_suggestLoadedCoreFirstCheckBox(new QCheckBox(this))
+   ,m_allPlaylistsMaxCountSpinBox(new QSpinBox(this))
 {
    QFormLayout *form = new QFormLayout();
    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -289,6 +290,8 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT), MainWindow::THEME_SYSTEM_DEFAULT);
    m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK), MainWindow::THEME_DARK);
    m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM), MainWindow::THEME_CUSTOM);
+
+   m_allPlaylistsMaxCountSpinBox->setRange(0, 99999);
 
    form->setFormAlignment(Qt::AlignCenter);
    form->setLabelAlignment(Qt::AlignCenter);
@@ -304,8 +307,9 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY), m_saveGeometryCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS), m_saveDockPositionsCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB), m_saveLastTabCheckBox);
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES), m_showHiddenFilesCheckBox);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES), m_showHiddenFilesCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST), m_suggestLoadedCoreFirstCheckBox);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_MAX_COUNT), m_allPlaylistsMaxCountSpinBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME), m_themeComboBox);
    form->addRow(m_highlightColorLabel, m_highlightColorPushButton);
 
@@ -381,6 +385,7 @@ void ViewOptionsDialog::loadViewOptions()
    m_saveLastTabCheckBox->setChecked(m_settings->value("save_last_tab", false).toBool());
    m_showHiddenFilesCheckBox->setChecked(m_settings->value("show_hidden_files", true).toBool());
    m_suggestLoadedCoreFirstCheckBox->setChecked(m_settings->value("suggest_loaded_core_first", false).toBool());
+   m_allPlaylistsMaxCountSpinBox->setValue(m_settings->value("all_playlists_max_count", 0).toInt());
 
    themeIndex = m_themeComboBox->findData(m_mainwindow->getThemeFromString(m_settings->value("theme", "default").toString()));
 
@@ -420,9 +425,12 @@ void ViewOptionsDialog::saveViewOptions()
    m_settings->setValue("show_hidden_files", m_showHiddenFilesCheckBox->isChecked());
    m_settings->setValue("highlight_color", m_highlightColor);
    m_settings->setValue("suggest_loaded_core_first", m_suggestLoadedCoreFirstCheckBox->isChecked());
+   m_settings->setValue("all_playlists_max_count", m_allPlaylistsMaxCountSpinBox->value());
 
    if (!m_mainwindow->customThemeString().isEmpty())
       m_settings->setValue("custom_theme", m_customThemePath);
+
+   m_mainwindow->setAllPlaylistsMaxCount(m_allPlaylistsMaxCountSpinBox->value());
 }
 
 void ViewOptionsDialog::onAccepted()
@@ -455,7 +463,7 @@ CoreInfoWidget::CoreInfoWidget(CoreInfoLabel *label, QWidget *parent) :
    ,m_label(label)
    ,m_scrollArea(new QScrollArea(this))
 {
-   m_scrollArea->setFrameShape(QFrame::NoFrame);
+   //m_scrollArea->setFrameShape(QFrame::NoFrame);
    m_scrollArea->setWidgetResizable(true);
    m_scrollArea->setWidget(m_label);
 }
@@ -542,6 +550,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_currentGridHash()
    ,m_lastViewType(m_viewType)
    ,m_currentGridWidget(NULL)
+   ,m_allPlaylistsMaxCount(0)
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -795,12 +804,16 @@ void MainWindow::onGridItemClicked()
    if (m_currentGridWidget)
    {
       m_currentGridWidget->setObjectName("thumbnailWidget");
-      m_currentGridWidget->setFrameStyle(QFrame::Plain);
+      //m_currentGridWidget->setFrameStyle(QFrame::Plain);
+      m_currentGridWidget->style()->unpolish(m_currentGridWidget);
+      m_currentGridWidget->style()->polish(m_currentGridWidget);
    }
 
    hash = w->property("hash").value<QHash<QString, QString> >();
    w->setObjectName("thumbnailWidgetSelected");
-   w->setFrameStyle(QFrame::Box | QFrame::Plain);
+   w->style()->unpolish(w);
+   w->style()->polish(w);
+   //w->setFrameStyle(QFrame::Box | QFrame::Plain);
    w->setLineWidth(2);
 
    m_currentGridWidget = w;
@@ -1517,7 +1530,7 @@ void MainWindow::setTheme(Theme theme)
    {
       case THEME_SYSTEM_DEFAULT:
       {
-         qApp->setStyleSheet(qt_theme_default_stylesheet);
+         qApp->setStyleSheet(qt_theme_default_stylesheet.arg(m_settings->value("highlight_color", "palette(highlight)").toString()));
 
          break;
       }
@@ -3162,7 +3175,7 @@ GridItem* MainWindow::doDeferredImageLoad(GridItem *item, QString path)
    return item;
 }
 
-void MainWindow::addPlaylistItemsToGrid(const QStringList &paths)
+void MainWindow::addPlaylistItemsToGrid(const QStringList &paths, bool add)
 {
    QVector<QHash<QString, QString> > items;
    int i;
@@ -3177,10 +3190,13 @@ void MainWindow::addPlaylistItemsToGrid(const QStringList &paths)
       /* QVector::append() wasn't added until 5.5, so just do it the old fashioned way */
       for (j = 0; j < vec.size(); j++)
       {
+         if (add && items.size() >= m_allPlaylistsMaxCount)
+            goto finish;
+
          items.append(vec.at(j));
       }
    }
-
+finish:
    std::sort(items.begin(), items.end(), comp_hash_label_key);
 
    addPlaylistHashToGrid(items);
@@ -3252,13 +3268,14 @@ void MainWindow::addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &
       item->widget->setLayout(new QVBoxLayout());
       item->widget->setObjectName("thumbnailWidget");
       item->widget->setProperty("hash", QVariant::fromValue<QHash<QString, QString> >(hash));
-      item->widget->setFrameStyle(QFrame::Plain);
+      //item->widget->setFrameStyle(QFrame::Plain);
       item->widget->setLineWidth(0);
 
       connect(item->widget, SIGNAL(mouseDoubleClicked()), this, SLOT(onGridItemDoubleClicked()));
       connect(item->widget, SIGNAL(mousePressed()), this, SLOT(onGridItemClicked()));
 
       label = new ThumbnailLabel(item->widget);
+      label->setObjectName("thumbnailGridLabel");
 
       item->label = label;
 
@@ -3309,8 +3326,10 @@ void MainWindow::initContentGridLayout()
    if (m_currentGridWidget)
    {
       m_currentGridWidget->setObjectName("thumbnailWidget");
-      m_currentGridWidget->setFrameStyle(QFrame::Plain);
+      //m_currentGridWidget->setFrameStyle(QFrame::Plain);
       m_currentGridWidget->setLineWidth(0);
+      m_currentGridWidget->style()->unpolish(m_currentGridWidget);
+      m_currentGridWidget->style()->polish(m_currentGridWidget);
    }
 
    m_currentGridWidget = NULL;
@@ -3330,7 +3349,7 @@ void MainWindow::initContentGridLayout()
          playlists.append(playlistDir.absoluteFilePath(playlist));
       }
 
-      addPlaylistItemsToGrid(playlists);
+      addPlaylistItemsToGrid(playlists, true);
    }
    else
       addPlaylistItemsToGrid(QStringList() << path);
@@ -3362,8 +3381,10 @@ void MainWindow::initContentTableWidget()
    if (m_currentGridWidget)
    {
       m_currentGridWidget->setObjectName("thumbnailWidget");
-      m_currentGridWidget->setFrameStyle(QFrame::Plain);
+      //m_currentGridWidget->setFrameStyle(QFrame::Plain);
       m_currentGridWidget->setLineWidth(0);
+      m_currentGridWidget->style()->unpolish(m_currentGridWidget);
+      m_currentGridWidget->style()->polish(m_currentGridWidget);
    }
 
    m_currentGridWidget = NULL;
@@ -3397,7 +3418,7 @@ void MainWindow::initContentTableWidget()
          playlists.append(playlistDir.absoluteFilePath(playlist));
       }
 
-      addPlaylistItemsToTable(playlists);
+      addPlaylistItemsToTable(playlists, true);
    }
    else
       addPlaylistItemsToTable(QStringList() << path);
@@ -3491,7 +3512,7 @@ QVector<QHash<QString, QString> > MainWindow::getPlaylistItems(QString pathStrin
    return items;
 }
 
-void MainWindow::addPlaylistItemsToTable(const QStringList &paths)
+void MainWindow::addPlaylistItemsToTable(const QStringList &paths, bool add)
 {
    QVector<QHash<QString, QString> > items;
    int i;
@@ -3506,10 +3527,13 @@ void MainWindow::addPlaylistItemsToTable(const QStringList &paths)
       /* QVector::append() wasn't added until 5.5, so just do it the old fashioned way */
       for (j = 0; j < vec.size(); j++)
       {
+         if (add && items.size() >= m_allPlaylistsMaxCount)
+            goto finish;
+
          items.append(vec.at(j));
       }
    }
-
+finish:
    addPlaylistHashToTable(items);
 }
 
@@ -3582,6 +3606,14 @@ void MainWindow::closeEvent(QCloseEvent *event)
    m_settings->setValue("view_type", getCurrentViewTypeString());
 
    QMainWindow::closeEvent(event);
+}
+
+void MainWindow::setAllPlaylistsMaxCount(int count)
+{
+   if (count < 1)
+      count = 0;
+
+   m_allPlaylistsMaxCount = count;
 }
 
 static void* ui_window_qt_init(void)

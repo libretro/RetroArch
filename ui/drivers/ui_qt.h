@@ -58,6 +58,7 @@ class QPixmap;
 class QPaintEvent;
 class QSettings;
 class QCheckBox;
+class QSpinBox;
 class QFormLayout;
 class QStyle;
 class QScrollArea;
@@ -190,6 +191,7 @@ private:
    QLabel *m_highlightColorLabel;
    QString m_customThemePath;
    QCheckBox *m_suggestLoadedCoreFirstCheckBox;
+   QSpinBox *m_allPlaylistsMaxCountSpinBox;
 };
 
 class CoreInfoLabel : public QLabel
@@ -291,6 +293,7 @@ public:
    void setCurrentViewType(ViewType viewType);
    QString getCurrentViewTypeString();
    ViewType getCurrentViewType();
+   void setAllPlaylistsMaxCount(int count);
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -339,9 +342,9 @@ private slots:
    void currentItemChanged(const QHash<QString, QString> &hash);
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
-   void addPlaylistItemsToTable(const QStringList &paths);
+   void addPlaylistItemsToTable(const QStringList &paths, bool all = false);
    void addPlaylistHashToTable(const QVector<QHash<QString, QString> > &items);
-   void addPlaylistItemsToGrid(const QStringList &paths);
+   void addPlaylistItemsToGrid(const QStringList &paths, bool all = false);
    void addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &items);
    void onContentItemDoubleClicked(QTableWidgetItem *item);
    void onCoreLoadWindowClosed();
@@ -423,6 +426,7 @@ private:
    QHash<QString, QString> m_currentGridHash;
    ViewType m_lastViewType;
    QPointer<ThumbnailWidget> m_currentGridWidget;
+   int m_allPlaylistsMaxCount;
 
 protected:
    void closeEvent(QCloseEvent *event);
