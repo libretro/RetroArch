@@ -843,6 +843,15 @@ void config_set_int(config_file_t *conf, const char *key, int val)
    config_set_string(conf, key, buf);
 }
 
+void config_set_uint(config_file_t *conf, const char *key, unsigned int val)
+{
+   char buf[128];
+
+   buf[0] = '\0';
+   snprintf(buf, sizeof(buf), "%u", val);
+   config_set_string(conf, key, buf);
+}
+
 void config_set_hex(config_file_t *conf, const char *key, unsigned val)
 {
    char buf[128];

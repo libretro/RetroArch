@@ -1945,6 +1945,87 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Toggle cheat index.\n");
             break;
+        case MENU_ENUM_LABEL_CHEAT_IDX:
+            snprintf(s, len,
+                     "Index position in list.\n");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION:
+            snprintf(s, len,
+                     "Address bitmask when Memory Search Size < 8-bit.\n");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_MATCH_IDX:
+            snprintf(s, len,
+                     "Select the match to view.");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
+            snprintf(s, len,
+                     "Scan memory to create new cheats");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_START_OR_RESTART:
+            snprintf(s, len,
+                     "Left/Right to change bit-size\n");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT:
+            snprintf(s, len,
+                     "Left/Right to change value\n");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_SEARCH_LT:
+            snprintf(s, len,
+                     " ");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_SEARCH_GT:
+            snprintf(s, len,
+                     " ");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_SEARCH_EQ:
+            snprintf(s, len,
+                     " ");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ:
+            snprintf(s, len,
+                     " ");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS:
+            snprintf(s, len,
+                     "Left/Right to change value\n");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS:
+            snprintf(s, len,
+                     "Left/Right to change value\n");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_ADD_MATCHES:
+            snprintf(s, len,
+                     " ");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_VIEW_MATCHES:
+            snprintf(s, len,
+                     " ");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_CREATE_OPTION:
+            snprintf(s, len,
+                     " ");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_DELETE_OPTION:
+            snprintf(s, len,
+                     " ");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
+            snprintf(s, len,
+                     " ");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
+            snprintf(s, len,
+                     " ");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
+            snprintf(s, len,
+                     " ");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_BIG_ENDIAN:
+            snprintf(s, len,
+                     "Big endian    : 258 = 0x0102\n"
+                     "Little endian : 258 = 0x0201");
+            break;
         case MENU_ENUM_LABEL_HOLD_FAST_FORWARD:
             snprintf(s, len,
                      "Hold for fast-forward. Releasing button \n"

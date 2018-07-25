@@ -1370,6 +1370,7 @@ bool retroarch_main_init(int argc, char *argv[])
       }
    }
 
+   command_event(CMD_EVENT_CHEATS_INIT, NULL);
    drivers_init(DRIVERS_CMD_ALL);
    command_event(CMD_EVENT_COMMAND_INIT, NULL);
    command_event(CMD_EVENT_REMOTE_INIT, NULL);
@@ -1377,7 +1378,6 @@ bool retroarch_main_init(int argc, char *argv[])
    command_event(CMD_EVENT_REWIND_INIT, NULL);
    command_event(CMD_EVENT_CONTROLLERS_INIT, NULL);
    command_event(CMD_EVENT_RECORD_INIT, NULL);
-   command_event(CMD_EVENT_CHEATS_INIT, NULL);
 
    path_init_savefile();
 
@@ -2669,6 +2669,8 @@ static enum runloop_state runloop_check_state(
    if (menu_is_alive)
    {
       static input_bits_t old_input = {{0}};
+      static enum menu_action old_action = MENU_ACTION_CANCEL;
+
       menu_ctx_iterate_t iter;
 
       retro_ctx.poll_cb();
@@ -2689,6 +2691,52 @@ static enum runloop_state runloop_check_state(
 
          iter.action               = action;
 
+         global_t *global = global_get_ptr();
+         if ( global )
+         {
+            if ( action == old_action )
+            {
+               if ( action == MENU_ACTION_NOOP )
+               {
+                  global->menu.noop_press_time = cpu_features_get_time_usec() - global->menu.noop_start_time ;
+               }
+               else
+               {
+                  global->menu.action_press_time = cpu_features_get_time_usec() - global->menu.action_start_time ;
+               }
+            }
+            else
+            {
+               if ( action == MENU_ACTION_NOOP )
+               {
+                  global->menu.noop_start_time = cpu_features_get_time_usec() ;
+                  global->menu.noop_press_time = 0 ;
+                  if ( global->menu.prev_action == old_action )
+                  {
+                     global->menu.action_start_time = global->menu.prev_start_time;
+                  }
+                  else
+                  {
+                     global->menu.action_start_time = cpu_features_get_time_usec() ;
+                  }
+               }
+               else
+               {
+                  if ( global->menu.prev_action == action && global->menu.noop_press_time < 200000) //250ms
+                  {
+                     global->menu.action_start_time  = global->menu.prev_start_time ;
+                     global->menu.action_press_time = cpu_features_get_time_usec() - global->menu.action_start_time;
+                  }
+                  else
+                  {
+                     global->menu.prev_start_time = cpu_features_get_time_usec() ;
+                     global->menu.prev_action = action ;
+                     global->menu.action_press_time = 0 ;
+                  }
+               }
+            }
+         }
+
          if (!menu_driver_iterate(&iter))
             rarch_menu_running_finished();
 
@@ -2708,6 +2756,7 @@ static enum runloop_state runloop_check_state(
          }
 
          old_input                 = current_input;
+         old_action                = action;
 
          if (!focused)
             return RUNLOOP_STATE_POLLED_AND_SLEEP;
@@ -3366,6 +3415,8 @@ int runloop_iterate(unsigned *sleep_ms)
    if (runloop_check_cheevos())
       cheevos_test();
 #endif
+
+   cheat_manager_apply_retro_cheats() ;
 
 #ifdef HAVE_DISCORD
    if (discord_is_inited)

@@ -35,6 +35,7 @@
 #include "configuration.h"
 #include "config.def.h"
 #include "setting_list.h"
+#include "retroarch.h"
 
 bool settings_list_append(rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -146,7 +147,16 @@ static void setting_get_string_representation_hex(void *data,
             *setting->value.target.unsigned_integer);
 }
 
-static void setting_get_string_representation_uint(void *data,
+void setting_get_string_representation_hex_and_uint(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (setting)
+      snprintf(s, len, "%u (%08X)",
+            *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
+}
+
+void setting_get_string_representation_uint(void *data,
       char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -155,7 +165,7 @@ static void setting_get_string_representation_uint(void *data,
             *setting->value.target.unsigned_integer);
 }
 
-static void setting_get_string_representation_size(void *data,
+void setting_get_string_representation_size(void *data,
       char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -173,11 +183,85 @@ void setting_get_string_representation_size_in_mb(void *data,
             (*setting->value.target.sizet)/(1024*1024));
 }
 
-static int setting_uint_action_left_default(void *data, bool wraparound)
+void setting_get_string_representation_uint_as_enum(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (setting)
+      snprintf(s, len, "%s",
+            msg_hash_to_str(setting->index_offset+(*setting->value.target.unsigned_integer)));
+}
+
+static float recalc_step_based_on_length_of_action(rarch_setting_t *setting)
+{
+   float step = setting->step;
+#ifdef HAVE_MENU
+   global_t *global = global_get_ptr();
+   if ( global )
+   {
+#if 0
+      if (setting->enforce_minrange)
+      {
+         float numsteps = (setting->max-setting->min)/setting->step ;
+         float multiplier = 1.0f ;
+         if ( global->menu.action_press_time  > 12000000)
+         {
+            multiplier = (numsteps/60.0f);
+         } else if ( global->menu.action_press_time  > 9000000)
+         {
+            multiplier = (numsteps/300.0f) ;
+         } else if ( global->menu.action_press_time  > 6000000)
+         {
+            multiplier = (numsteps/750.0f);
+         } else if ( global->menu.action_press_time  > 3000000)
+         {
+            multiplier = (numsteps/3000.0f) ;
+         } else
+         {
+            multiplier = 1.0f ;
+         }
+         step = setting->step*multiplier;
+      }
+      else
+#endif
+      {
+         if ( global->menu.action_press_time  > 21000000)
+         {
+            step = setting->step*1000000.0f ;
+         } else if ( global->menu.action_press_time  > 18000000)
+         {
+            step = setting->step*10000.0f ;
+         } else if ( global->menu.action_press_time  > 15000000)
+         {
+            step = setting->step*1000.0f ;
+         } else if ( global->menu.action_press_time  > 12000000)
+         {
+            step = setting->step*100.0f ;
+         } else if ( global->menu.action_press_time  > 9000000)
+         {
+            step = setting->step*100.0f ;
+         } else if ( global->menu.action_press_time  > 6000000)
+         {
+            step = setting->step*10.0f ;
+         } else if ( global->menu.action_press_time  > 3000000)
+         {
+            step = setting->step*5.0f ;
+         } else
+         {
+            step = setting->step ;
+         }
+      }
+   }
+#endif
+   return step < setting->step ? setting->step : step ;
+}
+
+int setting_uint_action_left_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    double               min = 0.0f;
    bool                 overflowed = false;
+   float                step = 0.0f ;
 
    if (!setting)
       return -1;
@@ -186,10 +270,12 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   overflowed = setting->step > *setting->value.target.unsigned_integer;
+   step = recalc_step_based_on_length_of_action(setting) ;
+
+   overflowed = step > *setting->value.target.unsigned_integer;
 
    if (!overflowed)
-      *setting->value.target.unsigned_integer = *setting->value.target.unsigned_integer - setting->step;
+      *setting->value.target.unsigned_integer = *setting->value.target.unsigned_integer - step;
 
    if (setting->enforce_minrange)
    {
@@ -211,10 +297,11 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
    return 0;
 }
 
-static int setting_uint_action_right_default(void *data, bool wraparound)
+int setting_uint_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    double               max = 0.0f;
+   float                step = 0.0f ;
 
    if (!setting)
       return -1;
@@ -223,8 +310,10 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
+   step = recalc_step_based_on_length_of_action(setting) ;
+
    *setting->value.target.unsigned_integer =
-      *setting->value.target.unsigned_integer + setting->step;
+      *setting->value.target.unsigned_integer + step;
 
    if (setting->enforce_maxrange)
    {
@@ -246,11 +335,36 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
    return 0;
 }
 
+int setting_uint_action_right_with_refresh(void *data, bool wraparound)
+{
+   int retval = setting_uint_action_right_default(data, wraparound) ;
+   bool refresh      = false;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+   return retval ;
+}
+
+int setting_uint_action_left_with_refresh(void *data, bool wraparound)
+{
+   int retval = setting_uint_action_left_default(data, wraparound) ;
+   bool refresh      = false;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+   return retval ;
+
+}
+
+
 static int setting_size_action_left_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    double               min = 0.0f;
    bool                 overflowed = false;
+   float                step = 0.0f ;
 
    if (!setting)
       return -1;
@@ -259,10 +373,12 @@ static int setting_size_action_left_default(void *data, bool wraparound)
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   overflowed = setting->step > *setting->value.target.sizet;
+   step = recalc_step_based_on_length_of_action(setting) ;
+
+   overflowed = step > *setting->value.target.sizet;
 
    if (!overflowed)
-      *setting->value.target.sizet = *setting->value.target.sizet - setting->step;
+      *setting->value.target.sizet = *setting->value.target.sizet - step;
 
    if (setting->enforce_minrange)
    {
@@ -288,6 +404,7 @@ static int setting_size_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    double               max = 0.0f;
+   float                step = 0.0f ;
 
    if (!setting)
       return -1;
@@ -296,8 +413,10 @@ static int setting_size_action_right_default(void *data, bool wraparound)
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
+   step = recalc_step_based_on_length_of_action(setting) ;
+
    *setting->value.target.sizet =
-      *setting->value.target.sizet + setting->step;
+      *setting->value.target.sizet + step;
 
    if (setting->enforce_maxrange)
    {
@@ -1044,7 +1163,6 @@ static rarch_setting_t setting_size_setting(const char* name,
    result.action_cancel             = NULL;
    result.action_ok                 = setting_generic_action_ok_default;
    result.action_select             = setting_generic_action_ok_default;
-   result.get_string_representation = &setting_get_string_representation_size;
    result.get_string_representation = string_representation_handler;
 
    result.bind_type                 = 0;
