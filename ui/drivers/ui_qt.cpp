@@ -477,7 +477,7 @@ static void* ui_companion_qt_init(void)
    mainwindow->resizeThumbnails(true, true, true);
 
    if (qsettings->contains("all_playlists_max_count"))
-      mainwindow->setAllPlaylistsMaxCount(qsettings->value("all_playlists_max_count", 0).toInt());
+      mainwindow->setAllPlaylistsMaxCount(qsettings->value("all_playlists_max_count", 5000).toInt());
 
    if (qsettings->contains("geometry"))
       if (qsettings->contains("save_geometry"))

@@ -385,7 +385,7 @@ void ViewOptionsDialog::loadViewOptions()
    m_saveLastTabCheckBox->setChecked(m_settings->value("save_last_tab", false).toBool());
    m_showHiddenFilesCheckBox->setChecked(m_settings->value("show_hidden_files", true).toBool());
    m_suggestLoadedCoreFirstCheckBox->setChecked(m_settings->value("suggest_loaded_core_first", false).toBool());
-   m_allPlaylistsMaxCountSpinBox->setValue(m_settings->value("all_playlists_max_count", 0).toInt());
+   m_allPlaylistsMaxCountSpinBox->setValue(m_settings->value("all_playlists_max_count", 5000).toInt());
 
    themeIndex = m_themeComboBox->findData(m_mainwindow->getThemeFromString(m_settings->value("theme", "default").toString()));
 

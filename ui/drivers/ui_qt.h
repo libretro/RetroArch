@@ -89,7 +89,7 @@ class ThumbnailWidget : public QFrame
    Q_OBJECT
 public:
    ThumbnailWidget(QWidget *parent = 0);
-   ThumbnailWidget(const ThumbnailWidget& other) { assert(false && "DONT EVER USE THIS"); }
+   ThumbnailWidget(const ThumbnailWidget& other) { retro_assert(false && "DONT EVER USE THIS"); }
 
    QSize sizeHint() const;
    void setSizeHint(QSize size);
