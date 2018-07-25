@@ -138,7 +138,17 @@ GridItem::GridItem() :
    ,image()
    ,pixmap()
    ,imageWatcher()
+   ,labelText()
 {
+}
+
+/* https://gist.github.com/andrey-str/0f9c7709cbf0c9c49ef9 */
+static void setElidedText(QLabel *label, QWidget *clipWidget, int padding, const QString &text)
+{
+   QFontMetrics metrix(label->font());
+   int width = clipWidget->width() - padding;
+   QString clippedText = metrix.elidedText(text, Qt::ElideRight, width);
+   label->setText(clippedText);
 }
 
 TreeView::TreeView(QWidget *parent) :
@@ -857,6 +867,7 @@ void MainWindow::onListViewClicked()
 inline void MainWindow::calcGridItemSize(GridItem *item, int zoomValue)
 {
    int newSize = 0;
+   QLabel *label = NULL;
 
    if (zoomValue < 50)
       newSize = expScale(lerp(0, 49, 25, 49, zoomValue) / 50.0, 102, 256);
@@ -864,6 +875,11 @@ inline void MainWindow::calcGridItemSize(GridItem *item, int zoomValue)
       newSize = expScale(zoomValue / 100.0, 256, 1024);
 
    item->widget->setFixedSize(QSize(newSize, newSize));
+
+   label = item->widget->findChild<QLabel*>("thumbnailQLabel");
+
+   if (label)
+      setElidedText(label, item->widget, item->widget->layout()->contentsMargins().left() + item->widget->layout()->spacing(), item->labelText);
 }
 
 void MainWindow::onZoomValueChanged(int value)
@@ -3285,14 +3301,15 @@ void MainWindow::addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &
       label->setObjectName("thumbnailGridLabel");
 
       item->label = label;
+      item->labelText = hash.value("label");
+
+      newLabel = new QLabel(item->labelText, item->widget);
+      newLabel->setObjectName("thumbnailQLabel");
+      newLabel->setAlignment(Qt::AlignCenter);
 
       calcGridItemSize(item, zoomValue);
 
       item->widget->layout()->addWidget(label);
-
-      newLabel = new QLabel(hash.value("label"), item->widget);
-      newLabel->setObjectName("thumbnailQLabel");
-      newLabel->setAlignment(Qt::AlignCenter);
 
       item->widget->layout()->addWidget(newLabel);
       qobject_cast<QVBoxLayout*>(item->widget->layout())->setStretchFactor(label, 1);

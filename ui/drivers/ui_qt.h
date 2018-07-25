@@ -82,6 +82,7 @@ public:
    QImage image;
    QPixmap pixmap;
    QFutureWatcher<GridItem*> imageWatcher;
+   QString labelText;
 };
 
 class ThumbnailWidget : public QFrame
