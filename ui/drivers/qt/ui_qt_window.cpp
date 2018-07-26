@@ -29,6 +29,7 @@
 #include <QMenu>
 #include <QDockWidget>
 #include <QList>
+#include <QInputDialog>
 #include <QtConcurrentRun>
 
 #include "../ui_qt.h"
@@ -977,7 +978,7 @@ void MainWindow::setCustomThemeString(QString qss)
    m_customThemeString = qss;
 }
 
-bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowModality modality)
+bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowModality modality, bool showDontAsk)
 {
    QPointer<QMessageBox> msgBoxPtr;
    QMessageBox *msgBox = NULL;
@@ -985,13 +986,16 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowM
 
    msgBoxPtr = new QMessageBox(this);
    msgBox = msgBoxPtr.data();
-   checkBox = new QCheckBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN), msgBox);
 
    msgBox->setWindowModality(modality);
    msgBox->setTextFormat(Qt::RichText);
 
-   /* QMessageBox::setCheckBox() is available since 5.2 */
-   msgBox->setCheckBox(checkBox);
+   if (showDontAsk)
+   {
+      checkBox = new QCheckBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN), msgBox);
+      /* QMessageBox::setCheckBox() is available since 5.2 */
+      msgBox->setCheckBox(checkBox);
+   }
 
    switch (msgType)
    {
@@ -1013,6 +1017,13 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowM
          msgBox->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ERROR));
          break;
       }
+      case MSGBOX_TYPE_QUESTION:
+      {
+         msgBox->setIcon(QMessageBox::Question);
+         msgBox->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_QUESTION));
+         msgBox->setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+         break;
+      }
       default:
          break;
    }
@@ -1023,7 +1034,10 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowM
    if (!msgBoxPtr)
       return true;
 
-   if (checkBox->isChecked())
+   if (checkBox && checkBox->isChecked())
+      return false;
+
+   if (msgBox->result() == QMessageBox::Cancel)
       return false;
 
    return true;
@@ -1036,6 +1050,8 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    QScopedPointer<QMenu> associateMenu;
    QScopedPointer<QMenu> hiddenPlaylistsMenu;
    QScopedPointer<QAction> hideAction;
+   QScopedPointer<QAction> newPlaylistAction;
+   QScopedPointer<QAction> deletePlaylistAction;
    QPointer<QAction> selectedAction;
    QPoint cursorPos = QCursor::pos();
    QListWidgetItem *selectedItem = m_listWidget->itemAt(m_listWidget->viewport()->mapFromGlobal(cursorPos));
@@ -1044,6 +1060,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    QString currentPlaylistDirPath;
    QString currentPlaylistPath;
    QString currentPlaylistFileName;
+   QFile currentPlaylistFile;
    QByteArray currentPlaylistFileNameArray;
    QFileInfo currentPlaylistFileInfo;
    QMap<QString, const core_info_t*> coreList;
@@ -1069,6 +1086,9 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    stcores = string_split(settings->arrays.playlist_cores, ";");
 
    currentPlaylistPath = selectedItem->data(Qt::UserRole).toString();
+
+   currentPlaylistFile.setFileName(currentPlaylistPath);
+
    currentPlaylistFileInfo = QFileInfo(currentPlaylistPath);
    currentPlaylistFileName = currentPlaylistFileInfo.fileName();
    currentPlaylistDirPath = currentPlaylistFileInfo.absoluteDir().absolutePath();
@@ -1080,11 +1100,19 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    menu->setObjectName("menu");
 
    hiddenPlaylistsMenu.reset(new QMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS), this));
+   hideAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_HIDE), this));
+   newPlaylistAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST)) + "...", this));
+
    hiddenPlaylistsMenu->setObjectName("hiddenPlaylistsMenu");
 
-   hideAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_HIDE), this));
-
    menu->addAction(hideAction.data());
+   menu->addAction(newPlaylistAction.data());
+
+   if (currentPlaylistFile.exists())
+   {
+      deletePlaylistAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST)) + "...", this));
+      menu->addAction(deletePlaylistAction.data());
+   }
 
    for (j = 0; j < m_listWidget->count() && m_listWidget->count() > 0; j++)
    {
@@ -1179,6 +1207,30 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
             new_playlist_names, sizeof(settings->arrays.playlist_names));
       strlcpy(settings->arrays.playlist_cores,
             new_playlist_cores, sizeof(settings->arrays.playlist_cores));
+   }
+   else if (selectedAction == deletePlaylistAction.data())
+   {
+      if (currentPlaylistFile.exists())
+      {
+         if (ui_window.qtWindow->showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST)).arg(selectedItem->text()), MainWindow::MSGBOX_TYPE_QUESTION, Qt::ApplicationModal, false))
+         {
+            if (currentPlaylistFile.remove())
+               reloadPlaylists();
+            else
+               ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+         }
+      }
+   }
+   else if (selectedAction == newPlaylistAction.data())
+   {
+      QString name = QInputDialog::getText(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME));
+      QString newPlaylistPath = playlistDirAbsPath + "/" + name + file_path_str(FILE_PATH_LPL_EXTENSION);
+      QFile file(newPlaylistPath);
+
+      if (file.open(QIODevice::WriteOnly))
+         file.close();
+
+      reloadPlaylists();
    }
    else if (selectedAction == hideAction.data())
    {
