@@ -830,8 +830,6 @@ void MainWindow::onGridItemClicked()
    w->setObjectName("thumbnailWidgetSelected");
    w->style()->unpolish(w);
    w->style()->polish(w);
-   //w->setFrameStyle(QFrame::Box | QFrame::Plain);
-   w->setLineWidth(2);
 
    m_currentGridWidget = w;
    m_currentGridHash = hash;
@@ -879,7 +877,7 @@ inline void MainWindow::calcGridItemSize(GridItem *item, int zoomValue)
    label = item->widget->findChild<QLabel*>("thumbnailQLabel");
 
    if (label)
-      setElidedText(label, item->widget, item->widget->layout()->contentsMargins().left() + item->widget->layout()->spacing(), item->labelText);
+      setElidedText(label, item->widget, item->widget->layout()->contentsMargins().left() + item->widget->layout()->spacing() + 2, item->labelText);
 }
 
 void MainWindow::onZoomValueChanged(int value)
@@ -3291,8 +3289,6 @@ void MainWindow::addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &
       item->widget->setLayout(new QVBoxLayout());
       item->widget->setObjectName("thumbnailWidget");
       item->widget->setProperty("hash", QVariant::fromValue<QHash<QString, QString> >(hash));
-      //item->widget->setFrameStyle(QFrame::Plain);
-      item->widget->setLineWidth(0);
 
       connect(item->widget, SIGNAL(mouseDoubleClicked()), this, SLOT(onGridItemDoubleClicked()));
       connect(item->widget, SIGNAL(mousePressed()), this, SLOT(onGridItemClicked()));
@@ -3351,8 +3347,6 @@ void MainWindow::initContentGridLayout()
    if (m_currentGridWidget)
    {
       m_currentGridWidget->setObjectName("thumbnailWidget");
-      //m_currentGridWidget->setFrameStyle(QFrame::Plain);
-      m_currentGridWidget->setLineWidth(0);
       m_currentGridWidget->style()->unpolish(m_currentGridWidget);
       m_currentGridWidget->style()->polish(m_currentGridWidget);
    }
@@ -3406,8 +3400,6 @@ void MainWindow::initContentTableWidget()
    if (m_currentGridWidget)
    {
       m_currentGridWidget->setObjectName("thumbnailWidget");
-      //m_currentGridWidget->setFrameStyle(QFrame::Plain);
-      m_currentGridWidget->setLineWidth(0);
       m_currentGridWidget->style()->unpolish(m_currentGridWidget);
       m_currentGridWidget->style()->polish(m_currentGridWidget);
    }
