@@ -4002,8 +4002,6 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
    free(ribbon_verts);
 }
 
-
-
 static void *xmb_init(void **userdata, bool video_is_threaded)
 {
    unsigned width, height;

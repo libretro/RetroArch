@@ -436,24 +436,13 @@ static const struct font_glyph *vulkan_raster_font_get_glyph(
    return glyph;
 }
 
-static void vulkan_raster_font_flush_block(unsigned width, unsigned height,
-      void *data, video_frame_info_t *video_info)
-{
-   (void)data;
-}
-
-static void vulkan_raster_font_bind_block(void *data, void *userdata)
-{
-   (void)data;
-}
-
 font_renderer_t vulkan_raster_font = {
    vulkan_raster_font_init_font,
    vulkan_raster_font_free_font,
    vulkan_raster_font_render_msg,
    "Vulkan raster",
    vulkan_raster_font_get_glyph,
-   vulkan_raster_font_bind_block,
-   vulkan_raster_font_flush_block,
+   NULL,                            /* bind_block */
+   NULL,                            /* flush_block */
    vulkan_get_message_width
 };

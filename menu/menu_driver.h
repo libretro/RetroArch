@@ -726,6 +726,14 @@ void menu_display_draw_quad(
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color);
+void menu_display_draw_polygon(
+      video_frame_info_t *video_info,
+      int x1, int y1,
+      int x2, int y2,
+      int x3, int y3,
+      int x4, int y4,
+      unsigned width, unsigned height,
+      float *color);
 void menu_display_draw_texture(
       video_frame_info_t *video_info,
       int x, int y, unsigned w, unsigned h,
@@ -817,6 +825,7 @@ extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
 extern menu_ctx_driver_t menu_ctx_nuklear;
 extern menu_ctx_driver_t menu_ctx_xmb;
+extern menu_ctx_driver_t menu_ctx_stripes;
 extern menu_ctx_driver_t menu_ctx_zarch;
 extern menu_ctx_driver_t menu_ctx_null;
 

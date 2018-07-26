@@ -31,6 +31,9 @@
 #define MAX_PADS 4
 #endif
 
+/* TODO/FIXME - 
+ * fix game focus toggle */
+
 typedef struct gx_input
 {
    bool blocked;

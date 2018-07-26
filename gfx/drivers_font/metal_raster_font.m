@@ -529,7 +529,7 @@ static const struct font_glyph *metal_raster_font_get_glyph(
 }
 
 static void metal_raster_font_flush_block(unsigned width, unsigned height,
-                                          void *data, video_frame_info_t *video_info)
+      void *data, video_frame_info_t *video_info)
 {
    (void)data;
 }

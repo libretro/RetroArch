@@ -124,7 +124,10 @@ void input_mapper_poll(input_mapper_t *handle)
                if (remap_valid)
                {
                   unsigned current_button_value = BIT256_GET(current_input, j);
-
+#ifdef HAVE_OVERLAY
+               if (poll_overlay && i == 0)
+                  current_button_value |= input_overlay_key_pressed(overlay_ptr, j);
+#endif
                   if ((current_button_value == 1) && (j != remap_button))
                   {
                      MAPPER_SET_KEY (handle,

@@ -29,10 +29,12 @@
 #include <QMenu>
 #include <QDockWidget>
 #include <QList>
+#include <QtConcurrentRun>
 
 #include "../ui_qt.h"
 #include "ui_qt_load_core_window.h"
 #include "ui_qt_themes.h"
+#include "flowlayout.h"
 
 extern "C" {
 #include "../../../version.h"
@@ -52,6 +54,7 @@ extern "C" {
 #include <encodings/utf.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
+#include <math.h>
 }
 
 #define TIMER_MSEC 1000 /* periodic timer for gathering statistics */
@@ -83,12 +86,34 @@ enum CoreSelection
    CORE_SELECTION_LOAD_CORE
 };
 
+static double lerp(double x, double y, double a, double b, double d) {
+  return a + (b - a) * ((double)(d - x) / (double)(y - x));
+}
+
+/* https://stackoverflow.com/questions/7246622/how-to-create-a-slider-with-a-non-linear-scale */
+static double expScale(double inputValue, double midValue, double maxValue)
+{
+   double returnValue = 0;
+   double M = maxValue / midValue;
+   double C = log(pow(M - 1, 2));
+   double B = maxValue / (exp(C) - 1);
+   double A = -1 * B;
+
+   returnValue = A + B * exp(C * inputValue);
+
+   return returnValue;
+}
+
 #ifdef HAVE_LIBRETRODB
 static void scan_finished_handler(void *task_data, void *user_data, const char *err)
 {
    menu_ctx_environment_t menu_environ;
    menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
    menu_environ.data = NULL;
+
+   (void)task_data;
+   (void)user_data;
+   (void)err;
 
    menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
 
@@ -99,6 +124,32 @@ static void scan_finished_handler(void *task_data, void *user_data, const char *
       ui_window.qtWindow->settings()->setValue("scan_finish_confirm", false);
 }
 #endif
+
+inline static bool comp_hash_label_key(const QHash<QString, QString> &lhs, const QHash<QString, QString> &rhs)
+{
+   return lhs.value("label") < rhs.value("label");
+}
+
+GridItem::GridItem() :
+   QObject()
+   ,widget(NULL)
+   ,label(NULL)
+   ,hash()
+   ,image()
+   ,pixmap()
+   ,imageWatcher()
+   ,labelText()
+{
+}
+
+/* https://gist.github.com/andrey-str/0f9c7709cbf0c9c49ef9 */
+static void setElidedText(QLabel *label, QWidget *clipWidget, int padding, const QString &text)
+{
+   QFontMetrics metrix(label->font());
+   int width = clipWidget->width() - padding;
+   QString clippedText = metrix.elidedText(text, Qt::ElideRight, width);
+   label->setText(clippedText);
+}
 
 TreeView::TreeView(QWidget *parent) :
    QTreeView(parent)
@@ -168,7 +219,7 @@ void CoreInfoDialog::showCoreInfo()
    int row = 0;
    int rowCount = m_formLayout->rowCount();
    int i = 0;
-   QList<QHash<QString, QString> > infoList = m_mainwindow->getCoreInfo();
+   QVector<QHash<QString, QString> > infoList = m_mainwindow->getCoreInfo();
 
    if (rowCount > 0)
    {
@@ -239,6 +290,8 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    ,m_highlightColorLabel(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR), this))
    ,m_customThemePath()
    ,m_suggestLoadedCoreFirstCheckBox(new QCheckBox(this))
+   ,m_allPlaylistsListMaxCountSpinBox(new QSpinBox(this))
+   ,m_allPlaylistsGridMaxCountSpinBox(new QSpinBox(this))
 {
    QFormLayout *form = new QFormLayout();
    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -248,6 +301,9 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT), MainWindow::THEME_SYSTEM_DEFAULT);
    m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK), MainWindow::THEME_DARK);
    m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM), MainWindow::THEME_CUSTOM);
+
+   m_allPlaylistsListMaxCountSpinBox->setRange(0, 99999);
+   m_allPlaylistsGridMaxCountSpinBox->setRange(0, 99999);
 
    form->setFormAlignment(Qt::AlignCenter);
    form->setLabelAlignment(Qt::AlignCenter);
@@ -263,8 +319,10 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY), m_saveGeometryCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS), m_saveDockPositionsCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB), m_saveLastTabCheckBox);
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES), m_showHiddenFilesCheckBox);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES), m_showHiddenFilesCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST), m_suggestLoadedCoreFirstCheckBox);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT), m_allPlaylistsListMaxCountSpinBox);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT), m_allPlaylistsGridMaxCountSpinBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME), m_themeComboBox);
    form->addRow(m_highlightColorLabel, m_highlightColorPushButton);
 
@@ -340,6 +398,8 @@ void ViewOptionsDialog::loadViewOptions()
    m_saveLastTabCheckBox->setChecked(m_settings->value("save_last_tab", false).toBool());
    m_showHiddenFilesCheckBox->setChecked(m_settings->value("show_hidden_files", true).toBool());
    m_suggestLoadedCoreFirstCheckBox->setChecked(m_settings->value("suggest_loaded_core_first", false).toBool());
+   m_allPlaylistsListMaxCountSpinBox->setValue(m_settings->value("all_playlists_list_max_count", 0).toInt());
+   m_allPlaylistsGridMaxCountSpinBox->setValue(m_settings->value("all_playlists_grid_max_count", 5000).toInt());
 
    themeIndex = m_themeComboBox->findData(m_mainwindow->getThemeFromString(m_settings->value("theme", "default").toString()));
 
@@ -379,9 +439,14 @@ void ViewOptionsDialog::saveViewOptions()
    m_settings->setValue("show_hidden_files", m_showHiddenFilesCheckBox->isChecked());
    m_settings->setValue("highlight_color", m_highlightColor);
    m_settings->setValue("suggest_loaded_core_first", m_suggestLoadedCoreFirstCheckBox->isChecked());
+   m_settings->setValue("all_playlists_list_max_count", m_allPlaylistsListMaxCountSpinBox->value());
+   m_settings->setValue("all_playlists_grid_max_count", m_allPlaylistsGridMaxCountSpinBox->value());
 
    if (!m_mainwindow->customThemeString().isEmpty())
       m_settings->setValue("custom_theme", m_customThemePath);
+
+   m_mainwindow->setAllPlaylistsListMaxCount(m_allPlaylistsListMaxCountSpinBox->value());
+   m_mainwindow->setAllPlaylistsGridMaxCount(m_allPlaylistsGridMaxCountSpinBox->value());
 }
 
 void ViewOptionsDialog::onAccepted()
@@ -414,7 +479,7 @@ CoreInfoWidget::CoreInfoWidget(CoreInfoLabel *label, QWidget *parent) :
    ,m_label(label)
    ,m_scrollArea(new QScrollArea(this))
 {
-   m_scrollArea->setFrameShape(QFrame::NoFrame);
+   //m_scrollArea->setFrameShape(QFrame::NoFrame);
    m_scrollArea->setWidgetResizable(true);
    m_scrollArea->setWidget(m_label);
 }
@@ -487,12 +552,103 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_historyPlaylistsItem(NULL)
    ,m_folderIcon()
    ,m_customThemeString()
+   ,m_gridLayout(NULL)
+   ,m_gridWidget(new QWidget(this))
+   ,m_gridScrollArea(new QScrollArea(m_gridWidget))
+   ,m_gridItems()
+   ,m_gridLayoutWidget(new QWidget())
+   ,m_zoomSlider(NULL)
+   ,m_lastZoomSliderValue(0)
+   ,m_pendingItemUpdates()
+   ,m_viewType(VIEW_TYPE_LIST)
+   ,m_gridProgressBar(NULL)
+   ,m_gridProgressWidget(NULL)
+   ,m_currentGridHash()
+   ,m_lastViewType(m_viewType)
+   ,m_currentGridWidget(NULL)
+   ,m_allPlaylistsListMaxCount(0)
+   ,m_allPlaylistsGridMaxCount(0)
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
    QString configDir = QFileInfo(path_get(RARCH_PATH_CONFIG)).dir().absolutePath();
    QToolButton *searchResetButton = NULL;
+   QWidget *zoomWidget = new QWidget();
+   QHBoxLayout *zoomLayout = new QHBoxLayout();
+   QLabel *zoomLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ZOOM), zoomWidget);
+   QPushButton *viewTypePushButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW), zoomWidget);
+   QMenu *viewTypeMenu = new QMenu(viewTypePushButton);
+   QAction *viewTypeIconsAction = NULL;
+   QAction *viewTypeListAction = NULL;
+   QHBoxLayout *gridProgressLayout = new QHBoxLayout();
+   QLabel *gridProgressLabel = NULL;
+   QHBoxLayout *gridFooterLayout = NULL;
    int i = 0;
+
+   qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
+
+   m_gridProgressWidget = new QWidget();
+   gridProgressLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PROGRESS), m_gridProgressWidget);
+
+   viewTypePushButton->setObjectName("viewTypePushButton");
+   viewTypePushButton->setFlat(true);
+
+   viewTypeIconsAction = viewTypeMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS));
+   viewTypeListAction = viewTypeMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST));
+
+   viewTypePushButton->setMenu(viewTypeMenu);
+
+   gridProgressLabel->setObjectName("gridProgressLabel");
+
+   m_gridProgressBar = new QProgressBar(m_gridProgressWidget);
+
+   m_gridProgressBar->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred));
+
+   zoomLabel->setObjectName("zoomLabel");
+
+   m_zoomSlider = new QSlider(Qt::Horizontal, zoomWidget);
+
+   m_zoomSlider->setMinimum(0);
+   m_zoomSlider->setMaximum(100);
+   m_zoomSlider->setValue(50);
+   m_zoomSlider->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred));
+
+   m_lastZoomSliderValue = m_zoomSlider->value();
+
+   m_gridWidget->setLayout(new QVBoxLayout());
+
+   m_gridLayout = new FlowLayout(m_gridLayoutWidget);
+
+   m_gridScrollArea->setAlignment(Qt::AlignCenter);
+   m_gridScrollArea->setFrameShape(QFrame::NoFrame);
+   m_gridScrollArea->setWidgetResizable(true);
+   m_gridScrollArea->setWidget(m_gridLayoutWidget);
+
+   m_gridWidget->layout()->addWidget(m_gridScrollArea);
+   m_gridWidget->layout()->setAlignment(Qt::AlignCenter);
+
+   m_gridProgressWidget->setLayout(gridProgressLayout);
+   gridProgressLayout->setContentsMargins(0, 0, 0, 0);
+   gridProgressLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
+   gridProgressLayout->addWidget(gridProgressLabel);
+   gridProgressLayout->addWidget(m_gridProgressBar);
+
+   m_gridWidget->layout()->addWidget(m_gridProgressWidget);
+
+   zoomWidget->setLayout(zoomLayout);
+   zoomLayout->setContentsMargins(0, 0, 0, 0);
+   zoomLayout->addWidget(zoomLabel);
+   zoomLayout->addWidget(m_zoomSlider);
+   zoomLayout->addWidget(viewTypePushButton);
+
+   gridFooterLayout = new QHBoxLayout();
+   gridFooterLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
+   gridFooterLayout->addWidget(m_gridProgressWidget);
+   gridFooterLayout->addWidget(zoomWidget);
+
+   static_cast<QVBoxLayout*>(m_gridWidget->layout())->addLayout(gridFooterLayout);
+
+   m_gridProgressWidget->hide();
 
    m_tableWidget->setAlternatingRowColors(true);
 
@@ -610,11 +766,13 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(m_coreInfoPushButton, SIGNAL(clicked()), m_coreInfoDialog, SLOT(showCoreInfo()));
    connect(m_runPushButton, SIGNAL(clicked()), this, SLOT(onRunClicked()));
    connect(m_stopPushButton, SIGNAL(clicked()), this, SLOT(onStopClicked()));
-   connect(m_browserAndPlaylistTabWidget, SIGNAL(currentChanged(int)), this, SLOT(onTabWidgetIndexChanged(int)));
    connect(m_dirTree, SIGNAL(itemsSelected(QModelIndexList)), this, SLOT(onTreeViewItemsSelected(QModelIndexList)));
    connect(m_dirTree, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileBrowserTreeContextMenuRequested(const QPoint&)));
    connect(m_listWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onPlaylistWidgetContextMenuRequested(const QPoint&)));
    connect(m_launchWithComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onLaunchWithComboBoxIndexChanged(int)));
+   connect(m_zoomSlider, SIGNAL(valueChanged(int)), this, SLOT(onZoomValueChanged(int)));
+   connect(viewTypeIconsAction, SIGNAL(triggered()), this, SLOT(onIconViewClicked()));
+   connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
 
    /* make sure these use an auto connection so it will be queued if called from a different thread (some facilities in RA log messages from other threads) */
    connect(this, SIGNAL(gotLogMessage(const QString&)), this, SLOT(onGotLogMessage(const QString&)), Qt::AutoConnection);
@@ -632,16 +790,6 @@ MainWindow::MainWindow(QWidget *parent) :
    qApp->processEvents();
    QTimer::singleShot(0, this, SLOT(onBrowserStartClicked()));
 
-   for (i = 0; i < m_listWidget->count(); i++)
-   {
-      /* select the first non-hidden row */
-      if (!m_listWidget->isRowHidden(i))
-      {
-         m_listWidget->setCurrentRow(i);
-         break;
-      }
-   }
-
    m_searchLineEdit->setFocus();
    m_loadCoreWindow->setWindowModality(Qt::ApplicationModal);
 
@@ -658,6 +806,91 @@ MainWindow::~MainWindow()
       delete m_thumbnailPixmap2;
    if (m_thumbnailPixmap3)
       delete m_thumbnailPixmap3;
+
+   removeGridItems();
+}
+
+void MainWindow::onGridItemClicked()
+{
+   QHash<QString, QString> hash;
+   ThumbnailWidget *w = static_cast<ThumbnailWidget*>(sender());
+
+   if (!w)
+      return;
+
+   if (m_currentGridWidget)
+   {
+      m_currentGridWidget->setObjectName("thumbnailWidget");
+      //m_currentGridWidget->setFrameStyle(QFrame::Plain);
+      m_currentGridWidget->style()->unpolish(m_currentGridWidget);
+      m_currentGridWidget->style()->polish(m_currentGridWidget);
+   }
+
+   hash = w->property("hash").value<QHash<QString, QString> >();
+   w->setObjectName("thumbnailWidgetSelected");
+   w->style()->unpolish(w);
+   w->style()->polish(w);
+
+   m_currentGridWidget = w;
+   m_currentGridHash = hash;
+
+   currentItemChanged(hash);
+}
+
+void MainWindow::onGridItemDoubleClicked()
+{
+   QHash<QString, QString> hash;
+   ThumbnailWidget *w = static_cast<ThumbnailWidget*>(sender());
+
+   if (!w)
+      return;
+
+   hash = w->property("hash").value<QHash<QString, QString> >();
+
+   loadContent(hash);
+}
+
+void MainWindow::onIconViewClicked()
+{
+   setCurrentViewType(VIEW_TYPE_ICONS);
+   onCurrentListItemChanged(m_listWidget->currentItem(), NULL);
+}
+
+void MainWindow::onListViewClicked()
+{
+   setCurrentViewType(VIEW_TYPE_LIST);
+   onCurrentListItemChanged(m_listWidget->currentItem(), NULL);
+}
+
+inline void MainWindow::calcGridItemSize(GridItem *item, int zoomValue)
+{
+   int newSize = 0;
+   QLabel *label = NULL;
+
+   if (zoomValue < 50)
+      newSize = expScale(lerp(0, 49, 25, 49, zoomValue) / 50.0, 102, 256);
+   else
+      newSize = expScale(zoomValue / 100.0, 256, 1024);
+
+   item->widget->setFixedSize(QSize(newSize, newSize));
+
+   label = item->widget->findChild<QLabel*>("thumbnailQLabel");
+
+   if (label)
+      setElidedText(label, item->widget, item->widget->layout()->contentsMargins().left() + item->widget->layout()->spacing() + 2, item->labelText);
+}
+
+void MainWindow::onZoomValueChanged(int value)
+{
+   int i = 0;
+
+   for (i = 0; i < m_gridItems.count() && m_gridItems.count() > 0; i++)
+   {
+      GridItem *item = m_gridItems.at(i);
+      calcGridItemSize(item, value);
+   }
+
+   m_lastZoomSliderValue = value;
 }
 
 void MainWindow::showWelcomeScreen()
@@ -746,11 +979,11 @@ void MainWindow::setCustomThemeString(QString qss)
 
 bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowModality modality)
 {
-   QScopedPointer<QMessageBox> msgBoxPtr;
+   QPointer<QMessageBox> msgBoxPtr;
    QMessageBox *msgBox = NULL;
    QCheckBox *checkBox = NULL;
 
-   msgBoxPtr.reset(new QMessageBox(this));
+   msgBoxPtr = new QMessageBox(this);
    msgBox = msgBoxPtr.data();
    checkBox = new QCheckBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN), msgBox);
 
@@ -787,6 +1020,9 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowM
    msgBox->setText(msg);
    msgBox->exec();
 
+   if (!msgBoxPtr)
+      return true;
+
    if (checkBox->isChecked())
       return false;
 
@@ -800,7 +1036,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    QScopedPointer<QMenu> associateMenu;
    QScopedPointer<QMenu> hiddenPlaylistsMenu;
    QScopedPointer<QAction> hideAction;
-   QAction *selectedAction = NULL;
+   QPointer<QAction> selectedAction;
    QPoint cursorPos = QCursor::pos();
    QListWidgetItem *selectedItem = m_listWidget->itemAt(m_listWidget->viewport()->mapFromGlobal(cursorPos));
    QDir playlistDir(settings->paths.directory_playlist);
@@ -850,20 +1086,17 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
    menu->addAction(hideAction.data());
 
-   if (m_listWidget->count() > 0)
+   for (j = 0; j < m_listWidget->count() && m_listWidget->count() > 0; j++)
    {
-      for (j = 0; j < m_listWidget->count(); j++)
-      {
-         QListWidgetItem *item = m_listWidget->item(j);
-         bool hidden = m_listWidget->isItemHidden(item);
+      QListWidgetItem *item = m_listWidget->item(j);
+      bool hidden = m_listWidget->isItemHidden(item);
 
-         if (hidden)
-         {
-            QAction *action = hiddenPlaylistsMenu->addAction(item->text());
-            action->setProperty("row", j);
-            action->setProperty("core_path", item->data(Qt::UserRole).toString());
-            foundHiddenPlaylist = true;
-         }
+      if (hidden)
+      {
+         QAction *action = hiddenPlaylistsMenu->addAction(item->text());
+         action->setProperty("row", j);
+         action->setProperty("core_path", item->data(Qt::UserRole).toString());
+         foundHiddenPlaylist = true;
       }
    }
 
@@ -888,17 +1121,28 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
       core_info_get_list(&core_info_list);
 
-      for (i = 0; i < core_info_list->count; i++)
+      for (i = 0; i < core_info_list->count && core_info_list->count > 0; i++)
       {
          const core_info_t *core = &core_info_list->list[i];
          coreList[core->core_name] = core;
       }
 
-      foreach (const QString &key, coreList.keys())
       {
-         const core_info_t *core = coreList.value(key);
-         QAction *action = associateMenu->addAction(core->core_name);
-         action->setProperty("core_path", core->path);
+         QMapIterator<QString, const core_info_t*> coreListIterator(coreList);
+
+         while (coreListIterator.hasNext())
+         {
+            QString key;
+            const core_info_t *core = NULL;
+            QAction *action = NULL;
+
+            coreListIterator.next();
+
+            key = coreListIterator.key();
+            core = coreList.value(key);
+            action = associateMenu->addAction(core->core_name);
+            action->setProperty("core_path", core->path);
+         }
       }
 
       menu->addMenu(associateMenu.data());
@@ -991,7 +1235,7 @@ end:
 void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
 {
 #ifdef HAVE_LIBRETRODB
-   QAction *action = NULL;
+   QPointer<QAction> action;
    QList<QAction*> actions;
    QScopedPointer<QAction> scanAction;
    QDir dir;
@@ -1041,6 +1285,8 @@ void MainWindow::onGotStatusMessage(QString msg, unsigned priority, unsigned dur
    QScreen *screen = qApp->primaryScreen();
    QStatusBar *status = statusBar();
 
+   Q_UNUSED(priority)
+
    if (msg.isEmpty())
       return;
 
@@ -1082,6 +1328,7 @@ void MainWindow::reloadPlaylists()
    QDir playlistDir(settings->paths.directory_playlist);
    QString currentPlaylistPath;
    QStringList hiddenPlaylists = m_settings->value("hidden_playlists").toStringList();
+   int i = 0;
 
    currentItem = m_listWidget->currentItem();
 
@@ -1132,9 +1379,10 @@ void MainWindow::reloadPlaylists()
    if (hiddenPlaylists.contains(QFileInfo(settings->paths.path_content_video_history).fileName()))
       m_listWidget->setRowHidden(m_listWidget->row(videoPlaylistsItem), true);
 
-   foreach (QString file, m_playlistFiles)
+   for (i = 0; i < m_playlistFiles.count() && m_playlistFiles.count() > 0; i++)
    {
       QListWidgetItem *item = NULL;
+      const QString &file = m_playlistFiles.at(i);
       QString fileDisplayName = file;
       QString fileName = file;
       bool hasIcon = false;
@@ -1172,7 +1420,6 @@ void MainWindow::reloadPlaylists()
 
       if (firstItem)
       {
-         int i = 0;
          bool found = false;
 
          for (i = 0; i < m_listWidget->count(); i++)
@@ -1220,7 +1467,7 @@ void MainWindow::onGotLogMessage(const QString &msg)
 
 void MainWindow::onLaunchWithComboBoxIndexChanged(int)
 {
-   QList<QHash<QString, QString> > infoList = getCoreInfo();
+   QVector<QHash<QString, QString> > infoList = getCoreInfo();
    QString coreInfoText;
    QVariantMap coreMap = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
    CoreSelection coreSelection = static_cast<CoreSelection>(coreMap.value("core_selection").toInt());
@@ -1304,7 +1551,7 @@ void MainWindow::setTheme(Theme theme)
    {
       case THEME_SYSTEM_DEFAULT:
       {
-         qApp->setStyleSheet(qt_theme_default_stylesheet);
+         qApp->setStyleSheet(qt_theme_default_stylesheet.arg(m_settings->value("highlight_color", "palette(highlight)").toString()));
 
          break;
       }
@@ -1325,9 +1572,9 @@ void MainWindow::setTheme(Theme theme)
    }
 }
 
-QList<QHash<QString, QString> > MainWindow::getCoreInfo()
+QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 {
-   QList<QHash<QString, QString> > infoList;
+   QVector<QHash<QString, QString> > infoList;
    QHash<QString, QString> currentCore = getSelectedCore();
    core_info_list_t *core_info_list = NULL;
    const core_info_t *core_info = NULL;
@@ -1729,9 +1976,12 @@ QHash<QString, QString> MainWindow::getSelectedCore()
    QHash<QString, QString> coreHash;
    QHash<QString, QString> contentHash;
    QTableWidgetItem *contentItem = m_tableWidget->currentItem();
+   ViewType viewType = getCurrentViewType();
 
-   if (contentItem)
+   if (viewType == VIEW_TYPE_LIST && contentItem)
       contentHash = contentItem->data(Qt::UserRole).value<QHash<QString, QString> >();
+   else if (viewType == VIEW_TYPE_ICONS)
+      contentHash = m_currentGridHash;
 
    switch(coreSelection)
    {
@@ -1743,7 +1993,7 @@ QHash<QString, QString> MainWindow::getSelectedCore()
       }
       case CORE_SELECTION_PLAYLIST_SAVED:
       {
-         if (!contentItem || contentHash["core_path"].isEmpty())
+         if (contentHash.isEmpty() || contentHash["core_path"].isEmpty())
             break;
 
          coreHash["core_path"] = contentHash["core_path"];
@@ -1752,10 +2002,10 @@ QHash<QString, QString> MainWindow::getSelectedCore()
       }
       case CORE_SELECTION_PLAYLIST_DEFAULT:
       {
-         QList<QHash<QString, QString> > cores;
+         QVector<QHash<QString, QString> > cores;
          int i = 0;
 
-         if (!contentItem || contentHash["db_name"].isEmpty())
+         if (contentHash.isEmpty() || contentHash["db_name"].isEmpty())
             break;
 
          cores = getPlaylistDefaultCores();
@@ -1782,12 +2032,19 @@ QHash<QString, QString> MainWindow::getSelectedCore()
    return coreHash;
 }
 
-void MainWindow::onRunClicked()
+/* the hash typically has the following keys:
+path - absolute path to the content file
+core_path - absolute path to the core, or "DETECT" to ask the user
+db_name - the display name of the rdb database this content is from
+label - the display name of the content, usually comes from the database
+crc32 - an upper-case, 8 byte string representation of the hex CRC32 checksum (e.g. ABCDEF12) followed by "|crc"
+core_name - the display name of the core, or "DETECT" if unknown
+label_noext - the display name of the content that is guaranteed not to contain a file extension
+*/
+void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
 {
 #ifdef HAVE_MENU
    content_ctx_info_t content_info;
-   QHash<QString, QString> contentHash;
-   QTableWidgetItem *item = m_tableWidget->currentItem();
    QByteArray corePathArray;
    QByteArray contentPathArray;
    QByteArray contentLabelArray;
@@ -1797,63 +2054,50 @@ void MainWindow::onRunClicked()
    QVariantMap coreMap = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
    CoreSelection coreSelection = static_cast<CoreSelection>(coreMap.value("core_selection").toInt());
 
-   if (!item)
-      return;
-
    if (m_pendingRun)
       coreSelection = CORE_SELECTION_CURRENT;
 
-   contentHash = item->data(Qt::UserRole).value<QHash<QString, QString> >();
-
    if (coreSelection == CORE_SELECTION_ASK)
    {
-      QTableWidgetItem *item = m_tableWidget->currentItem();
       QStringList extensionFilters;
 
-      if (item)
+      if (contentHash.contains("path"))
       {
-         QHash<QString, QString> hash;
+         int lastIndex = contentHash["path"].lastIndexOf('.');
+         QString extensionStr;
+         QByteArray pathArray = contentHash["path"].toUtf8();
+         const char *pathData = pathArray.constData();
 
-         hash = item->data(Qt::UserRole).value<QHash<QString, QString> >();
-
-         if (hash.contains("path"))
+         if (lastIndex >= 0)
          {
-            int lastIndex = hash["path"].lastIndexOf('.');
-            QString extensionStr;
-            QByteArray pathArray = hash["path"].toUtf8();
-            const char *pathData = pathArray.constData();
+            extensionStr = contentHash["path"].mid(lastIndex + 1);
 
-            if (lastIndex >= 0)
+            if (!extensionStr.isEmpty())
             {
-               extensionStr = hash["path"].mid(lastIndex + 1);
-
-               if (!extensionStr.isEmpty())
-               {
-                  extensionFilters.append(extensionStr.toLower());
-               }
+               extensionFilters.append(extensionStr.toLower());
             }
+         }
 
-            if (path_is_compressed_file(pathData))
+         if (path_is_compressed_file(pathData))
+         {
+            unsigned i = 0;
+            struct string_list *list = file_archive_get_file_list(pathData, NULL);
+
+            if (list)
             {
-               unsigned i = 0;
-               struct string_list *list = file_archive_get_file_list(pathData, NULL);
-
-               if (list)
+               if (list->size > 0)
                {
-                  if (list->size > 0)
+                  for (i = 0; i < list->size; i++)
                   {
-                     for (i = 0; i < list->size; i++)
-                     {
-                        const char *filePath = list->elems[i].data;
-                        const char *extension = path_get_extension(filePath);
+                     const char *filePath = list->elems[i].data;
+                     const char *extension = path_get_extension(filePath);
 
-                        if (!extensionFilters.contains(extension, Qt::CaseInsensitive))
-                           extensionFilters.append(extension);
-                     }
+                     if (!extensionFilters.contains(extension, Qt::CaseInsensitive))
+                        extensionFilters.append(extension);
                   }
-
-                  string_list_free(list);
                }
+
+               string_list_free(list);
             }
          }
       }
@@ -1884,7 +2128,7 @@ void MainWindow::onRunClicked()
       }
       case CORE_SELECTION_PLAYLIST_DEFAULT:
       {
-         QList<QHash<QString, QString> > cores = getPlaylistDefaultCores();
+         QVector<QHash<QString, QString> > cores = getPlaylistDefaultCores();
          int i = 0;
 
          for (i = 0; i < cores.count(); i++)
@@ -1929,6 +2173,25 @@ void MainWindow::onRunClicked()
 #endif
 }
 
+void MainWindow::onRunClicked()
+{
+#ifdef HAVE_MENU
+   QTableWidgetItem *item = m_tableWidget->currentItem();
+   ViewType viewType = getCurrentViewType();
+   QHash<QString, QString> contentHash;
+
+   if (!item)
+      return;
+
+   if (viewType == VIEW_TYPE_LIST)
+      contentHash = item->data(Qt::UserRole).value<QHash<QString, QString> >();
+   else if (viewType == VIEW_TYPE_ICONS)
+      contentHash = m_currentGridHash;
+
+   loadContent(contentHash);
+#endif
+}
+
 bool MainWindow::isContentLessCore()
 {
    rarch_system_info_t *system = runloop_get_system_info();
@@ -1949,13 +2212,13 @@ ViewOptionsDialog* MainWindow::viewOptionsDialog()
    return m_viewOptionsDialog;
 }
 
-QList<QHash<QString, QString> > MainWindow::getPlaylistDefaultCores()
+QVector<QHash<QString, QString> > MainWindow::getPlaylistDefaultCores()
 {
    settings_t *settings = config_get_ptr();
    struct string_list *playlists = string_split(settings->arrays.playlist_names, ";");
    struct string_list *cores = string_split(settings->arrays.playlist_cores, ";");
    unsigned i = 0;
-   QList<QHash<QString, QString> > coreList;
+   QVector<QHash<QString, QString> > coreList;
 
    if (!playlists || !cores)
    {
@@ -1997,6 +2260,7 @@ void MainWindow::setCoreActions()
 {
    QTableWidgetItem *currentContentItem = m_tableWidget->currentItem();
    QListWidgetItem *currentPlaylistItem = m_listWidget->currentItem();
+   ViewType viewType = getCurrentViewType();
    QHash<QString, QString> hash;
 
    m_launchWithComboBox->clear();
@@ -2015,12 +2279,14 @@ void MainWindow::setCoreActions()
       m_launchWithComboBox->addItem(m_currentCore, QVariant::fromValue(comboBoxMap));
    }
 
-   if (currentContentItem)
+   if (viewType == VIEW_TYPE_LIST && currentContentItem)
       hash = currentContentItem->data(Qt::UserRole).value<QHash<QString, QString> >();
+   else if (viewType == VIEW_TYPE_ICONS)
+      hash = m_currentGridHash;
 
    if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
    {
-      if (currentContentItem)
+      if (!hash.isEmpty())
       {
          QString coreName = hash["core_name"];
 
@@ -2066,13 +2332,12 @@ void MainWindow::setCoreActions()
 
    if (!hash["db_name"].isEmpty())
    {
-      QList<QHash<QString, QString> > defaultCores = getPlaylistDefaultCores();
+      QVector<QHash<QString, QString> > defaultCores = getPlaylistDefaultCores();
       int i = 0;
 
       if (defaultCores.count() > 0)
       {
          QString currentPlaylistItemDataString;
-         QHash<QString, QString> hash;
          bool allPlaylists = false;
          int row = 0;
 
@@ -2081,9 +2346,6 @@ void MainWindow::setCoreActions()
             currentPlaylistItemDataString = currentPlaylistItem->data(Qt::UserRole).toString();
             allPlaylists = (currentPlaylistItemDataString == ALL_PLAYLISTS_TOKEN);
          }
-
-         if (currentContentItem)
-            hash = currentContentItem->data(Qt::UserRole).value<QHash<QString, QString> >();
 
          for (row = 0; row < m_listWidget->count(); row++)
          {
@@ -2174,6 +2436,9 @@ void MainWindow::onTabWidgetIndexChanged(int index)
    {
       QModelIndex index = m_dirTree->currentIndex();
 
+      /* force list view for file browser, will set it back to whatever the user had when switching back to playlist tab */
+      setCurrentViewType(VIEW_TYPE_LIST);
+
       m_tableWidget->clear();
       m_tableWidget->setColumnCount(0);
       m_tableWidget->setRowCount(0);
@@ -2187,6 +2452,9 @@ void MainWindow::onTabWidgetIndexChanged(int index)
    else if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
    {
       QListWidgetItem *item = m_listWidget->currentItem();
+
+      if (m_lastViewType != getCurrentViewType())
+         setCurrentViewType(m_lastViewType);
 
       m_tableWidget->clear();
       m_tableWidget->setColumnCount(0);
@@ -2234,22 +2502,13 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
 {
    int i = 0;
    QList<QTableWidgetItem*> items;
+   QVector<QPointer<GridItem> > gridItems;
    QVector<unsigned> textUnicode = text.toUcs4();
    QVector<unsigned> textHiraToKata;
    QVector<unsigned> textKataToHira;
+   ViewType viewType = getCurrentViewType();
    bool foundHira = false;
    bool foundKata = false;
-
-   if (text.isEmpty())
-   {
-      for (i = 0; i < m_tableWidget->rowCount(); i++)
-      {
-         m_tableWidget->setRowHidden(i, false);
-      }
-      return;
-   }
-
-   items.append(m_tableWidget->findItems(text, Qt::MatchContains));
 
    for (i = 0; i < textUnicode.size(); i++)
    {
@@ -2272,33 +2531,109 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
       }
    }
 
-   if (foundHira)
+   switch(viewType)
    {
-      items.append(m_tableWidget->findItems(QString::fromUcs4(textHiraToKata.constData(), textHiraToKata.size()), Qt::MatchContains));
-   }
-
-   if (foundKata)
-   {
-      items.append(m_tableWidget->findItems(QString::fromUcs4(textKataToHira.constData(), textKataToHira.size()), Qt::MatchContains));
-   }
-
-   if (items.isEmpty())
-   {
-      for (i = 0; i < m_tableWidget->rowCount(); i++)
+      case VIEW_TYPE_LIST:
       {
-         m_tableWidget->setRowHidden(i, true);
-      }
+         if (text.isEmpty())
+         {
+            for (i = 0; i < m_tableWidget->rowCount(); i++)
+            {
+               m_tableWidget->setRowHidden(i, false);
+            }
+            return;
+         }
 
-      return;
-   }
-   else
-   {
-      for (i = 0; i < m_tableWidget->rowCount(); i++)
-      {
-         if (items.contains(m_tableWidget->item(i, 0)))
-            m_tableWidget->setRowHidden(i, false);
+         items.append(m_tableWidget->findItems(text, Qt::MatchContains));
+
+         if (foundHira)
+         {
+            items.append(m_tableWidget->findItems(QString::fromUcs4(textHiraToKata.constData(), textHiraToKata.size()), Qt::MatchContains));
+         }
+
+         if (foundKata)
+         {
+            items.append(m_tableWidget->findItems(QString::fromUcs4(textKataToHira.constData(), textKataToHira.size()), Qt::MatchContains));
+         }
+
+         if (items.isEmpty())
+         {
+            for (i = 0; i < m_tableWidget->rowCount(); i++)
+            {
+               m_tableWidget->setRowHidden(i, true);
+            }
+
+            return;
+         }
          else
-            m_tableWidget->setRowHidden(i, true);
+         {
+            for (i = 0; i < m_tableWidget->rowCount(); i++)
+            {
+               if (items.contains(m_tableWidget->item(i, 0)))
+                  m_tableWidget->setRowHidden(i, false);
+               else
+                  m_tableWidget->setRowHidden(i, true);
+            }
+         }
+
+         break;
+      }
+      case VIEW_TYPE_ICONS:
+      {
+         int i;
+
+         if (text.isEmpty())
+         {
+            for (i = 0; i < m_gridItems.size(); i++)
+            {
+               m_gridItems.at(i)->widget->show();
+            }
+            return;
+         }
+
+         for (i = 0; i < m_gridItems.count(); i++)
+         {
+            const QPointer<GridItem> &item = m_gridItems.at(i);
+
+            if (item->hash.value("label").contains(text, Qt::CaseInsensitive))
+               gridItems.append(item);
+
+            if (foundHira)
+            {
+               if (item->hash.value("label").contains(QString::fromUcs4(textHiraToKata.constData(), textHiraToKata.size()), Qt::CaseInsensitive))
+                  gridItems.append(item);
+            }
+
+            if (foundKata)
+            {
+               if (item->hash.value("label").contains(QString::fromUcs4(textKataToHira.constData(), textKataToHira.size()), Qt::CaseInsensitive))
+                  gridItems.append(item);
+            }
+         }
+
+         if (gridItems.isEmpty())
+         {
+            for (i = 0; i < m_gridItems.size(); i++)
+            {
+               m_gridItems.at(i)->widget->hide();
+            }
+
+            return;
+         }
+         else
+         {
+            for (i = 0; i < m_gridItems.size(); i++)
+            {
+               const QPointer<GridItem> &item = m_gridItems.at(i);
+
+               if (gridItems.contains(item))
+                  item->widget->show();
+               else
+                  item->widget->hide();
+            }
+         }
+
+         break;
       }
    }
 }
@@ -2308,6 +2643,7 @@ void MainWindow::onViewClosedDocksAboutToShow()
    QMenu *menu = qobject_cast<QMenu*>(sender());
    QList<QDockWidget*> dockWidgets;
    bool found = false;
+   int i = 0;
 
    if (!menu)
       return;
@@ -2322,8 +2658,10 @@ void MainWindow::onViewClosedDocksAboutToShow()
       return;
    }
 
-   foreach (QDockWidget *dock, dockWidgets)
+   for (i = 0; i < dockWidgets.count() && dockWidgets.count() > 0; i++)
    {
+      const QDockWidget *dock = dockWidgets.at(i);
+
       if (!dock->isVisible())
       {
          QAction *action = menu->addAction(dock->property("menu_text").toString(), this, SLOT(onShowHiddenDockWidgetAction()));
@@ -2333,9 +2671,7 @@ void MainWindow::onViewClosedDocksAboutToShow()
    }
 
    if (!found)
-   {
       menu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE));
-   }
 }
 
 void MainWindow::onShowHiddenDockWidgetAction()
@@ -2376,18 +2712,24 @@ void MainWindow::onSearchEnterPressed()
 
 void MainWindow::onCurrentTableItemChanged(QTableWidgetItem *current, QTableWidgetItem *)
 {
-   settings_t *settings = config_get_ptr();
    QHash<QString, QString> hash;
-   QString label;
-   QString playlist_name;
-   QByteArray extension;
-   QString extensionStr;
-   int lastIndex = -1;
 
    if (!current)
       return;
 
    hash = current->data(Qt::UserRole).value<QHash<QString, QString> >();
+
+   currentItemChanged(hash);
+}
+
+void MainWindow::currentItemChanged(const QHash<QString, QString> &hash)
+{
+   settings_t *settings = config_get_ptr();
+   QString label;
+   QString playlist_name;
+   QByteArray extension;
+   QString extensionStr;
+   int lastIndex = -1;
 
    label = hash["label_noext"];
    label.replace(m_fileSanitizerRegex, "_");
@@ -2504,21 +2846,75 @@ void MainWindow::resizeThumbnails(bool one, bool two, bool three)
    }
 }
 
+void MainWindow::setCurrentViewType(ViewType viewType)
+{
+   m_lastViewType = m_viewType;
+   m_viewType = viewType;
+
+   switch (viewType)
+   {
+      case VIEW_TYPE_ICONS:
+      {
+         m_tableWidget->hide();
+         m_gridWidget->show();
+         break;
+      }
+      case VIEW_TYPE_LIST:
+      default:
+      {
+         m_gridWidget->hide();
+         m_tableWidget->show();
+         break;
+      }
+   }
+}
+
+MainWindow::ViewType MainWindow::getCurrentViewType()
+{
+   return m_viewType;
+}
+
 void MainWindow::onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous)
 {
+   ViewType viewType = getCurrentViewType();
+
    Q_UNUSED(current)
    Q_UNUSED(previous)
 
    if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) != msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
       return;
 
-   initContentTableWidget();
+   switch (viewType)
+   {
+      case VIEW_TYPE_ICONS:
+      {
+         initContentGridLayout();
+         break;
+      }
+      case VIEW_TYPE_LIST:
+      default:
+      {
+         initContentTableWidget();
+         break;
+      }
+   }
+
    setCoreActions();
 }
 
 TableWidget* MainWindow::contentTableWidget()
 {
    return m_tableWidget;
+}
+
+QWidget* MainWindow::contentGridWidget()
+{
+   return m_gridWidget;
+}
+
+FlowLayout* MainWindow::contentGridLayout()
+{
+   return m_gridLayout;
 }
 
 void MainWindow::onBrowserDownloadsClicked()
@@ -2700,6 +3096,295 @@ void MainWindow::onLoadCoreClicked(const QStringList &extensionFilters)
    m_loadCoreWindow->initCoreList(extensionFilters);
 }
 
+void MainWindow::removeGridItems()
+{
+   if (m_gridItems.count() > 0)
+   {
+      QMutableVectorIterator<QPointer<GridItem> > items(m_gridItems);
+
+      m_pendingItemUpdates.clear();
+
+      while (items.hasNext())
+      {
+         QPointer<GridItem> item = items.next();
+
+         if (item)
+         {
+            item->imageWatcher.waitForFinished();
+
+            items.remove();
+
+            m_gridLayout->removeWidget(item->widget);
+
+            delete item->widget;
+            delete item;
+         }
+      }
+   }
+}
+
+void MainWindow::onDeferredImageLoaded()
+{
+   const QFutureWatcher<GridItem*> *watcher = static_cast<QFutureWatcher<GridItem*>*>(sender());
+   GridItem *item = NULL;
+
+   if (!watcher)
+      return;
+
+   item = watcher->result();
+
+   if (!item)
+      return;
+
+   if (m_gridItems.contains(item))
+   {
+      if (!item->image.isNull())
+      {
+         m_pendingItemUpdates.append(item);
+         QTimer::singleShot(0, this, SLOT(onPendingItemUpdates()));
+      }
+   }
+}
+
+void MainWindow::onPendingItemUpdates()
+{
+   QMutableListIterator<GridItem*> list(m_pendingItemUpdates);
+
+   while (list.hasNext())
+   {
+      GridItem *item = list.next();
+
+      if (!item)
+         continue;
+
+      if (m_gridItems.contains(item))
+         onUpdateGridItemPixmapFromImage(item);
+
+      list.remove();
+   }
+}
+
+void MainWindow::onUpdateGridItemPixmapFromImage(GridItem *item)
+{
+   if (!item)
+      return;
+
+   if (!m_gridItems.contains(item))
+      return;
+
+   item->label->setPixmap(QPixmap::fromImage(item->image));
+   item->label->update();
+}
+
+void MainWindow::loadImageDeferred(GridItem *item, QString path)
+{
+   connect(&item->imageWatcher, SIGNAL(finished()), this, SLOT(onDeferredImageLoaded()), Qt::QueuedConnection);
+   item->imageWatcher.setFuture(QtConcurrent::run<GridItem*>(this, &MainWindow::doDeferredImageLoad, item, path));
+}
+
+GridItem* MainWindow::doDeferredImageLoad(GridItem *item, QString path)
+{
+   /* this runs in another thread */
+   if (!item)
+      return NULL;
+
+   /* While we are indeed writing across thread boundaries here, the image is never accessed until after
+    * its thread finishes, and the item is never deleted without first waiting for the thread to finish.
+    */
+   item->image = QImage(path);
+
+   return item;
+}
+
+void MainWindow::addPlaylistItemsToGrid(const QStringList &paths, bool add)
+{
+   QVector<QHash<QString, QString> > items;
+   int i;
+
+   if (paths.isEmpty())
+      return;
+
+   for (i = 0; i < paths.size(); i++)
+   {
+      int j;
+      QVector<QHash<QString, QString> > vec = getPlaylistItems(paths.at(i));
+      /* QVector::append() wasn't added until 5.5, so just do it the old fashioned way */
+      for (j = 0; j < vec.size(); j++)
+      {
+         if (add && m_allPlaylistsGridMaxCount > 0 && items.size() >= m_allPlaylistsGridMaxCount)
+            goto finish;
+
+         items.append(vec.at(j));
+      }
+   }
+finish:
+   std::sort(items.begin(), items.end(), comp_hash_label_key);
+
+   addPlaylistHashToGrid(items);
+}
+
+void MainWindow::addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &items)
+{
+   QScreen *screen = qApp->primaryScreen();
+   QSize screenSize = screen->size();
+   QListWidgetItem *currentItem = m_listWidget->currentItem();
+   settings_t *settings = config_get_ptr();
+   int i = 0;
+   int zoomValue = m_zoomSlider->value();
+
+   m_gridProgressBar->setMinimum(0);
+   m_gridProgressBar->setMaximum(items.count() - 1);
+   m_gridProgressBar->setValue(0);
+
+   for (i = 0; i < items.count(); i++)
+   {
+      const QHash<QString, QString> &hash = items.at(i);
+      QPointer<GridItem> item;
+      QPointer<ThumbnailLabel> label;
+      QString thumbnailFileNameNoExt;
+      QLabel *newLabel = NULL;
+      QSize thumbnailWidgetSizeHint(screenSize.width() / 8, screenSize.height() / 8);
+      QByteArray extension;
+      QString extensionStr;
+      QString imagePath;
+      int lastIndex = -1;
+
+      if (m_listWidget->currentItem() != currentItem)
+      {
+         /* user changed the current playlist before we finished loading... abort */
+         m_gridProgressWidget->hide();
+         break;
+      }
+
+      item = new GridItem();
+
+      lastIndex = hash["path"].lastIndexOf('.');
+
+      if (lastIndex >= 0)
+      {
+         extensionStr = hash["path"].mid(lastIndex + 1);
+
+         if (!extensionStr.isEmpty())
+         {
+            extension = extensionStr.toLower().toUtf8();
+         }
+      }
+
+      if (!extension.isEmpty() && m_imageFormats.contains(extension))
+      {
+         /* use thumbnail widgets to show regular image files */
+         imagePath = hash["path"];
+      }
+      else
+      {
+         thumbnailFileNameNoExt = hash["label_noext"];
+         thumbnailFileNameNoExt.replace(m_fileSanitizerRegex, "_");
+         imagePath = QString(settings->paths.directory_thumbnails) + "/" + hash.value("db_name") + "/" + THUMBNAIL_BOXART + "/" + thumbnailFileNameNoExt + ".png";
+      }
+
+      item->hash = hash;
+      item->widget = new ThumbnailWidget();
+      item->widget->setSizeHint(thumbnailWidgetSizeHint);
+      item->widget->setFixedSize(item->widget->sizeHint());
+      item->widget->setLayout(new QVBoxLayout());
+      item->widget->setObjectName("thumbnailWidget");
+      item->widget->setProperty("hash", QVariant::fromValue<QHash<QString, QString> >(hash));
+
+      connect(item->widget, SIGNAL(mouseDoubleClicked()), this, SLOT(onGridItemDoubleClicked()));
+      connect(item->widget, SIGNAL(mousePressed()), this, SLOT(onGridItemClicked()));
+
+      label = new ThumbnailLabel(item->widget);
+      label->setObjectName("thumbnailGridLabel");
+
+      item->label = label;
+      item->labelText = hash.value("label");
+
+      newLabel = new QLabel(item->labelText, item->widget);
+      newLabel->setObjectName("thumbnailQLabel");
+      newLabel->setAlignment(Qt::AlignCenter);
+      newLabel->setToolTip(item->labelText);
+
+      calcGridItemSize(item, zoomValue);
+
+      item->widget->layout()->addWidget(label);
+
+      item->widget->layout()->addWidget(newLabel);
+      qobject_cast<QVBoxLayout*>(item->widget->layout())->setStretchFactor(label, 1);
+
+      m_gridLayout->addWidgetDeferred(item->widget);
+      m_gridItems.append(item);
+
+      loadImageDeferred(item, imagePath);
+
+      if (i % 25 == 0)
+         qApp->processEvents();
+
+      m_gridProgressBar->setValue(i);
+   }
+
+   /* If there's only one entry, a min/max/value of all zero would make an indeterminate progress bar that never ends... so just hide it when we are done. */
+   if (m_gridProgressBar->value() == m_gridProgressBar->maximum())
+      m_gridProgressWidget->hide();
+}
+
+void MainWindow::initContentGridLayout()
+{
+   QListWidgetItem *item = m_listWidget->currentItem();
+   QString path;
+
+   if (!item)
+      return;
+
+   m_gridProgressBar->setMinimum(0);
+   m_gridProgressBar->setMaximum(0);
+   m_gridProgressBar->setValue(0);
+   m_gridProgressWidget->show();
+
+   removeGridItems();
+
+   m_currentGridHash.clear();
+
+   if (m_currentGridWidget)
+   {
+      m_currentGridWidget->setObjectName("thumbnailWidget");
+      m_currentGridWidget->style()->unpolish(m_currentGridWidget);
+      m_currentGridWidget->style()->polish(m_currentGridWidget);
+   }
+
+   m_currentGridWidget = NULL;
+
+   path = item->data(Qt::UserRole).toString();
+
+   if (path == ALL_PLAYLISTS_TOKEN)
+   {
+      settings_t *settings = config_get_ptr();
+      QDir playlistDir(settings->paths.directory_playlist);
+      QStringList playlists;
+      int i = 0;
+
+      for (i = 0; i < m_playlistFiles.count() && m_playlistFiles.count() > 0; i++)
+      {
+         const QString &playlist = m_playlistFiles.at(i);
+         playlists.append(playlistDir.absoluteFilePath(playlist));
+      }
+
+      addPlaylistItemsToGrid(playlists, true);
+   }
+   else
+      addPlaylistItemsToGrid(QStringList() << path);
+
+   QTimer::singleShot(0, this, SLOT(onContentGridInited()));
+}
+
+void MainWindow::onContentGridInited()
+{
+   m_gridLayoutWidget->resize(m_gridScrollArea->viewport()->size());
+
+   onZoomValueChanged(m_zoomSlider->value());
+
+   onSearchEnterPressed();
+}
+
 void MainWindow::initContentTableWidget()
 {
    QListWidgetItem *item = m_listWidget->currentItem();
@@ -2709,6 +3394,17 @@ void MainWindow::initContentTableWidget()
 
    if (!item)
       return;
+
+   m_currentGridHash.clear();
+
+   if (m_currentGridWidget)
+   {
+      m_currentGridWidget->setObjectName("thumbnailWidget");
+      m_currentGridWidget->style()->unpolish(m_currentGridWidget);
+      m_currentGridWidget->style()->polish(m_currentGridWidget);
+   }
+
+   m_currentGridWidget = NULL;
 
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
 
@@ -2730,14 +3426,19 @@ void MainWindow::initContentTableWidget()
    {
       settings_t *settings = config_get_ptr();
       QDir playlistDir(settings->paths.directory_playlist);
+      QStringList playlists;
+      int i = 0;
 
-      foreach (QString playlist, m_playlistFiles)
+      for (i = 0; i < m_playlistFiles.count() && m_playlistFiles.count() > 0; i++)
       {
-         addPlaylistItemsToTable(playlistDir.absoluteFilePath(playlist));
+         const QString &playlist = m_playlistFiles.at(i);
+         playlists.append(playlistDir.absoluteFilePath(playlist));
       }
+
+      addPlaylistItemsToTable(playlists, true);
    }
    else
-      addPlaylistItemsToTable(path);
+      addPlaylistItemsToTable(QStringList() << path);
 
    m_tableWidget->setSortingEnabled(true);
 
@@ -2759,22 +3460,20 @@ void MainWindow::initContentTableWidget()
    onSearchEnterPressed();
 }
 
-void MainWindow::addPlaylistItemsToTable(QString pathString)
+QVector<QHash<QString, QString> > MainWindow::getPlaylistItems(QString pathString)
 {
    QByteArray pathArray;
+   QVector<QHash<QString, QString> > items;
    const char *pathData = NULL;
    playlist_t *playlist = NULL;
    unsigned playlistSize = 0;
    unsigned i = 0;
-   int oldRowCount = m_tableWidget->rowCount();
 
    pathArray.append(pathString);
    pathData = pathArray.constData();
 
    playlist = playlist_init(pathData, COLLECTION_SIZE);
    playlistSize = playlist_get_size(playlist);
-
-   m_tableWidget->setRowCount(oldRowCount + playlistSize);
 
    for (i = 0; i < playlistSize; i++)
    {
@@ -2784,7 +3483,6 @@ void MainWindow::addPlaylistItemsToTable(QString pathString)
       const char *core_name = NULL;
       const char *crc32 = NULL;
       const char *db_name = NULL;
-      QTableWidgetItem *labelItem = NULL;
       QHash<QString, QString> hash;
 
       playlist_get_index(playlist, i,
@@ -2822,15 +3520,58 @@ void MainWindow::addPlaylistItemsToTable(QString pathString)
          hash["db_name"].remove(file_path_str(FILE_PATH_LPL_EXTENSION));
       }
 
-      labelItem = new QTableWidgetItem(hash["label"]);
+      items.append(hash);
+   }
+
+   playlist_free(playlist);
+   playlist = NULL;
+
+   return items;
+}
+
+void MainWindow::addPlaylistItemsToTable(const QStringList &paths, bool add)
+{
+   QVector<QHash<QString, QString> > items;
+   int i;
+
+   if (paths.isEmpty())
+      return;
+
+   for (i = 0; i < paths.size(); i++)
+   {
+      int j;
+      QVector<QHash<QString, QString> > vec = getPlaylistItems(paths.at(i));
+      /* QVector::append() wasn't added until 5.5, so just do it the old fashioned way */
+      for (j = 0; j < vec.size(); j++)
+      {
+         if (add && m_allPlaylistsListMaxCount > 0 && items.size() >= m_allPlaylistsListMaxCount)
+            goto finish;
+
+         items.append(vec.at(j));
+      }
+   }
+finish:
+   addPlaylistHashToTable(items);
+}
+
+void MainWindow::addPlaylistHashToTable(const QVector<QHash<QString, QString> > &items)
+{
+   int i = 0;
+   int oldRowCount = m_tableWidget->rowCount();
+
+   m_tableWidget->setRowCount(oldRowCount + items.count());
+
+   for (i = 0; i < items.count(); i++)
+   {
+      QTableWidgetItem *labelItem = NULL;
+      const QHash<QString, QString> &hash = items.at(i);
+
+      labelItem = new QTableWidgetItem(hash.value("label"));
       labelItem->setData(Qt::UserRole, QVariant::fromValue<QHash<QString, QString> >(hash));
       labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable);
 
       m_tableWidget->setItem(oldRowCount + i, 0, labelItem);
    }
-
-   playlist_free(playlist);
-   playlist = NULL;
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -2852,6 +3593,24 @@ QSettings* MainWindow::settings()
    return m_settings;
 }
 
+QString MainWindow::getCurrentViewTypeString()
+{
+   switch (m_viewType)
+   {
+      case VIEW_TYPE_ICONS:
+      {
+         return QStringLiteral("icons");
+      }
+      case VIEW_TYPE_LIST:
+      default:
+      {
+         return QStringLiteral("list");
+      }
+   }
+
+   return QStringLiteral("list");
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
    if (m_settings->value("save_geometry", false).toBool())
@@ -2861,7 +3620,25 @@ void MainWindow::closeEvent(QCloseEvent *event)
    if (m_settings->value("save_last_tab", false).toBool())
       m_settings->setValue("last_tab", m_browserAndPlaylistTabWidget->currentIndex());
 
+   m_settings->setValue("view_type", getCurrentViewTypeString());
+
    QMainWindow::closeEvent(event);
+}
+
+void MainWindow::setAllPlaylistsListMaxCount(int count)
+{
+   if (count < 1)
+      count = 0;
+
+   m_allPlaylistsListMaxCount = count;
+}
+
+void MainWindow::setAllPlaylistsGridMaxCount(int count)
+{
+   if (count < 1)
+      count = 0;
+
+   m_allPlaylistsGridMaxCount = count;
 }
 
 static void* ui_window_qt_init(void)

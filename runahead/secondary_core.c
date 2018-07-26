@@ -80,7 +80,11 @@ char* get_temp_directory_alloc(void)
    return path;
 #endif
 #else
-   char *path = strcpy_alloc_force(getenv("TMPDIR"));
+   char *path = "/tmp";
+   if (getenv("TMPDIR"))
+      path = getenv("TMPDIR");
+
+   path = strcpy_alloc_force(path);
    return path;
 #endif
 }

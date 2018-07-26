@@ -284,6 +284,7 @@ enum menu_driver_enum
    MENU_XUI,
    MENU_MATERIALUI,
    MENU_XMB,
+   MENU_STRIPES,
    MENU_NUKLEAR,
    MENU_NULL
 };
@@ -1026,6 +1027,8 @@ const char *config_get_default_menu(void)
          return "glui";
       case MENU_XMB:
          return "xmb";
+      case MENU_STRIPES:
+         return "stripes";
       case MENU_NUKLEAR:
          return "nuklear";
       case MENU_NULL:

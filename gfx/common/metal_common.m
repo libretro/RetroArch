@@ -104,6 +104,16 @@
          .height = _video.height,
          .fullscreen = _video.fullscreen,
       };
+      
+      if (mode.width == 0 || mode.height == 0)
+      {
+         // 0 indicates full screen, so we'll use the view's dimensions, which should already be full screen
+         // If this turns out to be the wrong assumption, we can use NSScreen to query the dimensions
+         CGSize size = view.frame.size;
+         mode.width = (unsigned int)size.width;
+         mode.height = (unsigned int)size.height;
+      }
+      
       [apple_platform setVideoMode:mode];
       
       *input = NULL;
@@ -213,6 +223,8 @@
 
 - (void)_updateViewport:(CGSize)size
 {
+   RARCH_LOG("[Metal]: _updateViewport size %.0fx%.0f\n", size.width, size.height);
+   
    _viewport->full_width = (unsigned int)size.width;
    _viewport->full_height = (unsigned int)size.height;
    video_driver_set_size(&_viewport->full_width, &_viewport->full_height);

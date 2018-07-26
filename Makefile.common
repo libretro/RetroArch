@@ -334,14 +334,16 @@ OBJ += ui/drivers/ui_qt.o \
        ui/drivers/qt/ui_qt_window.o \
        ui/drivers/qt/ui_qt_browser_window.o \
        ui/drivers/qt/ui_qt_load_core_window.o \
-       ui/drivers/qt/ui_qt_msg_window.o
+       ui/drivers/qt/ui_qt_msg_window.o \
+       ui/drivers/qt/flowlayout.o
 
 MOC_HEADERS += ui/drivers/ui_qt.h \
-							 ui/drivers/qt/ui_qt_load_core_window.h
+							 ui/drivers/qt/ui_qt_load_core_window.h \
+							 ui/drivers/qt/flowlayout.h
 
-DEFINES += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) -DHAVE_MAIN
+DEFINES += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) $(QT5CONCURRENT_CFLAGS) -DHAVE_MAIN
 #DEFINES += $(QT5WEBENGINE_CFLAGS)
-LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS)
+LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS) $(QT5CONCURRENT_LIBS)
 #LIBS += $(QT5WEBENGINE_LIBS)
 NEED_CXX_LINKER = 1
 
@@ -741,11 +743,16 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
    ifeq ($(HAVE_XMB),)
       HAVE_XMB = 1
    endif
+   
+   ifeq ($(HAVE_STRIPES),)
+      HAVE_STRIPES = 1
+   endif
 else
    HAVE_ZARCH ?= 0
    HAVE_MATERIALUI  ?= 0
    #HAVE_NUKLEAR ?= 0
    HAVE_XMB   ?= 0
+   HAVE_STRIPES ?= 0
 endif
 
 ifeq ($(HAVE_RGUI), 1)
@@ -774,6 +781,12 @@ endif
 ifeq ($(HAVE_XMB), 1)
    OBJ += menu/drivers/xmb.o
    DEFINES += -DHAVE_XMB
+   HAVE_MENU_COMMON = 1
+endif
+
+ifeq ($(HAVE_STRIPES), 1)
+   OBJ += menu/drivers/stripes.o
+   DEFINES += -DHAVE_STRIPES
    HAVE_MENU_COMMON = 1
 endif
 

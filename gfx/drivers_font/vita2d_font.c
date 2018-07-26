@@ -347,18 +347,13 @@ static const struct font_glyph *vita2d_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
-static void vita2d_font_bind_block(void *data, void *userdata)
-{
-   (void)data;
-}
-
 font_renderer_t vita2d_vita_font = {
    vita2d_font_init_font,
    vita2d_font_free_font,
    vita2d_font_render_msg,
    "vita2dfont",
 	 vita2d_font_get_glyph,
-   vita2d_font_bind_block,
+   NULL,                      /* bind_block */
    NULL,                      /* flush */
    vita2d_font_get_message_width,
 };

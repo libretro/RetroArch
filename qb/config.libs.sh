@@ -278,14 +278,16 @@ if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
    check_pkgconf QT5CORE Qt5Core 5.2
    check_pkgconf QT5GUI Qt5Gui 5.2
    check_pkgconf QT5WIDGETS Qt5Widgets 5.2
+   check_pkgconf QT5CONCURRENT Qt5Concurrent 5.2
    #check_pkgconf QT5WEBENGINE Qt5WebEngine 5.4
 
    check_val '' QT5CORE -lQt5Core QT5CORE
    check_val '' QT5GUI -lQt5Gui QT5GUI
    check_val '' QT5WIDGETS -lQt5Widgets QT5WIDGETS
+   check_val '' QT5CONCURRENT -lQt5Widgets QT5CONCURRENT
    #check_val '' QT5WEBENGINE -lQt5WebEngine QT5WEBENGINE
 
-   if [ "$HAVE_QT5CORE" = "no" ] || [ "$HAVE_QT5GUI" = "no" ] || [ "$HAVE_QT5WIDGETS" = "no" ]; then
+   if [ "$HAVE_QT5CORE" = "no" ] || [ "$HAVE_QT5GUI" = "no" ] || [ "$HAVE_QT5WIDGETS" = "no" ] || [ "$HAVE_QT5CONCURRENT" = "no" ]; then
       die : 'Notice: Not building Qt support, required libraries were not found.'
       HAVE_QT=no
    else
@@ -510,6 +512,7 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
    if [ "$HAVE_RGUI" = 'no' ]; then
       HAVE_MATERIALUI=no
       HAVE_XMB=no
+      HAVE_STRIPES=no
       HAVE_ZARCH=no
       die : 'Notice: RGUI not available, MaterialUI, XMB and ZARCH will also be disabled.'
    elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
@@ -522,6 +525,7 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
       else
          HAVE_MATERIALUI=no
          HAVE_XMB=no
+         HAVE_STRIPES=no
          HAVE_ZARCH=no
          die : 'Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled.'
       fi

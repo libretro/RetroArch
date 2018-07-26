@@ -55,6 +55,14 @@
 		0538875720DE11D300769232 /* retro_assert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_assert.h; sourceTree = "<group>"; };
 		0538875820DE11D300769232 /* retro_endianness.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_endianness.h; sourceTree = "<group>"; };
 		0538875920DE11D300769232 /* libretro.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libretro.h; sourceTree = "<group>"; };
+		0548E2B220F976E10094A083 /* driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = driver.c; path = ../../driver.c; sourceTree = "<group>"; };
+		0548E2B320F976E10094A083 /* dynamic.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = dynamic.c; path = ../../dynamic.c; sourceTree = "<group>"; };
+		0548E2B420F976E10094A083 /* dynamic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = dynamic.h; path = ../../dynamic.h; sourceTree = "<group>"; };
+		0548E2B520F976E20094A083 /* driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = driver.h; path = ../../driver.h; sourceTree = "<group>"; };
+		0548E2B620F977060094A083 /* playlist.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = playlist.h; path = ../../playlist.h; sourceTree = "<group>"; };
+		0548E2B720F977060094A083 /* performance_counters.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = performance_counters.h; path = ../../performance_counters.h; sourceTree = "<group>"; };
+		0548E2B820F977060094A083 /* performance_counters.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = performance_counters.c; path = ../../performance_counters.c; sourceTree = "<group>"; };
+		0548E2B920F977060094A083 /* playlist.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = playlist.c; path = ../../playlist.c; sourceTree = "<group>"; };
 		055312AB20DE130A00C4D7F4 /* gl_capabilities.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl_capabilities.c; sourceTree = "<group>"; };
 		055312AD20DE130A00C4D7F4 /* scaler_int.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scaler_int.c; sourceTree = "<group>"; };
 		055312AE20DE130A00C4D7F4 /* pixconv.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pixconv.c; sourceTree = "<group>"; };
@@ -1070,8 +1078,6 @@
 		05BF821320ED69A500D95B19 /* core */ = {
 			isa = PBXGroup;
 			children = (
-				05B5F91120ED6AAE009C521F /* retroarch.c */,
-				05B5F91220ED6AAF009C521F /* retroarch.h */,
 				05B5F90F20ED6A03009C521F /* command.c */,
 				05BF821720ED69D100D95B19 /* command.h */,
 				05BF821420ED69D100D95B19 /* config.def.h */,
@@ -1085,6 +1091,16 @@
 				05BF821B20ED69D100D95B19 /* core_info.h */,
 				05B5F90E20ED6A03009C521F /* core_type.h */,
 				05BF821920ED69D100D95B19 /* core.h */,
+				0548E2B220F976E10094A083 /* driver.c */,
+				0548E2B520F976E20094A083 /* driver.h */,
+				0548E2B320F976E10094A083 /* dynamic.c */,
+				0548E2B420F976E10094A083 /* dynamic.h */,
+				0548E2B820F977060094A083 /* performance_counters.c */,
+				0548E2B720F977060094A083 /* performance_counters.h */,
+				0548E2B920F977060094A083 /* playlist.c */,
+				0548E2B620F977060094A083 /* playlist.h */,
+				05B5F91120ED6AAE009C521F /* retroarch.c */,
+				05B5F91220ED6AAF009C521F /* retroarch.h */,
 			);
 			name = core;
 			sourceTree = "<group>";

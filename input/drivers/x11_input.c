@@ -131,8 +131,9 @@ static bool x_is_pressed(x11_input_t *x11,
 {
    const struct retro_keybind *bind = &binds[id];
 
-   if ( (bind->key < RETROK_LAST) && x_keyboard_pressed(x11, bind->key) )
-      return true;
+   if ((bind->key < RETROK_LAST) && x_keyboard_pressed(x11, bind->key) )
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !x11->blocked)
+         return true;
 
    if (binds && binds[id].valid)
    {
