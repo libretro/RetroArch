@@ -332,15 +332,15 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-      "Carraga Automaticamente Arquivos de Redefinição"
+      "Carrega Automaticamente Arquivos de Redefinição"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
-      "Carraga Automaticamente Arquivos de Remapeamento"
+      "Carrega Automaticamente Arquivos de Remapeamento"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-      "Carraga Automaticamente Predefinições de Shader"
+      "Carrega Automaticamente Predefinições de Shader"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
@@ -682,7 +682,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
       "Contadores do Frontend")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
-      "Carraga Automaticamente Opções de Núcleo Específicas do Conteúdo")
+      "Carrega Automaticamente Opções de Núcleo Específicas do Conteúdo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
       "Criar arquivo de opções do jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
@@ -846,7 +846,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
       "Roda do Mouse para Esquerda")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
-      "Roda do Mouse para Diretira")
+      "Roda do Mouse para Direita")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
       "Tipo de Mapeamento para Gamepad no Teclado")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
@@ -1200,7 +1200,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
       "Não há listas de reprodução.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
-      "Não há itens de lista de reprodução disponíveis.")
+      "Não há itens de lista de reprodução disponível.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
       "Nenhuma configuração encontrada.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
@@ -1226,7 +1226,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_OPTIONAL,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY,
       "Transparência")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
-      "Carraga Automaticamente Transparência Favorita")
+      "Carrega Automaticamente Transparência Favorita")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
       "Transparência")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
@@ -1402,7 +1402,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
       "Índice Automático de Estado de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-      "Carraga Automaticamente Estado de Jogo")
+      "Carrega Automaticamente Estado de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
       "Salvar Automaticamente Estado de Jogo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
@@ -3405,9 +3405,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
       "Exibir/ocultar a opção 'Reiniciar'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
-      "Show Shutdown")
+      "Exibir Desligar")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
-      "Show/hide the 'Shutdown' option.")
+      "Exibir/ocultar a opção 'Desligar'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
       "Menu Rápido")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
@@ -3731,10 +3731,10 @@ MSG_HASH(
       "Habilitar ou desabilitar o suporte ao Discord. Não funcionará com a versão do navegador, apenas o cliente nativo de desktop."
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-      "Power Management")
+      "Gerenciamento de Energia")
 MSG_HASH(MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-      "Change power management settings.")
+      "Altere as configurações de gerenciamento de energia.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
-      "Sustained Performance Mode")
+      "Modo de Desempenho Sustentado")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
-      "mpv support")
+      "Suporte mpv")
