@@ -677,6 +677,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FPS_SHOW,
       "Display Framerate")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
       "Limit Maximum Run Speed")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+      "VRR Runloop (G-Sync, FreeSync Mode)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
       "Frame Throttle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
@@ -3158,6 +3160,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
       "Select a disk image to insert.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Makes sure the framerate is capped while inside the menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+      "Force exact frame timing for variable refresh rate screens. This disables Audio Sync to avoid deviation.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,
       "Select a different layout for the XMB interface.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_THEME,

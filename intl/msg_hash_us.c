@@ -1246,6 +1246,17 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Do not rely on this cap to be perfectly \n"
                              "accurate.");
             break;
+        case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
+            snprintf(s, len,
+                     "VRR Runloop Mode."
+                             " \n"
+                             "This option will force x1 speed \n"
+                             "to ensure smooth scrolling.\n"
+                             "Audio Sync is disabled.\n"
+                             " \n"
+                             "Cores that don't handle their timings well \n"
+                             "will exhibit audio crackling.");
+            break;
         case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
             snprintf(s, len,
                      "Which monitor to prefer.\n"

@@ -1755,8 +1755,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                ? 1.0f : settings->floats.fastforward_ratio;
 
             frame_limit_last_time    = cpu_features_get_time_usec();
+
             frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f
-                  / (av_info->timing.fps * fastforward_ratio));
+            / (av_info->timing.fps * (settings->bools.vrr_runloop_enable ? 1.0f : fastforward_ratio)));
          }
          break;
       case RARCH_CTL_GET_PERFCNT:
@@ -3395,9 +3396,24 @@ int runloop_iterate(unsigned *sleep_ms)
    if (runloop_autosave)
       autosave_unlock();
 
-   if (settings->floats.fastforward_ratio)
+   /* Condition for max speed x0.0 when vrr_runloop is off to skip that part */
+   if (settings->floats.fastforward_ratio || settings->bools.vrr_runloop_enable)
       end:
    {
+      if (settings->bools.vrr_runloop_enable)
+      {
+         struct retro_system_av_info *av_info =
+         video_viewport_get_system_av_info();
+
+         /* Fast Forward for max speed x0.0 */
+         if (!settings->floats.fastforward_ratio && runloop_fastmotion)
+            return 0;
+
+         frame_limit_minimum_time = 
+            (retro_time_t)roundf(1000000.0f / (av_info->timing.fps *
+            (runloop_fastmotion ? settings->floats.fastforward_ratio : 1.0f)));
+      }
+
       retro_time_t to_sleep_ms  = (
             (frame_limit_last_time + frame_limit_minimum_time)
             - cpu_features_get_time_usec()) / 1000;

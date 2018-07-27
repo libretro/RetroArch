@@ -484,7 +484,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          && current_audio->use_float(audio_driver_context_audio_data))
       audio_driver_use_float = true;
 
-   if (!settings->bools.audio_sync && audio_driver_active)
+   /* Disable audio sync for vrr screens as it induces frame timing deviation. */
+   if ((!settings->bools.audio_sync || settings->bools.vrr_runloop_enable) && audio_driver_active)
    {
       command_event(CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE, NULL);
       audio_driver_chunk_size = audio_driver_chunk_nonblock_size;
@@ -581,7 +582,7 @@ void audio_driver_set_nonblocking_state(bool enable)
       )
       current_audio->set_nonblock_state(
             audio_driver_context_audio_data,
-            settings->bools.audio_sync ? enable : true);
+            (settings->bools.audio_sync && !settings->bools.vrr_runloop_enable) ? enable : true);
 
    audio_driver_chunk_size = enable ?
       audio_driver_chunk_nonblock_size :
