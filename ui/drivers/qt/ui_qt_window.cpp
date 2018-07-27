@@ -30,6 +30,8 @@
 #include <QDockWidget>
 #include <QList>
 #include <QInputDialog>
+#include <QMimeData>
+#include <QProgressDialog>
 #include <QtConcurrentRun>
 
 #include "../ui_qt.h"
@@ -588,6 +590,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
    qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
 
+   setAcceptDrops(true);
+
    m_gridProgressWidget = new QWidget();
    gridProgressLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PROGRESS), m_gridProgressWidget);
 
@@ -811,6 +815,137 @@ MainWindow::~MainWindow()
    removeGridItems();
 }
 
+void MainWindow::dragEnterEvent(QDragEnterEvent *event)
+{
+   const QMimeData *data = event->mimeData();
+
+   if (data->hasUrls())
+      event->acceptProposedAction();
+}
+
+static void addDirectoryFilesToList(QStringList &list, QDir &dir)
+{
+   QStringList dirList = dir.entryList(QStringList(), QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System, QDir::Name);
+   int i;
+
+   for (i = 0; i < dirList.count(); i++)
+   {
+      QString path(dir.path() + "/" + dirList.at(i));
+      QFileInfo fileInfo(path);
+
+      if (fileInfo.isDir())
+      {
+         QDir fileInfoDir(path);
+
+         addDirectoryFilesToList(list, fileInfoDir);
+         continue;
+      }
+
+      if (fileInfo.isFile())
+      {
+         list.append(fileInfo.absoluteFilePath());
+      }
+   }
+}
+
+void MainWindow::dropEvent(QDropEvent *event)
+{
+   const QMimeData *data = event->mimeData();
+
+   if (data->hasUrls())
+   {
+      QList<QUrl> urls = data->urls();
+      QStringList list;
+      QString currentPlaylistPath;
+      QListWidgetItem *currentItem = m_listWidget->currentItem();
+      QByteArray currentPlaylistArray;
+      const char *currentPlaylistData = NULL;
+      playlist_t *playlist = NULL;
+
+      if (currentItem)
+      {
+         currentPlaylistPath = currentItem->data(Qt::UserRole).toString();
+
+         if (!currentPlaylistPath.isEmpty())
+         {
+            currentPlaylistArray = currentPlaylistPath.toUtf8();
+            currentPlaylistData = currentPlaylistArray.constData();
+         }
+      }
+
+      QProgressDialog dialog(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES), "Cancel", 0, 0, this);
+      int i;
+
+      dialog.setWindowModality(Qt::ApplicationModal);
+
+      for (i = 0; i < urls.count(); i++)
+      {
+         QString path(urls.at(i).toLocalFile());
+         QFileInfo fileInfo(path);
+
+         if (dialog.wasCanceled())
+            return;
+
+         if (i % 25 == 0)
+            qApp->processEvents();
+
+         if (fileInfo.isDir())
+         {
+            QDir dir(path);
+            addDirectoryFilesToList(list, dir);
+            continue;
+         }
+
+         if (fileInfo.isFile())
+         {
+            list.append(fileInfo.absoluteFilePath());
+         }
+      }
+
+      dialog.setLabelText(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST));
+      dialog.setMaximum(list.count());
+
+      playlist = playlist_init(currentPlaylistData, COLLECTION_SIZE);
+
+      for (i = 0; i < list.count(); i++)
+      {
+         QString fileName = list.at(i);
+         QFileInfo fileInfo;
+         QByteArray fileBaseNameArray;
+         QByteArray pathArray;
+         const char *pathData = NULL;
+         const char *fileNameNoExten = NULL;
+
+         if (dialog.wasCanceled())
+         {
+            playlist_free(playlist);
+            return;
+         }
+
+         if (fileName.isEmpty())
+            continue;
+
+         fileInfo = fileName;
+         fileBaseNameArray = fileInfo.baseName().toUtf8();
+         fileNameNoExten = fileBaseNameArray.constData();
+
+         /* a modal QProgressDialog calls processEvents() automatically in setValue() */
+         dialog.setValue(i + 1);
+
+         pathArray = fileName.toUtf8();
+         pathData = pathArray.constData();
+
+         playlist_push(playlist, pathData, fileNameNoExten,
+               "DETECT", "DETECT", fileNameNoExten, "00000000|crc");
+      }
+
+      playlist_write_file(playlist);
+      playlist_free(playlist);
+
+      reloadPlaylists();
+   }
+}
+
 void MainWindow::onGridItemClicked()
 {
    QHash<QString, QString> hash;
@@ -883,9 +1018,9 @@ inline void MainWindow::calcGridItemSize(GridItem *item, int zoomValue)
 
 void MainWindow::onZoomValueChanged(int value)
 {
-   int i = 0;
+   int i;
 
-   for (i = 0; i < m_gridItems.count() && m_gridItems.count() > 0; i++)
+   for (i = 0; i < m_gridItems.count(); i++)
    {
       GridItem *item = m_gridItems.at(i);
       calcGridItemSize(item, value);
@@ -1114,7 +1249,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
       menu->addAction(deletePlaylistAction.data());
    }
 
-   for (j = 0; j < m_listWidget->count() && m_listWidget->count() > 0; j++)
+   for (j = 0; j < m_listWidget->count(); j++)
    {
       QListWidgetItem *item = m_listWidget->item(j);
       bool hidden = m_listWidget->isItemHidden(item);
@@ -1431,7 +1566,7 @@ void MainWindow::reloadPlaylists()
    if (hiddenPlaylists.contains(QFileInfo(settings->paths.path_content_video_history).fileName()))
       m_listWidget->setRowHidden(m_listWidget->row(videoPlaylistsItem), true);
 
-   for (i = 0; i < m_playlistFiles.count() && m_playlistFiles.count() > 0; i++)
+   for (i = 0; i < m_playlistFiles.count(); i++)
    {
       QListWidgetItem *item = NULL;
       const QString &file = m_playlistFiles.at(i);
@@ -2710,7 +2845,7 @@ void MainWindow::onViewClosedDocksAboutToShow()
       return;
    }
 
-   for (i = 0; i < dockWidgets.count() && dockWidgets.count() > 0; i++)
+   for (i = 0; i < dockWidgets.count(); i++)
    {
       const QDockWidget *dock = dockWidgets.at(i);
 
@@ -3414,7 +3549,7 @@ void MainWindow::initContentGridLayout()
       QStringList playlists;
       int i = 0;
 
-      for (i = 0; i < m_playlistFiles.count() && m_playlistFiles.count() > 0; i++)
+      for (i = 0; i < m_playlistFiles.count(); i++)
       {
          const QString &playlist = m_playlistFiles.at(i);
          playlists.append(playlistDir.absoluteFilePath(playlist));
@@ -3481,7 +3616,7 @@ void MainWindow::initContentTableWidget()
       QStringList playlists;
       int i = 0;
 
-      for (i = 0; i < m_playlistFiles.count() && m_playlistFiles.count() > 0; i++)
+      for (i = 0; i < m_playlistFiles.count(); i++)
       {
          const QString &playlist = m_playlistFiles.at(i);
          playlists.append(playlistDir.absoluteFilePath(playlist));

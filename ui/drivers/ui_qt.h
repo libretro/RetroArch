@@ -34,6 +34,7 @@
 #include <QImage>
 #include <QPointer>
 #include <QProgressBar>
+#include <QDragEnterEvent>
 
 extern "C" {
 #include <retro_assert.h>
@@ -437,6 +438,8 @@ private:
 protected:
    void closeEvent(QCloseEvent *event);
    void keyPressEvent(QKeyEvent *event);
+   void dragEnterEvent(QDragEnterEvent *event);
+   void dropEvent(QDropEvent *event);
 };
 
 Q_DECLARE_METATYPE(ThumbnailWidget)
