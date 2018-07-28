@@ -189,7 +189,9 @@ void setting_get_string_representation_uint_as_enum(void *data,
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       snprintf(s, len, "%s",
-            msg_hash_to_str(setting->index_offset+(*setting->value.target.unsigned_integer)));
+            msg_hash_to_str((enum msg_hash_enums)(
+               setting->index_offset+(
+                  *setting->value.target.unsigned_integer))));
 }
 
 static float recalc_step_based_on_length_of_action(rarch_setting_t *setting)
