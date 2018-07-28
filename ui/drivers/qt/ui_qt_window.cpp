@@ -626,6 +626,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_gridWidget->layout()->addWidget(m_gridScrollArea);
    m_gridWidget->layout()->setAlignment(Qt::AlignCenter);
+   m_gridWidget->layout()->setContentsMargins(0, 0, 0, 0);
 
    m_gridProgressWidget->setLayout(gridProgressLayout);
    gridProgressLayout->setContentsMargins(0, 0, 0, 0);
