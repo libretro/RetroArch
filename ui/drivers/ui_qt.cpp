@@ -535,15 +535,12 @@ static void* ui_companion_qt_init(void)
    /* setting the last tab must come after setting the view type */
    if (qsettings->contains("save_last_tab"))
    {
-      if (qsettings->contains("last_tab"))
-      {
-         int lastTabIndex = qsettings->value("last_tab", 0).toInt();
+      int lastTabIndex = qsettings->value("last_tab", 0).toInt();
 
-         if (lastTabIndex >= 0 && browserAndPlaylistTabWidget->count() > lastTabIndex)
-         {
-            browserAndPlaylistTabWidget->setCurrentIndex(lastTabIndex);
-            mainwindow->onTabWidgetIndexChanged(lastTabIndex);
-         }
+      if (lastTabIndex >= 0 && browserAndPlaylistTabWidget->count() > lastTabIndex)
+      {
+         browserAndPlaylistTabWidget->setCurrentIndex(lastTabIndex);
+         mainwindow->onTabWidgetIndexChanged(lastTabIndex);
       }
    }
    else
