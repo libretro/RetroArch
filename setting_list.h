@@ -101,7 +101,7 @@ struct rarch_setting
    bool                 enforce_maxrange;
 
    uint8_t              index;
-   uint8_t              index_offset;
+   uint32_t             index_offset;
 
    unsigned             bind_type;
    uint32_t             size;
@@ -434,6 +434,17 @@ void settings_data_list_current_add_free_flags(
 void setting_get_string_representation_size_in_mb(void *data,
       char *s, size_t len);
 
+int setting_uint_action_right_with_refresh(void *data, bool wraparound) ;
+
+int setting_uint_action_left_with_refresh(void *data, bool wraparound) ;
+
+void setting_get_string_representation_uint_as_enum(void *data,
+      char *s, size_t len);
+
+int setting_uint_action_left_default(void *data, bool wraparound);
+int setting_uint_action_right_default(void *data, bool wraparound);
+void setting_get_string_representation_uint(void *data,char *s, size_t len);
+void setting_get_string_representation_hex_and_uint(void *data, char *s, size_t len);
 #define setting_get_type(setting) ((setting) ? setting->type : ST_NONE)
 
 RETRO_END_DECLS

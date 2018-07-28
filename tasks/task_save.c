@@ -52,6 +52,7 @@
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "tasks_internal.h"
+#include "../managers/cheat_manager.h"
 
 #define SAVE_STATE_CHUNK 4096
 
@@ -1482,6 +1483,7 @@ bool event_save_files(void)
 {
    unsigned i;
 
+   cheat_manager_save_game_specific_cheats() ;
    if (!task_save_files ||
          !rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL))
       return false;

@@ -206,7 +206,7 @@ static void keyboard_handle_modifiers(void *data,
 #endif
 }
 
-static void keyboard_handle_repeat_info(void *data,
+void keyboard_handle_repeat_info(void *data,
                                         struct wl_keyboard *wl_keyboard,
                                         int32_t rate,
                                         int32_t delay)
@@ -223,8 +223,8 @@ static const struct wl_keyboard_listener keyboard_listener = {
    keyboard_handle_enter,
    keyboard_handle_leave,
    keyboard_handle_key,
-   keyboard_handle_modifiers,
-   keyboard_handle_repeat_info,
+   keyboard_handle_modifiers
+   //keyboard_handle_repeat_info
 };
 
 static void gfx_ctx_wl_show_mouse(void *data, bool state);

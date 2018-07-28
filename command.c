@@ -1069,6 +1069,7 @@ static void command_event_deinit_core(bool reinit)
 static void command_event_init_cheats(void)
 {
    bool allow_cheats = true;
+
 #ifdef HAVE_NETWORKING
    allow_cheats &= !netplay_driver_ctl(
          RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
@@ -1078,6 +1079,8 @@ static void command_event_init_cheats(void)
    if (!allow_cheats)
       return;
 
+   cheat_manager_alloc_if_empty() ;
+   cheat_manager_load_game_specific_cheats() ;
    /* TODO/FIXME - add some stuff here. */
 }
 
