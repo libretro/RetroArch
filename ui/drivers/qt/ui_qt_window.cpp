@@ -1426,36 +1426,39 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    bool specialPlaylist = false;
    bool foundHiddenPlaylist = false;
 
-   if (!selectedItem)
-      return;
-
    new_playlist_names[0] = new_playlist_cores[0] = '\0';
 
    stnames = string_split(settings->arrays.playlist_names, ";");
    stcores = string_split(settings->arrays.playlist_cores, ";");
 
-   currentPlaylistPath = selectedItem->data(Qt::UserRole).toString();
+   if (selectedItem)
+   {
+      currentPlaylistPath = selectedItem->data(Qt::UserRole).toString();
+      currentPlaylistFile.setFileName(currentPlaylistPath);
 
-   currentPlaylistFile.setFileName(currentPlaylistPath);
+      currentPlaylistFileInfo = QFileInfo(currentPlaylistPath);
+      currentPlaylistFileName = currentPlaylistFileInfo.fileName();
+      currentPlaylistDirPath = currentPlaylistFileInfo.absoluteDir().absolutePath();
 
-   currentPlaylistFileInfo = QFileInfo(currentPlaylistPath);
-   currentPlaylistFileName = currentPlaylistFileInfo.fileName();
-   currentPlaylistDirPath = currentPlaylistFileInfo.absoluteDir().absolutePath();
-
-   currentPlaylistFileNameArray.append(currentPlaylistFileName);
-   currentPlaylistFileNameData = currentPlaylistFileNameArray.constData();
+      currentPlaylistFileNameArray.append(currentPlaylistFileName);
+      currentPlaylistFileNameData = currentPlaylistFileNameArray.constData();
+   }
 
    menu.reset(new QMenu(this));
    menu->setObjectName("menu");
 
    hiddenPlaylistsMenu.reset(new QMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS), this));
-   hideAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_HIDE), this));
    newPlaylistAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST)) + "...", this));
 
    hiddenPlaylistsMenu->setObjectName("hiddenPlaylistsMenu");
 
-   menu->addAction(hideAction.data());
    menu->addAction(newPlaylistAction.data());
+
+   if (selectedItem)
+   {
+      hideAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_HIDE), this));
+      menu->addAction(hideAction.data());
+   }
 
    if (currentPlaylistFile.exists())
    {
