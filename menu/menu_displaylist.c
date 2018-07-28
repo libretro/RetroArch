@@ -5157,8 +5157,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST:
+      {
+         rarch_setting_t *setting = NULL;
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
+         if ( !cheat_manager_state.memory_initialized)
+            cheat_manager_initialize_search(NULL,true) ;
+
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADDRESS));
+         if ( setting )
+            setting->max = cheat_manager_state.total_memory_size==0?0:cheat_manager_state.total_memory_size-1;
 
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEAT_IDX,
@@ -5174,11 +5182,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_CHEAT_HANDLER,
                PARSE_ONLY_UINT, false);
          if ( cheat_manager_state.working_cheat.handler == CHEAT_HANDLER_TYPE_EMU)
-         {
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_CHEAT_CODE,
                   PARSE_ONLY_STRING, false);
-         }
          else
          {
             menu_displaylist_parse_settings_enum(menu, info,
@@ -5250,10 +5256,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          info->need_push    = true;
          break;
+      }
       case DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST:
-		  {
+      {
          char cheat_label[64];
-		 rarch_setting_t *setting;
+         rarch_setting_t *setting;
          unsigned int address = 0;
          unsigned int address_mask = 0;
          unsigned int prev_val = 0;
@@ -5346,8 +5353,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          info->need_refresh = true;
          info->need_push    = true;
-		  }
          break;
+      }
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_displaylist_parse_settings_enum(menu, info,
