@@ -164,6 +164,27 @@ private slots:
    void onLastWindowClosed();
 };
 
+class PlaylistEntryDialog : public QDialog
+{
+   Q_OBJECT
+public:
+   PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent = 0);
+   const QHash<QString, QString> getSelectedCore();
+   const QString getSelectedDatabase();
+public slots:
+   bool showDialog();
+   void hideDialog();
+   void onAccepted();
+   void onRejected();
+private:
+   void loadPlaylistOptions();
+
+   MainWindow *m_mainwindow;
+   QSettings *m_settings;
+   QComboBox *m_coreComboBox;
+   QComboBox *m_databaseComboBox;
+};
+
 class ViewOptionsDialog : public QDialog
 {
    Q_OBJECT
@@ -300,6 +321,7 @@ public:
    ViewType getCurrentViewType();
    void setAllPlaylistsListMaxCount(int count);
    void setAllPlaylistsGridMaxCount(int count);
+   PlaylistEntryDialog* playlistEntryDialog();
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -434,6 +456,7 @@ private:
    QPointer<ThumbnailWidget> m_currentGridWidget;
    int m_allPlaylistsListMaxCount;
    int m_allPlaylistsGridMaxCount;
+   PlaylistEntryDialog *m_playlistEntryDialog;
 
 protected:
    void closeEvent(QCloseEvent *event);
