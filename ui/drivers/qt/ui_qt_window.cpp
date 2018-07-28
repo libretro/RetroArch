@@ -32,6 +32,8 @@
 #include <QInputDialog>
 #include <QMimeData>
 #include <QProgressDialog>
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QtConcurrentRun>
 
 #include "../ui_qt.h"
@@ -143,6 +145,40 @@ inline static bool comp_hash_label_key_lower(const QHash<QString, QString> &lhs,
    return lhs.value("label").toLower() < rhs.value("label").toLower();
 }
 
+static void addDirectoryFilesToList(QStringList &list, QDir &dir)
+{
+   QStringList dirList = dir.entryList(QStringList(), QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System, QDir::Name);
+   int i;
+
+   for (i = 0; i < dirList.count(); i++)
+   {
+      QString path(dir.path() + "/" + dirList.at(i));
+      QFileInfo fileInfo(path);
+
+      if (fileInfo.isDir())
+      {
+         QDir fileInfoDir(path);
+
+         addDirectoryFilesToList(list, fileInfoDir);
+         continue;
+      }
+
+      if (fileInfo.isFile())
+      {
+         list.append(fileInfo.absoluteFilePath());
+      }
+   }
+}
+
+/* https://gist.github.com/andrey-str/0f9c7709cbf0c9c49ef9 */
+static void setElidedText(QLabel *label, QWidget *clipWidget, int padding, const QString &text)
+{
+   QFontMetrics metrix(label->font());
+   int width = clipWidget->width() - padding;
+   QString clippedText = metrix.elidedText(text, Qt::ElideRight, width);
+   label->setText(clippedText);
+}
+
 GridItem::GridItem() :
    QObject()
    ,widget(NULL)
@@ -153,15 +189,6 @@ GridItem::GridItem() :
    ,imageWatcher()
    ,labelText()
 {
-}
-
-/* https://gist.github.com/andrey-str/0f9c7709cbf0c9c49ef9 */
-static void setElidedText(QLabel *label, QWidget *clipWidget, int padding, const QString &text)
-{
-   QFontMetrics metrix(label->font());
-   int width = clipWidget->width() - padding;
-   QString clippedText = metrix.elidedText(text, Qt::ElideRight, width);
-   label->setText(clippedText);
 }
 
 TreeView::TreeView(QWidget *parent) :
@@ -181,6 +208,41 @@ void TreeView::selectionChanged(const QItemSelection &selected, const QItemSelec
    QTreeView::selectionChanged(selected, deselected);
 
    emit itemsSelected(list);
+}
+
+FileDropWidget::FileDropWidget(QWidget *parent) :
+   QWidget(parent)
+{
+   setAcceptDrops(true);
+}
+
+void FileDropWidget::dragEnterEvent(QDragEnterEvent *event)
+{
+   const QMimeData *data = event->mimeData();
+
+   if (data->hasUrls())
+      event->acceptProposedAction();
+}
+
+void FileDropWidget::dropEvent(QDropEvent *event)
+{
+   const QMimeData *data = event->mimeData();
+
+   if (data->hasUrls())
+   {
+      QList<QUrl> urls = data->urls();
+      QStringList files;
+      int i;
+
+      for (i = 0; i < urls.count(); i++)
+      {
+         QString path(urls.at(i).toLocalFile());
+
+         files.append(path);
+      }
+
+      emit filesDropped(files);
+   }
 }
 
 TableWidget::TableWidget(QWidget *parent) :
@@ -714,7 +776,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_gridWidget(new QWidget(this))
    ,m_gridScrollArea(new QScrollArea(m_gridWidget))
    ,m_gridItems()
-   ,m_gridLayoutWidget(new QWidget())
+   ,m_gridLayoutWidget(new FileDropWidget())
    ,m_zoomSlider(NULL)
    ,m_lastZoomSliderValue(0)
    ,m_pendingItemUpdates()
@@ -745,8 +807,6 @@ MainWindow::MainWindow(QWidget *parent) :
    int i = 0;
 
    qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
-
-   setAcceptDrops(true);
 
    m_gridProgressWidget = new QWidget();
    gridProgressLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PROGRESS), m_gridProgressWidget);
@@ -935,6 +995,8 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(m_zoomSlider, SIGNAL(valueChanged(int)), this, SLOT(onZoomValueChanged(int)));
    connect(viewTypeIconsAction, SIGNAL(triggered()), this, SLOT(onIconViewClicked()));
    connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
+   connect(m_tableWidget, SIGNAL(filesDropped(QStringList)), this, SLOT(onPlaylistFilesDropped(QStringList)));
+   connect(m_gridLayoutWidget, SIGNAL(filesDropped(QStringList)), this, SLOT(onPlaylistFilesDropped(QStringList)));
 
    /* make sure these use an auto connection so it will be queued if called from a different thread (some facilities in RA log messages from other threads) */
    connect(this, SIGNAL(gotLogMessage(const QString&)), this, SLOT(onGotLogMessage(const QString&)), Qt::AutoConnection);
@@ -972,29 +1034,61 @@ MainWindow::~MainWindow()
    removeGridItems();
 }
 
-void MainWindow::dragEnterEvent(QDragEnterEvent *event)
+void MainWindow::onPlaylistFilesDropped(QStringList files)
 {
-   const QMimeData *data = event->mimeData();
-
-   if (data->hasUrls())
-      event->acceptProposedAction();
+   addFilesToPlaylist(files);
 }
 
-static void addDirectoryFilesToList(QStringList &list, QDir &dir)
+/* Takes a list of files and folders and adds them to the currently selected playlist. Folders will have their contents added recursively. */
+void MainWindow::addFilesToPlaylist(QStringList files)
 {
-   QStringList dirList = dir.entryList(QStringList(), QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System, QDir::Name);
+   QStringList list;
+   QString currentPlaylistPath;
+   QListWidgetItem *currentItem = m_listWidget->currentItem();
+   QByteArray currentPlaylistArray;
+   QScopedPointer<QProgressDialog> dialog(NULL);
+   PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
+   QHash<QString, QString> selectedCore;
+   QString selectedDatabase;
+   const char *currentPlaylistData = NULL;
+   playlist_t *playlist = NULL;
    int i;
 
-   for (i = 0; i < dirList.count(); i++)
+   if (currentItem)
    {
-      QString path(dir.path() + "/" + dirList.at(i));
+      currentPlaylistPath = currentItem->data(Qt::UserRole).toString();
+
+      if (!currentPlaylistPath.isEmpty())
+      {
+         currentPlaylistArray = currentPlaylistPath.toUtf8();
+         currentPlaylistData = currentPlaylistArray.constData();
+      }
+   }
+
+   if (!playlistDialog->showDialog())
+      return;
+
+   selectedCore = m_playlistEntryDialog->getSelectedCore();
+   selectedDatabase = m_playlistEntryDialog->getSelectedDatabase();
+
+   dialog.reset(new QProgressDialog(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES), "Cancel", 0, 0, this));
+   dialog->setWindowModality(Qt::ApplicationModal);
+
+   for (i = 0; i < files.count(); i++)
+   {
+      QString path(files.at(i));
       QFileInfo fileInfo(path);
+
+      if (dialog->wasCanceled())
+         return;
+
+      if (i % 25 == 0)
+         qApp->processEvents();
 
       if (fileInfo.isDir())
       {
-         QDir fileInfoDir(path);
-
-         addDirectoryFilesToList(list, fileInfoDir);
+         QDir dir(path);
+         addDirectoryFilesToList(list, dir);
          continue;
       }
 
@@ -1003,161 +1097,96 @@ static void addDirectoryFilesToList(QStringList &list, QDir &dir)
          list.append(fileInfo.absoluteFilePath());
       }
    }
-}
 
-void MainWindow::dropEvent(QDropEvent *event)
-{
-   const QMimeData *data = event->mimeData();
+   dialog->setLabelText(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST));
+   dialog->setMaximum(list.count());
 
-   if (data->hasUrls())
+   playlist = playlist_init(currentPlaylistData, COLLECTION_SIZE);
+
+   for (i = 0; i < list.count(); i++)
    {
-      QList<QUrl> urls = data->urls();
-      QStringList list;
-      QString currentPlaylistPath;
-      QListWidgetItem *currentItem = m_listWidget->currentItem();
-      QByteArray currentPlaylistArray;
-      QScopedPointer<QProgressDialog> dialog(NULL);
-      PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
-      QHash<QString, QString> selectedCore;
-      QString selectedDatabase;
-      const char *currentPlaylistData = NULL;
-      playlist_t *playlist = NULL;
-      int i;
+      QString fileName = list.at(i);
+      QFileInfo fileInfo;
+      QByteArray fileBaseNameArray;
+      QByteArray pathArray;
+      QByteArray corePathArray;
+      QByteArray coreNameArray;
+      QByteArray databaseArray;
+      const char *pathData = NULL;
+      const char *fileNameNoExten = NULL;
+      const char *corePathData = NULL;
+      const char *coreNameData = NULL;
+      const char *databaseData = NULL;
 
-      if (currentItem)
+      if (dialog->wasCanceled())
       {
-         currentPlaylistPath = currentItem->data(Qt::UserRole).toString();
-
-         if (!currentPlaylistPath.isEmpty())
-         {
-            currentPlaylistArray = currentPlaylistPath.toUtf8();
-            currentPlaylistData = currentPlaylistArray.constData();
-         }
-      }
-
-      if (!playlistDialog->showDialog())
+         playlist_free(playlist);
          return;
-
-      selectedCore = m_playlistEntryDialog->getSelectedCore();
-      selectedDatabase = m_playlistEntryDialog->getSelectedDatabase();
-
-      dialog.reset(new QProgressDialog(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES), "Cancel", 0, 0, this));
-      dialog->setWindowModality(Qt::ApplicationModal);
-
-      for (i = 0; i < urls.count(); i++)
-      {
-         QString path(urls.at(i).toLocalFile());
-         QFileInfo fileInfo(path);
-
-         if (dialog->wasCanceled())
-            return;
-
-         if (i % 25 == 0)
-            qApp->processEvents();
-
-         if (fileInfo.isDir())
-         {
-            QDir dir(path);
-            addDirectoryFilesToList(list, dir);
-            continue;
-         }
-
-         if (fileInfo.isFile())
-         {
-            list.append(fileInfo.absoluteFilePath());
-         }
       }
 
-      dialog->setLabelText(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST));
-      dialog->setMaximum(list.count());
+      if (fileName.isEmpty())
+         continue;
 
-      playlist = playlist_init(currentPlaylistData, COLLECTION_SIZE);
+      fileInfo = fileName;
+      fileBaseNameArray = fileInfo.baseName().toUtf8();
+      fileNameNoExten = fileBaseNameArray.constData();
 
-      for (i = 0; i < list.count(); i++)
+      /* a modal QProgressDialog calls processEvents() automatically in setValue() */
+      dialog->setValue(i + 1);
+
+      pathArray = fileName.toUtf8();
+      pathData = pathArray.constData();
+
+      if (selectedCore.isEmpty())
       {
-         QString fileName = list.at(i);
-         QFileInfo fileInfo;
-         QByteArray fileBaseNameArray;
-         QByteArray pathArray;
-         QByteArray corePathArray;
-         QByteArray coreNameArray;
-         QByteArray databaseArray;
-         const char *pathData = NULL;
-         const char *fileNameNoExten = NULL;
-         const char *corePathData = NULL;
-         const char *coreNameData = NULL;
-         const char *databaseData = NULL;
+         corePathData = "DETECT";
+         coreNameData = "DETECT";
+      }
+      else
+      {
+         corePathArray = selectedCore.value("core_path").toUtf8();
+         coreNameArray = selectedCore.value("core_name").toUtf8();
+         corePathData = corePathArray.constData();
+         coreNameData = coreNameArray.constData();
+      }
 
-         if (dialog->wasCanceled())
+      if (selectedDatabase.isEmpty())
+      {
+         databaseArray = QFileInfo(currentPlaylistPath).fileName().toUtf8();
+         databaseData = databaseArray.constData();
+      }
+      else
+      {
+         selectedDatabase += file_path_str(FILE_PATH_LPL_EXTENSION);
+         databaseArray = selectedDatabase.toUtf8();
+         databaseData = databaseArray.constData();
+      }
+
+      if (path_is_compressed_file(pathData))
+      {
+         struct string_list *list = file_archive_get_file_list(pathData, NULL);
+
+         if (list)
          {
-            playlist_free(playlist);
-            return;
-         }
-
-         if (fileName.isEmpty())
-            continue;
-
-         fileInfo = fileName;
-         fileBaseNameArray = fileInfo.baseName().toUtf8();
-         fileNameNoExten = fileBaseNameArray.constData();
-
-         /* a modal QProgressDialog calls processEvents() automatically in setValue() */
-         dialog->setValue(i + 1);
-
-         pathArray = fileName.toUtf8();
-         pathData = pathArray.constData();
-
-         if (selectedCore.isEmpty())
-         {
-            corePathData = "DETECT";
-            coreNameData = "DETECT";
-         }
-         else
-         {
-            corePathArray = selectedCore.value("core_path").toUtf8();
-            coreNameArray = selectedCore.value("core_name").toUtf8();
-            corePathData = corePathArray.constData();
-            coreNameData = coreNameArray.constData();
-         }
-
-         if (selectedDatabase.isEmpty())
-         {
-            databaseArray = QFileInfo(currentPlaylistPath).fileName().toUtf8();
-            databaseData = databaseArray.constData();
-         }
-         else
-         {
-            selectedDatabase += file_path_str(FILE_PATH_LPL_EXTENSION);
-            databaseArray = selectedDatabase.toUtf8();
-            databaseData = databaseArray.constData();
-         }
-
-         if (path_is_compressed_file(pathData))
-         {
-            struct string_list *list = file_archive_get_file_list(pathData, NULL);
-
-            if (list)
+            if (list->size == 1)
             {
-               if (list->size == 1)
-               {
-                  /* assume archives with one file should have that file loaded directly */
-                  pathArray = (QString(pathData) + "#" + list->elems[0].data).toUtf8();
-                  pathData = pathArray.constData();
-               }
-
-               string_list_free(list);
+               /* assume archives with one file should have that file loaded directly */
+               pathArray = (QString(pathData) + "#" + list->elems[0].data).toUtf8();
+               pathData = pathArray.constData();
             }
-         }
 
-         playlist_push(playlist, pathData, fileNameNoExten,
-               corePathData, coreNameData, "00000000|crc", databaseData);
+            string_list_free(list);
+         }
       }
 
-      playlist_write_file(playlist);
-      playlist_free(playlist);
-
-      reloadPlaylists();
+      playlist_push(playlist, pathData, fileNameNoExten,
+            corePathData, coreNameData, "00000000|crc", databaseData);
    }
+
+   playlist_write_file(playlist);
+   playlist_free(playlist);
+
+   reloadPlaylists();
 }
 
 void MainWindow::onGridItemClicked()

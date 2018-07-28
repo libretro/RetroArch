@@ -34,7 +34,6 @@
 #include <QImage>
 #include <QPointer>
 #include <QProgressBar>
-#include <QDragEnterEvent>
 
 extern "C" {
 #include <retro_assert.h>
@@ -65,6 +64,8 @@ class QFormLayout;
 class QStyle;
 class QScrollArea;
 class QSlider;
+class QDragEnterEvent;
+class QDropEvent;
 class LoadCoreWindow;
 class MainWindow;
 class ThumbnailWidget;
@@ -139,6 +140,18 @@ protected slots:
    void selectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 };
 
+class FileDropWidget : public QWidget
+{
+   Q_OBJECT
+public:
+   FileDropWidget(QWidget *parent = 0);
+signals:
+   void filesDropped(QStringList files);
+protected:
+   void dragEnterEvent(QDragEnterEvent *event);
+   void dropEvent(QDropEvent *event);
+};
+
 class TableWidget : public QTableWidget
 {
    Q_OBJECT
@@ -146,7 +159,7 @@ public:
    TableWidget(QWidget *parent = 0);
 signals:
    void enterPressed();
-protected slots:
+protected:
    void keyPressEvent(QKeyEvent *event);
 };
 
@@ -322,6 +335,7 @@ public:
    void setAllPlaylistsListMaxCount(int count);
    void setAllPlaylistsGridMaxCount(int count);
    PlaylistEntryDialog* playlistEntryDialog();
+   void addFilesToPlaylist(QStringList files);
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -389,6 +403,7 @@ private slots:
    void onPendingItemUpdates();
    void onGridItemDoubleClicked();
    void onGridItemClicked();
+   void onPlaylistFilesDropped(QStringList files);
 
 private:
    void setCurrentCoreLabel();
@@ -461,8 +476,6 @@ private:
 protected:
    void closeEvent(QCloseEvent *event);
    void keyPressEvent(QKeyEvent *event);
-   void dragEnterEvent(QDragEnterEvent *event);
-   void dropEvent(QDropEvent *event);
 };
 
 Q_DECLARE_METATYPE(ThumbnailWidget)
