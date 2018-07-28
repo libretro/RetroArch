@@ -37,6 +37,14 @@
 #include "setting_list.h"
 #include "retroarch.h"
 
+#define _3_SECONDS  3000000
+#define _6_SECONDS  6000000
+#define _9_SECONDS  9000000
+#define _12_SECONDS 12000000
+#define _15_SECONDS 15000000
+#define _18_SECONDS 18000000
+#define _21_SECONDS 21000000
+
 bool settings_list_append(rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -206,52 +214,38 @@ static float recalc_step_based_on_length_of_action(rarch_setting_t *setting)
       {
          float numsteps = (setting->max-setting->min)/setting->step ;
          float multiplier = 1.0f ;
-         if ( global->menu.action_press_time  > 12000000)
-         {
+         if ( global->menu.action_press_time  > _12_SECONDS)
             multiplier = (numsteps/60.0f);
-         } else if ( global->menu.action_press_time  > 9000000)
-         {
+         else if ( global->menu.action_press_time  > _9_SECONDS)
             multiplier = (numsteps/300.0f) ;
-         } else if ( global->menu.action_press_time  > 6000000)
-         {
+         else if ( global->menu.action_press_time  > _6_SECONDS)
             multiplier = (numsteps/750.0f);
-         } else if ( global->menu.action_press_time  > 3000000)
-         {
+         else if ( global->menu.action_press_time  > _3_SECONDS)
             multiplier = (numsteps/3000.0f) ;
-         } else
-         {
+         else
             multiplier = 1.0f ;
-         }
+
          step = setting->step*multiplier;
       }
       else
 #endif
       {
-         if ( global->menu.action_press_time  > 21000000)
-         {
+         if ( global->menu.action_press_time  > _21_SECONDS)
             step = setting->step*1000000.0f ;
-         } else if ( global->menu.action_press_time  > 18000000)
-         {
+         else if ( global->menu.action_press_time  > _18_SECONDS)
+            step = setting->step*100000.0f ;
+         else if ( global->menu.action_press_time  > _15_SECONDS)
             step = setting->step*10000.0f ;
-         } else if ( global->menu.action_press_time  > 15000000)
-         {
+         else if ( global->menu.action_press_time  > _12_SECONDS)
             step = setting->step*1000.0f ;
-         } else if ( global->menu.action_press_time  > 12000000)
-         {
+         else if ( global->menu.action_press_time  > _9_SECONDS)
             step = setting->step*100.0f ;
-         } else if ( global->menu.action_press_time  > 9000000)
-         {
-            step = setting->step*100.0f ;
-         } else if ( global->menu.action_press_time  > 6000000)
-         {
+         else if ( global->menu.action_press_time  > _6_SECONDS)
             step = setting->step*10.0f ;
-         } else if ( global->menu.action_press_time  > 3000000)
-         {
+         else if ( global->menu.action_press_time  > _3_SECONDS)
             step = setting->step*5.0f ;
-         } else
-         {
+         else
             step = setting->step ;
-         }
       }
    }
 #endif
