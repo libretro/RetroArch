@@ -147,9 +147,11 @@ public:
    FileDropWidget(QWidget *parent = 0);
 signals:
    void filesDropped(QStringList files);
+   void deletePressed();
 protected:
    void dragEnterEvent(QDragEnterEvent *event);
    void dropEvent(QDropEvent *event);
+   void keyPressEvent(QKeyEvent *event);
 };
 
 class TableWidget : public QTableWidget
@@ -159,6 +161,7 @@ public:
    TableWidget(QWidget *parent = 0);
 signals:
    void enterPressed();
+   void deletePressed();
 protected:
    void keyPressEvent(QKeyEvent *event);
 };
@@ -358,6 +361,7 @@ public slots:
    void loadContent(const QHash<QString, QString> &contentHash);
    void onStartCoreClicked();
    void onTableWidgetEnterPressed();
+   void onTableWidgetDeletePressed();
    void selectBrowserDir(QString path);
    void resizeThumbnails(bool one, bool two, bool three);
    void onResizeThumbnailOne();
@@ -373,6 +377,7 @@ public slots:
    void onIconViewClicked();
    void onListViewClicked();
    void onTabWidgetIndexChanged(int index);
+   void deleteCurrentPlaylistItem();
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());

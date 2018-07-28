@@ -279,6 +279,7 @@ static void* ui_companion_qt_init(void)
    widget->setObjectName("tableWidget");
 
    QObject::connect(widget, SIGNAL(filesDropped(QStringList)), mainwindow, SLOT(onPlaylistFilesDropped(QStringList)));
+   QObject::connect(widget, SIGNAL(deletePressed()), mainwindow, SLOT(deleteCurrentPlaylistItem()));
 
    layout = new QVBoxLayout();
    layout->addWidget(mainwindow->contentTableWidget());

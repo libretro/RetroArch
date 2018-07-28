@@ -216,6 +216,17 @@ FileDropWidget::FileDropWidget(QWidget *parent) :
    setAcceptDrops(true);
 }
 
+void FileDropWidget::keyPressEvent(QKeyEvent *event)
+{
+   if (event->key() == Qt::Key_Delete)
+   {
+      event->accept();
+      emit deletePressed();
+   }
+   else
+      QWidget::keyPressEvent(event);
+}
+
 void FileDropWidget::dragEnterEvent(QDragEnterEvent *event)
 {
    const QMimeData *data = event->mimeData();
@@ -256,6 +267,11 @@ void TableWidget::keyPressEvent(QKeyEvent *event)
    {
       event->accept();
       emit enterPressed();
+   }
+   else if (event->key() == Qt::Key_Delete)
+   {
+      event->accept();
+      emit deletePressed();
    }
    else
       QTableWidget::keyPressEvent(event);
@@ -984,6 +1000,7 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(m_tableWidget, SIGNAL(currentItemChanged(QTableWidgetItem*, QTableWidgetItem*)), this, SLOT(onCurrentTableItemChanged(QTableWidgetItem*, QTableWidgetItem*)));
    connect(m_tableWidget, SIGNAL(itemDoubleClicked(QTableWidgetItem*)), this, SLOT(onContentItemDoubleClicked(QTableWidgetItem*)));
    connect(m_tableWidget, SIGNAL(enterPressed()), this, SLOT(onTableWidgetEnterPressed()));
+   connect(m_tableWidget, SIGNAL(deletePressed()), this, SLOT(onTableWidgetDeletePressed()));
    connect(m_startCorePushButton, SIGNAL(clicked()), this, SLOT(onStartCoreClicked()));
    connect(m_coreInfoPushButton, SIGNAL(clicked()), m_coreInfoDialog, SLOT(showCoreInfo()));
    connect(m_runPushButton, SIGNAL(clicked()), this, SLOT(onRunClicked()));
@@ -995,7 +1012,6 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(m_zoomSlider, SIGNAL(valueChanged(int)), this, SLOT(onZoomValueChanged(int)));
    connect(viewTypeIconsAction, SIGNAL(triggered()), this, SLOT(onIconViewClicked()));
    connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
-   connect(m_tableWidget, SIGNAL(filesDropped(QStringList)), this, SLOT(onPlaylistFilesDropped(QStringList)));
    connect(m_gridLayoutWidget, SIGNAL(filesDropped(QStringList)), this, SLOT(onPlaylistFilesDropped(QStringList)));
 
    /* make sure these use an auto connection so it will be queued if called from a different thread (some facilities in RA log messages from other threads) */
@@ -1063,6 +1079,12 @@ void MainWindow::addFilesToPlaylist(QStringList files)
          currentPlaylistArray = currentPlaylistPath.toUtf8();
          currentPlaylistData = currentPlaylistArray.constData();
       }
+   }
+
+   if (currentPlaylistPath == ALL_PLAYLISTS_TOKEN)
+   {
+      ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal);
+      return;
    }
 
    if (!playlistDialog->showDialog())
@@ -2380,6 +2402,67 @@ void MainWindow::onTableWidgetEnterPressed()
    onRunClicked();
 }
 
+void MainWindow::onTableWidgetDeletePressed()
+{
+   deleteCurrentPlaylistItem();
+}
+
+void MainWindow::deleteCurrentPlaylistItem()
+{
+   QTableWidgetItem *contentItem = m_tableWidget->currentItem();
+   QListWidgetItem *playlistItem = m_listWidget->currentItem();
+   QHash<QString, QString> contentHash;
+   QString playlistPath;
+   QByteArray playlistArray;
+   ViewType viewType = getCurrentViewType();
+   playlist_t *playlist = NULL;
+   const char *playlistData = NULL;
+   unsigned index = 0;
+   bool ok = false;
+
+   if (!playlistItem)
+      return;
+
+   playlistPath = playlistItem->data(Qt::UserRole).toString();
+
+   if (playlistPath.isEmpty())
+      return;
+
+   if (viewType == VIEW_TYPE_LIST)
+   {
+      if (!contentItem)
+         return;
+
+      contentHash = contentItem->data(Qt::UserRole).value<QHash<QString, QString> >();
+   }
+   else if (viewType == VIEW_TYPE_ICONS)
+      contentHash = m_currentGridHash;
+   else
+      return;
+
+   if (contentHash.isEmpty())
+      return;
+
+   playlistArray = playlistPath.toUtf8();
+   playlistData = playlistArray.constData();
+
+   index = contentHash.value("index").toUInt(&ok);
+
+   if (!ok)
+      return;
+
+   if (!ui_window.qtWindow->showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM)).arg(contentHash["label"]), MainWindow::MSGBOX_TYPE_QUESTION, Qt::ApplicationModal, false))
+      return;
+
+   playlist = playlist_init(playlistData, COLLECTION_SIZE);
+
+   playlist_delete_index(playlist, index);
+   playlist_write_file(playlist);
+   playlist_free(playlist);
+
+   reloadPlaylists();
+}
+
 void MainWindow::onContentItemDoubleClicked(QTableWidgetItem*)
 {
    onRunClicked();
@@ -2415,6 +2498,8 @@ QHash<QString, QString> MainWindow::getSelectedCore()
       contentHash = contentItem->data(Qt::UserRole).value<QHash<QString, QString> >();
    else if (viewType == VIEW_TYPE_ICONS)
       contentHash = m_currentGridHash;
+   else
+      return coreHash;
 
    switch(coreSelection)
    {
@@ -2620,6 +2705,8 @@ void MainWindow::onRunClicked()
       contentHash = item->data(Qt::UserRole).value<QHash<QString, QString> >();
    else if (viewType == VIEW_TYPE_ICONS)
       contentHash = m_currentGridHash;
+   else
+      return;
 
    loadContent(contentHash);
 #endif
@@ -3073,6 +3160,8 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
 
          break;
       }
+      default:
+         break;
    }
 }
 
@@ -3300,6 +3389,7 @@ void MainWindow::setCurrentViewType(ViewType viewType)
       case VIEW_TYPE_LIST:
       default:
       {
+         m_viewType = VIEW_TYPE_LIST;
          m_gridWidget->hide();
          m_tableWidget->show();
          break;
@@ -3931,6 +4021,8 @@ QVector<QHash<QString, QString> > MainWindow::getPlaylistItems(QString pathStrin
          continue;
       else
          hash["path"] = path;
+
+      hash["index"] = QString::number(i);
 
       if (string_is_empty(label))
       {
