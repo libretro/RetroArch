@@ -1747,20 +1747,24 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_CHEAT_MEMORY_SEARCH_SIZE:
          {
             rarch_setting_t *setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_VALUE));
-            if ( setting ) {
+            if ( setting )
+			{
                *(setting->value.target.unsigned_integer) = 0 ;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
             }
             setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RUMBLE_VALUE));
-            if ( setting ) {
+            if ( setting )
+			{
                *setting->value.target.unsigned_integer = 0 ;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
             }
             setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION));
-            if ( setting ) {
+            if ( setting )
+			{
+			   int max_bit_position;
                *setting->value.target.unsigned_integer = 0 ;
-               int max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
-               setting->max = max_bit_position ;
+               max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
+               setting->max     = max_bit_position ;
             }
 
          }
@@ -1768,17 +1772,20 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_CHEAT_START_OR_RESTART:
          {
             rarch_setting_t *setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT));
-            if ( setting ) {
+            if ( setting )
+			{
                *setting->value.target.unsigned_integer = 0 ;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
             }
             setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS));
-            if ( setting ) {
+            if ( setting )
+			{
                *setting->value.target.unsigned_integer = 0 ;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
             }
             setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS));
-            if ( setting ) {
+            if ( setting )
+			{
                *setting->value.target.unsigned_integer = 0 ;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
             }
@@ -3307,10 +3314,11 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_CHEAT_DETAILS:
+		  {
+         int max_bit_position;
          if ( ! cheat_manager_state.cheats )
-         {
             break ;
-         }
+
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS), parent_group);
 
          parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DETAILS_SETTINGS);
@@ -3389,7 +3397,7 @@ static bool setting_append_list(
                setting_uint_action_left_default,setting_uint_action_right_default,
                0,&setting_get_string_representation_hex_and_uint,0,cheat_manager_state.total_memory_size==0?0:cheat_manager_state.total_memory_size-1,1) ;
 
-         int max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
+         max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
          config_uint_cbs(cheat_manager_state.working_cheat.address_mask, CHEAT_ADDRESS_BIT_POSITION,
                setting_uint_action_left_default,setting_uint_action_right_default,
                0,&setting_get_string_representation_hex_and_uint,0,max_bit_position,1) ;
@@ -3443,12 +3451,12 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
+		 }
          break;
       case SETTINGS_LIST_CHEAT_SEARCH:
          if ( ! cheat_manager_state.cheats )
-         {
             break ;
-         }
+         
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS), parent_group);
 
          parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS);

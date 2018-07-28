@@ -2680,30 +2680,25 @@ static enum runloop_state runloop_check_state(
          enum menu_action action;
          bool focused               = false;
          input_bits_t trigger_input = current_input;
+         global_t *global           = global_get_ptr();
 
          bits_clear_bits(trigger_input.data, old_input.data,
                ARRAY_SIZE(trigger_input.data));
 
-         action   = (enum menu_action)menu_event(&current_input, &trigger_input);
-         focused              = pause_nonactive ? is_focused : true;
-
+         action                    = (enum menu_action)menu_event(&current_input, &trigger_input);
+         focused                   = pause_nonactive ? is_focused : true;
          focused                   = focused && !ui_companion_is_on_foreground();
 
          iter.action               = action;
 
-         global_t *global = global_get_ptr();
          if ( global )
          {
             if ( action == old_action )
             {
                if ( action == MENU_ACTION_NOOP )
-               {
                   global->menu.noop_press_time = cpu_features_get_time_usec() - global->menu.noop_start_time ;
-               }
                else
-               {
                   global->menu.action_press_time = cpu_features_get_time_usec() - global->menu.action_start_time ;
-               }
             }
             else
             {
@@ -2712,13 +2707,9 @@ static enum runloop_state runloop_check_state(
                   global->menu.noop_start_time = cpu_features_get_time_usec() ;
                   global->menu.noop_press_time = 0 ;
                   if ( global->menu.prev_action == old_action )
-                  {
                      global->menu.action_start_time = global->menu.prev_start_time;
-                  }
                   else
-                  {
-                     global->menu.action_start_time = cpu_features_get_time_usec() ;
-                  }
+                     global->menu.action_start_time = cpu_features_get_time_usec();
                }
                else
                {

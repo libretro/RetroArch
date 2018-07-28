@@ -5251,6 +5251,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST:
+		  {
+         char cheat_label[64];
+		 rarch_setting_t *setting;
+         unsigned int address = 0;
+         unsigned int address_mask = 0;
+         unsigned int prev_val = 0;
+         unsigned int curr_val = 0 ;
+
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
 
@@ -5298,8 +5306,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS,
                PARSE_ONLY_UINT, false);
 
-         char cheat_label[64];
-
          cheat_label[0] = '\0';
          snprintf(cheat_label, sizeof(cheat_label),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES), cheat_manager_state.num_matches);
@@ -5319,10 +5325,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_UINT, false);
 
          cheat_label[0] = '\0';
-         unsigned int address = 0;
-         unsigned int address_mask = 0;
-         unsigned int prev_val = 0;
-         unsigned int curr_val = 0 ;
+
          cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_VIEW, cheat_manager_state.match_idx, &address, &address_mask, &prev_val, &curr_val) ;
          snprintf(cheat_label, sizeof(cheat_label),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_MATCH), address, address_mask);
@@ -5334,17 +5337,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_SETTINGS_CHEAT_MATCH, 0, 0);
 
 
-         rarch_setting_t *setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_MATCH));
-         if ( setting ) {
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_MATCH));
+         if ( setting )
             setting->max = cheat_manager_state.num_matches-1;
-         }
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_MATCH));
-         if ( setting ) {
+         if ( setting )
             setting->max = cheat_manager_state.num_matches-1;
-         }
 
          info->need_refresh = true;
          info->need_push    = true;
+		  }
          break;
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
