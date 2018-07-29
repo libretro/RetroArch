@@ -227,6 +227,7 @@ default_sublabel_macro(action_bind_sublabel_cheat_create_option,           MENU_
 default_sublabel_macro(action_bind_sublabel_cheat_delete_option,           MENU_ENUM_SUBLABEL_CHEAT_DELETE_OPTION)
 default_sublabel_macro(action_bind_sublabel_cheat_add_new_top,             MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP)
 default_sublabel_macro(action_bind_sublabel_cheat_add_new_bottom,          MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM)
+default_sublabel_macro(action_bind_sublabel_cheat_reload_cheats,           MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS)
 default_sublabel_macro(action_bind_sublabel_cheat_address_bit_position,    MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION)
 default_sublabel_macro(action_bind_sublabel_cheat_delete_all,              MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL)
 default_sublabel_macro(action_bind_sublabel_libretro_log_level,            MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL)
@@ -1450,6 +1451,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_add_new_top);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_reload_cheats);
             break;
          case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_add_new_bottom);

@@ -2656,7 +2656,18 @@ static int action_ok_audio_run(const char *path,
 #endif
 }
 
-static int action_ok_cheat_add_top(const char *path,
+static int action_ok_cheat_reload_cheats(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   bool          refresh = false ;
+   cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
+   cheat_manager_load_game_specific_cheats() ;
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   return 0 ;
+}
+
+   static int action_ok_cheat_add_top(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
@@ -4568,6 +4579,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
             BIND_ACTION_OK(cbs, action_ok_cheat_add_top);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
+            BIND_ACTION_OK(cbs, action_ok_cheat_reload_cheats);
             break;
          case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
             BIND_ACTION_OK(cbs, action_ok_cheat_add_bottom);

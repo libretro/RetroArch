@@ -2013,6 +2013,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      " ");
             break;
+        case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
+            snprintf(s, len,
+                     " ");
+            break;
         case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
             snprintf(s, len,
                      " ");
