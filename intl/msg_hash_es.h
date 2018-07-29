@@ -1300,11 +1300,11 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-	"Ranura de guardado -"
+	"Posición de guardado -"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-	"Ranura de guardado +"
+	"Posición de guardado +"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
@@ -2476,7 +2476,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-	"Ranura de guardado"
+	"Posición de guardado"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_STATUS,
@@ -3996,7 +3996,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MSG_FOUND_LAST_STATE_SLOT,
-	"Encontrada la ultima ranura de guardado"
+	"Encontrada la ultima posición de guardado"
 	)
 MSG_HASH(
 	MSG_FOUND_SHADER,
@@ -4088,11 +4088,11 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MSG_LOADED_STATE_FROM_SLOT,
-	"Cargado guardado de la ranura #%d"
+	"Cargado guardado de la posición #%d"
 	)
 MSG_HASH(
 	MSG_LOADED_STATE_FROM_SLOT_AUTO,
-	"Cargado guardado de la ranura #-1 (auto)"
+	"Cargado guardado de la posición #-1 (auto)"
 	)
 MSG_HASH(
 	MSG_LOADING,
@@ -4260,7 +4260,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MSG_SAVED_STATE_TO_SLOT,
-	"Guardado a la ranura #%d"
+	"Guardado a la posición #%d"
 	)
 MSG_HASH(
 	MSG_SAVED_STATE_TO_SLOT_AUTO,
@@ -4336,7 +4336,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MSG_STATE_SLOT,
-	"Ranura de guardado"
+	"Posición de guardado"
 	)
 MSG_HASH(
 	MSG_TAKING_SCREENSHOT,
@@ -5276,11 +5276,11 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_LOAD_STATE,
-	"Carga un guardado rápido desde la ranura seleccionada"
+	"Carga un guardado rápido desde la posición seleccionada"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_SAVE_STATE,
-	"Guarda en la ranura seleccionada"
+	"Guarda en la posición seleccionada"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_RESUME,
@@ -5292,7 +5292,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_STATE_SLOT,
-	"Cambia la ranura de guardado actual"
+	"Cambia la posición de guardado actual"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
