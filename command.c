@@ -246,28 +246,31 @@ bool command_set_shader(const char *arg)
 }
 
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
+#define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
 {
    cheevos_var_t var;
    unsigned i;
-   char reply[256]      = {0};
+   char  *reply         = NULL;
    const uint8_t * data = NULL;
    char *reply_at       = NULL;
+   unsigned int nbytes  = 0;
+   unsigned int alloc_size = 0;
+   int          addr    = -1;
 
-   reply[0]             = '\0';
+   if (sscanf(arg, "%x %d", &addr, &nbytes) != 2)
+      return true;
+   alloc_size = 40 + nbytes * 3; //We alloc more than needed, saving 20 bytes is not really relevant
+   reply = (char*) malloc(alloc_size);
+   reply[0] = '\0';
+   reply_at = reply + sprintf(reply, SMY_CMD_STR " %x", addr);
 
-   strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
-   reply_at = reply + strlen("READ_CORE_RAM ");
-   strlcpy(reply_at, arg, sizeof(reply)-strlen(reply));
-
-   var.value = strtoul(reply_at, (char**)&reply_at, 16);
+   var.value = addr;
    cheevos_var_patch_addr(&var, cheevos_get_console());
    data = cheevos_var_get_memory(&var);
 
    if (data)
    {
-      unsigned nbytes = strtol(reply_at, NULL, 10);
-
       for (i=0;i<nbytes;i++)
          sprintf(reply_at+3*i, " %.2X", data[i]);
       reply_at[3*nbytes] = '\n';
@@ -278,9 +281,11 @@ static bool command_read_ram(const char *arg)
       strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
       command_reply(reply, reply_at+strlen(" -1\n") - reply);
    }
+   free(reply);
 
    return true;
 }
+#undef SMY_CMD_STR
 
 static bool command_write_ram(const char *arg)
 {
