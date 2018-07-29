@@ -22,6 +22,7 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 #include <features/features_cpu.h>
@@ -48,6 +49,7 @@
 #include "../core.h"
 #include "../verbosity.h"
 #include "../input/input_driver.h"
+#include "../configuration.h"
 
 
 unsigned cheat_manager_get_buf_size(void)
@@ -124,6 +126,9 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
 
    buf[0] = cheats_file[0] = '\0';
 
+   if ( (!cheat_manager_state.cheats) || cheat_manager_state.size==0 )
+      return false ;
+
    if ( cheat_database == NULL )
    {
       strncpy(cheats_file, path, PATH_MAX_LENGTH) ;
@@ -148,12 +153,6 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
 
    if (!conf)
       return false;
-
-   if (!cheat_manager_state.cheats)
-   {
-      config_file_free(conf);
-      return false;
-   }
 
    config_set_int(conf, "cheats", cheat_manager_state.size);
 
@@ -546,24 +545,56 @@ bool cheat_manager_get_code_state(unsigned i)
    return cheat_manager_state.cheats[i].state;
 }
 
+bool cheat_manager_get_game_specific_filename(char * cheat_filename, size_t max_length)
+{
+   settings_t *settings                   = config_get_ptr();
+   global_t *global                       = global_get_ptr();
+   const char *core_name                  = NULL;
+   const char *game_name                  = NULL;
+   struct retro_system_info system_info;
+
+   if ( settings == NULL || global == NULL || cheat_filename == NULL)
+      return false ;
+
+   if ( !core_get_system_info(&system_info) )
+      return false ;
+
+
+   core_name                  = system_info.library_name;
+   game_name                  = path_basename(global->name.cheatfile);
+
+   if ( string_is_empty(settings->paths.path_cheat_database)  ||
+         string_is_empty(core_name)  || string_is_empty(game_name) )
+      return false ;
+
+   cheat_filename[0] = '\0';
+   strncat(cheat_filename, settings->paths.path_cheat_database, max_length) ;
+   fill_pathname_slash(cheat_filename, max_length) ;
+   strncat(cheat_filename, core_name, max_length-strlen(cheat_filename)) ;
+   fill_pathname_slash(cheat_filename, max_length) ;
+
+   if (!filestream_exists(cheat_filename))
+       path_mkdir(cheat_filename);
+
+   strncat(cheat_filename, game_name, max_length-strlen(cheat_filename)) ;
+
+   return true ;
+
+}
 void cheat_manager_load_game_specific_cheats()
 {
-   global_t *global           = global_get_ptr();
+   char cheat_file[PATH_MAX_LENGTH] ;
 
-   if (global )
-   {
-      cheat_manager_load(global->name.cheatfile,true) ;
-   }
+   if (cheat_manager_get_game_specific_filename(cheat_file, PATH_MAX_LENGTH) )
+      cheat_manager_load(cheat_file,true) ;
 
 }
 void cheat_manager_save_game_specific_cheats()
 {
-   global_t *global           = global_get_ptr();
+   char cheat_file[PATH_MAX_LENGTH] ;
 
-   if (global )
-   {
-      cheat_manager_save(global->name.cheatfile, NULL, true) ;
-   }
+   if (cheat_manager_get_game_specific_filename(cheat_file, PATH_MAX_LENGTH) )
+      cheat_manager_save(cheat_file, NULL, true) ;
 
 }
 
