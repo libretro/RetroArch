@@ -93,6 +93,7 @@
 #include "retroarch.h"
 #include "configuration.h"
 #include "input/input_remapping.h"
+#include "version.h"
 
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE           4096
@@ -130,6 +131,8 @@ struct command
 #endif
 };
 
+static bool command_version(const char *arg);
+
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
 static bool command_read_ram(const char *arg);
 static bool command_write_ram(const char *arg);
@@ -137,6 +140,7 @@ static bool command_write_ram(const char *arg);
 
 static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",      command_set_shader,  "<shader path>" },
+   { "VERSION",         command_version,     "No argument"},
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
    { "READ_CORE_RAM",   command_read_ram,    "<address> <number of bytes>" },
    { "WRITE_CORE_RAM",  command_write_ram,   "<address> <byte1> <byte2> ..." },
@@ -245,6 +249,15 @@ bool command_set_shader(const char *arg)
    return menu_shader_manager_set_preset(shader, type, arg);
 }
 
+static bool command_version(const char* arg)
+{
+      char reply[256] = {0};
+
+      sprintf(reply, "%s\n", PACKAGE_VERSION);
+      command_reply(reply, strlen(reply));
+      return true;
+}
+
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
 #define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
@@ -337,7 +350,7 @@ static bool command_get_arg(const char *tok,
       if (str == tok)
       {
          const char *argument = str + strlen(action_map[i].str);
-         if (*argument != ' ')
+         if (*argument != ' ' && *argument != '\0')
             return false;
 
          if (arg)
