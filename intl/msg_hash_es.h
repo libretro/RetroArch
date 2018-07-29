@@ -332,7 +332,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-	"Cargar autom. archivos de anulación"
+	"Cargar autom. archivos de personalización"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -2316,15 +2316,15 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-	"Guardar anulaciones del núcleo"
+	"Guardar personalizaciones del núcleo"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-	"Lugar donde guardar anulaciones del juego"
+	"Lugar donde guardar personalizaciones del juego"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-	"Guardar anulaciones del juego"
+	"Guardar personalizaciones del juego"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
@@ -4152,11 +4152,11 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MSG_OVERRIDES_ERROR_SAVING,
-	"Error guardando anulaciones"
+	"Error guardando personalizaciones"
 	)
 MSG_HASH(
 	MSG_OVERRIDES_SAVED_SUCCESSFULLY,
-	"Anulaciones guardadas exitosamente"
+	"Personalizaciones guardadas exitosamente"
 	)
 MSG_HASH(
 	MSG_PAUSED,
@@ -5328,7 +5328,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-	"Guarda un archivo de anulación que se aplicará a todo el contenido cargado con este núcleo. Tomará precedencia sobre la configuración principal"
+	"Guarda un archivo de personalización que se aplicará a todo el contenido cargado con este núcleo. Tomará precedencia sobre la configuración principal"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -5336,7 +5336,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-	"Guarda un archivo de anulación que se aplicará solo a este contenido cargado. Tomará precedencia sobre la configuración principal"
+	"Guarda un archivo de personalización que se aplicará solo a este contenido cargado. Tomará precedencia sobre la configuración principal"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
@@ -6004,19 +6004,19 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-	"Mostrar anulaciones de núcleo"
+	"Mostrar personalizaciones de núcleo"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-	"Mostrar/ocultar la opción de 'Guardar anulaciones de núcleo'"
+	"Mostrar/ocultar la opción de 'Guardar personalizaciones de núcleo'"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-	"Mostrar anulaciones de juego"
+	"Mostrar personalizaciones de juego"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-	"Mostrar/ocultar la opción de 'Guardar anulaciones de juego'"
+	"Mostrar/ocultar la opción de 'Guardar personalizaciones de juego'"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
@@ -6100,7 +6100,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MSG_CONFIG_OVERRIDE_LOADED,
-	"Anulaciones de configuraciones cargadas"
+	"Personalizar configuraciones cargadas"
 	)
 MSG_HASH(
 	MSG_GAME_REMAP_FILE_LOADED,
@@ -6486,7 +6486,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
-	"Anulaciones"
+	"Personalizaciones"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
