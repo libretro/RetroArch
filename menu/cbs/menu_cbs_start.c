@@ -205,7 +205,7 @@ static int action_start_cheat_num_passes(unsigned type, const char *label)
    {
       bool refresh                = false;
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-      cheat_manager_realloc(0);
+      cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
    }
 
    return 0;

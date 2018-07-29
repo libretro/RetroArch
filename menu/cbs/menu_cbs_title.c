@@ -117,6 +117,8 @@ default_title_macro(action_get_saving_settings_list,            MENU_ENUM_LABEL_
 default_title_macro(action_get_logging_settings_list,           MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS)
 default_title_macro(action_get_frame_throttle_settings_list,    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS)
 default_title_macro(action_get_rewind_settings_list,            MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS)
+default_title_macro(action_get_cheat_details_settings_list,     MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS)
+default_title_macro(action_get_cheat_search_settings_list,      MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS)
 default_title_macro(action_get_onscreen_display_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS)
 default_title_macro(action_get_onscreen_notifications_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS)
 default_title_macro(action_get_onscreen_overlay_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS)
@@ -156,6 +158,7 @@ default_title_macro(action_get_title_goto_video,                MENU_ENUM_LABEL_
 
 default_fill_title_macro(action_get_title_disk_image_append,    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND)
 default_fill_title_macro(action_get_title_cheat_file_load,      MENU_ENUM_LABEL_VALUE_CHEAT_FILE)
+default_fill_title_macro(action_get_title_cheat_file_load_append, MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND)
 default_fill_title_macro(action_get_title_remap_file_load,      MENU_ENUM_LABEL_VALUE_REMAP_FILE)
 default_fill_title_macro(action_get_title_overlay,              MENU_ENUM_LABEL_VALUE_OVERLAY)
 default_fill_title_macro(action_get_title_video_filter,         MENU_ENUM_LABEL_VALUE_VIDEO_FILTER)
@@ -363,6 +366,16 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_rewind_settings_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CHEAT_DETAILS_SETTINGS_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_cheat_details_settings_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CHEAT_SEARCH_SETTINGS_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_cheat_search_settings_list);
       return 0;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST)))
@@ -748,6 +761,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_rewind_settings_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_CHEAT_DETAILS_SETTINGS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_cheat_details_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CHEAT_SEARCH_SETTINGS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_cheat_search_settings_list);
+            break;
          case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_onscreen_display_settings_list);
             break;
@@ -782,6 +801,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_cheat_file_load);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_cheat_file_load_append);
             break;
          case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_remap_file_load);
@@ -1066,6 +1088,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_cheat_file_load);
+            break;
+         case MENU_LABEL_CHEAT_FILE_LOAD_APPEND:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_cheat_file_load_append);
             break;
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_remap_file_load);

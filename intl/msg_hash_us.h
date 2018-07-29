@@ -443,6 +443,14 @@ MSG_HASH(
       "Apply Changes"
       )
 MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT_START_SEARCH,
+      "Start Search For New Cheat Code"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
+      "Continue Search"
+      )
+MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
       "Cheat File"
       )
@@ -452,7 +460,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
-      "Load Cheat File"
+      "Load Cheat File (Replace)"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
+      "Load Cheat File (Append)"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
@@ -907,6 +919,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
       "Reset game")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
       "Rewind")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
+      "Cheat Details")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
+      "Start or Continue Cheat Search")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
       "Save state")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
@@ -1389,6 +1405,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
       "Rewind Buffer Size Step (MB)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
       "Rewind")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
+      "Cheat Details")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
+      "Start or Continue Cheat Search")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
       "File Browser")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
@@ -2817,6 +2837,94 @@ MSG_HASH(
       "Each time you increase or decrease the rewind buffer size value via this UI it will change by this amount"
       )
 MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_IDX,
+      "Index position in list."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
+      "Address bitmask when Memory Search Size < 8-bit."
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
+      "Select the match to view."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+      ""
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
+      "Left/Right to change bit-size"
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
+      "Left/Right to change value"
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_SEARCH_LT,
+      ""
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_SEARCH_GT,
+      ""
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_SEARCH_LTE,
+      ""
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_SEARCH_GTE,
+      ""
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQ,
+      ""
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_SEARCH_NEQ,
+      ""
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
+      "Left/Right to change value"
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
+      "Left/Right to change value"
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_ADD_MATCHES,
+      ""
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_VIEW_MATCHES,
+      ""
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_CREATE_OPTION,
+      ""
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_DELETE_OPTION,
+      ""
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+      ""
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+      ""
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+      ""
+)
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
+      "Big endian    : 258 = 0x0102,\nLittle endian : 258 = 0x0201"
+      )
+MSG_HASH(
       MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
       "Sets log level for cores. If a log level issued by a core is below this value, it is ignored."
       )
@@ -3109,6 +3217,10 @@ MSG_HASH(
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
       "Manages rewind settings.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_DETAILS,
+      "Manages cheat details settings.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH,
+      "Start or continue a cheat code search.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
       "Restarts the content from the beginning.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -3286,9 +3398,17 @@ MSG_HASH(
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
       "Cheat changes will take effect immediately.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
+      "Start search for a new cheat.  Number of bits can be changed.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_CONTINUE_SEARCH,
+      "Continue search for a new cheat.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-      "Load a cheat file."
+      "Load a cheat file and replace existing cheats."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
+      "Load a cheat file and append to existing cheats."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
@@ -3792,6 +3912,238 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
       "Sustained Performance Mode")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
       "mpv support")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_IDX,
+      "Index")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
+      "View Match #")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
+      "Match Address: %08X Mask: %02X")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
+      "Create Code Match #")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
+      "Delete Match #")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+      "Description")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
+      "Enabled")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
+      "Code")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
+      "Handler")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
+      "Memory Search Size")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
+      "Type")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
+      "Value")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
+      "Memory Address")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
+      "Memory Address Mask")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
+      "Rumble When Memory")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
+      "Rumble Value")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PORT,
+      "Rumble Port")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
+      "Rumble Primary Strength")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
+      "Rumble Primary Duration (ms)")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
+      "Rumble Secondary Strength")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
+      "Rumble Secondary Duration (ms)")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
+      "Add New Cheat After This One")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
+      "Add New Cheat Before This One")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
+      "Copy This Cheat After")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE,
+      "Copy This Cheat Before")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
+      "Delete This Cheat")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
+      "Emulator")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_RETRO,
+      "RetroArch")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_TYPE_DISABLED,
+      "<Disabled>")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+      "Set To Value")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_TYPE_INCREASE_VALUE,
+      "Increase By Value")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_TYPE_DECREASE_VALUE,
+      "Decrease By Value")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
+      "Run next cheat if value = memory")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
+      "Run next cheat if value != memory")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
+      "Run next cheat if value < memory")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
+      "Run next cheat if value > memory")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,
+      "<Disabled>")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
+      "Changes")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
+      "Does Not Change")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE,
+      "Increases")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE,
+      "Decreases")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_TYPE_EQ_VALUE,
+      "= Rumble Value")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
+      "!= Rumble Value")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
+      "< Rumble Value")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
+      "> Rumble Value")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
+      "1-bit, max value = 0x01")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
+      "2-bit, max value = 0x03")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_4,
+      "4-bit, max value = 0x0F")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_8,
+      "8-bit, max value = 0xFF")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
+      "16-bit, max value = 0xFFFF")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
+      "32-bit, max value = 0xFFFFFFFF")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_0,
+      "1")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_1,
+      "2")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_2,
+      "3")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_3,
+      "4")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_4,
+      "5")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_5,
+      "6")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_6,
+      "7")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_7,
+      "8")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_8,
+      "9")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_9,
+      "10")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_10,
+      "11")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_11,
+      "12")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_12,
+      "13")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_13,
+      "14")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_14,
+      "15")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_15,
+      "16")
+MSG_HASH(MENU_ENUM_LABEL_RUMBLE_PORT_16,
+      "All")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
+      "Start or Continue Cheat Search")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
+      "Start or Restart Cheat Search")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
+      "Search Memory For Values")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LT,
+      "Search Memory For Values")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GT,
+      "Search Memory For Values")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQ,
+      "Search Memory For Values")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GTE,
+      "Search Memory For Values")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LTE,
+      "Search Memory For Values")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
+      "Search Memory For Values")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQPLUS,
+      "Search Memory For Values")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
+      "Search Memory For Values")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
+      "Add the %u Matches to Your List")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
+      "View the List of %u Matches")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_CREATE_OPTION,
+      "Create Code From This Match")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
+      "Delete This Match")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
+      "Add New Code to Top")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
+      "Add New Code to Bottom")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
+      "Delete All Codes")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
+      "Equal to %u (%X)")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL,
+      "Less Than Before")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL,
+      "Greater Than Before")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL,
+      "Less Than or Equal To Before")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL,
+      "Greater Than or Equal To Before")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL,
+      "Equal to Before")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL,
+      "Not Equal to Before")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
+      "Equal to Before+%u (%X)")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
+      "Equal to Before-%u (%X)")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
+      "Start or Continue Cheat Search")
+MSG_HASH(MSG_CHEAT_INIT_SUCCESS,
+      "Successfully started cheat search")
+MSG_HASH(MSG_CHEAT_INIT_FAIL,
+      "Failed to start cheat search")
+MSG_HASH(MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+      "Searching has not been initialized/started")
+MSG_HASH(MSG_CHEAT_SEARCH_FOUND_MATCHES,
+      "New match count = %u")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
+      "Big Endian")
+MSG_HASH(MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+      "Added %u matches")
+MSG_HASH(MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+      "Failed to add matches")
+MSG_HASH(MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+      "Created code from match")
+MSG_HASH(MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+      "Failed to create code")
+MSG_HASH(MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+      "Deleted match")
+MSG_HASH(MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
+      "Not enough room.  The total number of cheats you can have is 100.")
+MSG_HASH(MSG_CHEAT_ADD_TOP_SUCCESS,
+      "New cheat added to top of list.")
+MSG_HASH(MSG_CHEAT_ADD_BOTTOM_SUCCESS,
+      "New cheat added to bottom of list.")
+MSG_HASH(MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
+      "Press right five times to delete all cheats.")
+MSG_HASH(MSG_CHEAT_DELETE_ALL_SUCCESS,
+      "All cheats deleted.")
+MSG_HASH(MSG_CHEAT_ADD_BEFORE_SUCCESS,
+      "New cheat added before this one.")
+MSG_HASH(MSG_CHEAT_ADD_AFTER_SUCCESS,
+      "New cheat added after this one.")
+MSG_HASH(MSG_CHEAT_COPY_BEFORE_SUCCESS,
+      "Cheat copied before this one.")
+MSG_HASH(MSG_CHEAT_COPY_AFTER_SUCCESS,
+      "Cheat copied after this one.")
+MSG_HASH(MSG_CHEAT_DELETE_SUCCESS,
+      "Cheat deleted.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_PROGRESS,
       "Progress:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
@@ -3800,3 +4152,33 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT
       "\"All Playlists\" max grid entries:")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
       "Show hidden files and folders:")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
+      "New Playlist")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
+      "Please enter the new playlist name:")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
+      "Delete Playlist")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
+      "Are you sure you want to delete the playlist \"%1\"?")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_QUESTION,
+      "Question")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
+      "Could not delete file.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
+      "Gathering list of files...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST,
+      "Adding files to playlist...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
+      "Playlist Entry")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
+      "Core:")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
+      "Database:")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
+      "(used to find thumbnails)")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+      "Are you sure you want to delete the item \"%1\"?")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
+      "Please choose a single playlist first.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DELETE,
+      "Delete")

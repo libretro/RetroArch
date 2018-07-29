@@ -19,6 +19,7 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../../msg_hash.h"
+#include "../../managers/cheat_manager.h"
 
 #include "../widgets/menu_filebrowser.h"
 
@@ -34,8 +35,9 @@ static int action_cancel_pop_default(const char *path,
 {
    size_t new_selection_ptr;
    const char *menu_label              = NULL;
+   enum msg_hash_enums enum_idx = 0 ;
 
-   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+   menu_entries_get_last_stack(NULL, &menu_label, NULL, &enum_idx, NULL);
 
    if (!string_is_empty(menu_label))
    {
@@ -58,6 +60,13 @@ static int action_cancel_pop_default(const char *path,
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
 
    return 0;
+}
+
+static int action_cancel_cheat_details(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   cheat_manager_copy_working_to_idx(cheat_manager_state.working_cheat.idx) ;
+   return action_cancel_pop_default(path, label, type, idx) ;
 }
 
 static int action_cancel_core_content(const char *path,
@@ -97,6 +106,41 @@ static int menu_cbs_init_bind_cancel_compare_type(
       case FILE_TYPE_DOWNLOAD_CORE:
          BIND_ACTION_CANCEL(cbs, action_cancel_core_content);
          return 0;
+   }
+
+   switch ( cbs->enum_idx )
+   {
+
+      case MENU_ENUM_LABEL_CHEAT_IDX:
+      case MENU_ENUM_LABEL_CHEAT_STATE:
+      case MENU_ENUM_LABEL_CHEAT_DESC:
+      case MENU_ENUM_LABEL_CHEAT_HANDLER:
+      case MENU_ENUM_LABEL_CHEAT_CODE:
+      case MENU_ENUM_LABEL_CHEAT_MEMORY_SEARCH_SIZE:
+      case MENU_ENUM_LABEL_CHEAT_TYPE:
+      case MENU_ENUM_LABEL_CHEAT_VALUE:
+      case MENU_ENUM_LABEL_CHEAT_ADDRESS:
+      case MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION:
+      case MENU_ENUM_LABEL_CHEAT_RUMBLE_TYPE:
+      case MENU_ENUM_LABEL_CHEAT_RUMBLE_VALUE:
+      case MENU_ENUM_LABEL_CHEAT_RUMBLE_PORT:
+      case MENU_ENUM_LABEL_CHEAT_RUMBLE_PRIMARY_STRENGTH:
+      case MENU_ENUM_LABEL_CHEAT_RUMBLE_PRIMARY_DURATION:
+      case MENU_ENUM_LABEL_CHEAT_RUMBLE_SECONDARY_STRENGTH:
+      case MENU_ENUM_LABEL_CHEAT_RUMBLE_SECONDARY_DURATION:
+      case MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER:
+      case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE:
+      case MENU_ENUM_LABEL_CHEAT_COPY_AFTER:
+      case MENU_ENUM_LABEL_CHEAT_COPY_BEFORE:
+      case MENU_ENUM_LABEL_CHEAT_DELETE:
+      {
+         BIND_ACTION_CANCEL(cbs, action_cancel_cheat_details);
+         break ;
+      }
+      default :
+      {
+         break ;
+      }
    }
    return -1;
 }

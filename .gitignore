@@ -72,6 +72,8 @@ menu/driverspzarch.c
 .settings
 libretro-super
 run.sh
+convert_rumble.awk
+*~
 
 # Wii U
 *.depend

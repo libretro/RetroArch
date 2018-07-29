@@ -132,59 +132,60 @@ static void dinput_joypad_destroy(void)
 
 static void dinput_create_rumble_effects(struct dinput_joypad *pad)
 {
-   LONG direction = 0;
-   DWORD axis     = DIJOFS_X;
-   DICONSTANTFORCE dicf;
    DIENVELOPE dienv;
-   HRESULT hr;
+   DICONSTANTFORCE dicf;
+   LONG direction                            = 0;
+   DWORD axis                                = DIJOFS_X;
 
-   dicf.lMagnitude = 0;
+   dicf.lMagnitude                           = 0;
 
-   dienv.dwSize = sizeof(DIENVELOPE);
-   dienv.dwAttackLevel = 5000;
-   dienv.dwAttackTime = 250000;
-   dienv.dwFadeLevel = 0;
-   dienv.dwFadeTime = 250000;
+   dienv.dwSize                              = sizeof(DIENVELOPE);
+   dienv.dwAttackLevel                       = 5000;
+   dienv.dwAttackTime                        = 250000;
+   dienv.dwFadeLevel                         = 0;
+   dienv.dwFadeTime                          = 250000;
 
-   pad->rumble_props.cAxes = 1;
-   pad->rumble_props.dwTriggerButton = DIEB_NOTRIGGER;
+   pad->rumble_props.cAxes                   = 1;
+   pad->rumble_props.dwTriggerButton         = DIEB_NOTRIGGER;
    pad->rumble_props.dwTriggerRepeatInterval = 0;
-   pad->rumble_props.cbTypeSpecificParams = sizeof(DICONSTANTFORCE);
-   pad->rumble_props.dwDuration = INFINITE;
-   pad->rumble_props.dwFlags = DIEFF_CARTESIAN | DIEFF_OBJECTOFFSETS;
-   pad->rumble_props.dwGain = 0;
-   pad->rumble_props.dwSize = sizeof(DIEFFECT);
-   pad->rumble_props.dwStartDelay = 0;
-   pad->rumble_props.lpEnvelope = &dienv;
-   pad->rumble_props.lpvTypeSpecificParams = &dicf;
-   pad->rumble_props.rgdwAxes = &axis;
-   pad->rumble_props.rglDirection = &direction;
+   pad->rumble_props.cbTypeSpecificParams    = sizeof(DICONSTANTFORCE);
+   pad->rumble_props.dwDuration              = INFINITE;
+   pad->rumble_props.dwFlags                 = DIEFF_CARTESIAN | 
+      DIEFF_OBJECTOFFSETS;
+   pad->rumble_props.dwGain                  = 0;
+   pad->rumble_props.dwSize                  = sizeof(DIEFFECT);
+   pad->rumble_props.dwStartDelay            = 0;
+   pad->rumble_props.lpEnvelope              = &dienv;
+   pad->rumble_props.lpvTypeSpecificParams   = &dicf;
+   pad->rumble_props.rgdwAxes                = &axis;
+   pad->rumble_props.rglDirection            = &direction;
 
-   hr = IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
-         &pad->rumble_props, &pad->rumble_iface[0], NULL);
-   if (hr != DI_OK)
+   if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
+         &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
       RARCH_WARN("[DINPUT]: Strong rumble unavailable.\n");
 
    axis = DIJOFS_Y;
 
-   hr = IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
-         &pad->rumble_props, &pad->rumble_iface[1], NULL);
-   if (hr != DI_OK)
+   if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
+         &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
       RARCH_WARN("[DINPUT]: Weak rumble unavailable.\n");
 }
 
-static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
+static BOOL CALLBACK enum_axes_cb(
+      const DIDEVICEOBJECTINSTANCE *inst, void *p)
 {
    DIPROPRANGE range;
    LPDIRECTINPUTDEVICE8 joypad = (LPDIRECTINPUTDEVICE8)p;
 
    memset(&range, 0, sizeof(range));
-   range.diph.dwSize = sizeof(DIPROPRANGE);
+
+   range.diph.dwSize       = sizeof(DIPROPRANGE);
    range.diph.dwHeaderSize = sizeof(DIPROPHEADER);
-   range.diph.dwHow = DIPH_BYID;
-   range.diph.dwObj = inst->dwType;
-   range.lMin = -0x7fff;
-   range.lMax = 0x7fff;
+   range.diph.dwHow        = DIPH_BYID;
+   range.diph.dwObj        = inst->dwType;
+   range.lMin              = -0x7fff;
+   range.lMax              = 0x7fff;
+
    IDirectInputDevice8_SetProperty(joypad, DIPROP_RANGE, &range.diph);
 
    return DIENUM_CONTINUE;
@@ -206,7 +207,8 @@ static bool guid_is_xinput_device(const GUID* product_guid)
 
    for (i = 0; i < ARRAY_SIZE(common_xinput_guids); ++i)
    {
-      if (string_is_equal_fast(product_guid, &common_xinput_guids[i], sizeof(GUID)))
+      if (string_is_equal_fast(product_guid,
+               &common_xinput_guids[i], sizeof(GUID)))
          return true;
    }
 
@@ -241,8 +243,10 @@ static bool guid_is_xinput_device(const GUID* product_guid)
       rdi.cbSize = sizeof (rdi);
 
       if ((raw_devs[i].dwType == RIM_TYPEHID) &&
-          (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICEINFO, &rdi, &rdiSize) != ((UINT)-1)) &&
-          (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId) == ((LONG)product_guid->Data1)) &&
+          (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
+                                  RIDI_DEVICEINFO, &rdi, &rdiSize) != ((UINT)-1)) &&
+          (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId) 
+           == ((LONG)product_guid->Data1)) &&
           (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICENAME, devName, &nameSize) != ((UINT)-1)) &&
           (strstr(devName, "IG_") != NULL) )
       {
@@ -313,15 +317,26 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    /* there may be more useful info in the GUID so leave this here for a while */
 #if 0
    printf("Guid = {%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n",
-   inst->guidProduct.Data1, inst->guidProduct.Data2, inst->guidProduct.Data3,
-   inst->guidProduct.Data4[0], inst->guidProduct.Data4[1], inst->guidProduct.Data4[2], inst->guidProduct.Data4[3],
-   inst->guidProduct.Data4[4], inst->guidProduct.Data4[5], inst->guidProduct.Data4[6], inst->guidProduct.Data4[7]);
+   inst->guidProduct.Data1,
+   inst->guidProduct.Data2,
+   inst->guidProduct.Data3,
+   inst->guidProduct.Data4[0],
+   inst->guidProduct.Data4[1],
+   inst->guidProduct.Data4[2],
+   inst->guidProduct.Data4[3],
+   inst->guidProduct.Data4[4],
+   inst->guidProduct.Data4[5],
+   inst->guidProduct.Data4[6],
+   inst->guidProduct.Data4[7]);
 #endif
 
    g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 % 0x10000;
    g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 / 0x10000;
 
-   RARCH_LOG("[DINPUT]: Device #%u PID: {%04lX} VID:{%04lX}\n", g_joypad_cnt, g_pads[g_joypad_cnt].pid, g_pads[g_joypad_cnt].vid);
+   RARCH_LOG("[DINPUT]: Device #%u PID: {%04lX} VID:{%04lX}\n",
+         g_joypad_cnt,
+         g_pads[g_joypad_cnt].pid,
+         g_pads[g_joypad_cnt].vid);
 
 #ifdef HAVE_XINPUT
    is_xinput_pad = g_xinput_block_pads
@@ -336,7 +351,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
 
    IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
-   IDirectInputDevice8_SetCooperativeLevel(*pad, (HWND)video_driver_window_get(),
+   IDirectInputDevice8_SetCooperativeLevel(*pad,
+         (HWND)video_driver_window_get(),
          DISCL_EXCLUSIVE | DISCL_BACKGROUND);
 
    IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb,

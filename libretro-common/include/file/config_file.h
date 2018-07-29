@@ -164,6 +164,7 @@ void config_set_string(config_file_t *conf, const char *entry, const char *val);
 void config_unset(config_file_t *conf, const char *key);
 void config_set_path(config_file_t *conf, const char *entry, const char *val);
 void config_set_bool(config_file_t *conf, const char *entry, bool val);
+void config_set_uint(config_file_t *conf, const char *key, unsigned int val);
 
 /* Write the current config to a file. */
 bool config_file_write(config_file_t *conf, const char *path);

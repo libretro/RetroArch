@@ -1,0 +1,322 @@
+#!/bin/sh
+
+source /etc/preinit
+script_init
+
+#### Variable Definitions ##################################################
+
+HOME=/etc/libretro
+corename="$1"
+noprefix="${corename#km_}"
+core="$HOME/core/${1}_libretro.so"
+rom="$2"
+filename="$(basename "$rom")"
+id="${filename%.*}"
+extension="${filename##*.}"
+newrsram=/var/saves/retroarch
+autosave="/var/cache/retroarch/$id.state.auto"
+t_suffix=_time.txt
+debug=0
+bezel_mode=0
+clovercon_file=/dev/clovercon1
+shift 2
+
+while [ $# -gt 0 ]; do
+  [ "$1" == "--load-state-file" ] && load="$2"
+  [ "$1" == "--save-on-quit" ] && save="$2"
+  [ "$1" == "--rollback-input-dir" ] && load="$2/savestate"
+  [ "$1" == "--rollback-output-dir" ] && save="$2/savestate"
+  [ "$1" == "--save-screenshot-on-quit" ] && screenshot="$2"
+  [ "$1" == "--save-data-backing-file" ] && sram="$2"
+  [ "$1" == "--graphic-filter" ] && filter="$2"
+  [ "$1" == "--enable-crt-scanlines" ] && crt=1
+  [ "$1" == "--video-mode" ] && [ "$2" == "crt-filter" ] && filter=crt720 && crt=1
+  [ "$1" == "--video-mode" ] && [ "$2" == "keep-aspect-ratio" ] && filter=gpu720
+  [ "$1" == "--video-mode" ] && [ "$2" == "pixel-perfect" ] && filter=ppu
+  [ "$1" == "--smooth43" ] && smooth43=1
+  [ "$1" == "--no-smooth" ] && no_smooth=1
+  [ "$1" == "--no-scanlines" ] && no_scanlines=1
+  [ "$1" == "--bezel-mode" ] && bezel_mode=1
+  [ "$1" == "--title-code" ] && title_code="$2"
+  [ "$1" == "--ra-extra" ] && extra="$2"
+  [ "$1" == "--ra-nosaves" ] && nosaves=1
+  [ "$1" == "--load-time-path" ] && timefile_load="$2"
+  [ "$1" == "--save-time-path" ] && timefile_save="$2"
+  [ "$1" == "--replay-inputs" ] && demo=1
+  [ "$1" == "--decorative-frame-path" ] && frame="$2"
+  [ "$1" == "--debug-usb" ] && debug=1
+  [ "$1" == "--debug-nand" ] && debug=2
+  [ "$1" == "--custom-loadscreen" ] && custom_loadscreen="$2"
+  shift
+done
+
+#### Visuals ###############################################################
+
+#Retrospective fix for hakchi port splashes
+if ! echo $corename | grep "prboom\|tyrquake\|cannonball"; then
+  umount "$rootfs/share/retroarch/assets/RAloading-min.png"
+fi
+
+# Display Splash Screen
+if [ ! -z "$custom_loadscreen" ]; then
+  decodepng "$rootfs/share/retroarch/assets/$custom_loadscreen" > /dev/fb0;
+else
+  if [ -f "$mountpoint/media/hakchi/RA_loading_screens/$noprefix.png" ] && [ -f "$rootfs/share/retroarch/assets/RAloading-min.png" ]; then
+	  decodepng "$mountpoint/media/hakchi/RA_loading_screens/$noprefix.png"  > /dev/fb0;
+  else
+    if [ -f "$rootfs/share/retroarch/assets/core_loading_screens/$noprefix.png" ] && [ -f "$rootfs/share/retroarch/assets/RAloading-min.png" ]; then
+      decodepng "$rootfs/share/retroarch/assets/core_loading_screens/$noprefix.png"  > /dev/fb0;
+    else
+      decodepng "$rootfs/share/retroarch/assets/RAloading-min.png" > /dev/fb0;
+    fi
+  fi
+fi
+
+#### Network Mounting ######################################################
+
+if [ -f "/media/hakchi/retroarch-mounted.cfg" ]; then
+  mv -f /media/hakchi/retroarch-mounted.cfg /etc/libretro/
+fi
+
+source /etc/libretro/retroarch-mounted.cfg
+if [ "$ra_mount_enable" == "true" ] && [ ! -z "${ra_mount_address// }" ] && [ ! -d /var/mount ]; then
+  mkdir -p /var/mount
+  if [ ! -z "${ra_mount_user// }" ] && [ ! -z "${ra_mount_pass// }" ]; then
+    mount -t cifs -o user=$ra_mount_user,pass=$ra_mount_pass $ra_mount_address /var/mount
+  elif [ ! -z "${ra_mount_user// }" ] && [ -z "${ra_mount_pass// }" ]; then
+    mount -t cifs -o user=$ra_mount_user $ra_mount_address /var/mount
+  else
+    mount -t cifs $ra_mount_address /var/mount
+  fi
+fi
+
+#### Saves and Configs #####################################################
+
+[ ! -z "$demo" ] && load="$(dirname "$load")/savestate"
+
+# Create cache and /var/saves/retroarch directories
+mkdir -p /var/cache/retroarch
+mkdir -p "$newrsram"
+
+# Create a "cartridge.sram" file of 21B to avoid hakchi2 save-state manager from removing the folder
+# Just in case we're going the "/var/saves/CLV-Z-RETROARCH" way
+# if [ -f "/var/saves/CLV-Z-RETROARCH/cartridge.sram" ]; then
+  # [ "$(wc -c </var/saves/CLV-Z-RETROARCH/cartridge.sram)" -lt 21 ] && rm /var/saves/CLV-Z-RETROARCH/cartridge.sram && dd if=/dev/zero of=/var/saves/CLV-Z-RETROARCH/cartridge.sram bs=21 count=1
+# else
+  # dd if=/dev/zero of=/var/saves/CLV-Z-RETROARCH/cartridge.sram bs=21 count=1
+# fi
+
+# Moving RetroArch saves from "/var/saves/" to "/var/saves/retroarch/" if the ID is known (if the .desktop is on the console atm)
+if [ -z "$(ls -A "$newrsram")" ]; then # so this whole part only executes at the 1st launch
+  if [ -d "/media/hakchi" ]; then
+    desktop_search="/media/hakchi/games"
+  else
+    desktop_search="/var/lib/hakchi/games"
+  fi
+  for rasaves in /var/saves/CLV-*; do
+    fdsgame=0
+    canoecheck=0
+    gameid="$(basename "$rasaves")"
+	# [ "$gameid" = "CLV-Z-RETROARCH" ] && continue
+    if [ -f "$rasaves/cartridge.sram" ] && [ -f "$rasaves/cartridge.sram.hash" ]; then
+      [ "$(tail -c 20 "$rasaves/cartridge.sram")" = "$(cat "$rasaves/cartridge.sram.hash")" ] && canoecheck=1 # check if thats a Canoe save
+    fi
+    if [ "$canoecheck" = 0 ] && [ -f "$rasaves/cartridge.sram" ]; then
+      if [ ! -z "$(find "$desktop_search" -name "$gameid.desktop")" ]; then # search for .desktop file
+	    filename2="$(cat `find "$desktop_search" -name "$gameid.desktop"` | grep "^Exec=" | basename `awk '{print $2}'`)"
+		[ "${filename2##*.}" = "fds" ] && fdsgame=1
+		filename2="${filename2%.*}"
+		if [ ! -z "$(cat `find "$desktop_search" -name "$gameid.desktop"` | grep "/bin/gpsp")" ]; then
+		  mv "$rasaves/cartridge.sram" "$newrsram/$filename2.sav" # rename the file to .sav if its a gpSP save
+		elif [ ! -z "$(cat `find "$desktop_search" -name "$gameid.desktop"` | grep "/bin/nes\|/bin/nestopia")" ] && [ "$fdsgame" = 1 ]; then
+		  mv "$rasaves/cartridge.sram" "$newrsram/$filename2.sav" # rename the file to .sav if its a FDS Nestopia save
+		else
+		  mv "$rasaves/cartridge.sram" "$newrsram/$filename2.srm" # rename the file to .srm
+		fi
+	  fi
+    fi
+    if ls "$rasaves" | grep -w "brm$"; then
+      mv "$rasaves/"*.brm "$newrsram" # no need to rename those, just move
+    fi
+  done
+fi
+
+# Copy savestates from USB if any
+if [ -d "/media/data/ra_savestates" ] && ls "/media/data/ra_savestates/$title_code/$id.state"*; then
+  cp "/media/data/ra_savestates/$title_code/$id.state"* /var/cache/retroarch
+fi
+
+# Move mame config files to "/var/saves/retroarch"
+if [ -d "/etc/libretro/.config/retroarch/config/arcade" ]; then
+  if [ ! -z "$(ls -A /etc/libretro/.config/retroarch/config/arcade)" ]; then
+    mv /etc/libretro/.config/retroarch/config/arcade/* "$newrsram"
+	[ -z "$(ls -A /etc/libretro/.config/retroarch/config/arcade)" ] && rmdir /etc/libretro/.config/retroarch/config/arcade
+  fi
+fi
+
+# saves if any
+if [ ! -z "$load" ] && [ -f "$load" ] && [ -z "$nosaves" ]; then
+  if [ "$(hexdump -n 2 -e '1/1 "%02X"' "$load")" == "1F8B" ]; then
+    cp -f "$load" "$autosave.gz"
+    gunzip -f "$autosave.gz"
+  else
+    cp -f "$load" "$autosave"
+  fi
+fi
+
+# Moving and renaming save from "/var/saves/CLV-*/cartridge.*" to "/var/saves/retroarch/$id.*" that were previously unknown
+if [ "$noprefix" == "nestopia" ] && [ "$extension" == "fds" ]; then
+  [ ! -z "$sram" ] && [ -f "$sram" ] && mv "$sram" "$newrsram/$id.sav"
+elif [ "$noprefix" == "gpsp" ]; then
+  [ ! -z "$sram" ] && [ -f "$sram" ] && mv "$sram" "$newrsram/$id.sav"
+elif [ "$noprefix" == "genesis_plus_gx" ]; then
+  [ -f "/var/saves/$title_code/$id.brm" ] && mv "/var/saves/$title_code/$id.brm" "$newrsram"
+else
+  [ ! -z "$sram" ] && [ -f "$sram" ] && mv "$sram" "$newrsram/$id.srm"
+fi
+
+#### General ###############################################################
+
+#Overcommit this. (Should solve dumb crashes due to memory limits)
+echo "1" > "/proc/sys/vm/overcommit_memory"
+
+[ -z "$timefile_save" ] && timefile_save="$load$t_suffix"
+[ -z "$timefile_load" ] && timefile_load="$load$t_suffix"
+
+# Hold L button while starting a game to toggle bezel-mode for this game
+if [ -e "$clovercon_file" ] && [ "$(cat $clovercon_file)" == "0004" ]; then
+  if [ "$bezel_mode" == "0" ]; then
+    sed -i "s/^Exec.*/& --bezel-mode/" "$gamepath/$title_code/$title_code.desktop" && bezel_mode=1
+  else
+    sed -i "s/ --bezel-mode//g" "$gamepath/$title_code/$title_code.desktop" && bezel_mode=0
+  fi
+fi
+# Hold R button while starting a game to toggle bezel-mode for this core
+if [ -e "$clovercon_file" ] && [ "$(cat $clovercon_file)" == "0008" ]; then
+  [ ! -f "$HOME/bezel-core" ] && touch "$HOME/bezel-core"
+  if grep "^$corename$" "$HOME/bezel-core"; then
+    sed -i "/^$corename$/d" "$HOME/bezel-core"
+  else
+    echo "$corename" >> "$HOME/bezel-core"
+  fi
+fi
+[ -f "$HOME/bezel-core" ] && grep "^$corename$" "$HOME/bezel-core" && bezel_mode=1
+
+# Smooth, border and scanlines
+if [ "$bezel_mode" == "1" ]; then
+  [ "$filter" == "crt720" ] && overlay1=scanlines.png && overlay2="$frame.png"
+else
+  [ "$filter" == "crt720" ] && overlay1=scanlines.png
+fi
+[ "$filter" == "crt720" ] && [ ! -z "$no_scanlines" ] || [ ! "$filter" == "crt720" ] && overlay1="$frame.png"
+retroarch_watchdog --configEdit /etc/libretro/.config/retroarch/overlay/default.cfg overlay0_overlay "$overlay1" overlay0_desc0_overlay "$overlay2"
+retroarch_watchdog --configEdit /etc/libretro/.config/retroarch/overlay/default_scanlines.cfg overlay0_desc0_overlay "$frame.png"
+
+ra_config_args=""
+# Functions to make the rest easier
+smooth(){ ra_config_args="$ra_config_args video_smooth $1"; }
+overlay(){ ra_config_args="$ra_config_args input_overlay_enable $1"; }
+overlay_file(){ ra_config_args="$ra_config_args input_overlay ~/.config/retroarch/overlay/$1"; }
+int_scale(){ ra_config_args="$ra_config_args video_scale_integer $1"; }
+ratio(){ ra_config_args="$ra_config_args aspect_ratio_index $1"; }
+width(){ ra_config_args="$ra_config_args custom_viewport_width $1"; }
+height(){ ra_config_args="$ra_config_args custom_viewport_height $1"; }
+posx(){ ra_config_args="$ra_config_args custom_viewport_x $1"; }
+posy(){ ra_config_args="$ra_config_args custom_viewport_y $1"; }
+
+# Smooth and bezel-mode
+if [ "$bezel_mode" == "1" ]; then
+  [ "$filter" == "crt720" ] && width 877 && posx 201
+  [ "$filter" == "gpu720" ] && smooth false && width 877 && posx 201
+  [ "$filter" == "ppu" ] && smooth false && width 768 && posx 256
+  ratio 22 && overlay true && overlay_file default.cfg && height 672 && posy 24 && int_scale true
+fi
+[ "$filter" == "crt720" ] && overlay true
+[ "$filter" == "crt720" ] && [ -z "$no_smooth" ] && smooth true
+[ "$filter" == "crt720" ] && [ ! -z "$no_smooth" ] && smooth false
+[ "$filter" == "gpu720" ] && [ ! -z "$smooth43" ] && smooth true
+
+# Set config for standalone launch mode
+if [ -z "${corename// }" ]; then
+    ra_config_args="$ra_config_args savefile_directory /var/saves/CLV-Z-RETROARCH"
+    ra_config_args="$ra_config_args savestate_directory /var/saves/CLV-Z-RASAVESTATES"
+    ra_config_args="$ra_config_args savestate_auto_save false"
+    ra_config_args="$ra_config_args savestate_auto_load false"
+    ra_config_args="$ra_config_args autosave_interval 0"
+fi
+
+[ ! -z "$ra_config_args" ] && retroarch_watchdog --configEdit /etc/libretro/retroarch.cfg $ra_config_args
+
+#### Runtime ###############################################################
+
+if [ -f "/media/hakchi/RA_DEV_MODE" ]; then #Devmode Active (Record current session)
+  if [ -z "${corename// }" ]; then
+    rm -f /media/Development_RetroArch.log
+    echo "Pre RA load Core Temp: $(more /sys/devices/virtual/thermal/thermal_zone0/temp)" >> /media/Development_RA_temp.log
+    retroarch -c "$HOME/retroarch.cfg" -vf > /media/Development_RetroArch.log 2>&1 &
+  else
+    rm -f /media/Development_RetroArch.log
+    echo "Pre RA load Core Temp: $(more /sys/devices/virtual/thermal/thermal_zone0/temp)" >> /media/Development_RA_temp.log
+    retroarch -c "$HOME/retroarch.cfg" -vfL "$core" "$rom" "$extra" > /media/Development_RetroArch.log 2>&1 &
+  fi
+else
+  if [ -z "${corename// }" ]; then
+    retroarch -c "$HOME/retroarch.cfg" -vf &
+  fi
+  if [ "$debug" == "0" ]; then #Default
+    retroarch -c "$HOME/retroarch.cfg" -vfL "$core" "$rom" "$extra" &
+  fi
+  if [ "$debug" == "1" ]; then #Verbose USB mode
+    retroarch -c "$HOME/retroarch.cfg" -vfL "$core" "$rom" "$extra" > "/media/${filename}_RetroArch.log" 2>&1 &
+  fi
+  if [ "$debug" == "2" ]; then #Verbose NAND mode
+    retroarch -c "$HOME/retroarch.cfg" -vfL "$core" "$rom" "$extra" > "/tmp/${filename}_RetroArch.log" 2>&1 &
+  fi
+fi
+
+#### Watchdog ##############################################################
+
+# Set Watchdog Arguments
+watchdog_args="$!"
+# Demo mode enabled
+[ ! -z "$demo" ] && watchdog_args="$watchdog_args --demo"
+# Set Screenshot Args
+[ ! -z "$screenshot" ] && [ -z "$nosaves" ] && watchdog_args="$watchdog_args --screenshot $screenshot"
+# Load Time Played
+[ -f "$timefile_load" ] && watchdog_args="$watchdog_args --time $(cat "$timefile_load")"
+[ -z "$demo" ] && watchdog_args="$watchdog_args --timePath $timefile_save"
+
+# Create output folders
+[ ! -z "$save" ] && mkdir -p "$(dirname "$save")"
+[ ! -z "$sram" ] && mkdir -p "$(dirname "$sram")"
+[ ! -z "$screenshot" ] && mkdir -p "$(dirname "$screenshot")"
+
+# Run retroarch watchdog
+retroarch_watchdog $watchdog_args
+
+#### Cleanup ###############################################################
+
+# Saves!
+[ ! -z "$save" ] && [ -f "$autosave" ] && [ -z "$nosaves" ] && gzip -f "$autosave" && mv -f "$autosave.gz" "$save"
+
+# Restore Retroarch Config
+retroarch_watchdog --configRestore /etc/libretro/retroarch.cfg
+
+# Copy savestates to USB if any and delete cache folder
+if [ -d "/media/hakchi" ] && ls "/var/cache/retroarch/$id".*[^auto]; then
+  [ ! -d "/media/data/ra_savestates/$title_code" ] && mkdir -p "/media/data/ra_savestates/$title_code"
+  cp "/var/cache/retroarch/$id".*[^auto] "/media/data/ra_savestates/$title_code"
+fi
+rm -rf /var/cache/retroarch/
+
+#Remove network drive mount if Hakchi Mount mod is enabled
+if [ ! -f "$rootfs/etc/hakchi_mount_mod" ]; then
+  umount "/var/mount" && rm -rf "/var/mount"
+fi
+
+if [ -f "/media/hakchi/RA_DEV_MODE" ]; then #Devmode Active (Record current session)
+  echo "Post RA load Core Temp: $(more /sys/devices/virtual/thermal/thermal_zone0/temp)" >> /media/Development_RA_temp.log
+fi
+
+# Back to the shell
+uistart

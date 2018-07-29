@@ -248,6 +248,12 @@ static const bool overlay_hide_in_menu = true;
 
 static const bool display_keyboard_overlay = false;
 
+#ifdef HAKCHI
+static const float default_input_overlay_opacity = 0.5f;
+#else
+static const float default_input_overlay_opacity = 0.7f;
+#endif
+
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 
@@ -706,7 +712,9 @@ static const unsigned midi_volume = 100;
 /* Only applies to Android 7.0 (API 24) and up */
 static const bool sustained_performance_mode = false;
 
-#if defined(ANDROID)
+#if defined(HAKCHI)
+static char buildbot_server_url[] = "http://hakchicloud.com/Libretro_Cores/";
+#elif defined(ANDROID)
 #if defined(ANDROID_ARM_V7)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/";
 #elif defined(ANDROID_ARM)

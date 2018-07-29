@@ -27,6 +27,10 @@
 #include "core_type.h"
 #include "core.h"
 
+#ifdef HAVE_MENU
+#include "menu/menu_input.h"
+#endif
+
 RETRO_BEGIN_DECLS
 
 enum rarch_ctl_state
@@ -271,6 +275,18 @@ typedef struct global
          } resolutions;
       } screen;
    } console;
+   /* Settings and/or global states specific to menus */
+   struct
+   {
+#ifdef HAVE_MENU
+      retro_time_t prev_start_time ;
+      retro_time_t noop_press_time ;
+      retro_time_t noop_start_time  ;
+      retro_time_t action_start_time  ;
+      retro_time_t action_press_time ;
+      enum menu_action prev_action ;
+#endif
+   } menu;
 } global_t;
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data);

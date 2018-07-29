@@ -275,8 +275,13 @@ static void* ui_companion_qt_init(void)
 
    listWidget = mainwindow->playlistListWidget();
 
-   widget = new QWidget(mainwindow);
+   widget = new FileDropWidget(mainwindow);
    widget->setObjectName("tableWidget");
+   widget->setContextMenuPolicy(Qt::CustomContextMenu);
+
+   QObject::connect(widget, SIGNAL(filesDropped(QStringList)), mainwindow, SLOT(onPlaylistFilesDropped(QStringList)));
+   QObject::connect(widget, SIGNAL(deletePressed()), mainwindow, SLOT(deleteCurrentPlaylistItem()));
+   QObject::connect(widget, SIGNAL(customContextMenuRequested(const QPoint&)), mainwindow, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
 
    layout = new QVBoxLayout();
    layout->addWidget(mainwindow->contentTableWidget());
@@ -532,15 +537,12 @@ static void* ui_companion_qt_init(void)
    /* setting the last tab must come after setting the view type */
    if (qsettings->contains("save_last_tab"))
    {
-      if (qsettings->contains("last_tab"))
-      {
-         int lastTabIndex = qsettings->value("last_tab", 0).toInt();
+      int lastTabIndex = qsettings->value("last_tab", 0).toInt();
 
-         if (lastTabIndex >= 0 && browserAndPlaylistTabWidget->count() > lastTabIndex)
-         {
-            browserAndPlaylistTabWidget->setCurrentIndex(lastTabIndex);
-            mainwindow->onTabWidgetIndexChanged(lastTabIndex);
-         }
+      if (lastTabIndex >= 0 && browserAndPlaylistTabWidget->count() > lastTabIndex)
+      {
+         browserAndPlaylistTabWidget->setCurrentIndex(lastTabIndex);
+         mainwindow->onTabWidgetIndexChanged(lastTabIndex);
       }
    }
    else

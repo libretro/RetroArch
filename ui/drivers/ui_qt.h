@@ -34,6 +34,7 @@
 #include <QImage>
 #include <QPointer>
 #include <QProgressBar>
+#include <QElapsedTimer>
 
 extern "C" {
 #include <retro_assert.h>
@@ -64,6 +65,8 @@ class QFormLayout;
 class QStyle;
 class QScrollArea;
 class QSlider;
+class QDragEnterEvent;
+class QDropEvent;
 class LoadCoreWindow;
 class MainWindow;
 class ThumbnailWidget;
@@ -138,6 +141,20 @@ protected slots:
    void selectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 };
 
+class FileDropWidget : public QWidget
+{
+   Q_OBJECT
+public:
+   FileDropWidget(QWidget *parent = 0);
+signals:
+   void filesDropped(QStringList files);
+   void deletePressed();
+protected:
+   void dragEnterEvent(QDragEnterEvent *event);
+   void dropEvent(QDropEvent *event);
+   void keyPressEvent(QKeyEvent *event);
+};
+
 class TableWidget : public QTableWidget
 {
    Q_OBJECT
@@ -145,7 +162,8 @@ public:
    TableWidget(QWidget *parent = 0);
 signals:
    void enterPressed();
-protected slots:
+   void deletePressed();
+protected:
    void keyPressEvent(QKeyEvent *event);
 };
 
@@ -161,6 +179,27 @@ public:
 
 private slots:
    void onLastWindowClosed();
+};
+
+class PlaylistEntryDialog : public QDialog
+{
+   Q_OBJECT
+public:
+   PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent = 0);
+   const QHash<QString, QString> getSelectedCore();
+   const QString getSelectedDatabase();
+public slots:
+   bool showDialog();
+   void hideDialog();
+   void onAccepted();
+   void onRejected();
+private:
+   void loadPlaylistOptions();
+
+   MainWindow *m_mainwindow;
+   QSettings *m_settings;
+   QComboBox *m_coreComboBox;
+   QComboBox *m_databaseComboBox;
 };
 
 class ViewOptionsDialog : public QDialog
@@ -261,6 +300,7 @@ public:
       MSGBOX_TYPE_INFO,
       MSGBOX_TYPE_WARNING,
       MSGBOX_TYPE_ERROR,
+      MSGBOX_TYPE_QUESTION,
    };
 
    MainWindow(QWidget *parent = NULL);
@@ -288,7 +328,7 @@ public:
    QString getThemeString(Theme theme);
    QHash<QString, QString> getSelectedCore();
    void showStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
-   bool showMessageBox(QString msg, MessageBoxType msgType = MSGBOX_TYPE_INFO, Qt::WindowModality modality = Qt::ApplicationModal);
+   bool showMessageBox(QString msg, MessageBoxType msgType = MSGBOX_TYPE_INFO, Qt::WindowModality modality = Qt::ApplicationModal, bool showDontAsk = true);
    bool setCustomThemeFile(QString filePath);
    void setCustomThemeString(QString qss);
    const QString& customThemeString() const;
@@ -298,6 +338,10 @@ public:
    ViewType getCurrentViewType();
    void setAllPlaylistsListMaxCount(int count);
    void setAllPlaylistsGridMaxCount(int count);
+   PlaylistEntryDialog* playlistEntryDialog();
+   void addFilesToPlaylist(QStringList files);
+   QString getCurrentPlaylistPath();
+   QHash<QString, QString> getCurrentContentHash();
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -320,6 +364,7 @@ public slots:
    void loadContent(const QHash<QString, QString> &contentHash);
    void onStartCoreClicked();
    void onTableWidgetEnterPressed();
+   void onTableWidgetDeletePressed();
    void selectBrowserDir(QString path);
    void resizeThumbnails(bool one, bool two, bool three);
    void onResizeThumbnailOne();
@@ -335,6 +380,8 @@ public slots:
    void onIconViewClicked();
    void onListViewClicked();
    void onTabWidgetIndexChanged(int index);
+   void deleteCurrentPlaylistItem();
+   void onFileDropWidgetContextMenuRequested(const QPoint &pos);
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
@@ -365,6 +412,7 @@ private slots:
    void onPendingItemUpdates();
    void onGridItemDoubleClicked();
    void onGridItemClicked();
+   void onPlaylistFilesDropped(QStringList files);
 
 private:
    void setCurrentCoreLabel();
@@ -432,6 +480,8 @@ private:
    QPointer<ThumbnailWidget> m_currentGridWidget;
    int m_allPlaylistsListMaxCount;
    int m_allPlaylistsGridMaxCount;
+   PlaylistEntryDialog *m_playlistEntryDialog;
+   QElapsedTimer m_statusMessageElapsedTimer;
 
 protected:
    void closeEvent(QCloseEvent *event);

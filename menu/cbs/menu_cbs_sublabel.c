@@ -41,6 +41,7 @@
 #include "../../retroarch.h"
 #include "../../content.h"
 #include "../../configuration.h"
+#include "../../managers/cheat_manager.h"
 
 #define default_sublabel_macro(func_name, lbl) \
   static int (func_name)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
@@ -209,6 +210,26 @@ default_sublabel_macro(action_bind_sublabel_rewind,                        MENU_
 default_sublabel_macro(action_bind_sublabel_rewind_granularity,            MENU_ENUM_SUBLABEL_REWIND_GRANULARITY)
 default_sublabel_macro(action_bind_sublabel_rewind_buffer_size,            MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE)
 default_sublabel_macro(action_bind_sublabel_rewind_buffer_size_step,       MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP)
+default_sublabel_macro(action_bind_sublabel_cheat_idx,                     MENU_ENUM_SUBLABEL_CHEAT_IDX)
+default_sublabel_macro(action_bind_sublabel_cheat_match_idx,               MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX)
+default_sublabel_macro(action_bind_sublabel_cheat_big_endian,              MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN)
+default_sublabel_macro(action_bind_sublabel_cheat_start_or_cont,           MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT)
+default_sublabel_macro(action_bind_sublabel_cheat_start_or_restart,        MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART)
+default_sublabel_macro(action_bind_sublabel_cheat_search_exact,            MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT)
+default_sublabel_macro(action_bind_sublabel_cheat_search_lt,               MENU_ENUM_SUBLABEL_CHEAT_SEARCH_LT)
+default_sublabel_macro(action_bind_sublabel_cheat_search_gt,               MENU_ENUM_SUBLABEL_CHEAT_SEARCH_GT)
+default_sublabel_macro(action_bind_sublabel_cheat_search_eq,               MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQ)
+default_sublabel_macro(action_bind_sublabel_cheat_search_neq,              MENU_ENUM_SUBLABEL_CHEAT_SEARCH_NEQ)
+default_sublabel_macro(action_bind_sublabel_cheat_search_eqplus,           MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS)
+default_sublabel_macro(action_bind_sublabel_cheat_search_eqminus,          MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS)
+default_sublabel_macro(action_bind_sublabel_cheat_add_matches,             MENU_ENUM_SUBLABEL_CHEAT_ADD_MATCHES)
+default_sublabel_macro(action_bind_sublabel_cheat_view_matches,            MENU_ENUM_SUBLABEL_CHEAT_VIEW_MATCHES)
+default_sublabel_macro(action_bind_sublabel_cheat_create_option,           MENU_ENUM_SUBLABEL_CHEAT_CREATE_OPTION)
+default_sublabel_macro(action_bind_sublabel_cheat_delete_option,           MENU_ENUM_SUBLABEL_CHEAT_DELETE_OPTION)
+default_sublabel_macro(action_bind_sublabel_cheat_add_new_top,             MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP)
+default_sublabel_macro(action_bind_sublabel_cheat_add_new_bottom,          MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM)
+default_sublabel_macro(action_bind_sublabel_cheat_address_bit_position,    MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION)
+default_sublabel_macro(action_bind_sublabel_cheat_delete_all,              MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL)
 default_sublabel_macro(action_bind_sublabel_libretro_log_level,            MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL)
 default_sublabel_macro(action_bind_sublabel_perfcnt_enable,                MENU_ENUM_SUBLABEL_PERFCNT_ENABLE)
 default_sublabel_macro(action_bind_sublabel_savestate_auto_save,           MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE)
@@ -304,6 +325,8 @@ default_sublabel_macro(action_bind_sublabel_undo_save_state,                    
 default_sublabel_macro(action_bind_sublabel_accounts_retro_achievements,           MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS)
 default_sublabel_macro(action_bind_sublabel_accounts_list,                         MENU_ENUM_SUBLABEL_ACCOUNTS_LIST)
 default_sublabel_macro(action_bind_sublabel_input_meta_rewind,                     MENU_ENUM_SUBLABEL_INPUT_META_REWIND)
+default_sublabel_macro(action_bind_sublabel_input_meta_cheat_details,              MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_DETAILS)
+default_sublabel_macro(action_bind_sublabel_input_meta_cheat_search,               MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH)
 default_sublabel_macro(action_bind_sublabel_restart_content,                       MENU_ENUM_SUBLABEL_RESTART_CONTENT)
 default_sublabel_macro(action_bind_sublabel_save_current_config_override_core,     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE)
 default_sublabel_macro(action_bind_sublabel_save_current_config_override_content_dir,
@@ -416,6 +439,7 @@ default_sublabel_macro(action_bind_sublabel_shader_preset_parameters,           
 default_sublabel_macro(action_bind_sublabel_cheat_apply_changes,                   MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES)
 default_sublabel_macro(action_bind_sublabel_cheat_num_passes,                      MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES)
 default_sublabel_macro(action_bind_sublabel_cheat_file_load,                       MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD)
+default_sublabel_macro(action_bind_sublabel_cheat_file_load_append,                MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND)
 default_sublabel_macro(action_bind_sublabel_cheat_file_save_as,                    MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS)
 default_sublabel_macro(action_bind_sublabel_quick_menu,                            MENU_ENUM_SUBLABEL_CONTENT_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_core_information,                      MENU_ENUM_SUBLABEL_CORE_INFORMATION)
@@ -541,6 +565,29 @@ static int action_bind_sublabel_remap_sublabel(
    return 0;
 }
 
+static int action_bind_sublabel_cheat_desc(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   unsigned offset = (type - MENU_SETTINGS_CHEAT_BEGIN);
+
+   if ( cheat_manager_state.cheats )
+   {
+      if ( cheat_manager_state.cheats[offset].handler == CHEAT_HANDLER_TYPE_EMU)
+      {
+         snprintf(s, len, "Emulator-Handled") ;
+      }
+      else
+      {
+         snprintf(s, len, "RetroArch-Handled") ;
+      }
+   }
+
+   return 0;
+}
+
 #ifdef HAVE_NETWORKING
 static int action_bind_sublabel_netplay_room(
       file_list_t *list,
@@ -653,6 +700,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_sublabel);
    }
 
+   if (type >= MENU_SETTINGS_CHEAT_BEGIN
+      && type <= MENU_SETTINGS_CHEAT_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_desc);
+   }
+
    if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN
       && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_END)
    {
@@ -713,6 +766,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_file_load);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_file_load_append);
             break;
          case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_apply_changes);
@@ -1063,6 +1119,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_REWIND_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_rewind);
             break;
+         case MENU_ENUM_LABEL_CHEAT_DETAILS_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_cheat_details);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_cheat_search);
+            break;
          case MENU_ENUM_LABEL_ACCOUNTS_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_accounts_list);
             break;
@@ -1338,6 +1400,66 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rewind_buffer_size_step);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_IDX:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_idx);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_MATCH_IDX:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_match_idx);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_BIG_ENDIAN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_big_endian);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_start_or_cont);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_START_OR_RESTART:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_start_or_restart);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_search_exact);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_SEARCH_LT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_search_lt);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_SEARCH_GT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_search_gt);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_SEARCH_EQ:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_search_eq);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_search_neq);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_search_eqplus);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_search_eqminus);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_ADD_MATCHES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_add_matches);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_VIEW_MATCHES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_view_matches);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_CREATE_OPTION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_create_option);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_DELETE_OPTION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_delete_option);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_add_new_top);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_add_new_bottom);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_address_bit_position);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_delete_all);
             break;
          case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_slowmotion_ratio);

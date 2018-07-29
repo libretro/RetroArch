@@ -1488,7 +1488,7 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
    SETTING_FLOAT("audio_volume",             &settings->floats.audio_volume, true, audio_volume, false);
    SETTING_FLOAT("audio_mixer_volume",       &settings->floats.audio_mixer_volume, true, audio_mixer_volume, false);
 #ifdef HAVE_OVERLAY
-   SETTING_FLOAT("input_overlay_opacity",    &settings->floats.input_overlay_opacity, true, 0.7f, false);
+   SETTING_FLOAT("input_overlay_opacity",    &settings->floats.input_overlay_opacity, true, default_input_overlay_opacity, false);
    SETTING_FLOAT("input_overlay_scale",      &settings->floats.input_overlay_scale, true, 1.0f, false);
 #endif
 #ifdef HAVE_MENU
