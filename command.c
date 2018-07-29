@@ -93,6 +93,7 @@
 #include "retroarch.h"
 #include "configuration.h"
 #include "input/input_remapping.h"
+#include "version.h"
 
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE           4096
@@ -130,6 +131,8 @@ struct command
 #endif
 };
 
+static bool command_version(const char *arg);
+
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
 static bool command_read_ram(const char *arg);
 static bool command_write_ram(const char *arg);
@@ -137,6 +140,7 @@ static bool command_write_ram(const char *arg);
 
 static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",      command_set_shader,  "<shader path>" },
+   { "VERSION",         command_version,     "No argument"},
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
    { "READ_CORE_RAM",   command_read_ram,    "<address> <number of bytes>" },
    { "WRITE_CORE_RAM",  command_write_ram,   "<address> <byte1> <byte2> ..." },
@@ -245,29 +249,41 @@ bool command_set_shader(const char *arg)
    return menu_shader_manager_set_preset(shader, type, arg);
 }
 
+static bool command_version(const char* arg)
+{
+      char reply[256] = {0};
+
+      sprintf(reply, "%s\n", PACKAGE_VERSION);
+      command_reply(reply, strlen(reply));
+      return true;
+}
+
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
+#define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
 {
    cheevos_var_t var;
    unsigned i;
-   char reply[256]      = {0};
+   char  *reply         = NULL;
    const uint8_t * data = NULL;
    char *reply_at       = NULL;
+   unsigned int nbytes  = 0;
+   unsigned int alloc_size = 0;
+   int          addr    = -1;
 
-   reply[0]             = '\0';
+   if (sscanf(arg, "%x %d", &addr, &nbytes) != 2)
+      return true;
+   alloc_size = 40 + nbytes * 3; //We alloc more than needed, saving 20 bytes is not really relevant
+   reply = (char*) malloc(alloc_size);
+   reply[0] = '\0';
+   reply_at = reply + sprintf(reply, SMY_CMD_STR " %x", addr);
 
-   strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
-   reply_at = reply + strlen("READ_CORE_RAM ");
-   strlcpy(reply_at, arg, sizeof(reply)-strlen(reply));
-
-   var.value = strtoul(reply_at, (char**)&reply_at, 16);
+   var.value = addr;
    cheevos_var_patch_addr(&var, cheevos_get_console());
    data = cheevos_var_get_memory(&var);
 
    if (data)
    {
-      unsigned nbytes = strtol(reply_at, NULL, 10);
-
       for (i=0;i<nbytes;i++)
          sprintf(reply_at+3*i, " %.2X", data[i]);
       reply_at[3*nbytes] = '\n';
@@ -278,9 +294,11 @@ static bool command_read_ram(const char *arg)
       strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
       command_reply(reply, reply_at+strlen(" -1\n") - reply);
    }
+   free(reply);
 
    return true;
 }
+#undef SMY_CMD_STR
 
 static bool command_write_ram(const char *arg)
 {
@@ -332,7 +350,7 @@ static bool command_get_arg(const char *tok,
       if (str == tok)
       {
          const char *argument = str + strlen(action_map[i].str);
-         if (*argument != ' ')
+         if (*argument != ' ' && *argument != '\0')
             return false;
 
          if (arg)
