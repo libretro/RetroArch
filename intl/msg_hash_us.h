@@ -4176,3 +4176,5 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
       "Are you sure you want to delete the item \"%1\"?")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
       "Please choose a single playlist first.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DELETE,
+      "Delete")

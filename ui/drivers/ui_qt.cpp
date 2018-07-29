@@ -277,9 +277,11 @@ static void* ui_companion_qt_init(void)
 
    widget = new FileDropWidget(mainwindow);
    widget->setObjectName("tableWidget");
+   widget->setContextMenuPolicy(Qt::CustomContextMenu);
 
    QObject::connect(widget, SIGNAL(filesDropped(QStringList)), mainwindow, SLOT(onPlaylistFilesDropped(QStringList)));
    QObject::connect(widget, SIGNAL(deletePressed()), mainwindow, SLOT(deleteCurrentPlaylistItem()));
+   QObject::connect(widget, SIGNAL(customContextMenuRequested(const QPoint&)), mainwindow, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
 
    layout = new QVBoxLayout();
    layout->addWidget(mainwindow->contentTableWidget());

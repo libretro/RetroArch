@@ -991,6 +991,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_dirTree->setContextMenuPolicy(Qt::CustomContextMenu);
    m_listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+   m_gridLayoutWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 
    connect(m_searchLineEdit, SIGNAL(returnPressed()), this, SLOT(onSearchEnterPressed()));
    connect(m_searchLineEdit, SIGNAL(textEdited(const QString&)), this, SLOT(onSearchLineEditEdited(const QString&)));
@@ -1014,6 +1015,7 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(viewTypeIconsAction, SIGNAL(triggered()), this, SLOT(onIconViewClicked()));
    connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
    connect(m_gridLayoutWidget, SIGNAL(filesDropped(QStringList)), this, SLOT(onPlaylistFilesDropped(QStringList)));
+   connect(m_gridLayoutWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
 
    /* make sure these use an auto connection so it will be queued if called from a different thread (some facilities in RA log messages from other threads) */
    connect(this, SIGNAL(gotLogMessage(const QString&)), this, SLOT(onGotLogMessage(const QString&)), Qt::AutoConnection);
@@ -1442,6 +1444,30 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowM
       return false;
 
    return true;
+}
+
+void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
+{
+   QScopedPointer<QMenu> menu;
+   QScopedPointer<QAction> deleteAction;
+   QPointer<QAction> selectedAction;
+   QPoint cursorPos = QCursor::pos();
+
+   menu.reset(new QMenu(this));
+
+   deleteAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE)), this));
+
+   menu->addAction(deleteAction.data());
+
+   selectedAction = menu->exec(cursorPos);
+
+   if (!selectedAction)
+      return;
+
+   if (selectedAction == deleteAction.data())
+   {
+      deleteCurrentPlaylistItem();
+   }
 }
 
 void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
@@ -2408,37 +2434,51 @@ void MainWindow::onTableWidgetDeletePressed()
    deleteCurrentPlaylistItem();
 }
 
-void MainWindow::deleteCurrentPlaylistItem()
+QString MainWindow::getCurrentPlaylistPath()
+{
+   QListWidgetItem *playlistItem = m_listWidget->currentItem();
+   QHash<QString, QString> contentHash;
+   QString playlistPath;
+
+   if (!playlistItem)
+      return playlistPath;
+
+   playlistPath = playlistItem->data(Qt::UserRole).toString();
+
+   return playlistPath;
+}
+
+QHash<QString, QString> MainWindow::getCurrentContentHash()
 {
    QTableWidgetItem *contentItem = m_tableWidget->currentItem();
    QListWidgetItem *playlistItem = m_listWidget->currentItem();
    QHash<QString, QString> contentHash;
-   QString playlistPath;
-   QByteArray playlistArray;
    ViewType viewType = getCurrentViewType();
-   playlist_t *playlist = NULL;
-   const char *playlistData = NULL;
-   unsigned index = 0;
-   bool ok = false;
-
-   if (!playlistItem)
-      return;
-
-   playlistPath = playlistItem->data(Qt::UserRole).toString();
-
-   if (playlistPath.isEmpty())
-      return;
 
    if (viewType == VIEW_TYPE_LIST)
    {
       if (!contentItem)
-         return;
+         return contentHash;
 
       contentHash = contentItem->data(Qt::UserRole).value<QHash<QString, QString> >();
    }
    else if (viewType == VIEW_TYPE_ICONS)
       contentHash = m_currentGridHash;
-   else
+
+   return contentHash;
+}
+
+void MainWindow::deleteCurrentPlaylistItem()
+{
+   QString playlistPath = getCurrentPlaylistPath();
+   QByteArray playlistArray;
+   QHash<QString, QString> contentHash = getCurrentContentHash();
+   playlist_t *playlist = NULL;
+   const char *playlistData = NULL;
+   unsigned index = 0;
+   bool ok = false;
+
+   if (playlistPath.isEmpty())
       return;
 
    if (contentHash.isEmpty())
