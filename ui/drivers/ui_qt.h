@@ -34,6 +34,7 @@
 #include <QImage>
 #include <QPointer>
 #include <QProgressBar>
+#include <QElapsedTimer>
 
 extern "C" {
 #include <retro_assert.h>
@@ -339,6 +340,8 @@ public:
    void setAllPlaylistsGridMaxCount(int count);
    PlaylistEntryDialog* playlistEntryDialog();
    void addFilesToPlaylist(QStringList files);
+   QString getCurrentPlaylistPath();
+   QHash<QString, QString> getCurrentContentHash();
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -378,6 +381,7 @@ public slots:
    void onListViewClicked();
    void onTabWidgetIndexChanged(int index);
    void deleteCurrentPlaylistItem();
+   void onFileDropWidgetContextMenuRequested(const QPoint &pos);
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
@@ -477,6 +481,7 @@ private:
    int m_allPlaylistsListMaxCount;
    int m_allPlaylistsGridMaxCount;
    PlaylistEntryDialog *m_playlistEntryDialog;
+   QElapsedTimer m_statusMessageElapsedTimer;
 
 protected:
    void closeEvent(QCloseEvent *event);

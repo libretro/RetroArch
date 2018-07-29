@@ -276,16 +276,18 @@ static int action_right_cheat_delete_all(unsigned type, const char *label,
       bool wraparound)
 {
    bool refresh = false ;
-   char msg[256] ;
+   char msg[256];
 
    if ( ++cheat_manager_state.delete_state >= 5 )
    {
+      msg[0] = '\0';
       cheat_manager_state.delete_state = 0 ;
       cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU) ;
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
       menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-      snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS)) ;
+      strlcpy(msg,
+            msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS), sizeof(msg));
       msg[sizeof(msg) - 1] = 0;
 
       runloop_msg_queue_push(msg, 1, 180, true);
