@@ -34,6 +34,7 @@
 #include <QImage>
 #include <QPointer>
 #include <QProgressBar>
+#include <QElapsedTimer>
 
 extern "C" {
 #include <retro_assert.h>
@@ -480,6 +481,7 @@ private:
    int m_allPlaylistsListMaxCount;
    int m_allPlaylistsGridMaxCount;
    PlaylistEntryDialog *m_playlistEntryDialog;
+   QElapsedTimer m_statusMessageElapsedTimer;
 
 protected:
    void closeEvent(QCloseEvent *event);

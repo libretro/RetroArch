@@ -63,6 +63,7 @@ extern "C" {
 }
 
 #define TIMER_MSEC 1000 /* periodic timer for gathering statistics */
+#define STATUS_MSG_THROTTLE_MSEC 250
 
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE 99999
@@ -805,6 +806,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_allPlaylistsListMaxCount(0)
    ,m_allPlaylistsGridMaxCount(0)
    ,m_playlistEntryDialog(NULL)
+   ,m_statusMessageElapsedTimer()
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -1035,6 +1037,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_searchLineEdit->setFocus();
    m_loadCoreWindow->setWindowModality(Qt::ApplicationModal);
+
+   m_statusMessageElapsedTimer.start();
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
    resizeDocks(QList<QDockWidget*>() << m_searchDock, QList<int>() << 1, Qt::Vertical);
@@ -1784,7 +1788,14 @@ void MainWindow::onGotStatusMessage(QString msg, unsigned priority, unsigned dur
       msecDuration = 1000;
 
    if (status->currentMessage().isEmpty() || flush)
-      status->showMessage(msg, msecDuration);
+   {
+      if (m_statusMessageElapsedTimer.elapsed() >= STATUS_MSG_THROTTLE_MSEC)
+      {
+         qint64 msgDuration = qMax(msecDuration, STATUS_MSG_THROTTLE_MSEC);
+         m_statusMessageElapsedTimer.restart();
+         status->showMessage(msg, msgDuration);
+      }
+   }
 }
 
 void MainWindow::deferReloadPlaylists()
