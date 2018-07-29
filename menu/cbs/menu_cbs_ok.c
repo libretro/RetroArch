@@ -2674,13 +2674,14 @@ static int action_ok_cheat_add_top(const char *path,
 
    for (i = cheat_manager_state.size-2 ; i >=0 ; i--)
    {
-      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      memcpy(&cheat_manager_state.cheats[i+1],
+            &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
       cheat_manager_state.cheats[i+1].idx++ ;
    }
 
    memcpy(&cheat_manager_state.cheats[0], &tmp, sizeof(struct item_cheat )) ;
 
-   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_ADD_TOP_SUCCESS)) ;
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_TOP_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
    runloop_msg_queue_push(msg, 1, 180, true);
@@ -2691,15 +2692,17 @@ static int action_ok_cheat_add_top(const char *path,
 static int action_ok_cheat_add_bottom(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char msg[256] ;
+   char msg[256];
    bool refresh = false ;
-
    unsigned int new_size = cheat_manager_get_size() + 1;
+
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_ADD_BOTTOM_SUCCESS)) ;
+   msg[0] = '\0';
+   strlcpy(msg, 
+         msg_hash_to_str(MSG_CHEAT_ADD_BOTTOM_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
    runloop_msg_queue_push(msg, 1, 180, true);
@@ -2711,7 +2714,7 @@ static int action_ok_cheat_delete_all(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char msg[256] ;
-   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_DELETE_ALL_INSTRUCTIONS)) ;
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_ALL_INSTRUCTIONS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
    runloop_msg_queue_push(msg, 1, 240, true);
@@ -2743,7 +2746,7 @@ static int action_ok_cheat_add_new_after(const char *path,
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_ADD_AFTER_SUCCESS)) ;
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_AFTER_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
    runloop_msg_queue_push(msg, 1, 180, true);
@@ -2771,13 +2774,15 @@ static int action_ok_cheat_add_new_before(const char *path,
       cheat_manager_state.cheats[i+1].idx++ ;
    }
 
-   memcpy(&cheat_manager_state.cheats[tmp.idx], &tmp, sizeof(struct item_cheat )) ;
-   memcpy(&cheat_manager_state.working_cheat, &tmp, sizeof(struct item_cheat )) ;
+   memcpy(&cheat_manager_state.cheats[tmp.idx],
+         &tmp, sizeof(struct item_cheat )) ;
+   memcpy(&cheat_manager_state.working_cheat,
+         &tmp, sizeof(struct item_cheat )) ;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_ADD_BEFORE_SUCCESS)) ;
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_BEFORE_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
    runloop_msg_queue_push(msg, 1, 180, true);
@@ -2810,7 +2815,7 @@ static int action_ok_cheat_copy_before(const char *path,
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_COPY_BEFORE_SUCCESS)) ;
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_BEFORE_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
    runloop_msg_queue_push(msg, 1, 180, true);
@@ -2844,7 +2849,7 @@ static int action_ok_cheat_copy_after(const char *path,
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_COPY_AFTER_SUCCESS)) ;
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_AFTER_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
    runloop_msg_queue_push(msg, 1, 180, true);
@@ -2872,7 +2877,7 @@ static int action_ok_cheat_delete(const char *path,
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_DELETE_SUCCESS)) ;
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
    runloop_msg_queue_push(msg, 1, 180, true);

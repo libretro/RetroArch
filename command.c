@@ -198,8 +198,7 @@ static struct sockaddr_storage lastcmd_net_source;
 static socklen_t lastcmd_net_source_len;
 #endif
 
-#ifdef HAVE_CHEEVOS
-#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
+#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
 static bool command_reply(const char * data, size_t len)
 {
    switch (lastcmd_source)
@@ -225,7 +224,6 @@ static bool command_reply(const char * data, size_t len)
 
    return false;
 }
-#endif
 #endif
 
 bool command_set_shader(const char *arg)
@@ -254,7 +252,9 @@ static bool command_version(const char* arg)
       char reply[256] = {0};
 
       sprintf(reply, "%s\n", PACKAGE_VERSION);
+#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
       command_reply(reply, strlen(reply));
+#endif
       return true;
 }
 

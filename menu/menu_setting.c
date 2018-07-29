@@ -443,10 +443,8 @@ static void setting_get_string_representation_uint_cheat_exact(void *data,
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-   {
       snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL),
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
-   }
 }
 
 static void setting_get_string_representation_uint_cheat_lt(void *data,
@@ -454,9 +452,7 @@ static void setting_get_string_representation_uint_cheat_lt(void *data,
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-   {
-      snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL));
-   }
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL), len);
 }
 
 static void setting_get_string_representation_uint_cheat_gt(void *data,
@@ -464,9 +460,7 @@ static void setting_get_string_representation_uint_cheat_gt(void *data,
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-   {
-      snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL));
-   }
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL), len);
 }
 
 static void setting_get_string_representation_uint_cheat_lte(void *data,
@@ -474,9 +468,7 @@ static void setting_get_string_representation_uint_cheat_lte(void *data,
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-   {
-      snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL));
-   }
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL), len);
 }
 
 static void setting_get_string_representation_uint_cheat_gte(void *data,
@@ -484,9 +476,7 @@ static void setting_get_string_representation_uint_cheat_gte(void *data,
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-   {
-      snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL));
-   }
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL), len);
 }
 
 static void setting_get_string_representation_uint_cheat_eq(void *data,
@@ -494,9 +484,7 @@ static void setting_get_string_representation_uint_cheat_eq(void *data,
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-   {
-      snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL));
-   }
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL), len);
 }
 
 static void setting_get_string_representation_uint_cheat_neq(void *data,
@@ -504,9 +492,7 @@ static void setting_get_string_representation_uint_cheat_neq(void *data,
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-   {
-      snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL));
-   }
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL), len);
 }
 
 static void setting_get_string_representation_uint_cheat_eqplus(void *data,
@@ -514,10 +500,8 @@ static void setting_get_string_representation_uint_cheat_eqplus(void *data,
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-   {
       snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL),
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
-   }
 }
 
 static void setting_get_string_representation_uint_cheat_eqminus(void *data,
@@ -525,10 +509,8 @@ static void setting_get_string_representation_uint_cheat_eqminus(void *data,
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-   {
       snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL),
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
-   }
 }
 
 static void setting_get_string_representation_uint_video_rotation(void *data,

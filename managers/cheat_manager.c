@@ -1317,8 +1317,8 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
    unsigned char *prev = cheat_manager_state.prev_memory_buf ;
    unsigned int curr_match_idx = 0;
 
-   if ( target_match_idx < 0 || target_match_idx > cheat_manager_state.num_matches-1)
-      return ;
+   if ( target_match_idx > cheat_manager_state.num_matches-1)
+      return;
 
    cheat_manager_setup_search_meta(cheat_manager_state.search_bit_size, &bytes_per_item, &mask, &bits);
 
