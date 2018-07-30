@@ -1166,7 +1166,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
 
       if (info.isFile())
       {
-         itemToAdd["label"] = info.baseName();
+         itemToAdd["label"] = info.completeBaseName();
          itemToAdd["path"] = path;
       }
    }
@@ -1267,7 +1267,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       }
       else
       {
-         fileBaseNameArray = fileInfo.baseName().toUtf8();
+         fileBaseNameArray = fileInfo.completeBaseName().toUtf8();
          pathArray = QDir::toNativeSeparators(fileName).toUtf8();
       }
 
