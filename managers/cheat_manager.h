@@ -150,6 +150,7 @@ struct cheat_manager
    unsigned num_matches ;
    bool  big_endian ;
    bool  memory_initialized ;
+   bool  memory_search_initialized ;
    unsigned int delete_state ;
 };
 
@@ -209,7 +210,7 @@ void cheat_manager_load_game_specific_cheats();
 
 void cheat_manager_save_game_specific_cheats();
 
-int cheat_manager_initialize_search(void *data, bool wraparound);
+int cheat_manager_initialize_memory(void *data, bool wraparound);
 int cheat_manager_search_exact(void *data, bool wraparound);
 int cheat_manager_search_lt(void *data, bool wraparound);
 int cheat_manager_search_gt(void *data, bool wraparound);

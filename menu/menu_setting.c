@@ -3449,7 +3449,7 @@ static bool setting_append_list(
                setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
                MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,&setting_get_string_representation_uint_as_enum,
                0,5,1) ;
-         (*list)[list_info->index - 1].action_ok = &cheat_manager_initialize_search;
+         (*list)[list_info->index - 1].action_ok = &cheat_manager_initialize_memory;
 
          CONFIG_BOOL(
                list, list_info,
