@@ -1250,12 +1250,12 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       if (files.count() == 1 && list.count() == 1 && i == 0)
       {
          fileBaseNameArray = selectedName.toUtf8();
-         pathArray = selectedPath.toUtf8();
+         pathArray = QDir::toNativeSeparators(selectedPath).toUtf8();
       }
       else
       {
          fileBaseNameArray = fileInfo.baseName().toUtf8();
-         pathArray = fileName.toUtf8();
+         pathArray = QDir::toNativeSeparators(fileName).toUtf8();
       }
 
       fileNameNoExten = fileBaseNameArray.constData();
@@ -1272,7 +1272,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       }
       else
       {
-         corePathArray = selectedCore.value("core_path").toUtf8();
+         corePathArray = QDir::toNativeSeparators(selectedCore.value("core_path")).toUtf8();
          coreNameArray = selectedCore.value("core_name").toUtf8();
          corePathData = corePathArray.constData();
          coreNameData = coreNameArray.constData();
@@ -1290,7 +1290,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
             if (list->size == 1)
             {
                /* assume archives with one file should have that file loaded directly */
-               pathArray = (QString(pathData) + "#" + list->elems[0].data).toUtf8();
+               pathArray = QDir::toNativeSeparators(QString(pathData) + "#" + list->elems[0].data).toUtf8();
                pathData = pathArray.constData();
             }
 
