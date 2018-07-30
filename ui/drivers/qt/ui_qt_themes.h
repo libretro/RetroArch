@@ -400,7 +400,7 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(""
    "   background-color:rgb(40,40,40);\n"
    "   border:3px solid %1;\n"
    "}\n"
-   "QScrollArea QWidget {\n"
+   "QWidget QScrollArea {\n"
    "background:rgb(25,25,25);\n"
    "}\n"
 );
