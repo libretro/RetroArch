@@ -372,6 +372,8 @@ PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent
    QDialog(parent)
    ,m_mainwindow(mainwindow)
    ,m_settings(mainwindow->settings())
+   ,m_nameLineEdit(new QLineEdit(this))
+   ,m_pathLineEdit(new QLineEdit(this))
    ,m_coreComboBox(new QComboBox(this))
    ,m_databaseComboBox(new QComboBox(this))
 {
@@ -396,6 +398,8 @@ PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent
    connect(this, SIGNAL(accepted()), this, SLOT(onAccepted()));
    connect(this, SIGNAL(rejected()), this, SLOT(onRejected()));
 
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME), m_nameLineEdit);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH), m_pathLineEdit);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE), m_coreComboBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE), databaseVBoxLayout);
 
@@ -411,11 +415,13 @@ void PlaylistEntryDialog::loadPlaylistOptions()
    unsigned i = 0;
    int j = 0;
 
+   m_nameLineEdit->clear();
+   m_pathLineEdit->clear();
    m_coreComboBox->clear();
    m_databaseComboBox->clear();
 
    m_coreComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK));
-   m_databaseComboBox->addItem(QString("<") + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) + ">");
+   m_databaseComboBox->addItem(QString("<") + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) + ">", QFileInfo(m_mainwindow->getCurrentPlaylistPath()).fileName().remove(file_path_str(FILE_PATH_LPL_EXTENSION)));
 
    core_info_get_list(&core_info_list);
 
@@ -480,9 +486,68 @@ void PlaylistEntryDialog::loadPlaylistOptions()
    }
 }
 
+void PlaylistEntryDialog::setEntryValues(const QHash<QString, QString> &contentHash)
+{
+   QString db;
+   QString coreName = contentHash.value("core_name");
+   int foundDB = 0;
+   int i = 0;
+
+   loadPlaylistOptions();
+
+   if (contentHash.isEmpty())
+   {
+      m_nameLineEdit->setText(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FIELD_MULTIPLE));
+      m_pathLineEdit->setText(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FIELD_MULTIPLE));
+      m_nameLineEdit->setEnabled(false);
+      m_pathLineEdit->setEnabled(false);
+   }
+   else
+   {
+      m_nameLineEdit->setEnabled(true);
+      m_pathLineEdit->setEnabled(true);
+      m_nameLineEdit->setText(contentHash.value("label"));
+      m_pathLineEdit->setText(contentHash.value("path"));
+   }
+
+   for (i = 0; i < m_coreComboBox->count(); i++)
+   {
+      const QHash<QString, QString> hash = m_coreComboBox->itemData(i, Qt::UserRole).value<QHash<QString, QString> >();
+
+      if (hash.isEmpty() || coreName.isEmpty())
+         continue;
+
+      if (hash.value("core_name") == coreName)
+      {
+         m_coreComboBox->setCurrentIndex(i);
+         break;
+      }
+   }
+
+   db = contentHash.value("db_name");
+
+   if (!db.isEmpty())
+   {
+      foundDB = m_databaseComboBox->findText(db);
+
+      if (foundDB >= 0)
+         m_databaseComboBox->setCurrentIndex(foundDB);
+   }
+}
+
 const QHash<QString, QString> PlaylistEntryDialog::getSelectedCore()
 {
    return m_coreComboBox->currentData(Qt::UserRole).value<QHash<QString, QString> >();
+}
+
+const QString PlaylistEntryDialog::getSelectedName()
+{
+   return m_nameLineEdit->text();
+}
+
+const QString PlaylistEntryDialog::getSelectedPath()
+{
+   return m_pathLineEdit->text();
 }
 
 const QString PlaylistEntryDialog::getSelectedDatabase()
@@ -498,9 +563,10 @@ void PlaylistEntryDialog::onRejected()
 {
 }
 
-bool PlaylistEntryDialog::showDialog()
+bool PlaylistEntryDialog::showDialog(const QHash<QString, QString> &hash)
 {
    loadPlaylistOptions();
+   setEntryValues(hash);
 
    if (exec() == QDialog::Accepted)
       return true;
@@ -1072,10 +1138,25 @@ void MainWindow::addFilesToPlaylist(QStringList files)
    QScopedPointer<QProgressDialog> dialog(NULL);
    PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
    QHash<QString, QString> selectedCore;
+   QHash<QString, QString> itemToAdd;
    QString selectedDatabase;
+   QString selectedName;
+   QString selectedPath;
    const char *currentPlaylistData = NULL;
    playlist_t *playlist = NULL;
    int i;
+
+   if (files.count() == 1)
+   {
+      QString path = files.at(0);
+      QFileInfo info(path);
+
+      if (info.isFile())
+      {
+         itemToAdd["label"] = info.baseName();
+         itemToAdd["path"] = path;
+      }
+   }
 
    if (currentItem)
    {
@@ -1090,15 +1171,23 @@ void MainWindow::addFilesToPlaylist(QStringList files)
 
    if (currentPlaylistPath == ALL_PLAYLISTS_TOKEN)
    {
-      ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal);
+      ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
       return;
    }
 
-   if (!playlistDialog->showDialog())
+   /* a blank itemToAdd means there will be multiple */
+   if (!playlistDialog->showDialog(itemToAdd))
       return;
 
+   selectedName = m_playlistEntryDialog->getSelectedName();
+   selectedPath = m_playlistEntryDialog->getSelectedPath();
    selectedCore = m_playlistEntryDialog->getSelectedCore();
    selectedDatabase = m_playlistEntryDialog->getSelectedDatabase();
+
+   if (selectedDatabase.isEmpty())
+      selectedDatabase = QFileInfo(currentPlaylistPath).fileName();
+   else
+      selectedDatabase += file_path_str(FILE_PATH_LPL_EXTENSION);
 
    dialog.reset(new QProgressDialog(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES), "Cancel", 0, 0, this));
    dialog->setWindowModality(Qt::ApplicationModal);
@@ -1157,13 +1246,23 @@ void MainWindow::addFilesToPlaylist(QStringList files)
          continue;
 
       fileInfo = fileName;
-      fileBaseNameArray = fileInfo.baseName().toUtf8();
+
+      if (files.count() == 1 && list.count() == 1 && i == 0)
+      {
+         fileBaseNameArray = selectedName.toUtf8();
+         pathArray = selectedPath.toUtf8();
+      }
+      else
+      {
+         fileBaseNameArray = fileInfo.baseName().toUtf8();
+         pathArray = fileName.toUtf8();
+      }
+
       fileNameNoExten = fileBaseNameArray.constData();
 
       /* a modal QProgressDialog calls processEvents() automatically in setValue() */
       dialog->setValue(i + 1);
 
-      pathArray = fileName.toUtf8();
       pathData = pathArray.constData();
 
       if (selectedCore.isEmpty())
@@ -1179,17 +1278,8 @@ void MainWindow::addFilesToPlaylist(QStringList files)
          coreNameData = coreNameArray.constData();
       }
 
-      if (selectedDatabase.isEmpty())
-      {
-         databaseArray = QFileInfo(currentPlaylistPath).fileName().toUtf8();
-         databaseData = databaseArray.constData();
-      }
-      else
-      {
-         selectedDatabase += file_path_str(FILE_PATH_LPL_EXTENSION);
-         databaseArray = selectedDatabase.toUtf8();
-         databaseData = databaseArray.constData();
-      }
+      databaseArray = selectedDatabase.toUtf8();
+      databaseData = databaseArray.constData();
 
       if (path_is_compressed_file(pathData))
       {
@@ -1450,25 +1540,172 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowM
    return true;
 }
 
+bool MainWindow::updateCurrentPlaylistEntry(const QHash<QString, QString> &contentHash)
+{
+   QString playlistPath = getCurrentPlaylistPath();
+   QString path;
+   QString label;
+   QString corePath;
+   QString coreName;
+   QString dbName;
+   QString crc32;
+   QByteArray playlistPathArray;
+   QByteArray pathArray;
+   QByteArray labelArray;
+   QByteArray corePathArray;
+   QByteArray coreNameArray;
+   QByteArray dbNameArray;
+   QByteArray crc32Array;
+   const char *playlistPathData = NULL;
+   const char *pathData = NULL;
+   const char *labelData = NULL;
+   const char *corePathData = NULL;
+   const char *coreNameData = NULL;
+   const char *dbNameData = NULL;
+   const char *crc32Data = NULL;
+   playlist_t *playlist = NULL;
+   unsigned index = 0;
+   bool ok = false;
+
+   if (playlistPath.isEmpty() || contentHash.isEmpty() || !contentHash.contains("index"))
+      return false;
+
+   index = contentHash.value("index").toUInt(&ok);
+
+   if (!ok)
+      return false;
+
+   path = contentHash.value("path");
+   label = contentHash.value("label");
+   coreName = contentHash.value("core_name");
+   corePath = contentHash.value("core_path");
+   dbName = contentHash.value("db_name");
+   crc32 = contentHash.value("crc32");
+
+   if (path.isEmpty() ||
+       label.isEmpty() ||
+       coreName.isEmpty() ||
+       corePath.isEmpty() ||
+       dbName.isEmpty() ||
+       crc32.isEmpty()
+      )
+      return false;
+
+   playlistPathArray = playlistPath.toUtf8();
+   pathArray = path.toUtf8();
+   labelArray = label.toUtf8();
+   coreNameArray = coreName.toUtf8();
+   corePathArray = corePath.toUtf8();
+   dbNameArray = (dbName + file_path_str(FILE_PATH_LPL_EXTENSION)).toUtf8();
+   crc32Array = crc32.toUtf8();
+
+   playlistPathData = playlistPathArray.constData();
+   pathData = pathArray.constData();
+   labelData = labelArray.constData();
+   coreNameData = coreNameArray.constData();
+   corePathData = corePathArray.constData();
+   dbNameData = dbNameArray.constData();
+   crc32Data = crc32Array.constData();
+
+   playlist = playlist_init(playlistPathData, COLLECTION_SIZE);
+
+   playlist_update(playlist, index, pathData, labelData,
+         corePathData, coreNameData, crc32Data, dbNameData);
+   playlist_write_file(playlist);
+   playlist_free(playlist);
+
+   reloadPlaylists();
+
+   return true;
+}
+
 void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 {
    QScopedPointer<QMenu> menu;
+   QScopedPointer<QAction> addFilesAction;
+   QScopedPointer<QAction> addFolderAction;
+   QScopedPointer<QAction> editAction;
    QScopedPointer<QAction> deleteAction;
    QPointer<QAction> selectedAction;
    QPoint cursorPos = QCursor::pos();
+   QHash<QString, QString> contentHash = getCurrentContentHash();
 
    menu.reset(new QMenu(this));
 
+   addFilesAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES)), this));
+   addFolderAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FOLDER)), this));
+   editAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_EDIT)), this));
    deleteAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE)), this));
 
-   menu->addAction(deleteAction.data());
+   menu->addAction(addFilesAction.data());
+   menu->addAction(addFolderAction.data());
+
+   if (!contentHash.isEmpty())
+   {
+      menu->addAction(editAction.data());
+      menu->addAction(deleteAction.data());
+   }
 
    selectedAction = menu->exec(cursorPos);
 
    if (!selectedAction)
       return;
 
-   if (selectedAction == deleteAction.data())
+   if (selectedAction == addFilesAction.data())
+   {
+      QStringList filePaths = QFileDialog::getOpenFileNames(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES));
+
+      if (!filePaths.isEmpty())
+         addFilesToPlaylist(filePaths);
+   }
+   else if (selectedAction == addFolderAction.data())
+   {
+      QString dirPath = QFileDialog::getExistingDirectory(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER), QString(), QFileDialog::ShowDirsOnly);
+
+      if (!dirPath.isEmpty())
+         addFilesToPlaylist(QStringList() << dirPath);
+   }
+   else if (selectedAction == editAction.data())
+   {
+      PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
+      QHash<QString, QString> selectedCore;
+      QString selectedDatabase;
+      QString selectedName;
+      QString selectedPath;
+      QString currentPlaylistPath = getCurrentPlaylistPath();
+
+      if (!playlistDialog->showDialog(contentHash))
+         return;
+
+      selectedName = m_playlistEntryDialog->getSelectedName();
+      selectedPath = m_playlistEntryDialog->getSelectedPath();
+      selectedCore = m_playlistEntryDialog->getSelectedCore();
+      selectedDatabase = m_playlistEntryDialog->getSelectedDatabase();
+
+      if (selectedCore.isEmpty())
+      {
+         selectedCore["core_name"] = "DETECT";
+         selectedCore["core_path"] = "DETECT";
+      }
+
+      if (selectedDatabase.isEmpty())
+      {
+         selectedDatabase = QFileInfo(currentPlaylistPath).fileName().remove(file_path_str(FILE_PATH_LPL_EXTENSION));
+      }
+
+      contentHash["label"] = selectedName;
+      contentHash["path"] = selectedPath;
+      contentHash["core_name"] = selectedCore.value("core_name");
+      contentHash["core_path"] = selectedCore.value("core_path");
+      contentHash["db_name"] = selectedDatabase;
+
+      if (!updateCurrentPlaylistEntry(contentHash))
+      {
+         ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+         return;
+      }
+   }
+   else if (selectedAction == deleteAction.data())
    {
       deleteCurrentPlaylistItem();
    }
@@ -1536,16 +1773,16 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
    menu->addAction(newPlaylistAction.data());
 
-   if (selectedItem)
-   {
-      hideAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_HIDE), this));
-      menu->addAction(hideAction.data());
-   }
-
    if (currentPlaylistFile.exists())
    {
       deletePlaylistAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST)) + "...", this));
       menu->addAction(deletePlaylistAction.data());
+   }
+
+   if (selectedItem)
+   {
+      hideAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_HIDE), this));
+      menu->addAction(hideAction.data());
    }
 
    for (j = 0; j < m_listWidget->count(); j++)
@@ -3813,7 +4050,7 @@ void MainWindow::addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &
    int zoomValue = m_zoomSlider->value();
 
    m_gridProgressBar->setMinimum(0);
-   m_gridProgressBar->setMaximum(items.count() - 1);
+   m_gridProgressBar->setMaximum(qMax(0, items.count() - 1));
    m_gridProgressBar->setValue(0);
 
    for (i = 0; i < items.count(); i++)
