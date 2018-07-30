@@ -217,6 +217,19 @@ FileDropWidget::FileDropWidget(QWidget *parent) :
    setAcceptDrops(true);
 }
 
+void FileDropWidget::paintEvent(QPaintEvent *event)
+{
+   QStyleOption o;
+   QPainter p;
+   o.initFrom(this);
+   p.begin(this);
+   style()->drawPrimitive(
+      QStyle::PE_Widget, &o, &p, this);
+   p.end();
+
+   QWidget::paintEvent(event);
+}
+
 void FileDropWidget::keyPressEvent(QKeyEvent *event)
 {
    if (event->key() == Qt::Key_Delete)
