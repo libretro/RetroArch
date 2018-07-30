@@ -455,14 +455,19 @@ void cheat_manager_free(void)
    if ( cheat_manager_state.prev_memory_buf )
       free(cheat_manager_state.prev_memory_buf) ;
 
+   if ( cheat_manager_state.matches )
+      free(cheat_manager_state.matches) ;
+
    cheat_manager_state.cheats = NULL ;
    cheat_manager_state.size = 0 ;
    cheat_manager_state.buf_size = 0 ;
    cheat_manager_state.prev_memory_buf = NULL ;
    cheat_manager_state.curr_memory_buf = NULL ;
+   cheat_manager_state.matches = NULL ;
    cheat_manager_state.total_memory_size = 0 ;
    cheat_manager_state.actual_memory_size = 0 ;
    cheat_manager_state.memory_initialized = false ;
+   cheat_manager_state.memory_search_initialized = false ;
 
 }
 
@@ -568,15 +573,15 @@ bool cheat_manager_get_game_specific_filename(char * cheat_filename, size_t max_
       return false ;
 
    cheat_filename[0] = '\0';
-   strncat(cheat_filename, settings->paths.path_cheat_database, max_length) ;
+   strlcat(cheat_filename, settings->paths.path_cheat_database, max_length-1) ;
    fill_pathname_slash(cheat_filename, max_length) ;
-   strncat(cheat_filename, core_name, max_length-strlen(cheat_filename)) ;
+   strlcat(cheat_filename, core_name, max_length-strlen(cheat_filename)-1) ;
    fill_pathname_slash(cheat_filename, max_length) ;
 
    if (!filestream_exists(cheat_filename))
        path_mkdir(cheat_filename);
 
-   strncat(cheat_filename, game_name, max_length-strlen(cheat_filename)) ;
+   strlcat(cheat_filename, game_name, max_length-strlen(cheat_filename)-1) ;
 
    return true ;
 
@@ -614,10 +619,11 @@ bool cheat_manager_alloc_if_empty(void)
    return true;
 }
 
-int cheat_manager_initialize_search(void *data, bool wraparound)
+int cheat_manager_initialize_memory(void *data, bool wraparound)
 {
    retro_ctx_memory_info_t meminfo ;
    bool refresh      = false;
+   bool is_search_initialization = (data != NULL) ;
 
    meminfo.id = RETRO_MEMORY_SYSTEM_RAM ;
    if (! core_get_memory(&meminfo) )
@@ -629,31 +635,35 @@ int cheat_manager_initialize_search(void *data, bool wraparound)
    cheat_manager_state.actual_memory_size = meminfo.size ;
    cheat_manager_state.curr_memory_buf = meminfo.data ;
    cheat_manager_state.total_memory_size = meminfo.size ;
-   cheat_manager_state.num_matches = 0 ;
+   cheat_manager_state.num_matches = (cheat_manager_state.total_memory_size*8)/((int)pow(2,cheat_manager_state.search_bit_size)) ;
    //ensure we're aligned on 4-byte boundary
    //if ( meminfo.size % 4 > 0 ) {
       //cheat_manager_state.total_memory_size = cheat_manager_state.total_memory_size + (4 - (meminfo.size%4)) ;
    //}
-   cheat_manager_state.prev_memory_buf = (uint8_t*) calloc(cheat_manager_state.total_memory_size, sizeof(uint8_t));
-   if (!cheat_manager_state.prev_memory_buf )
+   if ( is_search_initialization )
    {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true);
-      return 0 ;
-   }
-   cheat_manager_state.matches = (uint8_t*) calloc(cheat_manager_state.total_memory_size, sizeof(uint8_t));
-   if (!cheat_manager_state.matches )
-   {
-      free(cheat_manager_state.prev_memory_buf) ;
-      cheat_manager_state.prev_memory_buf = NULL ;
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true);
-      return 0 ;
-   }
+      cheat_manager_state.prev_memory_buf = (uint8_t*) calloc(cheat_manager_state.total_memory_size, sizeof(uint8_t));
+      if (!cheat_manager_state.prev_memory_buf )
+      {
+         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true);
+         return 0 ;
+      }
+      cheat_manager_state.matches = (uint8_t*) calloc(cheat_manager_state.total_memory_size, sizeof(uint8_t));
+      if (!cheat_manager_state.matches )
+      {
+         free(cheat_manager_state.prev_memory_buf) ;
+         cheat_manager_state.prev_memory_buf = NULL ;
+         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true);
+         return 0 ;
+      }
 
-   memset(cheat_manager_state.matches, 0xFF, cheat_manager_state.total_memory_size) ;
-   memcpy(cheat_manager_state.prev_memory_buf, cheat_manager_state.curr_memory_buf, cheat_manager_state.actual_memory_size);
-   cheat_manager_state.num_matches = (cheat_manager_state.total_memory_size*8)/((int)pow(2,cheat_manager_state.search_bit_size)) ;
+      memset(cheat_manager_state.matches, 0xFF, cheat_manager_state.total_memory_size) ;
+      memcpy(cheat_manager_state.prev_memory_buf, cheat_manager_state.curr_memory_buf, cheat_manager_state.actual_memory_size);
+      cheat_manager_state.memory_search_initialized = true ;
+   }
 
    cheat_manager_state.memory_initialized = true ;
+
 
    runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_SUCCESS), 1, 180, true);
    if ( !wraparound )
@@ -1135,7 +1145,7 @@ void cheat_manager_apply_retro_cheats(void)
       if (cheat_manager_state.cheats[i].handler != CHEAT_HANDLER_TYPE_RETRO || !cheat_manager_state.cheats[i].state)
          continue ;
       if ( !cheat_manager_state.memory_initialized )
-         cheat_manager_initialize_search(NULL, false) ;
+         cheat_manager_initialize_memory(NULL, false) ;
 
       /* If we're still not initialized, something must have gone wrong - just bail */
       if ( !cheat_manager_state.memory_initialized )
