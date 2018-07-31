@@ -2713,16 +2713,17 @@ static enum runloop_state runloop_check_state(
                }
                else
                {
-                  if ( global->menu.prev_action == action && global->menu.noop_press_time < 200000) //250ms
+                  if (  global->menu.prev_action == action && 
+                        global->menu.noop_press_time < 200000) /* 250ms */
                   {
-                     global->menu.action_start_time  = global->menu.prev_start_time ;
+                     global->menu.action_start_time = global->menu.prev_start_time ;
                      global->menu.action_press_time = cpu_features_get_time_usec() - global->menu.action_start_time;
                   }
                   else
                   {
-                     global->menu.prev_start_time = cpu_features_get_time_usec() ;
-                     global->menu.prev_action = action ;
-                     global->menu.action_press_time = 0 ;
+                     global->menu.prev_start_time   = cpu_features_get_time_usec() ;
+                     global->menu.prev_action       = action;
+                     global->menu.action_press_time = 0;
                   }
                }
             }

@@ -52,7 +52,7 @@ enum cheat_search_type
    CHEAT_SEARCH_TYPE_EQ,
    CHEAT_SEARCH_TYPE_NEQ,
    CHEAT_SEARCH_TYPE_EQPLUS,
-   CHEAT_SEARCH_TYPE_EQMINUS,
+   CHEAT_SEARCH_TYPE_EQMINUS
 };
 
 enum cheat_match_action_type
@@ -113,19 +113,19 @@ struct item_cheat
     * 1 : 11110000
     */
    unsigned int address_mask ;
-   //Whether to apply the cheat based on big-endian console memory or not
+   /* Whether to apply the cheat based on big-endian console memory or not */
    bool big_endian ;
    unsigned int rumble_type ;
    unsigned int rumble_value ;
    unsigned int rumble_prev_value ;
    unsigned int rumble_initialized ;
-   unsigned int rumble_port ; //0-15 for specific port, anything else means "all ports"
-   unsigned int rumble_primary_strength ; //0-65535
-   unsigned int rumble_primary_duration ; //in milliseconds
-   retro_time_t rumble_primary_end_time ; //clock value for when rumbling should stop
-   unsigned int rumble_secondary_strength ; //0-65535
-   unsigned int rumble_secondary_duration ; //in milliseconds
-   retro_time_t rumble_secondary_end_time ; //clock value for when rumbling should stop
+   unsigned int rumble_port ; /* 0-15 for specific port, anything else means "all ports" */
+   unsigned int rumble_primary_strength ; /* 0-65535 */
+   unsigned int rumble_primary_duration ; /* in milliseconds */
+   retro_time_t rumble_primary_end_time ; /* clock value for when rumbling should stop */
+   unsigned int rumble_secondary_strength ; /* 0-65535 */
+   unsigned int rumble_secondary_duration ; /* in milliseconds */
+   retro_time_t rumble_secondary_end_time ; /* clock value for when rumbling should stop */
 };
 
 struct cheat_manager
