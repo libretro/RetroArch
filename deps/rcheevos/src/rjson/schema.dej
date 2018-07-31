@@ -1,0 +1,75 @@
+//----------------------------------------------------------------------------
+
+struct gameid/GameID {
+  bool     success/Success;
+  unsigned gameid/GameID;
+};
+
+//----------------------------------------------------------------------------
+
+struct login/Login {
+  bool     success/Success;
+  string   user/User;
+  string   token/Token;
+  unsigned score/Score;
+  unsigned messages/Messages;
+};
+
+//----------------------------------------------------------------------------
+
+struct cheevo/Achievement {
+  unsigned id/ID;
+  string   memaddr/MemAddr;
+  string   title/Title;
+  string   description/Description;
+  unsigned points/Points;
+  string   author/Author;
+  string   badge/BadgeName;
+  unsigned flags/Flags;
+
+  unsigned long long modified/Modified;
+  unsigned long long created/Created;
+};
+
+struct lboard/Leaderboard {
+  unsigned id/ID;
+  string   mem/Mem;
+  string   format/Format;
+  string   title/Title;
+  string   description/Description;
+};
+
+struct patchdata/PatchData {
+  unsigned id/ID;
+  string   title/Title;
+  unsigned consoleid/ConsoleID;
+  unsigned topicid/ForumTopicID;
+  unsigned flags/Flags;
+  string   image_icon/ImageIcon;
+  string   image_title/ImageTitle;
+  string   image_ingame/ImageIngame;
+  string   image_boxart/ImageBoxArt;
+  string   publisher/Publisher;
+  string   developer/Developer;
+  string   genre/Genre;
+  string   released/Released;
+  bool     is_final/IsFinal;
+  string   console/ConsoleName;
+  string*  presence/RichPresencePatch;
+  cheevo   cheevos/Achievements[];
+  lboard   lboards/Leaderboards[];
+};
+
+struct patch/Patch {
+  bool      success/Success;
+  patchdata patchdata/PatchData;
+};
+
+//----------------------------------------------------------------------------
+
+struct unlocks/Unlocks {
+  bool     success/Success;
+  unsigned ids/UserUnlocks[];
+  unsigned gameid/GameID;
+  bool     hardcore/HardcoreMode;
+};
