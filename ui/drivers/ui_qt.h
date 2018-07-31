@@ -197,6 +197,8 @@ public slots:
    void hideDialog();
    void onAccepted();
    void onRejected();
+private slots:
+   void onPathClicked();
 private:
    void loadPlaylistOptions();
 

@@ -393,7 +393,14 @@ PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent
    QFormLayout *form = new QFormLayout();
    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
    QVBoxLayout *databaseVBoxLayout = new QVBoxLayout();
+   QHBoxLayout *pathHBoxLayout = new QHBoxLayout();
    QLabel *databaseLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS), this);
+   QToolButton *pathPushButton = new QToolButton(this);
+
+   pathPushButton->setText("...");
+
+   pathHBoxLayout->addWidget(m_pathLineEdit);
+   pathHBoxLayout->addWidget(pathPushButton);
 
    databaseVBoxLayout->addWidget(m_databaseComboBox);
    databaseVBoxLayout->addWidget(databaseLabel);
@@ -412,13 +419,25 @@ PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent
    connect(this, SIGNAL(rejected()), this, SLOT(onRejected()));
 
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME), m_nameLineEdit);
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH), m_pathLineEdit);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH), pathHBoxLayout);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE), m_coreComboBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE), databaseVBoxLayout);
 
    qobject_cast<QVBoxLayout*>(layout())->addLayout(form);
    layout()->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding));
    layout()->addWidget(buttonBox);
+
+   connect(pathPushButton, SIGNAL(clicked()), this, SLOT(onPathClicked()));
+}
+
+void PlaylistEntryDialog::onPathClicked()
+{
+   QString filePath = QFileDialog::getOpenFileName(this);
+
+   if (filePath.isEmpty())
+      return;
+
+   m_pathLineEdit->setText(filePath);
 }
 
 void PlaylistEntryDialog::loadPlaylistOptions()
@@ -1605,10 +1624,10 @@ bool MainWindow::updateCurrentPlaylistEntry(const QHash<QString, QString> &conte
       return false;
 
    playlistPathArray = playlistPath.toUtf8();
-   pathArray = path.toUtf8();
+   pathArray = QDir::toNativeSeparators(path).toUtf8();
    labelArray = label.toUtf8();
    coreNameArray = coreName.toUtf8();
-   corePathArray = corePath.toUtf8();
+   corePathArray = QDir::toNativeSeparators(corePath).toUtf8();
    dbNameArray = (dbName + file_path_str(FILE_PATH_LPL_EXTENSION)).toUtf8();
    crc32Array = crc32.toUtf8();
 
@@ -1619,6 +1638,23 @@ bool MainWindow::updateCurrentPlaylistEntry(const QHash<QString, QString> &conte
    corePathData = corePathArray.constData();
    dbNameData = dbNameArray.constData();
    crc32Data = crc32Array.constData();
+
+   if (path_is_compressed_file(pathData))
+   {
+      struct string_list *list = file_archive_get_file_list(pathData, NULL);
+
+      if (list)
+      {
+         if (list->size == 1)
+         {
+            /* assume archives with one file should have that file loaded directly */
+            pathArray = QDir::toNativeSeparators(QString(pathData) + "#" + list->elems[0].data).toUtf8();
+            pathData = pathArray.constData();
+         }
+
+         string_list_free(list);
+      }
+   }
 
    playlist = playlist_init(playlistPathData, COLLECTION_SIZE);
 
