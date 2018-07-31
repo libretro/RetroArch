@@ -1178,7 +1178,14 @@ void MainWindow::addFilesToPlaylist(QStringList files)
    playlist_t *playlist = NULL;
    int i;
 
-   if (files.count() == 1)
+   /* Assume a blank list means we will manually enter in all fields. */
+   if (files.isEmpty())
+   {
+      /* Make sure hash isn't blank, that would mean there's multiple entries to add at once. */
+      itemToAdd["label"] = "";
+      itemToAdd["path"] = "";
+   }
+   else if (files.count() == 1)
    {
       QString path = files.at(0);
       QFileInfo info(path);
@@ -1224,6 +1231,16 @@ void MainWindow::addFilesToPlaylist(QStringList files)
    dialog.reset(new QProgressDialog(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES), "Cancel", 0, 0, this));
    dialog->setWindowModality(Qt::ApplicationModal);
 
+   if (selectedName.isEmpty() || selectedPath.isEmpty() ||
+       selectedDatabase.isEmpty())
+   {
+      ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+      return;
+   }
+
+   if (files.isEmpty())
+      files.append(selectedPath);
+
    for (i = 0; i < files.count(); i++)
    {
       QString path(files.at(i));
@@ -1243,8 +1260,12 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       }
 
       if (fileInfo.isFile())
-      {
          list.append(fileInfo.absoluteFilePath());
+      else if (files.count() == 1)
+      {
+         /* If adding a single file, tell user that it doesn't exist. */
+         ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+         return;
       }
    }
 
@@ -1671,6 +1692,7 @@ bool MainWindow::updateCurrentPlaylistEntry(const QHash<QString, QString> &conte
 void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 {
    QScopedPointer<QMenu> menu;
+   QScopedPointer<QAction> addEntryAction;
    QScopedPointer<QAction> addFilesAction;
    QScopedPointer<QAction> addFolderAction;
    QScopedPointer<QAction> editAction;
@@ -1681,11 +1703,13 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 
    menu.reset(new QMenu(this));
 
+   addEntryAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY)), this));
    addFilesAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES)), this));
    addFolderAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FOLDER)), this));
    editAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_EDIT)), this));
    deleteAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE)), this));
 
+   menu->addAction(addEntryAction.data());
    menu->addAction(addFilesAction.data());
    menu->addAction(addFolderAction.data());
 
@@ -1706,6 +1730,10 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 
       if (!filePaths.isEmpty())
          addFilesToPlaylist(filePaths);
+   }
+   else if (selectedAction == addEntryAction.data())
+   {
+      addFilesToPlaylist(QStringList());
    }
    else if (selectedAction == addFolderAction.data())
    {
