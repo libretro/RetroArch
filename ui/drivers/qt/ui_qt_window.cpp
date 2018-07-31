@@ -3036,13 +3036,20 @@ void MainWindow::onRunClicked()
    ViewType viewType = getCurrentViewType();
    QHash<QString, QString> contentHash;
 
-   if (!item)
-      return;
-
    if (viewType == VIEW_TYPE_LIST)
+   {
+      if (!item)
+         return;
+
       contentHash = item->data(Qt::UserRole).value<QHash<QString, QString> >();
+   }
    else if (viewType == VIEW_TYPE_ICONS)
+   {
       contentHash = m_currentGridHash;
+
+      if (contentHash.isEmpty())
+         return;
+   }
    else
       return;
 
