@@ -2727,7 +2727,7 @@ void MainWindow::selectBrowserDir(QString path)
 
       hash["path"] = filePath;
       hash["label"] = hash["path"];
-      hash["label_noext"] = fileInfo.fileName().remove(QString(".") + fileInfo.completeSuffix());
+      hash["label_noext"] = fileInfo.completeBaseName();
       hash["db_name"] = fileInfo.dir().dirName();
 
       item->setData(Qt::UserRole, QVariant::fromValue<QHash<QString, QString> >(hash));
