@@ -19,7 +19,7 @@
 - MENU/QT/WIMP: QT QSlider styling for Dark Theme.
 - MENU/QT/WIMP: Remove button ghostly inside highlighting.
 - MENU/QT/WIMP: Initial grid view.
-- MENU/QT/WIMP: Drag&drop to add new playlist items, add option to add/delete playlists.
+- MENU/QT/WIMP: Drag&drop to add new playlist items, add option to add/edit/delete playlists.
 - METAL: Initial work-in-progress video driver for Metal. macOS-only right now, and currently requires macOS 10.13.
 - METAL: Supports XMB/MaterialUI, has a menu display driver. Has a font rendering driver.
 - METAL/SLANG: Slang shaders should be compatible with Metal video driver.

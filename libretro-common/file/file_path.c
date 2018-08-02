@@ -922,7 +922,7 @@ void fill_pathname_join_delim(char *out_path, const char *dir,
       const char *path, const char delim, size_t size)
 {
    size_t copied;
-   // behavior of strlcpy is undefined if dst and src overlap
+   /* behavior of strlcpy is undefined if dst and src overlap */
    if (out_path == dir)
       copied = strlen(dir);
    else

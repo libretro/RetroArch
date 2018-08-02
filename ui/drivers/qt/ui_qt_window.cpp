@@ -217,6 +217,19 @@ FileDropWidget::FileDropWidget(QWidget *parent) :
    setAcceptDrops(true);
 }
 
+void FileDropWidget::paintEvent(QPaintEvent *event)
+{
+   QStyleOption o;
+   QPainter p;
+   o.initFrom(this);
+   p.begin(this);
+   style()->drawPrimitive(
+      QStyle::PE_Widget, &o, &p, this);
+   p.end();
+
+   QWidget::paintEvent(event);
+}
+
 void FileDropWidget::keyPressEvent(QKeyEvent *event)
 {
    if (event->key() == Qt::Key_Delete)
@@ -380,7 +393,14 @@ PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent
    QFormLayout *form = new QFormLayout();
    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
    QVBoxLayout *databaseVBoxLayout = new QVBoxLayout();
+   QHBoxLayout *pathHBoxLayout = new QHBoxLayout();
    QLabel *databaseLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS), this);
+   QToolButton *pathPushButton = new QToolButton(this);
+
+   pathPushButton->setText("...");
+
+   pathHBoxLayout->addWidget(m_pathLineEdit);
+   pathHBoxLayout->addWidget(pathPushButton);
 
    databaseVBoxLayout->addWidget(m_databaseComboBox);
    databaseVBoxLayout->addWidget(databaseLabel);
@@ -399,13 +419,25 @@ PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent
    connect(this, SIGNAL(rejected()), this, SLOT(onRejected()));
 
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME), m_nameLineEdit);
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH), m_pathLineEdit);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH), pathHBoxLayout);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE), m_coreComboBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE), databaseVBoxLayout);
 
    qobject_cast<QVBoxLayout*>(layout())->addLayout(form);
    layout()->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding));
    layout()->addWidget(buttonBox);
+
+   connect(pathPushButton, SIGNAL(clicked()), this, SLOT(onPathClicked()));
+}
+
+void PlaylistEntryDialog::onPathClicked()
+{
+   QString filePath = QFileDialog::getOpenFileName(this);
+
+   if (filePath.isEmpty())
+      return;
+
+   m_pathLineEdit->setText(filePath);
 }
 
 void PlaylistEntryDialog::loadPlaylistOptions()
@@ -1146,14 +1178,21 @@ void MainWindow::addFilesToPlaylist(QStringList files)
    playlist_t *playlist = NULL;
    int i;
 
-   if (files.count() == 1)
+   /* Assume a blank list means we will manually enter in all fields. */
+   if (files.isEmpty())
+   {
+      /* Make sure hash isn't blank, that would mean there's multiple entries to add at once. */
+      itemToAdd["label"] = "";
+      itemToAdd["path"] = "";
+   }
+   else if (files.count() == 1)
    {
       QString path = files.at(0);
       QFileInfo info(path);
 
       if (info.isFile())
       {
-         itemToAdd["label"] = info.baseName();
+         itemToAdd["label"] = info.completeBaseName();
          itemToAdd["path"] = path;
       }
    }
@@ -1192,6 +1231,16 @@ void MainWindow::addFilesToPlaylist(QStringList files)
    dialog.reset(new QProgressDialog(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES), "Cancel", 0, 0, this));
    dialog->setWindowModality(Qt::ApplicationModal);
 
+   if (selectedName.isEmpty() || selectedPath.isEmpty() ||
+       selectedDatabase.isEmpty())
+   {
+      ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+      return;
+   }
+
+   if (files.isEmpty())
+      files.append(selectedPath);
+
    for (i = 0; i < files.count(); i++)
    {
       QString path(files.at(i));
@@ -1211,8 +1260,12 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       }
 
       if (fileInfo.isFile())
-      {
          list.append(fileInfo.absoluteFilePath());
+      else if (files.count() == 1)
+      {
+         /* If adding a single file, tell user that it doesn't exist. */
+         ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+         return;
       }
    }
 
@@ -1250,12 +1303,12 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       if (files.count() == 1 && list.count() == 1 && i == 0)
       {
          fileBaseNameArray = selectedName.toUtf8();
-         pathArray = selectedPath.toUtf8();
+         pathArray = QDir::toNativeSeparators(selectedPath).toUtf8();
       }
       else
       {
-         fileBaseNameArray = fileInfo.baseName().toUtf8();
-         pathArray = fileName.toUtf8();
+         fileBaseNameArray = fileInfo.completeBaseName().toUtf8();
+         pathArray = QDir::toNativeSeparators(fileName).toUtf8();
       }
 
       fileNameNoExten = fileBaseNameArray.constData();
@@ -1272,7 +1325,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       }
       else
       {
-         corePathArray = selectedCore.value("core_path").toUtf8();
+         corePathArray = QDir::toNativeSeparators(selectedCore.value("core_path")).toUtf8();
          coreNameArray = selectedCore.value("core_name").toUtf8();
          corePathData = corePathArray.constData();
          coreNameData = coreNameArray.constData();
@@ -1290,7 +1343,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
             if (list->size == 1)
             {
                /* assume archives with one file should have that file loaded directly */
-               pathArray = (QString(pathData) + "#" + list->elems[0].data).toUtf8();
+               pathArray = QDir::toNativeSeparators(QString(pathData) + "#" + list->elems[0].data).toUtf8();
                pathData = pathArray.constData();
             }
 
@@ -1592,10 +1645,10 @@ bool MainWindow::updateCurrentPlaylistEntry(const QHash<QString, QString> &conte
       return false;
 
    playlistPathArray = playlistPath.toUtf8();
-   pathArray = path.toUtf8();
+   pathArray = QDir::toNativeSeparators(path).toUtf8();
    labelArray = label.toUtf8();
    coreNameArray = coreName.toUtf8();
-   corePathArray = corePath.toUtf8();
+   corePathArray = QDir::toNativeSeparators(corePath).toUtf8();
    dbNameArray = (dbName + file_path_str(FILE_PATH_LPL_EXTENSION)).toUtf8();
    crc32Array = crc32.toUtf8();
 
@@ -1606,6 +1659,23 @@ bool MainWindow::updateCurrentPlaylistEntry(const QHash<QString, QString> &conte
    corePathData = corePathArray.constData();
    dbNameData = dbNameArray.constData();
    crc32Data = crc32Array.constData();
+
+   if (path_is_compressed_file(pathData))
+   {
+      struct string_list *list = file_archive_get_file_list(pathData, NULL);
+
+      if (list)
+      {
+         if (list->size == 1)
+         {
+            /* assume archives with one file should have that file loaded directly */
+            pathArray = QDir::toNativeSeparators(QString(pathData) + "#" + list->elems[0].data).toUtf8();
+            pathData = pathArray.constData();
+         }
+
+         string_list_free(list);
+      }
+   }
 
    playlist = playlist_init(playlistPathData, COLLECTION_SIZE);
 
@@ -1622,6 +1692,7 @@ bool MainWindow::updateCurrentPlaylistEntry(const QHash<QString, QString> &conte
 void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 {
    QScopedPointer<QMenu> menu;
+   QScopedPointer<QAction> addEntryAction;
    QScopedPointer<QAction> addFilesAction;
    QScopedPointer<QAction> addFolderAction;
    QScopedPointer<QAction> editAction;
@@ -1632,11 +1703,13 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 
    menu.reset(new QMenu(this));
 
+   addEntryAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY)), this));
    addFilesAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES)), this));
    addFolderAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FOLDER)), this));
    editAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_EDIT)), this));
    deleteAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE)), this));
 
+   menu->addAction(addEntryAction.data());
    menu->addAction(addFilesAction.data());
    menu->addAction(addFolderAction.data());
 
@@ -1657,6 +1730,10 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 
       if (!filePaths.isEmpty())
          addFilesToPlaylist(filePaths);
+   }
+   else if (selectedAction == addEntryAction.data())
+   {
+      addFilesToPlaylist(QStringList());
    }
    else if (selectedAction == addFolderAction.data())
    {
@@ -2650,7 +2727,7 @@ void MainWindow::selectBrowserDir(QString path)
 
       hash["path"] = filePath;
       hash["label"] = hash["path"];
-      hash["label_noext"] = fileInfo.fileName().remove(QString(".") + fileInfo.completeSuffix());
+      hash["label_noext"] = fileInfo.completeBaseName();
       hash["db_name"] = fileInfo.dir().dirName();
 
       item->setData(Qt::UserRole, QVariant::fromValue<QHash<QString, QString> >(hash));
@@ -2987,13 +3064,20 @@ void MainWindow::onRunClicked()
    ViewType viewType = getCurrentViewType();
    QHash<QString, QString> contentHash;
 
-   if (!item)
-      return;
-
    if (viewType == VIEW_TYPE_LIST)
+   {
+      if (!item)
+         return;
+
       contentHash = item->data(Qt::UserRole).value<QHash<QString, QString> >();
+   }
    else if (viewType == VIEW_TYPE_ICONS)
+   {
       contentHash = m_currentGridHash;
+
+      if (contentHash.isEmpty())
+         return;
+   }
    else
       return;
 

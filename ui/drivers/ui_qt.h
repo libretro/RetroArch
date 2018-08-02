@@ -153,6 +153,7 @@ protected:
    void dragEnterEvent(QDragEnterEvent *event);
    void dropEvent(QDropEvent *event);
    void keyPressEvent(QKeyEvent *event);
+   void paintEvent(QPaintEvent *event);
 };
 
 class TableWidget : public QTableWidget
@@ -196,6 +197,8 @@ public slots:
    void hideDialog();
    void onAccepted();
    void onRejected();
+private slots:
+   void onPathClicked();
 private:
    void loadPlaylistOptions();
 
