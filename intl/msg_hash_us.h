@@ -1395,6 +1395,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
       "Achievements")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
       "Rewind Enable")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+      "Apply After Toggle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
       "Rewind Granularity")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
@@ -1403,6 +1405,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
       "Rewind Buffer Size Step (MB)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
       "Rewind")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
+      "Cheat Settings")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
       "Cheat Details")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
@@ -2822,6 +2826,10 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_ENABLE,
       "Enable rewinding. This will take a performance hit when playing."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+      "Apply cheat immediately after toggling."
+)
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
       "When rewinding a defined number of frames, you can rewind several frames at a time, increasing the rewind speed."

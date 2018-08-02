@@ -494,6 +494,15 @@ void cheat_manager_toggle_index(unsigned i)
 
    cheat_manager_state.cheats[i].state = !cheat_manager_state.cheats[i].state;
    cheat_manager_update(&cheat_manager_state, i);
+
+   settings_t *settings                     = config_get_ptr();
+
+   if ( !settings )
+      return ;
+
+   if ( settings->bools.apply_cheats_after_toggle )
+      cheat_manager_apply_cheats();
+
 }
 
 void cheat_manager_toggle(void)

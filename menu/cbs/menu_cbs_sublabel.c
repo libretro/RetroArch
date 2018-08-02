@@ -206,6 +206,7 @@ default_sublabel_macro(action_bind_sublabel_run_ahead_secondary_instance,  MENU_
 default_sublabel_macro(action_bind_sublabel_run_ahead_hide_warnings,       MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS)
 default_sublabel_macro(action_bind_sublabel_run_ahead_frames,              MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES)
 default_sublabel_macro(action_bind_sublabel_rewind,                        MENU_ENUM_SUBLABEL_REWIND_ENABLE)
+default_sublabel_macro(action_bind_sublabel_cheat_apply_after_toggle,      MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE)
 default_sublabel_macro(action_bind_sublabel_rewind_granularity,            MENU_ENUM_SUBLABEL_REWIND_GRANULARITY)
 default_sublabel_macro(action_bind_sublabel_rewind_buffer_size,            MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE)
 default_sublabel_macro(action_bind_sublabel_rewind_buffer_size_step,       MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP)
@@ -1391,6 +1392,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_REWIND_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rewind);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_apply_after_toggle);
             break;
          case MENU_ENUM_LABEL_REWIND_GRANULARITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rewind_granularity);
