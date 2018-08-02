@@ -3157,7 +3157,7 @@ static unsigned menu_displaylist_parse_options(
 }
 
 static int menu_displaylist_parse_options_cheats(
-      menu_displaylist_info_t *info)
+      menu_displaylist_info_t *info, menu_handle_t *menu)
 {
    unsigned i;
 
@@ -3204,6 +3204,9 @@ static int menu_displaylist_parse_options_cheats(
          msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_ALL),
          MENU_ENUM_LABEL_CHEAT_DELETE_ALL,
          MENU_SETTING_ACTION, 0, 0);
+   menu_displaylist_parse_settings_enum(menu, info,
+         MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
+         PARSE_ONLY_BOOL, false);
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
          msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),
@@ -6868,7 +6871,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_OPTIONS_CHEATS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_options_cheats(info);
+         ret = menu_displaylist_parse_options_cheats(info, menu);
 
          info->need_push    = true;
          break;

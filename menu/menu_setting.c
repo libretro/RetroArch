@@ -105,7 +105,7 @@ enum settings_list_type
    SETTINGS_LIST_REWIND,
    SETTINGS_LIST_CHEAT_DETAILS,
    SETTINGS_LIST_CHEAT_SEARCH,
-   SETTINGS_LIST_CHEAT_MATCHES,
+   SETTINGS_LIST_CHEATS,
    SETTINGS_LIST_VIDEO,
    SETTINGS_LIST_AUDIO,
    SETTINGS_LIST_INPUT,
@@ -3295,6 +3295,33 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+      case SETTINGS_LIST_CHEATS:
+      {
+         START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS), parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.apply_cheats_after_toggle,
+               MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
+               MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+               rewind_enable,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
+      }
       case SETTINGS_LIST_CHEAT_DETAILS:
 		  {
          int max_bit_position;
@@ -8770,7 +8797,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_REWIND,
       SETTINGS_LIST_CHEAT_DETAILS,
       SETTINGS_LIST_CHEAT_SEARCH,
-      SETTINGS_LIST_CHEAT_MATCHES,
+      SETTINGS_LIST_CHEATS,
       SETTINGS_LIST_VIDEO,
       SETTINGS_LIST_AUDIO,
       SETTINGS_LIST_INPUT,
