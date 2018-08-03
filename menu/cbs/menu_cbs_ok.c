@@ -848,6 +848,11 @@ int generic_action_ok_displaylist_push(const char *path,
             int max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 7 : 0 ;
             setting->max = max_bit_position ;
          }
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADDRESS));
+         if ( setting )
+         {
+            cheat_manager_state.browse_address = *setting->value.target.unsigned_integer ;
+         }
          action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          break ;
       }

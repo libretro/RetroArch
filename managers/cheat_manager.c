@@ -1327,6 +1327,7 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
    bool refresh = false;
    unsigned int byte_part;
    unsigned int idx;
+   unsigned int start_idx;
    unsigned int mask = 0 ;
    unsigned int bytes_per_item = 1 ;
    unsigned int bits = 8 ;
@@ -1339,9 +1340,17 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
    if ( target_match_idx > cheat_manager_state.num_matches-1)
       return;
 
+   if ( curr == NULL  )
+      return ;
+
    cheat_manager_setup_search_meta(cheat_manager_state.search_bit_size, &bytes_per_item, &mask, &bits);
 
-   for (idx = 0 ; idx < cheat_manager_state.total_memory_size ; idx = idx + bytes_per_item)
+   if ( match_action == CHEAT_MATCH_ACTION_TYPE_BROWSE)
+      start_idx = *address ;
+   else
+      start_idx = 0 ;
+
+   for (idx = start_idx ; idx < cheat_manager_state.total_memory_size ; idx = idx + bytes_per_item)
    {
       switch ( bytes_per_item )
       {
@@ -1350,9 +1359,10 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
             curr_val = cheat_manager_state.big_endian ?
                   (*(curr+idx)*256) + *(curr+idx+1) :
                   *(curr+idx) + (*(curr+idx+1)*256) ;
-            prev_val = cheat_manager_state.big_endian ?
-                  (*(prev+idx)*256) + *(prev+idx+1) :
-                  *(prev+idx) + (*(prev+idx+1)*256) ;
+            if ( prev != NULL )
+               prev_val = cheat_manager_state.big_endian ?
+                     (*(prev+idx)*256) + *(prev+idx+1) :
+                     *(prev+idx) + (*(prev+idx+1)*256) ;
             break ;
          }
          case 4 :
@@ -1360,19 +1370,32 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
             curr_val = cheat_manager_state.big_endian ?
                   (*(curr+idx)*256*256*256) + (*(curr+idx+1)*256*256) + (*(curr+idx+2)*256) + *(curr+idx+3) :
                   *(curr+idx) + (*(curr+idx+1)*256) + (*(curr+idx+2)*256*256) + (*(curr+idx+3)*256*256*256) ;
-            prev_val = cheat_manager_state.big_endian ?
-                  (*(prev+idx)*256*256*256) + (*(prev+idx+1)*256*256) + (*(prev+idx+2)*256) + *(prev+idx+3) :
-                  *(prev+idx) + (*(prev+idx+1)*256) + (*(prev+idx+2)*256*256) + (*(prev+idx+3)*256*256*256) ;
+            if ( prev != NULL )
+               prev_val = cheat_manager_state.big_endian ?
+                     (*(prev+idx)*256*256*256) + (*(prev+idx+1)*256*256) + (*(prev+idx+2)*256) + *(prev+idx+3) :
+                     *(prev+idx) + (*(prev+idx+1)*256) + (*(prev+idx+2)*256*256) + (*(prev+idx+3)*256*256*256) ;
             break ;
          }
          case 1 :
          default :
          {
             curr_val = *(curr+idx) ;
-            prev_val = *(prev+idx) ;
+            if ( prev != NULL )
+               prev_val = *(prev+idx) ;
             break ;
          }
       }
+
+      if ( match_action == CHEAT_MATCH_ACTION_TYPE_BROWSE)
+      {
+         *curr_value = curr_val ;
+         *prev_value = prev_val ;
+         return ;
+      }
+
+      if ( prev == NULL )
+         return ;
+
       for (byte_part = 0 ; byte_part < 8/bits ; byte_part++)
       {
          unsigned int prev_match ;
@@ -1386,6 +1409,8 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
                {
                   switch ( match_action )
                   {
+                     case CHEAT_MATCH_ACTION_TYPE_BROWSE :
+                        return ;
                      case CHEAT_MATCH_ACTION_TYPE_VIEW :
                      {
                         *address = idx ;
@@ -1430,6 +1455,8 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
                {
                   switch ( match_action )
                   {
+                     case CHEAT_MATCH_ACTION_TYPE_BROWSE :
+                        return ;
                      case CHEAT_MATCH_ACTION_TYPE_VIEW :
                      {
                         *address = idx ;

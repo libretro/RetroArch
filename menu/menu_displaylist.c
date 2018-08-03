@@ -5180,6 +5180,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          if ( setting )
             setting->max = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
 
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY));
+         if ( setting )
+            setting->max = cheat_manager_state.actual_memory_size>0?cheat_manager_state.actual_memory_size-1:0 ;
+
+
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEAT_IDX,
                PARSE_ONLY_UINT, false);
@@ -5210,6 +5215,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ONLY_UINT, false);
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_CHEAT_ADDRESS,
+                  PARSE_ONLY_UINT, false);
+            menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY,
                   PARSE_ONLY_UINT, false);
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION,
@@ -5355,6 +5363,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MSG_UNKNOWN,
                MENU_SETTINGS_CHEAT_MATCH, 0, 0);
 
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY,
+               PARSE_ONLY_UINT, false);
+
+
 
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_MATCH));
          if ( setting )
@@ -5362,6 +5375,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_MATCH));
          if ( setting )
             setting->max = cheat_manager_state.num_matches-1;
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY));
+         if ( setting )
+            setting->max = cheat_manager_state.actual_memory_size>0?cheat_manager_state.actual_memory_size-1:0 ;
 
          info->need_refresh = true;
          info->need_push    = true;
