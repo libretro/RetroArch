@@ -513,6 +513,24 @@ static void setting_get_string_representation_uint_cheat_eqminus(void *data,
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
 }
 
+static void setting_get_string_representation_uint_cheat_browse_address(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (setting)
+      snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL),
+            *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
+
+   unsigned int address = cheat_manager_state.browse_address;
+   unsigned int address_mask = 0;
+   unsigned int prev_val = 0;
+   unsigned int curr_val = 0 ;
+   cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_BROWSE, cheat_manager_state.match_idx, &address, &address_mask, &prev_val, &curr_val) ;
+
+   snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val) ;
+
+}
+
 static void setting_get_string_representation_uint_video_rotation(void *data,
       char *s, size_t len)
 {
@@ -3403,7 +3421,7 @@ static bool setting_append_list(
                0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1) ;
 
          config_uint_cbs(cheat_manager_state.working_cheat.address, CHEAT_ADDRESS,
-               setting_uint_action_left_default,setting_uint_action_right_default,
+               setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
                0,&setting_get_string_representation_hex_and_uint,0,cheat_manager_state.total_memory_size==0?0:cheat_manager_state.total_memory_size-1,1) ;
 
          max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
@@ -3654,6 +3672,22 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_left = &setting_uint_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
          (*list)[list_info->index - 1].action_ok = &cheat_manager_copy_match;
+
+         CONFIG_UINT(
+               list, list_info,
+               &cheat_manager_state.browse_address,
+               MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY,
+               MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
+               cheat_manager_state.browse_address,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 0, cheat_manager_state.actual_memory_size>0?cheat_manager_state.actual_memory_size-1:0, 1, true, true);
+         (*list)[list_info->index - 1].action_left = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
+         (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_browse_address;
 
 
          END_SUB_GROUP(list, list_info, parent_group);

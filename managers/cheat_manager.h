@@ -59,7 +59,8 @@ enum cheat_match_action_type
 {
    CHEAT_MATCH_ACTION_TYPE_VIEW = 0,
    CHEAT_MATCH_ACTION_TYPE_DELETE,
-   CHEAT_MATCH_ACTION_TYPE_COPY
+   CHEAT_MATCH_ACTION_TYPE_COPY,
+   CHEAT_MATCH_ACTION_TYPE_BROWSE
 };
 
 enum cheat_rumble_type
@@ -152,6 +153,7 @@ struct cheat_manager
    bool  memory_initialized ;
    bool  memory_search_initialized ;
    unsigned int delete_state ;
+   unsigned browse_address;
 };
 
 typedef struct cheat_manager cheat_manager_t;
