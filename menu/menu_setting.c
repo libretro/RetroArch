@@ -516,15 +516,15 @@ static void setting_get_string_representation_uint_cheat_eqminus(void *data,
 static void setting_get_string_representation_uint_cheat_browse_address(void *data,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   unsigned int address      = cheat_manager_state.browse_address;
+   unsigned int address_mask = 0;
+   unsigned int prev_val     = 0;
+   unsigned int curr_val     = 0 ;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
    if (setting)
       snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL),
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
 
-   unsigned int address = cheat_manager_state.browse_address;
-   unsigned int address_mask = 0;
-   unsigned int prev_val = 0;
-   unsigned int curr_val = 0 ;
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_BROWSE, cheat_manager_state.match_idx, &address, &address_mask, &prev_val, &curr_val) ;
 
    snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val) ;
