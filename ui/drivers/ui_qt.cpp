@@ -224,6 +224,7 @@ static void* ui_companion_qt_init(void)
    QMenu *editMenu = NULL;
    QMenu *viewMenu = NULL;
    QMenu *viewClosedDocksMenu = NULL;
+   QMenu *helpMenu = NULL;
    QRect desktopRect;
    QDockWidget *thumbnailDock = NULL;
    QDockWidget *thumbnail2Dock = NULL;
@@ -321,6 +322,10 @@ static void* ui_companion_qt_init(void)
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST), mainwindow, SLOT(onListViewClicked()));
    viewMenu->addSeparator();
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS), mainwindow->viewOptionsDialog(), SLOT(showDialog()));
+
+   helpMenu = menu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP));
+   helpMenu->addAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT)) + "...", mainwindow, SLOT(showAbout()));
+   helpMenu->addAction("About Qt...", qApp, SLOT(aboutQt()));
 
    playlistWidget = new QWidget();
    playlistWidget->setLayout(new QVBoxLayout());

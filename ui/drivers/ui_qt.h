@@ -390,6 +390,7 @@ public slots:
    void onTabWidgetIndexChanged(int index);
    void deleteCurrentPlaylistItem();
    void onFileDropWidgetContextMenuRequested(const QPoint &pos);
+   void showAbout();
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());

@@ -40,6 +40,7 @@
 #include "ui_qt_load_core_window.h"
 #include "ui_qt_themes.h"
 #include "flowlayout.h"
+#include "invader_png.h"
 
 extern "C" {
 #include "../../../version.h"
@@ -179,6 +180,8 @@ static void setElidedText(QLabel *label, QWidget *clipWidget, int padding, const
    QString clippedText = metrix.elidedText(text, Qt::ElideRight, width);
    label->setText(clippedText);
 }
+
+const QPixmap getInvader();
 
 GridItem::GridItem() :
    QObject()
@@ -4542,6 +4545,44 @@ void MainWindow::setAllPlaylistsGridMaxCount(int count)
       count = 0;
 
    m_allPlaylistsGridMaxCount = count;
+}
+
+void MainWindow::showAbout()
+{
+   QScopedPointer<QDialog> dialog(new QDialog());
+   QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
+   QString text = QString("RetroArch ") + PACKAGE_VERSION + "<br><br>" + "<a href=\"http://www.libretro.com/\">http://www.libretro.com</a>";
+   QLabel *label = new QLabel(text, dialog.data());
+   QPixmap pix = getInvader();
+   QLabel *pixLabel = new QLabel();
+
+   label->setTextFormat(Qt::RichText);
+   label->setAlignment(Qt::AlignCenter);
+   pixLabel->setAlignment(Qt::AlignCenter);
+
+   pixLabel->setPixmap(pix);
+
+   connect(buttonBox, SIGNAL(accepted()), dialog.data(), SLOT(accept()));
+   connect(buttonBox, SIGNAL(rejected()), dialog.data(), SLOT(reject()));
+
+   dialog->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT));
+   dialog->setLayout(new QVBoxLayout());
+
+   dialog->layout()->addWidget(pixLabel);
+   dialog->layout()->addWidget(label);
+
+   dialog->layout()->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding));
+   dialog->layout()->addWidget(buttonBox);
+
+   dialog->exec();
+}
+
+const QPixmap getInvader()
+{
+   QPixmap pix;
+   pix.loadFromData(invader_png, invader_png_len, "PNG");
+
+   return pix;
 }
 
 static void* ui_window_qt_init(void)
