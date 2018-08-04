@@ -2886,7 +2886,6 @@ static int action_ok_cheat_delete(const char *path,
 {
    size_t new_selection_ptr;
    char msg[256];
-   bool          refresh = false;
    unsigned int new_size = cheat_manager_get_size() - 1;
 
    if( new_size >0 )

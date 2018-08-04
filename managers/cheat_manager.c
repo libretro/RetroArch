@@ -675,14 +675,15 @@ int cheat_manager_initialize_memory(void *data, bool wraparound)
       return 0 ;
    }
 
-   cheat_manager_state.actual_memory_size = meminfo.size ;
-   cheat_manager_state.curr_memory_buf = meminfo.data ;
-   cheat_manager_state.total_memory_size = meminfo.size ;
-   cheat_manager_state.num_matches = (cheat_manager_state.total_memory_size*8)/((int)pow(2,cheat_manager_state.search_bit_size)) ;
-   //ensure we're aligned on 4-byte boundary
-   //if ( meminfo.size % 4 > 0 ) {
-      //cheat_manager_state.total_memory_size = cheat_manager_state.total_memory_size + (4 - (meminfo.size%4)) ;
-   //}
+   cheat_manager_state.actual_memory_size = (unsigned)meminfo.size ;
+   cheat_manager_state.curr_memory_buf    = meminfo.data ;
+   cheat_manager_state.total_memory_size  = (unsigned)meminfo.size ;
+   cheat_manager_state.num_matches        = (cheat_manager_state.total_memory_size*8)/((int)pow(2,cheat_manager_state.search_bit_size)) ;
+   /* Ensure we're aligned on 4-byte boundary */
+#if 0
+   if (meminfo.size % 4 > 0)
+      cheat_manager_state.total_memory_size = cheat_manager_state.total_memory_size + (4 - (meminfo.size%4)) ;
+#endif
    if ( is_search_initialization )
    {
       cheat_manager_state.prev_memory_buf = (uint8_t*) calloc(cheat_manager_state.total_memory_size, sizeof(uint8_t));
@@ -810,7 +811,6 @@ int cheat_manager_search(enum cheat_search_type search_type)
    unsigned char *curr = cheat_manager_state.curr_memory_buf ;
    unsigned char *prev = cheat_manager_state.prev_memory_buf ;
    unsigned int idx = 0 ;
-   unsigned int num_matches = 0 ;
    unsigned int curr_val ;
    unsigned int prev_val ;
    unsigned int mask = 0 ;
@@ -1172,7 +1172,6 @@ void cheat_manager_apply_retro_cheats(void)
    unsigned int bytes_per_item = 1;
    unsigned int bits           = 8;
    unsigned int curr_val       = 0;
-   unsigned int num_added      = 0;
    bool run_cheat              = true;
 
    if ((!cheat_manager_state.cheats))
@@ -1358,7 +1357,6 @@ void cheat_manager_apply_retro_cheats(void)
 void cheat_manager_match_action(enum cheat_match_action_type match_action, unsigned int target_match_idx, unsigned int *address, unsigned int *address_mask,
       unsigned int *prev_value, unsigned int *curr_value)
 {
-   bool refresh = false;
    unsigned int byte_part;
    unsigned int idx;
    unsigned int start_idx;

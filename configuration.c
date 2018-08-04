@@ -4119,7 +4119,7 @@ bool config_save_file(const char *path)
              !retroarch_override_setting_is_set(size_settings[i].override, NULL))
             config_set_int(conf,
                   size_settings[i].ident,
-                  *size_settings[i].ptr);
+                  (int)*size_settings[i].ptr);
 
       free(size_settings);
    }
@@ -4397,7 +4397,7 @@ bool config_save_overrides(int override_type)
             RARCH_LOG("   override: %s=%d\n",
                   size_overrides[i].ident, (*size_overrides[i].ptr));
             config_set_int(conf, size_overrides[i].ident,
-                  (*size_overrides[i].ptr));
+                  (int)(*size_overrides[i].ptr));
          }
       }
       for (i = 0; i < (unsigned)float_settings_size; i++)
