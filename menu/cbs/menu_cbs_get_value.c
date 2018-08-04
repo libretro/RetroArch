@@ -1887,7 +1887,8 @@ static void menu_action_setting_disp_set_label_setting_string(file_list_t* list,
 
    *w = 19;
 
-   strlcpy(s, setting->value.target.string, len);
+   if ( setting->value.target.string != NULL )
+      strlcpy(s, setting->value.target.string, len);
 
    strlcpy(s2, path, len2);
 }

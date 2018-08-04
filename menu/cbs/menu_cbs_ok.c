@@ -2818,6 +2818,10 @@ static int action_ok_cheat_copy_before(const char *path,
 
    memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat )) ;
    tmp.idx = cheat_manager_state.working_cheat.idx ;
+   if ( tmp.code != NULL )
+      tmp.code = strdup(tmp.code) ;
+   if ( tmp.desc != NULL )
+      tmp.desc = strdup(tmp.desc) ;
 
    for (i = cheat_manager_state.size-2 ; i >=(int)tmp.idx ; i--)
    {
@@ -2853,6 +2857,10 @@ static int action_ok_cheat_copy_after(const char *path,
 
    memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat )) ;
    tmp.idx = cheat_manager_state.working_cheat.idx+1 ;
+   if ( tmp.code != NULL )
+      tmp.code = strdup(tmp.code) ;
+   if ( tmp.desc != NULL )
+      tmp.desc = strdup(tmp.desc) ;
 
    for (i = cheat_manager_state.size-2 ; i >= (int)(cheat_manager_state.working_cheat.idx+1); i--)
    {
@@ -2884,11 +2892,23 @@ static int action_ok_cheat_delete(const char *path,
    if( new_size >0 )
    {
       unsigned i;
+      if ( cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code != NULL )
+      {
+         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code) ;
+         cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code = NULL ;
+      }
+      if ( cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc != NULL )
+      {
+         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc) ;
+         cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc = NULL ;
+      }
       for (i = cheat_manager_state.working_cheat.idx ; i <cheat_manager_state.size-1  ; i++)
       {
          memcpy(&cheat_manager_state.cheats[i], &cheat_manager_state.cheats[i+1], sizeof(struct item_cheat )) ;
          cheat_manager_state.cheats[i].idx-- ;
       }
+      cheat_manager_state.cheats[cheat_manager_state.size-1].code = NULL ;
+      cheat_manager_state.cheats[cheat_manager_state.size-1].desc = NULL ;
    }
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
