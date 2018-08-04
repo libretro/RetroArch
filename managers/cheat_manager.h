@@ -76,15 +76,15 @@ enum cheat_rumble_type
    RUMBLE_TYPE_GT_VALUE
 };
 
-#define CHEAT_CODE_SIZE 200
-#define CHEAT_DESC_SIZE 100
+#define CHEAT_CODE_SCRATCH_SIZE 100
+#define CHEAT_DESC_SCRATCH_SIZE 255
 
 struct item_cheat
 {
    unsigned int idx;
-   char desc[CHEAT_DESC_SIZE];
+   char *desc;
    bool state;
-   char code[CHEAT_CODE_SIZE];
+   char *code;
    unsigned int handler ;
    /* Number of bits = 2^memory_search_size
     * 0=1, 1=2, 2=4, 3=8, 4=16, 5=32
@@ -154,6 +154,8 @@ struct cheat_manager
    bool  memory_search_initialized ;
    unsigned int delete_state ;
    unsigned browse_address;
+   char working_desc[CHEAT_DESC_SCRATCH_SIZE] ;
+   char working_code[CHEAT_CODE_SCRATCH_SIZE] ;
 };
 
 typedef struct cheat_manager cheat_manager_t;

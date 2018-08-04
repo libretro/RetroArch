@@ -233,6 +233,16 @@ bool cheat_manager_copy_idx_to_working(unsigned idx)
    }
 
    memcpy(&(cheat_manager_state.working_cheat), &(cheat_manager_state.cheats[idx]), sizeof(struct item_cheat)) ;
+   if ( cheat_manager_state.cheats[idx].desc != NULL )
+      strlcpy(cheat_manager_state.working_desc, cheat_manager_state.cheats[idx].desc, CHEAT_DESC_SCRATCH_SIZE) ;
+   else
+      cheat_manager_state.working_desc[0] = '\0' ;
+
+   if ( cheat_manager_state.cheats[idx].code != NULL )
+      strlcpy(cheat_manager_state.working_code, cheat_manager_state.cheats[idx].code, CHEAT_CODE_SCRATCH_SIZE) ;
+   else
+      cheat_manager_state.working_code[0] = '\0' ;
+
    return true ;
 }
 bool cheat_manager_copy_working_to_idx(unsigned idx)
@@ -243,6 +253,10 @@ bool cheat_manager_copy_working_to_idx(unsigned idx)
    }
 
    memcpy(&(cheat_manager_state.cheats[idx]), &(cheat_manager_state.working_cheat), sizeof(struct item_cheat)) ;
+   if ( cheat_manager_state.cheats[idx].desc != NULL )
+      free(cheat_manager_state.cheats[idx].desc) ;
+
+   cheat_manager_state.cheats[idx].desc = strdup(cheat_manager_state.working_desc) ;
    return true ;
 }
 static void cheat_manager_new(unsigned size)
@@ -268,8 +282,8 @@ static void cheat_manager_new(unsigned size)
 
    for (i = 0; i < cheat_manager_state.size; i++)
    {
-      cheat_manager_state.cheats[i].desc[0] = 0 ;
-      cheat_manager_state.cheats[i].code[0] = 0 ;
+      cheat_manager_state.cheats[i].desc = NULL ;
+      cheat_manager_state.cheats[i].code = NULL ;
       cheat_manager_state.cheats[i].state  = false;
    }
 
@@ -362,16 +376,16 @@ bool cheat_manager_load(const char *path, bool append)
 
       cheat_manager_state.cheats[i].idx = i ;
 
-      cheat_manager_state.cheats[i].desc[0] = 0 ;
-      cheat_manager_state.cheats[i].code[0] = 0 ;
+      cheat_manager_state.cheats[i].desc = NULL ;
+      cheat_manager_state.cheats[i].code = NULL ;
       cheat_manager_state.cheats[i].state = false ;
       cheat_manager_state.cheats[i].big_endian = false ;
 
       if (config_get_string(conf, desc_key, &tmp) && !string_is_empty(tmp))
-         strcpy(cheat_manager_state.cheats[i].desc,tmp) ;
+         cheat_manager_state.cheats[i].desc = strdup(tmp) ;
 
       if (config_get_string(conf, code_key, &tmp) && !string_is_empty(tmp))
-         strcpy(cheat_manager_state.cheats[i].code,tmp) ;
+         cheat_manager_state.cheats[i].code = strdup(tmp) ;
 
       if (config_get_bool(conf, enable_key, &tmp_bool))
          cheat_manager_state.cheats[i].state  = tmp_bool;
@@ -420,6 +434,16 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
    else
    {
       orig_size = cheat_manager_state.size ;
+
+      /* if size is decreasing, free the items that will be lost */
+      for (i = new_size; i < orig_size; i++)
+      {
+         if ( cheat_manager_state.cheats[i].code != NULL )
+            free(cheat_manager_state.cheats[i].code) ;
+         if ( cheat_manager_state.cheats[i].desc != NULL )
+            free(cheat_manager_state.cheats[i].desc) ;
+      }
+
       cheat_manager_state.cheats = (struct item_cheat*)
          realloc(cheat_manager_state.cheats, new_size * sizeof(struct item_cheat));
    }
@@ -449,8 +473,20 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
 
 void cheat_manager_free(void)
 {
+   unsigned i = 0 ;
+
    if (cheat_manager_state.cheats)
+   {
+      for (i = 0; i < cheat_manager_state.size; i++)
+      {
+         if ( cheat_manager_state.cheats[i].desc != NULL )
+            free(cheat_manager_state.cheats[i].desc) ;
+         if ( cheat_manager_state.cheats[i].code != NULL )
+            free(cheat_manager_state.cheats[i].code) ;
+      }
+
       free(cheat_manager_state.cheats);
+   }
 
    if ( cheat_manager_state.prev_memory_buf )
       free(cheat_manager_state.prev_memory_buf) ;
@@ -480,7 +516,7 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 
    snprintf(msg, sizeof(msg), "Cheat: #%u [%s]: %s",
          handle_idx, handle->cheats[handle_idx].state ? "ON" : "OFF",
-         (handle->cheats[handle_idx].desc[0]) ?
+         (handle->cheats[handle_idx].desc!=NULL) ?
          (handle->cheats[handle_idx].desc) : (handle->cheats[handle_idx].code)
          );
    runloop_msg_queue_push(msg, 1, 180, true);

@@ -3375,8 +3375,8 @@ static bool setting_append_list(
 
          CONFIG_STRING(
                list, list_info,
-               cheat_manager_state.working_cheat.desc,
-               sizeof(cheat_manager_state.working_cheat.desc),
+               cheat_manager_state.working_desc,
+               sizeof(cheat_manager_state.working_desc),
                MENU_ENUM_LABEL_CHEAT_DESC,
                MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
                "",
@@ -3394,8 +3394,8 @@ static bool setting_append_list(
 
          CONFIG_STRING(
                list, list_info,
-               cheat_manager_state.working_cheat.code,
-               sizeof(cheat_manager_state.working_cheat.code),
+               cheat_manager_state.working_code,
+               sizeof(cheat_manager_state.working_code),
                MENU_ENUM_LABEL_CHEAT_CODE,
                MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
                "",
@@ -3404,7 +3404,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
          config_uint_cbs(cheat_manager_state.working_cheat.memory_search_size, CHEAT_MEMORY_SEARCH_SIZE,
                setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
