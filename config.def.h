@@ -610,6 +610,9 @@ static const float slowmotion_ratio = 3.0;
 /* Maximum fast forward ratio. */
 static const float fastforward_ratio = 0.0;
 
+/* Enable runloop for variable refresh rate screens. Force x1 speed while handling fast forward too. */
+static const bool vrr_runloop_enable = false;
+
 /* Run core logic one or more frames ahead then load the state back to reduce perceived input lag. */
 static const unsigned run_ahead_frames = 1;
 

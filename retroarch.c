@@ -262,6 +262,7 @@ static msg_queue_t *runloop_msg_queue                      = NULL;
 
 static unsigned runloop_pending_windowed_scale             = 0;
 static unsigned runloop_max_frames                         = 0;
+static unsigned fastforward_after_frames                   = 0;
 
 static retro_usec_t runloop_frame_time_last                = 0;
 static retro_time_t frame_limit_minimum_time               = 0.0;
@@ -2971,6 +2972,7 @@ static enum runloop_state runloop_check_state(
          {
             input_driver_unset_nonblock_state();
             runloop_fastmotion = false;
+            fastforward_after_frames = 1;
          }
          else
          {
@@ -2990,6 +2992,7 @@ static enum runloop_state runloop_check_state(
          {
             input_driver_unset_nonblock_state();
             runloop_fastmotion = false;
+            fastforward_after_frames = 1;
          }
          driver_set_nonblock_state();
       }
@@ -3438,9 +3441,39 @@ int runloop_iterate(unsigned *sleep_ms)
    if (runloop_autosave)
       autosave_unlock();
 
-   if (settings->floats.fastforward_ratio)
+   /* Condition for max speed x0.0 when vrr_runloop is off to skip that part */
+   if (settings->floats.fastforward_ratio || settings->bools.vrr_runloop_enable)
       end:
    {
+      if (settings->bools.vrr_runloop_enable)
+      {
+         struct retro_system_av_info *av_info =
+         video_viewport_get_system_av_info();
+
+         /* Sync on video only, block audio later. */
+         if (fastforward_after_frames && settings->bools.audio_sync)
+         {
+            if (fastforward_after_frames == 1)
+               command_event(CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE, NULL);
+
+            fastforward_after_frames++;
+
+            if (fastforward_after_frames == 6)
+            {
+               command_event(CMD_EVENT_AUDIO_SET_BLOCKING_STATE, NULL);
+               fastforward_after_frames = 0;
+            }
+         }
+
+         /* Fast Forward for max speed x0.0 */
+         if (!settings->floats.fastforward_ratio && runloop_fastmotion)
+            return 0;
+
+         frame_limit_minimum_time = 
+            (retro_time_t)roundf(1000000.0f / (av_info->timing.fps *
+            (runloop_fastmotion ? settings->floats.fastforward_ratio : 1.0f)));
+      }
+
       retro_time_t to_sleep_ms  = (
             (frame_limit_last_time + frame_limit_minimum_time)
             - cpu_features_get_time_usec()) / 1000;

@@ -5377,6 +5377,22 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_SET_FRAME_LIMIT);
          menu_settings_list_current_add_range(list, list_info, 0, 10, 1.0, true, true);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.vrr_runloop_enable,
+               MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
+               MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
          CONFIG_FLOAT(
                list, list_info,
                &settings->floats.slowmotion_ratio,
