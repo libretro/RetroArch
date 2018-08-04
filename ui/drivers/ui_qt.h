@@ -391,6 +391,7 @@ public slots:
    void deleteCurrentPlaylistItem();
    void onFileDropWidgetContextMenuRequested(const QPoint &pos);
    void showAbout();
+   void showDocs();
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());

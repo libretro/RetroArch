@@ -1067,6 +1067,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_coreInfoLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
    m_coreInfoLabel->setTextFormat(Qt::RichText);
+   m_coreInfoLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
+   m_coreInfoLabel->setOpenExternalLinks(true);
 
    m_coreInfoDock->setObjectName("coreInfoDock");
    m_coreInfoDock->setProperty("default_area", Qt::RightDockWidgetArea);
@@ -1542,6 +1544,7 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowM
 
    msgBox->setWindowModality(modality);
    msgBox->setTextFormat(Qt::RichText);
+   msgBox->setTextInteractionFlags(Qt::TextBrowserInteraction);
 
    if (showDontAsk)
    {
@@ -4551,13 +4554,18 @@ void MainWindow::showAbout()
 {
    QScopedPointer<QDialog> dialog(new QDialog());
    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
-   QString text = QString("RetroArch ") + PACKAGE_VERSION + "<br><br>" + "<a href=\"http://www.libretro.com/\">http://www.libretro.com</a>";
+   QString text = QString("RetroArch ") + PACKAGE_VERSION +
+         "<br><br>" + "<a href=\"http://www.libretro.com/\">www.libretro.com</a>"
+         "<br><br>" + "<a href=\"http://www.retroarch.com/\">www.retroarch.com</a>";
    QLabel *label = new QLabel(text, dialog.data());
    QPixmap pix = getInvader();
    QLabel *pixLabel = new QLabel();
 
    label->setTextFormat(Qt::RichText);
    label->setAlignment(Qt::AlignCenter);
+   label->setTextInteractionFlags(Qt::TextBrowserInteraction);
+   label->setOpenExternalLinks(true);
+
    pixLabel->setAlignment(Qt::AlignCenter);
 
    pixLabel->setPixmap(pix);
@@ -4575,6 +4583,11 @@ void MainWindow::showAbout()
    dialog->layout()->addWidget(buttonBox);
 
    dialog->exec();
+}
+
+void MainWindow::showDocs()
+{
+   QDesktopServices::openUrl(QUrl("http://docs.libretro.com/"));
 }
 
 const QPixmap getInvader()
