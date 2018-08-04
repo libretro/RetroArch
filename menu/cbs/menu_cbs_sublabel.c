@@ -457,6 +457,9 @@ default_sublabel_macro(action_bind_sublabel_resume_hardcode_mode,               
 default_sublabel_macro(action_bind_sublabel_midi_input,                            MENU_ENUM_SUBLABEL_MIDI_INPUT)
 default_sublabel_macro(action_bind_sublabel_midi_output,                           MENU_ENUM_SUBLABEL_MIDI_OUTPUT)
 default_sublabel_macro(action_bind_sublabel_midi_volume,                           MENU_ENUM_SUBLABEL_MIDI_VOLUME)
+default_sublabel_macro(action_bind_sublabel_onscreen_overlay_settings_list,        MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_onscreen_notifications_settings_list,  MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS)
+
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -505,9 +508,9 @@ static int action_bind_sublabel_remap_kbd_sublabel(
    unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
 
    snprintf(s, len, "User #%d: %s", user_idx + 1,
-      input_config_get_device_display_name(user_idx) ? 
-      input_config_get_device_display_name(user_idx) : 
-      (input_config_get_device_name(user_idx) ? 
+      input_config_get_device_display_name(user_idx) ?
+      input_config_get_device_display_name(user_idx) :
+      (input_config_get_device_name(user_idx) ?
       input_config_get_device_name(user_idx) : "N/A"));
    return 0;
 }
@@ -544,7 +547,7 @@ static int action_bind_sublabel_audio_mixer_stream(
          break;
    }
 
-   snprintf(s, len, "State : %s | Volume: %.2f dB", msg, 
+   snprintf(s, len, "State : %s | Volume: %.2f dB", msg,
          stream->volume);
    return 0;
 }
@@ -555,13 +558,13 @@ static int action_bind_sublabel_remap_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) 
+   unsigned offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN)
       / (RARCH_FIRST_CUSTOM_BIND + 8);
 
    snprintf(s, len, "User #%d: %s", offset + 1,
-      input_config_get_device_display_name(offset) ? 
-      input_config_get_device_display_name(offset) : 
-      (input_config_get_device_name(offset) ? 
+      input_config_get_device_display_name(offset) ?
+      input_config_get_device_display_name(offset) :
+      (input_config_get_device_name(offset) ?
       input_config_get_device_name(offset) : "N/A"));
    return 0;
 }
@@ -1927,6 +1930,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MIDI_VOLUME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_midi_volume);
+            break;
+         case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_onscreen_overlay_settings_list);
+            break;
+         case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_onscreen_notifications_settings_list);
             break;
          default:
          case MSG_UNKNOWN:

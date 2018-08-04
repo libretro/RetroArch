@@ -112,7 +112,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MSG_NETPLAY_CLIENT_HANGUP,
-	"Juego en red desconectado"
+	"Desconectado del juego en red"
 	)
 MSG_HASH(
 	MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
@@ -152,7 +152,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-	"Mejora el rendimiento a costa de la latencia y mas video stuttering. Usar solo si no puede obtener máxima velocidad de otra manera"
+	"Mejora el rendimiento a costa de la latencia y posiblemente algunos tirones. Usar solo si no puede obtener máxima velocidad de otra manera"
 	)
 MSG_HASH(
 	MSG_AUDIO_VOLUME,
@@ -1256,7 +1256,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
-	"Siguiente Overlay"
+	"Siguiente superposición"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -1316,15 +1316,15 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
-	"Mostrar Overlay"
+	"Mostrar superposición"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-	"Ocultar Overlay en el menú"
+	"Ocultar superposición en el menú"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-	"Mostrar entradas en Overlay"
+	"Mostrar entradas en la superposición"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
@@ -1672,11 +1672,11 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-	"Conectar al servidor de juego en red"
+	"Conectar a un servidor de juego"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-	"Iniciar juego en red como servidor"
+	"Iniciar servidor de juego"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
@@ -1760,7 +1760,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-	"Juego en red: modo sin estado"
+	"Juego en red: modo sin estados"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
@@ -1900,11 +1900,19 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
-	"Overlay"
+	"Superposiciones"
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
+	"Opciones de controles en pantalla o marcos"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
-	"Notificaciones en pantalla"
+	"Notificaciones"
+	)
+MSG_HASH(
+	MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+	"Ajusta las notificaciones en pantalla"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
@@ -1916,31 +1924,31 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_OVERLAY,
-	"Overlay"
+	"Superposiciones"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
-	"Auto-cargar Overlay preferido"
+	"Auto-cargar superposición preferida"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
-	"Overlay"
+	"Superposiciones"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
-	"Opacidad de Overlay"
+	"Opacidad"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
-	"Preset de Overlay"
+	"Superposición"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE,
-	"Escala de Overlay"
+	"Escala"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
-	"Overlay en pantalla"
+	"Superposición de pantalla"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
@@ -2420,11 +2428,11 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-	"Reducir latencia emulando anticipadamente (Run-Ahead)"
+	"Reducir latencia usando Run-Ahead"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
-	"Número de Frames para adelantarse (to run ahead)"
+	"Frames a ir por delante"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
@@ -2668,7 +2676,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-	"Soporte de Overlay"
+	"Soporte de superposiciones"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
@@ -2912,7 +2920,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-	"Actualizar Overlays"
+	"Actualizar superposiciones"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
@@ -3424,7 +3432,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-	"Opciones de notificaciones, teclado en pantalla y overlays"
+	"Opciones de notificaciones, controles en pantalla y marcos"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
@@ -3516,7 +3524,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-	"Cambiar las opciones relacionados con el video, audio y lantencia de entrada"
+	"Ajustar la latencia por medio de opciones relacionadas con el video, audio y entradas"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
@@ -3572,7 +3580,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-	"Reducir latencia a costa de un mayor riesgo de stuttering. Agrega un retraso después del VSync en milisegundos"
+	"Reducir latencia a costa de un mayor riesgo de tirones. Agrega un retraso después del VSync en milisegundos"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
@@ -3580,7 +3588,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-	"Informa al controlador que use el modo de buffering especificado"
+	"Informa al controlador que use el modo de buffering especificado (doble, triple, etc.)"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
@@ -3876,7 +3884,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MSG_FAILED_TO_LOAD_OVERLAY,
-	"Fallo al cargar overlay"
+	"Fallo al cargar la superposición"
 	)
 MSG_HASH(
 	MSG_FAILED_TO_LOAD_STATE,
@@ -4592,7 +4600,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
-	"Info de base de datos "
+	"Info de base de datos"
 	)
 MSG_HASH(
 	MSG_WIFI_SCAN_COMPLETE,
@@ -4664,7 +4672,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
-	"Juego en red comenzará cuando se cargue el contenido"
+	"El juego en red comenzará cuando se cargue el contenido"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
@@ -4784,15 +4792,15 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-	"Ocultar el overlay en el menú, mostrarlo al salir del menú"
+	"Ocultar la superposición en el menú, mostrarla al salir del menú"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-	"Mostrar pulsaciones de teclado/mando en overlay"
+	"Mostrar pulsaciones en los controles en pantalla"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-	"Seleccionar el puerto en que el overlay escuchará las pulsaciones"
+	"Seleccionar el puerto en que los controles en pantalla escucharán las pulsaciones"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
@@ -4844,11 +4852,11 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-	"Ejecutar la logica del núcleo uno o mas frames por adelentado, luego cargar el estado de nuevo, para reducir la latencia de entrada percibida"
+	"Ejecutar la logica del núcleo uno o mas frames por adelentado, y decidir cuando adelantar basados en las pulsaciones del control, esto puede reducir la latencia de entrada percibida, eliminando el lag interno de la consola o juego emulado"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-	"El número de frames para ir adelantado, si excedes el número de frames de lag internos del juego, puede causar tirones (jitter)"
+	"El número de frames que el núcleo irá adelantado, si excedes el número de frames de lag internos del juego, puede causar tirones (jitter)"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
@@ -5072,23 +5080,23 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-	"Opacidad de overlay"
+	"Controla la transparencia de la superposición"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-	"Tamaño de overlay"
+	"Controla el tamaño de la superposición"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-	"Activar overlay"
+	"Activar superposición"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-	"Seleciona un overlay desde el explorador de archivos"
+	"Seleciona una superposición desde el explorador de archivos"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
-	"La dirección del servidor a conectar"
+	"La dirección IP del servidor a conectar"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
@@ -5120,7 +5128,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-	"Activarlo necesita una red muy rápida, pero se eliminará el jitter al no realizar rebobinados"
+	"Necesita una red muy rápida, pero se eliminarán los tirones al no realizar rebobinados de sincronización"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
@@ -5168,11 +5176,11 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-	"Activar juego en red en modo servidor"
+	"Este dispositivo será el anfitrión de la partida"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-	"Activar juego en red en modo cliente"
+	"Serás un cliente de la partida"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
@@ -5188,7 +5196,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-	"Configura esto para reducir la tasa de refresco del monitor a la mitad"
+	"Un intervalo de 0 significa que la GPU no esperará a intercambiar los búfers, pero puede causar tearing. Un intervalo de 1 significa que la GPU forzará a la CPU a esperar que al menos un cuadro sea mostrado."
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
@@ -5392,15 +5400,15 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-	"El número de frames de entrada a usar para ocultar la latencia de red durante juego en red. Reduce jitter y el uso de CPU, a costa de incrementar el input lag"
+	"El número de frames de entrada a usar para ocultar la latencia de red durante juego en red. Reduce los tirones y el uso de CPU, a costa de incrementar la latencia de entrada"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-	"El rango de frames de entrada a usar para ocultar la latencia de red durante juego en red. Reduce jitter y el uso de CPU, a costa de incrementar el input lag dentro de un rango"
+	"El rango de frames de entrada a usar para ocultar la latencia de red durante juego en red. Reduce los tirones y el uso de CPU, a costa de incrementar la latencia de entrada dentro de un rango"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-	"Continua el ciclo de discos. Si el disco fue insertado, se expulsará sino se insertará"
+	"Continua el ciclo de discos. Si el disco fue introducido, se expulsará sino se introducirá"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_DISK_INDEX,
@@ -5560,7 +5568,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
-	"Carpeta de donde cargar overlays"
+	"Carpeta de donde cargar superposiciones"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
@@ -6024,7 +6032,7 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
-	"Mostrar/ocultar la opción de 'Información'"
+	"Muestra/oculta la opción de 'Información'"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
@@ -6216,11 +6224,11 @@ MSG_HASH(
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-	"Muestra/oculta las opciones de overlays"
+	"Muestra/oculta las opciones de superposición"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
-	"Mostrar opciones de overlay"
+	"Mostrar opciones de superposición"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
