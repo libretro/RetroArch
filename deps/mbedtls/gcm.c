@@ -516,7 +516,7 @@ void mbedtls_gcm_free( mbedtls_gcm_context *ctx )
 static const int key_index[MAX_TESTS] =
     { 0, 0, 1, 1, 1, 1 };
 
-static const unsigned char key[MAX_TESTS][32] =
+static const unsigned char gcm_key[MAX_TESTS][32] =
 {
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -753,7 +753,7 @@ int mbedtls_gcm_self_test( int verbose )
                 mbedtls_printf( "  AES-GCM-%3d #%d (%s): ",
                                  key_len, i, "enc" );
 
-            mbedtls_gcm_setkey( &ctx, cipher, key[key_index[i]], key_len );
+            mbedtls_gcm_setkey( &ctx, cipher, gcm_key[key_index[i]], key_len );
 
             ret = mbedtls_gcm_crypt_and_tag( &ctx, MBEDTLS_GCM_ENCRYPT,
                                      pt_len[i],
@@ -780,7 +780,7 @@ int mbedtls_gcm_self_test( int verbose )
                 mbedtls_printf( "  AES-GCM-%3d #%d (%s): ",
                                  key_len, i, "dec" );
 
-            mbedtls_gcm_setkey( &ctx, cipher, key[key_index[i]], key_len );
+            mbedtls_gcm_setkey( &ctx, cipher, gcm_key[key_index[i]], key_len );
 
             ret = mbedtls_gcm_crypt_and_tag( &ctx, MBEDTLS_GCM_DECRYPT,
                                      pt_len[i],
@@ -807,7 +807,7 @@ int mbedtls_gcm_self_test( int verbose )
                 mbedtls_printf( "  AES-GCM-%3d #%d split (%s): ",
                                  key_len, i, "enc" );
 
-            mbedtls_gcm_setkey( &ctx, cipher, key[key_index[i]], key_len );
+            mbedtls_gcm_setkey( &ctx, cipher, gcm_key[key_index[i]], key_len );
 
             ret = mbedtls_gcm_starts( &ctx, MBEDTLS_GCM_ENCRYPT,
                               iv[iv_index[i]], iv_len[i],
@@ -874,7 +874,7 @@ int mbedtls_gcm_self_test( int verbose )
                 mbedtls_printf( "  AES-GCM-%3d #%d split (%s): ",
                                  key_len, i, "dec" );
 
-            mbedtls_gcm_setkey( &ctx, cipher, key[key_index[i]], key_len );
+            mbedtls_gcm_setkey( &ctx, cipher, gcm_key[key_index[i]], key_len );
 
             ret = mbedtls_gcm_starts( &ctx, MBEDTLS_GCM_DECRYPT,
                               iv[iv_index[i]], iv_len[i],
