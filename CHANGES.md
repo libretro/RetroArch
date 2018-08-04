@@ -23,6 +23,7 @@
 - METAL: Initial work-in-progress video driver for Metal. macOS-only right now, and currently requires macOS 10.13.
 - METAL: Supports XMB/MaterialUI, has a menu display driver. Has a font rendering driver.
 - METAL/SLANG: Slang shaders should be compatible with Metal video driver.
+- NETWORK: Enable SSL/TLS support by default for desktop platforms.
 - QNX: Fix Game Focus Toggle.
 - PS3: Add audio mixer support for FLAC and MP3.
 - PSP: Use proper button labels, fix inverted R-Stick Y axis.
