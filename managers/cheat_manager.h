@@ -76,7 +76,7 @@ enum cheat_rumble_type
    RUMBLE_TYPE_GT_VALUE
 };
 
-#define CHEAT_CODE_SIZE 100
+#define CHEAT_CODE_SIZE 200
 #define CHEAT_DESC_SIZE 100
 
 struct item_cheat
