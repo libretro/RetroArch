@@ -906,7 +906,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i, char pos)
       xmb_node_t *node = (xmb_node_t*)
          file_list_get_userdata_at_offset(selection_buf, i);
 
-      if (!string_is_empty(node->fullpath) && 
+      if (!string_is_empty(node->fullpath) &&
             (pos == 'R' || (pos == 'L' && string_is_equal(xmb_thumbnails_ident('R'),
                                                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))))
       {
@@ -937,9 +937,9 @@ static void xmb_update_thumbnail_path(void *data, unsigned i, char pos)
       if (string_is_equal(core_name, "imageviewer"))
       {
          if (
-               (pos == 'R') || 
+               (pos == 'R') ||
                (
-                pos == 'L' && 
+                pos == 'L' &&
                 string_is_equal(xmb_thumbnails_ident('R'),
                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
                )
@@ -1766,7 +1766,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    xmb_list_switch_horizontal_list(xmb);
 
    anim_entry.duration     = XMB_DELAY;
-   anim_entry.target_value = xmb->icon_spacing_horizontal 
+   anim_entry.target_value = xmb->icon_spacing_horizontal
       * -(float)xmb->categories_selection_ptr;
    anim_entry.subject      = &xmb->categories_x_pos;
    anim_entry.easing_enum  = EASING_OUT_QUAD;
@@ -1945,7 +1945,7 @@ static void xmb_context_reset_horizontal_list(
    size_t list_size                =
       xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
 
-   xmb->categories_x_pos           = 
+   xmb->categories_x_pos           =
       xmb->icon_spacing_horizontal *
       -(float)xmb->categories_selection_ptr;
 
@@ -2374,7 +2374,7 @@ static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
    {
       for (j = current; j-- > 0; )
       {
-         float bottom = xmb_item_y(xmb, j, current) 
+         float bottom = xmb_item_y(xmb, j, current)
             + base_y + xmb->icon_size;
 
          if (bottom < 0)
@@ -2984,7 +2984,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       return;
 
    scale_factor                            = (settings->uints.menu_xmb_scale_factor * (float)width) / (1920.0 * 100);
-   pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4; 
+   pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4;
 
    xmb->frame_count++;
 
@@ -3071,20 +3071,20 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* This is used for hiding thumbnails when going into sub-levels in the
     * Quick Menu as well as when selecting "Information" for a playlist entry.
-    * NOTE: This is currently a pretty crude check, simply going by menu depth 
+    * NOTE: This is currently a pretty crude check, simply going by menu depth
     * and not specifically identifying which menu we're actually in. */
    hide_thumbnails = xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && xmb->depth > 2;
 
    /* Right thumbnail big size */
    if (!hide_thumbnails && !xmb->savestate_thumbnail && xmb->use_ps3_layout &&
-         (!settings->bools.menu_xmb_vertical_thumbnails || 
+         (!settings->bools.menu_xmb_vertical_thumbnails ||
          (settings->bools.menu_xmb_vertical_thumbnails && !xmb->left_thumbnail)))
    {
       /* Do not draw the right thumbnail if there is no space available */
 
-      if (((xmb->margins_screen_top + 
+      if (((xmb->margins_screen_top +
                   xmb->icon_size + min_thumb_size) <= height) &&
-            ((xmb->margins_screen_left * scale_mod[5] + 
+            ((xmb->margins_screen_left * scale_mod[5] +
               xmb->icon_spacing_horizontal +
               pseudo_font_length + min_thumb_size) <= width))
       {
@@ -3096,8 +3096,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
             float thumb_width     = 0.0f;
             float thumb_height    = 0.0f;
-            float thumb_max_width = (float)width - (xmb->icon_size / 6) 
-               - (xmb->margins_screen_left * scale_mod[5]) - 
+            float thumb_max_width = (float)width - (xmb->icon_size / 6)
+               - (xmb->margins_screen_left * scale_mod[5]) -
                xmb->icon_spacing_horizontal - pseudo_font_length;
 
 #ifdef XMB_DEBUG
@@ -3125,11 +3125,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   ((float)height * under_thumb_margin))
             {
                thumb_width = thumb_width *
-                  ((((float)height * under_thumb_margin) - 
+                  ((((float)height * under_thumb_margin) -
                     xmb->margins_screen_top - xmb->icon_size) /
                    thumb_height);
                thumb_height = thumb_height *
-                  ((((float)height * under_thumb_margin) - 
+                  ((((float)height * under_thumb_margin) -
                     xmb->margins_screen_top - xmb->icon_size) /
                    thumb_height);
             }
@@ -3185,19 +3185,19 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          }
 
          /* Limit left thumbnail height to screen height + margin. */
-         if (xmb->margins_screen_top + xmb->icon_size * 
+         if (xmb->margins_screen_top + xmb->icon_size *
                (!(xmb->depth == 1)? 2.1 : 1) +
-               left_thumb_height >= 
+               left_thumb_height >=
                ((float)height - (96.0 * scale_factor)))
          {
             left_thumb_width = left_thumb_width *
-               ((((float)height - (96.0 * scale_factor)) 
+               ((((float)height - (96.0 * scale_factor))
                  - xmb->margins_screen_top -
                  (xmb->icon_size * (!(xmb->depth == 1)? 2.1 : 1))) /
                 left_thumb_height);
 
             left_thumb_height = left_thumb_height *
-               ((((float)height - (96.0 * scale_factor)) 
+               ((((float)height - (96.0 * scale_factor))
                  - xmb->margins_screen_top -
                  (xmb->icon_size * (!(xmb->depth == 1)? 2.1 : 1))) /
                 left_thumb_height);
@@ -3205,9 +3205,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          xmb_draw_thumbnail(video_info,
                xmb, &coord_white[0], width, height,
-               (xmb->icon_size / 6) + 
+               (xmb->icon_size / 6) +
                ((thumb_max_width - left_thumb_width) / 2),
-               xmb->margins_screen_top + xmb->icon_size * 
+               xmb->margins_screen_top + xmb->icon_size *
                (!(xmb->depth == 1)? 2.1 : 1) + left_thumb_height,
                left_thumb_width, left_thumb_height,
                xmb->left_thumbnail);
@@ -3220,9 +3220,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       /* Do not draw the left thumbnail if there is no space available */
 
-      if (((xmb->margins_screen_top + 
+      if (((xmb->margins_screen_top +
                   xmb->icon_size + min_thumb_size) <= height) &&
-            ((xmb->margins_screen_left * scale_mod[5] + 
+            ((xmb->margins_screen_left * scale_mod[5] +
               xmb->icon_spacing_horizontal +
               pseudo_font_length + min_thumb_size) <= width))
       {
@@ -3336,7 +3336,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          }
 
          xmb_draw_thumbnail(video_info,
-               xmb, &coord_white[0], width, height, 
+               xmb, &coord_white[0], width, height,
                ((thumb_max_width - left_thumb_width) / 2),
                xmb->margins_screen_top + (xmb->icon_size * (!(xmb->depth == 1)? 2.2 : 0.75)) +
                left_thumb_height,
@@ -3457,7 +3457,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             &mymat,
             xmb->textures.list[XMB_TEXTURE_ARROW],
             xmb->x + xmb->margins_screen_left +
-            xmb->icon_spacing_horizontal - 
+            xmb->icon_spacing_horizontal -
             xmb->icon_size / 2.0 + xmb->icon_size,
             xmb->margins_screen_top +
             xmb->icon_size / 2.0 + xmb->icon_spacing_vertical
@@ -3490,9 +3490,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          uintptr_t texture        = node->icon;
          float x                  = xmb->x + xmb->categories_x_pos +
             xmb->margins_screen_left +
-            xmb->icon_spacing_horizontal 
+            xmb->icon_spacing_horizontal
             * (i + 1) - xmb->icon_size / 2.0;
-         float y                  = xmb->margins_screen_top 
+         float y                  = xmb->margins_screen_top
             + xmb->icon_size / 2.0;
          float rotation           = 0;
          float scale_factor       = node->zoom;
@@ -3524,7 +3524,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Right side 2 thumbnails on top of each other */
    /* here to be displayed above the horizontal icons */
-   if (!hide_thumbnails && !xmb->savestate_thumbnail && xmb->use_ps3_layout && 
+   if (!hide_thumbnails && !xmb->savestate_thumbnail && xmb->use_ps3_layout &&
       xmb->left_thumbnail && xmb->thumbnail &&
       settings->bools.menu_xmb_vertical_thumbnails)
    {
@@ -3593,9 +3593,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
       /* Do not draw the left thumbnail if there is no space available */
 
-      if (((xmb->margins_screen_top + 
+      if (((xmb->margins_screen_top +
                   xmb->icon_size + min_thumb_size) <= height) &&
-            ((xmb->margins_screen_left * scale_mod[5] + 
+            ((xmb->margins_screen_left * scale_mod[5] +
               xmb->icon_spacing_horizontal +
               pseudo_font_length + min_thumb_size) <= width))
       {
@@ -3667,7 +3667,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->selection_buf_old,
             xmb->selection_ptr_old,
             (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
-            ? xmb->categories_selection_ptr : 
+            ? xmb->categories_selection_ptr :
             xmb->categories_selection_ptr_old,
             &item_color[0],
             width,
@@ -3803,7 +3803,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    float scale_factor            =
       ((settings->uints.menu_xmb_scale_factor * width) / (1920.0 * 100)) * 1.5;
 #ifdef _3DS
-   scale_factor                  = 
+   scale_factor                  =
       settings->uints.menu_xmb_scale_factor / 400.0;
 #endif
 
