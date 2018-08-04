@@ -150,25 +150,29 @@ static const uint32_t K[] =
     0x748F82EE, 0x78A5636F, 0x84C87814, 0x8CC70208,
     0x90BEFFFA, 0xA4506CEB, 0xBEF9A3F7, 0xC67178F2,
 };
-
+#undef SHRs
 #define  SHR(x,n) ((x & 0xFFFFFFFF) >> n)
+#undef ROTR
 #define ROTR(x,n) (SHR(x,n) | (x << (32 - n)))
-
+#undef S0
 #define S0(x) (ROTR(x, 7) ^ ROTR(x,18) ^  SHR(x, 3))
+#undef S1
 #define S1(x) (ROTR(x,17) ^ ROTR(x,19) ^  SHR(x,10))
-
+#undef S2
 #define S2(x) (ROTR(x, 2) ^ ROTR(x,13) ^ ROTR(x,22))
+#undef S3
 #define S3(x) (ROTR(x, 6) ^ ROTR(x,11) ^ ROTR(x,25))
 
 #define F0(x,y,z) ((x & y) | (z & (x | y)))
+#undef F1
 #define F1(x,y,z) (z ^ (x & (y ^ z)))
-
+#undef R
 #define R(t)                                    \
 (                                               \
     W[t] = S1(W[t -  2]) + W[t -  7] +          \
            S0(W[t - 15]) + W[t - 16]            \
 )
-
+#undef P
 #define P(a,b,c,d,e,f,g,h,x,K)                  \
 {                                               \
     temp1 = h + S3(e) + F1(e,f,g) + K + x;      \

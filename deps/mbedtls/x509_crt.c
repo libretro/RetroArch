@@ -1354,7 +1354,9 @@ static int x509_info_ext_key_usage( char **buf, size_t *size,
 /*
  * Return an informational string about the certificate.
  */
+#undef BEFORE_COLON
 #define BEFORE_COLON    18
+#undef BC
 #define BC              "18"
 int mbedtls_x509_crt_info( char *buf, size_t size, const char *prefix,
                    const mbedtls_x509_crt *crt )

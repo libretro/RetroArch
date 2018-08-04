@@ -570,7 +570,9 @@ int mbedtls_x509_crl_parse_file( mbedtls_x509_crl *chain, const char *path )
 /*
  * Return an informational string about the certificate.
  */
+#undef BEFORE_COLON
 #define BEFORE_COLON    14
+#undef BC
 #define BC              "14"
 /*
  * Return an informational string about the CRL.

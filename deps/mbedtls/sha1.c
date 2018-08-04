@@ -127,16 +127,16 @@ void mbedtls_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[6
     GET_UINT32_BE( W[13], data, 52 );
     GET_UINT32_BE( W[14], data, 56 );
     GET_UINT32_BE( W[15], data, 60 );
-
+#undef  S
 #define S(x,n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
-
+#undef R
 #define R(t)                                            \
 (                                                       \
     temp = W[( t -  3 ) & 0x0F] ^ W[( t - 8 ) & 0x0F] ^ \
            W[( t - 14 ) & 0x0F] ^ W[  t       & 0x0F],  \
     ( W[t & 0x0F] = S(temp,1) )                         \
 )
-
+#undef P
 #define P(a,b,c,d,e,x)                                  \
 {                                                       \
     e += S(a,5) + F(b,c,d) + K + x; b = S(b,30);        \

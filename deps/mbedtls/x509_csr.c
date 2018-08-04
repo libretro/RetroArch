@@ -328,8 +328,9 @@ int mbedtls_x509_csr_parse_file( mbedtls_x509_csr *csr, const char *path )
     return( ret );
 }
 #endif /* MBEDTLS_FS_IO */
-
+#undef BEFORE_COLON
 #define BEFORE_COLON    14
+#undef BC
 #define BC              "14"
 /*
  * Return an informational string about the CSR.

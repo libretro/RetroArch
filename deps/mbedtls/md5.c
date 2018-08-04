@@ -126,9 +126,9 @@ void mbedtls_md5_process( mbedtls_md5_context *ctx, const unsigned char data[64]
     GET_UINT32_LE( X[13], data, 52 );
     GET_UINT32_LE( X[14], data, 56 );
     GET_UINT32_LE( X[15], data, 60 );
-
+#undef  S
 #define S(x,n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
-
+#undef P
 #define P(a,b,c,d,k,s,t)                                \
 {                                                       \
     a += F(b,c,d) + X[k] + t; a = S(a,s) + b;           \
