@@ -44,10 +44,7 @@
 #include "mbedtls/pem.h"
 #endif /* MBEDTLS_PEM_WRITE_C */
 
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
-}
+#include "arc4_alt.h"
 
 void mbedtls_x509write_crt_init( mbedtls_x509write_cert *ctx )
 {

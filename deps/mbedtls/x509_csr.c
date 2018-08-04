@@ -60,10 +60,7 @@
 #include <stdio.h>
 #endif
 
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
-}
+#include "arc4_alt.h"
 
 /*
  *  Version  ::=  INTEGER  {  v1(0)  }
