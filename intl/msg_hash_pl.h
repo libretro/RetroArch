@@ -12,7 +12,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-      "Otrzymano nieznane polecenie gry internetwoej"
+      "Otrzymano nieznane polecenie gry sieciowej"
       )
 MSG_HASH(
       MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
@@ -52,7 +52,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
-      "Dołączyłeś do urządzeń wejściowych %.*s"
+      "Dołączyłeś z urządzeniami wejściowymi %.*s"
       )
 MSG_HASH(
       MSG_NETPLAY_PLAYER_S_LEFT,
@@ -64,23 +64,23 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
-      "%.*s dołączył do urządzeń wejściowych %.*s"
+      "%.*s dołączył z urządzeniami wejściowymi %.*s"
       )
 MSG_HASH(
       MSG_NETPLAY_NOT_RETROARCH,
-      "Próba połączenia online nie powiodła się, ponieważ peer nie działa w trybie RetroArch lub działa w starej wersji RetroArch."
+      "Próba połączenia online nie powiodła się, ponieważ peer nie działa w trybie RetroArch lub używa starej wersji RetroArch."
       )
 MSG_HASH(
       MSG_NETPLAY_OUT_OF_DATE,
-      "Grający online, peer ma starą wersję RetroArch. Nie można połączyć."
+      "Grający online korzysta ze starej wersji RetroArch. Nie można połączyć."
       )
 MSG_HASH(
       MSG_NETPLAY_DIFFERENT_VERSIONS,
-      "OSTRZEŻENIE: Grający w online ma inną wersję RetroArch. Jeśli wystąpią problemy, użyj tej samej wersji."
+      "OSTRZEŻENIE: Grający online korzysta z innej wersji RetroArch. Jeśli wystąpią problemy, użyjcie tej samej wersji."
       )
 MSG_HASH(
       MSG_NETPLAY_DIFFERENT_CORES,
-      "Grający w online ma inny rdzeń. Nie można połączyć."
+      "Grający online korzysta z innego rdzenia. Nie można połączyć."
       )
 MSG_HASH(
       MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
@@ -88,7 +88,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
-      "Ten rdzeń nie obsługuje gry online między architekturami w tych systemach"
+      "Ten rdzeń nie obsługuje gry online między architekturami tych systemów"
       )
 MSG_HASH(
       MSG_NETPLAY_PLATFORM_DEPENDENT,
@@ -120,7 +120,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
-      "Nie ma wolnych miejsc dla graczy"
+      "Brak wolnych miejsc dla graczy"
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
@@ -132,7 +132,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_PEER_PAUSED,
-      "Gre online \"%s\" wstrzymano"
+      "Gracz \"%s\" wstrzymał grę"
       )
 MSG_HASH(
       MSG_NETPLAY_CHANGED_NICK,
@@ -696,7 +696,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
       "Co to jest rdzeń?")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-      "Włącz liste historii")
+      "Włącz listę historii")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
       "Historia")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
@@ -1236,7 +1236,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
       "Wstrzymaj przy włączonym menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-      "Nie uruchamiaj się w tle")
+      "Nie pracuj w tle")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
       "Liczniki wydajności")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -1664,9 +1664,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_TRUE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
       "Włącz Companion UI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
-      "Włącz przy starcie UI Companion")
+      "Uruchom Companion UI przy włączeniu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
       "Pasek menu")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
+      "Uruchom menu okienkowe przy włączeniu")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+      "Włącz menu okienkowe (wymagany restar)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
       "Nie można odczytać skompresowanego pliku.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
@@ -1964,7 +1968,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
       "Zmień ustawienia prywatności.")
  MSG_HASH(MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
-      "Zmień ustawienia MIDI.")
+      "Zmień ustawienia urządzeń MIDI.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
       "Zmień domyślne katalogi, w których znajdują się pliki.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
@@ -2485,7 +2489,7 @@ MSG_HASH(
       )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   "Synchronizuj dźwięk. Zalecana."
+   "Synchronizuj dźwięk. Zalecane."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
@@ -2615,9 +2619,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
       "Włącz lub wyłącz kompozycję (tylko system Windows).")
 MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
-      "Włącz lub wyłącz najnowszą listę odtwarzania gier, zdjęć, muzyki i filmów.")
+      "Włącz lub wyłącz listę najnowszych odtwarzanych, zdjęć, muzyki i filmów.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
-      "Ogranicz liczbę wpisów na liście odtwarzania w przypadku gier, zdjęć, muzyki i filmów.")
+      "Ogranicz liczbę wpisów na liście odtwarzania dla gier, zdjęć, muzyki i filmów.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
       "Zunifikowane sterowanie menu")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
@@ -2878,7 +2882,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-      "Zastąp domyślne urządzenie audio używane przez sterownik audio. To zależy od kierowcy."
+      "Zastąp domyślne użądzenie audio używane przez sterownik. Zależne od sterownika."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
