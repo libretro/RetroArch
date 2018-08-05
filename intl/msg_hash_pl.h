@@ -2882,7 +2882,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-      "Zastąp domyślne użądzenie audio używane przez sterownik. Zależne od sterownika."
+      "Zastąp domyślne urządzenie audio używane przez sterownik. Zależne od sterownika."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
