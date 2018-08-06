@@ -3411,12 +3411,14 @@ bool config_load_remap(void)
 
    new_conf = NULL;
 
+   free(content_path);
    free(remap_directory);
    free(core_path);
    free(game_path);
    return false;
 
 success:
+   free(content_path);
    free(remap_directory);
    free(core_path);
    free(game_path);
