@@ -1605,7 +1605,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 static struct config_size_setting *populate_settings_size(settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_size_setting  *tmp   = (struct config_size_setting*)malloc((*size + 1) * sizeof(struct config_size_setting));
+   struct config_size_setting  *tmp   = (struct config_size_setting*)calloc((*size + 1), sizeof(struct config_size_setting));
 
    SETTING_SIZE("rewind_buffer_size",           &settings->sizes.rewind_buffer_size, true, rewind_buffer_size, false);
 
@@ -2646,11 +2646,9 @@ static bool config_load_file(const char *path, bool set_defaults,
        * If the value is less than 10000 then multiple by 1MB because if the retroarch.cfg
        * file contains rewind_buffer_size = "100" then that ultimately gets interpreted as
        * 100MB, so ensure the internal values represent that.*/
-      if ( strcmp(size_settings[i].ident, "rewind_buffer_size") == 0 ) {
-         if ( *size_settings[i].ptr < 10000) {
-            *size_settings[i].ptr  = *size_settings[i].ptr * 1024 * 1024 ;
-         }
-      }
+      if (string_is_equal(size_settings[i].ident, "rewind_buffer_size"))
+         if (*size_settings[i].ptr < 10000)
+            *size_settings[i].ptr  = *size_settings[i].ptr * 1024 * 1024;
    }
 
    for (i = 0; i < MAX_USERS; i++)
