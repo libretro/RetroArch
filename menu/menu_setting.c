@@ -3323,10 +3323,25 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
+               &settings->bools.apply_cheats_after_load,
+               MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
+               MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+               apply_cheats_after_load,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_BOOL(
+               list, list_info,
                &settings->bools.apply_cheats_after_toggle,
                MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
                MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
-               rewind_enable,
+               apply_cheats_after_toggle,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
