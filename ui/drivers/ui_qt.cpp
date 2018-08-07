@@ -224,6 +224,8 @@ static void* ui_companion_qt_init(void)
    QMenu *editMenu = NULL;
    QMenu *viewMenu = NULL;
    QMenu *viewClosedDocksMenu = NULL;
+   QMenu *toolsMenu = NULL;
+   QMenu *updaterMenu = NULL;
    QMenu *helpMenu = NULL;
    QRect desktopRect;
    QDockWidget *thumbnailDock = NULL;
@@ -323,6 +325,11 @@ static void* ui_companion_qt_init(void)
    viewMenu->addSeparator();
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS), mainwindow->viewOptionsDialog(), SLOT(showDialog()));
 
+   toolsMenu = menu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS));
+   updaterMenu = toolsMenu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER));
+#ifdef Q_OS_WIN
+   updaterMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY), mainwindow, SLOT(updateRetroArchNightly()));
+#endif
    helpMenu = menu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP));
    helpMenu->addAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION)), mainwindow, SLOT(showDocs()));
    helpMenu->addAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT)) + "...", mainwindow, SLOT(showAbout()));
