@@ -34,6 +34,8 @@
 
 #include <stddef.h>
 
+#include <retro_inline.h>
+
 #if defined(MBEDTLS_GCM_C) || defined(MBEDTLS_CCM_C)
 #define MBEDTLS_CIPHER_MODE_AEAD
 #endif
@@ -44,11 +46,6 @@
 
 #if defined(MBEDTLS_ARC4_C)
 #define MBEDTLS_CIPHER_MODE_STREAM
-#endif
-
-#if ( defined(__ARMCC_VERSION) || defined(_MSC_VER) ) && \
-    !defined(inline) && !defined(__cplusplus)
-#define inline __inline
 #endif
 
 #define MBEDTLS_ERR_CIPHER_FEATURE_UNAVAILABLE            -0x6080  /**< The selected feature is not available. */
@@ -74,7 +71,7 @@ typedef enum {
     MBEDTLS_CIPHER_ID_3DES,
     MBEDTLS_CIPHER_ID_CAMELLIA,
     MBEDTLS_CIPHER_ID_BLOWFISH,
-    MBEDTLS_CIPHER_ID_ARC4,
+    MBEDTLS_CIPHER_ID_ARC4
 } mbedtls_cipher_id_t;
 
 typedef enum {
@@ -126,7 +123,7 @@ typedef enum {
     MBEDTLS_CIPHER_AES_256_CCM,
     MBEDTLS_CIPHER_CAMELLIA_128_CCM,
     MBEDTLS_CIPHER_CAMELLIA_192_CCM,
-    MBEDTLS_CIPHER_CAMELLIA_256_CCM,
+    MBEDTLS_CIPHER_CAMELLIA_256_CCM
 } mbedtls_cipher_type_t;
 
 typedef enum {
@@ -138,7 +135,7 @@ typedef enum {
     MBEDTLS_MODE_CTR,
     MBEDTLS_MODE_GCM,
     MBEDTLS_MODE_STREAM,
-    MBEDTLS_MODE_CCM,
+    MBEDTLS_MODE_CCM
 } mbedtls_cipher_mode_t;
 
 typedef enum {
@@ -146,13 +143,13 @@ typedef enum {
     MBEDTLS_PADDING_ONE_AND_ZEROS, /**< ISO/IEC 7816-4 padding         */
     MBEDTLS_PADDING_ZEROS_AND_LEN, /**< ANSI X.923 padding             */
     MBEDTLS_PADDING_ZEROS,         /**< zero padding (not reversible!) */
-    MBEDTLS_PADDING_NONE,          /**< never pad (full blocks only)   */
+    MBEDTLS_PADDING_NONE          /**< never pad (full blocks only)   */
 } mbedtls_cipher_padding_t;
 
 typedef enum {
     MBEDTLS_OPERATION_NONE = -1,
     MBEDTLS_DECRYPT = 0,
-    MBEDTLS_ENCRYPT,
+    MBEDTLS_ENCRYPT
 } mbedtls_operation_t;
 
 enum {
@@ -163,7 +160,7 @@ enum {
     /** Key length, in bits (including parity), for DES in two key EDE */
     MBEDTLS_KEY_LENGTH_DES_EDE = 128,
     /** Key length, in bits (including parity), for DES in three-key EDE */
-    MBEDTLS_KEY_LENGTH_DES_EDE3 = 192,
+    MBEDTLS_KEY_LENGTH_DES_EDE3 = 192
 };
 
 /** Maximum length of any IV, in bytes */
@@ -337,7 +334,7 @@ int mbedtls_cipher_setup( mbedtls_cipher_context_t *ctx, const mbedtls_cipher_in
  * \return              size of the cipher's blocks, or 0 if ctx has not been
  *                      initialised.
  */
-static inline unsigned int mbedtls_cipher_get_block_size( const mbedtls_cipher_context_t *ctx )
+static INLINE unsigned int mbedtls_cipher_get_block_size( const mbedtls_cipher_context_t *ctx )
 {
     if( NULL == ctx || NULL == ctx->cipher_info )
         return 0;
@@ -354,7 +351,7 @@ static inline unsigned int mbedtls_cipher_get_block_size( const mbedtls_cipher_c
  * \return              mode of operation, or MBEDTLS_MODE_NONE if ctx
  *                      has not been initialised.
  */
-static inline mbedtls_cipher_mode_t mbedtls_cipher_get_cipher_mode( const mbedtls_cipher_context_t *ctx )
+static INLINE mbedtls_cipher_mode_t mbedtls_cipher_get_cipher_mode( const mbedtls_cipher_context_t *ctx )
 {
     if( NULL == ctx || NULL == ctx->cipher_info )
         return MBEDTLS_MODE_NONE;
@@ -371,7 +368,7 @@ static inline mbedtls_cipher_mode_t mbedtls_cipher_get_cipher_mode( const mbedtl
  *                      (0 for ciphers not using IV/NONCE).
  *                      If IV has already been set: actual size.
  */
-static inline int mbedtls_cipher_get_iv_size( const mbedtls_cipher_context_t *ctx )
+static INLINE int mbedtls_cipher_get_iv_size( const mbedtls_cipher_context_t *ctx )
 {
     if( NULL == ctx || NULL == ctx->cipher_info )
         return 0;
@@ -390,7 +387,7 @@ static inline int mbedtls_cipher_get_iv_size( const mbedtls_cipher_context_t *ct
  * \return              type of the cipher, or MBEDTLS_CIPHER_NONE if ctx has
  *                      not been initialised.
  */
-static inline mbedtls_cipher_type_t mbedtls_cipher_get_type( const mbedtls_cipher_context_t *ctx )
+static INLINE mbedtls_cipher_type_t mbedtls_cipher_get_type( const mbedtls_cipher_context_t *ctx )
 {
     if( NULL == ctx || NULL == ctx->cipher_info )
         return MBEDTLS_CIPHER_NONE;
@@ -405,7 +402,7 @@ static inline mbedtls_cipher_type_t mbedtls_cipher_get_type( const mbedtls_ciphe
  *
  * \return              name of the cipher, or NULL if ctx was not initialised.
  */
-static inline const char *mbedtls_cipher_get_name( const mbedtls_cipher_context_t *ctx )
+static INLINE const char *mbedtls_cipher_get_name( const mbedtls_cipher_context_t *ctx )
 {
     if( NULL == ctx || NULL == ctx->cipher_info )
         return 0;
@@ -422,7 +419,7 @@ static inline const char *mbedtls_cipher_get_name( const mbedtls_cipher_context_
  *                      MBEDTLS_KEY_LENGTH_NONE if ctx has not been
  *                      initialised.
  */
-static inline int mbedtls_cipher_get_key_bitlen( const mbedtls_cipher_context_t *ctx )
+static INLINE int mbedtls_cipher_get_key_bitlen( const mbedtls_cipher_context_t *ctx )
 {
     if( NULL == ctx || NULL == ctx->cipher_info )
         return MBEDTLS_KEY_LENGTH_NONE;
@@ -439,7 +436,7 @@ static inline int mbedtls_cipher_get_key_bitlen( const mbedtls_cipher_context_t 
  *                      or MBEDTLS_OPERATION_NONE if ctx has not been
  *                      initialised.
  */
-static inline mbedtls_operation_t mbedtls_cipher_get_operation( const mbedtls_cipher_context_t *ctx )
+static INLINE mbedtls_operation_t mbedtls_cipher_get_operation( const mbedtls_cipher_context_t *ctx )
 {
     if( NULL == ctx || NULL == ctx->cipher_info )
         return MBEDTLS_OPERATION_NONE;

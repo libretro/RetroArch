@@ -35,7 +35,7 @@ extern "C" {
 typedef enum
 {
     MBEDTLS_ECDH_OURS,
-    MBEDTLS_ECDH_THEIRS,
+    MBEDTLS_ECDH_THEIRS
 } mbedtls_ecdh_side;
 
 /**
