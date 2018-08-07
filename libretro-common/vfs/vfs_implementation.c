@@ -380,6 +380,22 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
    return stream->size;
 }
 
+int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, int64_t length)
+{
+   if (!stream)
+      return -1;
+
+#ifdef _WIN32
+   if(_chsize(_fileno(stream->fp), length) != 0)
+      return -1;
+#else
+   if(ftruncate(fileno(stream->fp), length) != 0)
+      return -1;
+#endif
+
+   return 0;
+}
+
 int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 {
    if (!stream)

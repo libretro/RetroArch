@@ -1047,6 +1047,10 @@ typedef int (RETRO_CALLCONV *retro_vfs_close_t)(struct retro_vfs_file_handle *st
  * Introduced in VFS API v1 */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_size_t)(struct retro_vfs_file_handle *stream);
 
+/* Truncate file to specified size. Returns 0 on success or -1 on error
+ * Introduced in VFS API v2 */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_truncate_t)(struct retro_vfs_file_handle *stream, int64_t length);
+
 /* Get the current read / write position for the file. Returns - 1 for error.
  * Introduced in VFS API v1 */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_tell_t)(struct retro_vfs_file_handle *stream);
@@ -1088,6 +1092,7 @@ struct retro_vfs_interface
 	retro_vfs_flush_t flush;
 	retro_vfs_remove_t remove;
 	retro_vfs_rename_t rename;
+   retro_vfs_truncate_t truncate;
 };
 
 struct retro_vfs_interface_info

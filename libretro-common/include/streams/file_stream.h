@@ -49,6 +49,8 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 
 int64_t filestream_get_size(RFILE *stream);
 
+int64_t filestream_truncate(RFILE *stream, int64_t length);
+
 /**
  * filestream_open:
  * @path               : path to file
