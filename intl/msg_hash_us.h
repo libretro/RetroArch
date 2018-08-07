@@ -3818,6 +3818,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
       "Please restart the program for the changes to take effect.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_LOG,
       "Log")
+#ifdef HAVE_QT
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
       "Scan Finished.<br><br>\n"
       "In order for content to be correctly scanned, you must:\n"
@@ -3826,6 +3827,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
       "<li>have \"Databases\" updated via Online Updater</li>\n"
       "<li>restart RetroArch if any of the above was just done</li></ul>\n"
       "Finally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>.")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
       "Don't show this again")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_STOP,
