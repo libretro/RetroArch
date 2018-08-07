@@ -48,10 +48,7 @@
 
 #if !defined(MBEDTLS_CAMELLIA_ALT)
 
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = (unsigned char*)v; while( n-- ) *p++ = 0;
-}
+#include "arc4_alt.h"
 
 /*
  * 32-bit integer manipulation macros (big endian)
@@ -88,7 +85,7 @@ static const unsigned char SIGMA_CHARS[6][8] =
 
 #if defined(MBEDTLS_CAMELLIA_SMALL_MEMORY)
 
-static const unsigned char FSb[256] =
+static const unsigned char C_FSb[256] =
 {
     112,130, 44,236,179, 39,192,229,228,133, 87, 53,234, 12,174, 65,
      35,239,107,147, 69, 25,165, 33,237, 14, 79, 78, 29,101,146,189,
@@ -108,14 +105,14 @@ static const unsigned char FSb[256] =
      64, 40,211,123,187,201, 67,193, 21,227,173,244,119,199,128,158
 };
 
-#define SBOX1(n) FSb[(n)]
-#define SBOX2(n) (unsigned char)((FSb[(n)] >> 7 ^ FSb[(n)] << 1) & 0xff)
-#define SBOX3(n) (unsigned char)((FSb[(n)] >> 1 ^ FSb[(n)] << 7) & 0xff)
-#define SBOX4(n) FSb[((n) << 1 ^ (n) >> 7) &0xff]
+#define SBOX1(n) C_FSb[(n)]
+#define SBOX2(n) (unsigned char)((C_FSb[(n)] >> 7 ^ C_FSb[(n)] << 1) & 0xff)
+#define SBOX3(n) (unsigned char)((C_FSb[(n)] >> 1 ^ C_FSb[(n)] << 7) & 0xff)
+#define SBOX4(n) C_FSb[((n) << 1 ^ (n) >> 7) &0xff]
 
 #else /* MBEDTLS_CAMELLIA_SMALL_MEMORY */
 
-static const unsigned char FSb[256] =
+static const unsigned char C_FSb[256] =
 {
  112, 130,  44, 236, 179,  39, 192, 229, 228, 133,  87,  53, 234,  12, 174,  65,
   35, 239, 107, 147,  69,  25, 165,  33, 237,  14,  79,  78,  29, 101, 146, 189,
@@ -195,7 +192,7 @@ static const unsigned char FSb4[256] =
   7,  85, 238,  10,  73, 104,  56, 164,  40, 123, 201, 193, 227, 244, 199, 158
 };
 
-#define SBOX1(n) FSb[(n)]
+#define SBOX1(n) C_FSb[(n)]
 #define SBOX2(n) FSb2[(n)]
 #define SBOX3(n) FSb3[(n)]
 #define SBOX4(n) FSb4[(n)]

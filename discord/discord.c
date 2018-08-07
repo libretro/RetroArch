@@ -14,10 +14,15 @@
  */
 
 #include "discord.h"
+#include "retroarch.h"
+#include "core.h"
+#include "core_info.h"
+#include "paths.h"
+#include <file/file_path.h>
 
 #include "../msg_hash.h"
 
-static const char* APPLICATION_ID = "450822022025576457";
+static const char* APPLICATION_ID = "475456035851599874";
 static int FrustrationLevel       = 0;
 static int64_t start_time         = 0;
 
@@ -66,6 +71,10 @@ static void handle_discord_join_request(const DiscordUser* request)
 
 void discord_update(enum discord_presence presence)
 {
+   rarch_system_info_t *system = runloop_get_system_info();
+   core_info_t *core_info    = NULL;
+   core_info_get_current_core(&core_info);
+
    if (!discord_ready)
       return;
    if (
@@ -81,20 +90,28 @@ void discord_update(enum discord_presence presence)
    {
       case DISCORD_PRESENCE_MENU:
          discord_presence.state           = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU);
-         discord_presence.largeImageKey   = "icon";
+         discord_presence.largeImageKey   = "base";
          discord_presence.instance        = 0;
          discord_presence.startTimestamp  = start_time;
          break;
       case DISCORD_PRESENCE_GAME:
-         start_time                       = time(0);
-         discord_presence.state           = "Link's House";
-         discord_presence.details         = "Legend of Zelda, The - Link's Awakening DX";
-         discord_presence.largeImageKey   = "icon";
-#if 0
-         discord_presence.smallImageKey   = "icon";
+         {
+            const char *system_name  = string_replace_substring(string_to_lower(core_info->core_name), " ", "_");
+
+            start_time                       = time(0);
+            discord_presence.state           = system ? system->info.library_name : "---";
+            discord_presence.details         = path_basename(path_get(RARCH_PATH_BASENAME));
+#if 1
+            RARCH_LOG("[Discord] system name: %s\n", system_name);
 #endif
-         discord_presence.instance        = 0;
-         discord_presence.startTimestamp  = start_time;
+            discord_presence.largeImageKey   = system_name;
+
+            discord_presence.smallImageKey   = "base";
+
+            discord_presence.instance        = 0;
+            discord_presence.startTimestamp  = start_time;
+
+         }
          break;
       case DISCORD_PRESENCE_NETPLAY_HOSTING:
       case DISCORD_PRESENCE_NETPLAY_CLIENT:

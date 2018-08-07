@@ -35,6 +35,7 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QtConcurrentRun>
+#include <QtNetwork>
 
 #include "../ui_qt.h"
 #include "ui_qt_load_core_window.h"
@@ -56,10 +57,12 @@ extern "C" {
 #include "../../../content.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../tasks/tasks_internal.h"
+#include "../../../config.def.h"
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
+#include <streams/file_stream.h>
 #include <math.h>
 }
 
@@ -81,6 +84,10 @@ extern "C" {
 #define KATAKANA_START 0x30A1U
 #define KATAKANA_END 0x30F6U
 #define HIRA_KATA_OFFSET (KATAKANA_START - HIRAGANA_START)
+#define USER_AGENT "RetroArch-WIMP/1.0"
+#define DOCS_URL "http://docs.libretro.com/"
+#define PARTIAL_EXTENSION ".partial"
+#define TEMP_EXTENSION ".update_tmp"
 
 static ui_window_qt_t ui_window = {0};
 
@@ -908,6 +915,10 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_allPlaylistsGridMaxCount(0)
    ,m_playlistEntryDialog(NULL)
    ,m_statusMessageElapsedTimer()
+   ,m_networkManager(new QNetworkAccessManager(this))
+   ,m_updateProgressDialog(new QProgressDialog())
+   ,m_updateFile()
+   ,m_updateReply()
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -926,6 +937,8 @@ MainWindow::MainWindow(QWidget *parent) :
    int i = 0;
 
    qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
+
+   m_updateProgressDialog->cancel();
 
    m_gridProgressWidget = new QWidget();
    gridProgressLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PROGRESS), m_gridProgressWidget);
@@ -1146,6 +1159,8 @@ MainWindow::MainWindow(QWidget *parent) :
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
    resizeDocks(QList<QDockWidget*>() << m_searchDock, QList<int>() << 1, Qt::Vertical);
 #endif
+
+   removeUpdateTempFiles();
 }
 
 MainWindow::~MainWindow()
@@ -1158,6 +1173,31 @@ MainWindow::~MainWindow()
       delete m_thumbnailPixmap3;
 
    removeGridItems();
+}
+
+void MainWindow::removeUpdateTempFiles()
+{
+   /* a QDir with no path means the current working directory */
+   QDir dir;
+   QStringList dirList = dir.entryList(QStringList(), QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System, QDir::Name);
+   int i;
+
+   for (i = 0; i < dirList.count(); i++)
+   {
+      QString path(dir.path() + "/" + dirList.at(i));
+      QFile file(path);
+
+      if (path.endsWith(TEMP_EXTENSION))
+      {
+         QByteArray pathArray = path.toUtf8();
+         const char *pathData = pathArray.constData();
+
+         if (file.remove())
+            RARCH_LOG("[Qt]: removed temporary update file %s\n", pathData);
+         else
+            RARCH_LOG("[Qt]: could not remove temporary update file %s\n", pathData);
+      }
+   }
 }
 
 void MainWindow::onPlaylistFilesDropped(QStringList files)
@@ -1215,7 +1255,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
 
    if (currentPlaylistPath == ALL_PLAYLISTS_TOKEN)
    {
-      ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+      showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
       return;
    }
 
@@ -1239,7 +1279,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
    if (selectedName.isEmpty() || selectedPath.isEmpty() ||
        selectedDatabase.isEmpty())
    {
-      ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+      showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
       return;
    }
 
@@ -1269,7 +1309,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       else if (files.count() == 1)
       {
          /* If adding a single file, tell user that it doesn't exist. */
-         ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+         showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
          return;
       }
    }
@@ -1469,11 +1509,11 @@ void MainWindow::showWelcomeScreen()
       "Documentation for RetroArch, libretro and cores:<br>\n"
       "<a href=\"https://docs.libretro.com/\">https://docs.libretro.com/</a>");
 
-   if (!ui_window.qtWindow->settings()->value("show_welcome_screen", true).toBool())
+   if (!m_settings->value("show_welcome_screen", true).toBool())
       return;
 
-   if (!ui_window.qtWindow->showMessageBox(welcomeText, MainWindow::MSGBOX_TYPE_INFO, Qt::ApplicationModal))
-      ui_window.qtWindow->settings()->setValue("show_welcome_screen", false);
+   if (!showMessageBox(welcomeText, MainWindow::MSGBOX_TYPE_INFO, Qt::ApplicationModal))
+      m_settings->setValue("show_welcome_screen", false);
 
 }
 
@@ -1784,7 +1824,7 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 
       if (!updateCurrentPlaylistEntry(contentHash))
       {
-         ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+         showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
          return;
       }
    }
@@ -1966,12 +2006,12 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    {
       if (currentPlaylistFile.exists())
       {
-         if (ui_window.qtWindow->showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST)).arg(selectedItem->text()), MainWindow::MSGBOX_TYPE_QUESTION, Qt::ApplicationModal, false))
+         if (showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST)).arg(selectedItem->text()), MainWindow::MSGBOX_TYPE_QUESTION, Qt::ApplicationModal, false))
          {
             if (currentPlaylistFile.remove())
                reloadPlaylists();
             else
-               ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+               showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
          }
       }
    }
@@ -2823,7 +2863,7 @@ void MainWindow::deleteCurrentPlaylistItem()
    if (!ok)
       return;
 
-   if (!ui_window.qtWindow->showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM)).arg(contentHash["label"]), MainWindow::MSGBOX_TYPE_QUESTION, Qt::ApplicationModal, false))
+   if (!showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM)).arg(contentHash["label"]), MainWindow::MSGBOX_TYPE_QUESTION, Qt::ApplicationModal, false))
       return;
 
    playlist = playlist_init(playlistData, COLLECTION_SIZE);
@@ -4587,7 +4627,313 @@ void MainWindow::showAbout()
 
 void MainWindow::showDocs()
 {
-   QDesktopServices::openUrl(QUrl("http://docs.libretro.com/"));
+   QDesktopServices::openUrl(QUrl(DOCS_URL));
+}
+
+void MainWindow::onUpdateNetworkError(QNetworkReply::NetworkError code)
+{
+   QNetworkReply *reply = m_updateReply.data();
+   QByteArray errorStringArray;
+   const char *errorStringData = NULL;
+
+   m_updateProgressDialog->reset();
+
+   if (!reply)
+      return;
+
+   errorStringArray = reply->errorString().toUtf8();
+   errorStringData = errorStringArray.constData();
+
+   RARCH_ERR("[Qt]: Network error code %d received: %s\n", code, errorStringData);
+
+   /* Deleting the reply here seems to cause a strange heap-use-after-free crash. */
+   /*
+   reply->disconnect();
+   reply->abort();
+   reply->deleteLater();
+   */
+}
+
+void MainWindow::onUpdateNetworkSslErrors(const QList<QSslError> &errors)
+{
+   QNetworkReply *reply = m_updateReply.data();
+   int i;
+
+   if (!reply)
+      return;
+
+   for (i = 0; i < errors.count(); i++)
+   {
+      const QSslError &error = errors.at(i);
+      QString string = QString("Ignoring SSL error code ") + QString::number(error.error()) + ": " + error.errorString();
+      QByteArray stringArray = string.toUtf8();
+      const char *stringData = stringArray.constData();
+      RARCH_ERR("[Qt]: %s\n", stringData);
+   }
+
+   /* ignore all SSL errors for now, like self-signed, expired etc. */
+   reply->ignoreSslErrors();
+}
+
+void MainWindow::onUpdateDownloadCanceled()
+{
+   m_updateProgressDialog->reset();
+}
+
+void MainWindow::onRetroArchUpdateDownloadFinished()
+{
+   QNetworkReply *reply = m_updateReply.data();
+   QNetworkReply::NetworkError error;
+   int code;
+
+   m_updateProgressDialog->reset();
+
+   if (!reply)
+      return;
+
+   error = reply->error();
+   code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+
+   if (m_updateFile.isOpen())
+      m_updateFile.close();
+
+   if (code != 200)
+   {
+      showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": HTTP Code " + QString::number(code), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+      RARCH_ERR("[Qt]: RetroArch update failed with HTTP status code: %d\n", code);
+      reply->disconnect();
+      reply->abort();
+      reply->deleteLater();
+      return;
+   }
+
+   if (error == QNetworkReply::NoError)
+   {
+      int index = m_updateFile.fileName().lastIndexOf(PARTIAL_EXTENSION);
+      QString newFileName = m_updateFile.fileName().left(index);
+      QFile newFile(newFileName);
+
+      /* rename() requires the old file to be deleted first if it exists */
+      if (newFile.exists() && !newFile.remove())
+         RARCH_ERR("[Qt]: RetroArch update finished, but old file could not be deleted.\n");
+      else
+      {
+         if (!m_updateFile.rename(newFileName))
+            RARCH_ERR("[Qt]: RetroArch update finished, but temp file could not be renamed.\n");
+         else
+         {
+            RARCH_LOG("[Qt]: RetroArch update finished downloading successfully.\n");
+
+            extractArchive(newFileName);
+         }
+      }
+   }
+   else
+   {
+      QByteArray errorArray = reply->errorString().toUtf8();
+      const char *errorData = errorArray.constData();
+
+      RARCH_ERR("[Qt]: RetroArch update ended prematurely: %s\n", errorData);
+      showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": Code " + QString::number(code) + ": " + errorData, MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+   }
+
+   reply->disconnect();
+   reply->close();
+   reply->deleteLater();
+}
+
+static void extractCB(void *task_data, void *user_data, const char *err)
+{
+   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
+   MainWindow *mainwindow = (MainWindow*)user_data;
+
+   if (err)
+      RARCH_ERR("%s", err);
+
+   if (dec)
+   {
+      if (filestream_exists(dec->source_file))
+         filestream_delete(dec->source_file);
+
+      free(dec->source_file);
+      free(dec);
+   }
+
+   mainwindow->onUpdateRetroArchFinished(string_is_empty(err));
+}
+
+void MainWindow::onUpdateRetroArchFinished(bool success)
+{
+   m_updateProgressDialog->reset();
+
+   if (!success)
+   {
+      RARCH_ERR("[Qt]: RetroArch update failed.\n");
+      showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+      return;
+   }
+
+   RARCH_LOG("[Qt]: RetroArch update finished successfully.\n");
+
+   showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED), MainWindow::MSGBOX_TYPE_INFO, Qt::ApplicationModal, false);
+}
+
+int MainWindow::extractArchive(QString path)
+{
+   QByteArray pathArray = path.toUtf8();
+   const char *file = pathArray.constData();
+   file_archive_transfer_t state;
+   struct archive_extract_userdata userdata;
+   struct string_list *file_list = file_archive_get_file_list(file, NULL);
+   bool returnerr = true;
+   unsigned i;
+
+   if (!file_list || file_list->size == 0)
+   {
+      showMessageBox("Error: Archive is empty.", MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+      RARCH_ERR("[Qt]: Downloaded archive is empty?\n");
+      return -1;
+   }
+
+   for (i = 0; i < file_list->size; i++)
+   {
+      QFile fileObj(file_list->elems[i].data);
+
+      if (fileObj.exists())
+      {
+         if (!fileObj.remove())
+         {
+            /* if we cannot delete the existing file to update it, rename it for now and delete later */
+            QFile fileTemp(fileObj.fileName() + TEMP_EXTENSION);
+
+            if (fileTemp.exists())
+            {
+               if (!fileTemp.remove())
+               {
+                  showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+                  RARCH_ERR("[Qt]: Could not delete file: %s\n", file_list->elems[i].data);
+                  return -1;
+               }
+            }
+
+            if (!fileObj.rename(fileTemp.fileName()))
+            {
+               showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+               RARCH_ERR("[Qt]: Could not rename file: %s\n", file_list->elems[i].data);
+               return -1;
+            }
+         }
+      }
+   }
+
+   string_list_free(file_list);
+
+   memset(&state, 0, sizeof(state));
+   memset(&userdata, 0, sizeof(userdata));
+
+   state.type = ARCHIVE_TRANSFER_INIT;
+
+   m_updateProgressDialog->setWindowModality(Qt::NonModal);
+   m_updateProgressDialog->setMinimumDuration(0);
+   m_updateProgressDialog->setRange(0, 0);
+   m_updateProgressDialog->setAutoClose(true);
+   m_updateProgressDialog->setAutoReset(true);
+   m_updateProgressDialog->setValue(0);
+   m_updateProgressDialog->setLabelText(QString(msg_hash_to_str(MSG_EXTRACTING)) + "...");
+   m_updateProgressDialog->setCancelButtonText(QString());
+   m_updateProgressDialog->show();
+
+   if (!task_push_decompress(file, ".",
+            NULL, NULL, NULL,
+            extractCB, this))
+   {
+      m_updateProgressDialog->reset();
+      return -1;
+   }
+
+   return returnerr;
+}
+
+void MainWindow::onUpdateDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
+{
+   QNetworkReply *reply = m_updateReply.data();
+   int progress = (bytesReceived / (float)bytesTotal) * 100.0f;
+
+   if (!reply)
+      return;
+
+   m_updateProgressDialog->setValue(progress);
+}
+
+void MainWindow::onUpdateDownloadReadyRead()
+{
+   QNetworkReply *reply = m_updateReply.data();
+
+   if (!reply)
+      return;
+
+   m_updateFile.write(reply->readAll());
+}
+
+void MainWindow::updateRetroArchNightly()
+{
+   QUrl url(QUrl(buildbot_server_url).resolved(QUrl("../RetroArch_update.zip")));
+   QNetworkRequest request(url);
+   QNetworkReply *reply = NULL;
+   QByteArray urlArray = url.toString().toUtf8();
+   const char *urlData = urlArray.constData();
+
+   if (m_updateFile.isOpen())
+   {
+      RARCH_ERR("[Qt]: File is already open.\n");
+      return;
+   }
+   else
+   {
+      QString fileName = QFileInfo(url.toString()).fileName() + PARTIAL_EXTENSION;
+      QByteArray fileNameArray = fileName.toUtf8();
+      const char *fileNameData = fileNameArray.constData();
+
+      m_updateFile.setFileName(fileName);
+
+      if (!m_updateFile.open(QIODevice::WriteOnly))
+      {
+         showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+         RARCH_ERR("[Qt]: Could not open file for writing: %s\n", fileNameData);
+         return;
+      }
+   }
+
+   RARCH_LOG("[Qt]: Starting update of RetroArch...\n");
+   RARCH_LOG("[Qt]: Downloading URL %s\n", urlData);
+
+   request.setHeader(QNetworkRequest::UserAgentHeader, USER_AGENT);
+
+   m_updateProgressDialog->setWindowModality(Qt::NonModal);
+   m_updateProgressDialog->setMinimumDuration(0);
+   m_updateProgressDialog->setRange(0, 100);
+   m_updateProgressDialog->setAutoClose(true);
+   m_updateProgressDialog->setAutoReset(true);
+   m_updateProgressDialog->setValue(0);
+   m_updateProgressDialog->setLabelText(QString(msg_hash_to_str(MSG_DOWNLOADING)) + "...");
+   m_updateProgressDialog->setCancelButtonText(tr("Cancel"));
+   m_updateProgressDialog->show();
+
+   m_updateReply = m_networkManager->get(request);
+   reply = m_updateReply.data();
+
+   /* make sure any previous connection is removed first */
+   disconnect(m_updateProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
+   disconnect(m_updateProgressDialog, SIGNAL(canceled()), m_updateProgressDialog, SLOT(reset()));
+   connect(m_updateProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
+   connect(m_updateProgressDialog, SIGNAL(canceled()), m_updateProgressDialog, SLOT(reset()));
+
+   connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(onUpdateNetworkError(QNetworkReply::NetworkError)));
+   connect(reply, SIGNAL(sslErrors(const QList<QSslError>&)), this, SLOT(onUpdateNetworkSslErrors(const QList<QSslError>&)));
+   connect(reply, SIGNAL(finished()), this, SLOT(onRetroArchUpdateDownloadFinished()));
+   connect(reply, SIGNAL(readyRead()), this, SLOT(onUpdateDownloadReadyRead()));
+   connect(reply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(onUpdateDownloadProgress(qint64, qint64)));
+
 }
 
 const QPixmap getInvader()

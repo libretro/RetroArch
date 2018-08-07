@@ -8755,14 +8755,14 @@ static bool setting_append_list(
    return true;
 }
 
-bool menu_setting_free(void *data)
+void menu_setting_free(void *data)
 {
    unsigned values, n;
    rarch_setting_t *setting = (rarch_setting_t*)data;
    rarch_setting_t **list = &setting;
 
    if (!setting)
-      return false;
+      return;
 
    /* Free data which was previously tagged */
    for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
@@ -8771,24 +8771,26 @@ bool menu_setting_free(void *data)
             switch (1 << n)
             {
                case SD_FREE_FLAG_VALUES:
-                  free((void*)setting->values);
+                  if (setting->values)
+                     free((void*)setting->values);
                   setting->values = NULL;
                   break;
                case SD_FREE_FLAG_NAME:
-                  free((void*)setting->name);
+                  if (setting->name)
+                     free((void*)setting->name);
                   setting->name = NULL;
                   break;
                case SD_FREE_FLAG_SHORT:
-                  free((void*)setting->short_description);
+                  if (setting->short_description)
+                     free((void*)setting->short_description);
                   setting->short_description = NULL;
                   break;
                default:
                   break;
             }
 
-   free(data);
-
-   return true;
+   if (data)
+      free(data);
 }
 
 static void menu_setting_terminate_last(rarch_setting_t *list, unsigned pos)

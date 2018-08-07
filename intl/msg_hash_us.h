@@ -3770,6 +3770,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
       "Custom...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
       "Options")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
+      "&Tools")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
       "&Help")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
@@ -3816,10 +3818,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_WARNING,
       "Warning")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_ERROR,
       "Error")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
+      "Network Error")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
       "Please restart the program for the changes to take effect.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_LOG,
       "Log")
+#ifdef HAVE_QT
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
       "Scan Finished.<br><br>\n"
       "In order for content to be correctly scanned, you must:\n"
@@ -3828,6 +3833,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
       "<li>have \"Databases\" updated via Online Updater</li>\n"
       "<li>restart RetroArch if any of the above was just done</li></ul>\n"
       "Finally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>.")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
       "Don't show this again")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_STOP,
@@ -3854,6 +3860,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
       "File is empty.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
       "Could not open file for reading.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
+      "Could not open file for writing.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
       "File does not exist.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
@@ -4192,6 +4200,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_QUESTION,
       "Question")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
       "Could not delete file.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
+      "Could not rename file.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
       "Gathering list of files...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST,
@@ -4232,3 +4242,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
       "Error updating playlist entry.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS,
       "Please fill out all required fields.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
+      "Update RetroArch (nightly)")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
+      "RetroArch updated successfully. Please restart the application for the changes to take effect.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
+      "Update failed.")

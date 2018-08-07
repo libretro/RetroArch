@@ -69,10 +69,7 @@
 }
 #endif
 
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
-}
+#include "arc4_alt.h"
 
 void mbedtls_ripemd160_init( mbedtls_ripemd160_context *ctx )
 {
@@ -138,15 +135,15 @@ void mbedtls_ripemd160_process( mbedtls_ripemd160_context *ctx, const unsigned c
     C = Cp = ctx->state[2];
     D = Dp = ctx->state[3];
     E = Ep = ctx->state[4];
-
+#undef F1
 #define F1( x, y, z )   ( x ^ y ^ z )
 #define F2( x, y, z )   ( ( x & y ) | ( ~x & z ) )
 #define F3( x, y, z )   ( ( x | ~y ) ^ z )
 #define F4( x, y, z )   ( ( x & z ) | ( y & ~z ) )
 #define F5( x, y, z )   ( x ^ ( y | ~z ) )
-
+#undef  S
 #define S( x, n ) ( ( x << n ) | ( x >> (32 - n) ) )
-
+#undef P
 #define P( a, b, c, d, e, r, s, f, k )      \
     a += f( b, c, d ) + X[r] + k;           \
     a = S( a, s ) + e;                      \

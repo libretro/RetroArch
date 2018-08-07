@@ -50,10 +50,7 @@
 #endif
 
 #if defined(MBEDTLS_SSL_SESSION_TICKETS)
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
-}
+#include "arc4_alt.h"
 #endif
 
 #if defined(MBEDTLS_SSL_DTLS_HELLO_VERIFY)
@@ -147,42 +144,8 @@ static int ssl_parse_servername_ext( mbedtls_ssl_context *ssl,
     return( 0 );
 }
 #endif /* MBEDTLS_SSL_SERVER_NAME_INDICATION */
+#include "ssl_parse_renegotiation_info.h"
 
-static int ssl_parse_renegotiation_info( mbedtls_ssl_context *ssl,
-                                         const unsigned char *buf,
-                                         size_t len )
-{
-#if defined(MBEDTLS_SSL_RENEGOTIATION)
-    if( ssl->renego_status != MBEDTLS_SSL_INITIAL_HANDSHAKE )
-    {
-        /* Check verify-data in constant-time. The length OTOH is no secret */
-        if( len    != 1 + ssl->verify_data_len ||
-            buf[0] !=     ssl->verify_data_len ||
-            mbedtls_ssl_safer_memcmp( buf + 1, ssl->peer_verify_data,
-                          ssl->verify_data_len ) != 0 )
-        {
-            MBEDTLS_SSL_DEBUG_MSG( 1, ( "non-matching renegotiation info" ) );
-            mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
-                                            MBEDTLS_SSL_ALERT_MSG_HANDSHAKE_FAILURE );
-            return( MBEDTLS_ERR_SSL_BAD_HS_CLIENT_HELLO );
-        }
-    }
-    else
-#endif /* MBEDTLS_SSL_RENEGOTIATION */
-    {
-        if( len != 1 || buf[0] != 0x0 )
-        {
-            MBEDTLS_SSL_DEBUG_MSG( 1, ( "non-zero length renegotiation info" ) );
-            mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
-                                            MBEDTLS_SSL_ALERT_MSG_HANDSHAKE_FAILURE );
-            return( MBEDTLS_ERR_SSL_BAD_HS_CLIENT_HELLO );
-        }
-
-        ssl->secure_renegotiation = MBEDTLS_SSL_SECURE_RENEGOTIATION;
-    }
-
-    return( 0 );
-}
 
 #if defined(MBEDTLS_SSL_PROTO_TLS1_2) && \
     defined(MBEDTLS_KEY_EXCHANGE__WITH_CERT__ENABLED)
@@ -402,22 +365,7 @@ static int ssl_parse_ecjpake_kkpp( mbedtls_ssl_context *ssl,
 #endif /* MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED */
 
 #if defined(MBEDTLS_SSL_MAX_FRAGMENT_LENGTH)
-static int ssl_parse_max_fragment_length_ext( mbedtls_ssl_context *ssl,
-                                              const unsigned char *buf,
-                                              size_t len )
-{
-    if( len != 1 || buf[0] >= MBEDTLS_SSL_MAX_FRAG_LEN_INVALID )
-    {
-        MBEDTLS_SSL_DEBUG_MSG( 1, ( "bad client hello message" ) );
-        mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
-                                        MBEDTLS_SSL_ALERT_MSG_ILLEGAL_PARAMETER );
-        return( MBEDTLS_ERR_SSL_BAD_HS_CLIENT_HELLO );
-    }
-
-    ssl->session_negotiate->mfl_code = buf[0];
-
-    return( 0 );
-}
+#include "ssl_parse_max_fragment_length_ext.h"
 #endif /* MBEDTLS_SSL_MAX_FRAGMENT_LENGTH */
 
 #if defined(MBEDTLS_SSL_TRUNCATED_HMAC)

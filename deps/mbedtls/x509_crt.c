@@ -75,10 +75,7 @@
 #endif /* !_WIN32 || EFIX64 || EFI32 */
 #endif
 
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
-}
+#include "arc4_alt.h"
 
 /*
  * Default profile
@@ -1357,7 +1354,9 @@ static int x509_info_ext_key_usage( char **buf, size_t *size,
 /*
  * Return an informational string about the certificate.
  */
+#undef BEFORE_COLON
 #define BEFORE_COLON    18
+#undef BC
 #define BC              "18"
 int mbedtls_x509_crt_info( char *buf, size_t size, const char *prefix,
                    const mbedtls_x509_crt *crt )

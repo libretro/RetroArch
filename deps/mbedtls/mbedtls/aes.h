@@ -45,8 +45,7 @@
 #endif
 
 #if !defined(MBEDTLS_AES_ALT)
-// Regular implementation
-//
+/* Regular implementation */
 
 #ifdef __cplusplus
 extern "C" {

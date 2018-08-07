@@ -210,9 +210,9 @@ bool cheat_manager_copy_idx_to_working(unsigned idx);
 
 bool cheat_manager_copy_working_to_idx(unsigned idx);
 
-void cheat_manager_load_game_specific_cheats();
+void cheat_manager_load_game_specific_cheats(void);
 
-void cheat_manager_save_game_specific_cheats();
+void cheat_manager_save_game_specific_cheats(void);
 
 int cheat_manager_initialize_memory(void *data, bool wraparound);
 int cheat_manager_search_exact(void *data, bool wraparound);
@@ -226,7 +226,7 @@ int cheat_manager_search_eqplus(void *data, bool wraparound);
 int cheat_manager_search_eqminus(void *data, bool wraparound);
 int cheat_manager_add_matches(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
-void cheat_manager_apply_retro_cheats() ;
+void cheat_manager_apply_retro_cheats(void);
 int cheat_manager_search(enum cheat_search_type search_type);
 void cheat_manager_match_action(enum cheat_match_action_type match_action, unsigned int target_match_idx, unsigned int *address, unsigned int *address_mask,
       unsigned int *prev_value, unsigned int *curr_value);

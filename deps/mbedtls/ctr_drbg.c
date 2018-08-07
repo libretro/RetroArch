@@ -49,10 +49,7 @@
 #endif /* MBEDTLS_PLATFORM_C */
 #endif /* MBEDTLS_SELF_TEST */
 
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
-}
+#include "arc4_alt.h"
 
 /*
  * CTR_DRBG context initialization
@@ -509,11 +506,11 @@ static const unsigned char nonce_pers_nopr[16] =
     { 0x1b, 0x54, 0xb8, 0xff, 0x06, 0x42, 0xbf, 0xf5,
       0x21, 0xf1, 0x5c, 0x1c, 0x0b, 0x66, 0x5f, 0x3f };
 
-static const unsigned char result_pr[16] =
+static const unsigned char ctr_result_pr[16] =
     { 0x34, 0x01, 0x16, 0x56, 0xb4, 0x29, 0x00, 0x8f,
       0x35, 0x63, 0xec, 0xb5, 0xf2, 0x59, 0x07, 0x23 };
 
-static const unsigned char result_nopr[16] =
+static const unsigned char ctr_result_nopr[16] =
     { 0xa0, 0x54, 0x30, 0x3d, 0x8a, 0x7e, 0xa9, 0x88,
       0x9d, 0x90, 0x3e, 0x07, 0x7c, 0x6f, 0x21, 0x8f };
 
@@ -556,7 +553,7 @@ int mbedtls_ctr_drbg_self_test( int verbose )
     mbedtls_ctr_drbg_set_prediction_resistance( &ctx, MBEDTLS_CTR_DRBG_PR_ON );
     CHK( mbedtls_ctr_drbg_random( &ctx, buf, MBEDTLS_CTR_DRBG_BLOCKSIZE ) );
     CHK( mbedtls_ctr_drbg_random( &ctx, buf, MBEDTLS_CTR_DRBG_BLOCKSIZE ) );
-    CHK( memcmp( buf, result_pr, MBEDTLS_CTR_DRBG_BLOCKSIZE ) );
+    CHK( memcmp( buf, ctr_result_pr, MBEDTLS_CTR_DRBG_BLOCKSIZE ) );
 
     mbedtls_ctr_drbg_free( &ctx );
 
@@ -577,7 +574,7 @@ int mbedtls_ctr_drbg_self_test( int verbose )
     CHK( mbedtls_ctr_drbg_random( &ctx, buf, 16 ) );
     CHK( mbedtls_ctr_drbg_reseed( &ctx, NULL, 0 ) );
     CHK( mbedtls_ctr_drbg_random( &ctx, buf, 16 ) );
-    CHK( memcmp( buf, result_nopr, 16 ) );
+    CHK( memcmp( buf, ctr_result_nopr, 16 ) );
 
     mbedtls_ctr_drbg_free( &ctx );
 

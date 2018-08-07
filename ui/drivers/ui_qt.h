@@ -35,6 +35,8 @@
 #include <QPointer>
 #include <QProgressBar>
 #include <QElapsedTimer>
+#include <QSslError>
+#include <QNetworkReply>
 
 extern "C" {
 #include <retro_assert.h>
@@ -67,6 +69,9 @@ class QScrollArea;
 class QSlider;
 class QDragEnterEvent;
 class QDropEvent;
+class QNetworkAccessManager;
+class QNetworkReply;
+class QProgressDialog;
 class LoadCoreWindow;
 class MainWindow;
 class ThumbnailWidget;
@@ -392,6 +397,8 @@ public slots:
    void onFileDropWidgetContextMenuRequested(const QPoint &pos);
    void showAbout();
    void showDocs();
+   void updateRetroArchNightly();
+   void onUpdateRetroArchFinished(bool success);
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
@@ -423,6 +430,12 @@ private slots:
    void onGridItemDoubleClicked();
    void onGridItemClicked();
    void onPlaylistFilesDropped(QStringList files);
+   void onUpdateNetworkError(QNetworkReply::NetworkError code);
+   void onUpdateNetworkSslErrors(const QList<QSslError> &errors);
+   void onRetroArchUpdateDownloadFinished();
+   void onUpdateDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+   void onUpdateDownloadReadyRead();
+   void onUpdateDownloadCanceled();
 
 private:
    void setCurrentCoreLabel();
@@ -433,6 +446,8 @@ private:
    void loadImageDeferred(GridItem *item, QString path);
    void calcGridItemSize(GridItem *item, int zoomValue);
    bool updateCurrentPlaylistEntry(const QHash<QString, QString> &contentHash);
+   int extractArchive(QString path);
+   void removeUpdateTempFiles();
    QVector<QHash<QString, QString> > getPlaylistItems(QString pathString);
 
    LoadCoreWindow *m_loadCoreWindow;
@@ -493,6 +508,10 @@ private:
    int m_allPlaylistsGridMaxCount;
    PlaylistEntryDialog *m_playlistEntryDialog;
    QElapsedTimer m_statusMessageElapsedTimer;
+   QNetworkAccessManager *m_networkManager;
+   QProgressDialog *m_updateProgressDialog;
+   QFile m_updateFile;
+   QPointer<QNetworkReply> m_updateReply;
 
 protected:
    void closeEvent(QCloseEvent *event);

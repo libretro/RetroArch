@@ -513,7 +513,7 @@ FLAC__bool FLAC__MD5Accumulate(FLAC__MD5Context *ctx, const FLAC__int32 * const 
 
 	format_input_(&ctx->internal_buf, signal, channels, samples, bytes_per_sample);
 
-	FLAC__MD5Update(ctx, ctx->internal_buf.p8, bytes_needed);
+	FLAC__MD5Update(ctx, ctx->internal_buf.p8, (unsigned)bytes_needed);
 
 	return true;
 }

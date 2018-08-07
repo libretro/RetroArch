@@ -88,7 +88,7 @@ enum
    ACTION_OK_SET_PATH_VIDEO_FILTER,
    ACTION_OK_SET_PATH_OVERLAY,
    ACTION_OK_SET_DIRECTORY,
-   ACTION_OK_LOAD_CHEAT_FILE_APPEND,
+   ACTION_OK_LOAD_CHEAT_FILE_APPEND
 };
 
 enum
@@ -1409,7 +1409,9 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_CHEAT_FILE_APPEND:
          flush_char = msg_hash_to_str(flush_id);
-         //cheat_manager_free();
+#if 0
+         cheat_manager_free();
+#endif
 
          if (!cheat_manager_load(action_path,true))
             goto error;
@@ -2886,7 +2888,6 @@ static int action_ok_cheat_delete(const char *path,
 {
    size_t new_selection_ptr;
    char msg[256];
-   bool          refresh = false;
    unsigned int new_size = cheat_manager_get_size() - 1;
 
    if( new_size >0 )

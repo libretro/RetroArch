@@ -3307,7 +3307,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
       "Добавить этот трек в доступный аудио слот. ")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-      "Добавить этот трек в доступный аудио слот и воспроизвести его.") // If no slots are currently available, it will be ignored.
+      "Добавить этот трек в доступный аудио слот и воспроизвести его.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
       "Воспроизвести")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
@@ -3335,20 +3335,20 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
       "Изменить настройки относящиеся к задержке видео, аудио и ввода.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-      "Обгон для уменьшения задержки") // Run-Ahead to Reduce Latency
+      "Обгон для уменьшения задержки")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
-      "Количество кадров для обгона")//Number of Frames to Run Ahead
+      "Количество кадров для обгона")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-      "Использовать вторую инстанцию для обгона") //RunAhead Use Second Instance
+      "Использовать вторую инстанцию для обгона")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
-      "Убрать уведомления об обгоне")//RunAhead Hide Warnings
+      "Убрать уведомления об обгоне")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-      "Обрабатывать логику ядра перед рендером 1 или более кадров для уменьшения задержки ввода." // Run core logic one or more frames ahead then load the state back to reduce perceived input lag.
+      "Обрабатывать логику ядра перед рендером 1 или более кадров для уменьшения задержки ввода."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-      "Количество кадров обгона. Может вызвать дрожание при большом значении." // Causes gameplay issues such as jitter if you exceed the number of lag frames internal to the game.
+      "Количество кадров обгона. Может вызвать дрожание при большом значении."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,

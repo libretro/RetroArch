@@ -6406,6 +6406,7 @@ MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_QT_LOG,
 	"Log"
 	)
+#ifdef HAVE_QT
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
 	"Escaneo Terminado.<br><br>\n"
@@ -6416,6 +6417,7 @@ MSG_HASH(
 	"<li>reiniciar RetroArch si actualizaste algo con el \"Actualizador en línea\"</li></ul>\n"
 	"Por último, el contenido debe coincidir las bases de datos existente de <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">aquí</a>. Si aún no funciona, considere <a href=\"https://www.github.com/libretro/RetroArch/issues\">enviar un reporte de error.</a>"
 	)
+#endif
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
 	"No mostrar esto de nuevo"
