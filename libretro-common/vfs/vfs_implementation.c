@@ -388,7 +388,7 @@ int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, i
 #ifdef _WIN32
    if(_chsize(_fileno(stream->fp), length) != 0)
       return -1;
-#else
+#elif !defined(VITA)
    if(ftruncate(fileno(stream->fp), length) != 0)
       return -1;
 #endif
