@@ -69,7 +69,9 @@ void* ssl_socket_init(int fd, const char *domain)
 
    state->domain = domain;
 
+#ifdef DEBUG
    mbedtls_debug_set_threshold(DEBUG_LEVEL);
+#endif
 
    mbedtls_net_init(&state->net_ctx);
    mbedtls_ssl_init(&state->ctx);
@@ -77,13 +79,17 @@ void* ssl_socket_init(int fd, const char *domain)
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
    mbedtls_x509_crt_init(&state->ca);
 #endif
+#ifdef DEBUG
    mbedtls_ctr_drbg_init(&state->ctr_drbg);
+#endif
    mbedtls_entropy_init(&state->entropy);
 
    state->net_ctx.fd = fd;
 
+#ifdef DEBUG
    if (mbedtls_ctr_drbg_seed(&state->ctr_drbg, mbedtls_entropy_func, &state->entropy, (const unsigned char*)pers, strlen(pers)) != 0)
       goto error;
+#endif
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
    if (mbedtls_x509_crt_parse(&state->ca, (const unsigned char*)cacert_pem, sizeof(cacert_pem) / sizeof(cacert_pem[0])) < 0)
@@ -114,7 +120,9 @@ int ssl_socket_connect(void *state_data, void *data, bool timeout_enable, bool n
 
    mbedtls_ssl_conf_authmode(&state->conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
    mbedtls_ssl_conf_ca_chain(&state->conf, &state->ca, NULL);
+#ifdef DEBUG
    mbedtls_ssl_conf_rng(&state->conf, mbedtls_ctr_drbg_random, &state->ctr_drbg);
+#endif
    mbedtls_ssl_conf_dbg(&state->conf, ssl_debug, stderr);
 
    if (mbedtls_ssl_setup(&state->ctx, &state->conf) != 0)
@@ -250,7 +258,9 @@ void ssl_socket_free(void *state_data)
 
    mbedtls_ssl_free(&state->ctx);
    mbedtls_ssl_config_free(&state->conf);
+#ifdef DEBUG
    mbedtls_ctr_drbg_free(&state->ctr_drbg);
+#endif
    mbedtls_entropy_free(&state->entropy);
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
    mbedtls_x509_crt_free(&state->ca);
