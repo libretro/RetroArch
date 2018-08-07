@@ -81,7 +81,10 @@
  * example, if double-width division is implemented in software, disabling
  * it can reduce code size in some embedded targets.
  */
-//#define MBEDTLS_NO_UDBL_DIVISION
+
+#if 0
+#define MBEDTLS_NO_UDBL_DIVISION
+#endif
 
 /**
  * \def MBEDTLS_HAVE_SSE2
@@ -90,7 +93,9 @@
  *
  * Uncomment if the CPU supports SSE2 (IA-32 specific).
  */
-//#define MBEDTLS_HAVE_SSE2
+#if 0
+#define MBEDTLS_HAVE_SSE2
+#endif
 
 /**
  * \def MBEDTLS_HAVE_TIME
@@ -141,7 +146,9 @@
  *
  * Enable this layer to allow use of alternative memory allocators.
  */
-//#define MBEDTLS_PLATFORM_MEMORY
+#if 0
+#define MBEDTLS_PLATFORM_MEMORY
+#endif
 
 /**
  * \def MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
@@ -160,7 +167,9 @@
  * Uncomment to prevent default assignment of standard functions in the
  * platform layer.
  */
-//#define MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
+#if 0
+#define MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
+#endif
 
 /**
  * \def MBEDTLS_PLATFORM_EXIT_ALT
@@ -185,13 +194,15 @@
  * Uncomment a macro to enable alternate implementation of specific base
  * platform function
  */
-//#define MBEDTLS_PLATFORM_EXIT_ALT
-//#define MBEDTLS_PLATFORM_TIME_ALT
-//#define MBEDTLS_PLATFORM_FPRINTF_ALT
-//#define MBEDTLS_PLATFORM_PRINTF_ALT
-//#define MBEDTLS_PLATFORM_SNPRINTF_ALT
-//#define MBEDTLS_PLATFORM_NV_SEED_ALT
-//#define MBEDTLS_PLATFORM_SETUP_TEARDOWN_ALT
+#if 0
+#define MBEDTLS_PLATFORM_EXIT_ALT
+#define MBEDTLS_PLATFORM_TIME_ALT
+#define MBEDTLS_PLATFORM_FPRINTF_ALT
+#define MBEDTLS_PLATFORM_PRINTF_ALT
+#define MBEDTLS_PLATFORM_SNPRINTF_ALT
+#define MBEDTLS_PLATFORM_NV_SEED_ALT
+#define MBEDTLS_PLATFORM_SETUP_TEARDOWN_ALT
+#endif
 
 /**
  * \def MBEDTLS_DEPRECATED_WARNING
@@ -206,7 +217,9 @@
  *
  * Uncomment to get warnings on using deprecated functions.
  */
-//#define MBEDTLS_DEPRECATED_WARNING
+#if 0
+#define MBEDTLS_DEPRECATED_WARNING
+#endif
 
 /**
  * \def MBEDTLS_DEPRECATED_REMOVED
@@ -218,7 +231,9 @@
  *
  * Uncomment to get errors on using deprecated functions.
  */
-//#define MBEDTLS_DEPRECATED_REMOVED
+#if 0
+#define MBEDTLS_DEPRECATED_REMOVED
+#endif
 
 /* \} name SECTION: System support */
 
@@ -241,7 +256,9 @@
  * You will need to provide a header "timing_alt.h" and an implementation at
  * compile time.
  */
-//#define MBEDTLS_TIMING_ALT
+#if 0
+#define MBEDTLS_TIMING_ALT
+#endif
 
 /**
  * \def MBEDTLS_AES_ALT
