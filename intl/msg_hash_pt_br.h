@@ -3642,6 +3642,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
       "Por favor, reinicie o programa para que as alterações entrem em vigor.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_LOG,
       "Relatório")
+#ifdef HAVE_QT
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
       "Verificação Terminada.<br><br>\n"
       "Para que o conteúdo seja verificado corretamente, você deve em ordem:\n"
@@ -3650,6 +3651,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
       "<li>ter a \"Base de Dados\" atualizada via Atualizador Online</li>\n"
       "<li>reiniciar o RetroArch caso alguma das situações acima tenha sido feita</li></ul>\n"
       "E finalmente, o conteúdo deve corresponder as bases de dados existentes <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">aqui</a>. Se ainda não estiver funcionando, considere <a href=\"https://www.github.com/libretro/RetroArch/issues\">enviar um relatório de erro</a>.")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
       "Não mostrar isto novamente")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_STOP,
