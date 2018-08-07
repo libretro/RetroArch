@@ -30,6 +30,8 @@
 
 RETRO_BEGIN_DECLS
 
+#ifndef SKIP_STDIO_REDEFINES
+
 #define FILE RFILE
 
 #undef fopen
@@ -59,6 +61,8 @@ RETRO_BEGIN_DECLS
 #define fprintf rfprintf
 #define ferror rferror
 #define feof rfeof
+
+#endif
 
 RFILE* rfopen(const char *path, const char *mode);
 
