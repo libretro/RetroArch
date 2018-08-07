@@ -123,6 +123,11 @@ int rfputc(int character, RFILE * stream)
     return filestream_putc(stream, character);
 }
 
+int64_t rfflush(RFILE * stream)
+{
+    return filestream_flush(stream);
+}
+
 int rfprintf(RFILE * stream, const char * format, ...)
 {
    int result;
