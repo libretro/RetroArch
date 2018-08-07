@@ -1863,9 +1863,7 @@
  *
  * This module provides the CTR_DRBG AES-256 random number generator.
  */
-#if 0
 #define MBEDTLS_CTR_DRBG_C
-#endif
 
 /**
  * \def MBEDTLS_DEBUG_C
