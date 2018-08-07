@@ -16,10 +16,11 @@
 - LOCALIZATION: Update Spanish translation.
 - MIDI: Add MIDI support to the libretro API. Dosbox is the first proof of concept core implementing libretro MIDI.
 - MIDI: Add a Windows driver for MIDI, based on winmm.
-- MENU/QT/WIMP: QT QSlider styling for Dark Theme.
+- MENU/QT/WIMP: Qt QSlider styling for Dark Theme.
 - MENU/QT/WIMP: Remove button ghostly inside highlighting.
 - MENU/QT/WIMP: Initial grid view.
 - MENU/QT/WIMP: Drag&drop to add new playlist items, add option to add/edit/delete playlists.
+- MENU/QT/WIMP: Add menu option to update RetroArch (Windows only for now).
 - METAL: Initial work-in-progress video driver for Metal. macOS-only right now, and currently requires macOS 10.13.
 - METAL: Supports XMB/MaterialUI, has a menu display driver. Has a font rendering driver.
 - METAL/SLANG: Slang shaders should be compatible with Metal video driver.
