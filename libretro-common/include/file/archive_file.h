@@ -39,6 +39,8 @@
 
 RETRO_BEGIN_DECLS
 
+struct archive_extract_userdata;
+
 enum file_archive_transfer_type
 {
    ARCHIVE_TRANSFER_NONE = 0,
@@ -96,6 +98,7 @@ typedef struct
    char *callback_error;
 
    file_archive_transfer_t archive;
+   struct archive_extract_userdata *userdata;
 } decompress_state_t;
 
 struct archive_extract_userdata

@@ -348,11 +348,20 @@ end:
       if (handle->backend)
       {
          if (handle->backend->stream_free)
-            handle->backend->stream_free(handle->stream);
-      }
+         {
+#ifdef HAVE_7ZIP
+            if (handle->backend != &sevenzip_backend)
+            {
+               handle->backend->stream_free(handle->stream);
 
-      if (handle->data)
-         free(handle->data);
+               if (handle->data)
+                  free(handle->data);
+            }
+#else
+            handle->backend->stream_free(handle->stream);
+#endif
+         }
+      }
    }
 
    return ret;
@@ -406,7 +415,9 @@ int file_archive_parse_file_iterate(
                   valid_exts, userdata, file_cb);
 
             if (ret != 1)
+            {
                state->type = ARCHIVE_TRANSFER_DEINIT;
+            }
             if (ret == -1)
                state->type = ARCHIVE_TRANSFER_DEINIT_ERROR;
 
