@@ -121,6 +121,8 @@ static double expScale(double inputValue, double midValue, double maxValue)
 #ifdef HAVE_LIBRETRODB
 static void scan_finished_handler(void *task_data, void *user_data, const char *err)
 {
+   bool dontAsk = false;
+   bool answer = false;
    menu_ctx_environment_t menu_environ;
    menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
    menu_environ.data = NULL;
@@ -134,7 +136,9 @@ static void scan_finished_handler(void *task_data, void *user_data, const char *
    if (!ui_window.qtWindow->settings()->value("scan_finish_confirm", true).toBool())
       return;
 
-   if (!ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED), MainWindow::MSGBOX_TYPE_INFO, Qt::ApplicationModal))
+   answer = ui_window.qtWindow->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED), MainWindow::MSGBOX_TYPE_QUESTION_OKCANCEL, Qt::ApplicationModal, true, &dontAsk);
+
+   if (answer && dontAsk)
       ui_window.qtWindow->settings()->setValue("scan_finish_confirm", false);
 }
 #endif
@@ -1491,6 +1495,8 @@ void MainWindow::onZoomValueChanged(int value)
 
 void MainWindow::showWelcomeScreen()
 {
+   bool dontAsk = false;
+   bool answer = false;
    const QString welcomeText = QStringLiteral(""
       "Welcome to the RetroArch Desktop Menu!<br>\n"
       "<br>\n"
@@ -1512,9 +1518,10 @@ void MainWindow::showWelcomeScreen()
    if (!m_settings->value("show_welcome_screen", true).toBool())
       return;
 
-   if (!showMessageBox(welcomeText, MainWindow::MSGBOX_TYPE_INFO, Qt::ApplicationModal))
-      m_settings->setValue("show_welcome_screen", false);
+   answer = showMessageBox(welcomeText, MainWindow::MSGBOX_TYPE_QUESTION_OKCANCEL, Qt::ApplicationModal, true, &dontAsk);
 
+   if (answer && dontAsk)
+      m_settings->setValue("show_welcome_screen", false);
 }
 
 const QString& MainWindow::customThemeString() const
@@ -1573,7 +1580,7 @@ void MainWindow::setCustomThemeString(QString qss)
    m_customThemeString = qss;
 }
 
-bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowModality modality, bool showDontAsk)
+bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowModality modality, bool showDontAsk, bool *dontAsk)
 {
    QPointer<QMessageBox> msgBoxPtr;
    QMessageBox *msgBox = NULL;
@@ -1613,7 +1620,14 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowM
          msgBox->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ERROR));
          break;
       }
-      case MSGBOX_TYPE_QUESTION:
+      case MSGBOX_TYPE_QUESTION_YESNO:
+      {
+         msgBox->setIcon(QMessageBox::Question);
+         msgBox->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_QUESTION));
+         msgBox->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+         break;
+      }
+      case MSGBOX_TYPE_QUESTION_OKCANCEL:
       {
          msgBox->setIcon(QMessageBox::Question);
          msgBox->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_QUESTION));
@@ -1630,11 +1644,12 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowM
    if (!msgBoxPtr)
       return true;
 
-   if (checkBox && checkBox->isChecked())
+   if (msgBox->result() != QMessageBox::Ok && msgBox->result() != QMessageBox::Yes)
       return false;
 
-   if (msgBox->result() == QMessageBox::Cancel)
-      return false;
+   if (checkBox)
+      if (dontAsk)
+         *dontAsk = checkBox->isChecked();
 
    return true;
 }
@@ -2006,7 +2021,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    {
       if (currentPlaylistFile.exists())
       {
-         if (showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST)).arg(selectedItem->text()), MainWindow::MSGBOX_TYPE_QUESTION, Qt::ApplicationModal, false))
+         if (showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST)).arg(selectedItem->text()), MainWindow::MSGBOX_TYPE_QUESTION_YESNO, Qt::ApplicationModal, false))
          {
             if (currentPlaylistFile.remove())
                reloadPlaylists();
@@ -2863,7 +2878,7 @@ void MainWindow::deleteCurrentPlaylistItem()
    if (!ok)
       return;
 
-   if (!showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM)).arg(contentHash["label"]), MainWindow::MSGBOX_TYPE_QUESTION, Qt::ApplicationModal, false))
+   if (!showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM)).arg(contentHash["label"]), MainWindow::MSGBOX_TYPE_QUESTION_YESNO, Qt::ApplicationModal, false))
       return;
 
    playlist = playlist_init(playlistData, COLLECTION_SIZE);

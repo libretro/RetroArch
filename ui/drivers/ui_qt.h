@@ -313,7 +313,8 @@ public:
       MSGBOX_TYPE_INFO,
       MSGBOX_TYPE_WARNING,
       MSGBOX_TYPE_ERROR,
-      MSGBOX_TYPE_QUESTION,
+      MSGBOX_TYPE_QUESTION_YESNO,
+      MSGBOX_TYPE_QUESTION_OKCANCEL,
    };
 
    MainWindow(QWidget *parent = NULL);
@@ -341,7 +342,7 @@ public:
    QString getThemeString(Theme theme);
    QHash<QString, QString> getSelectedCore();
    void showStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
-   bool showMessageBox(QString msg, MessageBoxType msgType = MSGBOX_TYPE_INFO, Qt::WindowModality modality = Qt::ApplicationModal, bool showDontAsk = true);
+   bool showMessageBox(QString msg, MessageBoxType msgType = MSGBOX_TYPE_INFO, Qt::WindowModality modality = Qt::ApplicationModal, bool showDontAsk = true, bool *dontAsk = NULL);
    bool setCustomThemeFile(QString filePath);
    void setCustomThemeString(QString qss);
    const QString& customThemeString() const;
