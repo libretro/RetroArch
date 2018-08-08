@@ -3205,6 +3205,9 @@ static int menu_displaylist_parse_options_cheats(
          MENU_ENUM_LABEL_CHEAT_DELETE_ALL,
          MENU_SETTING_ACTION, 0, 0);
    menu_displaylist_parse_settings_enum(menu, info,
+         MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
+         PARSE_ONLY_BOOL, false);
+   menu_displaylist_parse_settings_enum(menu, info,
          MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
          PARSE_ONLY_BOOL, false);
    menu_entries_append_enum(info->list,

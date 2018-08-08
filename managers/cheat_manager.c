@@ -509,7 +509,7 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 {
    char msg[256];
 
-   if (!handle || !handle->cheats)
+   if (!handle || !handle->cheats || handle->size == 0)
       return;
 
    snprintf(msg, sizeof(msg), "Cheat: #%u [%s]: %s",
@@ -524,7 +524,7 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 void cheat_manager_toggle_index(unsigned i)
 {
    settings_t *settings                     = config_get_ptr();
-   if (!cheat_manager_state.cheats)
+   if (!cheat_manager_state.cheats || cheat_manager_state.size == 0 )
       return;
 
    cheat_manager_state.cheats[i].state = !cheat_manager_state.cheats[i].state;
@@ -540,7 +540,7 @@ void cheat_manager_toggle_index(unsigned i)
 void cheat_manager_toggle(void)
 {
 
-   if (!cheat_manager_state.cheats)
+   if (!cheat_manager_state.cheats || cheat_manager_state.size == 0)
       return;
 
    cheat_manager_state.cheats[cheat_manager_state.ptr].state ^= true;
@@ -550,7 +550,7 @@ void cheat_manager_toggle(void)
 
 void cheat_manager_index_next(void)
 {
-   if (!cheat_manager_state.cheats)
+   if (!cheat_manager_state.cheats || cheat_manager_state.size == 0)
       return;
 
    cheat_manager_state.ptr = (cheat_manager_state.ptr + 1) % cheat_manager_state.size;
@@ -559,7 +559,7 @@ void cheat_manager_index_next(void)
 
 void cheat_manager_index_prev(void)
 {
-   if (!cheat_manager_state.cheats)
+   if (!cheat_manager_state.cheats || cheat_manager_state.size == 0)
       return;
 
    if (cheat_manager_state.ptr == 0)
