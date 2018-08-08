@@ -1125,7 +1125,9 @@
  * a timing side-channel.
  *
  */
+#if 0
 #define MBEDTLS_SSL_DEBUG_ALL
+#endif
 
 /** \def MBEDTLS_SSL_ENCRYPT_THEN_MAC
  *
