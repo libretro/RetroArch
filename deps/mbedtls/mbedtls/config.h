@@ -1875,9 +1875,7 @@
  *
  * This module provides debugging functions.
  */
-#if 0
 #define MBEDTLS_DEBUG_C
-#endif
 
 /**
  * \def MBEDTLS_DES_C
