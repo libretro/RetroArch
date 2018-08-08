@@ -1776,7 +1776,9 @@ void command_playlist_update_write(
  **/
 bool command_event(enum event_command cmd, void *data)
 {
+#ifdef HAVE_DISCORD
    static bool discord_inited = false;
+#endif
    bool boolean               = false;
 
    switch (cmd)
