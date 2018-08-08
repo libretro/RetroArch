@@ -27,7 +27,7 @@
 #include <lists/string_list.h>
 #include <retro_timers.h>
 
-#include "discord_rpc.h"
+#include "../deps/discord-rpc/include/discord_rpc.h"
 #include "verbosity.h"
 
 enum discord_presence
