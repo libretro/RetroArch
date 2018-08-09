@@ -690,21 +690,22 @@ static void menu_action_setting_disp_set_label_cheat(
    {
       if ( cheat_manager_state.cheats[cheat_index].handler == CHEAT_HANDLER_TYPE_EMU)
       {
-         snprintf(s, len, "%s : (%s)",
+         snprintf(s, len, "(%s) : %s",
                (cheat_manager_get_code(cheat_index) != NULL)
                ? cheat_manager_get_code(cheat_index) :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                cheat_manager_get_code_state(cheat_index) ?
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
                );
       }
       else
       {
-         snprintf(s, len, "%08X : (%s)", cheat_manager_state.cheats[cheat_index].address,
+         snprintf(s, len, "(%s) : %08X",
                cheat_manager_get_code_state(cheat_index) ?
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+               cheat_manager_state.cheats[cheat_index].address
                );
       }
    }
