@@ -88,6 +88,7 @@ extern "C" {
 #define DOCS_URL "http://docs.libretro.com/"
 #define PARTIAL_EXTENSION ".partial"
 #define TEMP_EXTENSION ".update_tmp"
+#define RETROARCH_NIGHTLY_UPDATE_PATH "../RetroArch_update.zip"
 
 static ui_window_qt_t ui_window = {0};
 
@@ -1143,6 +1144,8 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(this, SIGNAL(gotLogMessage(const QString&)), this, SLOT(onGotLogMessage(const QString&)), Qt::AutoConnection);
    connect(this, SIGNAL(gotStatusMessage(QString,unsigned,unsigned,bool)), this, SLOT(onGotStatusMessage(QString,unsigned,unsigned,bool)), Qt::AutoConnection);
    connect(this, SIGNAL(gotReloadPlaylists()), this, SLOT(onGotReloadPlaylists()));
+   connect(this, SIGNAL(showErrorMessageDeferred(QString)), this, SLOT(onShowErrorMessage(QString)), Qt::QueuedConnection);
+   connect(this, SIGNAL(extractArchiveDeferred(QString)), this, SLOT(onExtractArchive(QString)), Qt::QueuedConnection);
 
    m_timer->start(TIMER_MSEC);
 
@@ -1299,7 +1302,10 @@ void MainWindow::addFilesToPlaylist(QStringList files)
          return;
 
       if (i % 25 == 0)
+      {
+         /* Needed to update progress dialog while doing a lot of stuff on the main thread. */
          qApp->processEvents();
+      }
 
       if (fileInfo.isDir())
       {
@@ -4279,7 +4285,10 @@ void MainWindow::addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &
       loadImageDeferred(item, imagePath);
 
       if (i % 25 == 0)
+      {
+         /* Needed to update progress dialog while doing a lot of stuff on the main thread. */
          qApp->processEvents();
+      }
 
       m_gridProgressBar->setValue(i);
    }
@@ -4651,7 +4660,7 @@ void MainWindow::onUpdateNetworkError(QNetworkReply::NetworkError code)
    QByteArray errorStringArray;
    const char *errorStringData = NULL;
 
-   m_updateProgressDialog->reset();
+   m_updateProgressDialog->cancel();
 
    if (!reply)
       return;
@@ -4692,7 +4701,12 @@ void MainWindow::onUpdateNetworkSslErrors(const QList<QSslError> &errors)
 
 void MainWindow::onUpdateDownloadCanceled()
 {
-   m_updateProgressDialog->reset();
+   m_updateProgressDialog->cancel();
+}
+
+void MainWindow::onShowErrorMessage(QString msg)
+{
+   showMessageBox(msg, MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
 }
 
 void MainWindow::onRetroArchUpdateDownloadFinished()
@@ -4701,7 +4715,10 @@ void MainWindow::onRetroArchUpdateDownloadFinished()
    QNetworkReply::NetworkError error;
    int code;
 
-   m_updateProgressDialog->reset();
+   m_updateProgressDialog->cancel();
+
+   /* At least on Linux, the progress dialog will refuse to hide itself and will stay on screen in a corrupted way if we happen to show an error message in this function. processEvents() will sometimes fix it, other times not... seems random. */
+   qApp->processEvents();
 
    if (!reply)
       return;
@@ -4714,7 +4731,7 @@ void MainWindow::onRetroArchUpdateDownloadFinished()
 
    if (code != 200)
    {
-      showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": HTTP Code " + QString::number(code), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+      emit showErrorMessageDeferred(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": HTTP Code " + QString::number(code));
       RARCH_ERR("[Qt]: RetroArch update failed with HTTP status code: %d\n", code);
       reply->disconnect();
       reply->abort();
@@ -4733,13 +4750,15 @@ void MainWindow::onRetroArchUpdateDownloadFinished()
          RARCH_ERR("[Qt]: RetroArch update finished, but old file could not be deleted.\n");
       else
       {
-         if (!m_updateFile.rename(newFileName))
-            RARCH_ERR("[Qt]: RetroArch update finished, but temp file could not be renamed.\n");
-         else
+         if (m_updateFile.rename(newFileName))
          {
             RARCH_LOG("[Qt]: RetroArch update finished downloading successfully.\n");
-
-            extractArchive(newFileName);
+            emit extractArchiveDeferred(newFileName);
+         }
+         else
+         {
+            RARCH_ERR("[Qt]: RetroArch update finished, but temp file could not be renamed.\n");
+            emit showErrorMessageDeferred(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE));
          }
       }
    }
@@ -4749,7 +4768,7 @@ void MainWindow::onRetroArchUpdateDownloadFinished()
       const char *errorData = errorArray.constData();
 
       RARCH_ERR("[Qt]: RetroArch update ended prematurely: %s\n", errorData);
-      showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": Code " + QString::number(code) + ": " + errorData, MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+      emit showErrorMessageDeferred(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": Code " + QString::number(code) + ": " + errorData);
    }
 
    reply->disconnect();
@@ -4779,21 +4798,21 @@ static void extractCB(void *task_data, void *user_data, const char *err)
 
 void MainWindow::onUpdateRetroArchFinished(bool success)
 {
-   m_updateProgressDialog->reset();
+   m_updateProgressDialog->cancel();
 
    if (!success)
    {
       RARCH_ERR("[Qt]: RetroArch update failed.\n");
-      showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+      emit showErrorMessageDeferred(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED));
       return;
    }
 
    RARCH_LOG("[Qt]: RetroArch update finished successfully.\n");
 
-   showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED), MainWindow::MSGBOX_TYPE_INFO, Qt::ApplicationModal, false);
+   emit showErrorMessageDeferred(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED));
 }
 
-int MainWindow::extractArchive(QString path)
+int MainWindow::onExtractArchive(QString path)
 {
    QByteArray pathArray = path.toUtf8();
    const char *file = pathArray.constData();
@@ -4862,7 +4881,7 @@ int MainWindow::extractArchive(QString path)
             NULL, NULL, NULL,
             extractCB, this))
    {
-      m_updateProgressDialog->reset();
+      m_updateProgressDialog->cancel();
       return -1;
    }
 
@@ -4892,7 +4911,7 @@ void MainWindow::onUpdateDownloadReadyRead()
 
 void MainWindow::updateRetroArchNightly()
 {
-   QUrl url(QUrl(buildbot_server_url).resolved(QUrl("../RetroArch_update.zip")));
+   QUrl url(QUrl(buildbot_server_url).resolved(QUrl(RETROARCH_NIGHTLY_UPDATE_PATH)));
    QNetworkRequest request(url);
    QNetworkReply *reply = NULL;
    QByteArray urlArray = url.toString().toUtf8();
@@ -4939,9 +4958,9 @@ void MainWindow::updateRetroArchNightly()
 
    /* make sure any previous connection is removed first */
    disconnect(m_updateProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
-   disconnect(m_updateProgressDialog, SIGNAL(canceled()), m_updateProgressDialog, SLOT(reset()));
+   disconnect(m_updateProgressDialog, SIGNAL(canceled()), m_updateProgressDialog, SLOT(cancel()));
    connect(m_updateProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
-   connect(m_updateProgressDialog, SIGNAL(canceled()), m_updateProgressDialog, SLOT(reset()));
+   connect(m_updateProgressDialog, SIGNAL(canceled()), m_updateProgressDialog, SLOT(cancel()));
 
    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(onUpdateNetworkError(QNetworkReply::NetworkError)));
    connect(reply, SIGNAL(sslErrors(const QList<QSslError>&)), this, SLOT(onUpdateNetworkSslErrors(const QList<QSslError>&)));

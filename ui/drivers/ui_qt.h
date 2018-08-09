@@ -364,6 +364,8 @@ signals:
    void gotLogMessage(const QString &msg);
    void gotStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
    void gotReloadPlaylists();
+   void showErrorMessageDeferred(QString msg);
+   void extractArchiveDeferred(QString path);
 
 public slots:
    void onBrowserDownloadsClicked();
@@ -437,6 +439,8 @@ private slots:
    void onUpdateDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
    void onUpdateDownloadReadyRead();
    void onUpdateDownloadCanceled();
+   void onShowErrorMessage(QString msg);
+   int onExtractArchive(QString path);
 
 private:
    void setCurrentCoreLabel();
