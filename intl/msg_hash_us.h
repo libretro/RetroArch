@@ -4252,3 +4252,5 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
       "RetroArch updated successfully. Please restart the application for the changes to take effect.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
       "Update failed.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
+      "Contributors")

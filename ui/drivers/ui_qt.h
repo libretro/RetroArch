@@ -440,6 +440,7 @@ private slots:
    void onUpdateDownloadReadyRead();
    void onUpdateDownloadCanceled();
    void onShowErrorMessage(QString msg);
+   void onContributorsClicked();
    int onExtractArchive(QString path);
 
 private:
