@@ -1983,12 +1983,22 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
             QString key;
             const core_info_t *core = NULL;
             QAction *action = NULL;
+            QString name;
 
             coreListIterator.next();
 
             key = coreListIterator.key();
             core = coreList.value(key);
-            action = associateMenu->addAction(core->core_name);
+
+            if (string_is_empty(core->core_name))
+               name = core->display_name;
+            else
+               name = core->core_name;
+
+            if (name.isEmpty())
+               continue;
+
+            action = associateMenu->addAction(name);
             action->setProperty("core_path", core->path);
          }
       }
