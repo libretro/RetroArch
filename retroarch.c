@@ -3445,6 +3445,8 @@ int runloop_iterate(unsigned *sleep_ms)
    if (settings->floats.fastforward_ratio || settings->bools.vrr_runloop_enable)
       end:
    {
+      retro_time_t to_sleep_ms;
+	  
       if (settings->bools.vrr_runloop_enable)
       {
          struct retro_system_av_info *av_info =
@@ -3474,7 +3476,7 @@ int runloop_iterate(unsigned *sleep_ms)
             (runloop_fastmotion ? settings->floats.fastforward_ratio : 1.0f)));
       }
 
-      retro_time_t to_sleep_ms  = (
+      to_sleep_ms  = (
             (frame_limit_last_time + frame_limit_minimum_time)
             - cpu_features_get_time_usec()) / 1000;
 
