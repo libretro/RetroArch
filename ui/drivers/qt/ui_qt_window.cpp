@@ -156,6 +156,11 @@ inline static bool comp_hash_ui_display_name_key_lower(const QHash<QString, QStr
    return lhs.value("ui_display_name").toLower() < rhs.value("ui_display_name").toLower();
 }
 
+inline static bool comp_hash_name_key_lower(const QHash<QString, QString> &lhs, const QHash<QString, QString> &rhs)
+{
+   return lhs.value("name").toLower() < rhs.value("name").toLower();
+}
+
 inline static bool comp_hash_label_key_lower(const QHash<QString, QString> &lhs, const QHash<QString, QString> &rhs)
 {
    return lhs.value("label").toLower() < rhs.value("label").toLower();
@@ -1979,13 +1984,14 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
       {
          QMapIterator<QString, const core_info_t*> coreListIterator(coreList);
+         QVector<QHash<QString, QString> > cores;
 
          while (coreListIterator.hasNext())
          {
             QString key;
             const core_info_t *core = NULL;
-            QAction *action = NULL;
             QString name;
+            QHash<QString, QString> hash;
 
             coreListIterator.next();
 
@@ -2000,8 +2006,20 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
             if (name.isEmpty())
                continue;
 
-            action = associateMenu->addAction(name);
-            action->setProperty("core_path", core->path);
+            hash["name"] = name;
+            hash["core_path"] = core->path;
+
+            cores.append(hash);
+         }
+
+         std::sort(cores.begin(), cores.end(), comp_hash_name_key_lower);
+
+         for (j = 0; j < cores.count(); j++)
+         {
+            const QHash<QString, QString> &hash = cores.at(j);
+            QAction *action = associateMenu->addAction(hash.value("name"));
+
+            action->setProperty("core_path", hash.value("core_path"));
          }
       }
 
