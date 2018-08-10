@@ -1456,15 +1456,18 @@ void video_driver_monitor_adjust_system_rates(void)
    timing_skew                             = fabs(
          1.0f - info->fps / timing_skew_hz);
 
-   /* We don't want to adjust pitch too much. If we have extreme cases,
-    * just don't readjust at all. */
-   if (timing_skew <= settings->floats.audio_max_timing_skew)
-      return;
+   if (!settings->bools.vrr_runloop_enable)
+   {
+      /* We don't want to adjust pitch too much. If we have extreme cases,
+       * just don't readjust at all. */
+      if (timing_skew <= settings->floats.audio_max_timing_skew)
+         return;
 
-   RARCH_LOG("[Video]: Timings deviate too much. Will not adjust."
-         " (Display = %.2f Hz, Game = %.2f Hz)\n",
-         video_refresh_rate,
-         (float)info->fps);
+      RARCH_LOG("[Video]: Timings deviate too much. Will not adjust."
+            " (Display = %.2f Hz, Game = %.2f Hz)\n",
+            video_refresh_rate,
+            (float)info->fps);
+   }
 
    if (info->fps <= timing_skew_hz)
       return;
