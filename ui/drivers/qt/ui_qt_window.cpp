@@ -91,7 +91,6 @@ extern "C" {
 #define PARTIAL_EXTENSION ".partial"
 #define TEMP_EXTENSION ".update_tmp"
 #define RETROARCH_NIGHTLY_UPDATE_PATH "../RetroArch_update.zip"
-#define TEXT(src) "" #src
 
 static ui_window_qt_t ui_window = {0};
 
