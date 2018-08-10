@@ -1,4 +1,4 @@
-const char *retroarch_contributors_list = R"(
+static const char *retroarch_contributors_list = R"(
 RetroArch and the libretro team would like to
 acknowledge the following contributors:
 
