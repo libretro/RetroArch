@@ -1416,13 +1416,18 @@ void MainWindow::addFilesToPlaylist(QStringList files)
    reloadPlaylists();
 }
 
-void MainWindow::onGridItemClicked()
+void MainWindow::onGridItemClicked(ThumbnailWidget *widget)
 {
    QHash<QString, QString> hash;
    ThumbnailWidget *w = static_cast<ThumbnailWidget*>(sender());
 
    if (!w)
-      return;
+   {
+      if (widget)
+         w = widget;
+      else
+         return;
+   }
 
    if (m_currentGridWidget)
    {
@@ -4349,11 +4354,26 @@ void MainWindow::initContentGridLayout()
 
 void MainWindow::onContentGridInited()
 {
+   ThumbnailWidget *thumbnailWidget = NULL;
+
    m_gridLayoutWidget->resize(m_gridScrollArea->viewport()->size());
 
    onZoomValueChanged(m_zoomSlider->value());
 
    onSearchEnterPressed();
+
+   if (m_gridItems.count() > 0)
+   {
+      GridItem *gridItem = m_gridItems.at(0);
+
+      if (gridItem)
+      {
+         thumbnailWidget = m_gridItems.at(0)->widget.data();
+
+         if (thumbnailWidget)
+            onGridItemClicked(thumbnailWidget);
+      }
+   }
 }
 
 void MainWindow::initContentTableWidget()

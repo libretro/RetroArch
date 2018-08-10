@@ -431,7 +431,7 @@ private slots:
    void onUpdateGridItemPixmapFromImage(GridItem *item);
    void onPendingItemUpdates();
    void onGridItemDoubleClicked();
-   void onGridItemClicked();
+   void onGridItemClicked(ThumbnailWidget *thumbnailWidget = NULL);
    void onPlaylistFilesDropped(QStringList files);
    void onUpdateNetworkError(QNetworkReply::NetworkError code);
    void onUpdateNetworkSslErrors(const QList<QSslError> &errors);
