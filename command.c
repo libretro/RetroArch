@@ -2252,7 +2252,6 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_CORE_INFO_DEINIT:
          core_info_deinit_list();
-         core_info_free_current_core();
          break;
       case CMD_EVENT_CORE_INFO_INIT:
          {
