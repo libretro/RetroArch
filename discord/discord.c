@@ -73,10 +73,10 @@ void discord_update(enum discord_presence presence)
 {
    rarch_system_info_t *system = runloop_get_system_info();
    core_info_t *core_info    = NULL;
-   core_info_get_current_core(&core_info);
 
    if (!discord_ready)
       return;
+
    if (
          (discord_status != DISCORD_PRESENCE_MENU) && 
          (discord_status == presence))
@@ -95,8 +95,12 @@ void discord_update(enum discord_presence presence)
          discord_presence.startTimestamp  = start_time;
          break;
       case DISCORD_PRESENCE_GAME:
+         core_info_get_current_core(&core_info);
+
+         if (core_info)
          {
-            const char *system_name  = string_replace_substring(string_to_lower(core_info->core_name), " ", "_");
+            const char *system_name  = string_replace_substring(
+                  string_to_lower(core_info->core_name), " ", "_");
 
             start_time                       = time(0);
             discord_presence.state           = system ? system->info.library_name : "---";
