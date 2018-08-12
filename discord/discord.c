@@ -13,12 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "discord.h"
-#include "retroarch.h"
-#include "core.h"
-#include "core_info.h"
-#include "paths.h"
 #include <file/file_path.h>
+
+#include "discord.h"
+
+#include "../retroarch.h"
+#include "../core.h"
+#include "../core_info.h"
+#include "../paths.h"
 
 #include "../msg_hash.h"
 
