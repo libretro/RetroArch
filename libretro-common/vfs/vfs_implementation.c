@@ -193,9 +193,12 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 
 #ifdef VFS_FRONTEND
    const char                 *dumb_prefix  = "vfsonly://";
+   int                      dumb_prefix_len = strlen(dumb_prefix);
+   int                             path_len = strlen(path);
 
-   if (!memcmp(path, dumb_prefix, strlen(dumb_prefix)))
-      path += strlen(dumb_prefix);
+   if (path_len >= dumb_prefix_len)
+      if (!memcmp(path, dumb_prefix, dumb_prefix_len))
+         path += strlen(dumb_prefix);
 #endif
 
    if (!stream)
