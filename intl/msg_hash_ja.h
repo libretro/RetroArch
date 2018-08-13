@@ -448,6 +448,14 @@ MSG_HASH(
       "チートの変更点を適用"
       )
 MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT_START_SEARCH,
+      "新しいチート検索を開始"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
+      "検索を続行"
+      )
+MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
       "チートファイル"
       )
@@ -458,6 +466,10 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
       "チートファイルをロード"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
+      "チートファイルを追加"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
@@ -924,6 +936,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
       "リセット")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
       "巻き戻し")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
+      "チート詳細")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
+      "チート検索を開始/続行")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
       "状態保存")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
@@ -1398,10 +1414,24 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
       "レトロ実績")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
       "巻き戻しを有効")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+      "トグルの後で適用")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+      "コンテンツをロード時にチートを自動適当")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
       "巻き戻しの粒状度")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
+      "巻き戻しバッファサイズ(MB)")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
+      "巻き戻しバッファサイズのステップ(MB)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
       "巻き戻し")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
+      "チート設定")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
+      "チート詳細")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
+      "チート検索を開始/続行")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
       "ファイルブラウザー")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
@@ -3542,6 +3572,16 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
       "変更はRetroArchを再起動した後に反映されます。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_LOG,
       "ログ")
+#ifdef HAVE_QT
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
+      "スキャンが成功しました。<br><br>\n"
+      "コンテンツを正確にスキャンするには:\n"
+      "<ul><li>互換機コアがもうダウンロードされた</li>\n"
+      "<li>オンラインアップデーターで「コア情報」がもうアップデートされた</li>\n"
+      "<li>オンラインアップデーターで「データベース」がもうアップデートされた</li>\n"
+      "<li>上記タスクの後にRetroArchを再起動してください。</li></ul>\n"
+      "コンテンツが<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">存在データベース</a>の一致が必要です。まだちゃんと動けないとバグを<a href=\"https://www.github.com/libretro/RetroArch/issues\">報告</a>できます。")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
       "今後表示しない")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_STOP,
@@ -3637,7 +3677,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
       "電源管理")
 MSG_HASH(MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-      "Change power management settings.")
+      "電源関係設定を変更する。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
       "パフォーマンス維持モード")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
