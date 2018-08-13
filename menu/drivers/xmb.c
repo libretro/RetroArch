@@ -2387,7 +2387,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 #ifdef HAVE_NETWORKING
                   case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
                      return xmb->textures.list[XMB_TEXTURE_RUN];
-                  case MENU_ENUM_LABEL_NETPLAY_DISABLE_HOST: /* FIXME does not load */
+                  case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
                      return xmb->textures.list[XMB_TEXTURE_CLOSE];
                   case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
                      return xmb->textures.list[XMB_TEXTURE_ROOM];
