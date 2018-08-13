@@ -2239,7 +2239,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_SAVE_STATE:
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
       case MENU_ENUM_LABEL_LOAD_STATE:
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
          return xmb->textures.list[XMB_TEXTURE_LOADSTATE];
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
       case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
@@ -2280,7 +2279,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             settings_t *settings = config_get_ptr();
             if (settings->uints.menu_xmb_theme == XMB_ICON_THEME_MONOCHROME ||
                settings->uints.menu_xmb_theme == XMB_ICON_THEME_MONOCHROME_INVERTED ||
-               settings->uints.menu_xmb_theme == XMB_ICON_THEME_CUSTOM
+               settings->uints.menu_xmb_theme == XMB_ICON_THEME_CUSTOM ||
+               settings->uints.menu_xmb_theme == XMB_ICON_THEME_DOTART
             )
             {
                switch (enum_idx)
