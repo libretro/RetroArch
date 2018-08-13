@@ -3389,9 +3389,9 @@ found:
 
                /* Save token to config and clear pass on success */
                *coro->settings->arrays.cheevos_password = '\0';
-               strncpy(
+               strlcpy(
                      coro->settings->arrays.cheevos_token,
-                     cheevos_locals.token, sizeof(cheevos_locals.token)
+                     cheevos_locals.token, sizeof(coro->settings->arrays.cheevos_token)
                );
                CORO_RET();
             }
