@@ -129,10 +129,8 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
    if ( (!cheat_manager_state.cheats) || cheat_manager_state.size==0 )
       return false ;
 
-   if ( cheat_database == NULL )
-   {
-      strncpy(cheats_file, path, PATH_MAX_LENGTH) ;
-   }
+   if (!cheat_database)
+      strlcpy(cheats_file, path, sizeof(cheats_file));
    else
    {
       fill_pathname_join(buf, cheat_database, path, sizeof(buf));
@@ -140,13 +138,9 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
       fill_pathname_noext(cheats_file, buf, ".cht", sizeof(cheats_file));
    }
    if ( !overwrite )
-   {
       conf = config_file_new(cheats_file);
-   }
    else
-   {
       conf = config_file_new(NULL);
-   }
 
    if (!conf)
       conf = config_file_new(NULL);
