@@ -15,6 +15,7 @@ HAVE_ZARCH=no              # Zarch menu
 HAVE_NUKLEAR=no            # Nuklear menu
 HAVE_RUNAHEAD=yes          # Runahead support
 HAVE_SSL=yes               # SSL/mbedtls support
+C89_SSL=no			
 HAVE_OVERLAY=yes           # Overlay support
 HAVE_DYNAMIC=yes           # Dynamic loading of libretro library
 HAVE_SDL=auto              # SDL support
