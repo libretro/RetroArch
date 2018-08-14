@@ -42,6 +42,7 @@ extern "C" {
 #include <retro_assert.h>
 #include <retro_common_api.h>
 #include "../ui_companion_driver.h"
+#include "../../gfx/video_driver.h"
 }
 
 class QApplication;
@@ -433,6 +434,7 @@ private slots:
    void onGridItemDoubleClicked();
    void onGridItemClicked(ThumbnailWidget *thumbnailWidget = NULL);
    void onPlaylistFilesDropped(QStringList files);
+   void onShaderParamsClicked();
    void onUpdateNetworkError(QNetworkReply::NetworkError code);
    void onUpdateNetworkSslErrors(const QList<QSslError> &errors);
    void onRetroArchUpdateDownloadFinished();
@@ -441,6 +443,10 @@ private slots:
    void onUpdateDownloadCanceled();
    void onShowErrorMessage(QString msg);
    void onContributorsClicked();
+   void onShaderParamCheckBoxClicked();
+   void onShaderParamSliderValueChanged(int value);
+   void onShaderParamSpinBoxValueChanged(int value);
+   void onShaderParamDoubleSpinBoxValueChanged(double value);
    int onExtractArchive(QString path);
 
 private:
@@ -514,6 +520,7 @@ private:
    int m_allPlaylistsGridMaxCount;
    PlaylistEntryDialog *m_playlistEntryDialog;
    QElapsedTimer m_statusMessageElapsedTimer;
+   QDialog *m_shaderParamsDialog;
    QNetworkAccessManager *m_networkManager;
    QProgressDialog *m_updateProgressDialog;
    QFile m_updateFile;
@@ -526,6 +533,7 @@ protected:
 
 Q_DECLARE_METATYPE(ThumbnailWidget)
 Q_DECLARE_METATYPE(QPointer<ThumbnailWidget>)
+Q_DECLARE_METATYPE(struct video_shader_parameter*)
 
 RETRO_BEGIN_DECLS
 
