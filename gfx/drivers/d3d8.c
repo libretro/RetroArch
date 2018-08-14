@@ -926,8 +926,10 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
        * and will prevent a clean reset here
        * another approach would be to keep track of all created D3D
        * font objects and free/realloc them around the d3d_reset call  */
-
+#ifdef HAVE_MENU
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
+#endif
+
       if (!d3d8_reset(d3d->dev, &d3dpp))
       {
          d3d8_deinitialize(d3d);
@@ -938,7 +940,10 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
          if (ret)
             RARCH_LOG("[D3D8]: Recovered from dead state.\n");
       }
+
+#ifdef HAVE_MENU
       menu_driver_init(info->is_threaded);
+#endif
    }
 
    if (!ret)
