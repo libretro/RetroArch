@@ -545,9 +545,11 @@ bool video_shader_resolve_parameters(config_file_t *conf,
          if (ret == 5)
             param->step = 0.1f * (param->maximum - param->minimum);
 
-         RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f\n",
+         param->pass = i;
+
+         RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f in pass %d\n",
                param->desc,    param->id,      param->initial,
-               param->minimum, param->maximum, param->step);
+               param->minimum, param->maximum, param->step, param->pass);
          param->current = param->initial;
 
          shader->num_parameters++;
