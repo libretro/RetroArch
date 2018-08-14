@@ -1,9 +1,10 @@
-
+﻿
 #include <fstream>
 #include <iostream>
 #include <spirv_glsl.hpp>
 #include <spirv_hlsl.hpp>
 #include <spirv_msl.hpp>
+#include <string>
 #include <stdint.h>
 
 #include "glslang_util.h"

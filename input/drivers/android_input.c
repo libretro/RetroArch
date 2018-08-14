@@ -35,6 +35,7 @@
 
 #include "../input_driver.h"
 
+#include "../../command.h"
 #include "../../frontend/drivers/platform_unix.h"
 #include "../../gfx/video_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
@@ -153,7 +154,9 @@ static typeof(AMotionEvent_getButtonState) *p_AMotionEvent_getButtonState;
 
 #define AMotionEvent_getButtonState (*p_AMotionEvent_getButtonState)
 
+#ifdef HAVE_DYNAMIC
 static void *libandroid_handle;
+#endif
 
 static bool android_input_lookup_name_prekitkat(char *buf,
       int *vendorId, int *productId, size_t size, int id)
@@ -431,6 +434,7 @@ static void engine_handle_dpad_default(android_input_t *android,
    android->analog_state[port][1] = (int16_t)(y * 32767.0f);
 }
 
+#ifdef HAVE_DYNAMIC
 static void engine_handle_dpad_getaxisvalue(android_input_t *android,
       AInputEvent *event, int port, int source)
 {
@@ -465,20 +469,22 @@ static void engine_handle_dpad_getaxisvalue(android_input_t *android,
    android->analog_state[port][8] = (int16_t)(brake * 32767.0f);
    android->analog_state[port][9] = (int16_t)(gas * 32767.0f);
 }
+#endif
 
 
 static bool android_input_init_handle(void)
 {
+#ifdef HAVE_DYNAMIC
    if (libandroid_handle != NULL) /* already initialized */
       return true;
 #ifdef ANDROID_AARCH64
    if ((libandroid_handle = dlopen("/system/lib64/libandroid.so",
                RTLD_LOCAL | RTLD_LAZY)) == 0)
-   return false;
+      return false;
 #else
    if ((libandroid_handle = dlopen("/system/lib/libandroid.so",
                RTLD_LOCAL | RTLD_LAZY)) == 0)
-   return false;
+      return false;
 #endif
 
    if ((p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT,
@@ -489,6 +495,7 @@ static bool android_input_init_handle(void)
    }
 
    p_AMotionEvent_getButtonState = dlsym(RTLD_DEFAULT,"AMotionEvent_getButtonState");
+#endif
 
    pad_id1 = -1;
    pad_id2 = -1;
@@ -863,6 +870,7 @@ static int android_input_get_id_port(android_input_t *android, int id,
    return ret;
 }
 
+#ifdef HAVE_DYNAMIC
 /* Returns the index inside android->pad_state */
 static int android_input_get_id_index_from_name(android_input_t *android,
       const char *name)
@@ -876,6 +884,7 @@ static int android_input_get_id_index_from_name(android_input_t *android,
 
    return -1;
 }
+#endif
 
 static void handle_hotplug(android_input_t *android,
       struct android_app *android_app, int *port, int id,
@@ -1470,8 +1479,10 @@ static void android_input_free_input(void *data)
 
    android_app->input_alive = false;
 
+#ifdef HAVE_DYNAMIC
    dylib_close((dylib_t)libandroid_handle);
    libandroid_handle = NULL;
+#endif
 
    android_keyboard_free();
    free(data);
