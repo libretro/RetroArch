@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26228.9
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "msvc2017-android", "msvc2017-android", "{82FC602D-4083-4ED5-858B-A066A4280E4C}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "msvc-2017-android", "msvc-2017-android", "{82FC602D-4083-4ED5-858B-A066A4280E4C}"
 EndProject
-Project("{39E2626F-3545-4960-A6E8-258AD8476CE5}") = "msvc2017-android.Packaging", "msvc2017-android.Packaging\msvc2017-android.Packaging.androidproj", "{94B52983-76DE-4545-A708-433C377727C7}"
+Project("{39E2626F-3545-4960-A6E8-258AD8476CE5}") = "msvc-2017-android.Packaging", "msvc-2017-android.Packaging\msvc-2017-android.Packaging.androidproj", "{94B52983-76DE-4545-A708-433C377727C7}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "msvc2017-android.NativeActivity", "msvc2017-android.NativeActivity\msvc2017-android.NativeActivity.vcxproj", "{E27D73EC-6148-4817-B75C-ADAA0C563939}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "msvc-2017-android.NativeActivity", "msvc-2017-android.NativeActivity\msvc-2017-android.NativeActivity.vcxproj", "{E27D73EC-6148-4817-B75C-ADAA0C563939}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
