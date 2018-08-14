@@ -702,11 +702,14 @@ int cheat_manager_initialize_memory(void *data, bool wraparound)
 
 
    runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_SUCCESS), 1, 180, true);
-   if ( !wraparound )
+
+#ifdef HAVE_MENU
+   if (!wraparound)
    {
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
       menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    }
+#endif
 
    return 0 ;
 }
@@ -920,8 +923,10 @@ int cheat_manager_search(enum cheat_search_type search_type)
 
    runloop_msg_queue_push(msg, 1, 180, true);
 
+#ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+#endif
    return 0 ;
 }
 
@@ -1022,19 +1027,21 @@ int cheat_manager_add_matches(const char *path,
 
    runloop_msg_queue_push(msg, 1, 180, true);
 
+#ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+#endif
 
-   return 0 ;
+   return 0;
 }
 
 void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_value)
 {
-   bool rumble = false ;
+   bool rumble = false;
 
    switch (cheat->rumble_type)
    {
-      case RUMBLE_TYPE_DISABLED :
+      case RUMBLE_TYPE_DISABLED:
          return;
       case RUMBLE_TYPE_CHANGES:
          rumble = (curr_value != cheat->rumble_prev_value) ;
@@ -1059,8 +1066,7 @@ void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_valu
          break ;
       case RUMBLE_TYPE_GT_VALUE:
          rumble = (curr_value > cheat->rumble_value) ;
-         break ;
-
+         break;
    }
 
    cheat->rumble_prev_value = curr_value ;
@@ -1430,10 +1436,12 @@ int cheat_manager_copy_match(void *data, bool wraparound)
 
 int cheat_manager_delete_match(void *data, bool wraparound)
 {
-   bool refresh = false ;
+   bool refresh = false;
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_DELETE,
-	   cheat_manager_state.match_idx, NULL, NULL, NULL, NULL) ;
+	   cheat_manager_state.match_idx, NULL, NULL, NULL, NULL);
+#ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-   return 0 ;
+#endif
+   return 0;
 }
