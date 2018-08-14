@@ -155,6 +155,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       strlcpy(pass->source.path, tmp_str, sizeof(pass->source.path));
    else
       strlcpy(pass->source.path, tmp_path, sizeof(pass->source.path));
+
    free(tmp_path);
 
    /* Smooth */
@@ -208,7 +209,10 @@ static bool video_shader_parse_pass(config_file_t *conf,
    config_get_array(conf, scale_name_buf, scale_type_y, sizeof(scale_type_y));
 
    if (!*scale_type && !*scale_type_x && !*scale_type_y)
+   {
+      free(tmp_str);
       return true;
+   }
 
    if (*scale_type)
    {
@@ -253,6 +257,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    }
 
    snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
+
    if (scale->type_x == RARCH_SCALE_ABSOLUTE)
    {
       if (config_get_int(conf, attr_name_buf, &iattr))
@@ -277,6 +282,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    }
 
    snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
+
    if (scale->type_y == RARCH_SCALE_ABSOLUTE)
    {
       if (config_get_int(conf, attr_name_buf, &iattr))
@@ -500,9 +506,9 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 		  continue;
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-      /* First try to use the more robust slang 
+      /* First try to use the more robust slang
        * implementation to support #includes. */
-      /* FIXME: The check for slang can be removed 
+      /* FIXME: The check for slang can be removed
        * if it's sufficiently tested for
        * GLSL/Cg as well, it should be the same implementation. */
       if (string_is_equal(path_get_extension(path), "slang") &&
@@ -632,7 +638,7 @@ static bool video_shader_parse_imports(config_file_t *conf,
          var->type = RARCH_STATE_TRANSITION_PREV;
       else if (string_is_equal(semantic, "python"))
          var->type = RARCH_STATE_PYTHON;
-      else 
+      else
       {
          RARCH_ERR("Invalid semantic.\n");
          goto error;
@@ -752,11 +758,14 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
       if (!video_shader_parse_pass(conf, &shader->pass[i], i))
       {
          if (file_list)
+         {
             string_list_free(file_list);
+            file_list = NULL;
+         }
          return false;
       }
 
-      if (settings->bools.video_shader_watch_files)
+      if (settings->bools.video_shader_watch_files && file_list)
          string_list_append(file_list,
                shader->pass[i].source.path, attr);
    }
@@ -770,7 +779,8 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
 
       frontend_driver_watch_path_for_changes(file_list,
             flags, &file_change_data);
-      string_list_free(file_list);
+      if (file_list)
+         string_list_free(file_list);
    }
 
    if (!video_shader_parse_textures(conf, shader))
@@ -1130,7 +1140,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
          case GFX_CTX_OPENGL_API:
          case GFX_CTX_OPENGL_ES_API:
             {
-               struct retro_hw_render_callback *hwr = 
+               struct retro_hw_render_callback *hwr =
                   video_driver_get_hw_context();
                if (hwr)
                {
@@ -1162,7 +1172,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
          case GFX_CTX_OPENGL_API:
          case GFX_CTX_OPENGL_ES_API:
             {
-               struct retro_hw_render_callback *hwr = 
+               struct retro_hw_render_callback *hwr =
                   video_driver_get_hw_context();
                if (hwr)
                {
@@ -1227,7 +1237,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       }
    }
    if (
-         string_is_equal_case_insensitive(ext, "slangp") 
+         string_is_equal_case_insensitive(ext, "slangp")
          )
    {
       *is_preset = true;
