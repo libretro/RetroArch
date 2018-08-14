@@ -1042,11 +1042,11 @@ RECORDING
 /*============================================================
 THREAD
 ============================================================ */
-#if defined(HAVE_THREADS) && defined(XENON)
-#include "../thread/xenon_sdl_threads.c"
-#elif defined(HAVE_THREADS)
+#if defined(HAVE_THREADS)
 
-#if defined(PSP)
+#if defined(XENON)
+#include "../thread/xenon_sdl_threads.c"
+#elif defined(PSP)
 #include "../deps/pthreads/platform/helper/tls-helper.c"
 #include "../deps/pthreads/platform/psp/psp_osal.c"
 #include "../deps/pthreads/pte_main.c"
@@ -1072,7 +1072,6 @@ THREAD
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
 #endif
-
 
 /*============================================================
 NETPLAY
