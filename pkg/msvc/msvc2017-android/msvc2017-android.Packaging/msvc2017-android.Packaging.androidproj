@@ -119,7 +119,6 @@
     </AntPackage>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Content Include="res\values\strings.xml" />
     <AntBuildXml Include="build.xml" />
     <AndroidManifest Include="AndroidManifest.xml" />
     <AntProjectPropertiesFile Include="project.properties" />
@@ -139,6 +138,17 @@
     <JavaCompile Include="src\com\retroarch\browser\retroactivity\RetroActivityIntent.java" />
     <JavaCompile Include="src\com\retroarch\browser\retroactivity\RetroActivityLocation.java" />
     <JavaCompile Include="src\com\retroarch\browser\retroactivity\RetroActivityPast.java" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="res\drawable-hdpi\ic_launcher.png" />
+    <Content Include="res\drawable-ldpi\ic_launcher.png" />
+    <Content Include="res\drawable-mdpi\ic_launcher.png" />
+    <Content Include="res\drawable-xhdpi\banner.png" />
+    <Content Include="res\drawable-xhdpi\ic_launcher.png" />
+    <Content Include="res\drawable-xhdpi\ouya_icon.png" />
+    <Content Include="res\drawable-xxhdpi\ic_launcher.png" />
+    <Content Include="res\drawable-xxxhdpi\ic_launcher.png" />
+    <Content Include="res\drawable\banner.png" />
   </ItemGroup>
   <Import Project="$(AndroidTargetsPath)\Android.targets" />
   <ImportGroup Label="ExtensionTargets" />

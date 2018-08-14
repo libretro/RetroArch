@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2015-2017 - Andrés Suárez
  *  Copyright (C) 2016-2017 - Brad Parker
@@ -328,6 +328,7 @@ static bool command_write_ram(const char *arg)
 }
 #endif
 
+#ifdef HAVE_COMMAND
 static bool command_get_arg(const char *tok,
       const char **arg, unsigned *index)
 {
@@ -368,6 +369,7 @@ static bool command_get_arg(const char *tok,
 
    return false;
 }
+#endif
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
 static bool command_network_init(command_t *handle, uint16_t port)
