@@ -35,7 +35,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <RootNamespace>msvc-2017-android</RootNamespace>
+    <RootNamespace>retroarch-activity</RootNamespace>
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <ProjectVersion>1.0</ProjectVersion>
     <ProjectGuid>{94b52983-76de-4545-a708-433c377727c7}</ProjectGuid>

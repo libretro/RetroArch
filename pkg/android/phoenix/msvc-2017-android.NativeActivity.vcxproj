@@ -69,12 +69,12 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{e27d73ec-6148-4817-b75c-adaa0c563939}</ProjectGuid>
     <Keyword>Android</Keyword>
-    <RootNamespace>msvc-2017-android</RootNamespace>
+    <RootNamespace>retroarch-activity</RootNamespace>
     <DefaultLanguage>en-US</DefaultLanguage>
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <ApplicationType>Android</ApplicationType>
     <ApplicationTypeRevision>3.0</ApplicationTypeRevision>
-    <ProjectName>msvc-2017-android.NativeActivity</ProjectName>
+    <ProjectName>retroarch-activity.NativeActivity</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
