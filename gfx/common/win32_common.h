@@ -63,8 +63,6 @@ void create_gdi_context(HWND hwnd, bool *quit);
 
 bool gdi_has_menu_frame(void);
 
-void shader_dlg_params_reload(void);
-
 bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name);
 
 void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,

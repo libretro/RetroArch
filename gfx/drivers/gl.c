@@ -2200,11 +2200,6 @@ static bool gl_set_shader(void *data,
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl_set_shader_viewports(gl);
    context_bind_hw_render(true);
-#if defined(_WIN32) && !defined(_XBOX)
-   /* Shader dialog is disabled for now, until video_threaded issues are fixed.
-   shader_dlg_params_reload();*/
-#endif
-
 #endif
 
    return true;
