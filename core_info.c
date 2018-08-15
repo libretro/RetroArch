@@ -679,6 +679,9 @@ bool core_info_load(core_info_ctx_find_t *info)
    if (!info)
       return false;
 
+   if (!core_info_current)
+      core_info_init_current_core();
+
    core_info_get_current_core(&core_info);
 
    if (!core_info_curr_list)
