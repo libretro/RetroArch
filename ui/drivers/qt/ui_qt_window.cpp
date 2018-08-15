@@ -1340,31 +1340,6 @@ void MainWindow::onShaderParamSliderValueChanged(int value)
       return;
 
    spinBoxVariant = slider->property("spinBox");
-
-   if (spinBoxVariant.isValid())
-   {
-      QSpinBox *spinBox = spinBoxVariant.value<QSpinBox*>();
-
-      if (!spinBox)
-         return;
-
-      spinBox->blockSignals(true);
-      spinBox->setValue(slider->value());
-      spinBox->blockSignals(false);
-   }
-   else
-   {
-      QVariant doubleSpinBoxVariant = slider->property("doubleSpinBox");
-      QDoubleSpinBox *doubleSpinBox = doubleSpinBoxVariant.value<QDoubleSpinBox*>();
-
-      if (!doubleSpinBox)
-         return;
-
-      doubleSpinBox->blockSignals(true);
-      doubleSpinBox->setValue(slider->value());
-      doubleSpinBox->blockSignals(false);
-   }
-
    paramVariant = slider->property("param");
 
    if (paramVariant.isValid())
@@ -1376,6 +1351,30 @@ void MainWindow::onShaderParamSliderValueChanged(int value)
          newValue = lerp(0, 100, param->minimum, param->maximum, slider->value());
          param->current = newValue;
       }
+   }
+
+   if (spinBoxVariant.isValid())
+   {
+      QSpinBox *spinBox = spinBoxVariant.value<QSpinBox*>();
+
+      if (!spinBox)
+         return;
+
+      spinBox->blockSignals(true);
+      spinBox->setValue(newValue);
+      spinBox->blockSignals(false);
+   }
+   else
+   {
+      QVariant doubleSpinBoxVariant = slider->property("doubleSpinBox");
+      QDoubleSpinBox *doubleSpinBox = doubleSpinBoxVariant.value<QDoubleSpinBox*>();
+
+      if (!doubleSpinBox)
+         return;
+
+      doubleSpinBox->blockSignals(true);
+      doubleSpinBox->setValue(newValue);
+      doubleSpinBox->blockSignals(false);
    }
 }
 
