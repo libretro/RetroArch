@@ -35,7 +35,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\griffin\griffin.c">
+    <ClCompile Include="..\..\..\griffin\griffin.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">CompileAsC</CompileAs>
@@ -45,7 +45,7 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\griffin\griffin_cpp.cpp">
+    <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp">
       <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">c++11</CppLanguageStandard>
       <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">c++11</CppLanguageStandard>
       <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">c++11</CppLanguageStandard>
@@ -55,7 +55,7 @@
       <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">c++11</CppLanguageStandard>
       <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">c++11</CppLanguageStandard>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\griffin\griffin_glslang.cpp">
+    <ClCompile Include="..\..\..\griffin\griffin_glslang.cpp">
       <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">c++11</CppLanguageStandard>
       <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">c++11</CppLanguageStandard>
       <CppLanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">c++11</CppLanguageStandard>
