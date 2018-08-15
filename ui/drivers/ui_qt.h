@@ -250,6 +250,18 @@ private:
    QSpinBox *m_allPlaylistsGridMaxCountSpinBox;
 };
 
+class ShaderParamsDialog : public QDialog
+{
+   Q_OBJECT
+public:
+   ShaderParamsDialog(QWidget *parent = 0);
+   ~ShaderParamsDialog();
+signals:
+   void closed();
+protected:
+   void closeEvent(QCloseEvent *event);
+};
+
 class CoreInfoLabel : public QLabel
 {
    Q_OBJECT
@@ -365,6 +377,7 @@ signals:
    void gotLogMessage(const QString &msg);
    void gotStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
    void gotReloadPlaylists();
+   void gotReloadShaderParams();
    void showErrorMessageDeferred(QString msg);
    void extractArchiveDeferred(QString path);
 
@@ -393,6 +406,7 @@ public slots:
    void reloadPlaylists();
    void deferReloadPlaylists();
    void onGotReloadPlaylists();
+   void onGotReloadShaderParams();
    void showWelcomeScreen();
    void onIconViewClicked();
    void onListViewClicked();
@@ -403,6 +417,7 @@ public slots:
    void showDocs();
    void updateRetroArchNightly();
    void onUpdateRetroArchFinished(bool success);
+   void deferReloadShaderParams();
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
@@ -520,7 +535,7 @@ private:
    int m_allPlaylistsGridMaxCount;
    PlaylistEntryDialog *m_playlistEntryDialog;
    QElapsedTimer m_statusMessageElapsedTimer;
-   QDialog *m_shaderParamsDialog;
+   QPointer<ShaderParamsDialog> m_shaderParamsDialog;
    QNetworkAccessManager *m_networkManager;
    QProgressDialog *m_updateProgressDialog;
    QFile m_updateFile;

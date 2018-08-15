@@ -35,6 +35,7 @@
 #include "../verbosity.h"
 #include "../configuration.h"
 #include "../frontend/frontend_driver.h"
+#include "../command.h"
 #include "video_driver.h"
 #include "video_shader_parse.h"
 
@@ -784,6 +785,8 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
       if (file_list)
          string_list_free(file_list);
    }
+
+   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
 
    if (!video_shader_parse_textures(conf, shader))
       return false;

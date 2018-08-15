@@ -1336,8 +1336,8 @@ static void command_event_restore_default_shader_preset(void)
 
 static void command_event_restore_remaps(void)
 {
-   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) || 
-       rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) || 
+   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) ||
+       rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) ||
        rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
       input_remapping_set_defaults(true);
 }
@@ -2441,10 +2441,14 @@ TODO: Add a setting for these tweaks */
          if (!command_event_save_core_config())
             return false;
          break;
+      case CMD_EVENT_SHADER_PRESET_LOADED:
+         ui_companion_event_command(cmd);
+         break;
       case CMD_EVENT_SHADERS_APPLY_CHANGES:
 #ifdef HAVE_MENU
          menu_shader_manager_apply_changes();
 #endif
+         ui_companion_event_command(cmd);
          break;
       case CMD_EVENT_PAUSE_CHECKS:
          {
