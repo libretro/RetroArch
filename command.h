@@ -158,6 +158,8 @@ enum event_command
    CMD_EVENT_MENU_REFRESH,
    /* Applies shader changes. */
    CMD_EVENT_SHADERS_APPLY_CHANGES,
+   /* A new shader preset has been loaded */
+   CMD_EVENT_SHADER_PRESET_LOADED,
    /* Initializes shader directory. */
    CMD_EVENT_SHADER_DIR_INIT,
    /* Deinitializes shader directory. */

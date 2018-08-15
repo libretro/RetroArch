@@ -42,6 +42,7 @@ extern "C" {
 #include <retro_assert.h>
 #include <retro_common_api.h>
 #include "../ui_companion_driver.h"
+#include "../../gfx/video_driver.h"
 }
 
 class QApplication;
@@ -249,6 +250,18 @@ private:
    QSpinBox *m_allPlaylistsGridMaxCountSpinBox;
 };
 
+class ShaderParamsDialog : public QDialog
+{
+   Q_OBJECT
+public:
+   ShaderParamsDialog(QWidget *parent = 0);
+   ~ShaderParamsDialog();
+signals:
+   void closed();
+protected:
+   void closeEvent(QCloseEvent *event);
+};
+
 class CoreInfoLabel : public QLabel
 {
    Q_OBJECT
@@ -364,6 +377,7 @@ signals:
    void gotLogMessage(const QString &msg);
    void gotStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
    void gotReloadPlaylists();
+   void gotReloadShaderParams();
    void showErrorMessageDeferred(QString msg);
    void extractArchiveDeferred(QString path);
 
@@ -392,6 +406,7 @@ public slots:
    void reloadPlaylists();
    void deferReloadPlaylists();
    void onGotReloadPlaylists();
+   void onGotReloadShaderParams();
    void showWelcomeScreen();
    void onIconViewClicked();
    void onListViewClicked();
@@ -402,6 +417,7 @@ public slots:
    void showDocs();
    void updateRetroArchNightly();
    void onUpdateRetroArchFinished(bool success);
+   void deferReloadShaderParams();
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
@@ -433,6 +449,7 @@ private slots:
    void onGridItemDoubleClicked();
    void onGridItemClicked(ThumbnailWidget *thumbnailWidget = NULL);
    void onPlaylistFilesDropped(QStringList files);
+   void onShaderParamsClicked();
    void onUpdateNetworkError(QNetworkReply::NetworkError code);
    void onUpdateNetworkSslErrors(const QList<QSslError> &errors);
    void onRetroArchUpdateDownloadFinished();
@@ -441,6 +458,10 @@ private slots:
    void onUpdateDownloadCanceled();
    void onShowErrorMessage(QString msg);
    void onContributorsClicked();
+   void onShaderParamCheckBoxClicked();
+   void onShaderParamSliderValueChanged(int value);
+   void onShaderParamSpinBoxValueChanged(int value);
+   void onShaderParamDoubleSpinBoxValueChanged(double value);
    int onExtractArchive(QString path);
 
 private:
@@ -514,6 +535,7 @@ private:
    int m_allPlaylistsGridMaxCount;
    PlaylistEntryDialog *m_playlistEntryDialog;
    QElapsedTimer m_statusMessageElapsedTimer;
+   QPointer<ShaderParamsDialog> m_shaderParamsDialog;
    QNetworkAccessManager *m_networkManager;
    QProgressDialog *m_updateProgressDialog;
    QFile m_updateFile;
@@ -526,6 +548,7 @@ protected:
 
 Q_DECLARE_METATYPE(ThumbnailWidget)
 Q_DECLARE_METATYPE(QPointer<ThumbnailWidget>)
+Q_DECLARE_METATYPE(struct video_shader_parameter*)
 
 RETRO_BEGIN_DECLS
 

@@ -105,6 +105,7 @@ struct video_shader_parameter
    float initial;
    float maximum;
    float step;
+   int pass;
 };
 
 struct video_shader_pass
