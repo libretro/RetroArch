@@ -109,15 +109,11 @@ void discord_update(enum discord_presence presence)
             playlist_t *current_playlist = playlist_get_cached();
 
             if (current_playlist)
-            {
                playlist_get_index_by_path(
                   current_playlist, path_get(RARCH_PATH_CONTENT), NULL, &label, NULL, NULL, NULL, NULL);
-            }
 
             if (!label)
-            {
                label = (char *)path_basename(path_get(RARCH_PATH_BASENAME));
-            }
 
             start_time                       = time(0);
             discord_presence.state           = core_info->display_name;
