@@ -21,6 +21,7 @@
 #include "../core.h"
 #include "../core_info.h"
 #include "../paths.h"
+#include "../playlist.h"
 
 #include "../msg_hash.h"
 
@@ -80,7 +81,7 @@ void discord_update(enum discord_presence presence)
       return;
 
    if (
-         (discord_status != DISCORD_PRESENCE_MENU) && 
+         (discord_status != DISCORD_PRESENCE_MENU) &&
          (discord_status == presence))
       return;
 
@@ -104,16 +105,29 @@ void discord_update(enum discord_presence presence)
             const char *system_name  = string_replace_substring(
                   string_to_lower(core_info->core_name), " ", "_");
 
+            char *label = NULL;
+            playlist_t *current_playlist = playlist_get_cached();
+
+            if (current_playlist)
+            {
+               playlist_get_index_by_path(
+                  current_playlist, path_get(RARCH_PATH_CONTENT), NULL, &label, NULL, NULL, NULL, NULL);
+            }
+
+            if (!label)
+            {
+               label = (char *)path_basename(path_get(RARCH_PATH_BASENAME));
+            }
+
             start_time                       = time(0);
-            discord_presence.state           = system ? system->info.library_name : "---";
-            discord_presence.details         = path_basename(path_get(RARCH_PATH_BASENAME));
+            discord_presence.state           = core_info->display_name;
+            discord_presence.details         = label;
 #if 1
             RARCH_LOG("[Discord] system name: %s\n", system_name);
+            RARCH_LOG("[Discord] current content: %s\n", label);
 #endif
             discord_presence.largeImageKey   = system_name;
-
             discord_presence.smallImageKey   = "base";
-
             discord_presence.instance        = 0;
             discord_presence.startTimestamp  = start_time;
 
