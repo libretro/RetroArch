@@ -4,6 +4,7 @@
 #include <spirv_glsl.hpp>
 #include <spirv_hlsl.hpp>
 #include <spirv_msl.hpp>
+#include <compat/strl.h>
 #include <string>
 #include <stdint.h>
 
@@ -200,7 +201,7 @@ static bool slang_process_reflection(
          string uniform_id     = get_semantic_name(
                sl_reflection, (slang_semantic)semantic, 0);
 
-         strncpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+         strlcpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
 
          if (src.push_constant)
          {
@@ -226,7 +227,7 @@ static bool slang_process_reflection(
 
          string uniform_id = get_semantic_name(
                sl_reflection, SLANG_SEMANTIC_FLOAT_PARAMETER, i);
-         strncpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+         strlcpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
 
          if (src.push_constant)
          {
@@ -272,7 +273,7 @@ static bool slang_process_reflection(
             string id          = get_semantic_name(
                   sl_reflection, (slang_texture_semantic)semantic, index);
 
-            strncpy(texture.id, id.c_str(), sizeof(texture.id));
+            strlcpy(texture.id, id.c_str(), sizeof(texture.id));
 
             textures.push_back(texture);
 
@@ -297,7 +298,7 @@ static bool slang_process_reflection(
                         sl_reflection,
                         (slang_texture_semantic)semantic, index);
 
-            strncpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+            strlcpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
 
             if (src.push_constant)
             {
@@ -361,7 +362,7 @@ bool slang_process(
       return false;
 
    if (!*pass.alias && !output.meta.name.empty())
-      strncpy(pass.alias, output.meta.name.c_str(), sizeof(pass.alias) - 1);
+      strlcpy(pass.alias, output.meta.name.c_str(), sizeof(pass.alias) - 1);
 
    out->format = output.meta.rt_format;
 
