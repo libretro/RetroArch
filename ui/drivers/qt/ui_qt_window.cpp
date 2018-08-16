@@ -1181,6 +1181,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
    /* these are always queued */
    connect(this, SIGNAL(showErrorMessageDeferred(QString)), this, SLOT(onShowErrorMessage(QString)), Qt::QueuedConnection);
+   connect(this, SIGNAL(showInfoMessageDeferred(QString)), this, SLOT(onShowInfoMessage(QString)), Qt::QueuedConnection);
    connect(this, SIGNAL(extractArchiveDeferred(QString)), this, SLOT(onExtractArchive(QString)), Qt::QueuedConnection);
 
    m_timer->start(TIMER_MSEC);
@@ -5131,6 +5132,11 @@ void MainWindow::onShowErrorMessage(QString msg)
    showMessageBox(msg, MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
 }
 
+void MainWindow::onShowInfoMessage(QString msg)
+{
+   showMessageBox(msg, MainWindow::MSGBOX_TYPE_INFO, Qt::ApplicationModal, false);
+}
+
 void MainWindow::onRetroArchUpdateDownloadFinished()
 {
    QNetworkReply *reply = m_updateReply.data();
@@ -5231,7 +5237,7 @@ void MainWindow::onUpdateRetroArchFinished(bool success)
 
    RARCH_LOG("[Qt]: RetroArch update finished successfully.\n");
 
-   emit showErrorMessageDeferred(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED));
+   emit showInfoMessageDeferred(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED));
 }
 
 int MainWindow::onExtractArchive(QString path)

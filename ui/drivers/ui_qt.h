@@ -381,6 +381,7 @@ signals:
    void gotReloadPlaylists();
    void gotReloadShaderParams();
    void showErrorMessageDeferred(QString msg);
+   void showInfoMessageDeferred(QString msg);
    void extractArchiveDeferred(QString path);
 
 public slots:
@@ -459,6 +460,7 @@ private slots:
    void onUpdateDownloadReadyRead();
    void onUpdateDownloadCanceled();
    void onShowErrorMessage(QString msg);
+   void onShowInfoMessage(QString msg);
    void onContributorsClicked();
    void onShaderParamCheckBoxClicked();
    void onShaderParamSliderValueChanged(int value);
