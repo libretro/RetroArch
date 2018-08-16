@@ -1969,11 +1969,12 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
 retry:
    for (dpy = 0; dpy < display_count; dpy++)
    {
+      VkDisplayKHR display;
       if (monitor_index != 0 && (monitor_index - 1) != dpy)
          continue;
 
-      VkDisplayKHR display = displays[dpy].display;
-      best_mode = VK_NULL_HANDLE;
+      display    = displays[dpy].display;
+      best_mode  = VK_NULL_HANDLE;
       best_plane = UINT32_MAX;
 
       if (vkGetDisplayModePropertiesKHR(vk->context.gpu,

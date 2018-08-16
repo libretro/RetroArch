@@ -55,7 +55,7 @@ static void d3d11_free_overlays(d3d11_video_t* d3d11)
    Release(d3d11->overlays.vbo);
 }
 
-static void
+   static void
 d3d11_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w, float h)
 {
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
@@ -230,6 +230,7 @@ static void d3d11_set_filtering(void* data, unsigned index, bool smooth)
 static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
 {
    math_matrix_4x4 rot;
+   D3D11_MAPPED_SUBRESOURCE mapped_ubo;
    d3d11_video_t*  d3d11 = (d3d11_video_t*)data;
 
    if (!d3d11)
@@ -238,7 +239,6 @@ static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
    matrix_4x4_rotate_z(rot, rotation * (M_PI / 2.0f));
    matrix_4x4_multiply(d3d11->mvp, rot, d3d11->ubo_values.mvp);
 
-   D3D11_MAPPED_SUBRESOURCE mapped_ubo;
    D3D11MapBuffer(d3d11->context, d3d11->frame.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
    *(math_matrix_4x4*)mapped_ubo.pData = d3d11->mvp;
    D3D11UnmapBuffer(d3d11->context, d3d11->frame.ubo, 0);
@@ -258,7 +258,7 @@ static void d3d11_update_viewport(void* data, bool force_full)
    d3d11->frame.viewport.MaxDepth = 1.0f;
 
    if (d3d11->shader_preset && (d3d11->frame.output_size.x != d3d11->vp.width ||
-                                d3d11->frame.output_size.y != d3d11->vp.height))
+            d3d11->frame.output_size.y != d3d11->vp.height))
       d3d11->resize_render_targets = true;
 
    d3d11->frame.output_size.x = d3d11->vp.width;
@@ -318,8 +318,9 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    unsigned         i;
-   d3d11_texture_t* source;
-   d3d11_video_t*   d3d11 = (d3d11_video_t*)data;
+   config_file_t* conf     = NULL;
+   d3d11_texture_t* source = NULL;
+   d3d11_video_t*   d3d11  = (d3d11_video_t*)data;
 
    if (!d3d11)
       return false;
@@ -336,7 +337,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       return false;
    }
 
-   config_file_t* conf = config_file_new(path);
+   conf = config_file_new(path);
 
    if (!conf)
       return false;
@@ -389,16 +390,16 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       /* clang-format on */
 
       if (!slang_process(
-                d3d11->shader_preset, i, RARCH_SHADER_HLSL, 40, &semantics_map,
-                &d3d11->pass[i].semantics))
+               d3d11->shader_preset, i, RARCH_SHADER_HLSL, 40, &semantics_map,
+               &d3d11->pass[i].semantics))
          goto error;
 
       {
          static const D3D11_INPUT_ELEMENT_DESC desc[] = {
             { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
-              D3D11_INPUT_PER_VERTEX_DATA, 0 },
+               D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
-              D3D11_INPUT_PER_VERTEX_DATA, 0 },
+               D3D11_INPUT_PER_VERTEX_DATA, 0 },
          };
 #ifdef DEBUG
          bool save_hlsl = true;
@@ -419,13 +420,13 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          strlcat(ps_path, ps_ext, sizeof(ps_path));
 
          if (!d3d11_init_shader(
-                   d3d11->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
-                   &d3d11->pass[i].shader))
+                  d3d11->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
+                  &d3d11->pass[i].shader))
             save_hlsl = true;
 
          if (!d3d11_init_shader(
-                   d3d11->device, ps_src, 0, ps_path, NULL, "main", NULL, NULL, 0,
-                   &d3d11->pass[i].shader))
+                  d3d11->device, ps_src, 0, ps_path, NULL, "main", NULL, NULL, 0,
+                  &d3d11->pass[i].shader))
             save_hlsl = true;
 
          if (save_hlsl)
@@ -552,24 +553,24 @@ static void d3d11_gfx_free(void* data)
 
    font_driver_free_osd();
 
-	if (video_driver_is_video_cache_context())
-	{
+   if (video_driver_is_video_cache_context())
+   {
       cached_device_d3d11 = d3d11->device;
-		cached_context = d3d11->context;
-		cached_supportedFeatureLevel = d3d11->supportedFeatureLevel;
-	}
-	else
-	{
-		Release(d3d11->context);
-		Release(d3d11->device);
-	}
+      cached_context = d3d11->context;
+      cached_supportedFeatureLevel = d3d11->supportedFeatureLevel;
+   }
+   else
+   {
+      Release(d3d11->context);
+      Release(d3d11->device);
+   }
 
    win32_monitor_from_window();
    win32_destroy_window();
    free(d3d11);
 }
 
-static void*
+   static void*
 d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
    unsigned       i;
@@ -609,12 +610,12 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       UINT                 flags              = 0;
       D3D_FEATURE_LEVEL    
          requested_feature_levels[]           = 
-      {
-         D3D_FEATURE_LEVEL_11_0,
-         D3D_FEATURE_LEVEL_10_1,
-         D3D_FEATURE_LEVEL_10_0,
-         D3D_FEATURE_LEVEL_9_3
-      };
+         {
+            D3D_FEATURE_LEVEL_11_0,
+            D3D_FEATURE_LEVEL_10_1,
+            D3D_FEATURE_LEVEL_10_0,
+            D3D_FEATURE_LEVEL_9_3
+         };
       DXGI_SWAP_CHAIN_DESC desc               = { 0 };
       UINT number_feature_levels              = ARRAY_SIZE(requested_feature_levels);
 
@@ -642,39 +643,39 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 #ifdef DEBUG
       flags                                  |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
-		if(cached_device_d3d11 && cached_context)
-		{
-			IDXGIFactory* dxgiFactory    = NULL;
-			IDXGIDevice* dxgiDevice      = NULL;
-			IDXGIAdapter* adapter        = NULL;
+      if(cached_device_d3d11 && cached_context)
+      {
+         IDXGIFactory* dxgiFactory    = NULL;
+         IDXGIDevice* dxgiDevice      = NULL;
+         IDXGIAdapter* adapter        = NULL;
 
-			d3d11->device                = cached_device_d3d11;
-			d3d11->context               = cached_context;
-			d3d11->supportedFeatureLevel = cached_supportedFeatureLevel;
+         d3d11->device                = cached_device_d3d11;
+         d3d11->context               = cached_context;
+         d3d11->supportedFeatureLevel = cached_supportedFeatureLevel;
 
-			d3d11->device->lpVtbl->QueryInterface(
+         d3d11->device->lpVtbl->QueryInterface(
                d3d11->device, uuidof(IDXGIDevice), (void**)&dxgiDevice);
-			dxgiDevice->lpVtbl->GetAdapter(dxgiDevice, &adapter);
-			adapter->lpVtbl->GetParent(
+         dxgiDevice->lpVtbl->GetAdapter(dxgiDevice, &adapter);
+         adapter->lpVtbl->GetParent(
                adapter, uuidof(IDXGIFactory1), (void**)&dxgiFactory);
-			dxgiFactory->lpVtbl->CreateSwapChain(
+         dxgiFactory->lpVtbl->CreateSwapChain(
                dxgiFactory, (IUnknown*)d3d11->device,
                &desc, (IDXGISwapChain**)&d3d11->swapChain);
 
-			dxgiFactory->lpVtbl->Release(dxgiFactory);
-			adapter->lpVtbl->Release(adapter);
-			dxgiDevice->lpVtbl->Release(dxgiDevice);
-		}
-		else
-		{
-			if (FAILED(D3D11CreateDeviceAndSwapChain(
-					NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags,
-               requested_feature_levels, number_feature_levels,
-					D3D11_SDK_VERSION, &desc,
-               (IDXGISwapChain**)&d3d11->swapChain, &d3d11->device,
-					&d3d11->supportedFeatureLevel, &d3d11->context)))
+         dxgiFactory->lpVtbl->Release(dxgiFactory);
+         adapter->lpVtbl->Release(adapter);
+         dxgiDevice->lpVtbl->Release(dxgiDevice);
+      }
+      else
+      {
+         if (FAILED(D3D11CreateDeviceAndSwapChain(
+                     NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags,
+                     requested_feature_levels, number_feature_levels,
+                     D3D11_SDK_VERSION, &desc,
+                     (IDXGISwapChain**)&d3d11->swapChain, &d3d11->device,
+                     &d3d11->supportedFeatureLevel, &d3d11->context)))
             goto error;
-		}
+      }
    }
 
    {
@@ -801,52 +802,52 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    {
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d11_vertex_t, color),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
 
       static const char shader[] =
 #include "d3d_shaders/opaque_sm5.hlsl.h"
-            ;
+         ;
 
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]))
+               d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
+               countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]))
          goto error;
    }
 
    {
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d11_sprite_t, pos),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d11_sprite_t, coords),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d11_sprite_t, colors[0]),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 1, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d11_sprite_t, colors[1]),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 2, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d11_sprite_t, colors[2]),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 3, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d11_sprite_t, colors[3]),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "PARAMS", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_sprite_t, params),
-           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
 
       static const char shader[] =
 #include "d3d_shaders/sprite_sm4.hlsl.h"
-            ;
+         ;
 
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", "GSMain", desc,
-                countof(desc), &d3d11->sprites.shader))
+               d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", "GSMain", desc,
+               countof(desc), &d3d11->sprites.shader))
          goto error;
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMainA8", "GSMain", desc,
-                countof(desc), &d3d11->sprites.shader_font))
+               d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMainA8", "GSMain", desc,
+               countof(desc), &d3d11->sprites.shader_font))
          goto error;
    }
 
@@ -960,7 +961,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    }
 
    if (video_driver_get_hw_context()->context_type == RETRO_HW_CONTEXT_DIRECT3D &&
-       video_driver_get_hw_context()->version_major == 11)
+         video_driver_get_hw_context()->version_major == 11)
    {
       d3d11->hw.enable                  = true;
       d3d11->hw.iface.interface_type    = RETRO_HW_RENDER_INTERFACE_D3D11;
@@ -1064,7 +1065,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
       RARCH_LOG("[D3D11]: Updating framebuffer size %u x %u.\n", width, height);
 
       if ((i != (d3d11->shader_preset->passes - 1)) || (width != d3d11->vp.width) ||
-          (height != d3d11->vp.height))
+            (height != d3d11->vp.height))
       {
          d3d11->pass[i].viewport.Width    = width;
          d3d11->pass[i].viewport.Height   = height;
@@ -1145,7 +1146,7 @@ static bool d3d11_gfx_frame(
 #if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
    if (d3d11->resize_viewport)
 #endif
-   d3d11_update_viewport(d3d11, false);
+      d3d11_update_viewport(d3d11, false);
 
    D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
@@ -1160,7 +1161,7 @@ static bool d3d11_gfx_frame(
       if (d3d11->shader_preset)
       {
          if (d3d11->frame.texture[0].desc.Width != width ||
-             d3d11->frame.texture[0].desc.Height != height)
+               d3d11->frame.texture[0].desc.Height != height)
             d3d11->resize_render_targets = true;
 
          if (d3d11->resize_render_targets)
@@ -1194,7 +1195,7 @@ static bool d3d11_gfx_frame(
 
       /* either no history, or we moved a texture of a different size in the front slot */
       if (d3d11->frame.texture[0].desc.Width != width ||
-          d3d11->frame.texture[0].desc.Height != height)
+            d3d11->frame.texture[0].desc.Height != height)
       {
          d3d11->frame.texture[0].desc.Width  = width;
          d3d11->frame.texture[0].desc.Height = height;
@@ -1234,7 +1235,7 @@ static bool d3d11_gfx_frame(
 
          if (d3d11->shader_preset->pass[i].frame_count_mod)
             d3d11->pass[i].frame_count =
-                  frame_count % d3d11->shader_preset->pass[i].frame_count_mod;
+               frame_count % d3d11->shader_preset->pass[i].frame_count_mod;
          else
             d3d11->pass[i].frame_count = frame_count;
 
@@ -1596,7 +1597,7 @@ static void d3d11_gfx_unload_texture(void* data, uintptr_t handle)
    free(texture);
 }
 
-static bool
+   static bool
 d3d11_get_hw_render_interface(void* data, const struct retro_hw_render_interface** iface)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
