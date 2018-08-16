@@ -258,8 +258,10 @@ public:
    ~ShaderParamsDialog();
 signals:
    void closed();
+   void resized(QSize size);
 protected:
    void closeEvent(QCloseEvent *event);
+   void resizeEvent(QResizeEvent *event);
 };
 
 class CoreInfoLabel : public QLabel
@@ -462,6 +464,7 @@ private slots:
    void onShaderParamSliderValueChanged(int value);
    void onShaderParamSpinBoxValueChanged(int value);
    void onShaderParamDoubleSpinBoxValueChanged(double value);
+   void onShaderParamsDialogResized(QSize size);
    int onExtractArchive(QString path);
 
 private:

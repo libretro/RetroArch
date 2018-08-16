@@ -15,6 +15,7 @@
  */
 
 #include <QCloseEvent>
+#include <QResizeEvent>
 #include <QStyle>
 #include <QTimer>
 #include <QLabel>
@@ -210,6 +211,13 @@ ShaderParamsDialog::ShaderParamsDialog(QWidget *parent) :
 
 ShaderParamsDialog::~ShaderParamsDialog()
 {
+}
+
+void ShaderParamsDialog::resizeEvent(QResizeEvent *event)
+{
+   QDialog::resizeEvent(event);
+
+   emit resized(event->size());
 }
 
 void ShaderParamsDialog::closeEvent(QCloseEvent *event)
@@ -1235,6 +1243,22 @@ void MainWindow::removeUpdateTempFiles()
    }
 }
 
+void MainWindow::onShaderParamsDialogResized(QSize size)
+{
+   QVariant scrollAreaVariant = m_shaderParamsDialog->property("scrollArea");
+   QScrollArea *scrollArea = NULL;
+
+   if (!scrollAreaVariant.isValid())
+      return;
+
+   scrollArea = scrollAreaVariant.value<QScrollArea*>();
+
+   if (!scrollArea)
+      return;
+
+   scrollArea->resize(size);
+}
+
 void MainWindow::onShaderParamsClicked()
 {
    video_shader_ctx_t shader_info;
@@ -1242,6 +1266,9 @@ void MainWindow::onShaderParamsClicked()
    int last_pass = -1;
    QFormLayout *last_form = NULL;
    QGroupBox *last_group = NULL;
+   QScrollArea *scrollArea = NULL;
+   QWidget *widget = NULL;
+   QVBoxLayout *layout = NULL;
 
    video_shader_driver_get_current_shader(&shader_info);
 
@@ -1253,17 +1280,27 @@ void MainWindow::onShaderParamsClicked()
       delete m_shaderParamsDialog;
 
    m_shaderParamsDialog = new ShaderParamsDialog();
-   m_shaderParamsDialog->setLayout(new QVBoxLayout());
+   //m_shaderParamsDialog->setLayout(new QVBoxLayout());
    m_shaderParamsDialog->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS));
 
+   layout = new QVBoxLayout();
+   widget = new QWidget();
+   widget->setLayout(layout);
+   scrollArea = new QScrollArea(m_shaderParamsDialog);
+   scrollArea->setWidgetResizable(true);
+   scrollArea->setWidget(widget);
+
+   m_shaderParamsDialog->setProperty("scrollArea", QVariant::fromValue(scrollArea));
+
    connect(m_shaderParamsDialog, SIGNAL(closed()), m_shaderParamsDialog, SLOT(deleteLater()));
+   connect(m_shaderParamsDialog, SIGNAL(resized(QSize)), this, SLOT(onShaderParamsDialogResized(QSize)));
 
    if (shader_info.data->num_parameters == 0)
    {
       QLabel *label = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS), m_shaderParamsDialog);
       label->setAlignment(Qt::AlignCenter);
 
-      m_shaderParamsDialog->layout()->addWidget(label);
+      layout->addWidget(label);
    }
    else
    {
@@ -1284,7 +1321,7 @@ void MainWindow::onShaderParamsClicked()
             groupBox = new QGroupBox(shaderBasename);
             groupBox->setLayout(form);
 
-            m_shaderParamsDialog->layout()->addWidget(groupBox);
+            layout->addWidget(groupBox);
 
             last_form = form;
             last_pass = param->pass;
@@ -1354,7 +1391,7 @@ void MainWindow::onShaderParamsClicked()
          }
       }
 
-      m_shaderParamsDialog->layout()->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding));
+      layout->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding));
    }
 
    m_shaderParamsDialog->resize(720, 480);
