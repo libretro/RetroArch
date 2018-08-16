@@ -2886,12 +2886,6 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET:
          command_event_restore_default_shader_preset();
          break;
-      case CMD_EVENT_LIBUI_TEST:
-#if HAVE_LIBUI
-         extern int libui_main(void);
-         libui_main();
-#endif
-         break;
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
          {

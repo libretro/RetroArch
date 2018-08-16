@@ -2594,11 +2594,7 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_GRAB_MOUSE_TOGGLE);
 
       if (pressed && !old_pressed)
-#if HAVE_LIBUI
-         command_event(CMD_EVENT_LIBUI_TEST, NULL);
-#else
          command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-#endif
 
       old_pressed             = pressed;
    }
