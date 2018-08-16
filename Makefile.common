@@ -1735,6 +1735,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    ifeq ($(HAVE_DISCORD), 1)
+      NEED_CXX_LINKER = 1
       DEFINES += -DHAVE_DISCORD
       DEFINES += -Ideps/discord-rpc/include/ -Ideps/discord-rpc/thirdparty/rapidjson-1.1.0/include/
       OBJ     += deps/discord-rpc/src/discord_rpc.o \
