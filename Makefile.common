@@ -462,6 +462,7 @@ OBJS_TLS = deps/mbedtls/debug.o \
 
 OBJ += $(OBJS_TLS_CRYPTO) $(OBJS_TLS_X509) $(OBJS_TLS)
 endif
+endif
 
 # Miscellaneous
 
