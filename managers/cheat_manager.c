@@ -608,15 +608,15 @@ bool cheat_manager_get_game_specific_filename(char * cheat_filename, size_t max_
       return false ;
 
    cheat_filename[0] = '\0';
-   strlcat(cheat_filename, settings->paths.path_cheat_database, max_length-1) ;
-   fill_pathname_slash(cheat_filename, max_length) ;
-   strlcat(cheat_filename, core_name, max_length-strlen(cheat_filename)-1) ;
-   fill_pathname_slash(cheat_filename, max_length) ;
+   strlcat(cheat_filename, settings->paths.path_cheat_database, max_length);
+   fill_pathname_slash(cheat_filename, max_length);
+   strlcat(cheat_filename, core_name,  max_length);
+   fill_pathname_slash(cheat_filename, max_length);
 
    if (!filestream_exists(cheat_filename))
        path_mkdir(cheat_filename);
 
-   strlcat(cheat_filename, game_name, max_length-strlen(cheat_filename)-1) ;
+   strlcat(cheat_filename, game_name, max_length);
 
    return true ;
 
