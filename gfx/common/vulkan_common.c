@@ -2372,8 +2372,6 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       bool destroy_surface)
 {
-   unsigned i;
-
    if (!vk->context.instance)
       return;
 
