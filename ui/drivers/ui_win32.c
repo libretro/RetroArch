@@ -24,9 +24,6 @@
 #pragma comment( lib, "comctl32" )
 #endif
 
-#define TITLE_MAX PATH_MAX
-#define FULLPATH_MAX 32768
-
 #define IDI_ICON 1
 
 #ifndef _WIN32_WINNT
@@ -104,8 +101,8 @@ static bool win32_browser(
        * path/name of any file the user may select.
        * FIXME: We should really handle the
        * error case when this isn't big enough. */
-      char new_title[TITLE_MAX];
-      char new_file[FULLPATH_MAX];
+      char new_title[PATH_MAX];
+      char new_file[32768];
 
       new_title[0] = '\0';
       new_file[0] = '\0';
