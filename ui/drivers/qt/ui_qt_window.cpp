@@ -1280,15 +1280,17 @@ void MainWindow::onShaderParamsClicked()
       delete m_shaderParamsDialog;
 
    m_shaderParamsDialog = new ShaderParamsDialog();
-   //m_shaderParamsDialog->setLayout(new QVBoxLayout());
    m_shaderParamsDialog->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS));
+   m_shaderParamsDialog->setObjectName("shaderParamsDialog");
 
    layout = new QVBoxLayout();
    widget = new QWidget();
    widget->setLayout(layout);
+   widget->setObjectName("shaderParamsWidget");
    scrollArea = new QScrollArea(m_shaderParamsDialog);
    scrollArea->setWidgetResizable(true);
    scrollArea->setWidget(widget);
+   scrollArea->setObjectName("shaderParamsScrollArea");
 
    m_shaderParamsDialog->setProperty("scrollArea", QVariant::fromValue(scrollArea));
 
