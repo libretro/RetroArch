@@ -255,13 +255,14 @@ bool command_set_shader(const char *arg)
 
 static bool command_version(const char* arg)
 {
-      char reply[256] = {0};
+   char reply[256] = {0};
 
-      sprintf(reply, "%s\n", PACKAGE_VERSION);
+   sprintf(reply, "%s\n", PACKAGE_VERSION);
 #if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
-      command_reply(reply, strlen(reply));
+   command_reply(reply, strlen(reply));
 #endif
-      return true;
+
+   return true;
 }
 
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
@@ -556,10 +557,10 @@ bool command_network_send(const char *cmd_)
    }
    free(command);
 
-   return ret;
-#else
-   return false;
+   if (ret)
+      return true;
 #endif
+   return false;
 }
 
 #ifdef HAVE_STDIN_CMD

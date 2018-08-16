@@ -832,7 +832,6 @@ static void gl_set_osd_msg(void *data,
    font_driver_render_msg(video_info, font, msg, (const struct font_params *)params);
 }
 
-#if defined(HAVE_MENU)
 static void gl_show_mouse(void *data, bool state)
 {
    video_context_driver_show_mouse(&state);
@@ -847,6 +846,7 @@ static struct video_shader *gl_get_current_shader(void *data)
    return shader_info.data;
 }
 
+#if defined(HAVE_MENU)
 static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 {
    video_shader_ctx_coords_t coords;
