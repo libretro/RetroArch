@@ -1,6 +1,6 @@
 <!-- <!DOCTYPE manifest [ <!ENTITY % versionDTD SYSTEM "../../../version.dtd"> %versionDTD; ]> !-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.retroarch"
+    package="com.retroarch.aarch64"
     android:versionCode="70"
     android:versionName="1.7.3"
     android:installLocation="internalOnly">
@@ -18,7 +18,7 @@
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
-        android:label="RetroArch"
+        android:label="RetroArch (AArch64)"
         android:hasCode="true"
         android:isGame="true"
         android:banner="@drawable/banner">
