@@ -356,6 +356,8 @@ static const bool _avfoundation_supp = false;
 #else
 #define GLOBAL_CONFIG_DIR "/etc"
 #endif
+#else
+#define GLOBAL_CONFIG_DIR ""
 #endif
 
 #endif
