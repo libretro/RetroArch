@@ -276,6 +276,7 @@ public:
    void addFilesToPlaylist(QStringList files);
    QString getCurrentPlaylistPath();
    QHash<QString, QString> getCurrentContentHash();
+   static double lerp(double x, double y, double a, double b, double d);
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
