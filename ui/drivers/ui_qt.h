@@ -45,6 +45,10 @@ extern "C" {
 #include "../../gfx/video_driver.h"
 }
 
+#define ALL_PLAYLISTS_TOKEN "|||ALL|||"
+#define ICON_PATH "/xmb/dot-art/png/"
+#define THUMBNAIL_BOXART "Named_Boxarts"
+
 class QApplication;
 class QCloseEvent;
 class QKeyEvent;
@@ -78,6 +82,10 @@ class MainWindow;
 class ThumbnailWidget;
 class ThumbnailLabel;
 class FlowLayout;
+class ShaderParamsDialog;
+class CoreInfoDialog;
+class PlaylistEntryDialog;
+class ViewOptionsDialog;
 
 class GridItem : public QObject
 {
@@ -147,21 +155,6 @@ protected slots:
    void selectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 };
 
-class FileDropWidget : public QWidget
-{
-   Q_OBJECT
-public:
-   FileDropWidget(QWidget *parent = 0);
-signals:
-   void filesDropped(QStringList files);
-   void deletePressed();
-protected:
-   void dragEnterEvent(QDragEnterEvent *event);
-   void dropEvent(QDropEvent *event);
-   void keyPressEvent(QKeyEvent *event);
-   void paintEvent(QPaintEvent *event);
-};
-
 class TableWidget : public QTableWidget
 {
    Q_OBJECT
@@ -188,99 +181,11 @@ private slots:
    void onLastWindowClosed();
 };
 
-class PlaylistEntryDialog : public QDialog
-{
-   Q_OBJECT
-public:
-   PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent = 0);
-   const QHash<QString, QString> getSelectedCore();
-   const QString getSelectedDatabase();
-   const QString getSelectedName();
-   const QString getSelectedPath();
-   void setEntryValues(const QHash<QString, QString> &contentHash);
-public slots:
-   bool showDialog(const QHash<QString, QString> &hash = QHash<QString, QString>());
-   void hideDialog();
-   void onAccepted();
-   void onRejected();
-private slots:
-   void onPathClicked();
-private:
-   void loadPlaylistOptions();
-
-   MainWindow *m_mainwindow;
-   QSettings *m_settings;
-   QLineEdit *m_nameLineEdit;
-   QLineEdit *m_pathLineEdit;
-   QComboBox *m_coreComboBox;
-   QComboBox *m_databaseComboBox;
-};
-
-class ViewOptionsDialog : public QDialog
-{
-   Q_OBJECT
-public:
-   ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent = 0);
-public slots:
-   void showDialog();
-   void hideDialog();
-   void onAccepted();
-   void onRejected();
-private slots:
-   void onThemeComboBoxIndexChanged(int index);
-   void onHighlightColorChoose();
-private:
-   void loadViewOptions();
-   void saveViewOptions();
-   void showOrHideHighlightColor();
-
-   MainWindow *m_mainwindow;
-   QSettings *m_settings;
-   QCheckBox *m_saveGeometryCheckBox;
-   QCheckBox *m_saveDockPositionsCheckBox;
-   QCheckBox *m_saveLastTabCheckBox;
-   QCheckBox *m_showHiddenFilesCheckBox;
-   QComboBox *m_themeComboBox;
-   QPushButton *m_highlightColorPushButton;
-   QColor m_highlightColor;
-   QLabel *m_highlightColorLabel;
-   QString m_customThemePath;
-   QCheckBox *m_suggestLoadedCoreFirstCheckBox;
-   QSpinBox *m_allPlaylistsListMaxCountSpinBox;
-   QSpinBox *m_allPlaylistsGridMaxCountSpinBox;
-};
-
-class ShaderParamsDialog : public QDialog
-{
-   Q_OBJECT
-public:
-   ShaderParamsDialog(QWidget *parent = 0);
-   ~ShaderParamsDialog();
-signals:
-   void closed();
-   void resized(QSize size);
-protected:
-   void closeEvent(QCloseEvent *event);
-   void resizeEvent(QResizeEvent *event);
-};
-
 class CoreInfoLabel : public QLabel
 {
    Q_OBJECT
 public:
    CoreInfoLabel(QString text = QString(), QWidget *parent = 0);
-};
-
-class CoreInfoDialog : public QDialog
-{
-   Q_OBJECT
-public:
-   CoreInfoDialog(MainWindow *mainwindow, QWidget *parent = 0);
-public slots:
-   void showCoreInfo();
-private:
-   QFormLayout *m_formLayout;
-   MainWindow *m_mainwindow;
 };
 
 class CoreInfoWidget : public QWidget

@@ -42,6 +42,13 @@ UI
 #include "../ui/drivers/qt/ui_qt_msg_window.cpp"
 #include "../ui/drivers/qt/ui_qt_application.cpp"
 #include "../ui/drivers/qt/flowlayout.cpp"
+#include "../ui/drivers/qt/shaderparamsdialog.cpp"
+#include "../ui/drivers/qt/filedropwidget.cpp"
+#include "../ui/drivers/qt/coreinfodialog.cpp"
+#include "../ui/drivers/qt/playlistentrydialog.cpp"
+#include "../ui/drivers/qt/viewoptionsdialog.cpp"
+#include "../ui/drivers/qt/playlist.cpp"
+#include "../ui/drivers/qt/updateretroarch.cpp"
 #endif
 
 /*============================================================

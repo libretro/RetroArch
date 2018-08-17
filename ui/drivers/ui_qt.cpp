@@ -16,6 +16,7 @@
 
 extern "C" {
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -31,6 +32,8 @@ extern "C" {
 }
 
 #include "ui_qt.h"
+#include "qt/filedropwidget.h"
+#include "qt/viewoptionsdialog.h"
 
 #include <QApplication>
 #include <QtWidgets>

@@ -23,6 +23,8 @@
 #include <retro_common_api.h>
 #include <lists/file_list.h>
 
+#include "../setting_list.h"
+
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE 99999
 #endif
