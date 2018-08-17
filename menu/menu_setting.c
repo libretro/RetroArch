@@ -2468,7 +2468,16 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
+#ifdef HAVE_QT
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_SHOW_WIMP,
+               MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_UI_COMPANION_TOGGLE);
+#endif
 #if !defined(IOS)
          /* Apple rejects iOS apps that let you forcibly quit them. */
          CONFIG_ACTION(
@@ -3497,7 +3506,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_CHEAT_SEARCH:
          if ( ! cheat_manager_state.cheats )
             break ;
-         
+
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS), parent_group);
 
          parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS);
@@ -3764,9 +3773,9 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-				  
-				  
-			CONFIG_BOOL( 
+
+
+			CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.crt_switch_resolution,
                   MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,
@@ -3780,18 +3789,18 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_ADVANCED
-                  );	
-			
+                  );
+
 			CONFIG_UINT(
-				  list, list_info, 
-				  &settings->uints.crt_switch_resolution_super, 
-				  MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER, 
-				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER, 
-				  crt_switch_resolution_super, 
-				  &group_info, 
-				  &subgroup_info, 
-				  parent_group, 
-				  general_write_handler, 
+				  list, list_info,
+				  &settings->uints.crt_switch_resolution_super,
+				  MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER,
+				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+				  crt_switch_resolution_super,
+				  &group_info,
+				  &subgroup_info,
+				  parent_group,
+				  general_write_handler,
 				  general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 

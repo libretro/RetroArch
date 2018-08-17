@@ -3839,6 +3839,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
       "<li>have \"Databases\" updated via Online Updater</li>\n"
       "<li>restart RetroArch if any of the above was just done</li></ul>\n"
       "Finally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+      "Show Desktop UI"
+      )
 #endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
       "Don't show this again")
