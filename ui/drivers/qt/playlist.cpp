@@ -38,19 +38,6 @@ inline static bool comp_hash_label_key_lower(const QHash<QString, QString> &lhs,
 }
 
 /* https://stackoverflow.com/questions/7246622/how-to-create-a-slider-with-a-non-linear-scale */
-static double expScale(double inputValue, double midValue, double maxValue)
-{
-   double returnValue = 0;
-   double M = maxValue / midValue;
-   double C = log(pow(M - 1, 2));
-   double B = maxValue / (exp(C) - 1);
-   double A = -1 * B;
-
-   returnValue = A + B * exp(C * inputValue);
-
-   return returnValue;
-}
-
 static void addDirectoryFilesToList(QStringList &list, QDir &dir)
 {
    QStringList dirList = dir.entryList(QStringList(), QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System, QDir::Name);
@@ -920,33 +907,6 @@ finish:
    std::sort(items.begin(), items.end(), comp_hash_label_key_lower);
 
    addPlaylistHashToGrid(items);
-}
-
-/* https://gist.github.com/andrey-str/0f9c7709cbf0c9c49ef9 */
-static void setElidedText(QLabel *label, QWidget *clipWidget, int padding, const QString &text)
-{
-   QFontMetrics metrix(label->font());
-   int width = clipWidget->width() - padding;
-   QString clippedText = metrix.elidedText(text, Qt::ElideRight, width);
-   label->setText(clippedText);
-}
-
-inline void MainWindow::calcGridItemSize(GridItem *item, int zoomValue)
-{
-   int newSize = 0;
-   QLabel *label = NULL;
-
-   if (zoomValue < 50)
-      newSize = expScale(lerp(0, 49, 25, 49, zoomValue) / 50.0, 102, 256);
-   else
-      newSize = expScale(zoomValue / 100.0, 256, 1024);
-
-   item->widget->setFixedSize(QSize(newSize, newSize));
-
-   label = item->widget->findChild<QLabel*>("thumbnailQLabel");
-
-   if (label)
-      setElidedText(label, item->widget, item->widget->layout()->contentsMargins().left() + item->widget->layout()->spacing() + 2, item->labelText);
 }
 
 void MainWindow::addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &items)
