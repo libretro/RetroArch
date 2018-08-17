@@ -107,6 +107,7 @@ typedef struct gfx_ctx_wayland_data
 #endif
 } gfx_ctx_wayland_data_t;
 
+
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
 #ifndef EGL_OPENGL_ES3_BIT_KHR
@@ -354,9 +355,10 @@ static void touch_handle_down(void *data,
 {
    int i;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
    if (num_active_touches < MAX_TOUCHES)
    {
-      for (i=0; i<MAX_TOUCHES; i++)
+      for (i = 0; i < MAX_TOUCHES; i++)
       {
          /* Use next empty slot */
          if (!active_touch_positions[i].active)
@@ -371,13 +373,13 @@ static void touch_handle_down(void *data,
       }
    }
 }
-static void reorder_touches()
+static void reorder_touches(void)
 {
    int i, j;
    if (num_active_touches == 0)
       return;
 
-   for (i=0; i<MAX_TOUCHES; i++)
+   for (i = 0; i < MAX_TOUCHES; i++)
    {
       if (!active_touch_positions[i].active)
       {
@@ -410,7 +412,7 @@ static void touch_handle_up(void *data,
    int i;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   for (i=0; i<MAX_TOUCHES; i++)
+   for (i = 0; i < MAX_TOUCHES; i++)
    {
       if (active_touch_positions[i].active && active_touch_positions[i].id == id)
       {
@@ -421,7 +423,7 @@ static void touch_handle_up(void *data,
          num_active_touches--;
       }
    }
-   reorder_touches(wl);
+   reorder_touches();
 }
 static void touch_handle_motion(void *data,
       struct wl_touch *wl_touch,
@@ -432,7 +434,8 @@ static void touch_handle_motion(void *data,
 {
    int i;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   for (i=0; i<MAX_TOUCHES; i++)
+
+   for (i = 0; i < MAX_TOUCHES; i++)
    {
       if (active_touch_positions[i].active && active_touch_positions[i].id == id)
       {
@@ -453,7 +456,8 @@ static void touch_handle_cancel(void *data,
     * since they were not ment for us anyway */
    int i;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   for (i=0; i<MAX_TOUCHES; i++)
+
+   for (i = 0; i < MAX_TOUCHES; i++)
    {
       active_touch_positions[i].active = false;
       active_touch_positions[i].id = -1;
@@ -1105,7 +1109,7 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    wl->cursor.default_cursor = wl_cursor_theme_get_cursor(wl->cursor.theme, "left_ptr");
 
    num_active_touches = 0;
-   for (i=0;i<MAX_TOUCHES;i++)
+   for (i = 0;i < MAX_TOUCHES;i++)
    {
        active_touch_positions[i].active = false;
        active_touch_positions[i].id = -1;

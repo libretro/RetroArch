@@ -99,29 +99,28 @@ static int16_t input_wl_lightgun_state(input_ctx_wayland_data_t *wl, unsigned id
    return 0;
 }
 
+/* forward declaration */
+bool wayland_context_gettouchpos(void *data, unsigned id, 
+      unsigned* touch_x, unsigned* touch_y);
+
 static void input_wl_touch_pool(void *data)
 {
    int id;
+   unsigned touch_x             = 0;
+   unsigned touch_y             = 0;
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
    
    if (!wl)
       return;
 
-   unsigned touch_x = 0;
-   unsigned touch_y = 0;
-
-   for (id=0; id<MAX_TOUCHES; id++)
+   for (id = 0; id < MAX_TOUCHES; id++)
    {
       if (wayland_context_gettouchpos(wl, id, &touch_x, &touch_y))
-      {
          wl->touches[id].active = true;
-      }
       else
-      {
          wl->touches[id].active = false;
-      }
-      wl->touches[id].x = touch_x;
-      wl->touches[id].y = touch_y;
+      wl->touches[id].x         = touch_x;
+      wl->touches[id].y         = touch_y;
    }
 }
 
