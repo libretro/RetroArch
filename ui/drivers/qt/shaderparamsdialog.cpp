@@ -10,6 +10,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QPushButton>
+#include <QToolButton>
 
 #include "shaderparamsdialog.h"
 #include "../ui_qt.h"
@@ -418,28 +419,32 @@ void ShaderParamsDialog::reload()
       QHBoxLayout *filterScaleHBoxLayout = NULL;
       QComboBox *filterComboBox = new QComboBox();
       QComboBox *scaleComboBox = new QComboBox();
-      QPushButton *moveDownButton = NULL;
-      QPushButton *moveUpButton = NULL;
+      QToolButton *moveDownButton = NULL;
+      QToolButton *moveUpButton = NULL;
       unsigned j = 0;
 
       filterComboBox->setProperty("pass", i);
       scaleComboBox->setProperty("pass", i);
 
+      moveDownButton = new QToolButton();
+      moveDownButton->setText("↓");
+      moveDownButton->setProperty("pass", i);
+
+      moveUpButton = new QToolButton();
+      moveUpButton->setText("↑");
+      moveUpButton->setProperty("pass", i);
+
       /* Can't move down if we're already at the bottom. */
       if (i < static_cast<int>(video_shader->passes) - 1)
-      {
-         moveDownButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHADER_MOVE_DOWN));
-         moveDownButton->setProperty("pass", i);
          connect(moveDownButton, SIGNAL(clicked()), this, SLOT(onShaderPassMoveDownClicked()));
-      }
+      else
+         moveDownButton->setDisabled(true);
 
       /* Can't move up if we're already at the top. */
       if (i > 0)
-      {
-         moveUpButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHADER_MOVE_UP));
-         moveUpButton->setProperty("pass", i);
          connect(moveUpButton, SIGNAL(clicked()), this, SLOT(onShaderPassMoveUpClicked()));
-      }
+      else
+         moveUpButton->setDisabled(true);
 
       for (;;)
       {
@@ -482,10 +487,12 @@ void ShaderParamsDialog::reload()
       m_layout->addWidget(groupBox);
 
       filterScaleHBoxLayout = new QHBoxLayout();
+      filterScaleHBoxLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
       filterScaleHBoxLayout->addWidget(new QLabel(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILTER)) + ":"));
       filterScaleHBoxLayout->addWidget(filterComboBox);
       filterScaleHBoxLayout->addWidget(new QLabel(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCALE)) + ":"));
       filterScaleHBoxLayout->addWidget(scaleComboBox);
+      filterScaleHBoxLayout->addSpacerItem(new QSpacerItem(20, 0, QSizePolicy::Preferred, QSizePolicy::Preferred));
 
       if (moveUpButton)
          filterScaleHBoxLayout->addWidget(moveUpButton);
