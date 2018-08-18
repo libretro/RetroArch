@@ -1569,6 +1569,10 @@ end:
       free(content_ctx.name_ups);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
+   if (content_ctx.directory_cache)
+      free(content_ctx.directory_cache);
+   if (content_ctx.valid_extensions)
+      free(content_ctx.valid_extensions);
 
    if (!ret)
    {
