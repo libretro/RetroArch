@@ -607,6 +607,9 @@ static void ui_companion_qt_toggle(void *data, bool force)
 #endif
       if (settings->bools.ui_companion_toggle || force)
       {
+         if (settings->bools.video_fullscreen)
+            command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+
          win_handle->qtWindow->activateWindow();
          win_handle->qtWindow->raise();
          video_driver_show_mouse();
