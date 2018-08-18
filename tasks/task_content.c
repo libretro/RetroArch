@@ -814,6 +814,11 @@ static bool content_file_init(
 
       free(info);
    }
+   else if (special == NULL)
+   {
+      *error_string = strdup(msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
+      ret = false;
+   }
 
    return ret;
 }
@@ -874,7 +879,6 @@ static bool task_load_content(content_ctx_info_t *content_info,
 
    if (!content_load(content_info))
    {
-      *error_string = strdup("This core requires a content file, could not load content.\n");
       return false;
    }
 
