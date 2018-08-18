@@ -586,7 +586,6 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
    QSlider *slider = NULL;
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
-   double newValue = 0.0;
 
    getShaders(&menu_shader, &video_shader);
 
@@ -612,6 +611,8 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
 
       if (ok)
       {
+         double newValue = 0.0;
+
          if (menu_shader)
          {
             struct video_shader_parameter *param = &menu_shader->parameters[parameter];
@@ -643,8 +644,10 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
    QVariant sliderVariant;
    QVariant paramVariant;
    QSlider *slider = NULL;
-   struct video_shader_parameter *param = NULL;
-   double newValue = 0.0;
+   struct video_shader *menu_shader = NULL;
+   struct video_shader *video_shader = NULL;
+
+   getShaders(&menu_shader, &video_shader);
 
    if (!doubleSpinBox)
       return;
@@ -663,15 +666,34 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
 
    if (paramVariant.isValid())
    {
-      param = paramVariant.value<struct video_shader_parameter*>();
+      bool ok = false;
+      int parameter = paramVariant.toInt(&ok);
 
-      if (param)
+      if (ok)
       {
-         param->current = value;
-         newValue = MainWindow::lerp(param->minimum, param->maximum, 0, 100, param->current);
-         slider->blockSignals(true);
-         slider->setValue(newValue);
-         slider->blockSignals(false);
+         double newValue = 0.0;
+
+         if (menu_shader)
+         {
+            struct video_shader_parameter *param = &menu_shader->parameters[parameter];
+
+            param->current = value;
+            newValue = MainWindow::lerp(param->minimum, param->maximum, 0, 100, param->current);
+            slider->blockSignals(true);
+            slider->setValue(newValue);
+            slider->blockSignals(false);
+         }
+
+         if (video_shader)
+         {
+            struct video_shader_parameter *param = &video_shader->parameters[parameter];
+
+            param->current = value;
+            newValue = MainWindow::lerp(param->minimum, param->maximum, 0, 100, param->current);
+            slider->blockSignals(true);
+            slider->setValue(newValue);
+            slider->blockSignals(false);
+         }
       }
    }
 }
