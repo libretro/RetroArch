@@ -310,7 +310,7 @@ void ShaderParamsDialog::reload()
    if (!string_is_empty(video_shader->path))
    {
       shader_path = video_shader->path;
-      setWindowTitle(QFileInfo(shader_path).completeBaseName());
+      setWindowTitle(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER)) + ": " + QFileInfo(shader_path).fileName());
    }
    else
       setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
