@@ -14,6 +14,7 @@
 #include "../ui_qt.h"
 
 extern "C" {
+#include <string/stdstring.h>
 #include "../../../command.h"
 #ifdef HAVE_MENU
 #include "../../../menu/menu_shader.h"
@@ -284,6 +285,7 @@ void ShaderParamsDialog::reload()
 {
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
+   const char *shader_path = NULL;
    int i;
    unsigned j;
 
@@ -295,9 +297,23 @@ void ShaderParamsDialog::reload()
     */
 
    if ((video_shader && video_shader->passes == 0) || !video_shader)
+   {
+      setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
       goto end;
+   }
 
    clearLayout(m_layout);
+
+   /* Only check video_shader for the path, menu_shader seems stale... e.g. if you remove all the shader passes,
+    * it still has the old path in it, but video_shader does not
+    */
+   if (!string_is_empty(video_shader->path))
+   {
+      shader_path = video_shader->path;
+      setWindowTitle(QFileInfo(shader_path).completeBaseName());
+   }
+   else
+      setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
 
    /* NOTE: We assume that parameters are always grouped in order by the pass number, e.g., all parameters for pass 0 come first, then params for pass 1, etc. */
    for (i = 0; i < static_cast<int>(video_shader->passes); i++)
