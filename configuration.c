@@ -1480,7 +1480,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 static struct config_float_setting *populate_settings_float(settings_t *settings, int *size)
 {
    unsigned count = 0;
-   struct config_float_setting  *tmp      = (struct config_float_setting*)malloc((*size + 1) * sizeof(struct config_float_setting));
+   struct config_float_setting  *tmp      = (struct config_float_setting*)calloc(1, (*size + 1) * sizeof(struct config_float_setting));
 
    SETTING_FLOAT("video_aspect_ratio",       &settings->floats.video_aspect_ratio, true, aspect_ratio, false);
    SETTING_FLOAT("video_scale",              &settings->floats.video_scale, false, 0.0f, false);
