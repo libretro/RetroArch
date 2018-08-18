@@ -544,6 +544,7 @@ static int png_reverse_filter_init(const struct png_ihdr *ihdr,
       if (pngp->pass_size > pngp->total_out)
       {
          free(pngp->data);
+         pngp->data = NULL;
          return -1;
       }
 
@@ -721,6 +722,7 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
 
    free(pngp->data);
 
+   pngp->data = NULL;
    pngp->pass_width  = 0;
    pngp->pass_height = 0;
    pngp->pass_size   = 0;
@@ -746,7 +748,10 @@ static int png_reverse_filter_adam7(uint32_t **data_,
          return 0;
       case IMAGE_PROCESS_ERROR:
          if (pngp->data)
+         {
             free(pngp->data);
+            pngp->data = NULL;
+         }
          pngp->inflate_buf -= pngp->adam7_restore_buf_size;
          pngp->adam7_restore_buf_size = 0;
          return -1;
