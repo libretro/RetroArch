@@ -9,6 +9,7 @@
 #include <QDoubleSpinBox>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QPushButton>
 
 #include "shaderparamsdialog.h"
 #include "../ui_qt.h"
@@ -281,6 +282,98 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
    }
 }
 
+void ShaderParamsDialog::onShaderPassMoveDownClicked()
+{
+   QPushButton *button = qobject_cast<QPushButton*>(sender());
+   QVariant passVariant;
+   struct video_shader *menu_shader = NULL;
+   struct video_shader *video_shader = NULL;
+   int pass = 0;
+   bool ok = false;
+
+   getShaders(&menu_shader, &video_shader);
+
+   if (!button)
+      return;
+
+   passVariant = button->property("pass");
+
+   if (!passVariant.isValid())
+      return;
+
+   pass = passVariant.toInt(&ok);
+
+   if (!ok)
+      return;
+
+   if (pass < 0)
+      return;
+
+   if (video_shader)
+   {
+      if (pass >= static_cast<int>(video_shader->passes) - 1)
+         return;
+
+      std::swap(video_shader->pass[pass], video_shader->pass[pass + 1]);
+   }
+
+   if (menu_shader)
+   {
+      if (pass >= static_cast<int>(menu_shader->passes) - 1)
+         return;
+
+      std::swap(menu_shader->pass[pass], menu_shader->pass[pass + 1]);
+   }
+
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+}
+
+void ShaderParamsDialog::onShaderPassMoveUpClicked()
+{
+   QPushButton *button = qobject_cast<QPushButton*>(sender());
+   QVariant passVariant;
+   struct video_shader *menu_shader = NULL;
+   struct video_shader *video_shader = NULL;
+   int pass = 0;
+   bool ok = false;
+
+   getShaders(&menu_shader, &video_shader);
+
+   if (!button)
+      return;
+
+   passVariant = button->property("pass");
+
+   if (!passVariant.isValid())
+      return;
+
+   pass = passVariant.toInt(&ok);
+
+   if (!ok)
+      return;
+
+   if (pass <= 0)
+      return;
+
+   if (video_shader)
+   {
+      if (pass > static_cast<int>(video_shader->passes) - 1)
+         return;
+
+      std::swap(video_shader->pass[pass - 1], video_shader->pass[pass]);
+   }
+
+   if (menu_shader)
+   {
+      if (pass > static_cast<int>(menu_shader->passes) - 1)
+         return;
+
+      std::swap(menu_shader->pass[pass - 1], menu_shader->pass[pass]);
+   }
+
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+}
+
 void ShaderParamsDialog::reload()
 {
    struct video_shader *menu_shader = NULL;
@@ -325,10 +418,28 @@ void ShaderParamsDialog::reload()
       QHBoxLayout *filterScaleHBoxLayout = NULL;
       QComboBox *filterComboBox = new QComboBox();
       QComboBox *scaleComboBox = new QComboBox();
+      QPushButton *moveDownButton = NULL;
+      QPushButton *moveUpButton = NULL;
       unsigned j = 0;
 
       filterComboBox->setProperty("pass", i);
       scaleComboBox->setProperty("pass", i);
+
+      /* Can't move down if we're already at the bottom. */
+      if (i < static_cast<int>(video_shader->passes) - 1)
+      {
+         moveDownButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHADER_MOVE_DOWN));
+         moveDownButton->setProperty("pass", i);
+         connect(moveDownButton, SIGNAL(clicked()), this, SLOT(onShaderPassMoveDownClicked()));
+      }
+
+      /* Can't move up if we're already at the top. */
+      if (i > 0)
+      {
+         moveUpButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHADER_MOVE_UP));
+         moveUpButton->setProperty("pass", i);
+         connect(moveUpButton, SIGNAL(clicked()), this, SLOT(onShaderPassMoveUpClicked()));
+      }
 
       for (;;)
       {
@@ -371,10 +482,16 @@ void ShaderParamsDialog::reload()
       m_layout->addWidget(groupBox);
 
       filterScaleHBoxLayout = new QHBoxLayout();
-      filterScaleHBoxLayout->addWidget(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILTER)));
+      filterScaleHBoxLayout->addWidget(new QLabel(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILTER)) + ":"));
       filterScaleHBoxLayout->addWidget(filterComboBox);
-      filterScaleHBoxLayout->addWidget(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCALE)));
+      filterScaleHBoxLayout->addWidget(new QLabel(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCALE)) + ":"));
       filterScaleHBoxLayout->addWidget(scaleComboBox);
+
+      if (moveUpButton)
+         filterScaleHBoxLayout->addWidget(moveUpButton);
+
+      if (moveDownButton)
+         filterScaleHBoxLayout->addWidget(moveDownButton);
 
       form->addRow("", filterScaleHBoxLayout);
 

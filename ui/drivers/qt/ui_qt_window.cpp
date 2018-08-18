@@ -223,7 +223,6 @@ CoreInfoWidget::CoreInfoWidget(CoreInfoLabel *label, QWidget *parent) :
    ,m_label(label)
    ,m_scrollArea(new QScrollArea(this))
 {
-   //m_scrollArea->setFrameShape(QFrame::NoFrame);
    m_scrollArea->setWidgetResizable(true);
    m_scrollArea->setWidget(m_label);
 }
@@ -601,7 +600,6 @@ void MainWindow::onGridItemClicked(ThumbnailWidget *widget)
    if (m_currentGridWidget)
    {
       m_currentGridWidget->setObjectName("thumbnailWidget");
-      //m_currentGridWidget->setFrameStyle(QFrame::Plain);
       m_currentGridWidget->style()->unpolish(m_currentGridWidget);
       m_currentGridWidget->style()->polish(m_currentGridWidget);
    }
