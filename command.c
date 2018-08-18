@@ -1066,7 +1066,7 @@ static void command_event_init_controllers(void)
             break;
       }
 
-      if (set_controller && i < info->ports.size)
+      if (set_controller && info && i < info->ports.size)
       {
          pad.device     = device;
          pad.port       = i;

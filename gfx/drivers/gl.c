@@ -380,7 +380,7 @@ static bool gl_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    video_shader_ctx_init_t init_data;
    enum rarch_shader_type type     = DEFAULT_SHADER_TYPE;
    const char *shader_path         = retroarch_get_shader_preset();
-   
+
    if (shader_path)
    {
       type = video_shader_parse_type(shader_path,
@@ -839,7 +839,7 @@ static void gl_show_mouse(void *data, bool state)
 
 static struct video_shader *gl_get_current_shader(void *data)
 {
-   video_shader_ctx_t shader_info;
+   video_shader_ctx_t shader_info = {0};
 
    video_shader_driver_direct_get_current_shader(&shader_info);
 
@@ -1798,9 +1798,9 @@ static void *gl_init(const video_info_t *video,
    }
 
    if (!renderchain_gl_init_first(&gl->renderchain_driver,
-	   &gl->renderchain_data))
+      &gl->renderchain_data))
    {
-	   RARCH_ERR("[GL]: Renderchain could not be initialized.\n");
+      RARCH_ERR("[GL]: Renderchain could not be initialized.\n");
       goto error;
    }
 

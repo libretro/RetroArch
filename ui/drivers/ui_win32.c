@@ -57,6 +57,7 @@ typedef struct ui_companion_win32
    void *empty;
 } ui_companion_win32_t;
 
+#ifndef __WINRT__
 bool win32_window_init(WNDCLASSEX *wndclass,
       bool fullscreen, const char *class_name)
 {
@@ -79,7 +80,7 @@ bool win32_window_init(WNDCLASSEX *wndclass,
 
    return true;
 }
-
+#endif
 
 static bool win32_browser(
       HWND owner,

@@ -324,7 +324,7 @@ static void* ui_companion_qt_init(void)
 
    QObject::connect(viewClosedDocksMenu, SIGNAL(aboutToShow()), mainwindow, SLOT(onViewClosedDocksAboutToShow()));
 
-   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS), mainwindow, SLOT(onShaderParamsClicked()));
+   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS), mainwindow, SLOT(onShaderParamsClicked()));
 
    viewMenu->addSeparator();
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS), mainwindow, SLOT(onIconViewClicked()));
@@ -634,26 +634,6 @@ static void ui_companion_qt_event_command(void *data, enum event_command cmd)
    switch (cmd)
    {
       case CMD_EVENT_SHADERS_APPLY_CHANGES:
-      {
-         /* If shader was turned off, reload the params window manually because PRESET_LOADED won't be fired */
-         video_shader_ctx_t shader_info = {0};
-
-         if (!video_shader_driver_get_current_shader(&shader_info))
-            break;
-
-         /* Isn't there a better way to do this? */
-         if (shader_info.data && shader_info.data->num_parameters == 0)
-         {
-            if (shader_info.data->passes == 1 && string_is_empty(shader_info.data->pass[0].source.path))
-            {
-               RARCH_LOG("[Qt]: Clearing shader parameters.\n");
-               win_handle->qtWindow->deferReloadShaderParams();
-            }
-         }
-
-         /* Otherwise, PRESET_LOADED fires in more situations than APPLY_CHANGES, so use that for reloading the params window */
-         break;
-      }
       case CMD_EVENT_SHADER_PRESET_LOADED:
          RARCH_LOG("[Qt]: Reloading shader parameters.\n");
          win_handle->qtWindow->deferReloadShaderParams();

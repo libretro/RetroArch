@@ -1569,6 +1569,10 @@ end:
       free(content_ctx.name_ups);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
+   if (content_ctx.directory_cache)
+      free(content_ctx.directory_cache);
+   if (content_ctx.valid_extensions)
+      free(content_ctx.valid_extensions);
 
    if (!ret)
    {
@@ -1772,10 +1776,13 @@ void content_set_subsystem(unsigned idx)
 
    pending_subsystem_id                         = idx;
 
-   strlcpy(pending_subsystem_ident,
-	   subsystem->ident, sizeof(pending_subsystem_ident));
+   if (subsystem)
+   {
+      strlcpy(pending_subsystem_ident,
+         subsystem->ident, sizeof(pending_subsystem_ident));
 
-   pending_subsystem_rom_num                    = subsystem->num_roms;
+      pending_subsystem_rom_num                    = subsystem->num_roms;
+   }
 
    RARCH_LOG("[subsystem] settings current subsytem to: %d(%s) roms: %d\n",
       pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_num);
