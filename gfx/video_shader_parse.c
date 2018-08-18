@@ -503,8 +503,8 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       char *line         = NULL;
       const char *path   = shader->pass[i].source.path;
 
-	  if (string_is_empty(path))
-		  continue;
+     if (string_is_empty(path))
+        continue;
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
       /* First try to use the more robust slang
@@ -528,6 +528,9 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 
       line    = (char*)malloc(4096 * sizeof(char));
       line[0] = '\0';
+
+      /* even though the pass is set in the loop too, not all passes have parameters */
+      param->pass = i;
 
       while (shader->num_parameters < ARRAY_SIZE(shader->parameters)
             && intfstream_gets(file, line, line_size))

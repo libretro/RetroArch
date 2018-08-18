@@ -368,11 +368,6 @@ private slots:
    void onShowErrorMessage(QString msg);
    void onShowInfoMessage(QString msg);
    void onContributorsClicked();
-   void onShaderParamCheckBoxClicked();
-   void onShaderParamSliderValueChanged(int value);
-   void onShaderParamSpinBoxValueChanged(int value);
-   void onShaderParamDoubleSpinBoxValueChanged(double value);
-   void onShaderParamsDialogResized(QSize size);
    int onExtractArchive(QString path);
 
 private:

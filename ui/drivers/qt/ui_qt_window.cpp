@@ -314,7 +314,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_allPlaylistsGridMaxCount(0)
    ,m_playlistEntryDialog(NULL)
    ,m_statusMessageElapsedTimer()
-   ,m_shaderParamsDialog()
+   ,m_shaderParamsDialog(new ShaderParamsDialog())
    ,m_networkManager(new QNetworkAccessManager(this))
    ,m_updateProgressDialog(new QProgressDialog())
    ,m_updateFile()
@@ -583,312 +583,6 @@ MainWindow::~MainWindow()
 
 double MainWindow::lerp(double x, double y, double a, double b, double d) {
   return a + (b - a) * ((double)(d - x) / (double)(y - x));
-}
-
-void MainWindow::onShaderParamsDialogResized(QSize size)
-{
-   QVariant scrollAreaVariant = m_shaderParamsDialog->property("scrollArea");
-   QScrollArea *scrollArea = NULL;
-
-   if (!scrollAreaVariant.isValid())
-      return;
-
-   scrollArea = scrollAreaVariant.value<QScrollArea*>();
-
-   if (!scrollArea)
-      return;
-
-   scrollArea->resize(size);
-}
-
-void MainWindow::onShaderParamsClicked()
-{
-   video_shader_ctx_t shader_info = {0};
-   unsigned i;
-   int last_pass = -1;
-   QFormLayout *last_form = NULL;
-   QGroupBox *last_group = NULL;
-   QScrollArea *scrollArea = NULL;
-   QWidget *widget = NULL;
-   QVBoxLayout *layout = NULL;
-
-   if (!video_shader_driver_get_current_shader(&shader_info))
-      return;
-
-   if (!shader_info.data || shader_info.data->num_parameters > GFX_MAX_PARAMETERS)
-      return;
-
-   /* shader might have changed, so re-create the entire window */
-   if (m_shaderParamsDialog)
-      delete m_shaderParamsDialog;
-
-   m_shaderParamsDialog = new ShaderParamsDialog();
-   m_shaderParamsDialog->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS));
-   m_shaderParamsDialog->setObjectName("shaderParamsDialog");
-
-   layout = new QVBoxLayout();
-   widget = new QWidget();
-   widget->setLayout(layout);
-   widget->setObjectName("shaderParamsWidget");
-   scrollArea = new QScrollArea(m_shaderParamsDialog);
-   scrollArea->setWidgetResizable(true);
-   scrollArea->setWidget(widget);
-   scrollArea->setObjectName("shaderParamsScrollArea");
-
-   m_shaderParamsDialog->setProperty("scrollArea", QVariant::fromValue(scrollArea));
-
-   connect(m_shaderParamsDialog, SIGNAL(closed()), m_shaderParamsDialog, SLOT(deleteLater()));
-   connect(m_shaderParamsDialog, SIGNAL(resized(QSize)), this, SLOT(onShaderParamsDialogResized(QSize)));
-
-   if (shader_info.data->num_parameters == 0)
-   {
-      QLabel *label = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS), m_shaderParamsDialog);
-      label->setAlignment(Qt::AlignCenter);
-
-      layout->addWidget(label);
-   }
-   else
-   {
-      /* NOTE: We assume that parameters are always grouped in order by the pass number, e.g., all parameters for pass 0 come first, then params for pass 1, etc. */
-      for (i = 0; i < shader_info.data->num_parameters; i++)
-      {
-         struct video_shader_parameter *param = &shader_info.data->parameters[i];
-         QString desc = param->desc;
-         QFormLayout *form = last_form;
-
-         if (param->pass > last_pass)
-         {
-            QGroupBox *groupBox = NULL;
-            QFileInfo fileInfo(shader_info.data->pass[param->pass].source.path);
-            QString shaderBasename = fileInfo.completeBaseName();
-
-            form = new QFormLayout();
-            groupBox = new QGroupBox(shaderBasename);
-            groupBox->setLayout(form);
-
-            layout->addWidget(groupBox);
-
-            last_form = form;
-            last_pass = param->pass;
-         }
-
-         if ((param->minimum == 0.0)
-               && (param->maximum
-                  == (param->minimum
-                     + param->step)))
-         {
-            /* option is basically a bool, so use a checkbox */
-            QCheckBox *checkBox = new QCheckBox(m_shaderParamsDialog);
-            checkBox->setChecked(param->current == param->maximum ? true : false);
-            checkBox->setProperty("param", QVariant::fromValue(param));
-
-            connect(checkBox, SIGNAL(clicked()), this, SLOT(onShaderParamCheckBoxClicked()));
-
-            form->addRow(desc, checkBox);
-         }
-         else
-         {
-            QDoubleSpinBox *doubleSpinBox = NULL;
-            QSpinBox *spinBox = NULL;
-            QHBoxLayout *box = new QHBoxLayout();
-            QSlider *slider = new QSlider(Qt::Horizontal, m_shaderParamsDialog);
-            double value = lerp(param->minimum, param->maximum, 0, 100, param->current);
-            double intpart = 0;
-            bool stepIsFractional = modf(param->step, &intpart);
-
-            slider->setRange(0, 100);
-            slider->setSingleStep(1);
-            slider->setValue(value);
-            slider->setProperty("param", QVariant::fromValue(param));
-
-            connect(slider, SIGNAL(valueChanged(int)), this, SLOT(onShaderParamSliderValueChanged(int)));
-
-            box->addWidget(slider);
-
-            if (stepIsFractional)
-            {
-               doubleSpinBox = new QDoubleSpinBox(m_shaderParamsDialog);
-               doubleSpinBox->setRange(param->minimum, param->maximum);
-               doubleSpinBox->setSingleStep(param->step);
-               doubleSpinBox->setValue(param->current);
-               doubleSpinBox->setProperty("slider", QVariant::fromValue(slider));
-               slider->setProperty("doubleSpinBox", QVariant::fromValue(doubleSpinBox));
-
-               connect(doubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onShaderParamDoubleSpinBoxValueChanged(double)));
-
-               box->addWidget(doubleSpinBox);
-            }
-            else
-            {
-               spinBox = new QSpinBox(m_shaderParamsDialog);
-               spinBox->setRange(param->minimum, param->maximum);
-               spinBox->setSingleStep(param->step);
-               spinBox->setValue(param->current);
-               spinBox->setProperty("slider", QVariant::fromValue(slider));
-               slider->setProperty("spinBox", QVariant::fromValue(spinBox));
-
-               connect(spinBox, SIGNAL(valueChanged(int)), this, SLOT(onShaderParamSpinBoxValueChanged(int)));
-
-               box->addWidget(spinBox);
-            }
-
-            form->addRow(desc, box);
-         }
-      }
-
-      layout->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding));
-   }
-
-   m_shaderParamsDialog->resize(720, 480);
-   m_shaderParamsDialog->show();
-}
-
-void MainWindow::onShaderParamCheckBoxClicked()
-{
-   QCheckBox *checkBox = qobject_cast<QCheckBox*>(sender());
-   QVariant paramVariant;
-   struct video_shader_parameter *param = NULL;
-
-   if (!checkBox)
-      return;
-
-   paramVariant = checkBox->property("param");
-
-   if (paramVariant.isValid())
-   {
-      param = paramVariant.value<struct video_shader_parameter*>();
-
-      if (param)
-         param->current = (checkBox->isChecked() ? param->maximum : param->minimum);
-   }
-}
-
-void MainWindow::onShaderParamSliderValueChanged(int value)
-{
-   QVariant spinBoxVariant;
-   QVariant paramVariant;
-   QSlider *slider = qobject_cast<QSlider*>(sender());
-   struct video_shader_parameter *param = NULL;
-   double newValue = 0.0;
-
-   if (!slider)
-      return;
-
-   spinBoxVariant = slider->property("spinBox");
-   paramVariant = slider->property("param");
-
-   if (paramVariant.isValid())
-   {
-      param = paramVariant.value<struct video_shader_parameter*>();
-
-      if (param)
-      {
-         newValue = lerp(0, 100, param->minimum, param->maximum, slider->value());
-         param->current = newValue;
-      }
-   }
-
-   if (spinBoxVariant.isValid())
-   {
-      QSpinBox *spinBox = spinBoxVariant.value<QSpinBox*>();
-
-      if (!spinBox)
-         return;
-
-      spinBox->blockSignals(true);
-      spinBox->setValue(newValue);
-      spinBox->blockSignals(false);
-   }
-   else
-   {
-      QVariant doubleSpinBoxVariant = slider->property("doubleSpinBox");
-      QDoubleSpinBox *doubleSpinBox = doubleSpinBoxVariant.value<QDoubleSpinBox*>();
-
-      if (!doubleSpinBox)
-         return;
-
-      doubleSpinBox->blockSignals(true);
-      doubleSpinBox->setValue(newValue);
-      doubleSpinBox->blockSignals(false);
-   }
-}
-
-void MainWindow::onShaderParamSpinBoxValueChanged(int value)
-{
-   QSpinBox *spinBox = qobject_cast<QSpinBox*>(sender());
-   QVariant sliderVariant;
-   QVariant paramVariant;
-   QSlider *slider = NULL;
-   struct video_shader_parameter *param = NULL;
-   double newValue = 0.0;
-
-   if (!spinBox)
-      return;
-
-   sliderVariant = spinBox->property("slider");
-
-   if (!sliderVariant.isValid())
-      return;
-
-   slider = sliderVariant.value<QSlider*>();
-
-   if (!slider)
-      return;
-
-   paramVariant = slider->property("param");
-
-   if (paramVariant.isValid())
-   {
-      param = paramVariant.value<struct video_shader_parameter*>();
-
-      if (param)
-      {
-         param->current = value;
-         newValue = lerp(param->minimum, param->maximum, 0, 100, param->current);
-         slider->blockSignals(true);
-         slider->setValue(newValue);
-         slider->blockSignals(false);
-      }
-   }
-}
-
-void MainWindow::onShaderParamDoubleSpinBoxValueChanged(double value)
-{
-   QDoubleSpinBox *doubleSpinBox = qobject_cast<QDoubleSpinBox*>(sender());
-   QVariant sliderVariant;
-   QVariant paramVariant;
-   QSlider *slider = NULL;
-   struct video_shader_parameter *param = NULL;
-   double newValue = 0.0;
-
-   if (!doubleSpinBox)
-      return;
-
-   sliderVariant = doubleSpinBox->property("slider");
-
-   if (!sliderVariant.isValid())
-      return;
-
-   slider = sliderVariant.value<QSlider*>();
-
-   if (!slider)
-      return;
-
-   paramVariant = slider->property("param");
-
-   if (paramVariant.isValid())
-   {
-      param = paramVariant.value<struct video_shader_parameter*>();
-
-      if (param)
-      {
-         param->current = value;
-         newValue = lerp(param->minimum, param->maximum, 0, 100, param->current);
-         slider->blockSignals(true);
-         slider->setValue(newValue);
-         slider->blockSignals(false);
-      }
-   }
 }
 
 void MainWindow::onGridItemClicked(ThumbnailWidget *widget)
@@ -1225,10 +919,20 @@ void MainWindow::deferReloadShaderParams()
    emit gotReloadShaderParams();
 }
 
+void MainWindow::onShaderParamsClicked()
+{
+   if (!m_shaderParamsDialog)
+      return;
+
+   m_shaderParamsDialog->show();
+
+   onGotReloadShaderParams();
+}
+
 void MainWindow::onGotReloadShaderParams()
 {
    if (m_shaderParamsDialog && m_shaderParamsDialog->isVisible())
-      onShaderParamsClicked();
+      m_shaderParamsDialog->reload();
 }
 
 void MainWindow::appendLogMessage(const QString &msg)
@@ -1736,7 +1440,6 @@ void MainWindow::onTableWidgetDeletePressed()
 QHash<QString, QString> MainWindow::getCurrentContentHash()
 {
    QTableWidgetItem *contentItem = m_tableWidget->currentItem();
-   QListWidgetItem *playlistItem = m_listWidget->currentItem();
    QHash<QString, QString> contentHash;
    ViewType viewType = getCurrentViewType();
 

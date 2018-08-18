@@ -559,7 +559,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
       strlcpy(settings->arrays.playlist_cores,
             new_playlist_cores, sizeof(settings->arrays.playlist_cores));
    }
-   else if (selectedAction == deletePlaylistAction.data())
+   else if (selectedItem && selectedAction == deletePlaylistAction.data())
    {
       if (currentPlaylistFile.exists())
       {
@@ -583,7 +583,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
       reloadPlaylists();
    }
-   else if (selectedAction == hideAction.data())
+   else if (selectedItem && selectedAction == hideAction.data())
    {
       int row = m_listWidget->row(selectedItem);
 
