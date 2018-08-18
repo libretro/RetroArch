@@ -1112,7 +1112,7 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
 {
    unsigned count = 0;
    global_t   *global                  = global_get_ptr();
-   struct config_path_setting  *tmp    = (struct config_path_setting*)malloc((*size + 1) * sizeof(struct config_path_setting));
+   struct config_path_setting  *tmp    = (struct config_path_setting*)calloc(1, (*size + 1) * sizeof(struct config_path_setting));
 
    /* Paths */
 #ifdef HAVE_XMB
@@ -3027,6 +3027,8 @@ end:
       free(array_settings);
    if (path_settings)
       free(path_settings);
+   if (size_settings)
+      free(size_settings);
    free(tmp_str);
    return ret;
 }
@@ -4536,6 +4538,8 @@ bool config_save_overrides(int override_type)
       free(path_settings);
    if (path_overrides)
       free(path_overrides);
+   if (size_overrides)
+      free(size_overrides);
    free(settings);
    free(config_directory);
    free(override_directory);
