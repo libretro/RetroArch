@@ -6421,6 +6421,10 @@ MSG_HASH(
       MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
       "Mostrar intefaz de escritorio"
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_SHOW_WIMP,
+      "Abre la interfaz de escritorio si fue cerrada"
+      )
 #endif
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,

@@ -3843,6 +3843,10 @@ MSG_HASH(
       MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
       "Show Desktop UI"
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_SHOW_WIMP,
+      "Open the desktop UI if it was closed"
+      )
 #endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
       "Don't show this again")
