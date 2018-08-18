@@ -2228,10 +2228,16 @@ static void vulkan_set_osd_msg(void *data,
 static uintptr_t vulkan_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
+   struct vk_texture *texture  = NULL;
    vk_t *vk                    = (vk_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
-   struct vk_texture *texture = (struct vk_texture*)calloc(1, sizeof(*texture));
-   if (!image || !texture)
+   if (!image)
+      return 0;
+
+   texture                     = (struct vk_texture*)
+      calloc(1, sizeof(*texture));
+
+   if (!texture)
       return 0;
 
    if (!image->pixels || !image->width || !image->height)
