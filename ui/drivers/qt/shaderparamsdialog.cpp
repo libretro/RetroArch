@@ -408,7 +408,7 @@ void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, in
       /* option is basically a bool, so use a checkbox */
       QCheckBox *checkBox = new QCheckBox(this);
       checkBox->setChecked(param->current == param->maximum ? true : false);
-      checkBox->setProperty("pass", param->pass);
+      checkBox->setProperty("param", parameter);
 
       connect(checkBox, SIGNAL(clicked()), this, SLOT(onShaderParamCheckBoxClicked()));
 
@@ -479,7 +479,7 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
    if (menu_shader && menu_shader->passes == 0)
       return;
 
-   paramVariant = checkBox->property("parameter");
+   paramVariant = checkBox->property("param");
 
    if (paramVariant.isValid())
    {
