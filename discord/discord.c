@@ -25,8 +25,7 @@
 
 #include "../msg_hash.h"
 
-//static const char* APPLICATION_ID = "475456035851599874";
-static const char* APPLICATION_ID = "479875712363528207";
+static const char* APPLICATION_ID = "475456035851599874";
 static int FrustrationLevel       = 0;
 
 static int64_t start_time         = 0;
