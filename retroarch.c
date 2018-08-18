@@ -2710,7 +2710,7 @@ static enum runloop_state runloop_check_state(
                }
                else
                {
-                  if (  global->menu.prev_action == action && 
+                  if (  global->menu.prev_action == action &&
                         global->menu.noop_press_time < 200000) /* 250ms */
                   {
                      global->menu.action_start_time = global->menu.prev_start_time ;
@@ -3442,7 +3442,7 @@ int runloop_iterate(unsigned *sleep_ms)
       end:
    {
       retro_time_t to_sleep_ms;
-	  
+
       if (settings->bools.vrr_runloop_enable)
       {
          struct retro_system_av_info *av_info =
@@ -3467,7 +3467,7 @@ int runloop_iterate(unsigned *sleep_ms)
          if (!settings->floats.fastforward_ratio && runloop_fastmotion)
             return 0;
 
-         frame_limit_minimum_time = 
+         frame_limit_minimum_time =
             (retro_time_t)roundf(1000000.0f / (av_info->timing.fps *
             (runloop_fastmotion ? settings->floats.fastforward_ratio : 1.0f)));
       }
