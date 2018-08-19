@@ -840,7 +840,7 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
    QList<QAction*> actions;
    QScopedPointer<QAction> scanAction;
    QDir dir;
-   QString currentDirString = m_dirModel->filePath(m_dirTree->currentIndex());
+   QString currentDirString = QDir::toNativeSeparators(m_dirModel->filePath(m_dirTree->currentIndex()));
    settings_t *settings = config_get_ptr();
    QByteArray dirArray;
    const char *fullpath = NULL;
