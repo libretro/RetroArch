@@ -370,6 +370,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_gridWidget->setLayout(new QVBoxLayout());
 
    m_gridLayout = new FlowLayout(m_gridLayoutWidget);
+   m_gridLayoutWidget->setObjectName("gridLayoutWidget");
 
    m_gridScrollArea->setAlignment(Qt::AlignCenter);
    m_gridScrollArea->setFrameShape(QFrame::NoFrame);
