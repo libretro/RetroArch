@@ -131,41 +131,7 @@ void discord_update(enum discord_presence presence)
             RARCH_LOG("[Discord] current core: %s\n", system_name);
             RARCH_LOG("[Discord] current content: %s\n", label);
 #endif
-            /*
-               At the present time, there is no consistent or clean way to present what platform
-               or core the user is playing on/with. If we were to present the platform as an icon,
-               some cores have multiple platforms, such as Dolphin with the GC or Wii, or blueMSX
-               with the MSX or MSX2. The libretro API has no way of determining what platform a
-               selected content is associated with; it only knows what core it's playing under.
-               The platform is determined by the core itself during initialization, not viewable
-               by the libretro API. A solution to this problem would be associating the content
-               with the first platform available in the core's information file, but that solution
-               doesn't work when someone sees another users playing Super Mario Galaxy with a
-               GameCube icon. It's not good enough. Another solution would be exposing what
-               platform is associated with inside the core itself, visible through the libretro
-               API, but this would require updating every libretro core to support this feature,
-               and the support would be too slow and limited for it to really work as a solution.
-
-               If we were to present the core as an icon, there are a few options available, and
-               none of them are desirable either. If we were to provide an icon for each core based
-               on that core's logo or name, then we'd need new assets for every single libretro
-               core available, AND each asset would need to be consistent with each other, in a
-               similar vein to the XMB themes of RetroArch, which would be another massive
-               undertaking. If we were to provide an icon for each core based on that core's
-               platform, then we have the same issue as earlier, except this time we're additionally
-               limited by the amount of assets a Discord RPC application is allowed to have: 150.
-               There are currently 173 core information files available within RetroArch, which goes
-               over that number by a bit. Now if that were determined by platform instead of core,
-               that number goes significantly down as there are many cores with multiple platforms,
-               but then we have the issue as described earlier.
-
-               Because of this dilemma, for now the provided icon for the In-Game status will be the
-               standard/default "core" icon, at least we can come up with a solution that's clean
-               and consistent. When such a time presents itself, the below line will be uncommented.
-            */
-
-            //discord_presence.largeImageKey = system_name;
-            discord_presence.largeImageKey = "core";
+            discord_presence.largeImageKey = system_name;
 
             if (core_info->display_name)
                discord_presence.largeImageText = core_info->display_name;
