@@ -278,7 +278,7 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       border:1px solid %1;
       border-radius:4px;
    }
-   QPushButton[flat=\"true\"] {
+   QPushButton[flat="true"] {
       background-color:transparent;
    }
    QRadioButton::indicator {
