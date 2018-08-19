@@ -44,6 +44,8 @@ private:
    QCheckBox *m_suggestLoadedCoreFirstCheckBox;
    QSpinBox *m_allPlaylistsListMaxCountSpinBox;
    QSpinBox *m_allPlaylistsGridMaxCountSpinBox;
+protected:
+   void paintEvent(QPaintEvent *event);
 };
 
 #endif

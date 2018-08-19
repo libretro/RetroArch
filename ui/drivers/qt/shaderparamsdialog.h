@@ -5,6 +5,7 @@
 
 class QCloseEvent;
 class QResizeEvent;
+class QPaintEvent;
 class QVBoxLayout;
 class QFormLayout;
 class QLayout;
@@ -49,6 +50,7 @@ private:
 protected:
    void closeEvent(QCloseEvent *event);
    void resizeEvent(QResizeEvent *event);
+   void paintEvent(QPaintEvent *event);
 };
 
 #endif

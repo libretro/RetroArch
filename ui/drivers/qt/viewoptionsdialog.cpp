@@ -10,6 +10,7 @@
 #include <QFileDialog>
 #include <QApplication>
 #include <QColorDialog>
+#include <QPainter>
 
 #include "viewoptionsdialog.h"
 #include "../ui_qt.h"
@@ -216,3 +217,15 @@ void ViewOptionsDialog::hideDialog()
    reject();
 }
 
+void ViewOptionsDialog::paintEvent(QPaintEvent *event)
+{
+   QStyleOption o;
+   QPainter p;
+   o.initFrom(this);
+   p.begin(this);
+   style()->drawPrimitive(
+      QStyle::PE_Widget, &o, &p, this);
+   p.end();
+
+   QDialog::paintEvent(event);
+}

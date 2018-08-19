@@ -1,5 +1,6 @@
 #include <QCloseEvent>
 #include <QResizeEvent>
+#include <QPainter>
 #include <QScrollArea>
 #include <QVBoxLayout>
 #include <QGroupBox>
@@ -1151,4 +1152,17 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
          }
       }
    }
+}
+
+void ShaderParamsDialog::paintEvent(QPaintEvent *event)
+{
+   QStyleOption o;
+   QPainter p;
+   o.initFrom(this);
+   p.begin(this);
+   style()->drawPrimitive(
+      QStyle::PE_Widget, &o, &p, this);
+   p.end();
+
+   QDialog::paintEvent(event);
 }

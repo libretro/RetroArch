@@ -191,6 +191,19 @@ void TreeView::selectionChanged(const QItemSelection &selected, const QItemSelec
    emit itemsSelected(list);
 }
 
+void TreeView::paintEvent(QPaintEvent *event)
+{
+   QStyleOption o;
+   QPainter p;
+   o.initFrom(this);
+   p.begin(this);
+   style()->drawPrimitive(
+      QStyle::PE_Widget, &o, &p, this);
+   p.end();
+
+   QTreeView::paintEvent(event);
+}
+
 TableWidget::TableWidget(QWidget *parent) :
    QTableWidget(parent)
 {
@@ -212,10 +225,36 @@ void TableWidget::keyPressEvent(QKeyEvent *event)
       QTableWidget::keyPressEvent(event);
 }
 
+void TableWidget::paintEvent(QPaintEvent *event)
+{
+   QStyleOption o;
+   QPainter p;
+   o.initFrom(this);
+   p.begin(this);
+   style()->drawPrimitive(
+      QStyle::PE_Widget, &o, &p, this);
+   p.end();
+
+   QTableWidget::paintEvent(event);
+}
+
 CoreInfoLabel::CoreInfoLabel(QString text, QWidget *parent) :
    QLabel(text, parent)
 {
    setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+}
+
+void CoreInfoLabel::paintEvent(QPaintEvent *event)
+{
+   QStyleOption o;
+   QPainter p;
+   o.initFrom(this);
+   p.begin(this);
+   style()->drawPrimitive(
+      QStyle::PE_Widget, &o, &p, this);
+   p.end();
+
+   QLabel::paintEvent(event);
 }
 
 CoreInfoWidget::CoreInfoWidget(CoreInfoLabel *label, QWidget *parent) :
@@ -238,6 +277,19 @@ void CoreInfoWidget::resizeEvent(QResizeEvent *event)
    m_scrollArea->resize(event->size());
 }
 
+void CoreInfoWidget::paintEvent(QPaintEvent *event)
+{
+   QStyleOption o;
+   QPainter p;
+   o.initFrom(this);
+   p.begin(this);
+   style()->drawPrimitive(
+      QStyle::PE_Widget, &o, &p, this);
+   p.end();
+
+   QWidget::paintEvent(event);
+}
+
 LogTextEdit::LogTextEdit(QWidget *parent) :
    QPlainTextEdit(parent)
 {
@@ -251,6 +303,19 @@ void LogTextEdit::appendMessage(const QString& text)
 
    appendPlainText(text);
    verticalScrollBar()->setValue(verticalScrollBar()->maximum());
+}
+
+void LogTextEdit::paintEvent(QPaintEvent *event)
+{
+   QStyleOption o;
+   QPainter p;
+   o.initFrom(this);
+   p.begin(this);
+   style()->drawPrimitive(
+      QStyle::PE_Widget, &o, &p, this);
+   p.end();
+
+   QPlainTextEdit::paintEvent(event);
 }
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -2945,6 +3010,19 @@ void MainWindow::onShowErrorMessage(QString msg)
 void MainWindow::onShowInfoMessage(QString msg)
 {
    showMessageBox(msg, MainWindow::MSGBOX_TYPE_INFO, Qt::ApplicationModal, false);
+}
+
+void MainWindow::paintEvent(QPaintEvent *event)
+{
+   QStyleOption o;
+   QPainter p;
+   o.initFrom(this);
+   p.begin(this);
+   style()->drawPrimitive(
+      QStyle::PE_Widget, &o, &p, this);
+   p.end();
+
+   QMainWindow::paintEvent(event);
 }
 
 static void* ui_window_qt_init(void)
