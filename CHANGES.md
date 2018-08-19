@@ -21,6 +21,8 @@
 - MENU/QT/WIMP: Initial grid view.
 - MENU/QT/WIMP: Drag&drop to add new playlist items, add option to add/edit/delete playlists.
 - MENU/QT/WIMP: Add menu option to update RetroArch (Windows only for now).
+- MENU/XMB: Add new icons for the settings
+- MENU/XMB: Add an option to show the desktop ui
 - METAL: Initial work-in-progress video driver for Metal. macOS-only right now, and currently requires macOS 10.13.
 - METAL: Supports XMB/MaterialUI, has a menu display driver. Has a font rendering driver.
 - METAL/SLANG: Slang shaders should be compatible with Metal video driver.
@@ -91,7 +93,7 @@ video drivers that implement it (D3D8/9/10/11/12/GL)
 - MENU/RGUI: D3D8/D3D9: Hookup Menu Linear Filter
 - MENU/XMB: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
 - MENU/XMB: Left/right thumbnails are now automatically scaled according to layout.
-- MENU/XMB: Add Left Thumbnails (additional to the right). 
+- MENU/XMB: Add Left Thumbnails (additional to the right).
 - MENU/XMB: Fixed left/right tab regression.
 - MENU/XMB: Fix scaling of tall images that were cut on bottom previously.
 - MENU/XMB: Menu scale factor setting now changes texts length, image scaling and margins.
