@@ -1399,7 +1399,7 @@ void MainWindow::selectBrowserDir(QString path)
       QString fileName = dirList.at(i);
       QTableWidgetItem *item = new QTableWidgetItem(fileName);
       QHash<QString, QString> hash;
-      QString filePath(dir.absoluteFilePath(fileName));
+      QString filePath(QDir::toNativeSeparators(dir.absoluteFilePath(fileName)));
       QFileInfo fileInfo(filePath);
 
       hash["path"] = filePath;
