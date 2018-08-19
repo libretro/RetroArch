@@ -77,7 +77,6 @@ static void handle_discord_join_request(const DiscordUser* request)
 
 void discord_update(enum discord_presence presence)
 {
-   rarch_system_info_t *system = runloop_get_system_info();
    core_info_t *core_info = NULL;
    bool skip = false;
 

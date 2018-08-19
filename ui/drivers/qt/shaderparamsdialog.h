@@ -27,6 +27,8 @@ private slots:
    void onShaderParamDoubleSpinBoxValueChanged(double value);
    void onFilterComboBoxIndexChanged(int index);
    void onScaleComboBoxIndexChanged(int index);
+   void onShaderPassMoveDownClicked();
+   void onShaderPassMoveUpClicked();
 private:
    QString getFilterLabel(unsigned filter);
    void addShaderParam(struct video_shader_parameter *param, int parameter, QFormLayout *form);

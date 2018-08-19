@@ -748,6 +748,8 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
    shader->passes = MIN(shaders, GFX_MAX_SHADERS);
    attr.i         = 0;
 
+   strlcpy(shader->path, conf->path, sizeof(shader->path));
+
    if (settings->bools.video_shader_watch_files)
    {
       if (file_change_data)

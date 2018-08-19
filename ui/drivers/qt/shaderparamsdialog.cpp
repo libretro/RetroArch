@@ -9,11 +9,14 @@
 #include <QDoubleSpinBox>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QPushButton>
+#include <QToolButton>
 
 #include "shaderparamsdialog.h"
 #include "../ui_qt.h"
 
 extern "C" {
+#include <string/stdstring.h>
 #include "../../../command.h"
 #ifdef HAVE_MENU
 #include "../../../menu/menu_shader.h"
@@ -280,10 +283,103 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
    }
 }
 
+void ShaderParamsDialog::onShaderPassMoveDownClicked()
+{
+   QPushButton *button = qobject_cast<QPushButton*>(sender());
+   QVariant passVariant;
+   struct video_shader *menu_shader = NULL;
+   struct video_shader *video_shader = NULL;
+   int pass = 0;
+   bool ok = false;
+
+   getShaders(&menu_shader, &video_shader);
+
+   if (!button)
+      return;
+
+   passVariant = button->property("pass");
+
+   if (!passVariant.isValid())
+      return;
+
+   pass = passVariant.toInt(&ok);
+
+   if (!ok)
+      return;
+
+   if (pass < 0)
+      return;
+
+   if (video_shader)
+   {
+      if (pass >= static_cast<int>(video_shader->passes) - 1)
+         return;
+
+      std::swap(video_shader->pass[pass], video_shader->pass[pass + 1]);
+   }
+
+   if (menu_shader)
+   {
+      if (pass >= static_cast<int>(menu_shader->passes) - 1)
+         return;
+
+      std::swap(menu_shader->pass[pass], menu_shader->pass[pass + 1]);
+   }
+
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+}
+
+void ShaderParamsDialog::onShaderPassMoveUpClicked()
+{
+   QPushButton *button = qobject_cast<QPushButton*>(sender());
+   QVariant passVariant;
+   struct video_shader *menu_shader = NULL;
+   struct video_shader *video_shader = NULL;
+   int pass = 0;
+   bool ok = false;
+
+   getShaders(&menu_shader, &video_shader);
+
+   if (!button)
+      return;
+
+   passVariant = button->property("pass");
+
+   if (!passVariant.isValid())
+      return;
+
+   pass = passVariant.toInt(&ok);
+
+   if (!ok)
+      return;
+
+   if (pass <= 0)
+      return;
+
+   if (video_shader)
+   {
+      if (pass > static_cast<int>(video_shader->passes) - 1)
+         return;
+
+      std::swap(video_shader->pass[pass - 1], video_shader->pass[pass]);
+   }
+
+   if (menu_shader)
+   {
+      if (pass > static_cast<int>(menu_shader->passes) - 1)
+         return;
+
+      std::swap(menu_shader->pass[pass - 1], menu_shader->pass[pass]);
+   }
+
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+}
+
 void ShaderParamsDialog::reload()
 {
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
+   const char *shader_path = NULL;
    int i;
    unsigned j;
 
@@ -295,9 +391,23 @@ void ShaderParamsDialog::reload()
     */
 
    if ((video_shader && video_shader->passes == 0) || !video_shader)
+   {
+      setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
       goto end;
+   }
 
    clearLayout(m_layout);
+
+   /* Only check video_shader for the path, menu_shader seems stale... e.g. if you remove all the shader passes,
+    * it still has the old path in it, but video_shader does not
+    */
+   if (!string_is_empty(video_shader->path))
+   {
+      shader_path = video_shader->path;
+      setWindowTitle(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER)) + ": " + QFileInfo(shader_path).fileName());
+   }
+   else
+      setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
 
    /* NOTE: We assume that parameters are always grouped in order by the pass number, e.g., all parameters for pass 0 come first, then params for pass 1, etc. */
    for (i = 0; i < static_cast<int>(video_shader->passes); i++)
@@ -309,10 +419,32 @@ void ShaderParamsDialog::reload()
       QHBoxLayout *filterScaleHBoxLayout = NULL;
       QComboBox *filterComboBox = new QComboBox();
       QComboBox *scaleComboBox = new QComboBox();
+      QToolButton *moveDownButton = NULL;
+      QToolButton *moveUpButton = NULL;
       unsigned j = 0;
 
       filterComboBox->setProperty("pass", i);
       scaleComboBox->setProperty("pass", i);
+
+      moveDownButton = new QToolButton();
+      moveDownButton->setText("↓");
+      moveDownButton->setProperty("pass", i);
+
+      moveUpButton = new QToolButton();
+      moveUpButton->setText("↑");
+      moveUpButton->setProperty("pass", i);
+
+      /* Can't move down if we're already at the bottom. */
+      if (i < static_cast<int>(video_shader->passes) - 1)
+         connect(moveDownButton, SIGNAL(clicked()), this, SLOT(onShaderPassMoveDownClicked()));
+      else
+         moveDownButton->setDisabled(true);
+
+      /* Can't move up if we're already at the top. */
+      if (i > 0)
+         connect(moveUpButton, SIGNAL(clicked()), this, SLOT(onShaderPassMoveUpClicked()));
+      else
+         moveUpButton->setDisabled(true);
 
       for (;;)
       {
@@ -355,10 +487,18 @@ void ShaderParamsDialog::reload()
       m_layout->addWidget(groupBox);
 
       filterScaleHBoxLayout = new QHBoxLayout();
-      filterScaleHBoxLayout->addWidget(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILTER)));
+      filterScaleHBoxLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
+      filterScaleHBoxLayout->addWidget(new QLabel(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILTER)) + ":"));
       filterScaleHBoxLayout->addWidget(filterComboBox);
-      filterScaleHBoxLayout->addWidget(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCALE)));
+      filterScaleHBoxLayout->addWidget(new QLabel(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCALE)) + ":"));
       filterScaleHBoxLayout->addWidget(scaleComboBox);
+      filterScaleHBoxLayout->addSpacerItem(new QSpacerItem(20, 0, QSizePolicy::Preferred, QSizePolicy::Preferred));
+
+      if (moveUpButton)
+         filterScaleHBoxLayout->addWidget(moveUpButton);
+
+      if (moveDownButton)
+         filterScaleHBoxLayout->addWidget(moveDownButton);
 
       form->addRow("", filterScaleHBoxLayout);
 
@@ -392,7 +532,7 @@ void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, in
       /* option is basically a bool, so use a checkbox */
       QCheckBox *checkBox = new QCheckBox(this);
       checkBox->setChecked(param->current == param->maximum ? true : false);
-      checkBox->setProperty("pass", param->pass);
+      checkBox->setProperty("param", parameter);
 
       connect(checkBox, SIGNAL(clicked()), this, SLOT(onShaderParamCheckBoxClicked()));
 
@@ -463,7 +603,7 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
    if (menu_shader && menu_shader->passes == 0)
       return;
 
-   paramVariant = checkBox->property("parameter");
+   paramVariant = checkBox->property("param");
 
    if (paramVariant.isValid())
    {
@@ -570,7 +710,6 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
    QSlider *slider = NULL;
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
-   double newValue = 0.0;
 
    getShaders(&menu_shader, &video_shader);
 
@@ -596,6 +735,8 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
 
       if (ok)
       {
+         double newValue = 0.0;
+
          if (menu_shader)
          {
             struct video_shader_parameter *param = &menu_shader->parameters[parameter];
@@ -627,8 +768,10 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
    QVariant sliderVariant;
    QVariant paramVariant;
    QSlider *slider = NULL;
-   struct video_shader_parameter *param = NULL;
-   double newValue = 0.0;
+   struct video_shader *menu_shader = NULL;
+   struct video_shader *video_shader = NULL;
+
+   getShaders(&menu_shader, &video_shader);
 
    if (!doubleSpinBox)
       return;
@@ -647,15 +790,34 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
 
    if (paramVariant.isValid())
    {
-      param = paramVariant.value<struct video_shader_parameter*>();
+      bool ok = false;
+      int parameter = paramVariant.toInt(&ok);
 
-      if (param)
+      if (ok)
       {
-         param->current = value;
-         newValue = MainWindow::lerp(param->minimum, param->maximum, 0, 100, param->current);
-         slider->blockSignals(true);
-         slider->setValue(newValue);
-         slider->blockSignals(false);
+         double newValue = 0.0;
+
+         if (menu_shader)
+         {
+            struct video_shader_parameter *param = &menu_shader->parameters[parameter];
+
+            param->current = value;
+            newValue = MainWindow::lerp(param->minimum, param->maximum, 0, 100, param->current);
+            slider->blockSignals(true);
+            slider->setValue(newValue);
+            slider->blockSignals(false);
+         }
+
+         if (video_shader)
+         {
+            struct video_shader_parameter *param = &video_shader->parameters[parameter];
+
+            param->current = value;
+            newValue = MainWindow::lerp(param->minimum, param->maximum, 0, 100, param->current);
+            slider->blockSignals(true);
+            slider->setValue(newValue);
+            slider->blockSignals(false);
+         }
       }
    }
 }

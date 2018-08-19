@@ -375,6 +375,7 @@ static void global_free(void)
 
 static void retroarch_print_features(void)
 {
+   frontend_driver_attach_console();
    puts("");
    puts("Features:");
 
@@ -451,7 +452,7 @@ static void retroarch_print_features(void)
 static void retroarch_print_version(void)
 {
    char str[255];
-
+   frontend_driver_attach_console();
    str[0] = '\0';
 
    fprintf(stderr, "%s: %s -- v%s",
@@ -473,6 +474,7 @@ static void retroarch_print_version(void)
  **/
 static void retroarch_print_help(const char *arg0)
 {
+   frontend_driver_attach_console();
    puts("===================================================================");
    retroarch_print_version();
    puts("===================================================================");
