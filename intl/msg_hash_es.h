@@ -6419,11 +6419,11 @@ MSG_HASH(
 	)
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-      "Mostrar intefaz de escritorio"
+      "Mostrar el menú de escritorio"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SHOW_WIMP,
-      "Abre la interfaz de escritorio si fue cerrada"
+      "Abre el menú de escritorio si fue cerrado"
       )
 #endif
 MSG_HASH(
