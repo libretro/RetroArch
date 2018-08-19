@@ -153,8 +153,6 @@ signals:
 protected slots:
    void columnCountChanged(int oldCount, int newCount);
    void selectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
-protected:
-   void paintEvent(QPaintEvent *event);
 };
 
 class TableWidget : public QTableWidget
@@ -167,8 +165,6 @@ signals:
    void deletePressed();
 protected:
    void keyPressEvent(QKeyEvent *event);
-protected:
-   void paintEvent(QPaintEvent *event);
 };
 
 class AppHandler : public QObject
@@ -190,8 +186,6 @@ class CoreInfoLabel : public QLabel
    Q_OBJECT
 public:
    CoreInfoLabel(QString text = QString(), QWidget *parent = 0);
-protected:
-   void paintEvent(QPaintEvent *event);
 };
 
 class CoreInfoWidget : public QWidget
@@ -202,7 +196,6 @@ public:
    QSize sizeHint() const;
 protected:
    void resizeEvent(QResizeEvent *event);
-   void paintEvent(QPaintEvent *event);
 private:
    CoreInfoLabel *m_label;
    QScrollArea *m_scrollArea;
@@ -215,8 +208,6 @@ public:
    LogTextEdit(QWidget *parent = 0);
 public slots:
    void appendMessage(const QString& text);
-protected:
-   void paintEvent(QPaintEvent *event);
 };
 
 class MainWindow : public QMainWindow
@@ -459,7 +450,6 @@ private:
 protected:
    void closeEvent(QCloseEvent *event);
    void keyPressEvent(QKeyEvent *event);
-   void paintEvent(QPaintEvent *event);
 };
 
 Q_DECLARE_METATYPE(ThumbnailWidget)

@@ -5,7 +5,6 @@
 
 class QCloseEvent;
 class QResizeEvent;
-class QPaintEvent;
 class QVBoxLayout;
 class QFormLayout;
 class QLayout;

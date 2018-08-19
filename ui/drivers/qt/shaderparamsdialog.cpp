@@ -91,6 +91,19 @@ void ShaderParamsDialog::closeEvent(QCloseEvent *event)
    emit closed();
 }
 
+void ShaderParamsDialog::paintEvent(QPaintEvent *event)
+{
+   QStyleOption o;
+   QPainter p;
+   o.initFrom(this);
+   p.begin(this);
+   style()->drawPrimitive(
+      QStyle::PE_Widget, &o, &p, this);
+   p.end();
+
+   QDialog::paintEvent(event);
+}
+
 QString ShaderParamsDialog::getFilterLabel(unsigned filter)
 {
    QString filterString;
@@ -1152,17 +1165,4 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
          }
       }
    }
-}
-
-void ShaderParamsDialog::paintEvent(QPaintEvent *event)
-{
-   QStyleOption o;
-   QPainter p;
-   o.initFrom(this);
-   p.begin(this);
-   style()->drawPrimitive(
-      QStyle::PE_Widget, &o, &p, this);
-   p.end();
-
-   QDialog::paintEvent(event);
 }
