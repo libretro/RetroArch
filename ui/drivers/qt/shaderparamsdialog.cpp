@@ -14,6 +14,7 @@
 #include <QToolButton>
 #include <QMenu>
 #include <QFileDialog>
+#include <QTimer>
 
 #include "shaderparamsdialog.h"
 #include "../ui_qt.h"
@@ -41,25 +42,13 @@ enum
 
 ShaderParamsDialog::ShaderParamsDialog(QWidget *parent) :
    QDialog(parent)
-   ,m_layout(NULL)
+   ,m_layout()
+   ,m_scrollArea()
 {
-   QScrollArea *scrollArea = NULL;
-   QWidget *widget = NULL;
-
    setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
    setObjectName("shaderParamsDialog");
 
-   m_layout = new QVBoxLayout();
-
-   widget = new QWidget();
-   widget->setLayout(m_layout);
-   widget->setObjectName("shaderParamsWidget");
-   scrollArea = new QScrollArea(this);
-   scrollArea->setWidgetResizable(true);
-   scrollArea->setWidget(widget);
-   scrollArea->setObjectName("shaderParamsScrollArea");
-
-   setProperty("scrollArea", QVariant::fromValue(scrollArea));
+   QTimer::singleShot(0, this, SLOT(clearLayout()));
 }
 
 ShaderParamsDialog::~ShaderParamsDialog()
@@ -68,20 +57,12 @@ ShaderParamsDialog::~ShaderParamsDialog()
 
 void ShaderParamsDialog::resizeEvent(QResizeEvent *event)
 {
-   QVariant scrollAreaVariant = property("scrollArea");
-   QScrollArea *scrollArea = NULL;
-
    QDialog::resizeEvent(event);
 
-   if (!scrollAreaVariant.isValid())
+   if (!m_scrollArea)
       return;
 
-   scrollArea = scrollAreaVariant.value<QScrollArea*>();
-
-   if (!scrollArea)
-      return;
-
-   scrollArea->resize(event->size());
+   m_scrollArea->resize(event->size());
 }
 
 void ShaderParamsDialog::closeEvent(QCloseEvent *event)
@@ -126,35 +107,30 @@ QString ShaderParamsDialog::getFilterLabel(unsigned filter)
    return filterString;
 }
 
-void ShaderParamsDialog::clearLayout(QLayout *layout)
+void ShaderParamsDialog::clearLayout()
 {
-   QLayoutItem *child = NULL;
+   QWidget *widget = NULL;
 
-   while (layout->count() && ((child = layout->takeAt(0)) != 0))
+   if (m_scrollArea)
    {
-      QWidget *widget = child->widget();
-      QLayout *childLayout = child->layout();
-
-      if (widget)
-      {
-         QLayout *widgetLayout = widget->layout();
-
-         if (widgetLayout)
-            clearLayout(widgetLayout);
-
-         /* deleteLater() doesn't work right for some reason here,
-          * so just disconnect any signals in case there are pending events,
-          * and delete the widget immediately.
-          */
-         widget->disconnect();
-         delete widget;
-      }
-
-      if (childLayout)
-         clearLayout(childLayout);
-
-      delete child;
+      //qDeleteAll(children());
+      foreach (QObject *obj, children())
+         obj->deleteLater();
    }
+
+   m_layout = new QVBoxLayout();
+
+   widget = new QWidget();
+   widget->setLayout(m_layout);
+   widget->setObjectName("shaderParamsWidget");
+
+   m_scrollArea = new QScrollArea();
+
+   m_scrollArea->setParent(this);
+   m_scrollArea->setWidgetResizable(true);
+   m_scrollArea->setWidget(widget);
+   m_scrollArea->setObjectName("shaderParamsScrollArea");
+   m_scrollArea->show();
 }
 
 void ShaderParamsDialog::getShaders(struct video_shader **menu_shader, struct video_shader **video_shader)
@@ -597,7 +573,7 @@ void ShaderParamsDialog::onShaderClearAllPassesClicked()
    while (menu_shader->passes > 0)
       menu_shader_manager_decrement_amount_passes();
 
-   onShaderApplyClicked();
+   emit onShaderApplyClicked();
 #endif
 }
 
@@ -638,7 +614,7 @@ void ShaderParamsDialog::onShaderRemovePassClicked()
 
    menu_shader_manager_decrement_amount_passes();
 
-   onShaderApplyClicked();
+   emit onShaderApplyClicked();
 #endif
 }
 
@@ -648,6 +624,11 @@ void ShaderParamsDialog::onShaderApplyClicked()
 }
 
 void ShaderParamsDialog::reload()
+{
+   buildLayout();
+}
+
+void ShaderParamsDialog::buildLayout()
 {
    QPushButton *loadButton = NULL;
    QPushButton *saveButton = NULL;
@@ -677,7 +658,7 @@ void ShaderParamsDialog::reload()
       goto end;
    }
 
-   clearLayout(m_layout);
+   clearLayout();
 
    /* Only check video_shader for the path, menu_shader seems stale... e.g. if you remove all the shader passes,
     * it still has the old path in it, but video_shader does not
@@ -861,8 +842,10 @@ void ShaderParamsDialog::reload()
    m_layout->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding));
 
 end:
-   resize(720, 480);
+   /* Why is this required?? The layout is corrupt without both resizes. */
+   resize(720 + 1, 480);
    show();
+   resize(720, 480);
 }
 
 void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, int parameter, QFormLayout *form)

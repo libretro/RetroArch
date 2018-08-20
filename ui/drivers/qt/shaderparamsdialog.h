@@ -2,12 +2,14 @@
 #define SHADERPARAMSDIALOG_H
 
 #include <QDialog>
+#include <QPointer>
 
 class QCloseEvent;
 class QResizeEvent;
 class QVBoxLayout;
 class QFormLayout;
 class QLayout;
+class QScrollArea;
 
 class ShaderParamsDialog : public QDialog
 {
@@ -38,14 +40,16 @@ private slots:
    void onShaderClearAllPassesClicked();
    void onShaderRemovePassClicked();
    void onShaderApplyClicked();
+   void clearLayout();
+   void buildLayout();
 private:
    QString getFilterLabel(unsigned filter);
    void addShaderParam(struct video_shader_parameter *param, int parameter, QFormLayout *form);
-   void clearLayout(QLayout *layout);
    void getShaders(struct video_shader **menu_shader, struct video_shader **video_shader);
    void saveShaderPreset(const char *path, unsigned action_type);
 
-   QVBoxLayout *m_layout;
+   QPointer<QVBoxLayout> m_layout;
+   QPointer<QScrollArea> m_scrollArea;
 protected:
    void closeEvent(QCloseEvent *event);
    void resizeEvent(QResizeEvent *event);
