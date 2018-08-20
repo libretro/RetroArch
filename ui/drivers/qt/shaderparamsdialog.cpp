@@ -314,7 +314,7 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
 
 void ShaderParamsDialog::onShaderPassMoveDownClicked()
 {
-   QPushButton *button = qobject_cast<QPushButton*>(sender());
+   QToolButton *button = qobject_cast<QToolButton*>(sender());
    QVariant passVariant;
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
@@ -360,7 +360,7 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
 
 void ShaderParamsDialog::onShaderPassMoveUpClicked()
 {
-   QPushButton *button = qobject_cast<QPushButton*>(sender());
+   QToolButton *button = qobject_cast<QToolButton*>(sender());
    QVariant passVariant;
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
