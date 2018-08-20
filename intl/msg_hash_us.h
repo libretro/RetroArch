@@ -3839,6 +3839,14 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
       "<li>have \"Databases\" updated via Online Updater</li>\n"
       "<li>restart RetroArch if any of the above was just done</li></ul>\n"
       "Finally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+      "Show Desktop Menu"
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_SHOW_WIMP,
+      "Opens the desktop menu if it was closed"
+      )
 #endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
       "Don't show this again")
@@ -4270,3 +4278,17 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
       "Move Down")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
       "Move Up")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_LOAD,
+      "Load")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SAVE,
+      "Save")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_REMOVE,
+      "Remove")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_APPLY,
+      "Apply")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SHADER_ADD_PASS,
+      "Add Pass")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SHADER_CLEAR_ALL_PASSES,
+      "Clear All Passes")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_SHADER_NO_PASSES,
+      "No shader passes.")

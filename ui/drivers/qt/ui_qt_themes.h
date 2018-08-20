@@ -34,22 +34,18 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
    QTextEdit, LogTextEdit {
       background-color:rgb(25,25,25);
    }
-   QSpinBox, QCheckBox {
+   QSpinBox, QDoubleSpinBox, QCheckBox {
       background-color:rgb(25,25,25);
    }
    QCheckBox:checked, QCheckBox:unchecked {
       background-color:rgb(53,53,53);
    }
-   QDialog#shaderParamsDialog {
+   QWidget#shaderParamsWidget {
       background-color:rgb(25,25,25);
    }
-   QDialog#shaderParamsDialog QGroupBox, QDialog#shaderParamsDialog QGroupBox QLabel,
-   QDialog#shaderParamsDialog QGroupBox QSlider, QDialog#shaderParamsDialog QGroupBox QCheckBox:checked,
-   QDialog#shaderParamsDialog QGroupBox QCheckBox:unchecked {
-      background-color:rgb(53,53,53);
-   }
    QDialog#shaderParamsDialog QGroupBox {
-      border-top-left-radius: 0px;
+      background-color:rgb(53,53,53);
+      border-top-left-radius:0px;
    }
    QDialog#shaderParamsDialog QGroupBox::title {
       margin-left:0px;
@@ -58,7 +54,7 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       background-color:qlineargradient(x1:0,y1:1,x2:0,y2:0,stop:0 rgb(53,53,53),stop:1 rgba(125,125,125,127));
       border:1px solid rgba(25,25,25,75);
       border-top:1px solid rgba(175,175,175,50%);
-      border-bottom: none transparent;
+      border-bottom:none transparent;
    }
    QToolTip {
       color:white;
@@ -224,7 +220,7 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
    }
    QComboBox {
       min-height:20px;
-      padding:1px 18px 1px 3px;
+      padding:1px 6px 1px 6px;
    }
    QComboBox::focus {
       background:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgba(255,255,255,50), stop: 1 rgba(100,100,100,25));
@@ -238,6 +234,7 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
    }
    QComboBox::drop-down {
       background-color:transparent;
+      width:0px;
    }
    QComboBox::selected:on, QComboBox::selected:off {
       background-color:%1;
@@ -262,6 +259,10 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       padding:1px 3px 1px 3px;
       outline:none;
    }
+   QPushButton::disabled, QToolButton::disabled {
+      color:grey;
+      background-color:rgb(25,25,25);
+   }
    QPushButton::focus, QToolButton::focus {
       background:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgba(255,255,255,50), stop: 1 rgba(100,100,100,25));
       border:1px solid %1;
@@ -278,7 +279,7 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       border-radius:4px;
    }
    QPushButton[flat="true"] {
-      background-color: transparent;
+      background-color:transparent;
    }
    QRadioButton::indicator {
       width:18px;
@@ -428,7 +429,7 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
       background-color:rgb(40,40,40);
       border:3px solid %1;
    }
-   QScrollArea QWidget {
-   background:rgb(25,25,25);
+   QWidget#gridLayoutWidget {
+      background-color:rgb(25,25,25);
    }
 )");

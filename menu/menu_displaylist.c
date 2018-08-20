@@ -4857,7 +4857,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                         string_is_equal(core_path, path_get(RARCH_PATH_CORE)))
                   {
                      strlcpy(new_path_entry, core_path, sizeof(new_path_entry));
-                     snprintf(new_entry, sizeof(new_entry), "%s (%s)", 
+                     snprintf(new_entry, sizeof(new_entry), "%s (%s)",
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE),
                            core_name);
                      new_lbl_entry[0] = '\0';
@@ -5538,7 +5538,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SHOW_HELP,
                PARSE_ONLY_BOOL, false);
-
+#ifdef HAVE_QT
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SHOW_WIMP,
+               PARSE_ONLY_UINT, false);
+#endif
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,
                PARSE_ONLY_BOOL, false);
@@ -6291,11 +6295,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SCREEN_RESOLUTION,
                PARSE_ACTION, false);
-         menu_displaylist_parse_settings_enum(menu, info, 
-               MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION, 
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,
                PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info, 
-               MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER, 
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER,
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PAL60_ENABLE,
@@ -6908,7 +6912,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          {
             settings_t      *settings     = config_get_ptr();
-            if (settings->bools.quick_menu_show_save_core_overrides 
+            if (settings->bools.quick_menu_show_save_core_overrides
                   && !settings->bools.kiosk_mode_enable)
             {
                menu_entries_append_enum(info->list,
@@ -6919,7 +6923,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                count++;
             }
 
-            if (settings->bools.quick_menu_show_save_content_dir_overrides 
+            if (settings->bools.quick_menu_show_save_content_dir_overrides
                   && !settings->bools.kiosk_mode_enable)
             {
                menu_entries_append_enum(info->list,
@@ -6930,7 +6934,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                count++;
             }
 
-            if (settings->bools.quick_menu_show_save_game_overrides 
+            if (settings->bools.quick_menu_show_save_game_overrides
                   && !settings->bools.kiosk_mode_enable)
             {
                menu_entries_append_enum(info->list,

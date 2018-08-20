@@ -370,6 +370,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_gridWidget->setLayout(new QVBoxLayout());
 
    m_gridLayout = new FlowLayout(m_gridLayoutWidget);
+   m_gridLayoutWidget->setObjectName("gridLayoutWidget");
 
    m_gridScrollArea->setAlignment(Qt::AlignCenter);
    m_gridScrollArea->setFrameShape(QFrame::NoFrame);
@@ -839,7 +840,7 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
    QList<QAction*> actions;
    QScopedPointer<QAction> scanAction;
    QDir dir;
-   QString currentDirString = m_dirModel->filePath(m_dirTree->currentIndex());
+   QString currentDirString = QDir::toNativeSeparators(m_dirModel->filePath(m_dirTree->currentIndex()));
    settings_t *settings = config_get_ptr();
    QByteArray dirArray;
    const char *fullpath = NULL;
@@ -1398,7 +1399,7 @@ void MainWindow::selectBrowserDir(QString path)
       QString fileName = dirList.at(i);
       QTableWidgetItem *item = new QTableWidgetItem(fileName);
       QHash<QString, QString> hash;
-      QString filePath(dir.absoluteFilePath(fileName));
+      QString filePath(QDir::toNativeSeparators(dir.absoluteFilePath(fileName)));
       QFileInfo fileInfo(filePath);
 
       hash["path"] = filePath;
