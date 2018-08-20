@@ -161,7 +161,7 @@ void discord_update(enum discord_presence presence)
                const char *item  = string_replace_substring(
                   string_replace_substring(string_to_lower(missing_core_icons[i]), " ", "_"), "/", "_");
 
-               if (strcmp(item, core_name) == 0)
+               if (strcmp(item, system_name) == 0)
                {
                   discord_presence.largeImageKey = "core";
                   break;
