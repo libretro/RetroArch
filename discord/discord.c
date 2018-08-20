@@ -116,7 +116,9 @@ void discord_update(enum discord_presence presence)
          if (core_info)
          {
             const char *core_name = core_info->core_name ? core_info->core_name : "core";
-            const char *system_name  = string_replace_substring(string_to_lower((char *)core_name), " ", "_");
+
+            const char *system_name  = string_replace_substring(
+               string_replace_substring(string_to_lower((char *)core_name), " ", "_"), "/", "_");
 
             char *label = NULL;
             playlist_t *current_playlist = playlist_get_cached();
