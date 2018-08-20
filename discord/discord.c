@@ -35,6 +35,27 @@ static bool discord_ready         = false;
 static bool in_menu               = false;
 static unsigned discord_status    = 0;
 
+// If you are to add to this list, please use the `corename` attribute
+// from the core's respective info file. Case sensitivity does not matter.
+char missing_core_icons[][16] = {
+   "3D Engine",
+   "Cannonball",
+   "Daphne",
+   "FFmpeg",
+   "Game Music Emu",
+   "Imageviewer",
+   "Lutro",
+   "MESS 2014 (Git)",
+   "PocketCDG",
+   "REminiscence",
+   "RemoteJoy",
+   "Rustation",
+   "Theodore",
+   "ThePowderToy",
+   "UME 2014 (Git)",
+   "VeMUlator"
+};
+
 DiscordRichPresence discord_presence;
 
 static void handle_discord_ready(const DiscordUser* connectedUser)
@@ -135,6 +156,18 @@ void discord_update(enum discord_presence presence)
 #endif
             discord_presence.largeImageKey = system_name;
 
+            for (int i = 0; i < sizeof(missing_core_icons) / sizeof(missing_core_icons[0]); i++)
+            {
+               const char *item  = string_replace_substring(
+                  string_replace_substring(string_to_lower(missing_core_icons[i]), " ", "_"), "/", "_");
+
+               if (strcmp(item, core_name))
+               {
+                  discord_presence.largeImageKey = "core";
+                  break;
+               }
+            }
+
             if (core_info->display_name)
                discord_presence.largeImageText = core_info->display_name;
 
@@ -142,8 +175,6 @@ void discord_update(enum discord_presence presence)
                start_time = time(0);
             else
                start_time = start_time + difftime(time(0), pause_time);
-
-            RARCH_LOG("%d\n", start_time);
 
             if (!skip)
             {
