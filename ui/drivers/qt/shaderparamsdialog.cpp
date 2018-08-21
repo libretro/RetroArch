@@ -778,17 +778,14 @@ void ShaderParamsDialog::buildLayout()
     */
 
    if ((video_shader && video_shader->passes == 0) || !video_shader)
-   {
       setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
-      goto end;
-   }
 
    emit clearLayout();
 
    /* Only check video_shader for the path, menu_shader seems stale... e.g. if you remove all the shader passes,
     * it still has the old path in it, but video_shader does not
     */
-   if (!string_is_empty(video_shader->path))
+   if (video_shader && !string_is_empty(video_shader->path))
    {
       shader_path = video_shader->path;
       setWindowTitle(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER)) + ": " + QFileInfo(shader_path).fileName());
@@ -847,7 +844,7 @@ void ShaderParamsDialog::buildLayout()
    m_layout->addLayout(topButtonLayout);
 
    /* NOTE: We assume that parameters are always grouped in order by the pass number, e.g., all parameters for pass 0 come first, then params for pass 1, etc. */
-   for (i = 0; i < static_cast<int>(video_shader->passes); i++)
+   for (i = 0; video_shader && i < static_cast<int>(video_shader->passes); i++)
    {
       QFormLayout *form = NULL;
       QGroupBox *groupBox = NULL;
@@ -970,7 +967,6 @@ void ShaderParamsDialog::buildLayout()
 
    m_layout->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding));
 
-end:
    /* Why is this required?? The layout is corrupt without both resizes. */
    resize(720 + 1, 480);
    show();
