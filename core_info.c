@@ -149,6 +149,7 @@ static void core_info_list_free(core_info_list_t *core_info_list)
       free(info->path);
       free(info->core_name);
       free(info->systemname);
+      free(info->rpc_name);
       free(info->system_manufacturer);
       free(info->display_name);
       free(info->display_version);
@@ -298,6 +299,14 @@ static core_info_list_t *core_info_list_new(const char *path,
                && !string_is_empty(tmp))
          {
             core_info[i].systemname = strdup(tmp);
+            free(tmp);
+            tmp = NULL;
+         }
+
+         if (config_get_string(conf, "rpcname", &tmp)
+               && !string_is_empty(tmp))
+         {
+            core_info[i].rpc_name = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }

@@ -35,27 +35,6 @@ static bool discord_ready         = false;
 static bool in_menu               = false;
 static unsigned discord_status    = 0;
 
-// If you are to add to this list, please use the `corename` attribute
-// from the core's respective info file. Case sensitivity does not matter.
-char missing_core_icons[][16] = {
-   "3D Engine",
-   "Cannonball",
-   "Daphne",
-   "FFmpeg",
-   "Game Music Emu",
-   "Imageviewer",
-   "Lutro",
-   "MESS 2014 (Git)",
-   "PocketCDG",
-   "REminiscence",
-   "RemoteJoy",
-   "Rustation",
-   "Theodore",
-   "ThePowderToy",
-   "UME 2014 (Git)",
-   "VeMUlator"
-};
-
 DiscordRichPresence discord_presence;
 
 static void handle_discord_ready(const DiscordUser* connectedUser)
@@ -136,10 +115,7 @@ void discord_update(enum discord_presence presence)
       case DISCORD_PRESENCE_GAME:
          if (core_info)
          {
-            const char *core_name = core_info->core_name ? core_info->core_name : "core";
-
-            const char *system_name  = string_replace_substring(
-               string_replace_substring(string_to_lower((char *)core_name), " ", "_"), "/", "_");
+            const char *rpc_name  = core_info->rpc_name ? core_info->rpc_name : "core";
 
             char *label = NULL;
             playlist_t *current_playlist = playlist_get_cached();
@@ -151,22 +127,10 @@ void discord_update(enum discord_presence presence)
             if (!label)
                label = (char *)path_basename(path_get(RARCH_PATH_BASENAME));
 #if 1
-            RARCH_LOG("[Discord] current core: %s\n", system_name);
+            RARCH_LOG("[Discord] current core: %s\n", rpc_name);
             RARCH_LOG("[Discord] current content: %s\n", label);
 #endif
-            discord_presence.largeImageKey = system_name;
-
-            for (int i = 0; i < sizeof(missing_core_icons) / sizeof(missing_core_icons[0]); i++)
-            {
-               const char *item  = string_replace_substring(
-                  string_replace_substring(string_to_lower(missing_core_icons[i]), " ", "_"), "/", "_");
-
-               if (strcmp(item, system_name) == 0)
-               {
-                  discord_presence.largeImageKey = "core";
-                  break;
-               }
-            }
+            discord_presence.largeImageKey = rpc_name;
 
             if (core_info->display_name)
                discord_presence.largeImageText = core_info->display_name;
