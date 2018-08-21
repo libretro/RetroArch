@@ -114,9 +114,10 @@ void ShaderParamsDialog::clearLayout()
 
    if (m_scrollArea)
    {
-      //qDeleteAll(children());
       foreach (QObject *obj, children())
+      {
          obj->deleteLater();
+      }
    }
 
    m_layout = new QVBoxLayout();
@@ -436,6 +437,85 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
 #endif
 }
 
+void ShaderParamsDialog::onShaderResetPass(int pass)
+{
+   struct video_shader *menu_shader = NULL;
+   struct video_shader *video_shader = NULL;
+   unsigned i;
+
+   getShaders(&menu_shader, &video_shader);
+
+   if (menu_shader)
+   {
+      for (i = 0; i < menu_shader->num_parameters; i++)
+      {
+         struct video_shader_parameter *param = &menu_shader->parameters[i];
+
+         /* if pass < 0, reset all params, otherwise only reset the selected pass */
+         if (pass >= 0 && param->pass != pass)
+            continue;
+
+         param->current = param->initial;
+      }
+   }
+
+   if (video_shader)
+   {
+      for (i = 0; i < video_shader->num_parameters; i++)
+      {
+         struct video_shader_parameter *param = &video_shader->parameters[i];
+
+         /* if pass < 0, reset all params, otherwise only reset the selected pass */
+         if (pass >= 0 && param->pass != pass)
+            continue;
+
+         param->current = param->initial;
+      }
+   }
+
+   emit reload();
+}
+
+void ShaderParamsDialog::onShaderResetParameter(int parameter)
+{
+   struct video_shader *menu_shader = NULL;
+   struct video_shader *video_shader = NULL;
+   unsigned i;
+
+   getShaders(&menu_shader, &video_shader);
+
+   if (menu_shader)
+   {
+      struct video_shader_parameter *param = NULL;
+
+      if (parameter < 0 || parameter >= static_cast<int>(menu_shader->num_parameters))
+         return;
+
+      param = &menu_shader->parameters[parameter];
+
+      param->current = param->initial;
+   }
+
+   if (video_shader)
+   {
+      struct video_shader_parameter *param = NULL;
+
+      if (parameter < 0 || parameter >= static_cast<int>(video_shader->num_parameters))
+         return;
+
+      param = &video_shader->parameters[parameter];
+
+      param->current = param->initial;
+   }
+
+   emit reload();
+}
+
+void ShaderParamsDialog::onShaderResetAllPasses()
+{
+   emit onShaderResetPass(-1);
+}
+
 void ShaderParamsDialog::onShaderAddPassClicked()
 {
 #ifdef HAVE_MENU
@@ -670,7 +750,7 @@ void ShaderParamsDialog::onShaderApplyClicked()
 
 void ShaderParamsDialog::reload()
 {
-   buildLayout();
+   emit buildLayout();
 }
 
 void ShaderParamsDialog::buildLayout()
@@ -703,7 +783,7 @@ void ShaderParamsDialog::buildLayout()
       goto end;
    }
 
-   clearLayout();
+   emit clearLayout();
 
    /* Only check video_shader for the path, menu_shader seems stale... e.g. if you remove all the shader passes,
     * it still has the old path in it, but video_shader does not
@@ -846,6 +926,10 @@ void ShaderParamsDialog::buildLayout()
       form = new QFormLayout();
       groupBox = new QGroupBox(shaderBasename);
       groupBox->setLayout(form);
+      groupBox->setProperty("pass", i);
+      groupBox->setContextMenuPolicy(Qt::CustomContextMenu);
+
+      connect(groupBox, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onGroupBoxContextMenuRequested(const QPoint&)));
 
       m_layout->addWidget(groupBox);
 
@@ -893,9 +977,102 @@ end:
    resize(720, 480);
 }
 
+void ShaderParamsDialog::onParameterLabelContextMenuRequested(const QPoint&)
+{
+   QLabel *label = NULL;
+   QPointer<QAction> action;
+   QList<QAction*> actions;
+   QScopedPointer<QAction> resetParamAction;
+   QVariant paramVariant;
+   int parameter = 0;
+   bool ok = false;
+
+   label = qobject_cast<QLabel*>(sender());
+
+   if (!label)
+      return;
+
+   paramVariant = label->property("parameter");
+
+   if (!paramVariant.isValid())
+      return;
+
+   parameter = paramVariant.toInt(&ok);
+
+   if (!ok)
+      return;
+
+   resetParamAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER), 0));
+
+   actions.append(resetParamAction.data());
+
+   action = QMenu::exec(actions, QCursor::pos(), NULL, label);
+
+   if (!action)
+      return;
+
+   if (action == resetParamAction.data())
+   {
+      emit onShaderResetParameter(parameter);
+   }
+}
+
+void ShaderParamsDialog::onGroupBoxContextMenuRequested(const QPoint&)
+{
+   QGroupBox *groupBox = NULL;
+   QPointer<QAction> action;
+   QList<QAction*> actions;
+   QScopedPointer<QAction> resetPassAction;
+   QScopedPointer<QAction> resetAllPassesAction;
+   QVariant passVariant;
+   int pass = 0;
+   bool ok = false;
+
+   groupBox = qobject_cast<QGroupBox*>(sender());
+
+   if (!groupBox)
+      return;
+
+   passVariant = groupBox->property("pass");
+
+   if (!passVariant.isValid())
+      return;
+
+   pass = passVariant.toInt(&ok);
+
+   if (!ok)
+      return;
+
+   resetPassAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RESET_PASS), 0));
+   resetAllPassesAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RESET_ALL_PASSES), 0));
+
+   actions.append(resetPassAction.data());
+   actions.append(resetAllPassesAction.data());
+
+   action = QMenu::exec(actions, QCursor::pos(), NULL, groupBox);
+
+   if (!action)
+      return;
+
+   if (action == resetPassAction.data())
+   {
+      emit onShaderResetPass(pass);
+   }
+   else if (action == resetAllPassesAction.data())
+   {
+      emit onShaderResetAllPasses();
+   }
+}
+
 void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, int parameter, QFormLayout *form)
 {
    QString desc = param->desc;
+   QLabel *label = new QLabel(desc);
+
+   label->setProperty("parameter", parameter);
+   label->setContextMenuPolicy(Qt::CustomContextMenu);
+
+   connect(label, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onParameterLabelContextMenuRequested(const QPoint&)));
 
    if ((param->minimum == 0.0)
          && (param->maximum
@@ -909,7 +1086,7 @@ void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, in
 
       connect(checkBox, SIGNAL(clicked()), this, SLOT(onShaderParamCheckBoxClicked()));
 
-      form->addRow(desc, checkBox);
+      form->addRow(label, checkBox);
    }
    else
    {
@@ -957,7 +1134,7 @@ void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, in
          box->addWidget(spinBox);
       }
 
-      form->addRow(desc, box);
+      form->addRow(label, box);
    }
 }
 

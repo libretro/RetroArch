@@ -28,9 +28,14 @@ private slots:
    void onShaderParamSpinBoxValueChanged(int value);
    void onShaderParamDoubleSpinBoxValueChanged(double value);
    void onFilterComboBoxIndexChanged(int index);
+   void onGroupBoxContextMenuRequested(const QPoint &pos);
+   void onParameterLabelContextMenuRequested(const QPoint &pos);
    void onScaleComboBoxIndexChanged(int index);
    void onShaderPassMoveDownClicked();
    void onShaderPassMoveUpClicked();
+   void onShaderResetPass(int pass);
+   void onShaderResetAllPasses();
+   void onShaderResetParameter(int parameter);
    void onShaderLoadPresetClicked();
    void onShaderAddPassClicked();
    void onShaderSavePresetAsClicked();
