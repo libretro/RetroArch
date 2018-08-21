@@ -115,7 +115,7 @@ void discord_update(enum discord_presence presence)
       case DISCORD_PRESENCE_GAME:
          if (core_info)
          {
-            const char *rpc_name  = core_info->rpc_name ? core_info->rpc_name : "core";
+            const char *system_id  = core_info->system_id ? core_info->system_id : "core";
 
             char *label = NULL;
             playlist_t *current_playlist = playlist_get_cached();
@@ -127,10 +127,10 @@ void discord_update(enum discord_presence presence)
             if (!label)
                label = (char *)path_basename(path_get(RARCH_PATH_BASENAME));
 #if 1
-            RARCH_LOG("[Discord] current core: %s\n", rpc_name);
+            RARCH_LOG("[Discord] current core: %s\n", system_id);
             RARCH_LOG("[Discord] current content: %s\n", label);
 #endif
-            discord_presence.largeImageKey = rpc_name;
+            discord_presence.largeImageKey = system_id;
 
             if (core_info->display_name)
                discord_presence.largeImageText = core_info->display_name;
