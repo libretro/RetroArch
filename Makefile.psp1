@@ -13,7 +13,7 @@ TARGET = retroarchpsp
 ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
 else
-   OPTIMIZE_LV	:= -O2
+   OPTIMIZE_LV	:= -O3
 endif
 
 ifeq ($(WHOLE_ARCHIVE_LINK), 1)
@@ -22,7 +22,7 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
 endif
 
 INCDIR = deps deps/stb deps/libz deps/7zip deps/pthreads deps/pthreads/platform/psp deps/pthreads/platform/helper libretro-common/include
-CFLAGS = $(OPTIMIZE_LV) -G0 -std=gnu99 -ffast-math
+CFLAGS = $(OPTIMIZE_LV) -G0 -std=gnu99 -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES = -DPSP -D_MIPS_ARCH_ALLEGREX -DHAVE_LANGEXTRA -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DWANT_ZLIB -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
