@@ -2477,6 +2477,13 @@ TODO: Add a setting for these tweaks */
 
                if (!is_idle)
                   video_driver_cached_frame();
+
+#ifdef HAVE_DISCORD
+               discord_userdata_t userdata;
+               userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
+
+               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+#endif
             }
             else
             {

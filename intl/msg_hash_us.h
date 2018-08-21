@@ -6655,9 +6655,25 @@ MSG_HASH(
     "In-Menu"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-    "Enable Discord"
+    MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
+    "In-Game"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
+    "In-Game (Paused)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
+    "Playing"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
+    "Paused"
+    )
+MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
+     "Enable Discord"
+     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
     "Enable or disable Discord support. Will not work with the browser version, only native desktop client."

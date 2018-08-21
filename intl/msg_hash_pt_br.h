@@ -2056,7 +2056,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
 MSG_HASH(MSG_ADDED_TO_FAVORITES,
       "Adicionado aos favoritos")
 MSG_HASH(MSG_RESET_CORE_ASSOCIATION,
-      "A associação do núcleo de entrada da lista de reprodução foi redefinida.")      
+      "A associação do núcleo de entrada da lista de reprodução foi redefinida.")
 MSG_HASH(MSG_APPENDED_DISK,
       "Disco anexado")
 MSG_HASH(MSG_APPLICATION_DIR,
@@ -3561,7 +3561,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
       "Configurações do Mixer")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-      "Visualizar e/ou modificar as configurações do mixer de áudio.") 
+      "Visualizar e/ou modificar as configurações do mixer de áudio.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_INFO,
       "Informação")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
@@ -3724,6 +3724,14 @@ MSG_HASH(MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
       "Continuar conquistas para a sessão atual (Esta ação desabilitará Estados de Jogos, Trapaças, Rebobinagem, Pausa e Câmera Lenta e reiniciará o jogo atual).")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
       "No Menu")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
+      "No Jogo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
+      "No Jogo (Pausado)")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
+      "Jogando")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
+      "Pausado")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
       "Habilitar o Discord"
