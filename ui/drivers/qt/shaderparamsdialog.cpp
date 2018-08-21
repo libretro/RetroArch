@@ -66,6 +66,8 @@ void ShaderParamsDialog::resizeEvent(QResizeEvent *event)
       return;
 
    m_scrollArea->resize(event->size());
+
+   emit resized(event->size());
 }
 
 void ShaderParamsDialog::closeEvent(QCloseEvent *event)
@@ -475,7 +477,7 @@ void ShaderParamsDialog::onShaderResetPass(int pass)
       }
    }
 
-   emit reload();
+   reload();
 }
 
 void ShaderParamsDialog::onShaderResetParameter(int parameter)
@@ -510,12 +512,12 @@ void ShaderParamsDialog::onShaderResetParameter(int parameter)
       param->current = param->initial;
    }
 
-   emit reload();
+   reload();
 }
 
 void ShaderParamsDialog::onShaderResetAllPasses()
 {
-   emit onShaderResetPass(-1);
+   onShaderResetPass(-1);
 }
 
 void ShaderParamsDialog::onShaderAddPassClicked()
@@ -700,7 +702,7 @@ void ShaderParamsDialog::onShaderClearAllPassesClicked()
    while (menu_shader->passes > 0)
       menu_shader_manager_decrement_amount_passes();
 
-   emit onShaderApplyClicked();
+   onShaderApplyClicked();
 #endif
 }
 
@@ -741,7 +743,7 @@ void ShaderParamsDialog::onShaderRemovePassClicked()
 
    menu_shader_manager_decrement_amount_passes();
 
-   emit onShaderApplyClicked();
+   onShaderApplyClicked();
 #endif
 }
 
@@ -752,7 +754,7 @@ void ShaderParamsDialog::onShaderApplyClicked()
 
 void ShaderParamsDialog::reload()
 {
-   emit buildLayout();
+   buildLayout();
 }
 
 void ShaderParamsDialog::buildLayout()
@@ -767,6 +769,7 @@ void ShaderParamsDialog::buildLayout()
    QMenu *removeMenu = NULL;
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
+   struct video_shader *avail_shader = NULL;
    const char *shader_path = NULL;
    int i;
    unsigned j;
@@ -777,20 +780,50 @@ void ShaderParamsDialog::buildLayout()
    /* NOTE: For some reason, menu_shader_get() returns a COPY of what get_current_shader() gives us.
     * And if you want to be able to change shader settings/parameters from both the raster menu and
     * Qt at the same time... you must change BOTH or one will overwrite the other.
+    *
+    * AND, during a context reset, video_shader will be NULL but not menu_shader, so don't totally bail
+    * just because video_shader is NULL.
+    *
+    * Someone please fix this mess.
     */
 
-   if ((video_shader && video_shader->passes == 0) || !video_shader)
+   if (video_shader)
+   {
+      avail_shader = video_shader;
+
+      if (video_shader->passes == 0)
+         setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
+   }
+   else if (menu_shader)
+   {
+      avail_shader = menu_shader;
+
+      if (menu_shader->passes == 0)
+         setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
+   }
+   else
       setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
 
-   emit clearLayout();
+   clearLayout();
 
    /* Only check video_shader for the path, menu_shader seems stale... e.g. if you remove all the shader passes,
     * it still has the old path in it, but video_shader does not
     */
-   if (video_shader && !string_is_empty(video_shader->path))
+   if (video_shader)
    {
-      shader_path = video_shader->path;
-      setWindowTitle(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER)) + ": " + QFileInfo(shader_path).fileName());
+      if (!string_is_empty(video_shader->path))
+      {
+         shader_path = video_shader->path;
+         setWindowTitle(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER)) + ": " + QFileInfo(shader_path).fileName());
+      }
+   }
+   else if (menu_shader)
+   {
+      if (!string_is_empty(menu_shader->path))
+      {
+         shader_path = menu_shader->path;
+         setWindowTitle(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER)) + ": " + QFileInfo(shader_path).fileName());
+      }
    }
    else
       setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
@@ -846,11 +879,11 @@ void ShaderParamsDialog::buildLayout()
    m_layout->addLayout(topButtonLayout);
 
    /* NOTE: We assume that parameters are always grouped in order by the pass number, e.g., all parameters for pass 0 come first, then params for pass 1, etc. */
-   for (i = 0; video_shader && i < static_cast<int>(video_shader->passes); i++)
+   for (i = 0; avail_shader && i < static_cast<int>(avail_shader->passes); i++)
    {
       QFormLayout *form = NULL;
       QGroupBox *groupBox = NULL;
-      QFileInfo fileInfo(video_shader->pass[i].source.path);
+      QFileInfo fileInfo(avail_shader->pass[i].source.path);
       QString shaderBasename = fileInfo.completeBaseName();
       QHBoxLayout *filterScaleHBoxLayout = NULL;
       QComboBox *filterComboBox = new QComboBox(this);
@@ -877,7 +910,7 @@ void ShaderParamsDialog::buildLayout()
       moveUpButton->setProperty("pass", i);
 
       /* Can't move down if we're already at the bottom. */
-      if (i < static_cast<int>(video_shader->passes) - 1)
+      if (i < static_cast<int>(avail_shader->passes) - 1)
          connect(moveDownButton, SIGNAL(clicked()), this, SLOT(onShaderPassMoveDownClicked()));
       else
          moveDownButton->setDisabled(true);
@@ -915,8 +948,8 @@ void ShaderParamsDialog::buildLayout()
          scaleComboBox->addItem(label, j);
       }
 
-      filterComboBox->setCurrentIndex(static_cast<int>(video_shader->pass[i].filter));
-      scaleComboBox->setCurrentIndex(static_cast<int>(video_shader->pass[i].fbo.scale_x));
+      filterComboBox->setCurrentIndex(static_cast<int>(avail_shader->pass[i].filter));
+      scaleComboBox->setCurrentIndex(static_cast<int>(avail_shader->pass[i].fbo.scale_x));
 
       /* connect the signals only after the initial index is set */
       connect(filterComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onFilterComboBoxIndexChanged(int)));
@@ -948,9 +981,9 @@ void ShaderParamsDialog::buildLayout()
 
       form->addRow("", filterScaleHBoxLayout);
 
-      for (j = 0; j < video_shader->num_parameters; j++)
+      for (j = 0; j < avail_shader->num_parameters; j++)
       {
-         struct video_shader_parameter *param = &video_shader->parameters[j];
+         struct video_shader_parameter *param = &avail_shader->parameters[j];
 
          if (param->pass != i)
             continue;
@@ -1011,7 +1044,7 @@ void ShaderParamsDialog::onParameterLabelContextMenuRequested(const QPoint&)
 
    if (action == resetParamAction.data())
    {
-      emit onShaderResetParameter(parameter);
+      onShaderResetParameter(parameter);
    }
 }
 
@@ -1054,11 +1087,11 @@ void ShaderParamsDialog::onGroupBoxContextMenuRequested(const QPoint&)
 
    if (action == resetPassAction.data())
    {
-      emit onShaderResetPass(pass);
+      onShaderResetPass(pass);
    }
    else if (action == resetAllPassesAction.data())
    {
-      emit onShaderResetAllPasses();
+      onShaderResetAllPasses();
    }
 }
 
