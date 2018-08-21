@@ -400,16 +400,17 @@ bool core_unload(void)
    return true;
 }
 
-
 bool core_unload_game(void)
 {
    video_driver_free_hw_context();
 
    video_driver_set_cached_frame_ptr(NULL);
 
-   current_core.retro_unload_game();
-
-   current_core.game_loaded = false;
+   if (current_core.game_loaded)
+   {
+      current_core.retro_unload_game();
+      current_core.game_loaded = false;
+   }
 
    audio_driver_stop();
 
