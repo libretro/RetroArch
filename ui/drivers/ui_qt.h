@@ -87,6 +87,11 @@ class CoreInfoDialog;
 class PlaylistEntryDialog;
 class ViewOptionsDialog;
 
+enum SpecialPlaylist
+{
+   SPECIAL_PLAYLIST_HISTORY
+};
+
 class GridItem : public QObject
 {
    Q_OBJECT
@@ -277,6 +282,7 @@ public:
    QString getCurrentPlaylistPath();
    QHash<QString, QString> getCurrentContentHash();
    static double lerp(double x, double y, double a, double b, double d);
+   QString getSpecialPlaylistPath(SpecialPlaylist playlist);
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
