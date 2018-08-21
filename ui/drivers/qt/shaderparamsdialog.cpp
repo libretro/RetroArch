@@ -323,18 +323,50 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
 
    if (video_shader)
    {
+      int i;
+
       if (pass >= static_cast<int>(video_shader->passes) - 1)
          return;
 
       std::swap(video_shader->pass[pass], video_shader->pass[pass + 1]);
+
+      for (i = 0; i < static_cast<int>(video_shader->num_parameters); i++)
+      {
+         struct video_shader_parameter *param = &video_shader->parameters[i];
+
+         if (param->pass == pass)
+         {
+            param->pass += 1;
+         }
+         else if (param->pass == pass + 1)
+         {
+            param->pass -= 1;
+         }
+      }
    }
 
    if (menu_shader)
    {
+      int i;
+
       if (pass >= static_cast<int>(menu_shader->passes) - 1)
          return;
 
       std::swap(menu_shader->pass[pass], menu_shader->pass[pass + 1]);
+
+      for (i = 0; i < static_cast<int>(menu_shader->num_parameters); i++)
+      {
+         struct video_shader_parameter *param = &menu_shader->parameters[i];
+
+         if (param->pass == pass)
+         {
+            param->pass += 1;
+         }
+         else if (param->pass == pass + 1)
+         {
+            param->pass -= 1;
+         }
+      }
    }
 
    command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
@@ -369,18 +401,50 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
 
    if (video_shader)
    {
+      int i;
+
       if (pass > static_cast<int>(video_shader->passes) - 1)
          return;
 
       std::swap(video_shader->pass[pass - 1], video_shader->pass[pass]);
+
+      for (i = 0; i < static_cast<int>(video_shader->num_parameters); i++)
+      {
+         struct video_shader_parameter *param = &video_shader->parameters[i];
+
+         if (param->pass == pass)
+         {
+            param->pass -= 1;
+         }
+         else if (param->pass == pass - 1)
+         {
+            param->pass += 1;
+         }
+      }
    }
 
    if (menu_shader)
    {
+      int i;
+
       if (pass > static_cast<int>(menu_shader->passes) - 1)
          return;
 
       std::swap(menu_shader->pass[pass - 1], menu_shader->pass[pass]);
+
+      for (i = 0; i < static_cast<int>(menu_shader->num_parameters); i++)
+      {
+         struct video_shader_parameter *param = &menu_shader->parameters[i];
+
+         if (param->pass == pass)
+         {
+            param->pass -= 1;
+         }
+         else if (param->pass == pass - 1)
+         {
+            param->pass += 1;
+         }
+      }
    }
 
    command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
