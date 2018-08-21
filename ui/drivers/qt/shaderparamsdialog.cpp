@@ -49,6 +49,8 @@ ShaderParamsDialog::ShaderParamsDialog(QWidget *parent) :
    setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
    setObjectName("shaderParamsDialog");
 
+   resize(720, 480);
+
    QTimer::singleShot(0, this, SLOT(clearLayout()));
 }
 
@@ -968,9 +970,9 @@ void ShaderParamsDialog::buildLayout()
    m_layout->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding));
 
    /* Why is this required?? The layout is corrupt without both resizes. */
-   resize(720 + 1, 480);
+   resize(width() + 1, height());
    show();
-   resize(720, 480);
+   resize(width() - 1, height());
 }
 
 void ShaderParamsDialog::onParameterLabelContextMenuRequested(const QPoint&)
