@@ -21,6 +21,7 @@
 - MENU/QT/WIMP: Initial grid view.
 - MENU/QT/WIMP: Drag&drop to add new playlist items, add option to add/edit/delete playlists.
 - MENU/QT/WIMP: Add menu option to update RetroArch (Windows only for now).
+- MENU/QT/WIMP: Add menu option to manage shaders.
 - MENU/XMB: Add new icons for the settings
 - MENU/XMB: Add an option to show the desktop ui
 - METAL: Initial work-in-progress video driver for Metal. macOS-only right now, and currently requires macOS 10.13.

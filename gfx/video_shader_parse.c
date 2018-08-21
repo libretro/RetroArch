@@ -1136,11 +1136,16 @@ enum rarch_shader_type video_shader_get_type_from_ext(
 {
    enum gfx_ctx_api api = video_context_driver_get_api();
 
+   if (string_is_empty(ext))
+      return RARCH_SHADER_NONE;
+
+   if (strlen(ext) > 1 && ext[0] == '.')
+      ext++;
+
    *is_preset           = false;
 
    if (
-         string_is_equal(ext, "cg") ||
-         string_is_equal(ext, "CG")
+         string_is_equal_case_insensitive(ext, "cg")
          )
    {
       switch (api)

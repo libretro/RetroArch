@@ -260,6 +260,9 @@ static void* ui_companion_qt_init(void)
    QComboBox *launchWithComboBox = NULL;
    QSettings *qsettings = NULL;
    QListWidget *listWidget = NULL;
+   QString initialPlaylist;
+   bool foundPlaylist = false;
+
    int i = 0;
 
    if (!handle)
@@ -274,6 +277,8 @@ static void* ui_companion_qt_init(void)
    mainwindow = handle->window->qtWindow;
 
    qsettings = mainwindow->settings();
+
+   initialPlaylist = qsettings->value("initial_playlist", mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY)).toString();
 
    mainwindow->resize(qMin(desktopRect.width(), INITIAL_WIDTH), qMin(desktopRect.height(), INITIAL_HEIGHT));
    mainwindow->setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, mainwindow->size(), desktopRect));
@@ -571,13 +576,37 @@ static void* ui_companion_qt_init(void)
       mainwindow->onTabWidgetIndexChanged(0);
    }
 
-   for (i = 0; i < listWidget->count() && listWidget->count() > 0; i++)
+   /* the initial playlist that is selected is based on the user's setting (initialPlaylist) */
+   for (i = 0; listWidget->count() && i < listWidget->count(); i++)
    {
-      /* select the first non-hidden row */
-      if (!listWidget->isRowHidden(i))
+      QListWidgetItem *item = listWidget->item(i);
+      QString path;
+
+      if (!item)
+         continue;
+
+      path = item->data(Qt::UserRole).toString();
+
+      if (path == initialPlaylist)
       {
+         foundPlaylist = true;
+         listWidget->setRowHidden(i, false);
          listWidget->setCurrentRow(i);
          break;
+      }
+   }
+
+   /* couldn't find the user's initial playlist, just find anything */
+   if (!foundPlaylist)
+   {
+      for (i = 0; listWidget->count() && i < listWidget->count(); i++)
+      {
+         /* select the first non-hidden row */
+         if (!listWidget->isRowHidden(i))
+         {
+            listWidget->setCurrentRow(i);
+            break;
+         }
       }
    }
 

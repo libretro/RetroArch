@@ -581,6 +581,17 @@ MainWindow::~MainWindow()
    removeGridItems();
 }
 
+QString MainWindow::getSpecialPlaylistPath(SpecialPlaylist playlist)
+{
+   switch (playlist)
+   {
+      case SPECIAL_PLAYLIST_HISTORY:
+         return m_historyPlaylistsItem->data(Qt::UserRole).toString();
+      default:
+         return QString();
+   }
+}
+
 double MainWindow::lerp(double x, double y, double a, double b, double d) {
   return a + (b - a) * ((double)(d - x) / (double)(y - x));
 }

@@ -750,7 +750,10 @@ void MainWindow::reloadPlaylists()
 
       if (firstItem)
       {
-         bool found = false;
+         bool foundCurrent = false;
+         bool foundInitial = false;
+         QString initialPlaylist = m_settings->value("initial_playlist", m_historyPlaylistsItem->data(Qt::UserRole).toString()).toString();
+         QListWidgetItem *initialItem = NULL;
 
          for (i = 0; i < m_listWidget->count(); i++)
          {
@@ -761,21 +764,35 @@ void MainWindow::reloadPlaylists()
             {
                path = item->data(Qt::UserRole).toString();
 
-               if (!currentPlaylistPath.isEmpty() && !path.isEmpty())
+               if (!path.isEmpty())
                {
-                  if (path == currentPlaylistPath)
+                  /* don't break early here since we want to make sure we've found both initial and current items if they exist */
+                  if (!foundInitial && path == initialPlaylist)
                   {
-                     found = true;
+                     foundInitial = true;
+                     initialItem = item;
+                  }
+                  if (!foundCurrent && !currentPlaylistPath.isEmpty() && path == currentPlaylistPath)
+                  {
+                     foundCurrent = true;
                      m_listWidget->setCurrentItem(item);
-                     break;
                   }
                }
             }
          }
 
-         /* the previous playlist must be gone now, just select the first one */
-         if (!found)
-            m_listWidget->setCurrentItem(firstItem);
+         if (!foundCurrent)
+         {
+            if (foundInitial && initialItem)
+            {
+               m_listWidget->setCurrentItem(initialItem);
+            }
+            else
+            {
+               /* the previous playlist must be gone now, just select the first one */
+               m_listWidget->setCurrentItem(firstItem);
+            }
+         }
       }
    }
 }
