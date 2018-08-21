@@ -27,6 +27,7 @@ extern "C" {
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
 #include "../../../paths.h"
+#include "../../../file_path_special.h"
 #ifdef HAVE_MENU
 #include "../../../menu/menu_shader.h"
 #endif
@@ -384,12 +385,14 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
 {
 #ifdef HAVE_MENU
    QString path;
+   QString filter;
    QByteArray pathArray;
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
    const char *pathData = NULL;
    settings_t *settings = config_get_ptr();
    enum rarch_shader_type type = RARCH_SHADER_NONE;
+   bool is_preset = false;
 
    if (!settings)
       return;
@@ -399,7 +402,27 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    if (!menu_shader)
       return;
 
-   path = QFileDialog::getOpenFileName(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET), settings->paths.directory_video_shader);
+   filter = "Shader Preset (";
+
+   /* NOTE: Maybe we should have a way to get a list of all shader types instead of hard-coding this? */
+   if (video_shader_is_supported(RARCH_SHADER_CG) &&
+         video_shader_get_type_from_ext(file_path_str(FILE_PATH_CGP_EXTENSION), &is_preset)
+         != RARCH_SHADER_NONE)
+      filter += QLatin1Literal("*") + file_path_str(FILE_PATH_CGP_EXTENSION);
+
+   if (video_shader_is_supported(RARCH_SHADER_GLSL) &&
+         video_shader_get_type_from_ext(file_path_str(FILE_PATH_GLSLP_EXTENSION), &is_preset)
+         != RARCH_SHADER_NONE)
+      filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_GLSLP_EXTENSION);
+
+   if (video_shader_is_supported(RARCH_SHADER_SLANG) &&
+         video_shader_get_type_from_ext(file_path_str(FILE_PATH_SLANGP_EXTENSION), &is_preset)
+         != RARCH_SHADER_NONE)
+      filter += QLatin1Literal(" *") + file_path_str(FILE_PATH_SLANGP_EXTENSION);
+
+   filter += ")";
+
+   path = QFileDialog::getOpenFileName(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET), settings->paths.directory_video_shader, filter);
 
    if (path.isEmpty())
       return;
@@ -417,12 +440,14 @@ void ShaderParamsDialog::onShaderAddPassClicked()
 {
 #ifdef HAVE_MENU
    QString path;
+   QString filter;
    QByteArray pathArray;
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
    struct video_shader_pass *shader_pass = NULL;
    const char *pathData = NULL;
    settings_t *settings = config_get_ptr();
+   bool is_preset = false;
 
    if (!settings)
       return;
@@ -432,7 +457,27 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    if (!menu_shader)
       return;
 
-   path = QFileDialog::getOpenFileName(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET), settings->paths.directory_video_shader);
+   filter = "Shader (";
+
+   /* NOTE: Maybe we should have a way to get a list of all shader types instead of hard-coding this? */
+   if (video_shader_is_supported(RARCH_SHADER_CG) &&
+         video_shader_get_type_from_ext(".cg", &is_preset)
+         != RARCH_SHADER_NONE)
+      filter += QLatin1Literal("*.cg");
+
+   if (video_shader_is_supported(RARCH_SHADER_GLSL) &&
+         video_shader_get_type_from_ext(".glsl", &is_preset)
+         != RARCH_SHADER_NONE)
+      filter += QLatin1Literal(" *.glsl");
+
+   if (video_shader_is_supported(RARCH_SHADER_SLANG) &&
+         video_shader_get_type_from_ext(".slang", &is_preset)
+         != RARCH_SHADER_NONE)
+      filter += QLatin1Literal(" *.slang");
+
+   filter += ")";
+
+   path = QFileDialog::getOpenFileName(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET), settings->paths.directory_video_shader, filter);
 
    if (path.isEmpty())
       return;
