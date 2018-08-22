@@ -6391,6 +6391,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+#ifdef HAVE_SHADERPIPELINE
             if (video_shader_any_supported())
             {
                CONFIG_UINT(
@@ -6406,6 +6407,7 @@ static bool setting_append_list(
                      general_read_handler);
                menu_settings_list_current_add_range(list, list_info, 0, XMB_SHADER_PIPELINE_LAST-1, 1, true, true);
             }
+#endif
 
             CONFIG_UINT(
                   list, list_info,
