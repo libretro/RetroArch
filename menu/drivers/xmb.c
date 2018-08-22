@@ -2289,6 +2289,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_CONTENT_SETTINGS:
                   case MENU_ENUM_LABEL_UPDATE_ASSETS:
                      return xmb->textures.list[XMB_TEXTURE_QUICKMENU];
+                  case MENU_ENUM_LABEL_START_CORE:
+                     return xmb->textures.list[XMB_TEXTURE_RUN];
                   case MENU_ENUM_LABEL_CORE_LIST:
                   case MENU_ENUM_LABEL_CORE_SETTINGS:
                   case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
