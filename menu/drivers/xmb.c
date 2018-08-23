@@ -449,6 +449,8 @@ const char* xmb_theme_ident(void)
          return "custom";
       case XMB_ICON_THEME_MONOCHROME_INVERTED:
          return "monochrome-inverted";
+      case XMB_ICON_THEME_AUTOMATIC:
+         return "automatic";
       case XMB_ICON_THEME_MONOCHROME:
       default:
          break;
