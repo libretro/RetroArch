@@ -6487,7 +6487,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SHOW_WIMP,
-    "Opens the desktop menu if it was closed"
+    "Opens the desktop menu if it was closed."
     )
 #endif
 MSG_HASH(
