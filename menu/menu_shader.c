@@ -303,7 +303,7 @@ bool menu_shader_manager_save_preset(
             {
                strlcpy(default_preset, "menu",
                      sizeof(default_preset));
-               strlcat(default_preset, 
+               strlcat(default_preset,
                      preset_ext,
                      sizeof(default_preset));
             }

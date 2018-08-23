@@ -41,6 +41,33 @@ enum
    SHADER_PRESET_SAVE_NORMAL
 };
 
+ShaderPass::ShaderPass(struct video_shader_pass *passToCopy) :
+   pass(NULL)
+{
+   if (passToCopy)
+   {
+      pass = (struct video_shader_pass*)calloc(1, sizeof(*pass));
+      memcpy(pass, passToCopy, sizeof(*pass));
+   }
+}
+
+ShaderPass::~ShaderPass()
+{
+   if (pass)
+      free(pass);
+}
+
+ShaderPass& ShaderPass::operator=(const ShaderPass &other)
+{
+   if (this != &other && other.pass)
+   {
+      pass = (struct video_shader_pass*)calloc(1, sizeof(*pass));
+      memcpy(pass, other.pass, sizeof(*pass));
+   }
+
+   return *this;
+}
+
 ShaderParamsDialog::ShaderParamsDialog(QWidget *parent) :
    QDialog(parent)
    ,m_layout()
@@ -323,6 +350,7 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
 
    if (video_shader)
    {
+      ShaderPass tempPass;
       int i;
 
       if (pass >= static_cast<int>(video_shader->passes) - 1)
@@ -342,11 +370,14 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
          }
       }
 
-      std::swap(video_shader->pass[pass], video_shader->pass[pass + 1]);
+      tempPass = ShaderPass(&video_shader->pass[pass]);
+      memcpy(&video_shader->pass[pass], &video_shader->pass[pass + 1], sizeof(struct video_shader_pass));
+      memcpy(&video_shader->pass[pass + 1], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
    if (menu_shader)
    {
+      ShaderPass tempPass;
       int i;
 
       if (pass >= static_cast<int>(menu_shader->passes) - 1)
@@ -366,10 +397,12 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
          }
       }
 
-      std::swap(menu_shader->pass[pass], menu_shader->pass[pass + 1]);
+      tempPass = ShaderPass(&menu_shader->pass[pass]);
+      memcpy(&menu_shader->pass[pass], &menu_shader->pass[pass + 1], sizeof(struct video_shader_pass));
+      memcpy(&menu_shader->pass[pass + 1], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+   reload();
 }
 
 void ShaderParamsDialog::onShaderPassMoveUpClicked()
@@ -401,12 +434,11 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
 
    if (video_shader)
    {
+      ShaderPass tempPass;
       int i;
 
       if (pass > static_cast<int>(video_shader->passes) - 1)
          return;
-
-      std::swap(video_shader->pass[pass - 1], video_shader->pass[pass]);
 
       for (i = 0; i < static_cast<int>(video_shader->num_parameters); i++)
       {
@@ -421,16 +453,19 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
             param->pass += 1;
          }
       }
+
+      tempPass = ShaderPass(&video_shader->pass[pass - 1]);
+      memcpy(&video_shader->pass[pass - 1], &video_shader->pass[pass], sizeof(struct video_shader_pass));
+      memcpy(&video_shader->pass[pass], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
    if (menu_shader)
    {
+      ShaderPass tempPass;
       int i;
 
       if (pass > static_cast<int>(menu_shader->passes) - 1)
          return;
-
-      std::swap(menu_shader->pass[pass - 1], menu_shader->pass[pass]);
 
       for (i = 0; i < static_cast<int>(menu_shader->num_parameters); i++)
       {
@@ -445,9 +480,13 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
             param->pass += 1;
          }
       }
+
+      tempPass = ShaderPass(&menu_shader->pass[pass - 1]);
+      memcpy(&menu_shader->pass[pass - 1], &menu_shader->pass[pass], sizeof(struct video_shader_pass));
+      memcpy(&menu_shader->pass[pass], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+   reload();
 }
 
 void ShaderParamsDialog::onShaderLoadPresetClicked()
@@ -1196,6 +1235,10 @@ void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, in
       slider->setSingleStep(1);
       slider->setValue(value);
       slider->setProperty("param", parameter);
+
+      struct video_shader *video_shader = NULL;
+
+      getShaders(NULL, &video_shader);
 
       connect(slider, SIGNAL(valueChanged(int)), this, SLOT(onShaderParamSliderValueChanged(int)));
 

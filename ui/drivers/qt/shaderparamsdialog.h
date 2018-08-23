@@ -4,12 +4,25 @@
 #include <QDialog>
 #include <QPointer>
 
+extern "C" {
+#include "../.././gfx/video_shader_parse.h"
+}
+
 class QCloseEvent;
 class QResizeEvent;
 class QVBoxLayout;
 class QFormLayout;
 class QLayout;
 class QScrollArea;
+
+class ShaderPass
+{
+public:
+   ShaderPass(struct video_shader_pass *passToCopy = NULL);
+   ~ShaderPass();
+   ShaderPass& operator=(const ShaderPass &other);
+   struct video_shader_pass *pass;
+};
 
 class ShaderParamsDialog : public QDialog
 {
