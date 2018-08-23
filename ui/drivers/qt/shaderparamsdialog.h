@@ -48,7 +48,7 @@ private slots:
    void onShaderPassMoveUpClicked();
    void onShaderResetPass(int pass);
    void onShaderResetAllPasses();
-   void onShaderResetParameter(int parameter);
+   void onShaderResetParameter(QString parameter);
    void onShaderLoadPresetClicked();
    void onShaderAddPassClicked();
    void onShaderSavePresetAsClicked();
@@ -62,7 +62,7 @@ private slots:
    void buildLayout();
 private:
    QString getFilterLabel(unsigned filter);
-   void addShaderParam(struct video_shader_parameter *param, int parameter, QFormLayout *form);
+   void addShaderParam(struct video_shader_parameter *param, QFormLayout *form);
    void getShaders(struct video_shader **menu_shader, struct video_shader **video_shader);
    void saveShaderPreset(const char *path, unsigned action_type);
 

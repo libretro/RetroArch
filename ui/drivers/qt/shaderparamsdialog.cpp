@@ -583,7 +583,7 @@ void ShaderParamsDialog::onShaderResetPass(int pass)
    reload();
 }
 
-void ShaderParamsDialog::onShaderResetParameter(int parameter)
+void ShaderParamsDialog::onShaderResetParameter(QString parameter)
 {
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
@@ -594,25 +594,35 @@ void ShaderParamsDialog::onShaderResetParameter(int parameter)
    if (menu_shader)
    {
       struct video_shader_parameter *param = NULL;
+      int i;
 
-      if (parameter < 0 || parameter >= static_cast<int>(menu_shader->num_parameters))
-         return;
+      for (i = 0; i < static_cast<int>(menu_shader->num_parameters); i++)
+      {
+         QString id = menu_shader->parameters[i].id;
 
-      param = &menu_shader->parameters[parameter];
+         if (id == parameter)
+            param = &menu_shader->parameters[i];
+      }
 
-      param->current = param->initial;
+      if (param)
+         param->current = param->initial;
    }
 
    if (video_shader)
    {
       struct video_shader_parameter *param = NULL;
+      int i;
 
-      if (parameter < 0 || parameter >= static_cast<int>(video_shader->num_parameters))
-         return;
+      for (i = 0; i < static_cast<int>(video_shader->num_parameters); i++)
+      {
+         QString id = video_shader->parameters[i].id;
 
-      param = &video_shader->parameters[parameter];
+         if (id == parameter)
+            param = &video_shader->parameters[i];
+      }
 
-      param->current = param->initial;
+      if (param)
+         param->current = param->initial;
    }
 
    reload();
@@ -897,11 +907,21 @@ void ShaderParamsDialog::buildLayout()
       if (video_shader->passes == 0)
          setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
    }
+   /* Normally we'd only use video_shader, but the vulkan driver returns a NULL shader when there
+    * are zero passes, so just fall back to menu_shader.
+    */
+   else if (menu_shader)
+   {
+      avail_shader = menu_shader;
+
+      if (menu_shader->passes == 0)
+         setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
+   }
    else
    {
       setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
 
-      /* video_shader isn't available yet, just keep retrying until it is */
+      /* no shader is available yet, just keep retrying until it is */
       QTimer::singleShot(0, this, SLOT(buildLayout()));
       return;
    }
@@ -1090,7 +1110,7 @@ void ShaderParamsDialog::buildLayout()
          if (param->pass != i)
             continue;
 
-         addShaderParam(param, j, form);
+         addShaderParam(param, form);
       }
    }
 
@@ -1117,8 +1137,7 @@ void ShaderParamsDialog::onParameterLabelContextMenuRequested(const QPoint&)
    QList<QAction*> actions;
    QScopedPointer<QAction> resetParamAction;
    QVariant paramVariant;
-   int parameter = 0;
-   bool ok = false;
+   QString parameter;
 
    label = qobject_cast<QLabel*>(sender());
 
@@ -1130,10 +1149,7 @@ void ShaderParamsDialog::onParameterLabelContextMenuRequested(const QPoint&)
    if (!paramVariant.isValid())
       return;
 
-   parameter = paramVariant.toInt(&ok);
-
-   if (!ok)
-      return;
+   parameter = paramVariant.toString();
 
    resetParamAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER), 0));
 
@@ -1197,9 +1213,10 @@ void ShaderParamsDialog::onGroupBoxContextMenuRequested(const QPoint&)
    }
 }
 
-void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, int parameter, QFormLayout *form)
+void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, QFormLayout *form)
 {
    QString desc = param->desc;
+   QString parameter = param->id;
    QLabel *label = new QLabel(desc);
 
    label->setProperty("parameter", parameter);
@@ -1294,8 +1311,8 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
 
    if (paramVariant.isValid())
    {
+      QString parameter = paramVariant.toString();
       bool ok = false;
-      int parameter = paramVariant.toInt(&ok);
 
       if (!ok)
          return;
@@ -1303,8 +1320,15 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
       if (menu_shader)
       {
          struct video_shader_parameter *param = NULL;
+         int i;
 
-         param = &menu_shader->parameters[parameter];
+         for (i = 0; i < static_cast<int>(menu_shader->num_parameters); i++)
+         {
+            QString id = menu_shader->parameters[i].id;
+
+            if (id == parameter)
+               param = &menu_shader->parameters[i];
+         }
 
          if (param)
             param->current = (checkBox->isChecked() ? param->maximum : param->minimum);
@@ -1313,8 +1337,15 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
       if (video_shader)
       {
          struct video_shader_parameter *param = NULL;
+         int i;
 
-         param = &video_shader->parameters[parameter];
+         for (i = 0; i < video_shader->num_parameters; i++)
+         {
+            QString id = video_shader->parameters[i].id;
+
+            if (id == parameter)
+               param = &video_shader->parameters[i];
+         }
 
          if (param)
             param->current = (checkBox->isChecked() ? param->maximum : param->minimum);
@@ -1341,23 +1372,43 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
 
    if (paramVariant.isValid())
    {
-      bool ok = false;
-      int parameter = paramVariant.toInt(&ok);
+      QString parameter = paramVariant.toString();
 
-      if (ok)
+      if (menu_shader)
       {
-         if (menu_shader)
-         {
-            struct video_shader_parameter *param = &menu_shader->parameters[parameter];
+         struct video_shader_parameter *param = NULL;
+         int i;
 
+         for (i = 0; i < static_cast<int>(menu_shader->num_parameters); i++)
+         {
+            QString id = menu_shader->parameters[i].id;
+
+            if (id == parameter)
+               param = &menu_shader->parameters[i];
+         }
+
+         if (param)
+         {
             newValue = MainWindow::lerp(0, 100, param->minimum, param->maximum, slider->value());
             param->current = newValue;
          }
+      }
 
-         if (video_shader)
+      if (video_shader)
+      {
+         struct video_shader_parameter *param = NULL;
+         int i;
+
+         for (i = 0; i < video_shader->num_parameters; i++)
          {
-            struct video_shader_parameter *param = &video_shader->parameters[parameter];
+            QString id = video_shader->parameters[i].id;
 
+            if (id == parameter)
+               param = &video_shader->parameters[i];
+         }
+
+         if (param)
+         {
             newValue = MainWindow::lerp(0, 100, param->minimum, param->maximum, slider->value());
             param->current = newValue;
          }
@@ -1417,28 +1468,48 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
 
    if (paramVariant.isValid())
    {
-      bool ok = false;
-      int parameter = paramVariant.toInt(&ok);
+      QString parameter = paramVariant.toString();
 
-      if (ok)
+      double newValue = 0.0;
+
+      if (menu_shader)
       {
-         double newValue = 0.0;
+         struct video_shader_parameter *param = NULL;
+         int i;
 
-         if (menu_shader)
+         for (i = 0; i < static_cast<int>(menu_shader->num_parameters); i++)
          {
-            struct video_shader_parameter *param = &menu_shader->parameters[parameter];
+            QString id = menu_shader->parameters[i].id;
 
+            if (id == parameter)
+               param = &menu_shader->parameters[i];
+         }
+
+         if (param)
+         {
             param->current = value;
             newValue = MainWindow::lerp(param->minimum, param->maximum, 0, 100, param->current);
             slider->blockSignals(true);
             slider->setValue(newValue);
             slider->blockSignals(false);
          }
+      }
 
-         if (video_shader)
+      if (video_shader)
+      {
+         struct video_shader_parameter *param = NULL;
+         int i;
+
+         for (i = 0; i < video_shader->num_parameters; i++)
          {
-            struct video_shader_parameter *param = &video_shader->parameters[parameter];
+            QString id = video_shader->parameters[i].id;
 
+            if (id == parameter)
+               param = &video_shader->parameters[i];
+         }
+
+         if (param)
+         {
             param->current = value;
             newValue = MainWindow::lerp(param->minimum, param->maximum, 0, 100, param->current);
             slider->blockSignals(true);
@@ -1477,28 +1548,48 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
 
    if (paramVariant.isValid())
    {
-      bool ok = false;
-      int parameter = paramVariant.toInt(&ok);
+      QString parameter = paramVariant.toString();
 
-      if (ok)
+      double newValue = 0.0;
+
+      if (menu_shader)
       {
-         double newValue = 0.0;
+         struct video_shader_parameter *param = NULL;
+         int i;
 
-         if (menu_shader)
+         for (i = 0; i < static_cast<int>(menu_shader->num_parameters); i++)
          {
-            struct video_shader_parameter *param = &menu_shader->parameters[parameter];
+            QString id = menu_shader->parameters[i].id;
 
+            if (id == parameter)
+               param = &menu_shader->parameters[i];
+         }
+
+         if (param)
+         {
             param->current = value;
             newValue = MainWindow::lerp(param->minimum, param->maximum, 0, 100, param->current);
             slider->blockSignals(true);
             slider->setValue(newValue);
             slider->blockSignals(false);
          }
+      }
 
-         if (video_shader)
+      if (video_shader)
+      {
+         struct video_shader_parameter *param = NULL;
+         int i;
+
+         for (i = 0; i < video_shader->num_parameters; i++)
          {
-            struct video_shader_parameter *param = &video_shader->parameters[parameter];
+            QString id = video_shader->parameters[i].id;
 
+            if (id == parameter)
+               param = &video_shader->parameters[i];
+         }
+
+         if (param)
+         {
             param->current = value;
             newValue = MainWindow::lerp(param->minimum, param->maximum, 0, 100, param->current);
             slider->blockSignals(true);
