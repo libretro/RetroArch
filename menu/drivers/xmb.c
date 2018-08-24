@@ -2279,12 +2279,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       /* Menu icons are here waiting for theme support*/
       {
             settings_t *settings = config_get_ptr();
-            if (settings->uints.menu_xmb_theme == XMB_ICON_THEME_MONOCHROME ||
-               settings->uints.menu_xmb_theme == XMB_ICON_THEME_MONOCHROME_INVERTED ||
-               settings->uints.menu_xmb_theme == XMB_ICON_THEME_CUSTOM ||
-               settings->uints.menu_xmb_theme == XMB_ICON_THEME_DOTART ||
-               settings->uints.menu_xmb_theme == XMB_ICON_THEME_RETROSYSTEM
-            )
+            if (settings->uints.menu_xmb_theme != XMB_ICON_THEME_FLATUI ||
+                settings->uints.menu_xmb_theme != XMB_ICON_THEME_NEOACTIVE ||
+                settings->uints.menu_xmb_theme != XMB_ICON_THEME_RETROACTIVE ||
+                settings->uints.menu_xmb_theme != XMB_ICON_THEME_PIXEL )
             {
                switch (enum_idx)
                {
