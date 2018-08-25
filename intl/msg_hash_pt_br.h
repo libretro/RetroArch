@@ -7023,7 +7023,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
-    "Pesquisar Memória por Valores
+    "Pesquisar Memória por Valores"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQPLUS,
