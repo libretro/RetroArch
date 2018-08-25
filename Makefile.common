@@ -1141,7 +1141,7 @@ ifeq ($(HAVE_VULKAN), 1)
       CXXFLAGS += -fpermissive
    endif
 
-   CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses
+   CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-reorder -Wno-parentheses
 
    OBJ += gfx/drivers/vulkan.o \
           gfx/common/vulkan_common.o \
