@@ -1576,6 +1576,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_MAIN_DEINIT:
          if (!rarch_is_inited)
             return false;
+         libretro_free_system_info(&runloop_system.info);
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
          command_event(CMD_EVENT_COMMAND_DEINIT, NULL);
          command_event(CMD_EVENT_REMOTE_DEINIT, NULL);
