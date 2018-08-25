@@ -992,6 +992,7 @@ void MainWindow::addPlaylistHashToGrid(const QVector<QHash<QString, QString> > &
       item->widget->setLayout(new QVBoxLayout());
       item->widget->setObjectName("thumbnailWidget");
       item->widget->setProperty("hash", QVariant::fromValue<QHash<QString, QString> >(hash));
+      item->widget->setProperty("image_path", imagePath);
 
       connect(item->widget, SIGNAL(mouseDoubleClicked()), this, SLOT(onGridItemDoubleClicked()));
       connect(item->widget, SIGNAL(mousePressed()), this, SLOT(onGridItemClicked()));
