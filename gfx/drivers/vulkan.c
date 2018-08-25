@@ -744,6 +744,9 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 
    memset(&info, 0, sizeof(info));
 
+   if (!vk->context)
+      return false;
+
    info.device                = vk->context->device;
    info.gpu                   = vk->context->gpu;
    info.memory_properties     = &vk->context->memory_properties;
@@ -832,7 +835,7 @@ static bool vulkan_init_filter_chain(vk_t *vk)
 
 static void vulkan_init_resources(vk_t *vk)
 {
-   if (!vk)
+   if (!vk->context)
       return;
 
    vk->num_swapchain_images = vk->context->num_swapchain_images;
@@ -854,6 +857,9 @@ static void vulkan_init_static_resources(vk_t *vk)
    /* Create the pipeline cache. */
    VkPipelineCacheCreateInfo cache   = {
       VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
+
+   if (!vk->context)
+      return;
 
    vkCreatePipelineCache(vk->context->device,
          &cache, NULL, &vk->pipelines.cache);
@@ -2356,6 +2362,9 @@ static void vulkan_viewport_info(void *data, struct video_viewport *vp)
    vk_t *vk = (vk_t*)data;
 
    video_driver_get_size(&width, &height);
+
+   if (!vk)
+      return;
 
    /* Make sure we get the correct viewport. */
    vulkan_set_viewport(vk, width, height, false, true);
