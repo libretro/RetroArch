@@ -48,6 +48,8 @@ extern "C" {
 #define ALL_PLAYLISTS_TOKEN "|||ALL|||"
 #define ICON_PATH "/xmb/dot-art/png/"
 #define THUMBNAIL_BOXART "Named_Boxarts"
+#define THUMBNAIL_SCREENSHOT "Named_Snaps"
+#define THUMBNAIL_TITLE "Named_Titles"
 
 class QApplication;
 class QCloseEvent;
@@ -295,6 +297,8 @@ signals:
    void showErrorMessageDeferred(QString msg);
    void showInfoMessageDeferred(QString msg);
    void extractArchiveDeferred(QString path);
+   void itemChanged();
+   void gotThumbnailDownload(QString system, QString title);
 
 public slots:
    void onBrowserDownloadsClicked();
@@ -333,6 +337,7 @@ public slots:
    void updateRetroArchNightly();
    void onUpdateRetroArchFinished(bool success);
    void deferReloadShaderParams();
+   void downloadThumbnail(QString system, QString title, QUrl url = QUrl());
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
@@ -374,6 +379,14 @@ private slots:
    void onShowErrorMessage(QString msg);
    void onShowInfoMessage(QString msg);
    void onContributorsClicked();
+   void onThumbnailDownloadNetworkError(QNetworkReply::NetworkError code);
+   void onThumbnailDownloadNetworkSslErrors(const QList<QSslError> &errors);
+   void onThumbnailDownloadFinished();
+   void onThumbnailDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+   void onThumbnailDownloadReadyRead();
+   void onThumbnailDownloadCanceled();
+   void onItemChanged();
+   void onDownloadThumbnail(QString system, QString title);
    int onExtractArchive(QString path);
 
 private:
@@ -452,6 +465,10 @@ private:
    QProgressDialog *m_updateProgressDialog;
    QFile m_updateFile;
    QPointer<QNetworkReply> m_updateReply;
+   QProgressDialog *m_thumbnailDownloadProgressDialog;
+   QFile m_thumbnailDownloadFile;
+   QPointer<QNetworkReply> m_thumbnailDownloadReply;
+   QStringList m_pendingThumbnailDownloadTypes;
 
 protected:
    void closeEvent(QCloseEvent *event);

@@ -338,6 +338,7 @@ void MainWindow::updateRetroArchNightly()
    m_updateProgressDialog->show();
 
    m_updateReply = m_networkManager->get(request);
+
    reply = m_updateReply.data();
 
    /* make sure any previous connection is removed first */

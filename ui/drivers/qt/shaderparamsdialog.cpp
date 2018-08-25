@@ -1339,7 +1339,7 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
          struct video_shader_parameter *param = NULL;
          int i;
 
-         for (i = 0; i < video_shader->num_parameters; i++)
+         for (i = 0; i < static_cast<int>(video_shader->num_parameters); i++)
          {
             QString id = video_shader->parameters[i].id;
 
@@ -1399,7 +1399,7 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
          struct video_shader_parameter *param = NULL;
          int i;
 
-         for (i = 0; i < video_shader->num_parameters; i++)
+         for (i = 0; i < static_cast<int>(video_shader->num_parameters); i++)
          {
             QString id = video_shader->parameters[i].id;
 
@@ -1500,7 +1500,7 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
          struct video_shader_parameter *param = NULL;
          int i;
 
-         for (i = 0; i < video_shader->num_parameters; i++)
+         for (i = 0; i < static_cast<int>(video_shader->num_parameters); i++)
          {
             QString id = video_shader->parameters[i].id;
 
@@ -1580,7 +1580,7 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
          struct video_shader_parameter *param = NULL;
          int i;
 
-         for (i = 0; i < video_shader->num_parameters; i++)
+         for (i = 0; i < static_cast<int>(video_shader->num_parameters); i++)
          {
             QString id = video_shader->parameters[i].id;
 

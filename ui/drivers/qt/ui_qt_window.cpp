@@ -85,8 +85,6 @@ extern "C" {
 #endif
 
 #define GENERIC_FOLDER_ICON "/xmb/dot-art/png/folder.png"
-#define THUMBNAIL_SCREENSHOT "Named_Snaps"
-#define THUMBNAIL_TITLE "Named_Titles"
 #define HIRAGANA_START 0x3041U
 #define HIRAGANA_END 0x3096U
 #define KATAKANA_START 0x30A1U
@@ -318,6 +316,9 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_updateProgressDialog(new QProgressDialog())
    ,m_updateFile()
    ,m_updateReply()
+   ,m_thumbnailDownloadProgressDialog(new QProgressDialog())
+   ,m_thumbnailDownloadReply()
+   ,m_pendingThumbnailDownloadTypes()
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -338,6 +339,7 @@ MainWindow::MainWindow(QWidget *parent) :
    qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
 
    m_updateProgressDialog->cancel();
+   m_thumbnailDownloadProgressDialog->cancel();
 
    m_gridProgressWidget = new QWidget();
    gridProgressLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PROGRESS), m_gridProgressWidget);
@@ -535,6 +537,9 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(m_gridLayoutWidget, SIGNAL(filesDropped(QStringList)), this, SLOT(onPlaylistFilesDropped(QStringList)));
    connect(m_gridLayoutWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
 
+   connect(this, SIGNAL(itemChanged()), this, SLOT(onItemChanged()));
+   connect(this, SIGNAL(gotThumbnailDownload(QString,QString)), this, SLOT(onDownloadThumbnail(QString,QString)));
+
    /* make sure these use an auto connection so it will be queued if called from a different thread (some facilities in RA log messages from other threads) */
    connect(this, SIGNAL(gotLogMessage(const QString&)), this, SLOT(onGotLogMessage(const QString&)), Qt::AutoConnection);
    connect(this, SIGNAL(gotStatusMessage(QString,unsigned,unsigned,bool)), this, SLOT(onGotStatusMessage(QString,unsigned,unsigned,bool)), Qt::AutoConnection);
@@ -579,6 +584,29 @@ MainWindow::~MainWindow()
       delete m_thumbnailPixmap3;
 
    removeGridItems();
+}
+
+void MainWindow::onItemChanged()
+{
+   ViewType viewType = getCurrentViewType();
+
+   currentItemChanged(getCurrentContentHash());
+
+   if (viewType == VIEW_TYPE_ICONS)
+   {
+      int i;
+
+      for (i = 0; i < m_gridItems.count(); i++)
+      {
+         const QPointer<GridItem> &item = m_gridItems.at(i);
+
+         if (item->widget == m_currentGridWidget)
+         {
+            loadImageDeferred(item.data(), m_currentGridWidget->property("image_path").toString());
+            break;
+         }
+      }
+   }
 }
 
 QString MainWindow::getSpecialPlaylistPath(SpecialPlaylist playlist)

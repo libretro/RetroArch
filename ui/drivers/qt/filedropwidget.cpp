@@ -81,6 +81,7 @@ void FileDropWidget::dropEvent(QDropEvent *event)
 void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 {
    QScopedPointer<QMenu> menu;
+   QScopedPointer<QAction> downloadThumbnailAction;
    QScopedPointer<QAction> addEntryAction;
    QScopedPointer<QAction> addFilesAction;
    QScopedPointer<QAction> addFolderAction;
@@ -92,12 +93,14 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 
    menu.reset(new QMenu(this));
 
+   downloadThumbnailAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL)), this));
    addEntryAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY)), this));
    addFilesAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES)), this));
    addFolderAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FOLDER)), this));
    editAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_EDIT)), this));
    deleteAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE)), this));
 
+   menu->addAction(downloadThumbnailAction.data());
    menu->addAction(addEntryAction.data());
    menu->addAction(addFilesAction.data());
    menu->addAction(addFolderAction.data());
@@ -113,7 +116,30 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
    if (!selectedAction)
       return;
 
-   if (selectedAction == addFilesAction.data())
+   if (selectedAction == downloadThumbnailAction.data())
+   {
+      QHash<QString, QString> hash = getCurrentContentHash();
+      QString system = QFileInfo(getCurrentPlaylistPath()).completeBaseName();
+      QString path = hash.value("label");
+
+      if (!path.isEmpty())
+      {
+         QString title = QFileInfo(path).completeBaseName();
+
+         if (m_pendingThumbnailDownloadTypes.isEmpty())
+         {
+            m_pendingThumbnailDownloadTypes.append(THUMBNAIL_BOXART);
+            m_pendingThumbnailDownloadTypes.append(THUMBNAIL_SCREENSHOT);
+            m_pendingThumbnailDownloadTypes.append(THUMBNAIL_TITLE);
+            downloadThumbnail(system, title);
+         }
+         else
+         {
+            showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+         }
+      }
+   }
+   else if (selectedAction == addFilesAction.data())
    {
       QStringList filePaths = QFileDialog::getOpenFileNames(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES));
 
