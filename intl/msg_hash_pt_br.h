@@ -6719,7 +6719,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
-    "Ver Coincidencia #"
+    "Ver Coincidência #"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
@@ -6727,11 +6727,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
-    "Criar Código de Coincidencia #"
+    "Criar Código de Coincidência #"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
-    "Excluir Coincidencia #"
+    "Excluir Coincidência #"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
@@ -6831,95 +6831,95 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_DISABLED,
-    "<Disabled>"
+    "<Desabilitado>"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
-    "Set To Value"
+    "Ajustar Valor"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_INCREASE_VALUE,
-    "Increase By Value"
+    "Aumentar por Valor"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_DECREASE_VALUE,
-    "Decrease By Value"
+    "Diminuir por Valor"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
-    "Run next cheat if value = memory"
+    "Executar próxima trapaça se valor for igual à memória"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
-    "Run next cheat if value != memory"
+    "Executar próxima trapaça se valor for diferente da memória"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
-    "Run next cheat if value < memory"
+    "Executar próxima trapaça se valor for menor que a memória"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
-    "Run next cheat if value > memory"
+    "Executar próxima trapaça se valor for maior que a memória"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,
-    "<Disabled>"
+    "<Desabilitado>"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
-    "Changes"
+    "Alterações"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
-    "Does Not Change"
+    "Não Altera"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE,
-    "Increases"
+    "Aumenta"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE,
-    "Decreases"
+    "Diminui"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_EQ_VALUE,
-    "= Rumble Value"
+    "Igual Ao Valor da Vibração"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
-    "!= Rumble Value"
+    "Diferente Ao Valor da Vibração"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
-    "< Rumble Value"
+    "Menor Ao Valor da Vibração"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
-    "> Rumble Value"
+    "Maior Ao Valor da Vibração"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
-    "1-bit, max value = 0x01"
+    "1-bit, valor máx. = 0x01"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
-    "2-bit, max value = 0x03"
+    "2-bit, valor máx. = 0x03"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_4,
-    "4-bit, max value = 0x0F"
+    "4-bit, valor máx. = 0x0F"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_8,
-    "8-bit, max value = 0xFF"
+    "8-bit, valor máx. = 0xFF"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
-    "16-bit, max value = 0xFFFF"
+    "16-bit, valor máx. = 0xFFFF"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
-    "32-bit, max value = 0xFFFFFFFF"
+    "32-bit, valor máx. = 0xFFFFFFFF"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_PORT_0,
@@ -6991,135 +6991,135 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
-    "Start or Continue Cheat Search"
+    "Iniciar ou Continuar a Pesquisa de Trapaças"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
-    "Start or Restart Cheat Search"
+    "Iniciar ou Reiniciar a Pesquisa de Trapaças"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
-    "Search Memory For Values"
+    "Pesquisar Memória por Valores"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LT,
-    "Search Memory For Values"
+    "Pesquisar Memória por Valores"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GT,
-    "Search Memory For Values"
+    "Pesquisar Memória por Valores"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQ,
-    "Search Memory For Values"
+    "Pesquisar Memória por Valores"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GTE,
-    "Search Memory For Values"
+    "Pesquisar Memória por Valores"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LTE,
-    "Search Memory For Values"
+    "Pesquisar Memória por Valores"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
-    "Search Memory For Values"
+    "Pesquisar Memória por Valores"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQPLUS,
-    "Search Memory For Values"
+    "Pesquisar Memória por Valores"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
-    "Search Memory For Values"
+    "Pesquisar Memória por Valores"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-    "Add the %u Matches to Your List"
+    "Adicionar as %u Coincidências para Sua Lista"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
-    "View the List of %u Matches"
+    "Ver Lista de %u Coincidências"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_CREATE_OPTION,
-    "Create Code From This Match"
+    "Criar Código Desta CoincidênciaCoincidência"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
-    "Delete This Match"
+    "Excluir Esta Coincidência"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
-    "Add New Code to Top"
+    "Adicionar Novo Código no Início"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
-    "Add New Code to Bottom"
+    "Adicionar Novo Código no Final"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
-    "Delete All Codes"
+    "Excluir Todas as Trapaças"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
-    "Reload Game-Specific Cheats"
+    "Recarregar Trapaças Específicas do Jogo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
-    "Equal to %u (%X)"
+    "Igual a %u (%X)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL,
-    "Less Than Before"
+    "Menos do que Antes"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL,
-    "Greater Than Before"
+    "Maior que Antes"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL,
-    "Less Than or Equal To Before"
+    "Menos ou Igual a Antes"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL,
-    "Greater Than or Equal To Before"
+    "Maior ou Igual a Antes"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL,
-    "Equal to Before"
+    "Igual a Antes"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL,
-    "Not Equal to Before"
+    "Diferente a Antes"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
-    "Equal to Before+%u (%X)"
+    "Igual a Depois+%u (%X)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
-    "Equal to Before-%u (%X)"
+    "Igual a Antes-%u (%X)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
-    "Start or Continue Cheat Search"
+    "Iniciar ou Continuar Pesquisa de Trapaças"
     )
 MSG_HASH(
     MSG_CHEAT_INIT_SUCCESS,
-    "Successfully started cheat search"
+    "Pesquisa de trapaças iniciada corretamente"
     )
 MSG_HASH(
     MSG_CHEAT_INIT_FAIL,
-    "Failed to start cheat search"
+    "Falha ao iniciar a pesquisa de trapaças"
     )
 MSG_HASH(
     MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-    "Searching has not been initialized/started"
+    "A pesquisa não foi iniciada"
     )
 MSG_HASH(
     MSG_CHEAT_SEARCH_FOUND_MATCHES,
-    "New match count = %u"
+    "Número de coincidências  = %u"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
@@ -7127,59 +7127,59 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-    "Added %u matches"
+    "Adicionadas %u coincidências"
     )
 MSG_HASH(
     MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-    "Failed to add matches"
+    "Falha ao adicionar coincidências"
     )
 MSG_HASH(
     MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-    "Created code from match"
+    "Código criado da coincidência"
     )
 MSG_HASH(
     MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-    "Failed to create code"
+    "Falha ao criar o código"
     )
 MSG_HASH(
     MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-    "Deleted match"
+    "Excluir coincidência"
     )
 MSG_HASH(
     MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
-    "Not enough room.  The total number of cheats you can have is 100."
+    "Não há espaço suficiente. O máximo é 100 trapaças"
     )
 MSG_HASH(
     MSG_CHEAT_ADD_TOP_SUCCESS,
-    "New cheat added to top of list."
+    "Nova trapaça adicionada ao início da lista."
     )
 MSG_HASH(
     MSG_CHEAT_ADD_BOTTOM_SUCCESS,
-    "New cheat added to bottom of list."
+    "Nova trapaça adicionada ao final da lista."
     )
 MSG_HASH(
     MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
-    "Press right five times to delete all cheats."
+    "Pressione direita cinco vezes para excluir todas as trapaças."
     )
 MSG_HASH(
     MSG_CHEAT_DELETE_ALL_SUCCESS,
-    "All cheats deleted."
+    "Todas as trapaças foram excluídas."
     )
 MSG_HASH(
     MSG_CHEAT_ADD_BEFORE_SUCCESS,
-    "New cheat added before this one."
+    "Nova trapaça adicionada antes deste."
     )
 MSG_HASH(
     MSG_CHEAT_ADD_AFTER_SUCCESS,
-    "New cheat added after this one."
+    "Nova trapaça adicionada depois deste."
     )
 MSG_HASH(
     MSG_CHEAT_COPY_BEFORE_SUCCESS,
-    "Cheat copied before this one."
+    "Trapaça copiada antes deste."
     )
 MSG_HASH(
     MSG_CHEAT_COPY_AFTER_SUCCESS,
-    "Cheat copied after this one."
+    "Trapaça copiada depois deste."
     )
 MSG_HASH(
     MSG_CHEAT_DELETE_SUCCESS,
@@ -7191,11 +7191,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
-    "\"Todas Listas de Repr.\" Máx Entradas em Lista:"
+    "\"Todas as Listas de Repr.\" Máx. Entradas em Lista:"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
-    "\"Todas Listas de Repr.\" Máx. Entradas em Grade:"
+    "\"Todas as Listas de Repr.\" Máx. Entradas em Grade:"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
