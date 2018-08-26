@@ -605,6 +605,33 @@ MainWindow::~MainWindow()
    removeGridItems();
 }
 
+QVector<QPair<QString, QString> > MainWindow::getPlaylists()
+{
+   QVector<QPair<QString, QString> > playlists;
+   int i;
+
+   for (i = 0; i < m_listWidget->count(); i++)
+   {
+      QListWidgetItem *item = m_listWidget->item(i);
+      QPair<QString, QString> pair;
+      QString label;
+      QString path;
+
+      if (!item)
+         continue;
+
+      label = item->text();
+      path = item->data(Qt::UserRole).toString();
+
+      pair.first = label;
+      pair.second = path;
+
+      playlists.append(pair);
+   }
+
+   return playlists;
+}
+
 void MainWindow::onItemChanged()
 {
    ViewType viewType = getCurrentViewType();
@@ -633,7 +660,7 @@ QString MainWindow::getSpecialPlaylistPath(SpecialPlaylist playlist)
    switch (playlist)
    {
       case SPECIAL_PLAYLIST_HISTORY:
-         return m_historyPlaylistsItem->data(Qt::UserRole).toString();
+         return (m_historyPlaylistsItem ? m_historyPlaylistsItem->data(Qt::UserRole).toString() : QString());
       default:
          return QString();
    }

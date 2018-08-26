@@ -27,6 +27,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    ,m_saveLastTabCheckBox(new QCheckBox(this))
    ,m_showHiddenFilesCheckBox(new QCheckBox(this))
    ,m_themeComboBox(new QComboBox(this))
+   ,m_startupPlaylistComboBox(new QComboBox(this))
    ,m_highlightColorPushButton(new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CHOOSE), this))
    ,m_highlightColor()
    ,m_highlightColorLabel(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR), this))
@@ -65,6 +66,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST), m_suggestLoadedCoreFirstCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT), m_allPlaylistsListMaxCountSpinBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT), m_allPlaylistsGridMaxCountSpinBox);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST), m_startupPlaylistComboBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME), m_themeComboBox);
    form->addRow(m_highlightColorLabel, m_highlightColorPushButton);
 
@@ -133,7 +135,11 @@ void ViewOptionsDialog::loadViewOptions()
 {
    QColor highlightColor = m_settings->value("highlight_color", QApplication::palette().highlight().color()).value<QColor>();
    QPixmap highlightPixmap(m_highlightColorPushButton->iconSize());
+   QVector<QPair<QString, QString> > playlists = m_mainwindow->getPlaylists();
+   QString initialPlaylist = m_settings->value("initial_playlist", m_mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY)).toString();
    int themeIndex = 0;
+   int playlistIndex = 0;
+   int i;
 
    m_saveGeometryCheckBox->setChecked(m_settings->value("save_geometry", false).toBool());
    m_saveDockPositionsCheckBox->setChecked(m_settings->value("save_dock_positions", false).toBool());
@@ -156,6 +162,20 @@ void ViewOptionsDialog::loadViewOptions()
    }
 
    showOrHideHighlightColor();
+
+   m_startupPlaylistComboBox->clear();
+
+   for (i = 0; i < playlists.count(); i++)
+   {
+      const QPair<QString, QString> &pair = playlists.at(i);
+
+      m_startupPlaylistComboBox->addItem(pair.first, pair.second);
+   }
+
+   playlistIndex = m_startupPlaylistComboBox->findData(initialPlaylist, Qt::UserRole, Qt::MatchFixedString);
+
+   if (playlistIndex >= 0)
+      m_startupPlaylistComboBox->setCurrentIndex(playlistIndex);
 }
 
 void ViewOptionsDialog::showOrHideHighlightColor()
@@ -183,6 +203,7 @@ void ViewOptionsDialog::saveViewOptions()
    m_settings->setValue("suggest_loaded_core_first", m_suggestLoadedCoreFirstCheckBox->isChecked());
    m_settings->setValue("all_playlists_list_max_count", m_allPlaylistsListMaxCountSpinBox->value());
    m_settings->setValue("all_playlists_grid_max_count", m_allPlaylistsGridMaxCountSpinBox->value());
+   m_settings->setValue("initial_playlist", m_startupPlaylistComboBox->currentData(Qt::UserRole).toString());
 
    if (!m_mainwindow->customThemeString().isEmpty())
       m_settings->setValue("custom_theme", m_customThemePath);

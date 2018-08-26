@@ -285,6 +285,7 @@ public:
    QHash<QString, QString> getCurrentContentHash();
    static double lerp(double x, double y, double a, double b, double d);
    QString getSpecialPlaylistPath(SpecialPlaylist playlist);
+   QVector<QPair<QString, QString> > getPlaylists();
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);

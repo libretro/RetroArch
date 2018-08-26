@@ -37,6 +37,7 @@ private:
    QCheckBox *m_saveLastTabCheckBox;
    QCheckBox *m_showHiddenFilesCheckBox;
    QComboBox *m_themeComboBox;
+   QComboBox *m_startupPlaylistComboBox;
    QPushButton *m_highlightColorPushButton;
    QColor m_highlightColor;
    QLabel *m_highlightColorLabel;
