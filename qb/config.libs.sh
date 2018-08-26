@@ -281,6 +281,7 @@ if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
    check_pkgconf QT5CONCURRENT Qt5Concurrent 5.2
    check_pkgconf QT5NETWORK Qt5Network 5.2
    #check_pkgconf QT5WEBENGINE Qt5WebEngine 5.4
+   check_pkgconf OPENSSL openssl 1.0.0
 
    check_val '' QT5CORE -lQt5Core QT5CORE
    check_val '' QT5GUI -lQt5Gui QT5GUI
@@ -288,6 +289,7 @@ if [ "$HAVE_QT" != 'no' ] && [ "$MOC_PATH" != 'none' ]; then
    check_val '' QT5CONCURRENT -lQt5Concurrent QT5CONCURRENT
    check_val '' QT5NETWORK -lQt5Network QT5NETWORK
    #check_val '' QT5WEBENGINE -lQt5WebEngine QT5WEBENGINE
+   check_val '' OPENSSL -lssl OPENSSL
 
    if [ "$HAVE_QT5CORE" = "no" ] || [ "$HAVE_QT5GUI" = "no" ] || [ "$HAVE_QT5WIDGETS" = "no" ] || [ "$HAVE_QT5CONCURRENT" = "no" ] || [ "$HAVE_QT5NETWORK" = "no" ]; then
       die : 'Notice: Not building Qt support, required libraries were not found.'

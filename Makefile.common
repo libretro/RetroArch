@@ -332,6 +332,11 @@ endif
 
 # Qt WIMP GUI
 
+ifeq ($(HAVE_OPENSSL), 1)
+DEFINES += $(OPENSSL_CFLAGS)
+LIBS += $(OPENSSL_LIBS)
+endif
+
 ifeq ($(HAVE_QT), 1)
 OBJ += ui/drivers/ui_qt.o \
        ui/drivers/qt/ui_qt_application.o \
