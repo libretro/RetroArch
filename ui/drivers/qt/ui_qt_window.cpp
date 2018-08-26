@@ -578,11 +578,17 @@ MainWindow::MainWindow(QWidget *parent) :
    removeUpdateTempFiles();
 #ifdef HAVE_OPENSSL
    {
-      const SSL_METHOD* method = TLSv1_method();
+#if OPENSSL_VERSION_AT_LEAST(1,1)
+      const SSL_METHOD *method = TLS_method();
+      SSL_CTX *ctx = SSL_CTX_new(method);
 
+      if (ctx)
+         SSL_CTX_free(ctx);
+#else
+      const SSL_METHOD *method = TLSv1_method();
+      RARCH_LOG("[Qt]: TLS supports %d ciphers.\n", method->num_ciphers());
+#endif
       RARCH_LOG("[Qt]: Using %s\n", OPENSSL_VERSION_TEXT);
-
-      RARCH_LOG("[Qt]: TLSv1 supports %d ciphers.\n", method->num_ciphers());
    }
 #endif
 }
