@@ -120,12 +120,10 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
    {
       QHash<QString, QString> hash = getCurrentContentHash();
       QString system = QFileInfo(getCurrentPlaylistPath()).completeBaseName();
-      QString path = hash.value("label");
+      QString title = hash.value("label");
 
-      if (!path.isEmpty())
+      if (!title.isEmpty())
       {
-         QString title = QFileInfo(path).completeBaseName();
-
          if (m_pendingThumbnailDownloadTypes.isEmpty())
          {
             m_pendingThumbnailDownloadTypes.append(THUMBNAIL_BOXART);
