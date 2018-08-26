@@ -578,7 +578,7 @@ MainWindow::MainWindow(QWidget *parent) :
    removeUpdateTempFiles();
 #ifdef HAVE_OPENSSL
    {
-#if OPENSSL_VERSION_AT_LEAST(1,1)
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
       const SSL_METHOD *method = TLS_method();
       SSL_CTX *ctx = SSL_CTX_new(method);
 
