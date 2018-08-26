@@ -396,7 +396,9 @@ bool core_unload(void)
 {
    video_driver_set_cached_frame_ptr(NULL);
 
-   current_core.retro_deinit();
+   if (current_core.inited)
+      current_core.retro_deinit();
+
    return true;
 }
 
