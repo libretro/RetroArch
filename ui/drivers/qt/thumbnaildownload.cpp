@@ -124,6 +124,7 @@ void MainWindow::onThumbnailDownloadFinished()
       else
       {
          /*emit showErrorMessageDeferred(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": HTTP Code " + QString::number(code));*/
+         m_thumbnailDownloadFile.remove();
 
          RARCH_ERR("[Qt]: Thumbnail download failed with HTTP status code: %d\n", code);
 
