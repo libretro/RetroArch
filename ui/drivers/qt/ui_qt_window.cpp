@@ -73,8 +73,10 @@ extern "C" {
 #include <file/archive_file.h>
 #include <streams/file_stream.h>
 #include <math.h>
+#ifdef HAVE_OPENSSL
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
+#endif
 }
 
 #include "../../../AUTHORS.h"
@@ -574,7 +576,7 @@ MainWindow::MainWindow(QWidget *parent) :
 #endif
 
    removeUpdateTempFiles();
-
+#ifdef HAVE_OPENSSL
    {
       const SSL_METHOD* method = TLSv1_method();
 
@@ -582,6 +584,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
       RARCH_LOG("[Qt]: TLSv1 supports %d ciphers.\n", method->num_ciphers());
    }
+#endif
 }
 
 MainWindow::~MainWindow()
