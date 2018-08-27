@@ -377,6 +377,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    QScopedPointer<QAction> hideAction;
    QScopedPointer<QAction> newPlaylistAction;
    QScopedPointer<QAction> deletePlaylistAction;
+   QScopedPointer<QAction> downloadAllThumbnailsAction;
    QPointer<QAction> selectedAction;
    QPoint cursorPos = QCursor::pos();
    QListWidgetItem *selectedItem = m_listWidget->itemAt(m_listWidget->viewport()->mapFromGlobal(cursorPos));
@@ -527,6 +528,13 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
       menu->addMenu(associateMenu.data());
    }
 
+   if (!specialPlaylist)
+   {
+      downloadAllThumbnailsAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS), this));
+
+      menu->addAction(downloadAllThumbnailsAction.data());
+   }
+
    selectedAction = menu->exec(cursorPos);
 
    if (!selectedAction)
@@ -624,6 +632,13 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
             m_listWidget->setRowHidden(row, false);
          }
       }
+   }
+   else if (selectedItem && !specialPlaylist && selectedAction == downloadAllThumbnailsAction.data())
+   {
+      int row = m_listWidget->row(selectedItem);
+
+      if (row >= 0)
+         downloadAllThumbnails(currentPlaylistFileInfo.completeBaseName());
    }
 
    setCoreActions();
