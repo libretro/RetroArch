@@ -1,4 +1,4 @@
-#include <QDir>
+﻿#include <QDir>
 #include <QApplication>
 #include <QProgressDialog>
 
@@ -157,7 +157,7 @@ void MainWindow::onRetroArchUpdateDownloadFinished()
          if (m_updateFile.rename(newFileName))
          {
             RARCH_LOG("[Qt]: RetroArch update finished downloading successfully.\n");
-            emit extractArchiveDeferred(newFileName);
+            emit extractArchiveDeferred(newFileName, ".", TEMP_EXTENSION, extractCB);
          }
          else
          {
@@ -196,82 +196,6 @@ void MainWindow::onUpdateRetroArchFinished(bool success)
    RARCH_LOG("[Qt]: RetroArch update finished successfully.\n");
 
    emit showInfoMessageDeferred(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED));
-}
-
-int MainWindow::onExtractArchive(QString path)
-{
-   QByteArray pathArray = path.toUtf8();
-   const char *file = pathArray.constData();
-   file_archive_transfer_t state;
-   struct archive_extract_userdata userdata;
-   struct string_list *file_list = file_archive_get_file_list(file, NULL);
-   bool returnerr = true;
-   unsigned i;
-
-   if (!file_list || file_list->size == 0)
-   {
-      showMessageBox("Error: Archive is empty.", MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
-      RARCH_ERR("[Qt]: Downloaded archive is empty?\n");
-      return -1;
-   }
-
-   for (i = 0; i < file_list->size; i++)
-   {
-      QFile fileObj(file_list->elems[i].data);
-
-      if (fileObj.exists())
-      {
-         if (!fileObj.remove())
-         {
-            /* if we cannot delete the existing file to update it, rename it for now and delete later */
-            QFile fileTemp(fileObj.fileName() + TEMP_EXTENSION);
-
-            if (fileTemp.exists())
-            {
-               if (!fileTemp.remove())
-               {
-                  showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
-                  RARCH_ERR("[Qt]: Could not delete file: %s\n", file_list->elems[i].data);
-                  return -1;
-               }
-            }
-
-            if (!fileObj.rename(fileTemp.fileName()))
-            {
-               showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
-               RARCH_ERR("[Qt]: Could not rename file: %s\n", file_list->elems[i].data);
-               return -1;
-            }
-         }
-      }
-   }
-
-   string_list_free(file_list);
-
-   memset(&state, 0, sizeof(state));
-   memset(&userdata, 0, sizeof(userdata));
-
-   state.type = ARCHIVE_TRANSFER_INIT;
-
-   m_updateProgressDialog->setWindowModality(Qt::NonModal);
-   m_updateProgressDialog->setMinimumDuration(0);
-   m_updateProgressDialog->setRange(0, 0);
-   m_updateProgressDialog->setAutoClose(true);
-   m_updateProgressDialog->setAutoReset(true);
-   m_updateProgressDialog->setValue(0);
-   m_updateProgressDialog->setLabelText(QString(msg_hash_to_str(MSG_EXTRACTING)) + "...");
-   m_updateProgressDialog->setCancelButtonText(QString());
-   m_updateProgressDialog->show();
-
-   if (!task_push_decompress(file, ".",
-            NULL, NULL, NULL,
-            extractCB, this))
-   {
-      m_updateProgressDialog->cancel();
-      return -1;
-   }
-
-   return returnerr;
 }
 
 void MainWindow::onUpdateDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)

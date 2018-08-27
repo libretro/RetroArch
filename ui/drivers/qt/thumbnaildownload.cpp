@@ -168,6 +168,8 @@ void MainWindow::onThumbnailDownloadFinished()
       QByteArray errorArray = reply->errorString().toUtf8();
       const char *errorData = errorArray.constData();
 
+      m_thumbnailDownloadFile.remove();
+
       RARCH_ERR("[Qt]: Thumbnail download ended prematurely: %s\n", errorData);
       emit showErrorMessageDeferred(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": Code " + QString::number(code) + ": " + errorData);
    }

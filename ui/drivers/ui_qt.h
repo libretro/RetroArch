@@ -41,6 +41,7 @@
 extern "C" {
 #include <retro_assert.h>
 #include <retro_common_api.h>
+#include <queues/task_queue.h>
 #include "../ui_companion_driver.h"
 #include "../../gfx/video_driver.h"
 }
@@ -297,7 +298,7 @@ signals:
    void gotReloadShaderParams();
    void showErrorMessageDeferred(QString msg);
    void showInfoMessageDeferred(QString msg);
-   void extractArchiveDeferred(QString path);
+   void extractArchiveDeferred(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
    void itemChanged();
    void gotThumbnailDownload(QString system, QString title);
 
@@ -337,8 +338,10 @@ public slots:
    void showDocs();
    void updateRetroArchNightly();
    void onUpdateRetroArchFinished(bool success);
+   void onThumbnailPackExtractFinished(bool success);
    void deferReloadShaderParams();
    void downloadThumbnail(QString system, QString title, QUrl url = QUrl());
+   void downloadAllThumbnails(QString system, QUrl url = QUrl());
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
@@ -371,24 +374,33 @@ private slots:
    void onGridItemClicked(ThumbnailWidget *thumbnailWidget = NULL);
    void onPlaylistFilesDropped(QStringList files);
    void onShaderParamsClicked();
+   void onShowErrorMessage(QString msg);
+   void onShowInfoMessage(QString msg);
+   void onContributorsClicked();
+   void onItemChanged();
+   int onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
+
    void onUpdateNetworkError(QNetworkReply::NetworkError code);
    void onUpdateNetworkSslErrors(const QList<QSslError> &errors);
    void onRetroArchUpdateDownloadFinished();
    void onUpdateDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
    void onUpdateDownloadReadyRead();
    void onUpdateDownloadCanceled();
-   void onShowErrorMessage(QString msg);
-   void onShowInfoMessage(QString msg);
-   void onContributorsClicked();
+
    void onThumbnailDownloadNetworkError(QNetworkReply::NetworkError code);
    void onThumbnailDownloadNetworkSslErrors(const QList<QSslError> &errors);
    void onThumbnailDownloadFinished();
    void onThumbnailDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
    void onThumbnailDownloadReadyRead();
    void onThumbnailDownloadCanceled();
-   void onItemChanged();
    void onDownloadThumbnail(QString system, QString title);
-   int onExtractArchive(QString path);
+
+   void onThumbnailPackDownloadNetworkError(QNetworkReply::NetworkError code);
+   void onThumbnailPackDownloadNetworkSslErrors(const QList<QSslError> &errors);
+   void onThumbnailPackDownloadFinished();
+   void onThumbnailPackDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+   void onThumbnailPackDownloadReadyRead();
+   void onThumbnailPackDownloadCanceled();
 
 private:
    void setCurrentCoreLabel();
@@ -463,13 +475,19 @@ private:
    QElapsedTimer m_statusMessageElapsedTimer;
    QPointer<ShaderParamsDialog> m_shaderParamsDialog;
    QNetworkAccessManager *m_networkManager;
+
    QProgressDialog *m_updateProgressDialog;
    QFile m_updateFile;
    QPointer<QNetworkReply> m_updateReply;
+
    QProgressDialog *m_thumbnailDownloadProgressDialog;
    QFile m_thumbnailDownloadFile;
    QPointer<QNetworkReply> m_thumbnailDownloadReply;
    QStringList m_pendingThumbnailDownloadTypes;
+
+   QProgressDialog *m_thumbnailPackDownloadProgressDialog;
+   QFile m_thumbnailPackDownloadFile;
+   QPointer<QNetworkReply> m_thumbnailPackDownloadReply;
 
 protected:
    void closeEvent(QCloseEvent *event);
