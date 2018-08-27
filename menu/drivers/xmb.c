@@ -2028,6 +2028,13 @@ static void xmb_context_reset_horizontal_list(
                file_path_str(FILE_PATH_PNG_EXTENSION),
                PATH_MAX_LENGTH * sizeof(char));
 
+         /* If the playlist icon doesn't exist return default */
+
+         if (!filestream_exists(texturepath))
+               fill_pathname_join_concat(texturepath, iconpath, "default",
+               file_path_str(FILE_PATH_PNG_EXTENSION),
+               PATH_MAX_LENGTH * sizeof(char));
+
          ti.width         = 0;
          ti.height        = 0;
          ti.pixels        = NULL;
@@ -2045,10 +2052,21 @@ static void xmb_context_reset_horizontal_list(
             image_texture_free(&ti);
          }
 
-         strlcat(iconpath, sysname, PATH_MAX_LENGTH * sizeof(char));
-         fill_pathname_join_delim(content_texturepath, iconpath,
+         fill_pathname_join_delim(sysname, sysname,
                file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
                PATH_MAX_LENGTH * sizeof(char));
+         strlcat(content_texturepath, iconpath, PATH_MAX_LENGTH * sizeof(char));
+         strlcat(content_texturepath, sysname, PATH_MAX_LENGTH * sizeof(char));
+
+         /* If the content icon doesn't exist return default-content */
+
+         if (!filestream_exists(content_texturepath))
+         {
+            strlcat(iconpath, "default", PATH_MAX_LENGTH * sizeof(char));
+            fill_pathname_join_delim(content_texturepath, iconpath,
+                  file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
+                  PATH_MAX_LENGTH * sizeof(char));
+         }
 
          if (image_texture_load(&ti, content_texturepath))
          {
