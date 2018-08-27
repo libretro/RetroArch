@@ -1827,7 +1827,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          VK_DEBUG_REPORT_WARNING_BIT_EXT |
          VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
       info.pfnCallback = vulkan_debug_cb;
-      vkCreateDebugReportCallbackEXT(vk->context.instance, &info, NULL, &vk->context.debug_callback);
+
+      if (vk->context.instance)
+         vkCreateDebugReportCallbackEXT(vk->context.instance, &info, NULL,
+               &vk->context.debug_callback);
    }
    RARCH_LOG("[Vulkan]: Enabling Vulkan debug layers.\n");
 #endif
