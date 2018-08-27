@@ -5295,13 +5295,10 @@ static int xmb_list_push(void *data, void *userdata,
             }
 #endif
 #if defined(HAVE_NETWORKING)
+            if (settings->bools.menu_show_online_updater && !settings->bools.kiosk_mode_enable)
             {
-               settings_t *settings      = config_get_ptr();
-               if (settings->bools.menu_show_online_updater && !settings->bools.kiosk_mode_enable)
-               {
-                  entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
-                  menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
-               }
+               entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 #endif
             if (!settings->bools.menu_content_show_settings && !string_is_empty(settings->paths.menu_content_show_settings_password))
