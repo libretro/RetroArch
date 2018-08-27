@@ -260,14 +260,14 @@ static bool screenshot_dump(
    task->handler     = task_screenshot_handler;
 
    if (use_thread)
-      return screenshot_dump_direct(state);
-   else
    {
       if (!savestate)
-         task->title    = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
+         task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
 
       task_queue_push(task);
    }
+   else
+      return screenshot_dump_direct(state);
 
    return true;
 }
