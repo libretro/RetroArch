@@ -255,6 +255,7 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
 
       if (!m_thumbnailPackDownloadFile.open(QIODevice::WriteOnly))
       {
+         m_thumbnailPackDownloadProgressDialog->cancel();
          showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
          RARCH_ERR("[Qt]: Could not open file for writing: %s\n", fileNameData);
          return;

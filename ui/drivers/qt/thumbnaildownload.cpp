@@ -17,7 +17,6 @@ extern "C" {
 
 #define USER_AGENT "RetroArch-WIMP/" PACKAGE_VERSION
 #define PARTIAL_EXTENSION ".partial"
-#define TEMP_EXTENSION ".tmp"
 #define THUMBNAIL_URL_HEADER "https://github.com/libretro-thumbnails/"
 #define THUMBNAIL_URL_BRANCH "/blob/master/"
 #define THUMBNAIL_IMAGE_EXTENSION ".png"
@@ -255,6 +254,7 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
 
       if (!m_thumbnailDownloadFile.open(QIODevice::WriteOnly))
       {
+         m_thumbnailDownloadProgressDialog->cancel();
          showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
          RARCH_ERR("[Qt]: Could not open file for writing: %s\n", fileNameData);
          return;

@@ -374,10 +374,12 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    QScopedPointer<QMenu> menu;
    QScopedPointer<QMenu> associateMenu;
    QScopedPointer<QMenu> hiddenPlaylistsMenu;
+   QScopedPointer<QMenu> downloadAllThumbnailsMenu;
    QScopedPointer<QAction> hideAction;
    QScopedPointer<QAction> newPlaylistAction;
    QScopedPointer<QAction> deletePlaylistAction;
-   QScopedPointer<QAction> downloadAllThumbnailsAction;
+   QScopedPointer<QAction> downloadAllThumbnailsEntireSystemAction;
+   QScopedPointer<QAction> downloadAllThumbnailsThisPlaylistAction;
    QPointer<QAction> selectedAction;
    QPoint cursorPos = QCursor::pos();
    QListWidgetItem *selectedItem = m_listWidget->itemAt(m_listWidget->viewport()->mapFromGlobal(cursorPos));
@@ -530,9 +532,16 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
    if (!specialPlaylist)
    {
-      downloadAllThumbnailsAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS), this));
+      downloadAllThumbnailsMenu.reset(new QMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS), this));
+      downloadAllThumbnailsMenu->setObjectName("downloadAllThumbnailsMenu");
 
-      menu->addAction(downloadAllThumbnailsAction.data());
+      downloadAllThumbnailsThisPlaylistAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST), downloadAllThumbnailsMenu.data()));
+      downloadAllThumbnailsEntireSystemAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM), downloadAllThumbnailsMenu.data()));
+
+      downloadAllThumbnailsMenu->addAction(downloadAllThumbnailsThisPlaylistAction.data());
+      downloadAllThumbnailsMenu->addAction(downloadAllThumbnailsEntireSystemAction.data());
+
+      menu->addMenu(downloadAllThumbnailsMenu.data());
    }
 
    selectedAction = menu->exec(cursorPos);
@@ -633,12 +642,19 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
          }
       }
    }
-   else if (selectedItem && !specialPlaylist && selectedAction == downloadAllThumbnailsAction.data())
+   else if (selectedItem && !specialPlaylist && selectedAction->parent() == downloadAllThumbnailsMenu.data())
    {
-      int row = m_listWidget->row(selectedItem);
+      if (selectedAction == downloadAllThumbnailsEntireSystemAction.data())
+      {
+         int row = m_listWidget->row(selectedItem);
 
-      if (row >= 0)
-         downloadAllThumbnails(currentPlaylistFileInfo.completeBaseName());
+         if (row >= 0)
+            downloadAllThumbnails(currentPlaylistFileInfo.completeBaseName());
+      }
+      else if (selectedAction == downloadAllThumbnailsThisPlaylistAction.data())
+      {
+         downloadPlaylistThumbnails(currentPlaylistPath);
+      }
    }
 
    setCoreActions();
