@@ -1,3 +1,7 @@
+# v6.4.0
+
+* Added an enumeration with the console identifiers used in RetroAchievements
+
 # v6.3.1
 
 * Pass the peek function and the user data to the Lua functions used in operands.

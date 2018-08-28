@@ -41,6 +41,44 @@ enum {
 };
 
 /*****************************************************************************\
+| Console identifiers                                                         |
+\*****************************************************************************/
+
+enum {
+  RC_CONSOLE_MEGA_DRIVE = 1,
+  RC_CONSOLE_NINTENDO_64 = 2,
+  RC_CONSOLE_SUPER_NINTENDO = 3,
+  RC_CONSOLE_GAMEBOY = 4,
+  RC_CONSOLE_GAMEBOY_ADVANCE = 5,
+  RC_CONSOLE_GAMEBOY_COLOR = 6,
+  RC_CONSOLE_NINTENDO = 7,
+  RC_CONSOLE_PC_ENGINE = 8,
+  RC_CONSOLE_SEGA_CD = 9,
+  RC_CONSOLE_SEGA_32X = 10,
+  RC_CONSOLE_MASTER_SYSTEM = 11,
+  RC_CONSOLE_PLAYSTATION = 12,
+  RC_CONSOLE_ATARI_LYNX = 13,
+  RC_CONSOLE_NEOGEO_POCKET = 14,
+  RC_CONSOLE_GAME_GEAR = 15,
+  RC_CONSOLE_GAMECUBE = 16,
+  RC_CONSOLE_ATARI_JAGUAR = 17,
+  RC_CONSOLE_NINTENDO_DS = 18,
+  RC_CONSOLE_WII = 19,
+  RC_CONSOLE_WII_U = 20,
+  RC_CONSOLE_PLAYSTATION_2 = 21,
+  RC_CONSOLE_XBOX = 22,
+  RC_CONSOLE_SKYNET = 23,
+  RC_CONSOLE_XBOX_ONE = 24,
+  RC_CONSOLE_ATARI_2600 = 25,
+  RC_CONSOLE_MS_DOS = 26,
+  RC_CONSOLE_ARCADE = 27,
+  RC_CONSOLE_VIRTUAL_BOY = 28,
+  RC_CONSOLE_MSX = 29,
+  RC_CONSOLE_COMMODORE_64 = 30,
+  RC_CONSOLE_ZX81 = 31
+};
+
+/*****************************************************************************\
 | Callbacks                                                                   |
 \*****************************************************************************/
 
