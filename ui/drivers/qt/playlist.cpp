@@ -596,10 +596,13 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
       QString newPlaylistPath = playlistDirAbsPath + "/" + name + file_path_str(FILE_PATH_LPL_EXTENSION);
       QFile file(newPlaylistPath);
 
-      if (file.open(QIODevice::WriteOnly))
-         file.close();
+      if (!name.isEmpty())
+      {
+         if (file.open(QIODevice::WriteOnly))
+            file.close();
 
-      reloadPlaylists();
+         reloadPlaylists();
+      }
    }
    else if (selectedItem && selectedAction == hideAction.data())
    {
