@@ -1,3 +1,7 @@
+# v6.5.0
+
+* Added a schema for errors returned by the server
+
 # v6.4.0
 
 * Added an enumeration with the console identifiers used in RetroAchievements

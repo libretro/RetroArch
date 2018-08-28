@@ -502,6 +502,7 @@ enum {
 * `rc_json_login_t`: The login token for the user, given their user name and password.
 * `rc_json_patch_t`: The information about a game, given its identifier. It includes arrays with the achievements and leaderboards for the game.
 * `rc_json_unlocks_t`: The list of achievements already awarded for the player, given the game identifier. Used to avoid the emulator awarding achievements more than once.
+* `rc_json_error_t`: Error messages returned by the server.
 
 For each schema there are two functions, for example:
 

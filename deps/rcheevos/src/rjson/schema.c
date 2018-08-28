@@ -551,6 +551,48 @@ const rc_json_unlocks_t* rc_json_parse_unlocks(void* buffer, const char* json) {
   return (const rc_json_unlocks_t*)rc_json_deserialize(buffer, 0x9b4e2684U, (const uint8_t*)json);
 }
 
+static const rc_json_field_meta_t rc_json_field_meta_error[] = {
+  {
+    /* Metadata for field const char* error;. */
+    /* name_hash */ 0x0d2011cfU,
+    /* type_hash */ 0x00000000U,
+    /* offset    */ RC_JSON_OFFSETOF(rc_json_error_t, error),
+    /* type      */ RC_JSON_TYPE_STRING,
+    /* flags     */ 0
+  },
+  {
+    /* Metadata for field char success;. */
+    /* name_hash */ 0x110461deU,
+    /* type_hash */ 0x00000000U,
+    /* offset    */ RC_JSON_OFFSETOF(rc_json_error_t, success),
+    /* type      */ RC_JSON_TYPE_BOOL,
+    /* flags     */ 0
+  },
+};
+
+static const rc_json_struct_meta_t rc_json_struct_meta_error = {
+  /* fields     */ rc_json_field_meta_error,
+  /* name_hash  */ 0x0d2011cfU,
+  /* size       */ sizeof(rc_json_error_t),
+  /* alignment  */ RC_JSON_ALIGNOF(rc_json_error_t),
+  /* num_fields */ 2
+};
+
+int rc_json_get_error_size(const char* json) {
+  size_t size;
+  int res = rc_json_get_size(&size, 0x0d2011cfU, (const uint8_t*)json);
+
+  if (res == RC_JSON_OK) {
+    res = (int)size;
+  }
+
+  return res;
+}
+
+const rc_json_error_t* rc_json_parse_error(void* buffer, const char* json) {
+  return (const rc_json_error_t*)rc_json_deserialize(buffer, 0x0d2011cfU, (const uint8_t*)json);
+}
+
 const rc_json_struct_meta_t* rc_json_resolve_struct(unsigned hash) {
 
   switch (hash) {
@@ -561,6 +603,7 @@ const rc_json_struct_meta_t* rc_json_resolve_struct(unsigned hash) {
     case 0xadc4ac0fU: return &rc_json_struct_meta_patchdata;
     case 0x0dddd3d5U: return &rc_json_struct_meta_patch;
     case 0x9b4e2684U: return &rc_json_struct_meta_unlocks;
+    case 0x0d2011cfU: return &rc_json_struct_meta_error;
     default: return NULL;
   }
 }

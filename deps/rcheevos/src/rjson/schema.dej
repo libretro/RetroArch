@@ -73,3 +73,10 @@ struct unlocks/Unlocks {
   unsigned gameid/GameID;
   bool     hardcore/HardcoreMode;
 };
+
+//----------------------------------------------------------------------------
+
+struct error/Error {
+  bool success/Success;
+  string error/Error;
+};

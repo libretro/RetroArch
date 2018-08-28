@@ -115,6 +115,15 @@ rc_json_unlocks_t;
 int rc_json_get_unlocks_size(const char* json);
 const rc_json_unlocks_t* rc_json_parse_unlocks(void* buffer, const char* json);
 
+typedef struct {
+  const char* error;
+  char success;
+}
+rc_json_error_t;
+
+int rc_json_get_error_size(const char* json);
+const rc_json_error_t* rc_json_parse_error(void* buffer, const char* json);
+
 #ifdef __cplusplus
 }
 #endif
