@@ -327,6 +327,12 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_thumbnailPackDownloadProgressDialog(new QProgressDialog())
    ,m_thumbnailPackDownloadFile()
    ,m_thumbnailPackDownloadReply()
+   ,m_playlistThumbnailDownloadProgressDialog(new QProgressDialog())
+   ,m_playlistThumbnailDownloadFile()
+   ,m_playlistThumbnailDownloadReply()
+   ,m_pendingPlaylistThumbnails()
+   ,m_downloadedThumbnails(0)
+   ,m_failedThumbnails(0)
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -351,6 +357,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_updateProgressDialog->cancel();
    m_thumbnailDownloadProgressDialog->cancel();
    m_thumbnailPackDownloadProgressDialog->cancel();
+   m_playlistThumbnailDownloadProgressDialog->cancel();
 
    m_gridProgressWidget = new QWidget();
    gridProgressLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PROGRESS), m_gridProgressWidget);
@@ -549,6 +556,7 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(m_gridLayoutWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
 
    connect(this, SIGNAL(itemChanged()), this, SLOT(onItemChanged()));
+   connect(this, SIGNAL(gridItemChanged(QString)), this, SLOT(onGridItemChanged(QString)));
    connect(this, SIGNAL(gotThumbnailDownload(QString,QString)), this, SLOT(onDownloadThumbnail(QString,QString)));
 
    /* make sure these use an auto connection so it will be queued if called from a different thread (some facilities in RA log messages from other threads) */
@@ -637,6 +645,23 @@ QVector<QPair<QString, QString> > MainWindow::getPlaylists()
    }
 
    return playlists;
+}
+
+void MainWindow::onGridItemChanged(QString title)
+{
+   int i;
+
+   for (i = 0; i < m_gridItems.count(); i++)
+   {
+      const QPointer<GridItem> &item = m_gridItems.at(i);
+      const QHash<QString, QString> &hash = item->hash;
+
+      if (hash.value("label_noext") == title)
+      {
+         loadImageDeferred(item.data(), item->widget->property("image_path").toString());
+         break;
+      }
+   }
 }
 
 void MainWindow::onItemChanged()

@@ -51,6 +51,7 @@ UI
 #include "../ui/drivers/qt/updateretroarch.cpp"
 #include "../ui/drivers/qt/thumbnaildownload.cpp"
 #include "../ui/drivers/qt/thumbnailpackdownload.cpp"
+#include "../ui/drivers/qt/playlistthumbnaildownload.cpp"
 #endif
 
 /*============================================================

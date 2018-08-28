@@ -300,6 +300,7 @@ signals:
    void showInfoMessageDeferred(QString msg);
    void extractArchiveDeferred(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
    void itemChanged();
+   void gridItemChanged(QString title);
    void gotThumbnailDownload(QString system, QString title);
 
 public slots:
@@ -342,6 +343,8 @@ public slots:
    void deferReloadShaderParams();
    void downloadThumbnail(QString system, QString title, QUrl url = QUrl());
    void downloadAllThumbnails(QString system, QUrl url = QUrl());
+   void downloadPlaylistThumbnails(QString playlistPath);
+   void downloadNextPlaylistThumbnail(QString system, QString title, QString type, QUrl url = QUrl());
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
@@ -378,6 +381,7 @@ private slots:
    void onShowInfoMessage(QString msg);
    void onContributorsClicked();
    void onItemChanged();
+   void onGridItemChanged(QString title);
    int onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
 
    void onUpdateNetworkError(QNetworkReply::NetworkError code);
@@ -401,6 +405,13 @@ private slots:
    void onThumbnailPackDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
    void onThumbnailPackDownloadReadyRead();
    void onThumbnailPackDownloadCanceled();
+
+   void onPlaylistThumbnailDownloadNetworkError(QNetworkReply::NetworkError code);
+   void onPlaylistThumbnailDownloadNetworkSslErrors(const QList<QSslError> &errors);
+   void onPlaylistThumbnailDownloadFinished();
+   void onPlaylistThumbnailDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+   void onPlaylistThumbnailDownloadReadyRead();
+   void onPlaylistThumbnailDownloadCanceled();
 
 private:
    void setCurrentCoreLabel();
@@ -488,6 +499,13 @@ private:
    QProgressDialog *m_thumbnailPackDownloadProgressDialog;
    QFile m_thumbnailPackDownloadFile;
    QPointer<QNetworkReply> m_thumbnailPackDownloadReply;
+
+   QProgressDialog *m_playlistThumbnailDownloadProgressDialog;
+   QFile m_playlistThumbnailDownloadFile;
+   QPointer<QNetworkReply> m_playlistThumbnailDownloadReply;
+   QVector<QHash<QString, QString> > m_pendingPlaylistThumbnails;
+   unsigned m_downloadedThumbnails;
+   unsigned m_failedThumbnails;
 
 protected:
    void closeEvent(QCloseEvent *event);
