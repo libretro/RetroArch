@@ -333,6 +333,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_pendingPlaylistThumbnails()
    ,m_downloadedThumbnails(0)
    ,m_failedThumbnails(0)
+   ,m_playlistThumbnailDownloadWasCanceled(false)
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -554,6 +555,15 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
    connect(m_gridLayoutWidget, SIGNAL(filesDropped(QStringList)), this, SLOT(onPlaylistFilesDropped(QStringList)));
    connect(m_gridLayoutWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
+
+   connect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()), m_playlistThumbnailDownloadProgressDialog, SLOT(cancel()));
+   connect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()), this, SLOT(onPlaylistThumbnailDownloadCanceled()));
+
+   connect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()), m_thumbnailDownloadProgressDialog, SLOT(cancel()));
+   connect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()), this, SLOT(onThumbnailDownloadCanceled()));
+
+   connect(m_thumbnailPackDownloadProgressDialog, SIGNAL(canceled()), m_thumbnailPackDownloadProgressDialog, SLOT(cancel()));
+   connect(m_thumbnailPackDownloadProgressDialog, SIGNAL(canceled()), this, SLOT(onThumbnailPackDownloadCanceled()));
 
    connect(this, SIGNAL(itemChanged()), this, SLOT(onItemChanged()));
    connect(this, SIGNAL(gridItemChanged(QString)), this, SLOT(onGridItemChanged(QString)));

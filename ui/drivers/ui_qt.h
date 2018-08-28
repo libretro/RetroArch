@@ -506,6 +506,7 @@ private:
    QVector<QHash<QString, QString> > m_pendingPlaylistThumbnails;
    unsigned m_downloadedThumbnails;
    unsigned m_failedThumbnails;
+   bool m_playlistThumbnailDownloadWasCanceled;
 
 protected:
    void closeEvent(QCloseEvent *event);

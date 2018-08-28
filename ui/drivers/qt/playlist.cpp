@@ -467,7 +467,8 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
    menu->addMenu(hiddenPlaylistsMenu.data());
 
-   if (currentPlaylistDirPath != playlistDirAbsPath)
+   /* Don't just compare strings in case there are case differences on Windows that should be ignored. */
+   if (QDir(currentPlaylistDirPath) != QDir(playlistDirAbsPath))
    {
       /* special playlists like history etc. can't have an association */
       specialPlaylist = true;

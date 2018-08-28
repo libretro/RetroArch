@@ -285,9 +285,7 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
 
    /* make sure any previous connection is removed first */
    disconnect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
-   disconnect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()), m_thumbnailDownloadProgressDialog, SLOT(cancel()));
    connect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
-   connect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()), m_thumbnailDownloadProgressDialog, SLOT(cancel()));
 
    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(onThumbnailDownloadNetworkError(QNetworkReply::NetworkError)));
    connect(reply, SIGNAL(sslErrors(const QList<QSslError>&)), this, SLOT(onThumbnailDownloadNetworkSslErrors(const QList<QSslError>&)));

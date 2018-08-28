@@ -50,6 +50,8 @@ void MainWindow::onPlaylistThumbnailDownloadNetworkSslErrors(const QList<QSslErr
 void MainWindow::onPlaylistThumbnailDownloadCanceled()
 {
    m_playlistThumbnailDownloadProgressDialog->cancel();
+   m_playlistThumbnailDownloadWasCanceled = true;
+   RARCH_LOG("[Qt]: Playlist thumbnail download was canceled.\n");
 }
 
 void MainWindow::onPlaylistThumbnailDownloadFinished()
@@ -147,7 +149,7 @@ void MainWindow::onPlaylistThumbnailDownloadFinished()
       emit showErrorMessageDeferred(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": Code " + QString::number(code) + ": " + errorData);*/
    }
 
-   if (m_pendingPlaylistThumbnails.count() > 0)
+   if (!m_playlistThumbnailDownloadWasCanceled && m_pendingPlaylistThumbnails.count() > 0)
    {
       QHash<QString, QString> nextThumbnail = m_pendingPlaylistThumbnails.takeAt(0);
       ViewType viewType = getCurrentViewType();
@@ -250,9 +252,7 @@ void MainWindow::downloadNextPlaylistThumbnail(QString system, QString title, QS
 
    /* make sure any previous connection is removed first */
    disconnect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
-   disconnect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()), m_playlistThumbnailDownloadProgressDialog, SLOT(cancel()));
    connect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
-   connect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()), m_playlistThumbnailDownloadProgressDialog, SLOT(cancel()));
 
    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(onPlaylistThumbnailDownloadNetworkError(QNetworkReply::NetworkError)));
    connect(reply, SIGNAL(sslErrors(const QList<QSslError>&)), this, SLOT(onPlaylistThumbnailDownloadNetworkSslErrors(const QList<QSslError>&)));
@@ -287,6 +287,7 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
    m_pendingPlaylistThumbnails.clear();
    m_downloadedThumbnails = 0;
    m_failedThumbnails = 0;
+   m_playlistThumbnailDownloadWasCanceled = false;
 
    if (playlistItems.count() == 0)
       return;
