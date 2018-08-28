@@ -1949,6 +1949,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_show_wimp);
             break;
 #endif
+         case MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_apply_after_load);
+            break;
          default:
          case MSG_UNKNOWN:
             return -1;
