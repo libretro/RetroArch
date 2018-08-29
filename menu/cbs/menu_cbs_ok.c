@@ -847,7 +847,7 @@ int generic_action_ok_displaylist_push(const char *path,
             setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION));
          if ( setting )
-		 {
+       {
             int max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 7 : 0 ;
             setting->max = max_bit_position ;
          }
@@ -3498,7 +3498,7 @@ static int action_ok_option_create(const char *path,
          return false;
    }
 
-   if(config_file_write(conf, game_path))
+   if (config_file_write(conf, game_path))
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
