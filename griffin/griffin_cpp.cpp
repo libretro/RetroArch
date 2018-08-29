@@ -43,6 +43,7 @@ UI
 #include "../ui/drivers/qt/ui_qt_application.cpp"
 #include "../ui/drivers/qt/flowlayout.cpp"
 #include "../ui/drivers/qt/shaderparamsdialog.cpp"
+#include "../ui/drivers/qt/coreoptionsdialog.cpp"
 #include "../ui/drivers/qt/filedropwidget.cpp"
 #include "../ui/drivers/qt/coreinfodialog.cpp"
 #include "../ui/drivers/qt/playlistentrydialog.cpp"

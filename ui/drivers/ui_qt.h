@@ -86,6 +86,7 @@ class ThumbnailWidget;
 class ThumbnailLabel;
 class FlowLayout;
 class ShaderParamsDialog;
+class CoreOptionsDialog;
 class CoreInfoDialog;
 class PlaylistEntryDialog;
 class ViewOptionsDialog;
@@ -297,6 +298,7 @@ signals:
    void gotStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
    void gotReloadPlaylists();
    void gotReloadShaderParams();
+   void gotReloadCoreOptions();
    void showErrorMessageDeferred(QString msg);
    void showInfoMessageDeferred(QString msg);
    void extractArchiveDeferred(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
@@ -330,6 +332,7 @@ public slots:
    void deferReloadPlaylists();
    void onGotReloadPlaylists();
    void onGotReloadShaderParams();
+   void onGotReloadCoreOptions();
    void showWelcomeScreen();
    void onIconViewClicked();
    void onListViewClicked();
@@ -378,6 +381,7 @@ private slots:
    void onGridItemClicked(ThumbnailWidget *thumbnailWidget = NULL);
    void onPlaylistFilesDropped(QStringList files);
    void onShaderParamsClicked();
+   void onCoreOptionsClicked();
    void onShowErrorMessage(QString msg);
    void onShowInfoMessage(QString msg);
    void onContributorsClicked();
@@ -486,6 +490,7 @@ private:
    PlaylistEntryDialog *m_playlistEntryDialog;
    QElapsedTimer m_statusMessageElapsedTimer;
    QPointer<ShaderParamsDialog> m_shaderParamsDialog;
+   QPointer<CoreOptionsDialog> m_coreOptionsDialog;
    QNetworkAccessManager *m_networkManager;
 
    QProgressDialog *m_updateProgressDialog;

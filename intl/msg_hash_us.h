@@ -7426,3 +7426,7 @@ MSG_HASH(
     MSG_FAILED_TO_SET_DISK,
     "Failed to set disk"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
+    "Core Options"
+    )

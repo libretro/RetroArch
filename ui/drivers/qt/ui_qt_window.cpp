@@ -45,6 +45,7 @@
 #include "ui_qt_themes.h"
 #include "flowlayout.h"
 #include "shaderparamsdialog.h"
+#include "coreoptionsdialog.h"
 #include "filedropwidget.h"
 #include "coreinfodialog.h"
 #include "playlistentrydialog.h"
@@ -316,6 +317,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_playlistEntryDialog(NULL)
    ,m_statusMessageElapsedTimer()
    ,m_shaderParamsDialog(new ShaderParamsDialog())
+   ,m_coreOptionsDialog(new CoreOptionsDialog())
    ,m_networkManager(new QNetworkAccessManager(this))
    ,m_updateProgressDialog(new QProgressDialog())
    ,m_updateFile()
@@ -574,6 +576,7 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(this, SIGNAL(gotStatusMessage(QString,unsigned,unsigned,bool)), this, SLOT(onGotStatusMessage(QString,unsigned,unsigned,bool)), Qt::AutoConnection);
    connect(this, SIGNAL(gotReloadPlaylists()), this, SLOT(onGotReloadPlaylists()), Qt::AutoConnection);
    connect(this, SIGNAL(gotReloadShaderParams()), this, SLOT(onGotReloadShaderParams()), Qt::AutoConnection);
+   connect(this, SIGNAL(gotReloadCoreOptions()), this, SLOT(onGotReloadCoreOptions()), Qt::AutoConnection);
 
    /* these are always queued */
    connect(this, SIGNAL(showErrorMessageDeferred(QString)), this, SLOT(onShowErrorMessage(QString)), Qt::QueuedConnection);
@@ -1055,10 +1058,26 @@ void MainWindow::onShaderParamsClicked()
    onGotReloadShaderParams();
 }
 
+void MainWindow::onCoreOptionsClicked()
+{
+   if (!m_coreOptionsDialog)
+      return;
+
+   m_coreOptionsDialog->show();
+
+   onGotReloadCoreOptions();
+}
+
 void MainWindow::onGotReloadShaderParams()
 {
    if (m_shaderParamsDialog && m_shaderParamsDialog->isVisible())
       m_shaderParamsDialog->reload();
+}
+
+void MainWindow::onGotReloadCoreOptions()
+{
+   if (m_coreOptionsDialog && m_coreOptionsDialog->isVisible())
+      m_coreOptionsDialog->reload();
 }
 
 void MainWindow::appendLogMessage(const QString &msg)
