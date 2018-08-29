@@ -231,9 +231,18 @@ void MainWindow::downloadNextPlaylistThumbnail(QString system, QString title, QS
 
       if (!m_playlistThumbnailDownloadFile.open(QIODevice::WriteOnly))
       {
-         m_playlistThumbnailDownloadProgressDialog->cancel();
-         showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+         m_failedThumbnails++;
+
          RARCH_ERR("[Qt]: Could not open file for writing: %s\n", fileNameData);
+
+         if (m_pendingPlaylistThumbnails.count() > 0)
+         {
+            QHash<QString, QString> nextThumbnail = m_pendingPlaylistThumbnails.takeAt(0);
+            downloadNextPlaylistThumbnail(nextThumbnail.value("db_name"), nextThumbnail.value("label_noext"), nextThumbnail.value("type"));
+         }
+         else
+            m_playlistThumbnailDownloadProgressDialog->cancel();
+
          return;
       }
    }

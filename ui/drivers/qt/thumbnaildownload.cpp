@@ -257,6 +257,19 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
          m_thumbnailDownloadProgressDialog->cancel();
          showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
          RARCH_ERR("[Qt]: Could not open file for writing: %s\n", fileNameData);
+
+         if (m_thumbnailDownloadReply)
+         {
+            m_thumbnailDownloadReply->disconnect();
+            m_thumbnailDownloadReply->abort();
+            m_thumbnailDownloadReply->deleteLater();
+         }
+
+         if (m_pendingThumbnailDownloadTypes.isEmpty())
+            m_thumbnailDownloadProgressDialog->cancel();
+         else
+            downloadThumbnail(system, title);
+
          return;
       }
    }
