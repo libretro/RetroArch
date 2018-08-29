@@ -2380,9 +2380,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                      return xmb->textures.list[XMB_TEXTURE_RECORD];
                   case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_OSD];
-#ifdef HAVE_QT
                   case MENU_ENUM_LABEL_SHOW_WIMP:
-#endif
                   case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_UI];
                   case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:

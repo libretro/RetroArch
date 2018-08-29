@@ -88,9 +88,7 @@ enum
    ACTION_OK_SET_PATH_VIDEO_FILTER,
    ACTION_OK_SET_PATH_OVERLAY,
    ACTION_OK_SET_DIRECTORY,
-#ifdef HAVE_QT
    ACTION_OK_SHOW_WIMP,
-#endif
    ACTION_OK_LOAD_CHEAT_FILE_APPEND
 };
 
@@ -3531,9 +3529,7 @@ default_action_ok_cmd_func(action_ok_restart_content,          CMD_EVENT_RESET)
 default_action_ok_cmd_func(action_ok_screenshot,               CMD_EVENT_TAKE_SCREENSHOT)
 default_action_ok_cmd_func(action_ok_disk_cycle_tray_status,   CMD_EVENT_DISK_EJECT_TOGGLE)
 default_action_ok_cmd_func(action_ok_shader_apply_changes,     CMD_EVENT_SHADERS_APPLY_CHANGES)
-#ifdef HAVE_QT
 default_action_ok_cmd_func(action_ok_show_wimp,                CMD_EVENT_UI_COMPANION_TOGGLE)
-#endif
 
 static int action_ok_reset_core_association(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -4743,11 +4739,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_enable_settings);
             break;
-#ifdef HAVE_QT
          case MENU_ENUM_LABEL_SHOW_WIMP:
             BIND_ACTION_OK(cbs, action_ok_show_wimp);
             break;
-#endif
          case MENU_ENUM_LABEL_QUIT_RETROARCH:
             BIND_ACTION_OK(cbs, action_ok_quit);
             break;
