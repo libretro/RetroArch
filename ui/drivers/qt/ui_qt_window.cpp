@@ -3173,11 +3173,12 @@ int MainWindow::onExtractArchive(QString path, QString extractionDir, QString te
 
 QString MainWindow::getScrubbedString(QString str)
 {
-   const QLatin1Literal chars("&*/:`\"<>?\\|");
+   const QString chars("&*/:`\"<>?\\|");
+   int i;
 
-   foreach (QChar ch, chars)
+   for (i = 0; i < chars.count(); i++)
    {
-      str.replace(ch, "_");
+      str.replace(chars.at(i), '_');
    }
 
    return str;
