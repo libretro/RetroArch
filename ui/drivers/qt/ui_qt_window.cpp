@@ -3152,6 +3152,18 @@ int MainWindow::onExtractArchive(QString path, QString extractionDir, QString te
    return returnerr;
 }
 
+QString MainWindow::getScrubbedString(QString str)
+{
+   const QLatin1Literal chars("&*/:`\"<>?\\|");
+
+   foreach (QChar ch, chars)
+   {
+      str.replace(ch, "_");
+   }
+
+   return str;
+}
+
 static void* ui_window_qt_init(void)
 {
    ui_window.qtWindow = new MainWindow();

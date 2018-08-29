@@ -287,6 +287,7 @@ public:
    static double lerp(double x, double y, double a, double b, double d);
    QString getSpecialPlaylistPath(SpecialPlaylist playlist);
    QVector<QPair<QString, QString> > getPlaylists();
+   QString getScrubbedString(QString str);
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);

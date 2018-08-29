@@ -201,6 +201,7 @@ void MainWindow::downloadNextPlaylistThumbnail(QString system, QString title, QS
    if (!settings)
       return;
 
+   title = getScrubbedString(title);
    systemUnderscore = systemUnderscore.replace(" ", "_");
 
    urlString = QString(THUMBNAIL_URL_HEADER) + systemUnderscore + THUMBNAIL_URL_BRANCH + type + "/" + title + THUMBNAIL_URL_FOOTER;

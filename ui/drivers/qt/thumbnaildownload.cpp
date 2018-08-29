@@ -221,6 +221,7 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
    if (!settings || m_pendingThumbnailDownloadTypes.isEmpty())
       return;
 
+   title = getScrubbedString(title);
    downloadType = m_pendingThumbnailDownloadTypes.takeFirst();
 
    systemUnderscore = systemUnderscore.replace(" ", "_");
