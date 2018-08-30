@@ -16,6 +16,7 @@
 
 extern "C" {
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -31,6 +32,8 @@ extern "C" {
 }
 
 #include "ui_qt.h"
+#include "qt/filedropwidget.h"
+#include "qt/viewoptionsdialog.h"
 
 #include <QApplication>
 #include <QtWidgets>
@@ -257,6 +260,9 @@ static void* ui_companion_qt_init(void)
    QComboBox *launchWithComboBox = NULL;
    QSettings *qsettings = NULL;
    QListWidget *listWidget = NULL;
+   QString initialPlaylist;
+   bool foundPlaylist = false;
+
    int i = 0;
 
    if (!handle)
@@ -271,6 +277,8 @@ static void* ui_companion_qt_init(void)
    mainwindow = handle->window->qtWindow;
 
    qsettings = mainwindow->settings();
+
+   initialPlaylist = qsettings->value("initial_playlist", mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY)).toString();
 
    mainwindow->resize(qMin(desktopRect.width(), INITIAL_WIDTH), qMin(desktopRect.height(), INITIAL_HEIGHT));
    mainwindow->setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, mainwindow->size(), desktopRect));
@@ -320,6 +328,9 @@ static void* ui_companion_qt_init(void)
    viewClosedDocksMenu->setObjectName("viewClosedDocksMenu");
 
    QObject::connect(viewClosedDocksMenu, SIGNAL(aboutToShow()), mainwindow, SLOT(onViewClosedDocksAboutToShow()));
+
+   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS), mainwindow, SLOT(onCoreOptionsClicked()));
+   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS), mainwindow, SLOT(onShaderParamsClicked()));
 
    viewMenu->addSeparator();
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS), mainwindow, SLOT(onIconViewClicked()));
@@ -566,13 +577,37 @@ static void* ui_companion_qt_init(void)
       mainwindow->onTabWidgetIndexChanged(0);
    }
 
-   for (i = 0; i < listWidget->count() && listWidget->count() > 0; i++)
+   /* the initial playlist that is selected is based on the user's setting (initialPlaylist) */
+   for (i = 0; listWidget->count() && i < listWidget->count(); i++)
    {
-      /* select the first non-hidden row */
-      if (!listWidget->isRowHidden(i))
+      QListWidgetItem *item = listWidget->item(i);
+      QString path;
+
+      if (!item)
+         continue;
+
+      path = item->data(Qt::UserRole).toString();
+
+      if (path == initialPlaylist)
       {
+         foundPlaylist = true;
+         listWidget->setRowHidden(i, false);
          listWidget->setCurrentRow(i);
          break;
+      }
+   }
+
+   /* couldn't find the user's initial playlist, just find anything */
+   if (!foundPlaylist)
+   {
+      for (i = 0; listWidget->count() && i < listWidget->count(); i++)
+      {
+         /* select the first non-hidden row */
+         if (!listWidget->isRowHidden(i))
+         {
+            listWidget->setCurrentRow(i);
+            break;
+         }
       }
    }
 
@@ -602,6 +637,11 @@ static void ui_companion_qt_toggle(void *data, bool force)
 #endif
       if (settings->bools.ui_companion_toggle || force)
       {
+         if (settings->bools.video_fullscreen)
+            command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+
+         win_handle->qtWindow->activateWindow();
+         win_handle->qtWindow->raise();
          video_driver_show_mouse();
          win_handle->qtWindow->show();
 
@@ -621,11 +661,21 @@ static void ui_companion_qt_toggle(void *data, bool force)
 static void ui_companion_qt_event_command(void *data, enum event_command cmd)
 {
    ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
-
-   (void)cmd;
+   ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
 
    if (!handle)
       return;
+
+   switch (cmd)
+   {
+      case CMD_EVENT_SHADERS_APPLY_CHANGES:
+      case CMD_EVENT_SHADER_PRESET_LOADED:
+         RARCH_LOG("[Qt]: Reloading shader parameters.\n");
+         win_handle->qtWindow->deferReloadShaderParams();
+         break;
+      default:
+         break;
+   }
 }
 
 static void ui_companion_qt_notify_list_pushed(void *data, file_list_t *list,

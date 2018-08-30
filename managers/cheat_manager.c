@@ -593,7 +593,7 @@ bool cheat_manager_get_game_specific_filename(char * cheat_filename, size_t max_
    const char *game_name                  = NULL;
    struct retro_system_info system_info;
 
-   if ( settings == NULL || global == NULL || cheat_filename == NULL)
+   if (!settings || !global || !cheat_filename)
       return false ;
 
    if ( !core_get_system_info(&system_info) )
@@ -608,15 +608,15 @@ bool cheat_manager_get_game_specific_filename(char * cheat_filename, size_t max_
       return false ;
 
    cheat_filename[0] = '\0';
-   strlcat(cheat_filename, settings->paths.path_cheat_database, max_length-1) ;
-   fill_pathname_slash(cheat_filename, max_length) ;
-   strlcat(cheat_filename, core_name, max_length-strlen(cheat_filename)-1) ;
-   fill_pathname_slash(cheat_filename, max_length) ;
+   strlcat(cheat_filename, settings->paths.path_cheat_database, max_length);
+   fill_pathname_slash(cheat_filename, max_length);
+   strlcat(cheat_filename, core_name,  max_length);
+   fill_pathname_slash(cheat_filename, max_length);
 
    if (!filestream_exists(cheat_filename))
        path_mkdir(cheat_filename);
 
-   strlcat(cheat_filename, game_name, max_length-strlen(cheat_filename)-1) ;
+   strlcat(cheat_filename, game_name, max_length);
 
    return true ;
 
@@ -813,7 +813,7 @@ int cheat_manager_search(enum cheat_search_type search_type)
    unsigned int bits = 8 ;
    bool refresh      = false;
 
-   if ( cheat_manager_state.curr_memory_buf == NULL )
+   if (!cheat_manager_state.curr_memory_buf)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_NOT_INITIALIZED), 1, 180, true);
       return 0 ;
@@ -1290,8 +1290,8 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
    if (target_match_idx > cheat_manager_state.num_matches-1)
       return;
 
-   if (curr == NULL  )
-      return ;
+   if (!curr)
+      return;
 
    cheat_manager_setup_search_meta(cheat_manager_state.search_bit_size, &bytes_per_item, &mask, &bits);
 

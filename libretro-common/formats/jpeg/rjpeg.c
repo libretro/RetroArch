@@ -2505,15 +2505,18 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z,
       if (n >= 3)
       {
          uint8_t *y = coutput[0];
-         if (z->s->img_n == 3)
-            z->YCbCr_to_RGB_kernel(out, y, coutput[1], coutput[2], z->s->img_x, n);
-         else
-            for (i=0; i < z->s->img_x; ++i)
-            {
-               out[0] = out[1] = out[2] = y[i];
-               out[3] = 255; /* not used if n==3 */
-               out += n;
-            }
+         if (y)
+         {
+            if (z->s->img_n == 3)
+               z->YCbCr_to_RGB_kernel(out, y, coutput[1], coutput[2], z->s->img_x, n);
+            else
+               for (i=0; i < z->s->img_x; ++i)
+               {
+                  out[0] = out[1] = out[2] = y[i];
+                  out[3] = 255; /* not used if n==3 */
+                  out += n;
+               }
+         }
       }
       else
       {

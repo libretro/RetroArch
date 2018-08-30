@@ -804,6 +804,7 @@ RETRO_END_DECLS
 
 #ifndef PERF_START
 #define PERF_START() \
+   { \
    static struct retro_perf_counter perfcounter = { __FUNCTION__ }; \
    LARGE_INTEGER                    start, stop; \
    rarch_perf_register(&perfcounter); \
@@ -812,7 +813,8 @@ RETRO_END_DECLS
 
 #define PERF_STOP() \
    QueryPerformanceCounter(&stop); \
-   perfcounter.total += stop.QuadPart - start.QuadPart
+   perfcounter.total += stop.QuadPart - start.QuadPart; \
+   }
 #endif
 #else
 #define PERF_START()

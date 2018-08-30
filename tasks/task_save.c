@@ -1050,7 +1050,7 @@ static void save_state_cb(void *task_data,
    char               *path = strdup(state->path);
 
    if (state->thumbnail_enable)
-      take_screenshot(path, true, state->has_valid_framebuffer);
+      take_screenshot(path, true, state->has_valid_framebuffer, false, true);
 
    free(path);
 }

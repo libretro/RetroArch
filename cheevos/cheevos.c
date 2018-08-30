@@ -1674,7 +1674,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
                shotname[sizeof(shotname) - 1] = '\0';
 
                if (take_screenshot(shotname, true,
-                        video_driver_cached_frame_has_valid_framebuffer()))
+                        video_driver_cached_frame_has_valid_framebuffer(), false, true))
                   CHEEVOS_LOG("[CHEEVOS]: got a screenshot for cheevo %u\n", cheevo->id);
                else
                   CHEEVOS_LOG("[CHEEVOS]: failed to get screenshot for cheevo %u\n", cheevo->id);
@@ -2080,7 +2080,7 @@ void cheevos_populate_menu(void *data)
    cheevo_t *cheevo              = cheevos_locals.core.cheevos;
    end                           = cheevo + cheevos_locals.core.count;
 
-   if(settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable 
+   if(settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable
       && cheevos_loaded)
    {
       if (!cheevos_hardcore_paused)

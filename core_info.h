@@ -47,6 +47,7 @@ typedef struct
    char *core_name;
    char *system_manufacturer;
    char *systemname;
+   char *system_id;
    char *supported_extensions;
    char *authors;
    char *permissions;

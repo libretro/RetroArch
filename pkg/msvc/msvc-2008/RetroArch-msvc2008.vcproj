@@ -41,8 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\..\..\deps&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;HAVE_GRIFFIN;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DINPUT;HAVE_XINPUT;HAVE_DYLIB;HAVE_DYNAMIC;__STDC_CONSTANT_MACROS"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\..\..\deps&quot;;&quot;$(SolutionDir)\..\..\gfx\includev&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_CHEEVOS;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_UPDATE_ASSETS;HAVE_RUNAHEAD;HAVE_D3D;HAVE_D3D9;HAVE_D3DX;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_GLSL;HAVE_OVERLAY;HAVE_DINPUT;HAVE_XINPUT;HAVE_DYLIB;HAVE_DYNAMIC;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT;__STDC_CONSTANT_MACROS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -61,9 +61,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="msimg32.lib winmm.lib Dinput8.lib dxguid.lib Iphlpapi.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
+				EntryPointSymbol="mainCRTStartup"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -115,8 +117,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\..\..\deps&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;HAVE_GRIFFIN;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DINPUT;HAVE_XINPUT;HAVE_DYLIB;HAVE_DYNAMIC;__STDC_CONSTANT_MACROS"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\..\..\deps&quot;;&quot;$(SolutionDir)\..\..\gfx\include&quot;;&quot;$(DXSDK_DIR)Include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_CHEEVOS;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_UPDATE_ASSETS;HAVE_RUNAHEAD;HAVE_D3D;HAVE_D3D9;HAVE_D3DX;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_GLSL;HAVE_OVERLAY;HAVE_DINPUT;HAVE_XINPUT;HAVE_DYLIB;HAVE_DYNAMIC;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT;__STDC_CONSTANT_MACROS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -134,11 +136,13 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="msimg32.lib winmm.lib Dinput8.lib dxguid.lib Iphlpapi.lib"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				EntryPointSymbol="mainCRTStartup"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -188,8 +192,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\..\..\deps&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;HAVE_GRIFFIN;RARCH_INTERNAL;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DYLIB;HAVE_DYNAMIC;__STDC_CONSTANT_MACROS"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\..\..\deps&quot;;&quot;$(SolutionDir)\..\..\gfx\include&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_CHEEVOS;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_UPDATE_ASSETS;HAVE_RUNAHEAD;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DYLIB;HAVE_DYNAMIC;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT;__STDC_CONSTANT_MACROS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -208,9 +212,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="msimg32.lib winmm.lib dxguid.lib Iphlpapi.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
+				EntryPointSymbol="mainCRTStartup"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -262,8 +268,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\..\..\deps&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;HAVE_GRIFFIN;RARCH_INTERNAL;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DYLIB;HAVE_DYNAMIC;__STDC_CONSTANT_MACROS"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\..\..\deps&quot;;&quot;$(SolutionDir)\..\..\gfx\include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_CHEEVOS;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_UPDATE_ASSETS;HAVE_RUNAHEAD;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DYLIB;HAVE_DYNAMIC;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT;__STDC_CONSTANT_MACROS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -281,11 +287,13 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="msimg32.lib winmm.lib dxguid.lib Iphlpapi.lib"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				EntryPointSymbol="mainCRTStartup"
 				TargetMachine="1"
 			/>
 			<Tool

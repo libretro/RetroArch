@@ -103,6 +103,10 @@ void ui_companion_event_command(enum event_command action)
 
    if (ui && ui->event_command)
       ui->event_command(ui_companion_data, action);
+#ifdef HAVE_QT
+   if (ui_companion_qt.toggle && qt_is_inited)
+      ui_companion_qt.event_command(ui_companion_qt_data, action);
+#endif
 }
 
 void ui_companion_driver_deinit(void)

@@ -37,11 +37,12 @@
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
-#if HAVE_METAL
+#ifdef HAVE_METAL
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
 #endif
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
 @interface WindowListener : NSResponder<NSWindowDelegate>
 @end
 
@@ -59,6 +60,7 @@
 {}
 
 @end
+#endif
 
 id<ApplePlatform> apple_platform;
 
@@ -72,7 +74,9 @@ id<ApplePlatform> apple_platform;
    apple_view_type_t _vt;
    NSView* _renderView;
    id _sleepActivity;
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
    WindowListener *_listener;
+#endif
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
@@ -251,7 +255,7 @@ static char** waiting_argv;
 {
    unsigned i;
    apple_platform   = self;
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
    self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 #else
    SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
@@ -264,11 +268,15 @@ static char** waiting_argv;
    }
 #endif
    
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
    _listener = [WindowListener new];
+#endif
    
    [self.window setAcceptsMouseMovedEvents: YES];
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
    [self.window setNextResponder:_listener];
    self.window.delegate = _listener;
+#endif
    
    [[self.window contentView] setAutoresizesSubviews:YES];
 
@@ -286,8 +294,10 @@ static char** waiting_argv;
 
    waiting_argc = 0;
    
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
    [self.window makeMainWindow];
    [self.window makeKeyWindow];
+#endif
    
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
@@ -305,7 +315,9 @@ static char** waiting_argv;
       _renderView.wantsLayer = NO;
       _renderView.layer = nil;
       [_renderView removeFromSuperview];
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
       self.window.contentView = nil;
+#endif
       _renderView = nil;
    }
    
@@ -334,10 +346,17 @@ static char** waiting_argv;
    }
    
    _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-   _renderView.frame = self.window.contentView.bounds;
    
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
+   _renderView.frame = self.window.contentView.bounds;
    self.window.contentView = _renderView;
    [self.window.contentView setNextResponder:_listener];
+#else
+   /* TODO/FIXME - Aussiebloke - we need a workaround for OSX 10.5 for self.window.contentView.bounds -
+	* error - request for member 'bounds' in something not a structure or union. */
+   [self.window.contentView addSubview:_renderView];
+   [self.window makeFirstResponder:_renderView];
+#endif
 }
 
 - (apple_view_type_t)viewType {
@@ -353,6 +372,7 @@ static char** waiting_argv;
 }
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode {
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1060
    BOOL isFullScreen = (self.window.styleMask & NSFullScreenWindowMask) == NSFullScreenWindowMask;
    if (mode.fullscreen && !isFullScreen)
    {
@@ -366,11 +386,14 @@ static char** waiting_argv;
    }
    
    if (mode.width > 0)
+#endif
    {
       // HACK(sgc): ensure MTKView posts a drawable resize event
       [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
    }
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1060
    [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
+#endif
 }
 
 - (void)setCursorVisible:(bool)v {
@@ -382,7 +405,7 @@ static char** waiting_argv;
 
 - (bool)setDisableDisplaySleep:(bool)disable
 {
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
    if (disable && _sleepActivity == nil)
    {
       _sleepActivity = [NSProcessInfo.processInfo beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled reason:@"disable screen saver"];

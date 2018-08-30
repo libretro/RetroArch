@@ -92,6 +92,7 @@ Fabio Ritrovato (Sephiroth87)
 Fayne Aldan (FayneAldan)
 FIX94
 Flame Sage (chris062689)
+flyinghead
 Francisco José García García (frangarcj)
 GameDragon2k
 Garrett Brown (garbear)
@@ -124,6 +125,7 @@ Jay McCarthy (jeapostrophe)
 Jean-André Santoni (kivutar)
 Jean-Paul Mari (djipi)
 Jean-Sébastien Guay (Skylark13)
+Jesse Bryan (winneon)
 Joel (joel16)
 Joerg Sonnenberger (jsonn)
 Johannes Schickel (lordhoto)
@@ -260,6 +262,7 @@ Vladimir Panteleev (CyberShadow)
 Víctor "IlDucci" (IlDucci)
 Wang Vincent (susemm)
 webgeek1234
+Wiktor Strzębała (wiktorek140)
 xhp-creations
 Yarsan Hoessain (hyarsan)
 Yongwoon Cho (ssangkong)

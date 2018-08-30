@@ -29,6 +29,10 @@
 #include <wiiu/os/energy.h>
 #endif
 
+#ifdef HAVE_DISCORD
+#include "discord/discord.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -458,10 +462,17 @@ bool menu_display_libretro(bool is_idle,
          input_driver_set_libretro_input_blocked();
 
       core_run();
-
       input_driver_unset_libretro_input_blocked();
+
       return true;
    }
+
+#ifdef HAVE_DISCORD
+   discord_userdata_t userdata;
+   userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
+
+   command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+#endif
 
    if (is_idle)
       return true; /* Maybe return false here
@@ -1472,7 +1483,7 @@ void menu_display_draw_keyboard(
       }
 
       menu_display_draw_text(font, grid[i],
-            width/2.0 - (11*ptr_width)/2.0 + (i % 11) 
+            width/2.0 - (11*ptr_width)/2.0 + (i % 11)
             * ptr_width + ptr_width/2.0,
             height/2.0 + ptr_height + line_y + font->size / 3,
             width, height, 0xffffffff, TEXT_ALIGN_CENTER, 1.0f,

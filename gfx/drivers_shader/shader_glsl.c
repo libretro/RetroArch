@@ -539,8 +539,6 @@ static bool gl_glsl_compile_programs(
          return false;
       }
 
-      *pass->source.path        = '\0';
-
       vertex                    = pass->source.string.vertex;
       fragment                  = pass->source.string.fragment;
 

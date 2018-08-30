@@ -28,6 +28,16 @@
 #define UDEV_KEY_MAX			0x2ff
 #define UDEV_MAX_KEYS (UDEV_KEY_MAX + 7) / 8
 
+#define MAX_TOUCHES             16
+
+typedef struct
+{
+   bool active;
+   int16_t x;
+   int16_t y;
+} wayland_touch_data_t;
+
+
 typedef struct input_ctx_wayland_data
 {
    /* Wayland uses Linux keysyms. */
@@ -49,6 +59,9 @@ typedef struct input_ctx_wayland_data
 
    const input_device_driver_t *joypad;
    bool blocked;
+
+   wayland_touch_data_t touches[MAX_TOUCHES];
+
 } input_ctx_wayland_data_t;
 
 #endif

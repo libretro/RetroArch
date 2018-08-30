@@ -21,14 +21,18 @@
 #include "../core.h"
 #include "../core_info.h"
 #include "../paths.h"
+#include "../playlist.h"
 
 #include "../msg_hash.h"
 
 static const char* APPLICATION_ID = "475456035851599874";
 static int FrustrationLevel       = 0;
+
 static int64_t start_time         = 0;
+static int64_t pause_time         = 0;
 
 static bool discord_ready         = false;
+static bool in_menu               = false;
 static unsigned discord_status    = 0;
 
 DiscordRichPresence discord_presence;
@@ -73,51 +77,82 @@ static void handle_discord_join_request(const DiscordUser* request)
 
 void discord_update(enum discord_presence presence)
 {
-   rarch_system_info_t *system = runloop_get_system_info();
-   core_info_t *core_info    = NULL;
+   core_info_t *core_info = NULL;
+   bool skip = false;
+
+   core_info_get_current_core(&core_info);
 
    if (!discord_ready)
       return;
 
    if (
-         (discord_status != DISCORD_PRESENCE_MENU) && 
+         (discord_status != DISCORD_PRESENCE_MENU) &&
          (discord_status == presence))
       return;
-
-   RARCH_LOG("[Discord] updating (%d)\n", presence);
 
    memset(&discord_presence, 0, sizeof(discord_presence));
 
    switch (presence)
    {
       case DISCORD_PRESENCE_MENU:
-         discord_presence.state           = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU);
-         discord_presence.largeImageKey   = "base";
-         discord_presence.instance        = 0;
-         discord_presence.startTimestamp  = start_time;
-         break;
-      case DISCORD_PRESENCE_GAME:
-         core_info_get_current_core(&core_info);
+         discord_presence.details = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU);
+         discord_presence.largeImageKey = "base";
+         discord_presence.largeImageText = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
+         discord_presence.instance = 0;
 
+         in_menu = true;
+         break;
+      case DISCORD_PRESENCE_GAME_PAUSED:
+         discord_presence.smallImageKey = "paused";
+         discord_presence.smallImageText = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED);
+         discord_presence.details = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED);
+
+         pause_time = time(0);
+         skip = true;
+
+         if (in_menu)
+            break;
+      case DISCORD_PRESENCE_GAME:
          if (core_info)
          {
-            const char *system_name  = string_replace_substring(
-                  string_to_lower(core_info->core_name), " ", "_");
+            const char *system_id  = core_info->system_id ? core_info->system_id : "core";
 
-            start_time                       = time(0);
-            discord_presence.state           = system ? system->info.library_name : "---";
-            discord_presence.details         = path_basename(path_get(RARCH_PATH_BASENAME));
+            char *label = NULL;
+            playlist_t *current_playlist = playlist_get_cached();
+
+            if (current_playlist)
+               playlist_get_index_by_path(
+                  current_playlist, path_get(RARCH_PATH_CONTENT), NULL, &label, NULL, NULL, NULL, NULL);
+
+            if (!label)
+               label = (char *)path_basename(path_get(RARCH_PATH_BASENAME));
 #if 1
-            RARCH_LOG("[Discord] system name: %s\n", system_name);
+            RARCH_LOG("[Discord] current core: %s\n", system_id);
+            RARCH_LOG("[Discord] current content: %s\n", label);
 #endif
-            discord_presence.largeImageKey   = system_name;
+            discord_presence.largeImageKey = system_id;
 
-            discord_presence.smallImageKey   = "base";
+            if (core_info->display_name)
+               discord_presence.largeImageText = core_info->display_name;
 
-            discord_presence.instance        = 0;
-            discord_presence.startTimestamp  = start_time;
+            if (in_menu)
+               start_time = time(0);
+            else
+               start_time = start_time + difftime(time(0), pause_time);
 
+            if (!skip)
+            {
+               discord_presence.smallImageKey = "playing";
+               discord_presence.smallImageText = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING);
+               discord_presence.startTimestamp = start_time;
+               discord_presence.details = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME);
+            }
+
+            discord_presence.state = label;
+            discord_presence.instance = 0;
          }
+
+         in_menu = false;
          break;
       case DISCORD_PRESENCE_NETPLAY_HOSTING:
       case DISCORD_PRESENCE_NETPLAY_CLIENT:
@@ -125,6 +160,12 @@ void discord_update(enum discord_presence presence)
          /* TODO/FIXME */
          break;
    }
+
+   if (in_menu && skip)
+      return;
+
+   RARCH_LOG("[Discord] updating (%d)\n", presence);
+
    Discord_UpdatePresence(&discord_presence);
    discord_status                         = presence;
 }

@@ -292,7 +292,7 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
    get_ios_version(major, minor);
    strlcpy(s, "iOS", len);
 #elif defined(OSX)
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101000
    NSOperatingSystemVersion version =  [[NSProcessInfo processInfo] operatingSystemVersion];
    *major = (int)version.majorVersion;
    *minor = (int)version.minorVersion;

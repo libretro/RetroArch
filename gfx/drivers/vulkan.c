@@ -744,6 +744,9 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 
    memset(&info, 0, sizeof(info));
 
+   if (!vk->context)
+      return false;
+
    info.device                = vk->context->device;
    info.gpu                   = vk->context->gpu;
    info.memory_properties     = &vk->context->memory_properties;
@@ -808,8 +811,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 
 static bool vulkan_init_filter_chain(vk_t *vk)
 {
-   settings_t *settings = config_get_ptr();
-   const char *shader_path = retroarch_get_shader_preset();
+   const char     *shader_path = retroarch_get_shader_preset();
 
    enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_NONE);
 
@@ -833,7 +835,7 @@ static bool vulkan_init_filter_chain(vk_t *vk)
 
 static void vulkan_init_resources(vk_t *vk)
 {
-   if (!vk)
+   if (!vk->context)
       return;
 
    vk->num_swapchain_images = vk->context->num_swapchain_images;
@@ -855,6 +857,9 @@ static void vulkan_init_static_resources(vk_t *vk)
    /* Create the pipeline cache. */
    VkPipelineCacheCreateInfo cache   = {
       VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
+
+   if (!vk->context)
+      return;
 
    vkCreatePipelineCache(vk->context->device,
          &cache, NULL, &vk->pipelines.cache);
@@ -2228,10 +2233,16 @@ static void vulkan_set_osd_msg(void *data,
 static uintptr_t vulkan_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
+   struct vk_texture *texture  = NULL;
    vk_t *vk                    = (vk_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
-   struct vk_texture *texture = (struct vk_texture*)calloc(1, sizeof(*texture));
-   if (!image || !texture)
+   if (!image)
+      return 0;
+
+   texture                     = (struct vk_texture*)
+      calloc(1, sizeof(*texture));
+
+   if (!texture)
       return 0;
 
    if (!image->pixels || !image->width || !image->height)
@@ -2351,6 +2362,9 @@ static void vulkan_viewport_info(void *data, struct video_viewport *vp)
    vk_t *vk = (vk_t*)data;
 
    video_driver_get_size(&width, &height);
+
+   if (!vk)
+      return;
 
    /* Make sure we get the correct viewport. */
    vulkan_set_viewport(vk, width, height, false, true);

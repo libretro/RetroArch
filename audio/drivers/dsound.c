@@ -32,7 +32,9 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <retro_timers.h>
+#ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#endif
 #include <queues/fifo_queue.h>
 
 #include "../audio_driver.h"
@@ -59,7 +61,11 @@ typedef struct dsound
    CRITICAL_SECTION crit;
 
    HANDLE      event;
+#ifdef HAVE_THREADS
    sthread_t *thread;
+#else
+   HANDLE thread;
+#endif
 
    unsigned buffer_size;
 
@@ -137,7 +143,11 @@ static INLINE void release_region(dsound_t *ds, const struct audio_lock *region)
          region->size1, region->chunk2, region->size2);
 }
 
+#ifdef HAVE_THREADS
 static void dsound_thread(void *data)
+#else
+static DWORD CALLBACK dsound_thread(PVOID data)
+#endif
 {
    DWORD write_ptr;
    dsound_t *ds = (dsound_t*)data;
@@ -219,7 +229,13 @@ static void dsound_stop_thread(dsound_t *ds)
 
    ds->thread_alive = false;
 
+#ifdef HAVE_THREADS
    sthread_join(ds->thread);
+#else
+   WaitForSingleObject(ds->thread, INFINITE);
+   CloseHandle(ds->thread);
+#endif
+
    ds->thread = NULL;
 }
 
@@ -228,7 +244,12 @@ static bool dsound_start_thread(dsound_t *ds)
    if (!ds->thread)
    {
       ds->thread_alive = true;
-      ds->thread = sthread_create(dsound_thread, ds);
+
+#ifdef HAVE_THREADS
+      ds->thread       = sthread_create(dsound_thread, ds);
+#else
+      ds->thread       = CreateThread(NULL, 0, dsound_thread, ds, 0, NULL);
+#endif
       if (!ds->thread)
          return false;
    }
@@ -261,7 +282,12 @@ static void dsound_free(void *data)
    if (ds->thread)
    {
       ds->thread_alive = false;
+#ifdef HAVE_THREADS
       sthread_join(ds->thread);
+#else
+      WaitForSingleObject(ds->thread, INFINITE);
+      CloseHandle(ds->thread);
+#endif
    }
 
    DeleteCriticalSection(&ds->crit);

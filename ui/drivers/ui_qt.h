@@ -41,8 +41,16 @@
 extern "C" {
 #include <retro_assert.h>
 #include <retro_common_api.h>
+#include <queues/task_queue.h>
 #include "../ui_companion_driver.h"
+#include "../../gfx/video_driver.h"
 }
+
+#define ALL_PLAYLISTS_TOKEN "|||ALL|||"
+#define ICON_PATH "/xmb/dot-art/png/"
+#define THUMBNAIL_BOXART "Named_Boxarts"
+#define THUMBNAIL_SCREENSHOT "Named_Snaps"
+#define THUMBNAIL_TITLE "Named_Titles"
 
 class QApplication;
 class QCloseEvent;
@@ -77,6 +85,16 @@ class MainWindow;
 class ThumbnailWidget;
 class ThumbnailLabel;
 class FlowLayout;
+class ShaderParamsDialog;
+class CoreOptionsDialog;
+class CoreInfoDialog;
+class PlaylistEntryDialog;
+class ViewOptionsDialog;
+
+enum SpecialPlaylist
+{
+   SPECIAL_PLAYLIST_HISTORY
+};
 
 class GridItem : public QObject
 {
@@ -146,21 +164,6 @@ protected slots:
    void selectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 };
 
-class FileDropWidget : public QWidget
-{
-   Q_OBJECT
-public:
-   FileDropWidget(QWidget *parent = 0);
-signals:
-   void filesDropped(QStringList files);
-   void deletePressed();
-protected:
-   void dragEnterEvent(QDragEnterEvent *event);
-   void dropEvent(QDropEvent *event);
-   void keyPressEvent(QKeyEvent *event);
-   void paintEvent(QPaintEvent *event);
-};
-
 class TableWidget : public QTableWidget
 {
    Q_OBJECT
@@ -187,85 +190,11 @@ private slots:
    void onLastWindowClosed();
 };
 
-class PlaylistEntryDialog : public QDialog
-{
-   Q_OBJECT
-public:
-   PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent = 0);
-   const QHash<QString, QString> getSelectedCore();
-   const QString getSelectedDatabase();
-   const QString getSelectedName();
-   const QString getSelectedPath();
-   void setEntryValues(const QHash<QString, QString> &contentHash);
-public slots:
-   bool showDialog(const QHash<QString, QString> &hash = QHash<QString, QString>());
-   void hideDialog();
-   void onAccepted();
-   void onRejected();
-private slots:
-   void onPathClicked();
-private:
-   void loadPlaylistOptions();
-
-   MainWindow *m_mainwindow;
-   QSettings *m_settings;
-   QLineEdit *m_nameLineEdit;
-   QLineEdit *m_pathLineEdit;
-   QComboBox *m_coreComboBox;
-   QComboBox *m_databaseComboBox;
-};
-
-class ViewOptionsDialog : public QDialog
-{
-   Q_OBJECT
-public:
-   ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent = 0);
-public slots:
-   void showDialog();
-   void hideDialog();
-   void onAccepted();
-   void onRejected();
-private slots:
-   void onThemeComboBoxIndexChanged(int index);
-   void onHighlightColorChoose();
-private:
-   void loadViewOptions();
-   void saveViewOptions();
-   void showOrHideHighlightColor();
-
-   MainWindow *m_mainwindow;
-   QSettings *m_settings;
-   QCheckBox *m_saveGeometryCheckBox;
-   QCheckBox *m_saveDockPositionsCheckBox;
-   QCheckBox *m_saveLastTabCheckBox;
-   QCheckBox *m_showHiddenFilesCheckBox;
-   QComboBox *m_themeComboBox;
-   QPushButton *m_highlightColorPushButton;
-   QColor m_highlightColor;
-   QLabel *m_highlightColorLabel;
-   QString m_customThemePath;
-   QCheckBox *m_suggestLoadedCoreFirstCheckBox;
-   QSpinBox *m_allPlaylistsListMaxCountSpinBox;
-   QSpinBox *m_allPlaylistsGridMaxCountSpinBox;
-};
-
 class CoreInfoLabel : public QLabel
 {
    Q_OBJECT
 public:
    CoreInfoLabel(QString text = QString(), QWidget *parent = 0);
-};
-
-class CoreInfoDialog : public QDialog
-{
-   Q_OBJECT
-public:
-   CoreInfoDialog(MainWindow *mainwindow, QWidget *parent = 0);
-public slots:
-   void showCoreInfo();
-private:
-   QFormLayout *m_formLayout;
-   MainWindow *m_mainwindow;
 };
 
 class CoreInfoWidget : public QWidget
@@ -356,6 +285,10 @@ public:
    void addFilesToPlaylist(QStringList files);
    QString getCurrentPlaylistPath();
    QHash<QString, QString> getCurrentContentHash();
+   static double lerp(double x, double y, double a, double b, double d);
+   QString getSpecialPlaylistPath(SpecialPlaylist playlist);
+   QVector<QPair<QString, QString> > getPlaylists();
+   QString getScrubbedString(QString str);
 
 signals:
    void thumbnailChanged(const QPixmap &pixmap);
@@ -364,8 +297,14 @@ signals:
    void gotLogMessage(const QString &msg);
    void gotStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
    void gotReloadPlaylists();
+   void gotReloadShaderParams();
+   void gotReloadCoreOptions();
    void showErrorMessageDeferred(QString msg);
-   void extractArchiveDeferred(QString path);
+   void showInfoMessageDeferred(QString msg);
+   void extractArchiveDeferred(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
+   void itemChanged();
+   void gridItemChanged(QString title);
+   void gotThumbnailDownload(QString system, QString title);
 
 public slots:
    void onBrowserDownloadsClicked();
@@ -392,6 +331,8 @@ public slots:
    void reloadPlaylists();
    void deferReloadPlaylists();
    void onGotReloadPlaylists();
+   void onGotReloadShaderParams();
+   void onGotReloadCoreOptions();
    void showWelcomeScreen();
    void onIconViewClicked();
    void onListViewClicked();
@@ -402,6 +343,12 @@ public slots:
    void showDocs();
    void updateRetroArchNightly();
    void onUpdateRetroArchFinished(bool success);
+   void onThumbnailPackExtractFinished(bool success);
+   void deferReloadShaderParams();
+   void downloadThumbnail(QString system, QString title, QUrl url = QUrl());
+   void downloadAllThumbnails(QString system, QUrl url = QUrl());
+   void downloadPlaylistThumbnails(QString playlistPath);
+   void downloadNextPlaylistThumbnail(QString system, QString title, QString type, QUrl url = QUrl());
 
 private slots:
    void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
@@ -433,15 +380,43 @@ private slots:
    void onGridItemDoubleClicked();
    void onGridItemClicked(ThumbnailWidget *thumbnailWidget = NULL);
    void onPlaylistFilesDropped(QStringList files);
+   void onShaderParamsClicked();
+   void onCoreOptionsClicked();
+   void onShowErrorMessage(QString msg);
+   void onShowInfoMessage(QString msg);
+   void onContributorsClicked();
+   void onItemChanged();
+   void onGridItemChanged(QString title);
+   int onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
+
    void onUpdateNetworkError(QNetworkReply::NetworkError code);
    void onUpdateNetworkSslErrors(const QList<QSslError> &errors);
    void onRetroArchUpdateDownloadFinished();
    void onUpdateDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
    void onUpdateDownloadReadyRead();
    void onUpdateDownloadCanceled();
-   void onShowErrorMessage(QString msg);
-   void onContributorsClicked();
-   int onExtractArchive(QString path);
+
+   void onThumbnailDownloadNetworkError(QNetworkReply::NetworkError code);
+   void onThumbnailDownloadNetworkSslErrors(const QList<QSslError> &errors);
+   void onThumbnailDownloadFinished();
+   void onThumbnailDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+   void onThumbnailDownloadReadyRead();
+   void onThumbnailDownloadCanceled();
+   void onDownloadThumbnail(QString system, QString title);
+
+   void onThumbnailPackDownloadNetworkError(QNetworkReply::NetworkError code);
+   void onThumbnailPackDownloadNetworkSslErrors(const QList<QSslError> &errors);
+   void onThumbnailPackDownloadFinished();
+   void onThumbnailPackDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+   void onThumbnailPackDownloadReadyRead();
+   void onThumbnailPackDownloadCanceled();
+
+   void onPlaylistThumbnailDownloadNetworkError(QNetworkReply::NetworkError code);
+   void onPlaylistThumbnailDownloadNetworkSslErrors(const QList<QSslError> &errors);
+   void onPlaylistThumbnailDownloadFinished();
+   void onPlaylistThumbnailDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+   void onPlaylistThumbnailDownloadReadyRead();
+   void onPlaylistThumbnailDownloadCanceled();
 
 private:
    void setCurrentCoreLabel();
@@ -514,10 +489,30 @@ private:
    int m_allPlaylistsGridMaxCount;
    PlaylistEntryDialog *m_playlistEntryDialog;
    QElapsedTimer m_statusMessageElapsedTimer;
+   QPointer<ShaderParamsDialog> m_shaderParamsDialog;
+   QPointer<CoreOptionsDialog> m_coreOptionsDialog;
    QNetworkAccessManager *m_networkManager;
+
    QProgressDialog *m_updateProgressDialog;
    QFile m_updateFile;
    QPointer<QNetworkReply> m_updateReply;
+
+   QProgressDialog *m_thumbnailDownloadProgressDialog;
+   QFile m_thumbnailDownloadFile;
+   QPointer<QNetworkReply> m_thumbnailDownloadReply;
+   QStringList m_pendingThumbnailDownloadTypes;
+
+   QProgressDialog *m_thumbnailPackDownloadProgressDialog;
+   QFile m_thumbnailPackDownloadFile;
+   QPointer<QNetworkReply> m_thumbnailPackDownloadReply;
+
+   QProgressDialog *m_playlistThumbnailDownloadProgressDialog;
+   QFile m_playlistThumbnailDownloadFile;
+   QPointer<QNetworkReply> m_playlistThumbnailDownloadReply;
+   QVector<QHash<QString, QString> > m_pendingPlaylistThumbnails;
+   unsigned m_downloadedThumbnails;
+   unsigned m_failedThumbnails;
+   bool m_playlistThumbnailDownloadWasCanceled;
 
 protected:
    void closeEvent(QCloseEvent *event);
@@ -526,6 +521,7 @@ protected:
 
 Q_DECLARE_METATYPE(ThumbnailWidget)
 Q_DECLARE_METATYPE(QPointer<ThumbnailWidget>)
+Q_DECLARE_METATYPE(struct video_shader_parameter*)
 
 RETRO_BEGIN_DECLS
 

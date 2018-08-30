@@ -30,6 +30,8 @@ static void unset_fast_savestate(void);
 static void set_hard_disable_audio(void);
 static void unset_hard_disable_audio(void);
 
+static bool core_run_use_last_input(void);
+
 static size_t runahead_save_state_size = 0;
 static bool runahead_save_state_size_known = false;
 
@@ -174,13 +176,19 @@ static void runahead_clear_variables(void)
    runahead_last_frame_count         = 0;
 }
 
+static uint64_t runahead_get_frame_count()
+{
+   bool is_alive, is_focused = false;
+   uint64_t frame_count = 0;
+   video_driver_get_status(&frame_count, &is_alive, &is_focused);
+   return frame_count;
+}
+
+
 static void runahead_check_for_gui(void)
 {
    /* Hack: If we were in the GUI, force a resync. */
-   bool is_alive, is_focused = false;
-   uint64_t frame_count      = 0;
-
-   video_driver_get_status(&frame_count, &is_alive, &is_focused);
+   uint64_t frame_count = runahead_get_frame_count();
 
    if (frame_count != runahead_last_frame_count + 1)
       runahead_force_input_dirty = true;
@@ -241,7 +249,7 @@ void run_ahead(int runahead_count, bool useSecondary)
          if (frame_number == 0)
             core_run();
          else
-            core_run_no_input_polling();
+            core_run_use_last_input();
 
          if (suspended_frame)
          {
@@ -418,7 +426,7 @@ static bool runahead_load_state_secondary(void)
 
 static bool runahead_run_secondary(void)
 {
-   if (!secondary_core_run_no_input_polling())
+   if (!secondary_core_run_use_last_input())
    {
       runahead_secondary_core_available = false;
       return false;
@@ -488,4 +496,33 @@ static void set_hard_disable_audio(void)
 static void unset_hard_disable_audio(void)
 {
    hard_disable_audio = false;
+}
+
+static void runahead_input_poll_null(void)
+{
+}
+
+static bool core_run_use_last_input(void)
+{
+   extern struct retro_callbacks retro_ctx;
+   extern struct retro_core_t current_core;
+
+   retro_input_poll_t old_poll_function = retro_ctx.poll_cb;
+   retro_input_state_t old_input_function = retro_ctx.state_cb;
+
+   retro_ctx.poll_cb = runahead_input_poll_null;
+   retro_ctx.state_cb = input_state_get_last;
+
+   current_core.retro_set_input_poll(retro_ctx.poll_cb);
+   current_core.retro_set_input_state(retro_ctx.state_cb);
+
+   current_core.retro_run();
+
+   retro_ctx.poll_cb = old_poll_function;
+   retro_ctx.state_cb = old_input_function;
+
+   current_core.retro_set_input_poll(retro_ctx.poll_cb);
+   current_core.retro_set_input_state(retro_ctx.state_cb);
+
+   return true;
 }
