@@ -370,6 +370,7 @@ static char** waiting_argv;
 }
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode {
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1060
    BOOL isFullScreen = (self.window.styleMask & NSFullScreenWindowMask) == NSFullScreenWindowMask;
    if (mode.fullscreen && !isFullScreen)
    {
@@ -383,11 +384,14 @@ static char** waiting_argv;
    }
    
    if (mode.width > 0)
+#endif
    {
       // HACK(sgc): ensure MTKView posts a drawable resize event
       [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
    }
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1060
    [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
+#endif
 }
 
 - (void)setCursorVisible:(bool)v {
