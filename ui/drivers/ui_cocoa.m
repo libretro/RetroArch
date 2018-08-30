@@ -42,11 +42,7 @@
 #import <MetalKit/MetalKit.h>
 #endif
 
-#ifndef MAC_OS_X_VERSION_10_6
-#define MAC_OS_X_VERSION_10_6 1060
-#endif
-
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
 @interface WindowListener : NSResponder<NSWindowDelegate>
 @end
 
