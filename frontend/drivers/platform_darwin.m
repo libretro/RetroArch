@@ -286,6 +286,10 @@ static void frontend_darwin_get_name(char *s, size_t len)
 #endif
 }
 
+#ifndef MAC_OS_X_VERSION_10_10
+#define MAC_OS_X_VERSION_10_10 101000
+#endif
+
 static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 {
 #if defined(IOS)
