@@ -80,7 +80,7 @@ static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_stat
          break;
    }
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
    [alert beginSheetModalForWindow:(BRIDGE NSWindow *)ui_companion_driver_get_main_window()
                  completionHandler:^(NSModalResponse returnCode) {
                     [[NSApplication sharedApplication] stopModalWithCode:returnCode];

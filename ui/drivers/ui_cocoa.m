@@ -42,10 +42,6 @@
 #import <MetalKit/MetalKit.h>
 #endif
 
-#ifndef MAC_OS_X_VERSION_10_6
-#define MAC_OS_X_VERSION_10_6 1060
-#endif
-
 #if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
 @interface WindowListener : NSResponder<NSWindowDelegate>
 @end
@@ -78,7 +74,7 @@ id<ApplePlatform> apple_platform;
    apple_view_type_t _vt;
    NSView* _renderView;
    id _sleepActivity;
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
    WindowListener *_listener;
 #endif
 }
@@ -259,7 +255,7 @@ static char** waiting_argv;
 {
    unsigned i;
    apple_platform   = self;
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
    self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 #else
    SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
@@ -272,12 +268,12 @@ static char** waiting_argv;
    }
 #endif
    
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
    _listener = [WindowListener new];
 #endif
    
    [self.window setAcceptsMouseMovedEvents: YES];
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
    [self.window setNextResponder:_listener];
    self.window.delegate = _listener;
 #endif
@@ -298,7 +294,7 @@ static char** waiting_argv;
 
    waiting_argc = 0;
    
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
    [self.window makeMainWindow];
    [self.window makeKeyWindow];
 #endif
@@ -319,7 +315,7 @@ static char** waiting_argv;
       _renderView.wantsLayer = NO;
       _renderView.layer = nil;
       [_renderView removeFromSuperview];
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
       self.window.contentView = nil;
 #endif
       _renderView = nil;
@@ -352,7 +348,7 @@ static char** waiting_argv;
    _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
    _renderView.frame = self.window.contentView.bounds;
    
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
    self.window.contentView = _renderView;
    [self.window.contentView setNextResponder:_listener];
 #else
@@ -403,7 +399,7 @@ static char** waiting_argv;
 
 - (bool)setDisableDisplaySleep:(bool)disable
 {
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
    if (disable && _sleepActivity == nil)
    {
       _sleepActivity = [NSProcessInfo.processInfo beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled reason:@"disable screen saver"];
