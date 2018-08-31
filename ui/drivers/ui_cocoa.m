@@ -346,14 +346,12 @@ static char** waiting_argv;
    }
    
    _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+   _renderView.frame = self.window.contentView.bounds;
    
 #if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
-   _renderView.frame = self.window.contentView.bounds;
    self.window.contentView = _renderView;
    [self.window.contentView setNextResponder:_listener];
 #else
-   /* TODO/FIXME - Aussiebloke - we need a workaround for OSX 10.5 for self.window.contentView.bounds -
-	* error - request for member 'bounds' in something not a structure or union. */
    [self.window.contentView addSubview:_renderView];
    [self.window makeFirstResponder:_renderView];
 #endif
