@@ -292,11 +292,6 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
    get_ios_version(major, minor);
    strlcpy(s, "iOS", len);
 #elif defined(OSX)
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
-   NSOperatingSystemVersion version =  [[NSProcessInfo processInfo] operatingSystemVersion];
-   *major = (int)version.majorVersion;
-   *minor = (int)version.minorVersion;
-#else
    if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
    {
       typedef struct
@@ -314,7 +309,6 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
       Gestalt(gestaltSystemVersionMinor, (SInt32*)minor);
       Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
    }
-#endif
    strlcpy(s, "OSX", len);
 #endif
 }
