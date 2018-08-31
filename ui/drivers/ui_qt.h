@@ -429,6 +429,7 @@ private:
    bool updateCurrentPlaylistEntry(const QHash<QString, QString> &contentHash);
    int extractArchive(QString path);
    void removeUpdateTempFiles();
+   bool addDirectoryFilesToList(QProgressDialog *dialog, QStringList &list, QDir &dir, QStringList &extensions);
    QVector<QHash<QString, QString> > getPlaylistItems(QString pathString);
 
    LoadCoreWindow *m_loadCoreWindow;

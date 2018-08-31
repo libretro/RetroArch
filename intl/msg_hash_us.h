@@ -7267,6 +7267,18 @@ MSG_HASH(
     "Database:"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS,
+    "Extensions:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
+    "(space-separated; includes all by default)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
+    "Filter inside archives"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
     "(used to find thumbnails)"
     )

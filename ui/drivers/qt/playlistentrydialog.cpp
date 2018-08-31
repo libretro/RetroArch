@@ -1,5 +1,6 @@
 #include <QSettings>
 #include <QLineEdit>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QFormLayout>
 #include <QDialogButtonBox>
@@ -33,23 +34,34 @@ PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent
    ,m_settings(mainwindow->settings())
    ,m_nameLineEdit(new QLineEdit(this))
    ,m_pathLineEdit(new QLineEdit(this))
+   ,m_extensionsLineEdit(new QLineEdit(this))
    ,m_coreComboBox(new QComboBox(this))
    ,m_databaseComboBox(new QComboBox(this))
+   ,m_extensionArchiveCheckBox(new QCheckBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES), this))
 {
    QFormLayout *form = new QFormLayout();
    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
    QVBoxLayout *databaseVBoxLayout = new QVBoxLayout();
    QHBoxLayout *pathHBoxLayout = new QHBoxLayout();
+   QHBoxLayout *extensionHBoxLayout = new QHBoxLayout();
    QLabel *databaseLabel = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS), this);
    QToolButton *pathPushButton = new QToolButton(this);
 
-   pathPushButton->setText("...");
+   pathPushButton->setText(QStringLiteral("..."));
 
    pathHBoxLayout->addWidget(m_pathLineEdit);
    pathHBoxLayout->addWidget(pathPushButton);
 
    databaseVBoxLayout->addWidget(m_databaseComboBox);
    databaseVBoxLayout->addWidget(databaseLabel);
+
+   extensionHBoxLayout->addWidget(m_extensionsLineEdit);
+   extensionHBoxLayout->addWidget(m_extensionArchiveCheckBox);
+
+   m_extensionsLineEdit->setPlaceholderText(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER));
+
+   /* Ensure placeholder text is completely visible. */
+   m_extensionsLineEdit->setMinimumWidth(QFontMetrics(m_extensionsLineEdit->font()).boundingRect(m_extensionsLineEdit->placeholderText()).width() + m_extensionsLineEdit->frameSize().width());
 
    setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY));
 
@@ -68,12 +80,18 @@ PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH), pathHBoxLayout);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE), m_coreComboBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE), databaseVBoxLayout);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS), extensionHBoxLayout);
 
    qobject_cast<QVBoxLayout*>(layout())->addLayout(form);
    layout()->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding));
    layout()->addWidget(buttonBox);
 
    connect(pathPushButton, SIGNAL(clicked()), this, SLOT(onPathClicked()));
+}
+
+bool PlaylistEntryDialog::filterInArchive()
+{
+   return m_extensionArchiveCheckBox->isChecked();
 }
 
 void PlaylistEntryDialog::onPathClicked()
@@ -231,6 +249,18 @@ const QString PlaylistEntryDialog::getSelectedPath()
 const QString PlaylistEntryDialog::getSelectedDatabase()
 {
    return m_databaseComboBox->currentData(Qt::UserRole).toString();
+}
+
+const QStringList PlaylistEntryDialog::getSelectedExtensions()
+{
+   QStringList list;
+   QString text = m_extensionsLineEdit->text();
+
+   /* Otherwise it would create a QStringList with a single blank entry... */
+   if (!text.isEmpty())
+      list = text.split(' ');
+
+   return list;
 }
 
 void PlaylistEntryDialog::onAccepted()
