@@ -182,6 +182,11 @@ void PlaylistEntryDialog::loadPlaylistOptions()
    }
 }
 
+bool PlaylistEntryDialog::nameFieldEnabled()
+{
+   return m_nameLineEdit->isEnabled();
+}
+
 void PlaylistEntryDialog::setEntryValues(const QHash<QString, QString> &contentHash)
 {
    QString db;

@@ -306,11 +306,14 @@ void MainWindow::addFilesToPlaylist(QStringList files)
 
       fileInfo = fileName;
 
-      if (files.count() == 1 && list.count() == 1 && i == 0)
+      /* Make sure we're looking at a user-specified field and not just "<multiple>"
+       * in case it was a folder with one file in it */
+      if (files.count() == 1 && list.count() == 1 && i == 0 && playlistDialog->nameFieldEnabled())
       {
          fileBaseNameArray = selectedName.toUtf8();
          pathArray = QDir::toNativeSeparators(selectedPath).toUtf8();
       }
+      /* Otherwise just use the file name itself (minus extension) for the playlist entry title */
       else
       {
          fileBaseNameArray = fileInfo.completeBaseName().toUtf8();
