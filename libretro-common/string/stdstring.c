@@ -159,7 +159,7 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode)
    while (i < len)
    {
       unsigned counter;
-      int pos = &buffer[i] - buffer;
+      int pos = (int)(&buffer[i] - buffer);
 
       /* copy string until the end of the line is reached */
       for (counter = 1; counter <= (unsigned)line_width; counter++)
