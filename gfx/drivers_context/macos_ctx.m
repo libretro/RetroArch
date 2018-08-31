@@ -456,7 +456,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
          
          g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
          
-#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
          if (g_format == nil)
          {
             /* NSOpenGLFPAAllowOfflineRenderers is
