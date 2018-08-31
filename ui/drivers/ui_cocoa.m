@@ -37,7 +37,7 @@
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
-#ifdef HAVE_METAL
+#if HAVE_METAL
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
 #endif
