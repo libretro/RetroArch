@@ -29,7 +29,7 @@
 
 #ifdef __OBJC__
 
-#if (MAC_OS_X_VERSION_MAX_ALLOWED <= 1040)
+#if (MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4)
 typedef int NSInteger;
 typedef unsigned NSUInteger;
 typedef float CGFloat;

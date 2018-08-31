@@ -404,6 +404,10 @@ static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
 #endif
 }
 
+#ifndef MAC_OS_X_VERSION_10_10
+#define MAC_OS_X_VERSION_10_10 101000
+#endif
+
 static bool cocoagl_gfx_ctx_set_video_mode(void *data,
                                            video_frame_info_t *video_info,
                                            unsigned width, unsigned height, bool fullscreen)
@@ -446,7 +450,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
          }
 #endif
          
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101000
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
          if (g_major == 4 && g_minor == 1)
          {
             attributes[6] = NSOpenGLPFAOpenGLProfile;
@@ -456,7 +460,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
          
          g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
          
-#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
+#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
          if (g_format == nil)
          {
             /* NSOpenGLFPAAllowOfflineRenderers is
