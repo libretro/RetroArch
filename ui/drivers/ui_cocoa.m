@@ -74,7 +74,7 @@ id<ApplePlatform> apple_platform;
    apple_view_type_t _vt;
    NSView* _renderView;
    id _sleepActivity;
-#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
    WindowListener *_listener;
 #endif
 }
@@ -265,12 +265,12 @@ static char** waiting_argv;
           [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
    }
    
-#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
    _listener = [WindowListener new];
 #endif
    
    [self.window setAcceptsMouseMovedEvents: YES];
-#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
    [self.window setNextResponder:_listener];
    self.window.delegate = _listener;
 #endif
@@ -342,7 +342,7 @@ static char** waiting_argv;
    [_renderView setFrame: [[self.window contentView] bounds]];
    
    self.window.contentView = _renderView;
-#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
    [self.window.contentView setNextResponder:_listener];
 #endif
 }
