@@ -251,9 +251,7 @@ static char** waiting_argv;
 {
    unsigned i;
    apple_platform   = self;
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
-   self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
-#else
+
    SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
    SEL fsselector   = NSSelectorFromString(BOXSTRING("toggleFullScreen:"));
 
@@ -262,7 +260,6 @@ static char** waiting_argv;
        if ([self.window respondsToSelector:fsselector])
           [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
    }
-#endif
    
    _listener = [WindowListener new];
    
