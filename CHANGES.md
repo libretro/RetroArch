@@ -1,4 +1,6 @@
-# 1.7.4 (future)
+# 1.7.5 (future)
+
+# 1.7.4
 - ANDROID: Add sustained performance mode, can be turned on/off in Power Management settings menu.
 - ANDROID: Powerstate/battery level support.
 - CHEEVOS: Fix crash when scrolling Achievement List while Unofficial Achievements enabled (#6732).
