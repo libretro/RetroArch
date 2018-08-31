@@ -91,6 +91,9 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
    QPoint cursorPos = QCursor::pos();
    QHash<QString, QString> contentHash = getCurrentContentHash();
 
+   if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) != msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
+      return;
+
    menu.reset(new QMenu(this));
 
    downloadThumbnailAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL)), this));
