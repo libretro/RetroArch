@@ -763,11 +763,11 @@ ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_event_command,
    ui_companion_cocoa_notify_content_loaded,
    ui_companion_cocoa_notify_list_pushed,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* notify_refresh */
+   NULL, /* msg_queue_push */
+   NULL, /* render_messagebox */
    ui_companion_cocoa_get_main_window,
-   NULL,
+   NULL, /* log_msg */
    &ui_browser_window_cocoa,
    &ui_msg_window_cocoa,
    &ui_window_cocoa,

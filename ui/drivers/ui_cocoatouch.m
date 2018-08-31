@@ -710,7 +710,8 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_notify_refresh,
    ui_companion_cocoatouch_msg_queue_push,
    ui_companion_cocoatouch_render_messagebox,
-   NULL,
+   NULL, /* get_main_window */
+   NULL, /* log_msg */
    &ui_browser_window_null,
    &ui_msg_window_null,
    &ui_window_null,
