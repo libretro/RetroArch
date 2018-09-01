@@ -221,10 +221,7 @@ static int rbmp__high_bit(unsigned int z)
       z >>=  2;
    }
    if (z >= 0x00002)
-   {
       n +=  1;
-      z >>=  1;
-   }
    return n;
 }
 
