@@ -391,7 +391,7 @@ static int ssl_srv_parse_truncated_hmac_ext( mbedtls_ssl_context *ssl,
 #endif /* MBEDTLS_SSL_TRUNCATED_HMAC */
 
 #if defined(MBEDTLS_SSL_ENCRYPT_THEN_MAC)
-static int ssl_parse_encrypt_then_mac_ext( mbedtls_ssl_context *ssl,
+static int ssl_srv_parse_encrypt_then_mac_ext( mbedtls_ssl_context *ssl,
                                       const unsigned char *buf,
                                       size_t len )
 {
@@ -1711,7 +1711,7 @@ read_record_header:
             case MBEDTLS_TLS_EXT_ENCRYPT_THEN_MAC:
                 MBEDTLS_SSL_DEBUG_MSG( 3, ( "found encrypt then mac extension" ) );
 
-                ret = ssl_parse_encrypt_then_mac_ext( ssl, ext + 4, ext_size );
+                ret = ssl_srv_parse_encrypt_then_mac_ext( ssl, ext + 4, ext_size );
                 if( ret != 0 )
                     return( ret );
                 break;
