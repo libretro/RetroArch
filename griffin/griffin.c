@@ -1494,4 +1494,6 @@ SSL
 #include "../deps/mbedtls/ssl_srv.c"
 #include "../deps/mbedtls/ssl_ticket.c"
 #include "../deps/mbedtls/ssl_tls.c"
+
+#include "../libretro-common/net/net_socket_ssl.c"
 #endif
