@@ -498,6 +498,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_RUNAHEAD",
+					"-DHAVE_SSL",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_FLAC",
 					"-DHAVE_DR_FLAC",
@@ -560,6 +561,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-DHAVE_RUNAHEAD",
+					"-DHAVE_SSL",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_FLAC",
 					"-DHAVE_DR_FLAC",

@@ -136,11 +136,21 @@ void mbedtls_ripemd160_process( mbedtls_ripemd160_context *ctx, const unsigned c
     D = Dp = ctx->state[3];
     E = Ep = ctx->state[4];
 #undef F1
+#ifndef F1
 #define F1( x, y, z )   ( x ^ y ^ z )
+#endif
+#ifndef F2
 #define F2( x, y, z )   ( ( x & y ) | ( ~x & z ) )
+#endif
+#ifndef F3
 #define F3( x, y, z )   ( ( x | ~y ) ^ z )
+#endif
+#ifndef F4
 #define F4( x, y, z )   ( ( x & z ) | ( y & ~z ) )
+#endif
+#ifndef F5
 #define F5( x, y, z )   ( x ^ ( y | ~z ) )
+#endif
 #undef  S
 #define S( x, n ) ( ( x << n ) | ( x >> (32 - n) ) )
 #undef P
