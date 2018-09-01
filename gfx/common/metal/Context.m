@@ -382,7 +382,7 @@
 {
    assert(filter >= TEXTURE_FILTER_LINEAR && filter <= TEXTURE_FILTER_MIPMAP_NEAREST);
    
-   if (!image.pixels && !image.width && !image.height)
+   if (!image.pixels || !image.width || !image.height)
    {
       /* Create a dummy texture instead. */
 #define T0 0xff000000u
@@ -403,6 +403,7 @@
       image.pixels = (uint32_t *)checkerboard;
       image.width = 8;
       image.height = 8;
+      filter = TEXTURE_FILTER_MIPMAP_NEAREST;
    }
    
    BOOL mipmapped = filter == TEXTURE_FILTER_MIPMAP_LINEAR || filter == TEXTURE_FILTER_MIPMAP_NEAREST;
