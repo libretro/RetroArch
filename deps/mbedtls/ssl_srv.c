@@ -441,7 +441,7 @@ static int ssl_srv_parse_extended_ms_ext( mbedtls_ssl_context *ssl,
 #endif /* MBEDTLS_SSL_EXTENDED_MASTER_SECRET */
 
 #if defined(MBEDTLS_SSL_SESSION_TICKETS)
-static int ssl_parse_session_ticket_ext( mbedtls_ssl_context *ssl,
+static int ssl_srv_parse_session_ticket_ext( mbedtls_ssl_context *ssl,
                                          unsigned char *buf,
                                          size_t len )
 {
@@ -515,7 +515,7 @@ static int ssl_parse_session_ticket_ext( mbedtls_ssl_context *ssl,
 #endif /* MBEDTLS_SSL_SESSION_TICKETS */
 
 #if defined(MBEDTLS_SSL_ALPN)
-static int ssl_parse_alpn_ext( mbedtls_ssl_context *ssl,
+static int ssl_srv_parse_alpn_ext( mbedtls_ssl_context *ssl,
                                const unsigned char *buf, size_t len )
 {
     size_t list_len, cur_len, ours_len;
@@ -1731,7 +1731,7 @@ read_record_header:
             case MBEDTLS_TLS_EXT_SESSION_TICKET:
                 MBEDTLS_SSL_DEBUG_MSG( 3, ( "found session ticket extension" ) );
 
-                ret = ssl_parse_session_ticket_ext( ssl, ext + 4, ext_size );
+                ret = ssl_srv_parse_session_ticket_ext( ssl, ext + 4, ext_size );
                 if( ret != 0 )
                     return( ret );
                 break;
@@ -1741,7 +1741,7 @@ read_record_header:
             case MBEDTLS_TLS_EXT_ALPN:
                 MBEDTLS_SSL_DEBUG_MSG( 3, ( "found alpn extension" ) );
 
-                ret = ssl_parse_alpn_ext( ssl, ext + 4, ext_size );
+                ret = ssl_srv_parse_alpn_ext( ssl, ext + 4, ext_size );
                 if( ret != 0 )
                     return( ret );
                 break;
@@ -2391,7 +2391,7 @@ static int ssl_write_server_hello( mbedtls_ssl_context *ssl )
 
     /*
      * Resume is 0  by default, see ssl_handshake_init().
-     * It may be already set to 1 by ssl_parse_session_ticket_ext().
+     * It may be already set to 1 by ssl_srv_parse_session_ticket_ext().
      * If not, try looking up session ID in our cache.
      */
     if( ssl->handshake->resume == 0 &&
