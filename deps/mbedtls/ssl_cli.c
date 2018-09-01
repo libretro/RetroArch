@@ -1102,7 +1102,7 @@ static int ssl_cli_parse_encrypt_then_mac_ext( mbedtls_ssl_context *ssl,
 #endif /* MBEDTLS_SSL_ENCRYPT_THEN_MAC */
 
 #if defined(MBEDTLS_SSL_EXTENDED_MASTER_SECRET)
-static int ssl_parse_extended_ms_ext( mbedtls_ssl_context *ssl,
+static int ssl_cli_parse_extended_ms_ext( mbedtls_ssl_context *ssl,
                                          const unsigned char *buf,
                                          size_t len )
 {
@@ -1746,7 +1746,7 @@ static int ssl_parse_server_hello( mbedtls_ssl_context *ssl )
         case MBEDTLS_TLS_EXT_EXTENDED_MASTER_SECRET:
             MBEDTLS_SSL_DEBUG_MSG( 3, ( "found extended_master_secret extension" ) );
 
-            if( ( ret = ssl_parse_extended_ms_ext( ssl,
+            if( ( ret = ssl_cli_parse_extended_ms_ext( ssl,
                             ext + 4, ext_size ) ) != 0 )
             {
                 return( ret );
