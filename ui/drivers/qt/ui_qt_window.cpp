@@ -336,6 +336,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_downloadedThumbnails(0)
    ,m_failedThumbnails(0)
    ,m_playlistThumbnailDownloadWasCanceled(false)
+   ,m_pendingDirScrollPath()
 {
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
@@ -557,6 +558,11 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
    connect(m_gridLayoutWidget, SIGNAL(filesDropped(QStringList)), this, SLOT(onPlaylistFilesDropped(QStringList)));
    connect(m_gridLayoutWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
+   connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(onFileSystemDirLoaded(const QString&)));
+
+   /* must use queued connection */
+   connect(this, SIGNAL(scrollToDownloads(QString)), this, SLOT(onDownloadScroll(QString)), Qt::QueuedConnection);
+   connect(this, SIGNAL(scrollToDownloadsAgain(QString)), this, SLOT(onDownloadScrollAgain(QString)), Qt::QueuedConnection);
 
    connect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()), m_playlistThumbnailDownloadProgressDialog, SLOT(cancel()));
    connect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()), this, SLOT(onPlaylistThumbnailDownloadCanceled()));
@@ -631,6 +637,19 @@ MainWindow::~MainWindow()
       delete m_thumbnailPixmap3;
 
    removeGridItems();
+}
+
+void MainWindow::onFileSystemDirLoaded(const QString &path)
+{
+   if (path.isEmpty() || m_pendingDirScrollPath.isEmpty())
+      return;
+
+   if (QDir(path) == QDir(m_pendingDirScrollPath))
+   {
+      m_pendingDirScrollPath = QString();
+
+      emit scrollToDownloads(path);
+   }
 }
 
 QVector<QPair<QString, QString> > MainWindow::getPlaylists()
@@ -2542,10 +2561,33 @@ void MainWindow::onBrowserDownloadsClicked()
 {
    settings_t *settings = config_get_ptr();
    QDir dir(settings->paths.directory_core_assets);
+   QString path = dir.absolutePath();
+   QModelIndex index;
 
-   m_dirTree->setCurrentIndex(m_dirModel->index(dir.absolutePath()));
-   /* for some reason, scrollTo only seems to work right when the button is clicked twice (only tested on Linux) */
-   m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
+   m_pendingDirScrollPath = path;
+
+   index = m_dirModel->index(path);
+
+   m_dirTree->setCurrentIndex(index);
+
+   onDownloadScroll(path);
+}
+
+void MainWindow::onDownloadScroll(QString path)
+{
+   QModelIndex index = m_dirModel->index(path);
+   m_dirTree->scrollTo(index, QAbstractItemView::PositionAtTop);
+   m_dirTree->expand(index);
+
+   /* FIXME: Find a way to make this unnecessary */
+   emit scrollToDownloadsAgain(path);
+}
+
+void MainWindow::onDownloadScrollAgain(QString path)
+{
+   QModelIndex index = m_dirModel->index(path);
+   m_dirTree->scrollTo(index, QAbstractItemView::PositionAtTop);
+   m_dirTree->expand(index);
 }
 
 void MainWindow::onBrowserUpClicked()

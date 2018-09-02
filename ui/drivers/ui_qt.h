@@ -305,6 +305,8 @@ signals:
    void itemChanged();
    void gridItemChanged(QString title);
    void gotThumbnailDownload(QString system, QString title);
+   void scrollToDownloads(QString path);
+   void scrollToDownloadsAgain(QString path);
 
 public slots:
    void onBrowserDownloadsClicked();
@@ -387,6 +389,9 @@ private slots:
    void onContributorsClicked();
    void onItemChanged();
    void onGridItemChanged(QString title);
+   void onFileSystemDirLoaded(const QString &path);
+   void onDownloadScroll(QString path);
+   void onDownloadScrollAgain(QString path);
    int onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
 
    void onUpdateNetworkError(QNetworkReply::NetworkError code);
@@ -514,6 +519,7 @@ private:
    unsigned m_downloadedThumbnails;
    unsigned m_failedThumbnails;
    bool m_playlistThumbnailDownloadWasCanceled;
+   QString m_pendingDirScrollPath;
 
 protected:
    void closeEvent(QCloseEvent *event);
