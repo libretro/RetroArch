@@ -493,16 +493,19 @@ static void cheevos_award(cheevos_cheevo_t* cheevo, int mode)
    /* Take a screenshot of the achievement. */
    if (settings && settings->bools.cheevos_auto_screenshot)
    {
-      snprintf(buffer, sizeof(buffer), "%s/%s-cheevo-%u",
-         settings->paths.directory_screenshot,
-         path_basename(path_get(RARCH_PATH_BASENAME)),
-         cheevo->info->id);
+      char shotname[256];
 
-      if (take_screenshot(buffer, true,
-               video_driver_cached_frame_has_valid_framebuffer()))
-         CHEEVOS_LOG(CHEEVOS_TAG "Took a screenshot for cheevo %u\n", cheevo->info->id);
+      snprintf(shotname, sizeof(shotname), "%s/%s-cheevo-%u",
+      settings->paths.directory_screenshot,
+      path_basename(path_get(RARCH_PATH_BASENAME)),
+      cheevo->info->id);
+      shotname[sizeof(shotname) - 1] = '\0';
+
+      if (take_screenshot(shotname, true,
+            video_driver_cached_frame_has_valid_framebuffer(), false, true))
+      CHEEVOS_LOG("[CHEEVOS]: got a screenshot for cheevo %u\n", cheevo->info->id);
       else
-         CHEEVOS_LOG(CHEEVOS_TAG "Failed to take screenshot for cheevo %u\n", cheevo->info->id);
+      CHEEVOS_LOG("[CHEEVOS]: failed to get screenshot for cheevo %u\n", cheevo->info->id);
    }
 }
 
