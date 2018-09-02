@@ -41,7 +41,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
-#include "cheevos/var.h"
+#include "cheevos/fixup.h"
 #endif
 
 #ifdef HAVE_DISCORD
@@ -262,14 +262,13 @@ static bool command_version(const char* arg)
 #define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
 {
-   cheevos_var_t var;
    unsigned i;
    char  *reply         = NULL;
    const uint8_t * data = NULL;
    char *reply_at       = NULL;
    unsigned int nbytes  = 0;
    unsigned int alloc_size = 0;
-   int          addr    = -1;
+   unsigned int addr    = -1;
 
    if (sscanf(arg, "%x %d", &addr, &nbytes) != 2)
       return true;
@@ -278,9 +277,7 @@ static bool command_read_ram(const char *arg)
    reply[0] = '\0';
    reply_at = reply + sprintf(reply, SMY_CMD_STR " %x", addr);
 
-   var.value = addr;
-   cheevos_var_patch_addr(&var, cheevos_get_console());
-   data = cheevos_var_get_memory(&var);
+   data = cheevos_patch_address(addr, cheevos_get_console());
 
    if (data)
    {
@@ -302,14 +299,9 @@ static bool command_read_ram(const char *arg)
 
 static bool command_write_ram(const char *arg)
 {
-   cheevos_var_t var;
    unsigned nbytes   = 0;
-   uint8_t *data     = NULL;
-
-   var.value = strtoul(arg, (char**)&arg, 16);
-   cheevos_var_patch_addr(&var, cheevos_get_console());
-
-   data = cheevos_var_get_memory(&var);
+   unsigned int addr = strtoul(arg, (char**)&arg, 16);
+   uint8_t *data     = (uint8_t *)cheevos_patch_address(addr, cheevos_get_console());
 
    if (data)
    {
