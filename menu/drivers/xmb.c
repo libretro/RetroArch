@@ -2007,7 +2007,8 @@ static void xmb_context_reset_horizontal_list(
 
       {
          struct texture_image ti;
-         char sysname[256];
+         char *sysname             = (char*)
+            malloc(PATH_MAX_LENGTH * sizeof(char));
          char *iconpath            = (char*)
             malloc(PATH_MAX_LENGTH * sizeof(char));
          char *texturepath         = (char*)
@@ -2018,7 +2019,8 @@ static void xmb_context_reset_horizontal_list(
          iconpath[0]    = sysname[0] =
             texturepath[0] = content_texturepath[0] = '\0';
 
-         fill_pathname_base_noext(sysname, path, sizeof(sysname));
+         fill_pathname_base_noext(sysname, path,
+               PATH_MAX_LENGTH * sizeof(char));
 
          fill_pathname_application_special(iconpath,
                PATH_MAX_LENGTH * sizeof(char),
@@ -2080,6 +2082,7 @@ static void xmb_context_reset_horizontal_list(
             image_texture_free(&ti);
          }
 
+         free(sysname);
          free(iconpath);
          free(texturepath);
          free(content_texturepath);
