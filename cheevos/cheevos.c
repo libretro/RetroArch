@@ -503,9 +503,9 @@ static void cheevos_award(cheevos_cheevo_t* cheevo, int mode)
 
       if (take_screenshot(shotname, true,
             video_driver_cached_frame_has_valid_framebuffer(), false, true))
-      CHEEVOS_LOG("[CHEEVOS]: got a screenshot for cheevo %u\n", cheevo->info->id);
+         CHEEVOS_LOG("[CHEEVOS]: got a screenshot for cheevo %u\n", cheevo->info->id);
       else
-      CHEEVOS_LOG("[CHEEVOS]: failed to get screenshot for cheevo %u\n", cheevo->info->id);
+         CHEEVOS_LOG("[CHEEVOS]: failed to get screenshot for cheevo %u\n", cheevo->info->id);
    }
 }
 
