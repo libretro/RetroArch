@@ -183,6 +183,16 @@ int getaddrinfo_retro(const char *node, const char *service,
 #endif
    }
 
+#if defined(WIIU)
+   if (node == NULL) {
+      /* Wii U's socket library chokes on NULL node */
+      if (hints->ai_flags & AI_PASSIVE)
+         node = "0.0.0.0";
+      else
+         node = "127.0.0.1";
+   }
+#endif
+
 #ifdef HAVE_SOCKET_LEGACY
    info = (struct addrinfo*)calloc(1, sizeof(*info));
    if (!info)
