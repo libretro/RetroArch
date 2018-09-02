@@ -1042,11 +1042,11 @@ RECORDING
 /*============================================================
 THREAD
 ============================================================ */
-#if defined(HAVE_THREADS) && defined(XENON)
-#include "../thread/xenon_sdl_threads.c"
-#elif defined(HAVE_THREADS)
+#if defined(HAVE_THREADS)
 
-#if defined(PSP)
+#if defined(XENON)
+#include "../thread/xenon_sdl_threads.c"
+#elif defined(PSP)
 #include "../deps/pthreads/platform/helper/tls-helper.c"
 #include "../deps/pthreads/platform/psp/psp_osal.c"
 #include "../deps/pthreads/pte_main.c"
@@ -1072,7 +1072,6 @@ THREAD
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
 #endif
-
 
 /*============================================================
 NETPLAY
@@ -1416,4 +1415,85 @@ HTTP SERVER
 
 #if defined(HAVE_DISCORD)
 #include "../discord/discord.c"
+#endif
+
+/*============================================================
+SSL
+============================================================ */
+#if defined(HAVE_SSL)
+#include "../deps/mbedtls/aes.c"
+#include "../deps/mbedtls/aesni.c"
+#include "../deps/mbedtls/arc4.c"
+#include "../deps/mbedtls/asn1parse.c"
+#include "../deps/mbedtls/asn1write.c"
+#include "../deps/mbedtls/base64.c"
+#include "../deps/mbedtls/bignum.c"
+#include "../deps/mbedtls/blowfish.c"
+#include "../deps/mbedtls/camellia.c"
+#include "../deps/mbedtls/ccm.c"
+#include "../deps/mbedtls/cipher.c"
+#include "../deps/mbedtls/cipher_wrap.c"
+#include "../deps/mbedtls/cmac.c"
+#include "../deps/mbedtls/ctr_drbg.c"
+#include "../deps/mbedtls/des.c"
+#include "../deps/mbedtls/dhm.c"
+#include "../deps/mbedtls/ecdh.c"
+#include "../deps/mbedtls/ecdsa.c"
+#include "../deps/mbedtls/ecjpake.c"
+#include "../deps/mbedtls/ecp.c"
+#include "../deps/mbedtls/ecp_curves.c"
+#include "../deps/mbedtls/entropy.c"
+#include "../deps/mbedtls/entropy_poll.c"
+#include "../deps/mbedtls/error.c"
+#include "../deps/mbedtls/gcm.c"
+#include "../deps/mbedtls/havege.c"
+#include "../deps/mbedtls/hmac_drbg.c"
+#include "../deps/mbedtls/md.c"
+#include "../deps/mbedtls/md2.c"
+#include "../deps/mbedtls/md4.c"
+#include "../deps/mbedtls/md5.c"
+#include "../deps/mbedtls/md_wrap.c"
+#include "../deps/mbedtls/memory_buffer_alloc.c"
+#include "../deps/mbedtls/oid.c"
+#include "../deps/mbedtls/padlock.c"
+#include "../deps/mbedtls/pem.c"
+#include "../deps/mbedtls/pk.c"
+#include "../deps/mbedtls/pk_wrap.c"
+#include "../deps/mbedtls/pkcs12.c"
+#include "../deps/mbedtls/pkcs5.c"
+#include "../deps/mbedtls/pkparse.c"
+#include "../deps/mbedtls/pkwrite.c"
+#include "../deps/mbedtls/platform.c"
+#include "../deps/mbedtls/ripemd160.c"
+#include "../deps/mbedtls/rsa.c"
+#include "../deps/mbedtls/sha1.c"
+#include "../deps/mbedtls/sha256.c"
+#include "../deps/mbedtls/sha512.c"
+#include "../deps/mbedtls/threading.c"
+#include "../deps/mbedtls/timing.c"
+#include "../deps/mbedtls/version.c"
+#include "../deps/mbedtls/version_features.c"
+#include "../deps/mbedtls/xtea.c"
+
+#include "../deps/mbedtls/certs.c"
+#include "../deps/mbedtls/pkcs11.c"
+#include "../deps/mbedtls/x509.c"
+#include "../deps/mbedtls/x509_create.c"
+#include "../deps/mbedtls/x509_crl.c"
+#include "../deps/mbedtls/x509_crt.c"
+#include "../deps/mbedtls/x509_csr.c"
+#include "../deps/mbedtls/x509write_crt.c"
+#include "../deps/mbedtls/x509write_csr.c"
+
+#include "../deps/mbedtls/debug.c"
+#include "../deps/mbedtls/net_sockets.c"
+#include "../deps/mbedtls/ssl_cache.c"
+#include "../deps/mbedtls/ssl_ciphersuites.c"
+#include "../deps/mbedtls/ssl_cli.c"
+#include "../deps/mbedtls/ssl_cookie.c"
+#include "../deps/mbedtls/ssl_srv.c"
+#include "../deps/mbedtls/ssl_ticket.c"
+#include "../deps/mbedtls/ssl_tls.c"
+
+#include "../libretro-common/net/net_socket_ssl.c"
 #endif

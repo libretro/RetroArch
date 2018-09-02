@@ -51,6 +51,19 @@
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
 
+
+typedef struct touch_pos
+{
+   bool active;
+   int32_t id;
+   unsigned x;
+   unsigned y;
+} touch_pos_t;
+
+static int num_active_touches;
+static touch_pos_t active_touch_positions[MAX_TOUCHES];
+
+
 typedef struct gfx_ctx_wayland_data
 {
 #ifdef HAVE_EGL
@@ -70,6 +83,7 @@ typedef struct gfx_ctx_wayland_data
    struct wl_shell *shell;
    struct wl_keyboard *wl_keyboard;
    struct wl_pointer  *wl_pointer;
+   struct wl_touch *wl_touch;
    struct wl_seat *seat;
    struct wl_shm *shm;
    unsigned swap_interval;
@@ -92,6 +106,7 @@ typedef struct gfx_ctx_wayland_data
    gfx_ctx_vulkan_data_t vk;
 #endif
 } gfx_ctx_wayland_data_t;
+
 
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
@@ -223,8 +238,8 @@ static const struct wl_keyboard_listener keyboard_listener = {
    keyboard_handle_enter,
    keyboard_handle_leave,
    keyboard_handle_key,
-   keyboard_handle_modifiers
-   //keyboard_handle_repeat_info
+   keyboard_handle_modifiers,
+   keyboard_handle_repeat_info
 };
 
 static void gfx_ctx_wl_show_mouse(void *data, bool state);
@@ -329,8 +344,139 @@ static const struct wl_pointer_listener pointer_listener = {
    pointer_handle_axis,
 };
 
+static void touch_handle_down(void *data,
+      struct wl_touch *wl_touch,
+      uint32_t serial,
+      uint32_t time,
+      struct wl_surface *surface,
+      int32_t id,
+      wl_fixed_t x,
+      wl_fixed_t y)
+{
+   int i;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   if (num_active_touches < MAX_TOUCHES)
+   {
+      for (i = 0; i < MAX_TOUCHES; i++)
+      {
+         /* Use next empty slot */
+         if (!active_touch_positions[i].active)
+         {
+            active_touch_positions[num_active_touches].active = true;
+            active_touch_positions[num_active_touches].id = id;
+            active_touch_positions[num_active_touches].x = (unsigned) wl_fixed_to_int(x);
+            active_touch_positions[num_active_touches].y = (unsigned) wl_fixed_to_int(y);
+            num_active_touches++;
+            break;
+         }
+      }
+   }
+}
+static void reorder_touches(void)
+{
+   int i, j;
+   if (num_active_touches == 0)
+      return;
+
+   for (i = 0; i < MAX_TOUCHES; i++)
+   {
+      if (!active_touch_positions[i].active)
+      {
+         for (j=i+1; j<MAX_TOUCHES; j++)
+         {
+            if (active_touch_positions[j].active)
+            {
+               active_touch_positions[i].active = active_touch_positions[j].active;
+               active_touch_positions[i].id = active_touch_positions[j].id;
+               active_touch_positions[i].x = active_touch_positions[j].x;
+               active_touch_positions[i].y = active_touch_positions[j].y;
+               active_touch_positions[j].active = false;
+               active_touch_positions[j].id = -1;
+               active_touch_positions[j].x = (unsigned) 0;
+               active_touch_positions[j].y = (unsigned) 0;
+               break;
+            }
+            if (j == MAX_TOUCHES)
+               return;
+         }
+      }
+   }
+}
+static void touch_handle_up(void *data,
+      struct wl_touch *wl_touch,
+      uint32_t serial,
+      uint32_t time,
+      int32_t id)
+{
+   int i;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   for (i = 0; i < MAX_TOUCHES; i++)
+   {
+      if (active_touch_positions[i].active && active_touch_positions[i].id == id)
+      {
+         active_touch_positions[i].active = false;
+         active_touch_positions[i].id = -1;
+         active_touch_positions[i].x = (unsigned) 0;
+         active_touch_positions[i].y = (unsigned) 0;
+         num_active_touches--;
+      }
+   }
+   reorder_touches();
+}
+static void touch_handle_motion(void *data,
+      struct wl_touch *wl_touch,
+      uint32_t time,
+      int32_t id,
+      wl_fixed_t x,
+      wl_fixed_t y)
+{
+   int i;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   for (i = 0; i < MAX_TOUCHES; i++)
+   {
+      if (active_touch_positions[i].active && active_touch_positions[i].id == id)
+      {
+         active_touch_positions[i].x = (unsigned) wl_fixed_to_int(x);
+         active_touch_positions[i].y = (unsigned) wl_fixed_to_int(y);
+      }
+   }
+}
+static void touch_handle_frame(void *data,
+      struct wl_touch *wl_touch)
+{
+   /* TODO */
+}
+static void touch_handle_cancel(void *data,
+      struct wl_touch *wl_touch)
+{
+   /* If i understand the spec correctly we have to reset all touches here
+    * since they were not ment for us anyway */
+   int i;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   for (i = 0; i < MAX_TOUCHES; i++)
+   {
+      active_touch_positions[i].active = false;
+      active_touch_positions[i].id = -1;
+      active_touch_positions[i].x = (unsigned) 0;
+      active_touch_positions[i].y = (unsigned) 0;
+   }
+   num_active_touches = 0;
+}
+static const struct wl_touch_listener touch_listener = {
+   touch_handle_down,
+   touch_handle_up,
+   touch_handle_motion,
+   touch_handle_frame,
+   touch_handle_cancel,
+};
+
+
 static void seat_handle_capabilities(void *data,
-struct wl_seat *seat, unsigned caps)
+      struct wl_seat *seat, unsigned caps)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
@@ -354,6 +500,17 @@ struct wl_seat *seat, unsigned caps)
       wl_pointer_destroy(wl->wl_pointer);
       wl->wl_pointer = NULL;
    }
+   if ((caps & WL_SEAT_CAPABILITY_TOUCH) && !wl->wl_touch)
+   {
+      wl->wl_touch = wl_seat_get_touch(seat);
+      wl_touch_add_listener(wl->wl_touch, &touch_listener, wl);
+   }
+   else if (!(caps & WL_SEAT_CAPABILITY_TOUCH) && wl->wl_touch)
+   {
+      wl_touch_destroy(wl->wl_touch);
+      wl->wl_touch = NULL;
+   }
+
 }
 
 static void seat_handle_name(void *data, struct wl_seat *seat, const char *name)
@@ -367,6 +524,22 @@ static const struct wl_seat_listener seat_listener = {
    seat_handle_capabilities,
    seat_handle_name,
 };
+
+/* Touch handle functions */
+
+bool wayland_context_gettouchpos(void *data, unsigned id, 
+      unsigned* touch_x, unsigned* touch_y)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   if (id >= MAX_TOUCHES)
+       return false;
+   *touch_x = active_touch_positions[id].x;
+   *touch_y = active_touch_positions[id].y;
+   return active_touch_positions[id].active;
+}
+
+
 
 /* Shell surface callbacks. */
 static void shell_surface_handle_ping(void *data,
@@ -503,7 +676,7 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
       wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, 1);
    else if (string_is_equal(interface, "wl_seat"))
    {
-      wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, 4);
+      wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, 2);
       wl_seat_add_listener(wl->seat, &seat_listener, wl);
    }
 }
@@ -568,6 +741,8 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       wl_keyboard_destroy(wl->wl_keyboard);
    if (wl->wl_pointer)
       wl_pointer_destroy(wl->wl_pointer);
+   if (wl->wl_touch)
+      wl_touch_destroy(wl->wl_touch);
 
    if (wl->cursor.theme)
       wl_cursor_theme_destroy(wl->cursor.theme);
@@ -776,6 +951,7 @@ static bool gfx_ctx_wl_get_metrics(void *data,
 
 static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
 {
+   int i;
 #ifdef HAVE_OPENGL
    static const EGLint egl_attribs_gl[] = {
       WL_EGL_ATTRIBS_BASE,
@@ -924,12 +1100,23 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
          break;
    }
 
+
    wl->input.keyboard_focus = true;
    wl->input.mouse.focus = true;
 
    wl->cursor.surface = wl_compositor_create_surface(wl->compositor);
    wl->cursor.theme = wl_cursor_theme_load(NULL, 16, wl->shm);
    wl->cursor.default_cursor = wl_cursor_theme_get_cursor(wl->cursor.theme, "left_ptr");
+
+   num_active_touches = 0;
+   for (i = 0;i < MAX_TOUCHES;i++)
+   {
+       active_touch_positions[i].active = false;
+       active_touch_positions[i].id = -1;
+       active_touch_positions[i].x = (unsigned) 0;
+       active_touch_positions[i].y = (unsigned) 0;
+   }
+
    flush_wayland_fd(&wl->input);
 
 #ifdef HAVE_DBUS

@@ -193,9 +193,12 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 
 #ifdef VFS_FRONTEND
    const char                 *dumb_prefix  = "vfsonly://";
+   int                      dumb_prefix_len = (int)strlen(dumb_prefix);
+   int                             path_len = (int)strlen(path);
 
-   if (!memcmp(path, dumb_prefix, strlen(dumb_prefix)))
-      path += strlen(dumb_prefix);
+   if (path_len >= dumb_prefix_len)
+      if (!memcmp(path, dumb_prefix, dumb_prefix_len))
+         path += strlen(dumb_prefix);
 #endif
 
    if (!stream)
@@ -378,6 +381,22 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
    if (!stream)
       return 0;
    return stream->size;
+}
+
+int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, int64_t length)
+{
+   if (!stream)
+      return -1;
+
+#ifdef _WIN32
+   if(_chsize(_fileno(stream->fp), length) != 0)
+      return -1;
+#elif !defined(VITA) && !defined(PSP)
+   if(ftruncate(fileno(stream->fp), length) != 0)
+      return -1;
+#endif
+
+   return 0;
 }
 
 int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)

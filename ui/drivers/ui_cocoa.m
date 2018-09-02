@@ -42,6 +42,7 @@
 #import <MetalKit/MetalKit.h>
 #endif
 
+#if !((defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__))))
 @interface WindowListener : NSResponder<NSWindowDelegate>
 @end
 
@@ -59,6 +60,7 @@
 {}
 
 @end
+#endif
 
 id<ApplePlatform> apple_platform;
 
@@ -72,7 +74,9 @@ id<ApplePlatform> apple_platform;
    apple_view_type_t _vt;
    NSView* _renderView;
    id _sleepActivity;
+#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
    WindowListener *_listener;
+#endif
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
@@ -251,9 +255,7 @@ static char** waiting_argv;
 {
    unsigned i;
    apple_platform   = self;
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
-   self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
-#else
+
    SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
    SEL fsselector   = NSSelectorFromString(BOXSTRING("toggleFullScreen:"));
 
@@ -262,13 +264,16 @@ static char** waiting_argv;
        if ([self.window respondsToSelector:fsselector])
           [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
    }
+   
+#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+   _listener = [WindowListener new];
 #endif
    
-   _listener = [WindowListener new];
-   
    [self.window setAcceptsMouseMovedEvents: YES];
+#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
    [self.window setNextResponder:_listener];
    self.window.delegate = _listener;
+#endif
    
    [[self.window contentView] setAutoresizesSubviews:YES];
 
@@ -334,10 +339,12 @@ static char** waiting_argv;
    }
    
    _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-   _renderView.frame = self.window.contentView.bounds;
+   [_renderView setFrame: [[self.window contentView] bounds]];
    
    self.window.contentView = _renderView;
+#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
    [self.window.contentView setNextResponder:_listener];
+#endif
 }
 
 - (apple_view_type_t)viewType {
@@ -352,15 +359,19 @@ static char** waiting_argv;
    return [NSApp isActive];
 }
 
+#define NS_FULLSCREEN_WINDOW_MASK (1 << 14)
+
 - (void)setVideoMode:(gfx_ctx_mode_t)mode {
-   BOOL isFullScreen = (self.window.styleMask & NSFullScreenWindowMask) == NSFullScreenWindowMask;
-   if (mode.fullscreen && !isFullScreen)
+   BOOL isFullScreen = (self.window.styleMask & NS_FULLSCREEN_WINDOW_MASK) == NS_FULLSCREEN_WINDOW_MASK;
+   SEL fselector     = NSSelectorFromString(BOXSTRING("toggleFullScreen"));
+	
+   if (mode.fullscreen && !isFullScreen && [self.window respondsToSelector:fselector])
    {
       [self.window toggleFullScreen:self];
       return;
    }
    
-   if (!mode.fullscreen && isFullScreen)
+   if (!mode.fullscreen && isFullScreen && [self.window respondsToSelector:fselector])
    {
       [self.window toggleFullScreen:self];
    }
@@ -382,7 +393,7 @@ static char** waiting_argv;
 
 - (bool)setDisableDisplaySleep:(bool)disable
 {
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
    if (disable && _sleepActivity == nil)
    {
       _sleepActivity = [NSProcessInfo.processInfo beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled reason:@"disable screen saver"];
@@ -752,11 +763,11 @@ ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_event_command,
    ui_companion_cocoa_notify_content_loaded,
    ui_companion_cocoa_notify_list_pushed,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* notify_refresh */
+   NULL, /* msg_queue_push */
+   NULL, /* render_messagebox */
    ui_companion_cocoa_get_main_window,
-   NULL,
+   NULL, /* log_msg */
    &ui_browser_window_cocoa,
    &ui_msg_window_cocoa,
    &ui_window_cocoa,

@@ -262,11 +262,11 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 };
 
 static const video_driver_t *video_drivers[] = {
-#ifdef HAVE_VULKAN
-   &video_vulkan,
-#endif
 #ifdef HAVE_OPENGL
    &video_gl,
+#endif
+#ifdef HAVE_VULKAN
+   &video_vulkan,
 #endif
 #ifdef HAVE_METAL
    &video_metal,
@@ -1456,15 +1456,18 @@ void video_driver_monitor_adjust_system_rates(void)
    timing_skew                             = fabs(
          1.0f - info->fps / timing_skew_hz);
 
-   /* We don't want to adjust pitch too much. If we have extreme cases,
-    * just don't readjust at all. */
-   if (timing_skew <= settings->floats.audio_max_timing_skew)
-      return;
+   if (!settings->bools.vrr_runloop_enable)
+   {
+      /* We don't want to adjust pitch too much. If we have extreme cases,
+       * just don't readjust at all. */
+      if (timing_skew <= settings->floats.audio_max_timing_skew)
+         return;
 
-   RARCH_LOG("[Video]: Timings deviate too much. Will not adjust."
-         " (Display = %.2f Hz, Game = %.2f Hz)\n",
-         video_refresh_rate,
-         (float)info->fps);
+      RARCH_LOG("[Video]: Timings deviate too much. Will not adjust."
+            " (Display = %.2f Hz, Game = %.2f Hz)\n",
+            video_refresh_rate,
+            (float)info->fps);
+   }
 
    if (info->fps <= timing_skew_hz)
       return;
@@ -1638,7 +1641,7 @@ bool video_driver_is_stub_frame(void)
 bool video_driver_supports_recording(void)
 {
    settings_t *settings = config_get_ptr();
-   return settings->bools.video_gpu_record 
+   return settings->bools.video_gpu_record
       && current_video->read_viewport;
 }
 
@@ -1665,7 +1668,7 @@ void video_driver_set_viewport_config(void)
    {
       struct retro_game_geometry *geom = &video_driver_av_info.geometry;
 
-      if (geom->aspect_ratio > 0.0f && 
+      if (geom->aspect_ratio > 0.0f &&
             settings->bools.video_aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
       else
@@ -1895,7 +1898,7 @@ void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bo
          }
          else if (device_aspect > desired_aspect)
          {
-            delta      = (desired_aspect / device_aspect - 1.0f) 
+            delta      = (desired_aspect / device_aspect - 1.0f)
                / 2.0f + 0.5f;
             vp->x      = (int)roundf(vp->full_width * (0.5f - delta));
             vp->width  = (unsigned)roundf(2.0f * vp->full_width * delta);
@@ -1906,7 +1909,7 @@ void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bo
          {
             vp->x      = 0;
             vp->width  = vp->full_width;
-            delta      = (device_aspect / desired_aspect - 1.0f) 
+            delta      = (device_aspect / desired_aspect - 1.0f)
                / 2.0f + 0.5f;
             vp->y      = (int)roundf(vp->full_height * (0.5f - delta));
             vp->height = (unsigned)roundf(2.0f * vp->full_height * delta);
@@ -2321,7 +2324,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned base_width;
       /* Use system reported sizes as these define the
        * geometry for the "normal" case. */
-      unsigned base_height                 = 
+      unsigned base_height                 =
          video_driver_av_info.geometry.base_height;
 
       if (base_height == 0)
@@ -2628,9 +2631,9 @@ void video_driver_frame(const void *data, unsigned width,
    /* Display the FPS, with a higher priority. */
    if (video_info.fps_show)
       runloop_msg_queue_push(video_info.fps_text, 2, 1, true);
-  
-  	/* trigger set resolution*/
-	if (video_info.crt_switch_resolution)
+
+   /* trigger set resolution*/
+   if (video_info.crt_switch_resolution)
    {
       video_driver_crt_switching_active = true;
 
@@ -2643,9 +2646,9 @@ void video_driver_frame(const void *data, unsigned width,
       crt_switch_res_core(width, height, video_driver_core_hz);
    }
    else if (!video_info.crt_switch_resolution)
-		video_driver_crt_switching_active = false;
-	
-	/* trigger set resolution*/
+      video_driver_crt_switching_active = false;
+
+   /* trigger set resolution*/
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)
@@ -2738,8 +2741,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    settings                          = config_get_ptr();
    custom_vp                         = &settings->video_viewport_custom;
    video_info->refresh_rate          = settings->floats.video_refresh_rate;
-   video_info->crt_switch_resolution = settings->bools.crt_switch_resolution;	
-   video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;	
+   video_info->crt_switch_resolution = settings->bools.crt_switch_resolution;
+   video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;
    video_info->black_frame_insertion = settings->bools.video_black_frame_insertion;
    video_info->hard_sync             = settings->bools.video_hard_sync;
    video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;
@@ -2870,13 +2873,13 @@ bool video_driver_translate_coord_viewport(
       return false;
 
    if (mouse_x >= 0 && mouse_x <= norm_full_vp_width)
-      scaled_screen_x = ((2 * mouse_x * 0x7fff) 
+      scaled_screen_x = ((2 * mouse_x * 0x7fff)
             / norm_full_vp_width)  - 0x7fff;
    else
       scaled_screen_x = -0x8000; /* OOB */
 
    if (mouse_y >= 0 && mouse_y <= norm_full_vp_height)
-      scaled_screen_y = ((2 * mouse_y * 0x7fff) 
+      scaled_screen_y = ((2 * mouse_y * 0x7fff)
             / norm_full_vp_height) - 0x7fff;
    else
       scaled_screen_y = -0x8000; /* OOB */
@@ -2885,13 +2888,13 @@ bool video_driver_translate_coord_viewport(
    mouse_y           -= vp->y;
 
    if (mouse_x >= 0 && mouse_x <= norm_vp_width)
-      scaled_x        = ((2 * mouse_x * 0x7fff) 
+      scaled_x        = ((2 * mouse_x * 0x7fff)
             / norm_vp_width) - 0x7fff;
    else
       scaled_x        = -0x8000; /* OOB */
 
    if (mouse_y >= 0 && mouse_y <= norm_vp_height)
-      scaled_y        = ((2 * mouse_y * 0x7fff) 
+      scaled_y        = ((2 * mouse_y * 0x7fff)
             / norm_vp_height) - 0x7fff;
    else
       scaled_y        = -0x8000; /* OOB */
@@ -2917,7 +2920,7 @@ void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
       bool *is_focused)
 {
    *frame_count = video_driver_frame_count;
-   *is_alive    = current_video ? 
+   *is_alive    = current_video ?
       current_video->alive(video_driver_data) : true;
    *is_focused  = video_driver_cb_has_focus();
 }
@@ -2999,7 +3002,7 @@ bool video_context_driver_find_next_driver(void)
  *
  * Initialize graphics context driver.
  *
- * Returns: graphics context driver if successfully initialized, 
+ * Returns: graphics context driver if successfully initialized,
  * otherwise NULL.
  **/
 static const gfx_ctx_driver_t *video_context_driver_init(
@@ -3235,7 +3238,7 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
       return false;
 
    if (refresh_rate)
-      *refresh_rate = 
+      *refresh_rate =
          current_video_context.get_refresh_rate(video_context_data);
 
    return true;
@@ -3244,7 +3247,7 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp)
 {
    settings_t *settings    = config_get_ptr();
-   const char *joypad_name = settings ? 
+   const char *joypad_name = settings ?
       settings->arrays.input_joypad_driver : NULL;
 
    if (!current_video_context.input_driver)
@@ -3515,6 +3518,9 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 bool video_shader_driver_direct_get_current_shader(
       video_shader_ctx_t *shader)
 {
+   if (!current_shader)
+      return false;
+
    shader->data = current_shader->get_current_shader(current_shader_data);
 
    return true;

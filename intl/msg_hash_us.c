@@ -1181,6 +1181,14 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "This will take a performance hit, \n"
                              "so it is disabled by default.");
             break;
+        case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
+            snprintf(s, len,
+                     "Apply cheat immediately after toggling.");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:
+            snprintf(s, len,
+                     "Auto-apply cheats when game loads.");
+            break;
         case MENU_ENUM_LABEL_LIBRETRO_DIR_PATH:
             snprintf(s, len,
                      "Core Directory. \n"
@@ -1233,7 +1241,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
             snprintf(s, len,
-                     "Fastforward ratio."
+                     "Fastforward ratio.\n"
                              " \n"
                              "The maximum rate at which content will\n"
                              "be run when using fast forward.\n"
@@ -1245,6 +1253,15 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "the maximum rate will not be exceeded.\n"
                              "Do not rely on this cap to be perfectly \n"
                              "accurate.");
+            break;
+        case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
+            snprintf(s, len,
+                     "Sync to Exact Content Framerate.\n"
+                             " \n"
+                             "This option is the equivalent of forcing x1 speed\n"
+                             "while still allowing fast forward.\n"
+                             "No deviation from the core requested refresh rate,\n"
+                             "no sound Dynamic Rate Control).");
             break;
         case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
             snprintf(s, len,

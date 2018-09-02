@@ -52,14 +52,15 @@ enum cheat_search_type
    CHEAT_SEARCH_TYPE_EQ,
    CHEAT_SEARCH_TYPE_NEQ,
    CHEAT_SEARCH_TYPE_EQPLUS,
-   CHEAT_SEARCH_TYPE_EQMINUS,
+   CHEAT_SEARCH_TYPE_EQMINUS
 };
 
 enum cheat_match_action_type
 {
    CHEAT_MATCH_ACTION_TYPE_VIEW = 0,
    CHEAT_MATCH_ACTION_TYPE_DELETE,
-   CHEAT_MATCH_ACTION_TYPE_COPY
+   CHEAT_MATCH_ACTION_TYPE_COPY,
+   CHEAT_MATCH_ACTION_TYPE_BROWSE
 };
 
 enum cheat_rumble_type
@@ -75,15 +76,15 @@ enum cheat_rumble_type
    RUMBLE_TYPE_GT_VALUE
 };
 
-#define CHEAT_CODE_SIZE 100
-#define CHEAT_DESC_SIZE 100
+#define CHEAT_CODE_SCRATCH_SIZE 100
+#define CHEAT_DESC_SCRATCH_SIZE 255
 
 struct item_cheat
 {
    unsigned int idx;
-   char desc[CHEAT_DESC_SIZE];
+   char *desc;
    bool state;
-   char code[CHEAT_CODE_SIZE];
+   char *code;
    unsigned int handler ;
    /* Number of bits = 2^memory_search_size
     * 0=1, 1=2, 2=4, 3=8, 4=16, 5=32
@@ -113,19 +114,19 @@ struct item_cheat
     * 1 : 11110000
     */
    unsigned int address_mask ;
-   //Whether to apply the cheat based on big-endian console memory or not
+   /* Whether to apply the cheat based on big-endian console memory or not */
    bool big_endian ;
    unsigned int rumble_type ;
    unsigned int rumble_value ;
    unsigned int rumble_prev_value ;
    unsigned int rumble_initialized ;
-   unsigned int rumble_port ; //0-15 for specific port, anything else means "all ports"
-   unsigned int rumble_primary_strength ; //0-65535
-   unsigned int rumble_primary_duration ; //in milliseconds
-   retro_time_t rumble_primary_end_time ; //clock value for when rumbling should stop
-   unsigned int rumble_secondary_strength ; //0-65535
-   unsigned int rumble_secondary_duration ; //in milliseconds
-   retro_time_t rumble_secondary_end_time ; //clock value for when rumbling should stop
+   unsigned int rumble_port ; /* 0-15 for specific port, anything else means "all ports" */
+   unsigned int rumble_primary_strength ; /* 0-65535 */
+   unsigned int rumble_primary_duration ; /* in milliseconds */
+   retro_time_t rumble_primary_end_time ; /* clock value for when rumbling should stop */
+   unsigned int rumble_secondary_strength ; /* 0-65535 */
+   unsigned int rumble_secondary_duration ; /* in milliseconds */
+   retro_time_t rumble_secondary_end_time ; /* clock value for when rumbling should stop */
 };
 
 struct cheat_manager
@@ -152,6 +153,9 @@ struct cheat_manager
    bool  memory_initialized ;
    bool  memory_search_initialized ;
    unsigned int delete_state ;
+   unsigned browse_address;
+   char working_desc[CHEAT_DESC_SCRATCH_SIZE] ;
+   char working_code[CHEAT_CODE_SCRATCH_SIZE] ;
 };
 
 typedef struct cheat_manager cheat_manager_t;
@@ -206,9 +210,9 @@ bool cheat_manager_copy_idx_to_working(unsigned idx);
 
 bool cheat_manager_copy_working_to_idx(unsigned idx);
 
-void cheat_manager_load_game_specific_cheats();
+void cheat_manager_load_game_specific_cheats(void);
 
-void cheat_manager_save_game_specific_cheats();
+void cheat_manager_save_game_specific_cheats(void);
 
 int cheat_manager_initialize_memory(void *data, bool wraparound);
 int cheat_manager_search_exact(void *data, bool wraparound);
@@ -222,7 +226,7 @@ int cheat_manager_search_eqplus(void *data, bool wraparound);
 int cheat_manager_search_eqminus(void *data, bool wraparound);
 int cheat_manager_add_matches(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
-void cheat_manager_apply_retro_cheats() ;
+void cheat_manager_apply_retro_cheats(void);
 int cheat_manager_search(enum cheat_search_type search_type);
 void cheat_manager_match_action(enum cheat_match_action_type match_action, unsigned int target_match_idx, unsigned int *address, unsigned int *address_mask,
       unsigned int *prev_value, unsigned int *curr_value);

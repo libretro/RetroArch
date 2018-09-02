@@ -22,7 +22,7 @@
 
 #include <file/nbio.h>
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 
 #include <stdio.h>
 #include <stdlib.h>

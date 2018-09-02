@@ -543,17 +543,20 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
       }
    }
 
-   menu_display_set_alpha(body_bg_color, 1.0);
+   if (body_bg_color)
+   {
+      menu_display_set_alpha(body_bg_color, 1.0);
 
-   menu_display_draw_quad(
-         video_info,
-         x - longest_width / 2.0 -  mui->margin * 2.0,
-         y - line_height   / 2.0 -  mui->margin * 2.0,
-         longest_width +            mui->margin * 4.0,
-         line_height * list->size + mui->margin * 4.0,
-         width,
-         height,
-         &body_bg_color[0]);
+      menu_display_draw_quad(
+            video_info,
+            x - longest_width / 2.0 -  mui->margin * 2.0,
+            y - line_height   / 2.0 -  mui->margin * 2.0,
+            longest_width +            mui->margin * 4.0,
+            line_height * list->size + mui->margin * 4.0,
+            width,
+            height,
+            &body_bg_color[0]);
+   }
 
    /* print each line */
    for (i = 0; i < list->size; i++)

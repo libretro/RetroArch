@@ -6,7 +6,7 @@ Most of the magic happens on the browser so nothing really on that regard
 I you want a self hosted version you need
 - A web server, nginx/apache will do, download a build here: 
   https://buildbot.libretro.com/nightly/emscripten/
-- Extract the build somewher ein your web-server 
+- Extract the build somewhere in your web-server 
   - Grab the asset bundle:
   https://buildbot.libretro.com/assets/frontend/bundle.zip
 - Unzip it in the same dir you extracted the rest, inside **/assets/frontend/bundle**

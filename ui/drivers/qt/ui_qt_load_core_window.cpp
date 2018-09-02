@@ -124,6 +124,11 @@ void LoadCoreWindow::loadCore(const char *path)
    /* const-removing cast is safe here because the path is never written to */
    rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, const_cast<char*>(path));
 
+   command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+
+   core_info_init_current_core();
+
    if (!command_event(CMD_EVENT_LOAD_CORE, NULL))
    {
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE));

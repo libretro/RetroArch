@@ -200,12 +200,15 @@ default_sublabel_macro(action_bind_sublabel_video_gpu_record,              MENU_
 default_sublabel_macro(action_bind_sublabel_savestate_auto_index,          MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX)
 default_sublabel_macro(action_bind_sublabel_block_sram_overwrite,          MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE)
 default_sublabel_macro(action_bind_sublabel_fastforward_ratio,             MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO)
+default_sublabel_macro(action_bind_sublabel_vrr_runloop_enable,            MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE)
 default_sublabel_macro(action_bind_sublabel_slowmotion_ratio,              MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO)
 default_sublabel_macro(action_bind_sublabel_run_ahead_enabled,             MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED)
 default_sublabel_macro(action_bind_sublabel_run_ahead_secondary_instance,  MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE)
 default_sublabel_macro(action_bind_sublabel_run_ahead_hide_warnings,       MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS)
 default_sublabel_macro(action_bind_sublabel_run_ahead_frames,              MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES)
 default_sublabel_macro(action_bind_sublabel_rewind,                        MENU_ENUM_SUBLABEL_REWIND_ENABLE)
+default_sublabel_macro(action_bind_sublabel_cheat_apply_after_toggle,      MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE)
+default_sublabel_macro(action_bind_sublabel_cheat_apply_after_load,        MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD)
 default_sublabel_macro(action_bind_sublabel_rewind_granularity,            MENU_ENUM_SUBLABEL_REWIND_GRANULARITY)
 default_sublabel_macro(action_bind_sublabel_rewind_buffer_size,            MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE)
 default_sublabel_macro(action_bind_sublabel_rewind_buffer_size_step,       MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP)
@@ -370,9 +373,9 @@ default_sublabel_macro(action_bind_sublabel_quick_menu_show_options,            
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_controls,              MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_cheats,                MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_shaders,               MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS)
-default_sublabel_macro(action_bind_sublabel_content_show_overlays,               MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS)
-default_sublabel_macro(action_bind_sublabel_content_show_rewind,               MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND)
-default_sublabel_macro(action_bind_sublabel_content_show_latency,               MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY)
+default_sublabel_macro(action_bind_sublabel_content_show_overlays,                 MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS)
+default_sublabel_macro(action_bind_sublabel_content_show_rewind,                   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND)
+default_sublabel_macro(action_bind_sublabel_content_show_latency,                  MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_save_core_overrides,   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_save_game_overrides,   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_information,           MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION)
@@ -456,6 +459,11 @@ default_sublabel_macro(action_bind_sublabel_resume_hardcode_mode,               
 default_sublabel_macro(action_bind_sublabel_midi_input,                            MENU_ENUM_SUBLABEL_MIDI_INPUT)
 default_sublabel_macro(action_bind_sublabel_midi_output,                           MENU_ENUM_SUBLABEL_MIDI_OUTPUT)
 default_sublabel_macro(action_bind_sublabel_midi_volume,                           MENU_ENUM_SUBLABEL_MIDI_VOLUME)
+default_sublabel_macro(action_bind_sublabel_onscreen_overlay_settings_list,        MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_onscreen_notifications_settings_list,  MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS)
+#ifdef HAVE_QT
+default_sublabel_macro(action_bind_sublabel_show_wimp,                             MENU_ENUM_SUBLABEL_SHOW_WIMP)
+#endif
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -504,9 +512,9 @@ static int action_bind_sublabel_remap_kbd_sublabel(
    unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
 
    snprintf(s, len, "User #%d: %s", user_idx + 1,
-      input_config_get_device_display_name(user_idx) ? 
-      input_config_get_device_display_name(user_idx) : 
-      (input_config_get_device_name(user_idx) ? 
+      input_config_get_device_display_name(user_idx) ?
+      input_config_get_device_display_name(user_idx) :
+      (input_config_get_device_name(user_idx) ?
       input_config_get_device_name(user_idx) : "N/A"));
    return 0;
 }
@@ -543,7 +551,7 @@ static int action_bind_sublabel_audio_mixer_stream(
          break;
    }
 
-   snprintf(s, len, "State : %s | Volume: %.2f dB", msg, 
+   snprintf(s, len, "State : %s | Volume: %.2f dB", msg,
          stream->volume);
    return 0;
 }
@@ -554,13 +562,13 @@ static int action_bind_sublabel_remap_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) 
+   unsigned offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN)
       / (RARCH_FIRST_CUSTOM_BIND + 8);
 
    snprintf(s, len, "User #%d: %s", offset + 1,
-      input_config_get_device_display_name(offset) ? 
-      input_config_get_device_display_name(offset) : 
-      (input_config_get_device_name(offset) ? 
+      input_config_get_device_display_name(offset) ?
+      input_config_get_device_display_name(offset) :
+      (input_config_get_device_name(offset) ?
       input_config_get_device_name(offset) : "N/A"));
    return 0;
 }
@@ -1392,6 +1400,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_REWIND_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rewind);
             break;
+         case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_apply_after_toggle);
+            break;
          case MENU_ENUM_LABEL_REWIND_GRANULARITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rewind_granularity);
             break;
@@ -1481,6 +1492,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_fastforward_ratio);
+            break;
+         case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_vrr_runloop_enable);
             break;
          case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_block_sram_overwrite);
@@ -1923,6 +1937,20 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MIDI_VOLUME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_midi_volume);
+            break;
+         case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_onscreen_overlay_settings_list);
+            break;
+         case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_onscreen_notifications_settings_list);
+            break;
+#ifdef HAVE_QT
+         case MENU_ENUM_LABEL_SHOW_WIMP:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_show_wimp);
+            break;
+#endif
+         case MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_apply_after_load);
             break;
          default:
          case MSG_UNKNOWN:

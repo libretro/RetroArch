@@ -336,8 +336,10 @@ int setting_uint_action_right_with_refresh(void *data, bool wraparound)
    int retval = setting_uint_action_right_default(data, wraparound) ;
    bool refresh      = false;
 
+#ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+#endif
 
    return retval ;
 }
@@ -347,8 +349,10 @@ int setting_uint_action_left_with_refresh(void *data, bool wraparound)
    int retval = setting_uint_action_left_default(data, wraparound) ;
    bool refresh      = false;
 
+#ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+#endif
 
    return retval ;
 
@@ -557,7 +561,8 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
       case ST_STRING:
       case ST_STRING_OPTIONS:
       case ST_ACTION:
-         strlcpy(setting->value.target.string, value, setting->size);
+         if ( setting->value.target.string != NULL)
+            strlcpy(setting->value.target.string, value, setting->size);
          break;
       case ST_BOOL:
          if (string_is_equal(value, "true"))

@@ -80,7 +80,7 @@ static void input_state_set_last(unsigned port, unsigned device,
       element->state[id] = value;
 }
 
-static int16_t input_state_get_last(unsigned port,
+int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
    unsigned i;

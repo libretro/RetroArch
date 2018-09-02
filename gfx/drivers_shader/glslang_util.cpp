@@ -190,6 +190,8 @@ static string build_stage_source(const vector<string> &lines, const char *stage)
 }
 
 static const char *glslang_formats[] = {
+   "UNKNOWN",
+
    "R8_UNORM",
    "R8_UINT",
    "R8_SINT",
@@ -223,8 +225,6 @@ static const char *glslang_formats[] = {
    "R32G32B32A32_UINT",
    "R32G32B32A32_SINT",
    "R32G32B32A32_SFLOAT",
-
-   "UNKNOWN",
 };
 
 const char *glslang_format_to_string(enum glslang_format fmt)

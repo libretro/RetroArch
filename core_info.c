@@ -149,6 +149,7 @@ static void core_info_list_free(core_info_list_t *core_info_list)
       free(info->path);
       free(info->core_name);
       free(info->systemname);
+      free(info->system_id);
       free(info->system_manufacturer);
       free(info->display_name);
       free(info->display_version);
@@ -298,6 +299,14 @@ static core_info_list_t *core_info_list_new(const char *path,
                && !string_is_empty(tmp))
          {
             core_info[i].systemname = strdup(tmp);
+            free(tmp);
+            tmp = NULL;
+         }
+
+         if (config_get_string(conf, "systemid", &tmp)
+               && !string_is_empty(tmp))
+         {
+            core_info[i].system_id = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
@@ -678,6 +687,9 @@ bool core_info_load(core_info_ctx_find_t *info)
 
    if (!info)
       return false;
+
+   if (!core_info_current)
+      core_info_init_current_core();
 
    core_info_get_current_core(&core_info);
 

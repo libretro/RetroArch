@@ -288,6 +288,9 @@ static void frontend_psp_init(void *data)
 
 #ifdef VITA
    scePowerSetArmClockFrequency(444);
+   scePowerSetBusClockFrequency(222);
+   scePowerSetGpuClockFrequency(222);
+   scePowerSetGpuXbarClockFrequency(166);
    sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
 #else
    (void)data;

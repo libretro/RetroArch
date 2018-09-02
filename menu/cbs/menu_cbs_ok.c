@@ -88,7 +88,8 @@ enum
    ACTION_OK_SET_PATH_VIDEO_FILTER,
    ACTION_OK_SET_PATH_OVERLAY,
    ACTION_OK_SET_DIRECTORY,
-   ACTION_OK_LOAD_CHEAT_FILE_APPEND,
+   ACTION_OK_SHOW_WIMP,
+   ACTION_OK_LOAD_CHEAT_FILE_APPEND
 };
 
 enum
@@ -820,11 +821,11 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
          info.directory_ptr                       = idx;
          menu->scratchpad.unsigned_var            = (unsigned)idx;
-         info_path                                = 
+         info_path                                =
             settings->paths.directory_libretro;
          info_label                               = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET);
-         info.enum_idx                            = 
+         info.enum_idx                            =
             MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET;
          dl_type                                  = DISPLAYLIST_GENERIC;
          break;
@@ -844,9 +845,14 @@ int generic_action_ok_displaylist_push(const char *path,
             setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION));
          if ( setting )
-		 {
+       {
             int max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 7 : 0 ;
             setting->max = max_bit_position ;
+         }
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADDRESS));
+         if ( setting )
+         {
+            cheat_manager_state.browse_address = *setting->value.target.unsigned_integer ;
          }
          action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          break ;
@@ -988,7 +994,7 @@ static bool menu_content_playlist_load(playlist_t *playlist, size_t idx)
       path_check = (char *)
          calloc(strlen(path_tolower) + 1, sizeof(char));
 
-      strncpy(path_check, path, strlen(path_tolower));
+      strlcpy(path_check, path, strlen(path_tolower) + 1);
 
       valid_path = path_is_valid(path_check);
 
@@ -1404,7 +1410,9 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_CHEAT_FILE_APPEND:
          flush_char = msg_hash_to_str(flush_id);
-         //cheat_manager_free();
+#if 0
+         cheat_manager_free();
+#endif
 
          if (!cheat_manager_load(action_path,true))
             goto error;
@@ -1518,7 +1526,7 @@ static int action_ok_file_load(const char *path,
 
    if (filebrowser_get_type() == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
    {
-      /* TODO/FIXME - this path is triggered when we try to load a 
+      /* TODO/FIXME - this path is triggered when we try to load a
        * file from an archive while inside the load subsystem
        * action */
       menu_handle_t *menu                 = NULL;
@@ -1669,7 +1677,7 @@ static int action_ok_playlist_entry_collection(const char *path,
                core_info.inf->display_name,
                NULL,
                NULL);
-   }    
+   }
    else
       strlcpy(new_core_path, core_path, sizeof(new_core_path));
 
@@ -1743,7 +1751,7 @@ static int action_ok_playlist_entry(const char *path,
             core_info.inf->display_name,
             NULL,
             NULL);
-                 
+
    }
    else if (!string_is_empty(core_path))
       strlcpy(new_core_path, core_path, sizeof(new_core_path));
@@ -1806,9 +1814,9 @@ static int action_ok_playlist_entry_start_content(const char *path,
       if (!core_info_find(&core_info, new_core_path))
          found_associated_core = false;
 
-      /* TODO: figure out if this should refer to 
+      /* TODO: figure out if this should refer to
        * the inner or outer entry_path. */
-      /* TODO: make sure there's only one entry_path 
+      /* TODO: make sure there's only one entry_path
        * in this function. */
       if (!found_associated_core)
          return action_ok_file_load_with_detect_core(entry_path,
@@ -2104,7 +2112,7 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
                NULL);
    }
 
-  
+
    menu_input_dialog_end();
 }
 
@@ -2712,7 +2720,7 @@ static int action_ok_cheat_add_bottom(const char *path,
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
    msg[0] = '\0';
-   strlcpy(msg, 
+   strlcpy(msg,
          msg_hash_to_str(MSG_CHEAT_ADD_BOTTOM_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
@@ -2813,6 +2821,10 @@ static int action_ok_cheat_copy_before(const char *path,
 
    memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat )) ;
    tmp.idx = cheat_manager_state.working_cheat.idx ;
+   if ( tmp.code != NULL )
+      tmp.code = strdup(tmp.code) ;
+   if ( tmp.desc != NULL )
+      tmp.desc = strdup(tmp.desc) ;
 
    for (i = cheat_manager_state.size-2 ; i >=(int)tmp.idx ; i--)
    {
@@ -2848,6 +2860,10 @@ static int action_ok_cheat_copy_after(const char *path,
 
    memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat )) ;
    tmp.idx = cheat_manager_state.working_cheat.idx+1 ;
+   if ( tmp.code != NULL )
+      tmp.code = strdup(tmp.code) ;
+   if ( tmp.desc != NULL )
+      tmp.desc = strdup(tmp.desc) ;
 
    for (i = cheat_manager_state.size-2 ; i >= (int)(cheat_manager_state.working_cheat.idx+1); i--)
    {
@@ -2873,17 +2889,28 @@ static int action_ok_cheat_delete(const char *path,
 {
    size_t new_selection_ptr;
    char msg[256];
-   bool          refresh = false;
    unsigned int new_size = cheat_manager_get_size() - 1;
 
    if( new_size >0 )
    {
       unsigned i;
+      if ( cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code != NULL )
+      {
+         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code) ;
+         cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code = NULL ;
+      }
+      if ( cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc != NULL )
+      {
+         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc) ;
+         cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc = NULL ;
+      }
       for (i = cheat_manager_state.working_cheat.idx ; i <cheat_manager_state.size-1  ; i++)
       {
          memcpy(&cheat_manager_state.cheats[i], &cheat_manager_state.cheats[i+1], sizeof(struct item_cheat )) ;
          cheat_manager_state.cheats[i].idx-- ;
       }
+      cheat_manager_state.cheats[cheat_manager_state.size-1].code = NULL ;
+      cheat_manager_state.cheats[cheat_manager_state.size-1].desc = NULL ;
    }
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
@@ -3141,7 +3168,6 @@ static void cb_generic_dir_download(void *task_data,
       void *user_data, const char *err)
 {
    file_transfer_t     *transf      = (file_transfer_t*)user_data;
-
    if (transf)
    {
       generic_action_ok_network(transf->path, transf->path, 0, 0, 0,
@@ -3470,7 +3496,7 @@ static int action_ok_option_create(const char *path,
          return false;
    }
 
-   if(config_file_write(conf, game_path))
+   if (config_file_write(conf, game_path))
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
@@ -3495,15 +3521,15 @@ int (func_name)(const char *path, const char *label, unsigned type, size_t idx, 
    return generic_action_ok_command(cmd); \
 }
 
-default_action_ok_cmd_func(action_ok_cheat_apply_changes,CMD_EVENT_CHEATS_APPLY)
-default_action_ok_cmd_func(action_ok_quit,               CMD_EVENT_QUIT)
-default_action_ok_cmd_func(action_ok_save_new_config,    CMD_EVENT_MENU_SAVE_CONFIG)
-default_action_ok_cmd_func(action_ok_resume_content,     CMD_EVENT_RESUME)
-default_action_ok_cmd_func(action_ok_restart_content,    CMD_EVENT_RESET)
-default_action_ok_cmd_func(action_ok_screenshot,         CMD_EVENT_TAKE_SCREENSHOT)
-default_action_ok_cmd_func(action_ok_disk_cycle_tray_status, CMD_EVENT_DISK_EJECT_TOGGLE        )
-default_action_ok_cmd_func(action_ok_shader_apply_changes, CMD_EVENT_SHADERS_APPLY_CHANGES        )
-
+default_action_ok_cmd_func(action_ok_cheat_apply_changes,      CMD_EVENT_CHEATS_APPLY)
+default_action_ok_cmd_func(action_ok_quit,                     CMD_EVENT_QUIT)
+default_action_ok_cmd_func(action_ok_save_new_config,          CMD_EVENT_MENU_SAVE_CONFIG)
+default_action_ok_cmd_func(action_ok_resume_content,           CMD_EVENT_RESUME)
+default_action_ok_cmd_func(action_ok_restart_content,          CMD_EVENT_RESET)
+default_action_ok_cmd_func(action_ok_screenshot,               CMD_EVENT_TAKE_SCREENSHOT)
+default_action_ok_cmd_func(action_ok_disk_cycle_tray_status,   CMD_EVENT_DISK_EJECT_TOGGLE)
+default_action_ok_cmd_func(action_ok_shader_apply_changes,     CMD_EVENT_SHADERS_APPLY_CHANGES)
+default_action_ok_cmd_func(action_ok_show_wimp,                CMD_EVENT_UI_COMPANION_TOGGLE)
 
 static int action_ok_reset_core_association(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3918,7 +3944,7 @@ void netplay_refresh_rooms_menu(file_list_t *list)
          char country[PATH_MAX_LENGTH] = {0};
 
          if (*netplay_room_list[i].country)
-            string_add_between_pairs(country, netplay_room_list[i].country, 
+            string_add_between_pairs(country, netplay_room_list[i].country,
                   sizeof(country));
 
          /* Uncomment this to debug mismatched room parameters*/
@@ -4712,6 +4738,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_enable_settings);
+            break;
+         case MENU_ENUM_LABEL_SHOW_WIMP:
+            BIND_ACTION_OK(cbs, action_ok_show_wimp);
             break;
          case MENU_ENUM_LABEL_QUIT_RETROARCH:
             BIND_ACTION_OK(cbs, action_ok_quit);

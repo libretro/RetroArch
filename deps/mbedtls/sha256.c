@@ -50,10 +50,7 @@
 
 #if !defined(MBEDTLS_SHA256_ALT)
 
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
-}
+#include "arc4_alt.h"
 
 /*
  * 32-bit integer manipulation macros (big endian)
@@ -134,7 +131,7 @@ void mbedtls_sha256_starts( mbedtls_sha256_context *ctx, int is224 )
 }
 
 #if !defined(MBEDTLS_SHA256_PROCESS_ALT)
-static const uint32_t K[] =
+static const uint32_t SHA256_K[] =
 {
     0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5,
     0x3956C25B, 0x59F111F1, 0x923F82A4, 0xAB1C5ED5,
@@ -153,25 +150,29 @@ static const uint32_t K[] =
     0x748F82EE, 0x78A5636F, 0x84C87814, 0x8CC70208,
     0x90BEFFFA, 0xA4506CEB, 0xBEF9A3F7, 0xC67178F2,
 };
-
+#undef SHRs
 #define  SHR(x,n) ((x & 0xFFFFFFFF) >> n)
+#undef ROTR
 #define ROTR(x,n) (SHR(x,n) | (x << (32 - n)))
-
+#undef S0
 #define S0(x) (ROTR(x, 7) ^ ROTR(x,18) ^  SHR(x, 3))
+#undef S1
 #define S1(x) (ROTR(x,17) ^ ROTR(x,19) ^  SHR(x,10))
-
+#undef S2
 #define S2(x) (ROTR(x, 2) ^ ROTR(x,13) ^ ROTR(x,22))
+#undef S3
 #define S3(x) (ROTR(x, 6) ^ ROTR(x,11) ^ ROTR(x,25))
 
 #define F0(x,y,z) ((x & y) | (z & (x | y)))
+#undef F1
 #define F1(x,y,z) (z ^ (x & (y ^ z)))
-
+#undef R
 #define R(t)                                    \
 (                                               \
     W[t] = S1(W[t -  2]) + W[t -  7] +          \
            S0(W[t - 15]) + W[t - 16]            \
 )
-
+#undef P
 #define P(a,b,c,d,e,f,g,h,x,K)                  \
 {                                               \
     temp1 = h + S3(e) + F1(e,f,g) + K + x;      \
@@ -196,7 +197,7 @@ void mbedtls_sha256_process( mbedtls_sha256_context *ctx, const unsigned char da
         else
             R( i );
 
-        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], W[i], K[i] );
+        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], W[i], SHA256_K[i] );
 
         temp1 = A[7]; A[7] = A[6]; A[6] = A[5]; A[5] = A[4]; A[4] = A[3];
         A[3] = A[2]; A[2] = A[1]; A[1] = A[0]; A[0] = temp1;
@@ -207,26 +208,26 @@ void mbedtls_sha256_process( mbedtls_sha256_context *ctx, const unsigned char da
 
     for( i = 0; i < 16; i += 8 )
     {
-        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], W[i+0], K[i+0] );
-        P( A[7], A[0], A[1], A[2], A[3], A[4], A[5], A[6], W[i+1], K[i+1] );
-        P( A[6], A[7], A[0], A[1], A[2], A[3], A[4], A[5], W[i+2], K[i+2] );
-        P( A[5], A[6], A[7], A[0], A[1], A[2], A[3], A[4], W[i+3], K[i+3] );
-        P( A[4], A[5], A[6], A[7], A[0], A[1], A[2], A[3], W[i+4], K[i+4] );
-        P( A[3], A[4], A[5], A[6], A[7], A[0], A[1], A[2], W[i+5], K[i+5] );
-        P( A[2], A[3], A[4], A[5], A[6], A[7], A[0], A[1], W[i+6], K[i+6] );
-        P( A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[0], W[i+7], K[i+7] );
+        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], W[i+0], SHA256_K[i+0] );
+        P( A[7], A[0], A[1], A[2], A[3], A[4], A[5], A[6], W[i+1], SHA256_K[i+1] );
+        P( A[6], A[7], A[0], A[1], A[2], A[3], A[4], A[5], W[i+2], SHA256_K[i+2] );
+        P( A[5], A[6], A[7], A[0], A[1], A[2], A[3], A[4], W[i+3], SHA256_K[i+3] );
+        P( A[4], A[5], A[6], A[7], A[0], A[1], A[2], A[3], W[i+4], SHA256_K[i+4] );
+        P( A[3], A[4], A[5], A[6], A[7], A[0], A[1], A[2], W[i+5], SHA256_K[i+5] );
+        P( A[2], A[3], A[4], A[5], A[6], A[7], A[0], A[1], W[i+6], SHA256_K[i+6] );
+        P( A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[0], W[i+7], SHA256_K[i+7] );
     }
 
     for( i = 16; i < 64; i += 8 )
     {
-        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], R(i+0), K[i+0] );
-        P( A[7], A[0], A[1], A[2], A[3], A[4], A[5], A[6], R(i+1), K[i+1] );
-        P( A[6], A[7], A[0], A[1], A[2], A[3], A[4], A[5], R(i+2), K[i+2] );
-        P( A[5], A[6], A[7], A[0], A[1], A[2], A[3], A[4], R(i+3), K[i+3] );
-        P( A[4], A[5], A[6], A[7], A[0], A[1], A[2], A[3], R(i+4), K[i+4] );
-        P( A[3], A[4], A[5], A[6], A[7], A[0], A[1], A[2], R(i+5), K[i+5] );
-        P( A[2], A[3], A[4], A[5], A[6], A[7], A[0], A[1], R(i+6), K[i+6] );
-        P( A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[0], R(i+7), K[i+7] );
+        P( A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], R(i+0), SHA256_K[i+0] );
+        P( A[7], A[0], A[1], A[2], A[3], A[4], A[5], A[6], R(i+1), SHA256_K[i+1] );
+        P( A[6], A[7], A[0], A[1], A[2], A[3], A[4], A[5], R(i+2), SHA256_K[i+2] );
+        P( A[5], A[6], A[7], A[0], A[1], A[2], A[3], A[4], R(i+3), SHA256_K[i+3] );
+        P( A[4], A[5], A[6], A[7], A[0], A[1], A[2], A[3], R(i+4), SHA256_K[i+4] );
+        P( A[3], A[4], A[5], A[6], A[7], A[0], A[1], A[2], R(i+5), SHA256_K[i+5] );
+        P( A[2], A[3], A[4], A[5], A[6], A[7], A[0], A[1], R(i+6), SHA256_K[i+6] );
+        P( A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[0], R(i+7), SHA256_K[i+7] );
     }
 #endif /* MBEDTLS_SHA256_SMALLER */
 

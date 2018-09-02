@@ -105,7 +105,7 @@ enum settings_list_type
    SETTINGS_LIST_REWIND,
    SETTINGS_LIST_CHEAT_DETAILS,
    SETTINGS_LIST_CHEAT_SEARCH,
-   SETTINGS_LIST_CHEAT_MATCHES,
+   SETTINGS_LIST_CHEATS,
    SETTINGS_LIST_VIDEO,
    SETTINGS_LIST_AUDIO,
    SETTINGS_LIST_INPUT,
@@ -511,6 +511,24 @@ static void setting_get_string_representation_uint_cheat_eqminus(void *data,
    if (setting)
       snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL),
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
+}
+
+static void setting_get_string_representation_uint_cheat_browse_address(void *data,
+      char *s, size_t len)
+{
+   unsigned int address      = cheat_manager_state.browse_address;
+   unsigned int address_mask = 0;
+   unsigned int prev_val     = 0;
+   unsigned int curr_val     = 0 ;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   if (setting)
+      snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL),
+            *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
+
+   cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_BROWSE, cheat_manager_state.match_idx, &address, &address_mask, &prev_val, &curr_val) ;
+
+   snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val) ;
+
 }
 
 static void setting_get_string_representation_uint_video_rotation(void *data,
@@ -2450,7 +2468,16 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
+#ifdef HAVE_QT
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_SHOW_WIMP,
+               MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_UI_COMPANION_TOGGLE);
+#endif
 #if !defined(IOS)
          /* Apple rejects iOS apps that let you forcibly quit them. */
          CONFIG_ACTION(
@@ -3295,6 +3322,48 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+      case SETTINGS_LIST_CHEATS:
+      {
+         START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS), parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.apply_cheats_after_load,
+               MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
+               MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+               apply_cheats_after_load,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.apply_cheats_after_toggle,
+               MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
+               MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+               apply_cheats_after_toggle,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
+      }
       case SETTINGS_LIST_CHEAT_DETAILS:
 		  {
          int max_bit_position;
@@ -3330,8 +3399,8 @@ static bool setting_append_list(
 
          CONFIG_STRING(
                list, list_info,
-               cheat_manager_state.working_cheat.desc,
-               sizeof(cheat_manager_state.working_cheat.desc),
+               cheat_manager_state.working_desc,
+               sizeof(cheat_manager_state.working_desc),
                MENU_ENUM_LABEL_CHEAT_DESC,
                MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
                "",
@@ -3349,8 +3418,8 @@ static bool setting_append_list(
 
          CONFIG_STRING(
                list, list_info,
-               cheat_manager_state.working_cheat.code,
-               sizeof(cheat_manager_state.working_cheat.code),
+               cheat_manager_state.working_code,
+               sizeof(cheat_manager_state.working_code),
                MENU_ENUM_LABEL_CHEAT_CODE,
                MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
                "",
@@ -3359,7 +3428,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
          config_uint_cbs(cheat_manager_state.working_cheat.memory_search_size, CHEAT_MEMORY_SEARCH_SIZE,
                setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
@@ -3376,7 +3444,7 @@ static bool setting_append_list(
                0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1) ;
 
          config_uint_cbs(cheat_manager_state.working_cheat.address, CHEAT_ADDRESS,
-               setting_uint_action_left_default,setting_uint_action_right_default,
+               setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
                0,&setting_get_string_representation_hex_and_uint,0,cheat_manager_state.total_memory_size==0?0:cheat_manager_state.total_memory_size-1,1) ;
 
          max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
@@ -3438,7 +3506,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_CHEAT_SEARCH:
          if ( ! cheat_manager_state.cheats )
             break ;
-         
+
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS), parent_group);
 
          parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS);
@@ -3628,6 +3696,22 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
          (*list)[list_info->index - 1].action_ok = &cheat_manager_copy_match;
 
+         CONFIG_UINT(
+               list, list_info,
+               &cheat_manager_state.browse_address,
+               MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY,
+               MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
+               cheat_manager_state.browse_address,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 0, cheat_manager_state.actual_memory_size>0?cheat_manager_state.actual_memory_size-1:0, 1, true, true);
+         (*list)[list_info->index - 1].action_left = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
+         (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_browse_address;
+
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -3689,9 +3773,9 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-				  
-				  
-			CONFIG_BOOL( 
+
+
+			CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.crt_switch_resolution,
                   MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,
@@ -3705,18 +3789,18 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_ADVANCED
-                  );	
-			
+                  );
+
 			CONFIG_UINT(
-				  list, list_info, 
-				  &settings->uints.crt_switch_resolution_super, 
-				  MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER, 
-				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER, 
-				  crt_switch_resolution_super, 
-				  &group_info, 
-				  &subgroup_info, 
-				  parent_group, 
-				  general_write_handler, 
+				  list, list_info,
+				  &settings->uints.crt_switch_resolution_super,
+				  MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER,
+				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+				  crt_switch_resolution_super,
+				  &group_info,
+				  &subgroup_info,
+				  parent_group,
+				  general_write_handler,
 				  general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -5317,6 +5401,22 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_SET_FRAME_LIMIT);
          menu_settings_list_current_add_range(list, list_info, 0, 10, 1.0, true, true);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.vrr_runloop_enable,
+               MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
+               MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
          CONFIG_FLOAT(
                list, list_info,
                &settings->floats.slowmotion_ratio,
@@ -6291,6 +6391,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+#ifdef HAVE_SHADERPIPELINE
             if (video_shader_any_supported())
             {
                CONFIG_UINT(
@@ -6306,6 +6407,7 @@ static bool setting_append_list(
                      general_read_handler);
                menu_settings_list_current_add_range(list, list_info, 0, XMB_SHADER_PIPELINE_LAST-1, 1, true, true);
             }
+#endif
 
             CONFIG_UINT(
                   list, list_info,
@@ -8680,14 +8782,14 @@ static bool setting_append_list(
    return true;
 }
 
-bool menu_setting_free(void *data)
+void menu_setting_free(void *data)
 {
    unsigned values, n;
    rarch_setting_t *setting = (rarch_setting_t*)data;
    rarch_setting_t **list = &setting;
 
    if (!setting)
-      return false;
+      return;
 
    /* Free data which was previously tagged */
    for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
@@ -8696,24 +8798,26 @@ bool menu_setting_free(void *data)
             switch (1 << n)
             {
                case SD_FREE_FLAG_VALUES:
-                  free((void*)setting->values);
+                  if (setting->values)
+                     free((void*)setting->values);
                   setting->values = NULL;
                   break;
                case SD_FREE_FLAG_NAME:
-                  free((void*)setting->name);
+                  if (setting->name)
+                     free((void*)setting->name);
                   setting->name = NULL;
                   break;
                case SD_FREE_FLAG_SHORT:
-                  free((void*)setting->short_description);
+                  if (setting->short_description)
+                     free((void*)setting->short_description);
                   setting->short_description = NULL;
                   break;
                default:
                   break;
             }
 
-   free(data);
-
-   return true;
+   if (data)
+      free(data);
 }
 
 static void menu_setting_terminate_last(rarch_setting_t *list, unsigned pos)
@@ -8770,7 +8874,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_REWIND,
       SETTINGS_LIST_CHEAT_DETAILS,
       SETTINGS_LIST_CHEAT_SEARCH,
-      SETTINGS_LIST_CHEAT_MATCHES,
+      SETTINGS_LIST_CHEATS,
       SETTINGS_LIST_VIDEO,
       SETTINGS_LIST_AUDIO,
       SETTINGS_LIST_INPUT,

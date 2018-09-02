@@ -332,6 +332,11 @@ endif
 
 # Qt WIMP GUI
 
+ifeq ($(HAVE_OPENSSL), 1)
+DEFINES += $(OPENSSL_CFLAGS)
+LIBS += $(OPENSSL_LIBS)
+endif
+
 ifeq ($(HAVE_QT), 1)
 OBJ += ui/drivers/ui_qt.o \
        ui/drivers/qt/ui_qt_application.o \
@@ -339,15 +344,32 @@ OBJ += ui/drivers/ui_qt.o \
        ui/drivers/qt/ui_qt_browser_window.o \
        ui/drivers/qt/ui_qt_load_core_window.o \
        ui/drivers/qt/ui_qt_msg_window.o \
-       ui/drivers/qt/flowlayout.o
+       ui/drivers/qt/flowlayout.o \
+       ui/drivers/qt/shaderparamsdialog.o \
+       ui/drivers/qt/coreoptionsdialog.o \
+       ui/drivers/qt/filedropwidget.o \
+       ui/drivers/qt/coreinfodialog.o \
+       ui/drivers/qt/playlistentrydialog.o \
+       ui/drivers/qt/viewoptionsdialog.o \
+       ui/drivers/qt/playlist.o \
+       ui/drivers/qt/updateretroarch.o \
+       ui/drivers/qt/thumbnaildownload.o \
+       ui/drivers/qt/thumbnailpackdownload.o \
+       ui/drivers/qt/playlistthumbnaildownload.o
 
 MOC_HEADERS += ui/drivers/ui_qt.h \
 							 ui/drivers/qt/ui_qt_load_core_window.h \
-							 ui/drivers/qt/flowlayout.h
+							 ui/drivers/qt/flowlayout.h \
+							 ui/drivers/qt/shaderparamsdialog.h \
+							 ui/drivers/qt/coreoptionsdialog.h \
+							 ui/drivers/qt/filedropwidget.h \
+							 ui/drivers/qt/coreinfodialog.h \
+							 ui/drivers/qt/playlistentrydialog.h \
+							 ui/drivers/qt/viewoptionsdialog.h
 
-DEFINES += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) $(QT5CONCURRENT_CFLAGS) -DHAVE_MAIN
+DEFINES += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) $(QT5CONCURRENT_CFLAGS) $(QT5NETWORK_CFLAGS) -DHAVE_MAIN
 #DEFINES += $(QT5WEBENGINE_CFLAGS)
-LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS) $(QT5CONCURRENT_LIBS)
+LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS) $(QT5CONCURRENT_LIBS) $(QT5NETWORK_LIBS)
 #LIBS += $(QT5WEBENGINE_LIBS)
 NEED_CXX_LINKER = 1
 
@@ -374,198 +396,93 @@ OBJ += libretro-db/bintree.o \
 endif
 
 ifneq ($(C89_BUILD), 1)
-HAVE_LIBUI   = 0
 HAVE_GTKPLUS = 0
 
 ifeq ($(HAVE_SSL), 1)
 DEFINES += -DHAVE_SSL
-DEFINES += -DMBEDTLS_SSL_DEBUG_ALL
+
+ifeq ($(DEBUG), 1)
+  DEFINES += -DMBEDTLS_SSL_DEBUG_ALL
+endif
 
 # MinGW requires this for some reason, even though the include paths are relative to the source
 INCLUDE_DIRS += -Ideps/mbedtls
 
-OBJS_TLS_CRYPTO = deps/mbedtls/aes.o deps/mbedtls/aesni.o deps/mbedtls/arc4.o \
-                  deps/mbedtls/asn1parse.o deps/mbedtls/asn1write.o deps/mbedtls/base64.o \
-                  deps/mbedtls/bignum.o deps/mbedtls/blowfish.o deps/mbedtls/camellia.o \
-                  deps/mbedtls/ccm.o deps/mbedtls/cipher.o deps/mbedtls/cipher_wrap.o \
-                  deps/mbedtls/cmac.o deps/mbedtls/ctr_drbg.o deps/mbedtls/des.o \
-                  deps/mbedtls/dhm.o deps/mbedtls/ecdh.o deps/mbedtls/ecdsa.o \
-                  deps/mbedtls/ecjpake.o deps/mbedtls/ecp.o \
-                  deps/mbedtls/ecp_curves.o deps/mbedtls/entropy.o deps/mbedtls/entropy_poll.o \
-                  deps/mbedtls/error.o deps/mbedtls/gcm.o deps/mbedtls/havege.o \
-                  deps/mbedtls/hmac_drbg.o deps/mbedtls/md.o deps/mbedtls/md2.o \
-                  deps/mbedtls/md4.o deps/mbedtls/md5.o deps/mbedtls/md_wrap.o \
-                  deps/mbedtls/memory_buffer_alloc.o deps/mbedtls/oid.o \
-                  deps/mbedtls/padlock.o deps/mbedtls/pem.o deps/mbedtls/pk.o \
-                  deps/mbedtls/pk_wrap.o deps/mbedtls/pkcs12.o deps/mbedtls/pkcs5.o \
-                  deps/mbedtls/pkparse.o deps/mbedtls/pkwrite.o deps/mbedtls/platform.o \
-                  deps/mbedtls/ripemd160.o deps/mbedtls/rsa.o deps/mbedtls/sha1.o \
-                  deps/mbedtls/sha256.o deps/mbedtls/sha512.o deps/mbedtls/threading.o \
-                  deps/mbedtls/timing.o deps/mbedtls/version.o \
-                  deps/mbedtls/version_features.o deps/mbedtls/xtea.o
+OBJS_TLS_CRYPTO = deps/mbedtls/aes.o \
+						deps/mbedtls/aesni.o \
+						deps/mbedtls/arc4.o \
+                  deps/mbedtls/asn1parse.o \
+						deps/mbedtls/asn1write.o \
+						deps/mbedtls/base64.o \
+                  deps/mbedtls/bignum.o \
+						deps/mbedtls/blowfish.o \
+						deps/mbedtls/camellia.o \
+                  deps/mbedtls/ccm.o \
+						deps/mbedtls/cipher.o \
+						deps/mbedtls/cipher_wrap.o \
+                  deps/mbedtls/cmac.o \
+						deps/mbedtls/ctr_drbg.o \
+						deps/mbedtls/des.o \
+                  deps/mbedtls/dhm.o \
+						deps/mbedtls/ecdh.o \
+						deps/mbedtls/ecdsa.o \
+                  deps/mbedtls/ecjpake.o \
+						deps/mbedtls/ecp.o \
+                  deps/mbedtls/ecp_curves.o \
+						deps/mbedtls/entropy.o \
+						deps/mbedtls/entropy_poll.o \
+                  deps/mbedtls/error.o \
+						deps/mbedtls/gcm.o \
+						deps/mbedtls/havege.o \
+                  deps/mbedtls/hmac_drbg.o \
+						deps/mbedtls/md.o \
+						deps/mbedtls/md2.o \
+                  deps/mbedtls/md4.o \
+						deps/mbedtls/md5.o \
+						deps/mbedtls/md_wrap.o \
+                  deps/mbedtls/memory_buffer_alloc.o \
+						deps/mbedtls/oid.o \
+                  deps/mbedtls/padlock.o \
+						deps/mbedtls/pem.o \
+						deps/mbedtls/pk.o \
+                  deps/mbedtls/pk_wrap.o \
+						deps/mbedtls/pkcs12.o \
+						deps/mbedtls/pkcs5.o \
+                  deps/mbedtls/pkparse.o \
+						deps/mbedtls/pkwrite.o \
+						deps/mbedtls/platform.o \
+                  deps/mbedtls/ripemd160.o \
+						deps/mbedtls/rsa.o \
+						deps/mbedtls/sha1.o \
+                  deps/mbedtls/sha256.o \
+						deps/mbedtls/sha512.o \
+						deps/mbedtls/threading.o \
+                  deps/mbedtls/timing.o \
+						deps/mbedtls/version.o \
+                  deps/mbedtls/version_features.o \
+						deps/mbedtls/xtea.o
 
-OBJS_TLS_X509 = deps/mbedtls/certs.o deps/mbedtls/pkcs11.o deps/mbedtls/x509.o \
-                deps/mbedtls/x509_create.o deps/mbedtls/x509_crl.o deps/mbedtls/x509_crt.o \
-                deps/mbedtls/x509_csr.o deps/mbedtls/x509write_crt.o deps/mbedtls/x509write_csr.o
+OBJS_TLS_X509 = deps/mbedtls/certs.o \
+					 deps/mbedtls/pkcs11.o \
+					 deps/mbedtls/x509.o \
+                deps/mbedtls/x509_create.o \
+					 deps/mbedtls/x509_crl.o \
+					 deps/mbedtls/x509_crt.o \
+                deps/mbedtls/x509_csr.o \
+					 deps/mbedtls/x509write_crt.o \
+					 deps/mbedtls/x509write_csr.o
 
-OBJS_TLS = deps/mbedtls/debug.o deps/mbedtls/net_sockets.o \
-           deps/mbedtls/ssl_cache.o deps/mbedtls/ssl_ciphersuites.o \
-           deps/mbedtls/ssl_cli.o deps/mbedtls/ssl_cookie.o \
-           deps/mbedtls/ssl_srv.o deps/mbedtls/ssl_ticket.o \
+OBJS_TLS = deps/mbedtls/debug.o \
+			  deps/mbedtls/net_sockets.o \
+           deps/mbedtls/ssl_cache.o \
+			  deps/mbedtls/ssl_ciphersuites.o \
+           deps/mbedtls/ssl_cli.o \
+			  deps/mbedtls/ssl_cookie.o \
+           deps/mbedtls/ssl_srv.o \
+			  deps/mbedtls/ssl_ticket.o \
            deps/mbedtls/ssl_tls.o
 
 OBJ += $(OBJS_TLS_CRYPTO) $(OBJS_TLS_X509) $(OBJS_TLS)
-endif
-
-ifeq ($(HAVE_LIBUI), 1)
-DEFINES += -DHAVE_LIBUI
-ifneq ($(findstring Win32,$(OS)),)
-OBJ += deps/libui/windows/alloc.o \
-		 deps/libui/windows/area.o \
-		 deps/libui/windows/areadraw.o \
-		 deps/libui/windows/areaevents.o \
-		 deps/libui/windows/areascroll.o \
-		 deps/libui/windows/areautil.o \
-		 deps/libui/windows/box.o \
-		 deps/libui/windows/button.o \
-		 deps/libui/windows/checkbox.o \
-		 deps/libui/windows/colorbutton.o \
-		 deps/libui/windows/colordialog.o \
-		 deps/libui/windows/combobox.o \
-		 deps/libui/windows/container.o \
-		 deps/libui/windows/control.o \
-		 deps/libui/windows/d2dscratch.o \
-		 deps/libui/windows/datetimepicker.o \
-		 deps/libui/windows/debug.o \
-		 deps/libui/windows/draw.o \
-		 deps/libui/windows/drawmatrix.o \
-		 deps/libui/windows/drawpath.o \
-		 deps/libui/windows/drawtext.o \
-		 deps/libui/windows/dwrite.o \
-		 deps/libui/windows/editablecombo.o \
-		 deps/libui/windows/entry.o \
-		 deps/libui/windows/events.o \
-		 deps/libui/windows/fontbutton.o \
-		 deps/libui/windows/fontdialog.o \
-		 deps/libui/windows/form.o \
-		 deps/libui/windows/graphemes.o \
-		 deps/libui/windows/grid.o \
-		 deps/libui/windows/group.o \
-		 deps/libui/windows/init.o \
-		 deps/libui/windows/label.o \
-		 deps/libui/windows/main.o \
-		 deps/libui/windows/menu.o \
-		 deps/libui/windows/multilineentry.o \
-		 deps/libui/windows/parent.o \
-		 deps/libui/windows/progressbar.o \
-		 deps/libui/windows/radiobuttons.o \
-		 deps/libui/windows/separator.o \
-		 deps/libui/windows/sizing.o \
-		 deps/libui/windows/slider.o \
-		 deps/libui/windows/spinbox.o \
-		 deps/libui/windows/stddialogs.o \
-		 deps/libui/windows/tab.o \
-		 deps/libui/windows/tabpage.o \
-		 deps/libui/windows/text.o \
-		 deps/libui/windows/utf16.o \
-		 deps/libui/windows/utilwin.o \
-		 deps/libui/windows/window.o \
-		 deps/libui/windows/winpublic.o \
-		 deps/libui/windows/winutil.o
-LIBS += -luxtheme -ld2d1 -ldwrite -lusp10
-else
-ifneq ($(findstring Darwin,$(OS)),)
-OBJ += deps/libui/darwin/alloc.o \
-		 deps/libui/darwin/area.o \
-		 deps/libui/darwin/areaevents.o \
-		 deps/libui/darwin/autolayout.o \
-		 deps/libui/darwin/box.o \
-		 deps/libui/darwin/button.o \
-		 deps/libui/darwin/checkbox.o \
-		 deps/libui/darwin/colorbutton.o \
-		 deps/libui/darwin/combobox.o \
-		 deps/libui/darwin/control.o \
-		 deps/libui/darwin/datetimepicker.o \
-		 deps/libui/darwin/debug.o \
-		 deps/libui/darwin/draw.o \
-		 deps/libui/darwin/drawtext.o \
-		 deps/libui/darwin/editablecombo.o \
-		 deps/libui/darwin/entry.o \
-		 deps/libui/darwin/fontbutton.o \
-		 deps/libui/darwin/form.o \
-		 deps/libui/darwin/grid.o \
-		 deps/libui/darwin/group.o \
-		 deps/libui/darwin/image.o \
-		 deps/libui/darwin/label.o \
-		 deps/libui/darwin/main.o \
-		 deps/libui/darwin/map.o \
-		 deps/libui/darwin/menu.o \
-		 deps/libui/darwin/multilineentry.o \
-		 deps/libui/darwin/progressbar.o \
-		 deps/libui/darwin/radiobuttons.o \
-		 deps/libui/darwin/scrollview.o \
-		 deps/libui/darwin/separator.o \
-		 deps/libui/darwin/slider.o \
-		 deps/libui/darwin/spinbox.o \
-		 deps/libui/darwin/stddialogs.o \
-		 deps/libui/darwin/tab.o \
-		 deps/libui/darwin/text.o \
-		 deps/libui/darwin/util.o \
-		 deps/libui/darwin/window.o \
-		 deps/libui/darwin/winmoveresize.o
-else
-CFLAGS += -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/gtk-3.0 -I/usr/include/pango-1.0 -I/usr/include/cairo -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/atk-1.0
-LIBS += -lgtk-3 -lgdk-3 -lpangocairo-1.0 -lpango-1.0 -latk-1.0 -lcairo-gobject -lcairo -lgdk_pixbuf-2.0 -lgio-2.0  -lgobject-2.0 -lglib-2.0
-OBJ += deps/libui/unix/alloc.o \
-		 deps/libui/unix/area.o \
-		 deps/libui/unix/box.o \
-		 deps/libui/unix/button.o \
-		 deps/libui/unix/cellrendererbutton.o \
-		 deps/libui/unix/checkbox.o \
-		 deps/libui/unix/child.o \
-		 deps/libui/unix/colorbutton.o \
-		 deps/libui/unix/combobox.o \
-		 deps/libui/unix/control.o \
-		 deps/libui/unix/datetimepicker.o \
-		 deps/libui/unix/debug.o \
-		 deps/libui/unix/draw.o \
-		 deps/libui/unix/drawmatrix.o \
-		 deps/libui/unix/drawpath.o \
-		 deps/libui/unix/drawtext.o \
-		 deps/libui/unix/editablecombo.o \
-		 deps/libui/unix/entry.o \
-		 deps/libui/unix/fontbutton.o \
-		 deps/libui/unix/form.o \
-		 deps/libui/unix/future.o \
-		 deps/libui/unix/graphemes.o \
-		 deps/libui/unix/grid.o \
-		 deps/libui/unix/group.o \
-		 deps/libui/unix/image.o \
-		 deps/libui/unix/label.o \
-		 deps/libui/unix/main.o \
-		 deps/libui/unix/menu.o \
-		 deps/libui/unix/multilineentry.o \
-		 deps/libui/unix/progressbar.o \
-		 deps/libui/unix/radiobuttons.o \
-		 deps/libui/unix/separator.o \
-		 deps/libui/unix/slider.o \
-		 deps/libui/unix/spinbox.o \
-		 deps/libui/unix/stddialogs.o \
-		 deps/libui/unix/tab.o \
-		 deps/libui/unix/text.o \
-		 deps/libui/unix/util.o \
-		 deps/libui/unix/window.o
-endif
-endif
-
-OBJ += deps/libui/common/areaevents.o \
-		 deps/libui/common/control.o \
-		 deps/libui/common/debug.o \
-		 deps/libui/common/matrix.o \
-		 deps/libui/common/shouldquit.o \
-		 deps/libui/common/userbugs.o
-
-OBJ += deps/libui/libui_main.o
 endif
 endif
 
@@ -913,6 +830,9 @@ endif
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
 		  input/drivers/wayland_input.o
+ ifeq ($(HAVE_EGL), 1)
+   LIBS += $(EGL_LIBS)
+ endif
  DEFINES += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
  LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
 endif
@@ -1231,7 +1151,7 @@ ifeq ($(HAVE_VULKAN), 1)
       CXXFLAGS += -fpermissive
    endif
 
-   CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses
+   CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-reorder -Wno-parentheses
 
    OBJ += gfx/drivers/vulkan.o \
           gfx/common/vulkan_common.o \
@@ -1732,6 +1652,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    ifeq ($(HAVE_DISCORD), 1)
+      NEED_CXX_LINKER = 1
       DEFINES += -DHAVE_DISCORD
       DEFINES += -Ideps/discord-rpc/include/ -Ideps/discord-rpc/thirdparty/rapidjson-1.1.0/include/
       OBJ     += deps/discord-rpc/src/discord_rpc.o \

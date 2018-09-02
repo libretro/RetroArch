@@ -150,7 +150,10 @@ static unsigned count_sad(const uint8_t *data, size_t size)
    size_t i;
    unsigned cnt = 0;
    for (i = 0; i < size; i++)
-      cnt += abs((int8_t)data[i]);
+   {
+      if (data[i])
+         cnt += abs((int8_t)data[i]);
+   }
    return cnt;
 }
 

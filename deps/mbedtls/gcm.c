@@ -77,10 +77,7 @@
 }
 #endif
 
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
-}
+#include "arc4_alt.h"
 
 /*
  * Initialize a context
@@ -519,7 +516,7 @@ void mbedtls_gcm_free( mbedtls_gcm_context *ctx )
 static const int key_index[MAX_TESTS] =
     { 0, 0, 1, 1, 1, 1 };
 
-static const unsigned char key[MAX_TESTS][32] =
+static const unsigned char gcm_key[MAX_TESTS][32] =
 {
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -531,13 +528,13 @@ static const unsigned char key[MAX_TESTS][32] =
       0x6d, 0x6a, 0x8f, 0x94, 0x67, 0x30, 0x83, 0x08 },
 };
 
-static const size_t iv_len[MAX_TESTS] =
+static const size_t gcm_iv_len[MAX_TESTS] =
     { 12, 12, 12, 12, 8, 60 };
 
 static const int iv_index[MAX_TESTS] =
     { 0, 0, 1, 1, 1, 2 };
 
-static const unsigned char iv[MAX_TESTS][64] =
+static const unsigned char gcm_iv[MAX_TESTS][64] =
 {
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00 },
@@ -553,7 +550,7 @@ static const unsigned char iv[MAX_TESTS][64] =
       0xa6, 0x37, 0xb3, 0x9b },
 };
 
-static const size_t add_len[MAX_TESTS] =
+static const size_t gcm_add_len[MAX_TESTS] =
     { 0, 0, 0, 20, 20, 20 };
 
 static const int add_index[MAX_TESTS] =
@@ -756,12 +753,12 @@ int mbedtls_gcm_self_test( int verbose )
                 mbedtls_printf( "  AES-GCM-%3d #%d (%s): ",
                                  key_len, i, "enc" );
 
-            mbedtls_gcm_setkey( &ctx, cipher, key[key_index[i]], key_len );
+            mbedtls_gcm_setkey( &ctx, cipher, gcm_key[key_index[i]], key_len );
 
             ret = mbedtls_gcm_crypt_and_tag( &ctx, MBEDTLS_GCM_ENCRYPT,
                                      pt_len[i],
-                                     iv[iv_index[i]], iv_len[i],
-                                     additional[add_index[i]], add_len[i],
+                                     gcm_iv[iv_index[i]], gcm_iv_len[i],
+                                     additional[add_index[i]], gcm_add_len[i],
                                      pt[pt_index[i]], buf, 16, tag_buf );
 
             if( ret != 0 ||
@@ -783,12 +780,12 @@ int mbedtls_gcm_self_test( int verbose )
                 mbedtls_printf( "  AES-GCM-%3d #%d (%s): ",
                                  key_len, i, "dec" );
 
-            mbedtls_gcm_setkey( &ctx, cipher, key[key_index[i]], key_len );
+            mbedtls_gcm_setkey( &ctx, cipher, gcm_key[key_index[i]], key_len );
 
             ret = mbedtls_gcm_crypt_and_tag( &ctx, MBEDTLS_GCM_DECRYPT,
                                      pt_len[i],
-                                     iv[iv_index[i]], iv_len[i],
-                                     additional[add_index[i]], add_len[i],
+                                     gcm_iv[iv_index[i]], gcm_iv_len[i],
+                                     additional[add_index[i]], gcm_add_len[i],
                                      ct[j * 6 + i], buf, 16, tag_buf );
 
             if( ret != 0 ||
@@ -810,11 +807,11 @@ int mbedtls_gcm_self_test( int verbose )
                 mbedtls_printf( "  AES-GCM-%3d #%d split (%s): ",
                                  key_len, i, "enc" );
 
-            mbedtls_gcm_setkey( &ctx, cipher, key[key_index[i]], key_len );
+            mbedtls_gcm_setkey( &ctx, cipher, gcm_key[key_index[i]], key_len );
 
             ret = mbedtls_gcm_starts( &ctx, MBEDTLS_GCM_ENCRYPT,
-                              iv[iv_index[i]], iv_len[i],
-                              additional[add_index[i]], add_len[i] );
+                              gcm_iv[iv_index[i]], gcm_iv_len[i],
+                              additional[add_index[i]], gcm_add_len[i] );
             if( ret != 0 )
             {
                 if( verbose != 0 )
@@ -877,11 +874,11 @@ int mbedtls_gcm_self_test( int verbose )
                 mbedtls_printf( "  AES-GCM-%3d #%d split (%s): ",
                                  key_len, i, "dec" );
 
-            mbedtls_gcm_setkey( &ctx, cipher, key[key_index[i]], key_len );
+            mbedtls_gcm_setkey( &ctx, cipher, gcm_key[key_index[i]], key_len );
 
             ret = mbedtls_gcm_starts( &ctx, MBEDTLS_GCM_DECRYPT,
-                              iv[iv_index[i]], iv_len[i],
-                              additional[add_index[i]], add_len[i] );
+                              gcm_iv[iv_index[i]], gcm_iv_len[i],
+                              additional[add_index[i]], gcm_add_len[i] );
             if( ret != 0 )
             {
                 if( verbose != 0 )

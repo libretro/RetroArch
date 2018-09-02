@@ -3157,7 +3157,7 @@ static unsigned menu_displaylist_parse_options(
 }
 
 static int menu_displaylist_parse_options_cheats(
-      menu_displaylist_info_t *info)
+      menu_displaylist_info_t *info, menu_handle_t *menu)
 {
    unsigned i;
 
@@ -3204,6 +3204,12 @@ static int menu_displaylist_parse_options_cheats(
          msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_ALL),
          MENU_ENUM_LABEL_CHEAT_DELETE_ALL,
          MENU_SETTING_ACTION, 0, 0);
+   menu_displaylist_parse_settings_enum(menu, info,
+         MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
+         PARSE_ONLY_BOOL, false);
+   menu_displaylist_parse_settings_enum(menu, info,
+         MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
+         PARSE_ONLY_BOOL, false);
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
          msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),
@@ -4851,7 +4857,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                         string_is_equal(core_path, path_get(RARCH_PATH_CORE)))
                   {
                      strlcpy(new_path_entry, core_path, sizeof(new_path_entry));
-                     snprintf(new_entry, sizeof(new_entry), "%s (%s)", 
+                     snprintf(new_entry, sizeof(new_entry), "%s (%s)",
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE),
                            core_name);
                      new_lbl_entry[0] = '\0';
@@ -5131,6 +5137,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SLOWMOTION_RATIO,
                PARSE_ONLY_FLOAT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
+               PARSE_ONLY_BOOL, false);
 
          {
             settings_t      *settings     = config_get_ptr();
@@ -5177,6 +5186,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          if ( setting )
             setting->max = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
 
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY));
+         if ( setting )
+            setting->max = cheat_manager_state.actual_memory_size>0?cheat_manager_state.actual_memory_size-1:0 ;
+
+
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEAT_IDX,
                PARSE_ONLY_UINT, false);
@@ -5209,6 +5223,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   MENU_ENUM_LABEL_CHEAT_ADDRESS,
                   PARSE_ONLY_UINT, false);
             menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY,
+                  PARSE_ONLY_UINT, false);
+            menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION,
                   PARSE_ONLY_UINT, false);
             menu_displaylist_parse_settings_enum(menu, info,
@@ -5234,7 +5251,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ONLY_UINT, false);
          }
 
-         //<Inspect Memory At this Address>
+         /* Inspect Memory At this Address */
 
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER),
@@ -5352,13 +5369,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MSG_UNKNOWN,
                MENU_SETTINGS_CHEAT_MATCH, 0, 0);
 
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY,
+               PARSE_ONLY_UINT, false);
+
+
 
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_MATCH));
-         if ( setting )
+         if (setting)
             setting->max = cheat_manager_state.num_matches-1;
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_MATCH));
-         if ( setting )
+         if (setting)
             setting->max = cheat_manager_state.num_matches-1;
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY));
+         if (setting)
+            setting->max = cheat_manager_state.actual_memory_size>0?cheat_manager_state.actual_memory_size-1:0 ;
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -5513,7 +5538,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SHOW_HELP,
                PARSE_ONLY_BOOL, false);
-
+#ifdef HAVE_QT
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SHOW_WIMP,
+               PARSE_ONLY_UINT, false);
+#endif
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,
                PARSE_ONLY_BOOL, false);
@@ -6266,11 +6295,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SCREEN_RESOLUTION,
                PARSE_ACTION, false);
-         menu_displaylist_parse_settings_enum(menu, info, 
-               MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION, 
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,
                PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info, 
-               MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER, 
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER,
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PAL60_ENABLE,
@@ -6868,7 +6897,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_OPTIONS_CHEATS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_options_cheats(info);
+         ret = menu_displaylist_parse_options_cheats(info, menu);
 
          info->need_push    = true;
          break;
@@ -6883,7 +6912,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          {
             settings_t      *settings     = config_get_ptr();
-            if (settings->bools.quick_menu_show_save_core_overrides 
+            if (settings->bools.quick_menu_show_save_core_overrides
                   && !settings->bools.kiosk_mode_enable)
             {
                menu_entries_append_enum(info->list,
@@ -6894,7 +6923,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                count++;
             }
 
-            if (settings->bools.quick_menu_show_save_content_dir_overrides 
+            if (settings->bools.quick_menu_show_save_content_dir_overrides
                   && !settings->bools.kiosk_mode_enable)
             {
                menu_entries_append_enum(info->list,
@@ -6905,7 +6934,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                count++;
             }
 
-            if (settings->bools.quick_menu_show_save_game_overrides 
+            if (settings->bools.quick_menu_show_save_game_overrides
                   && !settings->bools.kiosk_mode_enable)
             {
                menu_entries_append_enum(info->list,
@@ -7015,7 +7044,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             if (system)
             {
-               if ( !string_is_empty(system->info.library_name) &&
+               if (!string_is_empty(system->info.library_name) &&
                      !string_is_equal(system->info.library_name,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
                   menu_displaylist_parse_settings_enum(menu, info,

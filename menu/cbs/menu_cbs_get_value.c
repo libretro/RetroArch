@@ -690,21 +690,22 @@ static void menu_action_setting_disp_set_label_cheat(
    {
       if ( cheat_manager_state.cheats[cheat_index].handler == CHEAT_HANDLER_TYPE_EMU)
       {
-         snprintf(s, len, "%s : (%s)",
-               (cheat_manager_get_code(cheat_index) != NULL)
-               ? cheat_manager_get_code(cheat_index) :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+         snprintf(s, len, "(%s) : %s",
                cheat_manager_get_code_state(cheat_index) ?
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+               (cheat_manager_get_code(cheat_index) != NULL)
+               ? cheat_manager_get_code(cheat_index) :
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
                );
       }
       else
       {
-         snprintf(s, len, "%08X : (%s)", cheat_manager_state.cheats[cheat_index].address,
+         snprintf(s, len, "(%s) : %08X",
                cheat_manager_get_code_state(cheat_index) ?
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+               cheat_manager_state.cheats[cheat_index].address
                );
       }
    }
@@ -974,6 +975,10 @@ static void menu_action_setting_disp_set_label_xmb_theme(
       case XMB_ICON_THEME_CUSTOM:
          strlcpy(s,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM), len);
+         break;
+      case XMB_ICON_THEME_AUTOMATIC:
+         strlcpy(s,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC), len);
          break;
    }
 }
@@ -1887,7 +1892,8 @@ static void menu_action_setting_disp_set_label_setting_string(file_list_t* list,
 
    *w = 19;
 
-   strlcpy(s, setting->value.target.string, len);
+   if ( setting->value.target.string != NULL )
+      strlcpy(s, setting->value.target.string, len);
 
    strlcpy(s2, path, len2);
 }

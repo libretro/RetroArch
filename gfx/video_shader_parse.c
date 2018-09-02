@@ -35,6 +35,7 @@
 #include "../verbosity.h"
 #include "../configuration.h"
 #include "../frontend/frontend_driver.h"
+#include "../command.h"
 #include "video_driver.h"
 #include "video_shader_parse.h"
 
@@ -155,6 +156,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       strlcpy(pass->source.path, tmp_str, sizeof(pass->source.path));
    else
       strlcpy(pass->source.path, tmp_path, sizeof(pass->source.path));
+
    free(tmp_path);
 
    /* Smooth */
@@ -208,7 +210,10 @@ static bool video_shader_parse_pass(config_file_t *conf,
    config_get_array(conf, scale_name_buf, scale_type_y, sizeof(scale_type_y));
 
    if (!*scale_type && !*scale_type_x && !*scale_type_y)
+   {
+      free(tmp_str);
       return true;
+   }
 
    if (*scale_type)
    {
@@ -253,6 +258,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    }
 
    snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
+
    if (scale->type_x == RARCH_SCALE_ABSOLUTE)
    {
       if (config_get_int(conf, attr_name_buf, &iattr))
@@ -277,6 +283,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    }
 
    snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
+
    if (scale->type_y == RARCH_SCALE_ABSOLUTE)
    {
       if (config_get_int(conf, attr_name_buf, &iattr))
@@ -496,13 +503,13 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       char *line         = NULL;
       const char *path   = shader->pass[i].source.path;
 
-	  if (string_is_empty(path))
-		  continue;
+     if (string_is_empty(path))
+        continue;
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-      /* First try to use the more robust slang 
+      /* First try to use the more robust slang
        * implementation to support #includes. */
-      /* FIXME: The check for slang can be removed 
+      /* FIXME: The check for slang can be removed
        * if it's sufficiently tested for
        * GLSL/Cg as well, it should be the same implementation. */
       if (string_is_equal(path_get_extension(path), "slang") &&
@@ -522,6 +529,9 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       line    = (char*)malloc(4096 * sizeof(char));
       line[0] = '\0';
 
+      /* even though the pass is set in the loop too, not all passes have parameters */
+      param->pass = i;
+
       while (shader->num_parameters < ARRAY_SIZE(shader->parameters)
             && intfstream_gets(file, line, line_size))
       {
@@ -539,9 +549,11 @@ bool video_shader_resolve_parameters(config_file_t *conf,
          if (ret == 5)
             param->step = 0.1f * (param->maximum - param->minimum);
 
-         RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f\n",
+         param->pass = i;
+
+         RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f in pass %d\n",
                param->desc,    param->id,      param->initial,
-               param->minimum, param->maximum, param->step);
+               param->minimum, param->maximum, param->step, param->pass);
          param->current = param->initial;
 
          shader->num_parameters++;
@@ -632,7 +644,7 @@ static bool video_shader_parse_imports(config_file_t *conf,
          var->type = RARCH_STATE_TRANSITION_PREV;
       else if (string_is_equal(semantic, "python"))
          var->type = RARCH_STATE_PYTHON;
-      else 
+      else
       {
          RARCH_ERR("Invalid semantic.\n");
          goto error;
@@ -736,6 +748,8 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
    shader->passes = MIN(shaders, GFX_MAX_SHADERS);
    attr.i         = 0;
 
+   strlcpy(shader->path, conf->path, sizeof(shader->path));
+
    if (settings->bools.video_shader_watch_files)
    {
       if (file_change_data)
@@ -752,11 +766,14 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
       if (!video_shader_parse_pass(conf, &shader->pass[i], i))
       {
          if (file_list)
+         {
             string_list_free(file_list);
+            file_list = NULL;
+         }
          return false;
       }
 
-      if (settings->bools.video_shader_watch_files)
+      if (settings->bools.video_shader_watch_files && file_list)
          string_list_append(file_list,
                shader->pass[i].source.path, attr);
    }
@@ -770,8 +787,11 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
 
       frontend_driver_watch_path_for_changes(file_list,
             flags, &file_change_data);
-      string_list_free(file_list);
+      if (file_list)
+         string_list_free(file_list);
    }
+
+   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
 
    if (!video_shader_parse_textures(conf, shader))
       return false;
@@ -1116,11 +1136,16 @@ enum rarch_shader_type video_shader_get_type_from_ext(
 {
    enum gfx_ctx_api api = video_context_driver_get_api();
 
+   if (string_is_empty(ext))
+      return RARCH_SHADER_NONE;
+
+   if (strlen(ext) > 1 && ext[0] == '.')
+      ext++;
+
    *is_preset           = false;
 
    if (
-         string_is_equal(ext, "cg") ||
-         string_is_equal(ext, "CG")
+         string_is_equal_case_insensitive(ext, "cg")
          )
    {
       switch (api)
@@ -1130,7 +1155,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
          case GFX_CTX_OPENGL_API:
          case GFX_CTX_OPENGL_ES_API:
             {
-               struct retro_hw_render_callback *hwr = 
+               struct retro_hw_render_callback *hwr =
                   video_driver_get_hw_context();
                if (hwr)
                {
@@ -1162,7 +1187,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
          case GFX_CTX_OPENGL_API:
          case GFX_CTX_OPENGL_ES_API:
             {
-               struct retro_hw_render_callback *hwr = 
+               struct retro_hw_render_callback *hwr =
                   video_driver_get_hw_context();
                if (hwr)
                {
@@ -1227,7 +1252,7 @@ enum rarch_shader_type video_shader_get_type_from_ext(
       }
    }
    if (
-         string_is_equal_case_insensitive(ext, "slangp") 
+         string_is_equal_case_insensitive(ext, "slangp")
          )
    {
       *is_preset = true;

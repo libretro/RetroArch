@@ -1,4 +1,6 @@
-# 1.7.4 (future)
+# 1.7.5 (future)
+
+# 1.7.4
 - ANDROID: Add sustained performance mode, can be turned on/off in Power Management settings menu.
 - ANDROID: Powerstate/battery level support.
 - CHEEVOS: Fix crash when scrolling Achievement List while Unofficial Achievements enabled (#6732).
@@ -16,13 +18,19 @@
 - LOCALIZATION: Update Spanish translation.
 - MIDI: Add MIDI support to the libretro API. Dosbox is the first proof of concept core implementing libretro MIDI.
 - MIDI: Add a Windows driver for MIDI, based on winmm.
-- MENU/QT/WIMP: QT QSlider styling for Dark Theme.
+- MENU/QT/WIMP: Qt QSlider styling for Dark Theme.
 - MENU/QT/WIMP: Remove button ghostly inside highlighting.
 - MENU/QT/WIMP: Initial grid view.
 - MENU/QT/WIMP: Drag&drop to add new playlist items, add option to add/edit/delete playlists.
+- MENU/QT/WIMP: Add menu option to update RetroArch (Windows only for now).
+- MENU/QT/WIMP: Add menu option to manage shaders.
+- MENU/QT/WIMP: Add menu option to manage core options.
+- MENU/XMB: Add new icons for the settings
+- MENU/XMB: Add an option to show the desktop ui
 - METAL: Initial work-in-progress video driver for Metal. macOS-only right now, and currently requires macOS 10.13.
 - METAL: Supports XMB/MaterialUI, has a menu display driver. Has a font rendering driver.
 - METAL/SLANG: Slang shaders should be compatible with Metal video driver.
+- NETWORK: Enable SSL/TLS support by default for desktop platforms.
 - QNX: Fix Game Focus Toggle.
 - PS3: Add audio mixer support for FLAC and MP3.
 - PSP: Use proper button labels, fix inverted R-Stick Y axis.
@@ -89,7 +97,7 @@ video drivers that implement it (D3D8/9/10/11/12/GL)
 - MENU/RGUI: D3D8/D3D9: Hookup Menu Linear Filter
 - MENU/XMB: Disable XMB shadow icons by default for PowerPC and ARM for performance reasons.
 - MENU/XMB: Left/right thumbnails are now automatically scaled according to layout.
-- MENU/XMB: Add Left Thumbnails (additional to the right). 
+- MENU/XMB: Add Left Thumbnails (additional to the right).
 - MENU/XMB: Fixed left/right tab regression.
 - MENU/XMB: Fix scaling of tall images that were cut on bottom previously.
 - MENU/XMB: Menu scale factor setting now changes texts length, image scaling and margins.

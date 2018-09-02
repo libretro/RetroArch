@@ -45,10 +45,7 @@
 #endif
 
 #if defined(MBEDTLS_PEM_PARSE_C)
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
-}
+#include "arc4_alt.h"
 
 void mbedtls_pem_init( mbedtls_pem_context *ctx )
 {

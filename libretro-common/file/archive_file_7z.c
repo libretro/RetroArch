@@ -70,7 +70,9 @@ static void *sevenzip_stream_alloc_impl(void *p, size_t size)
 static void sevenzip_stream_free_impl(void *p, void *address)
 {
    (void)p;
-   free(address);
+
+   if (address)
+      free(address);
 }
 
 static void *sevenzip_stream_alloc_tmp_impl(void *p, size_t size)
@@ -450,6 +452,8 @@ static int sevenzip_parse_file_iterate_step_internal(
          *csize    = (uint32_t)compressed_size;
       }
    }
+   else
+      return 0;
 
    *payback = 1;
 

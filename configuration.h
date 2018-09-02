@@ -239,6 +239,9 @@ typedef struct settings
       bool playlist_entry_remove;
       bool playlist_entry_rename;
       bool rewind_enable;
+      bool vrr_runloop_enable;
+      bool apply_cheats_after_toggle;
+      bool apply_cheats_after_load;
       bool run_ahead_enabled;
       bool run_ahead_secondary_instance;
       bool run_ahead_hide_warnings;

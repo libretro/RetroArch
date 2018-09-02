@@ -402,13 +402,14 @@ bool core_unload(void)
 bool core_unload_game(void)
 {
    video_driver_free_hw_context();
-   audio_driver_stop();
 
    video_driver_set_cached_frame_ptr(NULL);
 
    current_core.retro_unload_game();
 
    current_core.game_loaded = false;
+
+   audio_driver_stop();
 
    return true;
 }

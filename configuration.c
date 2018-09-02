@@ -1069,7 +1069,7 @@ bool config_overlay_enable_default(void)
 static struct config_array_setting *populate_settings_array(settings_t *settings, int *size)
 {
    unsigned count                        = 0;
-   struct config_array_setting  *tmp    = (struct config_array_setting*)malloc((*size + 1) * sizeof(struct config_array_setting));
+   struct config_array_setting  *tmp    = (struct config_array_setting*)calloc(1, (*size + 1) * sizeof(struct config_array_setting));
 
    /* Arrays */
    SETTING_ARRAY("playlist_names",           settings->arrays.playlist_names, false, NULL, true);
@@ -1112,7 +1112,7 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
 {
    unsigned count = 0;
    global_t   *global                  = global_get_ptr();
-   struct config_path_setting  *tmp    = (struct config_path_setting*)malloc((*size + 1) * sizeof(struct config_path_setting));
+   struct config_path_setting  *tmp    = (struct config_path_setting*)calloc(1, (*size + 1) * sizeof(struct config_path_setting));
 
    /* Paths */
 #ifdef HAVE_XMB
@@ -1280,6 +1280,9 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("ui_menubar_enable",             &settings->bools.ui_menubar_enable, true, true, false);
    SETTING_BOOL("suspend_screensaver_enable",    &settings->bools.ui_suspend_screensaver_enable, true, true, false);
    SETTING_BOOL("rewind_enable",                 &settings->bools.rewind_enable, true, rewind_enable, false);
+   SETTING_BOOL("vrr_runloop_enable",            &settings->bools.vrr_runloop_enable, true, vrr_runloop_enable, false);
+   SETTING_BOOL("apply_cheats_after_toggle",     &settings->bools.apply_cheats_after_toggle, true, apply_cheats_after_toggle, false);
+   SETTING_BOOL("apply_cheats_after_load",       &settings->bools.apply_cheats_after_load, true, apply_cheats_after_load, false);
    SETTING_BOOL("run_ahead_enabled",             &settings->bools.run_ahead_enabled, true, false, false);
    SETTING_BOOL("run_ahead_secondary_instance",  &settings->bools.run_ahead_secondary_instance, true, false, false);
    SETTING_BOOL("run_ahead_hide_warnings",       &settings->bools.run_ahead_hide_warnings, true, false, false);
@@ -1305,7 +1308,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("video_vsync",                   &settings->bools.video_vsync, true, vsync, false);
    SETTING_BOOL("video_hard_sync",               &settings->bools.video_hard_sync, true, hard_sync, false);
    SETTING_BOOL("video_black_frame_insertion",   &settings->bools.video_black_frame_insertion, true, black_frame_insertion, false);
-   SETTING_BOOL("crt_switch_resolution",  		 &settings->bools.crt_switch_resolution, true, crt_switch_resolution, false); 
+   SETTING_BOOL("crt_switch_resolution",  		 &settings->bools.crt_switch_resolution, true, crt_switch_resolution, false);
    SETTING_BOOL("video_disable_composition",     &settings->bools.video_disable_composition, true, disable_composition, false);
    SETTING_BOOL("pause_nonactive",               &settings->bools.pause_nonactive, true, pause_nonactive, false);
    SETTING_BOOL("video_gpu_screenshot",          &settings->bools.video_gpu_screenshot, true, gpu_screenshot, false);
@@ -1477,7 +1480,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 static struct config_float_setting *populate_settings_float(settings_t *settings, int *size)
 {
    unsigned count = 0;
-   struct config_float_setting  *tmp      = (struct config_float_setting*)malloc((*size + 1) * sizeof(struct config_float_setting));
+   struct config_float_setting  *tmp      = (struct config_float_setting*)calloc(1, (*size + 1) * sizeof(struct config_float_setting));
 
    SETTING_FLOAT("video_aspect_ratio",       &settings->floats.video_aspect_ratio, true, aspect_ratio, false);
    SETTING_FLOAT("video_scale",              &settings->floats.video_scale, false, 0.0f, false);
@@ -1604,7 +1607,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 static struct config_size_setting *populate_settings_size(settings_t *settings, int *size)
 {
    unsigned count                     = 0;
-   struct config_size_setting  *tmp   = (struct config_size_setting*)malloc((*size + 1) * sizeof(struct config_size_setting));
+   struct config_size_setting  *tmp   = (struct config_size_setting*)calloc((*size + 1), sizeof(struct config_size_setting));
 
    SETTING_SIZE("rewind_buffer_size",           &settings->sizes.rewind_buffer_size, true, rewind_buffer_size, false);
 
@@ -2645,11 +2648,9 @@ static bool config_load_file(const char *path, bool set_defaults,
        * If the value is less than 10000 then multiple by 1MB because if the retroarch.cfg
        * file contains rewind_buffer_size = "100" then that ultimately gets interpreted as
        * 100MB, so ensure the internal values represent that.*/
-      if ( strcmp(size_settings[i].ident, "rewind_buffer_size") == 0 ) {
-         if ( *size_settings[i].ptr < 10000) {
-            *size_settings[i].ptr  = *size_settings[i].ptr * 1024 * 1024 ;
-         }
-      }
+      if (string_is_equal(size_settings[i].ident, "rewind_buffer_size"))
+         if (*size_settings[i].ptr < 10000)
+            *size_settings[i].ptr  = *size_settings[i].ptr * 1024 * 1024;
    }
 
    for (i = 0; i < MAX_USERS; i++)
@@ -3026,6 +3027,8 @@ end:
       free(array_settings);
    if (path_settings)
       free(path_settings);
+   if (size_settings)
+      free(size_settings);
    free(tmp_str);
    return ret;
 }
@@ -3410,12 +3413,14 @@ bool config_load_remap(void)
 
    new_conf = NULL;
 
+   free(content_path);
    free(remap_directory);
    free(core_path);
    free(game_path);
    return false;
 
 success:
+   free(content_path);
    free(remap_directory);
    free(core_path);
    free(game_path);
@@ -4118,7 +4123,7 @@ bool config_save_file(const char *path)
              !retroarch_override_setting_is_set(size_settings[i].override, NULL))
             config_set_int(conf,
                   size_settings[i].ident,
-                  *size_settings[i].ptr);
+                  (int)*size_settings[i].ptr);
 
       free(size_settings);
    }
@@ -4396,7 +4401,7 @@ bool config_save_overrides(int override_type)
             RARCH_LOG("   override: %s=%d\n",
                   size_overrides[i].ident, (*size_overrides[i].ptr));
             config_set_int(conf, size_overrides[i].ident,
-                  (*size_overrides[i].ptr));
+                  (int)(*size_overrides[i].ptr));
          }
       }
       for (i = 0; i < (unsigned)float_settings_size; i++)
@@ -4428,7 +4433,7 @@ bool config_save_overrides(int override_type)
       for (i = 0; i < (unsigned)path_settings_size; i++)
       {
 
-         /* blacklist video_shader, better handled by shader presets*/ 
+         /* blacklist video_shader, better handled by shader presets*/
          /* to-do: add setting to control blacklisting */
          if (string_is_equal(path_settings[i].ident, "video_shader"))
             continue;
@@ -4533,6 +4538,8 @@ bool config_save_overrides(int override_type)
       free(path_settings);
    if (path_overrides)
       free(path_overrides);
+   if (size_overrides)
+      free(size_overrides);
    free(settings);
    free(config_directory);
    free(override_directory);

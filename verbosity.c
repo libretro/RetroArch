@@ -214,8 +214,8 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
 {
    unsigned i, offset;
-   int padding = size % 16;
-   uint8_t buf[16];
+   int padding     = size % 16;
+   uint8_t buf[16] = {0};
 
    RARCH_LOG("== %d-byte buffer ==================\n", size);
 

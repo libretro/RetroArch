@@ -23,6 +23,8 @@
 #ifndef MBEDTLS_SSL_CIPHERSUITES_H
 #define MBEDTLS_SSL_CIPHERSUITES_H
 
+#include <retro_inline.h>
+
 #include "pk.h"
 #include "cipher.h"
 #include "md.h"
@@ -246,7 +248,7 @@ typedef enum {
     MBEDTLS_KEY_EXCHANGE_ECDHE_PSK,
     MBEDTLS_KEY_EXCHANGE_ECDH_RSA,
     MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA,
-    MBEDTLS_KEY_EXCHANGE_ECJPAKE,
+    MBEDTLS_KEY_EXCHANGE_ECJPAKE
 } mbedtls_key_exchange_type_t;
 
 /* Key exchanges using a certificate */
@@ -363,7 +365,7 @@ int mbedtls_ssl_ciphersuite_uses_ec( const mbedtls_ssl_ciphersuite_t *info );
 int mbedtls_ssl_ciphersuite_uses_psk( const mbedtls_ssl_ciphersuite_t *info );
 
 #if defined(MBEDTLS_KEY_EXCHANGE__SOME_PFS__ENABLED)
-static inline int mbedtls_ssl_ciphersuite_has_pfs( const mbedtls_ssl_ciphersuite_t *info )
+static INLINE int mbedtls_ssl_ciphersuite_has_pfs( const mbedtls_ssl_ciphersuite_t *info )
 {
     switch( info->key_exchange )
     {
@@ -382,7 +384,7 @@ static inline int mbedtls_ssl_ciphersuite_has_pfs( const mbedtls_ssl_ciphersuite
 #endif /* MBEDTLS_KEY_EXCHANGE__SOME_PFS__ENABLED */
 
 #if defined(MBEDTLS_KEY_EXCHANGE__SOME_NON_PFS__ENABLED)
-static inline int mbedtls_ssl_ciphersuite_no_pfs( const mbedtls_ssl_ciphersuite_t *info )
+static INLINE int mbedtls_ssl_ciphersuite_no_pfs( const mbedtls_ssl_ciphersuite_t *info )
 {
     switch( info->key_exchange )
     {
@@ -400,7 +402,7 @@ static inline int mbedtls_ssl_ciphersuite_no_pfs( const mbedtls_ssl_ciphersuite_
 #endif /* MBEDTLS_KEY_EXCHANGE__SOME_NON_PFS__ENABLED */
 
 #if defined(MBEDTLS_KEY_EXCHANGE__SOME__ECDH_ENABLED)
-static inline int mbedtls_ssl_ciphersuite_uses_ecdh( const mbedtls_ssl_ciphersuite_t *info )
+static INLINE int mbedtls_ssl_ciphersuite_uses_ecdh( const mbedtls_ssl_ciphersuite_t *info )
 {
     switch( info->key_exchange )
     {
@@ -414,7 +416,7 @@ static inline int mbedtls_ssl_ciphersuite_uses_ecdh( const mbedtls_ssl_ciphersui
 }
 #endif /* MBEDTLS_KEY_EXCHANGE__SOME__ECDH_ENABLED */
 
-static inline int mbedtls_ssl_ciphersuite_cert_req_allowed( const mbedtls_ssl_ciphersuite_t *info )
+static INLINE int mbedtls_ssl_ciphersuite_cert_req_allowed( const mbedtls_ssl_ciphersuite_t *info )
 {
     switch( info->key_exchange )
     {
@@ -432,7 +434,7 @@ static inline int mbedtls_ssl_ciphersuite_cert_req_allowed( const mbedtls_ssl_ci
 }
 
 #if defined(MBEDTLS_KEY_EXCHANGE__SOME__DHE_ENABLED)
-static inline int mbedtls_ssl_ciphersuite_uses_dhe( const mbedtls_ssl_ciphersuite_t *info )
+static INLINE int mbedtls_ssl_ciphersuite_uses_dhe( const mbedtls_ssl_ciphersuite_t *info )
 {
     switch( info->key_exchange )
     {
@@ -447,7 +449,7 @@ static inline int mbedtls_ssl_ciphersuite_uses_dhe( const mbedtls_ssl_ciphersuit
 #endif /* MBEDTLS_KEY_EXCHANGE__SOME__DHE_ENABLED) */
 
 #if defined(MBEDTLS_KEY_EXCHANGE__SOME__ECDHE_ENABLED)
-static inline int mbedtls_ssl_ciphersuite_uses_ecdhe( const mbedtls_ssl_ciphersuite_t *info )
+static INLINE int mbedtls_ssl_ciphersuite_uses_ecdhe( const mbedtls_ssl_ciphersuite_t *info )
 {
     switch( info->key_exchange )
     {
@@ -463,7 +465,7 @@ static inline int mbedtls_ssl_ciphersuite_uses_ecdhe( const mbedtls_ssl_ciphersu
 #endif /* MBEDTLS_KEY_EXCHANGE__SOME__ECDHE_ENABLED) */
 
 #if defined(MBEDTLS_KEY_EXCHANGE__WITH_SERVER_SIGNATURE__ENABLED)
-static inline int mbedtls_ssl_ciphersuite_uses_server_signature( const mbedtls_ssl_ciphersuite_t *info )
+static INLINE int mbedtls_ssl_ciphersuite_uses_server_signature( const mbedtls_ssl_ciphersuite_t *info )
 {
     switch( info->key_exchange )
     {

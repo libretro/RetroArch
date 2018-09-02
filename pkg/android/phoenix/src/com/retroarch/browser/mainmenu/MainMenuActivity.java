@@ -30,6 +30,7 @@ import android.util.Log;
 public final class MainMenuActivity extends PreferenceActivity
 {
 	final private int REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS = 124;
+	public static String PACKAGE_NAME;
 	boolean checkPermissions = false;
 
 	public void showMessageOKCancel(String message, DialogInterface.OnClickListener onClickListener)
@@ -181,7 +182,7 @@ public final class MainMenuActivity extends PreferenceActivity
 		retro.putExtra("SDCARD", Environment.getExternalStorageDirectory().getAbsolutePath());
 		retro.putExtra("DOWNLOADS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
 		retro.putExtra("SCREENSHOTS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
-		String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/com.retroarch/files";
+		String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + PACKAGE_NAME + "/files";
 		retro.putExtra("EXTERNAL", external);
 	}
 
@@ -189,6 +190,8 @@ public final class MainMenuActivity extends PreferenceActivity
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+
+		PACKAGE_NAME = getPackageName();
 
 		// Bind audio stream to hardware controls.
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);

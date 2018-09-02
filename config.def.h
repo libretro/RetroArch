@@ -526,6 +526,12 @@ static const bool framecount_show = true;
  * depending on the save state buffer. */
 static const bool rewind_enable = false;
 
+/* When set, any time a cheat is toggled it is immediately applied. */
+static const bool apply_cheats_after_toggle = false;
+
+/* When set, all enabled cheats are auto-applied when a game is loaded. */
+static const bool apply_cheats_after_load = false;
+
 /* The buffer size for the rewind buffer. This needs to be about
  * 15-20MB per minute. Very game dependant. */
 static const unsigned rewind_buffer_size = 20 << 20; /* 20MiB */
@@ -606,6 +612,9 @@ static const float slowmotion_ratio = 3.0;
 
 /* Maximum fast forward ratio. */
 static const float fastforward_ratio = 0.0;
+
+/* Enable runloop for variable refresh rate screens. Force x1 speed while handling fast forward too. */
+static const bool vrr_runloop_enable = false;
 
 /* Run core logic one or more frames ahead then load the state back to reduce perceived input lag. */
 static const unsigned run_ahead_frames = 1;
