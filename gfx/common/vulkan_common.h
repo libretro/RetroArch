@@ -179,6 +179,7 @@ struct vk_texture
    VkImage image;
    VkImageView view;
    VkDeviceMemory memory;
+   VkBuffer buffer;
 
    VkFormat format;
 

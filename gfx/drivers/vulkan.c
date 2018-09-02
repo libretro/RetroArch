@@ -854,6 +854,8 @@ static void vulkan_init_static_resources(vk_t *vk)
    uint32_t blank[4 * 4];
    VkCommandPoolCreateInfo pool_info = {
       VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
+   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
    /* Create the pipeline cache. */
    VkPipelineCacheCreateInfo cache   = {
       VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
@@ -1509,23 +1511,22 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
 
 static void vulkan_readback(vk_t *vk)
 {
-   VkImageCopy region;
+   VkBufferImageCopy region;
    struct vk_texture *staging;
    struct video_viewport vp;
+   VkMemoryBarrier barrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER };
 
    vulkan_viewport_info(vk, &vp);
    memset(&region, 0, sizeof(region));
-   region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   region.srcSubresource.layerCount = 1;
-   region.dstSubresource            = region.srcSubresource;
+   region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   region.imageSubresource.layerCount = 1;
+   region.imageOffset.x               = vp.x;
+   region.imageOffset.y               = vp.y;
+   region.imageExtent.width           = vp.width;
+   region.imageExtent.height          = vp.height;
+   region.imageExtent.depth           = 1;
 
-   region.srcOffset.x               = vp.x;
-   region.srcOffset.y               = vp.y;
-   region.extent.width              = vp.width;
-   region.extent.height             = vp.height;
-   region.extent.depth              = 1;
-
-   /* FIXME: We won't actually get format conversion with vkCmdCopyImage, so have to check
+   /* FIXME: We won't actually get format conversion with vkCmdCopyImageToBuffer, so have to check
     * properly for this. BGRA seems to be the default for all swapchains. */
    if (vk->context->swapchain_format != VK_FORMAT_B8G8R8A8_UNORM)
       RARCH_WARN("[Vulkan]: Backbuffer is not BGRA8888, readbacks might not work properly.\n");
@@ -1537,25 +1538,18 @@ static void vulkan_readback(vk_t *vk)
          VK_FORMAT_B8G8R8A8_UNORM,
          NULL, NULL, VULKAN_TEXTURE_READBACK);
 
-   /* Go through the long-winded dance of remapping image layouts. */
-   vulkan_image_layout_transition(vk, vk->cmd, staging->image,
-         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-         0, VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-   vkCmdCopyImage(vk->cmd, vk->chain->backbuffer.image,
+   vkCmdCopyImageToBuffer(vk->cmd, vk->chain->backbuffer.image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-         staging->image,
-         VK_IMAGE_LAYOUT_GENERAL,
+         staging->buffer,
          1, &region);
 
    /* Make the data visible to host. */
-   vulkan_image_layout_transition(vk, vk->cmd, staging->image,
-         VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
+   barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+   barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+   vkCmdPipelineBarrier(vk->cmd,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_HOST_BIT);
+         VK_PIPELINE_STAGE_HOST_BIT, 0,
+         1, &barrier, 0, NULL, 0, NULL);
 }
 
 static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
