@@ -361,19 +361,16 @@ static char** waiting_argv;
    return [NSApp isActive];
 }
 
-#define NS_FULLSCREEN_WINDOW_MASK (1 << 14)
-
 - (void)setVideoMode:(gfx_ctx_mode_t)mode {
-   BOOL isFullScreen = (self.window.styleMask & NS_FULLSCREEN_WINDOW_MASK) == NS_FULLSCREEN_WINDOW_MASK;
-   SEL fselector     = NSSelectorFromString(BOXSTRING("toggleFullScreen"));
-	
-   if (mode.fullscreen && !isFullScreen && [self.window respondsToSelector:fselector])
+#ifdef HAVE_METAL
+   BOOL isFullScreen = (self.window.styleMask & NSFullScreenWindowMask) == NSFullScreenWindowMask;
+   if (mode.fullscreen && !isFullScreen)
    {
       [self.window toggleFullScreen:self];
       return;
    }
    
-   if (!mode.fullscreen && isFullScreen && [self.window respondsToSelector:fselector])
+   if (!mode.fullscreen && isFullScreen)
    {
       [self.window toggleFullScreen:self];
    }
@@ -384,6 +381,7 @@ static char** waiting_argv;
       [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
    }
    [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
+#endif
 }
 
 - (void)setCursorVisible:(bool)v {
