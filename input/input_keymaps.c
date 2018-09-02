@@ -288,6 +288,7 @@ const struct input_key_map input_config_key_map[] = {
    { "euro", RETROK_EURO },
    { "undo", RETROK_UNDO },
    { "clear", RETROK_CLEAR },
+   { "oem102", RETROK_OEM_102 },
 
    { "nul", RETROK_UNKNOWN },
    { NULL, RETROK_UNKNOWN },
@@ -328,7 +329,7 @@ const struct rarch_key_map rarch_key_map_sdl[] = {
    { SDLK_9, RETROK_9 },
    { SDLK_COLON, RETROK_COLON },
    { SDLK_SEMICOLON, RETROK_SEMICOLON },
-   { SDLK_LESS, RETROK_LESS },
+   { SDLK_LESS, RETROK_OEM_102 },
    { SDLK_EQUALS, RETROK_EQUALS },
    { SDLK_GREATER, RETROK_GREATER },
    { SDLK_QUESTION, RETROK_QUESTION },
@@ -574,6 +575,7 @@ const struct rarch_key_map rarch_key_map_dinput[] = {
    { DIK_SCROLL, RETROK_SCROLLOCK },
    { DIK_CAPSLOCK, RETROK_CAPSLOCK },
    { DIK_NUMLOCK, RETROK_NUMLOCK },
+   { DIK_OEM_102, RETROK_OEM_102 },
    { 0, RETROK_UNKNOWN },
 };
 #endif
@@ -831,6 +833,7 @@ const struct rarch_key_map rarch_key_map_x11[] = {
    /*{ ?, RETROK_POWER },*/
    { XK_EuroSign, RETROK_EURO },
    { XK_Undo, RETROK_UNDO },
+   /*{ ?, RETROK_OEM_102 },*/
    /* FIXME(shizeeg): RetroArch can't handle these buttons atm.
     * Do we really need RETROK_KP_INSERT, RETROK_KP_END,
     * RETROK_KP_DOWN, RETROK_KP_PAGEDOWN ???
@@ -986,6 +989,7 @@ const struct rarch_key_map rarch_key_map_linux[] = {
    { KEY_EURO, RETROK_EURO },
 #endif
    { KEY_UNDO, RETROK_UNDO },
+   /*{ ?, RETROK_OEM_102 },*/
    { 0, RETROK_UNKNOWN },
 };
 #endif
@@ -1320,6 +1324,7 @@ const struct rarch_key_map rarch_key_map_apple_hid[] = {
    /* { ?, RETROK_POWER }, */
    /* { ?, RETROK_EURO }, */
    /* { ?, RETROK_UNDO }, */
+   { KEY_NonUSBackslash, RETROK_OEM_102 },
    { 0, RETROK_UNKNOWN }
 };
 #endif

@@ -174,7 +174,8 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_MENU,           "Menu"},
    {RETROK_POWER,          "Power"},
    {RETROK_EURO,           "€"},
-   {RETROK_UNDO,           "Undo"}
+   {RETROK_UNDO,           "Undo"},
+   {RETROK_OEM_102,        "OEM-102"}
 };
 
 /* This sets up all the callback functions for a menu entry.

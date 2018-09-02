@@ -450,6 +450,7 @@ enum retro_key
    RETROK_POWER          = 320,
    RETROK_EURO           = 321,
    RETROK_UNDO           = 322,
+   RETROK_OEM_102        = 323,
 
    RETROK_LAST,
 
