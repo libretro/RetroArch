@@ -1,5 +1,4 @@
 #include "internal.h"
-#include "rjson.h"
 #include "rurl.h"
 
 #include "smw_snes.h"
@@ -2091,84 +2090,6 @@ static void test_lua(void) {
   }
 }
 
-static void test_json(void) {
-  {
-    /*------------------------------------------------------------------------
-    TestJson
-    ------------------------------------------------------------------------*/
-
-    char json[65536];
-    char buffer[65536];
-    int res;
-    const rc_json_patch_t* patch;
-
-    memcpy(json, smw_snes_json, smw_snes_json_len);
-    json[smw_snes_json_len] = 0;
-
-    res = rc_json_get_patch_size(json);
-    assert(res >= 0);
-    patch = rc_json_parse_patch(buffer, json);
-
-    assert(patch->success);
-    assert(patch->patchdata.id == 228);
-    assert(!strcmp(patch->patchdata.title, "Super Mario World"));
-		assert(patch->patchdata.consoleid == 3);
-		assert(patch->patchdata.topicid ==  135);
-		assert(patch->patchdata.flags == 0);
-		assert(!strcmp(patch->patchdata.image_icon, "/Images/006972.png"));
-		assert(!strcmp(patch->patchdata.image_title, "/Images/000021.png"));
-		assert(!strcmp(patch->patchdata.image_ingame, "/Images/000022.png"));
-		assert(!strcmp(patch->patchdata.image_boxart, "/Images/000138.png"));
-		assert(!strcmp(patch->patchdata.publisher, "Nintendo"));
-		assert(!strcmp(patch->patchdata.developer, "Nintendo EAD"));
-		assert(!strcmp(patch->patchdata.genre, "Platforming"));
-		assert(!strcmp(patch->patchdata.released, "JP 1990 , NA 1991 Europe 1992"));
-		assert(patch->patchdata.is_final == 0);
-		assert(!strcmp(patch->patchdata.console, "SNES"));
-    assert(patch->patchdata.presence != NULL);
-    assert(!strcmp(*patch->patchdata.presence, "Lookup:LevelName\r\n0x0=Title Screen\r\n0x14=Yellow Switch Palace\r\n0x28=Yoshi's House\r\n0x29=Yoshi's Island 1\r\n0x2a=Yoshi's Island 2\r\n0x27=Yoshi's Island 3\r\n0x26=Yoshi's Island 4\r\n0x25=#1 Iggy's Castle\r\n0x15=Donut Plains 1\r\n0x9=Donut Plains 2\r\n0x8=Green Switch Palace\r\n0x4=Donut Ghost House\r\n0x3=Top Secret Area\r\n0x5=Donut Plains 3\r\n0x6=Donut Plains 4\r\n0x7=#2 Morton's Castle\r\n0xa=Donut Secret 1\r\n0x13=Donut Secret House\r\n0x2f=Donut Secret 2\r\n0x3e=Vanilla Dome 1\r\n0x3c=Vanilla Dome 2\r\n0x3f=Red Switch Palace\r\n0x2b=Vanilla Ghost House\r\n0x2e=Vanilla Dome 3\r\n0x3d=Vanilla Dome 4\r\n0x40=#3 Lemmy's Castle\r\n0x2d=Vanilla Secret 1\r\n0x1=Vanilla Secret 2\r\n0x2=Vanilla Secret 3\r\n0xb=Vanilla Fortress\r\n0xc=Butter Bridge 1\r\n0xd=Butter Bridge 2\r\n0xe=#4 Ludwig's Castle\r\n0xf=Cheese Bridge Area\r\n0x10=Cookie Mountain\r\n0x11=Soda Lake\r\n0x41=Forest Ghost House\r\n0x42=Forest of Illusion 1\r\n0x43=Forest of Illusion 4\r\n0x44=Forest of Illusion 2\r\n0x45=Blue Switch Palace\r\n0x46=Forest Secret Area\r\n0x47=Forest of Illusion 3\r\n0x1f=Forest Fortress\r\n0x20=#5 Roy's Castle\r\n0x21=Choco-Ghost House\r\n0x22=Chocolate Island 1\r\n0x23=Chocolate Island 3\r\n0x24=Chocolate Island 2\r\n0x1b=Chocolate Fortress\r\n0x1d=Chocolate Island 4\r\n0x1c=Chocolate Island 5\r\n0x1a=#6 Wendy's Castle\r\n0x18=Sunken Ghost Ship\r\n0x3b=Chocolate Secret\r\n0x3a=Valley of Bowser 1\r\n0x39=Valley of Bowser 2\r\n0x38=Valley Ghost House\r\n0x37=Valley of Bowser 3\r\n0x33=Valley of Bowser 4\r\n0x34=#7 Larry's Castle\r\n0x35=Valley Fortress\r\n0x31=Front Door\r\n0x32=Back Door\r\n0x58=Star World 1\r\n0x54=Star World 2\r\n0x56=Star World 3\r\n0x59=Star World 4\r\n0x5a=Star World 5\r\n0x4e=Gnarly\r\n0x4f=Tubular\r\n0x50=Way Cool\r\n0x51=Awesome\r\n0x4c=Groovy\r\n0x4b=Mondo\r\n0x4a=Outrageous\r\n0x49=Funky\r\n\r\nFormat:Lives\r\nFormatType=VALUE\r\n\r\nDisplay:\r\n@LevelName(0xh0013bf), @Lives(0xh0dbe_v+1) lives"));
-    assert(patch->patchdata.cheevos_count == 53);
-    assert(patch->patchdata.lboards_count == 0);
-
-    assert(patch->patchdata.cheevos[0].id == 4874);
-		assert(!strcmp(patch->patchdata.cheevos[0].memaddr, "0xH000019=2"));
-		assert(!strcmp(patch->patchdata.cheevos[0].title, "I Believe I Can Fly"));
-		assert(!strcmp(patch->patchdata.cheevos[0].description, "Collect a feather"));
-		assert(patch->patchdata.cheevos[0].points == 2);
-		assert(!strcmp(patch->patchdata.cheevos[0].author, "UNHchabo"));
-		assert(patch->patchdata.cheevos[0].modified == 1452548368ULL);
-		assert(patch->patchdata.cheevos[0].created == 1391908064ULL);
-		assert(!strcmp(patch->patchdata.cheevos[0].badge, "05506"));
-		assert(patch->patchdata.cheevos[0].flags == 3);
-
-    assert(patch->patchdata.cheevos[52].id == 29667);
-		assert(!strcmp(patch->patchdata.cheevos[52].memaddr, "0xR001ff5=1_0xH0013bf=58"));
-		assert(!strcmp(patch->patchdata.cheevos[52].title, "Under A Koopa Moon"));
-		assert(!strcmp(patch->patchdata.cheevos[52].description, "Collect the 3-Up Moon in the Valley of Bowser"));
-		assert(patch->patchdata.cheevos[52].points == 2);
-		assert(!strcmp(patch->patchdata.cheevos[52].author, "Dexterspet"));
-		assert(patch->patchdata.cheevos[52].modified == 1445783716ULL);
-		assert(patch->patchdata.cheevos[52].created == 1445754036ULL);
-		assert(!strcmp(patch->patchdata.cheevos[52].badge, "30351"));
-		assert(patch->patchdata.cheevos[52].flags == 3);
-
-    memcpy(json, galaga_nes_json, galaga_nes_json_len);
-    json[galaga_nes_json_len] = 0;
-
-    res = rc_json_get_patch_size(json);
-    assert(res >= 0);
-    patch = rc_json_parse_patch(buffer, json);
-
-    assert(patch->patchdata.lboards_count == 1);
-
-    assert(patch->patchdata.lboards[0].id == 310);
-    assert(!strcmp(patch->patchdata.lboards[0].mem, "STA:0xh0482=1::CAN:0xh0470=0_0xh0471=0::SUB:0xh0485=0_d0xh007a=0_0xh007a=1::VAL:0xh00e5*10_0xh00e4*100_0xh00e3*1000_0xh00e2*10000_0xh00e1*100000_0xh00e0*1000000"));
-    assert(!strcmp(patch->patchdata.lboards[0].format, "SCORE"));
-    assert(!strcmp(patch->patchdata.lboards[0].title, "Hi-Score"));
-    assert(!strcmp(patch->patchdata.lboards[0].description, "Get the highest score possible."));
-  }
-}
-
 int main(void) {
   test_operand();
   test_condition();
@@ -2177,7 +2098,6 @@ int main(void) {
   test_value();
   test_lboard();
   test_lua();
-  test_json();
 
   return 0;
 }

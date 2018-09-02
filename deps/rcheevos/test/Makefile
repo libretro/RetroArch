@@ -1,12 +1,10 @@
 RC_SRC=../src/rcheevos
-RC_JSON_SRC=../src/rjson
 RC_URL_SRC=../src/rurl
 LUA_SRC=lua/src
 
 OBJ=$(RC_SRC)/trigger.o $(RC_SRC)/condset.o $(RC_SRC)/condition.o $(RC_SRC)/operand.o \
     $(RC_SRC)/term.o $(RC_SRC)/expression.o $(RC_SRC)/value.o $(RC_SRC)/lboard.o \
     $(RC_SRC)/alloc.o $(RC_SRC)/format.o \
-	$(RC_JSON_SRC)/dejson.o $(RC_JSON_SRC)/schema.o \
 	$(RC_URL_SRC)/url.o \
 	$(LUA_SRC)/lapi.o $(LUA_SRC)/lcode.o $(LUA_SRC)/lctype.o $(LUA_SRC)/ldebug.o \
 	$(LUA_SRC)/ldo.o $(LUA_SRC)/ldump.o $(LUA_SRC)/lfunc.o $(LUA_SRC)/lgc.o $(LUA_SRC)/llex.o \

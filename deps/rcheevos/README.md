@@ -465,54 +465,6 @@ void rc_format_value(char* buffer, int size, unsigned value, int format);
 
 `buffer` receives `value` formatted according to `format`. No more than `size` characters will be written to `buffer`. 32 characters are enough to hold any valid value with any format.
 
-# **rjson**
-
-**rjson** provides parsing of RetroAchievements JSON files, and provides the results in strongly typed C structures instead of returning a generic dictionary and forcing the caller to check for values and extracting them.
-
-Similarly to **rcheevos**, **rjson** does *not* allocate any memory. The caller must use the functions that compute the size needed to parse a given JSON, allocate the necessary memory, and call another function that does the parsing.
-
-## API
-
-### Return values
-
-The functions that compute the memory needed for a given JSON return a positive value, which is the number of bytes needed. Errors are negative values taken from the following enumeration:
-
-```c
-enum {
-  RC_JSON_OK = 0,
-  RC_JSON_OBJECT_EXPECTED = -1,
-  RC_JSON_UNKOWN_RECORD = -2,
-  RC_JSON_EOF_EXPECTED = -3,
-  RC_JSON_MISSING_KEY = -4,
-  RC_JSON_UNTERMINATED_KEY = -5,
-  RC_JSON_MISSING_VALUE = -6,
-  RC_JSON_UNTERMINATED_OBJECT = -7,
-  RC_JSON_INVALID_VALUE = -8,
-  RC_JSON_UNTERMINATED_STRING = -9,
-  RC_JSON_UNTERMINATED_ARRAY = -10,
-  RC_JSON_INVALID_ESCAPE = -11
-};
-```
-
-### Supported schemas
-
-**rjson** supports the following JSON schemas. Please see `rjson.h` for the definition of the C structures:
-
-* `rc_json_gameid_t`: The game identifier returned by the server, given its hash.
-* `rc_json_login_t`: The login token for the user, given their user name and password.
-* `rc_json_patch_t`: The information about a game, given its identifier. It includes arrays with the achievements and leaderboards for the game.
-* `rc_json_unlocks_t`: The list of achievements already awarded for the player, given the game identifier. Used to avoid the emulator awarding achievements more than once.
-* `rc_json_error_t`: Error messages returned by the server.
-
-For each schema there are two functions, for example:
-
-```c
-int rc_json_get_patch_size(const char* json);
-const rc_json_patch_t* rc_json_parse_patch(void* buffer, const char* json);
-```
-
-`rc_json_get_patch_size` returns the number of bytes needed to parse the given JSON as a `rc_json_patch_t`. `rc_json_parse_patch` parses the given JSON into the given `buffer`, returning a pointer that is used to access the decoded information.
-
 # **rurl**
 
 **rurl** builds URLs to access many RetroAchievements web services. Its purpose it to just to free the developer from having to URL-encode parameters and build correct URL that are valid for the server.

@@ -1,3 +1,7 @@
+# v7.0.0
+
+* Removed **rjson**
+
 # v6.5.0
 
 * Added a schema for errors returned by the server
