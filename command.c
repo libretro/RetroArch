@@ -282,8 +282,6 @@ static bool command_read_ram(const char *arg)
 
    data = cheevos_patch_address(addr, cheevos_get_console());
 
-   data       = cheevos_var_get_memory(&var);
-
    if (data)
    {
       for (i=0;i<nbytes;i++)
