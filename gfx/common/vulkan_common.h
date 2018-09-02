@@ -96,6 +96,7 @@ typedef struct vulkan_context
    /* Used by screenshot to get blits with correct colorspace. */
    bool swapchain_is_srgb;
    bool swap_interval_emulation_lock;
+   bool has_acquired_swapchain;
 
    unsigned swapchain_width;
    unsigned swapchain_height;
@@ -131,6 +132,8 @@ typedef struct gfx_ctx_vulkan_data
 {
    bool need_new_swapchain;
    bool created_new_swapchain;
+   bool emulate_mailbox;
+   bool emulating_mailbox;
    vulkan_context_t context;
    VkSurfaceKHR vk_surface;
    VkSwapchainKHR swapchain;

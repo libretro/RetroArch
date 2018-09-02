@@ -1778,7 +1778,7 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)vk->filter_chain,
          vk->cmd, &vk->vk_vp);
    /* Render to backbuffer. */
-   if (chain->backbuffer.image != VK_NULL_HANDLE)
+   if (chain->backbuffer.image != VK_NULL_HANDLE && vk->context->has_acquired_swapchain)
    {
       rp_info.renderPass               = vk->render_pass;
       rp_info.framebuffer              = chain->backbuffer.framebuffer;
@@ -1874,6 +1874,7 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_filter_chain_end_frame((vulkan_filter_chain_t*)vk->filter_chain, vk->cmd);
 
    if (chain->backbuffer.image != VK_NULL_HANDLE &&
+         vk->context->has_acquired_swapchain &&
          (vk->readback.pending || vk->readback.streamed))
    {
       /* We cannot safely read back from an image which
