@@ -65,7 +65,9 @@
       _inflightSemaphore = dispatch_semaphore_create(MAX_INFLIGHT);
       _device = d;
       _layer = layer;
+#if TARGET_OS_OSX
       _layer.displaySyncEnabled = YES;
+#endif
       _library = l;
       _commandQueue = [_device newCommandQueue];
       _clearColor = MTLClearColorMake(0, 0, 0, 1);
@@ -127,7 +129,16 @@
 
 - (void)setDisplaySyncEnabled:(bool)displaySyncEnabled
 {
+#if TARGET_OS_OSX
    _layer.displaySyncEnabled = displaySyncEnabled;
+#endif
+}
+
+- (bool)displaySyncEnabled
+{
+#if TARGET_OS_OSX
+   return _layer.displaySyncEnabled;
+#endif
 }
 
 #pragma mark - shaders
@@ -152,11 +163,6 @@
    }
    
    return _states[index][blend ? 1 : 0];
-}
-
-- (bool)displaySyncEnabled
-{
-   return _layer.displaySyncEnabled;
 }
 
 - (MTLVertexDescriptor *)_spriteVertexDescriptor
@@ -376,7 +382,7 @@
 {
    assert(filter >= TEXTURE_FILTER_LINEAR && filter <= TEXTURE_FILTER_MIPMAP_NEAREST);
    
-   if (!image.pixels && !image.width && !image.height)
+   if (!image.pixels || !image.width || !image.height)
    {
       /* Create a dummy texture instead. */
 #define T0 0xff000000u
@@ -397,6 +403,7 @@
       image.pixels = (uint32_t *)checkerboard;
       image.width = 8;
       image.height = 8;
+      filter = TEXTURE_FILTER_MIPMAP_NEAREST;
    }
    
    BOOL mipmapped = filter == TEXTURE_FILTER_MIPMAP_LINEAR || filter == TEXTURE_FILTER_MIPMAP_NEAREST;
@@ -441,13 +448,13 @@
    return _drawable;
 }
 
-- (void)convertFormat:(RPixelFormat)fmt from:(id<MTLBuffer>)src to:(id<MTLTexture>)dst
+- (void)convertFormat:(RPixelFormat)fmt from:(id<MTLTexture>)src to:(id<MTLTexture>)dst
 {
-   assert(dst.width * dst.height == src.length / RPixelFormatToBPP(fmt));
+   assert(src.width == dst.width && src.height == dst.height);
    assert(fmt >= 0 && fmt < RPixelFormatCount);
    Filter *conv = _filters[fmt];
    assert(conv != nil);
-   [conv apply:self.blitCommandBuffer inBuf:src outTex:dst];
+   [conv apply:self.blitCommandBuffer in:src out:dst];
 }
 
 - (id<MTLCommandBuffer>)blitCommandBuffer
@@ -615,6 +622,7 @@ static const NSUInteger kConstantAlignment = 4;
 
 - (void)commitRanges
 {
+#if TARGET_OS_OSX
    for (BufferNode *n = _head; n != nil; n = n.next)
    {
       if (n.allocated > 0)
@@ -622,6 +630,7 @@ static const NSUInteger kConstantAlignment = 4;
          [n.src didModifyRange:NSMakeRange(0, n.allocated)];
       }
    }
+#endif
 }
 
 - (void)discard
@@ -635,9 +644,15 @@ static const NSUInteger kConstantAlignment = 4;
 {
    bzero(range, sizeof(*range));
    
+#if TARGET_OS_OSX
+   MTLResourceOptions opts = MTLResourceStorageModeManaged;
+#else
+   MTLResourceOptions opts = MTLResourceStorageModeShared;
+#endif
+   
    if (!_head)
    {
-      _head = [[BufferNode alloc] initWithBuffer:[_device newBufferWithLength:_blockLen options:MTLResourceStorageModeManaged]];
+      _head = [[BufferNode alloc] initWithBuffer:[_device newBufferWithLength:_blockLen options:opts]];
       _length += _blockLen;
       _current = _head;
       _offset = 0;
@@ -659,7 +674,7 @@ static const NSUInteger kConstantAlignment = 4;
       blockLen = length;
    }
    
-   _current.next = [[BufferNode alloc] initWithBuffer:[_device newBufferWithLength:blockLen options:MTLResourceStorageModeManaged]];
+   _current.next = [[BufferNode alloc] initWithBuffer:[_device newBufferWithLength:blockLen options:opts]];
    if (!_current.next)
       return NO;
    

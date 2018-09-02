@@ -299,30 +299,29 @@
    settings_t *settings = config_get_ptr();
    if (settings && settings->bools.video_msg_bgcolor_enable)
    {
-      int msg_width           =
+      int msg_width =
          font_driver_get_message_width(NULL, msg, (unsigned)strlen(msg), 1.0f);
-   
-      float x                 = video_info->font_msg_pos_x;
-      float y                 = 1.0f - video_info->font_msg_pos_y;
-      float width             = msg_width / (float)_viewport->full_width;
-      float height            =
+      
+      float x = video_info->font_msg_pos_x;
+      float y = 1.0f - video_info->font_msg_pos_y;
+      float width = msg_width / (float)_viewport->full_width;
+      float height =
          settings->floats.video_font_size / (float)_viewport->full_height;
       
       y -= height;
       
-   
-      float x2                = 0.005f; /* extend background around text */
-      float y2                = 0.005f;
-   
-      x                      -= x2;
-      y                      -= y2;
-      width                  += x2;
-      height                 += y2;
-   
-      float r                 = settings->uints.video_msg_bgcolor_red / 255.0f;
-      float g                 = settings->uints.video_msg_bgcolor_green / 255.0f;
-      float b                 = settings->uints.video_msg_bgcolor_blue / 255.0f;
-      float a                 = settings->floats.video_msg_bgcolor_opacity;
+      float x2 = 0.005f; /* extend background around text */
+      float y2 = 0.005f;
+      
+      x -= x2;
+      y -= y2;
+      width += x2;
+      height += y2;
+      
+      float r = settings->uints.video_msg_bgcolor_red / 255.0f;
+      float g = settings->uints.video_msg_bgcolor_green / 255.0f;
+      float b = settings->uints.video_msg_bgcolor_blue / 255.0f;
+      float a = settings->floats.video_msg_bgcolor_opacity;
       [_context resetRenderViewport];
       [_context drawQuadX:x y:y w:width h:height r:r g:g b:b a:a];
    }
@@ -332,7 +331,12 @@
 
 - (void)_beginFrame
 {
+   video_viewport_t vp = *_viewport;
    video_driver_update_viewport(_viewport, NO, _keepAspect);
+   if (memcmp(&vp, _viewport, sizeof(vp)) != 0)
+   {
+      _context.viewport = _viewport;
+   }
    [_context begin];
    [self _updateUniforms];
 }
@@ -546,8 +550,8 @@ typedef struct MTLALIGN(16)
    CGRect _frame;
    NSUInteger _bpp;
    
-   id<MTLBuffer> _pixels;   // frame buffer in _srcFmt
-   bool _pixelsDirty;
+   id<MTLTexture> _src;    // src texture
+   bool _srcDirty;
    
    id<MTLSamplerState> _samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
    struct video_shader *_shader;
@@ -655,8 +659,11 @@ typedef struct MTLALIGN(16)
    
    if (_format != RPixelFormatBGRA8Unorm && _format != RPixelFormatBGRX8Unorm)
    {
-      _pixels = [_context.device newBufferWithLength:(NSUInteger)(size.width * size.height * 2)
-                                             options:MTLResourceStorageModeManaged];
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
+                                                                                    width:(NSUInteger)size.width
+                                                                                   height:(NSUInteger)size.height
+                                                                                mipmapped:NO];
+      _src = [_context.device newTextureWithDescriptor:td];
    }
 }
 
@@ -702,11 +709,11 @@ typedef struct MTLALIGN(16)
    if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
       return;
    
-   if (!_pixelsDirty)
+   if (!_srcDirty)
       return;
    
-   [_context convertFormat:_format from:_pixels to:_texture];
-   _pixelsDirty = NO;
+   [_context convertFormat:_format from:_src to:_texture];
+   _srcDirty = NO;
 }
 
 - (void)_updateHistory
@@ -778,26 +785,10 @@ typedef struct MTLALIGN(16)
    }
    else
    {
-      void *dst = _pixels.contents;
-      size_t len = (size_t)(_bpp * _size.width);
-      assert(len <= pitch); // the length can't be larger?
-      
-      if (len < pitch)
-      {
-         for (int i = 0; i < _size.height; i++)
-         {
-            memcpy(dst, src, len);
-            dst += len;
-            src += pitch;
-         }
-      }
-      else
-      {
-         memcpy(dst, src, _pixels.length);
-      }
-      
-      [_pixels didModifyRange:NSMakeRange(0, _pixels.length)];
-      _pixelsDirty = YES;
+      [_src replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
+              mipmapLevel:0 withBytes:src
+              bytesPerRow:(NSUInteger)(pitch)];
+      _srcDirty = YES;
    }
 }
 
@@ -1204,7 +1195,7 @@ static vertex_t vertex_bytes[] = {
                if (lib == nil)
                {
                   save_msl = true;
-                  RARCH_ERR("Metal]: unable to compile vertex shader: %s\n", err.localizedDescription.UTF8String);
+                  RARCH_ERR("[Metal]: unable to compile vertex shader: %s\n", err.localizedDescription.UTF8String);
                   return NO;
                }
 #if DEBUG
@@ -1220,7 +1211,7 @@ static vertex_t vertex_bytes[] = {
                if (lib == nil)
                {
                   save_msl = true;
-                  RARCH_ERR("Metal]: unable to compile fragment shader: %s\n", err.localizedDescription.UTF8String);
+                  RARCH_ERR("[Metal]: unable to compile fragment shader: %s\n", err.localizedDescription.UTF8String);
                   return NO;
                }
 #if DEBUG
@@ -1234,7 +1225,8 @@ static vertex_t vertex_bytes[] = {
             if (err != nil)
             {
                save_msl = true;
-               RARCH_ERR("error creating pipeline state: %s", err.localizedDescription.UTF8String);
+               RARCH_ERR("[Metal]: error creating pipeline state for pass %d: %s\n", i,
+                         err.localizedDescription.UTF8String);
                return NO;
             }
             
@@ -1253,10 +1245,11 @@ static vertex_t vertex_bytes[] = {
          {
             if (save_msl)
             {
-               RARCH_LOG("[Metal]: saving metal shader files\n");
+               NSString *basePath = [[NSString stringWithUTF8String:shader->pass[i].source.path] stringByDeletingPathExtension];
+               
+               RARCH_LOG("[Metal]: saving metal shader files to %s\n", basePath.UTF8String);
                
                NSError *err = nil;
-               NSString *basePath = [[NSString stringWithUTF8String:shader->pass[i].source.path] stringByDeletingPathExtension];
                [vs_src writeToFile:[basePath stringByAppendingPathExtension:@"vs.metal"]
                         atomically:NO
                           encoding:NSStringEncodingConversionAllowLossy

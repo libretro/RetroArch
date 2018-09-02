@@ -16,8 +16,8 @@
    CGRect _frame;
    NSUInteger _bpp;
    
-   id<MTLBuffer> _pixels;   // frame buffer in _srcFmt
-   bool _pixelsDirty;
+   id<MTLTexture> _src;    // source texture
+   bool _srcDirty;
 }
 
 - (instancetype)initWithDescriptor:(ViewDescriptor *)d context:(Context *)c
@@ -53,7 +53,6 @@
    
    _size = size;
    
-   // create new texture
    {
       MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
                                                                                     width:(NSUInteger)size.width
@@ -65,8 +64,11 @@
    
    if (_format != RPixelFormatBGRA8Unorm && _format != RPixelFormatBGRX8Unorm)
    {
-      _pixels = [_context.device newBufferWithLength:(NSUInteger)(size.width * size.height * 2)
-                                             options:MTLResourceStorageModeManaged];
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
+                                                                                    width:(NSUInteger)size.width
+                                                                                   height:(NSUInteger)size.height
+                                                                                mipmapped:NO];
+      _src = [_context.device newTextureWithDescriptor:td];
    }
 }
 
@@ -112,11 +114,11 @@
    if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
       return;
    
-   if (!_pixelsDirty)
+   if (!_srcDirty)
       return;
    
-   [_context convertFormat:_format from:_pixels to:_texture];
-   _pixelsDirty = NO;
+   [_context convertFormat:_format from:_src to:_texture];
+   _srcDirty = NO;
 }
 
 - (void)drawWithContext:(Context *)ctx
@@ -141,26 +143,10 @@
    }
    else
    {
-      void *dst = _pixels.contents;
-      size_t len = (size_t)(_bpp * _size.width);
-      assert(len <= pitch); // the length can't be larger?
-      
-      if (len < pitch)
-      {
-         for (int i = 0; i < _size.height; i++)
-         {
-            memcpy(dst, src, len);
-            dst += len;
-            src += pitch;
-         }
-      }
-      else
-      {
-         memcpy(dst, src, _pixels.length);
-      }
-      
-      [_pixels didModifyRange:NSMakeRange(0, _pixels.length)];
-      _pixelsDirty = YES;
+      [_src replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
+              mipmapLevel:0 withBytes:src
+              bytesPerRow:(NSUInteger)(pitch)];
+      _srcDirty = YES;
    }
 }
 

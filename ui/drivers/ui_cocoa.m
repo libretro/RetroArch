@@ -37,7 +37,7 @@
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
-#if HAVE_METAL
+#ifdef HAVE_METAL
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
 #endif
@@ -297,6 +297,8 @@ static char** waiting_argv;
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
+#pragma mark - ApplePlatform
+
 - (void)setViewType:(apple_view_type_t)vt {
    if (vt == _vt) {
       return;
@@ -359,19 +361,16 @@ static char** waiting_argv;
    return [NSApp isActive];
 }
 
-#define NS_FULLSCREEN_WINDOW_MASK (1 << 14)
-
 - (void)setVideoMode:(gfx_ctx_mode_t)mode {
-   BOOL isFullScreen = (self.window.styleMask & NS_FULLSCREEN_WINDOW_MASK) == NS_FULLSCREEN_WINDOW_MASK;
-   SEL fselector     = NSSelectorFromString(BOXSTRING("toggleFullScreen"));
-	
-   if (mode.fullscreen && !isFullScreen && [self.window respondsToSelector:fselector])
+#ifdef HAVE_METAL
+   BOOL isFullScreen = (self.window.styleMask & NSFullScreenWindowMask) == NSFullScreenWindowMask;
+   if (mode.fullscreen && !isFullScreen)
    {
       [self.window toggleFullScreen:self];
       return;
    }
    
-   if (!mode.fullscreen && isFullScreen && [self.window respondsToSelector:fselector])
+   if (!mode.fullscreen && isFullScreen)
    {
       [self.window toggleFullScreen:self];
    }
@@ -382,6 +381,7 @@ static char** waiting_argv;
       [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
    }
    [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
+#endif
 }
 
 - (void)setCursorVisible:(bool)v {
@@ -739,7 +739,7 @@ static void *ui_companion_cocoa_init(void)
 static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
 {
    (void)data;
-   command_event(cmd, NULL);
+   (void)cmd;
 }
 
 static void ui_companion_cocoa_notify_list_pushed(void *data,
