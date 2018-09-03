@@ -760,6 +760,24 @@ typedef struct MTLALIGN(16)
    }
 }
 
+- (bool)readViewport:(uint8_t *)buffer isIdle:(bool)isIdle
+{
+   RARCH_LOG("[Metal]: readViewport is_idle = %s\n", isIdle ? "YES" : "NO");
+   
+   bool enabled = _context.captureEnabled;
+   if (!enabled)
+      _context.captureEnabled = YES;
+   
+   video_driver_cached_frame();
+   
+   bool res = [_context readBackBuffer:buffer];
+   
+   if (!enabled)
+      _context.captureEnabled = NO;
+   
+   return res;
+}
+
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch
 {
    if (_shader && (_engine.frame.output_size.x != _viewport->width ||

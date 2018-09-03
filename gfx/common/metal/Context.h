@@ -34,6 +34,9 @@ typedef struct
 /*! @brief Specifies whether rendering is synchronized with the display */
 @property (nonatomic, readwrite) bool displaySyncEnabled;
 
+/*! @brief captureEnabled allows previous frames to be read */
+@property (nonatomic, readwrite) bool captureEnabled;
+
 /*! @brief Returns the command buffer used for pre-render work,
  * such as mip maps and shader effects
  * */
@@ -69,5 +72,7 @@ typedef struct
 
 /*! @brief end commits the command buffer */
 - (void)end;
+
+- (bool)readBackBuffer:(uint8_t *)buffer;
 
 @end
