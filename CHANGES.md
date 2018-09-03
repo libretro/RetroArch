@@ -1,4 +1,5 @@
 # 1.7.5 (future)
+- COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
 - METAL: Add screenshot support.
 
 # 1.7.4
