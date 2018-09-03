@@ -115,7 +115,6 @@ typedef struct
    slock_t* task_lock;
 #endif
 
-   int console_id;
    bool core_supports;
    
    cheevos_rapatchdata_t patchdata;
@@ -511,7 +510,8 @@ static void cheevos_award(cheevos_cheevo_t* cheevo, int mode)
 
 static unsigned cheevos_peek(unsigned address, unsigned num_bytes, void* ud)
 {
-   const uint8_t* data = cheevos_fixup_find(&cheevos_locals.fixups, address, cheevos_locals.console_id);
+   const uint8_t* data = cheevos_fixup_find(&cheevos_locals.fixups,
+      address, cheevos_locals.patchdata.console_id);
    unsigned value = 0;
 
    switch (num_bytes)
@@ -981,7 +981,7 @@ bool cheevos_get_support_cheevos(void)
 
 int cheevos_get_console(void)
 {
-   return cheevos_locals.console_id;
+   return cheevos_locals.patchdata.console_id;
 }
 
 static void cheevos_unlock_cb(unsigned id, void* userdata)
@@ -1031,8 +1031,8 @@ static void cheevos_unlock_cb(unsigned id, void* userdata)
  *
  * https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
  */
-#undef CORO_YIELD
-#define CORO_YIELD()
+/*#undef CORO_YIELD
+#define CORO_YIELD()*/
 
 typedef struct
 {
