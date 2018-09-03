@@ -144,7 +144,20 @@ typedef struct
    uint8_t reserve[8];
 } cheevos_nes_header_t;
 
-static cheevos_locals_t cheevos_locals;
+static cheevos_locals_t cheevos_locals =
+{
+   NULL, /* task */
+#ifdef HAVE_THREADS
+   NULL, /* task_lock */
+#endif
+   true, /* core_supports */
+   {0},  /* patchdata */
+   NULL, /* core */
+   NULL, /* unofficial */
+   NULL, /* lboards */
+   {0},  /* fixups */
+   {0},  /* token */
+};
 
 bool cheevos_loaded = false;
 bool cheevos_hardcore_active = false;
@@ -712,7 +725,8 @@ void cheevos_populate_menu(void* data)
    menu_displaylist_info_t* info = (menu_displaylist_info_t*)data;
    cheevos_cheevo_t* cheevo      = NULL;
 
-   if (   settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable 
+   if (   settings->bools.cheevos_enable
+       && settings->bools.cheevos_hardcore_mode_enable 
        && cheevos_loaded)
    {
       if (!cheevos_hardcore_paused)
@@ -907,14 +921,14 @@ bool cheevos_unload(void)
       CHEEVOS_FREE(cheevos_locals.lboards);
       cheevos_free_patchdata(&cheevos_locals.patchdata);
       cheevos_fixup_destroy(&cheevos_locals.fixups);
+
+      cheevos_locals.core       = NULL;
+      cheevos_locals.unofficial = NULL;
+      cheevos_locals.lboards    = NULL;
+
+      cheevos_loaded            = false;
+      cheevos_hardcore_paused   = false;
    }
-
-   cheevos_locals.core       = NULL;
-   cheevos_locals.unofficial = NULL;
-   cheevos_locals.lboards    = NULL;
-
-   cheevos_loaded            = false;
-   cheevos_hardcore_paused   = false;
 
    return true;
 }
@@ -927,7 +941,8 @@ bool cheevos_toggle_hardcore_mode(void)
       return false;
 
    /* reset and deinit rewind to avoid cheat the score */
-   if (settings->bools.cheevos_hardcore_mode_enable && !cheevos_hardcore_paused)
+   if (   settings->bools.cheevos_hardcore_mode_enable
+       && !cheevos_hardcore_paused)
    {
       const char *msg = msg_hash_to_str(
             MSG_CHEEVOS_HARDCORE_MODE_ENABLE);
