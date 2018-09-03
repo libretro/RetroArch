@@ -44,7 +44,7 @@ matrix:
       deploy:
         skip_cleanup: true
         provider: script
-        script: bash travis_metal_deploy.sh
+        script: cd ../retroarch; bash travis_metal_deploy.sh
         on:
           branch: master
 
