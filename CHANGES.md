@@ -1,5 +1,6 @@
 # 1.7.5 (future)
 - COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
+- MENU/QT/WIMP: Add option to filter extensions inside archives when adding to a playlist.
 - METAL: Add screenshot support.
 
 # 1.7.4
