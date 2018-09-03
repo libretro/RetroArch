@@ -54,6 +54,9 @@
    id<MTLRenderPipelineState> _states[GFX_MAX_SHADERS][2];
    id<MTLRenderPipelineState> _clearState;
    Uniforms _uniforms;
+   
+   bool _captureEnabled;
+   id<MTLTexture> _backBuffer;
 }
 
 - (instancetype)initWithDevice:(id<MTLDevice>)d
@@ -470,11 +473,65 @@
    [_chain[_currentChain] discard];
 }
 
+- (void)setCaptureEnabled:(bool)captureEnabled
+{
+   if (_captureEnabled == captureEnabled)
+      return;
+   
+   _captureEnabled = captureEnabled;
+   //_layer.framebufferOnly = !captureEnabled;
+}
+
+- (bool)captureEnabled
+{
+   return _captureEnabled;
+}
+
+- (bool)readBackBuffer:(uint8_t *)buffer
+{
+   if (!_captureEnabled || _backBuffer == nil)
+      return NO;
+   
+   if (_backBuffer.pixelFormat != MTLPixelFormatBGRA8Unorm)
+   {
+      RARCH_WARN("[Metal]: unexpected pixel format %d\n", _backBuffer.pixelFormat);
+      return NO;
+   }
+   
+   uint8_t *tmp = malloc(_backBuffer.width * _backBuffer.height * 4);
+   
+   [_backBuffer getBytes:tmp
+             bytesPerRow:4 * _backBuffer.width
+              fromRegion:MTLRegionMake2D(0, 0, _backBuffer.width, _backBuffer.height)
+             mipmapLevel:0];
+   
+   NSUInteger srcStride = _backBuffer.width * 4;
+   uint8_t const *src = tmp + (_viewport.y * srcStride);
+   
+   NSUInteger dstStride = _viewport.width * 3;
+   uint8_t *dst = buffer + (_viewport.height - 1) * dstStride;
+   
+   for (int y = _viewport.y; y < _viewport.height; y++, src += srcStride, dst -= dstStride)
+   {
+      for (int x = _viewport.x; x < _viewport.width; x++)
+      {
+         dst[3 * x + 0] = src[4 * x + 0];
+         dst[3 * x + 1] = src[4 * x + 1];
+         dst[3 * x + 2] = src[4 * x + 2];
+      }
+   }
+   
+   free(tmp);
+   
+   return YES;
+}
+
 - (void)begin
 {
    assert(_commandBuffer == nil);
    dispatch_semaphore_wait(_inflightSemaphore, DISPATCH_TIME_FOREVER);
    _commandBuffer = [_commandQueue commandBuffer];
+   _backBuffer = nil;
 }
 
 - (id<MTLRenderCommandEncoder>)rce
@@ -486,6 +543,10 @@
       rpd.colorAttachments[0].clearColor = _clearColor;
       rpd.colorAttachments[0].loadAction = MTLLoadActionClear;
       rpd.colorAttachments[0].texture = self.nextDrawable.texture;
+      if (_captureEnabled)
+      {
+         _backBuffer = self.nextDrawable.texture;
+      }
       _rce = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
    }
    return _rce;
@@ -643,7 +704,7 @@ static const NSUInteger kConstantAlignment = 4;
 - (bool)allocRange:(BufferRange *)range length:(NSUInteger)length
 {
    bzero(range, sizeof(*range));
-   
+
 #if TARGET_OS_OSX
    MTLResourceOptions opts = MTLResourceStorageModeManaged;
 #else

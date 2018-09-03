@@ -546,6 +546,7 @@ typedef struct MTLALIGN(16)
    Context *_context;
    id<MTLTexture> _texture; // final render texture
    Vertex _v[4];
+   VertexSlang _vertex[4];
    CGSize _size; // size of view in pixels
    CGRect _frame;
    NSUInteger _bpp;
@@ -587,6 +588,15 @@ typedef struct MTLALIGN(16)
       self.size = d.size;
       self.frame = CGRectMake(0, 0, 1, 1);
       resize_render_targets = YES;
+   
+      // init slang vertex buffer
+      VertexSlang v[4] = {
+         {simd_make_float4(0, 1, 0, 1), simd_make_float2(0, 1)},
+         {simd_make_float4(1, 1, 0, 1), simd_make_float2(1, 1)},
+         {simd_make_float4(0, 0, 0, 1), simd_make_float2(0, 0)},
+         {simd_make_float4(1, 0, 0, 1), simd_make_float2(1, 0)},
+      };
+      memcpy(_vertex, v, sizeof(_vertex));
    }
    return self;
 }
@@ -750,6 +760,24 @@ typedef struct MTLALIGN(16)
    }
 }
 
+- (bool)readViewport:(uint8_t *)buffer isIdle:(bool)isIdle
+{
+   RARCH_LOG("[Metal]: readViewport is_idle = %s\n", isIdle ? "YES" : "NO");
+   
+   bool enabled = _context.captureEnabled;
+   if (!enabled)
+      _context.captureEnabled = YES;
+   
+   video_driver_cached_frame();
+   
+   bool res = [_context readBackBuffer:buffer];
+   
+   if (!enabled)
+      _context.captureEnabled = NO;
+   
+   return res;
+}
+
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch
 {
    if (_shader && (_engine.frame.output_size.x != _viewport->width ||
@@ -815,19 +843,6 @@ typedef struct MTLALIGN(16)
    }
    init_history = NO;
 }
-
-typedef struct vertex
-{
-   simd_float4 pos;
-   simd_float2 tex;
-} vertex_t;
-
-static vertex_t vertex_bytes[] = {
-   {{0, 1, 0, 1}, {0, 1}},
-   {{1, 1, 0, 1}, {1, 1}},
-   {{0, 0, 0, 1}, {0, 0}},
-   {{1, 0, 0, 1}, {1, 0}},
-};
 
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce
 {
@@ -942,7 +957,7 @@ static vertex_t vertex_bytes[] = {
       
       [rce setFragmentTextures:textures withRange:NSMakeRange(0, SLANG_NUM_BINDINGS)];
       [rce setFragmentSamplerStates:samplers withRange:NSMakeRange(0, SLANG_NUM_BINDINGS)];
-      [rce setVertexBytes:vertex_bytes length:sizeof(vertex_bytes) atIndex:4];
+      [rce setVertexBytes:_vertex length:sizeof(_vertex) atIndex:4];
       [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
       
       if (!backBuffer)
@@ -1162,13 +1177,13 @@ static vertex_t vertex_bytes[] = {
          @try
          {
             MTLVertexDescriptor *vd = [MTLVertexDescriptor new];
-            vd.attributes[0].offset = offsetof(vertex_t, pos);
+            vd.attributes[0].offset = offsetof(VertexSlang, position);
             vd.attributes[0].format = MTLVertexFormatFloat4;
             vd.attributes[0].bufferIndex = 4;
-            vd.attributes[1].offset = offsetof(vertex_t, tex);
+            vd.attributes[1].offset = offsetof(VertexSlang, texCoord);
             vd.attributes[1].format = MTLVertexFormatFloat2;
             vd.attributes[1].bufferIndex = 4;
-            vd.layouts[4].stride = sizeof(vertex_t);
+            vd.layouts[4].stride = sizeof(VertexSlang);
             vd.layouts[4].stepFunction = MTLVertexStepFunctionPerVertex;
             
             MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
