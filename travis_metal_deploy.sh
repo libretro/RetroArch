@@ -21,7 +21,7 @@ echo "Downloading assets..."
 
 cd RetroArch.app/Contents/Resources/
 curl -O http://bot.libretro.com/assets/frontend/bundle.zip
-unzip -o bundle.zip
+unzip -q -o bundle.zip
 rm -rf bundle.zip
 
 echo "Creating DMG image..."
