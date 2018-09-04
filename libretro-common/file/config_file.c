@@ -999,6 +999,7 @@ void config_file_dump(config_file_t *conf, FILE *file)
    }
 
    list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
+   conf->entries = list;
 
    while (list)
    {
@@ -1092,7 +1093,7 @@ static void test_config_file(void)
    test_config_file_parse_contains("foo = \"bar\"",     "foo", "bar");
 
 #if 0
-   /* turns out it treats empty as nonexistent - 
+   /* turns out it treats empty as nonexistent -
     * should probably be fixed */
    test_config_file_parse_contains("foo = \"\"\n",   "foo", "");
    test_config_file_parse_contains("foo = \"\"",     "foo", "");
