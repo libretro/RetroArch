@@ -18,7 +18,7 @@ extern "C" {
 #define TEMP_EXTENSION ".update_tmp"
 #define RETROARCH_NIGHTLY_UPDATE_PATH "../RetroArch_update.zip"
 
-static void extractCB(void *task_data, void *user_data, const char *err)
+static void extractUpdateCB(void *task_data, void *user_data, const char *err)
 {
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
    MainWindow *mainwindow = (MainWindow*)user_data;
@@ -157,7 +157,7 @@ void MainWindow::onRetroArchUpdateDownloadFinished()
          if (m_updateFile.rename(newFileName))
          {
             RARCH_LOG("[Qt]: RetroArch update finished downloading successfully.\n");
-            emit extractArchiveDeferred(newFileName, ".", TEMP_EXTENSION, extractCB);
+            emit extractArchiveDeferred(newFileName, ".", TEMP_EXTENSION, extractUpdateCB);
          }
          else
          {
