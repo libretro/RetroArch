@@ -1,0 +1,20 @@
+//
+//  BaseConfig.xcconfig
+//  RetroArch
+//
+//  Created by Stuart Carnie on 5/10/18.
+//
+VULKAN_PACKAGE_PATH = /Volumes/Data/projects/frameworks/vulkan/moltenvk/Package
+
+// macOS
+VULKAN_FRAMEWORK_PATH[sdk=macosx*] = $(VULKAN_PACKAGE_PATH)/$(CONFIGURATION)/MoltenVK/macOS
+
+// general
+FRAMEWORK_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(LOCAL_LIBRARY_DIR)/Frameworks $(VULKAN_FRAMEWORK_PATH)
+LIBRARY_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(VULKAN_FRAMEWORK_PATH)
+
+OTHER_LDFLAGS = $(inherited) -lMoltenVK -framework MoltenVK
+
+OTHER_CFLAGS = $(inherited) $(QT_CFLAGS) -DHAVE_VULKAN
+
+LD_RUNPATH_SEARCH_PATHS = @executable_path
