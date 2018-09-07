@@ -267,6 +267,8 @@ bool task_push_audio_mixer_load(
 
 extern const char* const input_builtin_autoconfs[];
 
+void set_save_state_in_background(bool state) ;
+
 RETRO_END_DECLS
 
 #endif
