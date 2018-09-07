@@ -1387,6 +1387,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND:
+      {
+         bool state = *(const bool*)data;
+         RARCH_LOG("Environ SET_SAVE_STATE_IN_BACKGROUND: %s.\n", state ? "yes" : "no");
+
+         set_save_state_in_background(state) ;
+
+         break;
+      }
+
       case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
       {
          const char **path = (const char**)data;
