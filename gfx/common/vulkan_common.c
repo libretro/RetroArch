@@ -2464,8 +2464,8 @@ static void vulkan_acquire_clear_fences(gfx_ctx_vulkan_data_t *vk)
          vkDestroyFence(vk->context.device,
                vk->context.swapchain_fences[i], NULL);
          vk->context.swapchain_fences[i] = VK_NULL_HANDLE;
-         vk->context.swapchain_fences_signalled[i] = false;
       }
+      vk->context.swapchain_fences_signalled[i] = false;
    }
 }
 
@@ -2482,10 +2482,10 @@ static void vulkan_acquire_wait_fences(gfx_ctx_vulkan_data_t *vk)
       if (vk->context.swapchain_fences_signalled[index])
          vkWaitForFences(vk->context.device, 1, next_fence, true, UINT64_MAX);
       vkResetFences(vk->context.device, 1, next_fence);
-      vk->context.swapchain_fences_signalled[index] = false;
    }
    else
       vkCreateFence(vk->context.device, &fence_info, NULL, next_fence);
+   vk->context.swapchain_fences_signalled[index] = false;
 }
 
 static void vulkan_create_wait_fences(gfx_ctx_vulkan_data_t *vk)
