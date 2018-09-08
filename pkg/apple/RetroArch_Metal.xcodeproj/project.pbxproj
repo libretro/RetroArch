@@ -1510,6 +1510,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 05422E562140C8DB00F09961 /* Build configuration list for PBXNativeTarget "RetroArchQT" */;
 			buildPhases = (
+				053FC2782143764B00D98D46 /* ShellScript */,
 				05422E3D2140C8DB00F09961 /* Resources */,
 				05422E422140C8DB00F09961 /* Sources */,
 				05422E492140C8DB00F09961 /* Frameworks */,
@@ -1608,6 +1609,19 @@
 			shellPath = /bin/zsh;
 			shellScript = "BINARY=${TARGET_BUILD_DIR}/${EXECUTABLE_PATH}\nVER=Versions/${QT_VERSION}\nfor name in {QtConcurrent,QtCore,QtWidgets,QtNetwork,QtGui}; do\n    echo updating install path for ${name}.framework\n    install_name_tool -change ${QT_FRAMEWORK_PATH}/${name}.framework/${VER}/${name} @executable_path/../Frameworks/${name}.framework/${VER}/${name} ${BINARY}\ndone";
 			showEnvVarsInLog = 0;
+		};
+		053FC2782143764B00D98D46 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "make -C ${SRCBASE} -f Makefile.apple HAVE_QT=1 MOC=${QT_INSTALL}/bin/moc generate";
 		};
 /* End PBXShellScriptBuildPhase section */
 
