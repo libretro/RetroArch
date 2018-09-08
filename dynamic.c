@@ -1851,6 +1851,15 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          }
       }
       break;
+
+      case RETRO_ENVIRONMENT_GET_FASTFORWARDING:
+      {
+         extern bool runloop_fastmotion;
+         RARCH_LOG("RETRO_ENVIRONMENT_GET_FASTFORWARDING %d\n", runloop_fastmotion);
+         *(bool *)data = runloop_fastmotion;
+      }
+      break;
+
       
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
