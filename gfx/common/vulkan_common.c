@@ -42,9 +42,7 @@
 #define VENDOR_ID_NV 0x10DE
 #define VENDOR_ID_INTEL 0x8086
 
-// Windows is not particularly good at recreating swapchains.
-// Emulate vsync toggling by using vkAcquireNextImageKHR timeouts.
-#if defined(_WIN32)
+#ifdef _WIN32
 #define VULKAN_EMULATE_MAILBOX
 #endif
 
@@ -117,6 +115,126 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
    return VK_FALSE;
 }
 #endif
+
+void vulkan_emulated_mailbox_deinit(struct vulkan_emulated_mailbox *mailbox)
+{
+   if (mailbox->thread)
+   {
+      slock_lock(mailbox->lock);
+      mailbox->dead = true;
+      scond_signal(mailbox->cond);
+      slock_unlock(mailbox->lock);
+      sthread_join(mailbox->thread);
+   }
+
+   if (mailbox->lock)
+      slock_free(mailbox->lock);
+   if (mailbox->cond)
+      scond_free(mailbox->cond);
+
+   memset(mailbox, 0, sizeof(*mailbox));
+}
+
+VkResult vulkan_emulated_mailbox_acquire_next_image(struct vulkan_emulated_mailbox *mailbox,
+      unsigned *index)
+{
+   VkResult res;
+   if (mailbox->swapchain == VK_NULL_HANDLE)
+      return VK_ERROR_OUT_OF_DATE_KHR;
+
+   slock_lock(mailbox->lock);
+
+   if (!mailbox->has_pending_request)
+   {
+      mailbox->request_acquire = true;
+      mailbox->has_pending_request = true;
+      scond_signal(mailbox->cond);
+   }
+
+   if (!mailbox->acquired)
+   {
+      /* Wait some arbitrary time here for good measure.
+       * This lets us grab the index from mailbox_begin_acquire early. */
+      scond_wait_timeout(mailbox->cond, mailbox->lock, 1000);
+   }
+
+   if (mailbox->acquired)
+   {
+      res = mailbox->result;
+      *index = mailbox->index;
+      mailbox->has_pending_request = false;
+   }
+   else
+      res = VK_TIMEOUT;
+
+   mailbox->acquired = false;
+   slock_unlock(mailbox->lock);
+   return res;
+}
+
+static void vulkan_emulated_mailbox_loop(void *userdata)
+{
+   VkResult res;
+   VkFence fence;
+   VkFenceCreateInfo info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+   struct vulkan_emulated_mailbox *mailbox =
+      (struct vulkan_emulated_mailbox *)userdata;
+
+   vkCreateFence(mailbox->device, &info, NULL, &fence);
+
+   for (;;)
+   {
+      slock_lock(mailbox->lock);
+      while (!mailbox->dead && !mailbox->request_acquire)
+         scond_wait(mailbox->cond, mailbox->lock);
+
+      if (mailbox->dead)
+      {
+         slock_unlock(mailbox->lock);
+         break;
+      }
+
+      mailbox->request_acquire = false;
+      slock_unlock(mailbox->lock);
+
+      mailbox->result = vkAcquireNextImageKHR(mailbox->device, mailbox->swapchain, UINT64_MAX,
+            VK_NULL_HANDLE, fence, &mailbox->index);
+
+      if (mailbox->result == VK_SUCCESS)
+         vkWaitForFences(mailbox->device, 1, &fence, true, UINT64_MAX);
+      vkResetFences(mailbox->device, 1, &fence);
+
+      if (mailbox->result == VK_SUCCESS)
+      {
+         slock_lock(mailbox->lock);
+         mailbox->acquired = true;
+         scond_signal(mailbox->cond);
+         slock_unlock(mailbox->lock);
+      }
+   }
+
+   vkDestroyFence(mailbox->device, fence, NULL);
+}
+
+bool vulkan_emulated_mailbox_init(struct vulkan_emulated_mailbox *mailbox,
+   VkDevice device,
+   VkSwapchainKHR swapchain)
+{
+   memset(mailbox, 0, sizeof(*mailbox));
+   mailbox->device = device;
+   mailbox->swapchain = swapchain;
+
+   mailbox->cond = scond_new();
+   if (!mailbox->cond)
+      return false;
+   mailbox->lock = slock_new();
+   if (!mailbox->lock)
+      return false;
+   mailbox->thread = sthread_create(vulkan_emulated_mailbox_loop, mailbox);
+   if (!mailbox->thread)
+      return false;
+   return true;
+}
 
 uint32_t vulkan_find_memory_type(
       const VkPhysicalDeviceMemoryProperties *mem_props,
@@ -1579,10 +1697,13 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          &vk->context.memory_properties);
 
 #ifdef VULKAN_EMULATE_MAILBOX
+   /*
    // AMD can emulate Mailbox on Windows, but not NV.
    // Not tested on Intel.
    if (vk->context.gpu_properties.vendorID == VENDOR_ID_AMD)
       vk->emulate_mailbox = true;
+   */
+   vk->emulate_mailbox = true;
 #endif
 
    RARCH_LOG("[Vulkan]: Using GPU: %s\n", vk->context.gpu_properties.deviceName);
@@ -2344,6 +2465,7 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned i;
 
+   vulkan_emulated_mailbox_deinit(&vk->mailbox);
    if (vk->swapchain != VK_NULL_HANDLE)
    {
       vkDeviceWaitIdle(vk->context.device);
@@ -2545,19 +2667,17 @@ retry:
       }
    }
 
-   vkCreateFence(vk->context.device, &fence_info, NULL, &fence);
-
    if (vk->emulating_mailbox)
    {
       /* Non-blocking acquire. If we don't get a swapchain frame right away,
        * just skip rendering to the swapchain this frame, similar to what
        * MAILBOX would do. */
-      err = vkAcquireNextImageKHR(vk->context.device,
-            vk->swapchain, 0,
-            VK_NULL_HANDLE, fence, &vk->context.current_swapchain_index);
+      err = vulkan_emulated_mailbox_acquire_next_image(&vk->mailbox, &vk->context.current_swapchain_index);
+      fence = VK_NULL_HANDLE;
    }
    else
    {
+      vkCreateFence(vk->context.device, &fence_info, NULL, &fence);
       err = vkAcquireNextImageKHR(vk->context.device,
             vk->swapchain, UINT64_MAX,
             VK_NULL_HANDLE, fence, &vk->context.current_swapchain_index);
@@ -2565,7 +2685,8 @@ retry:
 
    if (err == VK_SUCCESS)
    {
-      vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
+      if (fence != VK_NULL_HANDLE)
+         vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
       vk->context.has_acquired_swapchain = true;
    }
    else
@@ -2575,7 +2696,8 @@ retry:
    trigger_spurious_error_vkresult(&err);
 #endif
 
-   vkDestroyFence(vk->context.device, fence, NULL);
+   if (fence != VK_NULL_HANDLE)
+      vkDestroyFence(vk->context.device, fence, NULL);
 
    if (err == VK_NOT_READY || err == VK_TIMEOUT)
    {
@@ -2665,8 +2787,15 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       RARCH_LOG("[Vulkan]: Do not need to re-create swapchain.\n");
       vk->created_new_swapchain = false;
       vulkan_create_wait_fences(vk);
+
+      if (vk->emulating_mailbox && vk->mailbox.swapchain == VK_NULL_HANDLE)
+         vulkan_emulated_mailbox_init(&vk->mailbox, vk->context.device, vk->swapchain);
+      else if (!vk->emulating_mailbox && vk->mailbox.swapchain != VK_NULL_HANDLE)
+         vulkan_emulated_mailbox_deinit(&vk->mailbox);
       return true;
    }
+
+   vulkan_emulated_mailbox_deinit(&vk->mailbox);
 
    present_mode_count = 0;
    vkGetPhysicalDeviceSurfacePresentModesKHR(
@@ -2903,5 +3032,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    /* Force driver to reset swapchain image handles. */
    vk->context.invalid_swapchain = true;
    vulkan_create_wait_fences(vk);
+
+   if (vk->emulating_mailbox)
+      vulkan_emulated_mailbox_init(&vk->mailbox, vk->context.device, vk->swapchain);
+
    return true;
 }

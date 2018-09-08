@@ -128,6 +128,27 @@ typedef struct vulkan_context
 #endif
 } vulkan_context_t;
 
+struct vulkan_emulated_mailbox
+{
+   sthread_t *thread;
+   VkDevice device;
+   VkSwapchainKHR swapchain;
+   slock_t *lock;
+   scond_t *cond;
+
+   unsigned index;
+   bool acquired;
+   bool request_acquire;
+   bool dead;
+   bool has_pending_request;
+   VkResult result;
+};
+
+bool vulkan_emulated_mailbox_init(struct vulkan_emulated_mailbox *mailbox,
+      VkDevice device, VkSwapchainKHR swapchain);
+void vulkan_emulated_mailbox_deinit(struct vulkan_emulated_mailbox *mailbox);
+VkResult vulkan_emulated_mailbox_acquire_next_image(struct vulkan_emulated_mailbox *mailbox, unsigned *index);
+
 typedef struct gfx_ctx_vulkan_data
 {
    bool need_new_swapchain;
@@ -137,6 +158,8 @@ typedef struct gfx_ctx_vulkan_data
    vulkan_context_t context;
    VkSurfaceKHR vk_surface;
    VkSwapchainKHR swapchain;
+
+   struct vulkan_emulated_mailbox mailbox;
 } gfx_ctx_vulkan_data_t;
 
 struct vulkan_display_surface_info

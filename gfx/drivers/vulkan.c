@@ -1906,7 +1906,8 @@ static bool vulkan_frame(void *data, const void *frame,
 
       vk->readback.pending = false;
    }
-   else if (chain->backbuffer.image != VK_NULL_HANDLE)
+   else if (chain->backbuffer.image != VK_NULL_HANDLE &&
+         vk->context->has_acquired_swapchain)
    {
       /* Prepare backbuffer for presentation. */
       vulkan_image_layout_transition(vk, vk->cmd,
@@ -1966,8 +1967,11 @@ static bool vulkan_frame(void *data, const void *frame,
 
    submit_info.signalSemaphoreCount = 0;
 
-   if (vk->context->swapchain_semaphores[frame_index] != VK_NULL_HANDLE)
+   if (vk->context->swapchain_semaphores[frame_index] != VK_NULL_HANDLE &&
+         vk->context->has_acquired_swapchain)
+   {
       signal_semaphores[submit_info.signalSemaphoreCount++] = vk->context->swapchain_semaphores[frame_index];
+   }
 
    if (vk->hw.signal_semaphore != VK_NULL_HANDLE)
    {
@@ -2009,7 +2013,9 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
-         video_info->black_frame_insertion
+         chain->backbuffer.image != VK_NULL_HANDLE
+         && vk->context->has_acquired_swapchain
+         && video_info->black_frame_insertion
          && !video_info->input_driver_nonblock_state
          && !video_info->runloop_is_slowmotion
          && !video_info->runloop_is_paused)
