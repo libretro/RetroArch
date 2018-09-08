@@ -940,6 +940,8 @@ FRONTEND
 #include "../frontend/drivers/platform_psp.c"
 #elif defined(_3DS)
 #include "../frontend/drivers/platform_ctr.c"
+#elif defined(HAVE_LIBNX)
+#include "../frontend/drivers/platform_switch.c"
 #elif defined(XENON)
 #include "../frontend/drivers/platform_xenon.c"
 #elif defined(__QNX__)
@@ -1229,6 +1231,9 @@ MENU
 
 #endif
 
+#ifdef HAVE_NXRGUI
+#include "../menu/drivers/nxrgui.c"
+#endif
 
 #ifdef HAVE_RGUI
 #include "../menu/drivers/rgui.c"

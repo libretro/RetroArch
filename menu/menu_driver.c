@@ -95,6 +95,9 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_RGUI)
    &menu_ctx_rgui,
 #endif
+#if defined(HAVE_NXRGUI)
+   &menu_ctx_nxrgui,
+#endif
 #if defined(HAVE_ZARCH)
    &menu_ctx_zarch,
 #endif
@@ -148,6 +151,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #endif
 #ifdef HAVE_CACA
    &menu_display_ctx_caca,
+#endif
+#if defined(HAVE_LIBNX)
+   &menu_display_ctx_switch,
 #endif
    &menu_display_ctx_null,
    NULL,
@@ -323,6 +329,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_VGA:
          if (string_is_equal(video_driver, "vga"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_SWITCH:
+         if (string_is_equal(video_driver, "switch"))
             return true;
          break;
    }

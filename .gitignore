@@ -154,3 +154,12 @@ retroarch.js.mem
 
 # only ignore .js files in the repo root
 /*.js
+*.d
+.vscode/*
+*.lst
+*.nacp
+*.nro
+*.nso
+*.pfs0
+exefs/*
+/icon.jpg

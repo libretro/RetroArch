@@ -286,6 +286,7 @@ enum menu_driver_enum
    MENU_XMB,
    MENU_STRIPES,
    MENU_NUKLEAR,
+   MENU_NXRGUI,
    MENU_NULL
 };
 
@@ -533,6 +534,8 @@ static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XMB;
 #elif defined(HAVE_RGUI)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
+#elif defined(HAVE_NXRGUI)
+static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NXRGUI;
 #else
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
 #endif
@@ -1021,6 +1024,8 @@ const char *config_get_default_menu(void)
    {
       case MENU_RGUI:
          return "rgui";
+      case MENU_NXRGUI:
+         return "nxrgui";
       case MENU_XUI:
          return "xui";
       case MENU_MATERIALUI:
@@ -1267,6 +1272,10 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("netplay_request_device_p14",    &settings->bools.netplay_request_devices[13], true, false, false);
    SETTING_BOOL("netplay_request_device_p15",    &settings->bools.netplay_request_devices[14], true, false, false);
    SETTING_BOOL("netplay_request_device_p16",    &settings->bools.netplay_request_devices[15], true, false, false);
+#endif
+#if defined(HAVE_LIBNX) // Switch specific Settings
+   SETTING_BOOL("split_joycon",   &settings->bools.split_joycon, false, split_joycon, false);
+   SETTING_BOOL("hack_overlay", &settings->bools.hack_overlay, true, hack_overlay, false);
 #endif
    SETTING_BOOL("input_descriptor_label_show",   &settings->bools.input_descriptor_label_show, true, input_descriptor_label_show, false);
    SETTING_BOOL("input_descriptor_hide_unbound", &settings->bools.input_descriptor_hide_unbound, true, input_descriptor_hide_unbound, false);
@@ -1785,8 +1794,15 @@ static void config_set_defaults(void)
 #endif
    settings->floats.video_scale                = scale;
 
-   if (g_defaults.settings.video_threaded_enable != video_threaded)
-      video_driver_set_threaded(g_defaults.settings.video_threaded_enable);
+#if defined(HAVE_LIBNX) // Best perf
+    video_driver_set_threaded(true);
+    //configuration_set_bool(settings, settings->bools.video_scale_integer, true);
+    configuration_set_bool(settings, settings->bools.video_vsync, true);
+    configuration_set_bool(settings, settings->bools.audio_sync, true);
+#else
+    if (g_defaults.settings.video_threaded_enable != video_threaded)
+        video_driver_set_threaded(g_defaults.settings.video_threaded_enable);
+#endif
 
    settings->floats.video_msg_color_r          = ((message_color >> 16) & 0xff) / 255.0f;
    settings->floats.video_msg_color_g          = ((message_color >>  8) & 0xff) / 255.0f;
@@ -1853,7 +1869,12 @@ static void config_set_defaults(void)
    for (i = 0; i < MAX_USERS; i++)
    {
       settings->uints.input_joypad_map[i] = i;
+      #if defined(HAVE_LIBNX)
+      settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_LSTICK;
+      #else
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_NONE;
+      #endif
+
       input_config_set_device(i, RETRO_DEVICE_JOYPAD);
       settings->uints.input_mouse_index[i] = 0;
    }
@@ -1882,8 +1903,13 @@ static void config_set_defaults(void)
    *settings->paths.directory_playlist = '\0';
    *settings->paths.directory_autoconfig = '\0';
 #ifdef HAVE_MENU
+#if defined(HAVE_LIBNX)
+   strcpy(settings->paths.directory_menu_content, "/switch");
+   strcpy(settings->paths.directory_menu_config, "/switch");
+#else
    *settings->paths.directory_menu_content = '\0';
    *settings->paths.directory_menu_config = '\0';
+#endif
 #endif
    *settings->paths.directory_video_shader = '\0';
    *settings->paths.directory_video_filter = '\0';
@@ -3596,6 +3622,11 @@ success:
 
 static void parse_config_file(void)
 {
+#if defined(HAVE_LIBNX) // This was useful at the start, should we keep it?
+      if (config_load_file("./retroarch.cfg",
+            false, config_get_ptr()))
+      return;
+#endif
    if (path_is_empty(RARCH_PATH_CONFIG))
    {
       RARCH_LOG("[Config]: Loading default config.\n");
@@ -4141,7 +4172,11 @@ bool config_save_file(const char *path)
       snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
       config_set_int(conf, cfg, input_config_get_device(i));
       snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
+      #if defined(HAVE_LIBNX) // Useful default
+      config_set_int(conf, cfg, ANALOG_DPAD_LSTICK);
+      #else
       config_set_int(conf, cfg, settings->uints.input_analog_dpad_mode[i]);
+      #endif
       snprintf(cfg, sizeof(cfg), "input_player%u_mouse_index", i + 1);
       config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
    }

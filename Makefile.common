@@ -142,6 +142,10 @@ ifeq ($(TARGET), retroarch_3ds)
 	OBJ += frontend/drivers/platform_ctr.o
 endif
 
+ifeq ($(HAVE_LIBNX), 1)
+	OBJ += frontend/drivers/platform_switch.o
+endif
+
 # Git
 
 GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
@@ -525,6 +529,10 @@ ifeq ($(TARGET), retroarch_3ds)
 	OBJ += gfx/drivers_font/ctr_font.o
 endif
 
+ifeq ($(HAVE_LIBNX), 1)
+	OBJ += gfx/drivers_font/switch_font.o
+endif
+
 ifeq ($(HAVE_OSS), 1)
    OBJ += audio/drivers/oss.o
 else ifeq ($(HAVE_OSS_BSD), 1)
@@ -708,6 +716,11 @@ endif
 ifeq ($(HAVE_STRIPES), 1)
    OBJ += menu/drivers/stripes.o
    DEFINES += -DHAVE_STRIPES
+endif
+
+ifeq ($(HAVE_NXRGUI), 1)
+   OBJ += menu/drivers/nxrgui.o
+   DEFINES += -DHAVE_NXRGUI
    HAVE_MENU_COMMON = 1
 endif
 
@@ -789,6 +802,10 @@ ifeq ($(HAVE_THREAD_STORAGE), 1)
    DEFINES += -DHAVE_THREAD_STORAGE
 endif
 
+ifeq ($(HAVE_LIBNX), 1)
+   OBJ += $(LIBRETRO_COMM_DIR)/rthreads/switch_pthread.o
+endif
+
 ifeq ($(HAVE_VITA2D), 1)
 	OBJ += $(DEPS_DIR)/libvita2d/source/vita2d.o \
 			 $(DEPS_DIR)/libvita2d/source/vita2d_texture.o \
@@ -821,10 +838,22 @@ ifeq ($(TARGET), retroarch_3ds)
 endif
 
 ifeq ($(TARGET), retroarch_switch)
-	OBJ += gfx/drivers/switch_gfx.o \
+	ifeq ($(HAVE_LIBNX), 1)
+		OBJ += input/drivers_joypad/switch_nx_joypad.o \
+			audio/drivers/switch_nx_audio.o \
+			audio/drivers/switch_nx_thread_audio.o \
+			input/drivers/switch_nx_input.o \
+			gfx/drivers/switch_nx_gfx.o \
+			menu/drivers_display/menu_display_switch_nx.o
+	else 
+		OBJ += input/drivers_joypad/switch_joypad.o \
+			audio/drivers/switch_audio.o \
 			input/drivers/switch_input.o \
-                        input/drivers_joypad/switch_joypad.o \
-                        audio/drivers/switch_audio.o
+			gfx/drivers/switch_gfx.o
+	endif
+	ifeq ($(HAVE_DUMMY), 1)
+		OBJ += switch/dummy.o
+	endif
 endif
 
 ifeq ($(HAVE_WAYLAND), 1)

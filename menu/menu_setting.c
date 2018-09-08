@@ -5910,6 +5910,53 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
+         
+         if (string_is_not_equal(settings->arrays.menu_driver, "nxrgui"))
+         {
+            CONFIG_PATH(
+                  list, list_info,
+                  settings->paths.path_menu_wallpaper,
+                  sizeof(settings->paths.path_menu_wallpaper),
+                  MENU_ENUM_LABEL_MENU_WALLPAPER,
+                  MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_values(list, list_info, "png");
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.menu_wallpaper_opacity,
+                  MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY,
+                  MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
+                  menu_wallpaper_opacity,
+                  "%.3f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.menu_framebuffer_opacity,
+                  MENU_ENUM_LABEL_MENU_FRAMEBUFFER_OPACITY,
+                  MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+                  menu_framebuffer_opacity,
+                  "%.3f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+         }
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
@@ -5983,6 +6030,130 @@ static bool setting_append_list(
                );
 
          if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+         {
+            gfx_ctx_flags_t flags;
+            bool setting_set = false;
+
+            if (video_driver_get_flags(&flags))
+               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING))
+                  setting_set = true;
+
+            flags.flags = 0;
+
+            if (video_context_driver_get_flags(&flags))
+               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING))
+                  setting_set = true;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_rgui_border_filler_enable,
+                  MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_rgui_background_filler_thickness_enable,
+                  MENU_ENUM_LABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_rgui_border_filler_thickness_enable,
+                  MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+            if (setting_set)
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.menu_linear_filter,
+                     MENU_ENUM_LABEL_MENU_LINEAR_FILTER,
+                     MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
+                     true,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_NONE
+                     );
+
+            /* These colors are hints. The menu driver is not required to use them. */
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_entry_normal_color,
+                  MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR,
+                  MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
+                  menu_entry_normal_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_entry_hover_color,
+                  MENU_ENUM_LABEL_ENTRY_HOVER_COLOR,
+                  MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
+                  menu_entry_hover_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_HEX(
+                  list, list_info,
+                  &settings->uints.menu_title_color,
+                  MENU_ENUM_LABEL_TITLE_COLOR,
+                  MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
+                  menu_title_color,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+         }
+
+         if (string_is_equal(settings->arrays.menu_driver, "nxrgui"))
          {
             gfx_ctx_flags_t flags;
             bool setting_set = false;

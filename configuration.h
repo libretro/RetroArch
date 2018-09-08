@@ -3,6 +3,7 @@
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2014-2016 - Jean-André Santoni
  *  Copyright (C) 2016 - Brad Parker
+ *  Copyright (C) 2018 - M4xw
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -30,35 +31,35 @@
 #include "led/led_defines.h"
 
 #define configuration_set_float(settings, var, newvar) \
-{ \
-   settings->modified = true; \
-   var = newvar; \
-}
+    {                                                  \
+        settings->modified = true;                     \
+        var = newvar;                                  \
+    }
 
 #define configuration_set_bool(settings, var, newvar) \
-{ \
-   settings->modified = true; \
-   var = newvar; \
-}
+    {                                                 \
+        settings->modified = true;                    \
+        var = newvar;                                 \
+    }
 
 #define configuration_set_uint(settings, var, newvar) \
-{ \
-   settings->modified = true; \
-   var = newvar; \
-}
+    {                                                 \
+        settings->modified = true;                    \
+        var = newvar;                                 \
+    }
 
 #define configuration_set_int(settings, var, newvar) \
-{ \
-   settings->modified = true; \
-   var = newvar; \
-}
+    {                                                \
+        settings->modified = true;                   \
+        var = newvar;                                \
+    }
 
 enum override_type
 {
-   OVERRIDE_NONE = 0,
-   OVERRIDE_CORE,
-   OVERRIDE_CONTENT_DIR,
-   OVERRIDE_GAME
+    OVERRIDE_NONE = 0,
+    OVERRIDE_CORE,
+    OVERRIDE_CONTENT_DIR,
+    OVERRIDE_GAME
 };
 
 RETRO_BEGIN_DECLS
@@ -281,6 +282,11 @@ typedef struct settings
       bool video_window_show_decorations;
 
       bool sustained_performance_mode;
+
+#if defined(HAVE_LIBNX) // Switch libnx specific Settings
+      bool split_joycon; // Split Joycons
+      bool hack_overlay; // Hacky overlay since our switches are possessed
+#endif
    } bools;
 
    struct

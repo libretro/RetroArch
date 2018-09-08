@@ -64,12 +64,11 @@ static bool bundle_assets_extract_enable = false;
 #endif
 
 #ifdef HAVE_MATERIALUI
-static bool materialui_icons_enable      = true;
+static bool materialui_icons_enable = true;
 #endif
 
-static const bool crt_switch_resolution = false; 	
-static const int crt_switch_resolution_super = 2560; 
-
+static const bool crt_switch_resolution = false;
+static const int crt_switch_resolution_super = 2560;
 
 static const bool def_history_list_enable = true;
 static const bool def_playlist_entry_remove = true;
@@ -257,10 +256,10 @@ static const float default_input_overlay_opacity = 0.7f;
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 
-static bool default_block_config_read    = true;
+static bool default_block_config_read = true;
 
-static bool quick_menu_show_take_screenshot      = true;
-static bool quick_menu_show_save_load_state      = true;
+static bool quick_menu_show_take_screenshot = true;
+static bool quick_menu_show_save_load_state = true;
 static bool quick_menu_show_undo_save_load_state = true;
 static bool quick_menu_show_add_to_favorites     = true;
 static bool quick_menu_show_options              = true;
@@ -285,28 +284,28 @@ static bool menu_show_quit_retroarch     = true;
 static bool menu_show_reboot             = true;
 static bool menu_show_shutdown           = true;
 #if defined(HAVE_LAKKA) || defined(VITA) || defined(_3DS)
-static bool menu_show_core_updater       = false;
+static bool menu_show_core_updater = false;
 #else
-static bool menu_show_core_updater       = true;
+static bool menu_show_core_updater = true;
 #endif
 
-static bool content_show_settings    = true;
-static bool content_show_favorites   = true;
+static bool content_show_settings = true;
+static bool content_show_favorites = true;
 #ifdef HAVE_IMAGEVIEWER
-static bool content_show_images      = true;
+static bool content_show_images = true;
 #endif
 static bool content_show_music       = true;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
 static bool content_show_video       = true;
 #endif
 #ifdef HAVE_NETWORKING
-static bool content_show_netplay     = true;
+static bool content_show_netplay = true;
 #endif
-static bool content_show_history     = true;
+static bool content_show_history = true;
 #ifdef HAVE_LIBRETRODB
-static bool content_show_add     	 = true;
+static bool content_show_add = true;
 #endif
-static bool content_show_playlists   = true;
+static bool content_show_playlists = true;
 
 #ifdef HAVE_XMB
 static unsigned xmb_scale_factor = 100;
@@ -314,13 +313,13 @@ static unsigned xmb_alpha_factor = 75;
 static unsigned menu_font_color_red = 255;
 static unsigned menu_font_color_green = 255;
 static unsigned menu_font_color_blue = 255;
-static unsigned xmb_menu_layout  = 0;
-static unsigned xmb_icon_theme   = XMB_ICON_THEME_MONOCHROME;
-static unsigned xmb_theme        = XMB_THEME_ELECTRIC_BLUE;
+static unsigned xmb_menu_layout = 0;
+static unsigned xmb_icon_theme = XMB_ICON_THEME_MONOCHROME;
+static unsigned xmb_theme = XMB_THEME_ELECTRIC_BLUE;
 #if defined(HAVE_LAKKA) || defined(__arm__) || defined(__PPC64__) || defined(__ppc64__) || defined(__powerpc64__) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
-static bool xmb_shadows_enable   = false;
+static bool xmb_shadows_enable = false;
 #else
-static bool xmb_shadows_enable   = true;
+static bool xmb_shadows_enable = true;
 #endif
 #endif
 
@@ -340,10 +339,10 @@ static unsigned menu_shader_pipeline = 1;
 static unsigned menu_shader_pipeline = 2;
 #endif
 
-static bool show_advanced_settings            = false;
+static bool show_advanced_settings = false;
 static const uint32_t menu_entry_normal_color = 0xffffffff;
-static const uint32_t menu_entry_hover_color  = 0xff64ff64;
-static const uint32_t menu_title_color        = 0xff64ff64;
+static const uint32_t menu_entry_hover_color = 0xff64ff64;
+static const uint32_t menu_title_color = 0xff64ff64;
 
 #else
 static bool default_block_config_read = false;
@@ -364,21 +363,21 @@ static bool default_systemfiles_in_content_dir = false;
 static bool default_screenshots_in_content_dir = false;
 
 #if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
-static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
+static unsigned menu_toggle_gamepad_combo = INPUT_TOGGLE_L3_R3;
 #elif defined(VITA)
-static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L1_R1_START_SELECT;
-#elif defined(SWITCH)
-static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_START_SELECT;
+static unsigned menu_toggle_gamepad_combo = INPUT_TOGGLE_L1_R1_START_SELECT;
+#elif defined(HAVE_LIBNX)
+static unsigned menu_toggle_gamepad_combo = INPUT_TOGGLE_START_SELECT;
 #else
-static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;
+static unsigned menu_toggle_gamepad_combo = INPUT_TOGGLE_NONE;
 #endif
 
 #if defined(VITA)
-static unsigned input_backtouch_enable       = false;
-static unsigned input_backtouch_toggle       = false;
+static unsigned input_backtouch_enable = false;
+static unsigned input_backtouch_toggle = false;
 #endif
 
-static bool show_physical_inputs             = true;
+static bool show_physical_inputs = true;
 
 static bool all_users_control_menu = false;
 
@@ -447,9 +446,9 @@ static const bool font_enable = true;
  * If your monitor does not run at 60Hz, or something close to it,
  * disable VSync, and leave this at its default. */
 #ifdef _3DS
-static const float refresh_rate = (32730.0 * 8192.0) / 4481134.0 ;
+static const float refresh_rate = (32730.0 * 8192.0) / 4481134.0;
 #else
-static const float refresh_rate = 60/1.001;
+static const float refresh_rate = 60 / 1.001;
 #endif
 
 /* Allow games to set rotation. If false, rotation requests are
@@ -509,8 +508,8 @@ static const float audio_mixer_volume = 0.0;
 
 #ifdef HAVE_WASAPI
 /* WASAPI defaults */
-static const bool wasapi_exclusive_mode  = true;
-static const bool wasapi_float_format    = false;
+static const bool wasapi_exclusive_mode = true;
+static const bool wasapi_float_format = false;
 static const int wasapi_sh_buffer_length = -16; /* auto */
 #endif
 
@@ -692,6 +691,12 @@ static const bool xmb_vertical_thumbnails = false;
 static const bool ui_companion_start_on_boot = false;
 #else
 static const bool ui_companion_start_on_boot = true;
+#endif
+
+// Switch libnx Specific settings
+#if defined(HAVE_LIBNX)
+static const bool split_joycon = false;
+static const bool hack_overlay = true;
 #endif
 
 static const bool ui_companion_enable = false;
