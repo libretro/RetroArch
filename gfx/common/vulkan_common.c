@@ -38,6 +38,10 @@
 #include "../../libretro-common/include/retro_math.h"
 #include "../../libretro-common/include/string/stdstring.h"
 
+#define VENDOR_ID_AMD 0x1002
+#define VENDOR_ID_NV 0x10DE
+#define VENDOR_ID_INTEL 0x8086
+
 // Windows is not particularly good at recreating swapchains.
 // Emulate vsync toggling by using vkAcquireNextImageKHR timeouts.
 #if defined(_WIN32)
@@ -1500,10 +1504,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       "VK_KHR_sampler_mirror_clamp_to_edge",
    };
 
-#ifdef VULKAN_EMULATE_MAILBOX
-   vk->emulate_mailbox = true;
-#endif
-
 #ifdef VULKAN_DEBUG
    static const char *device_layers[] = { "VK_LAYER_LUNARG_standard_validation" };
 #endif
@@ -1577,6 +1577,13 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          &vk->context.gpu_properties);
    vkGetPhysicalDeviceMemoryProperties(vk->context.gpu,
          &vk->context.memory_properties);
+
+#ifdef VULKAN_EMULATE_MAILBOX
+   // AMD can emulate Mailbox on Windows, but not NV.
+   // Not tested on Intel.
+   if (vk->context.gpu_properties.vendorID == VENDOR_ID_AMD)
+      vk->emulate_mailbox = true;
+#endif
 
    RARCH_LOG("[Vulkan]: Using GPU: %s\n", vk->context.gpu_properties.deviceName);
 
