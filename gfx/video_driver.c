@@ -3232,14 +3232,26 @@ bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
 
 bool video_context_driver_get_refresh_rate(float *refresh_rate)
 {
+   float refresh_holder      = 0;
+   
    if (!current_video_context.get_refresh_rate || !refresh_rate)
       return false;
    if (!video_context_data)
       return false;
-
-   if (refresh_rate)
-      *refresh_rate =
-         current_video_context.get_refresh_rate(video_context_data);
+   
+   if (!video_driver_crt_switching_active)
+      if (refresh_rate)
+         *refresh_rate =  
+             current_video_context.get_refresh_rate(video_context_data);
+   
+   if (video_driver_crt_switching_active)
+   {
+      if (refresh_rate)
+         refresh_holder  =  
+             current_video_context.get_refresh_rate(video_context_data);
+      if (refresh_holder != video_driver_core_hz) /* Fix for incorrect interlace detsction -- HARD SET VSNC TO REQUIRED REFRESH FOR CRT*/
+         *refresh_rate = video_driver_core_hz; 
+   }
 
    return true;
 }
