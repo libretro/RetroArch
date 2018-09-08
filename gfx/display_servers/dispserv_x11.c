@@ -23,8 +23,13 @@
 #include "../video_driver.h" /* needed to set refresh rate in set resolution */
 #include "../video_crt_switch.h" /* needed to set aspect for low res in linux */
 
+static unsigned orig_width      = 0;
+static unsigned orig_height     = 0;
 static char old_mode[150];
 static char new_mode[150];
+static char xrandr[250];
+static char fbset[150];
+static char output[250];
 static bool crt_en     = false;
 
 typedef struct
@@ -45,10 +50,28 @@ static void* x11_display_server_init(void)
 
 static void x11_display_server_destroy(void *data)
 {
-   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
-
+ dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   int i          = 0;
    if (crt_en == true)
-      system("xrandr -s 704x480");
+   {
+      sprintf(output,"xrandr -s %dx%d", orig_width, orig_height);
+      system(output);
+   }  
+   for (i =0; i < 3; i++)
+   {
+      sprintf(output,"xrandr --delmode %s%d %s", "VGA",i ,old_mode);
+      system(output);  
+      sprintf(output,"xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
+      system(output);  
+
+      sprintf(output,"xrandr --delmode %s%d %s", "DVI",i ,old_mode);
+      system(output);  
+      sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
+      system(output);  
+
+   }     
+      sprintf(output,"xrandr --rmmode %s", old_mode);
+	  system(output);
 
    if (dispserv)
       free(dispserv);
@@ -95,22 +118,41 @@ static bool x11_set_resolution(void *data,
    int vbp            = 0;
    int hmax           = 0;
    int vmax           = 0;
+   int pdefault       = 8;
+   int pwidth         = 0;
+   float roundw     = 0.0f;
+   float roundh     = 0.0f;
    float pixel_clock  = 0;
-   char xrandr[250];
-   char fbset[150];
-   char output[250];
 
    crt_en = true;
-
-   hsp = width*1.16;
       
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);	  
    
-   /* following code is the mode line genorator */
+  /* following code is the mode line genorator */
 
-   hfp = width+8;
-   hbp = width*1.32;
+   hsp = width*1.145;
+   hfp = width*1.025;
+
+   pwidth = width;
+
+   if (height < 400 && width > 400 )
+      pwidth = width/2;
+   
+
+   roundw = roundf((float)pwidth/(float)height * 100)/100;
+
+    if (height > width ) {
+       roundw = roundf((float)height/(float)width * 100)/100;
+   }
+
+   if (roundw > 1.35)
+      roundw = 1.25;
+
+    if (roundw < 1.20)
+      roundw = 1.34;
+
+   hbp = width*roundw-8;
    hmax = hbp;
    
    if (height < 241)
@@ -133,22 +175,18 @@ static bool x11_set_resolution(void *data,
    { 
       vmax = 285;
    }
-   if (height > 240 && height < 260 && hz < 52)
-   { 
-      vmax = 265;
-   }
    if (height > 250 && height < 260 && hz < 52)
    { 
       vmax = 313;
    }
    if (height > 260 && height < 300)
    { 
-      vmax = 313;
+      vmax = 318;
    }
 
    if (height > 400 && hz > 56)
    {
-      vmax = 523;
+      vmax = 533;
    }
    if (height > 520 && hz < 57)
    {
@@ -157,35 +195,27 @@ static bool x11_set_resolution(void *data,
 
    if (height > 300 && hz < 56)
    {
-      vmax = 627;
+      vmax = 615;
    }
-   
-   if (hz < 53)
-   {   
-   vfp = height+((vmax-height)*0.38);
+   if (height > 500 && hz < 56)
+   {
+      vmax = 624;
    }
-   if (hz > 56)
-   {   
-   vfp = height+((vmax-height)*0.15);
-   }
-   if (hz > 53 && hz < 56)
-   {   
-   vfp = height+((vmax-height)*0.35);
+     if (height > 300)
+   {
+        pdefault = pdefault*2;
    }
 
-   
-   if ( vfp < 1 )
-   {
-      vfp = height+2;
-        
-   }
+
+   vfp = height+((vmax-height)/2)-pdefault;
 
    if (height < 300)
    {
      vsp = vfp+3; /* needs to me 3 for progressive */
-   } if (height > 300)
+   } 
+   if (height > 300)
    {
-     vsp = vfp+6; /* needs to me 6 for interlaced */
+    vsp = vfp+6; /* needs to me 6 for interlaced */
    }
    
    vbp = vmax;
