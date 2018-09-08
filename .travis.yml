@@ -38,6 +38,7 @@ matrix:
       osx_image: xcode9.3
       script:
         - cd ~/
+        - brew install --force-bottle qt5
         - git clone --depth=50 https://github.com/libretro/libretro-super
         - cd libretro-super/travis
         - ./build-retroarch-metal.sh
