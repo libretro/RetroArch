@@ -60,10 +60,7 @@
 #include <stdio.h>
 #endif
 
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
-}
+#include "arc4_alt.h"
 
 /*
  *  Version  ::=  INTEGER  {  v1(0)  }
@@ -331,8 +328,9 @@ int mbedtls_x509_csr_parse_file( mbedtls_x509_csr *csr, const char *path )
     return( ret );
 }
 #endif /* MBEDTLS_FS_IO */
-
+#undef BEFORE_COLON
 #define BEFORE_COLON    14
+#undef BC
 #define BC              "14"
 /*
  * Return an informational string about the CSR.

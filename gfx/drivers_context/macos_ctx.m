@@ -1,9 +1,17 @@
-//
-//  cocoa_ctx.m
-//  RetroArch
-//
-//  Created by Stuart Carnie on 5/10/18.
-//
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2018      - Stuart Carnie
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -456,7 +464,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
          
          g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
          
-#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
          if (g_format == nil)
          {
             /* NSOpenGLFPAAllowOfflineRenderers is

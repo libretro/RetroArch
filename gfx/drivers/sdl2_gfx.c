@@ -104,8 +104,9 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
    if (!settings->bools.video_font_enable)
       return;
 
-   if (!font_renderer_create_default((const void**)&vid->font_driver, &vid->font_data,
-                                    *font_path ? font_path : NULL, font_size))
+   if (!font_renderer_create_default(
+            &vid->font_driver, &vid->font_data,
+            *font_path ? font_path : NULL, font_size))
    {
       RARCH_WARN("[SDL]: Could not initialize fonts.\n");
       return;

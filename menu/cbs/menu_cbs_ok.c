@@ -87,7 +87,9 @@ enum
    ACTION_OK_SET_PATH_AUDIO_FILTER,
    ACTION_OK_SET_PATH_VIDEO_FILTER,
    ACTION_OK_SET_PATH_OVERLAY,
-   ACTION_OK_SET_DIRECTORY
+   ACTION_OK_SET_DIRECTORY,
+   ACTION_OK_SHOW_WIMP,
+   ACTION_OK_LOAD_CHEAT_FILE_APPEND
 };
 
 enum
@@ -278,6 +280,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_FRAME_THROTTLE_SETTINGS_LIST;
       case ACTION_OK_DL_REWIND_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST;
+      case ACTION_OK_DL_CHEAT_DETAILS_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CHEAT_DETAILS_SETTINGS_LIST;
+      case ACTION_OK_DL_CHEAT_SEARCH_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CHEAT_SEARCH_SETTINGS_LIST;
       case ACTION_OK_DL_ONSCREEN_DISPLAY_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST;
       case ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
@@ -611,6 +617,14 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
+      case ACTION_OK_DL_CHEAT_FILE_APPEND:
+         filebrowser_clear_type();
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = settings->paths.path_cheat_database;
+         info_label         = label;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         break;
       case ACTION_OK_DL_CORE_LIST:
          filebrowser_clear_type();
          info.type          = type;
@@ -807,14 +821,56 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
          info.directory_ptr                       = idx;
          menu->scratchpad.unsigned_var            = (unsigned)idx;
-         info_path                                = 
+         info_path                                =
             settings->paths.directory_libretro;
          info_label                               = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET);
-         info.enum_idx                            = 
+         info.enum_idx                            =
             MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET;
          dl_type                                  = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_CHEAT_DETAILS_SETTINGS_LIST:
+      {
+         rarch_setting_t *setting = NULL;
+
+         cheat_manager_copy_idx_to_working(type-MENU_SETTINGS_CHEAT_BEGIN) ;
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_IDX));
+         if (setting)
+            setting->max = cheat_manager_get_size()-1 ;
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_VALUE));
+         if ( setting )
+            setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RUMBLE_VALUE));
+         if (setting)
+            setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION));
+         if ( setting )
+       {
+            int max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 7 : 0 ;
+            setting->max = max_bit_position ;
+         }
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADDRESS));
+         if ( setting )
+         {
+            cheat_manager_state.browse_address = *setting->value.target.unsigned_integer ;
+         }
+         action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
+         break ;
+      }
+      case ACTION_OK_DL_CHEAT_SEARCH_SETTINGS_LIST:
+      {
+         rarch_setting_t *setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT));
+         if ( setting)
+            setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS));
+         if ( setting )
+            setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
+         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS));
+         if ( setting )
+            setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
+         action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
+         break ;
+      }
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
       case ACTION_OK_DL_ACCOUNTS_LIST:
       case ACTION_OK_DL_INPUT_SETTINGS_LIST:
@@ -938,7 +994,7 @@ static bool menu_content_playlist_load(playlist_t *playlist, size_t idx)
       path_check = (char *)
          calloc(strlen(path_tolower) + 1, sizeof(char));
 
-      strncpy(path_check, path, strlen(path_tolower));
+      strlcpy(path_check, path, strlen(path_tolower) + 1);
 
       valid_path = path_is_valid(path_check);
 
@@ -1349,7 +1405,16 @@ static int generic_action_ok(const char *path,
          flush_char = msg_hash_to_str(flush_id);
          cheat_manager_free();
 
-         if (!cheat_manager_load(action_path))
+         if (!cheat_manager_load(action_path,false))
+            goto error;
+         break;
+      case ACTION_OK_LOAD_CHEAT_FILE_APPEND:
+         flush_char = msg_hash_to_str(flush_id);
+#if 0
+         cheat_manager_free();
+#endif
+
+         if (!cheat_manager_load(action_path,true))
             goto error;
          break;
       case ACTION_OK_APPEND_DISK_IMAGE:
@@ -1441,6 +1506,7 @@ default_action_ok_set(action_ok_config_load,          ACTION_OK_LOAD_CONFIG_FILE
 default_action_ok_set(action_ok_disk_image_append,    ACTION_OK_APPEND_DISK_IMAGE,     MSG_UNKNOWN)
 default_action_ok_set(action_ok_subsystem_add,        ACTION_OK_SUBSYSTEM_ADD,         MSG_UNKNOWN)
 default_action_ok_set(action_ok_cheat_file_load,      ACTION_OK_LOAD_CHEAT_FILE,       MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)
+default_action_ok_set(action_ok_cheat_file_load_append,      ACTION_OK_LOAD_CHEAT_FILE_APPEND,       MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)
 default_action_ok_set(action_ok_record_configfile_load,      ACTION_OK_LOAD_RECORD_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
 default_action_ok_set(action_ok_remap_file_load,      ACTION_OK_LOAD_REMAPPING_FILE,   MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS    )
 default_action_ok_set(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET   ,        MENU_ENUM_LABEL_SHADER_OPTIONS)
@@ -1460,7 +1526,7 @@ static int action_ok_file_load(const char *path,
 
    if (filebrowser_get_type() == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
    {
-      /* TODO/FIXME - this path is triggered when we try to load a 
+      /* TODO/FIXME - this path is triggered when we try to load a
        * file from an archive while inside the load subsystem
        * action */
       menu_handle_t *menu                 = NULL;
@@ -1611,7 +1677,7 @@ static int action_ok_playlist_entry_collection(const char *path,
                core_info.inf->display_name,
                NULL,
                NULL);
-   }    
+   }
    else
       strlcpy(new_core_path, core_path, sizeof(new_core_path));
 
@@ -1685,7 +1751,7 @@ static int action_ok_playlist_entry(const char *path,
             core_info.inf->display_name,
             NULL,
             NULL);
-                 
+
    }
    else if (!string_is_empty(core_path))
       strlcpy(new_core_path, core_path, sizeof(new_core_path));
@@ -1748,9 +1814,9 @@ static int action_ok_playlist_entry_start_content(const char *path,
       if (!core_info_find(&core_info, new_core_path))
          found_associated_core = false;
 
-      /* TODO: figure out if this should refer to 
+      /* TODO: figure out if this should refer to
        * the inner or outer entry_path. */
-      /* TODO: make sure there's only one entry_path 
+      /* TODO: make sure there's only one entry_path
        * in this function. */
       if (!found_associated_core)
          return action_ok_file_load_with_detect_core(entry_path,
@@ -2018,21 +2084,6 @@ int  generic_action_ok_help(const char *path,
          entry_idx, ACTION_OK_DL_HELP);
 }
 
-
-static void menu_input_st_cheat_cb(void *userdata, const char *str)
-{
-   (void)userdata;
-
-   if (str && *str)
-   {
-      unsigned cheat_index = menu_input_dialog_get_kb_type()
-         - MENU_SETTINGS_CHEAT_BEGIN;
-      cheat_manager_set_code(cheat_index, str);
-   }
-
-   menu_input_dialog_end();
-}
-
 static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 {
    unsigned idx = menu_input_dialog_get_kb_idx();
@@ -2061,7 +2112,7 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
                NULL);
    }
 
-  
+
    menu_input_dialog_end();
 }
 
@@ -2170,7 +2221,7 @@ static void menu_input_st_string_cb_cheat_file_save_as(
          menu_setting_generic(setting, false);
       }
       else if (!string_is_empty(label))
-         cheat_manager_save(str, settings->paths.path_cheat_database);
+         cheat_manager_save(str, settings->paths.path_cheat_database,false);
    }
 
    menu_input_dialog_end();
@@ -2206,10 +2257,6 @@ default_action_dialog_start(action_ok_cheat_file_save_as,
    msg_hash_to_str(MSG_INPUT_CHEAT_FILENAME),
    (unsigned)idx,
    menu_input_st_string_cb_cheat_file_save_as)
-default_action_dialog_start(action_ok_cheat,
-   msg_hash_to_str(MSG_INPUT_CHEAT),
-   (unsigned)idx,
-   menu_input_st_cheat_cb)
 default_action_dialog_start(action_ok_disable_kiosk_mode,
    msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD),
    (unsigned)entry_idx,
@@ -2617,6 +2664,272 @@ static int action_ok_audio_run(const char *path,
 #endif
 }
 
+static int action_ok_cheat_reload_cheats(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   bool          refresh = false ;
+   cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
+   cheat_manager_load_game_specific_cheats() ;
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   return 0 ;
+}
+
+   static int action_ok_cheat_add_top(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   int i;
+   struct item_cheat tmp;
+   char msg[256] ;
+   bool          refresh = false ;
+   unsigned int new_size = cheat_manager_get_size() + 1;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat )) ;
+   tmp.idx = 0 ;
+
+   for (i = cheat_manager_state.size-2 ; i >=0 ; i--)
+   {
+      memcpy(&cheat_manager_state.cheats[i+1],
+            &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      cheat_manager_state.cheats[i+1].idx++ ;
+   }
+
+   memcpy(&cheat_manager_state.cheats[0], &tmp, sizeof(struct item_cheat )) ;
+
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_TOP_SUCCESS), sizeof(msg));
+   msg[sizeof(msg) - 1] = 0;
+
+   runloop_msg_queue_push(msg, 1, 180, true);
+
+   return 0 ;
+}
+
+static int action_ok_cheat_add_bottom(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char msg[256];
+   bool refresh = false ;
+   unsigned int new_size = cheat_manager_get_size() + 1;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+
+   msg[0] = '\0';
+   strlcpy(msg,
+         msg_hash_to_str(MSG_CHEAT_ADD_BOTTOM_SUCCESS), sizeof(msg));
+   msg[sizeof(msg) - 1] = 0;
+
+   runloop_msg_queue_push(msg, 1, 180, true);
+
+   return 0 ;
+}
+
+static int action_ok_cheat_delete_all(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char msg[256] ;
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_ALL_INSTRUCTIONS), sizeof(msg));
+   msg[sizeof(msg) - 1] = 0;
+
+   runloop_msg_queue_push(msg, 1, 240, true);
+   return 0 ;
+}
+
+static int action_ok_cheat_add_new_after(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   int i;
+   char msg[256];
+   struct item_cheat tmp;
+   bool refresh = false;
+   unsigned int new_size = cheat_manager_get_size() + 1;
+
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat )) ;
+   tmp.idx = cheat_manager_state.working_cheat.idx+1 ;
+
+   for (i = cheat_manager_state.size-2 ; i >= (int)(cheat_manager_state.working_cheat.idx+1); i--)
+   {
+      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      cheat_manager_state.cheats[i+1].idx++ ;
+   }
+
+   memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat )) ;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_AFTER_SUCCESS), sizeof(msg));
+   msg[sizeof(msg) - 1] = 0;
+
+   runloop_msg_queue_push(msg, 1, 180, true);
+
+   return 0 ;
+}
+
+static int action_ok_cheat_add_new_before(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   int i;
+   char msg[256] ;
+   struct item_cheat tmp ;
+   bool refresh = false ;
+   unsigned int new_size = cheat_manager_get_size() + 1;
+
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat )) ;
+   tmp.idx = cheat_manager_state.working_cheat.idx ;
+
+   for (i = cheat_manager_state.size-2 ; i >=(int)tmp.idx ; i--)
+   {
+      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      cheat_manager_state.cheats[i+1].idx++ ;
+   }
+
+   memcpy(&cheat_manager_state.cheats[tmp.idx],
+         &tmp, sizeof(struct item_cheat )) ;
+   memcpy(&cheat_manager_state.working_cheat,
+         &tmp, sizeof(struct item_cheat )) ;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_BEFORE_SUCCESS), sizeof(msg));
+   msg[sizeof(msg) - 1] = 0;
+
+   runloop_msg_queue_push(msg, 1, 180, true);
+
+   return 0 ;
+}
+
+static int action_ok_cheat_copy_before(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   int i;
+   struct item_cheat tmp ;
+   char msg[256] ;
+   bool refresh = false ;
+   unsigned int new_size = cheat_manager_get_size() + 1;
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat )) ;
+   tmp.idx = cheat_manager_state.working_cheat.idx ;
+   if ( tmp.code != NULL )
+      tmp.code = strdup(tmp.code) ;
+   if ( tmp.desc != NULL )
+      tmp.desc = strdup(tmp.desc) ;
+
+   for (i = cheat_manager_state.size-2 ; i >=(int)tmp.idx ; i--)
+   {
+      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      cheat_manager_state.cheats[i+1].idx++ ;
+   }
+
+   memcpy(&cheat_manager_state.cheats[tmp.idx], &tmp, sizeof(struct item_cheat )) ;
+   memcpy(&cheat_manager_state.working_cheat, &tmp, sizeof(struct item_cheat )) ;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_BEFORE_SUCCESS), sizeof(msg));
+   msg[sizeof(msg) - 1] = 0;
+
+   runloop_msg_queue_push(msg, 1, 180, true);
+
+
+   return 0 ;
+}
+
+static int action_ok_cheat_copy_after(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   int i;
+   struct item_cheat tmp;
+   char msg[256];
+   bool          refresh = false ;
+   unsigned int new_size = cheat_manager_get_size() + 1;
+
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat )) ;
+   tmp.idx = cheat_manager_state.working_cheat.idx+1 ;
+   if ( tmp.code != NULL )
+      tmp.code = strdup(tmp.code) ;
+   if ( tmp.desc != NULL )
+      tmp.desc = strdup(tmp.desc) ;
+
+   for (i = cheat_manager_state.size-2 ; i >= (int)(cheat_manager_state.working_cheat.idx+1); i--)
+   {
+      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      cheat_manager_state.cheats[i+1].idx++ ;
+   }
+
+   memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat )) ;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_AFTER_SUCCESS), sizeof(msg));
+   msg[sizeof(msg) - 1] = 0;
+
+   runloop_msg_queue_push(msg, 1, 180, true);
+
+   return 0 ;
+}
+
+static int action_ok_cheat_delete(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   size_t new_selection_ptr;
+   char msg[256];
+   unsigned int new_size = cheat_manager_get_size() - 1;
+
+   if( new_size >0 )
+   {
+      unsigned i;
+      if ( cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code != NULL )
+      {
+         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code) ;
+         cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code = NULL ;
+      }
+      if ( cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc != NULL )
+      {
+         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc) ;
+         cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc = NULL ;
+      }
+      for (i = cheat_manager_state.working_cheat.idx ; i <cheat_manager_state.size-1  ; i++)
+      {
+         memcpy(&cheat_manager_state.cheats[i], &cheat_manager_state.cheats[i+1], sizeof(struct item_cheat )) ;
+         cheat_manager_state.cheats[i].idx-- ;
+      }
+      cheat_manager_state.cheats[cheat_manager_state.size-1].code = NULL ;
+      cheat_manager_state.cheats[cheat_manager_state.size-1].desc = NULL ;
+   }
+
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_SUCCESS), sizeof(msg));
+   msg[sizeof(msg) - 1] = 0;
+
+   runloop_msg_queue_push(msg, 1, 180, true);
+
+   new_selection_ptr = menu_navigation_get_selection();
+   menu_entries_pop_stack(&new_selection_ptr, 0, 1);
+   menu_navigation_set_selection(new_selection_ptr);
+
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+
+   return 0;
+}
+
 static int action_ok_file_load_imageviewer(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2855,7 +3168,6 @@ static void cb_generic_dir_download(void *task_data,
       void *user_data, const char *err)
 {
    file_transfer_t     *transf      = (file_transfer_t*)user_data;
-
    if (transf)
    {
       generic_action_ok_network(transf->path, transf->path, 0, 0, 0,
@@ -3184,7 +3496,7 @@ static int action_ok_option_create(const char *path,
          return false;
    }
 
-   if(config_file_write(conf, game_path))
+   if (config_file_write(conf, game_path))
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
@@ -3209,15 +3521,15 @@ int (func_name)(const char *path, const char *label, unsigned type, size_t idx, 
    return generic_action_ok_command(cmd); \
 }
 
-default_action_ok_cmd_func(action_ok_cheat_apply_changes,CMD_EVENT_CHEATS_APPLY)
-default_action_ok_cmd_func(action_ok_quit,               CMD_EVENT_QUIT)
-default_action_ok_cmd_func(action_ok_save_new_config,    CMD_EVENT_MENU_SAVE_CONFIG)
-default_action_ok_cmd_func(action_ok_resume_content,     CMD_EVENT_RESUME)
-default_action_ok_cmd_func(action_ok_restart_content,    CMD_EVENT_RESET)
-default_action_ok_cmd_func(action_ok_screenshot,         CMD_EVENT_TAKE_SCREENSHOT)
-default_action_ok_cmd_func(action_ok_disk_cycle_tray_status, CMD_EVENT_DISK_EJECT_TOGGLE        )
-default_action_ok_cmd_func(action_ok_shader_apply_changes, CMD_EVENT_SHADERS_APPLY_CHANGES        )
-
+default_action_ok_cmd_func(action_ok_cheat_apply_changes,      CMD_EVENT_CHEATS_APPLY)
+default_action_ok_cmd_func(action_ok_quit,                     CMD_EVENT_QUIT)
+default_action_ok_cmd_func(action_ok_save_new_config,          CMD_EVENT_MENU_SAVE_CONFIG)
+default_action_ok_cmd_func(action_ok_resume_content,           CMD_EVENT_RESUME)
+default_action_ok_cmd_func(action_ok_restart_content,          CMD_EVENT_RESET)
+default_action_ok_cmd_func(action_ok_screenshot,               CMD_EVENT_TAKE_SCREENSHOT)
+default_action_ok_cmd_func(action_ok_disk_cycle_tray_status,   CMD_EVENT_DISK_EJECT_TOGGLE)
+default_action_ok_cmd_func(action_ok_shader_apply_changes,     CMD_EVENT_SHADERS_APPLY_CHANGES)
+default_action_ok_cmd_func(action_ok_show_wimp,                CMD_EVENT_UI_COMPANION_TOGGLE)
 
 static int action_ok_reset_core_association(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3420,6 +3732,8 @@ default_action_ok_func(action_ok_compressed_archive_push_detect_core, ACTION_OK_
 default_action_ok_func(action_ok_logging_list, ACTION_OK_DL_LOGGING_SETTINGS_LIST)
 default_action_ok_func(action_ok_frame_throttle_list, ACTION_OK_DL_FRAME_THROTTLE_SETTINGS_LIST)
 default_action_ok_func(action_ok_rewind_list, ACTION_OK_DL_REWIND_SETTINGS_LIST)
+default_action_ok_func(action_ok_cheat, ACTION_OK_DL_CHEAT_DETAILS_SETTINGS_LIST)
+default_action_ok_func(action_ok_cheat_start_or_cont, ACTION_OK_DL_CHEAT_SEARCH_SETTINGS_LIST)
 default_action_ok_func(action_ok_onscreen_display_list, ACTION_OK_DL_ONSCREEN_DISPLAY_SETTINGS_LIST)
 default_action_ok_func(action_ok_onscreen_notifications_list, ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)
 default_action_ok_func(action_ok_onscreen_overlay_list, ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST)
@@ -3443,6 +3757,7 @@ default_action_ok_func(action_ok_mixer_stream_actions, ACTION_OK_DL_MIXER_STREAM
 default_action_ok_func(action_ok_browse_url_list, ACTION_OK_DL_BROWSE_URL_LIST)
 default_action_ok_func(action_ok_core_list, ACTION_OK_DL_CORE_LIST)
 default_action_ok_func(action_ok_cheat_file, ACTION_OK_DL_CHEAT_FILE)
+default_action_ok_func(action_ok_cheat_file_append, ACTION_OK_DL_CHEAT_FILE_APPEND)
 default_action_ok_func(action_ok_playlist_collection, ACTION_OK_DL_PLAYLIST_COLLECTION)
 default_action_ok_func(action_ok_disk_image_append_list, ACTION_OK_DL_DISK_IMAGE_APPEND_LIST)
 default_action_ok_func(action_ok_subsystem_add_list, ACTION_OK_DL_SUBSYSTEM_ADD_LIST)
@@ -3629,7 +3944,7 @@ void netplay_refresh_rooms_menu(file_list_t *list)
          char country[PATH_MAX_LENGTH] = {0};
 
          if (*netplay_room_list[i].country)
-            string_add_between_pairs(country, netplay_room_list[i].country, 
+            string_add_between_pairs(country, netplay_room_list[i].country,
                   sizeof(country));
 
          /* Uncomment this to debug mismatched room parameters*/
@@ -4285,6 +4600,36 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
+            BIND_ACTION_OK(cbs, action_ok_cheat_start_or_cont);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
+            BIND_ACTION_OK(cbs, action_ok_cheat_add_top);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
+            BIND_ACTION_OK(cbs, action_ok_cheat_reload_cheats);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
+            BIND_ACTION_OK(cbs, action_ok_cheat_add_bottom);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
+            BIND_ACTION_OK(cbs, action_ok_cheat_delete_all);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER:
+            BIND_ACTION_OK(cbs, action_ok_cheat_add_new_after);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE:
+            BIND_ACTION_OK(cbs, action_ok_cheat_add_new_before);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_COPY_AFTER:
+            BIND_ACTION_OK(cbs, action_ok_cheat_copy_after);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_COPY_BEFORE:
+            BIND_ACTION_OK(cbs, action_ok_cheat_copy_before);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_DELETE:
+            BIND_ACTION_OK(cbs, action_ok_cheat_delete);
+            break;
          case MENU_ENUM_LABEL_RUN_MUSIC:
             BIND_ACTION_OK(cbs, action_ok_audio_run);
             break;
@@ -4394,6 +4739,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_enable_settings);
             break;
+         case MENU_ENUM_LABEL_SHOW_WIMP:
+            BIND_ACTION_OK(cbs, action_ok_show_wimp);
+            break;
          case MENU_ENUM_LABEL_QUIT_RETROARCH:
             BIND_ACTION_OK(cbs, action_ok_quit);
             break;
@@ -4432,6 +4780,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_OK(cbs, action_ok_cheat_file);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
+            BIND_ACTION_OK(cbs, action_ok_cheat_file_append);
             break;
          case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
             BIND_ACTION_OK(cbs, action_ok_audio_dsp_plugin);
@@ -4722,6 +5073,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_UPDATE_CHEATS:
             BIND_ACTION_OK(cbs, action_ok_update_cheats);
             break;
+         case MENU_ENUM_LABEL_CHEAT_ADD_MATCHES:
+            BIND_ACTION_OK(cbs, cheat_manager_add_matches);
+            break;
          case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
             BIND_ACTION_OK(cbs, action_ok_update_autoconfig_profiles);
             break;
@@ -4769,6 +5123,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_OK(cbs, action_ok_cheat_file);
+            break;
+         case MENU_LABEL_CHEAT_FILE_LOAD_APPEND:
+            BIND_ACTION_OK(cbs, action_ok_cheat_file_append);
             break;
          case MENU_LABEL_AUDIO_DSP_PLUGIN:
             BIND_ACTION_OK(cbs, action_ok_audio_dsp_plugin);
@@ -4925,7 +5282,14 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_generic_list);
             break;
          case FILE_TYPE_CHEAT:
-            BIND_ACTION_OK(cbs, action_ok_cheat_file_load);
+            if ( menu_label_hash == MENU_LABEL_CHEAT_FILE_LOAD_APPEND )
+            {
+               BIND_ACTION_OK(cbs, action_ok_cheat_file_load_append);
+            }
+            else
+            {
+               BIND_ACTION_OK(cbs, action_ok_cheat_file_load);
+            }
             break;
          case FILE_TYPE_RECORD_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_record_configfile_load);

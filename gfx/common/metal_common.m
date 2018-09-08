@@ -71,13 +71,9 @@
    id<MTLSamplerState> _samplerStateLinear;
    id<MTLSamplerState> _samplerStateNearest;
    
-   //
-   id<MTLRenderPipelineState> _states[GFX_MAX_SHADERS][2];
-   
    // other state
    Uniforms _uniforms;
    Uniforms _viewportMVP;
-   Uniforms _viewportMVPNormalized;
 }
 
 - (instancetype)initWithVideo:(const video_info_t *)video
@@ -97,13 +93,9 @@
          return nil;
       }
       
-      if (![self _initStates])
-      {
-         return nil;
-      }
-      
       _video = *video;
       _viewport = (video_viewport_t *)calloc(1, sizeof(video_viewport_t));
+      _viewportMVP.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
       
       _keepAspect = _video.force_aspect;
       
@@ -112,13 +104,23 @@
          .height = _video.height,
          .fullscreen = _video.fullscreen,
       };
+      
+      if (mode.width == 0 || mode.height == 0)
+      {
+         // 0 indicates full screen, so we'll use the view's dimensions, which should already be full screen
+         // If this turns out to be the wrong assumption, we can use NSScreen to query the dimensions
+         CGSize size = view.frame.size;
+         mode.width = (unsigned int)size.width;
+         mode.height = (unsigned int)size.height;
+      }
+      
       [apple_platform setVideoMode:mode];
       
       *input = NULL;
       *inputData = NULL;
       
       // menu display
-      _display = [[MenuDisplay alloc] initWithDriver:self];
+      _display = [[MenuDisplay alloc] initWithContext:_context];
       
       // menu view
       _menu = [[MetalMenu alloc] initWithContext:_context];
@@ -214,162 +216,6 @@
    return YES;
 }
 
-- (bool)_initStates
-{
-   MTLVertexDescriptor *vd = [MTLVertexDescriptor new];
-   vd.attributes[0].offset = 0;
-   vd.attributes[0].format = MTLVertexFormatFloat2;
-   vd.attributes[1].offset = offsetof(SpriteVertex, texCoord);
-   vd.attributes[1].format = MTLVertexFormatFloat2;
-   vd.attributes[2].offset = offsetof(SpriteVertex, color);
-   vd.attributes[2].format = MTLVertexFormatFloat4;
-   vd.layouts[0].stride = sizeof(SpriteVertex);
-   
-   {
-      MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
-      psd.label = @"stock";
-      
-      MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
-      ca.pixelFormat = _layer.pixelFormat;
-      ca.blendingEnabled = NO;
-      ca.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-      ca.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-      ca.sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
-      ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-      
-      psd.sampleCount = 1;
-      psd.vertexDescriptor = vd;
-      psd.vertexFunction = [_library newFunctionWithName:@"stock_vertex"];
-      psd.fragmentFunction = [_library newFunctionWithName:@"stock_fragment"];
-      
-      NSError *err;
-      _states[VIDEO_SHADER_STOCK_BLEND][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-      if (err != nil)
-      {
-         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
-         return NO;
-      }
-      
-      psd.label = @"stock_blend";
-      ca.blendingEnabled = YES;
-      _states[VIDEO_SHADER_STOCK_BLEND][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-      if (err != nil)
-      {
-         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
-         return NO;
-      }
-      
-      MTLFunctionConstantValues *vals;
-      
-      psd.label = @"snow_simple";
-      ca.blendingEnabled = YES;
-      {
-         vals = [MTLFunctionConstantValues new];
-         float values[3] = {
-            1.25f,   // baseScale
-            0.50f,   // density
-            0.15f,   // speed
-         };
-         [vals setConstantValue:&values[0] type:MTLDataTypeFloat withName:@"snowBaseScale"];
-         [vals setConstantValue:&values[1] type:MTLDataTypeFloat withName:@"snowDensity"];
-         [vals setConstantValue:&values[2] type:MTLDataTypeFloat withName:@"snowSpeed"];
-      }
-      psd.fragmentFunction = [_library newFunctionWithName:@"snow_fragment" constantValues:vals error:&err];
-      _states[VIDEO_SHADER_MENU_3][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-      if (err != nil)
-      {
-         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
-         return NO;
-      }
-      
-      psd.label = @"snow";
-      ca.blendingEnabled = YES;
-      {
-         vals = [MTLFunctionConstantValues new];
-         float values[3] = {
-            3.50f,   // baseScale
-            0.70f,   // density
-            0.25f,   // speed
-         };
-         [vals setConstantValue:&values[0] type:MTLDataTypeFloat withName:@"snowBaseScale"];
-         [vals setConstantValue:&values[1] type:MTLDataTypeFloat withName:@"snowDensity"];
-         [vals setConstantValue:&values[2] type:MTLDataTypeFloat withName:@"snowSpeed"];
-      }
-      psd.fragmentFunction = [_library newFunctionWithName:@"snow_fragment" constantValues:vals error:&err];
-      _states[VIDEO_SHADER_MENU_4][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-      if (err != nil)
-      {
-         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
-         return NO;
-      }
-      
-      psd.label = @"bokeh";
-      ca.blendingEnabled = YES;
-      psd.fragmentFunction = [_library newFunctionWithName:@"bokeh_fragment"];
-      _states[VIDEO_SHADER_MENU_5][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-      if (err != nil)
-      {
-         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
-         return NO;
-      }
-      
-      psd.label = @"snowflake";
-      ca.blendingEnabled = YES;
-      psd.fragmentFunction = [_library newFunctionWithName:@"snowflake_fragment"];
-      _states[VIDEO_SHADER_MENU_6][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-      if (err != nil)
-      {
-         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
-         return NO;
-      }
-      
-      psd.label = @"ribbon";
-      ca.blendingEnabled = NO;
-      psd.vertexFunction = [_library newFunctionWithName:@"ribbon_vertex"];
-      psd.fragmentFunction = [_library newFunctionWithName:@"ribbon_fragment"];
-      _states[VIDEO_SHADER_MENU][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-      if (err != nil)
-      {
-         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
-         return NO;
-      }
-      
-      psd.label = @"ribbon_blend";
-      ca.blendingEnabled = YES;
-      ca.sourceRGBBlendFactor = MTLBlendFactorOne;
-      ca.destinationRGBBlendFactor = MTLBlendFactorOne;
-      _states[VIDEO_SHADER_MENU][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-      if (err != nil)
-      {
-         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
-         return NO;
-      }
-      
-      psd.label = @"ribbon_simple";
-      ca.blendingEnabled = NO;
-      psd.vertexFunction = [_library newFunctionWithName:@"ribbon_simple_vertex"];
-      psd.fragmentFunction = [_library newFunctionWithName:@"ribbon_simple_fragment"];
-      _states[VIDEO_SHADER_MENU_2][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-      if (err != nil)
-      {
-         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
-         return NO;
-      }
-      
-      psd.label = @"ribbon_simple_blend";
-      ca.blendingEnabled = YES;
-      ca.sourceRGBBlendFactor = MTLBlendFactorOne;
-      ca.destinationRGBBlendFactor = MTLBlendFactorOne;
-      _states[VIDEO_SHADER_MENU_2][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
-      if (err != nil)
-      {
-         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
-         return NO;
-      }
-   }
-   return YES;
-}
-
 - (void)_updateUniforms
 {
    _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
@@ -377,42 +223,17 @@
 
 - (void)_updateViewport:(CGSize)size
 {
+   RARCH_LOG("[Metal]: _updateViewport size %.0fx%.0f\n", size.width, size.height);
+   
    _viewport->full_width = (unsigned int)size.width;
    _viewport->full_height = (unsigned int)size.height;
    video_driver_set_size(&_viewport->full_width, &_viewport->full_height);
    _layer.drawableSize = size;
    video_driver_update_viewport(_viewport, NO, _keepAspect);
    
+   _context.viewport = _viewport;
+   
    _viewportMVP.outputSize = simd_make_float2(_viewport->full_width, _viewport->full_height);
-   _viewportMVP.projectionMatrix = matrix_proj_ortho(0, _viewport->full_width, _viewport->full_height, 0);
-   _viewportMVP.projectionMatrix = matrix_proj_ortho(0, _viewport->full_width, 0, _viewport->full_height);
-   
-   _viewportMVPNormalized.outputSize = simd_make_float2(_viewport->full_width, _viewport->full_height);
-   _viewportMVPNormalized.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
-}
-
-#pragma mark - shaders
-
-- (id<MTLRenderPipelineState>)getStockShader:(int)index blend:(bool)blend
-{
-   assert(index > 0 && index < GFX_MAX_SHADERS);
-   
-   switch (index)
-   {
-      case VIDEO_SHADER_STOCK_BLEND:
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
-         break;
-      default:
-         index = VIDEO_SHADER_STOCK_BLEND;
-         break;
-   }
-   
-   return _states[index][blend ? 1 : 0];
 }
 
 #pragma mark - video
@@ -455,7 +276,7 @@
       {
          id<MTLRenderCommandEncoder> rce = _context.rce;
          [rce pushDebugGroup:@"overlay"];
-         [rce setRenderPipelineState:[self getStockShader:VIDEO_SHADER_STOCK_BLEND blend:YES]];
+         [rce setRenderPipelineState:[_context getStockShader:VIDEO_SHADER_STOCK_BLEND blend:YES]];
          [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
          [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
          [_overlay drawWithEncoder:rce];
@@ -464,9 +285,7 @@
 #endif
       
       if (msg && *msg)
-      {
-         font_driver_render_msg(video_info, NULL, msg, NULL);
-      }
+         [self _renderMessage:msg info:video_info];
       
       [self _endFrame];
    }
@@ -474,9 +293,50 @@
    return YES;
 }
 
+- (void)_renderMessage:(const char *)msg
+                  info:(video_frame_info_t *)video_info
+{
+   settings_t *settings = config_get_ptr();
+   if (settings && settings->bools.video_msg_bgcolor_enable)
+   {
+      int msg_width =
+         font_driver_get_message_width(NULL, msg, (unsigned)strlen(msg), 1.0f);
+      
+      float x = video_info->font_msg_pos_x;
+      float y = 1.0f - video_info->font_msg_pos_y;
+      float width = msg_width / (float)_viewport->full_width;
+      float height =
+         settings->floats.video_font_size / (float)_viewport->full_height;
+      
+      y -= height;
+      
+      float x2 = 0.005f; /* extend background around text */
+      float y2 = 0.005f;
+      
+      x -= x2;
+      y -= y2;
+      width += x2;
+      height += y2;
+      
+      float r = settings->uints.video_msg_bgcolor_red / 255.0f;
+      float g = settings->uints.video_msg_bgcolor_green / 255.0f;
+      float b = settings->uints.video_msg_bgcolor_blue / 255.0f;
+      float a = settings->floats.video_msg_bgcolor_opacity;
+      [_context resetRenderViewport];
+      [_context drawQuadX:x y:y w:width h:height r:r g:g b:b a:a];
+   }
+   
+   font_driver_render_msg(video_info, NULL, msg, NULL);
+}
+
 - (void)_beginFrame
 {
+   video_viewport_t vp = *_viewport;
    video_driver_update_viewport(_viewport, NO, _keepAspect);
+   if (memcmp(&vp, _viewport, sizeof(vp)) != 0)
+   {
+      _context.viewport = _viewport;
+   }
    [_context begin];
    [self _updateUniforms];
 }
@@ -553,11 +413,6 @@
 - (Uniforms *)viewportMVP
 {
    return &_viewportMVP;
-}
-
-- (Uniforms *)viewportMVPNormalized
-{
-   return &_viewportMVPNormalized;
 }
 
 #pragma mark - MTKViewDelegate
@@ -691,12 +546,13 @@ typedef struct MTLALIGN(16)
    Context *_context;
    id<MTLTexture> _texture; // final render texture
    Vertex _v[4];
+   VertexSlang _vertex[4];
    CGSize _size; // size of view in pixels
    CGRect _frame;
    NSUInteger _bpp;
    
-   id<MTLBuffer> _pixels;   // frame buffer in _srcFmt
-   bool _pixelsDirty;
+   id<MTLTexture> _src;    // src texture
+   bool _srcDirty;
    
    id<MTLSamplerState> _samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
    struct video_shader *_shader;
@@ -732,6 +588,15 @@ typedef struct MTLALIGN(16)
       self.size = d.size;
       self.frame = CGRectMake(0, 0, 1, 1);
       resize_render_targets = YES;
+   
+      // init slang vertex buffer
+      VertexSlang v[4] = {
+         {simd_make_float4(0, 1, 0, 1), simd_make_float2(0, 1)},
+         {simd_make_float4(1, 1, 0, 1), simd_make_float2(1, 1)},
+         {simd_make_float4(0, 0, 0, 1), simd_make_float2(0, 0)},
+         {simd_make_float4(1, 0, 0, 1), simd_make_float2(1, 0)},
+      };
+      memcpy(_vertex, v, sizeof(_vertex));
    }
    return self;
 }
@@ -804,8 +669,11 @@ typedef struct MTLALIGN(16)
    
    if (_format != RPixelFormatBGRA8Unorm && _format != RPixelFormatBGRX8Unorm)
    {
-      _pixels = [_context.device newBufferWithLength:(NSUInteger)(size.width * size.height * 2)
-                                             options:MTLResourceStorageModeManaged];
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
+                                                                                    width:(NSUInteger)size.width
+                                                                                   height:(NSUInteger)size.height
+                                                                                mipmapped:NO];
+      _src = [_context.device newTextureWithDescriptor:td];
    }
 }
 
@@ -851,11 +719,11 @@ typedef struct MTLALIGN(16)
    if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
       return;
    
-   if (!_pixelsDirty)
+   if (!_srcDirty)
       return;
    
-   [_context convertFormat:_format from:_pixels to:_texture];
-   _pixelsDirty = NO;
+   [_context convertFormat:_format from:_src to:_texture];
+   _srcDirty = NO;
 }
 
 - (void)_updateHistory
@@ -890,6 +758,24 @@ typedef struct MTLALIGN(16)
       td.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
       [self _initTexture:&_engine.frame.texture[0] withDescriptor:td];
    }
+}
+
+- (bool)readViewport:(uint8_t *)buffer isIdle:(bool)isIdle
+{
+   RARCH_LOG("[Metal]: readViewport is_idle = %s\n", isIdle ? "YES" : "NO");
+   
+   bool enabled = _context.captureEnabled;
+   if (!enabled)
+      _context.captureEnabled = YES;
+   
+   video_driver_cached_frame();
+   
+   bool res = [_context readBackBuffer:buffer];
+   
+   if (!enabled)
+      _context.captureEnabled = NO;
+   
+   return res;
 }
 
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch
@@ -927,26 +813,10 @@ typedef struct MTLALIGN(16)
    }
    else
    {
-      void *dst = _pixels.contents;
-      size_t len = (size_t)(_bpp * _size.width);
-      assert(len <= pitch); // the length can't be larger?
-      
-      if (len < pitch)
-      {
-         for (int i = 0; i < _size.height; i++)
-         {
-            memcpy(dst, src, len);
-            dst += len;
-            src += pitch;
-         }
-      }
-      else
-      {
-         memcpy(dst, src, _pixels.length);
-      }
-      
-      [_pixels didModifyRange:NSMakeRange(0, _pixels.length)];
-      _pixelsDirty = YES;
+      [_src replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
+              mipmapLevel:0 withBytes:src
+              bytesPerRow:(NSUInteger)(pitch)];
+      _srcDirty = YES;
    }
 }
 
@@ -973,19 +843,6 @@ typedef struct MTLALIGN(16)
    }
    init_history = NO;
 }
-
-typedef struct vertex
-{
-   simd_float4 pos;
-   simd_float2 tex;
-} vertex_t;
-
-static vertex_t vertex_bytes[] = {
-   {{0, 1, 0, 1}, {0, 1}},
-   {{1, 1, 0, 1}, {1, 1}},
-   {{0, 0, 0, 1}, {0, 0}},
-   {{1, 0, 0, 1}, {1, 0}},
-};
 
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce
 {
@@ -1100,7 +957,7 @@ static vertex_t vertex_bytes[] = {
       
       [rce setFragmentTextures:textures withRange:NSMakeRange(0, SLANG_NUM_BINDINGS)];
       [rce setFragmentSamplerStates:samplers withRange:NSMakeRange(0, SLANG_NUM_BINDINGS)];
-      [rce setVertexBytes:vertex_bytes length:sizeof(vertex_bytes) atIndex:4];
+      [rce setVertexBytes:_vertex length:sizeof(_vertex) atIndex:4];
       [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
       
       if (!backBuffer)
@@ -1320,13 +1177,13 @@ static vertex_t vertex_bytes[] = {
          @try
          {
             MTLVertexDescriptor *vd = [MTLVertexDescriptor new];
-            vd.attributes[0].offset = offsetof(vertex_t, pos);
+            vd.attributes[0].offset = offsetof(VertexSlang, position);
             vd.attributes[0].format = MTLVertexFormatFloat4;
             vd.attributes[0].bufferIndex = 4;
-            vd.attributes[1].offset = offsetof(vertex_t, tex);
+            vd.attributes[1].offset = offsetof(VertexSlang, texCoord);
             vd.attributes[1].format = MTLVertexFormatFloat2;
             vd.attributes[1].bufferIndex = 4;
-            vd.layouts[4].stride = sizeof(vertex_t);
+            vd.layouts[4].stride = sizeof(VertexSlang);
             vd.layouts[4].stepFunction = MTLVertexStepFunctionPerVertex;
             
             MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
@@ -1353,7 +1210,7 @@ static vertex_t vertex_bytes[] = {
                if (lib == nil)
                {
                   save_msl = true;
-                  RARCH_ERR("Metal]: unable to compile vertex shader: %s\n", err.localizedDescription.UTF8String);
+                  RARCH_ERR("[Metal]: unable to compile vertex shader: %s\n", err.localizedDescription.UTF8String);
                   return NO;
                }
 #if DEBUG
@@ -1369,7 +1226,7 @@ static vertex_t vertex_bytes[] = {
                if (lib == nil)
                {
                   save_msl = true;
-                  RARCH_ERR("Metal]: unable to compile fragment shader: %s\n", err.localizedDescription.UTF8String);
+                  RARCH_ERR("[Metal]: unable to compile fragment shader: %s\n", err.localizedDescription.UTF8String);
                   return NO;
                }
 #if DEBUG
@@ -1383,7 +1240,8 @@ static vertex_t vertex_bytes[] = {
             if (err != nil)
             {
                save_msl = true;
-               RARCH_ERR("error creating pipeline state: %s", err.localizedDescription.UTF8String);
+               RARCH_ERR("[Metal]: error creating pipeline state for pass %d: %s\n", i,
+                         err.localizedDescription.UTF8String);
                return NO;
             }
             
@@ -1402,10 +1260,11 @@ static vertex_t vertex_bytes[] = {
          {
             if (save_msl)
             {
-               RARCH_LOG("[Metal]: saving metal shader files\n");
+               NSString *basePath = [[NSString stringWithUTF8String:shader->pass[i].source.path] stringByDeletingPathExtension];
+               
+               RARCH_LOG("[Metal]: saving metal shader files to %s\n", basePath.UTF8String);
                
                NSError *err = nil;
-               NSString *basePath = [[NSString stringWithUTF8String:shader->pass[i].source.path] stringByDeletingPathExtension];
                [vs_src writeToFile:[basePath stringByAppendingPathExtension:@"vs.metal"]
                         atomically:NO
                           encoding:NSStringEncodingConversionAllowLossy

@@ -45,7 +45,8 @@ static void *caca_init_font(void *data,
 
    font->caca = (caca_t*)data;
 
-   if (!font_renderer_create_default((const void**)&font->caca_font_driver,
+   if (!font_renderer_create_default(
+            &font->caca_font_driver,
             &font->caca_font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't initialize font renderer.\n");
@@ -128,18 +129,13 @@ static void caca_render_msg(video_frame_info_t *video_info,
    caca_refresh_display(*font->caca->caca_display);
 }
 
-static void caca_font_bind_block(void* data, void* userdata)
-{
-   (void)data;
-}
-
 font_renderer_t caca_font = {
    caca_init_font,
    caca_render_free_font,
    caca_render_msg,
    "caca font",
    caca_font_get_glyph,       /* get_glyph */
-   caca_font_bind_block,      /* bind_block */
+   NULL,                      /* bind_block */
    NULL,                      /* flush */
    caca_get_message_width     /* get_message_width */
 };

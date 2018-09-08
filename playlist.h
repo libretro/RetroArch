@@ -101,14 +101,14 @@ void playlist_delete_index(playlist_t *playlist,
 bool playlist_push(playlist_t *playlist,
       const char *path, const char *label,
       const char *core_path, const char *core_name,
-      const char *db_name,
-      const char *crc32);
+      const char *crc32,
+      const char *db_name);
 
 void playlist_update(playlist_t *playlist, size_t idx,
       const char *path, const char *label,
       const char *core_path, const char *core_name,
-      const char *db_name,
-      const char *crc32);
+      const char *crc32,
+      const char *db_name);
 
 void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,

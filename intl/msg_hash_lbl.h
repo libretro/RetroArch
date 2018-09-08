@@ -126,6 +126,8 @@ MSG_HASH(MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,
       "cheat_database_path")
 MSG_HASH(MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
       "cheat_file_load")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND,
+      "cheat_file_load_append")
 MSG_HASH(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
       "cheat_file_save_as")
 MSG_HASH(MENU_ENUM_LABEL_CHEAT_NUM_PASSES,
@@ -343,6 +345,10 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST,
       "deferred_retro_achievements_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST,
       "deferred_rewind_settings_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CHEAT_DETAILS_SETTINGS_LIST,
+      "deferred_cheat_details_settings_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CHEAT_SEARCH_SETTINGS_LIST,
+      "deferred_cheat_search_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST,
       "deferred_saving_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST,
@@ -931,10 +937,22 @@ MSG_HASH(MENU_ENUM_LABEL_INPUT_META_REWIND,
       "input_meta_rewind")
 MSG_HASH(MENU_ENUM_LABEL_REWIND_ENABLE,
       "rewind_enable")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
+      "cheat_apply_after_toggle")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
+      "cheat_apply_after_load")
 MSG_HASH(MENU_ENUM_LABEL_REWIND_GRANULARITY,
       "rewind_granularity")
+MSG_HASH(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE,
+      "rewind_buffer_size")
+MSG_HASH(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP,
+      "rewind_buffer_size_step")
 MSG_HASH(MENU_ENUM_LABEL_REWIND_SETTINGS,
       "rewind_settings")
+MSG_HASH(MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
+      "vrr_runloop_enable")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SETTINGS,
+      "cheat_settings")
 MSG_HASH(MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,
       "rgui_browser_directory")
 MSG_HASH(MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,
@@ -1123,10 +1141,10 @@ MSG_HASH(MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
       "use_this_directory")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE,
       "video_allow_rotate")
-MSG_HASH(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION, 
-	  "crt_switch_resolution") 
-MSG_HASH(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER, 
-	  "crt_switch_resolution_super") 
+MSG_HASH(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,
+	  "crt_switch_resolution")
+MSG_HASH(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER,
+	  "crt_switch_resolution_super")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,
       "video_aspect_ratio")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_AUTO,
@@ -1527,6 +1545,14 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS,
       "deferred_quick_menu_override_options")
 MSG_HASH(MENU_ENUM_LABEL_DISCORD_IN_MENU,
       "discord_in_menu")
+MSG_HASH(MENU_ENUM_LABEL_DISCORD_IN_GAME,
+      "discord_in_game")
+MSG_HASH(MENU_ENUM_LABEL_DISCORD_IN_GAME_PAUSED,
+      "discord_in_game_paused")
+MSG_HASH(MENU_ENUM_LABEL_DISCORD_STATUS_PLAYING,
+      "discord_status_playing")
+MSG_HASH(MENU_ENUM_LABEL_DISCORD_STATUS_PAUSED,
+      "discord_status_paused")
 MSG_HASH(MENU_ENUM_LABEL_MIDI_INPUT,
       "midi_input")
 MSG_HASH(MENU_ENUM_LABEL_MIDI_OUTPUT,
@@ -1535,3 +1561,97 @@ MSG_HASH(MENU_ENUM_LABEL_MIDI_VOLUME,
       "midi_volume")
 MSG_HASH(MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE,
       "sustained_performance_mode")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_IDX,
+      "cheat_idx")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_DESC,
+      "cheat_desc")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_STATE,
+      "cheat_state")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_CODE,
+      "cheat_code")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_HANDLER,
+      "cheat_handler")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_MEMORY_SEARCH_SIZE,
+      "cheat_memory_search_size")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_TYPE,
+      "cheat_type")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_VALUE,
+      "cheat_value")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_ADDRESS,
+      "cheat_address")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION,
+      "cheat_address_bit_position")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_RUMBLE_TYPE,
+      "cheat_rumble_type")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_RUMBLE_VALUE,
+      "cheat_rumble_value")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_RUMBLE_PORT,
+      "cheat_rumble_port")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_RUMBLE_PRIMARY_STRENGTH,
+      "cheat_rumble_primary_strength")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_RUMBLE_PRIMARY_DURATION,
+      "cheat_rumble_primary_duration")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_RUMBLE_SECONDARY_STRENGTH,
+      "cheat_rumble_secondary_strength")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_RUMBLE_SECONDARY_DURATION,
+      "cheat_rumble_secondary_duration")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER,
+      "cheat_add_new_after")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE,
+      "cheat_add_new_before")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_COPY_AFTER,
+      "cheat_copy_after")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_COPY_BEFORE,
+      "cheat_copy_before")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_DELETE,
+      "cheat_delete")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_START_OR_CONT,
+      "cheat_start_or_cont")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_START_OR_RESTART,
+      "cheat_start_or_restart")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT,
+      "cheat_search_exact")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_LT,
+      "cheat_search_lt")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_GT,
+      "cheat_search_gt")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_LTE,
+      "cheat_search_lte")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_GTE,
+      "cheat_search_gte")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_EQ,
+      "cheat_search_eq")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ,
+      "cheat_search_neq")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS,
+      "cheat_search_eqplus")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS,
+      "cheat_search_eqminus")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_ADD_MATCHES,
+      "cheat_add_matches")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_VIEW_MATCHES,
+      "cheat_view_matches")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_CREATE_OPTION,
+      "cheat_create_option")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_DELETE_OPTION,
+      "cheat_delete_option")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP,
+      "cheat_add_new_top")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM,
+      "cheat_add_new_bottom")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_DELETE_ALL,
+      "cheat_delete_all")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS,
+      "cheat_reload_cheats")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_BIG_ENDIAN,
+      "cheat_big_endian")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_MATCH_IDX,
+      "cheat_match_idx")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_MATCH,
+      "cheat_match")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY,
+      "cheat_browse_memory")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_COPY_MATCH,
+      "cheat_copy_match")
+MSG_HASH(MENU_ENUM_LABEL_CHEAT_DELETE_MATCH,
+      "cheat_delete_match")

@@ -25,6 +25,9 @@ extern "C" {
 #include "../../../frontend/frontend.h"
 #include "../../../tasks/tasks_internal.h"
 #include <retro_timers.h>
+#ifdef Q_OS_UNIX
+#include <locale.h>
+#endif
 }
 
 #include "../ui_qt.h"
@@ -127,6 +130,9 @@ static void* ui_application_qt_initialize(void)
    ui_application.app->setApplicationVersion(PACKAGE_VERSION);
    ui_application.app->connect(ui_application.app, SIGNAL(lastWindowClosed()), appHandler, SLOT(onLastWindowClosed()));
 
+#ifdef Q_OS_UNIX
+   setlocale(LC_NUMERIC, "C");
+#endif
    {
       /* Can't declare the pixmap at the top, because: "QPixmap: Must construct a QGuiApplication before a QPixmap" */
       QImage iconImage(16, 16, QImage::Format_ARGB32);

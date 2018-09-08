@@ -56,6 +56,7 @@
 #include "../../input/input_keymaps.h"
 #include "../video_thread_wrapper.h"
 #include "../video_display_server.h"
+#include "../../gfx/video_driver.h"
 #include <shellapi.h>
 
 #ifdef HAVE_MENU
@@ -92,78 +93,6 @@ extern void *dinput_wgl;
 extern void *dinput;
 #endif
 
-typedef enum  {
-  DISPLAYCONFIG_SCANLINE_ORDERING_UNSPECIFIED_CUSTOM                 = 0,
-  DISPLAYCONFIG_SCANLINE_ORDERING_PROGRESSIVE_CUSTOM                = 1,
-  DISPLAYCONFIG_SCANLINE_ORDERING_INTERLACED_CUSTOM                  = 2,
-  DISPLAYCONFIG_SCANLINE_ORDERING_INTERLACED_UPPERFIELDFIRST_CUSTOM  = DISPLAYCONFIG_SCANLINE_ORDERING_INTERLACED_CUSTOM,
-  DISPLAYCONFIG_SCANLINE_ORDERING_INTERLACED_LOWERFIELDFIRST_CUSTOM  = 3,
-  DISPLAYCONFIG_SCANLINE_ORDERING_FORCE_UINT32_CUSTOM                = 0xFFFFFFFF
-} DISPLAYCONFIG_SCANLINE_ORDERING_CUSTOM;
-
-typedef enum  {
-  DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE_CUSTOM         = 1,
-  DISPLAYCONFIG_MODE_INFO_TYPE_TARGET_CUSTOM        = 2,
-  DISPLAYCONFIG_MODE_INFO_TYPE_DESKTOP_IMAGE_CUSTOM  = 3,
-  DISPLAYCONFIG_MODE_INFO_TYPE_FORCE_UINT32_CUSTOM   = 0xFFFFFFFF
-} DISPLAYCONFIG_MODE_INFO_TYPE_CUSTOM;
-
-typedef enum  { 
-  DISPLAYCONFIG_PIXELFORMAT_8BPP_CUSTOM          = 1,
-  DISPLAYCONFIG_PIXELFORMAT_16BPP_CUSTOM         = 2,
-  DISPLAYCONFIG_PIXELFORMAT_24BPP_CUSTOM         = 3,
-  DISPLAYCONFIG_PIXELFORMAT_32BPP_CUSTOM         = 4,
-  DISPLAYCONFIG_PIXELFORMAT_NONGDI_CUSTOM        = 5,
-  DISPLAYCONFIG_PIXELFORMAT_FORCE_UINT32_CUSTOM  = 0xffffffff
-} DISPLAYCONFIG_PIXELFORMAT_CUSTOM;
-
-typedef enum  {
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_OTHER_CUSTOM                 = -1,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_HD15_CUSTOM                  = 0,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_SVIDEO_CUSTOM                = 1,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_COMPOSITE_VIDEO_CUSTOM       = 2,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_COMPONENT_VIDEO_CUSTOM       = 3,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DVI_CUSTOM                   = 4,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_HDMI_CUSTOM                  = 5,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_LVDS_CUSTOM                  = 6,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_D_JPN_CUSTOM                 = 8,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_SDI_CUSTOM                   = 9,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DISPLAYPORT_EXTERNAL_CUSTOM  = 10,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DISPLAYPORT_EMBEDDED_CUSTOM  = 11,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_UDI_EXTERNAL_CUSTOM          = 12,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_UDI_EMBEDDED_CUSTOM          = 13,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_SDTVDONGLE_CUSTOM            = 14,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_MIRACAST_CUSTOM              = 15,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INTERNAL_CUSTOM              = 0x80000000,
-  DISPLAYCONFIG_OUTPUT_TECHNOLOGY_FORCE_UINT32_CUSTOM          = 0xFFFFFFFF
-} DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY_CUSTOM;
-
-typedef enum  {
-  DISPLAYCONFIG_ROTATION_IDENTITY_CUSTOM      = 1,
-  DISPLAYCONFIG_ROTATION_ROTATE90_CUSTOM      = 2,
-  DISPLAYCONFIG_ROTATION_ROTATE180_CUSTOM     = 3,
-  DISPLAYCONFIG_ROTATION_ROTATE270_CUSTOM     = 4,
-  DISPLAYCONFIG_ROTATION_FORCE_UINT32_CUSTOM  = 0xFFFFFFFF
-} DISPLAYCONFIG_ROTATION_CUSTOM;
-
-typedef enum  {
-  DISPLAYCONFIG_SCALING_IDENTITY_CUSTOM                = 1,
-  DISPLAYCONFIG_SCALING_CENTERED_CUSTOM                = 2,
-  DISPLAYCONFIG_SCALING_STRETCHED_CUSTOM               = 3,
-  DISPLAYCONFIG_SCALING_ASPECTRATIOCENTEREDMAX_CUSTOM  = 4,
-  DISPLAYCONFIG_SCALING_CUSTOM_CUSTOM                  = 5,
-  DISPLAYCONFIG_SCALING_PREFERRED_CUSTOM               = 128,
-  DISPLAYCONFIG_SCALING_FORCE_UINT32_CUSTOM            = 0xFFFFFFFF
-} DISPLAYCONFIG_SCALING_CUST;
-
-typedef enum  {
-  DISPLAYCONFIG_TOPOLOGY_INTERNAL_CUSTOM      = 0x00000001,
-  DISPLAYCONFIG_TOPOLOGY_CLONE_CUSTOM         = 0x00000002,
-  DISPLAYCONFIG_TOPOLOGY_EXTEND_CUSTOM        = 0x00000004,
-  DISPLAYCONFIG_TOPOLOGY_EXTERNAL_CUSTOM      = 0x00000008,
-  DISPLAYCONFIG_TOPOLOGY_FORCE_UINT32_CUSTOM  = 0xFFFFFFFF
-} DISPLAYCONFIG_TOPOLOGY_ID_CUSTOM;
-
 typedef struct DISPLAYCONFIG_RATIONAL_CUSTOM {
   UINT32 Numerator;
   UINT32 Denominator;
@@ -188,7 +117,7 @@ typedef struct DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM {
     } AdditionalSignalInfo;
     UINT32 videoStandard;
   };
-  DISPLAYCONFIG_SCANLINE_ORDERING_CUSTOM scanLineOrdering;
+  UINT32 scanLineOrdering;
 } DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM;
 
 typedef struct DISPLAYCONFIG_TARGET_MODE_CUSTOM {
@@ -217,12 +146,12 @@ typedef struct DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM {
 typedef struct DISPLAYCONFIG_SOURCE_MODE_CUSTOM {
   UINT32                    width;
   UINT32                    height;
-  DISPLAYCONFIG_PIXELFORMAT_CUSTOM pixelFormat;
+  UINT32                    pixelFormat;
   POINTL                    position;
 } DISPLAYCONFIG_SOURCE_MODE_CUSTOM;
 
 typedef struct DISPLAYCONFIG_MODE_INFO_CUSTOM {
-  DISPLAYCONFIG_MODE_INFO_TYPE_CUSTOM infoType;
+  UINT32                       infoType;
   UINT32                       id;
   LUID                         adapterId;
   union {
@@ -242,13 +171,13 @@ typedef struct DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM {
       UINT32 targetModeInfoIdx  :16;
     };
   };
-  DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY_CUSTOM outputTechnology;
-  DISPLAYCONFIG_ROTATION_CUSTOM                rotation;
-  DISPLAYCONFIG_SCALING_CUST                 scaling;
-  DISPLAYCONFIG_RATIONAL_CUSTOM                refreshRate;
-  DISPLAYCONFIG_SCANLINE_ORDERING_CUSTOM       scanLineOrdering;
-  BOOL                                  targetAvailable;
-  UINT32                                statusFlags;
+  UINT32 outputTechnology;
+  UINT32 rotation;
+  UINT32 scaling;
+  DISPLAYCONFIG_RATIONAL_CUSTOM refreshRate;
+  UINT32 scanLineOrdering;
+  BOOL targetAvailable;
+  UINT32 statusFlags;
 } DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM;
 
 
@@ -259,7 +188,7 @@ typedef struct DISPLAYCONFIG_PATH_INFO_CUSTOM {
   UINT32                         flags;
 } DISPLAYCONFIG_PATH_INFO_CUSTOM;
 
-typedef LONG (WINAPI *QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_INFO_CUSTOM*, UINT32*, DISPLAYCONFIG_MODE_INFO_CUSTOM*, DISPLAYCONFIG_TOPOLOGY_ID_CUSTOM*);
+typedef LONG (WINAPI *QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_INFO_CUSTOM*, UINT32*, DISPLAYCONFIG_MODE_INFO_CUSTOM*, UINT32*);
 typedef LONG (WINAPI *GETDISPLAYCONFIGBUFFERSIZES)(UINT32, UINT32*, UINT32*);
 
 static bool g_win32_resized         = false;
@@ -1117,6 +1046,13 @@ void win32_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
 #if !defined(_XBOX)
+   if (video_driver_is_threaded())
+   {
+      const ui_application_t *application =
+         ui_companion_driver_get_application_ptr();
+      if (application)
+         application->process_events();
+   }
    *quit            = g_win32_quit;
 
    if (g_win32_resized)
@@ -1257,7 +1193,7 @@ void win32_set_window(unsigned *width, unsigned *height,
       settings_t *settings      = config_get_ptr();
       const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
-      if (!fullscreen && settings->bools.ui_menubar_enable)
+      if (!fullscreen && settings->bools.ui_menubar_enable && !video_driver_is_threaded())
       {
          RECT rc_temp;
          rc_temp.left   = 0;
@@ -1454,23 +1390,23 @@ float win32_get_refresh_rate(void *data)
    float refresh_rate                      = 0.0f;
 #if _WIN32_WINNT >= 0x0601 || _WIN32_WINDOWS >= 0x0601 /* Win 7 */
    OSVERSIONINFO version_info;
-   DISPLAYCONFIG_TOPOLOGY_ID_CUSTOM TopologyID;
+   UINT32 TopologyID;
    unsigned int NumPathArrayElements       = 0;
    unsigned int NumModeInfoArrayElements   = 0;
    DISPLAYCONFIG_PATH_INFO_CUSTOM *PathInfoArray  = NULL;
    DISPLAYCONFIG_MODE_INFO_CUSTOM *ModeInfoArray  = NULL;
    int result                              = 0;
 #ifdef HAVE_DYNAMIC
-	static QUERYDISPLAYCONFIG pQueryDisplayConfig;
-	static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes;
-	if (!pQueryDisplayConfig)
-		pQueryDisplayConfig = (QUERYDISPLAYCONFIG)GetProcAddress(GetModuleHandle("user32.dll"), "QueryDisplayConfig");
+    static QUERYDISPLAYCONFIG pQueryDisplayConfig;
+    static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes;
+    if (!pQueryDisplayConfig)
+        pQueryDisplayConfig = (QUERYDISPLAYCONFIG)GetProcAddress(GetModuleHandle("user32.dll"), "QueryDisplayConfig");
 
-	if (!pGetDisplayConfigBufferSizes)
-		pGetDisplayConfigBufferSizes = (GETDISPLAYCONFIGBUFFERSIZES)GetProcAddress(GetModuleHandle("user32.dll"), "GetDisplayConfigBufferSizes");
+    if (!pGetDisplayConfigBufferSizes)
+        pGetDisplayConfigBufferSizes = (GETDISPLAYCONFIGBUFFERSIZES)GetProcAddress(GetModuleHandle("user32.dll"), "GetDisplayConfigBufferSizes");
 #else
-	static QUERYDISPLAYCONFIG pQueryDisplayConfig                   = QueryDisplayConfig;
-	static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes = GetDisplayConfigBufferSizes;
+    static QUERYDISPLAYCONFIG pQueryDisplayConfig                   = QueryDisplayConfig;
+    static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes = GetDisplayConfigBufferSizes;
 #endif
 
    version_info.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);

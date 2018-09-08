@@ -52,7 +52,7 @@
 #endif
 
 #if defined(MBEDTLS_HAVE_TIME)
-#include "mbedtls/platform_time.h"
+#include "platform_time.h"
 #endif
 
 /*
@@ -412,7 +412,7 @@ typedef enum
     MBEDTLS_SSL_HANDSHAKE_WRAPUP,
     MBEDTLS_SSL_HANDSHAKE_OVER,
     MBEDTLS_SSL_SERVER_NEW_SESSION_TICKET,
-    MBEDTLS_SSL_SERVER_HELLO_VERIFY_REQUEST_SENT,
+    MBEDTLS_SSL_SERVER_HELLO_VERIFY_REQUEST_SENT
 }
 mbedtls_ssl_states;
 

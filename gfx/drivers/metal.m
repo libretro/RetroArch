@@ -163,7 +163,8 @@ static void metal_viewport_info(void *data, struct video_viewport *vp)
 
 static bool metal_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
-   return true;
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   return [md.frameView readViewport:buffer isIdle:is_idle];
 }
 
 static uintptr_t metal_load_texture(void *video_data, void *data,
@@ -196,14 +197,6 @@ static void metal_set_video_mode(void *data,
    RARCH_LOG("[Metal]: set_video_mode res=%dx%d fullscreen=%s\n",
              width, height,
              fullscreen ? "YES" : "NO");
-   MetalDriver *md = (__bridge MetalDriver *)data;
-   gfx_ctx_mode_t mode = {
-      .width      = width,
-      .height     = height,
-      .fullscreen = fullscreen,
-   };
-   
-   //[md setVideoMode:mode];
 }
 
 static float metal_get_refresh_rate(void *data)

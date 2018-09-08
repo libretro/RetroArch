@@ -450,6 +450,7 @@ enum retro_key
    RETROK_POWER          = 320,
    RETROK_EURO           = 321,
    RETROK_UNDO           = 322,
+   RETROK_OEM_102        = 323,
 
    RETROK_LAST,
 
@@ -1047,6 +1048,10 @@ typedef int (RETRO_CALLCONV *retro_vfs_close_t)(struct retro_vfs_file_handle *st
  * Introduced in VFS API v1 */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_size_t)(struct retro_vfs_file_handle *stream);
 
+/* Truncate file to specified size. Returns 0 on success or -1 on error
+ * Introduced in VFS API v2 */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_truncate_t)(struct retro_vfs_file_handle *stream, int64_t length);
+
 /* Get the current read / write position for the file. Returns - 1 for error.
  * Introduced in VFS API v1 */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_tell_t)(struct retro_vfs_file_handle *stream);
@@ -1077,6 +1082,7 @@ typedef int (RETRO_CALLCONV *retro_vfs_rename_t)(const char *old_path, const cha
 
 struct retro_vfs_interface
 {
+   /* VFS API v1 */
 	retro_vfs_get_path_t get_path;
 	retro_vfs_open_t open;
 	retro_vfs_close_t close;
@@ -1088,6 +1094,8 @@ struct retro_vfs_interface
 	retro_vfs_flush_t flush;
 	retro_vfs_remove_t remove;
 	retro_vfs_rename_t rename;
+   /* VFS API v2 */
+   retro_vfs_truncate_t truncate;
 };
 
 struct retro_vfs_interface_info
@@ -1179,6 +1187,12 @@ struct retro_led_interface
 #define RETRO_ENVIRONMENT_GET_MIDI_INTERFACE (48 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_midi_interface ** --
                                             * Returns a MIDI interface that can be used for raw data I/O.
+                                            */
+
+#define RETRO_ENVIRONMENT_GET_FASTFORWARDING (49 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                            /* bool * --
+                                            * Boolean value that indicates whether or not the frontend is in 
+                                            * fastforwarding mode.
                                             */
 
 /* Retrieves the current state of the MIDI input.
@@ -2190,17 +2204,26 @@ struct retro_system_info
                                    * Typically used for a GUI to filter
                                    * out extensions. */
 
-   /* If true, retro_load_game() is guaranteed to provide a valid pathname
-    * in retro_game_info::path.
-    * ::data and ::size are both invalid.
+   /* Libretro cores that need to have direct access to their content
+    * files, including cores which use the path of the content files to
+    * determine the paths of other files, should set need_fullpath to true.
     *
-    * If false, ::data and ::size are guaranteed to be valid, but ::path
-    * might not be valid.
+    * Cores should strive for setting need_fullpath to false,
+    * as it allows the frontend to perform patching, etc.
     *
-    * This is typically set to true for libretro implementations that must
-    * load from file.
-    * Implementations should strive for setting this to false, as it allows
-    * the frontend to perform patching, etc. */
+    * If need_fullpath is true and retro_load_game() is called:
+    *    - retro_game_info::path is guaranteed to have a valid path
+    *    - retro_game_info::data and retro_game_info::size are invalid
+    *
+    * If need_fullpath is false and retro_load_game() is called:
+    *    - retro_game_info::path may be NULL
+    *    - retro_game_info::data and retro_game_info::size are guaranteed
+    *      to be valid
+    *
+    * See also: 
+    *    - RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY
+    *    - RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY
+    */
    bool        need_fullpath;
 
    /* If true, the frontend is not allowed to extract any archives before

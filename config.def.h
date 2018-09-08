@@ -248,6 +248,12 @@ static const bool overlay_hide_in_menu = true;
 
 static const bool display_keyboard_overlay = false;
 
+#ifdef HAKCHI
+static const float default_input_overlay_opacity = 0.5f;
+#else
+static const float default_input_overlay_opacity = 0.7f;
+#endif
+
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 
@@ -520,9 +526,18 @@ static const bool framecount_show = true;
  * depending on the save state buffer. */
 static const bool rewind_enable = false;
 
+/* When set, any time a cheat is toggled it is immediately applied. */
+static const bool apply_cheats_after_toggle = false;
+
+/* When set, all enabled cheats are auto-applied when a game is loaded. */
+static const bool apply_cheats_after_load = false;
+
 /* The buffer size for the rewind buffer. This needs to be about
  * 15-20MB per minute. Very game dependant. */
 static const unsigned rewind_buffer_size = 20 << 20; /* 20MiB */
+
+/* The amount of MB to increase/decrease the rewind_buffer_size when it is changed via the UI. */
+static const unsigned rewind_buffer_size_step = 10; /* 10MB */
 
 /* How many frames to rewind at a time. */
 static const unsigned rewind_granularity = 1;
@@ -597,6 +612,9 @@ static const float slowmotion_ratio = 3.0;
 
 /* Maximum fast forward ratio. */
 static const float fastforward_ratio = 0.0;
+
+/* Enable runloop for variable refresh rate screens. Force x1 speed while handling fast forward too. */
+static const bool vrr_runloop_enable = false;
 
 /* Run core logic one or more frames ahead then load the state back to reduce perceived input lag. */
 static const unsigned run_ahead_frames = 1;
@@ -700,13 +718,19 @@ static const unsigned midi_volume = 100;
 /* Only applies to Android 7.0 (API 24) and up */
 static const bool sustained_performance_mode = false;
 
-#if defined(ANDROID)
-#if defined(ANDROID_ARM)
+#if defined(HAKCHI)
+static char buildbot_server_url[] = "http://hakchicloud.com/Libretro_Cores/";
+#elif defined(ANDROID)
+#if defined(ANDROID_ARM_V7)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/";
+#elif defined(ANDROID_ARM)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi/";
 #elif defined(ANDROID_AARCH64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/arm64-v8a/";
 #elif defined(ANDROID_X86)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86/";
+#elif defined(ANDROID_X64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86_64/";
 #else
 static char buildbot_server_url[] = "";
 #endif

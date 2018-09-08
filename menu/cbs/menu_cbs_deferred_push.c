@@ -115,6 +115,7 @@ generic_deferred_push(deferred_push_video_filter,                   DISPLAYLIST_
 generic_deferred_push(deferred_push_images,                         DISPLAYLIST_IMAGES)
 generic_deferred_push(deferred_push_audio_dsp_plugin,               DISPLAYLIST_AUDIO_FILTERS)
 generic_deferred_push(deferred_push_cheat_file_load,                DISPLAYLIST_CHEAT_FILES)
+generic_deferred_push(deferred_push_cheat_file_load_append,         DISPLAYLIST_CHEAT_FILES)
 generic_deferred_push(deferred_push_remap_file_load,                DISPLAYLIST_REMAP_FILES)
 generic_deferred_push(deferred_push_record_configfile,              DISPLAYLIST_RECORD_CONFIG_FILES)
 generic_deferred_push(deferred_push_input_overlay,                  DISPLAYLIST_OVERLAYS)
@@ -139,6 +140,8 @@ generic_deferred_push(deferred_push_mixer_stream_settings_list,     DISPLAYLIST_
 generic_deferred_push(deferred_push_logging_settings_list,          DISPLAYLIST_LOGGING_SETTINGS_LIST)
 generic_deferred_push(deferred_push_frame_throttle_settings_list,   DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST)
 generic_deferred_push(deferred_push_rewind_settings_list,           DISPLAYLIST_REWIND_SETTINGS_LIST)
+generic_deferred_push(deferred_push_cheat_details_settings_list,    DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST)
+generic_deferred_push(deferred_push_cheat_search_settings_list,     DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST)
 generic_deferred_push(deferred_push_onscreen_display_settings_list, DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST)
 generic_deferred_push(deferred_push_onscreen_notifications_settings_list, DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)
 generic_deferred_push(deferred_push_onscreen_overlay_settings_list, DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST)
@@ -653,6 +656,16 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rewind_settings_list);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CHEAT_DETAILS_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_details_settings_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CHEAT_SEARCH_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_search_settings_list);
+      return 0;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_display_settings_list);
@@ -1002,6 +1015,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_file_load);
                break;
+            case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_file_load_append);
+               break;
             case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);
                break;
@@ -1257,6 +1273,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_CHEAT_FILE_LOAD:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_file_load);
+               break;
+            case MENU_LABEL_CHEAT_FILE_LOAD_APPEND:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_file_load_append);
                break;
             case MENU_LABEL_REMAP_FILE_LOAD:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);

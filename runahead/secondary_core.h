@@ -10,7 +10,7 @@
 
 RETRO_BEGIN_DECLS
 
-bool secondary_core_run_no_input_polling(void);
+bool secondary_core_run_use_last_input(void);
 bool secondary_core_deserialize(const void *buffer, int size);
 bool secondary_core_ensure_exists(void);
 void secondary_core_destroy(void);

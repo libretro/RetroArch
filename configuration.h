@@ -239,6 +239,9 @@ typedef struct settings
       bool playlist_entry_remove;
       bool playlist_entry_rename;
       bool rewind_enable;
+      bool vrr_runloop_enable;
+      bool apply_cheats_after_toggle;
+      bool apply_cheats_after_load;
       bool run_ahead_enabled;
       bool run_ahead_secondary_instance;
       bool run_ahead_hide_warnings;
@@ -348,6 +351,7 @@ typedef struct settings
       unsigned content_history_size;
       unsigned libretro_log_level;
       unsigned rewind_granularity;
+      unsigned rewind_buffer_size_step;
       unsigned autosave_interval;
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
@@ -410,6 +414,12 @@ typedef struct settings
 
       unsigned midi_volume;
    } uints;
+
+   struct
+   {
+      size_t placeholder;
+      size_t rewind_buffer_size;
+   } sizes;
 
    struct
    {
@@ -509,7 +519,6 @@ typedef struct settings
 
    video_viewport_t video_viewport_custom;
 
-   size_t rewind_buffer_size;
 } settings_t;
 
 /**

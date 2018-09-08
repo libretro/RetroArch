@@ -139,7 +139,8 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
    if (!settings->bools.video_font_enable)
       return;
 
-   if (font_renderer_create_default((const void**)&xv->font_driver,
+   if (font_renderer_create_default(
+            &xv->font_driver,
             &xv->font, *settings->paths.path_font
             ? settings->paths.path_font : NULL,
             settings->floats.video_font_size))

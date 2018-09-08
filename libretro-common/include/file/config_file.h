@@ -118,6 +118,9 @@ bool config_get_int(config_file_t *conf, const char *entry, int *in);
 /* Extracts an uint from config file. */
 bool config_get_uint(config_file_t *conf, const char *entry, unsigned *in);
 
+/* Extracts an size_t from config file. */
+bool config_get_size_t(config_file_t *conf, const char *key, size_t *in);
+
 #if defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
 /* Extracts an uint64 from config file. */
 bool config_get_uint64(config_file_t *conf, const char *entry, uint64_t *in);
@@ -161,6 +164,7 @@ void config_set_string(config_file_t *conf, const char *entry, const char *val);
 void config_unset(config_file_t *conf, const char *key);
 void config_set_path(config_file_t *conf, const char *entry, const char *val);
 void config_set_bool(config_file_t *conf, const char *entry, bool val);
+void config_set_uint(config_file_t *conf, const char *key, unsigned int val);
 
 /* Write the current config to a file. */
 bool config_file_write(config_file_t *conf, const char *path);

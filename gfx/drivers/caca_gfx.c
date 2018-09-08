@@ -363,4 +363,5 @@ video_driver_t video_caca = {
   NULL, /* overlay_interface */
 #endif
   caca_gfx_get_poke_interface,
+  NULL /* wrap_type_to_enum */
 };

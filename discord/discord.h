@@ -27,13 +27,14 @@
 #include <lists/string_list.h>
 #include <retro_timers.h>
 
-#include "discord_rpc.h"
+#include "../deps/discord-rpc/include/discord_rpc.h"
 #include "verbosity.h"
 
 enum discord_presence
 {
    DISCORD_PRESENCE_MENU = 0,
    DISCORD_PRESENCE_GAME,
+   DISCORD_PRESENCE_GAME_PAUSED,
    DISCORD_PRESENCE_CHEEVO_UNLOCKED,
    DISCORD_PRESENCE_NETPLAY_HOSTING,
    DISCORD_PRESENCE_NETPLAY_CLIENT

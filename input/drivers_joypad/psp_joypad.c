@@ -34,7 +34,6 @@
 #include <psp2/ctrl.h>
 #include <psp2/touch.h>
 #define PSP_MAX_PADS 4
-static int psp2_model;
 static SceCtrlPortInfo old_ctrl_info, curr_ctrl_info;
 static SceCtrlActuator actuators[PSP_MAX_PADS] = {0};
 
@@ -64,7 +63,7 @@ extern uint64_t lifecycle_state;
 static const char *psp_joypad_name(unsigned pad)
 {
 #ifdef VITA
-   if (psp2_model != SCE_KERNEL_MODEL_VITATV)
+   if (!sceCtrlIsMultiControllerSupported())
       return "Vita Controller";
 
    switch (curr_ctrl_info.port[pad + 1])
@@ -89,8 +88,7 @@ static bool psp_joypad_init(void *data)
    (void)data;
 
 #if defined(VITA)
-   psp2_model = sceKernelGetModelForCDialog();
-   if (psp2_model != SCE_KERNEL_MODEL_VITATV)
+   if (!sceCtrlIsMultiControllerSupported())
    {
       sceTouchSetSamplingState(SCE_TOUCH_PORT_BACK, SCE_TOUCH_SAMPLING_STATE_START);
       sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, SCE_TOUCH_SAMPLING_STATE_START);
@@ -192,7 +190,7 @@ static void psp_joypad_poll(void)
 #endif
 
 #ifdef VITA
-   if (psp2_model != SCE_KERNEL_MODEL_VITATV)
+   if (!sceCtrlIsMultiControllerSupported())
       players_count = 1;
    else
    {
@@ -237,7 +235,7 @@ static void psp_joypad_poll(void)
       SceCtrlData state_tmp;
       unsigned i  = player;
 #if defined(VITA)
-      unsigned p = (psp2_model == SCE_KERNEL_MODEL_VITATV) ? player + 1 : player;
+      unsigned p = (sceCtrlIsMultiControllerSupported()) ? player + 1 : player;
       if (curr_ctrl_info.port[p] == SCE_CTRL_TYPE_UNPAIRED)
          continue;
 #elif defined(SN_TARGET_PSP2)
@@ -261,7 +259,7 @@ static void psp_joypad_poll(void)
          continue;
 #endif
 #if defined(VITA)
-      if (psp2_model == SCE_KERNEL_MODEL_VITA
+      if (!sceCtrlIsMultiControllerSupported()
          && settings->bools.input_backtouch_enable)
       {
          unsigned i;
@@ -332,7 +330,7 @@ static bool psp_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
 #ifdef VITA
-   if (psp2_model != SCE_KERNEL_MODEL_VITATV)
+   if (!sceCtrlIsMultiControllerSupported())
       return false;
 
    switch (effect)

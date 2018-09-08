@@ -14,15 +14,14 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "../video_display_server.h"
 #include "../common/x11_common.h"
 #include "../../configuration.h"
 #include "../video_driver.h" /* needed to set refresh rate in set resolution */
 #include "../video_crt_switch.h" /* needed to set aspect for low res in linux */
-
-#include <sys/types.h>
-#include <unistd.h>
 
 static char old_mode[150];
 static char new_mode[150];
@@ -99,7 +98,7 @@ static bool x11_set_resolution(void *data,
    float pixel_clock  = 0;
    char xrandr[250];
    char fbset[150];
-   char output[150];
+   char output[250];
 
    crt_en = true;
 
@@ -205,58 +204,58 @@ static bool x11_set_resolution(void *data,
    /* create progressive newmode from modline variables */
    if (height < 300)
    {
-      sprintf(xrandr,"xrandr --newmode \"%dx%d_%0.2f\" %lf %d %d %d %d %d %d %d %d -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
+      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%dx%d_%0.2f\" %lf %d %d %d %d %d %d %d %d -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
       system(xrandr);
 
    }
    /* create interlaced newmode from modline variables */
    if (height > 300)
    {    
-      sprintf(xrandr,"xrandr --newmode \"%dx%d_%0.2f\" %lf %d %d %d %d %d %d %d %d interlace -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
+      snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%dx%d_%0.2f\" %lf %d %d %d %d %d %d %d %d interlace -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
       system(xrandr);
 
    }
       /* variable for new mode */
-      sprintf(new_mode,"%dx%d_%0.2f", width, height, hz); 
+      snprintf(new_mode, sizeof(new_mode), "%dx%d_%0.2f", width, height, hz); 
 
       /* need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to add and delete modes */
       for (i =0; i < 3; i++)
       {
-         sprintf(output,"xrandr --addmode %s%d %s", "DVI",i ,new_mode);
+         snprintf(output, sizeof(output), "xrandr --addmode %s%d %s", "DVI",i ,new_mode);
          system(output); 
-         sprintf(output,"xrandr --delmode %s%d %s", "DVI",i ,old_mode);
+         snprintf(output, sizeof(output), "xrandr --delmode %s%d %s", "DVI",i ,old_mode);
          system(output); 
       }
       for (i =0; i < 3; i++)
       {
-         sprintf(output,"xrandr --addmode %s-%d %s", "DVI",i ,new_mode);
+         snprintf(output, sizeof(output), "xrandr --addmode %s-%d %s", "DVI",i ,new_mode);
          system(output); 
-         sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
+         snprintf(output, sizeof(output), "xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
          system(output);
       }
       for (i =0; i < 3; i++)
       {
-         sprintf(output,"xrandr --addmode %s%d %s", "VGA",i ,new_mode);
+         snprintf(output, sizeof(output), "xrandr --addmode %s%d %s", "VGA",i ,new_mode);
          system(output);  
-         sprintf(output,"xrandr --delmode %s%d %s", "VGA",i ,old_mode);
+         snprintf(output, sizeof(output), "xrandr --delmode %s%d %s", "VGA",i ,old_mode);
          system(output); 
       }
       for (i =0; i < 3; i++)
       {
-         sprintf(output,"xrandr --addmode %s-%d %s", "VGA",i ,new_mode);
+         snprintf(output, sizeof(output), "xrandr --addmode %s-%d %s", "VGA",i ,new_mode);
          system(output); 
-         sprintf(output,"xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
+         snprintf(output, sizeof(output), "xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
          system(output); 
       }
 		 
-      sprintf(output,"xrandr -s %s", new_mode);
+      snprintf(output, sizeof(output), "xrandr -s %s", new_mode);
       system(output);
 	  /* remove old mode */
-      sprintf(output,"xrandr --rmmode %s", old_mode);
+      snprintf(output, sizeof(output), "xrandr --rmmode %s", old_mode);
 	  system(output);
 	  system("xdotool windowactivate $(xdotool search --class RetroArch)");	/* needs xdotool installed. needed to recaputure window. */
        /* variable for old mode */
-	  sprintf(old_mode,"%s", new_mode);
+	  snprintf(old_mode, sizeof(old_mode), "%s", new_mode);
       system("xdotool windowactivate $(xdotool search --class RetroArch)");	/* needs xdotool installed. needed to recaputure window. */
                                                                             /* Second run needed as some times it runs to fast to capture first time */
 

@@ -66,6 +66,7 @@
 #include "configuration.h"
 #include "msg_hash.h"
 #include "verbosity.h"
+#include "tasks/tasks_internal.h"
 
 #ifdef HAVE_RUNAHEAD
 #include "runahead/secondary_core.h"
@@ -1387,6 +1388,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND:
+      {
+         bool state = *(const bool*)data;
+         RARCH_LOG("Environ SET_SAVE_STATE_IN_BACKGROUND: %s.\n", state ? "yes" : "no");
+
+         set_save_state_in_background(state) ;
+
+         break;
+      }
+
       case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
       {
          const char **path = (const char**)data;
@@ -1840,6 +1851,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          }
       }
       break;
+
+      case RETRO_ENVIRONMENT_GET_FASTFORWARDING:
+      {
+         extern bool runloop_fastmotion;
+         *(bool *)data = runloop_fastmotion;
+      }
+      break;
+
       
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);

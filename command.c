@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2015-2017 - Andrés Suárez
+ *  Copyright (C) 2015-2017 - Andres Suarez
  *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -93,6 +93,7 @@
 #include "retroarch.h"
 #include "configuration.h"
 #include "input/input_remapping.h"
+#include "version.h"
 
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE           4096
@@ -130,6 +131,8 @@ struct command
 #endif
 };
 
+static bool command_version(const char *arg);
+
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
 static bool command_read_ram(const char *arg);
 static bool command_write_ram(const char *arg);
@@ -137,6 +140,7 @@ static bool command_write_ram(const char *arg);
 
 static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",      command_set_shader,  "<shader path>" },
+   { "VERSION",         command_version,     "No argument"},
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
    { "READ_CORE_RAM",   command_read_ram,    "<address> <number of bytes>" },
    { "WRITE_CORE_RAM",  command_write_ram,   "<address> <byte1> <byte2> ..." },
@@ -194,8 +198,7 @@ static struct sockaddr_storage lastcmd_net_source;
 static socklen_t lastcmd_net_source_len;
 #endif
 
-#ifdef HAVE_CHEEVOS
-#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
+#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
 static bool command_reply(const char * data, size_t len)
 {
    switch (lastcmd_source)
@@ -222,15 +225,16 @@ static bool command_reply(const char * data, size_t len)
    return false;
 }
 #endif
-#endif
 
 bool command_set_shader(const char *arg)
 {
    char msg[256];
    bool is_preset                  = false;
-   struct video_shader    *shader  = menu_shader_get();
    enum rarch_shader_type     type = video_shader_get_type_from_ext(
          path_get_extension(arg), &is_preset);
+#ifdef HAVE_MENU
+   struct video_shader    *shader  = menu_shader_get();
+#endif
 
    if (type == RARCH_SHADER_NONE)
       return false;
@@ -242,32 +246,54 @@ bool command_set_shader(const char *arg)
          arg);
 
    retroarch_set_shader_preset(arg);
+#ifdef HAVE_MENU
    return menu_shader_manager_set_preset(shader, type, arg);
+#else
+   return true;
+#endif
+}
+
+static bool command_version(const char* arg)
+{
+   char reply[256] = {0};
+
+   sprintf(reply, "%s\n", PACKAGE_VERSION);
+#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
+   command_reply(reply, strlen(reply));
+#endif
+
+   return true;
 }
 
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
+#define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
 {
    cheevos_var_t var;
    unsigned i;
-   char reply[256]      = {0};
-   const uint8_t * data = NULL;
-   char *reply_at       = NULL;
+   char  *reply            = NULL;
+   const uint8_t * data    = NULL;
+   char *reply_at          = NULL;
+   unsigned int nbytes     = 0;
+   unsigned int alloc_size = 0;
+   int          addr       = -1;
 
-   reply[0]             = '\0';
+   if (sscanf(arg, "%x %d", &addr, &nbytes) != 2)
+      return true;
 
-   strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
-   reply_at = reply + strlen("READ_CORE_RAM ");
-   strlcpy(reply_at, arg, sizeof(reply)-strlen(reply));
+   alloc_size = 40 + nbytes * 3; /* We alloc more than needed, saving 20 bytes is not really relevant */
+   reply      = (char*) malloc(alloc_size);
+   reply[0]   = '\0';
+   reply_at   = reply + sprintf(reply, SMY_CMD_STR " %x", addr);
 
-   var.value = strtoul(reply_at, (char**)&reply_at, 16);
+   var.value  = addr;
+
    cheevos_var_patch_addr(&var, cheevos_get_console());
-   data = cheevos_var_get_memory(&var);
+
+   data       = cheevos_var_get_memory(&var);
 
    if (data)
    {
-      unsigned nbytes = strtol(reply_at, NULL, 10);
-
       for (i=0;i<nbytes;i++)
          sprintf(reply_at+3*i, " %.2X", data[i]);
       reply_at[3*nbytes] = '\n';
@@ -278,9 +304,11 @@ static bool command_read_ram(const char *arg)
       strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
       command_reply(reply, reply_at+strlen(" -1\n") - reply);
    }
+   free(reply);
 
    return true;
 }
+#undef SMY_CMD_STR
 
 static bool command_write_ram(const char *arg)
 {
@@ -307,6 +335,7 @@ static bool command_write_ram(const char *arg)
 }
 #endif
 
+#ifdef HAVE_COMMAND
 static bool command_get_arg(const char *tok,
       const char **arg, unsigned *index)
 {
@@ -332,7 +361,7 @@ static bool command_get_arg(const char *tok,
       if (str == tok)
       {
          const char *argument = str + strlen(action_map[i].str);
-         if (*argument != ' ')
+         if (*argument != ' ' && *argument != '\0')
             return false;
 
          if (arg)
@@ -347,6 +376,7 @@ static bool command_get_arg(const char *tok,
 
    return false;
 }
+#endif
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
 static bool command_network_init(command_t *handle, uint16_t port)
@@ -527,10 +557,10 @@ bool command_network_send(const char *cmd_)
    }
    free(command);
 
-   return ret;
-#else
-   return false;
+   if (ret)
+      return true;
 #endif
+   return false;
 }
 
 #ifdef HAVE_STDIN_CMD
@@ -1036,7 +1066,7 @@ static void command_event_init_controllers(void)
             break;
       }
 
-      if (set_controller && i < info->ports.size)
+      if (set_controller && info && i < info->ports.size)
       {
          pad.device     = device;
          pad.port       = i;
@@ -1051,8 +1081,11 @@ static void command_event_deinit_core(bool reinit)
    cheevos_unload();
 #endif
 
+   RARCH_LOG("Unloading game..\n");
    core_unload_game();
+   RARCH_LOG("Unloading core..\n");
    core_unload();
+   RARCH_LOG("Unloading core symbols..\n");
    core_uninit_symbols();
 
    if (reinit)
@@ -1065,7 +1098,9 @@ static void command_event_deinit_core(bool reinit)
 
 static void command_event_init_cheats(void)
 {
-   bool allow_cheats = true;
+   settings_t *settings          = config_get_ptr();
+   bool        allow_cheats      = true;
+
 #ifdef HAVE_NETWORKING
    allow_cheats &= !netplay_driver_ctl(
          RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
@@ -1075,7 +1110,12 @@ static void command_event_init_cheats(void)
    if (!allow_cheats)
       return;
 
-   /* TODO/FIXME - add some stuff here. */
+   cheat_manager_alloc_if_empty() ;
+   cheat_manager_load_game_specific_cheats() ;
+
+
+   if (settings != NULL && settings->bools.apply_cheats_after_load)
+      cheat_manager_apply_cheats();
 }
 
 static void command_event_load_auto_state(void)
@@ -1303,8 +1343,8 @@ static void command_event_restore_default_shader_preset(void)
 
 static void command_event_restore_remaps(void)
 {
-   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) || 
-       rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) || 
+   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL) ||
+       rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL) ||
        rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
       input_remapping_set_defaults(true);
 }
@@ -1395,7 +1435,6 @@ static bool command_event_save_config(
 static bool command_event_save_core_config(void)
 {
    char msg[128];
-   bool ret                        = false;
    bool found_path                 = false;
    bool overrides_active           = false;
    const char *core_path           = NULL;
@@ -1502,7 +1541,7 @@ static bool command_event_save_core_config(void)
    free(config_dir);
    free(config_name);
    free(config_path);
-   return ret;
+   return true;
 }
 
 /**
@@ -1746,7 +1785,9 @@ void command_playlist_update_write(
  **/
 bool command_event(enum event_command cmd, void *data)
 {
+#ifdef HAVE_DISCORD
    static bool discord_inited = false;
+#endif
    bool boolean               = false;
 
    switch (cmd)
@@ -1835,14 +1876,21 @@ bool command_event(enum event_command cmd, void *data)
          if (cheevos_hardcore_active)
             return false;
 #endif
-
-         return command_event_main_state(cmd);
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_UNDO_LOAD_STATE:
-         return command_event_main_state(cmd);
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_UNDO_SAVE_STATE:
-         return command_event_main_state(cmd);
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
-         return command_event_resize_windowed_scale();
+         if (!command_event_resize_windowed_scale())
+            return false;
+         break;
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
          if (menu_driver_is_alive())
@@ -1883,7 +1931,9 @@ bool command_event(enum event_command cmd, void *data)
                configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
             }
          }
-         return command_event_main_state(cmd);
+         if (!command_event_main_state(cmd))
+            return false;
+         break;
       case CMD_EVENT_SAVE_STATE_DECREMENT:
          {
             settings_t *settings      = config_get_ptr();
@@ -1904,7 +1954,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:
          if (!take_screenshot(path_get(RARCH_PATH_BASENAME), false,
-                  video_driver_cached_frame_has_valid_framebuffer()))
+                  video_driver_cached_frame_has_valid_framebuffer(), false, true))
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:
@@ -1933,7 +1983,9 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_QUIT:
-         return retroarch_main_quit();
+         if (!retroarch_main_quit())
+            return false;
+         break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS
          cheevos_toggle_hardcore_mode();
@@ -1997,7 +2049,7 @@ TODO: Add a setting for these tweaks */
                if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
                {
-                  state_manager_event_init((unsigned)settings->rewind_buffer_size);
+                  state_manager_event_init((unsigned)settings->sizes.rewind_buffer_size);
                }
             }
          }
@@ -2043,9 +2095,13 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_AUDIO_STOP:
          midi_driver_set_all_sounds_off();
-         return audio_driver_stop();
+         if (!audio_driver_stop())
+            return false;
+         break;
       case CMD_EVENT_AUDIO_START:
-         return audio_driver_start(rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL));
+         if (!audio_driver_start(rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL)))
+            return false;
+         break;
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
             bool audio_mute_enable    = *(audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE));
@@ -2205,6 +2261,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_CORE_INFO_DEINIT:
          core_info_deinit_list();
+         core_info_free_current_core();
          break;
       case CMD_EVENT_CORE_INFO_INIT:
          {
@@ -2391,10 +2448,14 @@ TODO: Add a setting for these tweaks */
          if (!command_event_save_core_config())
             return false;
          break;
+      case CMD_EVENT_SHADER_PRESET_LOADED:
+         ui_companion_event_command(cmd);
+         break;
       case CMD_EVENT_SHADERS_APPLY_CHANGES:
 #ifdef HAVE_MENU
          menu_shader_manager_apply_changes();
 #endif
+         ui_companion_event_command(cmd);
          break;
       case CMD_EVENT_PAUSE_CHECKS:
          {
@@ -2416,6 +2477,13 @@ TODO: Add a setting for these tweaks */
 
                if (!is_idle)
                   video_driver_cached_frame();
+
+#ifdef HAVE_DISCORD
+               discord_userdata_t userdata;
+               userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
+
+               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+#endif
             }
             else
             {
@@ -2630,14 +2698,13 @@ TODO: Add a setting for these tweaks */
          command_event(CMD_EVENT_REMOTE_DEINIT, NULL);
          input_driver_init_remote();
          break;
-
       case CMD_EVENT_MAPPER_DEINIT:
          input_driver_deinit_mapper();
          break;
       case CMD_EVENT_MAPPER_INIT:
          command_event(CMD_EVENT_MAPPER_DEINIT, NULL);
          input_driver_init_mapper();
-      break;
+         break;
       case CMD_EVENT_LOG_FILE_DEINIT:
          retro_main_log_file_deinit();
          break;
@@ -2646,8 +2713,10 @@ TODO: Add a setting for these tweaks */
             const char *path = (const char*)data;
             if (string_is_empty(path))
                return false;
-            return command_event_disk_control_append_image(path);
+            if (!command_event_disk_control_append_image(path))
+               return false;
          }
+         break;
       case CMD_EVENT_DISK_EJECT_TOGGLE:
          {
             rarch_system_info_t *info = runloop_get_system_info();
@@ -2754,10 +2823,8 @@ TODO: Add a setting for these tweaks */
          }
          break;
       case CMD_EVENT_UI_COMPANION_TOGGLE:
-         {
-            ui_companion_driver_toggle(true);
-            break;
-         }
+         ui_companion_driver_toggle(true);
+         break;
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
             static bool game_focus_state  = false;
@@ -2825,12 +2892,6 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET:
          command_event_restore_default_shader_preset();
-         break;
-      case CMD_EVENT_LIBUI_TEST:
-#if HAVE_LIBUI
-         extern int libui_main(void);
-         libui_main();
-#endif
          break;
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD

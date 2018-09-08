@@ -479,9 +479,9 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
       const struct retro_keybind *bind = &binds[id];
       int key                          = bind->key;
 
-      if (!rwebinput->blocked && (bind->key < RETROK_LAST) &&
-          rwebinput_key_pressed(rwebinput, key))
-         return true;
+      if ((key < RETROK_LAST) && rwebinput_key_pressed(rwebinput, key))
+         if ((id == RARCH_GAME_FOCUS_TOGGLE) || !rwebinput->blocked)
+            return true;
 
       if (bind->valid)
       {

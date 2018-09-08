@@ -49,10 +49,7 @@
 #endif /* MBEDTLS_PLATFORM_C */
 #endif /* MBEDTLS_SELF_TEST && MBEDTLS_AES_C */
 
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = (unsigned char*)v; while( n-- ) *p++ = 0;
-}
+#include "arc4_alt.h"
 
 #define CCM_ENCRYPT 0
 #define CCM_DECRYPT 1
@@ -359,7 +356,7 @@ int mbedtls_ccm_auth_decrypt( mbedtls_ccm_context *ctx, size_t length,
 /*
  * The data is the same for all tests, only the used length changes
  */
-static const unsigned char key[] = {
+static const unsigned char ccm_key[] = {
     0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
     0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f
 };
@@ -406,7 +403,7 @@ int mbedtls_ccm_self_test( int verbose )
 
     mbedtls_ccm_init( &ctx );
 
-    if( mbedtls_ccm_setkey( &ctx, MBEDTLS_CIPHER_ID_AES, key, 8 * sizeof key ) != 0 )
+    if( mbedtls_ccm_setkey( &ctx, MBEDTLS_CIPHER_ID_AES, ccm_key, 8 * sizeof ccm_key ) != 0 )
     {
         if( verbose != 0 )
             mbedtls_printf( "  CCM: setup failed" );

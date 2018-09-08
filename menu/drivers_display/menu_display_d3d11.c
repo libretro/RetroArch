@@ -207,8 +207,10 @@ static void menu_display_d3d11_draw_pipeline(menu_display_ctx_draw_t *draw,
             desc.ByteWidth         = ca->coords.vertices * 2 * sizeof(float);
             desc.BindFlags         = D3D11_BIND_VERTEX_BUFFER;
 
-            D3D11_SUBRESOURCE_DATA vertexData = { ca->coords.vertex };
-            D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu_pipeline_vbo);
+			{
+               D3D11_SUBRESOURCE_DATA vertexData = { ca->coords.vertex };
+               D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu_pipeline_vbo);
+			}
          }
          D3D11SetVertexBuffer(d3d11->context, 0, d3d11->menu_pipeline_vbo, 2 * sizeof(float), 0);
          draw->coords->vertices = ca->coords.vertices;

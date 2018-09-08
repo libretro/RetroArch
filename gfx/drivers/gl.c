@@ -380,7 +380,7 @@ static bool gl_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    video_shader_ctx_init_t init_data;
    enum rarch_shader_type type     = DEFAULT_SHADER_TYPE;
    const char *shader_path         = retroarch_get_shader_preset();
-   
+
    if (shader_path)
    {
       type = video_shader_parse_type(shader_path,
@@ -832,7 +832,6 @@ static void gl_set_osd_msg(void *data,
    font_driver_render_msg(video_info, font, msg, (const struct font_params *)params);
 }
 
-#if defined(HAVE_MENU)
 static void gl_show_mouse(void *data, bool state)
 {
    video_context_driver_show_mouse(&state);
@@ -840,13 +839,14 @@ static void gl_show_mouse(void *data, bool state)
 
 static struct video_shader *gl_get_current_shader(void *data)
 {
-   video_shader_ctx_t shader_info;
+   video_shader_ctx_t shader_info = {0};
 
    video_shader_driver_direct_get_current_shader(&shader_info);
 
    return shader_info.data;
 }
 
+#if defined(HAVE_MENU)
 static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 {
    video_shader_ctx_coords_t coords;
@@ -1798,9 +1798,9 @@ static void *gl_init(const video_info_t *video,
    }
 
    if (!renderchain_gl_init_first(&gl->renderchain_driver,
-	   &gl->renderchain_data))
+      &gl->renderchain_data))
    {
-	   RARCH_ERR("[GL]: Renderchain could not be initialized.\n");
+      RARCH_ERR("[GL]: Renderchain could not be initialized.\n");
       goto error;
    }
 
@@ -2200,11 +2200,6 @@ static bool gl_set_shader(void *data,
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl_set_shader_viewports(gl);
    context_bind_hw_render(true);
-#if defined(_WIN32) && !defined(_XBOX)
-   /* Shader dialog is disabled for now, until video_threaded issues are fixed.
-   shader_dlg_params_reload();*/
-#endif
-
 #endif
 
    return true;

@@ -301,7 +301,7 @@ static bool android_gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-#ifdef HAVE_VULKAN
+#if defined(HAVE_OPENGLES) || defined(HAVE_VLULKAN)
    struct android_app *android_app = (struct android_app*)g_android;
    android_ctx_data_t *and = (android_ctx_data_t*)data;
 #endif

@@ -34,6 +34,20 @@ matrix:
       osx_image: xcode7.3
       script:
           - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
+    - os: osx
+      osx_image: xcode9.3
+      script:
+        - cd ~/
+        - brew install --force-bottle qt5
+        - git clone --depth=50 https://github.com/libretro/libretro-super
+        - cd libretro-super/travis
+        - ./build-retroarch-metal.sh
+      deploy:
+        skip_cleanup: true
+        provider: script
+        script: cd ../retroarch; bash travis_metal_deploy.sh
+        on:
+          branch: master
 
 script:
   - ./configure

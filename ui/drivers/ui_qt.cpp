@@ -16,6 +16,7 @@
 
 extern "C" {
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -31,6 +32,8 @@ extern "C" {
 }
 
 #include "ui_qt.h"
+#include "qt/filedropwidget.h"
+#include "qt/viewoptionsdialog.h"
 
 #include <QApplication>
 #include <QtWidgets>
@@ -56,21 +59,36 @@ typedef struct ui_companion_qt
 } ui_companion_qt_t;
 
 ThumbnailWidget::ThumbnailWidget(QWidget *parent) :
-   QWidget(parent)
+   QFrame(parent)
+   ,m_sizeHint(QSize(256, 256))
 {
+}
+
+void ThumbnailWidget::mousePressEvent(QMouseEvent *event)
+{
+   QWidget::mousePressEvent(event);
+
+   emit mousePressed();
+}
+
+void ThumbnailWidget::mouseDoubleClickEvent(QMouseEvent *event)
+{
+   QWidget::mouseDoubleClickEvent(event);
+
+   emit mouseDoubleClicked();
 }
 
 void ThumbnailWidget::paintEvent(QPaintEvent *event)
 {
-  QStyleOption o;
-  QPainter p;
-  o.initFrom(this);
-  p.begin(this);
-  style()->drawPrimitive(
-    QStyle::PE_Widget, &o, &p, this);
-  p.end();
+   QStyleOption o;
+   QPainter p;
+   o.initFrom(this);
+   p.begin(this);
+   style()->drawPrimitive(
+      QStyle::PE_Widget, &o, &p, this);
+   p.end();
 
-  QWidget::paintEvent(event);
+   QFrame::paintEvent(event);
 }
 
 void ThumbnailWidget::resizeEvent(QResizeEvent *event)
@@ -80,7 +98,12 @@ void ThumbnailWidget::resizeEvent(QResizeEvent *event)
 
 QSize ThumbnailWidget::sizeHint() const
 {
-   return QSize(256, 256);
+   return m_sizeHint;
+}
+
+void ThumbnailWidget::setSizeHint(QSize size)
+{
+   m_sizeHint = size;
 }
 
 ThumbnailLabel::ThumbnailLabel(QWidget *parent) :
@@ -204,6 +227,11 @@ static void* ui_companion_qt_init(void)
    QMenu *editMenu = NULL;
    QMenu *viewMenu = NULL;
    QMenu *viewClosedDocksMenu = NULL;
+#ifdef Q_OS_WIN
+   QMenu *toolsMenu = NULL;
+   QMenu *updaterMenu = NULL;
+#endif
+   QMenu *helpMenu = NULL;
    QRect desktopRect;
    QDockWidget *thumbnailDock = NULL;
    QDockWidget *thumbnail2Dock = NULL;
@@ -231,6 +259,11 @@ static void* ui_companion_qt_init(void)
    QAction *exitAction = NULL;
    QComboBox *launchWithComboBox = NULL;
    QSettings *qsettings = NULL;
+   QListWidget *listWidget = NULL;
+   QString initialPlaylist;
+   bool foundPlaylist = false;
+
+   int i = 0;
 
    if (!handle)
       return NULL;
@@ -245,17 +278,27 @@ static void* ui_companion_qt_init(void)
 
    qsettings = mainwindow->settings();
 
+   initialPlaylist = qsettings->value("initial_playlist", mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY)).toString();
+
    mainwindow->resize(qMin(desktopRect.width(), INITIAL_WIDTH), qMin(desktopRect.height(), INITIAL_HEIGHT));
    mainwindow->setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, mainwindow->size(), desktopRect));
 
    mainwindow->setWindowTitle("RetroArch");
    mainwindow->setDockOptions(QMainWindow::AnimatedDocks | QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | GROUPED_DRAGGING);
 
-   widget = new QWidget(mainwindow);
+   listWidget = mainwindow->playlistListWidget();
+
+   widget = new FileDropWidget(mainwindow);
    widget->setObjectName("tableWidget");
+   widget->setContextMenuPolicy(Qt::CustomContextMenu);
+
+   QObject::connect(widget, SIGNAL(filesDropped(QStringList)), mainwindow, SLOT(onPlaylistFilesDropped(QStringList)));
+   QObject::connect(widget, SIGNAL(deletePressed()), mainwindow, SLOT(deleteCurrentPlaylistItem()));
+   QObject::connect(widget, SIGNAL(customContextMenuRequested(const QPoint&)), mainwindow, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
 
    layout = new QVBoxLayout();
    layout->addWidget(mainwindow->contentTableWidget());
+   layout->addWidget(mainwindow->contentGridWidget());
 
    widget->setLayout(layout);
 
@@ -286,7 +329,24 @@ static void* ui_companion_qt_init(void)
 
    QObject::connect(viewClosedDocksMenu, SIGNAL(aboutToShow()), mainwindow, SLOT(onViewClosedDocksAboutToShow()));
 
+   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS), mainwindow, SLOT(onCoreOptionsClicked()));
+   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS), mainwindow, SLOT(onShaderParamsClicked()));
+
+   viewMenu->addSeparator();
+   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS), mainwindow, SLOT(onIconViewClicked()));
+   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST), mainwindow, SLOT(onListViewClicked()));
+   viewMenu->addSeparator();
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS), mainwindow->viewOptionsDialog(), SLOT(showDialog()));
+
+#ifdef Q_OS_WIN
+   toolsMenu = menu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS));
+   updaterMenu = toolsMenu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER));
+   updaterMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY), mainwindow, SLOT(updateRetroArchNightly()));
+#endif
+   helpMenu = menu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP));
+   helpMenu->addAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION)), mainwindow, SLOT(showDocs()));
+   helpMenu->addAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT)) + "...", mainwindow, SLOT(showAbout()));
+   helpMenu->addAction("About Qt...", qApp, SLOT(aboutQt()));
 
    playlistWidget = new QWidget();
    playlistWidget->setLayout(new QVBoxLayout());
@@ -447,6 +507,12 @@ static void* ui_companion_qt_init(void)
    /* this should come last */
    mainwindow->resizeThumbnails(true, true, true);
 
+   if (qsettings->contains("all_playlists_list_max_count"))
+      mainwindow->setAllPlaylistsListMaxCount(qsettings->value("all_playlists_list_max_count", 0).toInt());
+
+   if (qsettings->contains("all_playlists_grid_max_count"))
+      mainwindow->setAllPlaylistsGridMaxCount(qsettings->value("all_playlists_grid_max_count", 5000).toInt());
+
    if (qsettings->contains("geometry"))
       if (qsettings->contains("save_geometry"))
          mainwindow->restoreGeometry(qsettings->value("geometry").toByteArray());
@@ -454,17 +520,6 @@ static void* ui_companion_qt_init(void)
    if (qsettings->contains("save_dock_positions"))
       if (qsettings->contains("dock_positions"))
          mainwindow->restoreState(qsettings->value("dock_positions").toByteArray());
-
-   if (qsettings->contains("save_last_tab"))
-   {
-      if (qsettings->contains("last_tab"))
-      {
-         int lastTabIndex = qsettings->value("last_tab", 0).toInt();
-
-         if (lastTabIndex >= 0 && browserAndPlaylistTabWidget->count() > lastTabIndex)
-            browserAndPlaylistTabWidget->setCurrentIndex(lastTabIndex);
-      }
-   }
 
    if (qsettings->contains("theme"))
    {
@@ -482,6 +537,79 @@ static void* ui_companion_qt_init(void)
    }
    else
       mainwindow->setTheme();
+
+   if (qsettings->contains("view_type"))
+   {
+      QString viewType = qsettings->value("view_type", "list").toString();
+
+      if (viewType == "list")
+         mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
+      else if (viewType == "icons")
+         mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_ICONS);
+      else
+         mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
+
+      /* we set it to the same thing a second time so that m_lastViewType is also equal to the startup view type */
+      mainwindow->setCurrentViewType(mainwindow->getCurrentViewType());
+   }
+   else
+      mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
+
+   /* We make sure to hook up the tab widget callback only after the tabs themselves have been added,
+    * but before changing to a specific one, to avoid the callback firing before the view type is set.
+    */
+   QObject::connect(browserAndPlaylistTabWidget, SIGNAL(currentChanged(int)), mainwindow, SLOT(onTabWidgetIndexChanged(int)));
+
+   /* setting the last tab must come after setting the view type */
+   if (qsettings->contains("save_last_tab"))
+   {
+      int lastTabIndex = qsettings->value("last_tab", 0).toInt();
+
+      if (lastTabIndex >= 0 && browserAndPlaylistTabWidget->count() > lastTabIndex)
+      {
+         browserAndPlaylistTabWidget->setCurrentIndex(lastTabIndex);
+         mainwindow->onTabWidgetIndexChanged(lastTabIndex);
+      }
+   }
+   else
+   {
+      browserAndPlaylistTabWidget->setCurrentIndex(0);
+      mainwindow->onTabWidgetIndexChanged(0);
+   }
+
+   /* the initial playlist that is selected is based on the user's setting (initialPlaylist) */
+   for (i = 0; listWidget->count() && i < listWidget->count(); i++)
+   {
+      QListWidgetItem *item = listWidget->item(i);
+      QString path;
+
+      if (!item)
+         continue;
+
+      path = item->data(Qt::UserRole).toString();
+
+      if (path == initialPlaylist)
+      {
+         foundPlaylist = true;
+         listWidget->setRowHidden(i, false);
+         listWidget->setCurrentRow(i);
+         break;
+      }
+   }
+
+   /* couldn't find the user's initial playlist, just find anything */
+   if (!foundPlaylist)
+   {
+      for (i = 0; listWidget->count() && i < listWidget->count(); i++)
+      {
+         /* select the first non-hidden row */
+         if (!listWidget->isRowHidden(i))
+         {
+            listWidget->setCurrentRow(i);
+            break;
+         }
+      }
+   }
 
    return handle;
 }
@@ -509,6 +637,11 @@ static void ui_companion_qt_toggle(void *data, bool force)
 #endif
       if (settings->bools.ui_companion_toggle || force)
       {
+         if (settings->bools.video_fullscreen)
+            command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+
+         win_handle->qtWindow->activateWindow();
+         win_handle->qtWindow->raise();
          video_driver_show_mouse();
          win_handle->qtWindow->show();
 
@@ -528,11 +661,21 @@ static void ui_companion_qt_toggle(void *data, bool force)
 static void ui_companion_qt_event_command(void *data, enum event_command cmd)
 {
    ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
-
-   (void)cmd;
+   ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
 
    if (!handle)
       return;
+
+   switch (cmd)
+   {
+      case CMD_EVENT_SHADERS_APPLY_CHANGES:
+      case CMD_EVENT_SHADER_PRESET_LOADED:
+         RARCH_LOG("[Qt]: Reloading shader parameters.\n");
+         win_handle->qtWindow->deferReloadShaderParams();
+         break;
+      default:
+         break;
+   }
 }
 
 static void ui_companion_qt_notify_list_pushed(void *data, file_list_t *list,

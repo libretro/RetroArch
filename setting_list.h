@@ -32,6 +32,7 @@ enum setting_type
    ST_BOOL,
    ST_INT,
    ST_UINT,
+   ST_SIZE,
    ST_FLOAT,
    ST_PATH,
    ST_DIR,
@@ -100,7 +101,7 @@ struct rarch_setting
    bool                 enforce_maxrange;
 
    uint8_t              index;
-   uint8_t              index_offset;
+   uint32_t             index_offset;
 
    unsigned             bind_type;
    uint32_t             size;
@@ -141,6 +142,7 @@ struct rarch_setting
       unsigned int               unsigned_integer;
       float                      fraction;
       const struct retro_keybind *keybind;
+      size_t                     sizet;
    } default_value;
 
    struct
@@ -153,6 +155,7 @@ struct rarch_setting
          unsigned int         *unsigned_integer;
          float                *fraction;
          struct retro_keybind *keybind;
+         size_t               *sizet;
       } target;
    } value;
 
@@ -162,6 +165,7 @@ struct rarch_setting
       int            integer;
       unsigned int   unsigned_integer;
       float          fraction;
+      size_t         sizet;
    } original_value;
 
    struct
@@ -289,6 +293,19 @@ bool CONFIG_UINT(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler);
 
+bool CONFIG_SIZE(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      size_t *target,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
+      size_t default_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler,
+	  get_string_representation_t string_representation_handler);
+
 bool CONFIG_FLOAT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -414,6 +431,20 @@ void settings_data_list_current_add_free_flags(
       rarch_setting_info_t *list_info,
       unsigned values);
 
+void setting_get_string_representation_size_in_mb(void *data,
+      char *s, size_t len);
+
+int setting_uint_action_right_with_refresh(void *data, bool wraparound) ;
+
+int setting_uint_action_left_with_refresh(void *data, bool wraparound) ;
+
+void setting_get_string_representation_uint_as_enum(void *data,
+      char *s, size_t len);
+
+int setting_uint_action_left_default(void *data, bool wraparound);
+int setting_uint_action_right_default(void *data, bool wraparound);
+void setting_get_string_representation_uint(void *data,char *s, size_t len);
+void setting_get_string_representation_hex_and_uint(void *data, char *s, size_t len);
 #define setting_get_type(setting) ((setting) ? setting->type : ST_NONE)
 
 RETRO_END_DECLS

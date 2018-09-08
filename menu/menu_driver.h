@@ -233,7 +233,7 @@ enum menu_settings_type
 
    MENU_SETTINGS_SUBSYSTEM_ADD,
    MENU_SETTINGS_SUBSYSTEM_LAST = MENU_SETTINGS_SUBSYSTEM_ADD + RARCH_MAX_SUBSYSTEMS,
-
+   MENU_SETTINGS_CHEAT_MATCH,
    MENU_SETTINGS_LAST
 };
 
@@ -278,6 +278,7 @@ enum xmb_icon_theme
    XMB_ICON_THEME_CUSTOM,
    XMB_ICON_THEME_RETROSYSTEM,
    XMB_ICON_THEME_MONOCHROME_INVERTED,
+   XMB_ICON_THEME_AUTOMATIC,
    XMB_ICON_THEME_LAST
 };
 
@@ -315,6 +316,7 @@ enum menu_display_driver_type
    MENU_VIDEO_DRIVER_CTR,
    MENU_VIDEO_DRIVER_WIIU,
    MENU_VIDEO_DRIVER_CACA,
+   MENU_VIDEO_DRIVER_SIXEL,
    MENU_VIDEO_DRIVER_GDI,
    MENU_VIDEO_DRIVER_VGA
 };
@@ -453,12 +455,6 @@ typedef struct menu_display_ctx_datetime
    size_t len;
    unsigned time_mode;
 } menu_display_ctx_datetime_t;
-
-typedef struct menu_display_ctx_font
-{
-   const char *path;
-   float size;
-} menu_display_ctx_font_t;
 
 typedef struct menu_ctx_driver
 {
@@ -731,6 +727,14 @@ void menu_display_draw_quad(
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color);
+void menu_display_draw_polygon(
+      video_frame_info_t *video_info,
+      int x1, int y1,
+      int x2, int y2,
+      int x3, int y3,
+      int x4, int y4,
+      unsigned width, unsigned height,
+      float *color);
 void menu_display_draw_texture(
       video_frame_info_t *video_info,
       int x, int y, unsigned w, unsigned h,
@@ -814,6 +818,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_wiiu;
 extern menu_display_ctx_driver_t menu_display_ctx_caca;
 extern menu_display_ctx_driver_t menu_display_ctx_gdi;
 extern menu_display_ctx_driver_t menu_display_ctx_vga;
+extern menu_display_ctx_driver_t menu_display_ctx_sixel;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 
 extern menu_ctx_driver_t menu_ctx_xui;
@@ -821,6 +826,7 @@ extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
 extern menu_ctx_driver_t menu_ctx_nuklear;
 extern menu_ctx_driver_t menu_ctx_xmb;
+extern menu_ctx_driver_t menu_ctx_stripes;
 extern menu_ctx_driver_t menu_ctx_zarch;
 extern menu_ctx_driver_t menu_ctx_null;
 

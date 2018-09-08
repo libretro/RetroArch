@@ -68,6 +68,84 @@ struct config_include_list
 static config_file_t *config_file_new_internal(
       const char *path, unsigned depth);
 
+static int config_sort_compare_func(struct config_entry_list *a,
+      struct config_entry_list *b)
+{
+   const char *a_key = a ? a->key : NULL;
+   const char *b_key = b ? b->key : NULL;
+
+   if (!a_key || !b_key)
+      return 0;
+
+   return strcasecmp(a_key, b_key);
+}
+
+/* https://stackoverflow.com/questions/7685/merge-sort-a-linked-list */
+static struct config_entry_list* merge_sort_linked_list(struct config_entry_list *list, int (*compare)(struct config_entry_list *one,struct config_entry_list *two))
+{
+   struct config_entry_list
+         *right  = list,
+         *temp   = list,
+         *last   = list,
+         *result = 0,
+         *next   = 0,
+         *tail   = 0;
+
+   /* Trivial case. */
+   if (!list || !list->next)
+      return list;
+
+   /* Find halfway through the list (by running two pointers, one at twice the speed of the other). */
+   while (temp && temp->next)
+   {
+      last = right;
+      right = right->next;
+      temp = temp->next->next;
+   }
+
+   /* Break the list in two. (prev pointers are broken here, but we fix later) */
+   last->next = 0;
+
+   /* Recurse on the two smaller lists: */
+   list = merge_sort_linked_list(list, compare);
+   right = merge_sort_linked_list(right, compare);
+
+   /* Merge: */
+   while (list || right)
+   {
+      /* Take from empty lists, or compare: */
+      if (!right)
+      {
+         next = list;
+         list = list->next;
+      }
+      else if (!list)
+      {
+         next = right;
+         right = right->next;
+      }
+      else if (compare(list, right) < 0)
+      {
+         next = list;
+         list = list->next;
+      }
+      else
+      {
+         next = right;
+         right = right->next;
+      }
+
+      if (!result)
+         result = next;
+      else
+         tail->next = next;
+
+      tail = next;
+   }
+
+   return result;
+}
+
 static char *strip_comment(char *str)
 {
    /* Remove everything after comment.
@@ -592,6 +670,24 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
    return false;
 }
 
+bool config_get_size_t(config_file_t *conf, const char *key, size_t *in)
+{
+   const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
+   errno = 0;
+
+   if (entry)
+   {
+      size_t val = 0;
+      if (sscanf(entry->value, "%" PRI_SIZET, &val) == 1)
+      {
+         *in = val;
+         return true;
+      }
+   }
+
+   return false;
+}
+
 #if defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
 bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 {
@@ -825,6 +921,15 @@ void config_set_int(config_file_t *conf, const char *key, int val)
    config_set_string(conf, key, buf);
 }
 
+void config_set_uint(config_file_t *conf, const char *key, unsigned int val)
+{
+   char buf[128];
+
+   buf[0] = '\0';
+   snprintf(buf, sizeof(buf), "%u", val);
+   config_set_string(conf, key, buf);
+}
+
 void config_set_hex(config_file_t *conf, const char *key, unsigned val)
 {
    char buf[128];
@@ -893,7 +998,8 @@ void config_file_dump(config_file_t *conf, FILE *file)
       includes = includes->next;
    }
 
-   list = (struct config_entry_list*)conf->entries;
+   list = merge_sort_linked_list((struct config_entry_list*)conf->entries, config_sort_compare_func);
+   conf->entries = list;
 
    while (list)
    {
@@ -987,7 +1093,7 @@ static void test_config_file(void)
    test_config_file_parse_contains("foo = \"bar\"",     "foo", "bar");
 
 #if 0
-   /* turns out it treats empty as nonexistent - 
+   /* turns out it treats empty as nonexistent -
     * should probably be fixed */
    test_config_file_parse_contains("foo = \"\"\n",   "foo", "");
    test_config_file_parse_contains("foo = \"\"",     "foo", "");

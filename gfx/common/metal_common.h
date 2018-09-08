@@ -40,6 +40,7 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 - (void)setFilteringIndex:(int)index smooth:(bool)smooth;
 - (BOOL)setShaderFromPath:(NSString *)path;
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch;
+- (bool)readViewport:(uint8_t *)buffer isIdle:(bool)isIdle;
 
 @end
 
@@ -79,7 +80,6 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 @property (nonatomic, readonly) Overlay *overlay;
 @property (nonatomic, readonly) Context *context;
 @property (nonatomic, readonly) Uniforms *viewportMVP;
-@property (nonatomic, readonly) Uniforms *viewportMVPNormalized;
 
 - (instancetype)initWithVideo:(const video_info_t *)video
                         input:(const input_driver_t **)input
@@ -93,8 +93,6 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
               pitch:(unsigned)pitch
                 msg:(const char *)msg
                info:(video_frame_info_t *)video_info;
-
-- (id<MTLRenderPipelineState>)getStockShader:(int)index blend:(bool)blend;
 
 /*! @brief setNeedsResize triggers a display resize */
 - (void)setNeedsResize;

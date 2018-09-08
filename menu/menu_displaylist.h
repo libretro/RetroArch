@@ -23,6 +23,8 @@
 #include <retro_common_api.h>
 #include <lists/file_list.h>
 
+#include "../setting_list.h"
+
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE 99999
 #endif
@@ -45,7 +47,8 @@ enum menu_displaylist_parse_type
    PARSE_ONLY_STRING_OPTIONS = (1 << 11),
    PARSE_ONLY_HEX            = (1 << 12),
    PARSE_ONLY_DIR            = (1 << 13),
-   PARSE_SUB_GROUP           = (1 << 14)
+   PARSE_SUB_GROUP           = (1 << 14),
+   PARSE_ONLY_SIZE           = (1 << 15)
 };
 
 enum menu_displaylist_ctl_state
@@ -118,6 +121,8 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_LOGGING_SETTINGS_LIST,
    DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST,
    DISPLAYLIST_REWIND_SETTINGS_LIST,
+   DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST,
+   DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST,
    DISPLAYLIST_AUDIO_SETTINGS_LIST,
    DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST,
    DISPLAYLIST_CORE_SETTINGS_LIST,

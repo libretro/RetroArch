@@ -584,6 +584,8 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+   win32_vk.fullscreen = fullscreen;
+
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
    {
       RARCH_ERR("[WGL]: win32_set_video_mode failed.\n");

@@ -96,8 +96,8 @@ struct revmodel
    struct comb combL[numcombs];
    struct allpass allpassL[numallpasses];
 
-   float **bufcomb;
-   float **bufallpass;
+   float *bufcomb[numcombs];
+   float *bufallpass[numallpasses];
 
    float gain;
    float roomsize, roomsize1;
@@ -194,26 +194,22 @@ static void revmodel_init(struct revmodel *rev,int srate)
   double r = srate * (1 / 44100.0);
   unsigned c;
 
-   rev->bufcomb=malloc(numcombs*sizeof(float*));
    for (c = 0; c < numcombs; ++c)
    {
 	   rev->bufcomb[c] = malloc(r*comb_lengths[c]*sizeof(float));
 	   rev->combL[c].buffer  =  rev->bufcomb[c];
+         memset(rev->combL[c].buffer,0,r*comb_lengths[c]*sizeof(float));
          rev->combL[c].bufsize=r*comb_lengths[c];
   }
 
-  rev->bufallpass=malloc(numallpasses*sizeof(float*));
    for (c = 0; c < numallpasses; ++c)
    {
 	   rev->bufallpass[c] = malloc(r*allpass_lengths[c]*sizeof(float));
 	   rev->allpassL[c].buffer  =  rev->bufallpass[c];
+         memset(rev->allpassL[c].buffer,0,r*allpass_lengths[c]*sizeof(float));
          rev->allpassL[c].bufsize=r*allpass_lengths[c];
+         rev->allpassL[c].feedback = 0.5f;
   }
-
-   rev->allpassL[0].feedback = 0.5f;
-   rev->allpassL[1].feedback = 0.5f;
-   rev->allpassL[2].feedback = 0.5f;
-   rev->allpassL[3].feedback = 0.5f;
 
    revmodel_setwet(rev, initialwet);
    revmodel_setroomsize(rev, initialroom);
@@ -237,15 +233,11 @@ static void reverb_free(void *data)
    free(rev->left.bufcomb[i]);
    free(rev->right.bufcomb[i]);
    }
-   free(rev->left.bufcomb);
-   free(rev->right.bufcomb);
 
    for (i = 0; i < numallpasses; i++) {
    free(rev->left.bufallpass[i]);
    free(rev->right.bufallpass[i]);
    }
-   free(rev->left.bufallpass);
-   free(rev->right.bufallpass);
    free(data);
 }
 

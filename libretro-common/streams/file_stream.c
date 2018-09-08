@@ -41,6 +41,7 @@ static retro_vfs_get_path_t filestream_get_path_cb = NULL;
 static retro_vfs_open_t filestream_open_cb         = NULL;
 static retro_vfs_close_t filestream_close_cb       = NULL;
 static retro_vfs_size_t filestream_size_cb         = NULL;
+static retro_vfs_truncate_t filestream_truncate_cb = NULL;
 static retro_vfs_tell_t filestream_tell_cb         = NULL;
 static retro_vfs_seek_t filestream_seek_cb         = NULL;
 static retro_vfs_read_t filestream_read_cb         = NULL;
@@ -67,6 +68,7 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    filestream_close_cb    = NULL;
    filestream_tell_cb     = NULL;
    filestream_size_cb     = NULL;
+   filestream_truncate_cb = NULL;
    filestream_seek_cb     = NULL;
    filestream_read_cb     = NULL;
    filestream_write_cb    = NULL;
@@ -84,6 +86,7 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    filestream_open_cb     = vfs_iface->open;
    filestream_close_cb    = vfs_iface->close;
    filestream_size_cb     = vfs_iface->size;
+   filestream_truncate_cb = vfs_iface->truncate;
    filestream_tell_cb     = vfs_iface->tell;
    filestream_seek_cb     = vfs_iface->seek;
    filestream_read_cb     = vfs_iface->read;
@@ -120,6 +123,21 @@ int64_t filestream_get_size(RFILE *stream)
       output = filestream_size_cb(stream->hfile);
    else
       output = retro_vfs_file_size_impl((libretro_vfs_implementation_file*)stream->hfile);
+
+   if (output == vfs_error_return_value)
+      stream->error_flag = true;
+
+   return output;
+}
+
+int64_t filestream_truncate(RFILE *stream, int64_t length)
+{
+   int64_t output;
+
+   if (filestream_truncate_cb != NULL)
+      output = filestream_truncate_cb(stream->hfile, length);
+   else
+      output = retro_vfs_file_truncate_impl((libretro_vfs_implementation_file*)stream->hfile, length);
 
    if (output == vfs_error_return_value)
       stream->error_flag = true;

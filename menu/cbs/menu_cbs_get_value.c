@@ -687,14 +687,48 @@ static void menu_action_setting_disp_set_label_cheat(
    unsigned cheat_index = type - MENU_SETTINGS_CHEAT_BEGIN;
 
    if (cheat_index < cheat_manager_get_buf_size())
-      snprintf(s, len, "%s : (%s)",
-            (cheat_manager_get_code(cheat_index) != NULL)
-            ? cheat_manager_get_code(cheat_index) :
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-            cheat_manager_get_code_state(cheat_index) ?
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) :
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)
-            );
+   {
+      if ( cheat_manager_state.cheats[cheat_index].handler == CHEAT_HANDLER_TYPE_EMU)
+      {
+         snprintf(s, len, "(%s) : %s",
+               cheat_manager_get_code_state(cheat_index) ?
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) :
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+               (cheat_manager_get_code(cheat_index) != NULL)
+               ? cheat_manager_get_code(cheat_index) :
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+               );
+      }
+      else
+      {
+         snprintf(s, len, "(%s) : %08X",
+               cheat_manager_get_code_state(cheat_index) ?
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) :
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+               cheat_manager_state.cheats[cheat_index].address
+               );
+      }
+   }
+   *w = 19;
+   strlcpy(s2, path, len2);
+}
+
+static void menu_action_setting_disp_set_label_cheat_match(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   unsigned int address = 0;
+   unsigned int address_mask = 0;
+   unsigned int prev_val = 0;
+   unsigned int curr_val = 0 ;
+   cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_VIEW, cheat_manager_state.match_idx, &address, &address_mask, &prev_val, &curr_val) ;
+
+   snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val) ;
    *w = 19;
    strlcpy(s2, path, len2);
 }
@@ -941,6 +975,10 @@ static void menu_action_setting_disp_set_label_xmb_theme(
       case XMB_ICON_THEME_CUSTOM:
          strlcpy(s,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM), len);
+         break;
+      case XMB_ICON_THEME_AUTOMATIC:
+         strlcpy(s,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC), len);
          break;
    }
 }
@@ -1854,7 +1892,8 @@ static void menu_action_setting_disp_set_label_setting_string(file_list_t* list,
 
    *w = 19;
 
-   strlcpy(s, setting->value.target.string, len);
+   if ( setting->value.target.string != NULL )
+      strlcpy(s, setting->value.target.string, len);
 
    strlcpy(s2, path, len2);
 }
@@ -2267,6 +2306,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          case FILE_TYPE_CHEAT:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_cheat);
+            break;
+         case MENU_SETTINGS_CHEAT_MATCH:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_cheat_match);
             break;
          case MENU_SETTING_SUBGROUP:
          case MENU_SETTINGS_CUSTOM_BIND_ALL:

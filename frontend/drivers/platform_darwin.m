@@ -292,11 +292,6 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
    get_ios_version(major, minor);
    strlcpy(s, "iOS", len);
 #elif defined(OSX)
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
-   NSOperatingSystemVersion version =  [[NSProcessInfo processInfo] operatingSystemVersion];
-   *major = (int)version.majorVersion;
-   *minor = (int)version.minorVersion;
-#else
    if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
    {
       typedef struct
@@ -314,7 +309,6 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
       Gestalt(gestaltSystemVersionMinor, (SInt32*)minor);
       Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
    }
-#endif
    strlcpy(s, "OSX", len);
 #endif
 }
@@ -353,9 +347,15 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 #endif
 
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
+#ifdef HAVE_METAL
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER],
+                      home_dir_buf, "shaders_slang",
+                      sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+#else
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER],
          home_dir_buf, "shaders_glsl",
          sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+#endif
 #if TARGET_OS_IPHONE
     int major, minor;
     get_ios_version(&major, &minor);

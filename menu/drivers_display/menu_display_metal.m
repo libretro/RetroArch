@@ -1,9 +1,17 @@
-//
-//  menu_display_metal.m
-//  RetroArch_Metal
-//
-//  Created by Stuart Carnie on 5/25/18.
-//
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2018      - Stuart Carnie
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <retro_miscellaneous.h>
 
@@ -35,7 +43,7 @@ static void *menu_display_metal_get_default_mvp(video_frame_info_t *video_info)
    if (!md)
       return NULL;
    
-   return (void *)&md.viewportMVPNormalized->projectionMatrix;
+   return (void *)&md.viewportMVP->projectionMatrix;
 }
 
 static void menu_display_metal_blend_begin(video_frame_info_t *video_info)

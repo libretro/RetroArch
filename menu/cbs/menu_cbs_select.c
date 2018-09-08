@@ -65,6 +65,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
          case ST_BOOL:
          case ST_INT:
          case ST_UINT:
+         case ST_SIZE:
          case ST_FLOAT:
             action = MENU_ACTION_RIGHT;
             break;

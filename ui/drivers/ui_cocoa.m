@@ -37,9 +37,29 @@
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
-#if HAVE_METAL
+#ifdef HAVE_METAL
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
+#endif
+
+#if !((defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__))))
+@interface WindowListener : NSResponder<NSWindowDelegate>
+@end
+
+@implementation WindowListener
+
+/* Similarly to SDL, we'll respond to key events by doing nothing so we don't beep.
+ */
+- (void)flagsChanged:(NSEvent *)event
+{}
+
+- (void)keyDown:(NSEvent *)event
+{}
+
+- (void)keyUp:(NSEvent *)event
+{}
+
+@end
 #endif
 
 id<ApplePlatform> apple_platform;
@@ -54,7 +74,9 @@ id<ApplePlatform> apple_platform;
    apple_view_type_t _vt;
    NSView* _renderView;
    id _sleepActivity;
-   
+#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+   WindowListener *_listener;
+#endif
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
@@ -109,7 +131,7 @@ static void app_terminate(void)
       case NSEventTypeKeyDown:
       case NSEventTypeKeyUp:
          {
-            NSString* ch = (NSString*)event.characters;
+            NSString* ch = event.characters;
             uint32_t character = 0;
             uint32_t mod = 0;
 
@@ -164,13 +186,13 @@ static void app_terminate(void)
                return;
 
             /* Relative */
-            apple->mouse_rel_x = event.deltaX;
-            apple->mouse_rel_y = event.deltaY;
+            apple->mouse_rel_x = (int16_t)event.deltaX;
+            apple->mouse_rel_y = (int16_t)event.deltaY;
 
             /* Absolute */
             pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
-            apple->touches[0].screen_x = pos.x;
-            apple->touches[0].screen_y = pos.y;
+            apple->touches[0].screen_x = (int16_t)pos.x;
+            apple->touches[0].screen_y = (int16_t)pos.y;
 
             mouse_pos = [apple_platform.renderView convertPoint:[event locationInWindow]  fromView:nil];
             apple->window_pos_x = (int16_t)mouse_pos.x;
@@ -233,9 +255,7 @@ static char** waiting_argv;
 {
    unsigned i;
    apple_platform   = self;
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
-   self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
-#else
+
    SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
    SEL fsselector   = NSSelectorFromString(BOXSTRING("toggleFullScreen:"));
 
@@ -244,9 +264,17 @@ static char** waiting_argv;
        if ([self.window respondsToSelector:fsselector])
           [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
    }
+   
+#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+   _listener = [WindowListener new];
 #endif
+   
    [self.window setAcceptsMouseMovedEvents: YES];
-
+#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+   [self.window setNextResponder:_listener];
+   self.window.delegate = _listener;
+#endif
+   
    [[self.window contentView] setAutoresizesSubviews:YES];
 
     for (i = 0; i < waiting_argc; i++)
@@ -262,16 +290,21 @@ static char** waiting_argv;
       app_terminate();
 
    waiting_argc = 0;
-
+   
+   [self.window makeMainWindow];
+   [self.window makeKeyWindow];
+   
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
+
+#pragma mark - ApplePlatform
 
 - (void)setViewType:(apple_view_type_t)vt {
    if (vt == _vt) {
       return;
    }
    
-   RARCH_LOG("[Cocoa] change view type: %d → %d\n", _vt, vt);
+   RARCH_LOG("[Cocoa]: change view type: %d → %d\n", _vt, vt);
    
    _vt = vt;
    if (_renderView != nil)
@@ -279,6 +312,7 @@ static char** waiting_argv;
       _renderView.wantsLayer = NO;
       _renderView.layer = nil;
       [_renderView removeFromSuperview];
+      self.window.contentView = nil;
       _renderView = nil;
    }
    
@@ -294,7 +328,7 @@ static char** waiting_argv;
       }
 #endif
       break;
-         
+      
       case APPLE_VIEW_TYPE_OPENGL:
       {
          _renderView = [CocoaView get];
@@ -307,10 +341,12 @@ static char** waiting_argv;
    }
    
    _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-   _renderView.frame = self.window.contentView.bounds;
-
-   [self.window.contentView addSubview:_renderView];
-   [self.window makeFirstResponder:_renderView];
+   [_renderView setFrame: [[self.window contentView] bounds]];
+   
+   self.window.contentView = _renderView;
+#if !(defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+   [self.window.contentView setNextResponder:_listener];
+#endif
 }
 
 - (apple_view_type_t)viewType {
@@ -326,6 +362,7 @@ static char** waiting_argv;
 }
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode {
+#ifdef HAVE_METAL
    BOOL isFullScreen = (self.window.styleMask & NSFullScreenWindowMask) == NSFullScreenWindowMask;
    if (mode.fullscreen && !isFullScreen)
    {
@@ -344,6 +381,7 @@ static char** waiting_argv;
       [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
    }
    [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
+#endif
 }
 
 - (void)setCursorVisible:(bool)v {
@@ -355,7 +393,7 @@ static char** waiting_argv;
 
 - (bool)setDisableDisplaySleep:(bool)disable
 {
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
    if (disable && _sleepActivity == nil)
    {
       _sleepActivity = [NSProcessInfo.processInfo beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled reason:@"disable screen saver"];
@@ -701,7 +739,7 @@ static void *ui_companion_cocoa_init(void)
 static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
 {
    (void)data;
-   command_event(cmd, NULL);
+   (void)cmd;
 }
 
 static void ui_companion_cocoa_notify_list_pushed(void *data,
@@ -725,11 +763,11 @@ ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_event_command,
    ui_companion_cocoa_notify_content_loaded,
    ui_companion_cocoa_notify_list_pushed,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* notify_refresh */
+   NULL, /* msg_queue_push */
+   NULL, /* render_messagebox */
    ui_companion_cocoa_get_main_window,
-   NULL,
+   NULL, /* log_msg */
    &ui_browser_window_cocoa,
    &ui_msg_window_cocoa,
    &ui_window_cocoa,

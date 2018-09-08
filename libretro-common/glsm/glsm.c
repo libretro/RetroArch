@@ -2457,7 +2457,9 @@ void rglUniform2uiv(	GLint location,
 #ifdef GLSM_DEBUG
    log_cb(RETRO_LOG_INFO, "glUniform2uiv.\n");
 #endif
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glUniform2uiv(location, count, value);
+#endif
 }
 
 /*

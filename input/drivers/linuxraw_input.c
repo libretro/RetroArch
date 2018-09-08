@@ -32,6 +32,9 @@
 #include "../input_keymaps.h"
 #include "../input_driver.h"
 
+/* TODO/FIXME - 
+ * fix game focus toggle */
+
 typedef struct linuxraw_input
 {
    bool blocked;

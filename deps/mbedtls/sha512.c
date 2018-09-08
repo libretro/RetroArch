@@ -56,10 +56,7 @@
 
 #if !defined(MBEDTLS_SHA512_ALT)
 
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
-}
+#include "arc4_alt.h"
 
 /*
  * 64-bit integer manipulation macros (big endian)
@@ -201,14 +198,17 @@ void mbedtls_sha512_process( mbedtls_sha512_context *ctx, const unsigned char da
     int i;
     uint64_t temp1, temp2, W[80];
     uint64_t A, B, C, D, E, F, G, H;
-
+#undef SHR
 #define  SHR(x,n) (x >> n)
+#undef ROTR
 #define ROTR(x,n) (SHR(x,n) | (x << (64 - n)))
-
+#undef S0
 #define S0(x) (ROTR(x, 1) ^ ROTR(x, 8) ^  SHR(x, 7))
+#undef S1
 #define S1(x) (ROTR(x,19) ^ ROTR(x,61) ^  SHR(x, 6))
-
+#undef S2
 #define S2(x) (ROTR(x,28) ^ ROTR(x,34) ^ ROTR(x,39))
+#undef S3
 #define S3(x) (ROTR(x,14) ^ ROTR(x,18) ^ ROTR(x,41))
 
 #define F0(x,y,z) ((x & y) | (z & (x | y)))

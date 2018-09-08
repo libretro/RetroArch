@@ -478,6 +478,36 @@ database_info_list_t *database_info_list_new(
 
          if (!new_ptr)
          {
+            if (db_info.bbfc_rating)
+               free(db_info.bbfc_rating);
+            if (db_info.cero_rating)
+               free(db_info.cero_rating);
+            if (db_info.description)
+               free(db_info.description);
+            if (db_info.edge_magazine_review)
+               free(db_info.edge_magazine_review);
+            if (db_info.elspa_rating)
+               free(db_info.elspa_rating);
+            if (db_info.enhancement_hw)
+               free(db_info.enhancement_hw);
+            if (db_info.esrb_rating)
+               free(db_info.esrb_rating);
+            if (db_info.franchise)
+               free(db_info.franchise);
+            if (db_info.genre)
+               free(db_info.genre);
+            if (db_info.name)
+               free(db_info.name);
+            if (db_info.origin)
+               free(db_info.origin);
+            if (db_info.pegi_rating)
+               free(db_info.pegi_rating);
+            if (db_info.publisher)
+               free(db_info.publisher);
+            if (db_info.rom_name)
+               free(db_info.rom_name);
+            if (db_info.serial)
+               free(db_info.serial);
             database_info_list_free(database_info_list);
             free(database_info);
             free(database_info_list);

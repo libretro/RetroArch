@@ -3,7 +3,7 @@
 
 #import <AppKit/AppKit.h>
 
-#include "discord_register.h"
+#include "../include/discord_register.h"
 
 static void RegisterCommand(const char* applicationId, const char* command)
 {

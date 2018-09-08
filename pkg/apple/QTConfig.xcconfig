@@ -1,0 +1,23 @@
+//
+//  RetroArch build configuration specific to Qt
+//
+//  Created by Stuart Carnie on 5/10/18.
+//
+
+// QT Support
+QT_INSTALL        = /usr/local/opt/qt
+QT_FRAMEWORK_PATH = $(QT_INSTALL)/lib
+QT_FRAMEWORKS     = -framework QtWidgets -framework QtGui -framework QtConcurrent -framework QtNetwork -framework QtCore
+QT_VERSION        = 5
+
+QT_HEADERS             = $(QT_INSTALL)/include
+QT_HEADER_SEARCH_PATHS = $(QT_HEADERS) $(QT_HEADERS)/QtWidgets $(QT_HEADERS)/QtGui $(QT_HEADERS)/QtConcurrent $(QT_HEADERS)/QtNetwork $(QT_HEADERS)/QtCore
+QT_CFLAGS              = -DHAVE_QT -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CONCURRENT_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB
+
+// general
+FRAMEWORK_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(QT_FRAMEWORK_PATH)
+
+OTHER_CFLAGS = $(inherited) $(QT_CFLAGS)
+
+HEADER_SEARCH_PATHS = $(inherited) $(QT_HEADER_SEARCH_PATHS)
+LD_RUNPATH_SEARCH_PATHS = @executable_path

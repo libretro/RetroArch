@@ -8,6 +8,36 @@
 
 /* Begin PBXBuildFile section */
 		05269A6220ABF20500C29F1E /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05269A6120ABF20500C29F1E /* MetalKit.framework */; };
+		053FC25E21433F2200D98D46 /* QtConcurrent.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25521433F1700D98D46 /* QtConcurrent.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		053FC26021433F2200D98D46 /* QtCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25421433F1700D98D46 /* QtCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		053FC26221433F2200D98D46 /* QtGui.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25321433F1700D98D46 /* QtGui.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		053FC26421433F2200D98D46 /* QtNetwork.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25621433F1800D98D46 /* QtNetwork.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		053FC26521433F2200D98D46 /* QtWidgets.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25721433F1800D98D46 /* QtWidgets.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		053FC26621433F2200D98D46 /* QtWidgets.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25721433F1800D98D46 /* QtWidgets.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		053FC270214340F500D98D46 /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25321433F1700D98D46 /* QtGui.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		053FC271214340F500D98D46 /* QtNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25621433F1800D98D46 /* QtNetwork.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		053FC272214341E000D98D46 /* QtConcurrent.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25521433F1700D98D46 /* QtConcurrent.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		053FC275214341F000D98D46 /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25421433F1700D98D46 /* QtCore.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		05422E3E2140C8DB00F09961 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
+		05422E3F2140C8DB00F09961 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
+		05422E402140C8DB00F09961 /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
+		05422E432140C8DB00F09961 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
+		05422E442140C8DB00F09961 /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
+		05422E452140C8DB00F09961 /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
+		05422E462140C8DB00F09961 /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
+		05422E472140C8DB00F09961 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; };
+		05422E482140C8DB00F09961 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05A8C74E20DB72F100FF7857 /* Shaders.metal */; };
+		05422E4A2140C8DB00F09961 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23B20A63CF50084ABDA /* QuartzCore.framework */; };
+		05422E4B2140C8DB00F09961 /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23920A63CED0084ABDA /* IOSurface.framework */; };
+		05422E4C2140C8DB00F09961 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23720A63CB40084ABDA /* Metal.framework */; };
+		05422E4D2140C8DB00F09961 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05269A6120ABF20500C29F1E /* MetalKit.framework */; };
+		05422E4E2140C8DB00F09961 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5061C8A31AE47E510080AE14 /* libz.dylib */; };
+		05422E4F2140C8DB00F09961 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EA81A89E4BE007336C1 /* CoreAudio.framework */; };
+		05422E502140C8DB00F09961 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB21A89E6C0007336C1 /* AudioUnit.framework */; };
+		05422E512140C8DB00F09961 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EAC1A89E5B4007336C1 /* OpenGL.framework */; };
+		05422E522140C8DB00F09961 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
+		05422E532140C8DB00F09961 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */; };
+		05422E542140C8DB00F09961 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
 		05770B9920E805160013DABC /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
 		05A8C7B420DB75A500FF7857 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05A8C74E20DB72F100FF7857 /* Shaders.metal */; };
 		05A8E23820A63CB40084ABDA /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23720A63CB40084ABDA /* Metal.framework */; };
@@ -40,10 +70,62 @@
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		053FC26721433F2200D98D46 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				053FC26021433F2200D98D46 /* QtCore.framework in Embed Frameworks */,
+				053FC25E21433F2200D98D46 /* QtConcurrent.framework in Embed Frameworks */,
+				053FC26621433F2200D98D46 /* QtWidgets.framework in Embed Frameworks */,
+				053FC26421433F2200D98D46 /* QtNetwork.framework in Embed Frameworks */,
+				053FC26221433F2200D98D46 /* QtGui.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		05422E552140C8DB00F09961 /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		05269A6120ABF20500C29F1E /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		05366512213F8BE5007E7EA0 /* thumbnailpackdownload.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = thumbnailpackdownload.cpp; sourceTree = "<group>"; };
+		05366513213F8BE5007E7EA0 /* ui_qt_application.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ui_qt_application.cpp; sourceTree = "<group>"; };
+		05366514213F8BE5007E7EA0 /* coreoptionsdialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreoptionsdialog.h; sourceTree = "<group>"; };
+		05366515213F8BE5007E7EA0 /* viewoptionsdialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = viewoptionsdialog.h; sourceTree = "<group>"; };
+		05366516213F8BE5007E7EA0 /* filedropwidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = filedropwidget.h; sourceTree = "<group>"; };
+		05366517213F8BE5007E7EA0 /* ui_qt_load_core_window.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ui_qt_load_core_window.cpp; sourceTree = "<group>"; };
+		05366518213F8BE5007E7EA0 /* playlistentrydialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = playlistentrydialog.cpp; sourceTree = "<group>"; };
+		05366519213F8BE5007E7EA0 /* ui_qt_load_core_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ui_qt_load_core_window.h; sourceTree = "<group>"; };
+		0536651A213F8BE5007E7EA0 /* shaderparamsdialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = shaderparamsdialog.cpp; sourceTree = "<group>"; };
+		0536651B213F8BE5007E7EA0 /* ui_qt_browser_window.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ui_qt_browser_window.cpp; sourceTree = "<group>"; };
+		0536651C213F8BE5007E7EA0 /* ui_qt_msg_window.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ui_qt_msg_window.cpp; sourceTree = "<group>"; };
+		0536651D213F8BE5007E7EA0 /* flowlayout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = flowlayout.h; sourceTree = "<group>"; };
+		0536651E213F8BE5007E7EA0 /* playlistthumbnaildownload.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = playlistthumbnaildownload.cpp; sourceTree = "<group>"; };
+		0536651F213F8BE5007E7EA0 /* playlistentrydialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = playlistentrydialog.h; sourceTree = "<group>"; };
+		05366520213F8BE5007E7EA0 /* coreinfodialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = coreinfodialog.cpp; sourceTree = "<group>"; };
+		05366521213F8BE5007E7EA0 /* filedropwidget.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = filedropwidget.cpp; sourceTree = "<group>"; };
+		05366522213F8BE5007E7EA0 /* thumbnaildownload.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = thumbnaildownload.cpp; sourceTree = "<group>"; };
+		05366523213F8BE5007E7EA0 /* playlist.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = playlist.cpp; sourceTree = "<group>"; };
+		05366524213F8BE5007E7EA0 /* ui_qt_themes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ui_qt_themes.h; sourceTree = "<group>"; };
+		05366525213F8BE5007E7EA0 /* shaderparamsdialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = shaderparamsdialog.h; sourceTree = "<group>"; };
+		05366526213F8BE5007E7EA0 /* flowlayout.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = flowlayout.cpp; sourceTree = "<group>"; };
+		05366527213F8BE5007E7EA0 /* viewoptionsdialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = viewoptionsdialog.cpp; sourceTree = "<group>"; };
+		05366528213F8BE5007E7EA0 /* coreoptionsdialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = coreoptionsdialog.cpp; sourceTree = "<group>"; };
+		05366529213F8BE5007E7EA0 /* ui_qt_window.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ui_qt_window.cpp; sourceTree = "<group>"; };
+		0536652A213F8BE5007E7EA0 /* invader_png.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = invader_png.h; sourceTree = "<group>"; };
+		0536652B213F8BE5007E7EA0 /* coreinfodialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreinfodialog.h; sourceTree = "<group>"; };
+		0536652C213F8BE5007E7EA0 /* updateretroarch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = updateretroarch.cpp; sourceTree = "<group>"; };
 		0538874D20DDD5C600769232 /* dxgi_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dxgi_common.c; sourceTree = "<group>"; };
 		0538874E20DDD5C600769232 /* dxgi_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dxgi_common.h; sourceTree = "<group>"; };
 		0538875120DE11D200769232 /* retro_common_api.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_common_api.h; sourceTree = "<group>"; };
@@ -55,6 +137,22 @@
 		0538875720DE11D300769232 /* retro_assert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_assert.h; sourceTree = "<group>"; };
 		0538875820DE11D300769232 /* retro_endianness.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_endianness.h; sourceTree = "<group>"; };
 		0538875920DE11D300769232 /* libretro.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libretro.h; sourceTree = "<group>"; };
+		053FC25321433F1700D98D46 /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = /usr/local/opt/qt/lib/QtGui.framework; sourceTree = "<group>"; };
+		053FC25421433F1700D98D46 /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = /usr/local/opt/qt/lib/QtCore.framework; sourceTree = "<group>"; };
+		053FC25521433F1700D98D46 /* QtConcurrent.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtConcurrent.framework; path = /usr/local/opt/qt/lib/QtConcurrent.framework; sourceTree = "<group>"; };
+		053FC25621433F1800D98D46 /* QtNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtNetwork.framework; path = /usr/local/opt/qt/lib/QtNetwork.framework; sourceTree = "<group>"; };
+		053FC25721433F1800D98D46 /* QtWidgets.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtWidgets.framework; path = /usr/local/opt/qt/lib/QtWidgets.framework; sourceTree = "<group>"; };
+		05422E592140C8DB00F09961 /* RetroArchQT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchQT.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		05422E5B2140CE3500F09961 /* VulkanConfig.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = VulkanConfig.xcconfig; sourceTree = "<group>"; };
+		05422E5C2140CFC500F09961 /* Metal.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Metal.xcconfig; sourceTree = "<group>"; };
+		0548E2B220F976E10094A083 /* driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = driver.c; path = ../../driver.c; sourceTree = "<group>"; };
+		0548E2B320F976E10094A083 /* dynamic.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = dynamic.c; path = ../../dynamic.c; sourceTree = "<group>"; };
+		0548E2B420F976E10094A083 /* dynamic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = dynamic.h; path = ../../dynamic.h; sourceTree = "<group>"; };
+		0548E2B520F976E20094A083 /* driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = driver.h; path = ../../driver.h; sourceTree = "<group>"; };
+		0548E2B620F977060094A083 /* playlist.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = playlist.h; path = ../../playlist.h; sourceTree = "<group>"; };
+		0548E2B720F977060094A083 /* performance_counters.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = performance_counters.h; path = ../../performance_counters.h; sourceTree = "<group>"; };
+		0548E2B820F977060094A083 /* performance_counters.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = performance_counters.c; path = ../../performance_counters.c; sourceTree = "<group>"; };
+		0548E2B920F977060094A083 /* playlist.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = playlist.c; path = ../../playlist.c; sourceTree = "<group>"; };
 		055312AB20DE130A00C4D7F4 /* gl_capabilities.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl_capabilities.c; sourceTree = "<group>"; };
 		055312AD20DE130A00C4D7F4 /* scaler_int.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scaler_int.c; sourceTree = "<group>"; };
 		055312AE20DE130A00C4D7F4 /* pixconv.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pixconv.c; sourceTree = "<group>"; };
@@ -428,11 +526,28 @@
 		05D7753120A55D2700646447 /* BaseConfig.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = BaseConfig.xcconfig; sourceTree = "<group>"; };
 		05D7753320A5678300646447 /* griffin_cpp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_cpp.cpp; path = ../../griffin/griffin_cpp.cpp; sourceTree = "<group>"; };
 		05D7753420A5678400646447 /* griffin_glslang.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_glslang.cpp; path = ../../griffin/griffin_glslang.cpp; sourceTree = "<group>"; };
-		05FA11A120CC6684008C5D0A /* MetalRenderer.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = MetalRenderer.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		05F2872F20F2BEEA00632D47 /* task_autodetect.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_autodetect.c; sourceTree = "<group>"; };
+		05F2873020F2BEEA00632D47 /* task_netplay_find_content.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_netplay_find_content.c; sourceTree = "<group>"; };
+		05F2873120F2BEEA00632D47 /* task_netplay_nat_traversal.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_netplay_nat_traversal.c; sourceTree = "<group>"; };
+		05F2873220F2BEEA00632D47 /* task_screenshot.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_screenshot.c; sourceTree = "<group>"; };
+		05F2873320F2BEEA00632D47 /* task_file_transfer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_file_transfer.c; sourceTree = "<group>"; };
+		05F2873420F2BEEA00632D47 /* task_database.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_database.c; sourceTree = "<group>"; };
+		05F2873520F2BEEA00632D47 /* task_save.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_save.c; sourceTree = "<group>"; };
+		05F2873620F2BEEA00632D47 /* task_powerstate.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_powerstate.c; sourceTree = "<group>"; };
+		05F2873720F2BEEA00632D47 /* task_image.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_image.c; sourceTree = "<group>"; };
+		05F2873820F2BEEA00632D47 /* tasks_internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tasks_internal.h; sourceTree = "<group>"; };
+		05F2873920F2BEEA00632D47 /* task_overlay.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_overlay.c; sourceTree = "<group>"; };
+		05F2873A20F2BEEA00632D47 /* task_audio_mixer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_audio_mixer.c; sourceTree = "<group>"; };
+		05F2873B20F2BEEA00632D47 /* task_decompress.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_decompress.c; sourceTree = "<group>"; };
+		05F2873C20F2BEEA00632D47 /* task_netplay_lan_scan.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_netplay_lan_scan.c; sourceTree = "<group>"; };
+		05F2873D20F2BEEA00632D47 /* task_wifi.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_wifi.c; sourceTree = "<group>"; };
+		05F2873E20F2BEEA00632D47 /* task_database_cue.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_database_cue.c; sourceTree = "<group>"; };
+		05F2873F20F2BEEA00632D47 /* task_content.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_content.c; sourceTree = "<group>"; };
+		05F2874020F2BEEA00632D47 /* task_http.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_http.c; sourceTree = "<group>"; };
+		05F2874120F2BEEA00632D47 /* task_patch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_patch.c; sourceTree = "<group>"; };
 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1DDD58150DA1D0A300B32029 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = MainMenu.xib; path = OSX/en.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
-		5008453B1B89300700CE6073 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = /../../pkg/apple/OSX/Info.plist; sourceTree = SOURCE_ROOT; };
 		5061C8A31AE47E510080AE14 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		509F0C9C1AA23AFC00619ECC /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = "<group>"; };
 		840222FB1A889EE2009AB261 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
@@ -448,9 +563,33 @@
 		8D1107320486CEB800E47090 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A902040DE66D42F9EE47BFE3 /* MenuDisplay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MenuDisplay.h; sourceTree = "<group>"; };
 		A902070F2C43F222FD56A95A /* MenuDisplay.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MenuDisplay.m; sourceTree = "<group>"; };
+		A90207489289602F593626D5 /* QTConfig.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = QTConfig.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		05422E492140C8DB00F09961 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				053FC272214341E000D98D46 /* QtConcurrent.framework in Frameworks */,
+				053FC275214341F000D98D46 /* QtCore.framework in Frameworks */,
+				053FC270214340F500D98D46 /* QtGui.framework in Frameworks */,
+				053FC271214340F500D98D46 /* QtNetwork.framework in Frameworks */,
+				053FC26521433F2200D98D46 /* QtWidgets.framework in Frameworks */,
+				05422E4A2140C8DB00F09961 /* QuartzCore.framework in Frameworks */,
+				05422E4B2140C8DB00F09961 /* IOSurface.framework in Frameworks */,
+				05422E4C2140C8DB00F09961 /* Metal.framework in Frameworks */,
+				05422E4D2140C8DB00F09961 /* MetalKit.framework in Frameworks */,
+				05422E4E2140C8DB00F09961 /* libz.dylib in Frameworks */,
+				05422E4F2140C8DB00F09961 /* CoreAudio.framework in Frameworks */,
+				05422E502140C8DB00F09961 /* AudioUnit.framework in Frameworks */,
+				05422E512140C8DB00F09961 /* OpenGL.framework in Frameworks */,
+				05422E522140C8DB00F09961 /* AppKit.framework in Frameworks */,
+				05422E532140C8DB00F09961 /* CoreVideo.framework in Frameworks */,
+				05422E542140C8DB00F09961 /* IOKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8D11072E0486CEB800E47090 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -472,6 +611,40 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		05366511213F8BE5007E7EA0 /* qt */ = {
+			isa = PBXGroup;
+			children = (
+				05366520213F8BE5007E7EA0 /* coreinfodialog.cpp */,
+				0536652B213F8BE5007E7EA0 /* coreinfodialog.h */,
+				05366528213F8BE5007E7EA0 /* coreoptionsdialog.cpp */,
+				05366514213F8BE5007E7EA0 /* coreoptionsdialog.h */,
+				05366521213F8BE5007E7EA0 /* filedropwidget.cpp */,
+				05366516213F8BE5007E7EA0 /* filedropwidget.h */,
+				05366526213F8BE5007E7EA0 /* flowlayout.cpp */,
+				0536651D213F8BE5007E7EA0 /* flowlayout.h */,
+				0536652A213F8BE5007E7EA0 /* invader_png.h */,
+				05366523213F8BE5007E7EA0 /* playlist.cpp */,
+				05366518213F8BE5007E7EA0 /* playlistentrydialog.cpp */,
+				0536651F213F8BE5007E7EA0 /* playlistentrydialog.h */,
+				0536651E213F8BE5007E7EA0 /* playlistthumbnaildownload.cpp */,
+				0536651A213F8BE5007E7EA0 /* shaderparamsdialog.cpp */,
+				05366525213F8BE5007E7EA0 /* shaderparamsdialog.h */,
+				05366522213F8BE5007E7EA0 /* thumbnaildownload.cpp */,
+				05366512213F8BE5007E7EA0 /* thumbnailpackdownload.cpp */,
+				05366513213F8BE5007E7EA0 /* ui_qt_application.cpp */,
+				0536651B213F8BE5007E7EA0 /* ui_qt_browser_window.cpp */,
+				05366517213F8BE5007E7EA0 /* ui_qt_load_core_window.cpp */,
+				05366519213F8BE5007E7EA0 /* ui_qt_load_core_window.h */,
+				0536651C213F8BE5007E7EA0 /* ui_qt_msg_window.cpp */,
+				05366524213F8BE5007E7EA0 /* ui_qt_themes.h */,
+				05366529213F8BE5007E7EA0 /* ui_qt_window.cpp */,
+				0536652C213F8BE5007E7EA0 /* updateretroarch.cpp */,
+				05366527213F8BE5007E7EA0 /* viewoptionsdialog.cpp */,
+				05366515213F8BE5007E7EA0 /* viewoptionsdialog.h */,
+			);
+			path = qt;
+			sourceTree = "<group>";
+		};
 		0538874F20DE117B00769232 /* libretro-common */ = {
 			isa = PBXGroup;
 			children = (
@@ -563,6 +736,7 @@
 				05A8C57120DB72F000FF7857 /* intl */,
 				05C5D53220E3DD0900654EE4 /* input */,
 				05A8C51A20DB72F000FF7857 /* menu */,
+				05F2872E20F2BEEA00632D47 /* tasks */,
 				05A8C5AD20DB72F000FF7857 /* ui */,
 			);
 			name = Sources;
@@ -769,6 +943,7 @@
 			isa = PBXGroup;
 			children = (
 				05A8C5BB20DB72F000FF7857 /* cocoa */,
+				05366511213F8BE5007E7EA0 /* qt */,
 				05A8C5CE20DB72F000FF7857 /* ui_cocoa.h */,
 				05A8C5BA20DB72F000FF7857 /* ui_cocoa.m */,
 				05A8C5CF20DB72F000FF7857 /* ui_cocoatouch.m */,
@@ -1050,8 +1225,6 @@
 		05BF821320ED69A500D95B19 /* core */ = {
 			isa = PBXGroup;
 			children = (
-				05B5F91120ED6AAE009C521F /* retroarch.c */,
-				05B5F91220ED6AAF009C521F /* retroarch.h */,
 				05B5F90F20ED6A03009C521F /* command.c */,
 				05BF821720ED69D100D95B19 /* command.h */,
 				05BF821420ED69D100D95B19 /* config.def.h */,
@@ -1065,6 +1238,16 @@
 				05BF821B20ED69D100D95B19 /* core_info.h */,
 				05B5F90E20ED6A03009C521F /* core_type.h */,
 				05BF821920ED69D100D95B19 /* core.h */,
+				0548E2B220F976E10094A083 /* driver.c */,
+				0548E2B520F976E20094A083 /* driver.h */,
+				0548E2B320F976E10094A083 /* dynamic.c */,
+				0548E2B420F976E10094A083 /* dynamic.h */,
+				0548E2B820F977060094A083 /* performance_counters.c */,
+				0548E2B720F977060094A083 /* performance_counters.h */,
+				0548E2B920F977060094A083 /* playlist.c */,
+				0548E2B620F977060094A083 /* playlist.h */,
+				05B5F91120ED6AAE009C521F /* retroarch.c */,
+				05B5F91220ED6AAF009C521F /* retroarch.h */,
 			);
 			name = core;
 			sourceTree = "<group>";
@@ -1194,6 +1377,33 @@
 			path = drivers_joypad;
 			sourceTree = "<group>";
 		};
+		05F2872E20F2BEEA00632D47 /* tasks */ = {
+			isa = PBXGroup;
+			children = (
+				05F2872F20F2BEEA00632D47 /* task_autodetect.c */,
+				05F2873020F2BEEA00632D47 /* task_netplay_find_content.c */,
+				05F2873120F2BEEA00632D47 /* task_netplay_nat_traversal.c */,
+				05F2873220F2BEEA00632D47 /* task_screenshot.c */,
+				05F2873320F2BEEA00632D47 /* task_file_transfer.c */,
+				05F2873420F2BEEA00632D47 /* task_database.c */,
+				05F2873520F2BEEA00632D47 /* task_save.c */,
+				05F2873620F2BEEA00632D47 /* task_powerstate.c */,
+				05F2873720F2BEEA00632D47 /* task_image.c */,
+				05F2873820F2BEEA00632D47 /* tasks_internal.h */,
+				05F2873920F2BEEA00632D47 /* task_overlay.c */,
+				05F2873A20F2BEEA00632D47 /* task_audio_mixer.c */,
+				05F2873B20F2BEEA00632D47 /* task_decompress.c */,
+				05F2873C20F2BEEA00632D47 /* task_netplay_lan_scan.c */,
+				05F2873D20F2BEEA00632D47 /* task_wifi.c */,
+				05F2873E20F2BEEA00632D47 /* task_database_cue.c */,
+				05F2873F20F2BEEA00632D47 /* task_content.c */,
+				05F2874020F2BEEA00632D47 /* task_http.c */,
+				05F2874120F2BEEA00632D47 /* task_patch.c */,
+			);
+			name = tasks;
+			path = ../../tasks;
+			sourceTree = "<group>";
+		};
 		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -1220,6 +1430,7 @@
 			isa = PBXGroup;
 			children = (
 				8D1107320486CEB800E47090 /* RetroArch.app */,
+				05422E592140C8DB00F09961 /* RetroArchQT.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1228,13 +1439,15 @@
 			isa = PBXGroup;
 			children = (
 				05D7753120A55D2700646447 /* BaseConfig.xcconfig */,
+				05422E5C2140CFC500F09961 /* Metal.xcconfig */,
+				A90207489289602F593626D5 /* QTConfig.xcconfig */,
+				05422E5B2140CE3500F09961 /* VulkanConfig.xcconfig */,
 				840222FA1A889EA2009AB261 /* Core */,
 				05A8C51920DB72C200FF7857 /* Sources */,
 				841CBB821A8A33810066E9F1 /* Assets */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
-				5008453B1B89300700CE6073 /* Info.plist */,
 			);
 			indentWidth = 3;
 			name = RetroArch;
@@ -1256,7 +1469,11 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				05FA11A120CC6684008C5D0A /* MetalRenderer.framework */,
+				053FC25521433F1700D98D46 /* QtConcurrent.framework */,
+				053FC25421433F1700D98D46 /* QtCore.framework */,
+				053FC25321433F1700D98D46 /* QtGui.framework */,
+				053FC25621433F1800D98D46 /* QtNetwork.framework */,
+				053FC25721433F1800D98D46 /* QtWidgets.framework */,
 				05269A6120ABF20500C29F1E /* MetalKit.framework */,
 				05A8E23B20A63CF50084ABDA /* QuartzCore.framework */,
 				05A8E23920A63CED0084ABDA /* IOSurface.framework */,
@@ -1289,6 +1506,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		05422E3C2140C8DB00F09961 /* RetroArchQT */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 05422E562140C8DB00F09961 /* Build configuration list for PBXNativeTarget "RetroArchQT" */;
+			buildPhases = (
+				053FC2782143764B00D98D46 /* ShellScript */,
+				05422E3D2140C8DB00F09961 /* Resources */,
+				05422E422140C8DB00F09961 /* Sources */,
+				05422E492140C8DB00F09961 /* Frameworks */,
+				05422E552140C8DB00F09961 /* Embed Libraries */,
+				053FC26721433F2200D98D46 /* Embed Frameworks */,
+				053FC27621434B7700D98D46 /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RetroArchQT;
+			productInstallPath = "$(HOME)/Applications";
+			productName = RetroArch;
+			productReference = 05422E592140C8DB00F09961 /* RetroArchQT.app */;
+			productType = "com.apple.product-type.application";
+		};
 		8D1107260486CEB800E47090 /* RetroArch */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "RetroArch" */;
@@ -1328,11 +1567,22 @@
 			projectRoot = "";
 			targets = (
 				8D1107260486CEB800E47090 /* RetroArch */,
+				05422E3C2140C8DB00F09961 /* RetroArchQT */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		05422E3D2140C8DB00F09961 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				05422E3E2140C8DB00F09961 /* InfoPlist.strings in Resources */,
+				05422E3F2140C8DB00F09961 /* MainMenu.xib in Resources */,
+				05422E402140C8DB00F09961 /* retroarch.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8D1107290486CEB800E47090 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1345,7 +1595,50 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		053FC27621434B7700D98D46 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/zsh;
+			shellScript = "BINARY=${TARGET_BUILD_DIR}/${EXECUTABLE_PATH}\nVER=Versions/${QT_VERSION}\nfor name in {QtConcurrent,QtCore,QtWidgets,QtNetwork,QtGui}; do\n    echo updating install path for ${name}.framework\n    install_name_tool -change ${QT_FRAMEWORK_PATH}/${name}.framework/${VER}/${name} @executable_path/../Frameworks/${name}.framework/${VER}/${name} ${BINARY}\ndone";
+			showEnvVarsInLog = 0;
+		};
+		053FC2782143764B00D98D46 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "make -C ${SRCBASE} -f Makefile.apple HAVE_QT=1 MOC=${QT_INSTALL}/bin/moc generate";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
+		05422E422140C8DB00F09961 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				05422E432140C8DB00F09961 /* griffin_glslang.cpp in Sources */,
+				05422E442140C8DB00F09961 /* menu_pipeline.metal in Sources */,
+				05422E452140C8DB00F09961 /* griffin_cpp.cpp in Sources */,
+				05422E462140C8DB00F09961 /* griffin_objc.m in Sources */,
+				05422E472140C8DB00F09961 /* griffin.c in Sources */,
+				05422E482140C8DB00F09961 /* Shaders.metal in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8D11072C0486CEB800E47090 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1381,8 +1674,54 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		05422E572140C8DB00F09961 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A90207489289602F593626D5 /* QTConfig.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
+				INSTALL_PATH = "@rpath";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		05422E582140C8DB00F09961 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A90207489289602F593626D5 /* QTConfig.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_MODEL_TUNING = G5;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
+				INSTALL_PATH = "@rpath";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		C01FCF4B08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -1402,6 +1741,7 @@
 		};
 		C01FCF4C08A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -1496,6 +1836,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		05422E562140C8DB00F09961 /* Build configuration list for PBXNativeTarget "RetroArchQT" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				05422E572140C8DB00F09961 /* Debug */,
+				05422E582140C8DB00F09961 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "RetroArch" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

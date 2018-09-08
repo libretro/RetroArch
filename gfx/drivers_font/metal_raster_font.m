@@ -64,8 +64,9 @@
       
       _driver = driver;
       _context = driver.context;
-      if (!font_renderer_create_default((const void **)&_font_driver,
-                                        &_font_data, font_path, font_size))
+      if (!font_renderer_create_default(
+               &_font_driver,
+               &_font_data, font_path, font_size))
       {
          RARCH_WARN("Couldn't initialize font renderer.\n");
          return nil;
@@ -323,17 +324,8 @@ static INLINE void write_quad6(SpriteVertex *pv,
    
    id<MTLRenderCommandEncoder> rce = _context.rce;
    [rce pushDebugGroup:@"render fonts"];
-   
-   MTLViewport vp = {
-      .originX = 0,
-      .originY = 0,
-      .width   = _driver.viewport->full_width,
-      .height  = _driver.viewport->full_height,
-      .znear   = 0,
-      .zfar    = 1,
-   };
-   [rce setViewport:vp];
-   
+
+   [_context resetRenderViewport];
    [rce setRenderPipelineState:_state];
    [rce setVertexBytes:&_uniforms length:sizeof(Uniforms) atIndex:BufferIndexUniforms];
    [rce setVertexBuffer:_vert offset:start atIndex:BufferIndexPositions];
@@ -537,7 +529,7 @@ static const struct font_glyph *metal_raster_font_get_glyph(
 }
 
 static void metal_raster_font_flush_block(unsigned width, unsigned height,
-                                          void *data, video_frame_info_t *video_info)
+      void *data, video_frame_info_t *video_info)
 {
    (void)data;
 }

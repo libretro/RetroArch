@@ -95,6 +95,7 @@ enum gfx_ctx_api
    GFX_CTX_DIRECT3D12_API,
    GFX_CTX_OPENVG_API,
    GFX_CTX_VULKAN_API,
+   GFX_CTX_SIXEL_API,
    GFX_CTX_METAL_API,
    GFX_CTX_GDI_API,
    GFX_CTX_GX_API,
@@ -1245,6 +1246,8 @@ extern bool (*video_driver_cb_has_focus)(void);
 
 bool video_driver_started_fullscreen(void);
 
+bool video_driver_is_threaded(void);
+
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;
 extern video_driver_t video_metal;
@@ -1273,6 +1276,7 @@ extern video_driver_t video_xshm;
 extern video_driver_t video_caca;
 extern video_driver_t video_gdi;
 extern video_driver_t video_vga;
+extern video_driver_t video_sixel;
 extern video_driver_t video_null;
 
 extern const gfx_ctx_driver_t gfx_ctx_osmesa;
@@ -1294,6 +1298,7 @@ extern const gfx_ctx_driver_t gfx_ctx_emscripten;
 extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;
+extern const gfx_ctx_driver_t gfx_ctx_sixel;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
 
