@@ -8,6 +8,16 @@
 
 /* Begin PBXBuildFile section */
 		05269A6220ABF20500C29F1E /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05269A6120ABF20500C29F1E /* MetalKit.framework */; };
+		053FC25E21433F2200D98D46 /* QtConcurrent.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25521433F1700D98D46 /* QtConcurrent.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		053FC26021433F2200D98D46 /* QtCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25421433F1700D98D46 /* QtCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		053FC26221433F2200D98D46 /* QtGui.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25321433F1700D98D46 /* QtGui.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		053FC26421433F2200D98D46 /* QtNetwork.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25621433F1800D98D46 /* QtNetwork.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		053FC26521433F2200D98D46 /* QtWidgets.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25721433F1800D98D46 /* QtWidgets.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		053FC26621433F2200D98D46 /* QtWidgets.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25721433F1800D98D46 /* QtWidgets.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		053FC270214340F500D98D46 /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25321433F1700D98D46 /* QtGui.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		053FC271214340F500D98D46 /* QtNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25621433F1800D98D46 /* QtNetwork.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		053FC272214341E000D98D46 /* QtConcurrent.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25521433F1700D98D46 /* QtConcurrent.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		053FC275214341F000D98D46 /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25421433F1700D98D46 /* QtCore.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		05422E3E2140C8DB00F09961 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		05422E3F2140C8DB00F09961 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
 		05422E402140C8DB00F09961 /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
@@ -58,6 +68,21 @@
 			files = (
 			);
 			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		053FC26721433F2200D98D46 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				053FC26021433F2200D98D46 /* QtCore.framework in Embed Frameworks */,
+				053FC25E21433F2200D98D46 /* QtConcurrent.framework in Embed Frameworks */,
+				053FC26621433F2200D98D46 /* QtWidgets.framework in Embed Frameworks */,
+				053FC26421433F2200D98D46 /* QtNetwork.framework in Embed Frameworks */,
+				053FC26221433F2200D98D46 /* QtGui.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		05422E552140C8DB00F09961 /* Embed Libraries */ = {
@@ -112,8 +137,12 @@
 		0538875720DE11D300769232 /* retro_assert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_assert.h; sourceTree = "<group>"; };
 		0538875820DE11D300769232 /* retro_endianness.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_endianness.h; sourceTree = "<group>"; };
 		0538875920DE11D300769232 /* libretro.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libretro.h; sourceTree = "<group>"; };
+		053FC25321433F1700D98D46 /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = /usr/local/opt/qt/lib/QtGui.framework; sourceTree = "<group>"; };
+		053FC25421433F1700D98D46 /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = /usr/local/opt/qt/lib/QtCore.framework; sourceTree = "<group>"; };
+		053FC25521433F1700D98D46 /* QtConcurrent.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtConcurrent.framework; path = /usr/local/opt/qt/lib/QtConcurrent.framework; sourceTree = "<group>"; };
+		053FC25621433F1800D98D46 /* QtNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtNetwork.framework; path = /usr/local/opt/qt/lib/QtNetwork.framework; sourceTree = "<group>"; };
+		053FC25721433F1800D98D46 /* QtWidgets.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtWidgets.framework; path = /usr/local/opt/qt/lib/QtWidgets.framework; sourceTree = "<group>"; };
 		05422E592140C8DB00F09961 /* RetroArchQT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchQT.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		05422E5A2140C8DC00F09961 /* RetroArch copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch copy-Info.plist"; path = "/Volumes/Data/projects/libretro/retroarch/pkg/apple/RetroArch copy-Info.plist"; sourceTree = "<absolute>"; };
 		05422E5B2140CE3500F09961 /* VulkanConfig.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = VulkanConfig.xcconfig; sourceTree = "<group>"; };
 		05422E5C2140CFC500F09961 /* Metal.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Metal.xcconfig; sourceTree = "<group>"; };
 		0548E2B220F976E10094A083 /* driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = driver.c; path = ../../driver.c; sourceTree = "<group>"; };
@@ -516,7 +545,6 @@
 		05F2873F20F2BEEA00632D47 /* task_content.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_content.c; sourceTree = "<group>"; };
 		05F2874020F2BEEA00632D47 /* task_http.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_http.c; sourceTree = "<group>"; };
 		05F2874120F2BEEA00632D47 /* task_patch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_patch.c; sourceTree = "<group>"; };
-		05FA11A120CC6684008C5D0A /* MetalRenderer.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = MetalRenderer.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1DDD58150DA1D0A300B32029 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = MainMenu.xib; path = OSX/en.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
@@ -543,6 +571,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				053FC272214341E000D98D46 /* QtConcurrent.framework in Frameworks */,
+				053FC275214341F000D98D46 /* QtCore.framework in Frameworks */,
+				053FC270214340F500D98D46 /* QtGui.framework in Frameworks */,
+				053FC271214340F500D98D46 /* QtNetwork.framework in Frameworks */,
+				053FC26521433F2200D98D46 /* QtWidgets.framework in Frameworks */,
 				05422E4A2140C8DB00F09961 /* QuartzCore.framework in Frameworks */,
 				05422E4B2140C8DB00F09961 /* IOSurface.framework in Frameworks */,
 				05422E4C2140C8DB00F09961 /* Metal.framework in Frameworks */,
@@ -1415,7 +1448,6 @@
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
-				05422E5A2140C8DC00F09961 /* RetroArch copy-Info.plist */,
 			);
 			indentWidth = 3;
 			name = RetroArch;
@@ -1437,7 +1469,11 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				05FA11A120CC6684008C5D0A /* MetalRenderer.framework */,
+				053FC25521433F1700D98D46 /* QtConcurrent.framework */,
+				053FC25421433F1700D98D46 /* QtCore.framework */,
+				053FC25321433F1700D98D46 /* QtGui.framework */,
+				053FC25621433F1800D98D46 /* QtNetwork.framework */,
+				053FC25721433F1800D98D46 /* QtWidgets.framework */,
 				05269A6120ABF20500C29F1E /* MetalKit.framework */,
 				05A8E23B20A63CF50084ABDA /* QuartzCore.framework */,
 				05A8E23920A63CED0084ABDA /* IOSurface.framework */,
@@ -1478,6 +1514,8 @@
 				05422E422140C8DB00F09961 /* Sources */,
 				05422E492140C8DB00F09961 /* Frameworks */,
 				05422E552140C8DB00F09961 /* Embed Libraries */,
+				053FC26721433F2200D98D46 /* Embed Frameworks */,
+				053FC27621434B7700D98D46 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -1556,6 +1594,23 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		053FC27621434B7700D98D46 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/zsh;
+			shellScript = "BINARY=${TARGET_BUILD_DIR}/${EXECUTABLE_PATH}\nVER=Versions/${QT_VERSION}\nfor name in {QtConcurrent,QtCore,QtWidgets,QtNetwork,QtGui}; do\n    echo updating install path for ${name}.framework\n    install_name_tool -change ${QT_FRAMEWORK_PATH}/${name}.framework/${VER}/${name} @executable_path/../Frameworks/${name}.framework/${VER}/${name} ${BINARY}\ndone";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		05422E422140C8DB00F09961 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -1616,8 +1671,12 @@
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				INFOPLIST_FILE = "RetroArch copy-Info.plist";
-				INSTALL_PATH = "$(HOME)/Applications";
+				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
+				INSTALL_PATH = "@rpath";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
@@ -1634,8 +1693,12 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				INFOPLIST_FILE = "RetroArch copy-Info.plist";
-				INSTALL_PATH = "$(HOME)/Applications";
+				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
+				INSTALL_PATH = "@rpath";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
