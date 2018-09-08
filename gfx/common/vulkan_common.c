@@ -96,6 +96,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
       RARCH_ERR("[Vulkan]: Error: %s: %s\n",
             pLayerPrefix, pMessage);
    }
+#if 0
    else if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
    {
       RARCH_WARN("[Vulkan]: Warning: %s: %s\n",
@@ -111,6 +112,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
       RARCH_LOG("[Vulkan]: Information: %s: %s\n",
             pLayerPrefix, pMessage);
    }
+#endif
 
    return VK_FALSE;
 }
@@ -147,27 +149,21 @@ VkResult vulkan_emulated_mailbox_acquire_next_image(struct vulkan_emulated_mailb
    if (!mailbox->has_pending_request)
    {
       mailbox->request_acquire = true;
-      mailbox->has_pending_request = true;
       scond_signal(mailbox->cond);
    }
 
-   if (!mailbox->acquired)
-   {
-      /* Wait some arbitrary time here for good measure.
-       * This lets us grab the index from mailbox_begin_acquire early. */
-      scond_wait_timeout(mailbox->cond, mailbox->lock, 1000);
-   }
+   mailbox->has_pending_request = true;
 
    if (mailbox->acquired)
    {
       res = mailbox->result;
       *index = mailbox->index;
       mailbox->has_pending_request = false;
+      mailbox->acquired = false;
    }
    else
       res = VK_TIMEOUT;
 
-   mailbox->acquired = false;
    slock_unlock(mailbox->lock);
    return res;
 }
@@ -1697,13 +1693,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          &vk->context.memory_properties);
 
 #ifdef VULKAN_EMULATE_MAILBOX
-   /*
-   // AMD can emulate Mailbox on Windows, but not NV.
-   // Not tested on Intel.
-   if (vk->context.gpu_properties.vendorID == VENDOR_ID_AMD)
-      vk->emulate_mailbox = true;
-   */
-   vk->emulate_mailbox = true;
+   /* Win32 windowed mode seems to deal just fine with toggling VSync.
+    * Fullscreen however ... */
+   vk->emulate_mailbox = vk->fullscreen;
 #endif
 
    RARCH_LOG("[Vulkan]: Using GPU: %s\n", vk->context.gpu_properties.deviceName);

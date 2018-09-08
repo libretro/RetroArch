@@ -160,6 +160,9 @@ typedef struct gfx_ctx_vulkan_data
    VkSwapchainKHR swapchain;
 
    struct vulkan_emulated_mailbox mailbox;
+   /* Used to check if we need to use mailbox emulation or not.
+    * Only relevant on Windows for now. */
+   bool fullscreen;
 } gfx_ctx_vulkan_data_t;
 
 struct vulkan_display_surface_info
