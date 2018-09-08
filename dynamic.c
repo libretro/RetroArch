@@ -66,6 +66,7 @@
 #include "configuration.h"
 #include "msg_hash.h"
 #include "verbosity.h"
+#include "tasks/tasks_internal.h"
 
 #ifdef HAVE_RUNAHEAD
 #include "runahead/secondary_core.h"
