@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <sys/statvfs.h>
 #include <sys/dirent.h>
+#include <sys/iosupport.h>
 #include <string.h>
 #include <malloc.h>
 #include <fcntl.h>
