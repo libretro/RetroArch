@@ -26,6 +26,10 @@
 #include <string/stdstring.h>
 #include <net/net_http.h>
 
+#ifdef HAVE_DISCORD
+#include <discord/discord.h>
+#endif
+
 #include <file/file_path.h>
 
 #include "netplay_discovery.h"
@@ -59,6 +63,10 @@ static int reannounce = 0;
 static bool is_mitm = false;
 
 static bool netplay_disconnect(netplay_t *netplay);
+
+#ifdef HAVE_DISCORD
+extern bool discord_is_inited;
+#endif
 
 /**
  * netplay_is_alive:
@@ -1490,6 +1498,14 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          case RARCH_NETPLAY_CTL_ENABLE_SERVER:
             netplay_enabled = true;
             netplay_is_client = false;
+#ifdef HAVE_DISCORD
+            if (discord_is_inited)
+            {
+               discord_userdata_t userdata;
+               userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING;
+               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+            }
+#endif
             goto done;
 
          case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
@@ -1499,6 +1515,14 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 
          case RARCH_NETPLAY_CTL_DISABLE:
             netplay_enabled = false;
+#ifdef HAVE_DISCORD
+            if (discord_is_inited)
+            {
+               discord_userdata_t userdata;
+               userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING_STOPPED;
+               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+            }
+#endif
             goto done;
 
          case RARCH_NETPLAY_CTL_IS_ENABLED:

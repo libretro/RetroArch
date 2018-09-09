@@ -467,16 +467,17 @@ bool menu_display_libretro(bool is_idle,
       return true;
    }
 
-#ifdef HAVE_DISCORD
-   discord_userdata_t userdata;
-   userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
-
-   command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-#endif
-
    if (is_idle)
+   {
+#ifdef HAVE_DISCORD
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
+
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+#endif
       return true; /* Maybe return false here
                       for indication of idleness? */
+   }
    return video_driver_cached_frame();
 }
 

@@ -14,6 +14,8 @@
       "*.in": "c",
       "*.rh": "c",
       "array": "c",
+      "file_stream.h": "c",
+      "driver.h": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }
