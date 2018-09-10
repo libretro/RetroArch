@@ -25,12 +25,12 @@
 
 static unsigned orig_width      = 0;
 static unsigned orig_height     = 0;
-static char old_mode[150];
-static char new_mode[150];
-static char xrandr[250];
-static char fbset[150];
-static char output[250];
-static bool crt_en     = false;
+static char old_mode[250]       = {0};
+static char new_mode[250]       = {0};
+static char xrandr[250]         = {0};
+static char fbset[150]          = {0};
+static char output[250]         = {0};
+static bool crt_en              = false;
 
 typedef struct
 {
@@ -56,22 +56,23 @@ static void x11_display_server_destroy(void *data)
    {
       sprintf(output,"xrandr -s %dx%d", orig_width, orig_height);
       system(output);
-   }  
-   for (i =0; i < 3; i++)
-   {
-      sprintf(output,"xrandr --delmode %s%d %s", "VGA",i ,old_mode);
-      system(output);  
-      sprintf(output,"xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
-      system(output);  
+    
+      for (i =0; i < 3; i++)
+      {
+         sprintf(output,"xrandr --delmode %s%d %s", "VGA",i ,old_mode);
+         system(output);  
+         sprintf(output,"xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
+         system(output);  
 
-      sprintf(output,"xrandr --delmode %s%d %s", "DVI",i ,old_mode);
-      system(output);  
-      sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
-      system(output);  
-
-   }     
+         sprintf(output,"xrandr --delmode %s%d %s", "DVI",i ,old_mode);
+         system(output);  
+         sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
+         system(output);  
+      }     
+   
       sprintf(output,"xrandr --rmmode %s", old_mode);
 	  system(output);
+   }
 
    if (dispserv)
       free(dispserv);
@@ -131,8 +132,8 @@ static bool x11_set_resolution(void *data,
    
   /* following code is the mode line genorator */
 
-   hsp = width*1.145;
-   hfp = width*1.025;
+   hsp = width*1.140;
+   hfp = width*1.055;
 
    pwidth = width;
 
@@ -231,7 +232,7 @@ static bool x11_set_resolution(void *data,
    }
    /* above code is the modeline genorator */
 
-   /* create progressive newmode from modline variables */
+   /* create interlaced newmode from modline variables */
    if (height < 300)
    {
       snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%dx%d_%0.2f\" %lf %d %d %d %d %d %d %d %d -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
@@ -287,7 +288,7 @@ static bool x11_set_resolution(void *data,
        /* variable for old mode */
 	  snprintf(old_mode, sizeof(old_mode), "%s", new_mode);
       system("xdotool windowactivate $(xdotool search --class RetroArch)");	/* needs xdotool installed. needed to recaputure window. */
-                                                                            /* Second run needed as some times it runs to fast to capture first time */
+                                                                   /* Second run needed as some times it runs to fast to capture first time */
 
  return true;
 }
