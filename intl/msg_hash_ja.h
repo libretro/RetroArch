@@ -33,7 +33,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_PUBLIC_ADDRESS,
-      "公式IPアドレス"
+      "グローバルIPアドレス"
       )
 MSG_HASH(
       MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -65,7 +65,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
-      "「%.*s」がプレヤー「%u」で接続しました"
+      "「%.*s」がプレヤー「%u」として接続しました"
       )
 MSG_HASH(
       MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
@@ -77,7 +77,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_OUT_OF_DATE,
-      "相手のRetroArchバージョンは古いから接続できません。"
+      "相手のRetroArchバージョンは古いため、接続できません。"
       )
 MSG_HASH(
       MSG_NETPLAY_DIFFERENT_VERSIONS,
@@ -149,11 +149,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
-      "メニューの外観関係の設定を変更する。"
+      "メニューの外観に関係する設定を変更する。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-      "CPUとGPUを強制に同期する。遅延が減るけどパフォーマンスも減る。"
+      "CPUとGPUを強制に同期する。遅延が減る代わりに性能が低下する。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_THREADED,
@@ -173,7 +173,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_CAPABILITIES,
-      "対応された機能"
+      "対応機能"
       )
 MSG_HASH(
       MSG_CONNECTING_TO_NETPLAY_HOST,
@@ -213,7 +213,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
-      "レトロ実績"
+      "RetroAchievements"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
@@ -221,11 +221,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
-      "実績(ハードコア)を一時停止"
+      "実績ハードコアモードを一時停止"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
-      "実績(ハードコア)を再開"
+      "実績ハードコアモードを再開"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
@@ -245,7 +245,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-      "ネットプレイのルーム表"
+      "ネットプレイのロビー表"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
@@ -499,19 +499,19 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
-      "解除された実績:"
+      "未解除の実績:"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
-      "ロックされている"
+      "未解除"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
-      "レトロ実績"
+      "RetroAchievements"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-      "非公式実績をテスト"
+      "非公式実績を試す"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
@@ -523,15 +523,15 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
-      "解除可能の実績:"
+      "解除済みの実績:"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
-      "解除されている"
+      "解除済み"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE,
-      "解除されている(ハードコア)"
+      "解除済み(ハードコア)"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -1411,7 +1411,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RETROPAD,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
       "レトロパッド(アナログ付)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-      "レトロ実績")
+      "実績")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
       "巻き戻しを有効")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
@@ -1997,7 +1997,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
       "システムのドライバを変更する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-      "実績関係の設定を変更する。")
+      "実績に関係する設定を変更する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
       "コアの設定を変更する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
@@ -2007,7 +2007,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
       "巻き戻し、早送り、スローモーションの設定を変更する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-      "保存関係の設定を変更する。")
+      "保存に関係する設定を変更する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
       "ログの設定を変更する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
@@ -2059,7 +2059,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
 MSG_HASH(MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
       "フォルダのネットワーク共有を有効する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
-      "OS関係のサービスを管理する。")
+      "OSに関係するサービスを管理する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
       "ファイルブラウザーの中に隠しファイルとフォルダを表示する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SSH_ENABLE,
@@ -2684,7 +2684,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE,
       "スノーフレーク")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-      "ルーム表を更新")
+      "ロビー表を更新")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
       "ニックネーム: %s")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
@@ -2698,9 +2698,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FILTER,
       "Apply a CPU-powered video filter. NOTE: Might come at a high performance cost. Some video filters might only work for cores that use 32bit or 16bit color.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
-      "レトロ実績上のユーザー名")
+      "RetroAchievementsアカウントのユーザー名")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-      "レトロ実績上のパスワード")
+      "RetroAchievementsアカウントのパスワード")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
       "ネットプレイの使用するニックネーム")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
@@ -3687,7 +3687,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
       "電源管理")
 MSG_HASH(MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-      "電源関係設定を変更する。")
+      "電源に関係する設定を変更する。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
       "パフォーマンス維持モード")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
