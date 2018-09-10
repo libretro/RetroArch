@@ -134,7 +134,7 @@ static bool x11_set_resolution(void *data,
   /* following code is the mode line genorator */
 
    hsp = width*1.140;
-   hfp = width*1.045;
+   hfp = width*1.055;
 
    pwidth = width;
 
