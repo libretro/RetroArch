@@ -3001,16 +3001,11 @@ found:
 
       memcpy((void*)&coro->header, coro->data,
             sizeof(coro->header));
-
-      if (     coro->header.id[0] != 'N'
-            || coro->header.id[1] != 'E'
-            || coro->header.id[2] != 'S'
-            || coro->header.id[3] != 0x1a)
-      {
-         coro->gameid = 0;
-         CORO_RET();
-      }
-
+      
+      if (coro->header.id[0] == 'N'
+        && coro->header.id[1] == 'E'
+        && coro->header.id[2] == 'S'
+        && coro->header.id[3] == 0x1a)
       {
          size_t romsize = 256;
          /* from FCEU core - compute size using the cart mapper */
@@ -3026,24 +3021,61 @@ found:
             * we use FCEU_read. */
          coro->round       = mapper != 53 && mapper != 198 && mapper != 228;
          coro->bytes       = coro->round ? romsize : coro->header.rom_size;
-      }
-
-      /* from FCEU core - check if Trainer included in ROM data */
-      MD5_Init(&coro->md5);
-      coro->offset = sizeof(coro->header) + (coro->header.rom_type & 4
+         
+         coro->offset = sizeof(coro->header) + (coro->header.rom_type & 4
             ? sizeof(coro->header) : 0);
-      coro->count  = 0x4000 * coro->bytes;
-      CORO_GOSUB(EVAL_MD5);
+            
+          /* from FCEU core - check if Trainer included in ROM data */
+          MD5_Init(&coro->md5);
+          coro->count  = 0x4000 * coro->bytes;
+          CORO_GOSUB(EVAL_MD5);
 
-      if (coro->count < 0x4000 * coro->bytes)
-      {
-         coro->offset      = 0xff;
-         coro->count       = 0x4000 * coro->bytes - coro->count;
-         CORO_GOSUB(FILL_MD5);
+          if (coro->count < 0x4000 * coro->bytes)
+          {
+             coro->offset      = 0xff;
+             coro->count       = 0x4000 * coro->bytes - coro->count;
+             CORO_GOSUB(FILL_MD5);
+          }
+
+          MD5_Final(coro->hash, &coro->md5);
+          CORO_GOTO(GET_GAMEID);
       }
+      else
+      {
+          // Fall back to headerless hashing
+          // PRG ROM size is unknown, so test by 16KB chunks          
+          size_t chunks = coro->len >> 14;
+          size_t chunk_size = 0x4000;
+          coro->round = 0;
+          coro->offset = 0;
+          
+          for (int i = 0; i < chunks; i++)
+          {
+              MD5_Init(&coro->md5);
+              
+              coro->bytes = i + 1;
+              coro->count = coro->bytes * chunk_size;
+              
+              CORO_GOSUB(EVAL_MD5);
 
-      MD5_Final(coro->hash, &coro->md5);
-      CORO_GOTO(GET_GAMEID);
+              if (coro->count < 0x4000 * coro->bytes)
+              {
+                 coro->offset      = 0xff;
+                 coro->count       = 0x4000 * coro->bytes - coro->count;
+                 CORO_GOSUB(FILL_MD5);
+              }
+
+              MD5_Final(coro->hash, &coro->md5);
+              CORO_GOSUB(GET_GAMEID);
+              
+              if (coro->gameid > 0)
+              {
+                  break;
+              }
+          }
+
+          CORO_RET();
+      }
 
       /**************************************************************************
        * Info   Tries to identify a "generic" game
