@@ -70,9 +70,10 @@ static void x11_display_server_destroy(void *data)
          system(output);  
 
       }     
-   }
+   
       sprintf(output,"xrandr --rmmode %s", old_mode);
 	  system(output);
+   }
 
    if (dispserv)
       free(dispserv);
