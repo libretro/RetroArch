@@ -25,12 +25,12 @@
 
 static unsigned orig_width      = 0;
 static unsigned orig_height     = 0;
-static char old_mode[250];
-static char new_mode[250];
-static char xrandr[250];
-static char fbset[150];
-static char output[250];
-static bool crt_en     = false;
+static char old_mode[250]       = {0};
+static char new_mode[250]       = {0};
+static char xrandr[250]         = {0};
+static char fbset[150]          = {0};
+static char output[250]         = {0};
+static bool crt_en              = false;
 
 typedef struct
 {
