@@ -584,7 +584,9 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+#ifdef HAVE_VULKAN
    win32_vk.fullscreen = fullscreen;
+#endif
 
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
    {
