@@ -68,7 +68,6 @@ static void x11_display_server_destroy(void *data)
          system(output);  
          sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
          system(output);  
-
       }     
    
       sprintf(output,"xrandr --rmmode %s", old_mode);
