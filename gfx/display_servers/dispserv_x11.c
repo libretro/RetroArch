@@ -56,20 +56,21 @@ static void x11_display_server_destroy(void *data)
    {
       sprintf(output,"xrandr -s %dx%d", orig_width, orig_height);
       system(output);
-   }  
-   for (i =0; i < 3; i++)
-   {
-      sprintf(output,"xrandr --delmode %s%d %s", "VGA",i ,old_mode);
-      system(output);  
-      sprintf(output,"xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
-      system(output);  
+    
+      for (i =0; i < 3; i++)
+      {
+         sprintf(output,"xrandr --delmode %s%d %s", "VGA",i ,old_mode);
+         system(output);  
+         sprintf(output,"xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
+         system(output);  
 
-      sprintf(output,"xrandr --delmode %s%d %s", "DVI",i ,old_mode);
-      system(output);  
-      sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
-      system(output);  
+         sprintf(output,"xrandr --delmode %s%d %s", "DVI",i ,old_mode);
+         system(output);  
+         sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
+         system(output);  
 
-   }     
+      }     
+   }
       sprintf(output,"xrandr --rmmode %s", old_mode);
 	  system(output);
 
