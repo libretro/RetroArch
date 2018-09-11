@@ -1,5 +1,6 @@
 # 1.7.5 (future)
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
+- CHEEVOS: Support headerless NES hashing.
 - CRT: New porches and interlaced bug fix.
 - COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
 - LOCALIZATION: Update Portuguese / Brazilian translation.
