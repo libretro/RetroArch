@@ -3202,7 +3202,7 @@ bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data)
    return true;
 }
 
-bool video_context_driver_swap_interval(unsigned *interval)
+bool video_context_driver_swap_interval(int *interval)
 {
    if (!current_video_context.swap_interval)
       return false;

@@ -97,7 +97,7 @@ static gfx_ctx_vulkan_data_t win32_vk;
 
 static unsigned         win32_major       = 0;
 static unsigned         win32_minor       = 0;
-static unsigned         win32_interval    = 0;
+static int              win32_interval    = 0;
 static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
 
 #ifdef HAVE_DYNAMIC
@@ -308,7 +308,7 @@ void create_graphics_context(HWND hwnd, bool *quit)
 
 void *dinput_wgl;
 
-static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_wgl_swap_interval(void *data, int interval)
 {
    (void)data;
 

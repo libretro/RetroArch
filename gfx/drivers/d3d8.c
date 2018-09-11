@@ -1006,13 +1006,15 @@ static bool d3d8_restore(void *data)
 
 static void d3d8_set_nonblock_state(void *data, bool state)
 {
-   unsigned interval            = state ? 0 : 1;
+   int      interval            = 0;
    d3d8_video_t            *d3d = (d3d8_video_t*)data;
 
    if (!d3d)
       return;
 
-   d3d->video_info.vsync = !state;
+   if (!state)
+      interval                  = 1;
+   d3d->video_info.vsync        = !state;
 
 #ifdef _XBOX
    d3d8_set_render_state(d3d->dev, D3D8_PRESENTATIONINTERVAL,

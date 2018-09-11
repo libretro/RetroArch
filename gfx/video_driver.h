@@ -354,7 +354,7 @@ typedef struct video_info
     */
    unsigned height;
 
-   unsigned swap_interval;
+   int swap_interval;
 
 #ifdef GEKKO
    bool vfilter;
@@ -522,7 +522,7 @@ typedef struct gfx_ctx_driver
          unsigned major, unsigned minor);
 
    /* Sets the swap interval. */
-   void (*swap_interval)(void *data, unsigned);
+   void (*swap_interval)(void *data, int);
 
    /* Sets video mode. Creates a window, etc. */
    bool (*set_video_mode)(void*, video_frame_info_t *video_info, unsigned, unsigned, bool);
@@ -1166,7 +1166,7 @@ void video_context_driver_destroy(void);
 
 bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data);
 
-bool video_context_driver_swap_interval(unsigned *interval);
+bool video_context_driver_swap_interval(int *interval);
 
 bool video_context_driver_get_proc_address(gfx_ctx_proc_address_t *proc);
 

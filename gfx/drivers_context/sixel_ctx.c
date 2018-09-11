@@ -151,7 +151,7 @@ static void gfx_ctx_sixel_show_mouse(void *data, bool state)
    (void)data;
 }
 
-static void gfx_ctx_sixel_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_sixel_swap_interval(void *data, int interval)
 {
    (void)data;
    (void)interval;

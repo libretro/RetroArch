@@ -417,7 +417,7 @@ dpi_fallback:
    return true;
 }
 
-static void gfx_ctx_qnx_set_swap_interval(void *data, unsigned swap_interval)
+static void gfx_ctx_qnx_set_swap_interval(void *data, int swap_interval)
 {
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
 

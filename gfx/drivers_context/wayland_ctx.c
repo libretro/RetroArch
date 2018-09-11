@@ -86,7 +86,7 @@ typedef struct gfx_ctx_wayland_data
    struct wl_touch *wl_touch;
    struct wl_seat *seat;
    struct wl_shm *shm;
-   unsigned swap_interval;
+   int swap_interval;
    bool core_hw_context_enable;
 
    unsigned buffer_scale;
@@ -1232,7 +1232,7 @@ static void gfx_ctx_wl_destroy(void *data)
    free(wl);
 }
 
-static void gfx_ctx_wl_set_swap_interval(void *data, unsigned swap_interval)
+static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 

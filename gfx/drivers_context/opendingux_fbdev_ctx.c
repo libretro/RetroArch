@@ -225,7 +225,7 @@ static void gfx_ctx_opendingux_swap_buffers(void *data, void *data2)
 }
 
 static void gfx_ctx_opendingux_set_swap_interval(
-      void *data, unsigned swap_interval)
+      void *data, int swap_interval)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
 

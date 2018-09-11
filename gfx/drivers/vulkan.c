@@ -1121,10 +1121,10 @@ static void *vulkan_init(const video_info_t *video,
 {
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
-   unsigned interval;
    unsigned full_x, full_y;
    unsigned win_width;
    unsigned win_height;
+   int interval                       = 0;
    unsigned temp_width                = 0;
    unsigned temp_height               = 0;
    const gfx_ctx_driver_t *ctx_driver = NULL;
@@ -1259,7 +1259,7 @@ static void vulkan_check_swapchain(vk_t *vk)
 
 static void vulkan_set_nonblock_state(void *data, bool state)
 {
-   unsigned interval;
+   int interval         = 0;
    vk_t *vk             = (vk_t*)data;
    settings_t *settings = config_get_ptr();
 
@@ -1268,7 +1268,9 @@ static void vulkan_set_nonblock_state(void *data, bool state)
 
    RARCH_LOG("[Vulkan]: VSync => %s\n", state ? "off" : "on");
 
-   interval = state ? 0 : settings->uints.video_swap_interval;
+   if (!state)
+      interval = settings->uints.video_swap_interval;
+
    video_context_driver_swap_interval(&interval);
 
    /* Changing vsync might require recreating the swapchain, which means new VkImages
@@ -2024,7 +2026,8 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 
    /* Vulkan doesn't directly support swap_interval > 1, so we fake it by duping out more frames. */
-   if (vk->context->swap_interval > 1 && !vk->context->swap_interval_emulation_lock)
+   if (      vk->context->swap_interval > 1 
+         && !vk->context->swap_interval_emulation_lock)
    {
       unsigned i;
       vk->context->swap_interval_emulation_lock = true;

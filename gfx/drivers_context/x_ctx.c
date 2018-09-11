@@ -100,7 +100,7 @@ typedef struct gfx_ctx_x_data
    unsigned swap_mode;
 #endif
 
-   unsigned g_interval;
+   int g_interval;
 
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;
@@ -320,7 +320,7 @@ static void gfx_ctx_x_destroy(void *data)
    free(data);
 }
 
-static void gfx_ctx_x_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_x_swap_interval(void *data, int interval)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 

@@ -23,7 +23,7 @@
 typedef struct
 {
    gfx_ctx_vulkan_data_t vk;
-   unsigned swap_interval;
+   int swap_interval;
    unsigned width;
    unsigned height;
 } khr_display_ctx_data_t;
@@ -99,7 +99,8 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
 
    khr->width = width;
    khr->height = height;
-   if (!vulkan_create_swapchain(&khr->vk, khr->width, khr->height, khr->swap_interval))
+   if (!vulkan_create_swapchain(&khr->vk, khr->width, khr->height,
+            khr->swap_interval))
    {
       RARCH_ERR("[Vulkan]: Failed to update swapchain.\n");
       return false;
@@ -189,9 +190,11 @@ static bool gfx_ctx_khr_display_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static void gfx_ctx_khr_display_set_swap_interval(void *data, unsigned swap_interval)
+static void gfx_ctx_khr_display_set_swap_interval(void *data,
+      int swap_interval)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
+
    if (khr->swap_interval != swap_interval)
    {
       khr->swap_interval = swap_interval;

@@ -18,7 +18,7 @@
 
 #include "../video_driver.h"
 
-static void gfx_ctx_null_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_null_swap_interval(void *data, int interval)
 {
    (void)data;
    (void)interval;
