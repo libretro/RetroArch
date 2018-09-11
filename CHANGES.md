@@ -1,4 +1,5 @@
 # 1.7.5 (future)
+- CAMERA: Fix Video4Linux2 driver that broke years ago.
 - COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
 - LOCALIZATION: Update Japanese translation.
 - MENU/QT/WIMP: Add option to filter extensions inside archives when adding to a playlist.
