@@ -1195,6 +1195,20 @@ struct retro_led_interface
                                             * fastforwarding mode.
                                             */
 
+#define RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND (50 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                            /* bool * --
+                                            * Boolean value that tells the front end to save states in the
+                                            * background or not.
+                                            */
+
+#define RETRO_ENVIRONMENT_GET_CLEAR_ALL_THREAD_WAITS_CB (51 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                            /* retro_environment_t * --
+                                            * Provides the callback to the frontend method which will cancel
+                                            * all currently waiting threads.  Used when coordination is needed
+                                            * between the core and the frontend to gracefully stop all threads.
+                                            */
+
+
 /* Retrieves the current state of the MIDI input.
  * Returns true if it's enabled, false otherwise. */
 typedef bool (RETRO_CALLCONV *retro_midi_input_enabled_t)(void);
