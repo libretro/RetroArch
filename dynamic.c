@@ -1042,6 +1042,16 @@ static void core_performance_counter_stop(struct retro_perf_counter *perf)
       perf->total += cpu_features_get_perf_counter() - perf->start;
 }
 
+bool rarch_clear_all_thread_waits(unsigned clear_threads, void *data)
+{
+   if ( clear_threads > 0)
+      audio_driver_start(false) ;
+   else
+      audio_driver_stop() ;
+
+   return true ;
+}
+
 /**
  * rarch_environment_cb:
  * @cmd                          : Identifier of command.
@@ -1833,8 +1843,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             int* result_p = (int*)data;
             *result_p = result;
          }
+         break;
       }
-      break;
 
       case RETRO_ENVIRONMENT_GET_MIDI_INTERFACE:
       {
@@ -1849,16 +1859,21 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             midi_interface->write = midi_driver_write;
             midi_interface->flush = midi_driver_flush;
          }
+         break;
       }
-      break;
 
       case RETRO_ENVIRONMENT_GET_FASTFORWARDING:
       {
          extern bool runloop_fastmotion;
          *(bool *)data = runloop_fastmotion;
+         break;
       }
-      break;
 
+      case RETRO_ENVIRONMENT_GET_CLEAR_ALL_THREAD_WAITS_CB:
+      {
+         *(retro_environment_t *)data = rarch_clear_all_thread_waits;
+         break;
+      }
       
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
