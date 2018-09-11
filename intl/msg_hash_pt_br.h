@@ -1000,7 +1000,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-    "Habilitar Autoconfiguração"
+    "Habilitar Auto Configuração"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
@@ -1372,7 +1372,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
-    "Salvar Autoconfiguração"
+    "Salvar Auto Configuração"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
@@ -1408,7 +1408,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-    "Autoconfiguração de Entrada"
+    "Auto Configuração de Entrada"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
@@ -2520,7 +2520,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
-    "Núcleos Sugeridos"
+    "Núcleos sugeridos"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -2548,7 +2548,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-    "Data de Compilação"
+    "Data de compilação"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
@@ -2560,7 +2560,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-    "Suporte à Interface de Comando"
+    "Suporte à interface de comando"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
@@ -2572,15 +2572,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-    "Métrica DPI da Tela"
+    "Métrica DPI da tela"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-    "Métrica de Altura da Tela (mm)"
+    "Métrica de altura da tela (mm)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-    "Métrica de Largura da Tela (mm)"
+    "Métrica de largura da tela (mm)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
@@ -2916,7 +2916,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-    "Atualizar Perfis de Autoconfiguração"
+    "Atualizar Perfis de Auto Configuração"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
@@ -3676,7 +3676,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-    "Erro em salvar o arquivo de autoconfiguração."
+    "Erro em salvar o arquivo de auto configuração."
     )
 MSG_HASH(
     MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
@@ -5044,7 +5044,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-    "Troca de botões para OK/Cancelar. Desabilitado é o estilo de botão japonês, habilitada é oestilo ocidental."
+    "Troca de botões para OK/Cancelar. Desabilitado é o estilo de botão japonês, habilitada é o estilo ocidental."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
@@ -5576,7 +5576,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
-    "Se um Joypad estiver conectado, o mesmo será autoconfigurado se um arquivo de configuração correspondente estiver presente dento deste diretório."
+    "Se um Joypad estiver conectado, o mesmo será configurado automaticamente se um arquivo de configuração correspondente estiver presente dento deste diretório."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
@@ -6211,7 +6211,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-    "Exibir Decorações da Janela"
+    "Exibir Botões em Janela"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
@@ -6275,7 +6275,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-    "Ativar áudio de menu"
+    "Ativar Áudio de Menu"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
@@ -7266,6 +7266,18 @@ MSG_HASH(
     "Banco de Dados:"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS,
+    "Extensões:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
+    "(separado por espaço; inclui tudo por padrão)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
+    "Filtrar dentro dos arquivos"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
     "(usado para encontrar miniaturas)"
     )
@@ -7385,13 +7397,47 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER,
     "Restaurar Parâmetro"
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
-    "Baixar miniaturas")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
-    "Um download já está em progresso.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
-    "Iniciar na lista de reprodução:")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-    "Baixar Todas as Miniaturas")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
-    "Miniaturas baixadas com sucesso.")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
+    "Baixar miniaturas"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
+    "Um download já está em progresso."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
+    "Iniciar na lista de reprodução:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
+    "Baixar Todas as Miniaturas"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
+    "Sistema Inteiro"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
+    "Esta Lista de Reprodução"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
+    "Miniaturas baixadas com sucesso."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
+    "Sucedido: %1 Falhou: %2"
+    )
+MSG_HASH(
+    MSG_DEVICE_CONFIGURED_IN_PORT,
+    "Configurado na porta:"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SET_DISK,
+    "Falha ao definir o disco"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
+    "Opções de Núcleo"
+    )
