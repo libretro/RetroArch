@@ -2,6 +2,7 @@
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
 - CRT: New porches and interlaced bug fix.
 - COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
+- LOCALIZATION: Update Portuguese / Brazilian translation.
 - LOCALIZATION: Update Japanese translation.
 - MENU/QT/WIMP: Add option to filter extensions inside archives when adding to a playlist.
 - METAL: Add screenshot support.
