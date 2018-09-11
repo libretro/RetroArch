@@ -1,11 +1,13 @@
 # 1.7.5 (future)
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
+- CRT: New porches and interlaced bug fix.
 - COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
 - LOCALIZATION: Update Japanese translation.
 - MENU/QT/WIMP: Add option to filter extensions inside archives when adding to a playlist.
 - METAL: Add screenshot support.
 - NETPLAY: Save lobby details received back from server after first announcement.
 - VULKAN: Fix race condition in threaded mailbox emulation.
+- VULKAN: Maintenance fixes.
 
 # 1.7.4
 - ANDROID: Add sustained performance mode, can be turned on/off in Power Management settings menu.
