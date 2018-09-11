@@ -4,6 +4,7 @@
 - MENU/QT/WIMP: Add option to filter extensions inside archives when adding to a playlist.
 - METAL: Add screenshot support.
 - NETPLAY: Save lobby details received back from server after first announcement.
+- VULKAN: Fix race condition in threaded mailbox emulation.
 
 # 1.7.4
 - ANDROID: Add sustained performance mode, can be turned on/off in Power Management settings menu.
