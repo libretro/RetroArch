@@ -8,7 +8,7 @@
 - MENU/QT/WIMP: Add option to filter extensions inside archives when adding to a playlist.
 - METAL: Add screenshot support.
 - NETPLAY: Save lobby details received back from server after first announcement.
-- OPENGL/GLX: Implement Adaptive VSync - XGL_EXT_swap_control_tear.
+- OPENGL/GLX: Implement Adaptive VSync - GLX_EXT_swap_control_tear.
 - OPENGL/WGL: Implement Adaptive VSync - WGL_EXT_swap_control_tear.
 - VULKAN: Fix race condition in threaded mailbox emulation.
 - VULKAN: Maintenance fixes.
