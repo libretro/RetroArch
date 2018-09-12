@@ -1215,6 +1215,10 @@ MENU
 #include "../menu/drivers_display/menu_display_wiiu.c"
 #endif
 
+#if defined(HAVE_LIBNX)
+#include "../menu/drivers_display/menu_display_switch.c"
+#endif
+
 #ifdef HAVE_CACA
 #include "../menu/drivers_display/menu_display_caca.c"
 #endif
