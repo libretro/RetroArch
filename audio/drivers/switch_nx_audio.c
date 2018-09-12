@@ -24,6 +24,10 @@
 
 #include "../../tasks/tasks_internal.h"
 
+#ifndef RESULT_OK
+#define RESULT_OK 0
+#endif
+
 typedef struct
 {
       bool blocking;
@@ -34,21 +38,14 @@ typedef struct
       AudioOutBuffer *current_buffer;
 } switch_audio_t;
 
-static bool switch_tasks_finder(retro_task_t *task, void *userdata)
-{
-      return task;
-}
-task_finder_data_t switch_tasks_finder_data = {switch_tasks_finder, NULL};
-
-#define SAMPLERATE 48000
-#define CHANNELCOUNT 2
+static const int sample_rate           = 48000;
+static const int num_channels          = 2;
 #define FRAMERATE (1000 / 30)
-#define SAMPLECOUNT SAMPLERATE / FRAMERATE
-#define BYTESPERSAMPLE sizeof(uint16_t)
+#define SAMPLECOUNT (sample_rate / FRAMERATE)
 
 static uint32_t switch_audio_data_size(void)
 {
-   return (SAMPLECOUNT * CHANNELCOUNT * BYTESPERSAMPLE);
+   return (SAMPLECOUNT * num_channels * sizeof(uint16_t));
 }
 
 static size_t switch_audio_buffer_size(void *data)
@@ -59,41 +56,40 @@ static size_t switch_audio_buffer_size(void *data)
 
 static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
 {
-   size_t to_write = size;
+   size_t     to_write = size;
    switch_audio_t *swa = (switch_audio_t *)data;
 
    if (!swa)
-   {
       return -1;
-   }
 
    if (!swa->current_buffer)
    {
       uint32_t num;
-      if (R_FAILED(audoutGetReleasedAudioOutBuffer(&swa->current_buffer, &num)))
+      if (audoutGetReleasedAudioOutBuffer(
+               &swa->current_buffer, &num) != RESULT_OK)
+      {
+         RARCH_LOG("Failed to get released buffer?\n");
          return -1;
+      }
 
       if (num < 1)
-      {
          swa->current_buffer = NULL;
 
+      if (!swa->current_buffer)
+      {
          if (swa->blocking)
          {
-            /* No buffer, blocking... */
+            RARCH_LOG("No buffer, blocking...\n");
 
             while (swa->current_buffer == NULL)
             {
                num = 0;
-               if (R_FAILED(audoutWaitPlayFinish(&swa->current_buffer, &num, U64_MAX)))
+               if (audoutWaitPlayFinish(&swa->current_buffer, &num, U64_MAX) != RESULT_OK)
                {
-#if 0
-                  if (task_queue_find(&switch_tasks_finder_data))
-                     task_queue_check();
-#endif
                }
             }
          }
-         else
+         else /* no buffer, nonblocking */
             return 0;
       }
 
@@ -104,13 +100,12 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
       to_write = switch_audio_buffer_size(NULL) - swa->current_buffer->data_size;
 
    memcpy(((uint8_t *)swa->current_buffer->buffer) + swa->current_buffer->data_size, buf, to_write);
-   swa->current_buffer->data_size += to_write;
-   swa->current_buffer->buffer_size = switch_audio_buffer_size(NULL);
+   swa->current_buffer->data_size   += to_write;
+   swa->current_buffer->buffer_size  = switch_audio_buffer_size(NULL);
 
    if (swa->current_buffer->data_size > (48000 * swa->latency) / 1000)
    {
-      Result r = audoutAppendAudioOutBuffer(swa->current_buffer);
-      if (R_FAILED(r))
+      if (audoutAppendAudioOutBuffer(swa->current_buffer) != RESULT_OK)
          return -1;
       swa->current_buffer = NULL;
    }
@@ -129,11 +124,8 @@ static bool switch_audio_stop(void *data)
       return false;
 
    if (!swa->is_paused)
-   {
-      Result rc = audoutStopAudioOut();
-      if (R_FAILED(rc))
+      if (audoutStopAudioOut() != RESULT_OK)
          return false;
-   }
 
    swa->is_paused = true;
    return true;
@@ -148,11 +140,8 @@ static bool switch_audio_start(void *data, bool is_shutdown)
       return false;
 
    if (swa->is_paused)
-   {
-      Result rc = audoutStartAudioOut();
-      if (R_FAILED(rc))
+      if (audoutStartAudioOut() != RESULT_OK)
          return false;
-   }
 
    swa->is_paused = false;
    return true;
@@ -168,21 +157,21 @@ static bool switch_audio_alive(void *data)
 
 static void switch_audio_free(void *data)
 {
+   unsigned i;
    switch_audio_t *swa = (switch_audio_t *)data;
 
-   if (swa)
-   {
-      unsigned i;
-      if (!swa->is_paused)
-         audoutStopAudioOut();
+   if (!swa)
+      return;
 
-      audoutExit();
+   if (!swa->is_paused)
+      audoutStopAudioOut();
 
-      for (i = 0; i < 5; i++)
-         free(swa->buffers[i].buffer);
+   audoutExit();
 
-      free(swa);
-   }
+   for (i = 0; i < 5; i++)
+      free(swa->buffers[i].buffer);
+
+   free(swa);
 }
 
 static bool switch_audio_use_float(void *data)
@@ -210,25 +199,21 @@ static void switch_audio_set_nonblock_state(void *data, bool state)
 }
 
 static void *switch_audio_init(const char *device,
-                               unsigned rate, unsigned latency,
-                               unsigned block_frames,
-                               unsigned *new_rate)
+      unsigned rate, unsigned latency,
+      unsigned block_frames,
+      unsigned *new_rate)
 {
    unsigned i;
    switch_audio_t *swa = (switch_audio_t *)calloc(1, sizeof(*swa));
+
    if (!swa)
       return NULL;
 
-   /* Init Audio Output */
-   Result rc = audoutInitialize();
-   if (R_FAILED(rc))
-   {
-      goto cleanExit;
-   }
+   if (audoutInitialize() != RESULT_OK)
+      goto fail;
 
-   rc = audoutStartAudioOut();
-   if (R_FAILED(rc))
-      goto cleanExit;
+   if (audoutStartAudioOut() != RESULT_OK)
+      goto fail;
 
    /* Create Buffers */
    for (i = 0; i < 5; i++)
@@ -244,26 +229,22 @@ static void *switch_audio_init(const char *device,
       audoutAppendAudioOutBuffer(&swa->buffers[i]);
    }
 
-   /* Set audio rate */
    *new_rate           = audoutGetSampleRate();
 
-   swa->is_paused      = false;
    swa->current_buffer = NULL;
    swa->latency        = latency;
    swa->last_append    = svcGetSystemTick();
+
    swa->blocking       = block_frames;
+   swa->is_paused      = false;
 
    RARCH_LOG("[Audio]: Audio initialized\n");
 
    return swa;
 
-cleanExit:;
-
+fail:
    if (swa)
       free(swa);
-
-   RARCH_LOG("[Audio]: Something failed in Audio Init!\n");
-
    return NULL;
 }
 
