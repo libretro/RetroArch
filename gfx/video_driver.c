@@ -3339,6 +3339,21 @@ void video_context_driver_set_data(void *data)
    video_context_data = data;
 }
 
+bool video_driver_get_all_flags(gfx_ctx_flags_t *flags, enum display_flags flag)
+{
+   if (video_driver_get_flags(flags))
+      if (BIT32_GET(flags->flags, flag))
+         return true;
+
+   flags->flags = 0;
+
+   if (video_context_driver_get_flags(flags))
+      if (BIT32_GET(flags->flags, flag))
+         return true;
+
+   return false;
+}
+
 bool video_driver_get_flags(gfx_ctx_flags_t *flags)
 {
    if (!flags || !video_driver_poke || !video_driver_poke->get_flags)

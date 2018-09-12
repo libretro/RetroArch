@@ -4338,19 +4338,8 @@ static bool setting_append_list(
 
             {
                gfx_ctx_flags_t flags;
-               bool customizable_swapchain_set = false;
 
-               if (video_driver_get_flags(&flags))
-                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
-                     customizable_swapchain_set = true;
-
-               flags.flags = 0;
-
-               if (video_context_driver_get_flags(&flags))
-                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
-                     customizable_swapchain_set = true;
-
-               if (customizable_swapchain_set)
+               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
                {
                   CONFIG_UINT(
                         list, list_info,
@@ -4370,19 +4359,8 @@ static bool setting_append_list(
 
             {
                gfx_ctx_flags_t flags;
-               bool hard_sync_supported = false;
 
-               if (video_driver_get_flags(&flags))
-                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_HARD_SYNC))
-                     hard_sync_supported = true;
-
-               flags.flags = 0;
-
-               if (video_context_driver_get_flags(&flags))
-                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_HARD_SYNC))
-                     hard_sync_supported = true;
-
-               if (hard_sync_supported)
+               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_HARD_SYNC))
                {
                   CONFIG_BOOL(
                         list, list_info,
@@ -4417,19 +4395,8 @@ static bool setting_append_list(
 
             {
                gfx_ctx_flags_t flags;
-               bool adaptive_vsync_supported = false;
 
-               if (video_driver_get_flags(&flags))
-                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
-                     adaptive_vsync_supported = true;
-
-               flags.flags = 0;
-
-               if (video_context_driver_get_flags(&flags))
-                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
-                     adaptive_vsync_supported = true;
-
-               if (adaptive_vsync_supported)
+               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
                {
                   CONFIG_BOOL(
                         list, list_info,
@@ -4466,19 +4433,8 @@ static bool setting_append_list(
 #if !defined(RARCH_MOBILE)
             {
                gfx_ctx_flags_t flags;
-               bool black_frame_insertion_supported = false;
 
-               if (video_driver_get_flags(&flags))
-                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION))
-                     black_frame_insertion_supported = true;
-
-               flags.flags = 0;
-
-               if (video_context_driver_get_flags(&flags))
-                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION))
-                     black_frame_insertion_supported = true;
-
-               if (black_frame_insertion_supported)
+               if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION))
                {
                   CONFIG_BOOL(
                         list, list_info,
@@ -6019,17 +5975,6 @@ static bool setting_append_list(
          if (string_is_equal(settings->arrays.menu_driver, "rgui"))
          {
             gfx_ctx_flags_t flags;
-            bool setting_set = false;
-
-            if (video_driver_get_flags(&flags))
-               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING))
-                  setting_set = true;
-
-            flags.flags = 0;
-
-            if (video_context_driver_get_flags(&flags))
-               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING))
-                  setting_set = true;
 
             CONFIG_BOOL(
                   list, list_info,
@@ -6079,7 +6024,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
-            if (setting_set)
+            if (video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING))
                CONFIG_BOOL(
                      list, list_info,
                      &settings->bools.menu_linear_filter,
