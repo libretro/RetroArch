@@ -25,6 +25,7 @@
 
 #ifdef HAVE_OPENGL
 #include <GL/glx.h>
+#include <gfx/gl_capabilities.h>
 
 #ifndef GLX_SAMPLE_BUFFERS
 #define GLX_SAMPLE_BUFFERS 100000
@@ -91,6 +92,7 @@ typedef struct gfx_ctx_x_data
    bool g_debug;
    bool g_should_reset_mode;
    bool g_is_double;
+   bool adaptive_vsync;
    bool core_hw_context_enable;
 
 #ifdef HAVE_OPENGL
@@ -1167,30 +1169,57 @@ static void *gfx_ctx_x_get_context_data(void *data)
 
 static uint32_t gfx_ctx_x_get_flags(void *data)
 {
-   uint32_t flags = 0;
+   uint32_t      flags = 0;
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-   if (x->core_hw_context_enable || x->g_core_es)
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+
+   switch (x_api)
    {
-      BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+         if (x->adaptive_vsync)
+         {
+            BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+         }
+
+         if (x->core_hw_context_enable || x->g_core_es)
+         {
+            BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+         }
+         if (x_enable_msaa)
+         {
+            BIT32_SET(flags, GFX_CTX_FLAGS_MULTISAMPLING);
+         }
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
    }
-   else
-   {
-      BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
-   }
-   if (x_enable_msaa)
-   {
-      BIT32_SET(flags, GFX_CTX_FLAGS_MULTISAMPLING);
-   }
+
    return flags;
 }
 
 static void gfx_ctx_x_set_flags(void *data, uint32_t flags)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-   if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
-      x->core_hw_context_enable = true;
-   if (BIT32_GET(flags, GFX_CTX_FLAGS_MULTISAMPLING))
-      x_enable_msaa = true;
+
+   switch (x_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+         if (BIT32_GET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
+            if (gl_query_extension("GLX_EXT_swap_control_tear"))
+               x->adaptive_vsync = true;
+         if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+            x->core_hw_context_enable = true;
+         if (BIT32_GET(flags, GFX_CTX_FLAGS_MULTISAMPLING))
+            x_enable_msaa = true;
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
 }
 
 static void gfx_ctx_x_make_current(bool release)

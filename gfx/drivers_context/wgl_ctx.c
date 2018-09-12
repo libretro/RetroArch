@@ -47,6 +47,7 @@
 
 #ifdef HAVE_OPENGL
 #include "../common/gl_common.h"
+#include <gfx/gl_capabilities.h>
 #endif
 
 #ifdef HAVE_VULKAN
@@ -106,7 +107,7 @@ static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll */
 
 typedef struct gfx_ctx_cgl_data
 {
-   void *empty;
+   bool adaptive_vsync;
 } gfx_ctx_wgl_data_t;
 
 static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
@@ -725,22 +726,63 @@ static void *gfx_ctx_wgl_get_context_data(void *data)
 
 static uint32_t gfx_ctx_wgl_get_flags(void *data)
 {
-   uint32_t flags = 0;
-   if (win32_core_hw_context_enable)
+   uint32_t          flags = 0;
+   gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)data;
+
+   (void)wgl;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+
+   switch (win32_api)
    {
-      BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+      case GFX_CTX_OPENGL_API:
+         if (wgl)
+         {
+            if (wgl->adaptive_vsync)
+            {
+               BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+            }
+         }
+
+         if (win32_core_hw_context_enable)
+         {
+            BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+         }
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
    }
-   else
-   {
-      BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
-   }
+
    return flags;
 }
 
 static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
 {
-   if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
-      win32_core_hw_context_enable = true;
+   gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)data;
+
+   (void)wgl;
+
+   switch (win32_api)
+   {
+      case GFX_CTX_OPENGL_API:
+#ifdef HAVE_OPENGL
+         if (wgl)
+         {
+            if (BIT32_GET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
+               if (gl_query_extension("WGL_EXT_swap_control_tear"))
+                  wgl->adaptive_vsync = true;
+         }
+
+         if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+            win32_core_hw_context_enable = true;
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
 }
 
 static void gfx_ctx_wgl_get_video_output_size(void *data,
