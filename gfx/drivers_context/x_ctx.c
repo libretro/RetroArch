@@ -92,7 +92,6 @@ typedef struct gfx_ctx_x_data
    bool g_debug;
    bool g_should_reset_mode;
    bool g_is_double;
-   bool adaptive_vsync;
    bool core_hw_context_enable;
 
 #ifdef HAVE_OPENGL
@@ -109,6 +108,7 @@ typedef struct gfx_ctx_x_data
 #endif
 } gfx_ctx_x_data_t;
 
+static bool x_adaptive_vsync                  = false;
 static bool x_enable_msaa                     = false;
 static unsigned g_major                       = 0;
 static unsigned g_minor                       = 0;
@@ -335,18 +335,18 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
 
          if (g_pglSwapIntervalEXT)
          {
-            RARCH_LOG("[GLX]: glXSwapIntervalEXT(%u)\n", x->g_interval);
+            RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
             g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
          }
          else if (g_pglSwapInterval)
          {
-            RARCH_LOG("[GLX]: glXSwapInterval(%u)\n", x->g_interval);
+            RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
             if (g_pglSwapInterval(x->g_interval) != 0)
                RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
          }
          else if (g_pglSwapIntervalSGI)
          {
-            RARCH_LOG("[GLX]: glXSwapIntervalSGI(%u)\n", x->g_interval);
+            RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
             if (g_pglSwapIntervalSGI(x->g_interval) != 0)
                RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
          }
@@ -583,6 +583,11 @@ static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
    {
       case GFX_CTX_OPENGL_API:
 #ifdef HAVE_OPENGL
+	 if (GLXExtensionSupported(g_x11_dpy, "GLX_EXT_swap_control_tear"))
+	 {
+            RARCH_LOG("[GLX]: GLX_EXT_swap_control_tear supported.\n");
+	    x_adaptive_vsync = true;
+	 }
          if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control") &&
              GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
             )
@@ -1178,7 +1183,7 @@ static uint32_t gfx_ctx_x_get_flags(void *data)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-         if (x->adaptive_vsync)
+         if (x_adaptive_vsync)
          {
             BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
          }
@@ -1209,8 +1214,7 @@ static void gfx_ctx_x_set_flags(void *data, uint32_t flags)
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
          if (BIT32_GET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
-            if (GLXExtensionSupported(g_x11_dpy, "GLX_EXT_swap_control_tear"))
-               x->adaptive_vsync = true;
+               x_adaptive_vsync = true;
          if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
             x->core_hw_context_enable = true;
          if (BIT32_GET(flags, GFX_CTX_FLAGS_MULTISAMPLING))
