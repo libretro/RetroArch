@@ -42,6 +42,10 @@ void conv_rgb565_0rgb1555(void *output, const void *input,
       int width, int height,
       int out_stride, int in_stride);
 
+void conv_rgb565_abgr8888(void *output, const void *input,
+      int width, int height,
+      int out_stride, int in_stride);
+
 void conv_rgb565_argb8888(void *output, const void *input,
       int width, int height,
       int out_stride, int in_stride);
