@@ -3204,9 +3204,14 @@ bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data)
 
 bool video_context_driver_swap_interval(int *interval)
 {
+   int current_interval                   = *interval;
+   settings_t *settings                   = config_get_ptr();
+   bool adaptive_vsync_enabled            = settings->bools.video_adaptive_vsync;
    if (!current_video_context.swap_interval)
       return false;
-   current_video_context.swap_interval(video_context_data, *interval);
+   if (adaptive_vsync_enabled && current_interval == 1)
+      current_interval = -1;
+   current_video_context.swap_interval(video_context_data, current_interval);
    return true;
 }
 

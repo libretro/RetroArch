@@ -4415,6 +4415,40 @@ static bool setting_append_list(
                }
             }
 
+            {
+               gfx_ctx_flags_t flags;
+               bool adaptive_vsync_supported = false;
+
+               if (video_driver_get_flags(&flags))
+                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
+                     adaptive_vsync_supported = true;
+
+               flags.flags = 0;
+
+               if (video_context_driver_get_flags(&flags))
+                  if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
+                     adaptive_vsync_supported = true;
+
+               if (adaptive_vsync_supported)
+               {
+                  CONFIG_BOOL(
+                        list, list_info,
+                        &settings->bools.video_adaptive_vsync,
+                        MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
+                        MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+                        false,
+                        MENU_ENUM_LABEL_VALUE_OFF,
+                        MENU_ENUM_LABEL_VALUE_ON,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group,
+                        general_write_handler,
+                        general_read_handler,
+                        SD_FLAG_NONE
+                        );
+               }
+            }
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.video_frame_delay,

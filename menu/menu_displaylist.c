@@ -6394,6 +6394,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
                PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
+               PARSE_ONLY_BOOL, false);
          if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
                PARSE_ONLY_UINT, false) == 0)

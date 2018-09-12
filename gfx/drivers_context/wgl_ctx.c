@@ -91,6 +91,7 @@ static HGLRC win32_hw_hrc;
 static HDC   win32_hdc;
 static bool  win32_use_hw_ctx             = false;
 static bool  win32_core_hw_context_enable = false;
+static bool  wgl_adaptive_vsync           = false;
 
 #ifdef HAVE_VULKAN
 static gfx_ctx_vulkan_data_t win32_vk;
@@ -105,9 +106,41 @@ static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
 static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll */
 #endif
 
+#ifdef HAVE_OPENGL
+static bool wgl_has_extension(const char *extension, const char *extensions)
+{
+   const char *start      = NULL;
+   const char *terminator = NULL;
+   const char      *where = strchr(extension, ' ');
+
+   if (where || *extension == '\0')
+      return false;
+
+   if (!extensions)
+      return false;
+
+   start = extensions;
+
+   for (;;)
+   {
+      where = strstr(start, extension);
+      if (!where)
+         break;
+
+      terminator = where + strlen(extension);
+      if (where == start || *(where - 1) == ' ')
+         if (*terminator == ' ' || *terminator == '\0')
+            return true;
+
+      start = terminator;
+   }
+   return false;
+}
+#endif
+
 typedef struct gfx_ctx_cgl_data
 {
-   bool adaptive_vsync;
+   void *empty;
 } gfx_ctx_wgl_data_t;
 
 static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
@@ -264,6 +297,23 @@ static void create_gl_context(HWND hwnd, bool *quit)
       else
          RARCH_ERR("[WGL]: wglCreateContextAttribsARB not supported.\n");
    }
+
+   {
+
+      const char *(WINAPI * wglGetExtensionsStringARB) (HDC) = 0;
+      const char *extensions                                 = NULL;
+
+      wglGetExtensionsStringARB = (const char *(WINAPI *) (HDC))
+         gfx_ctx_wgl_get_proc_address("wglGetExtensionsStringARB");
+      if (wglGetExtensionsStringARB)
+         extensions = wglGetExtensionsStringARB(win32_hdc);
+      RARCH_LOG("[WGL] extensions: %s\n", extensions);
+      if (wgl_has_extension("WGL_EXT_swap_control_tear", extensions))
+      {
+         RARCH_LOG("[WGL]: Adaptive VSync supported.\n");
+         wgl_adaptive_vsync = true;
+      }
+   }
 }
 #endif
 
@@ -323,7 +373,7 @@ static void gfx_ctx_wgl_swap_interval(void *data, int interval)
          if (!p_swap_interval)
             return;
 
-         RARCH_LOG("[WGL]: wglSwapInterval(%u)\n", win32_interval);
+         RARCH_LOG("[WGL]: wglSwapInterval(%i)\n", win32_interval);
          if (!p_swap_interval(win32_interval))
             RARCH_WARN("[WGL]: wglSwapInterval() failed.\n");
 #endif
@@ -479,6 +529,7 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
 #ifdef HAVE_DYNAMIC
    dll_handle = dylib_load("OpenGL32.dll");
 #endif
+ 
 
    win32_window_reset();
    win32_monitor_init();
@@ -573,6 +624,7 @@ static void gfx_ctx_wgl_destroy(void *data)
    if (wgl)
       free(wgl);
 
+   wgl_adaptive_vsync           = false;
    win32_core_hw_context_enable = false;
    g_win32_inited               = false;
    win32_major                  = 0;
@@ -727,21 +779,15 @@ static void *gfx_ctx_wgl_get_context_data(void *data)
 static uint32_t gfx_ctx_wgl_get_flags(void *data)
 {
    uint32_t          flags = 0;
-   gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)data;
-
-   (void)wgl;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
 
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-         if (wgl)
+         if (wgl_adaptive_vsync)
          {
-            if (wgl->adaptive_vsync)
-            {
-               BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
-            }
+            BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
          }
 
          if (win32_core_hw_context_enable)
@@ -759,19 +805,13 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
 
 static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
 {
-   gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)data;
-
-   (void)wgl;
-
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
 #ifdef HAVE_OPENGL
-         if (wgl)
+         if (BIT32_GET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
          {
-            if (BIT32_GET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
-               if (gl_query_extension("WGL_EXT_swap_control_tear"))
-                  wgl->adaptive_vsync = true;
+            wgl_adaptive_vsync = true;
          }
 
          if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))

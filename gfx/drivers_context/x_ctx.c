@@ -1209,7 +1209,7 @@ static void gfx_ctx_x_set_flags(void *data, uint32_t flags)
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
          if (BIT32_GET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
-            if (gl_query_extension("GLX_EXT_swap_control_tear"))
+            if (GLXExtensionSupported(g_x11_dpy, "GLX_EXT_swap_control_tear"))
                x->adaptive_vsync = true;
          if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
             x->core_hw_context_enable = true;
