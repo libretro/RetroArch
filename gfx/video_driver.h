@@ -1185,12 +1185,6 @@ bool video_context_driver_get_context_data(void *data);
 
 bool video_context_driver_show_mouse(bool *bool_data);
 
-void video_context_driver_set_data(void *data);
-
-bool video_driver_get_flags(gfx_ctx_flags_t *flags);
-
-bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
-
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags);
 
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics);
