@@ -30,14 +30,15 @@ static const size_t sample_buffer_size = ((max_num_samples * num_channels * size
 
 typedef struct
 {
-   audio_output_t output;
-   handle_t event;
-   audio_output_buffer_t buffers[3];
-   audio_output_buffer_t *current_buffer;
    bool blocking;
    bool is_paused;
    uint64_t last_append;
    unsigned latency;
+   audio_output_buffer_t buffers[3];
+   audio_output_buffer_t *current_buffer;
+
+   audio_output_t output;
+   handle_t event;
 } switch_audio_t;
 
 static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
