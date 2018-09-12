@@ -15,7 +15,10 @@
       "*.rh": "c",
       "array": "c",
       "file_stream.h": "c",
-      "driver.h": "c"
+      "driver.h": "c",
+      "iosfwd": "c",
+      "xlocbuf": "c",
+      "xmemory0": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

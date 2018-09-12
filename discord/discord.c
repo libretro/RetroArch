@@ -28,6 +28,7 @@
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
 #include "../../network/netplay/netplay_discovery.h"
+#include "../../tasks/tasks_internal.h"
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -43,6 +44,8 @@ static int64_t ellapsed_time      = 0;
 
 static bool discord_ready         = false;
 static unsigned discord_status    = 0;
+
+struct netplay_room *room;
 
 DiscordRichPresence discord_presence;
 
@@ -67,6 +70,21 @@ static void handle_discord_error(int errcode, const char* message)
 static void handle_discord_join(const char* secret)
 {
    RARCH_LOG("[Discord] join (%s)\n", secret);
+   static struct string_list *list =  NULL;
+   list = string_split(secret, "|");
+
+   char tmp_hostname[32];
+   snprintf(tmp_hostname,
+      sizeof(tmp_hostname),
+      "%s|%s", list->elems[0].data, list->elems[1].data);
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+      deinit_netplay();
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+   task_push_netplay_crc_scan(atoi(list->elems[3].data),
+      list->elems[2].data,
+      tmp_hostname, list->elems[4].data);
 }
 
 static void handle_discord_spectate(const char* secret)
@@ -155,9 +173,26 @@ void discord_update(enum discord_presence presence)
          }
          break;
       case DISCORD_PRESENCE_NETPLAY_HOSTING:
-         discord_presence.joinSecret = "JOINJOINJOIN";
+         room = netplay_get_host_room();
+         if (room->id == 0)
+            return;
+
+         RARCH_LOG("[Discord] netplay room details: id=%d, nick=%s IP=%s port=%d\n",
+            room->id, room->nickname,
+            room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
+            room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port);
+
+         char party_id[128];
+         snprintf(party_id, sizeof(party_id), "%d|%s", room->id, room->nickname);
+         char join_secret[128];
+         snprintf(join_secret, sizeof(join_secret), "%s|%d|%s|%u|%s", 
+            room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_address : room->address,
+            room->host_method == NETPLAY_HOST_METHOD_MITM ? room->mitm_port : room->port,
+            room->gamename, room->gamecrc, room->corename);
+         RARCH_LOG("%s\n", join_secret);
+         discord_presence.joinSecret = strdup(join_secret);
          discord_presence.spectateSecret = "SPECSPECSPEC";
-         discord_presence.partyId = "RADIUS";
+         discord_presence.partyId = party_id;
          discord_presence.partyMax = 0;
          discord_presence.partySize = 0;
          break;

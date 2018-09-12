@@ -640,6 +640,15 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
 {
    RARCH_LOG("[netplay] announcing netplay game... \n");
 
+#ifdef HAVE_DISCORD
+   if (discord_is_inited)
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING;
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+   }
+#endif
+
    if (task_data)
    {
       unsigned i, ip_len, port_len;
@@ -1498,14 +1507,6 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          case RARCH_NETPLAY_CTL_ENABLE_SERVER:
             netplay_enabled = true;
             netplay_is_client = false;
-#ifdef HAVE_DISCORD
-            if (discord_is_inited)
-            {
-               discord_userdata_t userdata;
-               userdata.status = DISCORD_PRESENCE_NETPLAY_HOSTING;
-               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-            }
-#endif
             goto done;
 
          case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
@@ -1541,6 +1542,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          case RARCH_NETPLAY_CTL_IS_CONNECTED:
             ret = false;
             goto done;
+
          default:
             goto done;
       }
