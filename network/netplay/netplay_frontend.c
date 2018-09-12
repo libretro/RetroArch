@@ -634,14 +634,14 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
 
    if (task_data)
    {
-      http_transfer_data_t *data = (http_transfer_data_t*)task_data;
-      struct string_list *lines;
-      struct netplay_room *host_room = netplay_get_host_room();
       unsigned i, ip_len, port_len;
-      const char *mitm_ip = NULL;
-      const char *mitm_port = NULL;
-      char *buf;
-      char *host_string;
+      http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
+      struct netplay_room *host_room = netplay_get_host_room();
+      struct string_list *lines      = NULL;
+      char *mitm_ip                  = NULL;
+      char *mitm_port                = NULL;
+      char *buf                      = NULL;
+      char *host_string              = NULL;
 
       if (data->len == 0)
       {
