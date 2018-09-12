@@ -2,8 +2,13 @@
 #include "../../config.h"
 #endif
 
-#include<libtransistor/nx.h>
+#ifdef HAVE_LIBNX
+#include <switch.h>
+#else
+#include <libtransistor/nx.h>
+#endif
 
+#include "../configuration.h"
 #include "../input_driver.h"
 
 #include "../../tasks/tasks_internal.h"
@@ -13,8 +18,18 @@
 #include "string.h"
 
 
+#ifdef HAVE_LIBNX
+
+#ifndef MAX_PADS
+#define MAX_PADS 8
+#endif
+
+#else
+
 #ifndef MAX_PADS
 #define MAX_PADS 10
+#endif
+
 #endif
 
 static uint16_t pad_state[MAX_PADS];
@@ -40,10 +55,16 @@ static void switch_joypad_autodetect_add(unsigned autoconf_pad)
 
 static bool switch_joypad_init(void *data)
 {
+#ifdef HAVE_LIBNX
+   unsigned i;
+   hidScanInput();
+   for (i = 0; i < MAX_PADS; i++)
+      switch_joypad_autodetect_add(i);
+#else
    hid_init();
-
    switch_joypad_autodetect_add(0);
    switch_joypad_autodetect_add(1);
+#endif
 
    return true;
 }
@@ -126,27 +147,78 @@ static bool switch_joypad_query_pad(unsigned pad)
 
 static void switch_joypad_destroy(void)
 {
+#ifndef HAVE_LIBNX
    hid_finalize();
+#endif
 }
+
+#ifdef HAVE_LIBNX
+int lastMode = 0; // 0 = handheld, 1 = whatever
 
 static void switch_joypad_poll(void)
 {
+   settings_t *settings = config_get_ptr();
+
+   hidScanInput();
+
+   if (settings->bools.split_joycon && !hidGetHandheldMode())
+   {
+      if (lastMode != 1)
+      {
+         RARCH_LOG("[HID] Enable Split Joycon!\n");
+         hidSetNpadJoyAssignmentModeSingleByDefault(CONTROLLER_PLAYER_1);
+         hidSetNpadJoyAssignmentModeSingleByDefault(CONTROLLER_PLAYER_2);
+         lastMode = 1;
+      }
+   }
+   else
+   {
+      if (lastMode != 0)
+      {
+         RARCH_LOG("[HID] Disable Split Joycon!\n");
+         hidSetNpadJoyAssignmentModeDual(CONTROLLER_PLAYER_1);
+         hidSetNpadJoyAssignmentModeDual(CONTROLLER_PLAYER_2);
+         lastMode = 0;
+      }
+   }
+   for (int i = 0; i < MAX_PADS; i++)
+   {
+      HidControllerID target = (i == 0) ? CONTROLLER_P1_AUTO : i;
+      pad_state[i] = hidKeysDown(target) | hidKeysHeld(target);
+      JoystickPosition joyPositionLeft, joyPositionRight;
+      hidJoystickRead(&joyPositionLeft, target, JOYSTICK_LEFT);
+      hidJoystickRead(&joyPositionRight, target, JOYSTICK_RIGHT);
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = joyPositionLeft.dx;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = -joyPositionLeft.dy;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = joyPositionRight.dx;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = -joyPositionRight.dy;
+   }
+}
+#else
+static void switch_joypad_poll(void)
+{
+   int16_t lsx, lsy, rsx, rsy;
    hid_controller_t    *controllers  = hid_get_shared_memory()->controllers;
    hid_controller_t           *cont  = &controllers[0];
    hid_controller_state_entry_t ent  = cont->main.entries[cont->main.latest_idx];
    hid_controller_state_entry_t ent8 = (cont+8)->main.entries[(cont+8)->main.latest_idx];
-   pad_state[0] = ent.button_state | ent8.button_state;
+   pad_state[0]                      = ent.button_state | ent8.button_state;
 
-   int16_t lsx, lsy, rsx, rsy;
-   lsx = ent.left_stick_x;
-   lsy = ent.left_stick_y;
-   rsx = ent.right_stick_x;
-   rsy = ent.right_stick_y;
-   if(ent8.left_stick_x != 0 || ent8.left_stick_y != 0) { // handheld overrides player 1
+   lsx                               = ent.left_stick_x;
+   lsy                               = ent.left_stick_y;
+   rsx                               = ent.right_stick_x;
+   rsy                               = ent.right_stick_y;
+
+   if (ent8.left_stick_x != 0 || ent8.left_stick_y != 0)
+   {
+      /* handheld overrides player 1 */
 	   lsx = ent8.left_stick_x;
 	   lsy = ent8.left_stick_y;
    }
-   if(ent8.right_stick_x != 0 || ent8.right_stick_y != 0) { // handheld overrides player 1
+
+   if (ent8.right_stick_x != 0 || ent8.right_stick_y != 0)
+   {
+      /* handheld overrides player 1 */
 	   rsx = ent8.right_stick_x;
 	   rsy = ent8.right_stick_y;
    }
@@ -156,6 +228,7 @@ static void switch_joypad_poll(void)
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rsx;
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = -rsy;
 }
+#endif
 
 input_device_driver_t switch_joypad = {
 	switch_joypad_init,

@@ -9,6 +9,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_LIBNX
+#include <switch.h>
+#endif
+
 #include "../input_driver.h"
 
 #define MAX_PADS 10

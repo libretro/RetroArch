@@ -325,6 +325,10 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "vga"))
             return true;
          break;
+      case MENU_VIDEO_DRIVER_SWITCH:
+         if (string_is_equal(video_driver, "switch"))
+            return true;
+         break;
    }
 
    return false;
