@@ -23,10 +23,6 @@
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
-#ifndef RESULT_OK
-#define RESULT_OK 0
-#endif
-
 static const int sample_rate           = 48000;
 static const int max_num_samples       = sample_rate;
 static const int num_channels          = 2;
@@ -57,7 +53,7 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
    {
       uint32_t num;
       if (audio_ipc_output_get_released_buffer(
-               &swa->output, &num, &swa->current_buffer) != RESULT_OK)
+               &swa->output, &num, &swa->current_buffer) != 0)
       {
          RARCH_LOG("Failed to get released buffer?\n");
          return -1;
@@ -80,7 +76,7 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
                svcWaitSynchronization(&handle_idx, &swa->event, 1, 33333333);
                svcResetSignal(swa->event);
 
-               if (audio_ipc_output_get_released_buffer(&swa->output, &num, &swa->current_buffer) != RESULT_OK)
+               if (audio_ipc_output_get_released_buffer(&swa->output, &num, &swa->current_buffer) != 0)
                   return -1;
             }
          }
@@ -102,7 +98,7 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
 	if (swa->current_buffer->data_size > (48000*swa->latency)/1000)
    {
 		if (audio_ipc_output_append_buffer(&swa->output, swa->current_buffer) 
-            != RESULT_OK)
+            != 0)
 			return -1;
 		swa->current_buffer = NULL;
 	}
@@ -119,7 +115,7 @@ static bool switch_audio_stop(void *data)
       return false;
 
    if(!swa->is_paused)
-	   if(audio_ipc_output_stop(&swa->output) != RESULT_OK)
+	   if(audio_ipc_output_stop(&swa->output) != 0)
 		   return false;
 
    swa->is_paused = true;
@@ -131,7 +127,7 @@ static bool switch_audio_start(void *data, bool is_shutdown)
    switch_audio_t *swa = (switch_audio_t*) data;
 
    if(swa->is_paused)
-	   if (audio_ipc_output_start(&swa->output) != RESULT_OK)
+	   if (audio_ipc_output_start(&swa->output) != 0)
 		   return false;
 
    swa->is_paused = false;
@@ -195,10 +191,10 @@ static void *switch_audio_init(const char *device,
    if (!swa)
       return NULL;
 
-   if (audio_ipc_init() != RESULT_OK)
+   if (audio_ipc_init() != 0)
       goto fail;
 
-   if (audio_ipc_list_outputs(&names[0], 8, &num_names) != RESULT_OK)
+   if (audio_ipc_list_outputs(&names[0], 8, &num_names) != 0)
       goto fail_audio_ipc;
 
    if (num_names != 1)
@@ -207,7 +203,7 @@ static void *switch_audio_init(const char *device,
       goto fail_audio_ipc;
    }
 
-   if (audio_ipc_open_output(names[0], &swa->output) != RESULT_OK)
+   if (audio_ipc_open_output(names[0], &swa->output) != 0)
       goto fail_audio_ipc;
 
    if (swa->output.sample_rate != sample_rate)
@@ -230,7 +226,7 @@ static void *switch_audio_init(const char *device,
       goto fail_audio_output;
    }
 
-   if (audio_ipc_output_register_buffer_event(&swa->output, &swa->event) != RESULT_OK)
+   if (audio_ipc_output_register_buffer_event(&swa->output, &swa->event) != 0)
       goto fail_audio_output;
 
    for(i = 0; i < 3; i++)
@@ -244,7 +240,7 @@ static void *switch_audio_init(const char *device,
       if(swa->buffers[i].sample_data == NULL)
 	      goto fail_audio_output;
       
-      if (audio_ipc_output_append_buffer(&swa->output, &swa->buffers[i]) != RESULT_OK)
+      if (audio_ipc_output_append_buffer(&swa->output, &swa->buffers[i]) != 0)
          goto fail_audio_output;
    }
 

@@ -24,10 +24,6 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#ifndef RESULT_OK
-#define RESULT_OK 0
-#endif
-
 typedef struct
 {
       bool blocking;
@@ -66,7 +62,7 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
    {
       uint32_t num;
       if (audoutGetReleasedAudioOutBuffer(
-               &swa->current_buffer, &num) != RESULT_OK)
+               &swa->current_buffer, &num) != 0)
       {
          RARCH_LOG("Failed to get released buffer?\n");
          return -1;
@@ -84,7 +80,7 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
             while (swa->current_buffer == NULL)
             {
                num = 0;
-               if (audoutWaitPlayFinish(&swa->current_buffer, &num, U64_MAX) != RESULT_OK)
+               if (audoutWaitPlayFinish(&swa->current_buffer, &num, U64_MAX) != 0)
                {
                }
             }
@@ -105,7 +101,7 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
 
    if (swa->current_buffer->data_size > (48000 * swa->latency) / 1000)
    {
-      if (audoutAppendAudioOutBuffer(swa->current_buffer) != RESULT_OK)
+      if (audoutAppendAudioOutBuffer(swa->current_buffer) != 0)
          return -1;
       swa->current_buffer = NULL;
    }
@@ -124,7 +120,7 @@ static bool switch_audio_stop(void *data)
       return false;
 
    if (!swa->is_paused)
-      if (audoutStopAudioOut() != RESULT_OK)
+      if (audoutStopAudioOut() != 0)
          return false;
 
    swa->is_paused = true;
@@ -140,7 +136,7 @@ static bool switch_audio_start(void *data, bool is_shutdown)
       return false;
 
    if (swa->is_paused)
-      if (audoutStartAudioOut() != RESULT_OK)
+      if (audoutStartAudioOut() != 0)
          return false;
 
    swa->is_paused = false;
@@ -209,10 +205,10 @@ static void *switch_audio_init(const char *device,
    if (!swa)
       return NULL;
 
-   if (audoutInitialize() != RESULT_OK)
+   if (audoutInitialize() != 0)
       goto fail;
 
-   if (audoutStartAudioOut() != RESULT_OK)
+   if (audoutStartAudioOut() != 0)
       goto fail;
 
    /* Create Buffers */
