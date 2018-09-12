@@ -114,13 +114,9 @@ void gfx_slow_swizzling_blit(uint32_t *buffer, uint32_t *image, int w, int h, in
                 uint8_t src_a = ((pixel & 0xFF000000) >> 24);
 
                 if (src_a > 0)
-                {
                     pixel &= 0x00FFFFFF;
-                }
                 else
-                {
                     pixel = dst;
-                }
             }
 
             dest_line[offs_x] = pixel;
@@ -151,8 +147,7 @@ static void clear_screen(switch_video_t *sw)
 static void *switch_init(const video_info_t *video,
                          const input_driver_t **input, void **input_data)
 {
-    void *switchinput = NULL;
-
+    void  *switchinput = NULL;
     switch_video_t *sw = (switch_video_t *)calloc(1, sizeof(*sw));
     if (!sw)
         return NULL;
@@ -200,12 +195,16 @@ static void *switch_init(const video_info_t *video,
     return sw;
 }
 
-static void switch_update_viewport(switch_video_t *sw, video_frame_info_t *video_info)
+static void switch_update_viewport(switch_video_t *sw,
+            video_frame_info_t *video_info)
 {
-    int x = 0;
-    int y = 0;
-    float width = sw->vp.full_width;
-    float height = sw->vp.full_height;
+    settings_t *settings = config_get_ptr();
+    int x                = 0;
+    int y                = 0;
+    float desired_aspect = 0.0f;
+    float width          = sw->vp.full_width;
+    float height         = sw->vp.full_height;
+
     if (sw->o_size)
     {
         width = sw->o_width;
@@ -219,10 +218,9 @@ static void switch_update_viewport(switch_video_t *sw, video_frame_info_t *video
         return;
     }
 
-    settings_t *settings = config_get_ptr();
-    float desired_aspect = video_driver_get_aspect_ratio();
+    desired_aspect = video_driver_get_aspect_ratio();
 
-    // We crash if >1.0f
+    /* We crash if >1.0f */
     printf("[Video] Aspect: %f\n", desired_aspect);
     /*if (desired_aspect > 1.8f)
             desired_aspect = 1.7778f;
@@ -336,9 +334,9 @@ static bool switch_frame(void *data, const void *frame,
                          uint64_t frame_count, unsigned pitch,
                          const char *msg, video_frame_info_t *video_info)
 {
-    switch_video_t *sw = data;
+    switch_video_t   *sw = data;
     uint32_t *out_buffer = NULL;
-    bool ffwd_mode = video_info->input_driver_nonblock_state;
+    bool       ffwd_mode = video_info->input_driver_nonblock_state;
 
     if (!frame)
         return true;
@@ -460,10 +458,8 @@ static bool switch_frame(void *data, const void *frame,
         struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
 
         if (osd_params)
-        {
             font_driver_render_msg(video_info, NULL, video_info->stat_text,
                                    (const struct font_params *)&video_info->osd_stat_params);
-        }
     }
 
     if (msg)
@@ -561,13 +557,9 @@ static void switch_set_texture_frame(
         sw->menu_texture.height != height)
     {
         if (sw->menu_texture.pixels)
-        {
             realloc(sw->menu_texture.pixels, sz);
-        }
         else
-        {
             sw->menu_texture.pixels = malloc(sz);
-        }
 
         if (!sw->menu_texture.pixels)
         {
@@ -621,9 +613,7 @@ static void switch_set_texture_enable(void *data, bool enable, bool full_screen)
     switch_video_t *sw = data;
 
     if (!sw->menu_texture.enable && enable)
-    {
         gfxConfigureResolution(sw->vp.full_width, sw->vp.full_height);
-    }
     else if (!enable && sw->menu_texture.enable && sw->smooth)
     {
         clear_screen(sw);
