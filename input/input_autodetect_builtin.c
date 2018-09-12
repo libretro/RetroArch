@@ -668,7 +668,7 @@ const char* const input_builtin_autoconfs[] =
 #ifdef __CELLOS_LV2__
    DECL_AUTOCONF_DEVICE("SixAxis Controller", "ps3", PS3INPUT_DEFAULT_BINDS),
 #endif
-#ifdef __SWITCH__
+#if defined(__SWITCH__) || defined(SWITCH)
    DECL_AUTOCONF_DEVICE("Switch Controller", "switch", SWITCH_DEFAULT_BINDS),
 #endif
 #ifdef EMSCRIPTEN
