@@ -59,6 +59,9 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(_3DS)
    &frontend_ctx_ctr,
 #endif
+#if defined(SWITCH) && defined(HAVE_LIBNX)
+   &frontend_ctx_switch,
+#endif
 #if defined(_WIN32) && !defined(_XBOX)
    &frontend_ctx_win32,
 #endif

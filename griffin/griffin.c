@@ -940,6 +940,8 @@ FRONTEND
 #include "../frontend/drivers/platform_psp.c"
 #elif defined(_3DS)
 #include "../frontend/drivers/platform_ctr.c"
+#elif defined(SWITCH) && defined(HAVE_LIBNX)
+#include "../frontend/drivers/platform_switch.c"
 #elif defined(XENON)
 #include "../frontend/drivers/platform_xenon.c"
 #elif defined(__QNX__)
