@@ -549,8 +549,6 @@ static void frontend_switch_init(void *data)
     gfxInitDefault();
     gfxSetMode(GfxMode_TiledDouble);
 
-    // Needed, else its flipped and mirrored
-    gfxSetDrawFlip(false);
     gfxConfigureTransform(0);
 
 #if defined(HAVE_LIBNX) && defined(NXLINK)
