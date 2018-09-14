@@ -161,7 +161,8 @@ static void switch_joypad_poll(void)
 
    hidScanInput();
 
-   if (settings->bools.split_joycon && !hidGetHandheldMode())
+   // TODO: Options via menu
+   /*if (settings->bools.split_joycon && !hidGetHandheldMode())
    {
       if (lastMode != 1)
       {
@@ -180,7 +181,8 @@ static void switch_joypad_poll(void)
          hidSetNpadJoyAssignmentModeDual(CONTROLLER_PLAYER_2);
          lastMode = 0;
       }
-   }
+   }*/
+
    for (int i = 0; i < MAX_PADS; i++)
    {
       HidControllerID target = (i == 0) ? CONTROLLER_P1_AUTO : i;

@@ -154,3 +154,12 @@ retroarch.js.mem
 
 # only ignore .js files in the repo root
 /*.js
+
+# Switch
+*.d
+exefs/*
+retroarch_switch.pfs0
+retroarch_switch.lst
+retroarch_switch.nacp
+retroarch_switch.nro
+retroarch_switch.nso

@@ -38,15 +38,17 @@
 #ifdef HAVE_LIBNX
 #define switch_audio_ipc_init audoutInitialize
 #define switch_audio_ipc_output_get_released_buffer(a, b) audoutGetReleasedAudioOutBuffer(&a->current_buffer, &b)
-#define switch_audio_ipc_output_append_buffer(a, b) audoutAppendAudioOutBuffer(b)
+#define switch_audio_ipc_output_append_buffer(a, b) audoutAppendAudioOutBuffer(&b)
 #define switch_audio_ipc_output_stop(a) audoutStopAudioOut()
 #define switch_audio_ipc_output_start(a) audoutStartAudioOut()
+#define audio_output_buffer_t AudioOutBuffer
 #else
 #define switch_audio_ipc_init audio_ipc_init
 #define switch_audio_ipc_output_get_released_buffer(a, b) audio_ipc_output_get_released_buffer(&a->output, &b, &a->current_buffer)
 #define switch_audio_ipc_output_append_buffer(a, b) audio_ipc_output_append_buffer(&a->output, &b)
 #define switch_audio_ipc_output_stop(a) audio_ipc_output_stop(&a->output)
 #define switch_audio_ipc_output_start(a) audio_ipc_output_start(&a->output)
+#define audio_output_buffer_t audio_output_buffer_t
 #endif
 
 static const int sample_rate           = 48000;
@@ -63,8 +65,10 @@ typedef struct
    audio_output_buffer_t buffers[BUFFER_COUNT];
    audio_output_buffer_t *current_buffer;
 
+#ifndef HAVE_LIBNX
    audio_output_t output;
    handle_t event;
+#endif
 } switch_audio_t;
 
 static uint32_t switch_audio_data_size(void)
@@ -141,15 +145,23 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
 	if (to_write > switch_audio_buffer_size(NULL) - swa->current_buffer->data_size)
 		to_write = switch_audio_buffer_size(NULL) - swa->current_buffer->data_size;
 	
+   #ifndef HAVE_LIBNX
 	memcpy(((uint8_t*) swa->current_buffer->sample_data) + swa->current_buffer->data_size, buf, to_write);
+   #else
+	memcpy(((uint8_t*) swa->current_buffer->buffer) + swa->current_buffer->data_size, buf, to_write);
+   #endif
 	swa->current_buffer->data_size   += to_write;
 	swa->current_buffer->buffer_size  = switch_audio_buffer_size(NULL);
 
 	if (swa->current_buffer->data_size > (48000 * swa->latency) / 1000)
    {
-		if (switch_audio_ipc_output_append_buffer(swa, swa->current_buffer) 
-            != 0)
-			return -1;
+      #ifdef HAVE_LIBNX
+         if (switch_audio_ipc_output_append_buffer(swa, *swa->current_buffer) != 0)
+            return -1;
+      #else
+         if (switch_audio_ipc_output_append_buffer(swa, swa->current_buffer) != 0)
+            return -1;
+      #endif
 		swa->current_buffer = NULL;
 	}
 
@@ -214,6 +226,7 @@ static void switch_audio_free(void *data)
 
    audoutExit();
 
+   int i;
    for (i = 0; i < BUFFER_COUNT; i++)
       free(swa->buffers[i].buffer);
 #else
