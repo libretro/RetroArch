@@ -204,7 +204,7 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
 #endif
 
    *new_rate = swa->sampleRate;
-
+   swa->fifoSize = (swa->sampleRate * sample_size * swa->latency) / 1000;
 
    for (int i = 0; i < AUDIO_BUFFER_COUNT; i++)
    {
@@ -237,7 +237,6 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
    }
    
    compat_mutex_create(&swa->fifoLock);
-   swa->fifoSize = (swa->sampleRate * sample_size * swa->latency) / 1000;
    swa->fifo = fifo_new(swa->fifoSize);
 
    compat_condvar_create(&swa->cond);
@@ -247,7 +246,7 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
 
    uint32_t prio;
    svcGetThreadPriority(&prio, 0xffff8000);
-   rc = compat_thread_create(&swa->thread, &mainLoop, (void*)swa, thread_stack_size, prio + 1, thread_preferred_cpu);
+   rc = compat_thread_create(&swa->thread, &mainLoop, (void*)swa, thread_stack_size, prio - 1, thread_preferred_cpu);
 
    if (R_FAILED(rc))
    {
