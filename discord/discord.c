@@ -35,7 +35,7 @@
 #include "../cheevos/cheevos.h"
 #endif
 
-static const char* APPLICATION_ID = "399289711077752833";
+static const char* APPLICATION_ID = "475456035851599874";
 static int FrustrationLevel       = 0;
 
 static int64_t start_time         = 0;
