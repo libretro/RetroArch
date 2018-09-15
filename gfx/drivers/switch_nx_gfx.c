@@ -773,4 +773,4 @@ video_driver_t video_switch = {
     switch_get_poke_interface,
 };
 
-/* vim: set ts=6 sw=6 sts=6: */
+/* vim: set ts=3 sw=3 */
