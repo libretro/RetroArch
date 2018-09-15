@@ -3160,61 +3160,73 @@ static int menu_displaylist_parse_options_cheats(
       menu_displaylist_info_t *info, menu_handle_t *menu)
 {
    unsigned i;
+   settings_t *settings        = config_get_ptr();
+   bool show_advanced_settings = settings->bools.menu_show_advanced_settings;
 
    if (!cheat_manager_alloc_if_empty())
       return -1;
 
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT),
-         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_START_OR_CONT),
-         MENU_ENUM_LABEL_CHEAT_START_OR_CONT,
-         MENU_SETTING_ACTION, 0, 0);
+   if (show_advanced_settings)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT),
+            msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_START_OR_CONT),
+            MENU_ENUM_LABEL_CHEAT_START_OR_CONT,
+            MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD),
          msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD),
          MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
          MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND),
-         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND),
-         MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND,
-         MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS),
-         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS),
-         MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS,
-         MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS),
-         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS),
-         MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
-         MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP),
-         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP),
-         MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP,
-         MENU_SETTING_ACTION, 0, 0);
+   if (show_advanced_settings)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND),
+            msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND),
+            MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND,
+            MENU_SETTING_ACTION, 0, 0);
+
+   if (show_advanced_settings)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS),
+            msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS),
+            MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS,
+            MENU_SETTING_ACTION, 0, 0);
+   if (show_advanced_settings)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS),
+            msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS),
+            MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
+            MENU_SETTING_ACTION, 0, 0);
+   if (show_advanced_settings)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP),
+            msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP),
+            MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP,
+            MENU_SETTING_ACTION, 0, 0);
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM),
          msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM),
          MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM,
          MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL),
-         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_ALL),
-         MENU_ENUM_LABEL_CHEAT_DELETE_ALL,
-         MENU_SETTING_ACTION, 0, 0);
-   menu_displaylist_parse_settings_enum(menu, info,
-         MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
-         PARSE_ONLY_BOOL, false);
-   menu_displaylist_parse_settings_enum(menu, info,
-         MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
-         PARSE_ONLY_BOOL, false);
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
-         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),
-         MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,
-         MENU_SETTING_ACTION, 0, 0);
+   if (show_advanced_settings)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL),
+            msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_ALL),
+            MENU_ENUM_LABEL_CHEAT_DELETE_ALL,
+            MENU_SETTING_ACTION, 0, 0);
+   if (show_advanced_settings)
+      menu_displaylist_parse_settings_enum(menu, info,
+            MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
+            PARSE_ONLY_BOOL, false);
+   if (show_advanced_settings)
+      menu_displaylist_parse_settings_enum(menu, info,
+            MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
+            PARSE_ONLY_BOOL, false);
+   if (show_advanced_settings)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
+            msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),
+            MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,
+            MENU_SETTING_ACTION, 0, 0);
    for (i = 0; i < cheat_manager_get_size(); i++)
    {
       char cheat_label[64];
