@@ -2177,6 +2177,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_RECORD_INIT:
          {
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
             bool *recording_enabled = recording_is_enabled();
             *recording_enabled = true;
             if (!recording_init(false))
