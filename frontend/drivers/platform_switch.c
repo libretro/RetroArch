@@ -431,16 +431,16 @@ char *realpath(const char *name, char *resolved)
    if (name == NULL)
    {
       /* As per Single Unix Specification V2 we must return an error if
-	 either parameter is a null pointer.  We extend this to allow
-	 the RESOLVED parameter to be NULL in case the we are expected to
-	 allocate the room for the return value.  */
+       either parameter is a null pointer.  We extend this to allow
+       the RESOLVED parameter to be NULL in case the we are expected to
+       allocate the room for the return value.  */
       return NULL;
    }
 
    if (name[0] == '\0')
    {
       /* As per Single Unix Specification V2 we must return an error if
-	 the name argument points to an empty string.  */
+       the name argument points to an empty string.  */
       return NULL;
    }
 
