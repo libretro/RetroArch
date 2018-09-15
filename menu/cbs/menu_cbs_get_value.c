@@ -603,14 +603,12 @@ static void menu_action_setting_disp_set_label_input_desc(
 
    remap_idx =
       settings->uints.input_remap_ids[user_idx][btn_idx];
-/*
-   if (remap_idx == RARCH_UNMAPPED)
-      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
-*/
+
    if (!system)
       return;
 
-   descriptor = system->input_desc_btn[user_idx][remap_idx];
+   if (remap_idx != RARCH_UNMAPPED)
+      descriptor = system->input_desc_btn[user_idx][remap_idx];
 
    if (!string_is_empty(descriptor) && remap_idx < RARCH_FIRST_CUSTOM_BIND)
       strlcpy(s, descriptor, len);
