@@ -3357,12 +3357,10 @@ int runloop_iterate(unsigned *sleep_ms)
    settings_t *settings                         = config_get_ptr();
    unsigned max_users                           = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
-   if (discord_is_inited)
-   {
 #ifdef HAVE_DISCORD
+   if (discord_is_inited)
       discord_run_callbacks();
 #endif
-   }
 
    if (runloop_frame_time.callback)
    {
