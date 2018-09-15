@@ -973,7 +973,7 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    {
       const char* ext = path_get_extension(settings->paths.path_shader);
 
-      if (ext && !strcmp(ext, "slangp"))
+      if (ext && string_is_equal(ext, "slangp"))
          d3d12_gfx_set_shader(d3d12, RARCH_SHADER_SLANG, settings->paths.path_shader);
    }
 
