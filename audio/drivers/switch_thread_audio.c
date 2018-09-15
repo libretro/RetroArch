@@ -45,44 +45,46 @@ static const size_t frame_size = channel_count * sample_size;
 
 typedef struct
 {
-      fifo_buffer_t* fifo;
-      compat_mutex fifoLock;
-      compat_condvar cond;
-      compat_mutex condLock;
+   fifo_buffer_t* fifo;
+   compat_mutex fifoLock;
+   compat_condvar cond;
+   compat_mutex condLock;
 
-      size_t fifoSize;
+   size_t fifoSize;
 
-      volatile bool running;
-      bool nonblocking;
-      bool is_paused;
+   volatile bool running;
+   bool nonblocking;
+   bool is_paused;
 
-      compat_audio_out_buffer buffers[AUDIO_BUFFER_COUNT];
-      compat_thread thread;
+   compat_audio_out_buffer buffers[AUDIO_BUFFER_COUNT];
+   compat_thread thread;
 
-      unsigned latency;
-      uint32_t sampleRate;
+   unsigned latency;
+   uint32_t sampleRate;
 
 #ifndef HAVE_LIBNX
-	audio_output_t output;
-	handle_t event;
+   audio_output_t output;
+   handle_t event;
 #endif
 } switch_thread_audio_t;
 
 static void mainLoop(void* data)
 {
-   switch_thread_audio_t* swa = (switch_thread_audio_t*)data;
+   Result rc;
+   uint32_t released_out_count                  = 0;
+   compat_audio_out_buffer *released_out_buffer = NULL;
+   switch_thread_audio_t                  *swa  = (switch_thread_audio_t*)data;
 
    if (!swa)
       return;
 
    RARCH_LOG("[Audio]: start mainLoop cpu %u tid %u\n", svcGetCurrentProcessorNumber(), swa->thread.handle);
 
-   compat_audio_out_buffer* released_out_buffer = NULL;
-   uint32_t released_out_count;
-   Result rc;
 
    while (swa->running)
    {
+      size_t buf_avail, avail, to_write;
+
       if (!released_out_buffer)
       {
 #ifdef HAVE_LIBNX
@@ -103,13 +105,14 @@ static void mainLoop(void* data)
          released_out_buffer->data_size = 0;
       }
 
-      size_t bufAvail = released_out_buffer->buffer_size - released_out_buffer->data_size;
+      buf_avail = released_out_buffer->buffer_size - released_out_buffer->data_size;
 
       compat_mutex_lock(&swa->fifoLock);
 
-      size_t avail = fifo_read_avail(swa->fifo);
-      size_t to_write = MIN(avail, bufAvail);
-      if (to_write > 0) {
+      avail    = fifo_read_avail(swa->fifo);
+      to_write = MIN(avail, buf_avail);
+      if (to_write > 0)
+      {
 	      uint8_t *base;
 #ifdef HAVE_LIBNX
 	      base = (uint8_t*) released_out_buffer->buffer;
@@ -125,7 +128,7 @@ static void mainLoop(void* data)
       released_out_buffer->data_size += to_write;
       if (released_out_buffer->data_size >= released_out_buffer->buffer_size / 2)
       {
-	      rc = switch_audio_ipc_output_append_buffer(swa, released_out_buffer);
+         rc = switch_audio_ipc_output_append_buffer(swa, released_out_buffer);
          if (R_FAILED(rc))
          {
             RARCH_LOG("[Audio]: audoutAppendAudioOutBuffer failed: %d\n", (int)rc);
@@ -139,8 +142,9 @@ static void mainLoop(void* data)
 
 static void *switch_thread_audio_init(const char *device, unsigned rate, unsigned latency, unsigned block_frames, unsigned *new_rate)
 {
-	(void)device;
-	
+   Result rc;
+   unsigned i;
+   uint32_t prio;
    char names[8][0x20];
    uint32_t num_names  = 0;
    switch_thread_audio_t *swa = (switch_thread_audio_t *)calloc(1, sizeof(*swa));
@@ -148,12 +152,12 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
    if (!swa)
       return NULL;
 
-   swa->running = true;
+   swa->running     = true;
    swa->nonblocking = true;
-   swa->is_paused = true;
-   swa->latency = MAX(latency, 8);
+   swa->is_paused   = true;
+   swa->latency     = MAX(latency, 8);
 
-   Result rc = switch_audio_ipc_init();
+   rc               = switch_audio_ipc_init();
    if (R_FAILED(rc))
    {
       RARCH_LOG("[Audio]: audio init failed %d\n", (int)rc);
@@ -171,18 +175,17 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
 
    swa->sampleRate = audoutGetSampleRate();
 #else
-   if (audio_ipc_list_outputs(&names[0], 8, &num_names) != RESULT_OK) {
+   if (audio_ipc_list_outputs(&names[0], 8, &num_names) != RESULT_OK)
 	   goto fail_audio_ipc;
-   }
 
-   if (num_names != 1) {
+   if (num_names != 1)
+   {
 	   RARCH_ERR("[Audio]: got back more than one AudioOut\n");
 	   goto fail_audio_ipc;
    }
 
-   if (audio_ipc_open_output(names[0], &swa->output) != RESULT_OK) {
+   if (audio_ipc_open_output(names[0], &swa->output) != RESULT_OK)
 	   goto fail_audio_ipc;
-   }
 
    swa->sampleRate = swa->output.sample_rate;
 
@@ -203,27 +206,27 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
       goto fail_audio_output;
 #endif
 
-   *new_rate = swa->sampleRate;
+   *new_rate     = swa->sampleRate;
    swa->fifoSize = (swa->sampleRate * sample_size * swa->latency) / 1000;
 
-   for (int i = 0; i < AUDIO_BUFFER_COUNT; i++)
+   for (i = 0; i < AUDIO_BUFFER_COUNT; i++)
    {
 #ifdef HAVE_LIBNX
-      swa->buffers[i].next = NULL; /* Unused */
+      swa->buffers[i].next        = NULL; /* Unused */
       swa->buffers[i].data_offset = 0;
       swa->buffers[i].buffer_size = swa->fifoSize;
-      swa->buffers[i].data_size = swa->buffers[i].buffer_size;
-      swa->buffers[i].buffer = memalign(0x1000, swa->buffers[i].buffer_size);
+      swa->buffers[i].data_size   = swa->buffers[i].buffer_size;
+      swa->buffers[i].buffer      = memalign(0x1000, swa->buffers[i].buffer_size);
 
       if (swa->buffers[i].buffer == NULL)
          goto fail;
 
       memset(swa->buffers[i].buffer, 0, swa->buffers[i].buffer_size);
 #else
-      swa->buffers[i].ptr = &swa->buffers[i].sample_data;
-      swa->buffers[i].unknown = 0;
+      swa->buffers[i].ptr         = &swa->buffers[i].sample_data;
+      swa->buffers[i].unknown     = 0;
       swa->buffers[i].buffer_size = swa->fifoSize;
-      swa->buffers[i].data_size = swa->buffers[i].buffer_size;
+      swa->buffers[i].data_size   = swa->buffers[i].buffer_size;
       swa->buffers[i].sample_data = alloc_pages(swa->buffers[i].buffer_size, swa->buffers[i].buffer_size, NULL);
 
       if (swa->buffers[i].sample_data == NULL)
@@ -244,7 +247,6 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
    RARCH_LOG("[Audio]: switch_thread_audio_init device %s requested rate %hu rate %hu latency %hu block_frames %hu fifoSize %lu\n",
          device, rate, swa->sampleRate, swa->latency, block_frames, swa->fifoSize);
 
-   uint32_t prio;
    svcGetThreadPriority(&prio, 0xffff8000);
    rc = compat_thread_create(&swa->thread, &mainLoop, (void*)swa, thread_stack_size, prio - 1, thread_preferred_cpu);
 
@@ -301,16 +303,17 @@ static bool switch_thread_audio_stop(void *data)
 
 static void switch_thread_audio_free(void *data)
 {
+   unsigned i;
    switch_thread_audio_t *swa = (switch_thread_audio_t *)data;
 
    if (!swa)
-      return;
+         return;
 
    if (swa->running)
    {
-      swa->running = false;
-      compat_thread_join(&swa->thread);
-      compat_thread_close(&swa->thread);
+         swa->running = false;
+         compat_thread_join(&swa->thread);
+         compat_thread_close(&swa->thread);
    }
 
    switch_audio_ipc_output_stop(swa);
@@ -318,15 +321,16 @@ static void switch_thread_audio_free(void *data)
 
    if (swa->fifo)
    {
-      fifo_free(swa->fifo);
-      swa->fifo = NULL;
+         fifo_free(swa->fifo);
+         swa->fifo = NULL;
    }
 
-   for (int i = 0; i < sizeof(swa->buffers)/sizeof(swa->buffers[0]); i++) {
+   for (i = 0; i < ARRAY_SIZE(swa->buffers); i++)
+   {
 #ifdef HAVE_LIBNX
-      free(swa->buffers[i].buffer);
+         free(swa->buffers[i].buffer);
 #else
-      free_pages(swa->buffers[i].sample_data);
+         free_pages(swa->buffers[i].sample_data);
 #endif
    }
 
@@ -336,61 +340,57 @@ static void switch_thread_audio_free(void *data)
 
 static ssize_t switch_thread_audio_write(void *data, const void *buf, size_t size)
 {
-      switch_thread_audio_t *swa = (switch_thread_audio_t *)data;
+   size_t avail, written;
+   switch_thread_audio_t *swa = (switch_thread_audio_t *)data;
 
-      if (!swa || !swa->running)
-            return 0;
+   if (!swa || !swa->running)
+         return 0;
 
-      size_t avail;
-      size_t written;
-
-      if (swa->nonblocking)
+   if (swa->nonblocking)
+   {
+      compat_mutex_lock(&swa->fifoLock);
+      avail = fifo_write_avail(swa->fifo);
+      written = MIN(avail, size);
+      if (written > 0)
+         fifo_write(swa->fifo, buf, written);
+      compat_mutex_unlock(&swa->fifoLock);
+   }
+   else
+   {
+      written = 0;
+      while (written < size && swa->running)
       {
-            compat_mutex_lock(&swa->fifoLock);
-            avail = fifo_write_avail(swa->fifo);
-            written = MIN(avail, size);
-            if (written > 0)
-            {
-                  fifo_write(swa->fifo, buf, written);
-            }
+         compat_mutex_lock(&swa->fifoLock);
+         avail = fifo_write_avail(swa->fifo);
+         if (avail == 0)
+         {
             compat_mutex_unlock(&swa->fifoLock);
+            compat_mutex_lock(&swa->condLock);
+            if (swa->running)
+               compat_condvar_wait(&swa->cond, &swa->condLock);
+            compat_mutex_unlock(&swa->condLock);
+         }
+         else
+         {
+            size_t write_amt = MIN(size - written, avail);
+            fifo_write(swa->fifo, (const char*)buf + written, write_amt);
+            compat_mutex_unlock(&swa->fifoLock);
+            written += write_amt;
+         }
       }
-      else
-      {
-            written = 0;
-            while (written < size && swa->running)
-            {
-                  compat_mutex_lock(&swa->fifoLock);
-                  avail = fifo_write_avail(swa->fifo);
-                  if (avail == 0)
-                  {
-                        compat_mutex_unlock(&swa->fifoLock);
-                        compat_mutex_lock(&swa->condLock);
-                        if (swa->running)
-                              compat_condvar_wait(&swa->cond, &swa->condLock);
-                        compat_mutex_unlock(&swa->condLock);
-                  }
-                  else
-                  {
-                        size_t write_amt = MIN(size - written, avail);
-                        fifo_write(swa->fifo, (const char*)buf + written, write_amt);
-                        compat_mutex_unlock(&swa->fifoLock);
-                        written += write_amt;
-                  }
-            }
-      }
+   }
 
-      return written;
+   return written;
 }
 
 static bool switch_thread_audio_alive(void *data)
 {
-      switch_thread_audio_t *swa = (switch_thread_audio_t *)data;
+   switch_thread_audio_t *swa = (switch_thread_audio_t *)data;
 
-      if (!swa)
-            return false;
+   if (!swa)
+         return false;
 
-      return !swa->is_paused;
+   return !swa->is_paused;
 }
 
 static void switch_thread_audio_set_nonblock_state(void *data, bool state)
@@ -409,23 +409,24 @@ static bool switch_thread_audio_use_float(void *data)
 
 static size_t switch_thread_audio_write_avail(void *data)
 {
-      switch_thread_audio_t* swa = (switch_thread_audio_t*)data;
+   size_t val;
+   switch_thread_audio_t* swa = (switch_thread_audio_t*)data;
 
-      compat_mutex_lock(&swa->fifoLock);
-      size_t val = fifo_write_avail(swa->fifo);
-      compat_mutex_unlock(&swa->fifoLock);
+   compat_mutex_lock(&swa->fifoLock);
+   val = fifo_write_avail(swa->fifo);
+   compat_mutex_unlock(&swa->fifoLock);
 
-      return val;
+   return val;
 }
 
 size_t switch_thread_audio_buffer_size(void *data)
 {
-      switch_thread_audio_t *swa = (switch_thread_audio_t *)data;
+   switch_thread_audio_t *swa = (switch_thread_audio_t *)data;
 
-      if (!swa)
-            return 0;
+   if (!swa)
+         return 0;
 
-      return swa->fifoSize;
+   return swa->fifoSize;
 }
 
 audio_driver_t audio_switch_thread = {

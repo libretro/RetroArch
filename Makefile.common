@@ -825,21 +825,16 @@ endif
 
 ifeq ($(TARGET), retroarch_switch)
     ifeq ($(HAVE_LIBNX), 1)
-     OBJ += input/drivers_joypad/switch_joypad.o \
-            input/drivers/switch_input.o \
-            menu/drivers_display/menu_display_switch.o \
-            gfx/drivers/switch_nx_gfx.o \
-            audio/drivers/switch_audio.o \
-            audio/drivers/switch_nx_thread_audio.o \
-            frontend/drivers/platform_switch.o
+     OBJ += menu/drivers_display/menu_display_switch.o \
+            gfx/drivers/switch_nx_gfx.o
     else
-     OBJ += gfx/drivers/switch_gfx.o \
-            input/drivers/switch_input.o \
-            input/drivers_joypad/switch_joypad.o \
-            audio/drivers/switch_audio.o \
-            audio/drivers/switch_nx_thread_audio.o \
-            frontend/drivers/platform_switch.o
+     OBJ += gfx/drivers/switch_gfx.o
     endif
+	 OBJ += audio/drivers/switch_audio.o \
+			  audio/drivers/switch_thread_audio.o \
+			  input/drivers/switch_input.o \
+			  input/drivers_joypad/switch_joypad.o \
+			  frontend/drivers/platform_switch.o
 endif
 
 ifeq ($(HAVE_WAYLAND), 1)
