@@ -445,4 +445,4 @@ audio_driver_t audio_switch_thread = {
       switch_thread_audio_buffer_size
 };
 
-/* vim: set ts=6 sw=6 sts=6: */
+/* vim: set ts=3 sw=3 */
