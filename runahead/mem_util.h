@@ -8,8 +8,6 @@
 
 #include <retro_common_api.h>
 
-#define FREE(xxxx) if ((xxxx) != NULL) { free((void*)(xxxx)); } (xxxx) = NULL
-
 RETRO_BEGIN_DECLS
 
 char *strcpy_alloc(const char *sourceStr);
