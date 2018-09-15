@@ -98,6 +98,8 @@
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE           4096
 
+extern bool discord_is_inited;
+
 enum cmd_source_t
 {
    CMD_NONE = 0,
@@ -1980,6 +1982,15 @@ bool command_event(enum event_command cmd, void *data)
             core_unload_game();
             if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                core_unload();
+#ifdef HAVE_DISCORD
+            if (discord_is_inited)
+            {
+               discord_userdata_t userdata;
+               userdata.status = DISCORD_PRESENCE_MENU;
+
+               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+            }
+#endif
          }
          break;
       case CMD_EVENT_QUIT:

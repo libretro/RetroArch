@@ -32,11 +32,13 @@
 
 enum discord_presence
 {
-   DISCORD_PRESENCE_MENU = 0,
+   DISCORD_PRESENCE_NONE = 0,
+   DISCORD_PRESENCE_MENU,
    DISCORD_PRESENCE_GAME,
    DISCORD_PRESENCE_GAME_PAUSED,
    DISCORD_PRESENCE_CHEEVO_UNLOCKED,
    DISCORD_PRESENCE_NETPLAY_HOSTING,
+   DISCORD_PRESENCE_NETPLAY_HOSTING_STOPPED,
    DISCORD_PRESENCE_NETPLAY_CLIENT
 };
 
@@ -50,5 +52,7 @@ void discord_init(void);
 void discord_shutdown(void);
 
 void discord_update(enum discord_presence presence);
+
+void discord_run_callbacks();
 
 #endif /* __RARCH_DISCORD_H */

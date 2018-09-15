@@ -204,7 +204,7 @@ static retro_bits_t has_set_libretro_device;
 static bool has_set_core                                        = false;
 static bool has_set_username                                    = false;
 #ifdef HAVE_DISCORD
-static bool discord_is_inited                                   = false;
+bool discord_is_inited                                         = false;
 #endif
 static bool rarch_is_inited                                     = false;
 static bool rarch_error_on_init                                 = false;
@@ -3357,6 +3357,13 @@ int runloop_iterate(unsigned *sleep_ms)
    settings_t *settings                         = config_get_ptr();
    unsigned max_users                           = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
+   if (discord_is_inited)
+   {
+#ifdef HAVE_DISCORD
+      discord_run_callbacks();
+#endif
+   }
+
    if (runloop_frame_time.callback)
    {
       /* Updates frame timing if frame timing callback is in use by the core.
@@ -3452,7 +3459,6 @@ int runloop_iterate(unsigned *sleep_ms)
    if (runloop_check_cheevos())
       cheevos_test();
 #endif
-
    cheat_manager_apply_retro_cheats() ;
 
 #ifdef HAVE_DISCORD
