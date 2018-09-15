@@ -153,6 +153,9 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
 #elif defined(__linux__)
    strlcpy(s, "elf", len);
    return true;
+#elif defined(HAVE_LIBNX)
+   strlcpy(s, "nro", len);
+   return true;
 #elif defined(_3DS)
    if (envIsHomebrew())
       strlcpy(s, "3dsx", len);
@@ -195,6 +198,9 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
    return true;
 #elif defined(_3DS)
    strlcpy(s, "retroarch.core", len);
+   return true;
+#elif defined(SWITCH)
+   strlcpy(s, "retroarch_switch.nro", len);
    return true;
 #else
    return false;

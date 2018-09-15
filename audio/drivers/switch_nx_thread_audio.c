@@ -165,7 +165,7 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
    swa->fifoSize = (swa->sampleRate * SAMPLE_SIZE * swa->latency) / 1000;
    swa->fifo = fifo_new(swa->fifoSize);
 
-   condvarInit(&swa->cond, &swa->condLock);
+   condvarInit(&swa->cond);
 
    RARCH_LOG("[Audio]: switch_thread_audio_init device %s requested rate %hu rate %hu latency %hu block_frames %hu fifoSize %lu\n",
          device, rate, swa->sampleRate, swa->latency, block_frames, swa->fifoSize);
@@ -278,7 +278,7 @@ static ssize_t switch_thread_audio_write(void *data, const void *buf, size_t siz
                         mutexUnlock(&swa->fifoLock);
                         lockMutex(&swa->condLock);
                         if (swa->running)
-                              condvarWait(&swa->cond);
+                              condvarWait(&swa->cond, &swa->condLock);
                         mutexUnlock(&swa->condLock);
                   }
                   else
