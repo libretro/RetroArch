@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _SWITCH_AUDIO_COMPAT_H
+#define _SWITCH_AUDIO_COMPAT_H
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
@@ -8,9 +9,9 @@
 
 #ifdef HAVE_LIBNX
 
-// libnx definitions
+/* libnx definitions */
 
-// threading
+/* threading */
 typedef Mutex compat_mutex;
 typedef Thread compat_thread;
 typedef CondVar compat_condvar;
@@ -36,7 +37,7 @@ typedef CondVar compat_condvar;
 #define compat_condvar_wake_all(condvar) \
    condvarWakeAll(condvar)
 
-// audio
+/* audio */
 typedef AudioOutBuffer compat_audio_out_buffer;
 #define switch_audio_ipc_init audoutInitialize
 #define switch_audio_ipc_finalize audoutExit
@@ -47,12 +48,12 @@ typedef AudioOutBuffer compat_audio_out_buffer;
 
 #else
 
-// libtransistor definitions
+/* libtransistor definitions */
 
 typedef result_t Result;
 #define R_FAILED(r) ((r) != RESULT_OK)
 
-// threading
+/* threading */
 typedef trn_mutex_t compat_mutex;
 typedef trn_thread_t compat_thread;
 typedef trn_condvar_t compat_condvar;
@@ -78,7 +79,7 @@ typedef trn_condvar_t compat_condvar;
 #define compat_condvar_wake_all(condvar) \
    trn_condvar_signal(condvar, -1)
 
-// audio
+/* audio */
 typedef audio_output_buffer_t compat_audio_out_buffer;
 #define switch_audio_ipc_init audio_ipc_init
 #define switch_audio_ipc_finalize audio_ipc_finalize
@@ -86,5 +87,7 @@ typedef audio_output_buffer_t compat_audio_out_buffer;
 #define switch_audio_ipc_output_append_buffer(a, b) audio_ipc_output_append_buffer(&a->output, b)
 #define switch_audio_ipc_output_stop(a) audio_ipc_output_stop(&a->output)
 #define switch_audio_ipc_output_start(a) audio_ipc_output_start(&a->output)
+
+#endif
 
 #endif
