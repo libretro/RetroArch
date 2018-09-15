@@ -11,7 +11,12 @@
 #include <formats/rpng.h>
 #include <formats/image.h>
 
+#ifdef HAVE_LIBNX
 #include <switch.h>
+#else
+#include <libtransistor/nx.h>
+#include <libtransistor/ipc_helpers.h>
+#endif
 
 #include <file/file_path.h>
 
@@ -37,16 +42,26 @@
 #endif
 #endif
 
+#ifdef HAVE_LIBNX
+#define SD_PREFIX
+#else
+#define SD_PREFIX "/sd"
+#endif
+
 static enum frontend_fork switch_fork_mode = FRONTEND_FORK_NONE;
 static const char *elf_path_cst = "/switch/retroarch_switch.nro";
 
 static uint64_t frontend_switch_get_mem_used(void);
+
+#ifdef HAVE_LIBNX
 
 // Splash
 static uint32_t *splashData = NULL;
 
 // switch_gfx.c protypes, we really need a header
 extern void gfx_slow_swizzling_blit(uint32_t *buffer, uint32_t *image, int w, int h, int tx, int ty, bool blend);
+
+#endif // HAVE_LIBNX
 
 static void get_first_valid_core(char *path_return)
 {
@@ -56,16 +71,16 @@ static void get_first_valid_core(char *path_return)
 
    path_return[0] = '\0';
 
-   dir = opendir("/retroarch/cores");
+   dir = opendir(SD_PREFIX "/retroarch/cores");
    if (dir != NULL)
    {
-      while (ent = readdir(dir))
+      while ((ent = readdir(dir)) != NULL)
       {
          if (ent == NULL)
             break;
          if (strlen(ent->d_name) > strlen(extension) && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
          {
-            strcpy(path_return, "/retroarch/cores");
+            strcpy(path_return, SD_PREFIX "/retroarch/cores");
             strcat(path_return, "/");
             strcat(path_return, ent->d_name);
             break;
@@ -83,11 +98,11 @@ static void frontend_switch_get_environment_settings(int *argc, char *argv[], vo
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
-   retro_main_log_file_init("/retroarch-log.txt");
+   retro_main_log_file_init(SD_PREFIX "/retroarch-log.txt");
 #endif
 #endif
 
-   fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], "/retroarch/retroarch_switch.nro", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+   fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], SD_PREFIX "/retroarch/retroarch_switch.nro", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
    RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
@@ -137,7 +152,8 @@ static void frontend_switch_deinit(void *data)
 {
    (void)data;
 
-#if defined(HAVE_LIBNX) && defined(NXLINK) // Else freeze on exit
+#ifdef HAVE_LIBNX
+#if defined(SWITCH) && defined(NXLINK)
    socketExit();
 #endif
 
@@ -149,8 +165,10 @@ static void frontend_switch_deinit(void *data)
    }
 
    gfxExit();
+#endif
 }
 
+#ifdef HAVE_LIBNX
 static void frontend_switch_exec(const char *path, bool should_load_game)
 {
    char game_path[PATH_MAX];
@@ -260,11 +278,6 @@ static void frontend_switch_exitspawn(char *s, size_t len)
    }
 #endif
    frontend_switch_exec(s, should_load_game);
-}
-
-static void frontend_switch_shutdown(bool unused)
-{
-   (void)unused;
 }
 
 void argb_to_rgba8(uint32_t *buff, uint32_t height, uint32_t width)
@@ -418,16 +431,16 @@ char *realpath(const char *name, char *resolved)
    if (name == NULL)
    {
       /* As per Single Unix Specification V2 we must return an error if
-	 either parameter is a null pointer.  We extend this to allow
-	 the RESOLVED parameter to be NULL in case the we are expected to
-	 allocate the room for the return value.  */
+       either parameter is a null pointer.  We extend this to allow
+       the RESOLVED parameter to be NULL in case the we are expected to
+       allocate the room for the return value.  */
       return NULL;
    }
 
    if (name[0] == '\0')
    {
       /* As per Single Unix Specification V2 we must return an error if
-	 the name argument points to an empty string.  */
+       the name argument points to an empty string.  */
       return NULL;
    }
 
@@ -536,6 +549,13 @@ error:
    return NULL;
 }
 
+#endif // HAVE_LIBNX
+
+static void frontend_switch_shutdown(bool unused)
+{
+   (void)unused;
+}
+
 // runloop_get_system_info isnt initialized that early..
 extern void retro_get_system_info(struct retro_system_info *info);
 
@@ -543,6 +563,7 @@ static void frontend_switch_init(void *data)
 {
    (void)data;
 
+#ifdef HAVE_LIBNX // splash
    // Init Resolution before initDefault
    gfxInitResolution(1280, 720);
 
@@ -551,13 +572,13 @@ static void frontend_switch_init(void *data)
 
    gfxConfigureTransform(0);
 
-#if defined(HAVE_LIBNX) && defined(NXLINK)
+#ifdef NXLINK
    socketInitializeDefault();
    nxlinkStdio();
 #ifndef IS_SALAMANDER
    verbosity_enable();
 #endif
-#endif
+#endif // NXLINK
 
    rarch_system_info_t *sys_info = runloop_get_system_info();
    retro_get_system_info(sys_info);
@@ -610,6 +631,7 @@ static void frontend_switch_init(void *data)
    {
       frontend_switch_showsplash();
    }
+#endif // HAVE_LIBNX (splash)
 }
 
 static int frontend_switch_get_rating(void)
@@ -642,7 +664,7 @@ static int frontend_switch_parse_drive_list(void *data, bool load_content)
 static uint64_t frontend_switch_get_mem_total(void)
 {
    uint64_t memoryTotal = 0;
-   svcGetInfo(&memoryTotal, 6, CUR_PROCESS_HANDLE, 0); // avaiable
+   svcGetInfo(&memoryTotal, 6, 0xffff8001, 0); // avaiable
    memoryTotal += frontend_switch_get_mem_used();
 
    return memoryTotal;
@@ -651,7 +673,7 @@ static uint64_t frontend_switch_get_mem_total(void)
 static uint64_t frontend_switch_get_mem_used(void)
 {
    uint64_t memoryUsed = 0;
-   svcGetInfo(&memoryUsed, 7, CUR_PROCESS_HANDLE, 0); // used
+   svcGetInfo(&memoryUsed, 7, 0xffff8001, 0); // used
 
    return memoryUsed;
 }
@@ -666,6 +688,7 @@ static void frontend_switch_get_os(char *s, size_t len, int *major, int *minor)
 {
    strlcpy(s, "Horizon OS", len);
 
+#ifdef HAVE_LIBNX
    // There is pretty sure a better way, but this will do just fine
    if (kernelAbove500())
    {
@@ -693,6 +716,37 @@ static void frontend_switch_get_os(char *s, size_t len, int *major, int *minor)
       *major = 1;
       *minor = 0;
    }
+#else
+   // defaults in case we error out
+   *major = 0;
+   *minor = 0;
+
+   char firmware_version[0x100];
+
+   result_t r; // used by LIB_ASSERT_OK macros
+   LIB_ASSERT_OK(fail, sm_init());
+
+   ipc_object_t set_sys;
+   LIB_ASSERT_OK(fail_sm, sm_get_service(&set_sys, "set:sys"));
+
+   ipc_request_t rq = ipc_make_request(3);
+   ipc_buffer_t buffers[] = {
+      ipc_make_buffer(firmware_version, 0x100, 0x1a),
+   };
+   ipc_msg_set_buffers(rq, buffers, buffer_ptrs);
+
+   LIB_ASSERT_OK(fail_object, ipc_send(set_sys, &rq, &ipc_default_response_fmt));
+
+   int patch;
+   sscanf(firmware_version + 0x68, "%d.%d.%d", major, minor, &patch);
+   
+fail_object:
+   ipc_close(set_sys);
+fail_sm:
+   sm_finalize();
+fail:
+   return;
+#endif
 }
 
 static void frontend_switch_get_name(char *s, size_t len)
@@ -706,6 +760,7 @@ frontend_ctx_driver_t frontend_ctx_switch =
         frontend_switch_get_environment_settings,
         frontend_switch_init,
         frontend_switch_deinit,
+#ifdef HAVE_LIBNX
         frontend_switch_exitspawn,
         NULL, /* process_args */
         frontend_switch_exec,
@@ -714,6 +769,12 @@ frontend_ctx_driver_t frontend_ctx_switch =
 #else
         frontend_switch_set_fork,
 #endif
+#else // HAVE_LIBNX
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+#endif // HAVE_LIBNX
         frontend_switch_shutdown,
         frontend_switch_get_name,
         frontend_switch_get_os,

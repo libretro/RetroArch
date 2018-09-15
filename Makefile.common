@@ -836,7 +836,9 @@ ifeq ($(TARGET), retroarch_switch)
      OBJ += gfx/drivers/switch_gfx.o \
             input/drivers/switch_input.o \
             input/drivers_joypad/switch_joypad.o \
-            audio/drivers/switch_audio.o
+            audio/drivers/switch_audio.o \
+            audio/drivers/switch_nx_thread_audio.o \
+            frontend/drivers/platform_switch.o
     endif
 endif
 
