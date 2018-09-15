@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2018      - misson2000
+ *  Copyright (C) 2018      - misson20000
  *  Copyright (C) 2018      - m4xw
  *  Copyright (C) 2018      - lifajucejo
  *
