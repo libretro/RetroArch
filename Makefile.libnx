@@ -19,8 +19,8 @@ OBJ :=
 
 # For threading we need to overwrite some vars with global defines because devkitPro's includes 
 # make it hard for us. This works for the pthread wrapper
-DEFINES_THREAD := -Dpthread_t=Thread -Dpthread_mutex_t=Mutex -Dpthread_mutexattr_t='void*' -Dpthread_attr_t=int -Dpthread_cond_t=CondVar -Dpthread_condattr_t='int'
-DEFINES := -U__linux__ -U__linux -DRARCH_INTERNAL -DGLOBAL_CONFIG_DIR='"/switch"'
+DEFINES_THREAD := -Dpthread_t=Thread -Dpthread_mutex_t=Mutex -Dpthread_mutexattr_t='void*' -Dpthread_attr_t=int -Dpthread_cond_t=CondVar -Dpthread_condattr_t='int' -D_SYS__PTHREADTYPES_H_
+DEFINES := -U__linux__ -U__linux -DRARCH_INTERNAL -DGLOBAL_CONFIG_DIR='"/switch"' $(DEFINES_THREAD)
 
 HAVE_CC_RESAMPLER = 1
 HAVE_MENU_COMMON = 1
@@ -42,8 +42,8 @@ HAVE_RUNAHEAD = 1
 
 # RetroArch libnx useful flags
 HAVE_OVERLAY = 0
-HAVE_THREADS = 0
-HAVE_PTHREADS = 0
+HAVE_THREADS = 1
+HAVE_PTHREADS = 1
 HAVE_FREETYPE = 0
 HAVE_SWITCH = 1
 HAVE_LIBNX = 1
@@ -76,12 +76,12 @@ OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 #     - icon.jpg
 #     - <libnx folder>/default_icon.jpg
 #---------------------------------------------------------------------------------
-BUILD :=	build
-SOURCES :=	$(CURDIR)/source
-DATA :=	data
+BUILD := build
+SOURCES := $(CURDIR)/source
+DATA := data
 INCLUDES :=	include
-EXEFS_SRC :=	exefs_src
-#ROMFS :=	switch/romfs
+EXEFS_SRC := exefs_src
+#ROMFS := switch/romfs
 
 APP_TITLE := RetroArch
 APP_VERSION := 1.0.0
