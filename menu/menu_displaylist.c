@@ -3217,14 +3217,16 @@ static int menu_displaylist_parse_options_cheats(
       menu_displaylist_parse_settings_enum(menu, info,
             MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
             PARSE_ONLY_BOOL, false);
-   menu_displaylist_parse_settings_enum(menu, info,
-         MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
-         PARSE_ONLY_BOOL, false);
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
-         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),
-         MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,
-         MENU_SETTING_ACTION, 0, 0);
+   if (show_advanced_settings)
+      menu_displaylist_parse_settings_enum(menu, info,
+            MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
+            PARSE_ONLY_BOOL, false);
+   if (show_advanced_settings)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
+            msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),
+            MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,
+            MENU_SETTING_ACTION, 0, 0);
    for (i = 0; i < cheat_manager_get_size(); i++)
    {
       char cheat_label[64];
