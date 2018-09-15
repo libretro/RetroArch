@@ -42,7 +42,7 @@ endif
 
 
 ifeq ($(strip $(LIBTRANSISTOR_HOME)),)
-$(error "Please set LIBTRANSISTOR_HOME in your environment. export LIBTRANSISTOR_HOME=<path t>o libtransistor")
+$(error "Please set LIBTRANSISTOR_HOME in your environment. export LIBTRANSISTOR_HOME=<path/to/libtransistor/dist/>")
 endif
 
 include $(LIBTRANSISTOR_HOME)/libtransistor.mk
@@ -52,7 +52,7 @@ LIBDIRS := -L.
 
 TARGETS := $(TARGET).nro
 
-CFLAGS += $(INCDIRS) $(DEFINES) -Wunused-command-line-argument
+CFLAGS += $(INCDIRS) $(DEFINES) -Wno-unused-command-line-argument -Werror-implicit-function-declaration
 
 all: $(TARGETS)
 

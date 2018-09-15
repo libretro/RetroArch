@@ -19,13 +19,7 @@
 #include <malloc.h>
 #include <stdint.h>
 
-#ifdef HAVE_LIBNX
-#include <switch.h>
-#else
-#include <libtransistor/nx.h>
-#include <libtransistor/alloc_pages.h>
-#endif
-
+#include "switch_audio_compat.h"
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
@@ -33,22 +27,6 @@
 #define BUFFER_COUNT 5
 #else
 #define BUFFER_COUNT 3
-#endif
-
-#ifdef HAVE_LIBNX
-#define switch_audio_ipc_init audoutInitialize
-#define switch_audio_ipc_output_get_released_buffer(a, b) audoutGetReleasedAudioOutBuffer(&a->current_buffer, &b)
-#define switch_audio_ipc_output_append_buffer(a, b) audoutAppendAudioOutBuffer(&b)
-#define switch_audio_ipc_output_stop(a) audoutStopAudioOut()
-#define switch_audio_ipc_output_start(a) audoutStartAudioOut()
-#define audio_output_buffer_t AudioOutBuffer
-#else
-#define switch_audio_ipc_init audio_ipc_init
-#define switch_audio_ipc_output_get_released_buffer(a, b) audio_ipc_output_get_released_buffer(&a->output, &b, &a->current_buffer)
-#define switch_audio_ipc_output_append_buffer(a, b) audio_ipc_output_append_buffer(&a->output, &b)
-#define switch_audio_ipc_output_stop(a) audio_ipc_output_stop(&a->output)
-#define switch_audio_ipc_output_start(a) audio_ipc_output_start(&a->output)
-#define audio_output_buffer_t audio_output_buffer_t
 #endif
 
 static const int sample_rate           = 48000;
@@ -62,8 +40,8 @@ typedef struct
    bool is_paused;
    uint64_t last_append;
    unsigned latency;
-   audio_output_buffer_t buffers[BUFFER_COUNT];
-   audio_output_buffer_t *current_buffer;
+   compat_audio_out_buffer buffers[BUFFER_COUNT];
+   compat_audio_out_buffer *current_buffer;
 
 #ifndef HAVE_LIBNX
    audio_output_t output;
@@ -155,13 +133,8 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
 
 	if (swa->current_buffer->data_size > (48000 * swa->latency) / 1000)
    {
-      #ifdef HAVE_LIBNX
-         if (switch_audio_ipc_output_append_buffer(swa, *swa->current_buffer) != 0)
-            return -1;
-      #else
          if (switch_audio_ipc_output_append_buffer(swa, swa->current_buffer) != 0)
             return -1;
-      #endif
 		swa->current_buffer = NULL;
 	}
 
@@ -339,7 +312,7 @@ static void *switch_audio_init(const char *device,
 	      goto fail_audio_output;
 #endif
 
-      if (switch_audio_ipc_output_append_buffer(swa, swa->buffers[i]) != 0)
+      if (switch_audio_ipc_output_append_buffer(swa, &swa->buffers[i]) != 0)
          goto fail_audio_output;
    }
 

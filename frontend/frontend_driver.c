@@ -71,6 +71,9 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #ifdef DJGPP
    &frontend_ctx_dos,
 #endif
+#ifdef SWITCH
+   &frontend_ctx_switch,
+#endif
    &frontend_ctx_null,
    NULL
 };
