@@ -1320,6 +1320,7 @@ static void retroarch_main_init_media(void)
 bool retroarch_main_init(int argc, char *argv[])
 {
    bool init_failed = false;
+   global_t  *global = global_get_ptr();
 
    retroarch_init_state();
 
@@ -1398,7 +1399,8 @@ bool retroarch_main_init(int argc, char *argv[])
    command_event(CMD_EVENT_MAPPER_INIT, NULL);
    command_event(CMD_EVENT_REWIND_INIT, NULL);
    command_event(CMD_EVENT_CONTROLLERS_INIT, NULL);
-   command_event(CMD_EVENT_RECORD_INIT, NULL);
+   if (!string_is_empty(global->record.path))
+      command_event(CMD_EVENT_RECORD_INIT, NULL);
 
    path_init_savefile();
 
@@ -3191,7 +3193,10 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_MOVIE_RECORD_TOGGLE);
 
       if (pressed && !old_pressed)
+      {
+         command_event(CMD_EVENT_RECORD_INIT, NULL);
          bsv_movie_check();
+      }
 
       old_pressed             = pressed;
    }

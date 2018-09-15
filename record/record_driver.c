@@ -35,6 +35,7 @@
 #include "../verbosity.h"
 #include "../msg_hash.h"
 #include "../list_special.h"
+#include "paths.h"
 
 
 static const record_driver_t *record_drivers[] = {
@@ -309,9 +310,10 @@ void recording_push_audio(const int16_t *data, size_t samples)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool recording_init(void)
+bool recording_init(bool stream)
 {
-   char recording_file[PATH_MAX_LENGTH];
+   char output[PATH_MAX_LENGTH];
+   char buf[PATH_MAX_LENGTH];
    struct ffemu_params params           = {0};
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
    bool *recording_enabled              = recording_is_enabled();
@@ -321,7 +323,7 @@ bool recording_init(void)
    if (!*recording_enabled)
       return false;
 
-   recording_file[0] = '\0';
+   output[0] = '\0';
 
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
@@ -343,19 +345,36 @@ bool recording_init(void)
          (float)av_info->timing.fps,
          (float)av_info->timing.sample_rate);
 
-   strlcpy(recording_file, global->record.path, sizeof(recording_file));
+   if (!string_is_empty(global->record.path))
+      strlcpy(output, global->record.path, sizeof(output));
+   else
+   {
+      if(stream)
+         if (!string_is_empty(settings->paths.path_stream_url))
+            strlcpy(output, settings->paths.path_stream_url, sizeof(output));
+         else
+            /* to-do determine the local interface, this won't work for connecting over the internet*/
+            snprintf(output, sizeof(output), "udp://127.0.0.1:%u", settings->uints.video_stream_port);
+      else
+      {
+         const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+         fill_str_dated_filename(buf, game_name,
+                  "mkv", sizeof(buf));
+         fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
 
+      }
+   }
    if (recording_use_output_dir)
-      fill_pathname_join(recording_file,
+      fill_pathname_join(output,
             global->record.output_dir,
-            global->record.path, sizeof(recording_file));
+            global->record.path, sizeof(output));
 
    params.out_width  = av_info->geometry.base_width;
    params.out_height = av_info->geometry.base_height;
    params.fb_width   = av_info->geometry.max_width;
    params.fb_height  = av_info->geometry.max_height;
    params.channels   = 2;
-   params.filename   = recording_file;
+   params.filename   = output;
    params.fps        = av_info->timing.fps;
    params.samplerate = av_info->timing.sample_rate;
    params.pix_fmt    = (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888) ?
@@ -364,6 +383,8 @@ bool recording_init(void)
 
    if (!string_is_empty(global->record.config))
       params.config = global->record.config;
+   else if (!string_is_empty(settings->paths.path_record_config))
+      params.config = settings->paths.path_record_config;
 
    if (video_driver_supports_recording())
    {
@@ -443,7 +464,7 @@ bool recording_init(void)
 
    RARCH_LOG("%s %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
          msg_hash_to_str(MSG_RECORDING_TO),
-         global->record.path,
+         output,
          params.out_width, params.out_height,
          params.fb_width, params.fb_height,
          (unsigned)params.pix_fmt);

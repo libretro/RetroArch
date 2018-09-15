@@ -18,7 +18,8 @@
       "driver.h": "c",
       "iosfwd": "c",
       "xlocbuf": "c",
-      "xmemory0": "c"
+      "xmemory0": "c",
+      "ios": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

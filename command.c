@@ -2176,9 +2176,12 @@ TODO: Add a setting for these tweaks */
             return false;
          break;
       case CMD_EVENT_RECORD_INIT:
-         command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
-         if (!recording_init())
-            return false;
+         {
+            bool *recording_enabled = recording_is_enabled();
+            *recording_enabled = true;
+            if (!recording_init(false))
+               return false;
+         }
          break;
       case CMD_EVENT_HISTORY_DEINIT:
          if (g_defaults.content_history)

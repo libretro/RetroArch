@@ -1160,6 +1160,14 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
    SETTING_PATH("input_overlay",
          settings->paths.path_overlay, false, NULL, true);
 #endif
+#ifdef HAVE_FFMPEG
+   SETTING_PATH("video_record_config",
+         settings->paths.path_record_config, false, NULL, true);
+   SETTING_PATH("video_stream_config",
+         settings->paths.path_stream_config, false, NULL, true);
+   SETTING_PATH("video_stream_url",
+         settings->paths.path_stream_url, false, NULL, true);
+#endif
    SETTING_PATH("video_font_path",
          settings->paths.path_font, false, NULL, true);
    SETTING_PATH("cursor_directory",
@@ -1580,6 +1588,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("aspect_ratio_index",           &settings->uints.video_aspect_ratio_idx, true, aspect_ratio_idx, false);
 #ifdef HAVE_NETWORKING
    SETTING_UINT("netplay_ip_port",              &settings->uints.netplay_port,         true, RARCH_DEFAULT_PORT, false);
+   SETTING_UINT("video_stream_port",            &settings->uints.video_stream_port,    true, RARCH_STREAM_DEFAULT_PORT, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT);
    SETTING_UINT("netplay_input_latency_frames_min",&settings->uints.netplay_input_latency_frames_min, true, 0, false);
    SETTING_UINT("netplay_input_latency_frames_range",&settings->uints.netplay_input_latency_frames_range, true, 0, false);
@@ -1921,6 +1930,9 @@ static void config_set_defaults(void)
    *settings->paths.path_menu_wallpaper    = '\0';
    *settings->paths.path_content_database  = '\0';
    *settings->paths.path_overlay           = '\0';
+   *settings->paths.path_record_config     = '\0';
+   *settings->paths.path_stream_config     = '\0';
+   *settings->paths.path_stream_url     = '\0';
    *settings->paths.path_softfilter_plugin = '\0';
 
    *settings->arrays.playlist_names = '\0';

@@ -158,7 +158,7 @@ void find_record_driver(void);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool recording_init(void);
+bool recording_init(bool stream);
 
 bool *recording_is_enabled(void);
 
