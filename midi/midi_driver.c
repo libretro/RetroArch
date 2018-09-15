@@ -14,6 +14,7 @@
  */
 
 #include <string.h>
+#include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <retro_miscellaneous.h>
 
@@ -64,7 +65,7 @@ static midi_driver_t *midi_driver_find_driver(const char *ident)
 
    for (i = 0; i < ARRAY_SIZE(midi_drivers); ++i)
    {
-      if (!strcmp(midi_drivers[i]->ident, ident))
+      if (string_is_equal(midi_drivers[i]->ident, ident))
          return midi_drivers[i];
    }
 
@@ -199,7 +200,8 @@ bool midi_driver_init(void)
 
       midi_drv = midi_driver_find_driver(settings->arrays.midi_driver);
       if (strcmp(midi_drv->ident, settings->arrays.midi_driver))
-         strcpy(settings->arrays.midi_driver, midi_drv->ident);
+         strlcpy(settings->arrays.midi_driver, midi_drv->ident,
+               sizeof(settings->arrays.midi_driver));
 
       if (!midi_drv->get_avail_inputs(midi_drv_inputs))
          err_str = "list of input devices unavailable";
@@ -207,7 +209,7 @@ bool midi_driver_init(void)
          err_str = "list of output devices unavailable";
       else
       {
-         if (strcmp(settings->arrays.midi_input, "Off"))
+         if (string_is_not_equal(settings->arrays.midi_input, "Off"))
          {
             if (string_list_find_elem(midi_drv_inputs, settings->arrays.midi_input))
                input = settings->arrays.midi_input;
@@ -215,11 +217,12 @@ bool midi_driver_init(void)
             {
                RARCH_WARN("[MIDI]: Input device \"%s\" unavailable.\n",
                      settings->arrays.midi_input);
-               strcpy(settings->arrays.midi_input, "Off");
+               strlcpy(settings->arrays.midi_input, "Off",
+                     sizeof(settings->arrays.midi_input));
             }
          }
 
-         if (strcmp(settings->arrays.midi_output, "Off"))
+         if (string_is_not_equal(settings->arrays.midi_output, "Off"))
          {
             if (string_list_find_elem(midi_drv_outputs, settings->arrays.midi_output))
                output = settings->arrays.midi_output;
@@ -227,7 +230,8 @@ bool midi_driver_init(void)
             {
                RARCH_WARN("[MIDI]: Output device \"%s\" unavailable.\n",
                      settings->arrays.midi_output);
-               strcpy(settings->arrays.midi_output, "Off");
+               strlcpy(settings->arrays.midi_output, "Off",
+                     sizeof(settings->arrays.midi_output));
             }
          }
 
@@ -314,7 +318,7 @@ bool midi_driver_set_input(const char *input)
       return false;
    }
 
-   if (!strcmp(input, "Off"))
+   if (string_is_equal(input, "Off"))
       input = NULL;
 
    if (!midi_drv->set_input(midi_drv_data, input))
@@ -346,7 +350,7 @@ bool midi_driver_set_output(const char *output)
       return false;
    }
 
-   if (!strcmp(output, "Off"))
+   if (string_is_equal(output, "Off"))
       output = NULL;
 
    if (!midi_drv->set_output(midi_drv_data, output))
