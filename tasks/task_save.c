@@ -1186,7 +1186,6 @@ error:
 bool content_save_state(const char *path, bool save_to_disk, bool autosave)
 {
    retro_ctx_size_info_t info;
-   bool ret    = false;
    void *data  = NULL;
 
    core_serialize_size(&info);
