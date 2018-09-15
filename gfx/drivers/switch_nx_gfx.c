@@ -54,11 +54,11 @@
 
 #ifdef HAVE_NXRGUI
 extern uint32_t *nx_backgroundImage;
-// Temp Overlay // KILL IT WITH FIRE
+/* Temp Overlay - kill it with fire */
 extern uint32_t *tmp_overlay;
 #endif
 
-// (C) libtransistor
+/* (C) libtransistor */
 static int pdep(uint32_t mask, uint32_t value)
 {
     uint32_t out = 0;
@@ -89,14 +89,14 @@ void gfx_slow_swizzling_blit(uint32_t *buffer, uint32_t *image, int w, int h, in
     const uint32_t tile_height = 128;
     const uint32_t padded_width = 128 * 10;
 
-    // we're doing this in pixels - should just shift the swizzles instead
+    /* we're doing this in pixels - should just shift the swizzles instead */
     uint32_t offs_x0 = swizzle_x(x0);
     uint32_t offs_y = swizzle_y(y0);
     uint32_t x_mask = swizzle_x(~0u);
     uint32_t y_mask = swizzle_y(~0u);
     uint32_t incr_y = swizzle_x(padded_width);
 
-    // step offs_x0 to the right row of tiles
+    /* step offs_x0 to the right row of tiles */
     offs_x0 += incr_y * (y0 / tile_height);
 
     uint32_t x, y;
@@ -108,7 +108,7 @@ void gfx_slow_swizzling_blit(uint32_t *buffer, uint32_t *image, int w, int h, in
         for (x = x0; x < x1; x++)
         {
             uint32_t pixel = *src++;
-            if (blend) // supercheap masking
+            if (blend) /* supercheap masking */
             {
                 uint32_t dst = dest_line[offs_x];
                 uint8_t src_a = ((pixel & 0xFF000000) >> 24);
@@ -126,16 +126,17 @@ void gfx_slow_swizzling_blit(uint32_t *buffer, uint32_t *image, int w, int h, in
 
         offs_y = (offs_y - y_mask) & y_mask;
         if (!offs_y)
-            offs_x0 += incr_y; // wrap into next tile row
+            offs_x0 += incr_y; /* wrap into next tile row */
     }
 }
 
-// needed to clear surface completely as hw scaling doesn't always scale to full resoution perflectly
+/* needed to clear surface completely as hw scaling doesn't always scale to full resoution perflectly */
 static void clear_screen(switch_video_t *sw)
 {
+    uint32_t *out_buffer = NULL;
     gfxConfigureResolution(sw->vp.full_width, sw->vp.full_height);
 
-    uint32_t *out_buffer = (uint32_t *)gfxGetFramebuffer(NULL, NULL);
+    out_buffer = (uint32_t *)gfxGetFramebuffer(NULL, NULL);
 
     memset(out_buffer, 0, gfxGetFramebufferSize());
 
@@ -164,7 +165,7 @@ static void *switch_init(const video_info_t *video,
     sw->vp.full_width = 1280;
     sw->vp.full_height = 720;
 
-    // Sanity check
+    /* Sanity check */
     sw->vp.width = MIN(sw->vp.width, sw->vp.full_width);
     sw->vp.height = MIN(sw->vp.height, sw->vp.full_height);
 
@@ -177,7 +178,7 @@ static void *switch_init(const video_info_t *video,
     sw->smooth = video->smooth;
     sw->menu_texture.enable = false;
 
-    // Autoselect driver
+    /* Autoselect driver */
     if (input && input_data)
     {
         settings_t *settings = config_get_ptr();
@@ -343,7 +344,7 @@ static bool switch_frame(void *data, const void *frame,
 
     if (ffwd_mode && !sw->is_threaded)
     {
-        // render every 4th frame when in ffwd mode and not threaded
+        /* render every 4th frame when in ffwd mode and not threaded */
         if ((frame_count % 4) != 0)
             return true;
     }
@@ -355,7 +356,7 @@ static bool switch_frame(void *data, const void *frame,
         switch_update_viewport(sw, video_info);
         printf("[Video] fw: %i fh: %i w: %i h: %i x: %i y: %i\n", sw->vp.full_width, sw->vp.full_height, sw->vp.width, sw->vp.height, sw->vp.x, sw->vp.y);
 
-        // Sanity check
+        /* Sanity check */
         sw->vp.width = MIN(sw->vp.width, sw->vp.full_width);
         sw->vp.height = MIN(sw->vp.height, sw->vp.full_height);
 
@@ -430,14 +431,17 @@ static bool switch_frame(void *data, const void *frame,
             gfx_slow_swizzling_blit(out_buffer, sw->tmp_image, sw->vp.full_width, sw->vp.full_height, 0, 0, true);
         }
     }
-    else if (sw->smooth) // bilinear
+    else if (sw->smooth) /* bilinear */
     {
+        int w, h;
+        unsigned x, y;
         struct scaler_ctx *ctx = &sw->scaler;
         scaler_ctx_scale_direct(ctx, sw->image, frame);
-        int w = sw->scaler.out_width;
-        int h = sw->scaler.out_height;
-        for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++)
+        w = sw->scaler.out_width;
+        h = sw->scaler.out_height;
+
+        for (y = 0; y < h; y++)
+            for (x = 0; x < w; x++)
                 out_buffer[gfxGetFramebufferDisplayOffset(x + sw->hw_scale.x_offset, y)] = sw->image[y * w + x];
     }
     else
@@ -447,9 +451,7 @@ static bool switch_frame(void *data, const void *frame,
         gfx_slow_swizzling_blit(out_buffer, sw->image, sw->vp.full_width, sw->vp.full_height, 0, 0, false);
 #ifdef HAVE_NXRGUI
         if (tmp_overlay)
-        {
             gfx_slow_swizzling_blit(out_buffer, tmp_overlay, sw->vp.full_width, sw->vp.full_height, 0, 0, true);
-        }
 #endif
     }
 
@@ -514,7 +516,7 @@ static void switch_free(void *data)
 }
 
 static bool switch_set_shader(void *data,
-                              enum rarch_shader_type type, const char *path)
+            enum rarch_shader_type type, const char *path)
 {
     (void)data;
     (void)type;
@@ -556,6 +558,9 @@ static void switch_set_texture_frame(
         sw->menu_texture.width != width ||
         sw->menu_texture.height != height)
     {
+        int xsf, yf, sf;
+        struct scaler_ctx *sctx = NULL;
+
         if (sw->menu_texture.pixels)
             realloc(sw->menu_texture.pixels, sz);
         else
@@ -567,31 +572,31 @@ static void switch_set_texture_frame(
             return;
         }
 
-        int xsf = 1280 / width;
-        int ysf = 720 / height;
-        int sf = xsf;
+        xsf = 1280 / width;
+        ysf = 720 / height;
+        sf  = xsf;
 
         if (ysf < sf)
             sf = ysf;
 
-        sw->menu_texture.width = width;
+        sw->menu_texture.width  = width;
         sw->menu_texture.height = height;
-        sw->menu_texture.tgtw = width * sf;
-        sw->menu_texture.tgth = height * sf;
+        sw->menu_texture.tgtw   = width * sf;
+        sw->menu_texture.tgth   = height * sf;
 
-        struct scaler_ctx *sctx = &sw->menu_texture.scaler;
+        sctx                    = &sw->menu_texture.scaler;
         scaler_ctx_gen_reset(sctx);
 
-        sctx->in_width = width;
-        sctx->in_height = height;
-        sctx->in_stride = width * (rgb32 ? 4 : 2);
-        sctx->in_fmt = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
-        sctx->out_width = sw->menu_texture.tgtw;
-        sctx->out_height = sw->menu_texture.tgth;
-        sctx->out_stride = 1280 * 4;
-        sctx->out_fmt = SCALER_FMT_ABGR8888;
+        sctx->in_width          = width;
+        sctx->in_height         = height;
+        sctx->in_stride         = width * (rgb32 ? 4 : 2);
+        sctx->in_fmt            = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
+        sctx->out_width         = sw->menu_texture.tgtw;
+        sctx->out_height        = sw->menu_texture.tgth;
+        sctx->out_stride        = 1280 * 4;
+        sctx->out_fmt           = SCALER_FMT_ABGR8888;
 
-        sctx->scaler_type = SCALER_TYPE_POINT;
+        sctx->scaler_type       = SCALER_TYPE_POINT;
 
         if (!scaler_ctx_gen_filter(sctx))
         {
@@ -625,9 +630,9 @@ static void switch_set_texture_enable(void *data, bool enable, bool full_screen)
 }
 
 static void switch_set_osd_msg(void *data,
-                               video_frame_info_t *video_info,
-                               const char *msg,
-                               const void *params, void *font)
+            video_frame_info_t *video_info,
+            const char *msg,
+            const void *params, void *font)
 {
     switch_video_t *sw = (switch_video_t *)data;
 
@@ -649,10 +654,9 @@ static void switch_overlay_enable(void *data, bool state)
 }
 
 static bool switch_overlay_load(void *data,
-                                const void *image_data, unsigned num_images)
+            const void *image_data, unsigned num_images)
 {
-    switch_video_t *swa = (switch_video_t *)data;
-
+    switch_video_t          *swa = (switch_video_t *)data;
     struct texture_image *images = (struct texture_image *)image_data;
 
     if (!swa)
@@ -665,7 +669,7 @@ static bool switch_overlay_load(void *data,
 }
 
 static void switch_overlay_tex_geom(void *data,
-                                    unsigned idx, float x, float y, float w, float h)
+            unsigned idx, float x, float y, float w, float h)
 {
     switch_video_t *swa = (switch_video_t *)data;
 
@@ -674,7 +678,7 @@ static void switch_overlay_tex_geom(void *data,
 }
 
 static void switch_overlay_vertex_geom(void *data,
-                                       unsigned idx, float x, float y, float w, float h)
+            unsigned idx, float x, float y, float w, float h)
 {
     switch_video_t *swa = (switch_video_t *)data;
 
@@ -741,7 +745,7 @@ static const video_poke_interface_t switch_poke_interface = {
 };
 
 static void switch_get_poke_interface(void *data,
-                                      const video_poke_interface_t **iface)
+            const video_poke_interface_t **iface)
 {
     (void)data;
     *iface = &switch_poke_interface;
