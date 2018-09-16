@@ -147,10 +147,10 @@ static void menu_action_setting_disp_set_label_crt_switch_resolution(
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
             break;
          case CRT_SWITCH_15KHZ:
-            strlcpy(s, "15 Khz", len);
+            strlcpy(s, "15 KHz", len);
             break;
          case CRT_SWITCH_31KHZ:
-            strlcpy(s, "31 Khz", len);
+            strlcpy(s, "31 KHz", len);
             break;
       }
    }
