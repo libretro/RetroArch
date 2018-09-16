@@ -6299,6 +6299,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING,
                PARSE_ONLY_INT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+               PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
          info->need_push    = true;

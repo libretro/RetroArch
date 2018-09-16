@@ -452,6 +452,7 @@ static const float refresh_rate = (32730.0 * 8192.0) / 4481134.0 ;
 #else
 static const float refresh_rate = 60/1.001;
 #endif
+static const float crt_refresh_rate = refresh_rate;
 
 /* Allow games to set rotation. If false, rotation requests are
  * honored, but ignored.

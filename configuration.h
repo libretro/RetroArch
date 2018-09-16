@@ -190,6 +190,8 @@ typedef struct settings
       bool quick_menu_show_information;
       bool kiosk_mode_enable;
 
+      bool crt_switch_custom_refresh_enable;
+
       /* Netplay */
       bool netplay_public_announce;
       bool netplay_start_as_spectator;
@@ -296,6 +298,7 @@ typedef struct settings
       float video_scale;
       float video_aspect_ratio;
       float video_refresh_rate;
+      float crt_video_refresh_rate;
       float video_font_size;
       float video_msg_pos_x;
       float video_msg_pos_y;
