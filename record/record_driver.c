@@ -51,6 +51,7 @@ unsigned    recording_height                   = 0;
 size_t      recording_gpu_width                = 0;
 size_t      recording_gpu_height               = 0;
 static bool recording_enable                   = false;
+static bool streaming_enable                   = false;
 static bool recording_use_output_dir           = false;
 
 static const record_driver_t *recording_driver = NULL;
@@ -282,14 +283,24 @@ bool recording_deinit(void)
    return true;
 }
 
-bool *recording_is_enabled(void)
+bool recording_is_enabled(void)
 {
-   return &recording_enable;
+   return recording_enable;
 }
 
 void recording_set_state(bool state)
 {
    recording_enable = state;
+}
+
+bool *streaming_is_enabled(void)
+{
+   return &streaming_enable;
+}
+
+void streaming_set_state(bool state)
+{
+   streaming_enable = state;
 }
 
 void recording_push_audio(const int16_t *data, size_t samples)
@@ -310,17 +321,17 @@ void recording_push_audio(const int16_t *data, size_t samples)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool recording_init(bool stream)
+bool recording_init()
 {
    char output[PATH_MAX_LENGTH];
    char buf[PATH_MAX_LENGTH];
    struct ffemu_params params           = {0};
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   bool *recording_enabled              = recording_is_enabled();
+   bool   recording_enabled             = recording_is_enabled();
    settings_t *settings                 = config_get_ptr();
    global_t *global                     = global_get_ptr();
 
-   if (!*recording_enabled)
+   if (!recording_enabled)
       return false;
 
    output[0] = '\0';
@@ -349,7 +360,7 @@ bool recording_init(bool stream)
       strlcpy(output, global->record.path, sizeof(output));
    else
    {
-      if(stream)
+      if(!streaming_is_enabled())
          if (!string_is_empty(settings->paths.path_stream_url))
             strlcpy(output, settings->paths.path_stream_url, sizeof(output));
          else

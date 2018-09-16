@@ -884,10 +884,10 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
             strlcpy(global->record.path, optarg,
                   sizeof(global->record.path));
             {
-               bool *recording_enabled = recording_is_enabled();
+               bool recording_enabled = recording_is_enabled();
 
                if (recording_enabled)
-                  *recording_enabled = true;
+                  recording_set_state(true);
             }
             break;
 
@@ -3194,7 +3194,10 @@ static enum runloop_state runloop_check_state(
 
       if (pressed && !old_pressed)
       {
-         command_event(CMD_EVENT_RECORD_INIT, NULL);
+         if (!recording_is_enabled())
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+         else
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          bsv_movie_check();
       }
 

@@ -1094,8 +1094,8 @@ static void vulkan_init_readback(vk_t *vk)
     * not initialized yet.
     */
    settings_t *settings    = config_get_ptr();
-   bool *recording_enabled = recording_is_enabled();
-   vk->readback.streamed   = settings->bools.video_gpu_record && *recording_enabled;
+   bool recording_enabled = recording_is_enabled();
+   vk->readback.streamed   = settings->bools.video_gpu_record && recording_enabled;
 
    if (!vk->readback.streamed)
       return;

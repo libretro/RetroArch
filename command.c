@@ -2172,15 +2172,17 @@ TODO: Add a setting for these tweaks */
          video_driver_gpu_record_deinit();
          break;
       case CMD_EVENT_RECORD_DEINIT:
-         if (!recording_deinit())
-            return false;
+         {
+            recording_set_state(false);
+            if (!recording_deinit())
+               return false;
+         }
          break;
       case CMD_EVENT_RECORD_INIT:
          {
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-            bool *recording_enabled = recording_is_enabled();
-            *recording_enabled = true;
-            if (!recording_init(false))
+            recording_set_state(true);
+            if (!recording_init())
                return false;
          }
          break;
