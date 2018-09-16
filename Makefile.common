@@ -217,6 +217,7 @@ OBJ += frontend/frontend.o \
        wifi/wifi_driver.o \
        location/location_driver.o \
        driver.o \
+       settings.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        dynamic.o \

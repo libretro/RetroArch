@@ -53,6 +53,7 @@
 #include "tasks/tasks_internal.h"
 
 #include "../list_special.h"
+#include "settings.h"
 
 static const char* invalid_filename_chars[] = {
    /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
@@ -3023,8 +3024,6 @@ static bool config_load_file(const char *path, bool set_defaults,
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
 
    ret = true;
-
-
 end:
    if (conf)
       config_file_free(conf);
@@ -3856,7 +3855,6 @@ void config_load(void)
    config_set_defaults();
    parse_config_file();
 }
-
 #if 0
 /**
  * config_save_keybinds_file:
@@ -4037,6 +4035,16 @@ bool config_save_file(const char *path)
    int size_settings_size                            = sizeof(settings->sizes) / sizeof(settings->sizes.placeholder);
    int array_settings_size                           = sizeof(settings->arrays)/ sizeof(settings->arrays.placeholder);
    int path_settings_size                            = sizeof(settings->paths) / sizeof(settings->paths.placeholder);
+
+
+   struct setting window_width;
+   int min  = 0;
+   int max  = 3840 * 4;
+   int def  = 1280;
+   int step = 8;
+
+   setting_add(&window_width, &settings->uints.video_window_x, 0, "video_window_width", SET_INT, 1, 1, 1, &min, &max, &step, &def);
+   setting_print(&window_width);
 
    if (!conf)
       conf = config_file_new(NULL);

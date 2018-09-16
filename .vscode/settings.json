@@ -19,7 +19,17 @@
       "iosfwd": "c",
       "xlocbuf": "c",
       "xmemory0": "c",
-      "ios": "c"
+      "ios": "c",
+      "chrono": "c",
+      "functional": "c",
+      "memory": "c",
+      "random": "c",
+      "ratio": "c",
+      "tuple": "c",
+      "type_traits": "c",
+      "utility": "c",
+      "xtr1common": "c",
+      "xutility": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }
