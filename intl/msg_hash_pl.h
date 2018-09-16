@@ -7,6 +7,9 @@ MSG_HASH(
       "Nieznany kompilator"
       )
 MSG_HASH(
+    MSG_NATIVE,
+    "Native")
+MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "Urządzenie zostało odłączone od portu"
       )

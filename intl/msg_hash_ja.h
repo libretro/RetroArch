@@ -12,6 +12,9 @@ MSG_HASH(
       "不明なコンパイラ"
       )
 MSG_HASH(
+    MSG_NATIVE,
+    "Native")
+MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "Device disconnected from port"
       )

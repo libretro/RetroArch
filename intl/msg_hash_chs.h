@@ -7,6 +7,9 @@ MSG_HASH(
       "未知的编译器"
       )
 MSG_HASH(
+    MSG_NATIVE,
+    "Native")
+MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "设备已从端口上断开"
       )

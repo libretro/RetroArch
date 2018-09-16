@@ -7,6 +7,9 @@ MSG_HASH(
       "알 수 없는 컴파일러"
       )
 MSG_HASH(
+    MSG_NATIVE,
+    "Native")
+MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "장치가 포트에서 연결 해제 되었습니다"
       )

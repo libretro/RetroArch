@@ -7,6 +7,9 @@ MSG_HASH(
       "Onbekende compiler"
       )
 MSG_HASH(
+    MSG_NATIVE,
+    "Native")
+MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "Apparaat ontkoppeld van port"
       )

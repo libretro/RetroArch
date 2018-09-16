@@ -142,7 +142,7 @@ static void menu_action_setting_disp_set_label_crt_switch_resolution_super(
    if (settings)
    {
       if (settings->uints.crt_switch_resolution_super == 0)
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         strlcpy(s, msg_hash_to_str(MSG_NATIVE), len);
       else
          snprintf(s, len, "%d", settings->uints.crt_switch_resolution_super);
    }
