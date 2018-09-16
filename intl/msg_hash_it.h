@@ -2249,9 +2249,9 @@ MSG_HASH(MSG_REWIND_REACHED_END,
 MSG_HASH(MSG_SAVED_NEW_CONFIG_TO,
       "Salvata la nuova configurazione su")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT,
-      "Saved state to slot #%d.")
+      "Stato salvato nello slot #%d.")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT_AUTO,
-      "Saved state to slot #-1 (auto).")
+      "Stato salvato nello slot #-1 (auto).")
 MSG_HASH(MSG_SAVED_SUCCESSFULLY_TO,
       "Salvato con successo su")
 MSG_HASH(MSG_SAVING_RAM_TYPE,
@@ -2519,11 +2519,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
       "Non è possibile trovare un core o un file di contenuto adatto, caricare manualmente.")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
-      "Browse URL"
+      "Sfoglia URL"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BROWSE_URL,
-      "URL Path"
+      "Percorso URL"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BROWSE_START,
@@ -3392,15 +3392,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
       "Cancella")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
-      "In-Menu")
+      "Nel Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
-      "In-Game")
+      "Nel Gioco")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
-      "In-Game (Paused)")
+      "Nel Gioco (In Pausa)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
       "Playing")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
-      "Paused")
+      "In Pausa")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
       "Abilita Discord"
@@ -3423,7 +3423,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-    "V-Sync is enabled until performance falls below the target refresh rate. Can minimize stuttering when performance falls below realtime, and can be more energy efficient."
+    "V-Sync è abilitato fino a quando le prestazioni non scendono al di sotto della frequenza di aggiornamento. Può ridurre alcuni problemi quando le prestazioni scendono al di sotto del tempo reale e può essere più efficiente dal punto di vista energetico."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
@@ -3431,5 +3431,5 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-    "Output native, low-resolution signals for use with CRT displays."
+    "Emissione di segnali nativi a bassa risoluzione per l'uso con display CRT."
     )
