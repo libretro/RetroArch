@@ -3,13 +3,17 @@
 - CHEEVOS: Support headerless NES hashing.
 - CRT: New porches and interlaced bug fix.
 - COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
+- DISCORD: Add 'Ask To Join' Feature.
 - LOCALIZATION: Update Portuguese / Brazilian translation.
 - LOCALIZATION: Update Japanese translation.
+- LOCALIZATION: Update Polish translation.
+- LOCALIZATION: Update Spanish translation.
 - MENU/QT/WIMP: Add option to filter extensions inside archives when adding to a playlist.
 - METAL: Add screenshot support.
 - NETPLAY: Save lobby details received back from server after first announcement.
 - OPENGL/GLX: Implement Adaptive VSync - GLX_EXT_swap_control_tear.
 - OPENGL/WGL: Implement Adaptive VSync - WGL_EXT_swap_control_tear.
+- SWITCH: Merging of RetroNX Nintendo Switch port, based on libnx SDK.
 - VULKAN: Fix race condition in threaded mailbox emulation.
 - VULKAN: Maintenance fixes.
 
