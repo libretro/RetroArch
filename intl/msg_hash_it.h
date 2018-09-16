@@ -3325,7 +3325,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
       "Attiva lo spessore del riempimento del bordo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
       "Abilita lo spessore del riempimento dello sfondo")
-MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION, "Solo per schermi CRT a 15 kHz. Tenta di utilizzare la risoluzione esatta core/gioco e la frequenza di aggiornamento.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION, "Solo per schermi CRT. Tenta di utilizzare la risoluzione esatta core/gioco e la frequenza di aggiornamento.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION, "CRT SwitchRes")
 MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER, "Quando CRT SwitchRes è abilitato, forza la risoluzione orizzontale ultrawide per minimizzare il cambio di modalità.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER, "CRT Super Risoluzione")
@@ -3425,5 +3425,5 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-    "For CRT displays only. Attempts to use exact core/game resolution and refresh rate."
+    "Output native, low-resolution signals for use with CRT displays."
     )

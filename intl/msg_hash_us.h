@@ -6236,7 +6236,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-    "For 15 kHz CRT displays only. Attempts to use exact core/game resolution and refresh rate."
+    "For CRT displays only. Attempts to use exact core/game resolution and refresh rate."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
@@ -7456,5 +7456,5 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-    "For CRT displays only. Attempts to use exact core/game resolution and refresh rate."
+    "Output native, low-resolution signals for use with CRT displays."
     )

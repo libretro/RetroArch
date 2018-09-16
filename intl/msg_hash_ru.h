@@ -3375,7 +3375,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
       "Включить фон заполнителя границ")
 MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-      "Только для 15 кГц CRT дисплеев. Пытается использовать точное разрешение и частоту обновления ядра/игры.")
+      "Только для CRT дисплеев. Пытается использовать точное разрешение и частоту обновления ядра/игры.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
       "CRT SwitchRes")
 MSG_HASH(MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
@@ -3496,5 +3496,5 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-    "For CRT displays only. Attempts to use exact core/game resolution and refresh rate."
+    "Output native, low-resolution signals for use with CRT displays."
     )
