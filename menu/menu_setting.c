@@ -4560,21 +4560,19 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-			CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.crt_switch_resolution,
-                  MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,
-                  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
-                  crt_switch_resolution,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_ADVANCED
-                  );
+			CONFIG_UINT(
+               list, list_info,
+               &settings->uints.crt_switch_resolution,
+               MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,
+               MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+               crt_switch_resolution,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+         menu_settings_list_current_add_range(list, list_info, CRT_SWITCH_NONE, CRT_SWITCH_31KHZ, 1.0, true, true);
 
 			CONFIG_UINT(
 				  list, list_info,

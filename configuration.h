@@ -53,6 +53,13 @@
    var = newvar; \
 }
 
+enum crt_switch_type
+{
+   CRT_SWITCH_NONE = 0,
+   CRT_SWITCH_15KHZ,
+   CRT_SWITCH_31KHZ
+};
+
 enum override_type
 {
    OVERRIDE_NONE = 0,
@@ -97,7 +104,6 @@ typedef struct settings
       bool video_statistics_show;
       bool video_framecount_show;
       bool video_msg_bgcolor_enable;
-      bool crt_switch_resolution;
 
       /* Audio */
       bool audio_enable;
@@ -361,6 +367,7 @@ typedef struct settings
       unsigned video_window_x;
       unsigned video_window_y;
       unsigned video_window_opacity;
+      unsigned crt_switch_resolution;
       unsigned crt_switch_resolution_super;
       unsigned video_monitor_index;
       unsigned video_fullscreen_x;

@@ -20,6 +20,7 @@
 
 #include <boolean.h>
 #include <audio/audio_resampler.h>
+#include "configuration.h"
 #include "gfx/video_defines.h"
 #include "input/input_driver.h"
 
@@ -67,7 +68,7 @@ static bool bundle_assets_extract_enable = false;
 static bool materialui_icons_enable      = true;
 #endif
 
-static const bool crt_switch_resolution      = false; 	
+static const unsigned crt_switch_resolution  = CRT_SWITCH_NONE; 	
 static const int crt_switch_resolution_super = 2560; 
 static const int crt_switch_center_adjust    = 0;
 
