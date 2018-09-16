@@ -293,9 +293,9 @@ void recording_set_state(bool state)
    recording_enable = state;
 }
 
-bool *streaming_is_enabled(void)
+bool streaming_is_enabled(void)
 {
-   return &streaming_enable;
+   return streaming_enable;
 }
 
 void streaming_set_state(bool state)
@@ -360,7 +360,7 @@ bool recording_init()
       strlcpy(output, global->record.path, sizeof(output));
    else
    {
-      if(!streaming_is_enabled())
+      if(streaming_is_enabled())
          if (!string_is_empty(settings->paths.path_stream_url))
             strlcpy(output, settings->paths.path_stream_url, sizeof(output));
          else
@@ -394,8 +394,13 @@ bool recording_init()
 
    if (!string_is_empty(global->record.config))
       params.config = global->record.config;
-   else if (!string_is_empty(settings->paths.path_record_config))
-      params.config = settings->paths.path_record_config;
+   else
+   {
+      if (streaming_is_enabled())
+         params.config = settings->paths.path_stream_config;
+      else
+         params.config = settings->paths.path_record_config;
+   }
 
    if (video_driver_supports_recording())
    {
