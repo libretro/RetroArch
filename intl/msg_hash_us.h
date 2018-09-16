@@ -1243,8 +1243,8 @@ MSG_HASH(
     "Menu toggle"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE,
-    "Movie record toggle"
+    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
+    "Input replay movie record toggle"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
@@ -4156,15 +4156,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-    "Movie file is not a valid BSV1 file."
+    "Input replay movie file is not a valid BSV1 file."
     )
 MSG_HASH(
     MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
-    "Movie format seems to have a different serializer version. Will most likely fail."
+    "Input replay movie format seems to have a different serializer version. Will most likely fail."
     )
 MSG_HASH(
     MSG_MOVIE_PLAYBACK_ENDED,
-    "Movie playback ended."
+    "Input replay movie playback ended."
     )
 MSG_HASH(
     MSG_MOVIE_RECORD_STOPPED,

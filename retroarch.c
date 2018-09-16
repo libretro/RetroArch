@@ -3190,7 +3190,7 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_pressed = false;
       bool pressed            = BIT256_GET(
-            current_input, RARCH_MOVIE_RECORD_TOGGLE);
+            current_input, RARCH_BSV_RECORD_TOGGLE);
 
       if (pressed && !old_pressed)
       {
