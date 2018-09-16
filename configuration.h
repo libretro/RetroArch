@@ -322,6 +322,7 @@ typedef struct settings
       int location_update_interval_distance;
       int state_slot;
       int audio_wasapi_sh_buffer_length;
+      int crt_switch_center_adjust;
    } ints;
 
    struct

@@ -4591,6 +4591,20 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_left   = &setting_uint_action_left_crt_switch_resolution_super;
          (*list)[list_info->index - 1].action_right  = &setting_uint_action_right_crt_switch_resolution_super;
 
+			CONFIG_INT(
+				  list, list_info,
+				  &settings->ints.crt_switch_center_adjust,
+				  MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING,
+				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+				  crt_switch_center_adjust,
+				  &group_info,
+				  &subgroup_info,
+				  parent_group,
+				  general_write_handler,
+				  general_read_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+         menu_settings_list_current_add_range(list, list_info, -3, 4, 1.0, true, true);
+
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;

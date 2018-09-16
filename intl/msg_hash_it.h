@@ -3433,3 +3433,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
     "Emissione di segnali nativi a bassa risoluzione per l'uso con display CRT."
     )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+    "Cycle through these options if the image is not centered properly on the display."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+    "X-Axis Centering"
+    )
