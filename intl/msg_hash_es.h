@@ -3295,6 +3295,10 @@ MSG_HASH(
     "Dot-Art"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
+    "Automatic"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
     "Color del menú"
     )
@@ -6655,19 +6659,19 @@ MSG_HASH(
     "En-Menú"
     )
 MSG_HASH(
- 	 MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
+    MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
     "En-Juego"
- 	 )
+    )
 MSG_HASH(
- 	 MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
+    MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
     "En-Juego (Pausado)"
- 	 )
+    )
 MSG_HASH(
- 	 MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
+    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
     "Jugando"
- 	 )
+    )
 MSG_HASH(
- 	 MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
+    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
     "Pausado"
     )
 MSG_HASH(
@@ -7263,6 +7267,18 @@ MSG_HASH(
     "Base de datos:"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS,
+    "Extensiones:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
+    "(separar con espacios; incluye a todas por defecto)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
+    "Filtrar archivos internos"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
     "(usado pata buscar miniaturas)"
     )
@@ -7423,10 +7439,14 @@ MSG_HASH(
     "Fallo al establecer disco"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
+    "Opciones de núcleo"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
-    "Adaptive Vsync"
+    "Vsync Adaptativo"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-    "V-Sync is enabled until performance falls below the target refresh rate. Can minimize stuttering when performance falls below realtime, and can be more energy efficient."
+    "V-Sync está activado hasta que el rendimiento sea inferior al necesario para mantener el refresco de pantalla. Puede minimizar los tirones cuando hay caidas de fps y es més eficiente energeticamente."
     )
