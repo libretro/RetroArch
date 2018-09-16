@@ -126,6 +126,28 @@ static void menu_action_setting_disp_set_label_cheevos_locked_entry(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY), len);
 }
 
+static void menu_action_setting_disp_set_label_crt_switch_resolution_super(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings = config_get_ptr();
+   *w = 19;
+   strlcpy(s2, path, len2);
+
+   if (settings)
+   {
+      if (settings->uints.crt_switch_resolution_super == 0)
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+      else
+         snprintf(s, len, "%d", settings->uints.crt_switch_resolution_super);
+   }
+}
+
 static void menu_action_setting_disp_set_label_cheevos_unlocked_entry(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -2371,6 +2393,10 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_crt_switch_resolution_super);
+            return 0;
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_cheevos_unlocked_entry);

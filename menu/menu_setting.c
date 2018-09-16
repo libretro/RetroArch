@@ -243,6 +243,58 @@ static void setting_get_string_representation_int_audio_wasapi_sh_buffer_length(
 }
 #endif
 
+static int setting_uint_action_left_crt_switch_resolution_super(
+      void *data, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return -1;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         *setting->value.target.unsigned_integer = 3840;
+         break;
+      case 1920:
+         *setting->value.target.unsigned_integer = 0;
+         break;
+      case 2560:
+         *setting->value.target.unsigned_integer = 1920;
+         break;
+      case 3840:
+         *setting->value.target.unsigned_integer = 2560;
+         break;
+   }
+
+   return 0;
+}
+
+static int setting_uint_action_right_crt_switch_resolution_super(
+      void *data, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return -1;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         *setting->value.target.unsigned_integer = 1920;
+         break;
+      case 1920:
+         *setting->value.target.unsigned_integer = 2560;
+         break;
+      case 2560:
+         *setting->value.target.unsigned_integer = 3840;
+         break;
+      case 3840:
+         *setting->value.target.unsigned_integer = 0;
+         break;
+   }
+
+   return 0;
+}
+
 static int setting_uint_action_right_custom_viewport_width(
       void *data, bool wraparound)
 {
@@ -4536,6 +4588,8 @@ static bool setting_append_list(
 				  general_write_handler,
 				  general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+         (*list)[list_info->index - 1].action_left   = &setting_uint_action_left_crt_switch_resolution_super;
+         (*list)[list_info->index - 1].action_right  = &setting_uint_action_right_crt_switch_resolution_super;
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

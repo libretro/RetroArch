@@ -6244,7 +6244,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-    "Al activar CRT SwitchRes, forzar resolución ultrawide horizontal para minimizar el cambio de modos"
+    "Switch among native and ultrawide super resolutions."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
