@@ -7450,3 +7450,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
     "V-Sync está activado hasta que el rendimiento sea inferior al necesario para mantener el refresco de pantalla. Puede minimizar los tirones cuando hay caidas de fps y es més eficiente energeticamente."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+    "CRT SwitchRes"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+    "For CRT displays only. Attempts to use exact core/game resolution and refresh rate."
+    )

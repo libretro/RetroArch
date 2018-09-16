@@ -107,6 +107,7 @@ enum settings_list_type
    SETTINGS_LIST_CHEAT_SEARCH,
    SETTINGS_LIST_CHEATS,
    SETTINGS_LIST_VIDEO,
+   SETTINGS_LIST_CRT_SWITCHRES,
    SETTINGS_LIST_AUDIO,
    SETTINGS_LIST_INPUT,
    SETTINGS_LIST_INPUT_HOTKEY,
@@ -2529,6 +2530,14 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_AUDIO_SETTINGS,
                MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
                &group_info,
@@ -3775,34 +3784,6 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
 
 
-			CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.crt_switch_resolution,
-                  MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,
-                  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
-                  crt_switch_resolution,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_ADVANCED
-                  );
-
-			CONFIG_UINT(
-				  list, list_info,
-				  &settings->uints.crt_switch_resolution_super,
-				  MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER,
-				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
-				  crt_switch_resolution_super,
-				  &group_info,
-				  &subgroup_info,
-				  parent_group,
-				  general_write_handler,
-				  general_read_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
          CONFIG_BOOL(
                list, list_info,
@@ -4517,6 +4498,47 @@ static bool setting_append_list(
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
          }
+         break;
+      case SETTINGS_LIST_CRT_SWITCHRES:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS), parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+			CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.crt_switch_resolution,
+                  MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,
+                  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+                  crt_switch_resolution,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED
+                  );
+
+			CONFIG_UINT(
+				  list, list_info,
+				  &settings->uints.crt_switch_resolution_super,
+				  MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER,
+				  MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+				  crt_switch_resolution_super,
+				  &group_info,
+				  &subgroup_info,
+				  parent_group,
+				  general_write_handler,
+				  general_read_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_AUDIO:
          START_GROUP(list, list_info, &group_info,
@@ -8855,6 +8877,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_CHEAT_SEARCH,
       SETTINGS_LIST_CHEATS,
       SETTINGS_LIST_VIDEO,
+      SETTINGS_LIST_CRT_SWITCHRES,
       SETTINGS_LIST_AUDIO,
       SETTINGS_LIST_INPUT,
       SETTINGS_LIST_INPUT_HOTKEY,

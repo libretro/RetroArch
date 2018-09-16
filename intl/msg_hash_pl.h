@@ -3630,3 +3630,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
     "V-Sync jest włączony, dopóki wydajność nie spadnie poniżej docelowej częstotliwości odświeżania. Może zminimalizować zacinanie, gdy wydajność spada poniżej czasu rzeczywistego oraz może być bardziej energooszczędne."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+    "CRT SwitchRes"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+    "For CRT displays only. Attempts to use exact core/game resolution and refresh rate."
+    )

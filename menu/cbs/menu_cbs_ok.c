@@ -270,6 +270,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST;
       case ACTION_OK_DL_VIDEO_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST;
+      case ACTION_OK_DL_CRT_SWITCHRES_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CRT_SWITCHRES_SETTINGS_LIST;
       case ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST;
       case ACTION_OK_DL_SAVING_SETTINGS_LIST:
@@ -878,6 +880,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_DRIVER_SETTINGS_LIST:
       case ACTION_OK_DL_CORE_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_SETTINGS_LIST:
+      case ACTION_OK_DL_CRT_SWITCHRES_SETTINGS_LIST:
       case ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST:
       case ACTION_OK_DL_SAVING_SETTINGS_LIST:
       case ACTION_OK_DL_LOGGING_SETTINGS_LIST:
@@ -3772,6 +3775,7 @@ default_action_ok_func(action_ok_open_archive_detect_core, ACTION_OK_DL_OPEN_ARC
 default_action_ok_func(action_ok_file_load_music, ACTION_OK_DL_MUSIC)
 default_action_ok_func(action_ok_push_accounts_list, ACTION_OK_DL_ACCOUNTS_LIST)
 default_action_ok_func(action_ok_push_driver_settings_list, ACTION_OK_DL_DRIVER_SETTINGS_LIST)
+default_action_ok_func(action_ok_push_crt_switchres_settings_list, ACTION_OK_DL_CRT_SWITCHRES_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_video_settings_list, ACTION_OK_DL_VIDEO_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_configuration_settings_list, ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_core_settings_list, ACTION_OK_DL_CORE_SETTINGS_LIST)
@@ -4825,6 +4829,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_video_settings_list);
+            break;
+         case MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_push_crt_switchres_settings_list);
             break;
          case MENU_ENUM_LABEL_AUDIO_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_audio_settings_list);
