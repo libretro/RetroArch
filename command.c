@@ -161,7 +161,7 @@ static const struct cmd_map map[] = {
    { "STATE_SLOT_PLUS",        RARCH_STATE_SLOT_PLUS },
    { "STATE_SLOT_MINUS",       RARCH_STATE_SLOT_MINUS },
    { "REWIND",                 RARCH_REWIND },
-   { "MOVIE_RECORD_TOGGLE",    RARCH_MOVIE_RECORD_TOGGLE },
+   { "BSV_RECORD_TOGGLE",      RARCH_BSV_RECORD_TOGGLE },
    { "PAUSE_TOGGLE",           RARCH_PAUSE_TOGGLE },
    { "FRAMEADVANCE",           RARCH_FRAMEADVANCE },
    { "RESET",                  RARCH_RESET },
@@ -2172,13 +2172,19 @@ TODO: Add a setting for these tweaks */
          video_driver_gpu_record_deinit();
          break;
       case CMD_EVENT_RECORD_DEINIT:
-         if (!recording_deinit())
-            return false;
+         {
+            recording_set_state(false);
+            if (!recording_deinit())
+               return false;
+         }
          break;
       case CMD_EVENT_RECORD_INIT:
-         command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
-         if (!recording_init())
-            return false;
+         {
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+            recording_set_state(true);
+            if (!recording_init())
+               return false;
+         }
          break;
       case CMD_EVENT_HISTORY_DEINIT:
          if (g_defaults.content_history)

@@ -1246,7 +1246,7 @@ MSG_HASH(
     "Alternar menu"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE,
+    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
     "Alternar gravação de filme"
     )
 MSG_HASH(

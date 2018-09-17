@@ -721,6 +721,15 @@ enum rarch_content_type path_is_media_type(const char *path)
 
    string_to_lower(ext_lower);
 
+   /* hack, to detect livestreams so the ffmpeg core can be started */
+   if (
+      strstr(path, "udp://")  ||
+      strstr(path, "tcp://")  ||
+      strstr(path, "rtmp://") ||
+      strstr(path, "rtp://")
+   )
+      return RARCH_CONTENT_MOVIE;
+
    switch (msg_hash_to_file_type(msg_hash_calculate(ext_lower)))
    {
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)

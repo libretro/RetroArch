@@ -657,6 +657,10 @@ static const unsigned libretro_log_level = 1;
 #define RARCH_DEFAULT_PORT 55435
 #endif
 
+#ifndef RARCH_STREAM_DEFAULT_PORT
+#define RARCH_STREAM_DEFAULT_PORT 56400
+#endif
+
 /* KEYBINDS, JOYPAD */
 
 /* Axis threshold (between 0.0 and 1.0)

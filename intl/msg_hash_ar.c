@@ -209,7 +209,7 @@ int menu_hash_get_help_ar_enum(enum msg_hash_enums msg, char *s, size_t len)
                    " \n"
                    "Rewinding must be enabled.");
              break;
-          case RARCH_MOVIE_RECORD_TOGGLE:
+          case RARCH_BSV_RECORD_TOGGLE:
              snprintf(s, len,
                    "Toggle between recording and not.");
              break;
@@ -1929,7 +1929,7 @@ int menu_hash_get_help_ar_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Frame advance when content is paused.");
             break;
-        case MENU_ENUM_LABEL_MOVIE_RECORD_TOGGLE:
+        case MENU_ENUM_LABEL_BSV_RECORD_TOGGLE:
             snprintf(s, len,
                      "Toggle between recording and not.");
             break;

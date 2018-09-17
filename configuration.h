@@ -385,6 +385,7 @@ typedef struct settings
       unsigned video_msg_bgcolor_red;
       unsigned video_msg_bgcolor_green;
       unsigned video_msg_bgcolor_blue;
+      unsigned video_stream_port;
 
       unsigned menu_thumbnails;
       unsigned menu_left_thumbnails;
@@ -489,6 +490,9 @@ typedef struct settings
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];
+      char path_record_config[PATH_MAX_LENGTH];
+      char path_stream_config[PATH_MAX_LENGTH];
+      char path_stream_url[PATH_MAX_LENGTH];
       char path_menu_wallpaper[PATH_MAX_LENGTH];
       char path_audio_dsp_plugin[PATH_MAX_LENGTH];
       char path_softfilter_plugin[PATH_MAX_LENGTH];
@@ -502,7 +506,6 @@ typedef struct settings
       char path_cheat_settings[PATH_MAX_LENGTH];
       char path_shader[PATH_MAX_LENGTH];
       char path_font[PATH_MAX_LENGTH];
-
 
       char directory_audio_filter[PATH_MAX_LENGTH];
       char directory_autoconfig[PATH_MAX_LENGTH];
