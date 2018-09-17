@@ -472,6 +472,7 @@ default_sublabel_macro(action_bind_sublabel_onscreen_notifications_settings_list
 #ifdef HAVE_QT
 default_sublabel_macro(action_bind_sublabel_show_wimp,                             MENU_ENUM_SUBLABEL_SHOW_WIMP)
 #endif
+default_sublabel_macro(action_bind_sublabel_discord_allow,                         MENU_ENUM_SUBLABEL_DISCORD_ALLOW)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -1981,8 +1982,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_show_wimp);
             break;
 #endif
-         case MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD:
+         case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_apply_after_load);
+            break;
+         case MENU_ENUM_LABEL_DISCORD_ALLOW:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_discord_allow);
             break;
          default:
          case MSG_UNKNOWN:
