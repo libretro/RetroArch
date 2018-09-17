@@ -71,7 +71,7 @@
 #include "../cheevos/cheevos.h"
 #endif
 
-#include "record/record_driver.h"
+#include "../../record/record_driver.h"
 
 enum
 {
