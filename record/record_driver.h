@@ -180,6 +180,10 @@ unsigned *recording_driver_get_height(void);
 
 void recording_driver_free_state(void);
 
+bool recording_is_enabled(void);
+
+bool streaming_is_enabled(void);
+
 extern void *recording_data;
 
 RETRO_END_DECLS
