@@ -2685,7 +2685,7 @@ static int action_ok_start_recording(const char *path,
 {
    streaming_set_state(false);
    command_event(CMD_EVENT_RECORD_INIT, NULL);
-   return 0;
+   return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
 static int action_ok_start_streaming(const char *path,
@@ -2693,7 +2693,7 @@ static int action_ok_start_streaming(const char *path,
 {
    streaming_set_state(true);
    command_event(CMD_EVENT_RECORD_INIT, NULL);
-   return 0;
+   return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
 static int action_ok_stop_recording(const char *path,
@@ -2702,7 +2702,7 @@ static int action_ok_stop_recording(const char *path,
    recording_set_state(false);
    streaming_set_state(false);
    command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-   return 0;
+   return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
 static int action_ok_stop_streaming(const char *path,
@@ -2711,7 +2711,7 @@ static int action_ok_stop_streaming(const char *path,
    recording_set_state(false);
    streaming_set_state(false);
    command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-   return 0;
+   return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
 static int action_ok_cheat_add_top(const char *path,
