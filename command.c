@@ -1725,14 +1725,12 @@ static bool command_event_resize_windowed_scale(void)
 }
 
 void command_playlist_push_write(
-      void *data,
+      playlist_t *playlist,
       const char *path,
       const char *label,
       const char *core_path,
       const char *core_name)
 {
-   playlist_t *playlist = (playlist_t*)data;
-
    if (!playlist)
       return;
 
@@ -1749,7 +1747,7 @@ void command_playlist_push_write(
 }
 
 void command_playlist_update_write(
-      void *data,
+      playlist_t *plist,
       size_t idx,
       const char *path,
       const char *label,
@@ -1758,7 +1756,6 @@ void command_playlist_update_write(
       const char *crc32,
       const char *db_name)
 {
-   playlist_t *plist    = (playlist_t*)data;
    playlist_t *playlist = plist ? plist : playlist_get_cached();
 
    if (!playlist)
