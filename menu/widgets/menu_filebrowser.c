@@ -57,7 +57,7 @@ void filebrowser_set_type(enum filebrowser_enums type)
    filebrowser_types = type;
 }
 
-void filebrowser_parse(void *data, unsigned type_data)
+void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
 {
    size_t i, list_size;
    struct string_list *str_list         = NULL;
@@ -66,7 +66,6 @@ void filebrowser_parse(void *data, unsigned type_data)
    unsigned dirs_count                  = 0;
    settings_t *settings                 = config_get_ptr();
    rarch_system_info_t *system          = runloop_get_system_info();
-   menu_displaylist_info_t *info        = (menu_displaylist_info_t*)data;
    enum menu_displaylist_ctl_state type = (enum menu_displaylist_ctl_state)
                                           type_data;
    const char *path                     = info ? info->path : NULL;
