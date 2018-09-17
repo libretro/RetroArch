@@ -2170,7 +2170,6 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_RECORD_DEINIT:
          {
-            recording_set_state(false);
             if (!recording_deinit())
                return false;
          }

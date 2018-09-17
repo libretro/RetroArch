@@ -164,6 +164,8 @@ bool recording_is_enabled(void);
 
 void recording_set_state(bool state);
 
+void streaming_set_state(bool state);
+
 void recording_push_audio(const int16_t *data, size_t samples);
 
 void *recording_driver_get_data_ptr(void);

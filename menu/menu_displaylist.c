@@ -2669,16 +2669,16 @@ static int menu_displaylist_parse_load_content_settings(
       }
       else
       {
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING),
-               msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING),
-               MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING, MENU_SETTING_ACTION, 0, 0);
-
-         if (!streaming_is_enabled())
+         if (streaming_is_enabled())
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING),
                   msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING),
                   MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING, MENU_SETTING_ACTION, 0, 0);
+         else
+            menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING),
+               msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING),
+               MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING, MENU_SETTING_ACTION, 0, 0);
 
       }
 
