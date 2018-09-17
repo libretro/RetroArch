@@ -73,7 +73,7 @@ typedef struct rarch_setting rarch_setting_t;
 typedef struct rarch_setting_info rarch_setting_info_t;
 typedef struct rarch_setting_group_info rarch_setting_group_info_t;
 
-typedef void (*change_handler_t               )(void *data);
+typedef void (*change_handler_t               )(rarch_setting_t *data);
 typedef int  (*action_left_handler_t          )(void *data, bool wraparound);
 typedef int  (*action_right_handler_t         )(void *data, bool wraparound);
 typedef int  (*action_up_handler_t            )(void *data);

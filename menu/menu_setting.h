@@ -123,13 +123,14 @@ void menu_setting_get_label(void *data, char *s,
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound);
 
-enum setting_type menu_setting_get_browser_selection_type(rarch_setting_t *setting);
+enum setting_type menu_setting_get_browser_selection_type(
+      rarch_setting_t *setting);
 
 void *setting_get_ptr(rarch_setting_t *setting);
 
-void general_write_handler(void *data);
+void general_write_handler(rarch_setting_t *setting);
 
-void general_read_handler(void *data);
+void general_read_handler(rarch_setting_t *setting);
 
 void menu_settings_list_current_add_cmd(
       rarch_setting_t **list,
@@ -140,7 +141,8 @@ void menu_settings_list_current_add_range(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       float min, float max, float step,
-      bool enforce_minrange_enable, bool enforce_maxrange_enable);
+      bool enforce_minrange_enable,
+      bool enforce_maxrange_enable);
 
 void settings_data_list_current_add_flags(
       rarch_setting_t **list,
@@ -167,7 +169,8 @@ void menu_setting_free(void *data);
 bool settings_list_append(rarch_setting_t **list,
       rarch_setting_info_t *list_info);
 
-bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data);
+bool menu_setting_ctl(
+      enum menu_setting_ctl_state state, void *data);
 
 RETRO_END_DECLS
 

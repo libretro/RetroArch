@@ -1506,62 +1506,60 @@ void menu_setting_get_label(void *data, char *s,
       setting->get_string_representation(setting, s, len);
 }
 
-void general_read_handler(void *data)
+void general_read_handler(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
    if (!setting)
       return;
 
-   if (setting->enum_idx != MSG_UNKNOWN)
+   if (setting->enum_idx == MSG_UNKNOWN)
+      return;
+
+   switch (setting->enum_idx)
    {
-      switch (setting->enum_idx)
-      {
-         case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
-            *setting->value.target.fraction = *(audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA));
-            if (*setting->value.target.fraction < 0.0005)
-            {
-               configuration_set_bool(settings, settings->bools.audio_rate_control, false);
-               audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
-            }
-            else
-            {
-               configuration_set_bool(settings, settings->bools.audio_rate_control, true);
-               audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
-            }
-            break;
-         case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
-            *setting->value.target.fraction = settings->floats.audio_max_timing_skew;
-            break;
-         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
-            *setting->value.target.fraction = settings->floats.video_refresh_rate;
-            break;
-         case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
-            *setting->value.target.integer = settings->uints.input_joypad_map[0];
-            break;
-         case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
-            *setting->value.target.integer = settings->uints.input_joypad_map[1];
-            break;
-         case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
-            *setting->value.target.integer = settings->uints.input_joypad_map[2];
-            break;
-         case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
-            *setting->value.target.integer = settings->uints.input_joypad_map[3];
-            break;
-         case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
-            *setting->value.target.integer = settings->uints.input_joypad_map[4];
-            break;
-         default:
-            break;
-      }
+      case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
+         *setting->value.target.fraction = *(audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA));
+         if (*setting->value.target.fraction < 0.0005)
+         {
+            configuration_set_bool(settings, settings->bools.audio_rate_control, false);
+            audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
+         }
+         else
+         {
+            configuration_set_bool(settings, settings->bools.audio_rate_control, true);
+            audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
+         }
+         break;
+      case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
+         *setting->value.target.fraction = settings->floats.audio_max_timing_skew;
+         break;
+      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
+         *setting->value.target.fraction = settings->floats.video_refresh_rate;
+         break;
+      case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
+         *setting->value.target.integer = settings->uints.input_joypad_map[0];
+         break;
+      case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
+         *setting->value.target.integer = settings->uints.input_joypad_map[1];
+         break;
+      case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
+         *setting->value.target.integer = settings->uints.input_joypad_map[2];
+         break;
+      case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
+         *setting->value.target.integer = settings->uints.input_joypad_map[3];
+         break;
+      case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
+         *setting->value.target.integer = settings->uints.input_joypad_map[4];
+         break;
+      default:
+         break;
    }
 }
 
-void general_write_handler(void *data)
+void general_write_handler(rarch_setting_t *setting)
 {
    enum event_command rarch_cmd = CMD_EVENT_NONE;
-   rarch_setting_t *setting     = (rarch_setting_t*)data;
    settings_t *settings         = config_get_ptr();
 
    if (!setting)
@@ -1854,10 +1852,9 @@ void general_write_handler(void *data)
 }
 
 #ifdef HAVE_OVERLAY
-static void overlay_enable_toggle_change_handler(void *data)
+static void overlay_enable_toggle_change_handler(rarch_setting_t *setting)
 {
    settings_t *settings  = config_get_ptr();
-   rarch_setting_t *setting = (rarch_setting_t *)data;
 
    if (!setting)
       return;
