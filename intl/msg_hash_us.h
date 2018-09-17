@@ -4531,7 +4531,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-    "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate. NOTE: This will be ignored if 'Threaded Video' is enabled."
+    "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate.\n"
+    "NOTE: This will be ignored if 'Threaded Video' is enabled."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
@@ -4755,7 +4756,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-    "Apply a CPU-powered video filter. NOTE: Might come at a high performance cost. Some video filters might only work for cores that use 32bit or 16bit color."
+    "Apply a CPU-powered video filter.\n"
+    "NOTE: Might come at a high performance cost. Some video filters might only work for cores that use 32bit or 16bit color."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
@@ -5011,7 +5013,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-    "Big endian  : 258 = 0x0102,\nLittle endian : 258 = 0x0201"
+    "Big endian  : 258 = 0x0102,\n"
+    "Little endian : 258 = 0x0201"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
@@ -5559,7 +5562,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-    "Set the custom scaling size here. NOTE: You have to enable 'DPI Override' for this scaling size to take effect."
+    "Set the custom scaling size here.\n"
+    "NOTE: You have to enable 'DPI Override' for this scaling size to take effect."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
@@ -6679,11 +6683,12 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-    "Enable Discord"
+    "Enable Discord Rich Presence"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-    "Enable or disable Discord support. Will not work with the browser version, only native desktop client."
+    "Enable or disable Discord Rich Presence support.\n"
+    "NOTE: It will not work with the browser version, only with the native desktop client."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
@@ -7470,17 +7475,21 @@ MSG_HASH(
     "X-Axis Centering"
     )
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-      "Use a custom refresh rate specified in the config file if needed.")
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+    "Use a custom refresh rate specified in the config file if needed."
+    )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-      "Use Custom Refresh Rate")
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+    "Use Custom Refresh Rate"
+    )
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-      "Select the output port connected to the CRT display.")
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+    "Select the output port connected to the CRT display."
+    )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-      "Output Display ID")
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+    "Output Display ID"
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
     "Start Recording"
