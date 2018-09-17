@@ -425,9 +425,7 @@ bool MainWindow::updateCurrentPlaylistEntry(const QHash<QString, QString> &conte
    if (path.isEmpty() ||
        label.isEmpty() ||
        coreName.isEmpty() ||
-       corePath.isEmpty() ||
-       dbName.isEmpty() ||
-       crc32.isEmpty()
+       corePath.isEmpty()
       )
       return false;
 
@@ -436,16 +434,24 @@ bool MainWindow::updateCurrentPlaylistEntry(const QHash<QString, QString> &conte
    labelArray = label.toUtf8();
    coreNameArray = coreName.toUtf8();
    corePathArray = QDir::toNativeSeparators(corePath).toUtf8();
-   dbNameArray = (dbName + file_path_str(FILE_PATH_LPL_EXTENSION)).toUtf8();
-   crc32Array = crc32.toUtf8();
+
+   if (!dbName.isEmpty())
+   {
+      dbNameArray = (dbName + file_path_str(FILE_PATH_LPL_EXTENSION)).toUtf8();
+      dbNameData = dbNameArray.constData();
+   }
 
    playlistPathData = playlistPathArray.constData();
    pathData = pathArray.constData();
    labelData = labelArray.constData();
    coreNameData = coreNameArray.constData();
    corePathData = corePathArray.constData();
-   dbNameData = dbNameArray.constData();
-   crc32Data = crc32Array.constData();
+
+   if (!crc32.isEmpty())
+   {
+      crc32Array = crc32.toUtf8();
+      crc32Data = crc32Array.constData();
+   }
 
    if (path_is_compressed_file(pathData))
    {
@@ -1287,7 +1293,7 @@ void MainWindow::addPlaylistHashToTable(const QVector<QHash<QString, QString> > 
 
       labelItem = new QTableWidgetItem(hash.value("label"));
       labelItem->setData(Qt::UserRole, QVariant::fromValue<QHash<QString, QString> >(hash));
-      labelItem->setFlags(labelItem->flags() & ~Qt::ItemIsEditable);
+      labelItem->setFlags(labelItem->flags() | Qt::ItemIsEditable);
 
       m_tableWidget->setItem(oldRowCount + i, 0, labelItem);
    }

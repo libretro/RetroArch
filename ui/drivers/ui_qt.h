@@ -359,6 +359,7 @@ private slots:
    void onCoreLoaded();
    void onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
    void onCurrentTableItemChanged(QTableWidgetItem *current, QTableWidgetItem *previous);
+   void onCurrentTableItemDataChanged(QTableWidgetItem *item);
    void currentItemChanged(const QHash<QString, QString> &hash);
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
