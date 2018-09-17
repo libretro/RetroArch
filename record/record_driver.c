@@ -35,7 +35,7 @@
 #include "../verbosity.h"
 #include "../msg_hash.h"
 #include "../list_special.h"
-#include "paths.h"
+#include "../paths.h"
 
 
 static const record_driver_t *record_drivers[] = {
