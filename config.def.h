@@ -448,11 +448,12 @@ static const bool font_enable = true;
  * If your monitor does not run at 60Hz, or something close to it,
  * disable VSync, and leave this at its default. */
 #ifdef _3DS
-static const float refresh_rate = (32730.0 * 8192.0) / 4481134.0 ;
+static const float refresh_rate     = (32730.0 * 8192.0) / 4481134.0 ;
+static const float crt_refresh_rate = (32730.0 * 8192.0) / 4481134.0 ;
 #else
-static const float refresh_rate = 60/1.001;
+static const float refresh_rate     = 60/1.001;
+static const float crt_refresh_rate = 60/1.001;
 #endif
-static const float crt_refresh_rate = refresh_rate;
 
 /* Allow games to set rotation. If false, rotation requests are
  * honored, but ignored.
