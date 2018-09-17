@@ -1491,12 +1491,11 @@ static void get_string_representation_bind_device(void * data, char *s,
  *
  * Get associated label of a setting.
  **/
-void menu_setting_get_label(void *data, char *s,
+void menu_setting_get_label(file_list_t *list, char *s,
       size_t len, unsigned *w, unsigned type,
       const char *menu_label, const char *label, unsigned idx)
 {
    rarch_setting_t *setting = NULL;
-   file_list_t *list        = (file_list_t*)data;
    if (!list || !label)
       return;
 
@@ -8877,14 +8876,15 @@ static bool setting_append_list(
    return true;
 }
 
-void menu_setting_free(void *data)
+void menu_setting_free(rarch_setting_t *setting)
 {
    unsigned values, n;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-   rarch_setting_t **list = &setting;
+   rarch_setting_t **list = NULL;
 
    if (!setting)
       return;
+
+   list                   = (rarch_setting_t**)&setting;
 
    /* Free data which was previously tagged */
    for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
@@ -8910,9 +8910,6 @@ void menu_setting_free(void *data)
                default:
                   break;
             }
-
-   if (data)
-      free(data);
 }
 
 static void menu_setting_terminate_last(rarch_setting_t *list, unsigned pos)

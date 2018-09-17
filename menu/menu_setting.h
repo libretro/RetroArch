@@ -116,7 +116,7 @@ void menu_setting_get_string_representation(void *data, char *s, size_t len);
  *
  * Get associated label of a setting.
  **/
-void menu_setting_get_label(void *data, char *s,
+void menu_setting_get_label(file_list_t *list, char *s,
       size_t len, unsigned *w, unsigned type,
       const char *menu_label, const char *label, unsigned idx);
 
@@ -164,7 +164,7 @@ void menu_settings_list_current_add_enum_value_idx(
       rarch_setting_info_t *list_info,
       enum msg_hash_enums enum_idx);
 
-void menu_setting_free(void *data);
+void menu_setting_free(rarch_setting_t *setting);
 
 bool settings_list_append(rarch_setting_t **list,
       rarch_setting_info_t *list_info);
