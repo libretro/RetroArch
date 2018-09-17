@@ -71,6 +71,8 @@
 #include "../cheevos/cheevos.h"
 #endif
 
+#include "record/record_driver.h"
+
 enum
 {
    ACTION_OK_LOAD_PRESET = 0,
@@ -2681,40 +2683,34 @@ static int action_ok_cheat_reload_cheats(const char *path,
 static int action_ok_start_recording(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   /* TODO/FIXME */
-#if 0
-   streaming_set_status(false);
-#endif
+   streaming_set_state(false);
    command_event(CMD_EVENT_RECORD_INIT, NULL);
-
    return 0;
 }
 
 static int action_ok_start_streaming(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   /* TODO/FIXME */
-#if 0
-   streaming_set_status(true);
-#endif
+   streaming_set_state(true);
    command_event(CMD_EVENT_RECORD_INIT, NULL);
-
    return 0;
 }
 
 static int action_ok_stop_recording(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   /* TODO/FIXME */
-
+   recording_set_state(false);
+   streaming_set_state(false);
+   command_event(CMD_EVENT_RECORD_DEINIT, NULL);
    return 0;
 }
 
 static int action_ok_stop_streaming(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   /* TODO/FIXME */
-
+   recording_set_state(false);
+   streaming_set_state(false);
+   command_event(CMD_EVENT_RECORD_DEINIT, NULL);
    return 0;
 }
 
