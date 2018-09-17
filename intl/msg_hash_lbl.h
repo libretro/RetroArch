@@ -1665,3 +1665,5 @@ MSG_HASH(MENU_ENUM_LABEL_CHEAT_DELETE_MATCH,
       "cheat_delete_match")
 MSG_HASH(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
       "crt_switch_resolution_use_custom_refresh_rate")
+MSG_HASH(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+      "crt_switch_resolution_output_display_id")
