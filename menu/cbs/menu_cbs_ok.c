@@ -2678,7 +2678,29 @@ static int action_ok_cheat_reload_cheats(const char *path,
    return 0 ;
 }
 
-   static int action_ok_cheat_add_top(const char *path,
+static int action_ok_start_recording(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#if 0
+   streaming_set_status(false);
+#endif
+   command_event(CMD_EVENT_RECORD_INIT, NULL);
+
+   return 0;
+}
+
+static int action_ok_start_streaming(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#if 0
+   streaming_set_status(true);
+#endif
+   command_event(CMD_EVENT_RECORD_INIT, NULL);
+
+   return 0;
+}
+
+static int action_ok_cheat_add_top(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
@@ -4604,6 +4626,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
+            BIND_ACTION_OK(cbs, action_ok_start_recording);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
+            BIND_ACTION_OK(cbs, action_ok_start_streaming);
+            break;
          case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
             BIND_ACTION_OK(cbs, action_ok_cheat_start_or_cont);
             break;

@@ -1467,6 +1467,14 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_REBOOT,
       "menu_show_reboot")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN,
       "menu_show_shutdown")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING,
+      "quick_menu_show_start_recording")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING,
+      "quick_menu_show_start_streaming")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING,
+      "quick_menu_show_stop_recording")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING,
+      "quick_menu_show_stop_streaming")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
       "quick_menu_show_take_screenshot")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,

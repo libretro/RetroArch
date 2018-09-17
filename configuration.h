@@ -188,6 +188,8 @@ typedef struct settings
       bool quick_menu_show_save_game_overrides;
       bool quick_menu_show_save_content_dir_overrides;
       bool quick_menu_show_information;
+      bool quick_menu_show_recording;
+      bool quick_menu_show_streaming;
       bool kiosk_mode_enable;
 
       bool crt_switch_custom_refresh_enable;
