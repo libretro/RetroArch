@@ -7231,6 +7231,10 @@ MSG_HASH(
     "Delete Playlist"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST,
+    "Rename Playlist"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
     "Are you sure you want to delete the playlist \"%1\"?"
     )

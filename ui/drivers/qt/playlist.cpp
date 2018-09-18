@@ -492,6 +492,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    QScopedPointer<QAction> hideAction;
    QScopedPointer<QAction> newPlaylistAction;
    QScopedPointer<QAction> deletePlaylistAction;
+   QScopedPointer<QAction> renamePlaylistAction;
    QScopedPointer<QAction> downloadAllThumbnailsEntireSystemAction;
    QScopedPointer<QAction> downloadAllThumbnailsThisPlaylistAction;
    QPointer<QAction> selectedAction;
@@ -551,6 +552,9 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    {
       deletePlaylistAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST)) + "...", this));
       menu->addAction(deletePlaylistAction.data());
+
+      renamePlaylistAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST)) + "...", this));
+      menu->addAction(renamePlaylistAction.data());
    }
 
    if (selectedItem)
@@ -704,6 +708,20 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
          }
       }
    }
+   else if (selectedItem && selectedAction == renamePlaylistAction.data())
+   {
+      if (currentPlaylistFile.exists())
+      {
+         QString oldName = selectedItem->text();
+         QString name = QInputDialog::getText(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME), QLineEdit::Normal, oldName);
+
+         if (!name.isEmpty())
+         {
+            renamePlaylistItem(selectedItem, name);
+            reloadPlaylists();
+         }
+      }
+   }
    else if (selectedAction == newPlaylistAction.data())
    {
       QString name = QInputDialog::getText(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME));
@@ -812,13 +830,17 @@ void MainWindow::reloadPlaylists()
    currentItem = m_listWidget->currentItem();
 
    if (currentItem)
-   {
       currentPlaylistPath = currentItem->data(Qt::UserRole).toString();
-   }
 
    getPlaylistFiles();
 
+   /* block this signal because setData() would trigger an infinite loop */
+   disconnect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
+
    m_listWidget->clear();
+   m_listWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+   m_listWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+   m_listWidget->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
 
    allPlaylistsItem = new QListWidgetItem(m_folderIcon, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS));
    allPlaylistsItem->setData(Qt::UserRole, ALL_PLAYLISTS_TOKEN);
@@ -880,6 +902,7 @@ void MainWindow::reloadPlaylists()
          icon = m_folderIcon;
 
       item = new QListWidgetItem(icon, fileDisplayName);
+      item->setFlags(item->flags() | Qt::ItemIsEditable);
       item->setData(Qt::UserRole, playlistDir.absoluteFilePath(file));
 
       m_listWidget->addItem(item);
@@ -944,6 +967,8 @@ void MainWindow::reloadPlaylists()
          }
       }
    }
+
+   connect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
 }
 
 QString MainWindow::getCurrentPlaylistPath()
