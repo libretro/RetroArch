@@ -184,6 +184,8 @@ static const struct cmd_map map[] = {
    { "UI_COMPANION_TOGGLE",    RARCH_UI_COMPANION_TOGGLE },
    { "GAME_FOCUS_TOGGLE",      RARCH_GAME_FOCUS_TOGGLE },
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
+   { "RECORDING_TOGGLE",       RARCH_RECORDING_TOGGLE },
+   { "STREAMING_TOGGLE",       RARCH_STREAMING_TOGGLE },
    { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
    { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
    { "MENU_LEFT",              RETRO_DEVICE_ID_JOYPAD_LEFT },
