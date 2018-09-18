@@ -2170,19 +2170,18 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_RECORD_DEINIT:
          {
+            recording_set_state(false);
+            streaming_set_state(false);
             if (!recording_deinit())
                return false;
          }
          break;
       case CMD_EVENT_RECORD_INIT:
          {
-            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
             recording_set_state(true);
             if (!recording_init())
             {
                command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-               recording_set_state(false);
-               streaming_set_state(false);
                return false;
             }
          }
