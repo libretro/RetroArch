@@ -20,6 +20,7 @@
 
 #include <retro_assert.h>
 #include <compat/msvc.h>
+#include <compat/strl.h>
 
 #include <boolean.h>
 #include <queues/fifo_queue.h>
@@ -82,6 +83,10 @@ extern "C" {
 
 #ifndef PIX_FMT_RGB32
 #define PIX_FMT_RGB32 AV_PIX_FMT_RGB32
+#endif
+
+#ifndef PIX_FMT_YUV444P
+#define PIX_FMT_YUV444P AV_PIX_FMT_YUV444P
 #endif
 
 #ifndef PIX_FMT_BGR24
@@ -539,22 +544,59 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    return true;
 }
 
+static bool ffmpeg_init_config_common(struct ff_config_param *params)
+{
+   params->scale_factor         = 1;
+   params->threads              = 1;
+   params->frame_drop_ratio     = 1;
+   params->audio_enable         = true;
+   params->audio_global_quality = 75;
+   params->out_pix_fmt          = PIX_FMT_YUV444P;
+
+   strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
+   strlcpy(params->acodec, "libmp3lame", sizeof(params->acodec));
+   strlcpy(params->format, "flv", sizeof(params->format));
+
+   av_dict_set(&params->video_opts, "video_preset", "ultrafast", 0);
+   av_dict_set(&params->video_opts, "video_tune", "ultrafast", 0);
+   av_dict_set(&params->video_opts, "video_crf", "18", 0);
+   av_dict_set(&params->audio_opts, "audio_global_quality", "75", 0);
+
+   return true;
+}
+
+static bool ffmpeg_init_config_recording(struct ff_config_param *params)
+{
+   params->threads              = 0;
+   params->audio_global_quality = 100;
+
+   strlcpy(params->vcodec, "libx264rgb", sizeof(params->vcodec));
+   strlcpy(params->format, "matroska", sizeof(params->format));
+
+   av_dict_set(&params->video_opts, "video_preset", "slow", 0);
+   av_dict_set(&params->video_opts, "video_tune", "animation", 0);
+   av_dict_set(&params->video_opts, "video_crf", "10", 0);
+   av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
+
+   return true;
+}
+
 static bool ffmpeg_init_config(struct ff_config_param *params,
       const char *config)
 {
    struct config_file_entry entry;
-   char pix_fmt[64] = {0};
+   char pix_fmt[64]         = {0};
 
-   params->out_pix_fmt = PIX_FMT_NONE;
-   params->scale_factor = 1;
-   params->threads = 1;
+   params->out_pix_fmt      = PIX_FMT_NONE;
+   params->scale_factor     = 1;
+   params->threads          = 1;
    params->frame_drop_ratio = 1;
-   params->audio_enable = true;
+   params->audio_enable     = true;
 
    if (!config)
       return true;
 
-   params->conf = config_file_new(config);
+   params->conf             = config_file_new(config);
    if (!params->conf)
    {
       RARCH_ERR("Failed to load FFmpeg config \"%s\".\n", config);
@@ -786,19 +828,54 @@ static void ffmpeg_free(void *data)
 
 static void *ffmpeg_new(const struct record_params *params)
 {
-   ffmpeg_t *handle = NULL;
+   ffmpeg_t *handle = (ffmpeg_t*)calloc(1, sizeof(*handle));
+   if (!handle)
+      return NULL;
 
    av_register_all();
    avformat_network_init();
 
-   handle = (ffmpeg_t*)calloc(1, sizeof(*handle));
-   if (!handle)
-      goto error;
-
    handle->params = *params;
 
-   if (!ffmpeg_init_config(&handle->config, params->config))
-      goto error;
+   if (params->config_type == RECORD_CONFIG_TYPE_RECORDING_CUSTOM)
+   {
+      if (!ffmpeg_init_config(&handle->config, params->config))
+         goto error;
+   }
+   else
+   {
+
+      switch (params->config_type)
+      {
+         case RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY:
+            ffmpeg_init_config_common(&handle->config);
+            ffmpeg_init_config_recording(&handle->config);
+            break;
+         case RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY:
+            ffmpeg_init_config_common(&handle->config);
+            ffmpeg_init_config_recording(&handle->config);
+            break;
+         case RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY:
+            ffmpeg_init_config_common(&handle->config);
+            ffmpeg_init_config_recording(&handle->config);
+            break;
+         case RECORD_CONFIG_TYPE_STREAM_YOUTUBE:
+            ffmpeg_init_config_common(&handle->config);
+            /* TODO/FIXME - fill this in */
+            break;
+         case RECORD_CONFIG_TYPE_STREAM_DISCORD:
+            ffmpeg_init_config_common(&handle->config);
+            /* TODO/FIXME - fill this in */
+            break;
+         case RECORD_CONFIG_TYPE_STREAM_TWITCH:
+            ffmpeg_init_config_common(&handle->config);
+            /* TODO/FIXME - fill this in */
+            break;
+         default:
+         case RECORD_CONFIG_TYPE_RECORDING_CUSTOM:
+            break;
+      }
+   }
 
    if (!ffmpeg_init_muxer_pre(handle))
       goto error;

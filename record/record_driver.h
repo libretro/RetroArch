@@ -31,6 +31,17 @@ enum ffemu_pix_format
    FFEMU_PIX_ARGB8888
 };
 
+enum record_config_type
+{
+   RECORD_CONFIG_TYPE_RECORDING_CUSTOM = 0,
+   RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
+   RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
+   RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
+   RECORD_CONFIG_TYPE_STREAM_YOUTUBE,
+   RECORD_CONFIG_TYPE_STREAM_TWITCH,
+   RECORD_CONFIG_TYPE_STREAM_DISCORD
+};
+
 /* Parameters passed to ffemu_new() */
 struct record_params
 {
@@ -54,6 +65,8 @@ struct record_params
 
    /* Audio channels. */
    unsigned channels;
+
+   enum record_config_type config_type;
 
    /* Input pixel format. */
    enum ffemu_pix_format pix_fmt;
