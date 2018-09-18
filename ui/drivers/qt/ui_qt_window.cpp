@@ -346,7 +346,6 @@ MainWindow::MainWindow(QWidget *parent) :
    QHBoxLayout *gridProgressLayout = new QHBoxLayout();
    QLabel *gridProgressLabel = NULL;
    QHBoxLayout *gridFooterLayout = NULL;
-   int i = 0;
 
    qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
    qRegisterMetaType<retro_task_callback_t>("retro_task_callback_t");

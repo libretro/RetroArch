@@ -79,10 +79,11 @@ void MainWindow::onPlaylistThumbnailDownloadFinished()
       if (!redirectUrl.isEmpty())
       {
          QByteArray redirectUrlArray = redirectUrl.toString().toUtf8();
+#if 0
          const char *redirectUrlData = redirectUrlArray.constData();
 
          /*RARCH_LOG("[Qt]: Thumbnail download got redirect with HTTP code %d: %s\n", code, redirectUrlData);*/
-
+#endif
          reply->disconnect();
          reply->abort();
          reply->deleteLater();
@@ -174,7 +175,9 @@ void MainWindow::onPlaylistThumbnailDownloadFinished()
 void MainWindow::onPlaylistThumbnailDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
 {
    QNetworkReply *reply = m_playlistThumbnailDownloadReply.data();
+#if 0
    int progress = (bytesReceived / (float)bytesTotal) * 100.0f;
+#endif
 
    if (!reply)
       return;

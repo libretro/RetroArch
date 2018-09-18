@@ -587,7 +587,6 @@ void ShaderParamsDialog::onShaderResetParameter(QString parameter)
 {
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
-   unsigned i;
 
    getShaders(&menu_shader, &video_shader);
 
@@ -884,8 +883,7 @@ void ShaderParamsDialog::buildLayout()
    struct video_shader *video_shader = NULL;
    struct video_shader *avail_shader = NULL;
    const char *shader_path = NULL;
-   int i;
-   unsigned j;
+   unsigned i;
    bool hasPasses = false;
 
    getShaders(&menu_shader, &video_shader);
