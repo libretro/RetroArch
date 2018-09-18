@@ -106,10 +106,8 @@ void PlaylistEntryDialog::onPathClicked()
 
 void PlaylistEntryDialog::loadPlaylistOptions()
 {
+   unsigned i, j;
    core_info_list_t *core_info_list = NULL;
-   const core_info_t *core_info = NULL;
-   unsigned i = 0;
-   int j = 0;
 
    m_nameLineEdit->clear();
    m_pathLineEdit->clear();

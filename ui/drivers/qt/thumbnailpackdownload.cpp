@@ -15,6 +15,7 @@ extern "C" {
 #include "../../../version.h"
 }
 
+#undef TEMP_EXTENSION
 #define USER_AGENT "RetroArch-WIMP/" PACKAGE_VERSION
 #define PARTIAL_EXTENSION ".partial"
 #define TEMP_EXTENSION ".tmp"

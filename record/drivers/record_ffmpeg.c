@@ -213,7 +213,7 @@ typedef struct ffmpeg
    struct ff_muxer_info muxer;
    struct ff_config_param config;
 
-   struct ffemu_params params;
+   struct record_params params;
 
    scond_t *cond;
    slock_t *cond_lock;
@@ -226,6 +226,8 @@ typedef struct ffmpeg
    volatile bool alive;
    volatile bool can_sleep;
 } ffmpeg_t;
+
+AVFormatContext *ctx;
 
 static bool ffmpeg_codec_has_sample_format(enum AVSampleFormat fmt,
       const enum AVSampleFormat *fmts)
@@ -277,8 +279,8 @@ static void ffmpeg_audio_resolve_format(struct ff_audio_info *audio,
 static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
       const AVCodec *codec)
 {
-   struct ff_config_param *params = &handle->config;
-   struct ffemu_params *param     = &handle->params;
+   struct ff_config_param *params  = &handle->config;
+   struct record_params *param     = &handle->params;
 
    /* We'll have to force resampling to some supported sampling rate. */
    if (codec->supported_samplerates && !params->sample_rate)
@@ -314,11 +316,11 @@ static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
 
 static bool ffmpeg_init_audio(ffmpeg_t *handle)
 {
-   settings_t *settings = config_get_ptr();
-   struct ff_config_param *params = &handle->config;
-   struct ff_audio_info *audio    = &handle->audio;
-   struct ffemu_params *param     = &handle->params;
-   AVCodec *codec                 = avcodec_find_encoder_by_name(
+   settings_t *settings            = config_get_ptr();
+   struct ff_config_param *params  = &handle->config;
+   struct ff_audio_info *audio     = &handle->audio;
+   struct record_params *param     = &handle->params;
+   AVCodec *codec                  = avcodec_find_encoder_by_name(
          *params->acodec ? params->acodec : "flac");
    if (!codec)
    {
@@ -401,9 +403,9 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
 static bool ffmpeg_init_video(ffmpeg_t *handle)
 {
    size_t size;
-   struct ff_config_param *params = &handle->config;
-   struct ff_video_info *video    = &handle->video;
-   struct ffemu_params *param     = &handle->params;
+   struct ff_config_param *params  = &handle->config;
+   struct ff_video_info *video     = &handle->video;
+   struct record_params *param     = &handle->params;
    AVCodec *codec = NULL;
 
    if (*params->vcodec)
@@ -617,8 +619,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
 
 static bool ffmpeg_init_muxer_pre(ffmpeg_t *handle)
 {
-   AVFormatContext *ctx = avformat_alloc_context();
-
+   ctx = avformat_alloc_context();
    av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
 
    if (*handle->config.format)
@@ -676,7 +677,7 @@ static bool init_thread(ffmpeg_t *handle)
    handle->cond = scond_new();
    handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) *
          handle->params.channels * MAX_FRAMES / 60); /* Some arbitrary max size. */
-   handle->attr_fifo = fifo_new(sizeof(struct ffemu_video_data) * MAX_FRAMES);
+   handle->attr_fifo = fifo_new(sizeof(struct record_video_data) * MAX_FRAMES);
    handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
             handle->video.pix_size * MAX_FRAMES);
 
@@ -783,7 +784,7 @@ static void ffmpeg_free(void *data)
    free(handle);
 }
 
-static void *ffmpeg_new(const struct ffemu_params *params)
+static void *ffmpeg_new(const struct record_params *params)
 {
    ffmpeg_t *handle = NULL;
 
@@ -822,13 +823,13 @@ error:
 }
 
 static bool ffmpeg_push_video(void *data,
-      const struct ffemu_video_data *vid)
+      const struct record_video_data *vid)
 {
    unsigned y;
    bool drop_frame;
-   struct ffemu_video_data attr_data;
+   struct record_video_data attr_data;
    ffmpeg_t *handle = (ffmpeg_t*)data;
-   int offset = 0;
+   int       offset = 0;
 
    if (!handle || !vid)
       return false;
@@ -892,7 +893,7 @@ static bool ffmpeg_push_video(void *data,
 }
 
 static bool ffmpeg_push_audio(void *data,
-      const struct ffemu_audio_data *audio_data)
+      const struct record_audio_data *audio_data)
 {
    ffmpeg_t *handle = (ffmpeg_t*)data;
 
@@ -974,7 +975,7 @@ static bool encode_video(ffmpeg_t *handle, AVPacket *pkt, AVFrame *frame)
 }
 
 static void ffmpeg_scale_input(ffmpeg_t *handle,
-      const struct ffemu_video_data *vid)
+      const struct record_video_data *vid)
 {
    /* Attempt to preserve more information if we scale down. */
    bool shrunk = handle->params.out_width < vid->width
@@ -1011,7 +1012,7 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
 }
 
 static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
-      const struct ffemu_video_data *vid)
+      const struct record_video_data *vid)
 {
    AVPacket pkt;
 
@@ -1150,7 +1151,7 @@ static bool encode_audio(ffmpeg_t *handle, AVPacket *pkt, bool dry)
 }
 
 static void ffmpeg_audio_resample(ffmpeg_t *handle,
-      struct ffemu_audio_data *aud)
+      struct record_audio_data *aud)
 {
    if (!handle->audio.use_float && !handle->audio.resampler)
       return;
@@ -1214,7 +1215,7 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
 }
 
 static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
-      struct ffemu_audio_data *aud, bool require_block)
+      struct record_audio_data *aud, bool require_block)
 {
    size_t written_frames = 0;
 
@@ -1269,7 +1270,7 @@ static void ffmpeg_flush_audio(ffmpeg_t *handle, void *audio_buf,
 
    if (avail)
    {
-      struct ffemu_audio_data aud = {0};
+      struct record_audio_data aud = {0};
 
       fifo_read(handle->audio_fifo, audio_buf, avail);
 
@@ -1316,7 +1317,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
    do
    {
-      struct ffemu_video_data attr_buf;
+      struct record_video_data attr_buf;
 
       did_work = false;
 
@@ -1324,7 +1325,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
       {
          if (fifo_read_avail(handle->audio_fifo) >= audio_buf_size)
          {
-            struct ffemu_audio_data aud = {0};
+            struct record_audio_data aud = {0};
 
             fifo_read(handle->audio_fifo, audio_buf, audio_buf_size);
 
@@ -1362,7 +1363,6 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 static bool ffmpeg_finalize(void *data)
 {
    ffmpeg_t *handle = (ffmpeg_t*)data;
-
    if (!handle)
       return false;
 
@@ -1375,6 +1375,8 @@ static bool ffmpeg_finalize(void *data)
 
    /* Write final data. */
    av_write_trailer(handle->muxer.ctx);
+
+   avio_close(ctx->pb);
 
    return true;
 }
@@ -1397,7 +1399,7 @@ static void ffmpeg_thread(void *data)
 
    while (ff->alive)
    {
-      struct ffemu_video_data attr_buf;
+      struct record_video_data attr_buf;
 
       bool avail_video = false;
       bool avail_audio = false;
@@ -1441,7 +1443,7 @@ static void ffmpeg_thread(void *data)
 
       if (avail_audio && audio_buf)
       {
-         struct ffemu_audio_data aud = {0};
+         struct record_audio_data aud = {0};
 
          slock_lock(ff->lock);
          fifo_read(ff->audio_fifo, audio_buf, audio_buf_size);
@@ -1459,7 +1461,7 @@ static void ffmpeg_thread(void *data)
    av_free(audio_buf);
 }
 
-const record_driver_t ffemu_ffmpeg = {
+const record_driver_t record_ffmpeg = {
    ffmpeg_new,
    ffmpeg_free,
    ffmpeg_push_video,

@@ -2930,6 +2930,36 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
+   /* Check recording toggle */
+   {
+      static bool old_pressed = false;
+      bool pressed            = BIT256_GET(
+            current_input, RARCH_RECORDING_TOGGLE);
+
+      if (pressed && !old_pressed)
+      {
+         /* TODO/FIXME */
+         /* insert logic here */
+      }
+
+      old_pressed             = pressed;
+   }
+
+   /* Check streaming toggle */
+   {
+      static bool old_pressed = false;
+      bool pressed            = BIT256_GET(
+            current_input, RARCH_STREAMING_TOGGLE);
+
+      if (pressed && !old_pressed)
+      {
+         /* TODO/FIXME */
+         /* insert logic here */
+      }
+
+      old_pressed             = pressed;
+   }
+
    if (BIT256_GET(current_input, RARCH_VOLUME_UP))
       command_event(CMD_EVENT_VOLUME_UP, NULL);
    else if (BIT256_GET(current_input, RARCH_VOLUME_DOWN))
