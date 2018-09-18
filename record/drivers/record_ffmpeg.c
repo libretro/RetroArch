@@ -227,6 +227,8 @@ typedef struct ffmpeg
    volatile bool can_sleep;
 } ffmpeg_t;
 
+AVFormatContext *ctx;
+
 static bool ffmpeg_codec_has_sample_format(enum AVSampleFormat fmt,
       const enum AVSampleFormat *fmts)
 {
@@ -617,8 +619,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
 
 static bool ffmpeg_init_muxer_pre(ffmpeg_t *handle)
 {
-   AVFormatContext *ctx = avformat_alloc_context();
-
+   ctx = avformat_alloc_context();
    av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
 
    if (*handle->config.format)
@@ -1362,7 +1363,6 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 static bool ffmpeg_finalize(void *data)
 {
    ffmpeg_t *handle = (ffmpeg_t*)data;
-
    if (!handle)
       return false;
 
@@ -1375,7 +1375,8 @@ static bool ffmpeg_finalize(void *data)
 
    /* Write final data. */
    av_write_trailer(handle->muxer.ctx);
-   avio_close(&ctx->pb);
+
+   avio_close(ctx->pb);
 
    return true;
 }
