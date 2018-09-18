@@ -356,8 +356,6 @@ bool recording_init()
          (float)av_info->timing.fps,
          (float)av_info->timing.sample_rate);
 
-   RARCH_LOG("STREAM!!! %d\n", streaming_is_enabled());
-
    if (!string_is_empty(global->record.path))
       strlcpy(output, global->record.path, sizeof(output));
    else
