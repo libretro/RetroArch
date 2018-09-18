@@ -70,6 +70,9 @@ addons:
       - libsdl-mixer1.2-dev
       - libsdl-ttf2.0-dev
       - libusb-1.0-0-dev
+      - qt5-default
+      - qt5-qmake
+      - qtbase5-dev-tools
   coverity_scan:
     project:
       name: "RetroArch"
