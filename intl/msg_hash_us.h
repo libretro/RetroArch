@@ -6915,6 +6915,14 @@ MSG_HASH(
     "> Rumble Value"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
+    "Increases by Rumble Value"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE_BY_VALUE,
+    "Decreases by Rumble Value"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
     "1-bit, max value = 0x01"
     )
