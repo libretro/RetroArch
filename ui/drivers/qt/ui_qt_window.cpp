@@ -20,9 +20,7 @@
 #include <QTimer>
 #include <QLabel>
 #include <QFileSystemModel>
-#include <QListWidget>
 #include <QListWidgetItem>
-#include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QHash>
 #include <QPushButton>
@@ -214,6 +212,26 @@ void TableWidget::keyPressEvent(QKeyEvent *event)
    QTableWidget::keyPressEvent(event);
 }
 
+ListWidget::ListWidget(QWidget *parent) :
+   QListWidget(parent)
+{
+}
+
+bool ListWidget::isEditorOpen()
+{
+   return (state() == QAbstractItemView::EditingState);
+}
+
+void ListWidget::keyPressEvent(QKeyEvent *event)
+{
+   if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+      emit enterPressed();
+   else if (event->key() == Qt::Key_Delete)
+      emit deletePressed();
+
+   QListWidget::keyPressEvent(event);
+}
+
 CoreInfoLabel::CoreInfoLabel(QString text, QWidget *parent) :
    QLabel(text, parent)
 {
@@ -264,7 +282,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_statusLabel(new QLabel(this))
    ,m_dirTree(new TreeView(this))
    ,m_dirModel(new QFileSystemModel(m_dirTree))
-   ,m_listWidget(new QListWidget(this))
+   ,m_listWidget(new ListWidget(this))
    ,m_tableWidget(new TableWidget(this))
    ,m_searchWidget(new QWidget(this))
    ,m_searchLineEdit(new QLineEdit(this))
@@ -2374,7 +2392,7 @@ void MainWindow::onCurrentTableItemDataChanged(QTableWidgetItem *item)
    if (!item)
       return;
 
-   /* block this signal because setData() would trigger an infinite look here */
+   /* block this signal because setData() would trigger an infinite loop here */
    disconnect(m_tableWidget, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(onCurrentTableItemDataChanged(QTableWidgetItem*)));
 
    hash = item->data(Qt::UserRole).value<QHash<QString, QString> >();
@@ -2388,6 +2406,78 @@ void MainWindow::onCurrentTableItemDataChanged(QTableWidgetItem *item)
    currentItemChanged(hash);
 
    connect(m_tableWidget, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(onCurrentTableItemDataChanged(QTableWidgetItem*)));
+}
+
+void MainWindow::onCurrentListItemDataChanged(QListWidgetItem *item)
+{
+   renamePlaylistItem(item, item->text());
+}
+
+void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
+{
+   QString oldPath;
+   QString newPath;
+   QString extension;
+   QString oldName;
+   QFile file;
+   QFileInfo info;
+   QFileInfo playlistInfo;
+   QString playlistPath;
+   settings_t *settings = config_get_ptr();
+   QDir playlistDir(settings->paths.directory_playlist);
+   bool specialPlaylist = false;
+
+   if (!item)
+      return;
+
+   playlistPath = item->data(Qt::UserRole).toString();
+   playlistInfo = playlistPath;
+   oldName = playlistInfo.completeBaseName();
+
+   /* Don't just compare strings in case there are case differences on Windows that should be ignored. */
+   if (QDir(playlistInfo.absoluteDir()) != QDir(playlistDir))
+   {
+      /* special playlists like history etc. can't have an association */
+      specialPlaylist = true;
+   }
+
+   if (specialPlaylist)
+   {
+      /* special playlists shouldn't be editable already, but just in case, set the old name back and early return if they rename it */
+      item->setText(oldName);
+      return;
+   }
+
+   /* block this signal because setData() would trigger an infinite loop here */
+   disconnect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
+
+   oldPath = item->data(Qt::UserRole).toString();
+
+   file.setFileName(oldPath);
+   info = file;
+
+   extension = info.suffix();
+
+   newPath = info.absolutePath();
+
+   /* absolutePath() will always use / even on Windows */
+   if (newPath.at(newPath.count() - 1) != '/')
+   {
+      /* add trailing slash if the path doesn't have one */
+      newPath += '/';
+   }
+
+   newPath += newName + "." + extension;
+
+   item->setData(Qt::UserRole, newPath);
+
+   if (!file.rename(newPath))
+   {
+      RARCH_ERR("[Qt]: Could not rename playlist.\n");
+      item->setText(oldName);
+   }
+
+   connect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
 }
 
 void MainWindow::currentItemChanged(const QHash<QString, QString> &hash)
@@ -2637,7 +2727,7 @@ void MainWindow::onBrowserStartClicked()
    m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
 }
 
-QListWidget* MainWindow::playlistListWidget()
+ListWidget* MainWindow::playlistListWidget()
 {
    return m_listWidget;
 }
