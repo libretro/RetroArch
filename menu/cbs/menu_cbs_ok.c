@@ -2699,8 +2699,6 @@ static int action_ok_start_streaming(const char *path,
 static int action_ok_stop_recording(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   recording_set_state(false);
-   streaming_set_state(false);
    command_event(CMD_EVENT_RECORD_DEINIT, NULL);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
@@ -2708,8 +2706,6 @@ static int action_ok_stop_recording(const char *path,
 static int action_ok_stop_streaming(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   recording_set_state(false);
-   streaming_set_state(false);
    command_event(CMD_EVENT_RECORD_DEINIT, NULL);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
