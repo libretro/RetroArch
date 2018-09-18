@@ -1375,6 +1375,7 @@ static bool ffmpeg_finalize(void *data)
 
    /* Write final data. */
    av_write_trailer(handle->muxer.ctx);
+   avio_close(&ctx->pb);
 
    return true;
 }
