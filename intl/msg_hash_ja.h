@@ -420,7 +420,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-      "保存状態をロード時にセーブRAMを置き換えない"
+      "ステートロード時にセーブRAMを置き換えない"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
@@ -476,7 +476,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
-      "チートファイルを名前を付けて保存"
+      "チートファイルに名前を付けて保存"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INFORMATION,
       "コアの情報を表示する。")
@@ -514,7 +514,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-      "非公式実績を試す"
+      "非公式実績をテスト"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
@@ -1702,7 +1702,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
       "スクリーンショットを撮る")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-      "スレッド化タスク")
+      "タスクをスレッド化")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS,
       "サムネイル")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
@@ -1992,9 +1992,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
       "シェーダーのプリセット")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-      "Enable or disable achievements. For more information, visit http://retroachievements.org")
+      "実績を有効または無効にする。詳細については、http://retroachievements.orgを参照。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-      "Enable or disable unofficial achievements and/or beta features for testing purposes.")
+      "非公式実績/ベータ機能をテスト目的で有効または無効にする。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
       "ステートセーブやチート、巻き戻し、早送り、一時停止、スローモーションをすべてのゲームで無効する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
@@ -2088,7 +2088,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
       "The refresh rate as reported by the display driver.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-      "ビデオ出力の設定を変える。")
+      "ビデオ出力の設定を変更する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
       "無線ネットワークを検索して接続する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
@@ -2128,7 +2128,7 @@ MSG_HASH(MSG_BYTES,
 MSG_HASH(MSG_CANNOT_INFER_NEW_CONFIG_PATH,
       "Cannot infer new config path. Use current time.")
 MSG_HASH(MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "ハードコアモードが有効された。保存状態と巻き戻しは無効になった。")
+      "ハードコアモードが有効された。ステートセーブと巻き戻しは無効になった。")
 MSG_HASH(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
       "Comparing with known magic numbers...")
 MSG_HASH(MSG_COMPILED_AGAINST_API,
@@ -2142,7 +2142,7 @@ MSG_HASH(MSG_CONTENT_CRC32S_DIFFER,
 MSG_HASH(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
       "Content loading skipped. Implementation will load it on its own.")
 MSG_HASH(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-      "コアは保存状態の対応がありません。")
+      "コアはステートセーブの対応がありません。")
 MSG_HASH(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
       "Core options file created successfully.")
 MSG_HASH(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
@@ -2224,7 +2224,7 @@ MSG_HASH(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
 MSG_HASH(MSG_FAILED_TO_LOAD,
       "ロードに失敗")
 MSG_HASH(MSG_FAILED_TO_LOAD_CONTENT,
-      "コンテンツをロードに失敗しました。")
+      "コンテンツのロードに失敗しました")
 MSG_HASH(MSG_FAILED_TO_LOAD_MOVIE_FILE,
       "Failed to load movie file")
 MSG_HASH(MSG_FAILED_TO_LOAD_OVERLAY,
@@ -2334,9 +2334,9 @@ MSG_HASH(MSG_LIBRETRO_ABI_BREAK,
 MSG_HASH(MSG_LIBRETRO_FRONTEND,
       "libretroのフロントエンド")
 MSG_HASH(MSG_LOADED_STATE_FROM_SLOT,
-      "スロット%dから保存状態をロードしました。")
+      "スロット%dからステートロードしました")
 MSG_HASH(MSG_LOADED_STATE_FROM_SLOT_AUTO,
-      "スロット-1 (自動)から保存状態をロードしました。")
+      "スロット-1 (自動)からステートロードしました")
 MSG_HASH(MSG_LOADING,
       "ロード中")
 MSG_HASH(MSG_FIRMWARE,
@@ -2346,7 +2346,7 @@ MSG_HASH(MSG_LOADING_CONTENT_FILE,
 MSG_HASH(MSG_LOADING_HISTORY_FILE,
       "履歴ファイルをロード中")
 MSG_HASH(MSG_LOADING_STATE,
-      "保存状態をロード中")
+      "ステートロード中")
 MSG_HASH(MSG_MEMORY,
       "メモリ")
 MSG_HASH(MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
@@ -2370,7 +2370,7 @@ MSG_HASH(MSG_OVERRIDES_ERROR_SAVING,
 MSG_HASH(MSG_OVERRIDES_SAVED_SUCCESSFULLY,
       "優先ファイルを保存しました。")
 MSG_HASH(MSG_PAUSED,
-      "一時停止。")
+      "一時停止")
 MSG_HASH(MSG_PROGRAM,
       "RetroArch")
 MSG_HASH(MSG_READING_FIRST_DATA_TRACK,
@@ -2408,7 +2408,7 @@ MSG_HASH(MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
 MSG_HASH(MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
       "Reverting savestate directory to")
 MSG_HASH(MSG_REWINDING,
-      "巻き戻しています。")
+      "巻き戻しています")
 MSG_HASH(MSG_REWIND_INIT,
       "Initializing rewind buffer with size")
 MSG_HASH(MSG_REWIND_INIT_FAILED,
@@ -2420,15 +2420,15 @@ MSG_HASH(MSG_REWIND_REACHED_END,
 MSG_HASH(MSG_SAVED_NEW_CONFIG_TO,
       "Saved new config to")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT,
-      "スロット%dに状態を保存しました。")
+      "スロット%dにステートセーブしました")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT_AUTO,
-      "スロット-1 (自動)に状態を保存しました。")
+      "スロット-1 (自動)にステートセーブしました")
 MSG_HASH(MSG_SAVED_SUCCESSFULLY_TO,
       "Saved successfully to")
 MSG_HASH(MSG_SAVING_RAM_TYPE,
       "Saving RAM type")
 MSG_HASH(MSG_SAVING_STATE,
-      "状態を保存中")
+      "ステートセーブ中")
 MSG_HASH(MSG_SCANNING,
       "スキャン中")
 MSG_HASH(MSG_SCANNING_OF_DIRECTORY_FINISHED,
@@ -2444,11 +2444,11 @@ MSG_HASH(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
 MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
       "Skipping SRAM load.")
 MSG_HASH(MSG_SLOW_MOTION,
-      "スローモーション。")
+      "スローモーション")
 MSG_HASH(MSG_FAST_FORWARD,
-      "早送り。")
+      "早送り")
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
-      "スローモーション巻き戻し。")
+      "スローモーション巻き戻し")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
       "SRAM will not be saved.")
 MSG_HASH(MSG_STARTING_MOVIE_PLAYBACK,
@@ -2456,21 +2456,21 @@ MSG_HASH(MSG_STARTING_MOVIE_PLAYBACK,
 MSG_HASH(MSG_STARTING_MOVIE_RECORD_TO,
       "Starting movie record to")
 MSG_HASH(MSG_STATE_SIZE,
-      "状態のサイズ")
+      "ステートサイズ")
 MSG_HASH(MSG_STATE_SLOT,
-      "保存状態のスロット")
+      "ステートスロット")
 MSG_HASH(MSG_TAKING_SCREENSHOT,
-      "スクリーンショットを撮っています。")
+      "スクリーンショットを撮っています")
 MSG_HASH(MSG_TO,
       "to")
 MSG_HASH(MSG_UNDID_LOAD_STATE,
-      "保存状態のロードを前に戻した。")
+      "ステートロードを取り消しました")
 MSG_HASH(MSG_UNDOING_SAVE_STATE,
-      "Undoing save state")
+      "ステートセーブを取り消しています")
 MSG_HASH(MSG_UNKNOWN,
       "不明")
 MSG_HASH(MSG_UNPAUSED,
-      "一時停止が解除された。")
+      "一時停止解除")
 MSG_HASH(MSG_UNRECOGNIZED_COMMAND,
       "Unrecognized command")
 MSG_HASH(MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -2482,9 +2482,9 @@ MSG_HASH(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
 MSG_HASH(MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
       "Disconnecting device from port")
 MSG_HASH(MSG_VALUE_REBOOTING,
-      "再起動しています。。。")
+      "再起動しています...")
 MSG_HASH(MSG_VALUE_SHUTTING_DOWN,
-      "シャットダウンしています。。。")
+      "シャットダウンしています...")
 MSG_HASH(MSG_VERSION_OF_LIBRETRO_API,
       "Version of libretro API")
 MSG_HASH(MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
@@ -3065,9 +3065,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_OPTIONS,
       "Change the options for the currently running application.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
-      "Show advanced settings for powerusers (hidden by default).")
+      "上級ユーザー向けの詳細設定を表示する(標準では非表示)。")
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-      "Perform tasks on a separate thread.")
+      "タスクを別のスレッドで実行する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
       "Allow the user to remove entries from collections.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
@@ -3100,9 +3100,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Makes sure the framerate is capped while inside the menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,
-      "Select a different layout for the XMB interface.")
+      "XMBインタフェースに異なるレイアウトを選択する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_THEME,
-      "Select a different theme for the icon. Changes will take effect after you restart the program.")
+      "アイコンに異なるテーマを選択する。変更はプログラムの再起動後に反映される。")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
       "Enable drop shadows for all icons. This will have a minor performance hit.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
@@ -3116,7 +3116,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_FONT,
       "メニューの使用するフォントを選択する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-      "メニューにイメージタブを表示する。")
+      "メニューに画像タブを表示する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
       "メニューに音楽タブを表示する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
@@ -3132,9 +3132,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
       "メニューにスタートスクリーンを表示する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-      "Modify the opacity of the header graphic.")
+      "ヘッダーの不透明度を調整する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-      "Modify the opacity of the footer graphic.")
+      "フッターの不透明度を調整する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
       "The menu normally scales itself dynamically. If you want to set a specific scaling size instead, enable this.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
