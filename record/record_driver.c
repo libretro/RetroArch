@@ -40,9 +40,9 @@
 
 static const record_driver_t *record_drivers[] = {
 #ifdef HAVE_FFMPEG
-   &ffemu_ffmpeg,
+   &record_ffmpeg,
 #endif
-   &ffemu_null,
+   &record_null,
    NULL,
 };
 
@@ -169,7 +169,7 @@ const record_driver_t *ffemu_find_backend(const char *ident)
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool record_driver_init_first(const record_driver_t **backend, void **data,
-      const struct ffemu_params *params)
+      const struct record_params *params)
 {
    unsigned i;
 
@@ -191,10 +191,9 @@ bool record_driver_init_first(const record_driver_t **backend, void **data,
 void recording_dump_frame(const void *data, unsigned width,
       unsigned height, size_t pitch, bool is_idle)
 {
-   bool has_gpu_record = false;
-   uint8_t *gpu_buf    = NULL;
-   struct ffemu_video_data
-      ffemu_data       = {0};
+   bool has_gpu_record                 = false;
+   uint8_t *gpu_buf                    = NULL;
+   struct record_video_data ffemu_data = {0};
 
    video_driver_get_record_status(&has_gpu_record,
          &gpu_buf);
@@ -305,7 +304,7 @@ void streaming_set_state(bool state)
 
 void recording_push_audio(const int16_t *data, size_t samples)
 {
-   struct ffemu_audio_data ffemu_data;
+   struct record_audio_data ffemu_data;
 
    ffemu_data.data                    = data;
    ffemu_data.frames                  = samples / 2;
@@ -321,11 +320,11 @@ void recording_push_audio(const int16_t *data, size_t samples)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool recording_init()
+bool recording_init(void)
 {
    char output[PATH_MAX_LENGTH];
    char buf[PATH_MAX_LENGTH];
-   struct ffemu_params params           = {0};
+   struct record_params params          = {0};
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
    bool   recording_enabled             = recording_is_enabled();
    settings_t *settings                 = config_get_ptr();
