@@ -10,6 +10,7 @@
 - LOCALIZATION: Update Spanish translation.
 - MENU/QT/WIMP: Add option to filter extensions inside archives when adding to a playlist.
 - MENU/QT/WIMP: Rename playlist entries with 2 single clicks.
+- MENU/QT/WIMP: Fix shader parameter checkboxes not working
 - METAL: Add screenshot support.
 - NETPLAY: Save lobby details received back from server after first announcement.
 - OPENGL/GLX: Implement Adaptive VSync - GLX_EXT_swap_control_tear.
