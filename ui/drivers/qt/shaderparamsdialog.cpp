@@ -1310,10 +1310,6 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
    if (paramVariant.isValid())
    {
       QString parameter = paramVariant.toString();
-      bool ok = false;
-
-      if (!ok)
-         return;
 
       if (menu_shader)
       {
