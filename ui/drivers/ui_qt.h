@@ -169,6 +169,7 @@ class TableWidget : public QTableWidget
    Q_OBJECT
 public:
    TableWidget(QWidget *parent = 0);
+   bool isEditorOpen();
 signals:
    void enterPressed();
    void deletePressed();

@@ -199,6 +199,11 @@ TableWidget::TableWidget(QWidget *parent) :
 {
 }
 
+bool TableWidget::isEditorOpen()
+{
+   return (state() == QAbstractItemView::EditingState);
+}
+
 void TableWidget::keyPressEvent(QKeyEvent *event)
 {
    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
@@ -1587,8 +1592,13 @@ QTabWidget* MainWindow::browserAndPlaylistTabWidget()
 
 void MainWindow::onTableWidgetEnterPressed()
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
    /* entry is being renamed, ignore this enter press */
    if (m_tableWidget->isPersistentEditorOpen(m_tableWidget->currentIndex()))
+#else
+   /* we can only check if any editor at all is open */
+   if (m_tableWidget->isEditorOpen())
+#endif
       return;
    onRunClicked();
 }
