@@ -812,6 +812,8 @@ font_data_t *menu_display_font(
       float font_size,
       bool video_is_threaded);
 
+font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_threaded);
+
 void menu_display_reset_textures_list(
       const char *texture_path,
       const char *iconpath,
@@ -825,6 +827,8 @@ int menu_display_osk_ptr_at_pos(void *data, int x, int y,
 bool menu_display_driver_exists(const char *s);
 
 void menu_driver_destroy(void);
+
+void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha);
 
 extern uintptr_t menu_display_white_texture;
 
@@ -846,6 +850,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_switch;
 extern menu_display_ctx_driver_t menu_display_ctx_sixel;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 
+extern menu_ctx_driver_t menu_ctx_ozone;
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;

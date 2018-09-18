@@ -1743,7 +1743,10 @@ found:
 
       {
          settings_t *settings = config_get_ptr();
-         if (!string_is_equal(settings->arrays.menu_driver, "xmb") ||
+         if (!(
+               string_is_equal(settings->arrays.menu_driver, "xmb") || 
+               !string_is_equal(settings->arrays.menu_driver, "ozone")
+            ) ||
                !settings->bools.cheevos_badges_enable)
             CORO_RET();
       }

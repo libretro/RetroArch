@@ -26,7 +26,7 @@
 RETRO_BEGIN_DECLS
 
 typedef float (*easing_cb) (float, float, float, float);
-typedef void  (*tween_cb)  (void);
+typedef void  (*tween_cb)  (void*);
 
 enum menu_animation_ctl_state
 {
@@ -106,6 +106,7 @@ typedef struct menu_animation_ctx_entry
    float target_value;
    float *subject;
    tween_cb cb;
+   void *userdata;
 } menu_animation_ctx_entry_t;
 
 typedef struct menu_animation_ctx_ticker

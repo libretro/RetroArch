@@ -10,6 +10,7 @@ HAVE_LIBRETRODB=yes        # Libretrodb support
 HAVE_RGUI=yes              # RGUI menu
 HAVE_MATERIALUI=auto       # MaterialUI menu
 HAVE_XMB=auto              # XMB menu
+HAVE_OZONE=no              # Ozone menu
 HAVE_STRIPES=no            # Stripes menu
 HAVE_ZARCH=no              # Zarch menu
 HAVE_NUKLEAR=no            # Nuklear menu
