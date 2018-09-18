@@ -2179,7 +2179,12 @@ TODO: Add a setting for these tweaks */
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
             recording_set_state(true);
             if (!recording_init())
+            {
+               command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+               recording_set_state(false);
+               streaming_set_state(false);
                return false;
+            }
          }
          break;
       case CMD_EVENT_HISTORY_DEINIT:
