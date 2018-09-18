@@ -206,7 +206,6 @@ void CoreOptionsDialog::buildLayout()
    QFormLayout *form = NULL;
    settings_t *settings = config_get_ptr();
    size_t opts = 0;
-   int i;
    unsigned j, k;
 
    clearLayout();

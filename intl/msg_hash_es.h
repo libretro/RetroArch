@@ -7521,3 +7521,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
     "Detiene el streaming"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
+    "Recording toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
+    "Streaming toggle"
+    )

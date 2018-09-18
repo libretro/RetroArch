@@ -6337,6 +6337,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
+               PARSE_ACTION, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
@@ -6710,8 +6713,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_DRIVER_SETTINGS,  PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUDIO_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
