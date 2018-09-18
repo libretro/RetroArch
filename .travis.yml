@@ -20,6 +20,13 @@ matrix:
       script:
         - CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501" ./configure --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 && make HAVE_ZLIB=1 HAVE_BUILTINZLIB=1 HAVE_RPNG=1
     - compiler: gcc
+      addons:
+        # Install a more recent gcc than the default
+        apt:
+          packages:
+            - g++-7
+          sources:
+            - ubuntu-toolchain-r-test
     - compiler: clang
       addons:
         # Install a more recent clang than the default
