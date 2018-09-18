@@ -178,6 +178,32 @@ DECL_AXIS_EX(r_x_minus, -2, "R-Stick left") \
 DECL_AXIS_EX(r_y_plus,  +3, "R-Stick down") \
 DECL_AXIS_EX(r_y_minus, -3, "R-Stick up")
 
+#define PS2INPUT_DEFAULT_BINDS \
+DECL_BTN_EX(a, 8, "Circle") \
+DECL_BTN_EX(b, 0, "Cross") \
+DECL_BTN_EX(x, 9, "Triangle") \
+DECL_BTN_EX(y, 1, "Square") \
+DECL_BTN_EX(start, 3, "Start") \
+DECL_BTN_EX(select, 2, "Select") \
+DECL_BTN_EX(up, 4, "D-Pad up") \
+DECL_BTN_EX(down, 5, "D-Pad down") \
+DECL_BTN_EX(left, 6, "D-Pad left") \
+DECL_BTN_EX(right, 7, "D-Pad right") \
+DECL_BTN_EX(l, 10, "L1") \
+DECL_BTN_EX(r, 11, "R1") \
+DECL_BTN_EX(l2, 12, "L2") \
+DECL_BTN_EX(r2, 13, "R2") \
+DECL_BTN_EX(l3, 14, "L3") \
+DECL_BTN_EX(r3, 15, "R3") \
+DECL_AXIS_EX(l_x_plus,  +0, "L-Stick right") \
+DECL_AXIS_EX(l_x_minus, -0, "L-Stick left") \
+DECL_AXIS_EX(l_y_plus,  +1, "L-Stick down") \
+DECL_AXIS_EX(l_y_minus, -1, "L-Stick up") \
+DECL_AXIS_EX(r_x_plus,  +2, "R-Stick right") \
+DECL_AXIS_EX(r_x_minus, -2, "R-Stick left") \
+DECL_AXIS_EX(r_y_plus,  +3, "R-Stick down") \
+DECL_AXIS_EX(r_y_minus, -3, "R-Stick up")
+
 #define CTRINPUT_DEFAULT_BINDS \
 DECL_BTN(a, 8) \
 DECL_BTN(b, 0) \
@@ -640,6 +666,9 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("DS4 Controller", "vita", PSPINPUT_DEFAULT_BINDS),
 #elif defined(PSP)
    DECL_AUTOCONF_DEVICE("PSP Controller", "psp", PSPINPUT_DEFAULT_BINDS),
+#endif
+#if defined(PS2)
+   DECL_AUTOCONF_DEVICE("PS2 Controller", "ps2", PS2INPUT_DEFAULT_BINDS),
 #endif
 #ifdef _3DS
    DECL_AUTOCONF_DEVICE("3DS Controller", "ctr", CTRINPUT_DEFAULT_BINDS),

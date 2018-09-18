@@ -69,7 +69,7 @@ typedef struct
 
 static uint16_t *rgui_framebuf_data      = NULL;
 
-#if defined(GEKKO)|| defined(PSP)
+#if defined(GEKKO)|| defined(PSP) || defined(PS2)
 #define HOVER_COLOR(settings)    ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
 #define NORMAL_COLOR(settings)   0x7FFF
 #define TITLE_COLOR(settings)    HOVER_COLOR(settings)
@@ -93,7 +93,7 @@ static uint16_t rgui_gray_filler(rgui_t *rgui, unsigned x, unsigned y)
 {
    unsigned shft        = (rgui->bg_thickness ? 1 : 0);
    unsigned col         = (((x >> shft) + (y >> shft)) & 1) + 1;
-#if defined(GEKKO) || defined(PSP)
+#if defined(GEKKO) || defined(PSP) || defined(PS2)
    return (6 << 12) | (col << 8) | (col << 4) | (col << 0);
 #elif defined(HAVE_LIBNX) && !defined(HAVE_OPENGL)
    return (((31 * (54)) / 255) << 11) |
@@ -108,7 +108,7 @@ static uint16_t rgui_green_filler(rgui_t *rgui, unsigned x, unsigned y)
 {
    unsigned shft        = (rgui->border_thickness ? 1 : 0);
    unsigned col         = (((x >> shft) + (y >> shft)) & 1) + 1;
-#if defined(GEKKO) || defined(PSP)
+#if defined(GEKKO) || defined(PSP) || defined(PS2)
    return (6 << 12) | (col << 8) | (col << 5) | (col << 0);
 #elif defined(HAVE_LIBNX) && !defined(HAVE_OPENGL)
     return (((31 * (54)) / 255) << 11) |

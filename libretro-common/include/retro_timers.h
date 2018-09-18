@@ -37,6 +37,8 @@
 #include <pspthreadman.h>
 #elif defined(VITA)
 #include <psp2/kernel/threadmgr.h>
+#elif defined(PS2)
+#include <kernel.h>
 #elif defined(_3DS)
 #include <3ds.h>
 #else
@@ -77,6 +79,13 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
 #define nanosleep nanosleepDOS
 #endif
 
+#if defined(PS2)
+static void threadWakeupCB(s32 alarm_id, u16 time, void *common)
+{
+   iWakeupThread(*(int*)common);
+}
+#endif
+
 /**
  * retro_sleep:
  * @msec         : amount in milliseconds to sleep
@@ -89,6 +98,14 @@ static INLINE void retro_sleep(unsigned msec)
    sys_timer_usleep(1000 * msec);
 #elif defined(PSP) || defined(VITA)
    sceKernelDelayThread(1000 * msec);
+#elif defined(PS2)
+   int ThreadID;
+
+    if(msec>0){
+        ThreadID=GetThreadId();
+        SetAlarm(msec * 16, &threadWakeupCB, &ThreadID);
+        SleepThread();
+    }
 #elif defined(_3DS)
    svcSleepThread(1000000 * (s64)msec);
 #elif defined(__WINRT__)
