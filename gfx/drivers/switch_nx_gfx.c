@@ -558,7 +558,7 @@ static void switch_set_texture_frame(
         sw->menu_texture.width != width ||
         sw->menu_texture.height != height)
     {
-        int xsf, yf, sf;
+        int xsf, ysf, sf;
         struct scaler_ctx *sctx = NULL;
 
         if (sw->menu_texture.pixels)
