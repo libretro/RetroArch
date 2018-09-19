@@ -230,7 +230,7 @@ static const float aspect_ratio = DEFAULT_ASPECT_RATIO;
 /* 1:1 PAR */
 static const bool aspect_ratio_auto = false;
 
-#if defined(__CELLOS_LV2) || defined(_XBOX360) || defind(ANDROID_AARCH64)
+#if defined(__CELLOS_LV2) || defined(_XBOX360) || defined(ANDROID_AARCH64)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_16_9;
 #elif defined(PSP)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
