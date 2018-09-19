@@ -2094,7 +2094,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
       "RetroArchの使い方について学ぶ。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
-      "チートの変更点が今すぐに適用する。")
+      "チートの変更点を今すぐに適用する。")
 MSG_HASH(MSG_ADDED_TO_FAVORITES,
       "お気に入りに追加しました")
 MSG_HASH(MSG_RESET_CORE_ASSOCIATION,
@@ -2190,9 +2190,9 @@ MSG_HASH(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
 MSG_HASH(MSG_ERROR_PARSING_ARGUMENTS,
       "Error parsing arguments.")
 MSG_HASH(MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
-      "コアのオプションファイルを保存に失敗しました。")
+      "コアのオプションファイルの保存に失敗しました。")
 MSG_HASH(MSG_ERROR_SAVING_REMAP_FILE,
-      "リマップファイルを保存に失敗しました。")
+      "リマップファイルの保存に失敗しました。")
 MSG_HASH(MSG_ERROR_REMOVING_REMAP_FILE,
       "リマップファイルを削除に失敗しました。")
 MSG_HASH(MSG_ERROR_SAVING_SHADER_PRESET,
@@ -2218,63 +2218,63 @@ MSG_HASH(MSG_FAILED_TO_BIND_SOCKET,
 MSG_HASH(MSG_FAILED_TO_CREATE_THE_DIRECTORY,
       "Failed to create the directory.")
 MSG_HASH(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
-      "Failed to extract content from compressed file")
+      "圧縮ファイルのコンテンツの展開に失敗しました")
 MSG_HASH(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
-      "Failed to get nickname from client.")
+      "クライアントのニックネームの取得に失敗しました")
 MSG_HASH(MSG_FAILED_TO_LOAD,
       "ロードに失敗")
 MSG_HASH(MSG_FAILED_TO_LOAD_CONTENT,
       "コンテンツのロードに失敗しました")
 MSG_HASH(MSG_FAILED_TO_LOAD_MOVIE_FILE,
-      "Failed to load movie file")
+      "映像ファイルのロードに失敗しました")
 MSG_HASH(MSG_FAILED_TO_LOAD_OVERLAY,
-      "Failed to load overlay.")
+      "オーバーレイのロードに失敗しました")
 MSG_HASH(MSG_FAILED_TO_LOAD_STATE,
       "Failed to load state from")
 MSG_HASH(MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
-      "コアをロードするに失敗しました")
+      "コアのロードに失敗しました")
 MSG_HASH(MSG_FAILED_TO_PATCH,
       "パッチに失敗しました")
 MSG_HASH(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
-      "Failed to receive header from client.")
+      "クライアントのヘッダーの受信に失敗しました")
 MSG_HASH(MSG_FAILED_TO_RECEIVE_NICKNAME,
-      "Failed to receive nickname.")
+      "ニックネームの受信に失敗しました")
 MSG_HASH(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
-      "Failed to receive nickname from host.")
+      "ホストのニックネームの受信に失敗しました")
 MSG_HASH(MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
-      "Failed to receive nickname size from host.")
+      "ホストのニックネームサイズの受信に失敗しました")
 MSG_HASH(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
-      "Failed to receive SRAM data from host.")
+      "ホストのSRAMデータの受信に失敗しました")
 MSG_HASH(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-      "Failed to remove disk from tray.")
+      "トレイのディスクの除去に失敗しました")
 MSG_HASH(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
-      "Failed to remove temporary file")
+      "一時ファイルの除去に失敗しました")
 MSG_HASH(MSG_FAILED_TO_SAVE_SRAM,
-      "Failed to save SRAM")
+      "SRAMの保存に失敗しました")
 MSG_HASH(MSG_FAILED_TO_SAVE_STATE_TO,
       "Failed to save state to")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME,
-      "Failed to send nickname.")
+      "ニックネームの送信に失敗しました")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_SIZE,
-      "Failed to send nickname size.")
+      "ニックネームサイズの送信に失敗しました")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
-      "Failed to send nickname to client.")
+      "クライアントへのニックネームの送信に失敗しました")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
-      "Failed to send nickname to host.")
+      "ホストへのニックネームの送信に失敗しました")
 MSG_HASH(MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
-      "Failed to send SRAM data to client.")
+      "クライアントへのSRAMデータの送信に失敗しました")
 MSG_HASH(MSG_FAILED_TO_START_AUDIO_DRIVER,
       "Failed to start audio driver. Will continue without audio.")
 MSG_HASH(MSG_FAILED_TO_START_MOVIE_RECORD,
-      "Failed to start movie record.")
+      "映像の録画の開始に失敗しました")
 MSG_HASH(MSG_FAILED_TO_START_RECORDING,
-      "Failed to start recording.")
+      "録画の開始に失敗しました")
 MSG_HASH(MSG_FAILED_TO_TAKE_SCREENSHOT,
-      "Failed to take screenshot.")
+      "スクリーンショットの撮影に失敗しました")
 MSG_HASH(MSG_FAILED_TO_UNDO_LOAD_STATE,
-      "Failed to undo load state.")
+      "ステートロードの取り消しに失敗しました")
 MSG_HASH(MSG_FAILED_TO_UNDO_SAVE_STATE,
-      "Failed to undo save state.")
+      "ステートセーブの取り消しに失敗しました")
 MSG_HASH(MSG_FAILED_TO_UNMUTE_AUDIO,
       "Failed to unmute audio.")
 MSG_HASH(MSG_FATAL_ERROR_RECEIVED_IN,
@@ -2657,7 +2657,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
       "ユーザー%dのリモートを有効")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
-      "電池残量を表示")
+      "バッテリー残量を表示")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
       "ファイル選択")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FROM_COLLECTION,
@@ -2705,7 +2705,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
       "RetroAchievementsアカウントのパスワード")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-      "ネットプレイの使用するニックネーム")
+      "ネットプレイで使用するニックネーム")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
       "Capture the image after filters (but not shaders) are applied. Your video will look as fancy as what you see on your screen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
@@ -2804,7 +2804,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-      "Show thumbnails of save states inside the menu."
+      "メニューにステートセーブのサムネイルを表示する。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -2876,7 +2876,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
-      "Dynamically load a new wallpaper depending on context."
+      "コンテキストに応じて新しい壁紙を動的にロードする。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
@@ -2940,15 +2940,15 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
-      "Enable stdin command interface."
+      "stdinコマンドインタフェースを有効にする。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-      "Enable mouse controls inside the menu."
+      "メニューのマウス操作を有効にする。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-      "Enable touch controls inside the menu."
+      "メニューのタッチ操作を有効にする。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -2956,28 +2956,28 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
-      "Shows current date and/or time inside the menu."
+      "メニューに現在の日付と時刻を表示する。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
-      "Shows current battery level inside the menu."
+      "メニューに現在のバッテリー残量を表示する。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-      "Wrap-around to beginning and/or end if boundary of list is reached horizontally or vertically."
+      "リストの終端に水平または垂直に達したときに先頭/末尾に折り返す。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-      "Enables netplay in host (server) mode."
+      "ネットプレイをホスト(サーバー)モードで有効にする。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-      "Enables netplay in client mode.")
+      "ネットプレイをクライアントモードで有効にする。")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "Disconnects an active Netplay connection.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Scans a directory for compatible files and add them to the collection.")
+      "フォルダの対応ファイルをスキャンしてコレクションに追加する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Scans a compatible file and add it to the collection.")
+      "対応ファイルをスキャンしてコレクションに追加する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
       )
@@ -3015,7 +3015,7 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
       "Enable customized core options by default at startup.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ENABLE,
-      "Shows current core name inside menu.")
+      "メニューに現在のコアの名前を表示する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
       "View databases.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
@@ -3024,18 +3024,18 @@ MSG_HASH(MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
       "Captures an image of the screen.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-      "Closes the current game. Any unsaved changes might be lost."
+      "現在のゲームを閉じる。すべての保存されていない変更は失われる可能性がある。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_STATE,
-      "Load a saved state from the currently selected slot.")
+      "現在選択中のスロットに保存されたステートをロードする。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_STATE,
-      "Save a state to the currently selected slot.")
+      "現在選択中のスロットにステートを保存する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESUME,
-      "Resume the currently running application and leave the Quick Menu.")
+      "現在動作中のアプリを再開してクイックメニューを閉じる。")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-      "Resume the currently running application and leave the Quick Menu.")
+      "現在動作中のアプリを再開してクイックメニューを閉じる。")
 MSG_HASH(MENU_ENUM_SUBLABEL_STATE_SLOT,
-      "Changes the currently selected state slot.")
+      "現在選択中のステートスロットを変更する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
       "If a state was loaded, content will go back to the state prior to loading.")
 MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
@@ -3049,7 +3049,7 @@ MSG_HASH(
       "Manage currently configured accounts."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-      "Manages rewind settings.")
+      "巻き戻しの設定を管理する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
       "Restarts the content from the beginning.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -3057,9 +3057,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "Saves an override configuration file which will apply for the current content only. Will take precedence over the main configuration.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
-      "Set up cheat codes for the currently running content.")
+      "現在動作中のコンテンツにチートコードをセットアップする。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
-      "Set up shaders for the currently running content.")
+      "現在動作中のコンテンツにシェーダーをセットアップする。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
       "Change the controls for the currently running content.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_OPTIONS,
@@ -3106,11 +3106,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_THEME,
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
       "Enable drop shadows for all icons. This will have a minor performance hit.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-      "Select a different background color gradient theme.")
+      "異なる背景色グラデーションテーマを選択する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
-      "Modify the opacity of the background wallpaper.")
+      "壁紙の不透明度を調整する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-      "Select a different background color gradient theme.")
+      "異なる背景色グラデーションテーマを選択する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
       "Select an animated background effect. Can be GPU-intensive depending on the effect. If performance is unsatisfactory, either turn this off or revert to a simpler effect.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_FONT,
@@ -3168,7 +3168,7 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
       "このフォルダにセーブファイルを保存する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-      "このフォルダに保存状態を保存する。")
+      "このフォルダにステートセーブを保存する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
       "このフォルダにスクリーンショットを保存する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
@@ -3204,15 +3204,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
       "MITMサーバーの設置場所")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-      "中間者のサーバーにネットプレイ接続を転送する。ファイアウォールやNAT/UPnPが問題の時に便利。")
+      "中継サーバーにネットプレイ接続を転送する。ファイアウォールやNAT/UPnPに問題がある時に効果的。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
       "ミキサーに追加")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
-      "Add to mixer and play")
+      "ミキサーに追加して再生")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
       "ミキサーに追加")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
-      "Add to mixer and play")
+      "ミキサーに追加して再生")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
       "現在のコアで絞り込み")
 MSG_HASH(
@@ -3234,9 +3234,9 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
       "Mute/unmute mixer audio.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-      "")
+      "オンラインアップデーター")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-      "オンラインアップデーターを表示")
+      "オンラインアップデーターを表示する。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
       "表示")
 MSG_HASH(
@@ -3260,7 +3260,7 @@ MSG_HASH(MENU_ENUM_LABEL_RENAME_ENTRY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
       "フレームバッファーの不透明度")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-      "Modify the opacity of the framebuffer.")
+      "フレームバッファーの不透明度を調整する。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
       "お気に入り")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
@@ -3280,7 +3280,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_VIDEO,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
       "メニューのアイコン")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-      "Enable/disable the menu icons shown at the lefthand side of the menu entries.")
+      "メニュー項目の左側に表示されるメニューアイコンを有効/無効にする。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
       "設定タブを有効")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -3296,7 +3296,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Allow the user to rename entries in collections.")
+      "コレクションのエントリーの名前変更をユーザーに許可する。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "エントリーの名前変更を許す")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
@@ -3858,41 +3858,41 @@ MSG_HASH(
       "Output Display ID")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
-    "Start Recording"
+    "録画を開始"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
-    "Starts recording."
+    "録画を開始する。"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
-    "Stop Recording"
+    "録画を停止"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
-    "Stops recording."
+    "録画を停止する。"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
-    "Start Streaming"
+    "ストリーミングを開始"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
-    "Starts streaming."
+    "ストリーミングを開始する。"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
-    "Stop Streaming"
+    "ストリーミングを停止"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
-    "Stops streaming."
+    "ストリーミングを停止する。"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
-    "Recording toggle"
+    "録画に切り替え"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
-    "Streaming toggle"
+    "ストリーミングに切り替え"
     )
