@@ -385,6 +385,20 @@ void menu_display_blend_end(video_frame_info_t *video_info)
       menu_disp->blend_end(video_info);
 }
 
+/* Begin scissoring operation */
+void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+{
+   if (menu_disp && menu_disp->scissor_begin)
+      menu_disp->scissor_begin(video_info, x, y, width, height);
+}
+
+/* End scissoring operation */
+void menu_display_scissor_end()
+{
+   if (menu_disp && menu_disp->scissor_end)
+      menu_disp->scissor_end();
+}
+
 /* Teardown; deinitializes and frees all
  * fonts associated to the menu driver */
 void menu_display_font_free(font_data_t *font)

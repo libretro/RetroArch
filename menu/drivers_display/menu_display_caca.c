@@ -101,5 +101,7 @@ menu_display_ctx_driver_t menu_display_ctx_caca = {
    menu_display_caca_font_init_first,
    MENU_VIDEO_DRIVER_CACA,
    "menu_display_caca",
-   false
+   false,
+   NULL,
+   NULL
 };

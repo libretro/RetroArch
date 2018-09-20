@@ -135,5 +135,7 @@ menu_display_ctx_driver_t menu_display_ctx_metal = {
    .type                   = MENU_VIDEO_DRIVER_METAL,
    .ident                  = "menu_display_metal",
    .handles_transform      = NO,
+   .scissor_begin          = NULL,
+   .scissor_end            = NULL
 };
 
