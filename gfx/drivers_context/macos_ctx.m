@@ -299,7 +299,8 @@ static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
    {
 #if defined(HAVE_COCOATOUCH)
       case GFX_CTX_OPENGL_ES_API:
-         [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
+         // setViewType is not (yet?) defined for iOS
+         // [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
          break;
 #elif defined(HAVE_COCOA)
       case GFX_CTX_OPENGL_API:
