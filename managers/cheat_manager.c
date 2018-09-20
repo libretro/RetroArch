@@ -1067,6 +1067,12 @@ void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_valu
       case RUMBLE_TYPE_GT_VALUE:
          rumble = (curr_value > cheat->rumble_value) ;
          break;
+      case RUMBLE_TYPE_INCREASE_BY_VALUE:
+         rumble = (curr_value == cheat->rumble_prev_value + cheat->rumble_value) ;
+         break ;
+      case RUMBLE_TYPE_DECREASE_BY_VALUE:
+         rumble = (curr_value == cheat->rumble_prev_value - cheat->rumble_value) ;
+         break ;
    }
 
    cheat->rumble_prev_value = curr_value ;
