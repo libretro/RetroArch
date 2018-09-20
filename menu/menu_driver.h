@@ -378,6 +378,9 @@ typedef struct menu_display_ctx_driver
    enum menu_display_driver_type type;
    const char *ident;
    bool handles_transform;
+   /* Enables and disables scissoring */
+   void (*scissor_begin)(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height);
+   void (*scissor_end)(void);
 } menu_display_ctx_driver_t;
 
 
@@ -671,6 +674,9 @@ void menu_display_toggle_set_reason(enum menu_toggle_reason reason);
 
 void menu_display_blend_begin(video_frame_info_t *video_info);
 void menu_display_blend_end(video_frame_info_t *video_info);
+
+void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height);
+void menu_display_scissor_end();
 
 void menu_display_font_free(font_data_t *font);
 

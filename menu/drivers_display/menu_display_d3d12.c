@@ -309,5 +309,7 @@ menu_display_ctx_driver_t menu_display_ctx_d3d12 = {
    menu_display_d3d12_font_init_first,
    MENU_VIDEO_DRIVER_DIRECT3D12,
    "menu_display_d3d12",
-   true
+   true,
+   NULL,
+   NULL
 };
