@@ -288,6 +288,7 @@ static cheevos_locals_t cheevos_locals =
 bool cheevos_loaded = false;
 bool cheevos_hardcore_active = false;
 bool cheevos_hardcore_paused = false;
+bool cheevos_state_loaded_flag = false;
 int cheats_are_enabled = 0;
 int cheats_were_enabled = 0;
 

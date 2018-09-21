@@ -1675,6 +1675,9 @@ static bool command_event_main_state(unsigned cmd)
          case CMD_EVENT_LOAD_STATE:
             if (content_load_state(state_path, false, false))
             {
+#ifdef HAVE_CHEEVOS
+               cheevos_state_loaded_flag = true;
+#endif
                ret = true;
 #ifdef HAVE_NETWORKING
                netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
