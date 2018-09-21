@@ -17,6 +17,7 @@
 
 extern "C" {
 #include "../../../file_path_special.h"
+#include "../../../configuration.h"
 }
 
 FileDropWidget::FileDropWidget(QWidget *parent) :
@@ -80,6 +81,7 @@ void FileDropWidget::dropEvent(QDropEvent *event)
 
 void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 {
+   settings_t *settings = config_get_ptr();
    QScopedPointer<QMenu> menu;
    QScopedPointer<QAction> downloadThumbnailAction;
    QScopedPointer<QAction> addEntryAction;
@@ -90,116 +92,158 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
    QPointer<QAction> selectedAction;
    QPoint cursorPos = QCursor::pos();
    QHash<QString, QString> contentHash = getCurrentContentHash();
+   QDir playlistDir(settings->paths.directory_playlist);
+   QString playlistDirAbsPath = playlistDir.absolutePath();
+   QFileInfo currentPlaylistFileInfo;
+   QString currentPlaylistPath;
+   QString currentPlaylistFileName;
+   QString currentPlaylistDirPath;
+   QListWidgetItem *currentPlaylistItem = NULL;
+   bool specialPlaylist = false;
+   bool actionsAdded = false;
 
    if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) != msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
       return;
 
-   menu.reset(new QMenu(this));
+   currentPlaylistItem = m_listWidget->currentItem();
 
-   downloadThumbnailAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL)), this));
-   addEntryAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY)), this));
-   addFilesAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES)), this));
-   addFolderAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FOLDER)), this));
-   editAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_EDIT)), this));
-   deleteAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE)), this));
+   if (!currentPlaylistItem)
+      return;
 
-   menu->addAction(downloadThumbnailAction.data());
-   menu->addAction(addEntryAction.data());
-   menu->addAction(addFilesAction.data());
-   menu->addAction(addFolderAction.data());
-
-   if (!contentHash.isEmpty())
+   if (currentPlaylistItem)
    {
-      menu->addAction(editAction.data());
-      menu->addAction(deleteAction.data());
+      currentPlaylistPath = currentPlaylistItem->data(Qt::UserRole).toString();
+
+      currentPlaylistFileInfo = QFileInfo(currentPlaylistPath);
+      currentPlaylistFileName = currentPlaylistFileInfo.fileName();
+      currentPlaylistDirPath = currentPlaylistFileInfo.absoluteDir().absolutePath();
    }
 
-   selectedAction = menu->exec(cursorPos);
+   menu.reset(new QMenu(this));
+
+   /* Don't just compare strings in case there are case differences on Windows that should be ignored. */
+   if (QDir(currentPlaylistDirPath) != QDir(playlistDirAbsPath))
+   {
+      /* special playlists like history etc. can't have an association */
+      specialPlaylist = true;
+   }
+
+   if (!specialPlaylist)
+   {
+      downloadThumbnailAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL)), this));
+      menu->addAction(downloadThumbnailAction.data());
+
+      addEntryAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY)), this));
+      menu->addAction(addEntryAction.data());
+
+      addFilesAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES)), this));
+      menu->addAction(addFilesAction.data());
+
+      addFolderAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FOLDER)), this));
+      menu->addAction(addFolderAction.data());
+
+      editAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_EDIT)), this));
+      deleteAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE)), this));
+
+      if (!contentHash.isEmpty())
+      {
+         menu->addAction(editAction.data());
+         menu->addAction(deleteAction.data());
+      }
+
+      actionsAdded = true;
+   }
+
+   if (actionsAdded)
+      selectedAction = menu->exec(cursorPos);
 
    if (!selectedAction)
       return;
 
-   if (selectedAction == downloadThumbnailAction.data())
+   if (!specialPlaylist)
    {
-      QHash<QString, QString> hash = getCurrentContentHash();
-      QString system = QFileInfo(getCurrentPlaylistPath()).completeBaseName();
-      QString title = hash.value("label");
-
-      if (!title.isEmpty())
+      if (selectedAction == downloadThumbnailAction.data())
       {
-         if (m_pendingThumbnailDownloadTypes.isEmpty())
+         QHash<QString, QString> hash = getCurrentContentHash();
+         QString system = QFileInfo(getCurrentPlaylistPath()).completeBaseName();
+         QString title = hash.value("label");
+
+         if (!title.isEmpty())
          {
-            m_pendingThumbnailDownloadTypes.append(THUMBNAIL_BOXART);
-            m_pendingThumbnailDownloadTypes.append(THUMBNAIL_SCREENSHOT);
-            m_pendingThumbnailDownloadTypes.append(THUMBNAIL_TITLE);
-            downloadThumbnail(system, title);
+            if (m_pendingThumbnailDownloadTypes.isEmpty())
+            {
+               m_pendingThumbnailDownloadTypes.append(THUMBNAIL_BOXART);
+               m_pendingThumbnailDownloadTypes.append(THUMBNAIL_SCREENSHOT);
+               m_pendingThumbnailDownloadTypes.append(THUMBNAIL_TITLE);
+               downloadThumbnail(system, title);
+            }
+            else
+            {
+               showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+            }
          }
-         else
+      }
+      else if (selectedAction == addFilesAction.data())
+      {
+         QStringList filePaths = QFileDialog::getOpenFileNames(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES));
+
+         if (!filePaths.isEmpty())
+            addFilesToPlaylist(filePaths);
+      }
+      else if (selectedAction == addEntryAction.data())
+      {
+         addFilesToPlaylist(QStringList());
+      }
+      else if (selectedAction == addFolderAction.data())
+      {
+         QString dirPath = QFileDialog::getExistingDirectory(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER), QString(), QFileDialog::ShowDirsOnly);
+
+         if (!dirPath.isEmpty())
+            addFilesToPlaylist(QStringList() << dirPath);
+      }
+      else if (selectedAction == editAction.data())
+      {
+         PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
+         QHash<QString, QString> selectedCore;
+         QString selectedDatabase;
+         QString selectedName;
+         QString selectedPath;
+         QString currentPlaylistPath = getCurrentPlaylistPath();
+
+         if (!playlistDialog->showDialog(contentHash))
+            return;
+
+         selectedName = m_playlistEntryDialog->getSelectedName();
+         selectedPath = m_playlistEntryDialog->getSelectedPath();
+         selectedCore = m_playlistEntryDialog->getSelectedCore();
+         selectedDatabase = m_playlistEntryDialog->getSelectedDatabase();
+
+         if (selectedCore.isEmpty())
          {
-            showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+            selectedCore["core_name"] = "DETECT";
+            selectedCore["core_path"] = "DETECT";
+         }
+
+         if (selectedDatabase.isEmpty())
+         {
+            selectedDatabase = QFileInfo(currentPlaylistPath).fileName().remove(file_path_str(FILE_PATH_LPL_EXTENSION));
+         }
+
+         contentHash["label"] = selectedName;
+         contentHash["path"] = selectedPath;
+         contentHash["core_name"] = selectedCore.value("core_name");
+         contentHash["core_path"] = selectedCore.value("core_path");
+         contentHash["db_name"] = selectedDatabase;
+
+         if (!updateCurrentPlaylistEntry(contentHash))
+         {
+            showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+            return;
          }
       }
-   }
-   else if (selectedAction == addFilesAction.data())
-   {
-      QStringList filePaths = QFileDialog::getOpenFileNames(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES));
-
-      if (!filePaths.isEmpty())
-         addFilesToPlaylist(filePaths);
-   }
-   else if (selectedAction == addEntryAction.data())
-   {
-      addFilesToPlaylist(QStringList());
-   }
-   else if (selectedAction == addFolderAction.data())
-   {
-      QString dirPath = QFileDialog::getExistingDirectory(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER), QString(), QFileDialog::ShowDirsOnly);
-
-      if (!dirPath.isEmpty())
-         addFilesToPlaylist(QStringList() << dirPath);
-   }
-   else if (selectedAction == editAction.data())
-   {
-      PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
-      QHash<QString, QString> selectedCore;
-      QString selectedDatabase;
-      QString selectedName;
-      QString selectedPath;
-      QString currentPlaylistPath = getCurrentPlaylistPath();
-
-      if (!playlistDialog->showDialog(contentHash))
-         return;
-
-      selectedName = m_playlistEntryDialog->getSelectedName();
-      selectedPath = m_playlistEntryDialog->getSelectedPath();
-      selectedCore = m_playlistEntryDialog->getSelectedCore();
-      selectedDatabase = m_playlistEntryDialog->getSelectedDatabase();
-
-      if (selectedCore.isEmpty())
+      else if (selectedAction == deleteAction.data())
       {
-         selectedCore["core_name"] = "DETECT";
-         selectedCore["core_path"] = "DETECT";
+         deleteCurrentPlaylistItem();
       }
-
-      if (selectedDatabase.isEmpty())
-      {
-         selectedDatabase = QFileInfo(currentPlaylistPath).fileName().remove(file_path_str(FILE_PATH_LPL_EXTENSION));
-      }
-
-      contentHash["label"] = selectedName;
-      contentHash["path"] = selectedPath;
-      contentHash["core_name"] = selectedCore.value("core_name");
-      contentHash["core_path"] = selectedCore.value("core_path");
-      contentHash["db_name"] = selectedDatabase;
-
-      if (!updateCurrentPlaylistEntry(contentHash))
-      {
-         showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
-         return;
-      }
-   }
-   else if (selectedAction == deleteAction.data())
-   {
-      deleteCurrentPlaylistItem();
    }
 }
