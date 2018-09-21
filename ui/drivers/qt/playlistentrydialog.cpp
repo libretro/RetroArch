@@ -147,9 +147,9 @@ void PlaylistEntryDialog::loadPlaylistOptions()
 
          hash["ui_display_name"] = ui_display_name;
 
-         for (j = 0; j < databases.count(); j++)
+         for (j = 0; static_cast<int>(j) < databases.count(); j++)
          {
-            QString database = databases.at(j);
+            QString database = databases.at(static_cast<int>(j));
 
             if (database.isEmpty())
                continue;
@@ -165,16 +165,16 @@ void PlaylistEntryDialog::loadPlaylistOptions()
       std::sort(allCores.begin(), allCores.end(), comp_hash_ui_display_name_key_lower);
       std::sort(allDatabases.begin(), allDatabases.end(), comp_string_lower);
 
-      for (j = 0; j < allCores.count(); j++)
+      for (j = 0; static_cast<int>(j) < allCores.count(); j++)
       {
-         const QHash<QString, QString> &hash = allCores.at(j);
+         const QHash<QString, QString> &hash = allCores.at(static_cast<int>(j));
 
          m_coreComboBox->addItem(hash.value("ui_display_name"), QVariant::fromValue(hash));
       }
 
-      for (j = 0; j < allDatabases.count(); j++)
+      for (j = 0; static_cast<int>(j) < allDatabases.count(); j++)
       {
-         QString database = allDatabases.at(j);
+         QString database = allDatabases.at(static_cast<int>(j));
          m_databaseComboBox->addItem(database, database);
       }
    }
