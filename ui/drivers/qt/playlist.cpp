@@ -985,6 +985,45 @@ QString MainWindow::getCurrentPlaylistPath()
    return playlistPath;
 }
 
+bool MainWindow::currentPlaylistIsSpecial()
+{
+   settings_t *settings = config_get_ptr();
+   QDir playlistDir(settings->paths.directory_playlist);
+   QString playlistDirAbsPath = playlistDir.absolutePath();
+   QFileInfo currentPlaylistFileInfo;
+   QString currentPlaylistPath;
+   QString currentPlaylistDirPath;
+   QListWidgetItem *currentPlaylistItem = m_listWidget->currentItem();
+   bool specialPlaylist = false;
+
+   if (!currentPlaylistItem)
+      return false;
+
+   currentPlaylistPath = currentPlaylistItem->data(Qt::UserRole).toString();
+   currentPlaylistFileInfo = QFileInfo(currentPlaylistPath);
+   currentPlaylistDirPath = currentPlaylistFileInfo.absoluteDir().absolutePath();
+
+   /* Don't just compare strings in case there are case differences on Windows that should be ignored. */
+   if (QDir(currentPlaylistDirPath) != QDir(playlistDirAbsPath))
+      specialPlaylist = true;
+
+   return specialPlaylist;
+}
+
+bool MainWindow::currentPlaylistIsAll()
+{
+   QListWidgetItem *currentPlaylistItem = m_listWidget->currentItem();
+   bool all = false;
+
+   if (!currentPlaylistItem)
+      return false;
+
+   if (currentPlaylistItem->data(Qt::UserRole).toString() == ALL_PLAYLISTS_TOKEN)
+      all = true;
+
+   return all;
+}
+
 void MainWindow::deleteCurrentPlaylistItem()
 {
    QString playlistPath = getCurrentPlaylistPath();
@@ -994,6 +1033,10 @@ void MainWindow::deleteCurrentPlaylistItem()
    const char *playlistData = NULL;
    unsigned index = 0;
    bool ok = false;
+   bool isAllPlaylist = currentPlaylistIsAll();
+
+   if (isAllPlaylist)
+      return;
 
    if (playlistPath.isEmpty())
       return;

@@ -452,6 +452,8 @@ private:
    void removeUpdateTempFiles();
    bool addDirectoryFilesToList(QProgressDialog *dialog, QStringList &list, QDir &dir, QStringList &extensions);
    void renamePlaylistItem(QListWidgetItem *item, QString newName);
+   bool currentPlaylistIsSpecial();
+   bool currentPlaylistIsAll();
    QVector<QHash<QString, QString> > getPlaylistItems(QString pathString);
 
    LoadCoreWindow *m_loadCoreWindow;

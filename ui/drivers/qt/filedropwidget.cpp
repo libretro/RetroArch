@@ -81,7 +81,6 @@ void FileDropWidget::dropEvent(QDropEvent *event)
 
 void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 {
-   settings_t *settings = config_get_ptr();
    QScopedPointer<QMenu> menu;
    QScopedPointer<QAction> downloadThumbnailAction;
    QScopedPointer<QAction> addEntryAction;
@@ -92,47 +91,23 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
    QPointer<QAction> selectedAction;
    QPoint cursorPos = QCursor::pos();
    QHash<QString, QString> contentHash = getCurrentContentHash();
-   QDir playlistDir(settings->paths.directory_playlist);
-   QString playlistDirAbsPath = playlistDir.absolutePath();
-   QFileInfo currentPlaylistFileInfo;
-   QString currentPlaylistPath;
-   QString currentPlaylistFileName;
-   QString currentPlaylistDirPath;
-   QListWidgetItem *currentPlaylistItem = NULL;
-   bool specialPlaylist = false;
+   bool specialPlaylist = currentPlaylistIsSpecial();
+   bool allPlaylist = currentPlaylistIsAll();
    bool actionsAdded = false;
 
    if (m_browserAndPlaylistTabWidget->tabText(m_browserAndPlaylistTabWidget->currentIndex()) != msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
       return;
 
-   currentPlaylistItem = m_listWidget->currentItem();
-
-   if (!currentPlaylistItem)
-      return;
-
-   if (currentPlaylistItem)
-   {
-      currentPlaylistPath = currentPlaylistItem->data(Qt::UserRole).toString();
-
-      currentPlaylistFileInfo = QFileInfo(currentPlaylistPath);
-      currentPlaylistFileName = currentPlaylistFileInfo.fileName();
-      currentPlaylistDirPath = currentPlaylistFileInfo.absoluteDir().absolutePath();
-   }
-
    menu.reset(new QMenu(this));
-
-   /* Don't just compare strings in case there are case differences on Windows that should be ignored. */
-   if (QDir(currentPlaylistDirPath) != QDir(playlistDirAbsPath))
-   {
-      /* special playlists like history etc. can't have an association */
-      specialPlaylist = true;
-   }
 
    if (!specialPlaylist)
    {
       downloadThumbnailAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL)), this));
       menu->addAction(downloadThumbnailAction.data());
+   }
 
+   if (!allPlaylist)
+   {
       addEntryAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY)), this));
       menu->addAction(addEntryAction.data());
 
@@ -183,7 +158,11 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
             }
          }
       }
-      else if (selectedAction == addFilesAction.data())
+   }
+
+   if (!allPlaylist)
+   {
+      if (selectedAction == addFilesAction.data())
       {
          QStringList filePaths = QFileDialog::getOpenFileNames(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES));
 
