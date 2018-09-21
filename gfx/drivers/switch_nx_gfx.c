@@ -142,7 +142,6 @@ static void clear_screen(switch_video_t *sw)
 
     gfxFlushBuffers();
     gfxSwapBuffers();
-    gfxWaitForVsync();
 }
 
 static void *switch_init(const video_info_t *video,
@@ -469,7 +468,7 @@ static bool switch_frame(void *data, const void *frame,
 
     gfxFlushBuffers();
     gfxSwapBuffers();
-    if (sw->vsync || video_info->menu_is_alive)
+    if (sw->vsync)
         gfxWaitForVsync();
 
     return true;
