@@ -3154,7 +3154,7 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_CHEEVOS
    cheevos_hardcore_active =  settings->bools.cheevos_enable
                               && settings->bools.cheevos_hardcore_mode_enable
-                              && cheevos_loaded && !cheevos_hardcore_paused;
+                              && !cheevos_hardcore_paused;
 
    if (!cheevos_hardcore_active)
 #endif
