@@ -156,7 +156,7 @@ static bool sdl_ctx_bind_api(void *data,
    return true;
 }
 
-static void sdl_ctx_swap_interval(void *data, unsigned interval)
+static void sdl_ctx_swap_interval(void *data, int interval)
 {
    (void)data;
 #ifdef HAVE_SDL2

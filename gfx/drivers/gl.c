@@ -1318,7 +1318,7 @@ static void gl_free(void *data)
 
 static void gl_set_nonblock_state(void *data, bool state)
 {
-   unsigned interval           = 0;
+   int interval                = 0;
    gl_t             *gl        = (gl_t*)data;
    settings_t        *settings = config_get_ptr();
 
@@ -1696,13 +1696,14 @@ static void *gl_init(const video_info_t *video,
 {
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
-   unsigned interval, mip_level;
    unsigned full_x, full_y;
    video_shader_ctx_filter_t shader_filter;
    video_shader_ctx_info_t shader_info;
    video_shader_ctx_ident_t ident_info;
    settings_t *settings                 = config_get_ptr();
    video_shader_ctx_wrap_t wrap_info    = {0};
+   int interval                         = 0;
+   unsigned mip_level                   = 0;
    unsigned win_width                   = 0;
    unsigned win_height                  = 0;
    unsigned temp_width                  = 0;

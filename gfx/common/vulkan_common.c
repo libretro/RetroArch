@@ -168,6 +168,37 @@ VkResult vulkan_emulated_mailbox_acquire_next_image(struct vulkan_emulated_mailb
    return res;
 }
 
+VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
+      struct vulkan_emulated_mailbox *mailbox,
+      unsigned *index)
+{
+   VkResult res;
+   if (mailbox->swapchain == VK_NULL_HANDLE)
+      return VK_ERROR_OUT_OF_DATE_KHR;
+
+   slock_lock(mailbox->lock);
+
+   if (!mailbox->has_pending_request)
+   {
+      mailbox->request_acquire = true;
+      scond_signal(mailbox->cond);
+   }
+
+   mailbox->has_pending_request = true;
+
+   while (!mailbox->acquired)
+      scond_wait(mailbox->cond, mailbox->lock);
+
+   res = mailbox->result;
+   if (res == VK_SUCCESS)
+      *index = mailbox->index;
+   mailbox->has_pending_request = false;
+   mailbox->acquired = false;
+
+   slock_unlock(mailbox->lock);
+   return res;
+}
+
 static void vulkan_emulated_mailbox_loop(void *userdata)
 {
    VkResult res;
@@ -2659,6 +2690,8 @@ retry:
       }
    }
 
+   retro_assert(!vk->context.has_acquired_swapchain);
+
    if (vk->emulating_mailbox)
    {
       /* Non-blocking acquire. If we don't get a swapchain frame right away,
@@ -2756,6 +2789,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
    settings_t                    *settings = config_get_ptr();
    VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+   VkResult res;
 
    vkDeviceWaitIdle(vk->context.device);
    vulkan_acquire_clear_fences(vk);
@@ -2777,14 +2811,46 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    {
       /* Do not bother creating a swapchain redundantly. */
       RARCH_LOG("[Vulkan]: Do not need to re-create swapchain.\n");
-      vk->created_new_swapchain = false;
       vulkan_create_wait_fences(vk);
 
       if (vk->emulating_mailbox && vk->mailbox.swapchain == VK_NULL_HANDLE)
+      {
          vulkan_emulated_mailbox_init(&vk->mailbox, vk->context.device, vk->swapchain);
+         vk->created_new_swapchain = false;
+         return true;
+      }
       else if (!vk->emulating_mailbox && vk->mailbox.swapchain != VK_NULL_HANDLE)
+      {
+         /* We are tearing down, and entering a state where we are supposed to have
+          * acquired an image, so block until we have acquired. */
+         if (!vk->context.has_acquired_swapchain)
+         {
+            res = vulkan_emulated_mailbox_acquire_next_image_blocking(
+                  &vk->mailbox,
+                  &vk->context.current_swapchain_index);
+         }
+         else
+            res = VK_SUCCESS;
+
          vulkan_emulated_mailbox_deinit(&vk->mailbox);
-      return true;
+
+         if (res == VK_SUCCESS)
+         {
+            vk->context.has_acquired_swapchain = true;
+            vk->created_new_swapchain = false;
+            return true;
+         }
+         else
+         {
+            vk->context.has_acquired_swapchain = false;
+            /* We failed for some reason, so create a new swapchain. */
+         }
+      }
+      else
+      {
+         vk->created_new_swapchain = false;
+         return true;
+      }
    }
 
    vulkan_emulated_mailbox_deinit(&vk->mailbox);
@@ -3023,6 +3089,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    /* Force driver to reset swapchain image handles. */
    vk->context.invalid_swapchain = true;
+   vk->context.has_acquired_swapchain = false;
    vulkan_create_wait_fences(vk);
 
    if (vk->emulating_mailbox)

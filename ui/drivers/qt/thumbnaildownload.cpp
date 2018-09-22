@@ -15,6 +15,7 @@ extern "C" {
 #include "../../../version.h"
 }
 
+#undef USER_AGENT
 #define USER_AGENT "RetroArch-WIMP/" PACKAGE_VERSION
 #define PARTIAL_EXTENSION ".partial"
 #define THUMBNAIL_URL_HEADER "https://github.com/libretro-thumbnails/"

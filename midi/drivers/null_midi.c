@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include <libretro.h>
+#include <string/stdstring.h>
 #include <lists/string_list.h>
 
 #include "../midi_driver.h"
@@ -51,14 +52,14 @@ static bool null_midi_set_input(void *p, const char *input)
 {
    (void)p;
 
-   return input == NULL || !strcmp(input, "Null");
+   return input == NULL || string_is_equal(input, "Null");
 }
 
 static bool null_midi_set_output(void *p, const char *output)
 {
    (void)p;
 
-   return output == NULL || !strcmp(output, "Null");
+   return output == NULL || string_is_equal(output, "Null");
 }
 
 static bool null_midi_read(void *p, midi_event_t *event)

@@ -330,7 +330,7 @@ error:
    return NULL;
 }
 
-static void gfx_ctx_vc_set_swap_interval(void *data, unsigned swap_interval)
+static void gfx_ctx_vc_set_swap_interval(void *data, int swap_interval)
 {
 #ifdef HAVE_EGL
    vc_ctx_data_t *vc = (vc_ctx_data_t*)data;

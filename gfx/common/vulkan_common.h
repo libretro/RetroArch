@@ -148,6 +148,7 @@ bool vulkan_emulated_mailbox_init(struct vulkan_emulated_mailbox *mailbox,
       VkDevice device, VkSwapchainKHR swapchain);
 void vulkan_emulated_mailbox_deinit(struct vulkan_emulated_mailbox *mailbox);
 VkResult vulkan_emulated_mailbox_acquire_next_image(struct vulkan_emulated_mailbox *mailbox, unsigned *index);
+VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(struct vulkan_emulated_mailbox *mailbox, unsigned *index);
 
 typedef struct gfx_ctx_vulkan_data
 {

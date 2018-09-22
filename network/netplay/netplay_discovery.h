@@ -54,6 +54,7 @@ struct netplay_host_list
    size_t size;
 };
 
+/* Keep these in order, they coincide with a server-side enum and must match. */
 enum netplay_host_method
 {
    NETPLAY_HOST_METHOD_UNKNOWN = 0,
@@ -64,6 +65,7 @@ enum netplay_host_method
 
 struct netplay_room
 {
+   int id;
    char nickname    [PATH_MAX_LENGTH];
    char address     [PATH_MAX_LENGTH];
    char mitm_address[PATH_MAX_LENGTH];
@@ -97,5 +99,7 @@ void deinit_netplay_discovery(void);
 
 /** Discovery control */
 bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, void *data);
+
+struct netplay_room* netplay_get_host_room(void);
 
 #endif

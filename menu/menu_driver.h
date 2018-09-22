@@ -318,6 +318,7 @@ enum menu_display_driver_type
    MENU_VIDEO_DRIVER_CACA,
    MENU_VIDEO_DRIVER_SIXEL,
    MENU_VIDEO_DRIVER_GDI,
+   MENU_VIDEO_DRIVER_SWITCH,
    MENU_VIDEO_DRIVER_VGA
 };
 
@@ -377,6 +378,9 @@ typedef struct menu_display_ctx_driver
    enum menu_display_driver_type type;
    const char *ident;
    bool handles_transform;
+   /* Enables and disables scissoring */
+   void (*scissor_begin)(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height);
+   void (*scissor_end)(void);
 } menu_display_ctx_driver_t;
 
 
@@ -671,6 +675,9 @@ void menu_display_toggle_set_reason(enum menu_toggle_reason reason);
 void menu_display_blend_begin(video_frame_info_t *video_info);
 void menu_display_blend_end(video_frame_info_t *video_info);
 
+void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height);
+void menu_display_scissor_end();
+
 void menu_display_font_free(font_data_t *font);
 
 void menu_display_coords_array_reset(void);
@@ -818,6 +825,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_wiiu;
 extern menu_display_ctx_driver_t menu_display_ctx_caca;
 extern menu_display_ctx_driver_t menu_display_ctx_gdi;
 extern menu_display_ctx_driver_t menu_display_ctx_vga;
+extern menu_display_ctx_driver_t menu_display_ctx_switch;
 extern menu_display_ctx_driver_t menu_display_ctx_sixel;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 

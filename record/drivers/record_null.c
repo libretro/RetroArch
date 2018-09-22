@@ -31,19 +31,19 @@ static void record_null_free(void *data)
 {
 }
 
-static void *record_null_new(const struct ffemu_params *params)
+static void *record_null_new(const struct record_params *params)
 {
    return NULL;
 }
 
 static bool record_null_push_video(void *data,
-      const struct ffemu_video_data *video_data)
+      const struct record_video_data *video_data)
 {
    return false;
 }
 
 static bool record_null_push_audio(void *data,
-      const struct ffemu_audio_data *audio_data)
+      const struct record_audio_data *audio_data)
 {
    return false;
 }
@@ -53,7 +53,7 @@ static bool record_null_finalize(void *data)
    return false;
 }
 
-const record_driver_t ffemu_null = {
+const record_driver_t record_null = {
    record_null_new,
    record_null_free,
    record_null_push_video,

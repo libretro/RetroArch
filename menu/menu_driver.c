@@ -325,6 +325,10 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "vga"))
             return true;
          break;
+      case MENU_VIDEO_DRIVER_SWITCH:
+         if (string_is_equal(video_driver, "switch"))
+            return true;
+         break;
    }
 
    return false;
@@ -379,6 +383,20 @@ void menu_display_blend_end(video_frame_info_t *video_info)
 {
    if (menu_disp && menu_disp->blend_end)
       menu_disp->blend_end(video_info);
+}
+
+/* Begin scissoring operation */
+void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+{
+   if (menu_disp && menu_disp->scissor_begin)
+      menu_disp->scissor_begin(video_info, x, y, width, height);
+}
+
+/* End scissoring operation */
+void menu_display_scissor_end()
+{
+   if (menu_disp && menu_disp->scissor_end)
+      menu_disp->scissor_end();
 }
 
 /* Teardown; deinitializes and frees all
@@ -467,16 +485,17 @@ bool menu_display_libretro(bool is_idle,
       return true;
    }
 
-#ifdef HAVE_DISCORD
-   discord_userdata_t userdata;
-   userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
-
-   command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-#endif
-
    if (is_idle)
+   {
+#ifdef HAVE_DISCORD
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
+
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+#endif
       return true; /* Maybe return false here
                       for indication of idleness? */
+   }
    return video_driver_cached_frame();
 }
 

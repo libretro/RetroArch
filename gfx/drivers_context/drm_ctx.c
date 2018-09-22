@@ -81,7 +81,7 @@ typedef struct gfx_ctx_drm_data
    egl_ctx_data_t egl;
 #endif
    int fd;
-   unsigned interval;
+   int interval;
    unsigned fb_width;
    unsigned fb_height;
 
@@ -134,7 +134,7 @@ error:
    return NULL;
 }
 
-static void gfx_ctx_drm_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_drm_swap_interval(void *data, int interval)
 {
    gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
    drm->interval           = interval;

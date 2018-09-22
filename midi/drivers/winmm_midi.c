@@ -18,6 +18,7 @@
 #include <libretro.h>
 #include <lists/string_list.h>
 #include <verbosity.h>
+#include <string/stdstring.h>
 
 #include "../midi_driver.h"
 
@@ -52,8 +53,8 @@ static void winmm_midi_free(void *p);
 
 static bool winmm_midi_queue_read(winmm_midi_queue_t *q, midi_event_t *ev)
 {
-   int i;
-   midi_event_t *src_ev;
+   unsigned i;
+   midi_event_t *src_ev = NULL;
 
    if (q->rd_idx == q->wr_idx)
       return false;
@@ -84,10 +85,10 @@ static bool winmm_midi_queue_read(winmm_midi_queue_t *q, midi_event_t *ev)
 
 static bool winmm_midi_queue_write(winmm_midi_queue_t *q, const midi_event_t *ev)
 {
-   int rd_idx = q->rd_idx;
-   midi_event_t *dest_ev;
    int wr_avail;
-   int i;
+   unsigned i;
+   int rd_idx            = q->rd_idx;
+   midi_event_t *dest_ev = NULL;
 
    if (q->wr_idx >= rd_idx)
       wr_avail = WINMM_MIDI_BUF_LEN - q->wr_idx + rd_idx;
@@ -127,11 +128,11 @@ static bool winmm_midi_queue_write(winmm_midi_queue_t *q, const midi_event_t *ev
 
 static void winmm_midi_queue_init(winmm_midi_queue_t *q)
 {
-   int i, j;
+   unsigned i, j;
 
    for (i = j = 0; i < WINMM_MIDI_BUF_LEN; ++i, j += 4)
    {
-      q->events[i].data = &q->data[j];
+      q->events[i].data       = &q->data[j];
       q->events[i].delta_time = 0;
    }
 
@@ -142,9 +143,10 @@ static void winmm_midi_queue_init(winmm_midi_queue_t *q)
 static void CALLBACK winmm_midi_input_callback(HMIDIIN dev, UINT msg,
       DWORD_PTR q, DWORD_PTR par1, DWORD_PTR par2)
 {
-   winmm_midi_queue_t *queue = (winmm_midi_queue_t*)q;
-   midi_event_t event;
    uint8_t data[3];
+   midi_event_t event;
+   winmm_midi_queue_t *queue = (winmm_midi_queue_t*)q;
+
    (void)dev;
 
    if (msg == MIM_OPEN)
@@ -155,8 +157,8 @@ static void CALLBACK winmm_midi_input_callback(HMIDIIN dev, UINT msg,
       data[1] = (uint8_t)((par1 >> 8) & 0xFF);
       data[2] = (uint8_t)((par1 >> 16) & 0xFF);
 
-      event.data = data;
-      event.data_size = midi_driver_get_event_size(data[0]);
+      event.data       = data;
+      event.data_size  = midi_driver_get_event_size(data[0]);
       event.delta_time = 0;
 
       if (!winmm_midi_queue_write(queue, &event))
@@ -177,20 +179,19 @@ static void CALLBACK winmm_midi_input_callback(HMIDIIN dev, UINT msg,
 static HMIDIIN winmm_midi_open_input_device(const char *dev_name,
       winmm_midi_queue_t *queue)
 {
+   unsigned i;
    UINT dev_count = midiInGetNumDevs();
    HMIDIIN dev    = NULL;
-   MIDIINCAPSA caps;
-   MMRESULT mmr;
-   UINT i;
 
    for (i = 0; i < dev_count; ++i)
    {
-      mmr = midiInGetDevCapsA(i, &caps, sizeof(caps));
+      MIDIINCAPSA caps;
+      MMRESULT mmr = midiInGetDevCapsA((UINT)i, &caps, sizeof(caps));
       if (mmr == MMSYSERR_NOERROR)
       {
-         if (!strcmp(caps.szPname, dev_name))
+         if (string_is_equal(caps.szPname, dev_name))
          {
-            mmr = midiInOpen(&dev, i, (DWORD_PTR)winmm_midi_input_callback,
+            mmr = midiInOpen(&dev, (UINT)i, (DWORD_PTR)winmm_midi_input_callback,
                   (DWORD_PTR)queue, CALLBACK_FUNCTION);
             if (mmr != MMSYSERR_NOERROR)
                RARCH_ERR("[MIDI]: midiInOpen failed with error %d.\n", mmr);
@@ -206,18 +207,17 @@ static HMIDIIN winmm_midi_open_input_device(const char *dev_name,
 
 static HMIDISTRM winmm_midi_open_output_device(const char *dev_name)
 {
+   unsigned i;
    UINT dev_count = midiOutGetNumDevs();
    HMIDISTRM dev  = NULL;
-   MIDIOUTCAPSA caps;
-   MMRESULT mmr;
-   UINT i;
 
    for (i = 0; i < dev_count; ++i)
    {
-      mmr = midiOutGetDevCapsA(i, &caps, sizeof(caps));
+      MIDIOUTCAPSA caps;
+      MMRESULT mmr = midiOutGetDevCapsA(i, &caps, sizeof(caps));
       if (mmr == MMSYSERR_NOERROR)
       {
-         if (!strcmp(caps.szPname, dev_name))
+         if (string_is_equal(caps.szPname, dev_name))
          {
             mmr = midiStreamOpen(&dev, &i, 1, 0, 0, CALLBACK_NULL);
             if (mmr != MMSYSERR_NOERROR)
@@ -268,17 +268,19 @@ static bool winmm_midi_init_clock(HMIDISTRM out_dev, double *tick_dur)
    return true;
 }
 
-static bool winmm_midi_init_output_buffers(HMIDISTRM dev, winmm_midi_buffer_t *bufs)
+static bool winmm_midi_init_output_buffers(HMIDISTRM dev,
+      winmm_midi_buffer_t *bufs)
 {
-   MMRESULT mmr;
-   int i;
+   unsigned i;
 
    for (i = 0; i < WINMM_MIDI_BUF_CNT; ++i)
    {
-      bufs[i].header.dwBufferLength = sizeof(DWORD) * WINMM_MIDI_BUF_LEN;
+      MMRESULT mmr;
+
+      bufs[i].header.dwBufferLength  = sizeof(DWORD) * WINMM_MIDI_BUF_LEN;
       bufs[i].header.dwBytesRecorded = 0;
-      bufs[i].header.dwFlags = 0;
-      bufs[i].header.lpData = (LPSTR)bufs[i].data;
+      bufs[i].header.dwFlags         = 0;
+      bufs[i].header.lpData          = (LPSTR)bufs[i].data;
 
       mmr = midiOutPrepareHeader((HMIDIOUT)dev, &bufs[i].header, sizeof(MIDIHDR));
       if (mmr != MMSYSERR_NOERROR)
@@ -297,12 +299,12 @@ static bool winmm_midi_init_output_buffers(HMIDISTRM dev, winmm_midi_buffer_t *b
 
 static void winmm_midi_free_output_buffers(HMIDISTRM dev, winmm_midi_buffer_t *bufs)
 {
-   MMRESULT mmr;
-   int i;
+   unsigned i;
 
    for (i = 0; i < WINMM_MIDI_BUF_CNT; ++i)
    {
-      mmr = midiOutUnprepareHeader((HMIDIOUT)dev, &bufs[i].header, sizeof(MIDIHDR));
+      MMRESULT mmr = midiOutUnprepareHeader(
+            (HMIDIOUT)dev, &bufs[i].header, sizeof(MIDIHDR));
       if (mmr != MMSYSERR_NOERROR)
          RARCH_ERR("[MIDI]: midiOutUnprepareHeader failed with error %d.\n", mmr);
    }
@@ -357,15 +359,14 @@ static bool winmm_midi_write_long_event(winmm_midi_buffer_t *buf,
 
 static bool winmm_midi_get_avail_inputs(struct string_list *inputs)
 {
+   unsigned i;
    union string_list_elem_attr attr = {0};
    UINT dev_count                   = midiInGetNumDevs();
-   MIDIINCAPSA caps;
-   MMRESULT mmr;
-   UINT i;
 
    for (i = 0; i < dev_count; ++i)
    {
-      mmr = midiInGetDevCapsA(i, &caps, sizeof(caps));
+      MIDIINCAPSA caps;
+      MMRESULT mmr = midiInGetDevCapsA((UINT)i, &caps, sizeof(caps));
       if (mmr != MMSYSERR_NOERROR)
       {
          RARCH_ERR("[MIDI]: midiInGetDevCapsA failed with error %d.\n", mmr);
@@ -384,15 +385,14 @@ static bool winmm_midi_get_avail_inputs(struct string_list *inputs)
 
 static bool winmm_midi_get_avail_outputs(struct string_list *outputs)
 {
+   unsigned i;
    union string_list_elem_attr attr = {0};
    UINT dev_count                   = midiOutGetNumDevs();
-   MIDIOUTCAPSA caps;
-   MMRESULT mmr;
-   UINT i;
 
    for (i = 0; i < dev_count; ++i)
    {
-      mmr = midiOutGetDevCapsA(i, &caps, sizeof(caps));
+      MIDIOUTCAPSA caps;
+      MMRESULT mmr = midiOutGetDevCapsA((UINT)i, &caps, sizeof(caps));
       if (mmr != MMSYSERR_NOERROR)
       {
          RARCH_ERR("[MIDI]: midiOutGetDevCapsA failed with error %d.\n", mmr);
@@ -411,9 +411,9 @@ static bool winmm_midi_get_avail_outputs(struct string_list *outputs)
 
 static void *winmm_midi_init(const char *input, const char *output)
 {
-   winmm_midi_t *d = (winmm_midi_t*)calloc(sizeof(winmm_midi_t), 1);
-   bool err        = false;
    MMRESULT mmr;
+   bool err        = false;
+   winmm_midi_t *d = (winmm_midi_t*)calloc(sizeof(winmm_midi_t), 1);
 
    if (!d)
    {
@@ -470,6 +470,9 @@ static void winmm_midi_free(void *p)
 {
    winmm_midi_t *d = (winmm_midi_t*)p;
 
+   if (!d)
+      return;
+
    if (d->in_dev)
    {
       midiInStop(d->in_dev);
@@ -490,7 +493,6 @@ static bool winmm_midi_set_input(void *p, const char *input)
 {
    winmm_midi_t *d = (winmm_midi_t*)p;
    HMIDIIN new_dev = NULL;
-   MMRESULT mmr;
 
    if (input)
    {
@@ -508,7 +510,7 @@ static bool winmm_midi_set_input(void *p, const char *input)
    d->in_dev = new_dev;
    if (d->in_dev)
    {
-      mmr = midiInStart(d->in_dev);
+      MMRESULT mmr = midiInStart(d->in_dev);
       if (mmr != MMSYSERR_NOERROR)
       {
          RARCH_ERR("[MIDI]: midiInStart failed with error %d.\n", mmr);
@@ -523,8 +525,6 @@ static bool winmm_midi_set_output(void *p, const char *output)
 {
    winmm_midi_t *d   = (winmm_midi_t*)p;
    HMIDISTRM new_dev = NULL;
-   MMRESULT mmr;
-   int i;
 
    if (output)
    {
@@ -543,6 +543,7 @@ static bool winmm_midi_set_output(void *p, const char *output)
    d->out_dev = new_dev;
    if (d->out_dev)
    {
+      MMRESULT mmr;
       if (!winmm_midi_init_output_buffers(d->out_dev, d->out_bufs))
          return false;
 
@@ -594,11 +595,12 @@ static bool winmm_midi_flush(void *p)
 {
    winmm_midi_t *d          = (winmm_midi_t*)p;
    winmm_midi_buffer_t *buf = &d->out_bufs[d->out_buf_idx];
-   MMRESULT mmr;
 
    if (buf->header.dwBytesRecorded)
    {
-      mmr = midiStreamOut(d->out_dev, &buf->header, sizeof(buf->header));
+      MMRESULT mmr = midiStreamOut(
+            d->out_dev, &buf->header, sizeof(buf->header));
+
       if (mmr != MMSYSERR_NOERROR)
       {
 #ifdef DEBUG

@@ -240,7 +240,7 @@ static bool osmesa_ctx_bind_api(void *data,
    return true;
 }
 
-static void osmesa_ctx_swap_interval(void *data, unsigned interval)
+static void osmesa_ctx_swap_interval(void *data, int interval)
 {
    (void)data;
    (void)interval;

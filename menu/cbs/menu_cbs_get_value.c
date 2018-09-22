@@ -126,6 +126,58 @@ static void menu_action_setting_disp_set_label_cheevos_locked_entry(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY), len);
 }
 
+static void menu_action_setting_disp_set_label_crt_switch_resolution(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings = config_get_ptr();
+   *w = 19;
+   strlcpy(s2, path, len2);
+
+   if (settings)
+   {
+      switch (settings->uints.crt_switch_resolution)
+      {
+         case CRT_SWITCH_NONE:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+            break;
+         case CRT_SWITCH_15KHZ:
+            strlcpy(s, "15 KHz", len);
+            break;
+         case CRT_SWITCH_31KHZ:
+            strlcpy(s, "31 KHz", len);
+            break;
+      }
+   }
+}
+
+static void menu_action_setting_disp_set_label_crt_switch_resolution_super(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings = config_get_ptr();
+   *w = 19;
+   strlcpy(s2, path, len2);
+
+   if (settings)
+   {
+      if (settings->uints.crt_switch_resolution_super == 0)
+         strlcpy(s, msg_hash_to_str(MSG_NATIVE), len);
+      else
+         snprintf(s, len, "%d", settings->uints.crt_switch_resolution_super);
+   }
+}
+
 static void menu_action_setting_disp_set_label_cheevos_unlocked_entry(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -603,14 +655,12 @@ static void menu_action_setting_disp_set_label_input_desc(
 
    remap_idx =
       settings->uints.input_remap_ids[user_idx][btn_idx];
-/*
-   if (remap_idx == RARCH_UNMAPPED)
-      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
-*/
+
    if (!system)
       return;
 
-   descriptor = system->input_desc_btn[user_idx][remap_idx];
+   if (remap_idx != RARCH_UNMAPPED)
+      descriptor = system->input_desc_btn[user_idx][remap_idx];
 
    if (!string_is_empty(descriptor) && remap_idx < RARCH_FIRST_CUSTOM_BIND)
       strlcpy(s, descriptor, len);
@@ -2373,6 +2423,14 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_crt_switch_resolution);
+            return 0;
+         case MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_crt_switch_resolution_super);
+            return 0;
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_cheevos_unlocked_entry);

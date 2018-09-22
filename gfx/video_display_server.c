@@ -90,3 +90,10 @@ bool video_display_server_switch_resolution(unsigned width, unsigned height,
       return current_display_server->switch_resolution(current_display_server_data, width, height, int_hz, hz);
    return false;
 }
+
+const char *video_display_server_get_output_options(void)
+{
+   if (current_display_server && current_display_server->get_output_options)
+      return current_display_server->get_output_options(current_display_server_data);
+   return NULL;
+}

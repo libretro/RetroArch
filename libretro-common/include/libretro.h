@@ -1191,9 +1191,11 @@ struct retro_led_interface
 
 #define RETRO_ENVIRONMENT_GET_FASTFORWARDING (49 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                             /* bool * --
-                                            * Boolean value that indicates whether or not the frontend is in 
+                                            * Boolean value that indicates whether or not the frontend is in
                                             * fastforwarding mode.
                                             */
+
+
 
 /* Retrieves the current state of the MIDI input.
  * Returns true if it's enabled, false otherwise. */

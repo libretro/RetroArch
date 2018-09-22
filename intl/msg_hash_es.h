@@ -7,6 +7,9 @@ MSG_HASH(
     "Compilador Desconocido"
     )
 MSG_HASH(
+    MSG_NATIVE,
+    "Native")
+MSG_HASH(
     MSG_DEVICE_DISCONNECTED_FROM_PORT,
     "Dispositivo desconectado del puerto"
     )
@@ -412,7 +415,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-    "No sobrescribir SaveRAM al cargar un guardado rápido"
+    "No sobrescribir SaveRAM al cargar"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
@@ -820,7 +823,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-    "Sincronizar pantalla al contenido (G-Sync, FreeSync)"
+    "Sincronizar pantalla (VRR)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1243,7 +1246,7 @@ MSG_HASH(
     "Mostrar menú"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE,
+    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
     "Grabar video"
     )
 MSG_HASH(
@@ -2324,7 +2327,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-    "Indizar automáticamente guardados rápidos"
+    "Indizar automáticamente la posición"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -3004,7 +3007,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-    "Recortar Overscan (Reinicio)"
+    "Recortar Overscan (Reiniciar)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
@@ -3104,7 +3107,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-    "Set Display-Reported Refresh Rate"
+    "Establecer la frecuencia reportada"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
@@ -3184,19 +3187,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-    "Altura de relación de aspecto personalizada"
+    "Alto de la resolución personal"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-    "Ancho de relación de aspecto personalizada"
+    "Ancho de la resolución personal"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-    "Custom Aspect Ratio X Pos"
+    "Pos. X de la resolución personal"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-    "Custom Aspect Ratio Y Pos"
+    "Pos. Y de la resolución personal"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
@@ -3293,6 +3296,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART,
     "Dot-Art"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
+    "Automatic"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
@@ -3620,11 +3627,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-    "Estimado preciso de refresco de la pantalla en Hz"
+    "Estimado preciso de la frecuencia de actualización/tasa de refresco de la pantalla"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-    "La tasa de refresco indicada por el controlador de pantalla"
+    "Usar la frecuencia de actualización/tasa de refresco indicada por el controlador de pantalla"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
@@ -4508,7 +4515,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-    "Sincroniza la salida de la placa de video al refresco de la pantalla. Recomendado"
+    "Sincronizar la salida de la placa de video con la actualización/refresco de pantalla. Recomendado"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
@@ -4524,7 +4531,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-    "Tasa de refresco vertical de su pantalla. Usada para calcular la velocidad de audio. Nota: Se ignorará si 'Video por hilos' esta activado"
+    "Frecuencia de actualización/tasa de refresco vertical, usada para calcular la velocidad de audio.\nNota: Se ignorará si 'Video por hilos' esta activado"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
@@ -4748,7 +4755,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-    "Aplicar un filtro de video con la CPU. Nota: Puede tener un alto coste de rendimiento. Algunos filtros solo funcionan con núcleos que usan 16 o 32bit de color"
+    "Aplicar un filtro de video con la CPU\n"
+    "Nota: Puede tener un alto coste de rendimiento. Algunos filtros solo funcionan con núcleos que usan 16 o 32bit de color"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
@@ -5004,7 +5012,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-    "Big endian  : 258 = 0x0102,\nLittle endian : 258 = 0x0201"
+    "Big endian  : 258 = 0x0102,\n"
+    "Little endian : 258 = 0x0201"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
@@ -5552,7 +5561,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-    "Establecer DPI. NOTA: Debe activar 'Forzar DPI' para que tenga efecto"
+    "Establecer DPI\n"
+    "NOTA: Debe activar 'Forzar DPI' para que tenga efecto"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
@@ -5712,23 +5722,23 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-    "Valor de punto flotante (ancho / alto), usado si la relación de aspecto es 'Personal'"
+    "Valor de punto flotante (ancho / alto), usado si la relación de aspecto es 'Custom'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-    "Alto usada si la relación de aspecto es establecida en 'Personal'"
+    "Usado si la relación de aspecto es establecida en 'Custom'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-    "Ancho usada si la relación de aspecto es establecida en 'Personal'"
+    "Usado si la relación de aspecto es establecida en 'Custom'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-    "Margen de posición sobre el eje X de la pantalla. Serán ignorados si 'Escalar en múltiplos enteros' es activado, Entonces serán centrados"
+    "Margen de posición sobre el eje X de la pantalla. Será ignorado si 'Escalar en múltiplos enteros' es activado, Entonces estará centrado"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-    "Margen de posición sobre el eje Y de la pantalla. Serán ignorados si 'Escalar en múltiplos enteros' es activado, Entonces serán centrados"
+    "Margen de posición sobre el eje Y de la pantalla. Será ignorado si 'Escalar en múltiplos enteros' es activado, Entonces estará centrado"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
@@ -6232,7 +6242,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-    "Para pantallas CRT de 15 kHz. Intenta usar la resolución y refresco exactos del núcleo/juego"
+    "Para pantallas CRT. Intenta usar la resolución y refresco exactos del núcleo/juego"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
@@ -6240,7 +6250,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-    "Al activar CRT SwitchRes, forzar resolución ultrawide horizontal para minimizar el cambio de modos"
+    "Switch among native and ultrawide super resolutions."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
@@ -6655,28 +6665,29 @@ MSG_HASH(
     "En-Menú"
     )
 MSG_HASH(
- 	 MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
+    MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
     "En-Juego"
- 	 )
+    )
 MSG_HASH(
- 	 MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
+    MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
     "En-Juego (Pausado)"
- 	 )
+    )
 MSG_HASH(
- 	 MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
+    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
     "Jugando"
- 	 )
+    )
 MSG_HASH(
- 	 MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
+    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
     "Pausado"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-    "Activar Discord"
+    "Activar Discord Rich Presence"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-    "Activar o desactivar soporte de Discord. No funcionará en la versión web de RetroArch, solo en el cliente de escritorio"
+    "Activar o desactivar el soporte de Discord Rich Presence.\n"
+    "Nota: No funcionará en la versión web, solo con el cliente de escritorio"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
@@ -7263,6 +7274,18 @@ MSG_HASH(
     "Base de datos:"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS,
+    "Extensiones:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
+    "(separar con espacios; incluye a todas por defecto)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
+    "Filtrar archivos internos"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
     "(usado pata buscar miniaturas)"
     )
@@ -7421,4 +7444,88 @@ MSG_HASH(
 MSG_HASH(
     MSG_FAILED_TO_SET_DISK,
     "Fallo al establecer disco"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
+    "Opciones de núcleo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+    "Vsync Adaptativo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+    "V-Sync está activado hasta que el rendimiento sea inferior al necesario para mantener el refresco de pantalla. Puede minimizar los tirones cuando hay caidas de fps y es més eficiente energeticamente."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+    "CRT SwitchRes"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+    "Salida nativa de baja resolución para usar con pantallas CRT"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+    "Cambia esto si la imagen no está centrada en la pantalla"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+    "Centrado del eje X"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+    "Usar la frecuencia de actualización/tasa de refresco personalizada especificada en el archivo de configuración"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+    "Usar frecuencia personalizada"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+    "Seleccionar el puerto de salida conectado a la pantalla CRT"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+    "ID de la pantalla de salida"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
+    "Comenzar grabación"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
+    "Comienza la grabación"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
+    "Detener grabación"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
+    "Detiene la grabación"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
+    "Comenzar Streaming"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
+    "Comienza el streaming"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
+    "Detener Streaming"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
+    "Detiene el streaming"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
+    "Recording toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
+    "Streaming toggle"
     )

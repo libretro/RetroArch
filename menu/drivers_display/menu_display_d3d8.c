@@ -286,5 +286,7 @@ menu_display_ctx_driver_t menu_display_ctx_d3d8 = {
    menu_display_d3d8_font_init_first,
    MENU_VIDEO_DRIVER_DIRECT3D8,
    "menu_display_d3d8",
-   false
+   false,
+   NULL,
+   NULL
 };

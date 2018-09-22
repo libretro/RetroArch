@@ -1,8 +1,23 @@
 # 1.7.5 (future)
+- CAMERA: Fix Video4Linux2 driver that broke years ago.
+- CHEEVOS: Support headerless NES hashing.
+- CRT: New porches and interlaced bug fix.
 - COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
+- DISCORD: Add 'Ask To Join' Feature.
+- LOCALIZATION: Update Portuguese / Brazilian translation.
 - LOCALIZATION: Update Japanese translation.
+- LOCALIZATION: Update Polish translation.
+- LOCALIZATION: Update Spanish translation.
 - MENU/QT/WIMP: Add option to filter extensions inside archives when adding to a playlist.
+- MENU/QT/WIMP: Rename playlist entries with 2 single clicks.
+- MENU/QT/WIMP: Fix shader parameter checkboxes not working
 - METAL: Add screenshot support.
+- NETPLAY: Save lobby details received back from server after first announcement.
+- OPENGL/GLX: Implement Adaptive VSync - GLX_EXT_swap_control_tear.
+- OPENGL/WGL: Implement Adaptive VSync - WGL_EXT_swap_control_tear.
+- SWITCH: Merging of RetroNX Nintendo Switch port, based on libnx SDK.
+- VULKAN: Fix race condition in threaded mailbox emulation.
+- VULKAN: Maintenance fixes.
 
 # 1.7.4
 - ANDROID: Add sustained performance mode, can be turned on/off in Power Management settings menu.

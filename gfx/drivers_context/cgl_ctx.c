@@ -63,7 +63,7 @@ typedef struct gfx_ctx_cgl_data
    int width, height;
 } gfx_ctx_cgl_data_t;
 
-static void gfx_ctx_cgl_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_cgl_swap_interval(void *data, int interval)
 {
    gfx_ctx_cgl_data_t *cgl = (gfx_ctx_cgl_data_t*)data;
    GLint params            = interval;

@@ -21,6 +21,7 @@
 #include <QObject>
 #include <QMainWindow>
 #include <QTreeView>
+#include <QListWidget>
 #include <QTableWidget>
 #include <QFrame>
 #include <QWidget>
@@ -57,7 +58,6 @@ class QCloseEvent;
 class QKeyEvent;
 class QTimer;
 class QFileSystemModel;
-class QListWidget;
 class QListWidgetItem;
 class QTableWidgetItem;
 class QResizeEvent;
@@ -169,6 +169,20 @@ class TableWidget : public QTableWidget
    Q_OBJECT
 public:
    TableWidget(QWidget *parent = 0);
+   bool isEditorOpen();
+signals:
+   void enterPressed();
+   void deletePressed();
+protected:
+   void keyPressEvent(QKeyEvent *event);
+};
+
+class ListWidget : public QListWidget
+{
+   Q_OBJECT
+public:
+   ListWidget(QWidget *parent = 0);
+   bool isEditorOpen();
 signals:
    void enterPressed();
    void deletePressed();
@@ -249,7 +263,7 @@ public:
    MainWindow(QWidget *parent = NULL);
    ~MainWindow();
    TreeView* dirTreeView();
-   QListWidget* playlistListWidget();
+   ListWidget* playlistListWidget();
    TableWidget* contentTableWidget();
    FlowLayout* contentGridLayout();
    QWidget* contentGridWidget();
@@ -359,6 +373,8 @@ private slots:
    void onCoreLoaded();
    void onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
    void onCurrentTableItemChanged(QTableWidgetItem *current, QTableWidgetItem *previous);
+   void onCurrentTableItemDataChanged(QTableWidgetItem *item);
+   void onCurrentListItemDataChanged(QListWidgetItem *item);
    void currentItemChanged(const QHash<QString, QString> &hash);
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
@@ -435,6 +451,9 @@ private:
    int extractArchive(QString path);
    void removeUpdateTempFiles();
    bool addDirectoryFilesToList(QProgressDialog *dialog, QStringList &list, QDir &dir, QStringList &extensions);
+   void renamePlaylistItem(QListWidgetItem *item, QString newName);
+   bool currentPlaylistIsSpecial();
+   bool currentPlaylistIsAll();
    QVector<QHash<QString, QString> > getPlaylistItems(QString pathString);
 
    LoadCoreWindow *m_loadCoreWindow;
@@ -444,7 +463,7 @@ private:
    QLabel *m_statusLabel;
    TreeView *m_dirTree;
    QFileSystemModel *m_dirModel;
-   QListWidget *m_listWidget;
+   ListWidget *m_listWidget;
    TableWidget *m_tableWidget;
    QWidget *m_searchWidget;
    QLineEdit *m_searchLineEdit;

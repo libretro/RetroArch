@@ -7,6 +7,9 @@ MSG_HASH(
     "Compilador desconhecido"
     )
 MSG_HASH(
+    MSG_NATIVE,
+    "Native")
+MSG_HASH(
     MSG_DEVICE_DISCONNECTED_FROM_PORT,
     "Dispositivo desconectado da porta"
     )
@@ -1000,7 +1003,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-    "Habilitar Autoconfiguração"
+    "Habilitar Auto Configuração"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
@@ -1243,7 +1246,7 @@ MSG_HASH(
     "Alternar menu"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE,
+    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
     "Alternar gravação de filme"
     )
 MSG_HASH(
@@ -1372,7 +1375,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
-    "Salvar Autoconfiguração"
+    "Salvar Auto Configuração"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
@@ -1408,7 +1411,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-    "Autoconfiguração de Entrada"
+    "Auto Configuração de Entrada"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
@@ -2520,7 +2523,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
-    "Núcleos Sugeridos"
+    "Núcleos sugeridos"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -2548,7 +2551,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-    "Data de Compilação"
+    "Data de compilação"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
@@ -2560,7 +2563,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-    "Suporte à Interface de Comando"
+    "Suporte à interface de comando"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
@@ -2572,15 +2575,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-    "Métrica DPI da Tela"
+    "Métrica DPI da tela"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-    "Métrica de Altura da Tela (mm)"
+    "Métrica de altura da tela (mm)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-    "Métrica de Largura da Tela (mm)"
+    "Métrica de largura da tela (mm)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
@@ -2916,7 +2919,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-    "Atualizar Perfis de Autoconfiguração"
+    "Atualizar Perfis de Auto Configuração"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
@@ -3676,7 +3679,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-    "Erro em salvar o arquivo de autoconfiguração."
+    "Erro em salvar o arquivo de auto configuração."
     )
 MSG_HASH(
     MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
@@ -5044,7 +5047,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-    "Troca de botões para OK/Cancelar. Desabilitado é o estilo de botão japonês, habilitada é oestilo ocidental."
+    "Troca de botões para OK/Cancelar. Desabilitado é o estilo de botão japonês, habilitada é o estilo ocidental."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
@@ -5576,7 +5579,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
-    "Se um Joypad estiver conectado, o mesmo será autoconfigurado se um arquivo de configuração correspondente estiver presente dento deste diretório."
+    "Se um Joypad estiver conectado, o mesmo será configurado automaticamente se um arquivo de configuração correspondente estiver presente dento deste diretório."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
@@ -6211,7 +6214,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-    "Exibir Decorações da Janela"
+    "Exibir Botões em Janela"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
@@ -6235,7 +6238,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-    "Para monitores CRT de 15 kHz apenas. Tenta usar a resolução exata do núcleo/jogo e a taxa de atualização."
+    "Para monitores CRT apenas. Tenta usar a resolução exata do núcleo/jogo e a taxa de atualização."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
@@ -6243,7 +6246,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-    "Quando Trocar para Resolução CRT está ativada, força a resolução horizontal ultrawide  para minimizar a alternância de modo."
+    "Switch among native and ultrawide super resolutions."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
@@ -6275,7 +6278,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-    "Ativar áudio de menu"
+    "Ativar Áudio de Menu"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
@@ -7266,6 +7269,18 @@ MSG_HASH(
     "Banco de Dados:"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS,
+    "Extensões:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
+    "(separado por espaço; inclui tudo por padrão)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
+    "Filtrar dentro dos arquivos"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
     "(usado para encontrar miniaturas)"
     )
@@ -7385,13 +7400,115 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER,
     "Restaurar Parâmetro"
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
-    "Baixar miniaturas")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
-    "Um download já está em progresso.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
-    "Iniciar na lista de reprodução:")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-    "Baixar Todas as Miniaturas")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
-    "Miniaturas baixadas com sucesso.")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
+    "Baixar miniaturas"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
+    "Um download já está em progresso."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
+    "Iniciar na lista de reprodução:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
+    "Baixar Todas as Miniaturas"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
+    "Sistema Inteiro"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
+    "Esta Lista de Reprodução"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
+    "Miniaturas baixadas com sucesso."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
+    "Sucedido: %1 Falhou: %2"
+    )
+MSG_HASH(
+    MSG_DEVICE_CONFIGURED_IN_PORT,
+    "Configurado na porta:"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SET_DISK,
+    "Falha ao definir o disco"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
+    "Opções de Núcleo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+    "Adaptive Vsync"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+    "V-Sync is enabled until performance falls below the target refresh rate. Can minimize stuttering when performance falls below realtime, and can be more energy efficient."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+    "CRT SwitchRes"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+    "Output native, low-resolution signals for use with CRT displays."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+    "Cycle through these options if the image is not centered properly on the display."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+    "X-Axis Centering"
+    )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+      "Use a custom refresh rate specified in the config file if needed.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+      "Use Custom Refresh Rate")
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+      "Select the output port connected to the CRT display.")
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+      "Output Display ID")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
+    "Start Recording"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
+    "Starts recording."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
+    "Stop Recording"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
+    "Stops recording."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
+    "Start Streaming"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
+    "Starts streaming."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
+    "Stop Streaming"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
+    "Stops streaming."
+    )

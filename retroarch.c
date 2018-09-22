@@ -204,7 +204,7 @@ static retro_bits_t has_set_libretro_device;
 static bool has_set_core                                        = false;
 static bool has_set_username                                    = false;
 #ifdef HAVE_DISCORD
-static bool discord_is_inited                                   = false;
+bool discord_is_inited                                         = false;
 #endif
 static bool rarch_is_inited                                     = false;
 static bool rarch_error_on_init                                 = false;
@@ -884,10 +884,10 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
             strlcpy(global->record.path, optarg,
                   sizeof(global->record.path));
             {
-               bool *recording_enabled = recording_is_enabled();
+               bool recording_enabled = recording_is_enabled();
 
                if (recording_enabled)
-                  *recording_enabled = true;
+                  recording_set_state(true);
             }
             break;
 
@@ -1320,6 +1320,7 @@ static void retroarch_main_init_media(void)
 bool retroarch_main_init(int argc, char *argv[])
 {
    bool init_failed = false;
+   global_t  *global = global_get_ptr();
 
    retroarch_init_state();
 
@@ -1398,7 +1399,8 @@ bool retroarch_main_init(int argc, char *argv[])
    command_event(CMD_EVENT_MAPPER_INIT, NULL);
    command_event(CMD_EVENT_REWIND_INIT, NULL);
    command_event(CMD_EVENT_CONTROLLERS_INIT, NULL);
-   command_event(CMD_EVENT_RECORD_INIT, NULL);
+   if (!string_is_empty(global->record.path))
+      command_event(CMD_EVENT_RECORD_INIT, NULL);
 
    path_init_savefile();
 
@@ -2928,6 +2930,36 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
+   /* Check recording toggle */
+   {
+      static bool old_pressed = false;
+      bool pressed            = BIT256_GET(
+            current_input, RARCH_RECORDING_TOGGLE);
+
+      if (pressed && !old_pressed)
+      {
+         /* TODO/FIXME */
+         /* insert logic here */
+      }
+
+      old_pressed             = pressed;
+   }
+
+   /* Check streaming toggle */
+   {
+      static bool old_pressed = false;
+      bool pressed            = BIT256_GET(
+            current_input, RARCH_STREAMING_TOGGLE);
+
+      if (pressed && !old_pressed)
+      {
+         /* TODO/FIXME */
+         /* insert logic here */
+      }
+
+      old_pressed             = pressed;
+   }
+
    if (BIT256_GET(current_input, RARCH_VOLUME_UP))
       command_event(CMD_EVENT_VOLUME_UP, NULL);
    else if (BIT256_GET(current_input, RARCH_VOLUME_DOWN))
@@ -3188,10 +3220,16 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_pressed = false;
       bool pressed            = BIT256_GET(
-            current_input, RARCH_MOVIE_RECORD_TOGGLE);
+            current_input, RARCH_BSV_RECORD_TOGGLE);
 
       if (pressed && !old_pressed)
+      {
+         if (!recording_is_enabled())
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+         else
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          bsv_movie_check();
+      }
 
       old_pressed             = pressed;
    }
@@ -3357,6 +3395,11 @@ int runloop_iterate(unsigned *sleep_ms)
    settings_t *settings                         = config_get_ptr();
    unsigned max_users                           = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
+#ifdef HAVE_DISCORD
+   if (discord_is_inited)
+      discord_run_callbacks();
+#endif
+
    if (runloop_frame_time.callback)
    {
       /* Updates frame timing if frame timing callback is in use by the core.
@@ -3452,7 +3495,6 @@ int runloop_iterate(unsigned *sleep_ms)
    if (runloop_check_cheevos())
       cheevos_test();
 #endif
-
    cheat_manager_apply_retro_cheats() ;
 
 #ifdef HAVE_DISCORD

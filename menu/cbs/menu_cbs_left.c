@@ -321,7 +321,7 @@ static int shader_action_parameter_left(unsigned type, const char *label, bool w
    video_shader_driver_get_current_shader(&shader_info);
 
    param_prev = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-   param_menu = shader ? &shader->parameters[type - 
+   param_menu = shader ? &shader->parameters[type -
       MENU_SETTINGS_SHADER_PARAMETER_0] : NULL;
 
    if (!param_prev || !param_menu)
@@ -338,7 +338,7 @@ static int audio_mixer_stream_volume_left(unsigned type, const char *label,
 {
    unsigned         offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
    float orig_volume            = 0.0f;
-   
+
    if (offset >= AUDIO_MIXER_MAX_STREAMS)
       return 0;
 
@@ -385,9 +385,12 @@ static int action_left_input_desc(unsigned type, const char *label,
 
    /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
       also skip all the axes until analog remapping is implemented */
-   if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*|| 
-       (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
-      action_left_input_desc(type, label, wraparound);
+   if (remap_idx != RARCH_UNMAPPED)
+   {
+      if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*||
+          (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
+         action_left_input_desc(type, label, wraparound);
+   }
 
    return 0;
 }

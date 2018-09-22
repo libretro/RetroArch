@@ -53,6 +53,13 @@
    var = newvar; \
 }
 
+enum crt_switch_type
+{
+   CRT_SWITCH_NONE = 0,
+   CRT_SWITCH_15KHZ,
+   CRT_SWITCH_31KHZ
+};
+
 enum override_type
 {
    OVERRIDE_NONE = 0,
@@ -73,6 +80,7 @@ typedef struct settings
       bool video_fullscreen;
       bool video_windowed_fullscreen;
       bool video_vsync;
+      bool video_adaptive_vsync;
       bool video_hard_sync;
       bool video_black_frame_insertion;
       bool video_vfilter;
@@ -96,7 +104,6 @@ typedef struct settings
       bool video_statistics_show;
       bool video_framecount_show;
       bool video_msg_bgcolor_enable;
-      bool crt_switch_resolution;
 
       /* Audio */
       bool audio_enable;
@@ -181,7 +188,11 @@ typedef struct settings
       bool quick_menu_show_save_game_overrides;
       bool quick_menu_show_save_content_dir_overrides;
       bool quick_menu_show_information;
+      bool quick_menu_show_recording;
+      bool quick_menu_show_streaming;
       bool kiosk_mode_enable;
+
+      bool crt_switch_custom_refresh_enable;
 
       /* Netplay */
       bool netplay_public_announce;
@@ -289,6 +300,7 @@ typedef struct settings
       float video_scale;
       float video_aspect_ratio;
       float video_refresh_rate;
+      float crt_video_refresh_rate;
       float video_font_size;
       float video_msg_pos_x;
       float video_msg_pos_y;
@@ -321,6 +333,7 @@ typedef struct settings
       int location_update_interval_distance;
       int state_slot;
       int audio_wasapi_sh_buffer_length;
+      int crt_switch_center_adjust;
    } ints;
 
    struct
@@ -359,6 +372,7 @@ typedef struct settings
       unsigned video_window_x;
       unsigned video_window_y;
       unsigned video_window_opacity;
+      unsigned crt_switch_resolution;
       unsigned crt_switch_resolution_super;
       unsigned video_monitor_index;
       unsigned video_fullscreen_x;
@@ -373,6 +387,7 @@ typedef struct settings
       unsigned video_msg_bgcolor_red;
       unsigned video_msg_bgcolor_green;
       unsigned video_msg_bgcolor_blue;
+      unsigned video_stream_port;
 
       unsigned menu_thumbnails;
       unsigned menu_left_thumbnails;
@@ -477,6 +492,9 @@ typedef struct settings
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];
+      char path_record_config[PATH_MAX_LENGTH];
+      char path_stream_config[PATH_MAX_LENGTH];
+      char path_stream_url[PATH_MAX_LENGTH];
       char path_menu_wallpaper[PATH_MAX_LENGTH];
       char path_audio_dsp_plugin[PATH_MAX_LENGTH];
       char path_softfilter_plugin[PATH_MAX_LENGTH];
@@ -490,7 +508,6 @@ typedef struct settings
       char path_cheat_settings[PATH_MAX_LENGTH];
       char path_shader[PATH_MAX_LENGTH];
       char path_font[PATH_MAX_LENGTH];
-
 
       char directory_audio_filter[PATH_MAX_LENGTH];
       char directory_autoconfig[PATH_MAX_LENGTH];

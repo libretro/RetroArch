@@ -221,7 +221,7 @@ static bool gfx_ctx_vivante_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static void gfx_ctx_vivante_set_swap_interval(void *data, unsigned swap_interval)
+static void gfx_ctx_vivante_set_swap_interval(void *data, int swap_interval)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 

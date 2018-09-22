@@ -250,6 +250,18 @@ static bool menu_display_gl_font_init_first(
    return true;
 }
 
+static void menu_display_gl_scissor_begin(video_frame_info_t *video_info, int x, int y,
+      unsigned width, unsigned height)
+{
+   glScissor(x, video_info->height - y - height, width, height);
+   glEnable(GL_SCISSOR_TEST);
+}
+
+static void menu_display_gl_scissor_end()
+{
+   glDisable(GL_SCISSOR_TEST);
+}
+
 menu_display_ctx_driver_t menu_display_ctx_gl = {
    menu_display_gl_draw,
    menu_display_gl_draw_pipeline,
@@ -264,5 +276,7 @@ menu_display_ctx_driver_t menu_display_ctx_gl = {
    menu_display_gl_font_init_first,
    MENU_VIDEO_DRIVER_OPENGL,
    "menu_display_gl",
-   false
+   false,
+   menu_display_gl_scissor_begin,
+   menu_display_gl_scissor_end
 };

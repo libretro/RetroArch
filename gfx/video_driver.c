@@ -2741,7 +2741,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    settings                          = config_get_ptr();
    custom_vp                         = &settings->video_viewport_custom;
    video_info->refresh_rate          = settings->floats.video_refresh_rate;
-   video_info->crt_switch_resolution = settings->bools.crt_switch_resolution;
+   video_info->crt_switch_resolution = settings->uints.crt_switch_resolution;
    video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;
    video_info->black_frame_insertion = settings->bools.video_black_frame_insertion;
    video_info->hard_sync             = settings->bools.video_hard_sync;
@@ -3028,7 +3028,7 @@ static const gfx_ctx_driver_t *video_context_driver_init(
          ctx->bind_hw_render(ctx_data,
                video_info.shared_context && hw_render_ctx);
 
-      video_context_driver_set_data(ctx_data);
+      video_context_data = ctx_data;
 
       return ctx;
    }
@@ -3202,11 +3202,18 @@ bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data)
    return true;
 }
 
-bool video_context_driver_swap_interval(unsigned *interval)
+bool video_context_driver_swap_interval(int *interval)
 {
+   gfx_ctx_flags_t flags;
+   int current_interval                   = *interval;
+   settings_t *settings                   = config_get_ptr();
+   bool adaptive_vsync_enabled            = video_driver_get_all_flags(&flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
+
    if (!current_video_context.swap_interval)
       return false;
-   current_video_context.swap_interval(video_context_data, *interval);
+   if (adaptive_vsync_enabled && current_interval == 1)
+      current_interval = -1;
+   current_video_context.swap_interval(video_context_data, current_interval);
    return true;
 }
 
@@ -3329,22 +3336,9 @@ bool video_context_driver_show_mouse(bool *bool_data)
    return true;
 }
 
-void video_context_driver_set_data(void *data)
+static bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
 {
-   video_context_data = data;
-}
-
-bool video_driver_get_flags(gfx_ctx_flags_t *flags)
-{
-   if (!flags || !video_driver_poke || !video_driver_poke->get_flags)
-      return false;
-   flags->flags = video_driver_poke->get_flags(video_driver_data);
-   return true;
-}
-
-bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
-{
-   if (!flags || !current_video_context.get_flags)
+   if (!current_video_context.get_flags)
       return false;
 
    if (deferred_video_context_driver_set_flags)
@@ -3357,6 +3351,34 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
    flags->flags = current_video_context.get_flags(video_context_data);
    return true;
 }
+
+static bool video_driver_get_flags(gfx_ctx_flags_t *flags)
+{
+   if (!video_driver_poke || !video_driver_poke->get_flags)
+      return false;
+   flags->flags = video_driver_poke->get_flags(video_driver_data);
+   return true;
+}
+
+bool video_driver_get_all_flags(gfx_ctx_flags_t *flags, enum display_flags flag)
+{
+   if (!flags)
+      return false;
+
+   if (video_driver_get_flags(flags))
+      if (BIT32_GET(flags->flags, flag))
+         return true;
+
+   flags->flags = 0;
+
+   if (video_context_driver_get_flags(flags))
+      if (BIT32_GET(flags->flags, flag))
+         return true;
+
+   return false;
+}
+
+
 
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
 {

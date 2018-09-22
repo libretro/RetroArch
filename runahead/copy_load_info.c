@@ -15,9 +15,15 @@ static void free_retro_game_info(struct retro_game_info *dest)
 {
    if (!dest)
       return;
-   FREE(dest->path);
-   FREE(dest->data);
-   FREE(dest->meta);
+   if (dest->path)
+      free((void*)dest->path);
+   if (dest->data)
+      free((void*)dest->data);
+   if (dest->meta)
+      free((void*)dest->meta);
+   dest->path = NULL;
+   dest->data = NULL;
+   dest->meta = NULL;
 }
 
 static struct retro_game_info* clone_retro_game_info(const 
@@ -61,10 +67,14 @@ static void free_string_list(struct string_list *dest)
       return;
    for (i = 0; i < dest->size; i++)
    {
-      FREE(dest->elems[i].data);
+      if (dest->elems[i].data)
+         free(dest->elems[i].data);
+      dest->elems[i].data = NULL;
    }
 
-   FREE(dest->elems);
+   if (dest->elems)
+      free(dest->elems);
+   dest->elems = NULL;
 }
 
 static struct string_list *string_list_clone(
@@ -113,7 +123,9 @@ static void free_retro_subsystem_memory_info(struct
 {
    if (!dest)
       return;
-   FREE(dest->extension);
+   if (dest->extension)
+      free(dest->extension);
+   dest->extension = NULL;
 }
 
 static void clone_retro_subsystem_memory_info(struct 
@@ -131,14 +143,20 @@ static void free_retro_subsystem_rom_info(struct
    if (!dest)
       return;
 
-   FREE(dest->desc);
-   FREE(dest->valid_extensions);
+   if (dest->desc)
+      free(dest->desc);
+   if (dest->valid_extensions)
+      free(dest->valid_extensions);
+   dest->desc             = NULL;
+   dest->valid_extensions = NULL;
 
    for (i = 0; i < dest->num_memory; i++)
       free_retro_subsystem_memory_info((struct 
                retro_subsystem_memory_info*)&dest->memory[i]);
 
-   FREE(dest->memory);
+   if (dest->memory)
+      free(dest->memory);
+   dest->memory = NULL;
 }
 
 static void clone_retro_subsystem_rom_info(struct 
@@ -171,14 +189,20 @@ static void free_retro_subsystem_info(struct retro_subsystem_info *dest)
    if (!dest)
       return;
 
-   FREE(dest->desc);
-   FREE(dest->ident);
+   if (dest->desc)
+      free(dest->desc);
+   if (dest->ident)
+      free(dest->ident);
+   dest->desc  = NULL;
+   dest->ident = NULL;
 
    for (i = 0; i < dest->num_roms; i++)
       free_retro_subsystem_rom_info((struct 
                retro_subsystem_rom_info*)&dest->roms[i]);
 
-   FREE(dest->roms);
+   if (dest->roms)
+      free(dest->roms);
+   dest->roms = NULL;
 }
 
 static retro_subsystem_info* clone_retro_subsystem_info(struct 
@@ -215,12 +239,19 @@ static void free_retro_ctx_load_content_info(struct
 
    free_retro_game_info(dest->info);
    free_string_list((struct string_list*)dest->content);
-   FREE(dest->info);
-   FREE(dest->content);
+   if (dest->info)
+      free(dest->info);
+   if (dest->content)
+      free((void*)dest->content);
+
+   dest->info    = NULL;
+   dest->content = NULL;
 
 #if 0
    free_retro_subsystem_info((retro_subsystem_info*)dest->special);
-   FREE(dest->special);
+   if (dest->special)
+      free(dest->special);
+   dest->special = NULL;
 #endif
 }
 

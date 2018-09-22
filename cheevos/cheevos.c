@@ -3042,14 +3042,17 @@ found:
       }
       else
       {
-          // Fall back to headerless hashing
-          // PRG ROM size is unknown, so test by 16KB chunks          
-          size_t chunks = coro->len >> 14;
+         unsigned i;
+          size_t chunks     = coro->len >> 14;
           size_t chunk_size = 0x4000;
-          coro->round = 0;
-          coro->offset = 0;
+
+          /* Fall back to headerless hashing
+           * PRG ROM size is unknown, so test by 16KB chunks */
+
+          coro->round       = 0;
+          coro->offset      = 0;
           
-          for (int i = 0; i < chunks; i++)
+          for (i = 0; i < chunks; i++)
           {
               MD5_Init(&coro->md5);
               

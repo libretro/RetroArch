@@ -78,7 +78,7 @@ static void x11_display_server_destroy(void *data)
       free(dispserv);
 }
 
-static bool x11_set_window_opacity(void *data, unsigned opacity)
+static bool x11_display_server_set_window_opacity(void *data, unsigned opacity)
 {
    dispserv_x11_t *serv = (dispserv_x11_t*)data;
    Atom net_wm_opacity  = XInternAtom(g_x11_dpy, "_NET_WM_WINDOW_OPACITY", False);
@@ -96,7 +96,7 @@ static bool x11_set_window_opacity(void *data, unsigned opacity)
    return true;
 }
 
-static bool x11_set_window_decorations(void *data, bool on)
+static bool x11_display_server_set_window_decorations(void *data, bool on)
 {
    dispserv_x11_t *serv = (dispserv_x11_t*)data;
 
@@ -107,7 +107,7 @@ static bool x11_set_window_decorations(void *data, bool on)
    return true;
 }
 
-static bool x11_set_resolution(void *data,
+static bool x11_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz)
 {
    int i              = 0;
@@ -293,13 +293,20 @@ static bool x11_set_resolution(void *data,
  return true;
 }
 
+const char *x11_display_server_get_output_options(void)
+{
+   /* TODO/FIXME - hardcoded for now; list should be built up dynamically later */
+   return "HDMI-0|HDMI-1|HDMI-2|HDMI-3|DVI-0|DVI-1|DVI-2|DVI-3|VGA-0|VGA-1|VGA-2|VGA-3|Config";
+}
+
 const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
    x11_display_server_destroy,
-   x11_set_window_opacity,
+   x11_display_server_set_window_opacity,
    NULL,
-   x11_set_window_decorations,
-   x11_set_resolution, /* set_resolution */
+   x11_display_server_set_window_decorations,
+   x11_display_server_set_resolution,
+   x11_display_server_get_output_options,
    "x11"
 };
 

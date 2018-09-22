@@ -1059,13 +1059,18 @@ static bool d3d9_restore(void *data)
 
 static void d3d9_set_nonblock_state(void *data, bool state)
 {
-   unsigned interval            = state ? 0 : 1;
+   int interval                 = 0;
    d3d9_video_t            *d3d = (d3d9_video_t*)data;
 
    if (!d3d)
       return;
 
+   if (!state)
+      interval           = 1;
+
    d3d->video_info.vsync = !state;
+
+   (void)interval;
 
 #ifdef _XBOX
    d3d9_set_render_state(d3d->dev,
