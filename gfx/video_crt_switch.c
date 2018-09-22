@@ -100,13 +100,13 @@ static void crt_screen_setup_aspect(unsigned width, unsigned height)
       crt_aspect_ratio_switch(width, height);
    }
 
-   if (height < 191 && height != 144)
+   if (height < 200 && height != 144)
    {				
       crt_aspect_ratio_switch(width, height);
       height = 200;
    }	
 
-   if (height > 191)
+   if (height > 200)
       crt_aspect_ratio_switch(width, height);
 
    if (height == 144 && ra_set_core_hz == 50)
