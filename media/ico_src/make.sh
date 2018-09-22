@@ -1,0 +1,1 @@
+magick convert -verbose icon16.png icon24.png icon32.png icon48.png icon64.png icon96.png icon128.png icon192.png icon256.png ../retroarch.ico
