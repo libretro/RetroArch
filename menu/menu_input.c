@@ -565,12 +565,14 @@ static int menu_input_pointer_post_iterate(
 void menu_input_post_iterate(int *ret, unsigned action)
 {
    menu_entry_t entry;
+   size_t selection;
+   menu_file_list_cbs_t *cbs;
    settings_t *settings       = config_get_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    menu_input_t *menu_input   = menu_input_get_ptr();
    menu_navigation_set_selection(menu_input->pointer.ptr);
-   size_t selection           = menu_navigation_get_selection();
-   menu_file_list_cbs_t *cbs  = selection_buf ?
+   selection           = menu_navigation_get_selection();
+   cbs  = selection_buf ?
       (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
 
    menu_entry_init(&entry);
