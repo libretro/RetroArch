@@ -85,6 +85,7 @@ static bool write_file_with_random_name(char **tempDllPath,
    bool okay                = false;
    const char *prefix       = "tmp";
    time_t time_value        = time(NULL);
+   unsigned number_value    = (unsigned)time_value;
    char *ext                = strcpy_alloc_force(
          path_get_extension(*tempDllPath));
    int ext_len              = (int)strlen(ext);
@@ -100,8 +101,9 @@ static bool write_file_with_random_name(char **tempDllPath,
    /* Try up to 30 'random' filenames before giving up */
    for (i = 0; i < 30; i++)
    {
-      unsigned int number_value = (unsigned int)time_value * 214013 + 2531011;
-      int          number       = (number_value >> 14) % 100000;
+      int number;
+      number_value = number_value * 214013 + 2531011;
+      number       = (number_value >> 14) % 100000;
 
       snprintf(number_buf, sizeof(number_buf), "%05d", number);
 
