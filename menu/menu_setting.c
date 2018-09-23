@@ -2616,9 +2616,11 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_left   = &setting_action_left_analog_dpad_mode;
       (*list)[list_info->index - 1].action_right  = &setting_action_right_analog_dpad_mode;
       (*list)[list_info->index - 1].action_select = &setting_action_right_analog_dpad_mode;
-      (*list)[list_info->index - 1].action_start = &setting_action_start_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
       (*list)[list_info->index - 1].get_string_representation =
          &setting_get_string_representation_uint_analog_dpad_mode;
+      menu_settings_list_current_add_range(list, list_info, 0, 2, 1.0, true, true);
       menu_settings_list_current_add_enum_idx(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE + user));
 
