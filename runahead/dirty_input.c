@@ -131,16 +131,13 @@ int16_t input_state_get_last(unsigned port,
    {
       InputListElement *element = 
          (InputListElement*)input_state_list->data[i];
-      const unsigned MAX_ID = sizeof(element->state) / sizeof(int16_t);
 
       if (  (element->port   == port)   && 
             (element->device == device) &&
             (element->index  == index))
       {
          if (id < element->state_size)
-         {
             return element->state[id];
-         }
          return 0;
       }
    }
