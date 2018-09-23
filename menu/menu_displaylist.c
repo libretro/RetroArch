@@ -7771,15 +7771,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          if (frontend_driver_parse_drive_list(info->list, load_content) != 0)
             menu_entries_append_enum(info->list, "/", "",
                   MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-         info->need_refresh = true;
-         info->need_push    = true;
       }
       else
-      {
          filebrowser_parse(info, type);
-         info->need_refresh = true;
-         info->need_push    = true;
-      }
+
+      info->need_refresh = true;
+      info->need_push    = true;
    }
 
    if (ret != 0)
