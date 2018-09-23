@@ -810,65 +810,6 @@ static void menu_action_setting_disp_set_label_wifi_is_online(
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE), len);
 }
 
-static void menu_action_setting_disp_set_label_materialui_menu_color_theme(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   settings_t *settings        = config_get_ptr();
-
-   strlcpy(s2, path, len2);
-   *w = 19;
-
-   if (!settings)
-      return;
-
-   switch (settings->uints.menu_materialui_color_theme)
-   {
-      case MATERIALUI_THEME_BLUE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE), len);
-         break;
-      case MATERIALUI_THEME_BLUE_GREY:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY), len);
-         break;
-      case MATERIALUI_THEME_GREEN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN), len);
-         break;
-      case MATERIALUI_THEME_RED:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED), len);
-         break;
-      case MATERIALUI_THEME_YELLOW:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW), len);
-         break;
-      case MATERIALUI_THEME_DARK_BLUE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE), len);
-         break;
-      case MATERIALUI_THEME_NVIDIA_SHIELD:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD), len);
-         break;
-      default:
-         break;
-   }
-}
-
 static void menu_action_setting_disp_set_label_thumbnails(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1593,10 +1534,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_CONNECT_WIFI:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_wifi_is_online);
-            break;
-         case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_materialui_menu_color_theme);
             break;
          case MENU_ENUM_LABEL_THUMBNAILS:
             BIND_ACTION_GET_VALUE(cbs,
