@@ -3857,6 +3857,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_AUTOSAVE_INIT);
             menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
@@ -3903,7 +3904,10 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 1, 32768, 1, true, true);
+            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].offset_by     = 1;
+            menu_settings_list_current_add_range(list, list_info, 1, 32768, 1, true, true);
+
             CONFIG_SIZE(
                   list, list_info,
                   &settings->sizes.rewind_buffer_size,
@@ -3917,6 +3921,7 @@ static bool setting_append_list(
                   general_read_handler,
 				  &setting_get_string_representation_size_in_mb);
             menu_settings_list_current_add_range(list, list_info, 1024*1024, 1024*1024*1024, settings->uints.rewind_buffer_size_step*1024*1024, true, true);
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.rewind_buffer_size_step,
@@ -3928,6 +3933,8 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].offset_by     = 1;
             menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
@@ -4476,6 +4483,7 @@ static bool setting_append_list(
                      parent_group,
                      general_write_handler,
                      general_read_handler);
+               (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
                menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -4490,6 +4498,7 @@ static bool setting_append_list(
                      parent_group,
                      general_write_handler,
                      general_read_handler);
+               (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
                menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             }
@@ -6349,6 +6358,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
 
          CONFIG_FLOAT(
@@ -6972,6 +6982,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -6986,6 +6997,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -7000,6 +7012,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -8434,6 +8447,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 65535, 1, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -8681,6 +8695,8 @@ static bool setting_append_list(
                   parent_group,
                   NULL,
                   NULL);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].offset_by = 1;
             menu_settings_list_current_add_range(list, list_info, 1, 99999, 1, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -8710,6 +8726,8 @@ static bool setting_append_list(
                   parent_group,
                   NULL,
                   NULL);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].offset_by = 1;
             menu_settings_list_current_add_range(list, list_info, 1, 99999, 1, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             /* TODO/FIXME - add enum_idx */
@@ -9484,6 +9502,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0.0f, 100.0f, 1.0f, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
