@@ -1908,6 +1908,8 @@ bool command_event(enum event_command cmd, void *data)
          command_event_init_controllers();
          break;
       case CMD_EVENT_RESET:
+         cheevos_state_loaded_flag = false;
+         cheevos_hardcore_paused = false;
          RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
          runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true);
 

@@ -7544,5 +7544,5 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-    "Savestate loaded, Achievements Hardcore Mode disabled for the current session."
+    "A savestate was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
     )

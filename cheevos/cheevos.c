@@ -2266,7 +2266,8 @@ bool cheevos_toggle_hardcore_mode(void)
       return false;
 
    /* reset and deinit rewind to avoid cheat the score */
-   if (settings->bools.cheevos_hardcore_mode_enable && !cheevos_hardcore_paused)
+   if (settings->bools.cheevos_hardcore_mode_enable
+      && !cheevos_hardcore_paused)
    {
       const char *msg = msg_hash_to_str(
             MSG_CHEEVOS_HARDCORE_MODE_ENABLE);
