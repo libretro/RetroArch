@@ -7710,7 +7710,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      if (setting->get_string_representation)
                      {
                         unsigned orig_value = *setting->value.target.unsigned_integer;
-                        for (i = 0.00; i < max; i += step)
+                        for (i = 0.00; i <= max; i += step)
                         {
                            char val_s[256], val_d[256];
                            int val = (int)i;
@@ -7735,7 +7735,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      }
                      else
                      {
-                        for (i = 1.00; i < max; i += step)
+                        for (i = 1.00; i <= max; i += step)
                         {
                            char val_s[16], val_d[16];
                            int val = (int)i;
