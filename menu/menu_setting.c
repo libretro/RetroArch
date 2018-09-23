@@ -624,7 +624,8 @@ static void setting_get_string_representation_uint_video_rotation(void *data,
    }
 }
 
-static void setting_get_string_representation_uint_aspect_ratio_index(void *data,
+static void setting_get_string_representation_uint_aspect_ratio_index(
+      void *data,
       char *s, size_t len)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -632,6 +633,43 @@ static void setting_get_string_representation_uint_aspect_ratio_index(void *data
       strlcpy(s,
             aspectratio_lut[*setting->value.target.unsigned_integer].name,
             len);
+}
+
+static void setting_get_string_representation_uint_audio_resampler_quality(
+      void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case RESAMPLER_QUALITY_DONTCARE:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE),
+               len);
+         break;
+      case RESAMPLER_QUALITY_LOWEST:
+         strlcpy(s, "Lowest",
+               len);
+         break;
+      case RESAMPLER_QUALITY_LOWER:
+         strlcpy(s, "Lower",
+               len);
+         break;
+      case RESAMPLER_QUALITY_HIGHER:
+         strlcpy(s, "Higher",
+               len);
+         break;
+      case RESAMPLER_QUALITY_HIGHEST:
+         strlcpy(s, "Highest",
+               len);
+         break;
+      case RESAMPLER_QUALITY_NORMAL:
+         strlcpy(s, "Normal",
+               len);
+         break;
+   }
 }
 
 static void setting_get_string_representation_uint_libretro_device(void *data,
@@ -4814,6 +4852,9 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_audio_resampler_quality;
          menu_settings_list_current_add_range(list, list_info, RESAMPLER_QUALITY_DONTCARE, RESAMPLER_QUALITY_HIGHEST, 1.0, true, true);
 
          CONFIG_FLOAT(
