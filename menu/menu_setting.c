@@ -2322,7 +2322,7 @@ void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
          {
-            rarch_setting_t *buffer_size_setting = menu_setting_find("rewind_buffer_size");
+            rarch_setting_t *buffer_size_setting = menu_setting_find_enum(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE);
             if (buffer_size_setting)
                buffer_size_setting->step = (*setting->value.target.unsigned_integer)*1024*1024 ;
          }
