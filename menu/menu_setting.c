@@ -8479,9 +8479,10 @@ static bool setting_append_list(
                1,
                true,
                true);
-         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_REFRESH);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_user_language;
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_REFRESH);
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
