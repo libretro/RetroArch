@@ -2749,7 +2749,7 @@ static int action_ok_cheat_add_top(const char *path,
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
    memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat));
    tmp.idx = 0 ;
@@ -2780,7 +2780,7 @@ static int action_ok_cheat_add_bottom(const char *path,
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
    msg[0] = '\0';
    strlcpy(msg,
@@ -2812,7 +2812,7 @@ static int action_ok_cheat_add_new_after(const char *path,
    bool refresh = false;
    unsigned int new_size = cheat_manager_get_size() + 1;
 
-   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
    memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat));
    tmp.idx = cheat_manager_state.working_cheat.idx+1 ;
@@ -2845,7 +2845,7 @@ static int action_ok_cheat_add_new_before(const char *path,
    bool refresh = false ;
    unsigned int new_size = cheat_manager_get_size() + 1;
 
-   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
    memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat));
    tmp.idx = cheat_manager_state.working_cheat.idx ;

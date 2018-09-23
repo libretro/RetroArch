@@ -4029,6 +4029,20 @@ static bool setting_append_list(
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
+         CONFIG_STRING(
+               list, list_info,
+               cheat_manager_state.working_code,
+               sizeof(cheat_manager_state.working_code),
+               MENU_ENUM_LABEL_CHEAT_CODE,
+               MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
             config_uint_cbs(cheat_manager_state.working_cheat.handler, CHEAT_HANDLER,
                   setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
                   MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,&setting_get_string_representation_uint_as_enum,

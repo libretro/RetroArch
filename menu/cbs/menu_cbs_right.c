@@ -355,7 +355,7 @@ static int action_right_cheat_num_passes(unsigned type, const char *label,
    new_size = cheat_manager_get_size() + 1;
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
+   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
    return 0;
 }

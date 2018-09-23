@@ -250,6 +250,11 @@ bool cheat_manager_copy_working_to_idx(unsigned idx)
       free(cheat_manager_state.cheats[idx].desc) ;
 
    cheat_manager_state.cheats[idx].desc = strdup(cheat_manager_state.working_desc) ;
+
+   if ( cheat_manager_state.cheats[idx].code != NULL )
+      free(cheat_manager_state.cheats[idx].code) ;
+
+   cheat_manager_state.cheats[idx].code = strdup(cheat_manager_state.working_code) ;
    return true ;
 }
 static void cheat_manager_new(unsigned size)
