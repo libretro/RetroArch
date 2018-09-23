@@ -5206,15 +5206,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          if ( !cheat_manager_state.memory_initialized)
             cheat_manager_initialize_memory(NULL,true) ;
 
-         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADDRESS));
+         setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS);
          if ( setting )
             setting->max = cheat_manager_state.total_memory_size==0?0:cheat_manager_state.total_memory_size-1;
 
-         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION));
+         setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION);
          if ( setting )
             setting->max = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
 
-         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY));
+         setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY);
          if ( setting )
             setting->max = cheat_manager_state.actual_memory_size>0?cheat_manager_state.actual_memory_size-1:0 ;
 
@@ -5403,13 +5403,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
 
 
-         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_MATCH));
+         setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_DELETE_MATCH);
          if (setting)
             setting->max = cheat_manager_state.num_matches-1;
-         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_MATCH));
+         setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_COPY_MATCH);
          if (setting)
             setting->max = cheat_manager_state.num_matches-1;
-         setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY));
+         setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY);
          if (setting)
             setting->max = cheat_manager_state.actual_memory_size>0?cheat_manager_state.actual_memory_size-1:0 ;
 
