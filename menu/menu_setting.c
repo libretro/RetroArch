@@ -793,6 +793,64 @@ static void setting_get_string_representation_toggle_gamepad_combo(void *data,
    }
 }
 
+static void setting_get_string_representation_netplay_share_digital(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE), len);
+         break;
+
+      case RARCH_NETPLAY_SHARE_DIGITAL_OR:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR), len);
+         break;
+
+      case RARCH_NETPLAY_SHARE_DIGITAL_XOR:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR), len);
+         break;
+
+      case RARCH_NETPLAY_SHARE_DIGITAL_VOTE:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE), len);
+         break;
+
+      default:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE), len);
+         break;
+   }
+}
+
+static void setting_get_string_representation_netplay_share_analog(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE), len);
+         break;
+
+      case RARCH_NETPLAY_SHARE_ANALOG_MAX:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX), len);
+         break;
+
+      case RARCH_NETPLAY_SHARE_ANALOG_AVERAGE:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE), len);
+         break;
+
+      default:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE), len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_poll_type_behavior(void *data,
       char *s, size_t len)
 {
@@ -8123,6 +8181,9 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_netplay_share_digital;
             menu_settings_list_current_add_range(list, list_info, 0, RARCH_NETPLAY_SHARE_DIGITAL_LAST-1, 1, true, true);
 
             CONFIG_UINT(
@@ -8136,6 +8197,9 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_netplay_share_analog;
             menu_settings_list_current_add_range(list, list_info, 0, RARCH_NETPLAY_SHARE_ANALOG_LAST-1, 1, true, true);
 
             for (user = 0; user < MAX_USERS; user++)
