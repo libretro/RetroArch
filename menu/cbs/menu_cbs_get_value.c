@@ -577,7 +577,7 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
 
    for (key_id = 0; key_id < RARCH_MAX_KEYS - 1; key_id++)
    {
-      if(remap_id == key_descriptors[key_id].key)
+      if (remap_id == key_descriptors[key_id].key)
          break;
    }
 
@@ -606,7 +606,7 @@ static void menu_action_setting_disp_set_label_cheat(
 
    if (cheat_index < cheat_manager_get_buf_size())
    {
-      if ( cheat_manager_state.cheats[cheat_index].handler == CHEAT_HANDLER_TYPE_EMU)
+      if (cheat_manager_state.cheats[cheat_index].handler == CHEAT_HANDLER_TYPE_EMU)
       {
          snprintf(s, len, "(%s) : %s",
                cheat_manager_get_code_state(cheat_index) ?
@@ -1672,7 +1672,7 @@ static void menu_action_setting_disp_set_label_setting_string(file_list_t* list,
 
    *w = 19;
 
-   if ( setting->value.target.string != NULL )
+   if (setting->value.target.string != NULL)
       strlcpy(s, setting->value.target.string, len);
 
    strlcpy(s2, path, len2);
