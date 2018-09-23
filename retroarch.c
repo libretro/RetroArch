@@ -3156,6 +3156,12 @@ static enum runloop_state runloop_check_state(
                               && settings->bools.cheevos_hardcore_mode_enable
                               && cheevos_loaded && !cheevos_hardcore_paused;
 
+   if (cheevos_hardcore_active && cheevos_state_loaded_flag)
+   {
+      cheevos_hardcore_paused = true;
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true);
+   }
+
    if (!cheevos_hardcore_active)
 #endif
    {

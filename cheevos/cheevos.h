@@ -155,8 +155,10 @@ cheevos_console_t cheevos_get_console(void);
 extern bool cheevos_loaded;
 extern bool cheevos_hardcore_active;
 extern bool cheevos_hardcore_paused;
+extern bool cheevos_state_loaded_flag;
 extern int cheats_are_enabled;
 extern int cheats_were_enabled;
+;
 
 RETRO_END_DECLS
 

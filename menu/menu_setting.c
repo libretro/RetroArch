@@ -50,6 +50,11 @@
 
 #endif
 
+#ifdef HAVE_CHEEVOS
+#include "../cheevos/cheevos.h"
+#endif
+
+
 #include "../frontend/frontend_driver.h"
 
 #include "widgets/menu_input_bind_dialog.h"
@@ -1868,6 +1873,23 @@ static void overlay_enable_toggle_change_handler(rarch_setting_t *setting)
       command_event(CMD_EVENT_OVERLAY_INIT, NULL);
    else
       command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+}
+#endif
+
+#ifdef HAVE_CHEEVOS
+static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
+{
+   settings_t *settings  = config_get_ptr();
+
+   if (!setting)
+      return;
+
+   if (settings && settings->bools.cheevos_hardcore_mode_enable && cheevos_state_loaded_flag)
+   {
+      cheevos_hardcore_paused = true;
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true);
+      return;
+   }
 }
 #endif
 
@@ -7671,7 +7693,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group,
-               general_write_handler,
+               achievement_hardcore_mode_write_handler,
                general_read_handler,
                SD_FLAG_NONE
                );

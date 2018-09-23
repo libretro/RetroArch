@@ -288,6 +288,7 @@ static cheevos_locals_t cheevos_locals =
 bool cheevos_loaded = false;
 bool cheevos_hardcore_active = false;
 bool cheevos_hardcore_paused = false;
+bool cheevos_state_loaded_flag = false;
 int cheats_are_enabled = 0;
 int cheats_were_enabled = 0;
 
@@ -2265,10 +2266,14 @@ bool cheevos_toggle_hardcore_mode(void)
       return false;
 
    /* reset and deinit rewind to avoid cheat the score */
-   if (settings->bools.cheevos_hardcore_mode_enable && !cheevos_hardcore_paused)
+   if (settings->bools.cheevos_hardcore_mode_enable
+      && !cheevos_hardcore_paused)
    {
       const char *msg = msg_hash_to_str(
             MSG_CHEEVOS_HARDCORE_MODE_ENABLE);
+
+      /* reset the state loaded flag in case it was set */
+      cheevos_state_loaded_flag = false;
 
       /* send reset core cmd to avoid any user
        * savestate previusly loaded. */
