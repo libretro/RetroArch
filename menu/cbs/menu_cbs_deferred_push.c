@@ -535,8 +535,6 @@ static int general_push(menu_displaylist_info_t *info,
          break;
    }
 
-   (void)settings;
-
    if (settings->bools.multimedia_builtin_mediaplayer_enable ||
          settings->bools.multimedia_builtin_imageviewer_enable)
    {
