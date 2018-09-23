@@ -51,6 +51,7 @@
 #include "../../core_info.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../defaults.h"
+#include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
@@ -258,6 +259,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
 {
    switch (lbl)
    {
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST;
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
@@ -408,6 +411,15 @@ int generic_action_ok_displaylist_push(const char *path,
                MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST;
          dl_type           = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_USER_BINDS_LIST:
          info.type          = type;
@@ -837,24 +849,24 @@ int generic_action_ok_displaylist_push(const char *path,
       {
          rarch_setting_t *setting = NULL;
 
-         cheat_manager_copy_idx_to_working(type-MENU_SETTINGS_CHEAT_BEGIN) ;
+         cheat_manager_copy_idx_to_working(type-MENU_SETTINGS_CHEAT_BEGIN);
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_IDX));
          if (setting)
             setting->max = cheat_manager_get_size()-1 ;
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_VALUE));
-         if ( setting )
+         if (setting)
             setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RUMBLE_VALUE));
          if (setting)
             setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION));
-         if ( setting )
+         if (setting)
        {
             int max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 7 : 0 ;
             setting->max = max_bit_position ;
          }
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADDRESS));
-         if ( setting )
+         if (setting)
          {
             cheat_manager_state.browse_address = *setting->value.target.unsigned_integer ;
          }
@@ -864,13 +876,13 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_CHEAT_SEARCH_SETTINGS_LIST:
       {
          rarch_setting_t *setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT));
-         if ( setting)
+         if (setting)
             setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS));
-         if ( setting )
+         if (setting)
             setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS));
-         if ( setting )
+         if (setting)
             setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
          action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          break ;
@@ -1956,7 +1968,7 @@ static int action_ok_mixer_stream_action_stop(const char *path,
 static int action_ok_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return menu_setting_set(type, label, MENU_ACTION_OK, false);
+   return menu_setting_set(type, MENU_ACTION_OK, false);
 }
 
 static int action_ok_audio_add_to_mixer(const char *path,
@@ -2669,12 +2681,28 @@ static int action_ok_audio_run(const char *path,
 #endif
 }
 
+static int action_ok_core_option_dropdown_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char core_option_lbl[256];
+   char core_option_idx[256];
+   snprintf(core_option_lbl, sizeof(core_option_lbl), "core_option_%d", (int)idx);
+   snprintf(core_option_idx, sizeof(core_option_idx), "%d",
+         type);
+
+   generic_action_ok_displaylist_push(
+         core_option_lbl, NULL,
+         core_option_idx, 0, 0, 0, 
+         ACTION_OK_DL_DROPDOWN_BOX_LIST);
+   return 0;
+}
+
 static int action_ok_cheat_reload_cheats(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    bool          refresh = false ;
    cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
-   cheat_manager_load_game_specific_cheats() ;
+   cheat_manager_load_game_specific_cheats();
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    return 0 ;
@@ -2723,17 +2751,17 @@ static int action_ok_cheat_add_top(const char *path,
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat )) ;
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat));
    tmp.idx = 0 ;
 
    for (i = cheat_manager_state.size-2 ; i >=0 ; i--)
    {
       memcpy(&cheat_manager_state.cheats[i+1],
-            &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+            &cheat_manager_state.cheats[i], sizeof(struct item_cheat));
       cheat_manager_state.cheats[i+1].idx++ ;
    }
 
-   memcpy(&cheat_manager_state.cheats[0], &tmp, sizeof(struct item_cheat )) ;
+   memcpy(&cheat_manager_state.cheats[0], &tmp, sizeof(struct item_cheat));
 
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_TOP_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
@@ -2786,16 +2814,16 @@ static int action_ok_cheat_add_new_after(const char *path,
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat )) ;
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat));
    tmp.idx = cheat_manager_state.working_cheat.idx+1 ;
 
    for (i = cheat_manager_state.size-2 ; i >= (int)(cheat_manager_state.working_cheat.idx+1); i--)
    {
-      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat));
       cheat_manager_state.cheats[i+1].idx++ ;
    }
 
-   memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat )) ;
+   memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat));
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -2819,19 +2847,19 @@ static int action_ok_cheat_add_new_before(const char *path,
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat )) ;
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat));
    tmp.idx = cheat_manager_state.working_cheat.idx ;
 
    for (i = cheat_manager_state.size-2 ; i >=(int)tmp.idx ; i--)
    {
-      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat));
       cheat_manager_state.cheats[i+1].idx++ ;
    }
 
    memcpy(&cheat_manager_state.cheats[tmp.idx],
-         &tmp, sizeof(struct item_cheat )) ;
+         &tmp, sizeof(struct item_cheat));
    memcpy(&cheat_manager_state.working_cheat,
-         &tmp, sizeof(struct item_cheat )) ;
+         &tmp, sizeof(struct item_cheat));
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -2854,21 +2882,21 @@ static int action_ok_cheat_copy_before(const char *path,
    unsigned int new_size = cheat_manager_get_size() + 1;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat )) ;
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat));
    tmp.idx = cheat_manager_state.working_cheat.idx ;
-   if ( tmp.code != NULL )
-      tmp.code = strdup(tmp.code) ;
-   if ( tmp.desc != NULL )
-      tmp.desc = strdup(tmp.desc) ;
+   if (tmp.code)
+      tmp.code = strdup(tmp.code);
+   if (tmp.desc)
+      tmp.desc = strdup(tmp.desc);
 
    for (i = cheat_manager_state.size-2 ; i >=(int)tmp.idx ; i--)
    {
-      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat));
       cheat_manager_state.cheats[i+1].idx++ ;
    }
 
-   memcpy(&cheat_manager_state.cheats[tmp.idx], &tmp, sizeof(struct item_cheat )) ;
-   memcpy(&cheat_manager_state.working_cheat, &tmp, sizeof(struct item_cheat )) ;
+   memcpy(&cheat_manager_state.cheats[tmp.idx], &tmp, sizeof(struct item_cheat));
+   memcpy(&cheat_manager_state.working_cheat, &tmp, sizeof(struct item_cheat));
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -2893,20 +2921,20 @@ static int action_ok_cheat_copy_after(const char *path,
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat )) ;
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat));
    tmp.idx = cheat_manager_state.working_cheat.idx+1 ;
-   if ( tmp.code != NULL )
-      tmp.code = strdup(tmp.code) ;
-   if ( tmp.desc != NULL )
-      tmp.desc = strdup(tmp.desc) ;
+   if (tmp.code)
+      tmp.code = strdup(tmp.code);
+   if (tmp.desc)
+      tmp.desc = strdup(tmp.desc);
 
    for (i = cheat_manager_state.size-2 ; i >= (int)(cheat_manager_state.working_cheat.idx+1); i--)
    {
-      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat));
       cheat_manager_state.cheats[i+1].idx++ ;
    }
 
-   memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat )) ;
+   memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat ));
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -2922,26 +2950,26 @@ static int action_ok_cheat_copy_after(const char *path,
 static int action_ok_cheat_delete(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   size_t new_selection_ptr;
    char msg[256];
-   unsigned int new_size = cheat_manager_get_size() - 1;
+   size_t new_selection_ptr = 0;
+   unsigned int new_size    = cheat_manager_get_size() - 1;
 
-   if( new_size >0 )
+   if (new_size >0)
    {
       unsigned i;
-      if ( cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code != NULL )
+      if (cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code)
       {
-         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code) ;
+         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code);
          cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code = NULL ;
       }
-      if ( cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc != NULL )
+      if (cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc)
       {
-         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc) ;
+         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc);
          cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc = NULL ;
       }
       for (i = cheat_manager_state.working_cheat.idx ; i <cheat_manager_state.size-1  ; i++)
       {
-         memcpy(&cheat_manager_state.cheats[i], &cheat_manager_state.cheats[i+1], sizeof(struct item_cheat )) ;
+         memcpy(&cheat_manager_state.cheats[i], &cheat_manager_state.cheats[i+1], sizeof(struct item_cheat ));
          cheat_manager_state.cheats[i].idx-- ;
       }
       cheat_manager_state.cheats[cheat_manager_state.size-1].code = NULL ;
@@ -4258,6 +4286,75 @@ int action_ok_push_filebrowser_list_file_select(const char *path,
          entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
 
+static int action_ok_push_dropdown_setting_core_options_item(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   core_option_manager_t *coreopts = NULL;
+   int core_option_idx             = (int)atoi(label);
+
+   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+
+   if (!coreopts)
+      return -1;
+
+   core_option_manager_set_val(coreopts, core_option_idx, idx);
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_setting_string_options_item(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   strlcpy(setting->value.target.string, path,
+         sizeof(setting->value.target.string));
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_setting_int_item(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   *setting->value.target.integer = idx + setting->offset_by;
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_setting_uint_item(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   *setting->value.target.unsigned_integer = idx + setting->offset_by;
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_item(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#if 0
+   RARCH_LOG("dropdown: \n");
+   RARCH_LOG("path: %s \n", path);
+   RARCH_LOG("label: %s \n", label);
+   RARCH_LOG("type: %d \n", type);
+   RARCH_LOG("idx: %d \n", idx);
+   RARCH_LOG("entry_idx: %d \n", entry_idx);
+#endif
+   return 0;
+}
+
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5302,10 +5399,33 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_OK(cbs, action_ok_cheat);
    }
+   else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
+   {
+      return -1;
+   }
+   else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+   {
+      BIND_ACTION_OK(cbs, action_ok_core_option_dropdown_list);
+   }
    else
    {
       switch (type)
       {
+         case MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_core_options_item);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_string_options_item);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_int_item);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item);
+            break;
          case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_OK(cbs, action_ok_push_default);
             break;
@@ -5333,7 +5453,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_generic_list);
             break;
          case FILE_TYPE_CHEAT:
-            if ( menu_label_hash == MENU_LABEL_CHEAT_FILE_LOAD_APPEND )
+            if (menu_label_hash == MENU_LABEL_CHEAT_FILE_LOAD_APPEND)
             {
                BIND_ACTION_OK(cbs, action_ok_cheat_file_load_append);
             }

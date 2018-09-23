@@ -513,7 +513,7 @@ static int disk_options_disk_idx_right(unsigned type, const char *label,
 int bind_right_generic(unsigned type, const char *label,
        bool wraparound)
 {
-   return menu_setting_set(type, label, MENU_ACTION_RIGHT, wraparound);
+   return menu_setting_set(type, MENU_ACTION_RIGHT, wraparound);
 }
 
 static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,

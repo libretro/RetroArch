@@ -590,16 +590,12 @@ static int action_bind_sublabel_cheat_desc(
 {
    unsigned offset = (type - MENU_SETTINGS_CHEAT_BEGIN);
 
-   if ( cheat_manager_state.cheats )
+   if (cheat_manager_state.cheats)
    {
-      if ( cheat_manager_state.cheats[offset].handler == CHEAT_HANDLER_TYPE_EMU)
-      {
+      if (cheat_manager_state.cheats[offset].handler == CHEAT_HANDLER_TYPE_EMU)
          snprintf(s, len, "Emulator-Handled") ;
-      }
       else
-      {
          snprintf(s, len, "RetroArch-Handled") ;
-      }
    }
 
    return 0;

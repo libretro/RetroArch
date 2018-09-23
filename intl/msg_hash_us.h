@@ -3711,7 +3711,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-    "Hardcore Mode Enabled, savestate & rewind were disabled."
+    "Achievements Hardcore Mode Enabled, savestate & rewind were disabled."
     )
 MSG_HASH(
     MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -7541,4 +7541,8 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
     "Streaming toggle"
+    )
+MSG_HASH(
+    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
+    "A savestate was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
     )

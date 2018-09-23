@@ -78,6 +78,11 @@ static int action_get_title_action_generic(const char *path, const char *label,
    return 0; \
 }
 
+static int action_get_title_dropdown_item(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+{
+   return 0;
+}
+
 static int action_get_title_mixer_stream_actions(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
    unsigned         offset      = (menu_type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN);
@@ -1188,7 +1193,12 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       BIND_ACTION_GET_TITLE(cbs, action_get_title_mixer_stream_actions);
       return 0;
    }
-
+   if (string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
+   {
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
+         return 0;
+   }
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_quick_menu_views_settings_list);
