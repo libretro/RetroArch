@@ -6902,6 +6902,8 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].offset_by = 72;
             menu_settings_list_current_add_range(list, list_info, 72, 999, 1, true, true);
          }
 
