@@ -190,6 +190,68 @@ static void setting_get_string_representation_cheevos_password(void *data,
 }
 #endif
 
+static void setting_get_string_representation_uint_menu_thumbnails(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         strlcpy(s, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OFF), len);
+         break;
+      case 1:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS), len);
+         break;
+      case 2:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS), len);
+         break;
+      case 3:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS), len);
+         break;
+   }
+}
+
+static void setting_get_string_representation_uint_menu_left_thumbnails(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         strlcpy(s, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OFF), len);
+         break;
+      case 1:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS), len);
+         break;
+      case 2:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS), len);
+         break;
+      case 3:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS), len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_uint_xmb_icon_theme(void *data,
       char *s, size_t len)
 {
@@ -7399,6 +7461,9 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_thumbnails;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
 
             CONFIG_UINT(
@@ -7412,6 +7477,9 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_left_thumbnails;
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
 
             CONFIG_BOOL(
