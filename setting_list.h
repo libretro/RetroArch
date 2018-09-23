@@ -102,7 +102,7 @@ struct rarch_setting
 
    uint8_t              index;
    uint32_t             index_offset;
-   int8_t               offset_by;
+   int16_t               offset_by;
 
    unsigned             bind_type;
    uint32_t             size;
