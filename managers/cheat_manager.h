@@ -78,7 +78,8 @@ enum cheat_rumble_type
    RUMBLE_TYPE_DECREASE_BY_VALUE
 };
 
-#define CHEAT_CODE_SCRATCH_SIZE 100
+/* Some codes are ridiculously large - over 10000 bytes */
+#define CHEAT_CODE_SCRATCH_SIZE 16*1024
 #define CHEAT_DESC_SCRATCH_SIZE 255
 
 struct item_cheat
