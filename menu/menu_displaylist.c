@@ -7693,135 +7693,185 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_DROPDOWN_LIST:
          {
-            enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
-            rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
-
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            switch (setting->type)
+            if (strstr(info->path, "core_option_"))
             {
-               case ST_STRING_OPTIONS:
+               struct string_list *tmp_str_list = string_split(info->path, "_");
+
+               if (tmp_str_list && tmp_str_list->size > 0)
+               {
+                  core_option_manager_t *coreopts = NULL;
+
+                  rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+
+                  if (coreopts)
                   {
-                     struct string_list *tmp_str_list = string_split(setting->values, "|");
+                     unsigned size                   = tmp_str_list->size;
+                     unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
+                     struct core_option *option      = NULL;
 
-                     if (tmp_str_list && tmp_str_list->size > 0)
+                     i--;
+                     
+                     option                          = (struct core_option*)&coreopts->opts[i];
+
+                     if (option)
                      {
-                        unsigned i;
-                        unsigned size = tmp_str_list->size;
-
-                        for (i = 0; i < size; i++)
+                        unsigned k;
+                        for (k = 0; k < option->vals->size; k++)
                         {
-                           char val_d[256];
-                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                           menu_entries_append_enum(info->list,
-                                 tmp_str_list->elems[i].data,
-                                 val_d,
-                                 MENU_ENUM_LABEL_NO_ITEMS,
-                                 MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM, i, 0);
+                           const char *str = option->vals->elems[k].data;
+
+                           if (!string_is_empty(str))
+                           {
+                              char val_d[256];
+                              snprintf(val_d, sizeof(val_d), "%d", i);
+                              menu_entries_append_enum(info->list,
+                                    str,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM, k, 0);
+                              count++;
+                           }
                         }
                      }
                   }
-                  break;
-               case ST_INT:
+               }
+
+            }
+            else
+            {
+               enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
+               rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+               if (setting)
+               {
+                  switch (setting->type)
                   {
-                     float i;
-                     int32_t orig_value     = *setting->value.target.integer;
-                     unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM;
-                     float step             = setting->step;
-                     double min             = setting->enforce_minrange ? setting->min : 0.00;
-                     double max             = setting->enforce_maxrange ? setting->max : 999.00;
-
-                     if (setting->get_string_representation)
-                     {
-                        for (i = min; i <= max; i += step)
+                     case ST_STRING_OPTIONS:
                         {
-                           char val_s[256], val_d[256];
-                           int val = (int)i;
+                           struct string_list *tmp_str_list = string_split(setting->values, "|");
 
-                           *setting->value.target.integer = val;
+                           if (tmp_str_list && tmp_str_list->size > 0)
+                           {
+                              unsigned i;
+                              unsigned size = tmp_str_list->size;
 
-                           setting->get_string_representation(setting,
-                                 val_s, sizeof(val_s));
-                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                           menu_entries_append_enum(info->list,
-                                 val_s,
-                                 val_d,
-                                 MENU_ENUM_LABEL_NO_ITEMS,
-                                 setting_type, val, 0);
+                              for (i = 0; i < size; i++)
+                              {
+                                 char val_d[256];
+                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                                 menu_entries_append_enum(info->list,
+                                       tmp_str_list->elems[i].data,
+                                       val_d,
+                                       MENU_ENUM_LABEL_NO_ITEMS,
+                                       MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM, i, 0);
+                              }
+                           }
                         }
-
-                        *setting->value.target.integer = orig_value;
-                     }
-                     else
-                     {
-                        for (i = min; i <= max; i += step)
+                        break;
+                     case ST_INT:
                         {
-                           char val_s[16], val_d[16];
-                           int val = (int)i;
+                           float i;
+                           int32_t orig_value     = *setting->value.target.integer;
+                           unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM;
+                           float step             = setting->step;
+                           double min             = setting->enforce_minrange ? setting->min : 0.00;
+                           double max             = setting->enforce_maxrange ? setting->max : 999.00;
 
-                           snprintf(val_s, sizeof(val_s), "%d", val);
-                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                           if (setting->get_string_representation)
+                           {
+                              for (i = min; i <= max; i += step)
+                              {
+                                 char val_s[256], val_d[256];
+                                 int val = (int)i;
 
-                           menu_entries_append_enum(info->list,
-                                 val_s,
-                                 val_d,
-                                 MENU_ENUM_LABEL_NO_ITEMS,
-                                 setting_type, val, 0);
+                                 *setting->value.target.integer = val;
+
+                                 setting->get_string_representation(setting,
+                                       val_s, sizeof(val_s));
+                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                                 menu_entries_append_enum(info->list,
+                                       val_s,
+                                       val_d,
+                                       MENU_ENUM_LABEL_NO_ITEMS,
+                                       setting_type, val, 0);
+                              }
+
+                              *setting->value.target.integer = orig_value;
+                           }
+                           else
+                           {
+                              for (i = min; i <= max; i += step)
+                              {
+                                 char val_s[16], val_d[16];
+                                 int val = (int)i;
+
+                                 snprintf(val_s, sizeof(val_s), "%d", val);
+                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
+                                 menu_entries_append_enum(info->list,
+                                       val_s,
+                                       val_d,
+                                       MENU_ENUM_LABEL_NO_ITEMS,
+                                       setting_type, val, 0);
+                              }
+                           }
                         }
-                     }
+                        break;
+                     case ST_UINT:
+                        {
+                           float i;
+                           unsigned orig_value    = *setting->value.target.unsigned_integer;
+                           unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM;
+                           float step             = setting->step;
+                           double min             = setting->enforce_minrange ? setting->min : 0.00;
+                           double max             = setting->enforce_maxrange ? setting->max : 999.00;
+
+                           if (setting->get_string_representation)
+                           {
+                              for (i = min; i <= max; i += step)
+                              {
+                                 char val_s[256], val_d[256];
+                                 int val = (int)i;
+
+                                 *setting->value.target.unsigned_integer = val;
+
+                                 setting->get_string_representation(setting,
+                                       val_s, sizeof(val_s));
+                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                                 menu_entries_append_enum(info->list,
+                                       val_s,
+                                       val_d,
+                                       MENU_ENUM_LABEL_NO_ITEMS,
+                                       setting_type, val, 0);
+                              }
+
+                              *setting->value.target.unsigned_integer = orig_value;
+                           }
+                           else
+                           {
+                              for (i = min; i <= max; i += step)
+                              {
+                                 char val_s[16], val_d[16];
+                                 int val = (int)i;
+
+                                 snprintf(val_s, sizeof(val_s), "%d", val);
+                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
+                                 menu_entries_append_enum(info->list,
+                                       val_s,
+                                       val_d,
+                                       MENU_ENUM_LABEL_NO_ITEMS,
+                                       setting_type, val, 0);
+                              }
+                           }
+                        }
+                        break;
+                     default:
+                        break;
                   }
-                  break;
-               case ST_UINT:
-                  {
-                     float i;
-                     unsigned orig_value    = *setting->value.target.unsigned_integer;
-                     unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM;
-                     float step             = setting->step;
-                     double min             = setting->enforce_minrange ? setting->min : 0.00;
-                     double max             = setting->enforce_maxrange ? setting->max : 999.00;
-
-                     if (setting->get_string_representation)
-                     {
-                        for (i = min; i <= max; i += step)
-                        {
-                           char val_s[256], val_d[256];
-                           int val = (int)i;
-
-                           *setting->value.target.unsigned_integer = val;
-
-                           setting->get_string_representation(setting,
-                                 val_s, sizeof(val_s));
-                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                           menu_entries_append_enum(info->list,
-                                 val_s,
-                                 val_d,
-                                 MENU_ENUM_LABEL_NO_ITEMS,
-                                 setting_type, val, 0);
-                        }
-
-                        *setting->value.target.unsigned_integer = orig_value;
-                     }
-                     else
-                     {
-                        for (i = min; i <= max; i += step)
-                        {
-                           char val_s[16], val_d[16];
-                           int val = (int)i;
-
-                           snprintf(val_s, sizeof(val_s), "%d", val);
-                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-
-                           menu_entries_append_enum(info->list,
-                                 val_s,
-                                 val_d,
-                                 MENU_ENUM_LABEL_NO_ITEMS,
-                                 setting_type, val, 0);
-                        }
-                     }
-                  }
-                  break;
-               default:
-                  break;
+               }
             }
 
             info->need_refresh       = true;

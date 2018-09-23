@@ -51,6 +51,7 @@
 #include "../../core_info.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../defaults.h"
+#include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
@@ -2680,6 +2681,22 @@ static int action_ok_audio_run(const char *path,
 #endif
 }
 
+static int action_ok_core_option_dropdown_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char core_option_lbl[256];
+   char core_option_idx[256];
+   snprintf(core_option_lbl, sizeof(core_option_lbl), "core_option_%d", (int)idx);
+   snprintf(core_option_idx, sizeof(core_option_idx), "%d",
+         type);
+
+   generic_action_ok_displaylist_push(
+         core_option_lbl, NULL,
+         core_option_idx, 0, 0, 0, 
+         ACTION_OK_DL_DROPDOWN_BOX_LIST);
+   return 0;
+}
+
 static int action_ok_cheat_reload_cheats(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4269,6 +4286,21 @@ int action_ok_push_filebrowser_list_file_select(const char *path,
          entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
 
+static int action_ok_push_dropdown_setting_core_options_item(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   core_option_manager_t *coreopts = NULL;
+   int core_option_idx             = (int)atoi(label);
+
+   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+
+   if (!coreopts)
+      return -1;
+
+   core_option_manager_set_val(coreopts, core_option_idx, idx);
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_dropdown_setting_string_options_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5367,10 +5399,17 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_OK(cbs, action_ok_cheat);
    }
+   else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+   {
+      BIND_ACTION_OK(cbs, action_ok_core_option_dropdown_list);
+   }
    else
    {
       switch (type)
       {
+         case MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_core_options_item);
+            break;
          case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_string_options_item);
             break;
