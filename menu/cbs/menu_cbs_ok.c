@@ -848,7 +848,7 @@ int generic_action_ok_displaylist_push(const char *path,
       {
          rarch_setting_t *setting = NULL;
 
-         cheat_manager_copy_idx_to_working(type-MENU_SETTINGS_CHEAT_BEGIN) ;
+         cheat_manager_copy_idx_to_working(type-MENU_SETTINGS_CHEAT_BEGIN);
          setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_IDX));
          if (setting)
             setting->max = cheat_manager_get_size()-1 ;
@@ -2685,7 +2685,7 @@ static int action_ok_cheat_reload_cheats(const char *path,
 {
    bool          refresh = false ;
    cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
-   cheat_manager_load_game_specific_cheats() ;
+   cheat_manager_load_game_specific_cheats();
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    return 0 ;
@@ -2734,17 +2734,17 @@ static int action_ok_cheat_add_top(const char *path,
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat )) ;
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat));
    tmp.idx = 0 ;
 
    for (i = cheat_manager_state.size-2 ; i >=0 ; i--)
    {
       memcpy(&cheat_manager_state.cheats[i+1],
-            &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+            &cheat_manager_state.cheats[i], sizeof(struct item_cheat));
       cheat_manager_state.cheats[i+1].idx++ ;
    }
 
-   memcpy(&cheat_manager_state.cheats[0], &tmp, sizeof(struct item_cheat )) ;
+   memcpy(&cheat_manager_state.cheats[0], &tmp, sizeof(struct item_cheat));
 
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_TOP_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
@@ -2797,16 +2797,16 @@ static int action_ok_cheat_add_new_after(const char *path,
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat )) ;
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat));
    tmp.idx = cheat_manager_state.working_cheat.idx+1 ;
 
    for (i = cheat_manager_state.size-2 ; i >= (int)(cheat_manager_state.working_cheat.idx+1); i--)
    {
-      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat));
       cheat_manager_state.cheats[i+1].idx++ ;
    }
 
-   memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat )) ;
+   memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat));
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -2830,19 +2830,19 @@ static int action_ok_cheat_add_new_before(const char *path,
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat )) ;
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1], sizeof(struct item_cheat));
    tmp.idx = cheat_manager_state.working_cheat.idx ;
 
    for (i = cheat_manager_state.size-2 ; i >=(int)tmp.idx ; i--)
    {
-      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat));
       cheat_manager_state.cheats[i+1].idx++ ;
    }
 
    memcpy(&cheat_manager_state.cheats[tmp.idx],
-         &tmp, sizeof(struct item_cheat )) ;
+         &tmp, sizeof(struct item_cheat));
    memcpy(&cheat_manager_state.working_cheat,
-         &tmp, sizeof(struct item_cheat )) ;
+         &tmp, sizeof(struct item_cheat));
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -2865,21 +2865,21 @@ static int action_ok_cheat_copy_before(const char *path,
    unsigned int new_size = cheat_manager_get_size() + 1;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat )) ;
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat));
    tmp.idx = cheat_manager_state.working_cheat.idx ;
    if (tmp.code)
-      tmp.code = strdup(tmp.code) ;
+      tmp.code = strdup(tmp.code);
    if (tmp.desc)
-      tmp.desc = strdup(tmp.desc) ;
+      tmp.desc = strdup(tmp.desc);
 
    for (i = cheat_manager_state.size-2 ; i >=(int)tmp.idx ; i--)
    {
-      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat));
       cheat_manager_state.cheats[i+1].idx++ ;
    }
 
-   memcpy(&cheat_manager_state.cheats[tmp.idx], &tmp, sizeof(struct item_cheat )) ;
-   memcpy(&cheat_manager_state.working_cheat, &tmp, sizeof(struct item_cheat )) ;
+   memcpy(&cheat_manager_state.cheats[tmp.idx], &tmp, sizeof(struct item_cheat));
+   memcpy(&cheat_manager_state.working_cheat, &tmp, sizeof(struct item_cheat));
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -2904,20 +2904,20 @@ static int action_ok_cheat_copy_after(const char *path,
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat )) ;
+   memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat));
    tmp.idx = cheat_manager_state.working_cheat.idx+1 ;
    if (tmp.code)
-      tmp.code = strdup(tmp.code) ;
+      tmp.code = strdup(tmp.code);
    if (tmp.desc)
-      tmp.desc = strdup(tmp.desc) ;
+      tmp.desc = strdup(tmp.desc);
 
    for (i = cheat_manager_state.size-2 ; i >= (int)(cheat_manager_state.working_cheat.idx+1); i--)
    {
-      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat )) ;
+      memcpy(&cheat_manager_state.cheats[i+1], &cheat_manager_state.cheats[i], sizeof(struct item_cheat));
       cheat_manager_state.cheats[i+1].idx++ ;
    }
 
-   memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat )) ;
+   memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat ));
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -2942,17 +2942,17 @@ static int action_ok_cheat_delete(const char *path,
       unsigned i;
       if (cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code)
       {
-         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code) ;
+         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code);
          cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code = NULL ;
       }
       if (cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc)
       {
-         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc) ;
+         free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc);
          cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc = NULL ;
       }
       for (i = cheat_manager_state.working_cheat.idx ; i <cheat_manager_state.size-1  ; i++)
       {
-         memcpy(&cheat_manager_state.cheats[i], &cheat_manager_state.cheats[i+1], sizeof(struct item_cheat )) ;
+         memcpy(&cheat_manager_state.cheats[i], &cheat_manager_state.cheats[i+1], sizeof(struct item_cheat ));
          cheat_manager_state.cheats[i].idx-- ;
       }
       cheat_manager_state.cheats[cheat_manager_state.size-1].code = NULL ;
