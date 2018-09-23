@@ -510,11 +510,6 @@ void recording_driver_set_data_ptr(void *data)
    recording_data = data;
 }
 
-bool *recording_driver_get_use_output_dir_ptr(void)
-{
-   return &recording_use_output_dir;
-}
-
 unsigned *recording_driver_get_width(void)
 {
    return &recording_width;

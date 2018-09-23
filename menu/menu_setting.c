@@ -5952,22 +5952,6 @@ static bool setting_append_list(
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
-            CONFIG_BOOL(
-                  list, list_info,
-                  recording_driver_get_use_output_dir_ptr(),
-                  MENU_ENUM_LABEL_RECORD_USE_OUTPUT_DIRECTORY,
-                  MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
-                  false,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-
             END_SUB_GROUP(list, list_info, parent_group);
 
             START_SUB_GROUP(list, list_info, "Miscellaneous", &group_info, &subgroup_info, parent_group);
