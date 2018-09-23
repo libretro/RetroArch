@@ -43,6 +43,7 @@ typedef struct key_desc
 enum
 {
    ACTION_OK_DL_DEFAULT = 0,
+   ACTION_OK_DL_DROPDOWN_BOX_LIST,
    ACTION_OK_DL_OPEN_ARCHIVE,
    ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
    ACTION_OK_DL_MUSIC,
@@ -139,9 +140,15 @@ enum
 
 /* Function callbacks */
 
+int action_cancel_pop_default(const char *path,
+      const char *label, unsigned type, size_t idx);
+
 int action_refresh_default(file_list_t *list, file_list_t *menu_list);
 
 int shader_action_parameter_right(unsigned type, const char *label, bool wraparound);
+
+int action_cancel_pop_with_new_pos(const char *path,
+      const char *label, unsigned type, size_t idx, size_t new_idx);
 
 int generic_action_ok_displaylist_push(const char *path, const char *new_path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,

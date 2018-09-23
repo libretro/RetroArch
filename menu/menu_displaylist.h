@@ -54,6 +54,7 @@ enum menu_displaylist_parse_type
 enum menu_displaylist_ctl_state
 {
    DISPLAYLIST_NONE = 0,
+   DISPLAYLIST_DROPDOWN_LIST,
    DISPLAYLIST_INFO,
    DISPLAYLIST_HELP,
    DISPLAYLIST_HELP_SCREEN_LIST,

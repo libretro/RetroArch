@@ -159,6 +159,22 @@ struct string_options_entry
    size_t len;
 };
 
+static int setting_action_ok_uint(void *data, bool wraparound)
+{
+   char enum_idx[16];
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return -1;
+
+   snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+
+   generic_action_ok_displaylist_push(
+         enum_idx, /* we will pass the enumeration index of the string as a path */
+         NULL, NULL, 0, 0, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST);
+   return 0;
+}
+
 #ifdef HAVE_CHEEVOS
 static void setting_get_string_representation_cheevos_password(void *data,
       char *s, size_t len)
@@ -1054,8 +1070,7 @@ int menu_setting_set_flags(rarch_setting_t *setting)
    return 0;
 }
 
-int menu_setting_set(unsigned type, const char *label,
-      unsigned action, bool wraparound)
+int menu_setting_set(unsigned type, unsigned action, bool wraparound)
 {
    int ret                    = 0;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
@@ -4065,6 +4080,7 @@ static bool setting_append_list(
                   true,
                   true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_aspect_ratio_index;
 

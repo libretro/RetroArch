@@ -258,6 +258,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
 {
    switch (lbl)
    {
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST;
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
@@ -408,6 +410,15 @@ int generic_action_ok_displaylist_push(const char *path,
                MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST;
          dl_type           = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_USER_BINDS_LIST:
          info.type          = type;
@@ -1956,7 +1967,7 @@ static int action_ok_mixer_stream_action_stop(const char *path,
 static int action_ok_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return menu_setting_set(type, label, MENU_ACTION_OK, false);
+   return menu_setting_set(type, MENU_ACTION_OK, false);
 }
 
 static int action_ok_audio_add_to_mixer(const char *path,
@@ -4258,6 +4269,33 @@ int action_ok_push_filebrowser_list_file_select(const char *path,
          entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
 
+static int action_ok_push_dropdown_setting_uint_item(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   *setting->value.target.unsigned_integer = idx;
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_item(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#if 0
+   RARCH_LOG("dropdown: \n");
+   RARCH_LOG("path: %s \n", path);
+   RARCH_LOG("label: %s \n", label);
+   RARCH_LOG("type: %d \n", type);
+   RARCH_LOG("idx: %d \n", idx);
+   RARCH_LOG("entry_idx: %d \n", entry_idx);
+#endif
+   return 0;
+}
+
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5306,6 +5344,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       switch (type)
       {
+         case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item);
+            break;
          case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_OK(cbs, action_ok_push_default);
             break;

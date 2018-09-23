@@ -7690,6 +7690,76 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          use_filebrowser = true;
          break;
+      case DISPLAYLIST_DROPDOWN_LIST:
+         {
+            enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
+            rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+            switch (setting->type)
+            {
+               case ST_UINT:
+                  if (setting->enforce_minrange && setting->enforce_maxrange)
+                  {
+                     float i;
+                     float step = setting->step;
+                     double min = setting->min;
+                     double max = setting->max;
+
+                     if (setting->get_string_representation)
+                     {
+                        unsigned orig_value = *setting->value.target.unsigned_integer;
+                        for (i = 0.00; i < max; i += step)
+                        {
+                           char val_s[256], val_d[256];
+                           int val = (int)i;
+                           
+                           /* TODO/FIXME - 
+                            * get_string_representation for aspect ratio index
+                            * uses setting->value.target.unsigned_integer, so
+                            * create this hack */
+                           *setting->value.target.unsigned_integer = val;
+
+                           setting->get_string_representation(setting,
+                                 val_s, sizeof(val_s));
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                           menu_entries_append_enum(info->list,
+                                 val_s,
+                                 val_d,
+                                 MENU_ENUM_LABEL_NO_ITEMS,
+                                 MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM, val, 0);
+                        }
+
+                        *setting->value.target.unsigned_integer = orig_value;
+                     }
+                     else
+                     {
+                        for (i = 1.00; i < max; i += step)
+                        {
+                           char val_s[16], val_d[16];
+                           int val = (int)i;
+
+                           snprintf(val_s, sizeof(val_s), "%d", val);
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
+                           menu_entries_append_enum(info->list,
+                                 val_s,
+                                 val_d,
+                                 MENU_ENUM_LABEL_NO_ITEMS,
+                                 MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM, val, 0);
+                        }
+                     }
+                  }
+                  break;
+               default:
+                  break;
+            }
+
+            info->need_refresh       = true;
+            info->need_push          = true;
+         }
+         break;
       case DISPLAYLIST_NONE:
          break;
    }
