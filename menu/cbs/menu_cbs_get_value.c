@@ -1268,43 +1268,6 @@ static void menu_action_setting_disp_set_label_left_thumbnails(
    }
 }
 
-static void menu_action_setting_disp_set_label_menu_toggle_gamepad_combo(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   settings_t *settings        = config_get_ptr();
-
-   if (!settings)
-      return;
-
-   strlcpy(s2, path, len2);
-   *w = 19;
-
-   switch (settings->uints.input_menu_toggle_gamepad_combo)
-   {
-      case INPUT_TOGGLE_NONE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
-         break;
-      case INPUT_TOGGLE_DOWN_Y_L_R:
-         strlcpy(s, "Down + L1 + R1 + Y", len);
-         break;
-      case INPUT_TOGGLE_L3_R3:
-         strlcpy(s, "L3 + R3", len);
-         break;
-      case INPUT_TOGGLE_L1_R1_START_SELECT:
-         strlcpy(s, "L1 + R1 + Start + Select", len);
-         break;
-      case INPUT_TOGGLE_START_SELECT:
-         strlcpy(s, "Start + Select", len);
-         break;
-   }
-}
-
 
 static void menu_action_setting_disp_set_label_menu_disk_index(
       file_list_t* list,
@@ -2055,10 +2018,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_LEFT_THUMBNAILS:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_left_thumbnails);
-            break;
-         case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_menu_toggle_gamepad_combo);
             break;
          case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
             BIND_ACTION_GET_VALUE(cbs,

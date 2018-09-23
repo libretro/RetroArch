@@ -766,6 +766,33 @@ static void setting_get_string_representation_netplay_mitm_server(void *data,
 }
 #endif
 
+static void setting_get_string_representation_toggle_gamepad_combo(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case INPUT_TOGGLE_NONE:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
+         break;
+      case INPUT_TOGGLE_DOWN_Y_L_R:
+         strlcpy(s, "Down + L1 + R1 + Y", len);
+         break;
+      case INPUT_TOGGLE_L3_R3:
+         strlcpy(s, "L3 + R3", len);
+         break;
+      case INPUT_TOGGLE_L1_R1_START_SELECT:
+         strlcpy(s, "L1 + R1 + Start + Select", len);
+         break;
+      case INPUT_TOGGLE_START_SELECT:
+         strlcpy(s, "Start + Select", len);
+         break;
+   }
+}
+
 #ifdef HAVE_LANGEXTRA
 static void setting_get_string_representation_uint_user_language(void *data,
       char *s, size_t len)
@@ -5180,6 +5207,8 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_toggle_gamepad_combo;
             menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);
 
             CONFIG_BOOL(
