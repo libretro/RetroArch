@@ -4230,7 +4230,7 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info)
    info->setting                  = NULL;
 }
 
-static void menu_displaylist_enumerate_range(menu_displaylist_info_t *info,
+static bool menu_displaylist_enumerate_range(menu_displaylist_info_t *info,
       rarch_setting_t *setting, unsigned setting_type)
 {
    if (setting->enforce_minrange && setting->enforce_maxrange)
@@ -4242,7 +4242,6 @@ static void menu_displaylist_enumerate_range(menu_displaylist_info_t *info,
 
       if (setting->get_string_representation)
       {
-         unsigned orig_value = *setting->value.target.unsigned_integer;
          for (i = min; i <= max; i += step)
          {
             char val_s[256], val_d[256];
@@ -4264,7 +4263,7 @@ static void menu_displaylist_enumerate_range(menu_displaylist_info_t *info,
                   setting_type, val, 0);
          }
 
-         *setting->value.target.unsigned_integer = orig_value;
+         return true;
       }
       else
       {
@@ -4284,6 +4283,8 @@ static void menu_displaylist_enumerate_range(menu_displaylist_info_t *info,
          }
       }
    }
+
+   return false;
 }
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
@@ -7753,17 +7754,23 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            unsigned setting_type        = 0;
-
             switch (setting->type)
             {
                case ST_INT:
-                  setting_type           = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM;
-                  menu_displaylist_enumerate_range(info, setting, setting_type);
+                  {
+                     int32_t orig_value     = *setting->value.target.integer;
+                     unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM;
+                     if (menu_displaylist_enumerate_range(info, setting, setting_type))
+                        *setting->value.target.integer = orig_value;
+                  }
                   break;
                case ST_UINT:
-                  setting_type           = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM;
-                  menu_displaylist_enumerate_range(info, setting, setting_type);
+                  {
+                     unsigned orig_value    = *setting->value.target.unsigned_integer;
+                     unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM;
+                     if (menu_displaylist_enumerate_range(info, setting, setting_type))
+                        *setting->value.target.unsigned_integer = orig_value;
+                  }
                   break;
                default:
                   break;
