@@ -175,6 +175,16 @@ static int setting_action_ok_uint(void *data, bool wraparound)
    return 0;
 }
 
+static void setting_get_string_representation_max_users(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+}
+
 #ifdef HAVE_CHEEVOS
 static void setting_get_string_representation_cheevos_password(void *data,
       char *s, size_t len)
@@ -5522,6 +5532,10 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_max_users;
+            (*list)[list_info->index - 1].offset_by = 1;
             menu_settings_list_current_add_range(list, list_info, 1, MAX_USERS, 1, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 

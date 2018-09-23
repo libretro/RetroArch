@@ -858,6 +858,7 @@ static rarch_setting_t setting_action_setting(const char* name,
 
    result.index                     = 0;
    result.index_offset              = 0;
+   result.offset_by                 = 0;
 
    result.min                       = 0.0;
    result.max                       = 0.0;
@@ -920,6 +921,7 @@ static rarch_setting_t setting_group_setting(enum setting_type type, const char*
 
    result.index                     = 0;
    result.index_offset              = 0;
+   result.offset_by                 = 0;
 
    result.min                       = 0.0;
    result.max                       = 0.0;
@@ -993,6 +995,7 @@ static rarch_setting_t setting_float_setting(const char* name,
 
    result.index                     = 0;
    result.index_offset              = 0;
+   result.offset_by                 = 0;
 
    result.min                       = 0.0;
    result.max                       = 0.0;
@@ -1069,6 +1072,7 @@ static rarch_setting_t setting_uint_setting(const char* name,
 
    result.index                     = 0;
    result.index_offset              = 0;
+   result.offset_by                 = 0;
 
    result.min                       = 0.0;
    result.max                       = 0.0;
@@ -1147,6 +1151,7 @@ static rarch_setting_t setting_size_setting(const char* name,
 
    result.index                     = 0;
    result.index_offset              = 0;
+   result.offset_by                 = 0;
 
    result.min                       = 0.0;
    result.max                       = 0.0;
@@ -1223,6 +1228,7 @@ static rarch_setting_t setting_hex_setting(const char* name,
 
    result.index                     = 0;
    result.index_offset              = 0;
+   result.offset_by                 = 0;
 
    result.min                       = 0.0;
    result.max                       = 0.0;
@@ -1300,6 +1306,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
 
    result.index                     = idx;
    result.index_offset              = idx_offset;
+   result.offset_by                 = 0;
 
    result.min                       = 0.0;
    result.max                       = 0.0;
@@ -1459,6 +1466,7 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
 
    result.index                     = 0;
    result.index_offset              = 0;
+   result.offset_by                 = 0;
 
    result.min                       = 0.0;
    result.max                       = 0.0;
@@ -1580,6 +1588,7 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
 
    result.index                     = 0;
    result.index_offset              = 0;
+   result.offset_by                 = 0;
 
    result.min                       = 0.0;
    result.max                       = 0.0;
@@ -1654,6 +1663,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
 
    result.index                     = 0;
    result.index_offset              = 0;
+   result.offset_by                 = 0;
 
    result.min                       = 0.0;
    result.max                       = 0.0;
@@ -1732,6 +1742,7 @@ static rarch_setting_t setting_int_setting(const char* name,
 
    result.index                     = 0;
    result.index_offset              = 0;
+   result.offset_by                 = 0;
 
    result.min                       = 0.0;
    result.max                       = 0.0;
