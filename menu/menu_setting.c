@@ -1161,6 +1161,7 @@ static void setting_get_string_representation_toggle_gamepad_combo(void *data,
    }
 }
 
+#ifdef HAVE_NETWORKING
 static void setting_get_string_representation_netplay_share_digital(void *data,
       char *s, size_t len)
 {
@@ -1218,6 +1219,7 @@ static void setting_get_string_representation_netplay_share_analog(void *data,
          break;
    }
 }
+#endif
 
 static void setting_get_string_representation_poll_type_behavior(void *data,
       char *s, size_t len)
