@@ -6439,6 +6439,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+
          CONFIG_UINT(
                   list, list_info,
                   &settings->uints.input_overlay_show_physical_inputs_port,
@@ -6451,7 +6452,9 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler
                   );
-            menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS - 1, 1, true, true);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS - 1, 1, true, true);
+
          CONFIG_PATH(
                list, list_info,
                settings->paths.path_overlay,
