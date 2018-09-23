@@ -1976,35 +1976,29 @@ static void get_string_representation_bind_device(void * data, char *s,
    if (map < max_devices)
    {
       const char *device_name = input_config_get_device_display_name(map) ?
-                                input_config_get_device_display_name(map) : input_config_get_device_name(map);
+         input_config_get_device_display_name(map) : input_config_get_device_name(map);
 
       if (!string_is_empty(device_name))
       {
          unsigned idx = input_autoconfigure_get_device_name_index(map);
 
          /*if idx is non-zero, it's part of a set*/
-         if ( idx > 0 )
-         {
+         if ( idx > 0)
             snprintf(s, len,
                   "%s (#%u)",
                   device_name,
                   idx);
-         }
          else
-         {
             snprintf(s, len,
                   "%s",
                   device_name);
-         }
       }
       else
-      {
          snprintf(s, len,
                "%s (%s #%u)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
                map);
-      }
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
@@ -2324,29 +2318,28 @@ void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
          {
             rarch_setting_t *buffer_size_setting = menu_setting_find("rewind_buffer_size");
-            if ( buffer_size_setting ) {
+            if (buffer_size_setting)
                buffer_size_setting->step = (*setting->value.target.unsigned_integer)*1024*1024 ;
-            }
          }
          break;
       case MENU_ENUM_LABEL_CHEAT_MEMORY_SEARCH_SIZE:
          {
             rarch_setting_t *setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_VALUE));
-            if ( setting )
-			{
+            if (setting)
+            {
                *(setting->value.target.unsigned_integer) = 0 ;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
             }
             setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RUMBLE_VALUE));
-            if ( setting )
-			{
+            if (setting)
+            {
                *setting->value.target.unsigned_integer = 0 ;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
             }
             setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION));
-            if ( setting )
-			{
-			   int max_bit_position;
+            if (setting)
+            {
+               int max_bit_position;
                *setting->value.target.unsigned_integer = 0 ;
                max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
                setting->max     = max_bit_position ;
@@ -2357,20 +2350,20 @@ void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_CHEAT_START_OR_RESTART:
          {
             rarch_setting_t *setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT));
-            if ( setting )
-			{
+            if (setting)
+            {
                *setting->value.target.unsigned_integer = 0 ;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
             }
             setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS));
-            if ( setting )
-			{
+            if (setting)
+            {
                *setting->value.target.unsigned_integer = 0 ;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
             }
             setting = menu_setting_find(msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS));
-            if ( setting )
-			{
+            if (setting)
+            {
                *setting->value.target.unsigned_integer = 0 ;
                setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.search_bit_size))-1;
             }
@@ -3932,188 +3925,188 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_CHEATS:
-      {
-         START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS), parent_group);
+         {
+            START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS), parent_group);
 
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SETTINGS);
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SETTINGS);
 
-         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+            START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.apply_cheats_after_load,
-               MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
-               MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
-               apply_cheats_after_load,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_CMD_APPLY_AUTO);
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.apply_cheats_after_load,
+                  MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
+                  MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+                  apply_cheats_after_load,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_CMD_APPLY_AUTO);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.apply_cheats_after_toggle,
-               MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
-               MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
-               apply_cheats_after_toggle,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_CMD_APPLY_AUTO);
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.apply_cheats_after_toggle,
+                  MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
+                  MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+                  apply_cheats_after_toggle,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_CMD_APPLY_AUTO);
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
-         break;
-      }
+            END_SUB_GROUP(list, list_info, parent_group);
+            END_GROUP(list, list_info, parent_group);
+            break;
+         }
       case SETTINGS_LIST_CHEAT_DETAILS:
-		  {
-         int max_bit_position;
-         if ( ! cheat_manager_state.cheats )
-            break ;
+         {
+            int max_bit_position;
+            if (!cheat_manager_state.cheats)
+               break ;
 
-         START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS), parent_group);
+            START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS), parent_group);
 
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DETAILS_SETTINGS);
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DETAILS_SETTINGS);
 
-         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-
-
-         config_uint_cbs(cheat_manager_state.working_cheat.idx, CHEAT_IDX,
-               NULL,NULL,
-               0,&setting_get_string_representation_uint,0,cheat_manager_get_size()-1,1) ;
-
-         CONFIG_BOOL(
-               list, list_info,
-               &cheat_manager_state.working_cheat.state,
-               MENU_ENUM_LABEL_CHEAT_STATE,
-               MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
-               cheat_manager_state.working_cheat.state,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_STRING(
-               list, list_info,
-               cheat_manager_state.working_desc,
-               sizeof(cheat_manager_state.working_desc),
-               MENU_ENUM_LABEL_CHEAT_DESC,
-               MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-
-         config_uint_cbs(cheat_manager_state.working_cheat.handler, CHEAT_HANDLER,
-               setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
-               MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,&setting_get_string_representation_uint_as_enum,
-               CHEAT_HANDLER_TYPE_EMU,CHEAT_HANDLER_TYPE_RETRO,1) ;
-
-         CONFIG_STRING(
-               list, list_info,
-               cheat_manager_state.working_code,
-               sizeof(cheat_manager_state.working_code),
-               MENU_ENUM_LABEL_CHEAT_CODE,
-               MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-
-         config_uint_cbs(cheat_manager_state.working_cheat.memory_search_size, CHEAT_MEMORY_SEARCH_SIZE,
-               setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
-               MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,&setting_get_string_representation_uint_as_enum,
-               0,5,1) ;
-
-         config_uint_cbs(cheat_manager_state.working_cheat.cheat_type, CHEAT_TYPE,
-               setting_uint_action_left_default,setting_uint_action_right_default,
-               MENU_ENUM_LABEL_CHEAT_TYPE_DISABLED,&setting_get_string_representation_uint_as_enum,
-               CHEAT_TYPE_DISABLED,CHEAT_TYPE_RUN_NEXT_IF_GT,1) ;
-
-         config_uint_cbs(cheat_manager_state.working_cheat.value, CHEAT_VALUE,
-               setting_uint_action_left_default,setting_uint_action_right_default,
-               0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1) ;
-
-         config_uint_cbs(cheat_manager_state.working_cheat.address, CHEAT_ADDRESS,
-               setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
-               0,&setting_get_string_representation_hex_and_uint,0,cheat_manager_state.total_memory_size==0?0:cheat_manager_state.total_memory_size-1,1) ;
-
-         max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
-         config_uint_cbs(cheat_manager_state.working_cheat.address_mask, CHEAT_ADDRESS_BIT_POSITION,
-               setting_uint_action_left_default,setting_uint_action_right_default,
-               0,&setting_get_string_representation_hex_and_uint,0,max_bit_position,1) ;
-
-         CONFIG_BOOL(
-               list, list_info,
-               &cheat_manager_state.working_cheat.big_endian,
-               MENU_ENUM_LABEL_CHEAT_BIG_ENDIAN,
-               MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
-               cheat_manager_state.working_cheat.big_endian,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         config_uint_cbs(cheat_manager_state.working_cheat.rumble_type, CHEAT_RUMBLE_TYPE,
-               setting_uint_action_left_default,setting_uint_action_right_default,
-               MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,&setting_get_string_representation_uint_as_enum,
-               RUMBLE_TYPE_DISABLED,RUMBLE_TYPE_GT_VALUE,1) ;
-
-         config_uint_cbs(cheat_manager_state.working_cheat.rumble_value, CHEAT_RUMBLE_VALUE,
-               setting_uint_action_left_default,setting_uint_action_right_default,
-               0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1) ;
-
-         config_uint_cbs(cheat_manager_state.working_cheat.rumble_port, CHEAT_RUMBLE_PORT,
-               setting_uint_action_left_default,setting_uint_action_right_default,
-               MENU_ENUM_LABEL_RUMBLE_PORT_0,&setting_get_string_representation_uint_as_enum,
-               0,16,1) ;
-
-         config_uint_cbs(cheat_manager_state.working_cheat.rumble_primary_strength, CHEAT_RUMBLE_PRIMARY_STRENGTH,
-               setting_uint_action_left_default,setting_uint_action_right_default,
-               0,&setting_get_string_representation_hex_and_uint,0,65535,1) ;
-
-         config_uint_cbs(cheat_manager_state.working_cheat.rumble_primary_duration, CHEAT_RUMBLE_PRIMARY_DURATION,
-               setting_uint_action_left_default,setting_uint_action_right_default,
-               0,&setting_get_string_representation_uint,0,5000,1) ;
-
-         config_uint_cbs(cheat_manager_state.working_cheat.rumble_secondary_strength, CHEAT_RUMBLE_SECONDARY_STRENGTH,
-               setting_uint_action_left_default,setting_uint_action_right_default,
-               0,&setting_get_string_representation_hex_and_uint,0,65535,1) ;
-
-         config_uint_cbs(cheat_manager_state.working_cheat.rumble_secondary_duration, CHEAT_RUMBLE_SECONDARY_DURATION,
-               setting_uint_action_left_default,setting_uint_action_right_default,
-               0,&setting_get_string_representation_uint,0,5000,1) ;
+            START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
 
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
-		 }
+            config_uint_cbs(cheat_manager_state.working_cheat.idx, CHEAT_IDX,
+                  NULL,NULL,
+                  0,&setting_get_string_representation_uint,0,cheat_manager_get_size()-1,1) ;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &cheat_manager_state.working_cheat.state,
+                  MENU_ENUM_LABEL_CHEAT_STATE,
+                  MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
+                  cheat_manager_state.working_cheat.state,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_STRING(
+                  list, list_info,
+                  cheat_manager_state.working_desc,
+                  sizeof(cheat_manager_state.working_desc),
+                  MENU_ENUM_LABEL_CHEAT_DESC,
+                  MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+            config_uint_cbs(cheat_manager_state.working_cheat.handler, CHEAT_HANDLER,
+                  setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
+                  MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,&setting_get_string_representation_uint_as_enum,
+                  CHEAT_HANDLER_TYPE_EMU,CHEAT_HANDLER_TYPE_RETRO,1) ;
+
+            CONFIG_STRING(
+                  list, list_info,
+                  cheat_manager_state.working_code,
+                  sizeof(cheat_manager_state.working_code),
+                  MENU_ENUM_LABEL_CHEAT_CODE,
+                  MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+
+            config_uint_cbs(cheat_manager_state.working_cheat.memory_search_size, CHEAT_MEMORY_SEARCH_SIZE,
+                  setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
+                  MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,&setting_get_string_representation_uint_as_enum,
+                  0,5,1) ;
+
+            config_uint_cbs(cheat_manager_state.working_cheat.cheat_type, CHEAT_TYPE,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  MENU_ENUM_LABEL_CHEAT_TYPE_DISABLED,&setting_get_string_representation_uint_as_enum,
+                  CHEAT_TYPE_DISABLED,CHEAT_TYPE_RUN_NEXT_IF_GT,1) ;
+
+            config_uint_cbs(cheat_manager_state.working_cheat.value, CHEAT_VALUE,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1) ;
+
+            config_uint_cbs(cheat_manager_state.working_cheat.address, CHEAT_ADDRESS,
+                  setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
+                  0,&setting_get_string_representation_hex_and_uint,0,cheat_manager_state.total_memory_size==0?0:cheat_manager_state.total_memory_size-1,1) ;
+
+            max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0 ;
+            config_uint_cbs(cheat_manager_state.working_cheat.address_mask, CHEAT_ADDRESS_BIT_POSITION,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  0,&setting_get_string_representation_hex_and_uint,0,max_bit_position,1) ;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &cheat_manager_state.working_cheat.big_endian,
+                  MENU_ENUM_LABEL_CHEAT_BIG_ENDIAN,
+                  MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
+                  cheat_manager_state.working_cheat.big_endian,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            config_uint_cbs(cheat_manager_state.working_cheat.rumble_type, CHEAT_RUMBLE_TYPE,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,&setting_get_string_representation_uint_as_enum,
+                  RUMBLE_TYPE_DISABLED,RUMBLE_TYPE_GT_VALUE,1) ;
+
+            config_uint_cbs(cheat_manager_state.working_cheat.rumble_value, CHEAT_RUMBLE_VALUE,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1) ;
+
+            config_uint_cbs(cheat_manager_state.working_cheat.rumble_port, CHEAT_RUMBLE_PORT,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  MENU_ENUM_LABEL_RUMBLE_PORT_0,&setting_get_string_representation_uint_as_enum,
+                  0,16,1) ;
+
+            config_uint_cbs(cheat_manager_state.working_cheat.rumble_primary_strength, CHEAT_RUMBLE_PRIMARY_STRENGTH,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  0,&setting_get_string_representation_hex_and_uint,0,65535,1) ;
+
+            config_uint_cbs(cheat_manager_state.working_cheat.rumble_primary_duration, CHEAT_RUMBLE_PRIMARY_DURATION,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  0,&setting_get_string_representation_uint,0,5000,1) ;
+
+            config_uint_cbs(cheat_manager_state.working_cheat.rumble_secondary_strength, CHEAT_RUMBLE_SECONDARY_STRENGTH,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  0,&setting_get_string_representation_hex_and_uint,0,65535,1) ;
+
+            config_uint_cbs(cheat_manager_state.working_cheat.rumble_secondary_duration, CHEAT_RUMBLE_SECONDARY_DURATION,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  0,&setting_get_string_representation_uint,0,5000,1) ;
+
+
+
+            END_SUB_GROUP(list, list_info, parent_group);
+            END_GROUP(list, list_info, parent_group);
+         }
          break;
       case SETTINGS_LIST_CHEAT_SEARCH:
-         if ( ! cheat_manager_state.cheats )
+         if (!cheat_manager_state.cheats)
             break ;
 
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS), parent_group);
