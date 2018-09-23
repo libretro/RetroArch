@@ -5399,6 +5399,10 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_OK(cbs, action_ok_cheat);
    }
+   else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
+   {
+      return -1;
+   }
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
    {
       BIND_ACTION_OK(cbs, action_ok_core_option_dropdown_list);
