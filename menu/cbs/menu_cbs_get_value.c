@@ -638,9 +638,9 @@ static void menu_action_setting_disp_set_label_cheat_match(
    unsigned int address_mask = 0;
    unsigned int prev_val = 0;
    unsigned int curr_val = 0 ;
-   cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_VIEW, cheat_manager_state.match_idx, &address, &address_mask, &prev_val, &curr_val) ;
+   cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_VIEW, cheat_manager_state.match_idx, &address, &address_mask, &prev_val, &curr_val);
 
-   snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val) ;
+   snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val);
    *w = 19;
    strlcpy(s2, path, len2);
 }
