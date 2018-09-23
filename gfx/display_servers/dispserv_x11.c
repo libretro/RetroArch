@@ -108,7 +108,7 @@ static bool x11_display_server_set_window_decorations(void *data, bool on)
 }
 
 static bool x11_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz)
+      unsigned width, unsigned height, int int_hz, float hz, int center)
 {
    int i              = 0;
    int hfp            = 0;
