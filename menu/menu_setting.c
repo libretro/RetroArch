@@ -1092,19 +1092,12 @@ static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
 {
    const char *modes[3];
    rarch_setting_t *setting  = (rarch_setting_t*)data;
-   settings_t      *settings = config_get_ptr();
 
    modes[0] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
    modes[1] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG);
    modes[2] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG);
 
-
-   if (setting)
-   {
-      unsigned index_offset = setting->index_offset;
-      strlcpy(s, modes[settings->uints.input_analog_dpad_mode
-            [index_offset] % ANALOG_DPAD_LAST], len);
-   }
+   strlcpy(s, modes[*setting->value.target.unsigned_integer % ANALOG_DPAD_LAST], len);
 }
 
 #ifdef HAVE_THREADS
