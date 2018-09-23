@@ -125,36 +125,6 @@ static void menu_action_setting_disp_set_label_cheevos_locked_entry(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY), len);
 }
 
-static void menu_action_setting_disp_set_label_crt_switch_resolution(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   settings_t *settings = config_get_ptr();
-   *w = 19;
-   strlcpy(s2, path, len2);
-
-   if (settings)
-   {
-      switch (settings->uints.crt_switch_resolution)
-      {
-         case CRT_SWITCH_NONE:
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-            break;
-         case CRT_SWITCH_15KHZ:
-            strlcpy(s, "15 KHz", len);
-            break;
-         case CRT_SWITCH_31KHZ:
-            strlcpy(s, "31 KHz", len);
-            break;
-      }
-   }
-}
-
 static void menu_action_setting_disp_set_label_crt_switch_resolution_super(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -299,61 +269,6 @@ static void menu_action_setting_disp_set_label_filter(
    if (settings && *settings->paths.path_softfilter_plugin)
       fill_short_pathname_representation(s,
             settings->paths.path_softfilter_plugin, len);
-}
-
-static void menu_action_setting_disp_set_label_pipeline(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   settings_t *settings = config_get_ptr();
-
-   *s = '\0';
-   *w = 19;
-
-   switch (settings->uints.menu_xmb_shader_pipeline)
-   {
-      case XMB_SHADER_PIPELINE_WALLPAPER:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         break;
-      case XMB_SHADER_PIPELINE_SIMPLE_RIBBON:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED), len);
-         break;
-      case XMB_SHADER_PIPELINE_RIBBON:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON), len);
-         break;
-      case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW), len);
-         break;
-      case XMB_SHADER_PIPELINE_SNOW:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW), len);
-         break;
-      case XMB_SHADER_PIPELINE_BOKEH:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH), len);
-         break;
-      case XMB_SHADER_PIPELINE_SNOWFLAKE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE), len);
-         break;
-   }
-
-   strlcpy(s2, path, len2);
-
 }
 
 #ifdef HAVE_NETWORKING
@@ -883,71 +798,6 @@ static void menu_action_setting_disp_set_label_state(
    snprintf(s, len, "%d", settings->ints.state_slot);
    if (settings->ints.state_slot == -1)
       strlcat(s, " (Auto)", len);
-}
-
-static void menu_action_setting_disp_set_label_xmb_theme(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   settings_t *settings        = config_get_ptr();
-
-   if (!settings)
-      return;
-
-   strlcpy(s2, path, len2);
-   *w = 19;
-   switch (settings->uints.menu_xmb_theme)
-   {
-      case XMB_ICON_THEME_MONOCHROME:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME), len);
-         break;
-      case XMB_ICON_THEME_FLATUI:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI), len);
-         break;
-      case XMB_ICON_THEME_RETROACTIVE:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE), len);
-         break;
-      case XMB_ICON_THEME_RETROSYSTEM:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM), len);
-         break;
-      case XMB_ICON_THEME_PIXEL:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL), len);
-         break;
-      case XMB_ICON_THEME_NEOACTIVE:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE), len);
-         break;
-      case XMB_ICON_THEME_SYSTEMATIC:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC), len);
-         break;
-      case XMB_ICON_THEME_DOTART:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART), len);
-         break;
-      case XMB_ICON_THEME_MONOCHROME_INVERTED:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED), len);
-         break;
-      case XMB_ICON_THEME_CUSTOM:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM), len);
-         break;
-      case XMB_ICON_THEME_AUTOMATIC:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC), len);
-         break;
-   }
 }
 
 static void menu_action_setting_disp_set_label_wifi_is_online(
@@ -1875,10 +1725,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_xmb_layout);
             break;
-         case MENU_ENUM_LABEL_XMB_THEME:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_xmb_theme);
-            break;
          case MENU_ENUM_LABEL_CONNECT_WIFI:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_wifi_is_online);
@@ -1922,10 +1768,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_watch_for_changes);
-            break;
-         case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_pipeline);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
             BIND_ACTION_GET_VALUE(cbs,
@@ -2203,10 +2045,6 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
-         case MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_crt_switch_resolution);
-            return 0;
          case MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_crt_switch_resolution_super);
