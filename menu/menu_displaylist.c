@@ -4230,63 +4230,6 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info)
    info->setting                  = NULL;
 }
 
-static bool menu_displaylist_enumerate_range(menu_displaylist_info_t *info,
-      rarch_setting_t *setting, unsigned setting_type)
-{
-   if (setting->enforce_minrange && setting->enforce_maxrange)
-   {
-      float i;
-      float step = setting->step;
-      double min = setting->min;
-      double max = setting->max;
-
-      if (setting->get_string_representation)
-      {
-         for (i = min; i <= max; i += step)
-         {
-            char val_s[256], val_d[256];
-            int val = (int)i;
-
-            /* TODO/FIXME - 
-             * get_string_representation for aspect ratio index
-             * uses setting->value.target.unsigned_integer, so
-             * create this hack */
-            *setting->value.target.unsigned_integer = val;
-
-            setting->get_string_representation(setting,
-                  val_s, sizeof(val_s));
-            snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-            menu_entries_append_enum(info->list,
-                  val_s,
-                  val_d,
-                  MENU_ENUM_LABEL_NO_ITEMS,
-                  setting_type, val, 0);
-         }
-
-         return true;
-      }
-      else
-      {
-         for (i = min; i <= max; i += step)
-         {
-            char val_s[16], val_d[16];
-            int val = (int)i;
-
-            snprintf(val_s, sizeof(val_s), "%d", val);
-            snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-
-            menu_entries_append_enum(info->list,
-                  val_s,
-                  val_d,
-                  MENU_ENUM_LABEL_NO_ITEMS,
-                  setting_type, val, 0);
-         }
-      }
-   }
-
-   return false;
-}
-
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 {
    size_t i;
@@ -7761,16 +7704,106 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   {
                      int32_t orig_value     = *setting->value.target.integer;
                      unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM;
-                     if (menu_displaylist_enumerate_range(info, setting, setting_type))
-                        *setting->value.target.integer = orig_value;
+
+                     if (setting->enforce_minrange && setting->enforce_maxrange)
+                     {
+                        float i;
+                        float step = setting->step;
+                        double min = setting->min;
+                        double max = setting->max;
+
+                        if (setting->get_string_representation)
+                        {
+                           for (i = min; i <= max; i += step)
+                           {
+                              char val_s[256], val_d[256];
+                              int val = (int)i;
+
+                              *setting->value.target.integer = val;
+
+                              setting->get_string_representation(setting,
+                                    val_s, sizeof(val_s));
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, val, 0);
+                           }
+
+                           *setting->value.target.integer = orig_value;
+                        }
+                        else
+                        {
+                           for (i = min; i <= max; i += step)
+                           {
+                              char val_s[16], val_d[16];
+                              int val = (int)i;
+
+                              snprintf(val_s, sizeof(val_s), "%d", val);
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, val, 0);
+                           }
+                        }
+                     }
                   }
                   break;
                case ST_UINT:
                   {
                      unsigned orig_value    = *setting->value.target.unsigned_integer;
                      unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM;
-                     if (menu_displaylist_enumerate_range(info, setting, setting_type))
-                        *setting->value.target.unsigned_integer = orig_value;
+
+                     if (setting->enforce_minrange && setting->enforce_maxrange)
+                     {
+                        float i;
+                        float step = setting->step;
+                        double min = setting->min;
+                        double max = setting->max;
+
+                        if (setting->get_string_representation)
+                        {
+                           for (i = min; i <= max; i += step)
+                           {
+                              char val_s[256], val_d[256];
+                              int val = (int)i;
+
+                              *setting->value.target.unsigned_integer = val;
+
+                              setting->get_string_representation(setting,
+                                    val_s, sizeof(val_s));
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, val, 0);
+                           }
+
+                           *setting->value.target.unsigned_integer = orig_value;
+                        }
+                        else
+                        {
+                           for (i = min; i <= max; i += step)
+                           {
+                              char val_s[16], val_d[16];
+                              int val = (int)i;
+
+                              snprintf(val_s, sizeof(val_s), "%d", val);
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
+                              menu_entries_append_enum(info->list,
+                                    val_s,
+                                    val_d,
+                                    MENU_ENUM_LABEL_NO_ITEMS,
+                                    setting_type, val, 0);
+                           }
+                        }
+                     }
                   }
                   break;
                default:
