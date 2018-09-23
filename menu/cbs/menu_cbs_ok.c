@@ -4278,7 +4278,7 @@ static int action_ok_push_dropdown_setting_uint_item(const char *path,
    if (!setting)
       return -1;
 
-   *setting->value.target.unsigned_integer = idx;
+   *setting->value.target.unsigned_integer = idx + setting->offset_by;
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
