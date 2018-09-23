@@ -3534,6 +3534,7 @@ static bool setting_append_list(
                      general_read_handler,
                      general_write_handler);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+               (*list)[list_info->index - 1].action_ok    = setting_action_ok_uint;
                (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
                (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
             }

@@ -7700,6 +7700,28 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             switch (setting->type)
             {
+               case ST_STRING_OPTIONS:
+                  {
+                     struct string_list *tmp_str_list = string_split(setting->values, "|");
+
+                     if (tmp_str_list && tmp_str_list->size > 0)
+                     {
+                        unsigned i;
+                        unsigned size = tmp_str_list->size;
+
+                        for (i = 0; i < size; i++)
+                        {
+                           char val_d[256];
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                           menu_entries_append_enum(info->list,
+                                 tmp_str_list->elems[i].data,
+                                 val_d,
+                                 MENU_ENUM_LABEL_NO_ITEMS,
+                                 MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM, i, 0);
+                        }
+                     }
+                  }
+                  break;
                case ST_INT:
                   {
                      int32_t orig_value     = *setting->value.target.integer;
