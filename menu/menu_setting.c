@@ -793,6 +793,33 @@ static void setting_get_string_representation_toggle_gamepad_combo(void *data,
    }
 }
 
+static void setting_get_string_representation_poll_type_behavior(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY), len);
+         break;
+      case 1:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL), len);
+         break;
+      case 2:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE), len);
+         break;
+   }
+}
+
 #ifdef HAVE_LANGEXTRA
 static void setting_get_string_representation_uint_user_language(void *data,
       char *s, size_t len)
@@ -5112,6 +5139,9 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_poll_type_behavior;
             menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
@@ -5207,6 +5237,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_toggle_gamepad_combo;
             menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);

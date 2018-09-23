@@ -885,42 +885,6 @@ static void menu_action_setting_disp_set_label_state(
       strlcat(s, " (Auto)", len);
 }
 
-static void menu_action_setting_disp_set_label_poll_type_behavior(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   settings_t *settings        = config_get_ptr();
-
-   if (!settings)
-      return;
-
-   strlcpy(s2, path, len2);
-   *w = 19;
-   switch (settings->uints.input_poll_type_behavior)
-   {
-      case 0:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY), len);
-         break;
-      case 1:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL), len);
-         break;
-      case 2:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE), len);
-         break;
-   }
-}
-
 static void menu_action_setting_disp_set_label_xmb_theme(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1986,10 +1950,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_STATE_SLOT:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_state);
-            break;
-         case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_poll_type_behavior);
             break;
          case MENU_ENUM_LABEL_XMB_LAYOUT:
             BIND_ACTION_GET_VALUE(cbs,
