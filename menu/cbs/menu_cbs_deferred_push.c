@@ -118,6 +118,7 @@ generic_deferred_push(deferred_push_cheat_file_load,                DISPLAYLIST_
 generic_deferred_push(deferred_push_cheat_file_load_append,         DISPLAYLIST_CHEAT_FILES)
 generic_deferred_push(deferred_push_remap_file_load,                DISPLAYLIST_REMAP_FILES)
 generic_deferred_push(deferred_push_record_configfile,              DISPLAYLIST_RECORD_CONFIG_FILES)
+generic_deferred_push(deferred_push_stream_configfile,              DISPLAYLIST_STREAM_CONFIG_FILES)
 generic_deferred_push(deferred_push_input_overlay,                  DISPLAYLIST_OVERLAYS)
 generic_deferred_push(deferred_push_video_font_path,                DISPLAYLIST_FONTS)
 generic_deferred_push(deferred_push_xmb_font_path,                  DISPLAYLIST_FONTS)
@@ -1033,6 +1034,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_ENUM_LABEL_RECORD_CONFIG:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_record_configfile);
+               break;
+            case MENU_ENUM_LABEL_STREAM_CONFIG:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_stream_configfile);
                break;
             case MENU_ENUM_LABEL_SHADER_OPTIONS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_shader_options);

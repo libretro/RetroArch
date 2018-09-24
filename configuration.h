@@ -388,6 +388,10 @@ typedef struct settings
       unsigned video_msg_bgcolor_green;
       unsigned video_msg_bgcolor_blue;
       unsigned video_stream_port;
+      unsigned video_record_quality;
+      unsigned video_stream_quality;
+      unsigned video_record_scale_factor;
+      unsigned video_stream_scale_factor;
 
       unsigned menu_thumbnails;
       unsigned menu_left_thumbnails;

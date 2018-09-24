@@ -2151,7 +2151,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
-    "Load Recording Config..."
+    "Custom Record Config"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+    "Custom Stream Config"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
