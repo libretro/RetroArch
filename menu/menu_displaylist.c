@@ -7824,6 +7824,53 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                            }
                         }
                         break;
+                     case ST_FLOAT:
+                        {
+                           float i;
+                           float orig_value       = *setting->value.target.fraction;
+                           unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM;
+                           float step             = setting->step;
+                           double min             = setting->enforce_minrange ? setting->min : 0.00;
+                           double max             = setting->enforce_maxrange ? setting->max : 999.00;
+
+                           if (setting->get_string_representation)
+                           {
+                              for (i = min; i <= max; i += step)
+                              {
+                                 char val_s[256], val_d[256];
+
+                                 *setting->value.target.fraction = i;
+
+                                 setting->get_string_representation(setting,
+                                       val_s, sizeof(val_s));
+                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                                 menu_entries_append_enum(info->list,
+                                       val_s,
+                                       val_d,
+                                       MENU_ENUM_LABEL_NO_ITEMS,
+                                       setting_type, 0, 0);
+                              }
+
+                              *setting->value.target.fraction = orig_value;
+                           }
+                           else
+                           {
+                              for (i = min; i <= max; i += step)
+                              {
+                                 char val_s[16], val_d[16];
+
+                                 snprintf(val_s, sizeof(val_s), "%.2f", i);
+                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
+                                 menu_entries_append_enum(info->list,
+                                       val_s,
+                                       val_d,
+                                       MENU_ENUM_LABEL_NO_ITEMS,
+                                       setting_type, 0, 0);
+                              }
+                           }
+                        }
+                        break;
                      case ST_UINT:
                         {
                            float i;

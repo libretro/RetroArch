@@ -4328,6 +4328,20 @@ static int action_ok_push_dropdown_setting_int_item(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+static int action_ok_push_dropdown_setting_float_item(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+   float val                    = (float)atof(path);
+
+   if (!setting)
+      return -1;
+
+   *setting->value.target.fraction = (float)val;
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_dropdown_setting_uint_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5419,6 +5433,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_int_item);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_float_item);
             break;
          case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item);

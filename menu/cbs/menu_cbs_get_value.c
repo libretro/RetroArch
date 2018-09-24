@@ -1646,6 +1646,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
             break;
          case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM:
          case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM:
+         case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM:
          case MENU_SETTING_DROPDOWN_ITEM:
          case MENU_SETTING_NO_ITEM:
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_no_items);
