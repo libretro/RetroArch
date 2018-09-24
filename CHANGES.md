@@ -2,6 +2,7 @@
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
 - CHEEVOS: Support headerless NES hashing.
 - CRT: New porches and interlaced bug fix.
+- CRT: New functionality, ability to switch between 15KHz and 31KHz, etc.
 - COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
 - DISCORD: Add 'Ask To Join' Feature.
 - IOS: Use safe area to account for notch for iPhone X and adjust main view.
