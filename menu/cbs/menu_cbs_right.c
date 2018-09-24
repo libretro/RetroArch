@@ -118,7 +118,7 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
 
    for (key_id = 0; key_id < RARCH_MAX_KEYS - 1; key_id++)
    {
-      if(remap_id == key_descriptors[key_id].key)
+      if (remap_id == key_descriptors[key_id].key)
          break;
    }
 
@@ -159,17 +159,9 @@ int action_right_input_desc(unsigned type, const char *label,
       also skip all the axes until analog remapping is implemented */
    if (remap_idx != RARCH_UNMAPPED)
    {
-      if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*||
-          (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
+      if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END))
          action_right_input_desc(type, label, wraparound);
    }
-
-#if 0
-   int i = 0;
-   //RARCH_LOG("[remap-debug] new descriptor for %d: %s\n", remap_idx, system->input_desc_btn[user_idx][remap_idx]);
-   for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
-      RARCH_LOG("[remap-debug]: user %d button %d new id %d\n", user_idx, i, settings->uints.input_remap_ids[user_idx][i]);
-#endif
 
    return 0;
 }

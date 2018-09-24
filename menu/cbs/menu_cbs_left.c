@@ -413,7 +413,7 @@ static int action_left_input_desc_kbd(unsigned type, const char *label,
 
    for (key_id = 0; key_id < RARCH_MAX_KEYS - 1; key_id++)
    {
-      if(remap_id == key_descriptors[key_id].key)
+      if (remap_id == key_descriptors[key_id].key)
          break;
    }
 
