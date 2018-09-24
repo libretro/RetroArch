@@ -11,6 +11,7 @@
 - LOCALIZATION: Update Polish translation.
 - LOCALIZATION: Update Spanish translation.
 - MENU: Add dropdown lists for many settings.
+- MENU: Fix crash that could happen when changing core's options on Android.
 - MENU/QT/WIMP: Add option to filter extensions inside archives when adding to a playlist.
 - MENU/QT/WIMP: Rename playlist entries with 2 single clicks.
 - MENU/QT/WIMP: Fix shader parameter checkboxes not working
