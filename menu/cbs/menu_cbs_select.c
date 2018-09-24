@@ -67,6 +67,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
          case ST_UINT:
          case ST_SIZE:
          case ST_FLOAT:
+         case ST_STRING_OPTIONS:
             if (cbs->action_ok)
                action     = MENU_ACTION_OK;
             else
