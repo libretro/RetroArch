@@ -20,6 +20,7 @@
 - SWITCH: Merging of RetroNX Nintendo Switch port, based on libnx SDK.
 - VULKAN: Fix race condition in threaded mailbox emulation.
 - VULKAN: Maintenance fixes.
+- WIIU: Fix menu lag when built with DevKitPro r32.
 
 # 1.7.4
 - ANDROID: Add sustained performance mode, can be turned on/off in Power Management settings menu.
