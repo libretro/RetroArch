@@ -69,7 +69,7 @@ struct record_params
    /* Audio channels. */
    unsigned channels;
 
-   enum record_config_type config_type;
+   enum record_config_type preset;
 
    /* Input pixel format. */
    enum ffemu_pix_format pix_fmt;

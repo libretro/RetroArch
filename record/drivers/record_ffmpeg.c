@@ -651,6 +651,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
    return true;
 }
 
+/*
 static bool ffmpeg_init_config_recording(struct ff_config_param *params)
 {
    return true;
@@ -667,6 +668,7 @@ static bool ffmpeg_init_config_recording(struct ff_config_param *params)
 
    return true;
 }
+*/
 
 static bool ffmpeg_init_config(struct ff_config_param *params,
       const char *config)
@@ -924,13 +926,13 @@ static void *ffmpeg_new(const struct record_params *params)
 
    handle->params = *params;
 
-   if (params->config_type == RECORD_CONFIG_TYPE_RECORDING_CUSTOM)
+   if (params->preset == RECORD_CONFIG_TYPE_RECORDING_CUSTOM)
    {
       if (!ffmpeg_init_config(&handle->config, params->config))
          goto error;
    }
    else
-      ffmpeg_init_config_common(&handle->config, params->config_type);
+      ffmpeg_init_config_common(&handle->config, params->preset);
 
    if (!ffmpeg_init_muxer_pre(handle))
       goto error;

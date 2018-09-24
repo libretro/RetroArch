@@ -391,9 +391,15 @@ bool recording_init(void)
    else
    {
       if (streaming_is_enabled())
+      {
          params.config = settings->paths.path_stream_config;
+         params.preset = settings->uints.video_stream_quality;
+      }
       else
+      {
          params.config = settings->paths.path_record_config;
+         params.preset = settings->uints.video_record_quality;
+      }
    }
 
    if (video_driver_supports_recording())
