@@ -148,7 +148,7 @@ static const bool vsync = true;
 
 static const unsigned max_swapchain_images = 3;
 
-static const bool adaptive_vsync = true;
+static const bool adaptive_vsync = false;
 
 /* Attempts to hard-synchronize CPU and GPU.
  * Can reduce latency at cost of performance. */
