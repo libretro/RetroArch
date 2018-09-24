@@ -16,7 +16,7 @@ MSG_HASH(
     "Native")
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
-      "Device disconnected from port"
+      "デバイスがポートから切断されました"
       )
 MSG_HASH(
       MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
@@ -172,7 +172,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_AUTOLOADING_SAVESTATE_FROM,
-      "Auto-loading savestate from"
+      "ステートセーブを自動ロード中 from"
       )
 MSG_HASH(
       MSG_CAPABILITIES,
@@ -180,15 +180,15 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_CONNECTING_TO_NETPLAY_HOST,
-      "Connecting to netplay host"
+      "ネットプレイホストに接続中"
       )
 MSG_HASH(
       MSG_CONNECTING_TO_PORT,
-      "Connecting to port"
+      "ポートに接続中"
       )
 MSG_HASH(
       MSG_CONNECTION_SLOT,
-      "Connection slot"
+      "接続スロット"
       )
 MSG_HASH(
       MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
@@ -436,7 +436,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
-      "カメラを許す"
+      "カメラの使用を許可"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
@@ -570,10 +570,10 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
-      "履歴リストのサイズ"
+      "履歴一覧のサイズ"
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
-      "エントリー削除を許す")
+      "エントリーの削除を許可")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
       "クイックメニュー"
       )
@@ -662,9 +662,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
       "ディレクトリ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-      "Disk Cycle Tray Status")
+      "ディスクトレイの開閉")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-      "Disk Image Append")
+      "ディスクイメージを挿入")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
       "ディスクインデックス")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
@@ -696,9 +696,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
       "有効")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-      "Menu entry hover color")
+      "メニュー項目の選択色")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-      "Menu entry normal color")
+      "メニュー項目の通常色")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FALSE,
       "偽")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -892,9 +892,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
       "次のチートインデックス")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
-      "チートを切り替え")
+      "チートの切り替え")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
-      "ディスクを取り出し")
+      "ディスクの取り出し")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
       "次のディスクに切り替え")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -910,11 +910,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
       "フルスクリーンに切り替え")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
-      "マウスグラブを切り替え")
+      "マウスグラブの切り替え")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
-      "ゲームのフォーカスを切り替え")
+      "ゲームのフォーカスの切り替え")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
-      "デスクトップメニューを切り替え")
+      "デスクトップメニューに切り替え")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
       "デスクトップメニューを有効（再起動が必要）")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
@@ -1062,7 +1062,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_STATE,
       "ステートロード")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
-      "位置情報を許す")
+      "位置情報の使用を許可")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
       "位置情報のドライバ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1734,7 +1734,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
       "メニューバー")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
-      "圧縮ファイルの読み込みに失敗しました。")
+      "圧縮ファイルの読み込みに失敗しました")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
       "ステートロードを取り消す")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
@@ -1778,7 +1778,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
       "<このフォルダを使用>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
-      "回転を許す")
+      "回転を許可")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
       "コンフィグのアスペクト比")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
@@ -2040,11 +2040,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
 MSG_HASH(MENU_ENUM_SUBLABEL_CPU_CORES,
       "CPUのコア数")
 MSG_HASH(MENU_ENUM_SUBLABEL_FPS_SHOW,
-      "画面で現在のフレームレートを表示する。")
+      "画面に現在のフレームレートを表示する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
       "ホットキー設定を変更する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-      "メニューに切り替えるゲームパッドのボタンコンボ")
+      "同時押しでメニューに切り替え")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
       "ゲームパッド、キーボード、マウスの設定を変更する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
@@ -2100,7 +2100,7 @@ MSG_HASH(MSG_ADDED_TO_FAVORITES,
 MSG_HASH(MSG_RESET_CORE_ASSOCIATION,
       "プレイリストエントリーのコアの関連付けがリセットされました")
 MSG_HASH(MSG_APPENDED_DISK,
-      "ディスクを追加しました。")
+      "ディスクを挿入しました")
 MSG_HASH(MSG_APPLICATION_DIR,
       "アプリフォルダ")
 MSG_HASH(MSG_APPLYING_CHEAT,
@@ -2116,9 +2116,9 @@ MSG_HASH(MSG_AUTOCONFIG_FILE_ERROR_SAVING,
 MSG_HASH(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
       "自動設定ファイルの保存に成功しました")
 MSG_HASH(MSG_AUTOSAVE_FAILED,
-      "Could not initialize autosave.")
+      "自動セーブを初期化できませんでした")
 MSG_HASH(MSG_AUTO_SAVE_STATE_TO,
-      "Auto save state to")
+      "自動ステートセーブ to")
 MSG_HASH(MSG_BLOCKING_SRAM_OVERWRITE,
       "Blocking SRAM Overwrite")
 MSG_HASH(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -2136,7 +2136,7 @@ MSG_HASH(MSG_COMPILED_AGAINST_API,
 MSG_HASH(MSG_CONFIG_DIRECTORY_NOT_SET,
       "Config directory not set. Cannot save new config.")
 MSG_HASH(MSG_CONNECTED_TO,
-      "Connected to")
+      "接続しました to")
 MSG_HASH(MSG_CONTENT_CRC32S_DIFFER,
       "Content CRC32s differ. Cannot use different games.")
 MSG_HASH(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
@@ -2154,7 +2154,7 @@ MSG_HASH(MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
 MSG_HASH(MSG_COULD_NOT_OPEN_DATA_TRACK,
       "データトラックを開くことができませんでした")
 MSG_HASH(MSG_COULD_NOT_READ_CONTENT_FILE,
-      "コンテンツファイルの読み込みはできませんでした")
+      "コンテンツファイルを読み込むことができませんでした")
 MSG_HASH(MSG_COULD_NOT_READ_MOVIE_HEADER,
       "Could not read movie header.")
 MSG_HASH(MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
@@ -2164,7 +2164,7 @@ MSG_HASH(MSG_CRC32_CHECKSUM_MISMATCH,
 MSG_HASH(MSG_CUSTOM_TIMING_GIVEN,
       "Custom timing given")
 MSG_HASH(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
-      "解凍は既に実行されています")
+      "解凍は既に進行中です")
 MSG_HASH(MSG_DECOMPRESSION_FAILED,
       "解凍に失敗しました")
 MSG_HASH(MSG_DETECTED_VIEWPORT_OF,
@@ -2174,9 +2174,9 @@ MSG_HASH(MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
 MSG_HASH(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
       "Disconnect device from a valid port.")
 MSG_HASH(MSG_DISK_CLOSED,
-      "閉域")
+      "ディスクを挿入しました")
 MSG_HASH(MSG_DISK_EJECTED,
-      "取り出された")
+      "ディスクを排出しました")
 MSG_HASH(MSG_DOWNLOADING,
       "ダウンロード中")
 MSG_HASH(MSG_DOWNLOAD_FAILED,
@@ -2190,13 +2190,13 @@ MSG_HASH(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
 MSG_HASH(MSG_ERROR_PARSING_ARGUMENTS,
       "Error parsing arguments.")
 MSG_HASH(MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
-      "コアの設定ファイルの保存に失敗しました。")
+      "コアの設定ファイルの保存に失敗しました")
 MSG_HASH(MSG_ERROR_SAVING_REMAP_FILE,
-      "リマップファイルの保存に失敗しました。")
+      "リマップファイルの保存に失敗しました")
 MSG_HASH(MSG_ERROR_REMOVING_REMAP_FILE,
-      "リマップファイルを削除に失敗しました。")
+      "リマップファイルの削除に失敗しました")
 MSG_HASH(MSG_ERROR_SAVING_SHADER_PRESET,
-      "シェーダーのプリセットを保存に失敗しました。")
+      "シェーダーのプリセットの保存に失敗しました")
 MSG_HASH(MSG_EXTERNAL_APPLICATION_DIR,
       "外部アプリフォルダ")
 MSG_HASH(MSG_EXTRACTING,
@@ -2204,9 +2204,9 @@ MSG_HASH(MSG_EXTRACTING,
 MSG_HASH(MSG_EXTRACTING_FILE,
       "ファイルを解凍中")
 MSG_HASH(MSG_FAILED_SAVING_CONFIG_TO,
-      "Failed saving config to")
+      "コンフィグの保存に失敗しました to")
 MSG_HASH(MSG_FAILED_TO,
-      "Failed to")
+      "失敗しました to")
 MSG_HASH(MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
       "Failed to accept incoming spectator.")
 MSG_HASH(MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
@@ -2222,7 +2222,7 @@ MSG_HASH(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
 MSG_HASH(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
       "クライアントのニックネームの取得に失敗しました")
 MSG_HASH(MSG_FAILED_TO_LOAD,
-      "ロードに失敗")
+      "ロードに失敗しました")
 MSG_HASH(MSG_FAILED_TO_LOAD_CONTENT,
       "コンテンツのロードに失敗しました")
 MSG_HASH(MSG_FAILED_TO_LOAD_MOVIE_FILE,
@@ -2230,7 +2230,7 @@ MSG_HASH(MSG_FAILED_TO_LOAD_MOVIE_FILE,
 MSG_HASH(MSG_FAILED_TO_LOAD_OVERLAY,
       "オーバーレイのロードに失敗しました")
 MSG_HASH(MSG_FAILED_TO_LOAD_STATE,
-      "Failed to load state from")
+      "ロードステートに失敗しました from")
 MSG_HASH(MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
       "コアのロードに失敗しました")
 MSG_HASH(MSG_FAILED_TO_PATCH,
@@ -2252,7 +2252,7 @@ MSG_HASH(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
 MSG_HASH(MSG_FAILED_TO_SAVE_SRAM,
       "SRAMの保存に失敗しました")
 MSG_HASH(MSG_FAILED_TO_SAVE_STATE_TO,
-      "Failed to save state to")
+      "ステートセーブに失敗しました to")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME,
       "ニックネームの送信に失敗しました")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_SIZE,
@@ -2278,25 +2278,25 @@ MSG_HASH(MSG_FAILED_TO_UNDO_SAVE_STATE,
 MSG_HASH(MSG_FAILED_TO_UNMUTE_AUDIO,
       "オーディオの消音解除に失敗しました")
 MSG_HASH(MSG_FATAL_ERROR_RECEIVED_IN,
-      "Fatal error received in")
+      "致命的なエラーが発生しました in")
 MSG_HASH(MSG_FILE_NOT_FOUND,
       "そのようなファイルはありません。")
 MSG_HASH(MSG_FOUND_AUTO_SAVESTATE_IN,
-      "Found auto savestate in")
+      "自動ステートセーブが見つかりました in")
 MSG_HASH(MSG_FOUND_DISK_LABEL,
-      "Found disk label")
+      "ディスクラベルが見つかりました")
 MSG_HASH(MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
-      "Found first data track on file")
+      "ファイルの最初のデータトラックが見つかりました")
 MSG_HASH(MSG_FOUND_LAST_STATE_SLOT,
-      "Found last state slot")
+      "最後のステートスロットが見つかりました")
 MSG_HASH(MSG_FOUND_SHADER,
-      "Found shader")
+      "シェーダーが見つかりました")
 MSG_HASH(MSG_FRAMES,
       "フレーム")
 MSG_HASH(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
       "Per-Game Options: game-specific core options found at")
 MSG_HASH(MSG_GOT_INVALID_DISK_INDEX,
-      "Got invalid disk index.")
+      "無効なディスクインデックスです")
 MSG_HASH(MSG_GRAB_MOUSE_STATE,
       "マウスステートをグラブする")
 MSG_HASH(MSG_GAME_FOCUS_ON,
@@ -2322,7 +2322,7 @@ MSG_HASH(MSG_INTERNAL_STORAGE,
 MSG_HASH(MSG_REMOVABLE_STORAGE,
       "リムーバブルストレージ")
 MSG_HASH(MSG_INVALID_NICKNAME_SIZE,
-      "Invalid nickname size.")
+      "無効なニックネームサイズです")
 MSG_HASH(MSG_IN_BYTES,
       "(バイトで)")
 MSG_HASH(MSG_IN_GIGABYTES,
@@ -2416,17 +2416,17 @@ MSG_HASH(MSG_REWIND_INIT_FAILED,
 MSG_HASH(MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
       "Implementation uses threaded audio. Cannot use rewind.")
 MSG_HASH(MSG_REWIND_REACHED_END,
-      "Reached end of rewind buffer.")
+      "巻き戻しバッファの終わりに達しました")
 MSG_HASH(MSG_SAVED_NEW_CONFIG_TO,
-      "Saved new config to")
+      "新しいコンフィグを保存しました to")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT,
       "スロット%dにステートセーブしました")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT_AUTO,
       "スロット-1 (自動)にステートセーブしました")
 MSG_HASH(MSG_SAVED_SUCCESSFULLY_TO,
-      "Saved successfully to")
+      "保存に成功しました to")
 MSG_HASH(MSG_SAVING_RAM_TYPE,
-      "Saving RAM type")
+      "RAMの種類を保存中")
 MSG_HASH(MSG_SAVING_STATE,
       "ステートセーブ中")
 MSG_HASH(MSG_SCANNING,
@@ -2440,9 +2440,9 @@ MSG_HASH(MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
 MSG_HASH(MSG_SHADER,
       "シェーダー")
 MSG_HASH(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
-      "Shader preset saved successfully.")
+      "シェーダーのプリセットの保存に成功しました")
 MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
-      "Skipping SRAM load.")
+      "SRAMのロードをスキップ中")
 MSG_HASH(MSG_SLOW_MOTION,
       "スローモーション")
 MSG_HASH(MSG_FAST_FORWARD,
@@ -2450,7 +2450,7 @@ MSG_HASH(MSG_FAST_FORWARD,
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
       "スローモーション巻き戻し")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
-      "SRAM will not be saved.")
+      "SRAMはセーブされません")
 MSG_HASH(MSG_STARTING_MOVIE_PLAYBACK,
       "Starting movie playback.")
 MSG_HASH(MSG_STARTING_MOVIE_RECORD_TO,
@@ -2729,10 +2729,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
       "ポイントでのフォントサイズ")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-      "Hide the overlay while we are inside the menu, and show it again when exiting the menu.")
+      "メニュー表示中はオーバーレイを隠し、メニューを閉じたときに再表示する。")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
-      "Content which has been scanned will appear here."
+      "スキャンされたコンテンツがここに表示されます。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
@@ -2904,7 +2904,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-      "Select an overlay from the file browser."
+      "ファイルブラウザーからオーバーレイを選択する。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
@@ -2973,7 +2973,7 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
       "ネットプレイをクライアントモードで有効にする。")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-      "Disconnects an active Netplay connection.")
+      "アクティブなネットプレイ接続を切断する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
       "フォルダの対応ファイルをスキャンしてコレクションに追加する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
@@ -3046,7 +3046,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
-      "Manage currently configured accounts."
+      "現在設定されたアカウントを管理する。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
       "巻き戻しの設定を管理する。")
@@ -3069,7 +3069,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "タスクを別のスレッドで実行する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "Allow the user to remove entries from collections.")
+      "ユーザーがコレクションからエントリーを削除できるようにする。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
       "Sets the System directory. Cores can query for this directory to load BIOSes, system-specific configs, etc.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -3168,7 +3168,7 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
       "指定したフォルダにセーブファイルを保存する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-      "指定したこのフォルダにステートセーブを保存する。")
+      "指定したフォルダにステートセーブを保存する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
       "指定したフォルダにスクリーンショットを保存する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
@@ -3394,7 +3394,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
       "お気に入りに追加")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
-      "コア関連をリセット")
+      "コアの関連付けをリセット")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
       "キオスクモードを無効")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -3438,7 +3438,7 @@ MSG_HASH(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
       "自動的にコンテンツをプレイリストに追加")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Automatically scans loaded content so they appear inside playlists.")
+      "ロードされたコンテンツは自動的にスキャンされ、プレイリストに表示される。")
 MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
       "ファイルのスキャンは完了しました。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -3454,7 +3454,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
       "統計を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
-      "Show onscreen technical statistics.")
+      "技術的な統計を画面に表示する。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
       "Enable border filler")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
