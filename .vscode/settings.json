@@ -19,7 +19,8 @@
       "iosfwd": "c",
       "xlocbuf": "c",
       "xmemory0": "c",
-      "ios": "c"
+      "ios": "c",
+      "list": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

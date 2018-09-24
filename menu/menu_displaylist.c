@@ -7059,6 +7059,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_PATH, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_STREAM_CONFIG,
+               PARSE_ONLY_PATH, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RECORD_PATH,
                PARSE_ONLY_STRING, false) == 0)
             count++;
@@ -7618,6 +7622,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->exts         = strdup("cfg");
          break;
       case DISPLAYLIST_RECORD_CONFIG_FILES:
+      case DISPLAYLIST_STREAM_CONFIG_FILES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_RECORD_CONFIG;

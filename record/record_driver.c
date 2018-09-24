@@ -52,7 +52,6 @@ size_t      recording_gpu_width                = 0;
 size_t      recording_gpu_height               = 0;
 static bool recording_enable                   = false;
 static bool streaming_enable                   = false;
-static bool recording_use_output_dir           = false;
 
 static const record_driver_t *recording_driver = NULL;
 void *recording_data                           = NULL;
@@ -374,10 +373,6 @@ bool recording_init(void)
 
       }
    }
-   if (recording_use_output_dir)
-      fill_pathname_join(output,
-            global->record.output_dir,
-            global->record.path, sizeof(output));
 
    params.out_width  = av_info->geometry.base_width;
    params.out_height = av_info->geometry.base_height;
@@ -522,7 +517,6 @@ unsigned *recording_driver_get_height(void)
 
 void recording_driver_free_state(void)
 {
-   recording_use_output_dir = false;
    recording_gpu_width      = 0;
    recording_gpu_height     = 0;
    recording_width          = 0;

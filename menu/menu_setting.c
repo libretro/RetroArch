@@ -5926,8 +5926,8 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
             CONFIG_PATH(
                   list, list_info,
-                  global->record.config,
-                  sizeof(global->record.config),
+                  settings->paths.path_record_config,
+                  sizeof(settings->paths.path_record_config),
                   MENU_ENUM_LABEL_RECORD_CONFIG,
                   MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
                   "",
@@ -5938,19 +5938,34 @@ static bool setting_append_list(
                   general_read_handler);
             menu_settings_list_current_add_values(list, list_info, "cfg");
 
-            CONFIG_STRING(
+            CONFIG_PATH(
                   list, list_info,
-                  global->record.path,
-                  sizeof(global->record.path),
-                  MENU_ENUM_LABEL_RECORD_PATH,
-                  MENU_ENUM_LABEL_VALUE_RECORD_PATH,
+                  settings->paths.path_stream_config,
+                  sizeof(settings->paths.path_stream_config),
+                  MENU_ENUM_LABEL_STREAM_CONFIG,
+                  MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
                   "",
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            menu_settings_list_current_add_values(list, list_info, "cfg");
+
+         CONFIG_DIR(
+               list, list_info,
+               global->record.output_dir,
+               sizeof(global->record.output_dir),
+               MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
+               g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
             END_SUB_GROUP(list, list_info, parent_group);
 
