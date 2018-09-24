@@ -653,6 +653,82 @@ static int setting_uint_action_left_crt_switch_resolution_super(
    return 0;
 }
 
+static int setting_string_action_left_netplay_mitm_server(
+      void *data, bool wraparound)
+{
+   int i;
+   bool               found = false;
+   unsigned        list_len = ARRAY_SIZE(netplay_mitm_server_list);
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return -1;
+
+   for (i = 0; i < list_len; i++)
+   {
+      /* find the currently selected server in the list */
+      if (string_is_equal(setting->value.target.string, netplay_mitm_server_list[i].name))
+      {
+         /* move to the previous one in the list, wrap around if necessary */
+         if (i - 1 >= 0)
+         {
+            found = true;
+            strlcpy(setting->value.target.string, netplay_mitm_server_list[i - 1].name, sizeof(setting->value.target.string));
+            break;
+         }
+         else if (wraparound)
+         {
+            found = true;
+            strlcpy(setting->value.target.string, netplay_mitm_server_list[list_len - 1].name, sizeof(setting->value.target.string));
+            break;
+         }
+      }
+   }
+
+   /* current entry was invalid, go back to the end */
+   if (!found)
+      strlcpy(setting->value.target.string, netplay_mitm_server_list[list_len - 1].name, sizeof(setting->value.target.string));
+
+   return 0;
+}
+
+static int setting_string_action_right_netplay_mitm_server(
+      void *data, bool wraparound)
+{
+   unsigned i;
+   bool               found = false;
+   unsigned        list_len = ARRAY_SIZE(netplay_mitm_server_list);
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return -1;
+
+   for (i = 0; i < list_len; i++)
+   {
+      /* find the currently selected server in the list */
+      if (string_is_equal(setting->value.target.string, netplay_mitm_server_list[i].name))
+      {
+         /* move to the next one in the list, wrap around if necessary */
+         if (i + 1 < list_len)
+         {
+            found = true;
+            strlcpy(setting->value.target.string, netplay_mitm_server_list[i + 1].name, sizeof(setting->value.target.string));
+            break;
+         }
+         else if (wraparound)
+         {
+            found = true;
+            strlcpy(setting->value.target.string, netplay_mitm_server_list[0].name, sizeof(setting->value.target.string));
+            break;
+         }
+      }
+   }
+
+   /* current entry was invalid, go back to the start */
+   if (!found)
+      strlcpy(setting->value.target.string, netplay_mitm_server_list[0].name, sizeof(setting->value.target.string));
+
+   return 0;
+}
+
 static int setting_uint_action_right_crt_switch_resolution_super(
       void *data, bool wraparound)
 {
@@ -8482,6 +8558,8 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_netplay_mitm_server;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_netplay_mitm_server;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_netplay_mitm_server;
 
