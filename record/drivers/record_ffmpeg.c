@@ -550,13 +550,12 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
 
 static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned preset)
 {
-   char buf[256];
+   settings_t *settings = config_get_ptr();
 
    switch (preset)
    {
       case RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY:
       case RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY:
-         params->scale_factor         = 1;
          params->threads              = 1;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
@@ -573,7 +572,6 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          break;
       case RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY:
       case RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY:
-         params->scale_factor         = 1;
          params->threads              = 1;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
@@ -590,7 +588,6 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          break;
       case RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY:
       case RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY:
-         params->scale_factor         = 1;
          params->threads              = 1;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
@@ -606,7 +603,6 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY:
-         params->scale_factor         = 1;
          params->threads              = 1;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
@@ -622,7 +618,6 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
          break;
       case RECORD_CONFIG_TYPE_STREAMING_NETPLAY:
-         params->scale_factor         = 1;
          params->threads              = 1;
          params->frame_drop_ratio     = 1;
          params->audio_enable         = true;
@@ -642,11 +637,28 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
    }
 
    if (preset <= RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY)
+   {
+      if (!settings->bools.video_gpu_record)
+         params->scale_factor = settings->uints.video_record_scale_factor > 0 ? 
+            settings->uints.video_record_scale_factor : 1;
+      else
+         params->scale_factor = 1;
       strlcpy(params->format, "matroska", sizeof(params->format));
+   }
    else if (preset <= RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY)
+   {
+      if (!settings->bools.video_gpu_record)
+         params->scale_factor = settings->uints.video_stream_scale_factor > 0 ? 
+            settings->uints.video_stream_scale_factor : 1;
+      else
+         params->scale_factor = 1;
       strlcpy(params->format, "flv", sizeof(params->format));
+   }
    else
+   {
+      params->scale_factor = 1;
       strlcpy(params->format, "flv", sizeof(params->format));
+   }
 
    return true;
 }
