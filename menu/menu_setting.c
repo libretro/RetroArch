@@ -4059,6 +4059,7 @@ static bool setting_append_list(
                   setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
                   MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,&setting_get_string_representation_uint_as_enum,
                   CHEAT_HANDLER_TYPE_EMU,CHEAT_HANDLER_TYPE_RETRO,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             CONFIG_STRING(
                   list, list_info,
@@ -4077,15 +4078,18 @@ static bool setting_append_list(
                   setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
                   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,&setting_get_string_representation_uint_as_enum,
                   0,5,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.cheat_type, CHEAT_TYPE,
                   setting_uint_action_left_default,setting_uint_action_right_default,
                   MENU_ENUM_LABEL_CHEAT_TYPE_DISABLED,&setting_get_string_representation_uint_as_enum,
                   CHEAT_TYPE_DISABLED,CHEAT_TYPE_RUN_NEXT_IF_GT,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.value, CHEAT_VALUE,
                   setting_uint_action_left_default,setting_uint_action_right_default,
                   0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.address, CHEAT_ADDRESS,
                   setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
@@ -4115,15 +4119,18 @@ static bool setting_append_list(
                   setting_uint_action_left_default,setting_uint_action_right_default,
                   MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,&setting_get_string_representation_uint_as_enum,
                   RUMBLE_TYPE_DISABLED,RUMBLE_TYPE_GT_VALUE,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_value, CHEAT_RUMBLE_VALUE,
                   setting_uint_action_left_default,setting_uint_action_right_default,
                   0,&setting_get_string_representation_hex_and_uint,0,(int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_port, CHEAT_RUMBLE_PORT,
                   setting_uint_action_left_default,setting_uint_action_right_default,
                   MENU_ENUM_LABEL_RUMBLE_PORT_0,&setting_get_string_representation_uint_as_enum,
                   0,16,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_primary_strength, CHEAT_RUMBLE_PRIMARY_STRENGTH,
                   setting_uint_action_left_default,setting_uint_action_right_default,
@@ -4132,6 +4139,7 @@ static bool setting_append_list(
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_primary_duration, CHEAT_RUMBLE_PRIMARY_DURATION,
                   setting_uint_action_left_default,setting_uint_action_right_default,
                   0,&setting_get_string_representation_uint,0,5000,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_secondary_strength, CHEAT_RUMBLE_SECONDARY_STRENGTH,
                   setting_uint_action_left_default,setting_uint_action_right_default,
@@ -4140,8 +4148,7 @@ static bool setting_append_list(
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_secondary_duration, CHEAT_RUMBLE_SECONDARY_DURATION,
                   setting_uint_action_left_default,setting_uint_action_right_default,
                   0,&setting_get_string_representation_uint,0,5000,1) ;
-
-
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
