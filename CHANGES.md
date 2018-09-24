@@ -4,10 +4,12 @@
 - CRT: New porches and interlaced bug fix.
 - COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
 - DISCORD: Add 'Ask To Join' Feature.
+- IOS: Use safe area to account for notch for iPhone X and adjust main view.
 - LOCALIZATION: Update Portuguese / Brazilian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Polish translation.
 - LOCALIZATION: Update Spanish translation.
+- MENU: Add dropdown lists for many settings.
 - MENU/QT/WIMP: Add option to filter extensions inside archives when adding to a playlist.
 - MENU/QT/WIMP: Rename playlist entries with 2 single clicks.
 - MENU/QT/WIMP: Fix shader parameter checkboxes not working
