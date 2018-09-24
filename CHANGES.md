@@ -1,5 +1,6 @@
 # 1.7.5 (future)
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
+- CHEATS: Add support for Rumble when increase or decrease by the rumble value.
 - CHEEVOS: Support headerless NES hashing.
 - CRT: New porches and interlaced bug fix.
 - CRT: New functionality, ability to switch between 15KHz and 31KHz, etc.
