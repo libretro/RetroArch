@@ -18,6 +18,7 @@
 - NETPLAY: Save lobby details received back from server after first announcement.
 - OPENGL/GLX: Implement Adaptive VSync - GLX_EXT_swap_control_tear.
 - OPENGL/WGL: Implement Adaptive VSync - WGL_EXT_swap_control_tear.
+- RUNAHEAD: Fix performance degradation that could happen over time (after approx. 30 mins). Fixed input IDs outside of range 0-35 causing slow performance in runahead.
 - SWITCH: Merging of RetroNX Nintendo Switch port, based on libnx SDK.
 - VULKAN: Fix race condition in threaded mailbox emulation.
 - VULKAN: Maintenance fixes.
