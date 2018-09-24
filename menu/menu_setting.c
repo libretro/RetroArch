@@ -657,6 +657,7 @@ static int setting_string_action_left_netplay_mitm_server(
       void *data, bool wraparound)
 {
    int i;
+   int offset               = 0;
    bool               found = false;
    unsigned        list_len = ARRAY_SIZE(netplay_mitm_server_list);
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -671,22 +672,25 @@ static int setting_string_action_left_netplay_mitm_server(
          /* move to the previous one in the list, wrap around if necessary */
          if (i - 1 >= 0)
          {
-            found = true;
-            strlcpy(setting->value.target.string, netplay_mitm_server_list[i - 1].name, sizeof(setting->value.target.string));
-            break;
+            found  = true;
+            offset = i - 1;
          }
          else if (wraparound)
          {
-            found = true;
-            strlcpy(setting->value.target.string, netplay_mitm_server_list[list_len - 1].name, sizeof(setting->value.target.string));
-            break;
+            found  = true;
+            offset = list_len - 1;
          }
+
+         if (found)
+            break;
       }
    }
 
    /* current entry was invalid, go back to the end */
    if (!found)
-      strlcpy(setting->value.target.string, netplay_mitm_server_list[list_len - 1].name, sizeof(setting->value.target.string));
+      offset = list_len - 1;
+
+   strlcpy(setting->value.target.string, netplay_mitm_server_list[offset].name, sizeof(setting->value.target.string));
 
    return 0;
 }
@@ -695,6 +699,7 @@ static int setting_string_action_right_netplay_mitm_server(
       void *data, bool wraparound)
 {
    unsigned i;
+   int offset               = 0;
    bool               found = false;
    unsigned        list_len = ARRAY_SIZE(netplay_mitm_server_list);
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -709,22 +714,22 @@ static int setting_string_action_right_netplay_mitm_server(
          /* move to the next one in the list, wrap around if necessary */
          if (i + 1 < list_len)
          {
-            found = true;
-            strlcpy(setting->value.target.string, netplay_mitm_server_list[i + 1].name, sizeof(setting->value.target.string));
-            break;
+            offset = i + 1;
+            found  = true;
          }
          else if (wraparound)
-         {
             found = true;
-            strlcpy(setting->value.target.string, netplay_mitm_server_list[0].name, sizeof(setting->value.target.string));
+
+         if (found)
             break;
-         }
       }
    }
 
    /* current entry was invalid, go back to the start */
    if (!found)
-      strlcpy(setting->value.target.string, netplay_mitm_server_list[0].name, sizeof(setting->value.target.string));
+      offset = 0;
+
+   strlcpy(setting->value.target.string, netplay_mitm_server_list[offset].name, sizeof(setting->value.target.string));
 
    return 0;
 }
