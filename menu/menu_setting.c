@@ -175,6 +175,18 @@ static int setting_action_ok_uint(void *data, bool wraparound)
    return 0;
 }
 
+static void setting_get_string_representation_state_slot(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   snprintf(s, len, "%d", *setting->value.target.integer);
+   if (*setting->value.target.integer == -1)
+      strlcat(s, " (Auto)", len);
+}
+
 static void setting_get_string_representation_float_video_msg_color(void *data,
       char *s, size_t len)
 {
@@ -2945,6 +2957,8 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by     = -1;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_state_slot;
          menu_settings_list_current_add_range(list, list_info, -1, 0, 1, true, false);
 
          CONFIG_ACTION(

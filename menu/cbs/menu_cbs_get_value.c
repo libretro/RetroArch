@@ -751,27 +751,6 @@ static void menu_action_setting_disp_set_label_entry(
    strlcpy(s2, path, len2);
 }
 
-static void menu_action_setting_disp_set_label_state(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   settings_t *settings        = config_get_ptr();
-
-   if (!settings)
-      return;
-
-   strlcpy(s2, path, len2);
-   *w = 16;
-   snprintf(s, len, "%d", settings->ints.state_slot);
-   if (settings->ints.state_slot == -1)
-      strlcat(s, " (Auto)", len);
-}
-
 static void menu_action_setting_disp_set_label_wifi_is_online(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1365,10 +1344,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_WIFI_DRIVER:
          case MENU_ENUM_LABEL_MENU_DRIVER:
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
-            break;
-         case MENU_ENUM_LABEL_STATE_SLOT:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_state);
             break;
          case MENU_ENUM_LABEL_CONNECT_WIFI:
             BIND_ACTION_GET_VALUE(cbs,
