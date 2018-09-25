@@ -597,7 +597,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
          strlcpy(params->acodec, "libmp3lame", sizeof(params->acodec));
 
-         av_dict_set(&params->video_opts, "preset", "medium", 0);
+         av_dict_set(&params->video_opts, "preset", "superfast", 0);
          av_dict_set(&params->video_opts, "tune", "animation", 0);
          av_dict_set(&params->video_opts, "crf", "15", 0);
          av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
