@@ -566,7 +566,7 @@ static void menu_action_setting_disp_set_label_cheat(
                cheat_manager_get_code_state(cheat_index) ?
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) :
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-               (cheat_manager_get_code(cheat_index) != NULL)
+               cheat_manager_get_code(cheat_index)
                ? cheat_manager_get_code(cheat_index) :
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
                );
@@ -1138,7 +1138,7 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
          if (str_list->size != str_list2->size)
             break;
 
-         if (str_list2->elems[i].data == NULL)
+         if (!str_list2->elems[i].data)
             break;
 
          found_matching_core_association = true;
@@ -1279,7 +1279,7 @@ static void menu_action_setting_disp_set_label_setting_string(file_list_t* list,
 
    *w = 19;
 
-   if (setting->value.target.string != NULL)
+   if (setting->value.target.string)
       strlcpy(s, setting->value.target.string, len);
 
    strlcpy(s2, path, len2);
