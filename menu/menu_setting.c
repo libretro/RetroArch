@@ -688,6 +688,7 @@ static int setting_uint_action_left_crt_switch_resolution_super(
    return 0;
 }
 
+#ifdef HAVE_NETWORKING
 static int setting_string_action_left_netplay_mitm_server(
       void *data, bool wraparound)
 {
@@ -768,6 +769,7 @@ static int setting_string_action_right_netplay_mitm_server(
 
    return 0;
 }
+#endif
 
 static int setting_uint_action_right_crt_switch_resolution_super(
       void *data, bool wraparound)
