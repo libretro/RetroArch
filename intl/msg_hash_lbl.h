@@ -1679,3 +1679,11 @@ MSG_HASH(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
       "crt_switch_resolution_use_custom_refresh_rate")
 MSG_HASH(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
       "crt_switch_resolution_output_display_id")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,
+      "video_record_quality")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,
+      "video_stream_quality")
+MSG_HASH(MENU_ENUM_LABEL_STREAMING_URL,
+      "streaming_url")
+MSG_HASH(MENU_ENUM_LABEL_UDP_STREAM_PORT,
+      "udp_stream_port")

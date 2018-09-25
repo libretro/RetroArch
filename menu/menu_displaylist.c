@@ -7071,6 +7071,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_UDP_STREAM_PORT,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_STREAMING_URL,
+               PARSE_ONLY_STRING, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_GPU_RECORD,
                PARSE_ONLY_BOOL, false) == 0)
             count++;

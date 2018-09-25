@@ -7550,3 +7550,19 @@ MSG_HASH(
     MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
     "A savestate was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+    "Record Quality"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+    "Stream Quality"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAMING_URL,
+    "Streaming URL"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+    "UDP Stream Port"
+    )

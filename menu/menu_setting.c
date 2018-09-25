@@ -175,6 +175,59 @@ static int setting_action_ok_uint(void *data, bool wraparound)
    return 0;
 }
 
+static void setting_get_string_representation_video_stream_quality(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   /* TODO/FIXME - localize this */
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 5:
+         strlcpy(s, "Custom", len);
+         break;
+      case 6:
+         strlcpy(s, "Low", len);
+         break;
+      case 7:
+         strlcpy(s, "Medium", len);
+         break;
+      case 8:
+         strlcpy(s, "High", len);
+         break;
+   }
+}
+
+static void setting_get_string_representation_video_record_quality(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   /* TODO/FIXME - localize this */
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         strlcpy(s, "Custom", len);
+         break;
+      case 1:
+         strlcpy(s, "Low", len);
+         break;
+      case 2:
+         strlcpy(s, "Medium", len);
+         break;
+      case 3:
+         strlcpy(s, "High", len);
+         break;
+      case 4:
+         strlcpy(s, "Lossless", len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_video_filter(void *data,
       char *s, size_t len)
 {
@@ -6113,6 +6166,68 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_values(list, list_info, "cfg");
+
+         CONFIG_UINT(
+            list, list_info,
+            &settings->uints.video_stream_port,
+            MENU_ENUM_LABEL_UDP_STREAM_PORT,
+            MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+            1,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by = 1;
+         menu_settings_list_current_add_range(list, list_info, 1, 65536, 1, true, true);
+
+         CONFIG_UINT(
+            list, list_info,
+            &settings->uints.video_record_quality,
+            MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+            1,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_video_record_quality;
+         menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);
+         
+         CONFIG_UINT(
+            list, list_info,
+            &settings->uints.video_stream_quality,
+            MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,
+            MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+            1,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_video_stream_quality;
+         (*list)[list_info->index - 1].offset_by = 5;
+         menu_settings_list_current_add_range(list, list_info, 5, 8, 1, true, true);
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->paths.path_stream_url,
+               sizeof(settings->paths.path_stream_url),
+               MENU_ENUM_LABEL_STREAMING_URL,
+               MENU_ENUM_LABEL_VALUE_STREAMING_URL,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
          CONFIG_DIR(
                list, list_info,
