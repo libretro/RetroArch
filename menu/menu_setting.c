@@ -175,6 +175,16 @@ static int setting_action_ok_uint(void *data, bool wraparound)
    return 0;
 }
 
+static void setting_get_string_representation_video_filter(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   fill_short_pathname_representation(s, setting->value.target.string, len);
+}
+
 static void setting_get_string_representation_state_slot(void *data,
       char *s, size_t len)
 {
@@ -5252,6 +5262,8 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_video_filter;
             menu_settings_list_current_add_values(list, list_info, "filt");
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
