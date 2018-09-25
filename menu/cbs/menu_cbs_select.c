@@ -166,28 +166,17 @@ static int action_select_netplay_connect_room(const char *path,
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    if (netplay_room_list[idx - 3].host_method == NETPLAY_HOST_METHOD_MITM)
-   {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
             netplay_room_list[idx - 3].mitm_address,
             netplay_room_list[idx - 3].mitm_port);
-   }
    else
-   {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
             netplay_room_list[idx - 3].address,
             netplay_room_list[idx - 3].port);
-   }
-
-#if 0
-   RARCH_LOG("[lobby] connecting to: %s with game: %s/%08x\n",
-         tmp_hostname,
-         netplay_room_list[idx - 3].gamename,
-         netplay_room_list[idx - 3].gamecrc);
-#endif
 
    task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
          netplay_room_list[idx - 3].gamename,
