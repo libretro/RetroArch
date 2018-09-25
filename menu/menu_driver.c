@@ -2255,17 +2255,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
          }
          break;
-      case RARCH_MENU_CTL_REFRESH:
-         {
-#if 0
-            bool refresh = false;
-            menu_entries_ctl(MENU_ENTRIES_CTL_LIST_DEINIT, NULL);
-            menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_DEINIT, NULL);
-            menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL);
-            menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-#endif
-         }
-         break;
       case RARCH_MENU_CTL_LIST_SET_SELECTION:
          {
             file_list_t *list = (file_list_t*)data;

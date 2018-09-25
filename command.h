@@ -157,7 +157,6 @@ enum event_command
    CMD_EVENT_MENU_PAUSE_LIBRETRO,
    /* Toggles menu on/off. */
    CMD_EVENT_MENU_TOGGLE,
-   CMD_EVENT_MENU_REFRESH,
    /* Applies shader changes. */
    CMD_EVENT_SHADERS_APPLY_CHANGES,
    /* A new shader preset has been loaded */
