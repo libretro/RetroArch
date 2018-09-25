@@ -43,16 +43,16 @@
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
+#include "../menu_entries.h"
+#include "../menu_input.h"
 
 #include "../../core_info.h"
 #include "../../core.h"
-#include "../menu_entries.h"
+
 #include "../widgets/menu_entry.h"
 #include "../widgets/menu_input_dialog.h"
 #include "../widgets/menu_osk.h"
 #include "../widgets/menu_filebrowser.h"
-
-#include "../menu_event.h"
 
 #include "../../verbosity.h"
 #include "../../configuration.h"

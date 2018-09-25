@@ -46,7 +46,7 @@
 #include "menu_animation.h"
 #include "menu_driver.h"
 #include "menu_cbs.h"
-#include "menu_event.h"
+#include "menu_input.h"
 #include "menu_entries.h"
 #include "widgets/menu_dialog.h"
 #include "menu_shader.h"

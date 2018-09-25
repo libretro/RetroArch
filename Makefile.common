@@ -722,7 +722,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_driver.o \
           menu/menu_content.o \
           menu/menu_input.o \
-          menu/menu_event.o \
           menu/menu_entries.o \
           menu/menu_setting.o \
           menu/menu_networking.o \

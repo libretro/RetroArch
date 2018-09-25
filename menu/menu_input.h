@@ -19,7 +19,12 @@
 #define _MENU_INPUT_H
 
 #include <stdint.h>
+#include <compat/strl.h>
+
 #include <retro_common_api.h>
+#include <libretro.h>
+
+#include "../input/input_types.h"
 
 RETRO_BEGIN_DECLS
 
@@ -108,6 +113,38 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
+/*
+ * This function gets called in order to process all input events
+ * for the current frame.
+ *
+ * Sends input code to menu for one frame.
+ *
+ * It uses as input the local variables' input' and 'trigger_input'.
+ *
+ * Mouse and touch input events get processed inside this function.
+ *
+ * NOTE: 'input' and 'trigger_input' is sourced from the keyboard and/or
+ * the gamepad. It does not contain input state derived from the mouse
+ * and/or touch - this gets dealt with separately within this function.
+ *
+ * TODO/FIXME - maybe needs to be overhauled so we can send multiple
+ * events per frame if we want to, and we shouldn't send the
+ * entire button state either but do a separate event per button
+ * state.
+ */
+unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_state);
+
+/* Set a specific keyboard key.
+ *
+ * 'down' sets the latch (true would
+ * mean the key is being pressed down, while 'false' would mean that
+ * the key has been released).
+ **/
+void menu_event_kb_set(bool down, enum retro_key key);
+
+/* Check if a specific keyboard key has been pressed. */
+unsigned char menu_event_kb_is_set(enum retro_key key);
+
 void menu_input_post_iterate(int *ret, unsigned action);
 
 int16_t menu_input_pointer_state(enum menu_input_pointer_state state);
@@ -117,8 +154,6 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
 bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox);
 
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data);
-
-menu_input_t *menu_input_get_ptr(void);
 
 RETRO_END_DECLS
 
