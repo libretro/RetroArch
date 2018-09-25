@@ -627,6 +627,19 @@ static void setting_get_string_representation_int_audio_wasapi_sh_buffer_length(
 }
 #endif
 
+static void setting_get_string_representation_crt_switch_resolution_super(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   if (*setting->value.target.unsigned_integer == 0)
+      strlcpy(s, msg_hash_to_str(MSG_NATIVE), len);
+   else
+      snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+}
+
 static int setting_uint_action_left_crt_switch_resolution_super(
       void *data, bool wraparound)
 {
@@ -5273,6 +5286,8 @@ static bool setting_append_list(
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
          (*list)[list_info->index - 1].action_left   = &setting_uint_action_left_crt_switch_resolution_super;
          (*list)[list_info->index - 1].action_right  = &setting_uint_action_right_crt_switch_resolution_super;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_crt_switch_resolution_super;
 
 			CONFIG_INT(
 				  list, list_info,
