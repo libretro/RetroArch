@@ -1426,6 +1426,7 @@ HTTP SERVER
 SSL
 ============================================================ */
 #if defined(HAVE_SSL)
+#if defined(HAVE_NETWORKING)
 #include "../deps/mbedtls/aes.c"
 #include "../deps/mbedtls/aesni.c"
 #include "../deps/mbedtls/arc4.c"
@@ -1501,4 +1502,5 @@ SSL
 #include "../deps/mbedtls/ssl_tls.c"
 
 #include "../libretro-common/net/net_socket_ssl.c"
+#endif
 #endif
