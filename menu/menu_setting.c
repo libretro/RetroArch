@@ -133,6 +133,8 @@ enum settings_list_type
    SETTINGS_LIST_USER,
    SETTINGS_LIST_USER_ACCOUNTS,
    SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
+   SETTINGS_LIST_USER_ACCOUNTS_YOUTUBE,
+   SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
    SETTINGS_LIST_DIRECTORY,
    SETTINGS_LIST_PRIVACY,
    SETTINGS_LIST_MIDI
@@ -9567,6 +9569,22 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 #endif
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE,
+               MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_ACCOUNTS_TWITCH,
+               MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
+               &group_info,
+               &subgroup_info,
+               parent_group);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

@@ -231,6 +231,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST;
+      case ACTION_OK_DL_ACCOUNTS_TWITCH_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST;
+      case ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST;
       case ACTION_OK_DL_PLAYLIST_COLLECTION:
          return MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST;
       case ACTION_OK_DL_FAVORITES_LIST:
@@ -813,6 +817,8 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
       case ACTION_OK_DL_PLAYLIST_SETTINGS_LIST:
       case ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST:
+      case ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST:
+      case ACTION_OK_DL_ACCOUNTS_TWITCH_LIST:
       case ACTION_OK_DL_PLAYLIST_COLLECTION:
       case ACTION_OK_DL_FAVORITES_LIST:
       case ACTION_OK_DL_BROWSE_URL_LIST:
@@ -3734,6 +3740,8 @@ default_action_ok_func(action_ok_push_playlist_settings_list, ACTION_OK_DL_PLAYL
 default_action_ok_func(action_ok_push_input_hotkey_binds_list, ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST)
 default_action_ok_func(action_ok_push_user_binds_list, ACTION_OK_DL_USER_BINDS_LIST)
 default_action_ok_func(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST)
+default_action_ok_func(action_ok_push_accounts_youtube_list, ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST)
+default_action_ok_func(action_ok_push_accounts_twitch_list, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST)
 default_action_ok_func(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
 
 static int action_ok_shader_pass(const char *path,
@@ -4900,6 +4908,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_cheevos_list);
+            break;
+         case MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE:
+            BIND_ACTION_OK(cbs, action_ok_push_accounts_youtube_list);
+            break;
+         case MENU_ENUM_LABEL_ACCOUNTS_TWITCH:
+            BIND_ACTION_OK(cbs, action_ok_push_accounts_twitch_list);
             break;
          case MENU_ENUM_LABEL_SHADER_OPTIONS:
          case MENU_ENUM_LABEL_CORE_OPTIONS:

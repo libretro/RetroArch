@@ -170,6 +170,8 @@ generic_deferred_push(deferred_push_recording_settings_list,        DISPLAYLIST_
 generic_deferred_push(deferred_push_playlist_settings_list,         DISPLAYLIST_PLAYLIST_SETTINGS_LIST)
 generic_deferred_push(deferred_push_input_hotkey_binds_list,        DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST)
 generic_deferred_push(deferred_push_accounts_cheevos_list,          DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST)
+generic_deferred_push(deferred_push_accounts_twitch_list,           DISPLAYLIST_ACCOUNTS_TWITCH_LIST)
+generic_deferred_push(deferred_push_accounts_youtube_list,          DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST)
 generic_deferred_push(deferred_push_help,                           DISPLAYLIST_HELP_SCREEN_LIST)
 generic_deferred_push(deferred_push_rdb_entry_detail,               DISPLAYLIST_DATABASE_ENTRY)
 generic_deferred_push(deferred_push_rpl_entry_actions,              DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS)
@@ -950,6 +952,16 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_quick_menu_override_options);
    }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_youtube_list);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_twitch_list);
+   }
    else
    {
       if (cbs->enum_idx != MSG_UNKNOWN)
@@ -976,6 +988,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_cheevos_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_youtube_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_twitch_list);
                break;
             case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action_detect_core);
