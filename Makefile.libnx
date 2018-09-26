@@ -30,7 +30,6 @@ HAVE_RJPEG = 1
 HAVE_RBMP = 1
 HAVE_RGUI = 1
 HAVE_ZLIB = 1
-HAVE_BUILTINZLIB = 1
 HAVE_LIBRETRODB = 1
 HAVE_ZARCH = 0
 HAVE_MATERIALUI = 0
@@ -94,7 +93,9 @@ NO_ICON := 1
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -mcpu=cortex-a57+crc+fp+simd
 
 CFLAGS	:=	-g -Wall -O3 -ffast-math -ffunction-sections \
-			$(ARCH) $(DEFINES) -Ideps -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBNX)/include -include $(LIBNX)/include/switch.h #$(shell $(DEVKITPRO)/portlibs/switch/bin/freetype-config --cflags)
+			$(ARCH) $(DEFINES) -Ideps -Ilibretro-common/include -Ideps/stb -I$(LIBNX)/include -include $(LIBNX)/include/switch.h #$(shell $(DEVKITPRO)/portlibs/switch/bin/freetype-config --cflags)
+
+CFLAGS  += -I$(PORTLIBS)/include
 
 CFLAGS	+=	$(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1
 
