@@ -465,7 +465,7 @@ typedef struct menu_ctx_driver
    void  (*set_texture)(void);
    /* Render a messagebox to the screen. */
    void  (*render_messagebox)(void *data, const char *msg);
-   int   (*iterate)(void *data, void *userdata, enum menu_action action);
+   int   (*iterate)(menu_handle_t *menu, void *userdata, enum menu_action action);
    void  (*render)(void *data, bool is_idle);
    void  (*frame)(void *data, video_frame_info_t *video_info);
    /* Initializes the menu driver. (setup) */
