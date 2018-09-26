@@ -159,10 +159,122 @@ struct string_options_entry
    size_t len;
 };
 
-static int setting_action_ok_uint(void *data, bool wraparound)
+static int setting_action_ok_bind_all(rarch_setting_t *setting, bool wraparound)
+{
+   (void)wraparound;
+   if (!menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_ALL, setting))
+      return -1;
+   return 0;
+}
+
+static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
+      bool wraparound)
+{
+   unsigned index_offset     = 0;
+   const char *name          = NULL;
+
+   (void)wraparound;
+
+   if (!setting)
+      return -1;
+
+   index_offset = setting->index_offset;
+   name         = input_config_get_device_name(index_offset);
+
+   if(!string_is_empty(name) && config_save_autoconf_profile(name, index_offset))
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true);
+   else
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true);
+
+
+   return 0;
+}
+
+static int setting_action_ok_bind_defaults(rarch_setting_t *setting, bool wraparound)
+{
+   unsigned i;
+   menu_input_ctx_bind_limits_t lim;
+   struct retro_keybind *target          = NULL;
+   const struct retro_keybind *def_binds = NULL;
+
+   (void)wraparound;
+
+   if (!setting)
+      return -1;
+
+   target    =  &input_config_binds[setting->index_offset][0];
+   def_binds =  (setting->index_offset) ?
+      retro_keybinds_rest : retro_keybinds_1;
+
+   lim.min   = MENU_SETTINGS_BIND_BEGIN;
+   lim.max   = MENU_SETTINGS_BIND_LAST;
+
+   menu_input_key_bind_set_min_max(&lim);
+
+   for (i = MENU_SETTINGS_BIND_BEGIN;
+         i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+   {
+      target->key     = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+      target->joykey  = NO_BTN;
+      target->joyaxis = AXIS_NONE;
+      target->mbutton = NO_BTN;
+   }
+
+   return 0;
+}
+
+static int setting_action_ok_video_refresh_rate_auto(
+      rarch_setting_t *setting, bool wraparound)
+{
+   double video_refresh_rate = 0.0;
+   double deviation          = 0.0;
+   unsigned sample_points    = 0;
+
+   if (!setting)
+      return -1;
+
+   if (video_monitor_fps_statistics(&video_refresh_rate,
+            &deviation, &sample_points))
+   {
+      float video_refresh_rate_float = (float)video_refresh_rate;
+      driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &video_refresh_rate_float);
+      /* Incase refresh rate update forced non-block video. */
+      command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
+   }
+
+   if (setting_generic_action_ok_default(setting, wraparound) != 0)
+      return -1;
+
+   return 0;
+}
+
+static int setting_action_ok_video_refresh_rate_polled(rarch_setting_t *setting,
+      bool wraparound)
+{
+   float refresh_rate = 0.0;
+
+   if (!setting)
+     return -1;
+
+   if ((refresh_rate = video_driver_get_refresh_rate()) == 0.0)
+      return -1;
+
+   driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
+   /* Incase refresh rate update forced non-block video. */
+   command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
+
+   if (setting_generic_action_ok_default(setting, wraparound) != 0)
+      return -1;
+
+   return 0;
+}
+
+
+static int setting_action_ok_uint(rarch_setting_t *setting, bool wraparound)
 {
    char enum_idx[16];
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return -1;
 
@@ -175,10 +287,10 @@ static int setting_action_ok_uint(void *data, bool wraparound)
    return 0;
 }
 
-static void setting_get_string_representation_video_stream_quality(void *data,
+static void setting_get_string_representation_video_stream_quality(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -200,10 +312,9 @@ static void setting_get_string_representation_video_stream_quality(void *data,
    }
 }
 
-static void setting_get_string_representation_video_record_quality(void *data,
+static void setting_get_string_representation_video_record_quality(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -228,20 +339,18 @@ static void setting_get_string_representation_video_record_quality(void *data,
    }
 }
 
-static void setting_get_string_representation_video_filter(void *data,
+static void setting_get_string_representation_video_filter(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
    fill_short_pathname_representation(s, setting->value.target.string, len);
 }
 
-static void setting_get_string_representation_state_slot(void *data,
+static void setting_get_string_representation_state_slot(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -250,20 +359,18 @@ static void setting_get_string_representation_state_slot(void *data,
       strlcat(s, " (Auto)", len);
 }
 
-static void setting_get_string_representation_float_video_msg_color(void *data,
+static void setting_get_string_representation_float_video_msg_color(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
    snprintf(s, len, "%d", (int)(*setting->value.target.fraction * 255.0f));
 }
 
-static void setting_get_string_representation_max_users(void *data,
+static void setting_get_string_representation_max_users(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -271,10 +378,10 @@ static void setting_get_string_representation_max_users(void *data,
 }
 
 #ifdef HAVE_CHEEVOS
-static void setting_get_string_representation_cheevos_password(void *data,
+static void setting_get_string_representation_cheevos_password(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -286,10 +393,10 @@ static void setting_get_string_representation_cheevos_password(void *data,
 #endif
 
 #if TARGET_OS_IPHONE
-static void setting_get_string_representation_uint_keyboard_gamepad_mapping_type(void *data,
+static void setting_get_string_representation_uint_keyboard_gamepad_mapping_type(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -311,10 +418,10 @@ static void setting_get_string_representation_uint_keyboard_gamepad_mapping_type
 }
 #endif
 
-static void setting_get_string_representation_uint_menu_thumbnails(void *data,
+static void setting_get_string_representation_uint_menu_thumbnails(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -342,10 +449,10 @@ static void setting_get_string_representation_uint_menu_thumbnails(void *data,
    }
 }
 
-static void setting_get_string_representation_uint_menu_left_thumbnails(void *data,
+static void setting_get_string_representation_uint_menu_left_thumbnails(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -373,10 +480,10 @@ static void setting_get_string_representation_uint_menu_left_thumbnails(void *da
    }
 }
 
-static void setting_get_string_representation_uint_xmb_icon_theme(void *data,
+static void setting_get_string_representation_uint_xmb_icon_theme(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -429,10 +536,10 @@ static void setting_get_string_representation_uint_xmb_icon_theme(void *data,
    }
 }
 
-static void setting_get_string_representation_uint_xmb_layout(void *data,
+static void setting_get_string_representation_uint_xmb_layout(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -450,10 +557,10 @@ static void setting_get_string_representation_uint_xmb_layout(void *data,
    }
 }
 
-static void setting_get_string_representation_uint_materialui_menu_color_theme(void *data,
+static void setting_get_string_representation_uint_materialui_menu_color_theme(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -499,10 +606,10 @@ static void setting_get_string_representation_uint_materialui_menu_color_theme(v
    }
 }
 
-static void setting_get_string_representation_uint_xmb_menu_color_theme(void *data,
+static void setting_get_string_representation_uint_xmb_menu_color_theme(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -583,10 +690,10 @@ static void setting_get_string_representation_uint_xmb_menu_color_theme(void *da
    }
 }
 
-static void setting_get_string_representation_uint_xmb_shader_pipeline(void *data,
+static void setting_get_string_representation_uint_xmb_shader_pipeline(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -628,10 +735,9 @@ static void setting_get_string_representation_uint_xmb_shader_pipeline(void *dat
    }
 }
 
-static void setting_get_string_representation_uint_video_monitor_index(void *data,
+static void setting_get_string_representation_uint_video_monitor_index(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -642,12 +748,11 @@ static void setting_get_string_representation_uint_video_monitor_index(void *dat
       strlcpy(s, "0 (Auto)", len);
 }
 
-static void setting_get_string_representation_uint_custom_viewport_width(void *data,
+static void setting_get_string_representation_uint_custom_viewport_width(rarch_setting_t *setting,
       char *s, size_t len)
 {
    struct retro_game_geometry  *geom    = NULL;
    struct retro_system_av_info *av_info = NULL;
-   rarch_setting_t *setting             = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -663,12 +768,11 @@ static void setting_get_string_representation_uint_custom_viewport_width(void *d
             *setting->value.target.unsigned_integer);
 }
 
-static void setting_get_string_representation_uint_custom_viewport_height(void *data,
+static void setting_get_string_representation_uint_custom_viewport_height(rarch_setting_t *setting,
       char *s, size_t len)
 {
    struct retro_game_geometry  *geom    = NULL;
    struct retro_system_av_info *av_info = NULL;
-   rarch_setting_t *setting             = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -685,10 +789,9 @@ static void setting_get_string_representation_uint_custom_viewport_height(void *
 }
 
 #ifdef HAVE_WASAPI
-static void setting_get_string_representation_int_audio_wasapi_sh_buffer_length(void *data,
+static void setting_get_string_representation_int_audio_wasapi_sh_buffer_length(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -702,10 +805,10 @@ static void setting_get_string_representation_int_audio_wasapi_sh_buffer_length(
 }
 #endif
 
-static void setting_get_string_representation_crt_switch_resolution_super(void *data,
+static void setting_get_string_representation_crt_switch_resolution_super(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -715,10 +818,93 @@ static void setting_get_string_representation_crt_switch_resolution_super(void *
       snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 }
 
-static int setting_uint_action_left_crt_switch_resolution_super(
-      void *data, bool wraparound)
+static int setting_action_left_analog_dpad_mode(rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   unsigned port = 0;
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   port = setting->index_offset;
+
+   configuration_set_uint(settings, settings->uints.input_analog_dpad_mode[port],
+      (settings->uints.input_analog_dpad_mode
+       [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST);
+
+   return 0;
+}
+
+static int setting_action_left_libretro_device_type(
+      rarch_setting_t *setting, bool wraparound)
+{
+   retro_ctx_controller_info_t pad;
+   unsigned current_device, current_idx, i, devices[128],
+   types = 0, port = 0;
+   const struct retro_controller_info *desc = NULL;
+   rarch_system_info_t *system = NULL;
+
+   if (!setting)
+      return -1;
+
+   port = setting->index_offset;
+
+   devices[types++] = RETRO_DEVICE_NONE;
+   devices[types++] = RETRO_DEVICE_JOYPAD;
+
+   system           = runloop_get_system_info();
+
+   if (system)
+   {
+      /* Only push RETRO_DEVICE_ANALOG as default if we use an
+       * older core which doesn't use SET_CONTROLLER_INFO. */
+      if (!system->ports.size)
+         devices[types++] = RETRO_DEVICE_ANALOG;
+
+      if (port < system->ports.size)
+         desc = &system->ports.data[port];
+   }
+
+   if (desc)
+   {
+      for (i = 0; i < desc->num_types; i++)
+      {
+         unsigned id = desc->types[i].id;
+         if (types < ARRAY_SIZE(devices) &&
+               id != RETRO_DEVICE_NONE &&
+               id != RETRO_DEVICE_JOYPAD)
+            devices[types++] = id;
+      }
+   }
+
+   current_device = input_config_get_device(port);
+   current_idx    = 0;
+   for (i = 0; i < types; i++)
+   {
+      if (current_device != devices[i])
+         continue;
+
+      current_idx = i;
+      break;
+   }
+
+   current_device = devices
+      [(current_idx + types - 1) % types];
+
+   input_config_set_device(port, current_device);
+
+   pad.port   = port;
+   pad.device = current_device;
+
+   core_set_controller_port_device(&pad);
+
+   return 0;
+}
+
+
+static int setting_uint_action_left_crt_switch_resolution_super(
+      rarch_setting_t *setting, bool wraparound)
+{
    if (!setting)
       return -1;
 
@@ -741,15 +927,175 @@ static int setting_uint_action_left_crt_switch_resolution_super(
    return 0;
 }
 
+static int setting_action_left_bind_device(rarch_setting_t *setting, bool wraparound)
+{
+   unsigned               *p = NULL;
+   unsigned index_offset     = 0;
+   unsigned max_devices      = input_config_get_device_count();
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting || max_devices == 0)
+      return -1;
+
+   index_offset = setting->index_offset;
+
+   p = &settings->uints.input_joypad_map[index_offset];
+
+   if ((*p) >= max_devices)
+      *p = max_devices - 1;
+   else if ((*p) > 0)
+      (*p)--;
+
+   return 0;
+}
+
+
+static int setting_action_left_mouse_index(rarch_setting_t *setting, bool wraparound)
+{
+   settings_t *settings     = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   if (settings->uints.input_mouse_index[setting->index_offset])
+   {
+      --settings->uints.input_mouse_index[setting->index_offset];
+      settings->modified = true;
+   }
+
+   return 0;
+}
+
+static int setting_uint_action_left_custom_viewport_width(
+      rarch_setting_t *setting, bool wraparound)
+{
+   video_viewport_t vp;
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   video_viewport_t            *custom  = video_viewport_get_custom();
+   settings_t                 *settings = config_get_ptr();
+   struct retro_game_geometry     *geom = (struct retro_game_geometry*)
+      &av_info->geometry;
+
+   if (!settings || !av_info)
+      return -1;
+
+   video_driver_get_viewport_info(&vp);
+
+   if (custom->width <= 1)
+      custom->width = 1;
+   else if (settings->bools.video_scale_integer)
+   {
+      if (custom->width > geom->base_width)
+         custom->width -= geom->base_width;
+   }
+   else
+      custom->width -= 1;
+
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom->width / custom->height;
+
+   return 0;
+}
+
+static int setting_uint_action_left_custom_viewport_height(
+      rarch_setting_t *setting, bool wraparound)
+{
+   video_viewport_t vp;
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   video_viewport_t            *custom  = video_viewport_get_custom();
+   settings_t                 *settings = config_get_ptr();
+   struct retro_game_geometry     *geom = (struct retro_game_geometry*)
+      &av_info->geometry;
+
+   if (!settings || !av_info)
+      return -1;
+
+   video_driver_get_viewport_info(&vp);
+
+   if (custom->height <= 1)
+      custom->height = 1;
+   else if (settings->bools.video_scale_integer)
+   {
+      if (custom->height > geom->base_height)
+         custom->height -= geom->base_height;
+   }
+   else
+      custom->height -= 1;
+
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom->width / custom->height;
+
+   return 0;
+}
+
+static int setting_string_action_left_audio_device(
+      rarch_setting_t *setting, bool wraparound)
+{
+#if !defined(RARCH_CONSOLE)
+   int audio_device_index;
+   struct string_list *ptr  = NULL;
+
+   if (!audio_driver_get_devices_list((void**)&ptr))
+      return -1;
+
+   if (!ptr)
+      return -1;
+
+   /* Get index in the string list */
+   audio_device_index = string_list_find_elem(
+         ptr, setting->value.target.string) - 1;
+   audio_device_index--;
+
+   /* Reset index if needed */
+   if (audio_device_index < 0)
+      audio_device_index = (int)(ptr->size - 1);
+
+   strlcpy(setting->value.target.string, ptr->elems[audio_device_index].data, setting->size);
+#endif
+
+   return 0;
+}
+
+static int setting_string_action_left_driver(rarch_setting_t *setting,
+      bool wraparound)
+{
+   driver_ctx_info_t drv;
+
+   if (!setting)
+      return -1;
+
+   drv.label = setting->name;
+   drv.s     = setting->value.target.string;
+   drv.len   = setting->size;
+
+   if (!driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv))
+   {
+      settings_t *settings = config_get_ptr();
+
+      if (settings && settings->bools.menu_navigation_wraparound_enable)
+      {
+         drv.label = setting->name;
+         drv.s     = setting->value.target.string;
+         drv.len   = setting->size;
+         driver_ctl(RARCH_DRIVER_CTL_FIND_LAST, &drv);
+      }
+   }
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   return 0;
+}
+
+
 #ifdef HAVE_NETWORKING
 static int setting_string_action_left_netplay_mitm_server(
-      void *data, bool wraparound)
+      rarch_setting_t *setting, bool wraparound)
 {
    int i;
    int offset               = 0;
    bool               found = false;
    unsigned        list_len = ARRAY_SIZE(netplay_mitm_server_list);
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return -1;
 
@@ -786,13 +1132,12 @@ static int setting_string_action_left_netplay_mitm_server(
 }
 
 static int setting_string_action_right_netplay_mitm_server(
-      void *data, bool wraparound)
+      rarch_setting_t *setting, bool wraparound)
 {
    unsigned i;
    int offset               = 0;
    bool               found = false;
    unsigned        list_len = ARRAY_SIZE(netplay_mitm_server_list);
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return -1;
 
@@ -827,9 +1172,8 @@ static int setting_string_action_right_netplay_mitm_server(
 #endif
 
 static int setting_uint_action_right_crt_switch_resolution_super(
-      void *data, bool wraparound)
+      rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return -1;
 
@@ -853,7 +1197,7 @@ static int setting_uint_action_right_crt_switch_resolution_super(
 }
 
 static int setting_uint_action_right_custom_viewport_width(
-      void *data, bool wraparound)
+      rarch_setting_t *setting, bool wraparound)
 {
    video_viewport_t vp;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
@@ -879,7 +1223,7 @@ static int setting_uint_action_right_custom_viewport_width(
 }
 
 static int setting_uint_action_right_custom_viewport_height(
-      void *data, bool wraparound)
+      rarch_setting_t *setting, bool wraparound)
 {
    video_viewport_t vp;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
@@ -906,11 +1250,10 @@ static int setting_uint_action_right_custom_viewport_height(
 
 #if !defined(RARCH_CONSOLE)
 static int setting_string_action_right_audio_device(
-      void *data, bool wraparound)
+      rarch_setting_t *setting, bool wraparound)
 {
    int audio_device_index;
    struct string_list *ptr  = NULL;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!audio_driver_get_devices_list((void**)&ptr))
       return -1;
@@ -933,11 +1276,10 @@ static int setting_string_action_right_audio_device(
 }
 #endif
 
-static int setting_string_action_right_driver(void *data,
+static int setting_string_action_right_driver(rarch_setting_t *setting,
       bool wraparound)
 {
    driver_ctx_info_t drv;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
@@ -965,13 +1307,12 @@ static int setting_string_action_right_driver(void *data,
    return 0;
 }
 
-int setting_string_action_left_midi_input(void *data, bool wraparound)
+static int setting_string_action_left_midi_input(rarch_setting_t *setting, bool wraparound)
 {
    struct string_list *list = midi_driver_get_avail_inputs();
 
    if (list && list->size > 1)
    {
-      rarch_setting_t *setting = (rarch_setting_t*)data;
       int i = string_list_find_elem(list, setting->value.target.string) - 2;
 
       if (wraparound && i == -1)
@@ -987,13 +1328,12 @@ int setting_string_action_left_midi_input(void *data, bool wraparound)
    return -1;
 }
 
-int setting_string_action_right_midi_input(void *data, bool wraparound)
+static int setting_string_action_right_midi_input(rarch_setting_t *setting, bool wraparound)
 {
    struct string_list *list = midi_driver_get_avail_inputs();
 
    if (list && list->size > 1)
    {
-      rarch_setting_t *setting = (rarch_setting_t*)data;
       int i = string_list_find_elem(list, setting->value.target.string);
 
       if (wraparound && i == (int)list->size)
@@ -1009,13 +1349,12 @@ int setting_string_action_right_midi_input(void *data, bool wraparound)
    return -1;
 }
 
-int setting_string_action_left_midi_output(void *data, bool wraparound)
+static int setting_string_action_left_midi_output(rarch_setting_t *setting, bool wraparound)
 {
    struct string_list *list = midi_driver_get_avail_outputs();
 
    if (list && list->size > 1)
    {
-      rarch_setting_t *setting = (rarch_setting_t*)data;
       int i = string_list_find_elem(list, setting->value.target.string) - 2;
 
       if (wraparound && i == -1)
@@ -1031,13 +1370,12 @@ int setting_string_action_left_midi_output(void *data, bool wraparound)
    return -1;
 }
 
-int setting_string_action_right_midi_output(void *data, bool wraparound)
+static int setting_string_action_right_midi_output(rarch_setting_t *setting, bool wraparound)
 {
    struct string_list *list = midi_driver_get_avail_outputs();
 
    if (list && list->size > 1)
    {
-      rarch_setting_t *setting = (rarch_setting_t*)data;
       int i = string_list_find_elem(list, setting->value.target.string);
 
       if (wraparound && i == (int)list->size)
@@ -1053,89 +1391,80 @@ int setting_string_action_right_midi_output(void *data, bool wraparound)
    return -1;
 }
 
-static void setting_get_string_representation_uint_cheat_exact(void *data,
+static void setting_get_string_representation_uint_cheat_exact(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL),
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
 }
 
-static void setting_get_string_representation_uint_cheat_lt(void *data,
+static void setting_get_string_representation_uint_cheat_lt(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL), len);
 }
 
-static void setting_get_string_representation_uint_cheat_gt(void *data,
+static void setting_get_string_representation_uint_cheat_gt(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL), len);
 }
 
-static void setting_get_string_representation_uint_cheat_lte(void *data,
+static void setting_get_string_representation_uint_cheat_lte(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL), len);
 }
 
-static void setting_get_string_representation_uint_cheat_gte(void *data,
+static void setting_get_string_representation_uint_cheat_gte(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL), len);
 }
 
-static void setting_get_string_representation_uint_cheat_eq(void *data,
+static void setting_get_string_representation_uint_cheat_eq(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL), len);
 }
 
-static void setting_get_string_representation_uint_cheat_neq(void *data,
+static void setting_get_string_representation_uint_cheat_neq(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL), len);
 }
 
-static void setting_get_string_representation_uint_cheat_eqplus(void *data,
+static void setting_get_string_representation_uint_cheat_eqplus(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL),
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
 }
 
-static void setting_get_string_representation_uint_cheat_eqminus(void *data,
+static void setting_get_string_representation_uint_cheat_eqminus(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL),
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
 }
 
-static void setting_get_string_representation_uint_cheat_browse_address(void *data,
+static void setting_get_string_representation_uint_cheat_browse_address(rarch_setting_t *setting,
       char *s, size_t len)
 {
    unsigned int address      = cheat_manager_state.browse_address;
    unsigned int address_mask = 0;
    unsigned int prev_val     = 0;
    unsigned int curr_val     = 0 ;
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
+
    if (setting)
       snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL),
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
@@ -1146,10 +1475,9 @@ static void setting_get_string_representation_uint_cheat_browse_address(void *da
 
 }
 
-static void setting_get_string_representation_uint_video_rotation(void *data,
+static void setting_get_string_representation_uint_video_rotation(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
    {
       char rotation_lut[4][32] =
@@ -1166,10 +1494,9 @@ static void setting_get_string_representation_uint_video_rotation(void *data,
 }
 
 static void setting_get_string_representation_uint_aspect_ratio_index(
-      void *data,
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       strlcpy(s,
             aspectratio_lut[*setting->value.target.unsigned_integer].name,
@@ -1177,10 +1504,9 @@ static void setting_get_string_representation_uint_aspect_ratio_index(
 }
 
 static void setting_get_string_representation_uint_crt_switch_resolutions(
-      void *data,
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -1199,10 +1525,9 @@ static void setting_get_string_representation_uint_crt_switch_resolutions(
 }
 
 static void setting_get_string_representation_uint_audio_resampler_quality(
-      void *data,
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -1235,14 +1560,14 @@ static void setting_get_string_representation_uint_audio_resampler_quality(
    }
 }
 
-static void setting_get_string_representation_uint_libretro_device(void *data,
+static void setting_get_string_representation_uint_libretro_device(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
    unsigned index_offset, device;
    const struct retro_controller_description *desc = NULL;
    const char *name            = NULL;
    rarch_system_info_t *system = runloop_get_system_info();
-   rarch_setting_t *setting    = (rarch_setting_t*)data;
 
    if (!setting)
       return;
@@ -1285,11 +1610,11 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
       strlcpy(s, name, len);
 }
 
-static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
+static void setting_get_string_representation_uint_analog_dpad_mode(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
    const char *modes[3];
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
 
    modes[0] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
    modes[1] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG);
@@ -1299,10 +1624,10 @@ static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
 }
 
 #ifdef HAVE_THREADS
-static void setting_get_string_representation_uint_autosave_interval(void *data,
+static void setting_get_string_representation_uint_autosave_interval(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -1315,17 +1640,18 @@ static void setting_get_string_representation_uint_autosave_interval(void *data,
 #endif
 
 #if defined(HAVE_NETWORKING)
-static void setting_get_string_representation_netplay_mitm_server(void *data,
+static void setting_get_string_representation_netplay_mitm_server(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
 
 }
 #endif
 
-static void setting_get_string_representation_toggle_gamepad_combo(void *data,
+static void setting_get_string_representation_toggle_gamepad_combo(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -1350,10 +1676,10 @@ static void setting_get_string_representation_toggle_gamepad_combo(void *data,
 }
 
 #ifdef HAVE_NETWORKING
-static void setting_get_string_representation_netplay_share_digital(void *data,
+static void setting_get_string_representation_netplay_share_digital(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -1381,10 +1707,10 @@ static void setting_get_string_representation_netplay_share_digital(void *data,
    }
 }
 
-static void setting_get_string_representation_netplay_share_analog(void *data,
+static void setting_get_string_representation_netplay_share_analog(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -1409,10 +1735,10 @@ static void setting_get_string_representation_netplay_share_analog(void *data,
 }
 #endif
 
-static void setting_get_string_representation_poll_type_behavior(void *data,
+static void setting_get_string_representation_poll_type_behavior(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -1437,7 +1763,8 @@ static void setting_get_string_representation_poll_type_behavior(void *data,
 }
 
 #ifdef HAVE_LANGEXTRA
-static void setting_get_string_representation_uint_user_language(void *data,
+static void setting_get_string_representation_uint_user_language(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
    const char *modes[RETRO_LANGUAGE_LAST];
@@ -1464,11 +1791,10 @@ static void setting_get_string_representation_uint_user_language(void *data,
 }
 #endif
 
-static void setting_get_string_representation_uint_libretro_log_level(void *data,
+static void setting_get_string_representation_uint_libretro_log_level(
+      rarch_setting_t *setting,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (setting)
    {
       static const char *modes[] = {
@@ -1836,9 +2162,8 @@ void *setting_get_ptr(rarch_setting_t *setting)
  *
  * Get a setting value's string representation.
  **/
-void setting_get_string_representation(void *data, char *s, size_t len)
+void setting_get_string_representation(rarch_setting_t *setting, char *s, size_t len)
 {
-   rarch_setting_t* setting = (rarch_setting_t*)data;
    if (!setting || !s)
       return;
 
@@ -1855,9 +2180,8 @@ void setting_get_string_representation(void *data, char *s, size_t len)
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_action_start_bind_device(void *data)
+static int setting_action_start_bind_device(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
    if (!setting || !settings)
@@ -1869,7 +2193,7 @@ static int setting_action_start_bind_device(void *data)
 }
 
 
-static int setting_action_start_custom_viewport_width(void *data)
+static int setting_action_start_custom_viewport_width(rarch_setting_t *setting)
 {
    video_viewport_t vp;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
@@ -1895,7 +2219,7 @@ static int setting_action_start_custom_viewport_width(void *data)
    return 0;
 }
 
-static int setting_action_start_custom_viewport_height(void *data)
+static int setting_action_start_custom_viewport_height(rarch_setting_t *setting)
 {
    video_viewport_t vp;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
@@ -1923,10 +2247,8 @@ static int setting_action_start_custom_viewport_height(void *data)
 
 
 
-static int setting_action_start_analog_dpad_mode(void *data)
+static int setting_action_start_analog_dpad_mode(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (!setting)
       return -1;
 
@@ -1935,16 +2257,15 @@ static int setting_action_start_analog_dpad_mode(void *data)
    return 0;
 }
 
-static int setting_action_start_libretro_device_type(void *data)
+static int setting_action_start_libretro_device_type(rarch_setting_t *setting)
 {
    retro_ctx_controller_info_t pad;
    unsigned index_offset, current_device;
    unsigned devices[128], types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
    rarch_system_info_t *system = runloop_get_system_info();
-   rarch_setting_t   *setting  = (rarch_setting_t*)data;
 
-   if (setting_generic_action_start_default(setting) != 0)
+   if (!setting || setting_generic_action_start_default(setting) != 0)
       return -1;
 
    index_offset     = setting->index_offset;
@@ -1990,8 +2311,10 @@ static int setting_action_start_libretro_device_type(void *data)
 }
 
 static int setting_action_start_video_refresh_rate_auto(
-      void *data)
+      rarch_setting_t *setting)
 {
+   (void)setting;
+
    video_driver_monitor_reset();
    return 0;
 }
@@ -2000,10 +2323,9 @@ static int setting_action_start_video_refresh_rate_auto(
  ******* ACTION TOGGLE CALLBACK FUNCTIONS *******
 **/
 
-static int setting_action_right_analog_dpad_mode(void *data, bool wraparound)
+static int setting_action_right_analog_dpad_mode(rarch_setting_t *setting, bool wraparound)
 {
    unsigned port = 0;
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
    if (!setting)
@@ -2020,13 +2342,12 @@ static int setting_action_right_analog_dpad_mode(void *data, bool wraparound)
 }
 
 static int setting_action_right_libretro_device_type(
-      void *data, bool wraparound)
+      rarch_setting_t *setting, bool wraparound)
 {
    retro_ctx_controller_info_t pad;
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
-   rarch_setting_t *setting    = (rarch_setting_t*)data;
    rarch_system_info_t *system = runloop_get_system_info();
 
    if (!setting)
@@ -2084,12 +2405,11 @@ static int setting_action_right_libretro_device_type(
    return 0;
 }
 
-static int setting_action_right_bind_device(void *data, bool wraparound)
+static int setting_action_right_bind_device(rarch_setting_t *setting, bool wraparound)
 {
    unsigned index_offset;
    unsigned               *p = NULL;
    unsigned max_devices      = input_config_get_device_count();
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
    if (!setting)
@@ -2105,9 +2425,8 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
    return 0;
 }
 
-static int setting_action_right_mouse_index(void *data, bool wraparound)
+static int setting_action_right_mouse_index(rarch_setting_t *setting, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
    settings_t *settings     = config_get_ptr();
 
    if (!setting)
@@ -2125,19 +2444,18 @@ static int setting_action_right_mouse_index(void *data, bool wraparound)
 
 static void
 setting_get_string_representation_st_float_video_refresh_rate_polled(
-      void *data, char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
     snprintf(s, len, "%.3f Hz", video_driver_get_refresh_rate());
 }
 
 static void
 setting_get_string_representation_st_float_video_refresh_rate_auto(
-      void *data, char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    double video_refresh_rate = 0.0;
    double deviation          = 0.0;
    unsigned sample_points    = 0;
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
    if (!setting)
       return;
 
@@ -2152,12 +2470,11 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
 
-static void get_string_representation_bind_device(void * data, char *s,
+static void get_string_representation_bind_device(rarch_setting_t *setting, char *s,
       size_t len)
 {
    unsigned index_offset, map = 0;
    unsigned max_devices      = input_config_get_device_count();
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
    if (!setting)
@@ -2963,10 +3280,8 @@ static const char* config_get_audio_resampler_driver_options(void)
    return char_list_new_special(STRING_LIST_AUDIO_RESAMPLER_DRIVERS, NULL);
 }
 
-static int directory_action_start_generic(void *data)
+static int directory_action_start_generic(rarch_setting_t *setting)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
    if (!setting)
       return -1;
 
