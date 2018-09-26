@@ -7729,7 +7729,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
                   if (coreopts)
                   {
-                     unsigned size                   = tmp_str_list->size;
+                     unsigned size                   = (unsigned)tmp_str_list->size;
                      unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
                      struct core_option *option      = NULL;
 
@@ -7777,7 +7777,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                            if (tmp_str_list && tmp_str_list->size > 0)
                            {
                               unsigned i;
-                              unsigned size = tmp_str_list->size;
+                              unsigned size = (unsigned)tmp_str_list->size;
 
                               for (i = 0; i < size; i++)
                               {

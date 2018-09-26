@@ -686,7 +686,7 @@ void menu_display_blend_begin(video_frame_info_t *video_info);
 void menu_display_blend_end(video_frame_info_t *video_info);
 
 void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height);
-void menu_display_scissor_end();
+void menu_display_scissor_end(void);
 
 void menu_display_font_free(font_data_t *font);
 

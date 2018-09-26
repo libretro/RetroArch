@@ -4210,7 +4210,7 @@ static int action_ok_push_dropdown_setting_int_item(const char *path,
    if (!setting)
       return -1;
 
-   *setting->value.target.integer = idx + setting->offset_by;
+   *setting->value.target.integer = (int32_t)(idx + setting->offset_by);
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
@@ -4237,7 +4237,7 @@ static int action_ok_push_dropdown_setting_uint_item(const char *path,
    if (!setting)
       return -1;
 
-   *setting->value.target.unsigned_integer = idx + setting->offset_by;
+   *setting->value.target.unsigned_integer = (unsigned)(idx + setting->offset_by);
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
