@@ -6546,7 +6546,7 @@ static bool setting_append_list(
                &settings->uints.video_record_quality,
                MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,
                MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
-               1,
+               RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -6555,7 +6555,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
                (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_video_record_quality;
-            menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_RECORDING_CUSTOM, RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY, 1, true, true);
 
             CONFIG_PATH(
                list, list_info,
@@ -6607,7 +6607,7 @@ static bool setting_append_list(
                &settings->uints.video_stream_quality,
                MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,
                MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
-               1,
+               RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -6617,7 +6617,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_video_stream_quality;
                (*list)[list_info->index - 1].offset_by = 5;
-            menu_settings_list_current_add_range(list, list_info, 5, 8, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_STREAMING_CUSTOM, RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY, 1, true, true);
 
             CONFIG_PATH(
                list, list_info,
