@@ -1699,3 +1699,5 @@ MSG_HASH(MENU_ENUM_LABEL_TWITCH_STREAM_KEY,
       "twitch_stream_key")
 MSG_HASH(MENU_ENUM_LABEL_YOUTUBE_STREAM_KEY,
       "youtube_stream_key")
+MSG_HASH(MENU_ENUM_LABEL_STREAMING_MODE,
+      "streaming_mode")

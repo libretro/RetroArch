@@ -31,6 +31,13 @@ enum ffemu_pix_format
    FFEMU_PIX_ARGB8888
 };
 
+enum streaming_mode
+{
+   STREAMING_MODE_TWITCH = 0,
+   STREAMING_MODE_YOUTUBE,
+   STREAMING_MODE_UDP
+};
+
 enum record_config_type
 {
    RECORD_CONFIG_TYPE_RECORDING_CUSTOM = 0,

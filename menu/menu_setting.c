@@ -289,6 +289,28 @@ static int setting_action_ok_uint(rarch_setting_t *setting, bool wraparound)
    return 0;
 }
 
+static void setting_get_string_representation_streaming_mode(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   /* TODO/FIXME - localize this */
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case STREAMING_MODE_TWITCH:
+         strlcpy(s, "Twitch", len);
+         break;
+      case STREAMING_MODE_YOUTUBE:
+         strlcpy(s, "YouTube", len);
+         break;
+      case STREAMING_MODE_UDP:
+         strlcpy(s, "UDP", len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_video_stream_quality(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -6490,6 +6512,22 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_values(list, list_info, "cfg");
+
+         CONFIG_UINT(
+            list, list_info,
+            &settings->uints.streaming_mode,
+            MENU_ENUM_LABEL_STREAMING_MODE,
+            MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
+            STREAMING_MODE_TWITCH,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_streaming_mode;
+         menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
 
          CONFIG_UINT(
             list, list_info,

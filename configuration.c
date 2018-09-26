@@ -1536,6 +1536,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    unsigned count                     = 0;
    struct config_uint_setting  *tmp   = (struct config_uint_setting*)malloc((*size + 1) * sizeof(struct config_uint_setting));
 
+   SETTING_UINT("streaming_mode",  		         &settings->uints.streaming_mode, true, STREAMING_MODE_TWITCH, false);
    SETTING_UINT("crt_switch_resolution",  		&settings->uints.crt_switch_resolution, true, crt_switch_resolution, false);
    SETTING_UINT("input_bind_timeout",           &settings->uints.input_bind_timeout,     true, input_bind_timeout, false);
    SETTING_UINT("input_bind_hold",              &settings->uints.input_bind_hold,        true, input_bind_hold, false);

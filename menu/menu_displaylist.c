@@ -7068,6 +7068,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_STRING, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_STREAMING_MODE,
+               PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RECORD_USE_OUTPUT_DIRECTORY,
                PARSE_ONLY_BOOL, false) == 0)
             count++;
