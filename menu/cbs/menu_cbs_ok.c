@@ -78,6 +78,7 @@ enum
 {
    ACTION_OK_LOAD_PRESET = 0,
    ACTION_OK_LOAD_SHADER_PASS,
+   ACTION_OK_LOAD_STREAM_CONFIGFILE,
    ACTION_OK_LOAD_RECORD_CONFIGFILE,
    ACTION_OK_LOAD_REMAPPING_FILE,
    ACTION_OK_LOAD_CHEAT_FILE,
@@ -472,6 +473,14 @@ int generic_action_ok_displaylist_push(const char *path,
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->paths.directory_input_remapping;
+         info_label         = label;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         break;
+      case ACTION_OK_DL_STREAM_CONFIGFILE:
+         filebrowser_clear_type();
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = settings->paths.path_stream_config;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
@@ -1291,6 +1300,14 @@ static int generic_action_ok(const char *path,
             }
          }
          break;
+      case ACTION_OK_LOAD_STREAM_CONFIGFILE:
+         {
+            settings_t *settings            = config_get_ptr();
+            flush_char       = msg_hash_to_str(flush_id);
+            strlcpy(settings->paths.path_stream_config, action_path,
+                  sizeof(settings->paths.path_stream_config));
+         }
+         break;
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
          {
             global_t *global = global_get_ptr();
@@ -1417,6 +1434,7 @@ default_action_ok_set(action_ok_subsystem_add,        ACTION_OK_SUBSYSTEM_ADD,  
 default_action_ok_set(action_ok_cheat_file_load,      ACTION_OK_LOAD_CHEAT_FILE,       MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)
 default_action_ok_set(action_ok_cheat_file_load_append,      ACTION_OK_LOAD_CHEAT_FILE_APPEND,       MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)
 default_action_ok_set(action_ok_record_configfile_load,      ACTION_OK_LOAD_RECORD_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
+default_action_ok_set(action_ok_stream_configfile_load,      ACTION_OK_LOAD_STREAM_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
 default_action_ok_set(action_ok_remap_file_load,      ACTION_OK_LOAD_REMAPPING_FILE,   MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS    )
 default_action_ok_set(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET   ,        MENU_ENUM_LABEL_SHADER_OPTIONS)
 default_action_ok_set(action_ok_shader_pass_load,     ACTION_OK_LOAD_SHADER_PASS,      MENU_ENUM_LABEL_SHADER_OPTIONS)
@@ -3718,6 +3736,7 @@ default_action_ok_func(action_ok_disk_image_append_list, ACTION_OK_DL_DISK_IMAGE
 default_action_ok_func(action_ok_subsystem_add_list, ACTION_OK_DL_SUBSYSTEM_ADD_LIST)
 default_action_ok_func(action_ok_subsystem_add_load, ACTION_OK_DL_SUBSYSTEM_LOAD)
 default_action_ok_func(action_ok_record_configfile, ACTION_OK_DL_RECORD_CONFIGFILE)
+default_action_ok_func(action_ok_stream_configfile, ACTION_OK_DL_STREAM_CONFIGFILE)
 default_action_ok_func(action_ok_remap_file, ACTION_OK_DL_REMAP_FILE)
 default_action_ok_func(action_ok_shader_preset, ACTION_OK_DL_SHADER_PRESET)
 default_action_ok_func(action_ok_push_generic_list, ACTION_OK_DL_GENERIC)
@@ -4846,6 +4865,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_RECORD_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_record_configfile);
             break;
+         case MENU_ENUM_LABEL_STREAM_CONFIG:
+            BIND_ACTION_OK(cbs, action_ok_stream_configfile);
+            break;
 #ifdef HAVE_NETWORKING
          case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_core_content_list);
@@ -5381,6 +5403,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_RECORD_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_record_configfile_load);
+            break;
+         case FILE_TYPE_STREAM_CONFIG:
+            BIND_ACTION_OK(cbs, action_ok_stream_configfile_load);
             break;
          case FILE_TYPE_REMAP:
             BIND_ACTION_OK(cbs, action_ok_remap_file_load);

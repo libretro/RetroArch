@@ -7690,8 +7690,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             free(info->exts);
          info->exts         = strdup("cfg");
          break;
-      case DISPLAYLIST_RECORD_CONFIG_FILES:
       case DISPLAYLIST_STREAM_CONFIG_FILES:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         filebrowser_clear_type();
+         info->type_default = FILE_TYPE_STREAM_CONFIG;
+         load_content       = false;
+         use_filebrowser    = true;
+         if (!string_is_empty(info->exts))
+            free(info->exts);
+         info->exts         = strdup("cfg");
+         break;
+      case DISPLAYLIST_RECORD_CONFIG_FILES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_RECORD_CONFIG;
