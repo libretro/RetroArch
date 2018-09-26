@@ -527,7 +527,7 @@ void menu_entries_append(file_list_t *list, const char *path, const char *label,
    list_info.idx         = idx;
    list_info.entry_type  = type;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_INSERT, &list_info);
+   menu_driver_list_insert(&list_info);
 
    if (list_info.fullpath)
       free(list_info.fullpath);
@@ -575,7 +575,7 @@ void menu_entries_append_enum(file_list_t *list, const char *path,
    list_info.idx         = idx;
    list_info.entry_type  = type;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_INSERT, &list_info);
+   menu_driver_list_insert(&list_info);
 
    if (list_info.fullpath)
       free(list_info.fullpath);
@@ -627,7 +627,7 @@ void menu_entries_prepend(file_list_t *list, const char *path, const char *label
    list_info.idx         = idx;
    list_info.entry_type  = type;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_INSERT, &list_info);
+   menu_driver_list_insert(&list_info);
 
    if (list_info.fullpath)
       free(list_info.fullpath);

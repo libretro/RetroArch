@@ -102,7 +102,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_OWNS_DRIVER,
    RARCH_MENU_CTL_FIND_DRIVER,
    RARCH_MENU_CTL_LIST_FREE,
-   RARCH_MENU_CTL_LIST_INSERT,
    RARCH_MENU_CTL_ENVIRONMENT,
    RARCH_MENU_CTL_DRIVER_DATA_GET,
    RARCH_MENU_CTL_POINTER_TAP,
@@ -665,6 +664,8 @@ bool menu_driver_init(bool video_is_threaded);
 void menu_driver_set_thumbnail_system(char *s, size_t len);
 
 void menu_driver_set_thumbnail_content(char *s, size_t len);
+
+bool menu_driver_list_insert(menu_ctx_list_t *list);
 
 bool menu_driver_list_set_selection(file_list_t *list);
 

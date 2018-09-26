@@ -1969,6 +1969,17 @@ bool menu_driver_list_clear(file_list_t *list)
    return true;
 }
 
+bool menu_driver_list_insert(menu_ctx_list_t *list)
+{
+   if (!list || !menu_driver_ctx || !menu_driver_ctx->list_insert)
+      return false;
+   menu_driver_ctx->list_insert(menu_userdata,
+         list->list, list->path, list->fullpath,
+         list->label, list->idx, list->entry_type);
+
+   return true;
+}
+
 bool menu_driver_list_set_selection(file_list_t *list)
 {
    if (!list)
@@ -2273,16 +2284,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                file_list_free_userdata  (list->list, list->idx);
                file_list_free_actiondata(list->list, list->idx);
             }
-         }
-         break;
-      case RARCH_MENU_CTL_LIST_INSERT:
-         {
-            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
-            if (!list || !menu_driver_ctx || !menu_driver_ctx->list_insert)
-               return false;
-            menu_driver_ctx->list_insert(menu_userdata,
-                  list->list, list->path, list->fullpath,
-                  list->label, list->idx, list->entry_type);
          }
          break;
       case RARCH_MENU_CTL_ENVIRONMENT:
