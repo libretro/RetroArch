@@ -779,7 +779,8 @@ static int setting_string_action_left_netplay_mitm_server(
    if (!found)
       offset = list_len - 1;
 
-   strlcpy(setting->value.target.string, netplay_mitm_server_list[offset].name, sizeof(setting->value.target.string));
+   strlcpy(setting->value.target.string,
+         netplay_mitm_server_list[offset].name, setting->size);
 
    return 0;
 }
@@ -818,7 +819,8 @@ static int setting_string_action_right_netplay_mitm_server(
    if (!found)
       offset = 0;
 
-   strlcpy(setting->value.target.string, netplay_mitm_server_list[offset].name, sizeof(setting->value.target.string));
+   strlcpy(setting->value.target.string,
+         netplay_mitm_server_list[offset].name, setting->size);
 
    return 0;
 }
@@ -924,7 +926,8 @@ static int setting_string_action_right_audio_device(
    if (audio_device_index == (signed)ptr->size)
       audio_device_index = 0;
 
-   strlcpy(setting->value.target.string, ptr->elems[audio_device_index].data, setting->size);
+   strlcpy(setting->value.target.string,
+         ptr->elems[audio_device_index].data, setting->size);
 
    return 0;
 }
@@ -975,7 +978,8 @@ int setting_string_action_left_midi_input(void *data, bool wraparound)
          i = (int)list->size - 1;
       if (i >= 0)
       {
-         strlcpy(setting->value.target.string, list->elems[i].data, setting->size);
+         strlcpy(setting->value.target.string,
+               list->elems[i].data, setting->size);
          return 0;
       }
    }
@@ -996,7 +1000,8 @@ int setting_string_action_right_midi_input(void *data, bool wraparound)
          i = 0;
       if (i >= 0 && i < (int)list->size)
       {
-         strlcpy(setting->value.target.string, list->elems[i].data, setting->size);
+         strlcpy(setting->value.target.string,
+               list->elems[i].data, setting->size);
          return 0;
       }
    }
@@ -1017,7 +1022,8 @@ int setting_string_action_left_midi_output(void *data, bool wraparound)
          i = (int)list->size - 1;
       if (i >= 0)
       {
-         strlcpy(setting->value.target.string, list->elems[i].data, setting->size);
+         strlcpy(setting->value.target.string,
+               list->elems[i].data, setting->size);
          return 0;
       }
    }
@@ -1038,7 +1044,8 @@ int setting_string_action_right_midi_output(void *data, bool wraparound)
          i = 0;
       if (i >= 0 && i < (int)list->size)
       {
-         strlcpy(setting->value.target.string, list->elems[i].data, setting->size);
+         strlcpy(setting->value.target.string,
+               list->elems[i].data, setting->size);
          return 0;
       }
    }

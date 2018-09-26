@@ -4311,7 +4311,7 @@ static int action_ok_push_dropdown_setting_string_options_item(const char *path,
       return -1;
 
    strlcpy(setting->value.target.string, path,
-         sizeof(setting->value.target.string));
+         setting->size);
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
