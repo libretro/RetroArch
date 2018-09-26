@@ -2973,7 +2973,7 @@ static void update_streaming_url_write_handler(rarch_setting_t *setting)
          else
          {
             /* To-Do: Show input box for twitch_stream_key*/
-            RARCH_LOG("[record] twitch streaming key empty");
+            RARCH_LOG("[recording] twitch streaming key empty");
          }
          break;
       }
@@ -2987,7 +2987,7 @@ static void update_streaming_url_write_handler(rarch_setting_t *setting)
          else
          {
             /* To-Do: Show input box for youtube_stream_key*/
-            RARCH_LOG("[record] youtube streaming key empty");
+            RARCH_LOG("[recording] youtube streaming key empty");
          }
          break;
       }

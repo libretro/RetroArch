@@ -700,7 +700,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
    params->conf             = config_file_new(config);
    if (!params->conf)
    {
-      RARCH_ERR("Failed to load FFmpeg config \"%s\".\n", config);
+      RARCH_ERR("[FFmpeg] Failed to load FFmpeg config \"%s\".\n", config);
       return false;
    }
 
@@ -735,7 +735,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
       params->out_pix_fmt = av_get_pix_fmt(pix_fmt);
       if (params->out_pix_fmt == PIX_FMT_NONE)
       {
-         RARCH_ERR("Cannot find pix_fmt \"%s\".\n", pix_fmt);
+         RARCH_ERR("[FFmpeg] Cannot find pix_fmt \"%s\".\n", pix_fmt);
          return false;
       }
    }
