@@ -640,7 +640,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
    {
       if (!settings->bools.video_gpu_record)
          params->scale_factor = settings->uints.video_record_scale_factor > 0 ? 
-            settings->uints.video_record_scale_factor : 1;
+            settings->uints.video_record_scale_factor : 2;
       else
          params->scale_factor = 1;
       strlcpy(params->format, "matroska", sizeof(params->format));
@@ -649,17 +649,16 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
    {
       if (!settings->bools.video_gpu_record)
          params->scale_factor = settings->uints.video_stream_scale_factor > 0 ? 
-            settings->uints.video_stream_scale_factor : 1;
+            settings->uints.video_stream_scale_factor : 2;
       else
-         params->scale_factor = 1;
+         params->scale_factor = 2;
       strlcpy(params->format, "flv", sizeof(params->format));
    }
-   else
+   else if (preset == RECORD_CONFIG_TYPE_STREAMING_NETPLAY)
    {
       params->scale_factor = 1;
-      strlcpy(params->format, "flv", sizeof(params->format));
+      strlcpy(params->format, "m2ts", sizeof(params->format));
    }
-
    return true;
 }
 
@@ -698,6 +697,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
       return true;
 
    params->conf             = config_file_new(config);
+   RARCH_LOG("[FFmpeg] Loading FFmpeg config \"%s\".\n", config);
    if (!params->conf)
    {
       RARCH_ERR("[FFmpeg] Failed to load FFmpeg config \"%s\".\n", config);
@@ -938,7 +938,7 @@ static void *ffmpeg_new(const struct record_params *params)
 
    handle->params = *params;
 
-   if (params->preset == RECORD_CONFIG_TYPE_RECORDING_CUSTOM)
+   if (params->preset == RECORD_CONFIG_TYPE_RECORDING_CUSTOM || params->preset == RECORD_CONFIG_TYPE_STREAMING_CUSTOM)
    {
       if (!ffmpeg_init_config(&handle->config, params->config))
          goto error;
