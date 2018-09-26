@@ -972,10 +972,16 @@ void cheevos_test(void)
 
    cheevos_test_cheevo_set(true);
 
-   if (settings->bools.cheevos_test_unofficial)
-      cheevos_test_cheevo_set(false);
-   
-   cheevos_test_leaderboards();
+   if (settings)
+   {
+      if (settings->bools.cheevos_test_unofficial)
+         cheevos_test_cheevo_set(false);
+      
+      if (settings->bools.cheevos_hardcore_mode_enable &&
+          settings->bools.cheevos_leaderboards_enable  &&
+          !cheevos_hardcore_paused)
+         cheevos_test_leaderboards();
+   }
 }
 
 bool cheevos_set_cheats(void)
