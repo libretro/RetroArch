@@ -1949,14 +1949,35 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
    return true;
 }
 
-/* Clear all the menu lists. */
-bool menu_driver_list_clear(void *data)
+bool menu_driver_list_cache(menu_ctx_list_t *list)
 {
-   file_list_t *list = (file_list_t*)data;
+   if (!list || !menu_driver_ctx || !menu_driver_ctx->list_cache)
+      return false;
+
+   menu_driver_ctx->list_cache(menu_userdata,
+         list->type, list->action);
+   return true;
+}
+
+/* Clear all the menu lists. */
+bool menu_driver_list_clear(file_list_t *list)
+{
    if (!list)
       return false;
    if (menu_driver_ctx->list_clear)
       menu_driver_ctx->list_clear(list);
+   return true;
+}
+
+bool menu_driver_list_set_selection(file_list_t *list)
+{
+   if (!list)
+      return false;
+
+   if (!menu_driver_ctx || !menu_driver_ctx->list_set_selection)
+      return false;
+
+   menu_driver_ctx->list_set_selection(menu_userdata, list);
    return true;
 }
 
@@ -2055,6 +2076,41 @@ void menu_driver_destroy(void)
    menu_driver_data_own           = false;
    menu_driver_ctx                = NULL;
    menu_userdata                  = NULL;
+}
+
+bool menu_driver_list_get_entry(menu_ctx_list_t *list)
+{
+   if (!menu_driver_ctx || !menu_driver_ctx->list_get_entry)
+   {
+      list->entry = NULL;
+      return false;
+   }
+   list->entry = menu_driver_ctx->list_get_entry(menu_userdata,
+         list->type, (unsigned int)list->idx);
+   return true;
+}
+
+bool menu_driver_list_get_selection(menu_ctx_list_t *list)
+{
+   if (!menu_driver_ctx || !menu_driver_ctx->list_get_selection)
+   {
+      list->selection = 0;
+      return false;
+   }
+   list->selection = menu_driver_ctx->list_get_selection(menu_userdata);
+
+   return true;
+}
+
+bool menu_driver_list_get_size(menu_ctx_list_t *list)
+{
+   if (!menu_driver_ctx || !menu_driver_ctx->list_get_size)
+   {
+      list->size = 0;
+      return false;
+   }
+   list->size = menu_driver_ctx->list_get_size(menu_userdata, list->type);
+   return true;
 }
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
@@ -2202,42 +2258,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          }
          menu_driver_data = NULL;
          break;
-      case RARCH_MENU_CTL_LIST_GET_ENTRY:
-         {
-            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
-
-            if (!menu_driver_ctx || !menu_driver_ctx->list_get_entry)
-            {
-               list->entry = NULL;
-               return false;
-            }
-            list->entry = menu_driver_ctx->list_get_entry(menu_userdata,
-                  list->type, (unsigned int)list->idx);
-         }
-         break;
-      case RARCH_MENU_CTL_LIST_GET_SIZE:
-         {
-            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
-            if (!menu_driver_ctx || !menu_driver_ctx->list_get_size)
-            {
-               list->size = 0;
-               return false;
-            }
-            list->size = menu_driver_ctx->list_get_size(menu_userdata, list->type);
-         }
-         break;
-      case RARCH_MENU_CTL_LIST_GET_SELECTION:
-         {
-            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
-
-            if (!menu_driver_ctx || !menu_driver_ctx->list_get_selection)
-            {
-               list->selection = 0;
-               return false;
-            }
-            list->selection = menu_driver_ctx->list_get_selection(menu_userdata);
-         }
-         break;
       case RARCH_MENU_CTL_LIST_FREE:
          {
             menu_ctx_list_t *list = (menu_ctx_list_t*)data;
@@ -2253,28 +2273,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                file_list_free_userdata  (list->list, list->idx);
                file_list_free_actiondata(list->list, list->idx);
             }
-         }
-         break;
-      case RARCH_MENU_CTL_LIST_SET_SELECTION:
-         {
-            file_list_t *list = (file_list_t*)data;
-
-            if (!list)
-               return false;
-
-            if (!menu_driver_ctx || !menu_driver_ctx->list_set_selection)
-               return false;
-
-            menu_driver_ctx->list_set_selection(menu_userdata, list);
-         }
-         break;
-      case RARCH_MENU_CTL_LIST_CACHE:
-         {
-            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
-            if (!list || !menu_driver_ctx || !menu_driver_ctx->list_cache)
-               return false;
-            menu_driver_ctx->list_cache(menu_userdata,
-                  list->type, list->action);
          }
          break;
       case RARCH_MENU_CTL_LIST_INSERT:

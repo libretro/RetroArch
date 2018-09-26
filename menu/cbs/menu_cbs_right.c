@@ -225,7 +225,7 @@ static int action_right_goto_tab(void)
    list_info.type             = MENU_LIST_HORIZONTAL;
    list_info.action           = MENU_ACTION_RIGHT;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
+   menu_driver_list_cache(&list_info);
 
    if (cbs && cbs->action_content_list_switch)
       return cbs->action_content_list_switch(selection_buf, menu_stack,
@@ -239,11 +239,11 @@ static int action_right_mainmenu(unsigned type, const char *label,
 {
    menu_ctx_list_t list_info;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
+   menu_driver_list_get_selection(&list_info);
 
    list_info.type = MENU_LIST_PLAIN;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE,      &list_info);
+   menu_driver_list_get_size(&list_info);
 
    if (list_info.size == 1)
    {
@@ -254,8 +254,8 @@ static int action_right_mainmenu(unsigned type, const char *label,
       list_horiz_info.type      = MENU_LIST_HORIZONTAL;
       list_tabs_info.type       = MENU_LIST_TABS;
 
-      menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_horiz_info);
-      menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_tabs_info);
+      menu_driver_list_get_size(&list_horiz_info);
+      menu_driver_list_get_size(&list_tabs_info);
 
       if ((list_info.selection != (list_horiz_info.size + list_tabs_info.size))
          || settings->bools.menu_navigation_wraparound_enable)

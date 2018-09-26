@@ -2494,15 +2494,16 @@ static int menu_displaylist_parse_horizontal_list(
    playlist_t *playlist                = NULL;
    struct item_file *item              = NULL;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
+   menu_driver_list_get_selection(&list_info);
 
    list_info.type       = MENU_LIST_TABS;
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE,      &list_info);
+
+   menu_driver_list_get_size(&list_info);
 
    list_horiz_info.type = MENU_LIST_HORIZONTAL;
    list_horiz_info.idx  = list_info.selection - (list_info.size +1);
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_ENTRY,      &list_horiz_info);
+   menu_driver_list_get_entry(&list_horiz_info);
 
    item = (struct item_file*)list_horiz_info.entry;
 
@@ -7339,7 +7340,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             list_info.type    = MENU_LIST_PLAIN;
             list_info.action  = 0;
 
-            menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
+            menu_driver_list_cache(&list_info);
 
             menu_entries_append_enum(info->list, info->path,
                   info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0);
@@ -7355,7 +7356,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             list_info.type    = MENU_LIST_PLAIN;
             list_info.action  = 0;
 
-            menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
+            menu_driver_list_cache(&list_info);
 
             menu_entries_append_enum(info->list, info->path,
                   info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0);

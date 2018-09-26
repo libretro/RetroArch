@@ -465,11 +465,11 @@ static int action_left_mainmenu(unsigned type, const char *label,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
+   menu_driver_list_get_selection(&list_info);
 
    list_info.type = MENU_LIST_PLAIN;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_info);
+   menu_driver_list_get_size(&list_info);
 
    if (list_info.size == 1)
    {
@@ -498,7 +498,7 @@ static int action_left_mainmenu(unsigned type, const char *label,
             list_info.type             = MENU_LIST_HORIZONTAL;
             list_info.action           = MENU_ACTION_LEFT;
 
-            menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
+            menu_driver_list_cache(&list_info);
 
             if (cbs && cbs->action_content_list_switch)
                return cbs->action_content_list_switch(

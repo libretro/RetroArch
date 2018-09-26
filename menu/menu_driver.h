@@ -102,11 +102,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_OWNS_DRIVER,
    RARCH_MENU_CTL_FIND_DRIVER,
    RARCH_MENU_CTL_LIST_FREE,
-   RARCH_MENU_CTL_LIST_SET_SELECTION,
-   RARCH_MENU_CTL_LIST_GET_SELECTION,
-   RARCH_MENU_CTL_LIST_GET_SIZE,
-   RARCH_MENU_CTL_LIST_GET_ENTRY,
-   RARCH_MENU_CTL_LIST_CACHE,
    RARCH_MENU_CTL_LIST_INSERT,
    RARCH_MENU_CTL_ENVIRONMENT,
    RARCH_MENU_CTL_DRIVER_DATA_GET,
@@ -655,7 +650,9 @@ bool menu_driver_is_alive(void);
 
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate);
 
-bool menu_driver_list_clear(void *data);
+bool menu_driver_list_clear(file_list_t *list);
+
+bool menu_driver_list_cache(menu_ctx_list_t *list);
 
 void menu_driver_navigation_set(bool scroll);
 
@@ -669,10 +666,17 @@ void menu_driver_set_thumbnail_system(char *s, size_t len);
 
 void menu_driver_set_thumbnail_content(char *s, size_t len);
 
+bool menu_driver_list_set_selection(file_list_t *list);
+
+bool menu_driver_list_get_selection(menu_ctx_list_t *list);
+
+bool menu_driver_list_get_entry(menu_ctx_list_t *list);
+
+bool menu_driver_list_get_size(menu_ctx_list_t *list);
+
 size_t menu_navigation_get_selection(void);
 
 void menu_navigation_set_selection(size_t val);
-
 
 enum menu_toggle_reason menu_display_toggle_get_reason(void);
 void menu_display_toggle_set_reason(enum menu_toggle_reason reason);

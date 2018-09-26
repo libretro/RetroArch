@@ -181,7 +181,7 @@ static bool menu_list_pop_stack(menu_list_t *list,
    list_info.action = 0;
 
    if (animate)
-      menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
+      menu_driver_list_cache(&list_info);
 
    if (menu_list->size != 0)
    {
@@ -195,7 +195,7 @@ static bool menu_list_pop_stack(menu_list_t *list,
    }
 
    file_list_pop(menu_list, directory_ptr);
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_SET_SELECTION, menu_list);
+   menu_driver_list_set_selection(menu_list);
    if (animate)
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
