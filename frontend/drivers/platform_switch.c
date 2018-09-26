@@ -44,6 +44,7 @@
 
 #ifdef HAVE_LIBNX
 #define SD_PREFIX
+#include "../../gfx/common/switch_common.h"
 #else
 #define SD_PREFIX "/sd"
 #endif
@@ -57,9 +58,6 @@ static uint64_t frontend_switch_get_mem_used(void);
 
 // Splash
 static uint32_t *splashData = NULL;
-
-// switch_gfx.c protypes, we really need a header
-extern void gfx_slow_swizzling_blit(uint32_t *buffer, uint32_t *image, int w, int h, int tx, int ty, bool blend);
 
 #endif // HAVE_LIBNX
 
@@ -148,6 +146,7 @@ static void frontend_switch_get_environment_settings(int *argc, char *argv[], vo
                       file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 }
 
+extern switch_ctx_data_t *nx_ctx_ptr;
 static void frontend_switch_deinit(void *data)
 {
    (void)data;
@@ -164,7 +163,14 @@ static void frontend_switch_deinit(void *data)
       splashData = NULL;
    }
 
+#ifdef HAVE_OPENGL
+   // Workaround for eglTerminate/re-init bug
+   egl_destroy(&nx_ctx_ptr->egl);
+   nx_ctx_ptr->resize = false;
+   free(nx_ctx_ptr);
+#else
    gfxExit();
+#endif
 #endif
 }
 
@@ -563,7 +569,8 @@ static void frontend_switch_init(void *data)
 {
    (void)data;
 
-#ifdef HAVE_LIBNX // splash
+#ifdef HAVE_LIBNX
+#ifndef HAVE_OPENGL
    // Init Resolution before initDefault
    gfxInitResolution(1280, 720);
 
@@ -571,26 +578,24 @@ static void frontend_switch_init(void *data)
    gfxSetMode(GfxMode_TiledDouble);
 
    gfxConfigureTransform(0);
-
+#endif // HAVE_OPENGL
 #ifdef NXLINK
    socketInitializeDefault();
    nxlinkStdio();
 #ifndef IS_SALAMANDER
    verbosity_enable();
-#endif
+#endif // IS_SALAMANDER
 #endif // NXLINK
 
    rarch_system_info_t *sys_info = runloop_get_system_info();
    retro_get_system_info(sys_info);
 
    const char *core_name = NULL;
-
-   printf("[Video]: Video initialized\n");
-
    uint32_t width, height;
    width = height = 0;
 
    // Load splash
+#ifndef HAVE_OPENGL
    if (!splashData)
    {
       if (sys_info)
@@ -631,6 +636,7 @@ static void frontend_switch_init(void *data)
    {
       frontend_switch_showsplash();
    }
+#endif
 #endif // HAVE_LIBNX (splash)
 }
 
@@ -690,12 +696,16 @@ static void frontend_switch_get_os(char *s, size_t len, int *major, int *minor)
 
 #ifdef HAVE_LIBNX
    // There is pretty sure a better way, but this will do just fine
-   if (kernelAbove500())
+   if (kernelAbove600())
+   {
+      *major = 6;
+      *minor = 0;
+   }
+   else if(kernelAbove500())
    {
       *major = 5;
       *minor = 0;
-   }
-   else if (kernelAbove400())
+   }else if (kernelAbove400())
    {
       *major = 4;
       *minor = 0;

@@ -952,6 +952,12 @@ static bool gl_frame(void *data, const void *frame,
    if (!gl)
       return false;
 
+#ifdef HAVE_LIBNX
+   // Should be called once per frame
+   if(!appletMainLoop())
+    return false;
+#endif
+
    context_bind_hw_render(false);
 
    if (gl->core_context_in_use && gl->renderchain_driver->bind_vao)
@@ -1756,6 +1762,10 @@ static void *gl_init(const video_info_t *video,
    if (!video_context_driver_set_video_mode(&mode))
       goto error;
 
+#if !defined(RARCH_CONSOLE) || defined(HAVE_LIBNX)
+   rglgen_resolve_symbols(ctx_driver->get_proc_address);
+#endif
+
    /* Clear out potential error flags in case we use cached context. */
    glGetError();
 
@@ -1768,10 +1778,6 @@ static void *gl_init(const video_info_t *video,
 
    if (!string_is_empty(version))
       sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
-
-#ifndef RARCH_CONSOLE
-   rglgen_resolve_symbols(ctx_driver->get_proc_address);
-#endif
 
    hwr = video_driver_get_hw_context();
 
