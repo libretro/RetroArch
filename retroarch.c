@@ -883,12 +883,8 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
          case 'r':
             strlcpy(global->record.path, optarg,
                   sizeof(global->record.path));
-            {
-               bool recording_enabled = recording_is_enabled();
-
-               if (recording_enabled)
-                  recording_set_state(true);
-            }
+            if (recording_is_enabled())
+               recording_set_state(true);
             break;
 
 #ifdef HAVE_DYNAMIC
@@ -898,9 +894,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                settings_t *settings  = config_get_ptr();
 
                if (rarch_first_start)
-               {
                   core_set_on_cmdline = true;
-               }
 
                path_clear(RARCH_PATH_CORE);
                strlcpy(settings->paths.directory_libretro, optarg,
@@ -915,9 +909,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
             else if (filestream_exists(optarg))
             {
                if (rarch_first_start)
-               {
                   core_set_on_cmdline = true;
-               }
 
                rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, optarg);
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
@@ -1939,7 +1931,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             if (settings && settings->bools.game_specific_options)
                ret = rarch_game_specific_options(&game_options_path);
 
-            if(ret)
+            if (ret)
             {
                runloop_game_options_active = true;
                runloop_core_options        =
@@ -1979,7 +1971,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
             /* check if game options file was just created and flush
                to that file instead */
-            if(!path_is_empty(RARCH_PATH_CORE_OPTIONS))
+            if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
             {
                core_option_manager_flush_game_specific(runloop_core_options,
                      path_get(RARCH_PATH_CORE_OPTIONS));
