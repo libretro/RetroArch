@@ -95,7 +95,7 @@ ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -mcpu=cortex-a57+crc+fp
 CFLAGS	:=	-g -Wall -O3 -ffast-math -ffunction-sections \
 			$(ARCH) $(DEFINES) -Ideps -Ilibretro-common/include -Ideps/stb -I$(LIBNX)/include -include $(LIBNX)/include/switch.h #$(shell $(DEVKITPRO)/portlibs/switch/bin/freetype-config --cflags)
 
-INCLUDE += -I$(DEVKITPRO)/portlibs/switch/include
+CFLAGS  += -I$(PORTLIBS)/include
 
 CFLAGS	+=	$(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1
 
