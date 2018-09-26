@@ -476,6 +476,9 @@ typedef struct settings
 
       char midi_input[32];
       char midi_output[32];
+
+      char youtube_stream_key[PATH_MAX_LENGTH];
+      char twitch_stream_key[PATH_MAX_LENGTH];
    } arrays;
 
    struct

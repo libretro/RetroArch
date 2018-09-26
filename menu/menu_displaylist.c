@@ -7337,6 +7337,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_YOUTUBE_STREAM_KEY,
+               PARSE_ONLY_STRING, false) == 0)
+            count++;
+
          if (count == 0)
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
@@ -7350,6 +7355,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_ACCOUNTS_TWITCH_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_TWITCH_STREAM_KEY,
+               PARSE_ONLY_STRING, false) == 0)
+            count++;
 
          if (count == 0)
             menu_entries_append_enum(info->list,

@@ -1107,6 +1107,8 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("midi_driver",              settings->arrays.midi_driver, false, NULL, true);
    SETTING_ARRAY("midi_input",               settings->arrays.midi_input, true, midi_input, true);
    SETTING_ARRAY("midi_output",              settings->arrays.midi_output, true, midi_output, true);
+   SETTING_ARRAY("youtube_stream_key",       settings->arrays.youtube_stream_key, true, NULL, true);
+   SETTING_ARRAY("twitch_stream_key",        settings->arrays.twitch_stream_key, true, NULL, true);
    *size = count;
 
    return tmp;

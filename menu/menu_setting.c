@@ -9589,6 +9589,58 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+      case SETTINGS_LIST_USER_ACCOUNTS_YOUTUBE:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE),
+               parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.youtube_stream_key,
+               sizeof(settings->arrays.youtube_stream_key),
+               MENU_ENUM_LABEL_YOUTUBE_STREAM_KEY,
+               MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
+      case SETTINGS_LIST_USER_ACCOUNTS_TWITCH:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH),
+               parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.twitch_stream_key,
+               sizeof(settings->arrays.twitch_stream_key),
+               MENU_ENUM_LABEL_TWITCH_STREAM_KEY,
+               MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
       case SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS),
@@ -10274,6 +10326,8 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_USER,
       SETTINGS_LIST_USER_ACCOUNTS,
       SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
+      SETTINGS_LIST_USER_ACCOUNTS_YOUTUBE,
+      SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
       SETTINGS_LIST_DIRECTORY,
       SETTINGS_LIST_PRIVACY,
       SETTINGS_LIST_MIDI
