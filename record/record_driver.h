@@ -35,7 +35,8 @@ enum streaming_mode
 {
    STREAMING_MODE_TWITCH = 0,
    STREAMING_MODE_YOUTUBE,
-   STREAMING_MODE_UDP
+   STREAMING_MODE_LOCAL,
+   STREAMING_MODE_CUSTOM
 };
 
 enum record_config_type

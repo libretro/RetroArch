@@ -37,7 +37,6 @@
 #include "../list_special.h"
 #include "../paths.h"
 
-
 static const record_driver_t *record_drivers[] = {
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,
@@ -362,7 +361,7 @@ bool recording_init(void)
          if (!string_is_empty(settings->paths.path_stream_url))
             strlcpy(output, settings->paths.path_stream_url, sizeof(output));
          else
-            /* to-do determine the local interface, this won't work for connecting over the internet*/
+            /* Fallback, stream locally to 127.0.0.1 */
             snprintf(output, sizeof(output), "udp://127.0.0.1:%u", settings->uints.video_stream_port);
       else
       {
