@@ -54,9 +54,7 @@
 
 #include "../list_special.h"
 
-#ifdef HAVE_FFMPEG
 #include "record/record_driver.h"
-#endif
 
 static const char* invalid_filename_chars[] = {
    /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
