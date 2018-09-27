@@ -7075,6 +7075,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_STREAMING_MODE,
                PARSE_ONLY_UINT, false) == 0)
             count++;
+         if (menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_STREAMING_TITLE,
+               PARSE_ONLY_STRING, false) == 0)
+            count++;
          if (settings->uints.streaming_mode == STREAMING_MODE_LOCAL)
          {
             /* To-Do: Refresh on settings->uints.streaming_mode change to show this parameter */

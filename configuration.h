@@ -538,6 +538,7 @@ typedef struct settings
       char directory_thumbnails[PATH_MAX_LENGTH];
       char directory_menu_config[PATH_MAX_LENGTH];
       char directory_menu_content[PATH_MAX_LENGTH];
+      char streaming_title[PATH_MAX_LENGTH];
    } paths;
 
    bool modified;
