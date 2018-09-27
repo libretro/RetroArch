@@ -184,6 +184,7 @@ enum
    XMB_TEXTURE_OVERLAY,
    XMB_TEXTURE_OVERRIDE,
    XMB_TEXTURE_NOTIFICATIONS,
+   XMB_TEXTURE_STREAM,
    XMB_TEXTURE_LAST
 };
 
@@ -2377,8 +2378,14 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                      return xmb->textures.list[XMB_TEXTURE_LOG];
                   case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_FRAMESKIP];
+                  case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
                   case MENU_ENUM_LABEL_RECORDING_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_RECORD];
+                  case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
+                     return xmb->textures.list[XMB_TEXTURE_STREAM];
+                  case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
+                  case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
+                     return xmb->textures.list[XMB_TEXTURE_CLOSE];
                   case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_OSD];
                   case MENU_ENUM_LABEL_SHOW_WIMP:
@@ -4606,6 +4613,8 @@ static const char *xmb_texture_path(unsigned id)
          return "menu_override.png";
       case XMB_TEXTURE_NOTIFICATIONS:
          return "menu_notifications.png";
+      case XMB_TEXTURE_STREAM:
+         return "menu_stream.png";
    }
 
    return NULL;
