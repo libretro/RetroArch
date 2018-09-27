@@ -47,6 +47,7 @@
 
 #ifdef HAVE_OPENGL
 #include "../common/gl_common.h"
+#include <gfx/gl_capabilities.h>
 #endif
 
 #ifdef HAVE_VULKAN
@@ -90,6 +91,7 @@ static HGLRC win32_hw_hrc;
 static HDC   win32_hdc;
 static bool  win32_use_hw_ctx             = false;
 static bool  win32_core_hw_context_enable = false;
+static bool  wgl_adaptive_vsync           = false;
 
 #ifdef HAVE_VULKAN
 static gfx_ctx_vulkan_data_t win32_vk;
@@ -97,11 +99,43 @@ static gfx_ctx_vulkan_data_t win32_vk;
 
 static unsigned         win32_major       = 0;
 static unsigned         win32_minor       = 0;
-static unsigned         win32_interval    = 0;
+static int              win32_interval    = 0;
 static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
 
 #ifdef HAVE_DYNAMIC
 static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll */
+#endif
+
+#ifdef HAVE_OPENGL
+static bool wgl_has_extension(const char *extension, const char *extensions)
+{
+   const char *start      = NULL;
+   const char *terminator = NULL;
+   const char      *where = strchr(extension, ' ');
+
+   if (where || *extension == '\0')
+      return false;
+
+   if (!extensions)
+      return false;
+
+   start = extensions;
+
+   for (;;)
+   {
+      where = strstr(start, extension);
+      if (!where)
+         break;
+
+      terminator = where + strlen(extension);
+      if (where == start || *(where - 1) == ' ')
+         if (*terminator == ' ' || *terminator == '\0')
+            return true;
+
+      start = terminator;
+   }
+   return false;
+}
 #endif
 
 typedef struct gfx_ctx_cgl_data
@@ -263,6 +297,23 @@ static void create_gl_context(HWND hwnd, bool *quit)
       else
          RARCH_ERR("[WGL]: wglCreateContextAttribsARB not supported.\n");
    }
+
+   {
+
+      const char *(WINAPI * wglGetExtensionsStringARB) (HDC) = 0;
+      const char *extensions                                 = NULL;
+
+      wglGetExtensionsStringARB = (const char *(WINAPI *) (HDC))
+         gfx_ctx_wgl_get_proc_address("wglGetExtensionsStringARB");
+      if (wglGetExtensionsStringARB)
+         extensions = wglGetExtensionsStringARB(win32_hdc);
+      RARCH_LOG("[WGL] extensions: %s\n", extensions);
+      if (wgl_has_extension("WGL_EXT_swap_control_tear", extensions))
+      {
+         RARCH_LOG("[WGL]: Adaptive VSync supported.\n");
+         wgl_adaptive_vsync = true;
+      }
+   }
 }
 #endif
 
@@ -308,7 +359,7 @@ void create_graphics_context(HWND hwnd, bool *quit)
 
 void *dinput_wgl;
 
-static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_wgl_swap_interval(void *data, int interval)
 {
    (void)data;
 
@@ -322,7 +373,7 @@ static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
          if (!p_swap_interval)
             return;
 
-         RARCH_LOG("[WGL]: wglSwapInterval(%u)\n", win32_interval);
+         RARCH_LOG("[WGL]: wglSwapInterval(%i)\n", win32_interval);
          if (!p_swap_interval(win32_interval))
             RARCH_WARN("[WGL]: wglSwapInterval() failed.\n");
 #endif
@@ -478,6 +529,7 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
 #ifdef HAVE_DYNAMIC
    dll_handle = dylib_load("OpenGL32.dll");
 #endif
+ 
 
    win32_window_reset();
    win32_monitor_init();
@@ -572,6 +624,7 @@ static void gfx_ctx_wgl_destroy(void *data)
    if (wgl)
       free(wgl);
 
+   wgl_adaptive_vsync           = false;
    win32_core_hw_context_enable = false;
    g_win32_inited               = false;
    win32_major                  = 0;
@@ -584,6 +637,10 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+#ifdef HAVE_VULKAN
+   win32_vk.fullscreen = fullscreen;
+#endif
+
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
    {
       RARCH_ERR("[WGL]: win32_set_video_mode failed.\n");
@@ -721,22 +778,51 @@ static void *gfx_ctx_wgl_get_context_data(void *data)
 
 static uint32_t gfx_ctx_wgl_get_flags(void *data)
 {
-   uint32_t flags = 0;
-   if (win32_core_hw_context_enable)
+   uint32_t          flags = 0;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+
+   switch (win32_api)
    {
-      BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+      case GFX_CTX_OPENGL_API:
+         if (wgl_adaptive_vsync)
+         {
+            BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+         }
+
+         if (win32_core_hw_context_enable)
+         {
+            BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+         }
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
    }
-   else
-   {
-      BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
-   }
+
    return flags;
 }
 
 static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
 {
-   if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
-      win32_core_hw_context_enable = true;
+   switch (win32_api)
+   {
+      case GFX_CTX_OPENGL_API:
+#ifdef HAVE_OPENGL
+         if (BIT32_GET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
+         {
+            wgl_adaptive_vsync = true;
+         }
+
+         if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+            win32_core_hw_context_enable = true;
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
 }
 
 static void gfx_ctx_wgl_get_video_output_size(void *data,

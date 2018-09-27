@@ -7,6 +7,9 @@ MSG_HASH(
     "Unknown compiler"
     )
 MSG_HASH(
+    MSG_NATIVE,
+    "Native")
+MSG_HASH(
     MSG_DEVICE_DISCONNECTED_FROM_PORT,
     "Device disconnected from port"
     )
@@ -1243,8 +1246,8 @@ MSG_HASH(
     "Menu toggle"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE,
-    "Movie record toggle"
+    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
+    "Input replay movie record toggle"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
@@ -2148,7 +2151,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
-    "Load Recording Config..."
+    "Custom Record Config"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+    "Custom Stream Config"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -3708,7 +3715,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-    "Hardcore Mode Enabled, savestate & rewind were disabled."
+    "Achievements Hardcore Mode Enabled, savestate & rewind were disabled."
     )
 MSG_HASH(
     MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -4156,15 +4163,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-    "Movie file is not a valid BSV1 file."
+    "Input replay movie file is not a valid BSV1 file."
     )
 MSG_HASH(
     MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
-    "Movie format seems to have a different serializer version. Will most likely fail."
+    "Input replay movie format seems to have a different serializer version. Will most likely fail."
     )
 MSG_HASH(
     MSG_MOVIE_PLAYBACK_ENDED,
-    "Movie playback ended."
+    "Input replay movie playback ended."
     )
 MSG_HASH(
     MSG_MOVIE_RECORD_STOPPED,
@@ -4528,7 +4535,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-    "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate. NOTE: This will be ignored if 'Threaded Video' is enabled."
+    "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate.\n"
+    "NOTE: This will be ignored if 'Threaded Video' is enabled."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
@@ -4752,7 +4760,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-    "Apply a CPU-powered video filter. NOTE: Might come at a high performance cost. Some video filters might only work for cores that use 32bit or 16bit color."
+    "Apply a CPU-powered video filter.\n"
+    "NOTE: Might come at a high performance cost. Some video filters might only work for cores that use 32bit or 16bit color."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
@@ -5008,7 +5017,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-    "Big endian  : 258 = 0x0102,\nLittle endian : 258 = 0x0201"
+    "Big endian  : 258 = 0x0102,\n"
+    "Little endian : 258 = 0x0201"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
@@ -5556,7 +5566,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-    "Set the custom scaling size here. NOTE: You have to enable 'DPI Override' for this scaling size to take effect."
+    "Set the custom scaling size here.\n"
+    "NOTE: You have to enable 'DPI Override' for this scaling size to take effect."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
@@ -6236,7 +6247,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-    "For 15 kHz CRT displays only. Attempts to use exact core/game resolution and refresh rate."
+    "For CRT displays only. Attempts to use exact core/game resolution and refresh rate."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
@@ -6244,7 +6255,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-    "When CRT SwitchRes is enabled, force ultrawide horizontal resolution to minimize mode switching."
+    "Switch among native and ultrawide super resolutions."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
@@ -6675,12 +6686,13 @@ MSG_HASH(
     "Paused"
     )
 MSG_HASH(
-     MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-     "Enable Discord"
-     )
+    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
+    "Enable Discord Rich Presence"
+    )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-    "Enable or disable Discord support. Will not work with the browser version, only native desktop client."
+    "Enable or disable Discord Rich Presence support.\n"
+    "NOTE: It will not work with the browser version, only with the native desktop client."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
@@ -6905,6 +6917,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
     "> Rumble Value"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
+    "Increases by Rumble Value"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE_BY_VALUE,
+    "Decreases by Rumble Value"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
@@ -7223,6 +7243,10 @@ MSG_HASH(
     "Delete Playlist"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST,
+    "Rename Playlist"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
     "Are you sure you want to delete the playlist \"%1\"?"
     )
@@ -7442,3 +7466,119 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
     "Core Options"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+    "Adaptive Vsync"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+    "V-Sync is enabled until performance falls below the target refresh rate. Can minimize stuttering when performance falls below realtime, and can be more energy efficient."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+    "CRT SwitchRes"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+    "Output native, low-resolution signals for use with CRT displays."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+    "Cycle through these options if the image is not centered properly on the display."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+    "X-Axis Centering"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+    "Use a custom refresh rate specified in the config file if needed."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+    "Use Custom Refresh Rate"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+    "Select the output port connected to the CRT display."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+    "Output Display ID"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
+    "Start Recording"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
+    "Starts recording."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
+    "Stop Recording"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
+    "Stops recording."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
+    "Start Streaming"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
+    "Starts streaming."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
+    "Stop Streaming"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
+    "Stops streaming."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
+    "Recording toggle"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
+    "Streaming toggle"
+    )
+MSG_HASH(
+    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
+    "A savestate was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+    "Record Quality"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+    "Stream Quality"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAMING_URL,
+    "Streaming URL"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+    "UDP Stream Port"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
+    "Twitch"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
+    "YouTube"
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
+      "Twitch Stream Key")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+      "YouTube Stream Key")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
+      "Streaming Mode")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
+      "Title of Stream")

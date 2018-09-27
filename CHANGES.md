@@ -1,4 +1,32 @@
 # 1.7.5 (future)
+- CAMERA: Fix Video4Linux2 driver that broke years ago.
+- CHEATS: Add support for Rumble when increase or decrease by the rumble value.
+- CHEEVOS: Support headerless NES hashing.
+- CHEEVOS: Prevent loading states before achievements are fully loaded.
+- CRT: New porches and interlaced bug fix.
+- CRT: New functionality, ability to switch between 15KHz and 31KHz, etc.
+- COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
+- DISCORD: Add 'Ask To Join' Feature.
+- IOS: Use safe area to account for notch for iPhone X and adjust main view.
+- LOCALIZATION: Update Portuguese / Brazilian translation.
+- LOCALIZATION: Update Japanese translation.
+- LOCALIZATION: Update Polish translation.
+- LOCALIZATION: Update Spanish translation.
+- MENU: Add dropdown lists for many settings.
+- MENU: Fix crash that could happen when changing core's options on Android.
+- MENU/QT/WIMP: Add option to rename playlists.
+- MENU/QT/WIMP: Add option to filter extensions inside archives when adding to a playlist.
+- MENU/QT/WIMP: Rename playlist entries with 2 single clicks.
+- MENU/QT/WIMP: Fix shader parameter checkboxes not working
+- METAL: Add screenshot support.
+- NETPLAY: Save lobby details received back from server after first announcement.
+- OPENGL/GLX: Implement Adaptive VSync - GLX_EXT_swap_control_tear.
+- OPENGL/WGL: Implement Adaptive VSync - WGL_EXT_swap_control_tear.
+- RUNAHEAD: Fix performance degradation that could happen over time (after approx. 30 mins). Fixed input IDs outside of range 0-35 causing slow performance in runahead.
+- SWITCH: Merging of RetroNX Nintendo Switch port, based on libnx SDK.
+- VULKAN: Fix race condition in threaded mailbox emulation.
+- VULKAN: Maintenance fixes.
+- WIIU: Fix menu lag when built with DevKitPro r32.
 
 # 1.7.4
 - ANDROID: Add sustained performance mode, can be turned on/off in Power Management settings menu.

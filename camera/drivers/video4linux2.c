@@ -70,7 +70,7 @@ typedef struct video4linux
    char dev_name[255];
 } video4linux_t;
 
-static int xioctl(int fd, int request, void *args)
+static int xioctl(int fd, unsigned long request, void *args)
 {
    int r;
 
@@ -91,7 +91,7 @@ static bool init_mmap(void *data)
    req.type                       = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    req.memory                     = V4L2_MEMORY_MMAP;
 
-   if (xioctl(v4l->fd, (uint8_t)VIDIOC_REQBUFS, &req) == -1)
+   if (xioctl(v4l->fd, VIDIOC_REQBUFS, &req) == -1)
    {
       if (errno == EINVAL)
          RARCH_ERR("[V4L2]: %s does not support memory mapping.\n", v4l->dev_name);
@@ -122,7 +122,7 @@ static bool init_mmap(void *data)
       buf.memory = V4L2_MEMORY_MMAP;
       buf.index  = v4l->n_buffers;
 
-      if (xioctl(v4l->fd, (uint8_t)VIDIOC_QUERYBUF, &buf) == -1)
+      if (xioctl(v4l->fd, VIDIOC_QUERYBUF, &buf) == -1)
       {
          RARCH_ERR("[V4L2]: Error - xioctl VIDIOC_QUERYBUF.\n");
          return false;
@@ -152,7 +152,7 @@ static bool init_device(void *data)
    struct v4l2_cropcap cropcap = {0};
    video4linux_t          *v4l = (video4linux_t*)data;
 
-   if (xioctl(v4l->fd, (uint8_t)VIDIOC_QUERYCAP, &cap) < 0)
+   if (xioctl(v4l->fd, VIDIOC_QUERYCAP, &cap) < 0)
    {
       if (errno == EINVAL)
          RARCH_ERR("[V4L2]: %s is no V4L2 device.\n", v4l->dev_name);
@@ -176,7 +176,7 @@ static bool init_device(void *data)
 
    cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-   if (xioctl(v4l->fd, (uint8_t)VIDIOC_CROPCAP, &cropcap) == 0)
+   if (xioctl(v4l->fd, VIDIOC_CROPCAP, &cropcap) == 0)
    {
       crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
       crop.c    = cropcap.defrect;
@@ -190,7 +190,7 @@ static bool init_device(void *data)
    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
    fmt.fmt.pix.field       = V4L2_FIELD_NONE;
 
-   if (xioctl(v4l->fd, (uint8_t)VIDIOC_S_FMT, &fmt) < 0)
+   if (xioctl(v4l->fd, VIDIOC_S_FMT, &fmt) < 0)
    {
       RARCH_ERR("[V4L2]: Error - VIDIOC_S_FMT\n");
       return false;
@@ -248,7 +248,7 @@ static bool v4l_start(void *data)
       buf.memory = V4L2_MEMORY_MMAP;
       buf.index  = i;
 
-      if (xioctl(v4l->fd, (uint8_t)VIDIOC_QBUF, &buf) == -1)
+      if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
       {
          RARCH_ERR("[V4L2]: Error - VIDIOC_QBUF.\n");
          return false;
@@ -364,7 +364,7 @@ static bool preprocess_image(void *data)
    buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    buf.memory = V4L2_MEMORY_MMAP;
 
-   if (xioctl(v4l->fd, (uint8_t)VIDIOC_DQBUF, &buf) == -1)
+   if (xioctl(v4l->fd, VIDIOC_DQBUF, &buf) == -1)
    {
       switch (errno)
       {
@@ -384,7 +384,7 @@ static bool preprocess_image(void *data)
 
    scaler_ctx_scale_direct(ctx, v4l->buffer_output, (const uint8_t*)v4l->buffers[buf.index].start);
 
-   if (xioctl(v4l->fd, (uint8_t)VIDIOC_QBUF, &buf) == -1)
+   if (xioctl(v4l->fd, VIDIOC_QBUF, &buf) == -1)
       RARCH_ERR("[V4L2]: VIDIOC_QBUF\n");
 
    return true;

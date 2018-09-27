@@ -587,7 +587,6 @@ void ShaderParamsDialog::onShaderResetParameter(QString parameter)
 {
    struct video_shader *menu_shader = NULL;
    struct video_shader *video_shader = NULL;
-   unsigned i;
 
    getShaders(&menu_shader, &video_shader);
 
@@ -884,8 +883,7 @@ void ShaderParamsDialog::buildLayout()
    struct video_shader *video_shader = NULL;
    struct video_shader *avail_shader = NULL;
    const char *shader_path = NULL;
-   int i;
-   unsigned j;
+   unsigned i;
    bool hasPasses = false;
 
    getShaders(&menu_shader, &video_shader);
@@ -976,7 +974,7 @@ void ShaderParamsDialog::buildLayout()
     */
    if (menu_shader)
    {
-      for (i = 0; i < static_cast<int>(menu_shader->passes); i++)
+      for (i = 0; i < menu_shader->passes; i++)
       {
          QFileInfo fileInfo(menu_shader->pass[i].source.path);
          QString shaderBasename = fileInfo.completeBaseName();
@@ -1001,7 +999,7 @@ void ShaderParamsDialog::buildLayout()
    m_layout->addLayout(topButtonLayout);
 
    /* NOTE: We assume that parameters are always grouped in order by the pass number, e.g., all parameters for pass 0 come first, then params for pass 1, etc. */
-   for (i = 0; avail_shader && i < static_cast<int>(avail_shader->passes); i++)
+   for (i = 0; avail_shader && i < avail_shader->passes; i++)
    {
       QFormLayout *form = NULL;
       QGroupBox *groupBox = NULL;
@@ -1032,7 +1030,7 @@ void ShaderParamsDialog::buildLayout()
       moveUpButton->setProperty("pass", i);
 
       /* Can't move down if we're already at the bottom. */
-      if (i < static_cast<int>(avail_shader->passes) - 1)
+      if (i < avail_shader->passes - 1)
          connect(moveDownButton, SIGNAL(clicked()), this, SLOT(onShaderPassMoveDownClicked()));
       else
          moveDownButton->setDisabled(true);
@@ -1107,7 +1105,7 @@ void ShaderParamsDialog::buildLayout()
       {
          struct video_shader_parameter *param = &avail_shader->parameters[j];
 
-         if (param->pass != i)
+         if (param->pass != static_cast<int>(i))
             continue;
 
          addShaderParam(param, form);
@@ -1312,10 +1310,6 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
    if (paramVariant.isValid())
    {
       QString parameter = paramVariant.toString();
-      bool ok = false;
-
-      if (!ok)
-         return;
 
       if (menu_shader)
       {

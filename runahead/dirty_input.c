@@ -17,7 +17,8 @@ typedef struct InputListElement_t
    unsigned port;
    unsigned device;
    unsigned index;
-   int16_t state[36];
+   int16_t *state;
+   unsigned int state_size;
 } InputListElement;
 
 extern struct retro_core_t current_core;
@@ -35,9 +36,40 @@ static bool unserialze_hook(const void *buf, size_t size);
 static void* InputListElementConstructor(void)
 {
    const int size = sizeof(InputListElement);
-   void      *ptr = calloc(1, size);
-
+   const int initial_state_array_size = 256;
+   void *ptr = calloc(1, size);
+   InputListElement *element = (InputListElement*)ptr;
+   element->state_size = initial_state_array_size;
+   element->state = (int16_t*)calloc(element->state_size, sizeof(int16_t));
    return ptr;
+}
+
+static void InputListElementRealloc(InputListElement *element, unsigned int newSize)
+{
+   if (newSize > element->state_size)
+   {
+      element->state = realloc(element->state, newSize * sizeof(int16_t));
+      memset(&element->state[element->state_size], 0, (newSize - element->state_size) * sizeof(int16_t));
+      element->state_size = newSize;
+   }
+}
+
+static void InputListElementExpand(InputListElement *element, unsigned int newIndex)
+{
+   unsigned int newSize = element->state_size;
+   if (newSize == 0) newSize = 32;
+   while (newIndex >= newSize)
+   {
+      newSize *= 2;
+   }
+   InputListElementRealloc(element, newSize);
+}
+
+static void InputListElementDestructor(void* element_ptr)
+{
+   InputListElement *element = (InputListElement*)element_ptr;
+   free(element->state);
+   free(element_ptr);
 }
 
 static void input_state_destroy(void)
@@ -50,11 +82,11 @@ static void input_state_set_last(unsigned port, unsigned device,
 {
    unsigned i;
    InputListElement *element = NULL;
-   const unsigned     MAX_ID = sizeof(element->state) / sizeof(int16_t);
+   if (id >= 65536) return; /*arbitrary limit of up to 65536 elements in state array*/
 
    if (!input_state_list)
       mylist_create(&input_state_list, 16,
-            InputListElementConstructor, free);
+            InputListElementConstructor, InputListElementDestructor);
 
    /* find list item */
    for (i = 0; i < (unsigned)input_state_list->size; i++)
@@ -62,10 +94,13 @@ static void input_state_set_last(unsigned port, unsigned device,
       element = (InputListElement*)input_state_list->data[i];
       if (  (element->port   == port)   &&
             (element->device == device) &&
-            (element->index  == index)  &&
-            (id < MAX_ID)
+            (element->index  == index)
          )
       {
+         if (id >= element->state_size)
+         {
+            InputListElementExpand(element, id);
+         }
          element->state[id] = value;
          return;
       }
@@ -76,8 +111,11 @@ static void input_state_set_last(unsigned port, unsigned device,
    element->port      = port;
    element->device    = device;
    element->index     = index;
-   if (id < MAX_ID)
-      element->state[id] = value;
+   if (id >= element->state_size)
+   {
+      InputListElementExpand(element, id);
+   }
+   element->state[id] = value;
 }
 
 int16_t input_state_get_last(unsigned port,
@@ -93,14 +131,15 @@ int16_t input_state_get_last(unsigned port,
    {
       InputListElement *element = 
          (InputListElement*)input_state_list->data[i];
-      const unsigned MAX_ID = sizeof(element->state) / sizeof(int16_t);
 
       if (  (element->port   == port)   && 
             (element->device == device) &&
-            (element->index  == index)  &&
-            (id < MAX_ID)
-         )
-         return element->state[id];
+            (element->index  == index))
+      {
+         if (id < element->state_size)
+            return element->state[id];
+         return 0;
+      }
    }
    return 0;
 }

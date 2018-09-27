@@ -25,6 +25,7 @@
 
 #ifdef HAVE_OPENGL
 #include <GL/glx.h>
+#include <gfx/gl_capabilities.h>
 
 #ifndef GLX_SAMPLE_BUFFERS
 #define GLX_SAMPLE_BUFFERS 100000
@@ -100,13 +101,14 @@ typedef struct gfx_ctx_x_data
    unsigned swap_mode;
 #endif
 
-   unsigned g_interval;
+   int g_interval;
 
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;
 #endif
 } gfx_ctx_x_data_t;
 
+static bool x_adaptive_vsync                  = false;
 static bool x_enable_msaa                     = false;
 static unsigned g_major                       = 0;
 static unsigned g_minor                       = 0;
@@ -124,51 +126,25 @@ typedef struct Hints
 } Hints;
 
 /* We use long because X11 wants 32-bit pixels for 32-bit systems and 64 for 64... */
+/* ARGB*/
 static const unsigned long retroarch_icon_data[] = {
    16, 16,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0xffffffff, 0xffffffff,
-   0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0xffffffff, 0xffffffff,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xffffffff,
-   0xffffffff, 0xffffffff, 0x000000ff, 0xffffffff, 0xffffffff, 0x00000000,
-   0xffffffff, 0xffffffff, 0x000000ff, 0xffffffff, 0xffffffff, 0xffffffff,
-   0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0x000000ff, 0xffffffff,
-   0xffffffff, 0x000000ff, 0xffffffff, 0xffffffff, 0xffffffff, 0x000000ff,
-   0xffffffff, 0xffffffff, 0x000000ff, 0xffffffff, 0x00000000, 0x00000000,
-   0x00000000, 0xffffffff, 0x000000ff, 0xffffffff, 0x000000ff, 0x000000ff,
-   0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff, 0xffffffff,
-   0x000000ff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0xffffffff,
-   0x000000ff, 0x000000ff, 0x000000ff, 0xffffffff, 0x000000ff, 0x000000ff,
-   0x000000ff, 0xffffffff, 0x000000ff, 0x000000ff, 0x000000ff, 0xffffffff,
-   0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0x000000ff, 0x000000ff,
-   0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff,
-   0x000000ff, 0x000000ff, 0x000000ff, 0xffffffff, 0x00000000, 0x00000000,
-   0x00000000, 0xffffffff, 0xffffffff, 0x000000ff, 0x000000ff, 0x000000ff,
-   0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff, 0x000000ff,
-   0xffffffff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0xffffffff, 0xffffffff, 0x000000ff, 0xffffffff, 0xffffffff, 0xffffffff,
-   0xffffffff, 0xffffffff, 0x000000ff, 0xffffffff, 0xffffffff, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0x000000ff,
-   0xffffffff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0xffffffff,
-   0xffffffff, 0x000000ff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0xffffffff,
-   0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000
+0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
+0x00000000,0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xfff2f2f2,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0xfff2f2f2,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,0x00000000,
+0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000
 };
 
 #ifdef HAVE_OPENGL
@@ -320,7 +296,7 @@ static void gfx_ctx_x_destroy(void *data)
    free(data);
 }
 
-static void gfx_ctx_x_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_x_swap_interval(void *data, int interval)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
@@ -333,18 +309,18 @@ static void gfx_ctx_x_swap_interval(void *data, unsigned interval)
 
          if (g_pglSwapIntervalEXT)
          {
-            RARCH_LOG("[GLX]: glXSwapIntervalEXT(%u)\n", x->g_interval);
+            RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
             g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
          }
          else if (g_pglSwapInterval)
          {
-            RARCH_LOG("[GLX]: glXSwapInterval(%u)\n", x->g_interval);
+            RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
             if (g_pglSwapInterval(x->g_interval) != 0)
                RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
          }
          else if (g_pglSwapIntervalSGI)
          {
-            RARCH_LOG("[GLX]: glXSwapIntervalSGI(%u)\n", x->g_interval);
+            RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
             if (g_pglSwapIntervalSGI(x->g_interval) != 0)
                RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
          }
@@ -581,6 +557,11 @@ static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
    {
       case GFX_CTX_OPENGL_API:
 #ifdef HAVE_OPENGL
+	 if (GLXExtensionSupported(g_x11_dpy, "GLX_EXT_swap_control_tear"))
+	 {
+            RARCH_LOG("[GLX]: GLX_EXT_swap_control_tear supported.\n");
+	    x_adaptive_vsync = true;
+	 }
          if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control") &&
              GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
             )
@@ -1167,30 +1148,56 @@ static void *gfx_ctx_x_get_context_data(void *data)
 
 static uint32_t gfx_ctx_x_get_flags(void *data)
 {
-   uint32_t flags = 0;
+   uint32_t      flags = 0;
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-   if (x->core_hw_context_enable || x->g_core_es)
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+
+   switch (x_api)
    {
-      BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+         if (x_adaptive_vsync)
+         {
+            BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+         }
+
+         if (x->core_hw_context_enable || x->g_core_es)
+         {
+            BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+         }
+         if (x_enable_msaa)
+         {
+            BIT32_SET(flags, GFX_CTX_FLAGS_MULTISAMPLING);
+         }
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
    }
-   else
-   {
-      BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
-   }
-   if (x_enable_msaa)
-   {
-      BIT32_SET(flags, GFX_CTX_FLAGS_MULTISAMPLING);
-   }
+
    return flags;
 }
 
 static void gfx_ctx_x_set_flags(void *data, uint32_t flags)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-   if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
-      x->core_hw_context_enable = true;
-   if (BIT32_GET(flags, GFX_CTX_FLAGS_MULTISAMPLING))
-      x_enable_msaa = true;
+
+   switch (x_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+         if (BIT32_GET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
+               x_adaptive_vsync = true;
+         if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+            x->core_hw_context_enable = true;
+         if (BIT32_GET(flags, GFX_CTX_FLAGS_MULTISAMPLING))
+            x_enable_msaa = true;
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
 }
 
 static void gfx_ctx_x_make_current(bool release)

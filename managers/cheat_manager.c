@@ -250,6 +250,11 @@ bool cheat_manager_copy_working_to_idx(unsigned idx)
       free(cheat_manager_state.cheats[idx].desc) ;
 
    cheat_manager_state.cheats[idx].desc = strdup(cheat_manager_state.working_desc) ;
+
+   if ( cheat_manager_state.cheats[idx].code != NULL )
+      free(cheat_manager_state.cheats[idx].code) ;
+
+   cheat_manager_state.cheats[idx].code = strdup(cheat_manager_state.working_code) ;
    return true ;
 }
 static void cheat_manager_new(unsigned size)
@@ -654,51 +659,51 @@ bool cheat_manager_alloc_if_empty(void)
    return true;
 }
 
-int cheat_manager_initialize_memory(void *data, bool wraparound)
+int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
 {
-   retro_ctx_memory_info_t meminfo ;
-   bool refresh      = false;
-   bool is_search_initialization = (data != NULL) ;
+   retro_ctx_memory_info_t meminfo;
+   bool refresh                  = false;
+   bool is_search_initialization = (setting != NULL);
 
-   meminfo.id = RETRO_MEMORY_SYSTEM_RAM ;
-   if (! core_get_memory(&meminfo) )
+   meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
+   if (!core_get_memory(&meminfo))
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true);
-      return 0 ;
+      return 0;
    }
 
-   cheat_manager_state.actual_memory_size = (unsigned)meminfo.size ;
-   cheat_manager_state.curr_memory_buf    = meminfo.data ;
-   cheat_manager_state.total_memory_size  = (unsigned)meminfo.size ;
-   cheat_manager_state.num_matches        = (cheat_manager_state.total_memory_size*8)/((int)pow(2,cheat_manager_state.search_bit_size)) ;
+   cheat_manager_state.actual_memory_size = (unsigned)meminfo.size;
+   cheat_manager_state.curr_memory_buf    = meminfo.data;
+   cheat_manager_state.total_memory_size  = (unsigned)meminfo.size;
+   cheat_manager_state.num_matches        = (cheat_manager_state.total_memory_size*8)/((int)pow(2,cheat_manager_state.search_bit_size));
    /* Ensure we're aligned on 4-byte boundary */
 #if 0
    if (meminfo.size % 4 > 0)
-      cheat_manager_state.total_memory_size = cheat_manager_state.total_memory_size + (4 - (meminfo.size%4)) ;
+      cheat_manager_state.total_memory_size = cheat_manager_state.total_memory_size + (4 - (meminfo.size%4));
 #endif
-   if ( is_search_initialization )
+   if (is_search_initialization)
    {
       cheat_manager_state.prev_memory_buf = (uint8_t*) calloc(cheat_manager_state.total_memory_size, sizeof(uint8_t));
-      if (!cheat_manager_state.prev_memory_buf )
+      if (!cheat_manager_state.prev_memory_buf)
       {
          runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true);
-         return 0 ;
+         return 0;
       }
       cheat_manager_state.matches = (uint8_t*) calloc(cheat_manager_state.total_memory_size, sizeof(uint8_t));
-      if (!cheat_manager_state.matches )
+      if (!cheat_manager_state.matches)
       {
-         free(cheat_manager_state.prev_memory_buf) ;
-         cheat_manager_state.prev_memory_buf = NULL ;
+         free(cheat_manager_state.prev_memory_buf);
+         cheat_manager_state.prev_memory_buf = NULL;
          runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true);
-         return 0 ;
+         return 0;
       }
 
-      memset(cheat_manager_state.matches, 0xFF, cheat_manager_state.total_memory_size) ;
+      memset(cheat_manager_state.matches, 0xFF, cheat_manager_state.total_memory_size);
       memcpy(cheat_manager_state.prev_memory_buf, cheat_manager_state.curr_memory_buf, cheat_manager_state.actual_memory_size);
-      cheat_manager_state.memory_search_initialized = true ;
+      cheat_manager_state.memory_search_initialized = true;
    }
 
-   cheat_manager_state.memory_initialized = true ;
+   cheat_manager_state.memory_initialized = true;
 
 
    runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_SUCCESS), 1, 180, true);
@@ -711,7 +716,7 @@ int cheat_manager_initialize_memory(void *data, bool wraparound)
    }
 #endif
 
-   return 0 ;
+   return 0;
 }
 
 static void cheat_manager_setup_search_meta(unsigned int bitsize, unsigned int *bytes_per_item, unsigned int *mask, unsigned int *bits)
@@ -763,39 +768,39 @@ static void cheat_manager_setup_search_meta(unsigned int bitsize, unsigned int *
    }
 }
 
-int cheat_manager_search_exact(void *data, bool wraparound)
+int cheat_manager_search_exact(rarch_setting_t *setting, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EXACT) ;
 }
-int cheat_manager_search_lt(void *data, bool wraparound)
+int cheat_manager_search_lt(rarch_setting_t *setting, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_LT) ;
 }
-int cheat_manager_search_gt(void *data, bool wraparound)
+int cheat_manager_search_gt(rarch_setting_t *setting, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_GT) ;
 }
-int cheat_manager_search_lte(void *data, bool wraparound)
+int cheat_manager_search_lte(rarch_setting_t *setting, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_LTE) ;
 }
-int cheat_manager_search_gte(void *data, bool wraparound)
+int cheat_manager_search_gte(rarch_setting_t *setting, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_GTE) ;
 }
-int cheat_manager_search_eq(void *data, bool wraparound)
+int cheat_manager_search_eq(rarch_setting_t *setting, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EQ) ;
 }
-int cheat_manager_search_neq(void *data, bool wraparound)
+int cheat_manager_search_neq(rarch_setting_t *setting, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_NEQ) ;
 }
-int cheat_manager_search_eqplus(void *data, bool wraparound)
+int cheat_manager_search_eqplus(rarch_setting_t *setting, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EQPLUS) ;
 }
-int cheat_manager_search_eqminus(void *data, bool wraparound)
+int cheat_manager_search_eqminus(rarch_setting_t *setting, bool wraparound)
 {
    return cheat_manager_search(CHEAT_SEARCH_TYPE_EQMINUS) ;
 }
@@ -803,15 +808,15 @@ int cheat_manager_search_eqminus(void *data, bool wraparound)
 int cheat_manager_search(enum cheat_search_type search_type)
 {
    char msg[100];
-   unsigned char *curr = cheat_manager_state.curr_memory_buf ;
-   unsigned char *prev = cheat_manager_state.prev_memory_buf ;
-   unsigned int idx = 0 ;
-   unsigned int curr_val ;
-   unsigned int prev_val ;
-   unsigned int mask = 0 ;
-   unsigned int bytes_per_item = 1 ;
-   unsigned int bits = 8 ;
-   bool refresh      = false;
+   unsigned char *curr         = cheat_manager_state.curr_memory_buf;
+   unsigned char *prev         = cheat_manager_state.prev_memory_buf;
+   unsigned int idx            = 0;
+   unsigned int curr_val       = 0;
+   unsigned int prev_val       = 0;
+   unsigned int mask           = 0;
+   unsigned int bytes_per_item = 1;
+   unsigned int bits           = 8;
+   bool refresh                = false;
 
    if (!cheat_manager_state.curr_memory_buf)
    {
@@ -827,7 +832,7 @@ int cheat_manager_search(enum cheat_search_type search_type)
    {
       unsigned byte_part;
 
-      switch (bytes_per_item )
+      switch (bytes_per_item)
       {
          case 2 :
          {
@@ -1067,6 +1072,12 @@ void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_valu
       case RUMBLE_TYPE_GT_VALUE:
          rumble = (curr_value > cheat->rumble_value) ;
          break;
+      case RUMBLE_TYPE_INCREASE_BY_VALUE:
+         rumble = (curr_value == cheat->rumble_prev_value + cheat->rumble_value) ;
+         break ;
+      case RUMBLE_TYPE_DECREASE_BY_VALUE:
+         rumble = (curr_value == cheat->rumble_prev_value - cheat->rumble_value) ;
+         break ;
    }
 
    cheat->rumble_prev_value = curr_value ;
@@ -1427,14 +1438,14 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
       }
    }
 }
-int cheat_manager_copy_match(void *data, bool wraparound)
+int cheat_manager_copy_match(rarch_setting_t *setting, bool wraparound)
 {
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_COPY,
 	   cheat_manager_state.match_idx, NULL, NULL, NULL, NULL) ;
    return 0 ;
 }
 
-int cheat_manager_delete_match(void *data, bool wraparound)
+int cheat_manager_delete_match(rarch_setting_t *setting, bool wraparound)
 {
    bool refresh = false;
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_DELETE,

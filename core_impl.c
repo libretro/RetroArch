@@ -43,6 +43,7 @@
 #include "verbosity.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
+#include "tasks/tasks_internal.h"
 
 #ifdef HAVE_RUNAHEAD
 #include "runahead/copy_load_info.h"
@@ -298,6 +299,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 #endif
 
    content_get_status(&contentless, &is_inited);
+   set_save_state_in_background(false);
 
    if (load_info && load_info->special)
       current_core.game_loaded = current_core.retro_load_game_special(

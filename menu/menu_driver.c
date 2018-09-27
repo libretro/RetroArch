@@ -46,7 +46,7 @@
 #include "menu_animation.h"
 #include "menu_driver.h"
 #include "menu_cbs.h"
-#include "menu_event.h"
+#include "menu_input.h"
 #include "menu_entries.h"
 #include "widgets/menu_dialog.h"
 #include "menu_shader.h"
@@ -325,6 +325,10 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "vga"))
             return true;
          break;
+      case MENU_VIDEO_DRIVER_SWITCH:
+         if (string_is_equal(video_driver, "switch"))
+            return true;
+         break;
    }
 
    return false;
@@ -379,6 +383,20 @@ void menu_display_blend_end(video_frame_info_t *video_info)
 {
    if (menu_disp && menu_disp->blend_end)
       menu_disp->blend_end(video_info);
+}
+
+/* Begin scissoring operation */
+void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+{
+   if (menu_disp && menu_disp->scissor_begin)
+      menu_disp->scissor_begin(video_info, x, y, width, height);
+}
+
+/* End scissoring operation */
+void menu_display_scissor_end()
+{
+   if (menu_disp && menu_disp->scissor_end)
+      menu_disp->scissor_end();
 }
 
 /* Teardown; deinitializes and frees all
@@ -467,16 +485,17 @@ bool menu_display_libretro(bool is_idle,
       return true;
    }
 
-#ifdef HAVE_DISCORD
-   discord_userdata_t userdata;
-   userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
-
-   command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-#endif
-
    if (is_idle)
+   {
+#ifdef HAVE_DISCORD
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
+
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+#endif
       return true; /* Maybe return false here
                       for indication of idleness? */
+   }
    return video_driver_cached_frame();
 }
 
@@ -1930,14 +1949,46 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
    return true;
 }
 
-/* Clear all the menu lists. */
-bool menu_driver_list_clear(void *data)
+bool menu_driver_list_cache(menu_ctx_list_t *list)
 {
-   file_list_t *list = (file_list_t*)data;
+   if (!list || !menu_driver_ctx || !menu_driver_ctx->list_cache)
+      return false;
+
+   menu_driver_ctx->list_cache(menu_userdata,
+         list->type, list->action);
+   return true;
+}
+
+/* Clear all the menu lists. */
+bool menu_driver_list_clear(file_list_t *list)
+{
    if (!list)
       return false;
    if (menu_driver_ctx->list_clear)
       menu_driver_ctx->list_clear(list);
+   return true;
+}
+
+bool menu_driver_list_insert(menu_ctx_list_t *list)
+{
+   if (!list || !menu_driver_ctx || !menu_driver_ctx->list_insert)
+      return false;
+   menu_driver_ctx->list_insert(menu_userdata,
+         list->list, list->path, list->fullpath,
+         list->label, list->idx, list->entry_type);
+
+   return true;
+}
+
+bool menu_driver_list_set_selection(file_list_t *list)
+{
+   if (!list)
+      return false;
+
+   if (!menu_driver_ctx || !menu_driver_ctx->list_set_selection)
+      return false;
+
+   menu_driver_ctx->list_set_selection(menu_userdata, list);
    return true;
 }
 
@@ -2036,6 +2087,41 @@ void menu_driver_destroy(void)
    menu_driver_data_own           = false;
    menu_driver_ctx                = NULL;
    menu_userdata                  = NULL;
+}
+
+bool menu_driver_list_get_entry(menu_ctx_list_t *list)
+{
+   if (!menu_driver_ctx || !menu_driver_ctx->list_get_entry)
+   {
+      list->entry = NULL;
+      return false;
+   }
+   list->entry = menu_driver_ctx->list_get_entry(menu_userdata,
+         list->type, (unsigned int)list->idx);
+   return true;
+}
+
+bool menu_driver_list_get_selection(menu_ctx_list_t *list)
+{
+   if (!menu_driver_ctx || !menu_driver_ctx->list_get_selection)
+   {
+      list->selection = 0;
+      return false;
+   }
+   list->selection = menu_driver_ctx->list_get_selection(menu_userdata);
+
+   return true;
+}
+
+bool menu_driver_list_get_size(menu_ctx_list_t *list)
+{
+   if (!menu_driver_ctx || !menu_driver_ctx->list_get_size)
+   {
+      list->size = 0;
+      return false;
+   }
+   list->size = menu_driver_ctx->list_get_size(menu_userdata, list->type);
+   return true;
 }
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
@@ -2183,42 +2269,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          }
          menu_driver_data = NULL;
          break;
-      case RARCH_MENU_CTL_LIST_GET_ENTRY:
-         {
-            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
-
-            if (!menu_driver_ctx || !menu_driver_ctx->list_get_entry)
-            {
-               list->entry = NULL;
-               return false;
-            }
-            list->entry = menu_driver_ctx->list_get_entry(menu_userdata,
-                  list->type, (unsigned int)list->idx);
-         }
-         break;
-      case RARCH_MENU_CTL_LIST_GET_SIZE:
-         {
-            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
-            if (!menu_driver_ctx || !menu_driver_ctx->list_get_size)
-            {
-               list->size = 0;
-               return false;
-            }
-            list->size = menu_driver_ctx->list_get_size(menu_userdata, list->type);
-         }
-         break;
-      case RARCH_MENU_CTL_LIST_GET_SELECTION:
-         {
-            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
-
-            if (!menu_driver_ctx || !menu_driver_ctx->list_get_selection)
-            {
-               list->selection = 0;
-               return false;
-            }
-            list->selection = menu_driver_ctx->list_get_selection(menu_userdata);
-         }
-         break;
       case RARCH_MENU_CTL_LIST_FREE:
          {
             menu_ctx_list_t *list = (menu_ctx_list_t*)data;
@@ -2234,49 +2284,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                file_list_free_userdata  (list->list, list->idx);
                file_list_free_actiondata(list->list, list->idx);
             }
-         }
-         break;
-      case RARCH_MENU_CTL_REFRESH:
-         {
-#if 0
-            bool refresh = false;
-            menu_entries_ctl(MENU_ENTRIES_CTL_LIST_DEINIT, NULL);
-            menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_DEINIT, NULL);
-            menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL);
-            menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-#endif
-         }
-         break;
-      case RARCH_MENU_CTL_LIST_SET_SELECTION:
-         {
-            file_list_t *list = (file_list_t*)data;
-
-            if (!list)
-               return false;
-
-            if (!menu_driver_ctx || !menu_driver_ctx->list_set_selection)
-               return false;
-
-            menu_driver_ctx->list_set_selection(menu_userdata, list);
-         }
-         break;
-      case RARCH_MENU_CTL_LIST_CACHE:
-         {
-            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
-            if (!list || !menu_driver_ctx || !menu_driver_ctx->list_cache)
-               return false;
-            menu_driver_ctx->list_cache(menu_userdata,
-                  list->type, list->action);
-         }
-         break;
-      case RARCH_MENU_CTL_LIST_INSERT:
-         {
-            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
-            if (!list || !menu_driver_ctx || !menu_driver_ctx->list_insert)
-               return false;
-            menu_driver_ctx->list_insert(menu_userdata,
-                  list->list, list->path, list->fullpath,
-                  list->label, list->idx, list->entry_type);
          }
          break;
       case RARCH_MENU_CTL_ENVIRONMENT:

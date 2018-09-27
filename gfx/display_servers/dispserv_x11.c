@@ -23,9 +23,14 @@
 #include "../video_driver.h" /* needed to set refresh rate in set resolution */
 #include "../video_crt_switch.h" /* needed to set aspect for low res in linux */
 
-static char old_mode[150];
-static char new_mode[150];
-static bool crt_en     = false;
+static unsigned orig_width      = 0;
+static unsigned orig_height     = 0;
+static char old_mode[250]       = {0};
+static char new_mode[250]       = {0};
+static char xrandr[250]         = {0};
+static char fbset[150]          = {0};
+static char output[250]         = {0};
+static bool crt_en              = false;
 
 typedef struct
 {
@@ -45,16 +50,35 @@ static void* x11_display_server_init(void)
 
 static void x11_display_server_destroy(void *data)
 {
-   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
-
+ dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   int i          = 0;
    if (crt_en == true)
-      system("xrandr -s 704x480");
+   {
+      sprintf(output,"xrandr -s %dx%d", orig_width, orig_height);
+      system(output);
+    
+      for (i =0; i < 3; i++)
+      {
+         sprintf(output,"xrandr --delmode %s%d %s", "VGA",i ,old_mode);
+         system(output);  
+         sprintf(output,"xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
+         system(output);  
+
+         sprintf(output,"xrandr --delmode %s%d %s", "DVI",i ,old_mode);
+         system(output);  
+         sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
+         system(output);  
+      }     
+   
+      sprintf(output,"xrandr --rmmode %s", old_mode);
+	  system(output);
+   }
 
    if (dispserv)
       free(dispserv);
 }
 
-static bool x11_set_window_opacity(void *data, unsigned opacity)
+static bool x11_display_server_set_window_opacity(void *data, unsigned opacity)
 {
    dispserv_x11_t *serv = (dispserv_x11_t*)data;
    Atom net_wm_opacity  = XInternAtom(g_x11_dpy, "_NET_WM_WINDOW_OPACITY", False);
@@ -72,7 +96,7 @@ static bool x11_set_window_opacity(void *data, unsigned opacity)
    return true;
 }
 
-static bool x11_set_window_decorations(void *data, bool on)
+static bool x11_display_server_set_window_decorations(void *data, bool on)
 {
    dispserv_x11_t *serv = (dispserv_x11_t*)data;
 
@@ -83,8 +107,8 @@ static bool x11_set_window_decorations(void *data, bool on)
    return true;
 }
 
-static bool x11_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz)
+static bool x11_display_server_set_resolution(void *data,
+      unsigned width, unsigned height, int int_hz, float hz, int center)
 {
    int i              = 0;
    int hfp            = 0;
@@ -95,22 +119,41 @@ static bool x11_set_resolution(void *data,
    int vbp            = 0;
    int hmax           = 0;
    int vmax           = 0;
+   int pdefault       = 8;
+   int pwidth         = 0;
+   float roundw     = 0.0f;
+   float roundh     = 0.0f;
    float pixel_clock  = 0;
-   char xrandr[250];
-   char fbset[150];
-   char output[250];
 
    crt_en = true;
-
-   hsp = width*1.16;
       
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);	  
    
-   /* following code is the mode line genorator */
+  /* following code is the mode line genorator */
 
-   hfp = width+8;
-   hbp = width*1.32;
+   hsp = width*1.140;
+   hfp = width*1.055;
+
+   pwidth = width;
+
+   if (height < 400 && width > 400 )
+      pwidth = width/2;
+   
+
+   roundw = roundf((float)pwidth/(float)height * 100)/100;
+
+    if (height > width ) {
+       roundw = roundf((float)height/(float)width * 100)/100;
+   }
+
+   if (roundw > 1.35)
+      roundw = 1.25;
+
+    if (roundw < 1.20)
+      roundw = 1.34;
+
+   hbp = width*roundw-8;
    hmax = hbp;
    
    if (height < 241)
@@ -133,22 +176,18 @@ static bool x11_set_resolution(void *data,
    { 
       vmax = 285;
    }
-   if (height > 240 && height < 260 && hz < 52)
-   { 
-      vmax = 265;
-   }
    if (height > 250 && height < 260 && hz < 52)
    { 
       vmax = 313;
    }
    if (height > 260 && height < 300)
    { 
-      vmax = 313;
+      vmax = 318;
    }
 
    if (height > 400 && hz > 56)
    {
-      vmax = 523;
+      vmax = 533;
    }
    if (height > 520 && hz < 57)
    {
@@ -157,35 +196,27 @@ static bool x11_set_resolution(void *data,
 
    if (height > 300 && hz < 56)
    {
-      vmax = 627;
+      vmax = 615;
    }
-   
-   if (hz < 53)
-   {   
-   vfp = height+((vmax-height)*0.38);
+   if (height > 500 && hz < 56)
+   {
+      vmax = 624;
    }
-   if (hz > 56)
-   {   
-   vfp = height+((vmax-height)*0.15);
-   }
-   if (hz > 53 && hz < 56)
-   {   
-   vfp = height+((vmax-height)*0.35);
+     if (height > 300)
+   {
+        pdefault = pdefault*2;
    }
 
-   
-   if ( vfp < 1 )
-   {
-      vfp = height+2;
-        
-   }
+
+   vfp = height+((vmax-height)/2)-pdefault;
 
    if (height < 300)
    {
      vsp = vfp+3; /* needs to me 3 for progressive */
-   } if (height > 300)
+   } 
+   if (height > 300)
    {
-     vsp = vfp+6; /* needs to me 6 for interlaced */
+    vsp = vfp+6; /* needs to me 6 for interlaced */
    }
    
    vbp = vmax;
@@ -201,7 +232,7 @@ static bool x11_set_resolution(void *data,
    }
    /* above code is the modeline genorator */
 
-   /* create progressive newmode from modline variables */
+   /* create interlaced newmode from modline variables */
    if (height < 300)
    {
       snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%dx%d_%0.2f\" %lf %d %d %d %d %d %d %d %d -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
@@ -257,18 +288,25 @@ static bool x11_set_resolution(void *data,
        /* variable for old mode */
 	  snprintf(old_mode, sizeof(old_mode), "%s", new_mode);
       system("xdotool windowactivate $(xdotool search --class RetroArch)");	/* needs xdotool installed. needed to recaputure window. */
-                                                                            /* Second run needed as some times it runs to fast to capture first time */
+                                                                   /* Second run needed as some times it runs to fast to capture first time */
 
  return true;
+}
+
+const char *x11_display_server_get_output_options(void)
+{
+   /* TODO/FIXME - hardcoded for now; list should be built up dynamically later */
+   return "HDMI-0|HDMI-1|HDMI-2|HDMI-3|DVI-0|DVI-1|DVI-2|DVI-3|VGA-0|VGA-1|VGA-2|VGA-3|Config";
 }
 
 const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
    x11_display_server_destroy,
-   x11_set_window_opacity,
+   x11_display_server_set_window_opacity,
    NULL,
-   x11_set_window_decorations,
-   x11_set_resolution, /* set_resolution */
+   x11_display_server_set_window_decorations,
+   x11_display_server_set_resolution,
+   x11_display_server_get_output_options,
    "x11"
 };
 

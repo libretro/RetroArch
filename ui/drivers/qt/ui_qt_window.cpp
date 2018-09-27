@@ -20,9 +20,7 @@
 #include <QTimer>
 #include <QLabel>
 #include <QFileSystemModel>
-#include <QListWidget>
 #include <QListWidgetItem>
-#include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QHash>
 #include <QPushButton>
@@ -199,20 +197,39 @@ TableWidget::TableWidget(QWidget *parent) :
 {
 }
 
+bool TableWidget::isEditorOpen()
+{
+   return (state() == QAbstractItemView::EditingState);
+}
+
 void TableWidget::keyPressEvent(QKeyEvent *event)
 {
    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
-   {
-      event->accept();
       emit enterPressed();
-   }
    else if (event->key() == Qt::Key_Delete)
-   {
-      event->accept();
       emit deletePressed();
-   }
-   else
-      QTableWidget::keyPressEvent(event);
+
+   QTableWidget::keyPressEvent(event);
+}
+
+ListWidget::ListWidget(QWidget *parent) :
+   QListWidget(parent)
+{
+}
+
+bool ListWidget::isEditorOpen()
+{
+   return (state() == QAbstractItemView::EditingState);
+}
+
+void ListWidget::keyPressEvent(QKeyEvent *event)
+{
+   if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+      emit enterPressed();
+   else if (event->key() == Qt::Key_Delete)
+      emit deletePressed();
+
+   QListWidget::keyPressEvent(event);
 }
 
 CoreInfoLabel::CoreInfoLabel(QString text, QWidget *parent) :
@@ -265,7 +282,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_statusLabel(new QLabel(this))
    ,m_dirTree(new TreeView(this))
    ,m_dirModel(new QFileSystemModel(m_dirTree))
-   ,m_listWidget(new QListWidget(this))
+   ,m_listWidget(new ListWidget(this))
    ,m_tableWidget(new TableWidget(this))
    ,m_searchWidget(new QWidget(this))
    ,m_searchLineEdit(new QLineEdit(this))
@@ -352,7 +369,6 @@ MainWindow::MainWindow(QWidget *parent) :
    QHBoxLayout *gridProgressLayout = new QHBoxLayout();
    QLabel *gridProgressLabel = NULL;
    QHBoxLayout *gridFooterLayout = NULL;
-   int i = 0;
 
    qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
    qRegisterMetaType<retro_task_callback_t>("retro_task_callback_t");
@@ -1593,6 +1609,14 @@ QTabWidget* MainWindow::browserAndPlaylistTabWidget()
 
 void MainWindow::onTableWidgetEnterPressed()
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+   /* entry is being renamed, ignore this enter press */
+   if (m_tableWidget->isPersistentEditorOpen(m_tableWidget->currentIndex()))
+#else
+   /* we can only check if any editor at all is open */
+   if (m_tableWidget->isEditorOpen())
+#endif
+      return;
    onRunClicked();
 }
 
@@ -2361,6 +2385,101 @@ void MainWindow::onCurrentTableItemChanged(QTableWidgetItem *current, QTableWidg
    currentItemChanged(hash);
 }
 
+void MainWindow::onCurrentTableItemDataChanged(QTableWidgetItem *item)
+{
+   QHash<QString, QString> hash;
+
+   if (!item)
+      return;
+
+   /* block this signal because setData() would trigger an infinite loop here */
+   disconnect(m_tableWidget, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(onCurrentTableItemDataChanged(QTableWidgetItem*)));
+
+   hash = item->data(Qt::UserRole).value<QHash<QString, QString> >();
+   hash["label"] = item->text();
+   hash["label_noext"] = QFileInfo(item->text()).completeBaseName();
+
+   item->setData(Qt::UserRole, QVariant::fromValue(hash));
+
+   updateCurrentPlaylistEntry(hash);
+
+   currentItemChanged(hash);
+
+   connect(m_tableWidget, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(onCurrentTableItemDataChanged(QTableWidgetItem*)));
+}
+
+void MainWindow::onCurrentListItemDataChanged(QListWidgetItem *item)
+{
+   renamePlaylistItem(item, item->text());
+}
+
+void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
+{
+   QString oldPath;
+   QString newPath;
+   QString extension;
+   QString oldName;
+   QFile file;
+   QFileInfo info;
+   QFileInfo playlistInfo;
+   QString playlistPath;
+   settings_t *settings = config_get_ptr();
+   QDir playlistDir(settings->paths.directory_playlist);
+   bool specialPlaylist = false;
+
+   if (!item)
+      return;
+
+   playlistPath = item->data(Qt::UserRole).toString();
+   playlistInfo = playlistPath;
+   oldName = playlistInfo.completeBaseName();
+
+   /* Don't just compare strings in case there are case differences on Windows that should be ignored. */
+   if (QDir(playlistInfo.absoluteDir()) != QDir(playlistDir))
+   {
+      /* special playlists like history etc. can't have an association */
+      specialPlaylist = true;
+   }
+
+   if (specialPlaylist)
+   {
+      /* special playlists shouldn't be editable already, but just in case, set the old name back and early return if they rename it */
+      item->setText(oldName);
+      return;
+   }
+
+   /* block this signal because setData() would trigger an infinite loop here */
+   disconnect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
+
+   oldPath = item->data(Qt::UserRole).toString();
+
+   file.setFileName(oldPath);
+   info = file;
+
+   extension = info.suffix();
+
+   newPath = info.absolutePath();
+
+   /* absolutePath() will always use / even on Windows */
+   if (newPath.at(newPath.count() - 1) != '/')
+   {
+      /* add trailing slash if the path doesn't have one */
+      newPath += '/';
+   }
+
+   newPath += newName + "." + extension;
+
+   item->setData(Qt::UserRole, newPath);
+
+   if (!file.rename(newPath))
+   {
+      RARCH_ERR("[Qt]: Could not rename playlist.\n");
+      item->setText(oldName);
+   }
+
+   connect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
+}
+
 void MainWindow::currentItemChanged(const QHash<QString, QString> &hash)
 {
    settings_t *settings = config_get_ptr();
@@ -2608,7 +2727,7 @@ void MainWindow::onBrowserStartClicked()
    m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
 }
 
-QListWidget* MainWindow::playlistListWidget()
+ListWidget* MainWindow::playlistListWidget()
 {
    return m_listWidget;
 }
@@ -2955,11 +3074,15 @@ void MainWindow::initContentTableWidget()
 
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
 
+   /* block this signal because setData() called in addPlaylistHashToTable() would trigger an infinite loop */
+   disconnect(m_tableWidget, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(onCurrentTableItemDataChanged(QTableWidgetItem*)));
+
    m_tableWidget->clear();
    m_tableWidget->setColumnCount(0);
    m_tableWidget->setRowCount(0);
    m_tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
    m_tableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+   m_tableWidget->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
    m_tableWidget->setSortingEnabled(false);
    m_tableWidget->setColumnCount(1);
    m_tableWidget->setRowCount(0);
@@ -3005,6 +3128,8 @@ void MainWindow::initContentTableWidget()
    }
 
    onSearchEnterPressed();
+
+   connect(m_tableWidget, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(onCurrentTableItemDataChanged(QTableWidgetItem*)));
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)

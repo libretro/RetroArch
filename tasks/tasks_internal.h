@@ -265,7 +265,10 @@ bool task_push_audio_mixer_load_and_play(
 bool task_push_audio_mixer_load(
       const char *fullpath, retro_task_callback_t cb, void *user_data);
 
+void set_save_state_in_background(bool state);
+
 extern const char* const input_builtin_autoconfs[];
+
 
 RETRO_END_DECLS
 

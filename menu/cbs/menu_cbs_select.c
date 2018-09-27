@@ -67,7 +67,11 @@ static int action_select_default(const char *path, const char *label, unsigned t
          case ST_UINT:
          case ST_SIZE:
          case ST_FLOAT:
-            action = MENU_ACTION_RIGHT;
+         case ST_STRING_OPTIONS:
+            if (cbs->action_ok)
+               action     = MENU_ACTION_OK;
+            else
+               action = MENU_ACTION_RIGHT;
             break;
          case ST_PATH:
          case ST_DIR:
@@ -109,12 +113,6 @@ static int action_select_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    return action_ok_path_use_directory(path, label, type, idx, 0 /* unused */);
-}
-
-static int action_select_driver_setting(const char *path, const char *label, unsigned type,
-      size_t idx)
-{
-   return bind_right_generic(type, label, true);
 }
 
 static int action_select_core_setting(const char *path, const char *label, unsigned type,
@@ -168,28 +166,17 @@ static int action_select_netplay_connect_room(const char *path,
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    if (netplay_room_list[idx - 3].host_method == NETPLAY_HOST_METHOD_MITM)
-   {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
             netplay_room_list[idx - 3].mitm_address,
             netplay_room_list[idx - 3].mitm_port);
-   }
    else
-   {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
             netplay_room_list[idx - 3].address,
             netplay_room_list[idx - 3].port);
-   }
-
-#if 0
-   RARCH_LOG("[lobby] connecting to: %s with game: %s/%08x\n",
-         tmp_hostname,
-         netplay_room_list[idx - 3].gamename,
-         netplay_room_list[idx - 3].gamecrc);
-#endif
 
    task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
          netplay_room_list[idx - 3].gamename,
@@ -264,17 +251,6 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       return 0;
    }
 #endif
-
-   if (cbs->setting)
-   {
-      uint64_t flags = cbs->setting->flags;
-
-      if (flags & SD_FLAG_IS_DRIVER)
-      {
-         BIND_ACTION_SELECT(cbs, action_select_driver_setting);
-         return 0;
-      }
-   }
 
    if ((type >= MENU_SETTINGS_CORE_OPTION_START))
    {

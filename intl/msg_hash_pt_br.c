@@ -203,7 +203,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              " \n"
                              "Voltar Atrás precisa estar habilitado.");
                 break;
-            case RARCH_MOVIE_RECORD_TOGGLE:
+            case RARCH_BSV_RECORD_TOGGLE:
                 snprintf(s, len,
                          "Alternar entre gravando ou não.");
                 break;
@@ -1984,7 +1984,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                      "Avanço de quadro quando o conteúdo \n"
                      "estiver pausado.");
             break;
-        case MENU_ENUM_LABEL_MOVIE_RECORD_TOGGLE:
+        case MENU_ENUM_LABEL_BSV_RECORD_TOGGLE:
             snprintf(s, len,
                      "Alternar entre gravando ou não.");
             break;

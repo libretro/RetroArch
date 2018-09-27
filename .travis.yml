@@ -20,6 +20,13 @@ matrix:
       script:
         - CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501" ./configure --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12 && make HAVE_ZLIB=1 HAVE_BUILTINZLIB=1 HAVE_RPNG=1
     - compiler: gcc
+      addons:
+        # Install a more recent gcc than the default
+        apt:
+          packages:
+            - g++-7
+          sources:
+            - ubuntu-toolchain-r-test
     - compiler: clang
       addons:
         # Install a more recent clang than the default
@@ -37,7 +44,17 @@ matrix:
     - os: osx
       osx_image: xcode9.3
       script:
-          - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch_Metal.xcodeproj
+        - cd ~/
+        - brew install --force-bottle qt5
+        - git clone --depth=50 https://github.com/libretro/libretro-super
+        - cd libretro-super/travis
+        - ./build-retroarch-metal.sh
+      deploy:
+        skip_cleanup: true
+        provider: script
+        script: cd ../retroarch; bash travis_metal_deploy.sh
+        on:
+          branch: master
 
 script:
   - ./configure
@@ -60,6 +77,9 @@ addons:
       - libsdl-mixer1.2-dev
       - libsdl-ttf2.0-dev
       - libusb-1.0-0-dev
+      - qt5-default
+      - qt5-qmake
+      - qtbase5-dev-tools
   coverity_scan:
     project:
       name: "RetroArch"

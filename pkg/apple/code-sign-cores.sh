@@ -43,7 +43,9 @@ echo "${ITEMS}"
 
 # Change the Internal Field Separator (IFS) so that spaces in paths will not cause problems below.
 SAVED_IFS=$IFS
-IFS=$(echo -en "\n\b")
+# Doing IFS=$(echo -en "\n") does not work on Xcode 10 for some reason
+IFS="
+"
 
 # Loop through all items.
 for ITEM in $ITEMS;

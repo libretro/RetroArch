@@ -233,17 +233,17 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
             ol->active->mod_x, ol->active->mod_y,
             ol->active->mod_w, ol->active->mod_h);
 
-   for (i = 0; i < ol->active->size; i++)
-   {
-      struct overlay_desc *desc = &ol->active->descs[i];
+   if (ol->iface->vertex_geom)
+      for (i = 0; i < ol->active->size; i++)
+      {
+         struct overlay_desc *desc = &ol->active->descs[i];
 
-      if (!desc->image.pixels)
-         continue;
+         if (!desc->image.pixels)
+            continue;
 
-      if (ol->iface->vertex_geom)
          ol->iface->vertex_geom(ol->iface_data, desc->image_index,
                desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
-   }
+      }
 }
 
 /**

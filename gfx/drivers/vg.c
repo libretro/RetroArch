@@ -77,7 +77,7 @@ static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
 
 static void vg_set_nonblock_state(void *data, bool state)
 {
-   unsigned interval = state ? 0 : 1;
+   int interval = state ? 0 : 1;
    video_context_driver_swap_interval(&interval);
 }
 
@@ -97,13 +97,14 @@ static void *vg_init(const video_info_t *video,
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    gfx_ctx_aspect_t aspect_data;
-   unsigned interval;
-   unsigned temp_width = 0, temp_height = 0;
    unsigned win_width, win_height;
-   VGfloat clearColor[4] = {0, 0, 0, 1};
-   settings_t        *settings = config_get_ptr();
-   vg_t                    *vg = (vg_t*)calloc(1, sizeof(vg_t));
-   const gfx_ctx_driver_t *ctx = video_context_driver_init_first(
+   VGfloat clearColor[4]           = {0, 0, 0, 1};
+   int interval                    = 0;
+   unsigned temp_width             = 0;
+   unsigned temp_height            = 0;
+   settings_t        *settings     = config_get_ptr();
+   vg_t                    *vg     = (vg_t*)calloc(1, sizeof(vg_t));
+   const gfx_ctx_driver_t *ctx     = video_context_driver_init_first(
          vg, settings->arrays.video_context_driver,
          GFX_CTX_OPENVG_API, 0, 0, false);
 

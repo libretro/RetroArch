@@ -58,7 +58,7 @@ typedef struct
    EGLSurface surf;
    EGLDisplay dpy;
    EGLConfig config;
-   unsigned interval;
+   int interval;
 
    unsigned major;
    unsigned minor;
@@ -84,7 +84,7 @@ void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable);
 
 void egl_swap_buffers(void *data);
 
-void egl_set_swap_interval(egl_ctx_data_t *egl, unsigned interval);
+void egl_set_swap_interval(egl_ctx_data_t *egl, int interval);
 
 void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height);
 

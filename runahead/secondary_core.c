@@ -36,20 +36,9 @@ extern retro_ctx_load_content_info_t *load_content_info;
 extern enum rarch_core_type last_core_type;
 extern struct retro_callbacks retro_ctx;
 
-static char* get_temp_directory_alloc(void);
-
-static char* copy_core_to_temp_file(void);
-
-static bool write_file_with_random_name(char **tempDllPath,
-      const char *retroarchTempPath, const void* data, ssize_t dataSize);
-
-static bool secondary_core_create(void);
-
 bool secondary_core_run_no_input_polling(void);
 
 bool secondary_core_deserialize(const void *buffer, int size);
-
-static bool rarch_environment_secondary_core_hook(unsigned cmd, void *data);
 
 void secondary_core_destroy(void);
 
@@ -59,18 +48,17 @@ void remember_controller_port_device(long port, long device);
 
 void clear_controller_port_map(void);
 
-char* get_temp_directory_alloc(void)
+static char *get_temp_directory_alloc(void)
 {
+   char *path       = NULL;
 #ifdef _WIN32
 #ifdef LEGACY_WIN32
    DWORD pathLength = GetTempPath(0, NULL) + 1;
-   char *path       = (char*)malloc(pathLength * sizeof(char));
+   path             = (char*)malloc(pathLength * sizeof(char));
 
    path[pathLength - 1] = 0;
    GetTempPath(pathLength, path);
-   return path;
 #else
-   char *path;
    DWORD pathLength = GetTempPathW(0, NULL) + 1;
    wchar_t *wideStr = (wchar_t*)malloc(pathLength * sizeof(wchar_t));
    wideStr[pathLength - 1] = 0;
@@ -78,80 +66,28 @@ char* get_temp_directory_alloc(void)
 
    path = utf16_to_utf8_string_alloc(wideStr);
    free(wideStr);
-   return path;
 #endif
 #else
-   char *path = "/tmp";
+   path = "/tmp";
    if (getenv("TMPDIR"))
       path = getenv("TMPDIR");
 
    path = strcpy_alloc_force(path);
-   return path;
 #endif
+   return path;
 }
 
-char* copy_core_to_temp_file(void)
-{
-   char *tempDirectory      = NULL;
-   char *retroarchTempPath  = NULL;
-   char *tempDllPath        = NULL;
-   void *dllFileData        = NULL;
-   int64_t dllFileSize      = 0;
-   const char *corePath     = path_get(RARCH_PATH_CORE);
-   const char *coreBaseName = path_basename(corePath);
-
-   if (strlen(coreBaseName) == 0)
-      goto failed;
-
-   tempDirectory = get_temp_directory_alloc();
-   if (!tempDirectory)
-      goto failed;
-
-   strcat_alloc(&retroarchTempPath, tempDirectory);
-   strcat_alloc(&retroarchTempPath, path_default_slash());
-   strcat_alloc(&retroarchTempPath, "retroarch_temp");
-   strcat_alloc(&retroarchTempPath, path_default_slash());
-
-   if (!path_mkdir(retroarchTempPath))
-      goto failed;
-
-   if (!filestream_read_file(corePath, &dllFileData, &dllFileSize))
-      goto failed;
-
-   strcat_alloc(&tempDllPath, retroarchTempPath);
-   strcat_alloc(&tempDllPath, coreBaseName);
-
-   if (!filestream_write_file(tempDllPath, dllFileData, dllFileSize))
-   {
-      /* try other file names */
-      if (!write_file_with_random_name(&tempDllPath, retroarchTempPath, dllFileData, dllFileSize))
-         goto failed;
-   }
-
-   FREE(tempDirectory);
-   FREE(retroarchTempPath);
-   FREE(dllFileData);
-   return tempDllPath;
-
-failed:
-   FREE(tempDirectory);
-   FREE(retroarchTempPath);
-   FREE(tempDllPath);
-   FREE(dllFileData);
-   return NULL;
-}
-
-bool write_file_with_random_name(char **tempDllPath,
+static bool write_file_with_random_name(char **tempDllPath,
       const char *retroarchTempPath, const void* data, ssize_t dataSize)
 {
-   bool okay = false;
    unsigned i;
    char number_buf[32];
+   bool okay                = false;
    const char *prefix       = "tmp";
    time_t time_value        = time(NULL);
-   unsigned int number_value= (unsigned int)time_value;
-   int number               = 0;
-   char *ext                = strcpy_alloc_force(path_get_extension(*tempDllPath));
+   unsigned number_value    = (unsigned)time_value;
+   char *ext                = strcpy_alloc_force(
+         path_get_extension(*tempDllPath));
    int ext_len              = (int)strlen(ext);
 
    if (ext_len > 0)
@@ -165,12 +101,15 @@ bool write_file_with_random_name(char **tempDllPath,
    /* Try up to 30 'random' filenames before giving up */
    for (i = 0; i < 30; i++)
    {
+      int number;
       number_value = number_value * 214013 + 2531011;
       number       = (number_value >> 14) % 100000;
 
       snprintf(number_buf, sizeof(number_buf), "%05d", number);
 
-      FREE(*tempDllPath);
+      if (*tempDllPath)
+         free(*tempDllPath);
+      *tempDllPath = NULL;
       strcat_alloc(tempDllPath, retroarchTempPath);
       strcat_alloc(tempDllPath, prefix);
       strcat_alloc(tempDllPath, number_buf);
@@ -182,31 +121,134 @@ bool write_file_with_random_name(char **tempDllPath,
       }
    }
 
-   FREE(ext);
+   if (ext)
+      free(ext);
+   ext = NULL;
    return okay;
 }
 
-bool secondary_core_create(void)
+static char *copy_core_to_temp_file(void)
+{
+   bool failed              = false;
+   char *tempDirectory      = NULL;
+   char *retroarchTempPath  = NULL;
+   char *tempDllPath        = NULL;
+   void *dllFileData        = NULL;
+   int64_t dllFileSize      = 0;
+   const char *corePath     = path_get(RARCH_PATH_CORE);
+   const char *coreBaseName = path_basename(corePath);
+
+   if (strlen(coreBaseName) == 0)
+   {
+      failed = true;
+      goto end;
+   }
+
+   tempDirectory = get_temp_directory_alloc();
+   if (!tempDirectory)
+   {
+      failed = true;
+      goto end;
+   }
+
+   strcat_alloc(&retroarchTempPath, tempDirectory);
+   strcat_alloc(&retroarchTempPath, path_default_slash());
+   strcat_alloc(&retroarchTempPath, "retroarch_temp");
+   strcat_alloc(&retroarchTempPath, path_default_slash());
+
+   if (!path_mkdir(retroarchTempPath))
+   {
+      failed = true;
+      goto end;
+   }
+
+   if (!filestream_read_file(corePath, &dllFileData, &dllFileSize))
+   {
+      failed = true;
+      goto end;
+   }
+
+   strcat_alloc(&tempDllPath, retroarchTempPath);
+   strcat_alloc(&tempDllPath, coreBaseName);
+
+   if (!filestream_write_file(tempDllPath, dllFileData, dllFileSize))
+   {
+      /* try other file names */
+      if (!write_file_with_random_name(&tempDllPath,
+               retroarchTempPath, dllFileData, dllFileSize))
+         failed = true;
+   }
+
+end:
+   if (tempDirectory)
+      free(tempDirectory);
+   if (retroarchTempPath)
+      free(retroarchTempPath);
+   if (dllFileData)
+      free(dllFileData);
+
+   tempDirectory     = NULL;
+   retroarchTempPath = NULL;
+   dllFileData       = NULL;
+
+   if (!failed)
+      return tempDllPath;
+
+   if (tempDllPath)
+      free(tempDllPath);
+
+   tempDllPath       = NULL;
+
+   return NULL;
+}
+
+static bool has_variable_update = false;
+
+static bool rarch_environment_secondary_core_hook(unsigned cmd, void *data)
+{
+   bool result = rarch_environment_cb(cmd, data);
+   if (has_variable_update)
+   {
+      if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE)
+      {
+         bool *bool_p        = (bool*)data;
+         *bool_p             = true;
+         has_variable_update = false;
+         return true;
+      }
+      else if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE)
+         has_variable_update = false;
+   }
+   return result;
+}
+
+static bool secondary_core_create(void)
 {
    long port, device;
-   bool contentless, is_inited;
+   bool contentless       = false;
+   bool is_inited         = false;
 
    if (  last_core_type != CORE_TYPE_PLAIN || 
          !load_content_info                ||
          load_content_info->special)
       return false;
 
-   FREE(secondary_library_path);
+   if (secondary_library_path)
+      free(secondary_library_path);
+   secondary_library_path = NULL;
    secondary_library_path = copy_core_to_temp_file();
 
    if (!secondary_library_path)
       return false;
 
    /* Load Core */
-   if (init_libretro_sym_custom(CORE_TYPE_PLAIN, &secondary_core, secondary_library_path, &secondary_module))
+   if (init_libretro_sym_custom(
+            CORE_TYPE_PLAIN, &secondary_core,
+            secondary_library_path, &secondary_module))
    {
       secondary_core.symbols_inited = true;
-      secondary_core.retro_set_environment(rarch_environment_secondary_core_hook);
+      secondary_core.retro_set_environment(
+            rarch_environment_secondary_core_hook);
       secondary_core_set_variable_update();
 
       secondary_core.retro_init();
@@ -248,9 +290,8 @@ bool secondary_core_create(void)
          }
       }
       else
-      {
          secondary_core.game_loaded = false;
-      }
+
       if (!secondary_core.inited)
       {
          secondary_core_destroy();
@@ -268,7 +309,8 @@ bool secondary_core_create(void)
       {
          device = port_map[port];
          if (device >= 0)
-            secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
+            secondary_core.retro_set_controller_port_device(
+                  (unsigned)port, (unsigned)device);
       }
       clear_controller_port_map();
    }
@@ -278,37 +320,13 @@ bool secondary_core_create(void)
    return true;
 }
 
-static bool has_variable_update;
-
-static bool rarch_environment_secondary_core_hook(unsigned cmd, void *data)
-{
-   bool result = rarch_environment_cb(cmd, data);
-   if (has_variable_update)
-   {
-      if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE)
-      {
-         bool *bool_p = (bool*)data;
-         *bool_p = true;
-         has_variable_update = false;
-         return true;
-      }
-      else if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE)
-      {
-         has_variable_update = false;
-      }
-   }
-   return result;
-}
 
 void secondary_core_set_variable_update(void)
 {
    has_variable_update = true;
 }
 
-static void secondary_core_input_poll_null(void)
-{
-
-}
+static void secondary_core_input_poll_null(void) { }
 
 bool secondary_core_run_use_last_input(void)
 {
@@ -339,9 +357,7 @@ bool secondary_core_run_use_last_input(void)
 bool secondary_core_deserialize(const void *buffer, int size)
 {
    if (secondary_core_ensure_exists())
-   {
       return secondary_core.retro_unserialize(buffer, size);
-   }
    return false;
 }
 
@@ -360,21 +376,23 @@ bool secondary_core_ensure_exists(void)
 
 void secondary_core_destroy(void)
 {
-   if (secondary_module)
-   {
-      /* unload game from core */
-      if (secondary_core.retro_unload_game)
-         secondary_core.retro_unload_game();
-      /* deinit */
-      if (secondary_core.retro_deinit)
-         secondary_core.retro_deinit();
-      memset(&secondary_core, 0, sizeof(struct retro_core_t));
+   if (!secondary_module)
+      return;
 
-      dylib_close(secondary_module);
-      secondary_module = NULL;
-      filestream_delete(secondary_library_path);
-      FREE(secondary_library_path);
-   }
+   /* unload game from core */
+   if (secondary_core.retro_unload_game)
+      secondary_core.retro_unload_game();
+   /* deinit */
+   if (secondary_core.retro_deinit)
+      secondary_core.retro_deinit();
+   memset(&secondary_core, 0, sizeof(struct retro_core_t));
+
+   dylib_close(secondary_module);
+   secondary_module = NULL;
+   filestream_delete(secondary_library_path);
+   if (secondary_library_path)
+      free(secondary_library_path);
+   secondary_library_path = NULL;
 }
 
 void remember_controller_port_device(long port, long device)
@@ -401,25 +419,16 @@ bool secondary_core_run_no_input_polling(void)
 {
    return false;
 }
+
 bool secondary_core_deserialize(const void *buffer, int size)
 {
    return false;
 }
-void secondary_core_destroy(void)
-{
-   /* do nothing */
-}
-void remember_controller_port_device(long port, long device)
-{
-   /* do nothing */
-}
-void secondary_core_set_variable_update(void)
-{
-   /* do nothing */
-}
-void clear_controller_port_map(void)
-{
-   /* do nothing */
-}
+
+void secondary_core_destroy(void) { }
+void remember_controller_port_device(long port, long device) { }
+void secondary_core_set_variable_update(void) { }
+void clear_controller_port_map(void) { }
+
 #endif
 

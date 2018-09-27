@@ -20,6 +20,7 @@
 
 #include <retro_assert.h>
 #include <compat/msvc.h>
+#include <compat/strl.h>
 
 #include <boolean.h>
 #include <queues/fifo_queue.h>
@@ -82,6 +83,14 @@ extern "C" {
 
 #ifndef PIX_FMT_RGB32
 #define PIX_FMT_RGB32 AV_PIX_FMT_RGB32
+#endif
+
+#ifndef PIX_FMT_YUV444P
+#define PIX_FMT_YUV444P AV_PIX_FMT_YUV444P
+#endif
+
+#ifndef PIX_FMT_YUV420P
+#define PIX_FMT_YUV420P AV_PIX_FMT_YUV420P
 #endif
 
 #ifndef PIX_FMT_BGR24
@@ -213,7 +222,7 @@ typedef struct ffmpeg
    struct ff_muxer_info muxer;
    struct ff_config_param config;
 
-   struct ffemu_params params;
+   struct record_params params;
 
    scond_t *cond;
    slock_t *cond_lock;
@@ -226,6 +235,8 @@ typedef struct ffmpeg
    volatile bool alive;
    volatile bool can_sleep;
 } ffmpeg_t;
+
+AVFormatContext *ctx;
 
 static bool ffmpeg_codec_has_sample_format(enum AVSampleFormat fmt,
       const enum AVSampleFormat *fmts)
@@ -277,8 +288,8 @@ static void ffmpeg_audio_resolve_format(struct ff_audio_info *audio,
 static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
       const AVCodec *codec)
 {
-   struct ff_config_param *params = &handle->config;
-   struct ffemu_params *param     = &handle->params;
+   struct ff_config_param *params  = &handle->config;
+   struct record_params *param     = &handle->params;
 
    /* We'll have to force resampling to some supported sampling rate. */
    if (codec->supported_samplerates && !params->sample_rate)
@@ -314,11 +325,11 @@ static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
 
 static bool ffmpeg_init_audio(ffmpeg_t *handle)
 {
-   settings_t *settings = config_get_ptr();
-   struct ff_config_param *params = &handle->config;
-   struct ff_audio_info *audio    = &handle->audio;
-   struct ffemu_params *param     = &handle->params;
-   AVCodec *codec                 = avcodec_find_encoder_by_name(
+   settings_t *settings            = config_get_ptr();
+   struct ff_config_param *params  = &handle->config;
+   struct ff_audio_info *audio     = &handle->audio;
+   struct record_params *param     = &handle->params;
+   AVCodec *codec                  = avcodec_find_encoder_by_name(
          *params->acodec ? params->acodec : "flac");
    if (!codec)
    {
@@ -401,9 +412,9 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
 static bool ffmpeg_init_video(ffmpeg_t *handle)
 {
    size_t size;
-   struct ff_config_param *params = &handle->config;
-   struct ff_video_info *video    = &handle->video;
-   struct ffemu_params *param     = &handle->params;
+   struct ff_config_param *params  = &handle->config;
+   struct ff_video_info *video     = &handle->video;
+   struct record_params *param     = &handle->params;
    AVCodec *codec = NULL;
 
    if (*params->vcodec)
@@ -537,25 +548,163 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    return true;
 }
 
+static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned preset)
+{
+   settings_t *settings = config_get_ptr();
+
+   switch (preset)
+   {
+      case RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY:
+      case RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY:
+         params->threads              = 1;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 75;
+         params->out_pix_fmt          = PIX_FMT_YUV420P;
+
+         strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
+         strlcpy(params->acodec, "libmp3lame", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "preset", "ultrafast", 0);
+         av_dict_set(&params->video_opts, "tune", "animation", 0);
+         av_dict_set(&params->video_opts, "crf", "30", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "75", 0);
+         break;
+      case RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY:
+      case RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY:
+         params->threads              = 1;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 75;
+         params->out_pix_fmt          = PIX_FMT_YUV420P;
+
+         strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
+         strlcpy(params->acodec, "libmp3lame", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "preset", "superfast", 0);
+         av_dict_set(&params->video_opts, "tune", "animation", 0);
+         av_dict_set(&params->video_opts, "crf", "25", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "75", 0);
+         break;
+      case RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY:
+      case RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY:
+         params->threads              = 1;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 100;
+         params->out_pix_fmt          = PIX_FMT_YUV444P;
+
+         strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
+         strlcpy(params->acodec, "libmp3lame", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "preset", "superfast", 0);
+         av_dict_set(&params->video_opts, "tune", "animation", 0);
+         av_dict_set(&params->video_opts, "crf", "15", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
+         break;
+      case RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY:
+         params->threads              = 1;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 100;
+         params->out_pix_fmt          = PIX_FMT_BGR24;
+
+         strlcpy(params->vcodec, "libx264rgb", sizeof(params->vcodec));
+         strlcpy(params->acodec, "flac", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "preset", "medium", 0);
+         av_dict_set(&params->video_opts, "tune", "animation", 0);
+         av_dict_set(&params->video_opts, "crf", "0", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
+         break;
+      case RECORD_CONFIG_TYPE_STREAMING_NETPLAY:
+         params->threads              = 1;
+         params->frame_drop_ratio     = 1;
+         params->audio_enable         = true;
+         params->audio_global_quality = 50;
+         params->out_pix_fmt          = PIX_FMT_YUV420P;
+
+         strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
+         strlcpy(params->acodec, "mp3", sizeof(params->acodec));
+
+         av_dict_set(&params->video_opts, "preset", "ultrafast", 0);
+         av_dict_set(&params->video_opts, "tune", "zerolatency", 0);
+         av_dict_set(&params->video_opts, "crf", "20", 0);
+         av_dict_set(&params->audio_opts, "audio_global_quality", "50", 0);
+         break;
+      default:
+         break;
+   }
+
+   if (preset <= RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY)
+   {
+      if (!settings->bools.video_gpu_record)
+         params->scale_factor = settings->uints.video_record_scale_factor > 0 ? 
+            settings->uints.video_record_scale_factor : 1;
+      else
+         params->scale_factor = 1;
+      strlcpy(params->format, "matroska", sizeof(params->format));
+   }
+   else if (preset <= RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY)
+   {
+      if (!settings->bools.video_gpu_record)
+         params->scale_factor = settings->uints.video_stream_scale_factor > 0 ? 
+            settings->uints.video_stream_scale_factor : 1;
+      else
+         params->scale_factor = 1;
+      if (settings->uints.streaming_mode == STREAMING_MODE_YOUTUBE || settings->uints.streaming_mode == STREAMING_MODE_TWITCH)
+         strlcpy(params->format, "flv", sizeof(params->format));
+      else
+         strlcpy(params->format, "mpegts", sizeof(params->format));
+   }
+   else if (preset == RECORD_CONFIG_TYPE_STREAMING_NETPLAY)
+   {
+      params->scale_factor = 1;
+      strlcpy(params->format, "mpegts", sizeof(params->format));
+   }
+
+   return true;
+}
+
+/*
+static bool ffmpeg_init_config_recording(struct ff_config_param *params)
+{
+   return true;
+   params->threads              = 0;
+   params->audio_global_quality = 100;
+
+   strlcpy(params->vcodec, "libx264rgb", sizeof(params->vcodec));
+   strlcpy(params->format, "matroska", sizeof(params->format));
+
+   av_dict_set(&params->video_opts, "video_preset", "slow", 0);
+   av_dict_set(&params->video_opts, "video_tune", "animation", 0);
+   av_dict_set(&params->video_opts, "video_crf", "10", 0);
+   av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
+
+   return true;
+}
+*/
+
 static bool ffmpeg_init_config(struct ff_config_param *params,
       const char *config)
 {
    struct config_file_entry entry;
-   char pix_fmt[64] = {0};
+   char pix_fmt[64]         = {0};
 
-   params->out_pix_fmt = PIX_FMT_NONE;
-   params->scale_factor = 1;
-   params->threads = 1;
+   params->out_pix_fmt      = PIX_FMT_NONE;
+   params->scale_factor     = 1;
+   params->threads          = 1;
    params->frame_drop_ratio = 1;
-   params->audio_enable = true;
+   params->audio_enable     = true;
 
    if (!config)
       return true;
 
-   params->conf = config_file_new(config);
+   params->conf             = config_file_new(config);
+   RARCH_LOG("[FFmpeg] Loading FFmpeg config \"%s\".\n", config);
    if (!params->conf)
    {
-      RARCH_ERR("Failed to load FFmpeg config \"%s\".\n", config);
+      RARCH_ERR("[FFmpeg] Failed to load FFmpeg config \"%s\".\n", config);
       return false;
    }
 
@@ -590,7 +739,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
       params->out_pix_fmt = av_get_pix_fmt(pix_fmt);
       if (params->out_pix_fmt == PIX_FMT_NONE)
       {
-         RARCH_ERR("Cannot find pix_fmt \"%s\".\n", pix_fmt);
+         RARCH_ERR("[FFmpeg] Cannot find pix_fmt \"%s\".\n", pix_fmt);
          return false;
       }
    }
@@ -617,8 +766,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
 
 static bool ffmpeg_init_muxer_pre(ffmpeg_t *handle)
 {
-   AVFormatContext *ctx = avformat_alloc_context();
-
+   ctx = avformat_alloc_context();
    av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
 
    if (*handle->config.format)
@@ -660,7 +808,7 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
    }
 
    av_dict_set(&handle->muxer.ctx->metadata, "title",
-         "RetroArch video dump", 0);
+         "RetroArch Video Dump", 0);
 
    return avformat_write_header(handle->muxer.ctx, NULL) >= 0;
 }
@@ -676,7 +824,7 @@ static bool init_thread(ffmpeg_t *handle)
    handle->cond = scond_new();
    handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) *
          handle->params.channels * MAX_FRAMES / 60); /* Some arbitrary max size. */
-   handle->attr_fifo = fifo_new(sizeof(struct ffemu_video_data) * MAX_FRAMES);
+   handle->attr_fifo = fifo_new(sizeof(struct record_video_data) * MAX_FRAMES);
    handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
             handle->video.pix_size * MAX_FRAMES);
 
@@ -783,21 +931,24 @@ static void ffmpeg_free(void *data)
    free(handle);
 }
 
-static void *ffmpeg_new(const struct ffemu_params *params)
+static void *ffmpeg_new(const struct record_params *params)
 {
-   ffmpeg_t *handle = NULL;
+   ffmpeg_t *handle = (ffmpeg_t*)calloc(1, sizeof(*handle));
+   if (!handle)
+      return NULL;
 
    av_register_all();
    avformat_network_init();
 
-   handle = (ffmpeg_t*)calloc(1, sizeof(*handle));
-   if (!handle)
-      goto error;
-
    handle->params = *params;
 
-   if (!ffmpeg_init_config(&handle->config, params->config))
-      goto error;
+   if (params->preset == RECORD_CONFIG_TYPE_RECORDING_CUSTOM || params->preset == RECORD_CONFIG_TYPE_STREAMING_CUSTOM)
+   {
+      if (!ffmpeg_init_config(&handle->config, params->config))
+         goto error;
+   }
+   else
+      ffmpeg_init_config_common(&handle->config, params->preset);
 
    if (!ffmpeg_init_muxer_pre(handle))
       goto error;
@@ -822,13 +973,13 @@ error:
 }
 
 static bool ffmpeg_push_video(void *data,
-      const struct ffemu_video_data *vid)
+      const struct record_video_data *vid)
 {
    unsigned y;
    bool drop_frame;
-   struct ffemu_video_data attr_data;
+   struct record_video_data attr_data;
    ffmpeg_t *handle = (ffmpeg_t*)data;
-   int offset = 0;
+   int       offset = 0;
 
    if (!handle || !vid)
       return false;
@@ -892,7 +1043,7 @@ static bool ffmpeg_push_video(void *data,
 }
 
 static bool ffmpeg_push_audio(void *data,
-      const struct ffemu_audio_data *audio_data)
+      const struct record_audio_data *audio_data)
 {
    ffmpeg_t *handle = (ffmpeg_t*)data;
 
@@ -974,7 +1125,7 @@ static bool encode_video(ffmpeg_t *handle, AVPacket *pkt, AVFrame *frame)
 }
 
 static void ffmpeg_scale_input(ffmpeg_t *handle,
-      const struct ffemu_video_data *vid)
+      const struct record_video_data *vid)
 {
    /* Attempt to preserve more information if we scale down. */
    bool shrunk = handle->params.out_width < vid->width
@@ -1011,7 +1162,7 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
 }
 
 static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
-      const struct ffemu_video_data *vid)
+      const struct record_video_data *vid)
 {
    AVPacket pkt;
 
@@ -1150,7 +1301,7 @@ static bool encode_audio(ffmpeg_t *handle, AVPacket *pkt, bool dry)
 }
 
 static void ffmpeg_audio_resample(ffmpeg_t *handle,
-      struct ffemu_audio_data *aud)
+      struct record_audio_data *aud)
 {
    if (!handle->audio.use_float && !handle->audio.resampler)
       return;
@@ -1214,7 +1365,7 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
 }
 
 static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
-      struct ffemu_audio_data *aud, bool require_block)
+      struct record_audio_data *aud, bool require_block)
 {
    size_t written_frames = 0;
 
@@ -1269,7 +1420,7 @@ static void ffmpeg_flush_audio(ffmpeg_t *handle, void *audio_buf,
 
    if (avail)
    {
-      struct ffemu_audio_data aud = {0};
+      struct record_audio_data aud = {0};
 
       fifo_read(handle->audio_fifo, audio_buf, avail);
 
@@ -1316,7 +1467,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
    do
    {
-      struct ffemu_video_data attr_buf;
+      struct record_video_data attr_buf;
 
       did_work = false;
 
@@ -1324,7 +1475,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
       {
          if (fifo_read_avail(handle->audio_fifo) >= audio_buf_size)
          {
-            struct ffemu_audio_data aud = {0};
+            struct record_audio_data aud = {0};
 
             fifo_read(handle->audio_fifo, audio_buf, audio_buf_size);
 
@@ -1362,7 +1513,6 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 static bool ffmpeg_finalize(void *data)
 {
    ffmpeg_t *handle = (ffmpeg_t*)data;
-
    if (!handle)
       return false;
 
@@ -1375,6 +1525,8 @@ static bool ffmpeg_finalize(void *data)
 
    /* Write final data. */
    av_write_trailer(handle->muxer.ctx);
+
+   avio_close(ctx->pb);
 
    return true;
 }
@@ -1397,7 +1549,7 @@ static void ffmpeg_thread(void *data)
 
    while (ff->alive)
    {
-      struct ffemu_video_data attr_buf;
+      struct record_video_data attr_buf;
 
       bool avail_video = false;
       bool avail_audio = false;
@@ -1441,7 +1593,7 @@ static void ffmpeg_thread(void *data)
 
       if (avail_audio && audio_buf)
       {
-         struct ffemu_audio_data aud = {0};
+         struct record_audio_data aud = {0};
 
          slock_lock(ff->lock);
          fifo_read(ff->audio_fifo, audio_buf, audio_buf_size);
@@ -1459,7 +1611,7 @@ static void ffmpeg_thread(void *data)
    av_free(audio_buf);
 }
 
-const record_driver_t ffemu_ffmpeg = {
+const record_driver_t record_ffmpeg = {
    ffmpeg_new,
    ffmpeg_free,
    ffmpeg_push_video,

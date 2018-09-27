@@ -171,7 +171,7 @@ void egl_swap_buffers(void *data)
    eglSwapBuffers(egl->dpy, egl->surf);
 }
 
-void egl_set_swap_interval(egl_ctx_data_t *egl, unsigned interval)
+void egl_set_swap_interval(egl_ctx_data_t *egl, int interval)
 {
    /* Can be called before initialization.
     * Some contexts require that swap interval

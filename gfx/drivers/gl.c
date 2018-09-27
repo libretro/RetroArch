@@ -952,6 +952,12 @@ static bool gl_frame(void *data, const void *frame,
    if (!gl)
       return false;
 
+#ifdef HAVE_LIBNX
+   // Should be called once per frame
+   if(!appletMainLoop())
+    return false;
+#endif
+
    context_bind_hw_render(false);
 
    if (gl->core_context_in_use && gl->renderchain_driver->bind_vao)
@@ -1318,7 +1324,7 @@ static void gl_free(void *data)
 
 static void gl_set_nonblock_state(void *data, bool state)
 {
-   unsigned interval           = 0;
+   int interval                = 0;
    gl_t             *gl        = (gl_t*)data;
    settings_t        *settings = config_get_ptr();
 
@@ -1696,13 +1702,14 @@ static void *gl_init(const video_info_t *video,
 {
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
-   unsigned interval, mip_level;
    unsigned full_x, full_y;
    video_shader_ctx_filter_t shader_filter;
    video_shader_ctx_info_t shader_info;
    video_shader_ctx_ident_t ident_info;
    settings_t *settings                 = config_get_ptr();
    video_shader_ctx_wrap_t wrap_info    = {0};
+   int interval                         = 0;
+   unsigned mip_level                   = 0;
    unsigned win_width                   = 0;
    unsigned win_height                  = 0;
    unsigned temp_width                  = 0;
@@ -1755,6 +1762,10 @@ static void *gl_init(const video_info_t *video,
    if (!video_context_driver_set_video_mode(&mode))
       goto error;
 
+#if !defined(RARCH_CONSOLE) || defined(HAVE_LIBNX)
+   rglgen_resolve_symbols(ctx_driver->get_proc_address);
+#endif
+
    /* Clear out potential error flags in case we use cached context. */
    glGetError();
 
@@ -1767,10 +1778,6 @@ static void *gl_init(const video_info_t *video,
 
    if (!string_is_empty(version))
       sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
-
-#ifndef RARCH_CONSOLE
-   rglgen_resolve_symbols(ctx_driver->get_proc_address);
-#endif
 
    hwr = video_driver_get_hw_context();
 

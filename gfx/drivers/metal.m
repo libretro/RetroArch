@@ -163,7 +163,8 @@ static void metal_viewport_info(void *data, struct video_viewport *vp)
 
 static bool metal_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
-   return true;
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   return [md.frameView readViewport:buffer isIdle:is_idle];
 }
 
 static uintptr_t metal_load_texture(void *video_data, void *data,

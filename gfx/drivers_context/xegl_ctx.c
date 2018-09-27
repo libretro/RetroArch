@@ -255,7 +255,7 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 }
 
 /* forward declaration */
-static void gfx_ctx_xegl_set_swap_interval(void *data, unsigned swap_interval);
+static void gfx_ctx_xegl_set_swap_interval(void *data, int swap_interval);
 
 static bool gfx_ctx_xegl_set_video_mode(void *data,
       video_frame_info_t *video_info,
@@ -561,7 +561,7 @@ static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
    }
 }
 
-static void gfx_ctx_xegl_set_swap_interval(void *data, unsigned swap_interval)
+static void gfx_ctx_xegl_set_swap_interval(void *data, int swap_interval)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 

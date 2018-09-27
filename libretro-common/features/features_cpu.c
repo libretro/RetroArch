@@ -79,7 +79,9 @@
 #include <wiiu/os/time.h>
 #endif
 
-#ifdef SWITCH
+#if defined(HAVE_LIBNX)
+#include <switch.h>
+#elif defined(SWITCH)
 #include <libtransistor/types.h>
 #include <libtransistor/svc.h>
 #endif
@@ -219,7 +221,9 @@ retro_time_t cpu_features_get_time_usec(void)
    return sys_time_get_system_time();
 #elif defined(GEKKO)
    return ticks_to_microsecs(gettime());
-#elif defined(SWITCH)
+#elif defined(WIIU)
+   return ticks_to_us(OSGetSystemTime());
+#elif defined(SWITCH) || defined(HAVE_LIBNX)
    return (svcGetSystemTick() * 10) / 192;
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
    struct timespec tv = {0};
@@ -236,8 +240,6 @@ retro_time_t cpu_features_get_time_usec(void)
    return osGetTime() * 1000;
 #elif defined(VITA)
    return sceKernelGetProcessTimeWide();
-#elif defined(WIIU)
-   return ticks_to_us(OSGetSystemTime());
 #else
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif
@@ -480,6 +482,8 @@ unsigned cpu_features_get_core_amount(void)
 #elif defined(PSP)
    return 1;
 #elif defined(VITA)
+   return 4;
+#elif defined(HAVE_LIBNX) || defined(SWITCH)
    return 4;
 #elif defined(_3DS)
    u8 device_model = 0xFF;

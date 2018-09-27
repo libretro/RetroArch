@@ -31,6 +31,7 @@ static unsigned ra_tmp_height     = 0;
 static unsigned ra_set_core_hz    = 0;
 static unsigned orig_width        = 0;
 static unsigned orig_height       = 0;
+static int crt_center_adjust = 0;
 
 static bool first_run             = true;
 
@@ -53,12 +54,25 @@ static void switch_crt_hz(void)
    if (ra_core_hz == ra_tmp_core_hz)
       return;
    /* set hz float to an int for windows switching */
-   if (ra_core_hz < 53)
-      ra_set_core_hz = 50;	
-   if (ra_core_hz >= 53  &&  ra_core_hz < 57)
-      ra_set_core_hz = 55;	
-   if (ra_core_hz >= 57)
-      ra_set_core_hz = 60;	
+   if (ra_core_hz < 100)
+   {
+      if (ra_core_hz < 53)
+         ra_set_core_hz = 50;	
+      if (ra_core_hz >= 53  &&  ra_core_hz < 57)
+         ra_set_core_hz = 55;	
+      if (ra_core_hz >= 57)
+         ra_set_core_hz = 60;	
+   }
+
+   if (ra_core_hz > 100)
+   {
+      if (ra_core_hz < 106)
+         ra_set_core_hz = 120;	
+      if (ra_core_hz >= 106  &&  ra_core_hz < 114)
+         ra_set_core_hz = 110;	
+      if (ra_core_hz >= 114)
+         ra_set_core_hz = 120;	
+   }
 	
    video_monitor_set_refresh_rate(ra_set_core_hz);
    
@@ -78,7 +92,7 @@ static void switch_res_crt(unsigned width, unsigned height)
    if (height > 100)
    {
       video_display_server_switch_resolution(width, height,
-            ra_set_core_hz, ra_core_hz);
+            ra_set_core_hz, ra_core_hz, crt_center_adjust);
       video_driver_apply_state_changes();
    }
 }
@@ -100,13 +114,13 @@ static void crt_screen_setup_aspect(unsigned width, unsigned height)
       crt_aspect_ratio_switch(width, height);
    }
 
-   if (height < 191 && height != 144)
+   if (height < 200 && height != 144)
    {				
       crt_aspect_ratio_switch(width, height);
       height = 200;
    }	
 
-   if (height > 191)
+   if (height > 200)
       crt_aspect_ratio_switch(width, height);
 
    if (height == 144 && ra_set_core_hz == 50)
@@ -149,13 +163,23 @@ static void crt_screen_setup_aspect(unsigned width, unsigned height)
 }
 
 
-void crt_switch_res_core(unsigned width, unsigned height, float hz)
+void crt_switch_res_core(unsigned width, unsigned height, float hz, unsigned crt_mode, int crt_switch_center_adjust)
 {
    /* ra_core_hz float passed from within 
     * void video_driver_monitor_adjust_system_rates(void) */
    ra_core_width  = width;		
    ra_core_height = height;
    ra_core_hz     = hz;
+   crt_center_adjust = crt_switch_center_adjust;
+
+   if (crt_mode == 2)
+   {
+      if (hz > 53)
+         ra_core_hz = hz*2;
+
+      if (hz <= 53)
+         ra_core_hz = 120.0f;
+   }
 
    crt_check_first_run();
 

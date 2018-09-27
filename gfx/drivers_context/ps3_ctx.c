@@ -140,10 +140,10 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
    global->console.screen.resolutions.check = true;
 }
 
-static void gfx_ctx_ps3_set_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_ps3_set_swap_interval(void *data, int interval)
 {
 #if defined(HAVE_PSGL)
-   if (interval)
+   if (interval == 1)
       glEnable(GL_VSYNC_SCE);
    else
       glDisable(GL_VSYNC_SCE);

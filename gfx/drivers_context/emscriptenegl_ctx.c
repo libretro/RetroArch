@@ -49,14 +49,14 @@ static int emscripten_initial_width;
 static int emscripten_initial_height;
 static enum gfx_ctx_api emscripten_api = GFX_CTX_NONE;
 
-static void gfx_ctx_emscripten_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_emscripten_swap_interval(void *data, int interval)
 {
    (void)data;
 
    if (interval == 0)
       emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
    else
-      emscripten_set_main_loop_timing(EM_TIMING_RAF, (int)interval);
+      emscripten_set_main_loop_timing(EM_TIMING_RAF, interval);
 }
 
 static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)

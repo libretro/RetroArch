@@ -31,8 +31,30 @@ enum ffemu_pix_format
    FFEMU_PIX_ARGB8888
 };
 
+enum streaming_mode
+{
+   STREAMING_MODE_TWITCH = 0,
+   STREAMING_MODE_YOUTUBE,
+   STREAMING_MODE_LOCAL,
+   STREAMING_MODE_CUSTOM
+};
+
+enum record_config_type
+{
+   RECORD_CONFIG_TYPE_RECORDING_CUSTOM = 0,
+   RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
+   RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
+   RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
+   RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
+   RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
+   RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
+   RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
+   RECORD_CONFIG_TYPE_STREAMING_NETPLAY
+};
+
 /* Parameters passed to ffemu_new() */
-struct ffemu_params
+struct record_params
 {
    /* Framerate per second of input video. */
    double fps;
@@ -55,6 +77,8 @@ struct ffemu_params
    /* Audio channels. */
    unsigned channels;
 
+   enum record_config_type preset;
+
    /* Input pixel format. */
    enum ffemu_pix_format pix_fmt;
 
@@ -65,7 +89,7 @@ struct ffemu_params
    const char *config;
 };
 
-struct ffemu_video_data
+struct record_video_data
 {
    const void *data;
    unsigned width;
@@ -74,7 +98,7 @@ struct ffemu_video_data
    bool is_dupe;
 };
 
-struct ffemu_audio_data
+struct record_audio_data
 {
    const void *data;
    size_t frames;
@@ -82,16 +106,16 @@ struct ffemu_audio_data
 
 typedef struct record_driver
 {
-   void *(*init)(const struct ffemu_params *params);
+   void *(*init)(const struct record_params *params);
    void  (*free)(void *data);
-   bool  (*push_video)(void *data, const struct ffemu_video_data *video_data);
-   bool  (*push_audio)(void *data, const struct ffemu_audio_data *audio_data);
+   bool  (*push_video)(void *data, const struct record_video_data *video_data);
+   bool  (*push_audio)(void *data, const struct record_audio_data *audio_data);
    bool  (*finalize)(void *data);
    const char *ident;
 } record_driver_t;
 
-extern const record_driver_t ffemu_ffmpeg;
-extern const record_driver_t ffemu_null;
+extern const record_driver_t record_ffmpeg;
+extern const record_driver_t record_null;
 
 /**
  * config_get_record_driver_options:
@@ -142,7 +166,7 @@ const char *record_driver_find_ident(int idx);
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool record_driver_init_first(const record_driver_t **backend, void **data,
-      const struct ffemu_params *params);
+      const struct record_params *params);
 
 void recording_dump_frame(const void *data, unsigned width,
       unsigned height, size_t pitch, bool is_idle);
@@ -160,9 +184,11 @@ void find_record_driver(void);
  **/
 bool recording_init(void);
 
-bool *recording_is_enabled(void);
+bool recording_is_enabled(void);
 
 void recording_set_state(bool state);
+
+void streaming_set_state(bool state);
 
 void recording_push_audio(const int16_t *data, size_t samples);
 
@@ -172,13 +198,17 @@ void recording_driver_clear_data_ptr(void);
 
 void recording_driver_set_data_ptr(void *data);
 
-bool *recording_driver_get_use_output_dir_ptr(void);
-
 unsigned *recording_driver_get_width(void);
 
 unsigned *recording_driver_get_height(void);
 
 void recording_driver_free_state(void);
+
+bool recording_is_enabled(void);
+
+bool streaming_is_enabled(void);
+
+void recording_driver_update_streaming_url(void);
 
 extern void *recording_data;
 

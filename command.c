@@ -98,6 +98,8 @@
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE           4096
 
+extern bool discord_is_inited;
+
 enum cmd_source_t
 {
    CMD_NONE = 0,
@@ -159,7 +161,7 @@ static const struct cmd_map map[] = {
    { "STATE_SLOT_PLUS",        RARCH_STATE_SLOT_PLUS },
    { "STATE_SLOT_MINUS",       RARCH_STATE_SLOT_MINUS },
    { "REWIND",                 RARCH_REWIND },
-   { "MOVIE_RECORD_TOGGLE",    RARCH_MOVIE_RECORD_TOGGLE },
+   { "BSV_RECORD_TOGGLE",      RARCH_BSV_RECORD_TOGGLE },
    { "PAUSE_TOGGLE",           RARCH_PAUSE_TOGGLE },
    { "FRAMEADVANCE",           RARCH_FRAMEADVANCE },
    { "RESET",                  RARCH_RESET },
@@ -182,6 +184,8 @@ static const struct cmd_map map[] = {
    { "UI_COMPANION_TOGGLE",    RARCH_UI_COMPANION_TOGGLE },
    { "GAME_FOCUS_TOGGLE",      RARCH_GAME_FOCUS_TOGGLE },
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
+   { "RECORDING_TOGGLE",       RARCH_RECORDING_TOGGLE },
+   { "STREAMING_TOGGLE",       RARCH_STREAMING_TOGGLE },
    { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
    { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
    { "MENU_LEFT",              RETRO_DEVICE_ID_JOYPAD_LEFT },
@@ -1656,6 +1660,9 @@ static bool command_event_main_state(unsigned cmd)
          case CMD_EVENT_LOAD_STATE:
             if (content_load_state(state_path, false, false))
             {
+#ifdef HAVE_CHEEVOS
+               cheevos_state_loaded_flag = true;
+#endif
                ret = true;
 #ifdef HAVE_NETWORKING
                netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
@@ -1708,14 +1715,12 @@ static bool command_event_resize_windowed_scale(void)
 }
 
 void command_playlist_push_write(
-      void *data,
+      playlist_t *playlist,
       const char *path,
       const char *label,
       const char *core_path,
       const char *core_name)
 {
-   playlist_t *playlist = (playlist_t*)data;
-
    if (!playlist)
       return;
 
@@ -1732,7 +1737,7 @@ void command_playlist_push_write(
 }
 
 void command_playlist_update_write(
-      void *data,
+      playlist_t *plist,
       size_t idx,
       const char *path,
       const char *label,
@@ -1741,7 +1746,6 @@ void command_playlist_update_write(
       const char *crc32,
       const char *db_name)
 {
-   playlist_t *plist    = (playlist_t*)data;
    playlist_t *playlist = plist ? plist : playlist_get_cached();
 
    if (!playlist)
@@ -1777,11 +1781,6 @@ bool command_event(enum event_command cmd, void *data)
 
    switch (cmd)
    {
-      case CMD_EVENT_MENU_REFRESH:
-#ifdef HAVE_MENU
-         menu_driver_ctl(RARCH_MENU_CTL_REFRESH, NULL);
-#endif
-         break;
       case CMD_EVENT_SET_PER_GAME_RESOLUTION:
 #if defined(GEKKO)
          {
@@ -1842,6 +1841,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_LOAD_CORE:
       {
          bool success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+         (void)success;
 
 #ifndef HAVE_DYNAMIC
          command_event(CMD_EVENT_QUIT, NULL);
@@ -1888,6 +1888,10 @@ bool command_event(enum event_command cmd, void *data)
          command_event_init_controllers();
          break;
       case CMD_EVENT_RESET:
+#ifdef HAVE_CHEEVOS
+         cheevos_state_loaded_flag = false;
+         cheevos_hardcore_paused = false;
+#endif
          RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
          runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true);
 
@@ -1965,6 +1969,15 @@ bool command_event(enum event_command cmd, void *data)
             core_unload_game();
             if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                core_unload();
+#ifdef HAVE_DISCORD
+            if (discord_is_inited)
+            {
+               discord_userdata_t userdata;
+               userdata.status = DISCORD_PRESENCE_MENU;
+
+               command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+            }
+#endif
          }
          break;
       case CMD_EVENT_QUIT:
@@ -2145,13 +2158,22 @@ TODO: Add a setting for these tweaks */
          video_driver_gpu_record_deinit();
          break;
       case CMD_EVENT_RECORD_DEINIT:
-         if (!recording_deinit())
-            return false;
+         {
+            recording_set_state(false);
+            streaming_set_state(false);
+            if (!recording_deinit())
+               return false;
+         }
          break;
       case CMD_EVENT_RECORD_INIT:
-         command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
-         if (!recording_init())
-            return false;
+         {
+            recording_set_state(true);
+            if (!recording_init())
+            {
+               command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+               return false;
+            }
+         }
          break;
       case CMD_EVENT_HISTORY_DEINIT:
          if (g_defaults.content_history)

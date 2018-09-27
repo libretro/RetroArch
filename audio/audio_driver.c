@@ -125,6 +125,7 @@ static const audio_driver_t *audio_drivers[] = {
 #endif
 #ifdef SWITCH
    &audio_switch,
+   &audio_switch_thread,
 #endif
    &audio_null,
    NULL,

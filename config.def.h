@@ -20,6 +20,7 @@
 
 #include <boolean.h>
 #include <audio/audio_resampler.h>
+#include "configuration.h"
 #include "gfx/video_defines.h"
 #include "input/input_driver.h"
 
@@ -67,15 +68,15 @@ static bool bundle_assets_extract_enable = false;
 static bool materialui_icons_enable      = true;
 #endif
 
-static const bool crt_switch_resolution = false; 	
+static const unsigned crt_switch_resolution  = CRT_SWITCH_NONE; 	
 static const int crt_switch_resolution_super = 2560; 
+static const int crt_switch_center_adjust    = 0;
 
+static const bool def_history_list_enable    = true;
+static const bool def_playlist_entry_remove  = true;
+static const bool def_playlist_entry_rename  = true;
 
-static const bool def_history_list_enable = true;
-static const bool def_playlist_entry_remove = true;
-static const bool def_playlist_entry_rename = true;
-
-static const unsigned int def_user_language = 0;
+static const unsigned int def_user_language  = 0;
 
 #if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
 static const bool def_mouse_enable = true;
@@ -146,6 +147,8 @@ static const bool disable_composition = false;
 static const bool vsync = true;
 
 static const unsigned max_swapchain_images = 3;
+
+static const bool adaptive_vsync = false;
 
 /* Attempts to hard-synchronize CPU and GPU.
  * Can reduce latency at cost of performance. */
@@ -229,7 +232,7 @@ static const float aspect_ratio = DEFAULT_ASPECT_RATIO;
 /* 1:1 PAR */
 static const bool aspect_ratio_auto = false;
 
-#if defined(__CELLOS_LV2) || defined(_XBOX360)
+#if defined(__CELLOS_LV2) || defined(_XBOX360) || defined(ANDROID_AARCH64)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_16_9;
 #elif defined(PSP)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
@@ -259,15 +262,17 @@ static const float default_input_overlay_opacity = 0.7f;
 
 static bool default_block_config_read    = true;
 
-static bool quick_menu_show_take_screenshot      = true;
-static bool quick_menu_show_save_load_state      = true;
-static bool quick_menu_show_undo_save_load_state = true;
-static bool quick_menu_show_add_to_favorites     = true;
-static bool quick_menu_show_options              = true;
-static bool quick_menu_show_controls             = true;
-static bool quick_menu_show_cheats               = true;
-static bool quick_menu_show_shaders              = true;
-static bool quick_menu_show_information          = true;
+static bool quick_menu_show_take_screenshot             = true;
+static bool quick_menu_show_save_load_state             = true;
+static bool quick_menu_show_undo_save_load_state        = true;
+static bool quick_menu_show_add_to_favorites            = true;
+static bool quick_menu_show_options                     = true;
+static bool quick_menu_show_controls                    = true;
+static bool quick_menu_show_cheats                      = true;
+static bool quick_menu_show_shaders                     = true;
+static bool quick_menu_show_information                 = true;
+static bool quick_menu_show_recording                   = true;
+static bool quick_menu_show_streaming                   = true;
 
 static bool quick_menu_show_save_core_overrides         = true;
 static bool quick_menu_show_save_game_overrides         = true;
@@ -447,9 +452,11 @@ static const bool font_enable = true;
  * If your monitor does not run at 60Hz, or something close to it,
  * disable VSync, and leave this at its default. */
 #ifdef _3DS
-static const float refresh_rate = (32730.0 * 8192.0) / 4481134.0 ;
+static const float refresh_rate     = (32730.0 * 8192.0) / 4481134.0 ;
+static const float crt_refresh_rate = (32730.0 * 8192.0) / 4481134.0 ;
 #else
-static const float refresh_rate = 60/1.001;
+static const float refresh_rate     = 60/1.001;
+static const float crt_refresh_rate = 60/1.001;
 #endif
 
 /* Allow games to set rotation. If false, rotation requests are
@@ -652,6 +659,10 @@ static const unsigned libretro_log_level = 1;
 
 #ifndef RARCH_DEFAULT_PORT
 #define RARCH_DEFAULT_PORT 55435
+#endif
+
+#ifndef RARCH_STREAM_DEFAULT_PORT
+#define RARCH_STREAM_DEFAULT_PORT 56400
 #endif
 
 /* KEYBINDS, JOYPAD */

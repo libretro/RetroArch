@@ -33,6 +33,22 @@
 
 RETRO_BEGIN_DECLS
 
+#define RETRO_ENVIRONMENT_RETROARCH_START_BLOCK 0x800000
+
+
+#define RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND (2 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
+                                            /* bool * --
+                                            * Boolean value that tells the front end to save states in the
+                                            * background or not.
+                                            */
+
+#define RETRO_ENVIRONMENT_GET_CLEAR_ALL_THREAD_WAITS_CB (3 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
+                                            /* retro_environment_t * --
+                                            * Provides the callback to the frontend method which will cancel
+                                            * all currently waiting threads.  Used when coordination is needed
+                                            * between the core and the frontend to gracefully stop all threads.
+                                            */
+
 enum rarch_ctl_state
 {
    RARCH_CTL_NONE = 0,

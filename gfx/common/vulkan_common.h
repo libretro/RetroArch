@@ -96,6 +96,7 @@ typedef struct vulkan_context
    /* Used by screenshot to get blits with correct colorspace. */
    bool swapchain_is_srgb;
    bool swap_interval_emulation_lock;
+   bool has_acquired_swapchain;
 
    unsigned swapchain_width;
    unsigned swapchain_height;
@@ -127,13 +128,42 @@ typedef struct vulkan_context
 #endif
 } vulkan_context_t;
 
+struct vulkan_emulated_mailbox
+{
+   sthread_t *thread;
+   VkDevice device;
+   VkSwapchainKHR swapchain;
+   slock_t *lock;
+   scond_t *cond;
+
+   unsigned index;
+   bool acquired;
+   bool request_acquire;
+   bool dead;
+   bool has_pending_request;
+   VkResult result;
+};
+
+bool vulkan_emulated_mailbox_init(struct vulkan_emulated_mailbox *mailbox,
+      VkDevice device, VkSwapchainKHR swapchain);
+void vulkan_emulated_mailbox_deinit(struct vulkan_emulated_mailbox *mailbox);
+VkResult vulkan_emulated_mailbox_acquire_next_image(struct vulkan_emulated_mailbox *mailbox, unsigned *index);
+VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(struct vulkan_emulated_mailbox *mailbox, unsigned *index);
+
 typedef struct gfx_ctx_vulkan_data
 {
    bool need_new_swapchain;
    bool created_new_swapchain;
+   bool emulate_mailbox;
+   bool emulating_mailbox;
    vulkan_context_t context;
    VkSurfaceKHR vk_surface;
    VkSwapchainKHR swapchain;
+
+   struct vulkan_emulated_mailbox mailbox;
+   /* Used to check if we need to use mailbox emulation or not.
+    * Only relevant on Windows for now. */
+   bool fullscreen;
 } gfx_ctx_vulkan_data_t;
 
 struct vulkan_display_surface_info
@@ -179,6 +209,7 @@ struct vk_texture
    VkImage image;
    VkImageView view;
    VkDeviceMemory memory;
+   VkBuffer buffer;
 
    VkFormat format;
 

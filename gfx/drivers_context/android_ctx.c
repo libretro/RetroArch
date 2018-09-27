@@ -60,7 +60,7 @@ typedef struct
    gfx_ctx_vulkan_data_t vk;
    unsigned width;
    unsigned height;
-   unsigned swap_interval;
+   int swap_interval;
 #endif
 } android_ctx_data_t;
 
@@ -507,7 +507,7 @@ static void android_gfx_ctx_swap_buffers(void *data, void *data2)
    }
 }
 
-static void android_gfx_ctx_set_swap_interval(void *data, unsigned swap_interval)
+static void android_gfx_ctx_set_swap_interval(void *data, int swap_interval)
 {
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
 

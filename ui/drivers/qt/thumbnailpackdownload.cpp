@@ -15,13 +15,14 @@ extern "C" {
 #include "../../../version.h"
 }
 
+#undef TEMP_EXTENSION
 #define USER_AGENT "RetroArch-WIMP/" PACKAGE_VERSION
 #define PARTIAL_EXTENSION ".partial"
 #define TEMP_EXTENSION ".tmp"
 #define THUMBNAILPACK_URL_HEADER "http://thumbnailpacks.libretro.com/"
 #define THUMBNAILPACK_EXTENSION ".zip"
 
-static void extractCB(void *task_data, void *user_data, const char *err)
+static void extractThumbnailPackCB(void *task_data, void *user_data, const char *err)
 {
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
    MainWindow *mainwindow = (MainWindow*)user_data;
@@ -167,7 +168,7 @@ void MainWindow::onThumbnailPackDownloadFinished()
             if (settings)
             {
                RARCH_LOG("[Qt]: Thumbnail pack download finished successfully.\n");
-               emit extractArchiveDeferred(newFileName, settings->paths.directory_thumbnails, TEMP_EXTENSION, extractCB);
+               emit extractArchiveDeferred(newFileName, settings->paths.directory_thumbnails, TEMP_EXTENSION, extractThumbnailPackCB);
             }
          }
          else

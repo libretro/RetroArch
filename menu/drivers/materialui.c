@@ -42,7 +42,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
-#include "../menu_event.h"
+#include "../menu_input.h"
 
 #include "../widgets/menu_input_dialog.h"
 #include "../widgets/menu_osk.h"

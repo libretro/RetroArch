@@ -57,6 +57,12 @@ typedef struct
 
 typedef struct
 {
+   vector_float4 position;
+   vector_float2 texCoord;
+} VertexSlang;
+
+typedef struct
+{
    vector_float4 position METAL_POSITION;
    vector_float2 texCoord;
 } ColorInOut;

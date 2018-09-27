@@ -45,7 +45,7 @@ static HDC   win32_gdi_hdc;
 
 static unsigned         win32_gdi_major       = 0;
 static unsigned         win32_gdi_minor       = 0;
-static unsigned         win32_gdi_interval    = 0;
+static int              win32_gdi_interval    = 0;
 static enum gfx_ctx_api win32_gdi_api         = GFX_CTX_NONE;
 
 typedef struct gfx_ctx_gdi_data
@@ -308,7 +308,7 @@ static void gfx_ctx_gdi_show_mouse(void *data, bool state)
    win32_show_cursor(state);
 }
 
-static void gfx_ctx_gdi_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_gdi_swap_interval(void *data, int interval)
 {
    (void)data;
    (void)interval;

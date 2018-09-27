@@ -518,7 +518,7 @@ static void task_database_cue_prune(database_info_handle_t *db,
       for (i = db->list_ptr; i < db->list->size; ++i)
       {
          if (db->list->elems[i].data
-               && !strcmp(path, db->list->elems[i].data))
+               && string_is_equal(path, db->list->elems[i].data))
          {
             RARCH_LOG("Pruning file referenced by cue: %s\n", path);
             free(db->list->elems[i].data);
@@ -550,7 +550,8 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
    {
       for (i = db->list_ptr; i < db->list->size; ++i)
       {
-         if (db->list->elems[i].data && !strcmp(path, db->list->elems[i].data))
+         if (db->list->elems[i].data 
+               && string_is_equal(path, db->list->elems[i].data))
          {
             RARCH_LOG("Pruning file referenced by gdi: %s\n", path);
             free(db->list->elems[i].data);

@@ -43,16 +43,16 @@
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
+#include "../menu_entries.h"
+#include "../menu_input.h"
 
 #include "../../core_info.h"
 #include "../../core.h"
-#include "../menu_entries.h"
+
 #include "../widgets/menu_entry.h"
 #include "../widgets/menu_input_dialog.h"
 #include "../widgets/menu_osk.h"
 #include "../widgets/menu_filebrowser.h"
-
-#include "../menu_event.h"
 
 #include "../../verbosity.h"
 #include "../../configuration.h"
@@ -184,6 +184,7 @@ enum
    XMB_TEXTURE_OVERLAY,
    XMB_TEXTURE_OVERRIDE,
    XMB_TEXTURE_NOTIFICATIONS,
+   XMB_TEXTURE_STREAM,
    XMB_TEXTURE_LAST
 };
 
@@ -2007,7 +2008,8 @@ static void xmb_context_reset_horizontal_list(
 
       {
          struct texture_image ti;
-         char sysname[256];
+         char *sysname             = (char*)
+            malloc(PATH_MAX_LENGTH * sizeof(char));
          char *iconpath            = (char*)
             malloc(PATH_MAX_LENGTH * sizeof(char));
          char *texturepath         = (char*)
@@ -2018,7 +2020,8 @@ static void xmb_context_reset_horizontal_list(
          iconpath[0]    = sysname[0] =
             texturepath[0] = content_texturepath[0] = '\0';
 
-         fill_pathname_base_noext(sysname, path, sizeof(sysname));
+         fill_pathname_base_noext(sysname, path,
+               PATH_MAX_LENGTH * sizeof(char));
 
          fill_pathname_application_special(iconpath,
                PATH_MAX_LENGTH * sizeof(char),
@@ -2080,6 +2083,7 @@ static void xmb_context_reset_horizontal_list(
             image_texture_free(&ti);
          }
 
+         free(sysname);
          free(iconpath);
          free(texturepath);
          free(content_texturepath);
@@ -2374,8 +2378,14 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                      return xmb->textures.list[XMB_TEXTURE_LOG];
                   case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_FRAMESKIP];
+                  case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
                   case MENU_ENUM_LABEL_RECORDING_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_RECORD];
+                  case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
+                     return xmb->textures.list[XMB_TEXTURE_STREAM];
+                  case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
+                  case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
+                     return xmb->textures.list[XMB_TEXTURE_CLOSE];
                   case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_OSD];
                   case MENU_ENUM_LABEL_SHOW_WIMP:
@@ -4603,6 +4613,8 @@ static const char *xmb_texture_path(unsigned id)
          return "menu_override.png";
       case XMB_TEXTURE_NOTIFICATIONS:
          return "menu_notifications.png";
+      case XMB_TEXTURE_STREAM:
+         return "menu_stream.png";
    }
 
    return NULL;

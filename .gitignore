@@ -120,6 +120,9 @@ wiiu/wut/elf2rpl/elf2rpl
 
 pkg/apple/iOS/build/
 pkg/apple/iOS/modules/
+pkg/apple/build/
+ui/drivers/qt/moc_*
+ui/drivers/moc_*
 
 obj-unix/
 .vagrant/
@@ -151,3 +154,12 @@ retroarch.js.mem
 
 # only ignore .js files in the repo root
 /*.js
+
+# Switch
+*.d
+exefs/*
+retroarch_switch.pfs0
+retroarch_switch.lst
+retroarch_switch.nacp
+retroarch_switch.nro
+retroarch_switch.nso

@@ -22,6 +22,8 @@
 
 #include <retro_common_api.h>
 
+#include "../menu_displaylist.h"
+
 RETRO_BEGIN_DECLS
 
 enum filebrowser_enums
@@ -43,7 +45,7 @@ void filebrowser_clear_type(void);
 
 void filebrowser_set_type(enum filebrowser_enums type);
 
-void filebrowser_parse(void *data, unsigned type);
+void filebrowser_parse(menu_displaylist_info_t *data, unsigned type);
 
 RETRO_END_DECLS
 

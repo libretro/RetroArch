@@ -69,6 +69,7 @@ be received by your application before it calls any ITaskbarList3 method.
 static unsigned win32_orig_width          = 0;
 static unsigned win32_orig_height         = 0;
 static unsigned win32_orig_refresh        = 0;
+static int crt_center                     = 0;
 
 static void* win32_display_server_init(void)
 {
@@ -107,7 +108,7 @@ static void win32_display_server_destroy(void *data)
    
    if (win32_orig_width > 0 && win32_orig_height > 0 )
       video_display_server_switch_resolution(win32_orig_width, win32_orig_height,
-         win32_orig_refresh , (float)win32_orig_refresh );
+         win32_orig_refresh , (float)win32_orig_refresh, crt_center );
 
 #ifdef HAS_TASKBAR_EXT
    if (g_taskbarList && win32_taskbar_is_created())
@@ -121,7 +122,7 @@ static void win32_display_server_destroy(void *data)
       free(dispserv);
 }
 
-static bool win32_set_window_opacity(void *data, unsigned opacity)
+static bool win32_display_server_set_window_opacity(void *data, unsigned opacity)
 {
    HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
@@ -148,7 +149,7 @@ static bool win32_set_window_opacity(void *data, unsigned opacity)
 #endif
 }
 
-static bool win32_set_window_progress(void *data, int progress, bool finished)
+static bool win32_display_server_set_window_progress(void *data, int progress, bool finished)
 {
    HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
@@ -187,7 +188,7 @@ static bool win32_set_window_progress(void *data, int progress, bool finished)
    return true;
 }
 
-static bool win32_set_window_decorations(void *data, bool on)
+static bool win32_display_server_set_window_decorations(void *data, bool on)
 {
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
@@ -201,7 +202,7 @@ static bool win32_set_window_decorations(void *data, bool on)
 }
 
 static bool win32_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz)
+      unsigned width, unsigned height, int int_hz, float hz, int center)
 {
    LONG res;
    DEVMODE curDevmode;
@@ -286,10 +287,11 @@ static bool win32_display_server_set_resolution(void *data,
 const video_display_server_t dispserv_win32 = {
    win32_display_server_init,
    win32_display_server_destroy,
-   win32_set_window_opacity,
-   win32_set_window_progress,
-   win32_set_window_decorations,
+   win32_display_server_set_window_opacity,
+   win32_display_server_set_window_progress,
+   win32_display_server_set_window_decorations,
    win32_display_server_set_resolution,
+   NULL, /* get_output_options */
    "win32"
 };
 

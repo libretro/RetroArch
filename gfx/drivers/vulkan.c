@@ -854,6 +854,8 @@ static void vulkan_init_static_resources(vk_t *vk)
    uint32_t blank[4 * 4];
    VkCommandPoolCreateInfo pool_info = {
       VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
+   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
    /* Create the pipeline cache. */
    VkPipelineCacheCreateInfo cache   = {
       VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
@@ -1092,8 +1094,8 @@ static void vulkan_init_readback(vk_t *vk)
     * not initialized yet.
     */
    settings_t *settings    = config_get_ptr();
-   bool *recording_enabled = recording_is_enabled();
-   vk->readback.streamed   = settings->bools.video_gpu_record && *recording_enabled;
+   bool recording_enabled = recording_is_enabled();
+   vk->readback.streamed   = settings->bools.video_gpu_record && recording_enabled;
 
    if (!vk->readback.streamed)
       return;
@@ -1119,10 +1121,10 @@ static void *vulkan_init(const video_info_t *video,
 {
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
-   unsigned interval;
    unsigned full_x, full_y;
    unsigned win_width;
    unsigned win_height;
+   int interval                       = 0;
    unsigned temp_width                = 0;
    unsigned temp_height               = 0;
    const gfx_ctx_driver_t *ctx_driver = NULL;
@@ -1257,7 +1259,7 @@ static void vulkan_check_swapchain(vk_t *vk)
 
 static void vulkan_set_nonblock_state(void *data, bool state)
 {
-   unsigned interval;
+   int interval         = 0;
    vk_t *vk             = (vk_t*)data;
    settings_t *settings = config_get_ptr();
 
@@ -1266,7 +1268,9 @@ static void vulkan_set_nonblock_state(void *data, bool state)
 
    RARCH_LOG("[Vulkan]: VSync => %s\n", state ? "off" : "on");
 
-   interval = state ? 0 : settings->uints.video_swap_interval;
+   if (!state)
+      interval = settings->uints.video_swap_interval;
+
    video_context_driver_swap_interval(&interval);
 
    /* Changing vsync might require recreating the swapchain, which means new VkImages
@@ -1509,23 +1513,22 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
 
 static void vulkan_readback(vk_t *vk)
 {
-   VkImageCopy region;
+   VkBufferImageCopy region;
    struct vk_texture *staging;
    struct video_viewport vp;
+   VkMemoryBarrier barrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER };
 
    vulkan_viewport_info(vk, &vp);
    memset(&region, 0, sizeof(region));
-   region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   region.srcSubresource.layerCount = 1;
-   region.dstSubresource            = region.srcSubresource;
+   region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   region.imageSubresource.layerCount = 1;
+   region.imageOffset.x               = vp.x;
+   region.imageOffset.y               = vp.y;
+   region.imageExtent.width           = vp.width;
+   region.imageExtent.height          = vp.height;
+   region.imageExtent.depth           = 1;
 
-   region.srcOffset.x               = vp.x;
-   region.srcOffset.y               = vp.y;
-   region.extent.width              = vp.width;
-   region.extent.height             = vp.height;
-   region.extent.depth              = 1;
-
-   /* FIXME: We won't actually get format conversion with vkCmdCopyImage, so have to check
+   /* FIXME: We won't actually get format conversion with vkCmdCopyImageToBuffer, so have to check
     * properly for this. BGRA seems to be the default for all swapchains. */
    if (vk->context->swapchain_format != VK_FORMAT_B8G8R8A8_UNORM)
       RARCH_WARN("[Vulkan]: Backbuffer is not BGRA8888, readbacks might not work properly.\n");
@@ -1537,25 +1540,18 @@ static void vulkan_readback(vk_t *vk)
          VK_FORMAT_B8G8R8A8_UNORM,
          NULL, NULL, VULKAN_TEXTURE_READBACK);
 
-   /* Go through the long-winded dance of remapping image layouts. */
-   vulkan_image_layout_transition(vk, vk->cmd, staging->image,
-         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-         0, VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-   vkCmdCopyImage(vk->cmd, vk->chain->backbuffer.image,
+   vkCmdCopyImageToBuffer(vk->cmd, vk->chain->backbuffer.image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-         staging->image,
-         VK_IMAGE_LAYOUT_GENERAL,
+         staging->buffer,
          1, &region);
 
    /* Make the data visible to host. */
-   vulkan_image_layout_transition(vk, vk->cmd, staging->image,
-         VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
+   barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+   barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+   vkCmdPipelineBarrier(vk->cmd,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_HOST_BIT);
+         VK_PIPELINE_STAGE_HOST_BIT, 0,
+         1, &barrier, 0, NULL, 0, NULL);
 }
 
 static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
@@ -1784,7 +1780,7 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)vk->filter_chain,
          vk->cmd, &vk->vk_vp);
    /* Render to backbuffer. */
-   if (chain->backbuffer.image != VK_NULL_HANDLE)
+   if (chain->backbuffer.image != VK_NULL_HANDLE && vk->context->has_acquired_swapchain)
    {
       rp_info.renderPass               = vk->render_pass;
       rp_info.framebuffer              = chain->backbuffer.framebuffer;
@@ -1880,6 +1876,7 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_filter_chain_end_frame((vulkan_filter_chain_t*)vk->filter_chain, vk->cmd);
 
    if (chain->backbuffer.image != VK_NULL_HANDLE &&
+         vk->context->has_acquired_swapchain &&
          (vk->readback.pending || vk->readback.streamed))
    {
       /* We cannot safely read back from an image which
@@ -1911,7 +1908,8 @@ static bool vulkan_frame(void *data, const void *frame,
 
       vk->readback.pending = false;
    }
-   else if (chain->backbuffer.image != VK_NULL_HANDLE)
+   else if (chain->backbuffer.image != VK_NULL_HANDLE &&
+         vk->context->has_acquired_swapchain)
    {
       /* Prepare backbuffer for presentation. */
       vulkan_image_layout_transition(vk, vk->cmd,
@@ -1971,8 +1969,11 @@ static bool vulkan_frame(void *data, const void *frame,
 
    submit_info.signalSemaphoreCount = 0;
 
-   if (vk->context->swapchain_semaphores[frame_index] != VK_NULL_HANDLE)
+   if (vk->context->swapchain_semaphores[frame_index] != VK_NULL_HANDLE &&
+         vk->context->has_acquired_swapchain)
+   {
       signal_semaphores[submit_info.signalSemaphoreCount++] = vk->context->swapchain_semaphores[frame_index];
+   }
 
    if (vk->hw.signal_semaphore != VK_NULL_HANDLE)
    {
@@ -2014,7 +2015,9 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
-         video_info->black_frame_insertion
+         chain->backbuffer.image != VK_NULL_HANDLE
+         && vk->context->has_acquired_swapchain
+         && video_info->black_frame_insertion
          && !video_info->input_driver_nonblock_state
          && !video_info->runloop_is_slowmotion
          && !video_info->runloop_is_paused)
@@ -2023,7 +2026,8 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 
    /* Vulkan doesn't directly support swap_interval > 1, so we fake it by duping out more frames. */
-   if (vk->context->swap_interval > 1 && !vk->context->swap_interval_emulation_lock)
+   if (      vk->context->swap_interval > 1 
+         && !vk->context->swap_interval_emulation_lock)
    {
       unsigned i;
       vk->context->swap_interval_emulation_lock = true;

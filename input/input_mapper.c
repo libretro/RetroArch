@@ -117,7 +117,7 @@ void input_mapper_poll(input_mapper_t *handle)
             input_get_state_for_port(settings, i, &current_input);
             for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
             {
-               unsigned remap_button         = 
+               unsigned remap_button         =
                   settings->uints.input_keymapper_ids[i][j];
                bool remap_valid              = remap_button != RETROK_UNKNOWN;
 
@@ -137,7 +137,7 @@ void input_mapper_poll(input_mapper_t *handle)
                            0, 0, RETRO_DEVICE_KEYBOARD);
                      key_event[j] = true;
                   }
-                  /* key_event tracks if a key is pressed for ANY PLAYER, so we must check 
+                  /* key_event tracks if a key is pressed for ANY PLAYER, so we must check
                      if the key was used by any player before releasing */
                   else if (!key_event[j])
                   {
@@ -152,10 +152,10 @@ void input_mapper_poll(input_mapper_t *handle)
             /* gamepad remapping */
          case RETRO_DEVICE_JOYPAD:
          case RETRO_DEVICE_ANALOG:
-            /* this loop iterates on all users and all buttons, 
-             * and checks if a pressed button is assigned to any 
-             * other button than the default one, then it sets 
-             * the bit on the mapper input bitmap, later on the 
+            /* this loop iterates on all users and all buttons,
+             * and checks if a pressed button is assigned to any
+             * other button than the default one, then it sets
+             * the bit on the mapper input bitmap, later on the
              * original input is cleared in input_state */
             BIT256_CLEAR_ALL(handle->buttons[i]);
             BIT256_CLEAR_ALL_PTR(&current_input);
@@ -194,7 +194,7 @@ void input_mapper_poll(input_mapper_t *handle)
                         invert = -1;
 
                      handle->analog_value[i][
-                        remap_button - RARCH_FIRST_CUSTOM_BIND] = 
+                        remap_button - RARCH_FIRST_CUSTOM_BIND] =
                            32767 * invert;
                   }
                }
@@ -204,7 +204,7 @@ void input_mapper_poll(input_mapper_t *handle)
             {
                unsigned k                 = j + RARCH_FIRST_CUSTOM_BIND;
                int16_t current_axis_value = current_input.analogs[j];
-               unsigned remap_axis        = 
+               unsigned remap_axis        =
                   settings->uints.input_remap_ids[i][k];
 
                if (
@@ -213,7 +213,7 @@ void input_mapper_poll(input_mapper_t *handle)
                      (remap_axis != RARCH_UNMAPPED)
                   ))
                {
-                  if (remap_axis < RARCH_FIRST_CUSTOM_BIND && 
+                  if (remap_axis < RARCH_FIRST_CUSTOM_BIND &&
                      abs(current_axis_value) > *input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD) * 32767)
                   {
                      BIT256_SET(handle->buttons[i], remap_axis);
@@ -221,18 +221,22 @@ void input_mapper_poll(input_mapper_t *handle)
                   else
                   {
                      int invert = 1;
+                     unsigned remap_axis_bind = remap_axis - RARCH_FIRST_CUSTOM_BIND;
 
-                     if (  (k % 2 == 0 && remap_axis % 2 != 0) || 
+                     if (  (k % 2 == 0 && remap_axis % 2 != 0) ||
                            (k % 2 != 0 && remap_axis % 2 == 0)
                         )
                         invert = -1;
 
-                     handle->analog_value[i][
-                        remap_axis - RARCH_FIRST_CUSTOM_BIND] = 
-                           current_axis_value * invert;
+                     if (remap_axis_bind < sizeof(handle->analog_value[i]))
+                     {
+                        handle->analog_value[i][
+                           remap_axis_bind] =
+                              current_axis_value * invert;
+                     }
 #if 0
                      RARCH_LOG("axis %d(%d) remapped to axis %d val %d\n",
-                           j, k, 
+                           j, k,
                            remap_axis - RARCH_FIRST_CUSTOM_BIND,
                            current_axis_value);
 #endif

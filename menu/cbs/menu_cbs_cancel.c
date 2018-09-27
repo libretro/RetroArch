@@ -30,12 +30,17 @@
 #endif
 
 /* Clicks the back button */
-static int action_cancel_pop_default(const char *path,
+int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    size_t new_selection_ptr;
-   const char *menu_label              = NULL;
-   enum msg_hash_enums enum_idx = 0 ;
+   const char *menu_label      = NULL;
+   enum msg_hash_enums enum_idx = 0;
+
+   (void)path;
+   (void)label;
+   (void)type;
+   (void)idx;
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, &enum_idx, NULL);
 

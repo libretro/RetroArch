@@ -1119,7 +1119,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Avanza un fotograma mientras \n"
                "el contenido esté en pausa.");
          break;
-      case MENU_ENUM_LABEL_MOVIE_RECORD_TOGGLE:
+      case MENU_ENUM_LABEL_BSV_RECORD_TOGGLE:
          snprintf(s, len,
                "Activa o desactiva la grabación.");
          break;

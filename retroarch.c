@@ -61,7 +61,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
-#include "menu/menu_event.h"
+#include "menu/menu_input.h"
 #include "menu/widgets/menu_dialog.h"
 #include "menu/widgets/menu_input_dialog.h"
 #endif
@@ -204,7 +204,7 @@ static retro_bits_t has_set_libretro_device;
 static bool has_set_core                                        = false;
 static bool has_set_username                                    = false;
 #ifdef HAVE_DISCORD
-static bool discord_is_inited                                   = false;
+bool discord_is_inited                                         = false;
 #endif
 static bool rarch_is_inited                                     = false;
 static bool rarch_error_on_init                                 = false;
@@ -238,7 +238,7 @@ static bool runloop_paused                                      = false;
 static bool runloop_idle                                        = false;
 static bool runloop_exec                                        = false;
 static bool runloop_slowmotion                                  = false;
-static bool runloop_fastmotion                                  = false;
+bool runloop_fastmotion                                         = false;
 static bool runloop_shutdown_initiated                          = false;
 static bool runloop_core_shutdown_initiated                     = false;
 static bool runloop_perfcnt_enable                              = false;
@@ -883,12 +883,8 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
          case 'r':
             strlcpy(global->record.path, optarg,
                   sizeof(global->record.path));
-            {
-               bool *recording_enabled = recording_is_enabled();
-
-               if (recording_enabled)
-                  *recording_enabled = true;
-            }
+            if (recording_is_enabled())
+               recording_set_state(true);
             break;
 
 #ifdef HAVE_DYNAMIC
@@ -898,9 +894,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                settings_t *settings  = config_get_ptr();
 
                if (rarch_first_start)
-               {
                   core_set_on_cmdline = true;
-               }
 
                path_clear(RARCH_PATH_CORE);
                strlcpy(settings->paths.directory_libretro, optarg,
@@ -915,9 +909,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
             else if (filestream_exists(optarg))
             {
                if (rarch_first_start)
-               {
                   core_set_on_cmdline = true;
-               }
 
                rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, optarg);
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
@@ -1320,6 +1312,7 @@ static void retroarch_main_init_media(void)
 bool retroarch_main_init(int argc, char *argv[])
 {
    bool init_failed = false;
+   global_t  *global = global_get_ptr();
 
    retroarch_init_state();
 
@@ -1398,7 +1391,8 @@ bool retroarch_main_init(int argc, char *argv[])
    command_event(CMD_EVENT_MAPPER_INIT, NULL);
    command_event(CMD_EVENT_REWIND_INIT, NULL);
    command_event(CMD_EVENT_CONTROLLERS_INIT, NULL);
-   command_event(CMD_EVENT_RECORD_INIT, NULL);
+   if (!string_is_empty(global->record.path))
+      command_event(CMD_EVENT_RECORD_INIT, NULL);
 
    path_init_savefile();
 
@@ -1937,7 +1931,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             if (settings && settings->bools.game_specific_options)
                ret = rarch_game_specific_options(&game_options_path);
 
-            if(ret)
+            if (ret)
             {
                runloop_game_options_active = true;
                runloop_core_options        =
@@ -1977,7 +1971,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
             /* check if game options file was just created and flush
                to that file instead */
-            if(!path_is_empty(RARCH_PATH_CORE_OPTIONS))
+            if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
             {
                core_option_manager_flush_game_specific(runloop_core_options,
                      path_get(RARCH_PATH_CORE_OPTIONS));
@@ -2928,6 +2922,43 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
+   /* Check recording toggle */
+   {
+      static bool old_pressed = false;
+      bool pressed            = BIT256_GET(
+            current_input, RARCH_RECORDING_TOGGLE);
+
+      if (pressed && !old_pressed)
+      {
+         if (recording_is_enabled())
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+         else
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+      }
+
+      old_pressed             = pressed;
+   }
+
+   /* Check streaming toggle */
+   {
+      static bool old_pressed = false;
+      bool pressed            = BIT256_GET(
+            current_input, RARCH_STREAMING_TOGGLE);
+
+      if (pressed && !old_pressed)
+      {
+         if (streaming_is_enabled())
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+         else
+         {
+            streaming_set_state(true);
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+         }
+      }
+
+      old_pressed             = pressed;
+   }
+
    if (BIT256_GET(current_input, RARCH_VOLUME_UP))
       command_event(CMD_EVENT_VOLUME_UP, NULL);
    else if (BIT256_GET(current_input, RARCH_VOLUME_DOWN))
@@ -3056,37 +3087,32 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_STATE_SLOT_PLUS);
       bool should_slot_decrease            = BIT256_GET(
             current_input, RARCH_STATE_SLOT_MINUS);
+      bool should_set                      = false;
 
       /* Checks if the state increase/decrease keys have been pressed
        * for this frame. */
       if (should_slot_increase && !old_should_slot_increase)
       {
-         char msg[128];
          int new_state_slot = settings->ints.state_slot + 1;
-
-         msg[0] = '\0';
 
          configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
 
-         snprintf(msg, sizeof(msg), "%s: %d",
-               msg_hash_to_str(MSG_STATE_SLOT),
-               settings->ints.state_slot);
-
-         runloop_msg_queue_push(msg, 2, 180, true);
-
-         RARCH_LOG("%s\n", msg);
+         should_set = true;
       }
       else if (should_slot_decrease && !old_should_slot_decrease)
       {
-         char msg[128];
          int new_state_slot = settings->ints.state_slot - 1;
 
-         msg[0] = '\0';
-
          if (settings->ints.state_slot > 0)
-         {
             configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-         }
+
+         should_set = true;
+      }
+
+      if (should_set)
+      {
+         char msg[128];
+         msg[0] = '\0';
 
          snprintf(msg, sizeof(msg), "%s: %d",
                msg_hash_to_str(MSG_STATE_SLOT),
@@ -3123,6 +3149,12 @@ static enum runloop_state runloop_check_state(
    cheevos_hardcore_active =  settings->bools.cheevos_enable
                               && settings->bools.cheevos_hardcore_mode_enable
                               && cheevos_loaded && !cheevos_hardcore_paused;
+
+   if (cheevos_hardcore_active && cheevos_state_loaded_flag)
+   {
+      cheevos_hardcore_paused = true;
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true);
+   }
 
    if (!cheevos_hardcore_active)
 #endif
@@ -3188,10 +3220,16 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_pressed = false;
       bool pressed            = BIT256_GET(
-            current_input, RARCH_MOVIE_RECORD_TOGGLE);
+            current_input, RARCH_BSV_RECORD_TOGGLE);
 
       if (pressed && !old_pressed)
+      {
+         if (!recording_is_enabled())
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+         else
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          bsv_movie_check();
+      }
 
       old_pressed             = pressed;
    }
@@ -3290,7 +3328,7 @@ static enum runloop_state runloop_check_state(
             /* rarch_timer_begin */
             timer.timeout_end = cpu_features_get_time_usec() + SHADER_FILE_WATCH_DELAY_MSEC * 1000;
             timer.timer_begin = true;
-            timer.timer_end = false;
+            timer.timer_end   = false;
          }
       }
 
@@ -3302,7 +3340,7 @@ static enum runloop_state runloop_check_state(
       if (need_to_apply)
       {
          /* rarch_timer_tick */
-         timer.current = cpu_features_get_time_usec();
+         timer.current    = cpu_features_get_time_usec();
          timer.timeout_us = (timer.timeout_end - timer.current);
 
          if (!timer.timer_end && rarch_timer_has_expired(&timer))
@@ -3356,6 +3394,11 @@ int runloop_iterate(unsigned *sleep_ms)
    bool input_nonblock_state                    = input_driver_is_nonblock_state();
    settings_t *settings                         = config_get_ptr();
    unsigned max_users                           = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+
+#ifdef HAVE_DISCORD
+   if (discord_is_inited)
+      discord_run_callbacks();
+#endif
 
    if (runloop_frame_time.callback)
    {
@@ -3452,7 +3495,6 @@ int runloop_iterate(unsigned *sleep_ms)
    if (runloop_check_cheevos())
       cheevos_test();
 #endif
-
    cheat_manager_apply_retro_cheats() ;
 
 #ifdef HAVE_DISCORD

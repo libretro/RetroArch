@@ -1,3 +1,19 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2018      - misson20000
+ *  Copyright (C) 2018      - m4xw
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
@@ -146,41 +162,41 @@ static bool switch_frame(void *data, const void *frame,
    centerx                = (1280-tgtw)/2;
    centery                = (720-tgth)/2;
 
-   // clear image to black
+   /* clear image to black */
    for(y = 0; y < 720; y++)
    {
       for(x = 0; x < 1280; x++)
-      {
          sw->image[y*1280+x] = 0xFF000000;
-      }
    }
 
-   if(width > 0 && height > 0) {
+   if(width > 0 && height > 0)
+   {
 	   if(sw->last_width != width ||
 	      sw->last_height != height)
-		   {
-			   scaler_ctx_gen_reset(&sw->scaler);
-			   
-			   sw->scaler.in_width = width;
-			   sw->scaler.in_height = height;
-			   sw->scaler.in_stride = pitch;
-			   sw->scaler.in_fmt = sw->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
-			   
-			   sw->scaler.out_width = tgtw;
-			   sw->scaler.out_height = tgth;
-			   sw->scaler.out_stride = 1280 * sizeof(uint32_t);
-			   sw->scaler.out_fmt = SCALER_FMT_ABGR8888;
-			   
-			   sw->scaler.scaler_type = SCALER_TYPE_POINT;
-			   
-			   if(!scaler_ctx_gen_filter(&sw->scaler)) {
-				   RARCH_ERR("failed to generate scaler for main image\n");
-				   return false;
-			   }
+      {
+         scaler_ctx_gen_reset(&sw->scaler);
 
-			   sw->last_width = width;
-			   sw->last_height = height;
-		   }
+         sw->scaler.in_width    = width;
+         sw->scaler.in_height   = height;
+         sw->scaler.in_stride   = pitch;
+         sw->scaler.in_fmt      = sw->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
+
+         sw->scaler.out_width   = tgtw;
+         sw->scaler.out_height  = tgth;
+         sw->scaler.out_stride  = 1280 * sizeof(uint32_t);
+         sw->scaler.out_fmt     = SCALER_FMT_ABGR8888;
+
+         sw->scaler.scaler_type = SCALER_TYPE_POINT;
+
+         if(!scaler_ctx_gen_filter(&sw->scaler))
+         {
+            RARCH_ERR("failed to generate scaler for main image\n");
+            return false;
+         }
+
+         sw->last_width         = width;
+         sw->last_height        = height;
+      }
 
 	   scaler_ctx_scale(&sw->scaler, sw->image + (centery * 1280) + centerx, frame);
    }
@@ -213,10 +229,8 @@ static bool switch_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-      {
          font_driver_render_msg(video_info, NULL, video_info->stat_text,
                (const struct font_params*)&video_info->osd_stat_params);
-      }
    }
 #endif
 
@@ -232,14 +246,12 @@ static bool switch_frame(void *data, const void *frame,
       RARCH_LOG("message: %s\n", msg);
 
    r = surface_dequeue_buffer(&sw->surface, &out_buffer);
-   if(r != RESULT_OK) {
-	   return true; // just skip the frame
-   }
+   if(r != RESULT_OK)
+	   return true; /* just skip the frame */
 
    r = surface_wait_buffer(&sw->surface);
-   if(r != RESULT_OK) {
+   if(r != RESULT_OK)
 	   return true;
-   }
    gfx_slow_swizzling_blit(out_buffer, sw->image, 1280, 720, 0, 0);
    
    r = surface_queue_buffer(&sw->surface);
@@ -333,6 +345,8 @@ static void switch_set_texture_frame(
          sw->menu_texture.width  != width ||
          sw->menu_texture.height != height)
    {
+      struct scaler_ctx *sctx;
+      int xsf, ysf, sf;
       if (sw->menu_texture.pixels)
          free(sw->menu_texture.pixels);
 
@@ -343,32 +357,32 @@ static void switch_set_texture_frame(
          return;
       }
 
-      int xsf                = 1280 / width;
-      int ysf                = 720  / height;
-      int sf                 = xsf;
+      xsf                     = 1280 / width;
+      ysf                     = 720  / height;
+      sf                      = xsf;
       
       if (ysf < sf)
 	      sf = ysf;
          
-      sw->menu_texture.width = width;
+      sw->menu_texture.width  = width;
       sw->menu_texture.height = height;
-      sw->menu_texture.tgtw = width * sf;
-      sw->menu_texture.tgth = height * sf;
+      sw->menu_texture.tgtw   = width * sf;
+      sw->menu_texture.tgth   = height * sf;
 
-      struct scaler_ctx *sctx = &sw->menu_texture.scaler;
+      sctx                    = &sw->menu_texture.scaler;
       scaler_ctx_gen_reset(sctx);
 
-      sctx->in_width = width;
-      sctx->in_height = height;
-      sctx->in_stride = width * (rgb32 ? 4 : 2);
-      sctx->in_fmt = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
+      sctx->in_width          = width;
+      sctx->in_height         = height;
+      sctx->in_stride         = width * (rgb32 ? 4 : 2);
+      sctx->in_fmt            = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
 
-      sctx->out_width = sw->menu_texture.tgtw;
-      sctx->out_height = sw->menu_texture.tgth;
-      sctx->out_stride = 1280 * 4;
-      sctx->out_fmt = SCALER_FMT_ABGR8888;
+      sctx->out_width         = sw->menu_texture.tgtw;
+      sctx->out_height        = sw->menu_texture.tgth;
+      sctx->out_stride        = 1280 * 4;
+      sctx->out_fmt           = SCALER_FMT_ABGR8888;
 
-      sctx->scaler_type = SCALER_TYPE_POINT;
+      sctx->scaler_type       = SCALER_TYPE_POINT;
 
       if (!scaler_ctx_gen_filter(sctx))
       {
@@ -383,6 +397,9 @@ static void switch_set_texture_frame(
 static void switch_set_texture_enable(void *data, bool enable, bool full_screen)
 {
 	switch_video_t *sw = data;
+   if (!sw)
+      return;
+
 	sw->menu_texture.enable = enable;
 	sw->menu_texture.fullscreen = full_screen;
 }
@@ -441,3 +458,5 @@ video_driver_t video_switch = {
 #endif
 	switch_get_poke_interface,
 };
+
+/* vim: set ts=3 sw=3 */

@@ -181,7 +181,7 @@ static bool menu_list_pop_stack(menu_list_t *list,
    list_info.action = 0;
 
    if (animate)
-      menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
+      menu_driver_list_cache(&list_info);
 
    if (menu_list->size != 0)
    {
@@ -195,7 +195,7 @@ static bool menu_list_pop_stack(menu_list_t *list,
    }
 
    file_list_pop(menu_list, directory_ptr);
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_SET_SELECTION, menu_list);
+   menu_driver_list_set_selection(menu_list);
    if (animate)
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
@@ -527,7 +527,7 @@ void menu_entries_append(file_list_t *list, const char *path, const char *label,
    list_info.idx         = idx;
    list_info.entry_type  = type;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_INSERT, &list_info);
+   menu_driver_list_insert(&list_info);
 
    if (list_info.fullpath)
       free(list_info.fullpath);
@@ -575,7 +575,7 @@ void menu_entries_append_enum(file_list_t *list, const char *path,
    list_info.idx         = idx;
    list_info.entry_type  = type;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_INSERT, &list_info);
+   menu_driver_list_insert(&list_info);
 
    if (list_info.fullpath)
       free(list_info.fullpath);
@@ -627,7 +627,7 @@ void menu_entries_prepend(file_list_t *list, const char *path, const char *label
    list_info.idx         = idx;
    list_info.entry_type  = type;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_INSERT, &list_info);
+   menu_driver_list_insert(&list_info);
 
    if (list_info.fullpath)
       free(list_info.fullpath);
@@ -757,6 +757,8 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          break;
       case MENU_ENTRIES_CTL_SETTINGS_DEINIT:
          menu_setting_free(menu_entries_list_settings);
+         if (menu_entries_list_settings)
+            free(menu_entries_list_settings);
          menu_entries_list_settings = NULL;
          break;
       case MENU_ENTRIES_CTL_SETTINGS_INIT:

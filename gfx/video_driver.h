@@ -118,7 +118,8 @@ enum display_flags
    GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES,
    GFX_CTX_FLAGS_HARD_SYNC,
    GFX_CTX_FLAGS_BLACK_FRAME_INSERTION,
-   GFX_CTX_FLAGS_MENU_FRAME_FILTERING
+   GFX_CTX_FLAGS_MENU_FRAME_FILTERING,
+   GFX_CTX_FLAGS_ADAPTIVE_VSYNC
 };
 
 enum shader_uniform_type
@@ -354,7 +355,7 @@ typedef struct video_info
     */
    unsigned height;
 
-   unsigned swap_interval;
+   int swap_interval;
 
 #ifdef GEKKO
    bool vfilter;
@@ -408,7 +409,6 @@ typedef struct video_frame_info
    bool black_frame_insertion;
    bool hard_sync;
    bool fps_show;
-   bool crt_switch_resolution; 
    bool statistics_show;
    bool framecount_show;
    bool scale_integer;
@@ -429,11 +429,13 @@ typedef struct video_frame_info
 
    int custom_vp_x;
    int custom_vp_y;
+   int crt_switch_center_adjust;
 
    unsigned hard_sync_frames;
    unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;
    unsigned monitor_index;
+   unsigned crt_switch_resolution; 
    unsigned crt_switch_resolution_super; 
    unsigned width;
    unsigned height;
@@ -522,7 +524,7 @@ typedef struct gfx_ctx_driver
          unsigned major, unsigned minor);
 
    /* Sets the swap interval. */
-   void (*swap_interval)(void *data, unsigned);
+   void (*swap_interval)(void *data, int);
 
    /* Sets video mode. Creates a window, etc. */
    bool (*set_video_mode)(void*, video_frame_info_t *video_info, unsigned, unsigned, bool);
@@ -1166,7 +1168,7 @@ void video_context_driver_destroy(void);
 
 bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data);
 
-bool video_context_driver_swap_interval(unsigned *interval);
+bool video_context_driver_swap_interval(int *interval);
 
 bool video_context_driver_get_proc_address(gfx_ctx_proc_address_t *proc);
 
@@ -1183,12 +1185,6 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate);
 bool video_context_driver_get_context_data(void *data);
 
 bool video_context_driver_show_mouse(bool *bool_data);
-
-void video_context_driver_set_data(void *data);
-
-bool video_driver_get_flags(gfx_ctx_flags_t *flags);
-
-bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags);
 
@@ -1248,6 +1244,9 @@ bool video_driver_started_fullscreen(void);
 
 bool video_driver_is_threaded(void);
 
+bool video_driver_get_all_flags(gfx_ctx_flags_t *flags,
+      enum display_flags flag);
+
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;
 extern video_driver_t video_metal;
@@ -1299,6 +1298,7 @@ extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;
 extern const gfx_ctx_driver_t gfx_ctx_sixel;
+extern const gfx_ctx_driver_t switch_ctx;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
 

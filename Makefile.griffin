@@ -193,7 +193,7 @@ else ifeq ($(libogc_platform), 1)
    RARCH_CONSOLE             = 1
 
    ifeq ($(platform), wii)
-      HAVE_LANGEXTRA           := 1
+      #HAVE_LANGEXTRA           := 1
       HAVE_WIIUSB_HID          := 1
       HAVE_RARCH_EXEC          := 1
       HAVE_RSOUND              := 1
@@ -250,7 +250,7 @@ else ifeq ($(platform), psp1)
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
    HAVE_KERNEL_PRX          := 1
-   HAVE_LANGEXTRA           := 1
+   #HAVE_LANGEXTRA          := 1
    RARCH_CONSOLE             = 1
 
    ifeq ($(BUILD_PRX), 1)

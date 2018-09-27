@@ -1,5 +1,5 @@
 Name:           retroarch
-Version:        1.7.4
+Version:        1.7.5
 Release:        v1.2
 Summary:        Official reference frontend for libretro
 

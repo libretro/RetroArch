@@ -84,9 +84,16 @@ bool video_display_server_set_window_decorations(bool on)
 
 
 bool video_display_server_switch_resolution(unsigned width, unsigned height,
-      int int_hz, float hz)
+      int int_hz, float hz, int center)
 {
    if (current_display_server && current_display_server->switch_resolution)
-      return current_display_server->switch_resolution(current_display_server_data, width, height, int_hz, hz);
+      return current_display_server->switch_resolution(current_display_server_data, width, height, int_hz, hz, center);
    return false;
+}
+
+const char *video_display_server_get_output_options(void)
+{
+   if (current_display_server && current_display_server->get_output_options)
+      return current_display_server->get_output_options(current_display_server_data);
+   return NULL;
 }

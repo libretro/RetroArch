@@ -940,6 +940,8 @@ FRONTEND
 #include "../frontend/drivers/platform_psp.c"
 #elif defined(_3DS)
 #include "../frontend/drivers/platform_ctr.c"
+#elif defined(SWITCH) && defined(HAVE_LIBNX)
+#include "../frontend/drivers/platform_switch.c"
 #elif defined(XENON)
 #include "../frontend/drivers/platform_xenon.c"
 #elif defined(__QNX__)
@@ -1135,7 +1137,6 @@ MENU
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.c"
 #include "../menu/menu_input.c"
-#include "../menu/menu_event.c"
 #include "../menu/menu_entries.c"
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
@@ -1213,6 +1214,10 @@ MENU
 
 #ifdef WIIU
 #include "../menu/drivers_display/menu_display_wiiu.c"
+#endif
+
+#if defined(HAVE_LIBNX)
+#include "../menu/drivers_display/menu_display_switch.c"
 #endif
 
 #ifdef HAVE_CACA
@@ -1421,6 +1426,7 @@ HTTP SERVER
 SSL
 ============================================================ */
 #if defined(HAVE_SSL)
+#if defined(HAVE_NETWORKING)
 #include "../deps/mbedtls/aes.c"
 #include "../deps/mbedtls/aesni.c"
 #include "../deps/mbedtls/arc4.c"
@@ -1496,4 +1502,5 @@ SSL
 #include "../deps/mbedtls/ssl_tls.c"
 
 #include "../libretro-common/net/net_socket_ssl.c"
+#endif
 #endif
