@@ -3041,6 +3041,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
+   recording_driver_update_streaming_url();
 
    ret = true;
 

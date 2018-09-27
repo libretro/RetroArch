@@ -208,6 +208,8 @@ bool recording_is_enabled(void);
 
 bool streaming_is_enabled(void);
 
+void recording_driver_update_streaming_url();
+
 extern void *recording_data;
 
 RETRO_END_DECLS

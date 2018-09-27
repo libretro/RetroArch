@@ -2956,53 +2956,8 @@ static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
 #ifdef HAVE_FFMPEG
 static void update_streaming_url_write_handler(rarch_setting_t *setting)
 {
-   settings_t *settings  = config_get_ptr();
-   const char* youtube_url = "rtmp://a.rtmp.youtube.com/live2/";
-   const char* twitch_url = "rtmp://live.twitch.tv/app/";
-
-   if (!setting)
-      return;
-
-   switch (settings->uints.streaming_mode)
-   {
-      case STREAMING_MODE_TWITCH:
-      {
-         if (!string_is_empty(settings->arrays.twitch_stream_key))
-            snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
-               "%s%s", twitch_url, settings->arrays.twitch_stream_key);
-         else
-         {
-            /* To-Do: Show input box for twitch_stream_key*/
-            RARCH_LOG("[recording] twitch streaming key empty");
-         }
-         break;
-      }
-      case STREAMING_MODE_YOUTUBE:
-      {
-         if (!string_is_empty(settings->arrays.youtube_stream_key))
-         {
-            snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
-               "%s%s", youtube_url, settings->arrays.youtube_stream_key);
-         }
-         else
-         {
-            /* To-Do: Show input box for youtube_stream_key*/
-            RARCH_LOG("[recording] youtube streaming key empty");
-         }
-         break;
-      }
-      case STREAMING_MODE_LOCAL:
-         /* To-Do: figure out default interface and bind to that instead */
-         snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
-            "udp://%s:%u", "127.0.0.1", settings->uints.video_stream_port);
-         break;
-      case STREAMING_MODE_CUSTOM:
-      default:
-         /* Do nothing, let the user input the URL */
-         break;
-   }
+   recording_driver_update_streaming_url();
 }
-
 #endif
 
 #ifdef HAVE_LAKKA
@@ -9702,7 +9657,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group,
-               general_write_handler,
+               update_streaming_url_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
@@ -9728,7 +9683,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group,
-               general_write_handler,
+               update_streaming_url_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
