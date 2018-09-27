@@ -2953,12 +2953,10 @@ static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
 }
 #endif
 
-#ifdef HAVE_FFMPEG
 static void update_streaming_url_write_handler(rarch_setting_t *setting)
 {
    recording_driver_update_streaming_url();
 }
-#endif
 
 #ifdef HAVE_LAKKA
 static void systemd_service_toggle(const char *path, char *unit, bool enable)
