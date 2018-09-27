@@ -520,11 +520,11 @@ unsigned *recording_driver_get_height(void)
    return &recording_height;
 }
 
-void recording_driver_update_streaming_url()
+void recording_driver_update_streaming_url(void)
 {
-   settings_t *settings  = config_get_ptr();
+   settings_t *settings    = config_get_ptr();
    const char* youtube_url = "rtmp://a.rtmp.youtube.com/live2/";
-   const char* twitch_url = "rtmp://live.twitch.tv/app/";
+   const char* twitch_url  = "rtmp://live.twitch.tv/app/";
 
    if (!settings)
       return;

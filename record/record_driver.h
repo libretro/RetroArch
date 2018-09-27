@@ -208,7 +208,7 @@ bool recording_is_enabled(void);
 
 bool streaming_is_enabled(void);
 
-void recording_driver_update_streaming_url();
+void recording_driver_update_streaming_url(void);
 
 extern void *recording_data;
 
