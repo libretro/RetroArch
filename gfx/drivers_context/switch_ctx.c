@@ -34,11 +34,10 @@ void switch_ctx_destroy(void *data)
     if (ctx_nx)
     {
 #ifdef HAVE_EGL
-        // Workaround for eglTerminate/re-init bug, other part in platform_switch.c
-        //egl_destroy(&ctx_nx->egl);
+        egl_destroy(&ctx_nx->egl);
 #endif
         ctx_nx->resize = false;
-        //free(ctx_nx);
+        free(ctx_nx);
     }
 }
 

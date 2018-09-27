@@ -163,12 +163,7 @@ static void frontend_switch_deinit(void *data)
       splashData = NULL;
    }
 
-#ifdef HAVE_OPENGL
-   // Workaround for eglTerminate/re-init bug
-   egl_destroy(&nx_ctx_ptr->egl);
-   nx_ctx_ptr->resize = false;
-   free(nx_ctx_ptr);
-#else
+#ifndef HAVE_OPENGL
    gfxExit();
 #endif
 #endif
