@@ -2929,10 +2929,7 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_RECORDING_TOGGLE);
 
       if (pressed && !old_pressed)
-      {
-         /* TODO/FIXME */
-         /* insert logic here */
-      }
+         command_event(RARCH_RECORDING_TOGGLE, NULL);
 
       old_pressed             = pressed;
    }
@@ -2944,10 +2941,7 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_STREAMING_TOGGLE);
 
       if (pressed && !old_pressed)
-      {
-         /* TODO/FIXME */
-         /* insert logic here */
-      }
+         command_event(RARCH_STREAMING_TOGGLE, NULL);
 
       old_pressed             = pressed;
    }
