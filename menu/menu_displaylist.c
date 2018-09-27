@@ -2656,33 +2656,34 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
       }
 
-#ifdef HAVE_FFMPEG
-      if (!recording_is_enabled())
+      if (string_is_not_equal(settings->arrays.record_driver, "null"))
       {
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING),
-               msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING),
-               MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING, MENU_SETTING_ACTION, 0, 0);
+         if (!recording_is_enabled())
+         {
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING),
+                  msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING),
+                  MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING, MENU_SETTING_ACTION, 0, 0);
 
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING),
-               msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING),
-               MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING, MENU_SETTING_ACTION, 0, 0);
-      }
-      else
-      {
-         if (streaming_is_enabled())
             menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING),
-                  msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING),
-                  MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING, MENU_SETTING_ACTION, 0, 0);
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING),
+                  msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING),
+                  MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING, MENU_SETTING_ACTION, 0, 0);
+         }
          else
-            menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING),
-               msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING),
-               MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING, MENU_SETTING_ACTION, 0, 0);
+         {
+            if (streaming_is_enabled())
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING),
+                     msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING),
+                     MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING, MENU_SETTING_ACTION, 0, 0);
+            else
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING),
+                     msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING),
+                     MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING, MENU_SETTING_ACTION, 0, 0);
+         }
       }
-#endif
 
       if (settings->bools.quick_menu_show_options && !settings->bools.kiosk_mode_enable)
       {
