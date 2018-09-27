@@ -35,7 +35,8 @@ enum streaming_mode
 {
    STREAMING_MODE_TWITCH = 0,
    STREAMING_MODE_YOUTUBE,
-   STREAMING_MODE_UDP
+   STREAMING_MODE_LOCAL,
+   STREAMING_MODE_CUSTOM
 };
 
 enum record_config_type
@@ -206,6 +207,8 @@ void recording_driver_free_state(void);
 bool recording_is_enabled(void);
 
 bool streaming_is_enabled(void);
+
+void recording_driver_update_streaming_url();
 
 extern void *recording_data;
 

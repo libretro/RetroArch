@@ -305,8 +305,11 @@ static void setting_get_string_representation_streaming_mode(
       case STREAMING_MODE_YOUTUBE:
          strlcpy(s, "YouTube", len);
          break;
-      case STREAMING_MODE_UDP:
-         strlcpy(s, "UDP", len);
+      case STREAMING_MODE_LOCAL:
+         strlcpy(s, "Local", len);
+         break;
+      case STREAMING_MODE_CUSTOM:
+         strlcpy(s, "Custom", len);
          break;
    }
 }
@@ -2947,6 +2950,13 @@ static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
       runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true);
       return;
    }
+}
+#endif
+
+#ifdef HAVE_FFMPEG
+static void update_streaming_url_write_handler(rarch_setting_t *setting)
+{
+   recording_driver_update_streaming_url();
 }
 #endif
 
@@ -6485,99 +6495,100 @@ static bool setting_append_list(
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_RECORDING_SETTINGS);
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-            CONFIG_PATH(
-                  list, list_info,
-                  settings->paths.path_record_config,
-                  sizeof(settings->paths.path_record_config),
-                  MENU_ENUM_LABEL_RECORD_CONFIG,
-                  MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
-                  "",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_values(list, list_info, "cfg");
+
+            CONFIG_UINT(
+               list, list_info,
+               &settings->uints.video_record_quality,
+               MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,
+               MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+               RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_video_record_quality;
+            menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_RECORDING_CUSTOM, RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY, 1, true, true);
 
             CONFIG_PATH(
-                  list, list_info,
-                  settings->paths.path_stream_config,
-                  sizeof(settings->paths.path_stream_config),
-                  MENU_ENUM_LABEL_STREAM_CONFIG,
-                  MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
-                  "",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
+               list, list_info,
+               settings->paths.path_record_config,
+               sizeof(settings->paths.path_record_config),
+               MENU_ENUM_LABEL_RECORD_CONFIG,
+               MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
             menu_settings_list_current_add_values(list, list_info, "cfg");
 
-         CONFIG_UINT(
-            list, list_info,
-            &settings->uints.streaming_mode,
-            MENU_ENUM_LABEL_STREAMING_MODE,
-            MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
-            STREAMING_MODE_TWITCH,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_streaming_mode;
-         menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+            CONFIG_UINT(
+               list, list_info,
+               &settings->uints.streaming_mode,
+               MENU_ENUM_LABEL_STREAMING_MODE,
+               MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
+               STREAMING_MODE_TWITCH,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               update_streaming_url_write_handler,
+               general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_streaming_mode;
+            menu_settings_list_current_add_range(list, list_info, 0, STREAMING_MODE_CUSTOM, 1, true, true);
 
-         CONFIG_UINT(
-            list, list_info,
-            &settings->uints.video_stream_port,
-            MENU_ENUM_LABEL_UDP_STREAM_PORT,
-            MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
-            1,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].offset_by = 1;
-         menu_settings_list_current_add_range(list, list_info, 1, 65536, 1, true, true);
+            CONFIG_UINT(
+               list, list_info,
+               &settings->uints.video_stream_port,
+               MENU_ENUM_LABEL_UDP_STREAM_PORT,
+               MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+               1,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               update_streaming_url_write_handler,
+               general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].offset_by = 1;
+            menu_settings_list_current_add_range(list, list_info, 1, 65536, 1, true, true);
 
-         CONFIG_UINT(
-            list, list_info,
-            &settings->uints.video_record_quality,
-            MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
-            1,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_video_record_quality;
-         menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);
-         
-         CONFIG_UINT(
-            list, list_info,
-            &settings->uints.video_stream_quality,
-            MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,
-            MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
-            1,
-            &group_info,
-            &subgroup_info,
-            parent_group,
-            general_write_handler,
-            general_read_handler);
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_video_stream_quality;
-         (*list)[list_info->index - 1].offset_by = 5;
-         menu_settings_list_current_add_range(list, list_info, 5, 8, 1, true, true);
+            CONFIG_UINT(
+               list, list_info,
+               &settings->uints.video_stream_quality,
+               MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,
+               MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+               RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_video_stream_quality;
+               (*list)[list_info->index - 1].offset_by = 5;
+            menu_settings_list_current_add_range(list, list_info, RECORD_CONFIG_TYPE_STREAMING_CUSTOM, RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY, 1, true, true);
 
-         CONFIG_STRING(
+            CONFIG_PATH(
+               list, list_info,
+               settings->paths.path_stream_config,
+               sizeof(settings->paths.path_stream_config),
+               MENU_ENUM_LABEL_STREAM_CONFIG,
+               MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+            menu_settings_list_current_add_values(list, list_info, "cfg");
+
+            CONFIG_STRING(
                list, list_info,
                settings->paths.path_stream_url,
                sizeof(settings->paths.path_stream_url),
@@ -6589,9 +6600,9 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
-         CONFIG_DIR(
+            CONFIG_DIR(
                list, list_info,
                global->record.output_dir,
                sizeof(global->record.output_dir),
@@ -6604,7 +6615,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+               (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
             END_SUB_GROUP(list, list_info, parent_group);
 
@@ -9646,7 +9657,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group,
-               general_write_handler,
+               update_streaming_url_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
@@ -9672,7 +9683,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group,
-               general_write_handler,
+               update_streaming_url_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 

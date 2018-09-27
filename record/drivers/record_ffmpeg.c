@@ -597,7 +597,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
          strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
          strlcpy(params->acodec, "libmp3lame", sizeof(params->acodec));
 
-         av_dict_set(&params->video_opts, "preset", "medium", 0);
+         av_dict_set(&params->video_opts, "preset", "superfast", 0);
          av_dict_set(&params->video_opts, "tune", "animation", 0);
          av_dict_set(&params->video_opts, "crf", "15", 0);
          av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
@@ -652,12 +652,15 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
             settings->uints.video_stream_scale_factor : 1;
       else
          params->scale_factor = 1;
-      strlcpy(params->format, "flv", sizeof(params->format));
+      if (settings->uints.streaming_mode == STREAMING_MODE_YOUTUBE || settings->uints.streaming_mode == STREAMING_MODE_TWITCH)
+         strlcpy(params->format, "flv", sizeof(params->format));
+      else
+         strlcpy(params->format, "mpegts", sizeof(params->format));
    }
-   else
+   else if (preset == RECORD_CONFIG_TYPE_STREAMING_NETPLAY)
    {
       params->scale_factor = 1;
-      strlcpy(params->format, "flv", sizeof(params->format));
+      strlcpy(params->format, "mpegts", sizeof(params->format));
    }
 
    return true;
@@ -698,9 +701,10 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
       return true;
 
    params->conf             = config_file_new(config);
+   RARCH_LOG("[FFmpeg] Loading FFmpeg config \"%s\".\n", config);
    if (!params->conf)
    {
-      RARCH_ERR("Failed to load FFmpeg config \"%s\".\n", config);
+      RARCH_ERR("[FFmpeg] Failed to load FFmpeg config \"%s\".\n", config);
       return false;
    }
 
@@ -735,7 +739,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
       params->out_pix_fmt = av_get_pix_fmt(pix_fmt);
       if (params->out_pix_fmt == PIX_FMT_NONE)
       {
-         RARCH_ERR("Cannot find pix_fmt \"%s\".\n", pix_fmt);
+         RARCH_ERR("[FFmpeg] Cannot find pix_fmt \"%s\".\n", pix_fmt);
          return false;
       }
    }
@@ -938,7 +942,7 @@ static void *ffmpeg_new(const struct record_params *params)
 
    handle->params = *params;
 
-   if (params->preset == RECORD_CONFIG_TYPE_RECORDING_CUSTOM)
+   if (params->preset == RECORD_CONFIG_TYPE_RECORDING_CUSTOM || params->preset == RECORD_CONFIG_TYPE_STREAMING_CUSTOM)
    {
       if (!ffmpeg_init_config(&handle->config, params->config))
          goto error;

@@ -2656,6 +2656,7 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
       }
 
+#ifdef HAVE_FFMPEG
       if (!recording_is_enabled())
       {
          menu_entries_append_enum(info->list,
@@ -2680,8 +2681,8 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING),
                msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING),
                MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING, MENU_SETTING_ACTION, 0, 0);
-
       }
+#endif
 
       if (settings->bools.quick_menu_show_options && !settings->bools.kiosk_mode_enable)
       {
@@ -7050,43 +7051,37 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_RECORDING_SETTINGS_LIST:
+      {
+         settings_t      *settings      = config_get_ptr();
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          if (menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_RECORD_ENABLE,
-               PARSE_ONLY_BOOL, false) == 0)
+               MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,
+               PARSE_ONLY_UINT, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RECORD_CONFIG,
                PARSE_ONLY_PATH, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_STREAM_CONFIG,
-               PARSE_ONLY_PATH, false) == 0)
+               MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,
+               PARSE_ONLY_UINT, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_RECORD_PATH,
-               PARSE_ONLY_STRING, false) == 0)
+               MENU_ENUM_LABEL_STREAM_CONFIG,
+               PARSE_ONLY_PATH, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_STREAMING_MODE,
                PARSE_ONLY_UINT, false) == 0)
             count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_RECORD_USE_OUTPUT_DIRECTORY,
-               PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_UDP_STREAM_PORT,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
+         if (settings->uints.streaming_mode == STREAMING_MODE_LOCAL)
+         {
+            /* To-Do: Refresh on settings->uints.streaming_mode change to show this parameter */
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_UDP_STREAM_PORT,
+                  PARSE_ONLY_UINT, false) == 0)
+               count++;
+         }
          if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_STREAMING_URL,
                PARSE_ONLY_STRING, false) == 0)
@@ -7108,6 +7103,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   0, 0, 0);
 
          info->need_push    = true;
+      }
          break;
       case DISPLAYLIST_MAIN_MENU:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);

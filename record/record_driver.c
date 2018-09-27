@@ -37,7 +37,6 @@
 #include "../list_special.h"
 #include "../paths.h"
 
-
 static const record_driver_t *record_drivers[] = {
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,
@@ -119,12 +118,12 @@ void find_record_driver(void)
       {
          unsigned d;
 
-         RARCH_ERR("Couldn't find any record driver named \"%s\"\n",
+         RARCH_ERR("[recording] Couldn't find any record driver named \"%s\"\n",
                settings->arrays.record_driver);
          RARCH_LOG_OUTPUT("Available record drivers are:\n");
          for (d = 0; record_driver_find_handle(d); d++)
             RARCH_LOG_OUTPUT("\t%s\n", record_driver_find_ident(d));
-         RARCH_WARN("Going to default to first record driver...\n");
+         RARCH_WARN("[recording] Going to default to first record driver...\n");
       }
 
       recording_driver = (const record_driver_t*)record_driver_find_handle(0);
@@ -217,7 +216,7 @@ void recording_dump_frame(const void *data, unsigned width,
 
       if (!vp.width || !vp.height)
       {
-         RARCH_WARN("%s \n",
+         RARCH_WARN("[recording] %s \n",
                msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
          command_event(CMD_EVENT_GPU_RECORD_DEINIT, NULL);
 
@@ -229,7 +228,7 @@ void recording_dump_frame(const void *data, unsigned width,
       if (  vp.width  != recording_gpu_width ||
             vp.height != recording_gpu_height)
       {
-         RARCH_WARN("%s\n", msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE));
+         RARCH_WARN("[recording] %s\n", msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE));
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE),
@@ -336,7 +335,7 @@ bool recording_init(void)
 
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
-      RARCH_WARN("%s\n",
+      RARCH_WARN("[recording] %s\n",
             msg_hash_to_str(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED));
       return false;
    }
@@ -344,12 +343,12 @@ bool recording_init(void)
    if (!settings->bools.video_gpu_record
          && video_driver_is_hw_context())
    {
-      RARCH_WARN("%s.\n",
+      RARCH_WARN("[recording] %s.\n",
             msg_hash_to_str(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING));
       return false;
    }
 
-   RARCH_LOG("%s: FPS: %.4f, Sample rate: %.4f\n",
+   RARCH_LOG("[recording] %s: FPS: %.4f, Sample rate: %.4f\n",
          msg_hash_to_str(MSG_CUSTOM_TIMING_GIVEN),
          (float)av_info->timing.fps,
          (float)av_info->timing.sample_rate);
@@ -362,7 +361,7 @@ bool recording_init(void)
          if (!string_is_empty(settings->paths.path_stream_url))
             strlcpy(output, settings->paths.path_stream_url, sizeof(output));
          else
-            /* to-do determine the local interface, this won't work for connecting over the internet*/
+            /* Fallback, stream locally to 127.0.0.1 */
             snprintf(output, sizeof(output), "udp://127.0.0.1:%u", settings->uints.video_stream_port);
       else
       {
@@ -418,7 +417,7 @@ bool recording_init(void)
 
       if (!vp.width || !vp.height)
       {
-         RARCH_ERR("Failed to get viewport information from video driver. "
+         RARCH_ERR("[recording] Failed to get viewport information from video driver. "
                "Cannot start recording ...\n");
          return false;
       }
@@ -438,7 +437,7 @@ bool recording_init(void)
       recording_gpu_width        = vp.width;
       recording_gpu_height       = vp.height;
 
-      RARCH_LOG("%s %u x %u\n", msg_hash_to_str(MSG_DETECTED_VIEWPORT_OF),
+      RARCH_LOG("[recording] %s %u x %u\n", msg_hash_to_str(MSG_DETECTED_VIEWPORT_OF),
             vp.width, vp.height);
 
       gpu_size = vp.width * vp.height * 3;
@@ -478,7 +477,7 @@ bool recording_init(void)
       }
    }
 
-   RARCH_LOG("%s %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
+   RARCH_LOG("[recording] %s %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
          msg_hash_to_str(MSG_RECORDING_TO),
          output,
          params.out_width, params.out_height,
@@ -487,7 +486,7 @@ bool recording_init(void)
 
    if (!record_driver_init_first(&recording_driver, &recording_data, &params))
    {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
+      RARCH_ERR("[recording] %s\n", msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
       command_event(CMD_EVENT_GPU_RECORD_DEINIT, NULL);
 
       return false;
@@ -519,6 +518,55 @@ unsigned *recording_driver_get_width(void)
 unsigned *recording_driver_get_height(void)
 {
    return &recording_height;
+}
+
+void recording_driver_update_streaming_url()
+{
+   settings_t *settings  = config_get_ptr();
+   const char* youtube_url = "rtmp://a.rtmp.youtube.com/live2/";
+   const char* twitch_url = "rtmp://live.twitch.tv/app/";
+
+   if (!settings)
+      return;
+
+   switch (settings->uints.streaming_mode)
+   {
+      case STREAMING_MODE_TWITCH:
+      {
+         if (!string_is_empty(settings->arrays.twitch_stream_key))
+            snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
+               "%s%s", twitch_url, settings->arrays.twitch_stream_key);
+         else
+         {
+            /* To-Do: Show input box for twitch_stream_key*/
+            RARCH_LOG("[recording] twitch streaming key empty");
+         }
+         break;
+      }
+      case STREAMING_MODE_YOUTUBE:
+      {
+         if (!string_is_empty(settings->arrays.youtube_stream_key))
+         {
+            snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
+               "%s%s", youtube_url, settings->arrays.youtube_stream_key);
+         }
+         else
+         {
+            /* To-Do: Show input box for youtube_stream_key*/
+            RARCH_LOG("[recording] youtube streaming key empty");
+         }
+         break;
+      }
+      case STREAMING_MODE_LOCAL:
+         /* To-Do: figure out default interface and bind to that instead */
+         snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
+            "udp://%s:%u", "127.0.0.1", settings->uints.video_stream_port);
+         break;
+      case STREAMING_MODE_CUSTOM:
+      default:
+         /* Do nothing, let the user input the URL */
+         break;
+   }
 }
 
 void recording_driver_free_state(void)
