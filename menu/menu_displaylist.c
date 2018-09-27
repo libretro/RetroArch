@@ -7295,6 +7295,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ACTION, false) == 0)
             count++;
 
+#ifdef HAVE_NETWORKING
          if (menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE,
                PARSE_ACTION, false) == 0)
@@ -7304,6 +7305,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_ACCOUNTS_TWITCH,
                PARSE_ACTION, false) == 0)
             count++;
+#endif
 
          if (count == 0)
             menu_entries_append_enum(info->list,
