@@ -3080,37 +3080,32 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_STATE_SLOT_PLUS);
       bool should_slot_decrease            = BIT256_GET(
             current_input, RARCH_STATE_SLOT_MINUS);
+      bool should_set                      = false;
 
       /* Checks if the state increase/decrease keys have been pressed
        * for this frame. */
       if (should_slot_increase && !old_should_slot_increase)
       {
-         char msg[128];
          int new_state_slot = settings->ints.state_slot + 1;
-
-         msg[0] = '\0';
 
          configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
 
-         snprintf(msg, sizeof(msg), "%s: %d",
-               msg_hash_to_str(MSG_STATE_SLOT),
-               settings->ints.state_slot);
-
-         runloop_msg_queue_push(msg, 2, 180, true);
-
-         RARCH_LOG("%s\n", msg);
+         should_set = true;
       }
       else if (should_slot_decrease && !old_should_slot_decrease)
       {
-         char msg[128];
          int new_state_slot = settings->ints.state_slot - 1;
 
-         msg[0] = '\0';
-
          if (settings->ints.state_slot > 0)
-         {
             configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-         }
+
+         should_set = true;
+      }
+
+      if (should_set)
+      {
+         char msg[128];
+         msg[0] = '\0';
 
          snprintf(msg, sizeof(msg), "%s: %d",
                msg_hash_to_str(MSG_STATE_SLOT),
@@ -3326,7 +3321,7 @@ static enum runloop_state runloop_check_state(
             /* rarch_timer_begin */
             timer.timeout_end = cpu_features_get_time_usec() + SHADER_FILE_WATCH_DELAY_MSEC * 1000;
             timer.timer_begin = true;
-            timer.timer_end = false;
+            timer.timer_end   = false;
          }
       }
 
@@ -3338,7 +3333,7 @@ static enum runloop_state runloop_check_state(
       if (need_to_apply)
       {
          /* rarch_timer_tick */
-         timer.current = cpu_features_get_time_usec();
+         timer.current    = cpu_features_get_time_usec();
          timer.timeout_us = (timer.timeout_end - timer.current);
 
          if (!timer.timer_end && rarch_timer_has_expired(&timer))
