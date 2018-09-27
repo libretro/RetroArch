@@ -169,7 +169,7 @@ else
 endif
 #---------------------------------------------------------------------------------
 
-export OFILES 	:=	$(OBJ) libretro_switch.a
+export OFILES 	:=	$(OBJ) libretro_libnx.a
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
