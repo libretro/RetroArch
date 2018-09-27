@@ -1,9 +1,9 @@
 #include "internal.h"
 
-void* rc_alloc(void* pointer, int* offset, int size, rc_scratch_t* scratch) {
+void* rc_alloc(void* pointer, int* offset, int size, int alignment, rc_scratch_t* scratch) {
   void* ptr;
 
-  *offset = (*offset + RC_ALIGNMENT - 1) & -RC_ALIGNMENT;
+  *offset = (*offset + alignment - 1) & ~(alignment - 1);
 
   if (pointer != 0) {
     ptr = (void*)((char*)pointer + *offset);

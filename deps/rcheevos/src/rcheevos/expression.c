@@ -4,7 +4,7 @@ rc_expression_t* rc_parse_expression(int* ret, void* buffer, rc_scratch_t* scrat
   rc_expression_t* self;
   rc_term_t** next;
 
-  self = (rc_expression_t*)rc_alloc(buffer, ret, sizeof(rc_expression_t), scratch);
+  self = RC_ALLOC(rc_expression_t, buffer, ret, scratch);
   next = &self->terms;
 
   for (;;) {

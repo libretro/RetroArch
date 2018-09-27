@@ -41,7 +41,7 @@ int rc_trigger_size(const char* memaddr) {
   rc_scratch_t scratch;
 
   ret = 0;
-  self = (rc_trigger_t*)rc_alloc(0, &ret, sizeof(rc_trigger_t), &scratch);
+  self = RC_ALLOC(rc_trigger_t, 0, &ret, &scratch);
   rc_parse_trigger_internal(self, &ret, 0, &scratch, &memaddr, 0, 0);
   return ret;
 }
@@ -52,7 +52,7 @@ rc_trigger_t* rc_parse_trigger(void* buffer, const char* memaddr, lua_State* L, 
   rc_scratch_t scratch;
   
   ret = 0;
-  self = (rc_trigger_t*)rc_alloc(buffer, &ret, sizeof(rc_trigger_t), &scratch);
+  self = RC_ALLOC(rc_trigger_t, buffer, &ret, &scratch);
   rc_parse_trigger_internal(self, &ret, buffer, 0, &memaddr, L, funcs_ndx);
   return ret >= 0 ? self : 0;
 }

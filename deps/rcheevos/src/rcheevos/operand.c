@@ -295,8 +295,8 @@ typedef struct {
 rc_luapeek_t;
 
 static int rc_luapeek(lua_State* L) {
-  unsigned address = luaL_checkinteger(L, 1);
-  unsigned num_bytes = luaL_checkinteger(L, 2);
+  unsigned address = (unsigned)luaL_checkinteger(L, 1);
+  unsigned num_bytes = (unsigned)luaL_checkinteger(L, 2);
   rc_luapeek_t* luapeek = (rc_luapeek_t*)lua_touserdata(L, 3);
 
   unsigned value = luapeek->peek(address, num_bytes, luapeek->ud);

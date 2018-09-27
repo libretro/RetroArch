@@ -8,7 +8,7 @@ rc_condition_t* rc_parse_condition(int* ret, void* buffer, rc_scratch_t* scratch
   int ret2;
 
   aux = *memaddr;
-  self = (rc_condition_t*)rc_alloc(buffer, ret, sizeof(rc_condition_t), scratch);
+  self = RC_ALLOC(rc_condition_t, buffer, ret, scratch);
   self->current_hits = 0;
 
   if (*aux != 0 && aux[1] == ':') {

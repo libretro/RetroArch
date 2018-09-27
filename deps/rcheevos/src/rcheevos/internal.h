@@ -3,6 +3,11 @@
 
 #include "rcheevos.h"
 
+#define RC_OFFSETOF(s, f) ((int)(long long)(&((s*)0)->f))
+#define RC_ALIGNOF(t) RC_OFFSETOF(struct{char c; t d;}, d)
+
+#define RC_ALLOC(t, p, o, s) ((t*)rc_alloc(p, o, sizeof(t), RC_ALIGNOF(t), s))
+
 typedef union {
   rc_operand_t operand;
   rc_condition_t condition;
@@ -14,7 +19,7 @@ typedef union {
 }
 rc_scratch_t;
 
-void* rc_alloc(void* pointer, int* offset, int size, rc_scratch_t* scratch);
+void* rc_alloc(void* pointer, int* offset, int size, int alignment, rc_scratch_t* scratch);
 
 void rc_parse_trigger_internal(rc_trigger_t* self, int* ret, void* buffer, rc_scratch_t* scratch, const char** memaddr, lua_State* L, int funcs_ndx);
 

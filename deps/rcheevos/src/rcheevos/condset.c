@@ -27,7 +27,7 @@ rc_condset_t* rc_parse_condset(int* ret, void* buffer, rc_scratch_t* scratch, co
   rc_condition_t** next;
   int in_pause;
 
-  self = (rc_condset_t*)rc_alloc(buffer, ret, sizeof(rc_condset_t), scratch);
+  self = RC_ALLOC(rc_condset_t, buffer, ret, scratch);
   self->has_pause = 0;
   next = &self->conditions;
 
