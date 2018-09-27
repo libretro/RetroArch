@@ -640,7 +640,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
    {
       if (!settings->bools.video_gpu_record)
          params->scale_factor = settings->uints.video_record_scale_factor > 0 ? 
-            settings->uints.video_record_scale_factor : 2;
+            settings->uints.video_record_scale_factor : 1;
       else
          params->scale_factor = 1;
       strlcpy(params->format, "matroska", sizeof(params->format));
@@ -649,16 +649,20 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params, unsigned p
    {
       if (!settings->bools.video_gpu_record)
          params->scale_factor = settings->uints.video_stream_scale_factor > 0 ? 
-            settings->uints.video_stream_scale_factor : 2;
+            settings->uints.video_stream_scale_factor : 1;
       else
-         params->scale_factor = 2;
-      strlcpy(params->format, "flv", sizeof(params->format));
+         params->scale_factor = 1;
+      if (settings->uints.streaming_mode == STREAMING_MODE_YOUTUBE || settings->uints.streaming_mode == STREAMING_MODE_TWITCH)
+         strlcpy(params->format, "flv", sizeof(params->format));
+      else
+         strlcpy(params->format, "mpegts", sizeof(params->format));
    }
    else if (preset == RECORD_CONFIG_TYPE_STREAMING_NETPLAY)
    {
       params->scale_factor = 1;
-      strlcpy(params->format, "m2ts", sizeof(params->format));
+      strlcpy(params->format, "mpegts", sizeof(params->format));
    }
+
    return true;
 }
 
