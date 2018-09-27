@@ -1164,14 +1164,12 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
    SETTING_PATH("input_overlay",
          settings->paths.path_overlay, false, NULL, true);
 #endif
-#ifdef HAVE_FFMPEG
    SETTING_PATH("video_record_config",
          settings->paths.path_record_config, false, NULL, true);
    SETTING_PATH("video_stream_config",
          settings->paths.path_stream_config, false, NULL, true);
    SETTING_PATH("video_stream_url",
          settings->paths.path_stream_url, false, NULL, true);
-#endif
    SETTING_PATH("video_font_path",
          settings->paths.path_font, false, NULL, true);
    SETTING_PATH("cursor_directory",
@@ -1620,13 +1618,11 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 
    SETTING_UINT("midi_volume",                  &settings->uints.midi_volume, true, midi_volume, false);
 
-#ifdef HAVE_FFMPEG
    SETTING_UINT("video_stream_port",            &settings->uints.video_stream_port,    true, RARCH_STREAM_DEFAULT_PORT, false);
    SETTING_UINT("video_record_quality",            &settings->uints.video_record_quality,    true, RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY, false);
    SETTING_UINT("video_stream_quality",            &settings->uints.video_stream_quality,    true, RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY, false);
    SETTING_UINT("video_record_scale_factor",            &settings->uints.video_record_scale_factor,    true, 1, false);
    SETTING_UINT("video_stream_scale_factor",            &settings->uints.video_stream_scale_factor,    true, 1, false);
-#endif
 
    *size = count;
 
