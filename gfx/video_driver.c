@@ -354,6 +354,9 @@ static const video_driver_t *video_drivers[] = {
 };
 
 static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
+#if defined(HAVE_LIBNX) && defined(HAVE_OPENGL)
+   &switch_ctx,
+#endif
 #if defined(__CELLOS_LV2__)
    &gfx_ctx_ps3,
 #endif

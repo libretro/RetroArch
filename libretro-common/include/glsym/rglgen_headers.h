@@ -62,8 +62,14 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+#ifndef HAVE_LIBNX
 #include <GL/gl.h>
 #include <GL/glext.h>
+#else
+// We need to avoid including <GL/gl.h> on this platform
+#include "switch/nx_gl.h"
+#include <GL/glext.h>
+#endif // SWITCH
 #endif
 
 #ifndef GL_MAP_WRITE_BIT
