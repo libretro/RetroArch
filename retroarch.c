@@ -2929,7 +2929,12 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_RECORDING_TOGGLE);
 
       if (pressed && !old_pressed)
-         command_event(RARCH_RECORDING_TOGGLE, NULL);
+      {
+         if (recording_is_enabled())
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+         else
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+      }
 
       old_pressed             = pressed;
    }
@@ -2941,7 +2946,15 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_STREAMING_TOGGLE);
 
       if (pressed && !old_pressed)
-         command_event(RARCH_STREAMING_TOGGLE, NULL);
+      {
+         if (streaming_is_enabled())
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+         else
+         {
+            streaming_set_state(true);
+            command_event(CMD_EVENT_RECORD_INIT, NULL);
+         }
+      }
 
       old_pressed             = pressed;
    }
