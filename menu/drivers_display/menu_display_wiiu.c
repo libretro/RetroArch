@@ -331,7 +331,7 @@ static bool menu_display_wiiu_font_init_first(
 static void menu_display_wiiu_scissor_begin(video_frame_info_t *video_info, int x, int y,
       unsigned width, unsigned height)
 {
-   GX2SetScissor(max(x, 0), max(video_info->height - y - height, 0), min(width, video_info->width), min(height, video_info->height));
+   GX2SetScissor(MAX(x, 0), MAX(video_info->height - y - height, 0), MIN(width, video_info->width), MIN(height, video_info->height));
 }
 
 static void menu_display_wiiu_scissor_end(video_frame_info_t *video_info)
