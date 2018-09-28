@@ -328,6 +328,17 @@ static bool menu_display_wiiu_font_init_first(
    return *handle;
 }
 
+static void menu_display_wiiu_scissor_begin(video_frame_info_t *video_info, int x, int y,
+      unsigned width, unsigned height)
+{
+   GX2SetScissor(max(x, 0), max(video_info->height - y - height, 0), min(width, video_info->width), min(height, video_info->height));
+}
+
+static void menu_display_wiiu_scissor_end(void)
+{
+   /* Scissor test is always enabled with GX2 */
+}
+
 menu_display_ctx_driver_t menu_display_ctx_wiiu = {
    menu_display_wiiu_draw,
    menu_display_wiiu_draw_pipeline,
@@ -343,6 +354,6 @@ menu_display_ctx_driver_t menu_display_ctx_wiiu = {
    MENU_VIDEO_DRIVER_WIIU,
    "menu_display_wiiu",
    true,
-   NULL,
-   NULL
+   menu_display_wiiu_scissor_begin,
+   menu_display_wiiu_scissor_end
 };
