@@ -2308,13 +2308,13 @@ MSG_HASH(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
 MSG_HASH(MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
       "Inflated checksum did not match CRC32.")
 MSG_HASH(MSG_INPUT_CHEAT,
-      "Input Cheat")
+      "チートを入力")
 MSG_HASH(MSG_INPUT_CHEAT_FILENAME,
-      "Input Cheat Filename")
+      "チートファイル名を入力")
 MSG_HASH(MSG_INPUT_PRESET_FILENAME,
-      "Input Preset Filename")
+      "プリセットファイル名を入力")
 MSG_HASH(MSG_INPUT_RENAME_ENTRY,
-      "Rename Title")
+      "タイトルを変更")
 MSG_HASH(MSG_INTERFACE,
       "インタフェース")
 MSG_HASH(MSG_INTERNAL_STORAGE,
@@ -2392,7 +2392,7 @@ MSG_HASH(MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
 MSG_HASH(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
       "リマップファイルを削除しました")
 MSG_HASH(MSG_REMOVED_DISK_FROM_TRAY,
-      "ディスクをトレイから取り除きました")
+      "ディスクをトレイから取り出しました")
 MSG_HASH(MSG_REMOVING_TEMPORARY_CONTENT_FILE,
       "一時コンテンツファイルを削除中")
 MSG_HASH(MSG_RESET,
@@ -2404,15 +2404,15 @@ MSG_HASH(MSG_RESTORED_OLD_SAVE_STATE,
 MSG_HASH(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
       "Shaders: restoring default shader preset to")
 MSG_HASH(MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
-      "Reverting savefile directory to")
+      "セーブフォルダを元に戻しています to")
 MSG_HASH(MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-      "Reverting savestate directory to")
+      "ステートセーブフォルダを元に戻しています to")
 MSG_HASH(MSG_REWINDING,
       "巻き戻しています")
 MSG_HASH(MSG_REWIND_INIT,
       "Initializing rewind buffer with size")
 MSG_HASH(MSG_REWIND_INIT_FAILED,
-      "Failed to initialize rewind buffer. Rewinding will be disabled.")
+      "巻き戻しバッファの初期化に失敗しました。巻き戻しが無効になります")
 MSG_HASH(MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
       "Implementation uses threaded audio. Cannot use rewind.")
 MSG_HASH(MSG_REWIND_REACHED_END,
@@ -2452,9 +2452,9 @@ MSG_HASH(MSG_SLOW_MOTION_REWIND,
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
       "SRAMはセーブされません")
 MSG_HASH(MSG_STARTING_MOVIE_PLAYBACK,
-      "Starting movie playback.")
+      "動画の再生を開始しています")
 MSG_HASH(MSG_STARTING_MOVIE_RECORD_TO,
-      "Starting movie record to")
+      "動画の録画を開始しています to")
 MSG_HASH(MSG_STATE_SIZE,
       "ステートサイズ")
 MSG_HASH(MSG_STATE_SLOT,
@@ -2478,9 +2478,9 @@ MSG_HASH(MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
 MSG_HASH(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
       "Using libretro dummy core. Skipping recording.")
 MSG_HASH(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
-      "Connect device from a valid port.")
+      "デバイスを有効なポートから接続します")
 MSG_HASH(MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
-      "Disconnecting device from port")
+      "デバイスをポートから切断中")
 MSG_HASH(MSG_VALUE_REBOOTING,
       "再起動しています...")
 MSG_HASH(MSG_VALUE_SHUTTING_DOWN,
@@ -2575,7 +2575,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
-   "設定されていない"
+   "設定されていません"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
@@ -2687,7 +2687,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE,
       "スノーフレーク")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-      "ロビー一覧を更新")
+      "ルーム一覧を更新")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
       "ニックネーム: %s")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
@@ -2820,7 +2820,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-      "Swap buttons for OK/Cancel. Disabled is the Japanese button orientation, enabled is the western orientation."
+      "OK/キャンセルボタンを入れ替えます。無効はマルをOKとする日本式配置、有効はバツをOKとする西洋式配置です。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
@@ -2888,15 +2888,15 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-      "Audio output samplerate."
+      "オーディオ出力のサンプルレート"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-      "Opacity of all UI elements of the overlay."
+      "オーバーレイUI要素の不透明度"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-      "Scale of all UI elements of the overlay."
+      "オーバーレイUI要素の表示倍率"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
@@ -3081,16 +3081,16 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
       "The place to store the wallpapers dynamically loaded by the menu depending on context.")
 MSG_HASH(MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
-      "To store thumbnail files."
+      "サムネイルファイルの保存フォルダ"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-      "Sets start directory for menu configuration browser.")
+      "設定ファイルブラウザーの初期ディレクトリーを指定する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
       "The number of frames of input latency for netplay to use to hide network latency. This reduces jitter and makes netplay less CPU-intensive, at the expense of noticeable input lag.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
       "The range of frames of input latency that may be used to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of unpredictable input lag.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-      "Cycle the current disk. If the disk is inserted, it will eject the disk. If the disk has not been inserted, it will be inserted. ")
+      "ディスクトレイの状態を変更します。ディスクが挿入されていればそのディスクを排出し、未挿入であればディスクを挿入します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
       "ディスクのインデックスを変更する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
@@ -3232,7 +3232,7 @@ MSG_HASH(
       "オーディオミキサーを消音"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-      "Mute/unmute mixer audio.")
+      "ミキサーオーディオを消音/消音解除にする。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
       "オンラインアップデーターを表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
@@ -3292,7 +3292,7 @@ MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
       "パスワードが違います")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
-      "Enables the Settings tab. A restart is required for the tab to appear.")
+      "設定タブを有効にする。タブを表示するには再起動が必要。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
@@ -3682,7 +3682,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-      "Enable or disable Discord support. Will not work with the browser version, only native desktop client."
+      "Discord連携を有効または無効にします。デスクトップクライアントでのみ動作し、ブラウザーバージョンでは動作しません。"
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
       "入力")
@@ -3898,19 +3898,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
-    "Record Quality"
+    "録画の品質"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
-    "Stream Quality"
+    "配信の品質"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_STREAMING_URL,
-    "Streaming URL"
+    "配信URL"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
-    "UDP Stream Port"
+    "UDP配信ポート"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
@@ -3921,10 +3921,10 @@ MSG_HASH(
     "YouTube"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
-      "Twitch Stream Key")
+      "Twitch配信キー")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
-      "YouTube Stream Key")
+      "YouTubeストリームキー")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
-      "Streaming Mode")
+      "配信モード")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
-      "Title of Stream")
+      "配信タイトル")
