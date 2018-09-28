@@ -260,7 +260,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mv -f ../retroarch_3ds.3ds ../pkg/${platform}/build/rom/${name}_libretro.3ds
    elif [ $PLATFORM = "libnx" ] ; then
       mkdir -p ../pkg/${platform}/build/libnx/
-      mv -f ../retroarch_switch.nro ../pkg/${platform}/build/libnx/${name}.nro
+      mv -f ../retroarch_switch.nro ../pkg/${platform}/build/libnx/${name}_libretro.nro
    elif [ $PLATFORM = "unix" ] ; then
       mv -f ../retroarch ../pkg/${platform}/${name}_libretro.elf
    elif [ $PLATFORM = "ngc" ] ; then
