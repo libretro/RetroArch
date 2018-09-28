@@ -298,6 +298,7 @@ enum record_driver_enum
 enum midi_driver_enum
 {
    MIDI_WINMM               = RECORD_NULL + 1,
+   MIDI_ALSA,
    MIDI_NULL
 };
 
@@ -409,6 +410,8 @@ static enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_NULL;
 
 #ifdef HAVE_WINMM
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_WINMM;
+#elif defined HAVE_ALSA
+static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
 #else
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
 #endif
@@ -1047,6 +1050,8 @@ const char *config_get_default_midi(void)
    {
       case MIDI_WINMM:
          return "winmm";
+      case MIDI_ALSA:
+         return "alsa";
       case MIDI_NULL:
          break;
    }
