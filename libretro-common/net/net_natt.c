@@ -184,7 +184,7 @@ static bool natt_open_port(struct natt_status *status,
 bool natt_open_port_any(struct natt_status *status,
       uint16_t port, enum socket_protocol proto)
 {
-#if !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU)
+#if !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU) && !defined(SWITCH)
    size_t i;
    char port_str[6];
    struct net_ifinfo list;

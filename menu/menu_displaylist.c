@@ -93,7 +93,7 @@ static enum msg_hash_enums new_type     = MSG_UNKNOWN;
  * function pointer callback functions that don't necessarily
  * call each other. */
 
-#if !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU)
+#if !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU) && !defined(SWITCH)
 #include <net/net_ifinfo.h>
 
 static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
@@ -4694,7 +4694,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_NETWORK_INFO:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-#if defined(HAVE_NETWORKING) && !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU)
+#if defined(HAVE_NETWORKING) && !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU) && !defined(SWITCH)
          menu_displaylist_parse_network_info(info);
 #endif
          info->need_push    = true;
