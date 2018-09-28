@@ -821,12 +821,12 @@ static void task_load_handler(retro_task_t *task)
    {
       if (state->autoload)
       {
-         char *msg = (char*)malloc(1024 * sizeof(char));
+         char *msg = (char*)malloc(8192 * sizeof(char));
 
          msg[0] = '\0';
 
          snprintf(msg,
-               1024 * sizeof(char),
+               8192 * sizeof(char),
                "%s \"%s\" %s.",
                msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
                state->path,
