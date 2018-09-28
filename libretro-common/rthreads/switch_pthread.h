@@ -57,34 +57,22 @@ static INLINE ThreadVars *getThreadVars(void)
    return (ThreadVars *)((u8 *)armGetTls() + 0x1E0);
 }
 
-#define STACKSIZE (8 * 1024)
-
-/* libnx threads return void but pthreads return void pointer */
-
+#define STACKSIZE (128 * 1024)
 static uint32_t threadCounter = 1;
-
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
 {
    u32 prio = 0;
-   u64 core_mask = 0;
 
    Thread new_switch_thread;
 
    svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
-   svcGetInfo(&core_mask, 0, CUR_PROCESS_HANDLE, 0);
 
    // Launch threads on Core 1
-   int rc = threadCreate(&new_switch_thread, (void (*)(void *))start_routine, arg, STACKSIZE, prio - 1, -2);
+   int rc = threadCreate(&new_switch_thread, (void (*)(void *))start_routine, arg, STACKSIZE, prio - 1, 1);
 
    if (R_FAILED(rc))
    {
       return EAGAIN;
-   }
-
-   rc = svcSetThreadCoreMask(new_switch_thread.handle, -1, core_mask);
-   if (R_FAILED(rc))
-   {
-      return -1;
    }
 
    printf("[Threading]: Starting Thread(#%i)\n", threadCounter);
