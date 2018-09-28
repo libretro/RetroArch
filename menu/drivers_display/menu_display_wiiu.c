@@ -336,7 +336,7 @@ static void menu_display_wiiu_scissor_begin(video_frame_info_t *video_info, int 
 
 static void menu_display_wiiu_scissor_end(void)
 {
-   /* Scissor test is always enabled with GX2 */
+   GX2SetScissor(0, 0, video_info->width, video_info->height);
 }
 
 menu_display_ctx_driver_t menu_display_ctx_wiiu = {
