@@ -164,7 +164,7 @@ static unsigned video_driver_height                      = 0;
 
 static enum rarch_display_type video_driver_display_type = RARCH_DISPLAY_NONE;
 static char video_driver_title_buf[64]                   = {0};
-static char video_driver_window_title[128]               = {0};
+static char video_driver_window_title[512]               = {0};
 static bool video_driver_window_title_update             = true;
 
 static retro_time_t video_driver_frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
