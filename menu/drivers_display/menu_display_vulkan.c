@@ -346,6 +346,25 @@ static bool menu_display_vk_font_init_first(
    return false;
 }
 
+static void menu_display_vk_scissor_begin(video_frame_info_t *video_info,
+      int x, int y, unsigned width, unsigned height)
+{
+   VkRect2D sci;
+   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
+
+   sci.offset.x      = x;
+   sci.offset.y      = video_info->height - y - height;
+   sci.extent.width  = width;
+   sci.extent.height = height;
+
+   vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+}
+
+static void menu_display_vk_scissor_end(void)
+{
+   /* Can remain a stub for Vulkan */
+}
+
 menu_display_ctx_driver_t menu_display_ctx_vulkan = {
    menu_display_vk_draw,
    menu_display_vk_draw_pipeline,
@@ -361,6 +380,6 @@ menu_display_ctx_driver_t menu_display_ctx_vulkan = {
    MENU_VIDEO_DRIVER_VULKAN,
    "menu_display_vulkan",
    false,
-   NULL,
-   NULL
+   menu_display_vk_scissor_begin,
+   menu_display_vk_scissor_end
 };
