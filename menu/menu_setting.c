@@ -32,8 +32,6 @@
 
 #include <compat/strl.h>
 
-#include <audio/audio_resampler.h>
-
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif

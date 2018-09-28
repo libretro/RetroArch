@@ -6555,9 +6555,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_AUDIO_LATENCY,
                PARSE_ONLY_UINT, false) == 0)
             count++;
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
-               PARSE_ONLY_UINT, false);
+         {
+            settings_t *settings      = config_get_ptr();
+            if (string_is_not_equal(settings->arrays.audio_resampler, "null"))
+            {
+               menu_displaylist_parse_settings_enum(menu, info,
+                     MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
+                     PARSE_ONLY_UINT, false);
+               count++;
+            }
+         }
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
                PARSE_ONLY_FLOAT, false);
