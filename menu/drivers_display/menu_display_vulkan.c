@@ -360,9 +360,17 @@ static void menu_display_vk_scissor_begin(video_frame_info_t *video_info,
    vkCmdSetScissor (vk->cmd, 0, 1, &sci);
 }
 
-static void menu_display_vk_scissor_end(void)
+static void menu_display_vk_scissor_end(video_frame_info_t *video_info)
 {
-   /* Can remain a stub for Vulkan */
+   VkRect2D sci;
+   vk_t *vk = video_info ? (vk_t*)video_info->userdata : NULL;
+
+   sci.offset.x      = 0;
+   sci.offset.y      = 0;
+   sci.extent.width  = video_info->width;
+   sci.extent.height = video_info->height;
+
+   vkCmdSetScissor (vk->cmd, 0, 1, &sci);
 }
 
 menu_display_ctx_driver_t menu_display_ctx_vulkan = {

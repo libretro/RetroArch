@@ -334,7 +334,7 @@ static void menu_display_wiiu_scissor_begin(video_frame_info_t *video_info, int 
    GX2SetScissor(max(x, 0), max(video_info->height - y - height, 0), min(width, video_info->width), min(height, video_info->height));
 }
 
-static void menu_display_wiiu_scissor_end(void)
+static void menu_display_wiiu_scissor_end(video_frame_info_t *video_info)
 {
    GX2SetScissor(0, 0, video_info->width, video_info->height);
 }

@@ -393,10 +393,10 @@ void menu_display_scissor_begin(video_frame_info_t *video_info, int x, int y, un
 }
 
 /* End scissoring operation */
-void menu_display_scissor_end()
+void menu_display_scissor_end(video_frame_info_t *video_info)
 {
    if (menu_disp && menu_disp->scissor_end)
-      menu_disp->scissor_end();
+      menu_disp->scissor_end(video_info);
 }
 
 /* Teardown; deinitializes and frees all
