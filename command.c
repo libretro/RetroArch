@@ -1638,8 +1638,8 @@ static bool command_event_main_state(unsigned cmd)
 {
    retro_ctx_size_info_t info;
    char msg[128];
-   char *state_path           = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   size_t state_path_size     = PATH_MAX_LENGTH * sizeof(char);
+   size_t state_path_size     = 8192 * sizeof(char);
+   char *state_path           = (char*)malloc(state_path_size);
    global_t *global           = global_get_ptr();
    bool ret                   = false;
    bool push_msg              = true;
