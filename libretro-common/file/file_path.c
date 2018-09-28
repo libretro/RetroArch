@@ -230,7 +230,7 @@ static bool path_mkdir_error(int ret)
 {
 #if defined(VITA)
    return (ret == SCE_ERROR_ERRNO_EEXIST);
-#elif defined(PSP) || defined(_3DS) || defined(WIIU)
+#elif defined(PSP) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
    return (ret == -1);
 #else
    return (ret < 0 && errno == EEXIST);

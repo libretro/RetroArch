@@ -35,9 +35,9 @@ HAVE_STATIC_VIDEO_FILTERS = 1
 HAVE_STATIC_AUDIO_FILTERS = 1
 HAVE_MENU = 1
 HAVE_RUNAHEAD = 1
+HAVE_NETWORKING = 1
 
 # RetroArch libnx useful flags
-HAVE_OVERLAY = 0
 HAVE_THREADS = 1
 HAVE_PTHREADS = 1
 HAVE_FREETYPE = 0
@@ -55,6 +55,8 @@ ifeq ($(HAVE_OPENGL), 1)
   HAVE_ZARCH = 0
   HAVE_XMB = 0
   HAVE_STRIPES = 0
+
+  HAVE_OVERLAY = 1
 else
   HAVE_RGUI = 1
 
@@ -65,9 +67,7 @@ else
 endif
 
 include Makefile.common
-BLACKLIST :=
-#BLACKLIST += input/input_overlay.o
-#BLACKLIST += tasks/task_overlay.o
+BLACKLIST := $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
 
 OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
