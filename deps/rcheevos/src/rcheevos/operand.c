@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#ifndef RC_DISABLE_LUA
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,6 +15,8 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* RC_DISABLE_LUA */
 
 static int rc_parse_operand_lua(rc_operand_t* self, const char** memaddr, lua_State* L, int funcs_ndx) {
   const char* aux = *memaddr;
@@ -32,6 +36,8 @@ static int rc_parse_operand_lua(rc_operand_t* self, const char** memaddr, lua_St
     aux++;
   }
 
+#ifndef RC_DISABLE_LUA
+
   if (L != 0) {
     if (!lua_istable(L, funcs_ndx)) {
       return RC_INVALID_LUA_OPERAND;
@@ -47,6 +53,8 @@ static int rc_parse_operand_lua(rc_operand_t* self, const char** memaddr, lua_St
 
     self->function_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
+
+#endif /* RC_DISABLE_LUA */
 
   self->type = RC_OPERAND_LUA;
   *memaddr = aux;
@@ -288,6 +296,8 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_trigger, l
   }
 }
 
+#ifndef RC_DISABLE_LUA
+
 typedef struct {
   rc_peek_t peek;
   void* ud;
@@ -305,8 +315,13 @@ static int rc_luapeek(lua_State* L) {
   return 1;
 }
 
+#endif /* RC_DISABLE_LUA */
+
 unsigned rc_evaluate_operand(rc_operand_t* self, rc_peek_t peek, void* ud, lua_State* L) {
+#ifndef RC_DISABLE_LUA
   rc_luapeek_t luapeek;
+#endif /* RC_DISABLE_LUA */
+
   unsigned value = 0;
 
   switch (self->type) {
@@ -319,6 +334,8 @@ unsigned rc_evaluate_operand(rc_operand_t* self, rc_peek_t peek, void* ud, lua_S
       return 0;
     
     case RC_OPERAND_LUA:
+#ifndef RC_DISABLE_LUA
+
       if (L != 0) {
         lua_rawgeti(L, LUA_REGISTRYINDEX, self->function_ref);
         lua_pushcfunction(L, rc_luapeek);
@@ -339,6 +356,8 @@ unsigned rc_evaluate_operand(rc_operand_t* self, rc_peek_t peek, void* ud, lua_S
 
         lua_pop(L, 1);
       }
+
+#endif /* RC_DISABLE_LUA */
 
       break;
 

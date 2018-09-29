@@ -2065,8 +2065,10 @@ static void test_lboard(void) {
 static void test_lua(void) {
   {
     /*------------------------------------------------------------------------
-    TestJson
+    TestLua
     ------------------------------------------------------------------------*/
+
+#ifndef RC_DISABLE_LUA
 
     lua_State* L;
     const char* luacheevo = "return { test = function(peek, ud) return peek(0, 4, ud) end }";
@@ -2087,6 +2089,8 @@ static void test_lua(void) {
 
     trigger = rc_parse_trigger(buffer, "@test=0xX0", L, 1);
     assert(rc_test_trigger(trigger, peek, &memory, L) != 0);
+
+#endif /* RC_DISABLE_LUA */
   }
 }
 
