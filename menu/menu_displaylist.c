@@ -4703,10 +4703,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          if (count == 0)
             menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE),
-                  MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
-                  MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                  0, 0, 0);
 
          info->need_push    = true;
          info->need_refresh = true;
