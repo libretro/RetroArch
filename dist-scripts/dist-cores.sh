@@ -160,6 +160,11 @@ fi
 
 COUNTER=0
 
+if [ $PLATFORM = "libnx" ]; then
+   make -C ../ -f Makefile.${platform} HAVE_STATIC_DUMMY=1 -j3 || exit 1
+   mv -f ../retroarch_switch.nro ../pkg/${platform}/switch/retroarch_switch.nro
+fi
+
 #for f in *_${platform}.${EXT} ; do
 for f in `ls -v *_${platform}.${EXT}`; do
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
@@ -259,8 +264,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mv -f ../retroarch_3ds.3dsx ../pkg/${platform}/build/3dsx/${name}_libretro.3dsx
       mv -f ../retroarch_3ds.3ds ../pkg/${platform}/build/rom/${name}_libretro.3ds
    elif [ $PLATFORM = "libnx" ] ; then
-      mkdir -p ../pkg/${platform}/build/libnx/
-      mv -f ../retroarch_switch.nro ../pkg/${platform}/build/libnx/${name}_libretro.nro
+      mkdir -p ../pkg/${platform}/retroarch/cores/
+      mv -f ../retroarch_switch.nro ../pkg/${platform}/retroarch/cores/${name}_libretro.nro
    elif [ $PLATFORM = "unix" ] ; then
       mv -f ../retroarch ../pkg/${platform}/${name}_libretro.elf
    elif [ $PLATFORM = "ngc" ] ; then
