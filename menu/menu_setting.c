@@ -2291,51 +2291,18 @@ static int setting_action_start_analog_dpad_mode(rarch_setting_t *setting)
 static int setting_action_start_libretro_device_type(rarch_setting_t *setting)
 {
    retro_ctx_controller_info_t pad;
-   unsigned index_offset, current_device;
-   unsigned devices[128], types = 0, port = 0;
-   const struct retro_controller_info *desc = NULL;
-   rarch_system_info_t *system = runloop_get_system_info();
+   unsigned port = 0;
 
    if (!setting || setting_generic_action_start_default(setting) != 0)
       return -1;
 
-   index_offset     = setting->index_offset;
-   port             = index_offset;
+   port             = setting->index_offset;
 
-   devices[types++] = RETRO_DEVICE_NONE;
-   devices[types++] = RETRO_DEVICE_JOYPAD;
+   input_config_set_device(port, RETRO_DEVICE_JOYPAD);
 
-   if (system)
-   {
-      /* Only push RETRO_DEVICE_ANALOG as default if we use an
-       * older core which doesn't use SET_CONTROLLER_INFO. */
-      if (!system->ports.size)
-         devices[types++] = RETRO_DEVICE_ANALOG;
+   pad.port         = port;
+   pad.device       = RETRO_DEVICE_JOYPAD;
 
-      if (port < system->ports.size)
-         desc = &system->ports.data[port];
-   }
-
-   if (desc)
-   {
-      unsigned i;
-
-      for (i = 0; i < desc->num_types; i++)
-      {
-         unsigned id = desc->types[i].id;
-         if (types < ARRAY_SIZE(devices) &&
-               id != RETRO_DEVICE_NONE &&
-               id != RETRO_DEVICE_JOYPAD)
-            devices[types++] = id;
-      }
-   }
-
-   current_device = RETRO_DEVICE_JOYPAD;
-
-   input_config_set_device(port, current_device);
-
-   pad.port   = port;
-   pad.device = current_device;
    core_set_controller_port_device(&pad);
 
    return 0;
