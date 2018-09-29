@@ -152,8 +152,9 @@ ACHIEVEMENTS
 #include "../network/net_http_special.c"
 #include "../cheevos/cheevos.c"
 #include "../cheevos/badges.c"
-#include "../cheevos/var.c"
-#include "../cheevos/cond.c"
+#include "../cheevos/fixup.c"
+#include "../cheevos/hash.c"
+#include "../cheevos/parser.c"
 #endif
 
 /*============================================================
