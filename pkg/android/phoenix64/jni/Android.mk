@@ -96,13 +96,14 @@ LOCAL_C_INCLUDES := \
 							$(LOCAL_PATH)/$(RARCH_DIR)/deps/stb \
 							$(LOCAL_PATH)/$(RARCH_DIR)/deps/7zip
 
+INCLUDE_DIRS     := \
+	-I$(LOCAL_PATH)/$(DEPS_DIR)/stb/ \
+	-I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/ \
+	-I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include \
+	-I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
 
-LOCAL_CFLAGS     += -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/
-LOCAL_CFLAGS     += -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/
-LOCAL_CXXFLAGS     += -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/
-LOCAL_CXXFLAGS     += -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/
-LOCAL_CFLAGS     += -I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
-LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
+LOCAL_CFLAGS     += $(INCLUDE_DIRS)
+LOCAL_CXXFLAGS   += $(INCLUDE_DIRS)
 
 ifeq ($(HAVE_VULKAN),1)
 INCFLAGS         += $(LOCAL_PATH)/$(RARCH_DIR)/gfx/include
