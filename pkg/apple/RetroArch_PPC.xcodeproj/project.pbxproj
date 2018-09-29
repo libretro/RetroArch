@@ -234,6 +234,7 @@
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps",
 					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/libz",
 					"$(SRCROOT)",
 				);
@@ -250,6 +251,7 @@
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps",
 					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/libz",
 					"$(SRCROOT)",
 				);

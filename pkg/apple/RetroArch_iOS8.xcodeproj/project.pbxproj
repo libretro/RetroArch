@@ -478,6 +478,7 @@
 					../../,
 					"../../libretro-common/include",
 					../../deps/stb,
+					../../deps/rcheevos/include,
 					../../deps/libz,
 					../../deps,
 				);
@@ -562,6 +563,7 @@
 					../../,
 					"../../libretro-common/include",
 					../../deps/stb,
+					../../deps/rcheevos/include,
 					../../deps/libz,
 					../../deps,
 				);
