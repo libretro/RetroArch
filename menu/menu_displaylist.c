@@ -98,11 +98,12 @@ static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 
 static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 {
-   unsigned k              = 0;
    net_ifinfo_t      list;
+   unsigned count          = 0;
+   unsigned k              = 0;
 
    if (!net_ifinfo_new(&list))
-      return -1;
+      return 0;
 
    for (k = 0; k < list.size; k++)
    {
@@ -116,10 +117,12 @@ static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
       menu_entries_append_enum(info->list, tmp, "",
             MENU_ENUM_LABEL_NETWORK_INFO_ENTRY,
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      count++;
    }
 
    net_ifinfo_free(&list);
-   return 0;
+
+   return count;
 }
 #endif
 
@@ -4695,8 +4698,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_NETWORK_INFO:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #if defined(HAVE_NETWORKING) && !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU) && !defined(SWITCH)
-         menu_displaylist_parse_network_info(info);
+         count = menu_displaylist_parse_network_info(info);
 #endif
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE),
+                  MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
+                  MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
+
          info->need_push    = true;
          info->need_refresh = true;
          break;
