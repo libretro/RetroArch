@@ -319,27 +319,27 @@ unsigned rc_evaluate_operand(rc_operand_t* self, rc_peek_t peek, void* ud, lua_S
       return 0;
     
     case RC_OPERAND_LUA:
-      lua_rawgeti(L, LUA_REGISTRYINDEX, self->function_ref);
-      lua_pushcfunction(L, rc_luapeek);
+      if (L != 0) {
+        lua_rawgeti(L, LUA_REGISTRYINDEX, self->function_ref);
+        lua_pushcfunction(L, rc_luapeek);
 
-      luapeek.peek = peek;
-      luapeek.ud = ud;
+        luapeek.peek = peek;
+        luapeek.ud = ud;
 
-      lua_pushlightuserdata(L, &luapeek);
-      
-      if (lua_pcall(L, 2, 1, 0) == LUA_OK) {
-        if (lua_isboolean(L, -1)) {
-          value = lua_toboolean(L, -1);
+        lua_pushlightuserdata(L, &luapeek);
+        
+        if (lua_pcall(L, 2, 1, 0) == LUA_OK) {
+          if (lua_isboolean(L, -1)) {
+            value = lua_toboolean(L, -1);
+          }
+          else {
+            value = (unsigned)lua_tonumber(L, -1);
+          }
         }
-        else {
-          value = (unsigned)lua_tonumber(L, -1);
-        }
-      }
-      else {
-        value = 0;
+
+        lua_pop(L, 1);
       }
 
-      lua_pop(L, 1);
       break;
 
     case RC_OPERAND_ADDRESS:

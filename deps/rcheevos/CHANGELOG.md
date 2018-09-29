@@ -1,3 +1,13 @@
+# v7.0.2
+
+* Make sure the code is C89-compliant
+* Use 32-bit types in Lua
+* Only evaluate Lua operands when the Lua state is not `NULL`
+
+# v7.0.1
+
+* Fix the alignment of memory allocations
+
 # v7.0.0
 
 * Removed **rjson**

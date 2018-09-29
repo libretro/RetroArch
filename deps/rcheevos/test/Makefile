@@ -19,7 +19,7 @@ OBJ=$(RC_SRC)/trigger.o $(RC_SRC)/condset.o $(RC_SRC)/condition.o $(RC_SRC)/oper
 all: test
 
 %.o: %.c
-	gcc -Wall -O0 -g -I../include -I$(RC_SRC) -I$(LUA_SRC) -c $< -o $@
+	gcc -Wall -O0 -g -std=c89 -ansi -Wno-long-long -DLUA_32BITS -I../include -I$(RC_SRC) -I$(LUA_SRC) -c $< -o $@
 
 test: $(OBJ)
 	gcc -o $@ $+ -lm
