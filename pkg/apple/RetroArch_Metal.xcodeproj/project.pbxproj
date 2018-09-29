@@ -1785,6 +1785,23 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCBASE)",
+					"$(SRCBASE)/gfx/include",
+					"$(SRCBASE)/libretro-common/include",
+					"$(DEPS_DIR)/libFLAC/include",
+					"$(DEPS_DIR)/7zip",
+					"$(DEPS_DIR)/rcheevos/include",
+					"$(DEPS_DIR)/stb",
+					"$(DEPS_DIR)",
+					"$(DEPS_DIR)/SPIRV-Cross",
+					"$(DEPS_DIR)/glslang",
+					"$(DEPS_DIR)/glslang/glslang/glslang/Public",
+					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
+					"$(DEPS_DIR)/glslang/glslang/SPIRV",
+					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				ONLY_ACTIVE_ARCH = YES;
 				PREBINDING = NO;
@@ -1823,6 +1840,23 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCBASE)",
+					"$(SRCBASE)/gfx/include",
+					"$(SRCBASE)/libretro-common/include",
+					"$(DEPS_DIR)/libFLAC/include",
+					"$(DEPS_DIR)/7zip",
+					"$(DEPS_DIR)/rcheevos/include",
+					"$(DEPS_DIR)/stb",
+					"$(DEPS_DIR)",
+					"$(DEPS_DIR)/SPIRV-Cross",
+					"$(DEPS_DIR)/glslang",
+					"$(DEPS_DIR)/glslang/glslang/glslang/Public",
+					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
+					"$(DEPS_DIR)/glslang/glslang/SPIRV",
+					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PREBINDING = NO;
 				SDKROOT = macosx;
