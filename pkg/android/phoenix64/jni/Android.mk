@@ -4,9 +4,10 @@ include $(CLEAR_VARS)
 
 RARCH_DIR := ../../../..
 
-HAVE_NEON   := 1
-HAVE_LOGGER := 0
-HAVE_VULKAN := 1
+HAVE_NEON    := 1
+HAVE_LOGGER  := 0
+HAVE_VULKAN  := 1
+HAVE_CHEEVOS := 1
 
 INCFLAGS    :=
 DEFINES     :=
@@ -78,9 +79,12 @@ ifeq ($(HAVE_VULKAN),1)
 DEFINES += -DHAVE_VULKAN -DHAVE_SLANG -DHAVE_GLSLANG -DHAVE_SPIRV_CROSS -DWANT_GLSLANG -D__STDC_LIMIT_MACROS
 endif
 DEFINES += -DHAVE_7ZIP
+
+ifeq ($(HAVE_CHEEVOS),1)
 DEFINES += -DHAVE_CHEEVOS
+endif
+
 DEFINES += -DHAVE_SL
-#DEFINES += -DHAVE_TINYALSA
 DEFINES += -DFLAC_PACKAGE_VERSION="\"retroarch\"" -DHAVE_LROUND -DFLAC__HAS_OGG=0
 
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
@@ -99,11 +103,15 @@ LOCAL_C_INCLUDES := \
 INCLUDE_DIRS     := \
 	-I$(LOCAL_PATH)/$(DEPS_DIR)/stb/ \
 	-I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/ \
-	-I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include \
 	-I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
+
+ifeq ($(HAVE_CHEEVOS),1)
+INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include
+endif
 
 LOCAL_CFLAGS     += $(INCLUDE_DIRS)
 LOCAL_CXXFLAGS   += $(INCLUDE_DIRS)
+LOCAL_CPPFLAGS   == $(INCLUDE_DIRS)
 
 ifeq ($(HAVE_VULKAN),1)
 INCFLAGS         += $(LOCAL_PATH)/$(RARCH_DIR)/gfx/include
