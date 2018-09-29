@@ -5271,6 +5271,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION,
                   PARSE_ONLY_UINT, false);
             menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_CHEAT_REPEAT_COUNT,
+                  PARSE_ONLY_UINT, false);
+            menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+                  PARSE_ONLY_UINT, false);
+            menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+                  PARSE_ONLY_UINT, false);
+            menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_CHEAT_RUMBLE_TYPE,
                   PARSE_ONLY_UINT, false);
             menu_displaylist_parse_settings_enum(menu, info,

@@ -4585,6 +4585,21 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+            config_uint_cbs(cheat_manager_state.working_cheat.repeat_count, CHEAT_REPEAT_COUNT,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  0,&setting_get_string_representation_hex_and_uint,1,2048,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+
+            config_uint_cbs(cheat_manager_state.working_cheat.repeat_add_to_address, CHEAT_REPEAT_ADD_TO_ADDRESS,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  0,&setting_get_string_representation_hex_and_uint,1,2048,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+
+            config_uint_cbs(cheat_manager_state.working_cheat.repeat_add_to_value, CHEAT_REPEAT_ADD_TO_VALUE,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  0,&setting_get_string_representation_hex_and_uint,0,0xFFFF,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_type, CHEAT_RUMBLE_TYPE,
                   setting_uint_action_left_default,setting_uint_action_right_default,
                   MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,&setting_get_string_representation_uint_as_enum,

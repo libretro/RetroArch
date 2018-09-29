@@ -6823,6 +6823,18 @@ MSG_HASH(
     "Rumble Secondary Duration (ms)"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
+    "Number of Iterations"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
+    "Value Increase Each Iteration"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
+    "Address Increase Each Iteration"
+)
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
     "Add New Cheat After This One"
     )
