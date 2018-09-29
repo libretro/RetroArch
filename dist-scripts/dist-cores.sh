@@ -40,7 +40,6 @@ mkdir -p ../pkg/vita/vpk
 elif [ $PLATFORM = "libnx" ] ; then
 platform=libnx
 EXT=a
-mkdir -p ../pkg/${platform}/build/romfs
 
 # CTR/3DS
 elif [ $PLATFORM = "ctr" ] ; then
@@ -269,7 +268,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mv -f ../retroarch_3ds.3ds ../pkg/${platform}/build/rom/${name}_libretro.3ds
    elif [ $PLATFORM = "libnx" ] ; then
       mkdir -p ../pkg/${platform}/retroarch/cores/
-      mv -f ../retroarch_switch.nro ../pkg/${platform}/retroarch/cores/${name}_libretro.nro
+      mv -f ../retroarch_switch.nro ../pkg/${platform}/retroarch/cores/${name}_libretro_${platform}.nro
    elif [ $PLATFORM = "unix" ] ; then
       mv -f ../retroarch ../pkg/${platform}/${name}_libretro.elf
    elif [ $PLATFORM = "ngc" ] ; then
