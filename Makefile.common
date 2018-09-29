@@ -1629,7 +1629,13 @@ ifeq ($(HAVE_NETWORKING), 1)
          deps/rcheevos/src/rcheevos/alloc.o \
          deps/rcheevos/src/rcheevos/format.o \
          deps/rcheevos/src/rurl/url.o \
-         deps/lua/src/lapi.o \
+         $(LIBRETRO_COMM_DIR)/utils/md5.o
+   endif
+
+   ifeq ($(HAVE_LUA), 1)
+      DEFINES += -DHAVE_LUA \
+         -Ideps/lua/src
+      OBJ += deps/lua/src/lapi.o \
          deps/lua/src/lcode.o \
          deps/lua/src/lctype.o \
          deps/lua/src/ldebug.o \
@@ -1661,8 +1667,9 @@ ifeq ($(HAVE_NETWORKING), 1)
          deps/lua/src/ltablib.o \
          deps/lua/src/lutf8lib.o \
          deps/lua/src/loadlib.o \
-         deps/lua/src/linit.o \
-         $(LIBRETRO_COMM_DIR)/utils/md5.o
+         deps/lua/src/linit.o
+   else
+      DEFINES += -DRC_DISABLE_LUA
    endif
 
    ifeq ($(HAVE_DISCORD), 1)
