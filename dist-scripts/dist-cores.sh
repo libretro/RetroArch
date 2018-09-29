@@ -161,12 +161,16 @@ fi
 COUNTER=0
 
 if [ $PLATFORM = "libnx" ]; then
+   echo Buildbot: building static core for ${platform}
+   mkdir -p ../pkg/${platform}/switch
    make -C ../ -f Makefile.${platform} HAVE_STATIC_DUMMY=1 -j3 || exit 1
    mv -f ../retroarch_switch.nro ../pkg/${platform}/switch/retroarch_switch.nro
 fi
 
 #for f in *_${platform}.${EXT} ; do
 for f in `ls -v *_${platform}.${EXT}`; do
+
+   echo Buildbot: building ${name} for ${platform}
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
    async=0
    pthread=0
