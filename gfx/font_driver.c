@@ -56,6 +56,14 @@ int font_renderer_create_default(
    for (i = 0; font_backends[i]; i++)
    {
       const char *path = font_path;
+      /*
+        Switch libnx freetype is bugged on thread, skip
+        TODO: remove when fixed
+      */
+#if defined(HAVE_LIBNX) && defined(HAVE_FREETYPE)
+      if(font_backends[i] == &freetype_font_renderer && *video_driver_get_threaded()) // freetype
+         continue;
+#endif
 
       if (!path)
          path = font_backends[i]->get_default_font();
