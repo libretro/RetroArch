@@ -860,24 +860,14 @@ static int setting_action_left_analog_dpad_mode(rarch_setting_t *setting, bool w
    return 0;
 }
 
-static int setting_action_left_libretro_device_type(
-      rarch_setting_t *setting, bool wraparound)
+static unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsigned port)
 {
-   retro_ctx_controller_info_t pad;
-   unsigned current_device, current_idx, i, devices[128],
-   types = 0, port = 0;
+   unsigned types                           = 0;
    const struct retro_controller_info *desc = NULL;
-   rarch_system_info_t *system = NULL;
+   rarch_system_info_t              *system = runloop_get_system_info();
 
-   if (!setting)
-      return -1;
-
-   port = setting->index_offset;
-
-   devices[types++] = RETRO_DEVICE_NONE;
-   devices[types++] = RETRO_DEVICE_JOYPAD;
-
-   system           = runloop_get_system_info();
+   devices[types++]                         = RETRO_DEVICE_NONE;
+   devices[types++]                         = RETRO_DEVICE_JOYPAD;
 
    if (system)
    {
@@ -892,16 +882,32 @@ static int setting_action_left_libretro_device_type(
 
    if (desc)
    {
+      unsigned i;
       for (i = 0; i < desc->num_types; i++)
       {
          unsigned id = desc->types[i].id;
-         if (types < ARRAY_SIZE(devices) &&
+         if (types < devices_size &&
                id != RETRO_DEVICE_NONE &&
                id != RETRO_DEVICE_JOYPAD)
             devices[types++] = id;
       }
    }
 
+   return types;
+}
+
+static int setting_action_left_libretro_device_type(
+      rarch_setting_t *setting, bool wraparound)
+{
+   retro_ctx_controller_info_t pad;
+   unsigned current_device, current_idx, i, devices[128],
+   types = 0, port = 0;
+
+   if (!setting)
+      return -1;
+
+   port           = setting->index_offset;
+   types          = libretro_device_get_size(devices, ARRAY_SIZE(devices), port);
    current_device = input_config_get_device(port);
    current_idx    = 0;
    for (i = 0; i < types; i++)
@@ -2372,40 +2378,12 @@ static int setting_action_right_libretro_device_type(
    retro_ctx_controller_info_t pad;
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
-   const struct retro_controller_info *desc = NULL;
-   rarch_system_info_t *system = runloop_get_system_info();
 
    if (!setting)
       return -1;
 
-   port = setting->index_offset;
-
-   devices[types++] = RETRO_DEVICE_NONE;
-   devices[types++] = RETRO_DEVICE_JOYPAD;
-
-   if (system)
-   {
-      /* Only push RETRO_DEVICE_ANALOG as default if we use an
-       * older core which doesn't use SET_CONTROLLER_INFO. */
-      if (!system->ports.size)
-         devices[types++] = RETRO_DEVICE_ANALOG;
-
-      if (port < system->ports.size)
-         desc = &system->ports.data[port];
-   }
-
-   if (desc)
-   {
-      for (i = 0; i < desc->num_types; i++)
-      {
-         unsigned id = desc->types[i].id;
-         if (types < ARRAY_SIZE(devices) &&
-               id != RETRO_DEVICE_NONE &&
-               id != RETRO_DEVICE_JOYPAD)
-            devices[types++] = id;
-      }
-   }
-
+   port           = setting->index_offset;
+   types          = libretro_device_get_size(devices, ARRAY_SIZE(devices), port);
    current_device = input_config_get_device(port);
    current_idx    = 0;
    for (i = 0; i < types; i++)
