@@ -186,6 +186,18 @@ static void *switch_init(const video_info_t *video,
         *input_data = switchinput;
     }
 
+#ifdef HAVE_LIBNX
+#ifdef HAVE_OPENGL
+    // Init Resolution before initDefault
+    gfxInitResolution(1280, 720);
+
+    gfxInitDefault();
+    gfxSetMode(GfxMode_TiledDouble);
+
+    gfxConfigureTransform(0);
+#endif // HAVE_OPENGL
+#endif
+
     font_driver_init_osd(sw, false,
                          video->is_threaded,
                          FONT_DRIVER_RENDER_SWITCH);
@@ -512,6 +524,12 @@ static void switch_free(void *data)
         free(sw->menu_texture.pixels);
 
     free(sw);
+
+#ifdef HAVE_LIBNX
+#ifdef HAVE_OPENGL
+    gfxExit();
+#endif // HAVE_OPENGL
+#endif
 }
 
 static bool switch_set_shader(void *data,

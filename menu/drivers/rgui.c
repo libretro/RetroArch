@@ -95,7 +95,7 @@ static uint16_t rgui_gray_filler(rgui_t *rgui, unsigned x, unsigned y)
    unsigned col         = (((x >> shft) + (y >> shft)) & 1) + 1;
 #if defined(GEKKO) || defined(PSP)
    return (6 << 12) | (col << 8) | (col << 4) | (col << 0);
-#elif defined(SWITCH)
+#elif defined(HAVE_LIBNX) && !defined(HAVE_OPENGL)
    return (((31 * (54)) / 255) << 11) |
            (((63 * (54)) / 255) << 5) |
            ((31 * (54)) / 255);
@@ -110,7 +110,7 @@ static uint16_t rgui_green_filler(rgui_t *rgui, unsigned x, unsigned y)
    unsigned col         = (((x >> shft) + (y >> shft)) & 1) + 1;
 #if defined(GEKKO) || defined(PSP)
    return (6 << 12) | (col << 8) | (col << 5) | (col << 0);
-#elif defined(SWITCH)
+#elif defined(HAVE_LIBNX) && !defined(HAVE_OPENGL)
     return (((31 * (54)) / 255) << 11) |
            (((63 * (109)) / 255) << 5) |
            ((31 * (54)) / 255);

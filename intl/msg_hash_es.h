@@ -2154,6 +2154,10 @@ MSG_HASH(
     "Cargar configuración de grabación..."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+    "Cargar configuración de Streaming..."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
     "Controlador de grabación"
     )
@@ -4531,7 +4535,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-    "Frecuencia de actualización/tasa de refresco vertical, usada para calcular la velocidad de audio.\nNota: Se ignorará si 'Video por hilos' esta activado"
+    "Frecuencia de actualización/tasa de refresco vertical, usada para calcular la velocidad de audio.\n"
+    "Nota: Se ignorará si 'Video por hilos' esta activado"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
@@ -6914,6 +6919,14 @@ MSG_HASH(
     "Mayor al valor de vibración"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
+    "Incremeta por el valor de vibración"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE_BY_VALUE,
+    "Disminuye por el valor de vibración"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
     "1-bit, valor máx. = 0x01"
     )
@@ -7230,6 +7243,10 @@ MSG_HASH(
     "Borrar Playlist"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST,
+    "Renombrar Playlist"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
     "¿Está seguro que desea borrar la playlist \"%1\"?"
     )
@@ -7523,27 +7540,31 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
-    "Recording toggle"
+    "Comenzar/Detener Grabación"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
-    "Streaming toggle"
+    "Comenzar/Detener Streaming"
+    )
+MSG_HASH(
+    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
+    "Detectado un guardado rápido, Los logros hardcore se desactivaron para está sesión. Reinicia para habilitarlos"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
-    "Record Quality"
+    "Calidad de grabación"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
-    "Stream Quality"
+    "Calidad del Stream"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_STREAMING_URL,
-    "Streaming URL"
+    "URL del Stream"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
-    "UDP Stream Port"
+    "Puerto del Stream UDP"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
@@ -7553,11 +7574,19 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
     "YouTube"
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
-      "Twitch Stream Key")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
-      "YouTube Stream Key")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
-      "Streaming Mode")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
-      "Title of Stream")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
+    "Twitch Stream Key"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+    "YouTube Stream Key"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
+    "Modo de Streaming"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
+    "Título del Stream"
+    )

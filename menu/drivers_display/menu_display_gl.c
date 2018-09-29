@@ -257,7 +257,7 @@ static void menu_display_gl_scissor_begin(video_frame_info_t *video_info, int x,
    glEnable(GL_SCISSOR_TEST);
 }
 
-static void menu_display_gl_scissor_end()
+static void menu_display_gl_scissor_end(video_frame_info_t *video_info)
 {
    glDisable(GL_SCISSOR_TEST);
 }

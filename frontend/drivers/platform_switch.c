@@ -59,6 +59,8 @@ static uint64_t frontend_switch_get_mem_used(void);
 // Splash
 static uint32_t *splashData = NULL;
 
+static bool psmInitialized = false;
+
 #endif // HAVE_LIBNX
 
 static void get_first_valid_core(char *path_return)
@@ -162,6 +164,9 @@ static void frontend_switch_deinit(void *data)
       free(splashData);
       splashData = NULL;
    }
+
+   if (psmInitialized)
+       psmExit();
 
 #ifndef HAVE_OPENGL
    gfxExit();
@@ -582,6 +587,17 @@ static void frontend_switch_init(void *data)
 #endif // IS_SALAMANDER
 #endif // NXLINK
 
+   Result rc;
+   rc = psmInitialize();
+   if (R_SUCCEEDED(rc))
+   {
+       psmInitialized = true;
+   }
+   else
+   {
+       RARCH_WARN("Error initializing psm\n");
+   }
+
    rarch_system_info_t *sys_info = runloop_get_system_info();
    retro_get_system_info(sys_info);
 
@@ -681,8 +697,34 @@ static uint64_t frontend_switch_get_mem_used(void)
 
 static enum frontend_powerstate frontend_switch_get_powerstate(int *seconds, int *percent)
 {
-   // This is fine monkaS
-   return FRONTEND_POWERSTATE_CHARGED;
+   if (!psmInitialized)
+      return FRONTEND_POWERSTATE_NONE;
+
+   uint32_t pct;
+   ChargerType ct;
+   Result rc;
+
+   rc = psmGetBatteryChargePercentage(&pct);
+   if (!R_SUCCEEDED(rc))
+      return FRONTEND_POWERSTATE_NONE;
+
+   rc = psmGetChargerType(&ct);
+   if (!R_SUCCEEDED(rc))
+      return FRONTEND_POWERSTATE_NONE;
+
+   *percent = (int)pct;
+
+   if (*percent >= 100)
+      return FRONTEND_POWERSTATE_CHARGED;
+
+   switch (ct)
+   {
+   case ChargerType_Charger:
+   case ChargerType_Usb:
+      return FRONTEND_POWERSTATE_CHARGING;
+   }
+
+   return FRONTEND_POWERSTATE_NO_SOURCE;
 }
 
 static void frontend_switch_get_os(char *s, size_t len, int *major, int *minor)

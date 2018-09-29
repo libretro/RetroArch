@@ -502,7 +502,7 @@ typedef struct settings
       char path_overlay[PATH_MAX_LENGTH];
       char path_record_config[PATH_MAX_LENGTH];
       char path_stream_config[PATH_MAX_LENGTH];
-      char path_stream_url[PATH_MAX_LENGTH];
+      char path_stream_url[8192];
       char path_menu_wallpaper[PATH_MAX_LENGTH];
       char path_audio_dsp_plugin[PATH_MAX_LENGTH];
       char path_softfilter_plugin[PATH_MAX_LENGTH];

@@ -35,15 +35,15 @@ HAVE_STATIC_VIDEO_FILTERS = 1
 HAVE_STATIC_AUDIO_FILTERS = 1
 HAVE_MENU = 1
 HAVE_RUNAHEAD = 1
+HAVE_NETWORKING = 1
 
 # RetroArch libnx useful flags
-HAVE_OVERLAY = 0
 HAVE_THREADS = 1
 HAVE_PTHREADS = 1
-HAVE_FREETYPE = 0
+HAVE_FREETYPE = 1
 HAVE_SWITCH = 1
 HAVE_LIBNX = 1
-HAVE_OPENGL = 0
+HAVE_OPENGL = 1
 
 ifeq ($(HAVE_OPENGL), 1)
   HAVE_EGL = 1
@@ -53,8 +53,10 @@ ifeq ($(HAVE_OPENGL), 1)
   HAVE_MATERIALUI = 1
 
   HAVE_ZARCH = 0
-  HAVE_XMB = 0
+  HAVE_XMB = 1
   HAVE_STRIPES = 0
+
+  HAVE_OVERLAY = 1
 else
   HAVE_RGUI = 1
 
@@ -65,9 +67,7 @@ else
 endif
 
 include Makefile.common
-BLACKLIST :=
-#BLACKLIST += input/input_overlay.o
-#BLACKLIST += tasks/task_overlay.o
+BLACKLIST := $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
 
 OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
@@ -110,9 +110,9 @@ NO_ICON := 1
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -mcpu=cortex-a57+crc+fp+simd
 
 CFLAGS	:=	-g -Wall -O3 -ffast-math -ffunction-sections \
-			$(ARCH) $(DEFINES) -Ideps -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h #$(shell $(DEVKITPRO)/portlibs/switch/bin/freetype-config --cflags)
+			$(ARCH) $(DEFINES) -Ideps -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h $(shell $(DEVKITPRO)/portlibs/switch/bin/freetype-config --cflags)
 
-CFLAGS	+=	$(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1
+CFLAGS	+=	$(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1 -DHAVE_SHADERPIPELINE -DHAVE_FREETYPE
 
 # The following line works around an issue in newlib that produces a compilation
 # error in glm. It will be removed as soon as this issue is resolved.
@@ -123,7 +123,7 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,--allow-multiple-definition -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lstdc++ -lbz2 -lpng -lz -lnx -lm
+LIBS	:= -lfreetype -lstdc++ -lbz2 -lpng -lz -lnx -lm
 
 ifeq ($(HAVE_OPENGL), 1)
   LIBS := -lEGL -lglapi -ldrm_nouveau $(LIBS)
@@ -169,7 +169,7 @@ else
 endif
 #---------------------------------------------------------------------------------
 
-export OFILES 	:=	$(OBJ) libretro_switch.a
+export OFILES 	:=	$(OBJ) libretro_libnx.a
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
