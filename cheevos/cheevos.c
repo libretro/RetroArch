@@ -479,7 +479,6 @@ static void cheevos_award_task_hardcore(void* task_data, void* user_data,
 static void cheevos_award(cheevos_cheevo_t* cheevo, int mode)
 {
    settings_t *settings = config_get_ptr();
-   int ret;
    char buffer[256];
    buffer[0] = 0;
 
@@ -543,7 +542,7 @@ static void cheevos_test_cheevo_set(bool official)
    settings_t *settings = config_get_ptr();
    int mode = CHEEVOS_ACTIVE_SOFTCORE;
    cheevos_cheevo_t* cheevo;
-   int i, count, valid;
+   int i, count;
 
    if (settings && settings->bools.cheevos_hardcore_mode_enable && !cheevos_hardcore_paused)
       mode = CHEEVOS_ACTIVE_HARDCORE;
