@@ -2446,6 +2446,7 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
 
+#ifdef HAVE_LIBNX
 static void get_string_representation_split_joycon(rarch_setting_t *setting, char *s,
       size_t len)
 {
@@ -2458,6 +2459,7 @@ static void get_string_representation_split_joycon(rarch_setting_t *setting, cha
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
 }
+#endif
 
 static void get_string_representation_bind_device(rarch_setting_t *setting, char *s,
       size_t len)
