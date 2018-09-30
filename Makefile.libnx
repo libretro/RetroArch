@@ -40,7 +40,7 @@ HAVE_NETWORKING = 1
 # RetroArch libnx useful flags
 HAVE_THREADS = 1
 HAVE_PTHREADS = 1
-HAVE_FREETYPE = 1
+HAVE_FREETYPE = 0
 HAVE_SWITCH = 1
 HAVE_LIBNX = 1
 HAVE_OPENGL = 1
@@ -110,9 +110,9 @@ APP_ICON := pkg/libnx/retroarch.jpg
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -mcpu=cortex-a57+crc+fp+simd
 
 CFLAGS := -g -Wall -O3 -ffast-math -ffunction-sections \
-          $(ARCH) $(DEFINES) -Ideps -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h $(shell $(PORTLIBS)/bin/freetype-config --cflags)
+          $(ARCH) $(DEFINES) -Ideps -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h #$(shell $(PORTLIBS)/bin/freetype-config --cflags)
 
-CFLAGS += $(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1 -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DHAVE_FREETYPE
+CFLAGS += $(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1 -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS #-DHAVE_FREETYPE
 
 ifeq ($(strip $(HAVE_STATIC_DUMMY)),1)
   CFLAGS	+=	-DHAVE_STATIC_DUMMY=1
@@ -127,7 +127,7 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,--allow-multiple-definition -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lfreetype -lstdc++ -lbz2 -lpng -lz -lnx -lm
+LIBS	:= -lstdc++ -lbz2 -lpng -lz -lnx -lm
 
 ifeq ($(HAVE_OPENGL), 1)
   LIBS := -lEGL -lglapi -ldrm_nouveau $(LIBS)
