@@ -426,6 +426,7 @@ typedef struct video_frame_info
    bool runloop_is_paused;
    bool is_perfcnt_enable;
    bool menu_is_alive;
+   bool msg_bgcolor_enable;
 
    int custom_vp_x;
    int custom_vp_y;
