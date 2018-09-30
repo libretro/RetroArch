@@ -3029,18 +3029,21 @@ found:
 
       coro->offset = sizeof(coro->header) + (coro->header.rom_type & 4
             ? sizeof(coro->header) : 0);
+
+          size_t chunk_size = 0x4000;
             
           /* from FCEU core - check if Trainer included in ROM data */
           MD5_Init(&coro->md5);
-      coro->count  = 0x4000 * coro->bytes;
-      CORO_GOSUB(EVAL_MD5);
 
-      if (coro->count < 0x4000 * coro->bytes)
-      {
-         coro->offset      = 0xff;
-         coro->count       = 0x4000 * coro->bytes - coro->count;
-         CORO_GOSUB(FILL_MD5);
-      }
+          coro->count  = chunk_size * coro->bytes;
+          CORO_GOSUB(EVAL_MD5);
+
+          if (coro->count < chunk_size * coro->bytes)
+          {
+             coro->offset      = 0xff;
+             coro->count       = chunk_size * coro->bytes - coro->count;
+             CORO_GOSUB(FILL_MD5);
+          }
 
       MD5_Final(coro->hash, &coro->md5);
       CORO_GOTO(GET_GAMEID);
@@ -3074,10 +3077,10 @@ found:
           
           CORO_GOSUB(EVAL_MD5);
 
-          if (coro->count < 0x4000 * coro->bytes)
+          if (coro->count < chunk_size * coro->bytes)
           {
              coro->offset      = 0xff;
-             coro->count       = 0x4000 * coro->bytes - coro->count;
+             coro->count       = chunk_size * coro->bytes - coro->count;
              CORO_GOSUB(FILL_MD5);
           }
 
