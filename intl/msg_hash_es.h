@@ -7590,3 +7590,7 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
     "Título del Stream"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+    "Split Joy-Con"
+    )

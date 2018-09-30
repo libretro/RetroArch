@@ -3279,6 +3279,7 @@ static int menu_displaylist_parse_options_remappings(
    {
       char key_type[PATH_MAX_LENGTH];
       char key_analog[PATH_MAX_LENGTH];
+      char key_split_joycon[PATH_MAX_LENGTH];
       unsigned val = p + 1;
 
       key_type[0] = key_analog[0] = '\0';
@@ -3287,11 +3288,18 @@ static int menu_displaylist_parse_options_remappings(
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE), val);
       snprintf(key_analog, sizeof(key_analog),
                msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), val);
+      snprintf(key_split_joycon, sizeof(key_analog),
+            "%s_%u",
+               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON), val);
 
       menu_displaylist_parse_settings(menu, info,
             key_type, PARSE_ONLY_UINT, true);
       menu_displaylist_parse_settings(menu, info,
             key_analog, PARSE_ONLY_UINT, true);
+#ifdef HAVE_LIBNX
+      menu_displaylist_parse_settings(menu, info,
+            key_split_joycon, PARSE_ONLY_UINT, true);
+#endif
    }
 
    menu_entries_append_enum(info->list,
