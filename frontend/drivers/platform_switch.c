@@ -62,6 +62,10 @@ static uint32_t *splashData = NULL;
 
 static bool psmInitialized = false;
 
+#ifdef NXLINK
+extern bool nxlink_connected;
+#endif
+
 #endif // HAVE_LIBNX
 
 static void get_first_valid_core(char *path_return)
@@ -614,7 +618,7 @@ static void frontend_switch_init(void *data)
 #endif // HAVE_OPENGL
 #ifdef NXLINK
    socketInitializeDefault();
-   nxlinkStdio();
+   nxlink_connected = nxlinkStdio() != -1;
 #ifndef IS_SALAMANDER
    verbosity_enable();
 #endif // IS_SALAMANDER
