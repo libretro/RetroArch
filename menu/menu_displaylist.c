@@ -3279,7 +3279,6 @@ static int menu_displaylist_parse_options_remappings(
    {
       char key_type[PATH_MAX_LENGTH];
       char key_analog[PATH_MAX_LENGTH];
-      char key_split_joycon[PATH_MAX_LENGTH];
       unsigned val = p + 1;
 
       key_type[0] = key_analog[0] = '\0';
@@ -3288,18 +3287,11 @@ static int menu_displaylist_parse_options_remappings(
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE), val);
       snprintf(key_analog, sizeof(key_analog),
                msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), val);
-      snprintf(key_split_joycon, sizeof(key_analog),
-            "%s_%u",
-               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON), val);
 
       menu_displaylist_parse_settings(menu, info,
             key_type, PARSE_ONLY_UINT, true);
       menu_displaylist_parse_settings(menu, info,
             key_analog, PARSE_ONLY_UINT, true);
-#ifdef HAVE_LIBNX
-      menu_displaylist_parse_settings(menu, info,
-            key_split_joycon, PARSE_ONLY_UINT, true);
-#endif
    }
 
    menu_entries_append_enum(info->list,
@@ -6680,6 +6672,27 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS, PARSE_ACTION, false);
 
+#ifdef HAVE_LIBNX
+         {
+            unsigned user;
+
+            for (user = 0; user < 8; user++)
+            {
+               char key_split_joycon[PATH_MAX_LENGTH];
+               unsigned val = user + 1;
+
+               key_split_joycon[0] = '\0';
+
+               snprintf(key_split_joycon, sizeof(key_split_joycon),
+                     "%s_%u",
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON), val);
+
+               menu_displaylist_parse_settings(menu, info,
+                     key_split_joycon, PARSE_ONLY_UINT, true);
+            }
+         }
+#endif
+
          {
             unsigned user;
             unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
@@ -6689,6 +6702,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user),
                      PARSE_ACTION, false);
             }
+
          }
 
          info->need_refresh = true;
