@@ -8,6 +8,7 @@
 - CRT: New functionality, ability to switch between 15KHz and 31KHz, etc.
 - COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
 - DISCORD: Add 'Ask To Join' Feature.
+- INPUT: Add new menu toggle combos 'L3 + R' and 'L + R' (useful for Switch).
 - IOS: Use safe area to account for notch for iPhone X and adjust main view.
 - LOCALIZATION: Update Portuguese / Brazilian translation.
 - LOCALIZATION: Update Japanese translation.
