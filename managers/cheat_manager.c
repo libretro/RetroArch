@@ -693,6 +693,10 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
       return 0;
    }
 
+   if ( meminfo.size == 0 )
+   {
+      return 0 ;
+   }
    cheat_manager_state.actual_memory_size = (unsigned)meminfo.size;
    cheat_manager_state.curr_memory_buf    = meminfo.data;
    cheat_manager_state.total_memory_size  = (unsigned)meminfo.size;
