@@ -2551,22 +2551,23 @@ typedef struct
 enum
 {
    /* Negative values because CORO_SUB generates positive values */
-   SNES_MD5     = -1,
-   GENESIS_MD5  = -2,
-   LYNX_MD5     = -3,
-   NES_MD5      = -4,
-   GENERIC_MD5  = -5,
-   FILENAME_MD5 = -6,
-   EVAL_MD5     = -7,
-   FILL_MD5     = -8,
-   GET_GAMEID   = -9,
-   GET_CHEEVOS  = -10,
-   GET_BADGES   = -11,
-   LOGIN        = -12,
-   HTTP_GET     = -13,
-   DEACTIVATE   = -14,
-   PLAYING      = -15,
-   DELAY        = -16
+   SNES_MD5             = -1,
+   GENESIS_MD5          = -2,
+   LYNX_MD5             = -3,
+   NES_MD5              = -4,
+   HEADERLESS_NES_MD5   = -5,
+   GENERIC_MD5          = -6,
+   FILENAME_MD5         = -7,
+   EVAL_MD5             = -8,
+   FILL_MD5             = -9,
+   GET_GAMEID           = -10,
+   GET_CHEEVOS          = -11,
+   GET_BADGES           = -12,
+   LOGIN                = -13,
+   HTTP_GET             = -14,
+   DEACTIVATE           = -15,
+   PLAYING              = -16,
+   DELAY                = -17
 };
 
 static int cheevos_iterate(coro_t *coro)
@@ -2612,12 +2613,15 @@ static int cheevos_iterate(coro_t *coro)
 
    static cheevos_finder_t finders[] =
    {
-      {SNES_MD5,    "SNES (8Mb padding)",                snes_exts},
-      {GENESIS_MD5, "Genesis (6Mb padding)",             genesis_exts},
-      {LYNX_MD5,    "Atari Lynx (only first 512 bytes)", lynx_exts},
-      {NES_MD5,     "NES (discards VROM)",               NULL},
-      {GENERIC_MD5, "Generic (plain content)",           NULL},
-      {FILENAME_MD5, "Generic (filename)",               NULL}
+      {SNES_MD5,            "SNES (8Mb padding)",                snes_exts},
+      {GENESIS_MD5,         "Genesis (6Mb padding)",             genesis_exts},
+      {LYNX_MD5,            "Atari Lynx (only first 512 bytes)", lynx_exts},
+      {NES_MD5,             "NES (discards VROM)",               NULL},
+      {GENERIC_MD5,         "Generic (plain content)",           NULL},
+      {FILENAME_MD5,        "Generic (filename)",                NULL},
+      /* Headerless NES comes last due to the volume of requests
+       * and lack of extension filtering. */
+      {HEADERLESS_NES_MD5,  "Headerless NES (discards VROM)",    NULL}
    };
 
    CORO_ENTER();
@@ -3041,42 +3045,45 @@ found:
       MD5_Final(coro->hash, &coro->md5);
       CORO_GOTO(GET_GAMEID);
       }
-      else
+
+    CORO_SUB(HEADERLESS_NES_MD5)
+
+      unsigned i;
+      size_t chunks     = coro->len >> 14;
+      size_t chunk_size = 0x4000;
+
+      /* Fall back to headerless hashing
+       * PRG ROM size is unknown, so test by 16KB chunks */
+
+      coro->round       = 0;
+      coro->offset      = 0;
+      
+      for (i = chunks; i > 0; i--)
       {
-          // Fall back to headerless hashing
-          // PRG ROM size is unknown, so test by 16KB chunks          
-          size_t chunks = coro->len >> 14;
-          size_t chunk_size = 0x4000;
-          coro->round = 0;
-          coro->offset = 0;
+          MD5_Init(&coro->md5);
           
-          for (int i = 0; i < chunks; i++)
+          coro->bytes = i;
+          coro->count = coro->bytes * chunk_size;
+          
+          CORO_GOSUB(EVAL_MD5);
+
+          if (coro->count < 0x4000 * coro->bytes)
           {
-              MD5_Init(&coro->md5);
-              
-              coro->bytes = i + 1;
-              coro->count = coro->bytes * chunk_size;
-              
-              CORO_GOSUB(EVAL_MD5);
-
-              if (coro->count < 0x4000 * coro->bytes)
-              {
-                 coro->offset      = 0xff;
-                 coro->count       = 0x4000 * coro->bytes - coro->count;
-                 CORO_GOSUB(FILL_MD5);
-              }
-
-              MD5_Final(coro->hash, &coro->md5);
-              CORO_GOSUB(GET_GAMEID);
-              
-              if (coro->gameid > 0)
-              {
-                  break;
-              }
+             coro->offset      = 0xff;
+             coro->count       = 0x4000 * coro->bytes - coro->count;
+             CORO_GOSUB(FILL_MD5);
           }
 
-          CORO_RET();
+          MD5_Final(coro->hash, &coro->md5);
+          CORO_GOSUB(GET_GAMEID);
+          
+          if (coro->gameid > 0)
+          {
+              break;
+          }
       }
+
+      CORO_RET();
 
       /**************************************************************************
        * Info   Tries to identify a "generic" game
