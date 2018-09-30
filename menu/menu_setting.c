@@ -3144,6 +3144,7 @@ static bool setting_append_list_input_player_options(
       menu_settings_list_current_add_enum_idx(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE + user));
 
+#ifdef HAVE_LIBNX
       CONFIG_UINT_ALT(
             list, list_info,
             &settings->uints.input_split_joycon[user],
@@ -3166,6 +3167,7 @@ static bool setting_append_list_input_player_options(
 #endif
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_split_joycon;
       menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0, true, true);
+#endif
 
       CONFIG_ACTION_ALT(
             list, list_info,
