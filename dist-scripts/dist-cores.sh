@@ -164,6 +164,7 @@ if [ $PLATFORM = "libnx" ]; then
    mkdir -p ../pkg/${platform}/switch
    make -C ../ -f Makefile.${platform} HAVE_STATIC_DUMMY=1 -j3 || exit 1
    mv -f ../retroarch_switch.nro ../pkg/${platform}/switch/retroarch_switch.nro
+   make -C ../ -f Makefile.${platform} clean || exit 1
 fi
 
 #for f in *_${platform}.${EXT} ; do
