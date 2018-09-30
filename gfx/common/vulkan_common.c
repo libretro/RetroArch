@@ -199,10 +199,14 @@ VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
    return res;
 }
 
-static void vulkan_emulated_mailbox_loop(struct vulkan_emulated_mailbox *mailbox)
+static void vulkan_emulated_mailbox_loop(void *userdata)
 {
    VkFence fence;
    VkFenceCreateInfo info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+   struct vulkan_emulated_mailbox *mailbox = (struct vulkan_emulated_mailbox*)userdata;
+
+   if (!mailbox)
+      return;
 
    vkCreateFence(mailbox->device, &info, NULL, &fence);
 
