@@ -199,12 +199,10 @@ VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
    return res;
 }
 
-static void vulkan_emulated_mailbox_loop(void *userdata)
+static void vulkan_emulated_mailbox_loop(struct vulkan_emulated_mailbox *mailbox)
 {
    VkFence fence;
    VkFenceCreateInfo info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
-   struct vulkan_emulated_mailbox *mailbox =
-      (struct vulkan_emulated_mailbox *)userdata;
 
    vkCreateFence(mailbox->device, &info, NULL, &fence);
 
@@ -1544,10 +1542,10 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
       const char **exts, unsigned num_exts,
       const char **optional_exts, unsigned num_optional_exts)
 {
-   bool ret = true;
-   VkExtensionProperties *properties = NULL;
    uint32_t property_count;
    unsigned i;
+   bool ret                          = true;
+   VkExtensionProperties *properties = NULL;
 
    if (vkEnumerateDeviceExtensionProperties(gpu, NULL, &property_count, NULL) != VK_SUCCESS)
       return false;
