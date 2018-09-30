@@ -1703,6 +1703,9 @@ static void setting_get_string_representation_toggle_gamepad_combo(
       case INPUT_TOGGLE_START_SELECT:
          strlcpy(s, "Start + Select", len);
          break;
+      case INPUT_TOGGLE_L3_R:
+         strlcpy(s, "L3 + R", len);
+         break;
    }
 }
 
@@ -6265,7 +6268,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_toggle_gamepad_combo;
-            menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
 
             CONFIG_BOOL(
                   list, list_info,
