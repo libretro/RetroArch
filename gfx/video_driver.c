@@ -2861,13 +2861,12 @@ void video_driver_build_info(video_frame_info_t *video_info)
  * viewport info.
  **/
 bool video_driver_translate_coord_viewport(
-      void *data,
+      struct video_viewport *vp,
       int mouse_x,           int mouse_y,
       int16_t *res_x,        int16_t *res_y,
       int16_t *res_screen_x, int16_t *res_screen_y)
 {
    int scaled_screen_x, scaled_screen_y, scaled_x, scaled_y;
-   struct video_viewport *vp = (struct video_viewport*)data;
    int norm_vp_width         = (int)vp->width;
    int norm_vp_height        = (int)vp->height;
    int norm_full_vp_width    = (int)vp->full_width;
@@ -3493,34 +3492,24 @@ static const shader_backend_t *video_shader_set_backend(
    return NULL;
 }
 
-void video_shader_driver_use(void *data)
+void video_shader_driver_use(video_shader_ctx_info_t *shader_info)
 {
    if (current_shader && current_shader->use)
-   {
-      video_shader_ctx_info_t *shader_info =
-         (video_shader_ctx_info_t*)data;
       current_shader->use(shader_info->data, current_shader_data,
             shader_info->idx, shader_info->set_active);
-   }
 }
 
-void video_shader_driver_set_parameter(void *data)
+void video_shader_driver_set_parameter(struct uniform_info *param)
 {
    if (current_shader && current_shader->set_uniform_parameter)
-   {
-      struct uniform_info *param = (struct uniform_info*)data;
       current_shader->set_uniform_parameter(current_shader_data,
             param, NULL);
-   }
 }
 
-void video_shader_driver_set_parameters(void *data)
+void video_shader_driver_set_parameters(video_shader_ctx_params_t *params)
 {
    if (current_shader && current_shader->set_params)
-   {
-      video_shader_ctx_params_t *params = (video_shader_ctx_params_t*)data;
       current_shader->set_params(params, current_shader_data);
-   }
 }
 
 bool video_shader_driver_get_prev_textures(
