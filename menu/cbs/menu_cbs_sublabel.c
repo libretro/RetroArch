@@ -232,6 +232,9 @@ default_sublabel_macro(action_bind_sublabel_cheat_search_eq,               MENU_
 default_sublabel_macro(action_bind_sublabel_cheat_search_neq,              MENU_ENUM_SUBLABEL_CHEAT_SEARCH_NEQ)
 default_sublabel_macro(action_bind_sublabel_cheat_search_eqplus,           MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS)
 default_sublabel_macro(action_bind_sublabel_cheat_search_eqminus,          MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS)
+default_sublabel_macro(action_bind_sublabel_cheat_repeat_count,            MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT)
+default_sublabel_macro(action_bind_sublabel_cheat_repeat_add_to_address,   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS)
+default_sublabel_macro(action_bind_sublabel_cheat_repeat_add_to_value,     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE)
 default_sublabel_macro(action_bind_sublabel_cheat_add_matches,             MENU_ENUM_SUBLABEL_CHEAT_ADD_MATCHES)
 default_sublabel_macro(action_bind_sublabel_cheat_view_matches,            MENU_ENUM_SUBLABEL_CHEAT_VIEW_MATCHES)
 default_sublabel_macro(action_bind_sublabel_cheat_create_option,           MENU_ENUM_SUBLABEL_CHEAT_CREATE_OPTION)
@@ -1470,6 +1473,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_search_eqminus);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_REPEAT_COUNT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_repeat_count);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_ADDRESS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_repeat_add_to_address);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_VALUE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_repeat_add_to_value);
             break;
          case MENU_ENUM_LABEL_CHEAT_ADD_MATCHES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_add_matches);

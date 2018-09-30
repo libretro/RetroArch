@@ -4916,6 +4916,18 @@ MSG_HASH(
     "Auto-apply cheats when game loads."
 )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
+    "The number of times the cheat will be applied.  Use with the other two Iteration options to affect large areas of memory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+    "After each 'Number of Iterations' the Memory Address will be increased by this number times the 'Memory Search Size'."
+)
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+    "After each 'Number of Iterations' the Value will be increased by this amount."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
     "When rewinding a defined number of frames, you can rewind several frames at a time, increasing the rewind speed."
     )
