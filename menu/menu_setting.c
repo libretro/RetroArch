@@ -1123,7 +1123,7 @@ static int setting_string_action_left_driver(rarch_setting_t *setting,
 static int setting_string_action_left_netplay_mitm_server(
       rarch_setting_t *setting, bool wraparound)
 {
-   int i;
+   unsigned i;
    int offset               = 0;
    bool               found = false;
    unsigned        list_len = ARRAY_SIZE(netplay_mitm_server_list);

@@ -201,7 +201,6 @@ VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
 
 static void vulkan_emulated_mailbox_loop(void *userdata)
 {
-   VkResult res;
    VkFence fence;
    VkFenceCreateInfo info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
    struct vulkan_emulated_mailbox *mailbox =
@@ -619,7 +618,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
       type = VULKAN_TEXTURE_STAGING;
       vkDestroyImage(device, tex.image, NULL);
-      tex.image = NULL;
+      tex.image          = NULL;
       info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
 
       buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;

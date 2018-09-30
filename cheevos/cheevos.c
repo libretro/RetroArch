@@ -651,7 +651,7 @@ static void cheevos_lboard_submit(cheevos_lboard_t* lboard)
 static void cheevos_test_leaderboards(void)
 {
    cheevos_lboard_t* lboard = cheevos_locals.lboards;
-   int i;
+   unsigned	 i;
    unsigned value;
 
    for (i = 0; i < cheevos_locals.patchdata.lboard_count; i++, lboard++)
