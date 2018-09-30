@@ -2869,6 +2869,38 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
     "Show date / time"
     )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+       "Style of date / time"
+    )
+    MSG_HASH(
+       MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+       "Changes the style current date and/or time is shown inside the menu."
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
+       "YYYY-MM-DD H:M:S"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD,
+       "YY-MM-DD"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
+       "HH:MM:SS"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
+       "HH:MM"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
+       "DD/MM HH:MM"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
+       "HH:MM (AM/PM)"
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
     "Menu title color"

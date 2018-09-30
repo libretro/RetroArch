@@ -1738,6 +1738,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Shows current date and/or time inside menu.");
             break;
+        case MENU_ENUM_LABEL_TIMEDATE_STYLE:
+           snprintf(s, len,
+              "Style to show the current date and/or time in.");
+           break;
         case MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE:
             snprintf(s, len,
                      "Shows current battery level inside menu.");

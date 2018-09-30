@@ -368,6 +368,14 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
          strftime(datetime->s, datetime->len,
                "%d/%m %H:%M", localtime(&time_));
          break;
+      case 5: /* Time (hours-minutes), in 12 hour AM-PM designation */
+#if defined(__linux__) && !defined(ANDROID)
+         strftime(datetime->s, datetime->len,
+            "%c", localtime(&time_));
+#else
+         strftime(datetime->s, datetime->len,
+            "%I:%M %p", localtime(&time_));
+#endif
    }
 }
 
