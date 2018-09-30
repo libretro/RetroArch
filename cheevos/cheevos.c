@@ -3048,16 +3048,23 @@ found:
 
     CORO_SUB(HEADERLESS_NES_MD5)
 
-      unsigned i;
       size_t chunks     = coro->len >> 14;
+
+      /* Assume that valid (including unlicensed) NES titles do not 
+       * exceed 32MiB, in order to avoid excessive requests
+       * with large non-NES files. */
+      if (chunks > 250)
+      {
+          CORO_RET();
+      }
+
       size_t chunk_size = 0x4000;
 
-      /* Fall back to headerless hashing
-       * PRG ROM size is unknown, so test by 16KB chunks */
-
+      /* PRG ROM size is unknown, so test by 16KB chunks. */
       coro->round       = 0;
       coro->offset      = 0;
-      
+
+      unsigned i;
       for (i = chunks; i > 0; i--)
       {
           MD5_Init(&coro->md5);
