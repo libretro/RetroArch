@@ -2786,6 +2786,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->use_rgba              = video_driver_use_rgba;
 
    video_info->libretro_running       = false;
+   video_info->msg_bgcolor_enable     = settings->bools.video_msg_bgcolor_enable;
+
 #ifdef HAVE_MENU
    video_info->menu_is_alive          = menu_driver_is_alive();
    video_info->menu_footer_opacity    = settings->floats.menu_footer_opacity;

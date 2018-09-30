@@ -1148,8 +1148,7 @@ static bool gl_frame(void *data, const void *frame,
 
    if (!string_is_empty(msg))
    {
-      settings_t *settings = config_get_ptr();
-      if (settings && settings->bools.video_msg_bgcolor_enable)
+      if (video_info->msg_bgcolor_enable)
          gl_render_osd_background(gl, video_info, msg);
       font_driver_render_msg(video_info, NULL, msg, NULL);
    }
