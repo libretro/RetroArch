@@ -1,5 +1,5 @@
-#ifndef CORO_H
-#define CORO_H
+#ifndef __RARCH_CHEEVOS_CORO_H
+#define __RARCH_CHEEVOS_CORO_H
 
 /*
 Released under the CC0: https://creativecommons.org/publicdomain/zero/1.0/
@@ -72,4 +72,4 @@ Released under the CC0: https://creativecommons.org/publicdomain/zero/1.0/
   int step, sp; \
   int stack[ 8 ];
 
-#endif /* CORO_H */
+#endif /* __RARCH_CHEEVOS_CORO_H */

@@ -152,8 +152,21 @@ ACHIEVEMENTS
 #include "../network/net_http_special.c"
 #include "../cheevos/cheevos.c"
 #include "../cheevos/badges.c"
-#include "../cheevos/var.c"
-#include "../cheevos/cond.c"
+#include "../cheevos/fixup.c"
+#include "../cheevos/hash.c"
+#include "../cheevos/parser.c"
+
+#include "../deps/rcheevos/src/rcheevos/alloc.c"
+#include "../deps/rcheevos/src/rcheevos/condition.c"
+#include "../deps/rcheevos/src/rcheevos/condset.c"
+#include "../deps/rcheevos/src/rcheevos/expression.c"
+#include "../deps/rcheevos/src/rcheevos/format.c"
+#include "../deps/rcheevos/src/rcheevos/lboard.c"
+#include "../deps/rcheevos/src/rcheevos/operand.c"
+#include "../deps/rcheevos/src/rcheevos/term.c"
+#include "../deps/rcheevos/src/rcheevos/trigger.c"
+#include "../deps/rcheevos/src/rcheevos/value.c"
+#include "../deps/rcheevos/src/rurl/url.c"
 #endif
 
 /*============================================================

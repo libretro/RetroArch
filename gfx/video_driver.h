@@ -1085,7 +1085,7 @@ void video_driver_frame(const void *data, unsigned width,
  * viewport info.
  **/
 bool video_driver_translate_coord_viewport(
-      void *data,
+      struct video_viewport *vp,
       int mouse_x, int mouse_y,
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
       int16_t *res_screen_y);
@@ -1208,9 +1208,9 @@ bool video_shader_driver_direct_get_current_shader(video_shader_ctx_t *shader);
 
 bool video_shader_driver_deinit(void);
 
-void video_shader_driver_set_parameter(void *data);
+void video_shader_driver_set_parameter(struct uniform_info *param);
 
-void video_shader_driver_set_parameters(void *data);
+void video_shader_driver_set_parameters(video_shader_ctx_params_t *params);
 
 bool video_shader_driver_init_first(void);
 
@@ -1232,7 +1232,7 @@ bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter);
 
 bool video_shader_driver_compile_program(struct shader_program_info *program_info);
 
-void video_shader_driver_use(void *data);
+void video_shader_driver_use(video_shader_ctx_info_t *shader_info);
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
 

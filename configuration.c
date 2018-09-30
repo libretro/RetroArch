@@ -1879,7 +1879,11 @@ static void config_set_defaults(void)
    for (i = 0; i < MAX_USERS; i++)
    {
       settings->uints.input_joypad_map[i] = i;
+#ifdef SWITCH // Switch prefered default dpad mode
+      settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_LSTICK;
+#else
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_NONE;
+#endif
       input_config_set_device(i, RETRO_DEVICE_JOYPAD);
       settings->uints.input_mouse_index[i] = 0;
    }

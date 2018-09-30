@@ -1,6 +1,7 @@
 # 1.7.5 (future)
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
 - CHEATS: Add support for Rumble when increase or decrease by the rumble value.
+- CHEATS: Add cheat variables to allow for updating large portions of memory.
 - CHEEVOS: Support headerless NES hashing.
 - CHEEVOS: Prevent loading states before achievements are fully loaded.
 - CRT: New porches and interlaced bug fix.

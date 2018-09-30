@@ -34,7 +34,7 @@ static const font_renderer_driver_t *font_backends[] = {
    &coretext_font_renderer,
 #endif
 #ifdef HAVE_STB_FONT
-#if defined(VITA) || defined(WIIU) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER) && _MSC_VER > 1400) || defined(__CELLOS_LV2__)
+#if defined(VITA) || defined(WIIU) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER) && _MSC_VER > 1400) || defined(__CELLOS_LV2__) || defined(HAVE_LIBNX)
    &stb_unicode_font_renderer,
 #else
    &stb_font_renderer,
@@ -56,14 +56,6 @@ int font_renderer_create_default(
    for (i = 0; font_backends[i]; i++)
    {
       const char *path = font_path;
-      /*
-        Switch libnx freetype is bugged on thread, skip
-        TODO: remove when fixed
-      */
-#if defined(HAVE_LIBNX) && defined(HAVE_FREETYPE)
-      if(font_backends[i] == &freetype_font_renderer && *video_driver_get_threaded()) // freetype
-         continue;
-#endif
 
       if (!path)
          path = font_backends[i]->get_default_font();
