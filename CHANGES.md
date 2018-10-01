@@ -9,6 +9,7 @@
 - CRT: New functionality, ability to switch between 15KHz and 31KHz, etc.
 - COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
 - DISCORD: Add 'Ask To Join' Feature.
+- EMSCRIPTEN: Add stb_font support.
 - INPUT: Add new menu toggle combos 'L3 + R' and 'L + R' (useful for Switch).
 - IOS: Use safe area to account for notch for iPhone X and adjust main view.
 - LOCALIZATION: Update Portuguese / Brazilian translation.
@@ -26,6 +27,7 @@
 - OPENGL/GLX: Implement Adaptive VSync - GLX_EXT_swap_control_tear.
 - OPENGL/WGL: Implement Adaptive VSync - WGL_EXT_swap_control_tear.
 - RUNAHEAD: Fix performance degradation that could happen over time (after approx. 30 mins). Fixed input IDs outside of range 0-35 causing slow performance in runahead.
+- SWITCH: Add stb_font support.
 - SWITCH: Merging of RetroNX Nintendo Switch port, based on libnx SDK.
 - VULKAN: Fix race condition in threaded mailbox emulation.
 - VULKAN: Maintenance fixes.
