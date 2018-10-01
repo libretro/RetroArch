@@ -36,6 +36,7 @@
 #include "../../core.h"
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
+#include ".././verbosity.h"
 
 #ifdef HAVE_METAL
 #import <Metal/Metal.h>
