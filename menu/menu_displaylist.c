@@ -1225,6 +1225,16 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT),
+         _stbfont_supp ?
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO));
+   menu_entries_append_enum(info->list, feat_str, "",
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT),
          _netplay_supp ?
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES)
@@ -7853,7 +7863,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      struct core_option *option      = NULL;
 
                      i--;
-                     
+
                      option                          = (struct core_option*)&coreopts->opts[i];
 
                      if (option)

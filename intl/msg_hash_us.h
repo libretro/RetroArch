@@ -2622,6 +2622,10 @@ MSG_HASH(
     "FreeType support"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
+    "STB TrueType support"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
     "Frontend identifier"
     )
