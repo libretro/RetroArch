@@ -29,6 +29,7 @@
 - SWITCH: Add stb_font support.
 - SWITCH: Add Retro Achievements support.
 - SWITCH: Add networking support.
+- SWITCH: Add touchscreen support.
 - SWITCH: Add OpenGL support.
 - SWITCH: Merging of RetroNX Nintendo Switch port, based on libnx SDK.
 - VULKAN: Fix race condition in threaded mailbox emulation.
