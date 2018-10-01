@@ -2604,6 +2604,12 @@ static int cheevos_iterate(coro_t *coro)
       0x0b88abd2U, /* swc */
       0
    };
+   
+   static const uint32_t nes_exts[] =
+   {
+      0x0b88944bU, /* nes */
+      0
+   };
 
    static const uint32_t lynx_exts[] =
    {
@@ -2619,9 +2625,8 @@ static int cheevos_iterate(coro_t *coro)
       {NES_MD5,             "NES (discards VROM)",               NULL},
       {GENERIC_MD5,         "Generic (plain content)",           NULL},
       {FILENAME_MD5,        "Generic (filename)",                NULL},
-      /* Headerless NES comes last due to the volume of requests
-       * and lack of extension filtering. */
-      {HEADERLESS_NES_MD5,  "Headerless NES (discards VROM)",    NULL}
+      /* Headerless NES comes last due to the volume of requests. */
+      {HEADERLESS_NES_MD5,  "Headerless NES (discards VROM)",    nes_exts}
    };
 
    CORO_ENTER();
