@@ -36,6 +36,7 @@
 #include "../../core.h"
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
+#include ".././verbosity.h"
 
 id apple_platform;
 
