@@ -519,26 +519,35 @@ static void setting_get_string_representation_uint_menu_timedate_style(
          MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS), len);
       break;
    case 1:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD), len);
+      strlcpy(s, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM), len);
       break;
    case 2:
       strlcpy(s,
          msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS), len);
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD), len);
       break;
    case 3:
       strlcpy(s,
          msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM), len);
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS), len);
       break;
    case 4:
       strlcpy(s,
          msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM), len);
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM), len);
       break;
    case 5:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM), len);
+      break;
+   case 6:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM), len);
+      break;
+   case 7:
       strlcpy(s,
          msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM), len);
@@ -8279,7 +8288,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_menu_timedate_style;
-         menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0, 7, 1, true, true);
 
          CONFIG_BOOL(
                list, list_info,

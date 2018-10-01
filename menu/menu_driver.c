@@ -17,7 +17,7 @@
 
 #include <string.h>
 #include <time.h>
-
+#include <locale.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
@@ -346,32 +346,42 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
 
    time(&time_);
 
+   setlocale(LC_TIME, "");
+
    switch (datetime->time_mode)
    {
       case 0: /* Date and time */
          strftime(datetime->s, datetime->len,
                "%Y-%m-%d %H:%M:%S", localtime(&time_));
          break;
-      case 1: /* Date */
+      case 1: /* YY-MM-DD HH:MM */
          strftime(datetime->s, datetime->len,
-               "%Y-%m-%d", localtime(&time_));
+               "%Y-%m-%d %H:%M", localtime(&time_));
          break;
-      case 2: /* Time */
+      case 2: /* Date */
+         strftime(datetime->s, datetime->len,
+               "%y-%m-%d", localtime(&time_));
+         break;
+      case 3: /* Time */
          strftime(datetime->s, datetime->len,
                "%H:%M:%S", localtime(&time_));
          break;
-      case 3: /* Time (hours-minutes) */
+      case 4: /* Time (hours-minutes) */
          strftime(datetime->s, datetime->len,
                "%H:%M", localtime(&time_));
          break;
-      case 4: /* Date and time, without year and seconds */
+      case 5: /* Date and time, without year and seconds */
          strftime(datetime->s, datetime->len,
                "%d/%m %H:%M", localtime(&time_));
          break;
-      case 5: /* Time (hours-minutes), in 12 hour AM-PM designation */
+      case 6:
+         strftime(datetime->s, datetime->len,
+               "%m/%d %H:%M", localtime(&time_));
+         break;
+      case 7: /* Time (hours-minutes), in 12 hour AM-PM designation */
 #if defined(__linux__) && !defined(ANDROID)
          strftime(datetime->s, datetime->len,
-            "%c", localtime(&time_));
+            "%r", localtime(&time_));
 #else
          strftime(datetime->s, datetime->len,
             "%I:%M %p", localtime(&time_));
