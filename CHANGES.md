@@ -28,6 +28,8 @@
 - RUNAHEAD: Fix performance degradation that could happen over time (after approx. 30 mins). Fixed input IDs outside of range 0-35 causing slow performance in runahead.
 - SWITCH: Add stb_font support.
 - SWITCH: Add Retro Achievements support.
+- SWITCH: Add networking support.
+- SWITCH: Add OpenGL support.
 - SWITCH: Merging of RetroNX Nintendo Switch port, based on libnx SDK.
 - VULKAN: Fix race condition in threaded mailbox emulation.
 - VULKAN: Maintenance fixes.
