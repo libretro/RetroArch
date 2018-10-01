@@ -23,6 +23,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include <lists/file_list.h>
+
 #include "../setting_list.h"
 
 RETRO_BEGIN_DECLS
