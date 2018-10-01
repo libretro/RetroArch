@@ -48,7 +48,7 @@
 #define DEFAULT_ASPECT_RATIO -1.0f
 #endif
 
-#ifdef RARCH_MOBILE
+#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX)
 static const bool pointer_enable = true;
 #else
 static const bool pointer_enable = false;
