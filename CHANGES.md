@@ -1,5 +1,6 @@
 # 1.7.5 (future)
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
+- CONFIG: Add 'Reset To Defaults' setting in Configurations. Thi will reset your config file to defaults.
 - CHEATS: Add support for Rumble when increase or decrease by the rumble value.
 - CHEATS: Add cheat variables to allow for updating large portions of memory.
 - CHEEVOS: Support headerless NES hashing.
