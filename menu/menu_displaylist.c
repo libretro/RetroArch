@@ -2995,6 +2995,12 @@ static int menu_displaylist_parse_configurations_list(
          MENU_SETTING_ACTION, 0, 0);
 
    menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG),
+         msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG),
+         MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG),
          msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG),
          MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,

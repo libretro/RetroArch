@@ -721,6 +721,8 @@ bool config_init(void);
 
 bool config_overlay_enable_default(void);
 
+void config_set_defaults(void);
+
 void config_free(void);
 
 settings_t *config_get_ptr(void);

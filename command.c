@@ -2439,6 +2439,9 @@ TODO: Add a setting for these tweaks */
          command_event(CMD_EVENT_QUIT, NULL);
 #endif
          break;
+      case CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG:
+         config_set_defaults();
+         break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
          command_event_save_current_config(OVERRIDE_NONE);
          break;

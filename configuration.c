@@ -1666,7 +1666,7 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
  *
  * Set 'default' configuration values.
  **/
-static void config_set_defaults(void)
+void config_set_defaults(void)
 {
    unsigned i, j;
 #ifdef HAVE_MENU

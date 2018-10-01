@@ -1711,3 +1711,5 @@ MSG_HASH(MENU_ENUM_LABEL_STREAMING_MODE,
       "streaming_mode")
 MSG_HASH(MENU_ENUM_LABEL_STREAMING_TITLE,
       "streaming_title")
+MSG_HASH(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
+      "reset_to_default_config")
