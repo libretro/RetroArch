@@ -1070,6 +1070,12 @@ enum retro_mod
                                             * Returns a MIDI interface that can be used for raw data I/O.
                                             */
 
+#define RETRO_ENVIRONMENT_GET_FASTFORWARDING (49 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                            /* bool * --
+                                            * Boolean value that indicates whether or not the frontend is in
+                                            * fastforwarding mode.
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
