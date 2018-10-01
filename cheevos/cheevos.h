@@ -70,7 +70,6 @@ extern bool cheevos_hardcore_paused;
 extern bool cheevos_state_loaded_flag;
 extern int cheats_are_enabled;
 extern int cheats_were_enabled;
-;
 
 RETRO_END_DECLS
 
