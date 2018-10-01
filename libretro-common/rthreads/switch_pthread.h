@@ -32,6 +32,8 @@
 #include "../../verbosity.h"
 
 #define THREADVARS_MAGIC 0x21545624 // !TV$
+int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+void pthread_exit(void *retval);
 
 // This structure is exactly 0x20 bytes, if more is needed modify getThreadVars() below
 typedef struct
@@ -55,43 +57,6 @@ typedef struct
 static INLINE ThreadVars *getThreadVars(void)
 {
    return (ThreadVars *)((u8 *)armGetTls() + 0x1E0);
-}
-
-#define STACKSIZE (128 * 1024)
-static uint32_t threadCounter = 1;
-int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
-{
-   u32 prio = 0;
-
-   Thread new_switch_thread;
-
-   svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
-
-   // Launch threads on Core 1
-   int rc = threadCreate(&new_switch_thread, (void (*)(void *))start_routine, arg, STACKSIZE, prio - 1, 1);
-
-   if (R_FAILED(rc))
-   {
-      return EAGAIN;
-   }
-
-   printf("[Threading]: Starting Thread(#%i)\n", threadCounter);
-   if (R_FAILED(threadStart(&new_switch_thread)))
-   {
-      threadClose(&new_switch_thread);
-      return -1;
-   }
-
-   *thread = new_switch_thread;
-
-   return 0;
-}
-
-void pthread_exit(void *retval)
-{
-   (void)retval;
-   printf("[Threading]: Exiting Thread\n");
-   svcExitThread();
 }
 
 static INLINE Thread threadGetCurrent(void)
