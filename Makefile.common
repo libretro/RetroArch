@@ -1608,29 +1608,16 @@ ifeq ($(HAVE_NETWORKING), 1)
 			network/netplay/netplay_room_parse.o
 
    # Retro Achievements
-
    ifeq ($(HAVE_CHEEVOS), 1)
-      DEFINES += -DHAVE_CHEEVOS \
-         -Ideps/rcheevos/include \
-         -Ideps/lua/src
-      OBJ += cheevos/cheevos.o \
-         cheevos/fixup.o \
-         cheevos/parser.o \
-         cheevos/badges.o \
-         cheevos/hash.o \
-         deps/rcheevos/src/rcheevos/trigger.o \
-         deps/rcheevos/src/rcheevos/condset.o \
-         deps/rcheevos/src/rcheevos/condition.o \
-         deps/rcheevos/src/rcheevos/operand.o \
-         deps/rcheevos/src/rcheevos/term.o \
-         deps/rcheevos/src/rcheevos/expression.o \
-         deps/rcheevos/src/rcheevos/value.o \
-         deps/rcheevos/src/rcheevos/lboard.o \
-         deps/rcheevos/src/rcheevos/alloc.o \
-         deps/rcheevos/src/rcheevos/format.o \
-         deps/rcheevos/src/rurl/url.o \
-         $(LIBRETRO_COMM_DIR)/utils/md5.o
-   endif
+      DEFINES += -DHAVE_CHEEVOS
+		
+		OBJ += cheevos/cheevos.o \
+				 cheevos/badges.o \
+				 cheevos/var.o \
+				 cheevos/cond.o
+
+		OBJ += \
+		 $(LIBRETRO_COMM_DIR)/utils/md5.o
 
    ifeq ($(HAVE_LUA), 1)
       DEFINES += -DHAVE_LUA \
@@ -1672,6 +1659,8 @@ ifeq ($(HAVE_NETWORKING), 1)
    else
       DEFINES += -DRC_DISABLE_LUA
    endif
+
+	endif
 
    ifeq ($(HAVE_DISCORD), 1)
       NEED_CXX_LINKER = 1

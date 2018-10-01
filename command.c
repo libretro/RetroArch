@@ -41,7 +41,11 @@
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
+#ifdef HAVE_NEW_CHEEVOS
 #include "cheevos/fixup.h"
+#else
+#include "cheevos/var.h"
+#endif
 #endif
 
 #ifdef HAVE_DISCORD
@@ -273,6 +277,7 @@ static bool command_version(const char* arg)
 #define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
 {
+#if defined(HAVE_NEW_CHEEVOS)
    unsigned i;
    char  *reply            = NULL;
    const uint8_t * data    = NULL;
@@ -299,6 +304,38 @@ static bool command_read_ram(const char *arg)
       command_reply(reply, reply_at+strlen(" -1\n") - reply);
    }
    free(reply);
+#else
+      cheevos_var_t var;
+   unsigned i;
+   char reply[256]      = {0};
+   const uint8_t * data = NULL;
+   char *reply_at       = NULL;
+
+   reply[0]             = '\0';
+
+   strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
+   reply_at = reply + strlen("READ_CORE_RAM ");
+   strlcpy(reply_at, arg, sizeof(reply)-strlen(reply));
+
+   var.value = strtoul(reply_at, (char**)&reply_at, 16);
+   cheevos_var_patch_addr(&var, cheevos_get_console());
+   data = cheevos_var_get_memory(&var);
+
+   if (data)
+   {
+      unsigned nbytes = strtol(reply_at, NULL, 10);
+
+      for (i=0;i<nbytes;i++)
+         sprintf(reply_at+3*i, " %.2X", data[i]);
+      reply_at[3*nbytes] = '\n';
+      command_reply(reply, reply_at+3*nbytes+1 - reply);
+   }
+   else
+   {
+      strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
+      command_reply(reply, reply_at+strlen(" -1\n") - reply);
+   }
+#endif
 
    return true;
 }
@@ -307,8 +344,18 @@ static bool command_read_ram(const char *arg)
 static bool command_write_ram(const char *arg)
 {
    unsigned nbytes   = 0;
+#if defined(HAVE_NEW_CHEEVOS)
    unsigned int addr = strtoul(arg, (char**)&arg, 16);
    uint8_t *data     = (uint8_t *)cheevos_patch_address(addr, cheevos_get_console());
+#else
+   cheevos_var_t var;
+   uint8_t *data     = NULL;
+
+   var.value = strtoul(arg, (char**)&arg, 16);
+   cheevos_var_patch_addr(&var, cheevos_get_console());
+
+   data = cheevos_var_get_memory(&var);
+#endif
 
    if (data)
    {

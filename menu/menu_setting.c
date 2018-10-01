@@ -2908,7 +2908,9 @@ static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
    if (!setting)
       return;
 
-   if (settings && settings->bools.cheevos_hardcore_mode_enable && cheevos_state_loaded_flag)
+   if (settings && settings->bools.cheevos_hardcore_mode_enable
+         && cheevos_state_loaded_flag
+         )
    {
       cheevos_hardcore_paused = true;
       runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true);

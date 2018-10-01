@@ -150,11 +150,13 @@ ACHIEVEMENTS
 
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../network/net_http_special.c"
-#include "../cheevos/cheevos.c"
-#include "../cheevos/badges.c"
-#include "../cheevos/fixup.c"
-#include "../cheevos/hash.c"
-#include "../cheevos/parser.c"
+
+#ifdef HAVE_NEW_CHEEVOS
+#include "../cheevos-new/cheevos.c"
+#include "../cheevos-new/badges.c"
+#include "../cheevos-new/fixup.c"
+#include "../cheevos-new/hash.c"
+#include "../cheevos-new/parser.c"
 
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
 #include "../deps/rcheevos/src/rcheevos/condition.c"
@@ -167,6 +169,13 @@ ACHIEVEMENTS
 #include "../deps/rcheevos/src/rcheevos/trigger.c"
 #include "../deps/rcheevos/src/rcheevos/value.c"
 #include "../deps/rcheevos/src/rurl/url.c"
+#else
+#include "../cheevos/cheevos.c"
+#include "../cheevos/badges.c"
+#include "../cheevos/cond.c"
+#include "../cheevos/var.c"
+#endif
+
 #endif
 
 /*============================================================

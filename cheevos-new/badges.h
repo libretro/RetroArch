@@ -13,12 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_CHEEVOS_OLD_BADGE_H
-#define __RARCH_CHEEVOS_OLD_BADGE_H
-
-#ifdef HAVE_NEW_CHEEVOS
-#include "../cheevos-new/badges.h"
-#else
+#ifndef __RARCH_CHEEVOS_BADGE_H
+#define __RARCH_CHEEVOS_BADGE_H
 
 #include "../menu/menu_driver.h"
 
@@ -44,7 +40,5 @@ extern badges_ctx_t badges_ctx;
 static badges_ctx_t new_badges_ctx;
 
 RETRO_END_DECLS
-
-#endif
 
 #endif
