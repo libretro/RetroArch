@@ -3,7 +3,6 @@
 - CONFIG: Add 'Reset To Defaults' setting in Configurations. Thi will reset your config file to defaults.
 - CHEATS: Add support for Rumble when increase or decrease by the rumble value.
 - CHEATS: Add cheat variables to allow for updating large portions of memory.
-- CHEEVOS: Support headerless NES hashing.
 - CHEEVOS: Prevent loading states before achievements are fully loaded.
 - CRT: New porches and interlaced bug fix.
 - CRT: New functionality, ability to switch between 15KHz and 31KHz, etc.
@@ -28,6 +27,7 @@
 - OPENGL/WGL: Implement Adaptive VSync - WGL_EXT_swap_control_tear.
 - RUNAHEAD: Fix performance degradation that could happen over time (after approx. 30 mins). Fixed input IDs outside of range 0-35 causing slow performance in runahead.
 - SWITCH: Add stb_font support.
+- SWITCH: Add Retro Achievements support.
 - SWITCH: Merging of RetroNX Nintendo Switch port, based on libnx SDK.
 - VULKAN: Fix race condition in threaded mailbox emulation.
 - VULKAN: Maintenance fixes.
