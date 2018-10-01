@@ -100,7 +100,7 @@ enum {
   RC_OPERAND_8_BITS,
   RC_OPERAND_16_BITS,
   RC_OPERAND_24_BITS,
-  RC_OPERAND_32_BITS,
+  RC_OPERAND_32_BITS
 };
 
 /* types */
@@ -300,12 +300,12 @@ void rc_reset_lboard(rc_lboard_t* lboard);
 
 /* Supported formats. */
 enum {
-  RC_FORMAT_FRAMES,
+  RC_FORMAT_FRAMES = 0,
   RC_FORMAT_SECONDS,
   RC_FORMAT_CENTISECS,
   RC_FORMAT_SCORE,
   RC_FORMAT_VALUE,
-  RC_FORMAT_OTHER,
+  RC_FORMAT_OTHER
 };
 
 int rc_parse_format(const char* format_str);
