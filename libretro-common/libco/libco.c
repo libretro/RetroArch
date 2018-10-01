@@ -4,6 +4,11 @@
   license: public domain
 */
 
+#ifdef __GENODE__
+void *genode_alloc_secondary_stack(unsigned long stack_size);
+void genode_free_secondary_stack(void *stack);
+#endif
+
 #if defined _MSC_VER
   #include <Windows.h>
   #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
