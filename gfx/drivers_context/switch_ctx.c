@@ -253,6 +253,19 @@ static float switch_ctx_get_refresh_rate(void *data)
     return ctx_nx->refresh_rate;
 }
 
+bool switch_ctx_get_metrics(void *data,
+   enum display_metric_types type, float *value)
+{
+   switch (type)
+   {
+      case DISPLAY_METRIC_DPI:
+         *value = 236.87; //FIXME: Don't hardcode this value
+         return true;
+      default:
+         return false;
+   }
+}
+
 const gfx_ctx_driver_t switch_ctx = {
     switch_ctx_init,
     switch_ctx_destroy,
@@ -265,7 +278,7 @@ const gfx_ctx_driver_t switch_ctx = {
     NULL, /* get_video_output_size */
     NULL, /* get_video_output_prev */
     NULL, /* get_video_output_next */
-    NULL, /* get_metrics */
+    switch_ctx_get_metrics,
     NULL,
     NULL, /* update_title */
     switch_ctx_check_window,

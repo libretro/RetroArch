@@ -24,15 +24,73 @@ typedef struct switch_input
 {
    const input_device_driver_t *joypad;
    bool blocked;
+
+#ifdef HAVE_LIBNX
+   uint32_t touch_x;
+   uint32_t touch_y;
+
+   bool touch_state;
+#endif
 } switch_input_t;
 
 static void switch_input_poll(void *data)
 {
-	switch_input_t *sw = (switch_input_t*) data;
+   switch_input_t *sw = (switch_input_t*) data;
 
-	if (sw->joypad)
-		sw->joypad->poll();
+   if (sw->joypad)
+      sw->joypad->poll();
+
+#ifdef HAVE_LIBNX
+   uint32_t touch_count = hidTouchCount();
+
+   sw->touch_state = touch_count > 0;
+
+   if (sw->touch_state)
+   {
+      touchPosition touch_position;
+      hidTouchRead(&touch_position, 0);
+
+      sw->touch_x = touch_position.px;
+      sw->touch_y = touch_position.py;
+   }
+#endif
 }
+
+#ifdef HAVE_LIBNX
+static int16_t scale_touch(int16_t from_min, int16_t from_max,
+      int16_t to_min, int16_t to_max, 
+      int16_t value)
+{
+   int32_t from_range = from_max - from_min;
+   int32_t to_range = to_max - to_min;
+
+   return (((value - from_min) * to_range) / from_range) + to_min;
+}
+
+static int16_t switch_pointer_device_state(switch_input_t *sw, 
+      unsigned id, unsigned idx)
+{
+   /*
+      Here we assume that the touch screen is always 1280x720
+      Call me back when a Nintendo Switch XL is out
+   */
+
+   if (idx != 0)
+      return 0;
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_POINTER_PRESSED:
+         return sw->touch_state;
+      case RETRO_DEVICE_ID_POINTER_X:
+         return scale_touch(0, 1280, -0x7fff, 0x7fff, (uint16_t) sw->touch_x);
+      case RETRO_DEVICE_ID_POINTER_Y:
+         return scale_touch(0, 720, -0x7fff, 0x7fff, (uint16_t) sw->touch_y);
+   }
+
+   return 0;
+}
+#endif
 
 static int16_t switch_input_state(void *data,
       rarch_joypad_info_t joypad_info,
@@ -56,6 +114,11 @@ static int16_t switch_input_state(void *data,
             return input_joypad_analog(sw->joypad,
                   joypad_info, port, idx, id, binds[port]);
          break;
+#ifdef HAVE_LIBNX
+      case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
+         return switch_pointer_device_state(sw, id, idx);
+#endif
    }
 
    return 0;
