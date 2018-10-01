@@ -7853,7 +7853,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      struct core_option *option      = NULL;
 
                      i--;
-                     
+
                      option                          = (struct core_option*)&coreopts->opts[i];
 
                      if (option)
