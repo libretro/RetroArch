@@ -3058,10 +3058,16 @@ found:
 
       size_t chunks     = coro->len >> 14;
 
+      /* Avoid memcpy, since we only want to check that
+       * the file is headerless. */
+      char* header = (char*)(coro->data);
+
       /* Assume that valid (including unlicensed) NES titles do not 
-       * exceed 32MiB, in order to avoid excessive requests
+       * exceed 32Mb, in order to avoid excessive requests
        * with large non-NES files. */
-      if (chunks > 250)
+      if (chunks == 0 || chunks > 250 ||
+        (header[0] == 'N' && header[1] == 'E'
+        && header[2] == 'S' && header[3] == 0x1a))
       {
           CORO_RET();
       }
