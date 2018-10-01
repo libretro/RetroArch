@@ -110,6 +110,7 @@ HAVE_QT=auto               # Qt companion support
 C89_QT=no
 HAVE_XSHM=no               # XShm video driver support
 HAVE_CHEEVOS=yes           # Retro Achievements
+C89_CHEEVOS=no
 HAVE_LUA=yes               # Lua support (for Retro Achievements)
 HAVE_DISCORD=yes           # Discord Integration
 C89_DISCORD=no
