@@ -2461,6 +2461,32 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
    return false;
 }
 
+static bool check_menu_driver_compatibility()
+{
+   settings_t *settings = config_get_ptr();
+   char *video_driver = settings->arrays.video_driver;
+   char *menu_driver  = settings->arrays.menu_driver;
+
+
+   if (string_is_equal(menu_driver, "rgui") ||
+       string_is_equal(menu_driver, "null"))
+      return true;
+   else
+   {
+      if (string_is_equal(video_driver, "d3d9")   ||
+          string_is_equal(video_driver, "d3d10")  ||
+          string_is_equal(video_driver, "d3d11")  ||
+          string_is_equal(video_driver, "d3d12")  ||
+          string_is_equal(video_driver, "gl")     ||
+          string_is_equal(video_driver, "gx2")    ||
+          string_is_equal(video_driver, "vulkan") ||
+          string_is_equal(video_driver, "metal")  ||
+          string_is_equal(video_driver, "vita"))
+         return true;
+   }
+   return false;
+}
+
 #if 0
 static bool config_read_keybinds(const char *path)
 {
@@ -3039,6 +3065,10 @@ static bool config_load_file(const char *path, bool set_defaults,
          break;
       }
    }
+
+   if (!check_menu_driver_compatibility())
+      strlcpy(settings->arrays.menu_driver, "rgui", sizeof(settings->arrays.menu_driver));
+
 
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
    recording_driver_update_streaming_url();
