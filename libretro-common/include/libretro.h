@@ -1069,11 +1069,25 @@ enum retro_mod
                                            /* struct retro_midi_interface ** --
                                             * Returns a MIDI interface that can be used for raw data I/O.
                                             */
-
 #define RETRO_ENVIRONMENT_GET_FASTFORWARDING (49 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                             /* bool * --
                                             * Boolean value that indicates whether or not the frontend is in
                                             * fastforwarding mode.
+                                            */
+#define RETRO_ENVIRONMENT_SET_ACTIVE_PORT_COUNT (50 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* uint32_t * --
+                                            * Provides a count to the front-end stating how many controller ports are 
+                                            * actively being monitored by the core. This may be fewer than the highest
+                                            * port value in the RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS table, or the 
+                                            * number of entries in the RETRO_ENVIRONMENT_SET_CONTROLLER_INFO table.
+                                            * The value can change at any time - usually in response to a change in
+                                            * input device configuration. For example connecting (or enabling via core
+                                            * option) a multitap might raise the port count from 2 to 5. Alternatively
+                                            * specific games might provide additional controller hardware - e.g. 
+                                            * Micro Machines 2 on the Mega Drive has additional controller ports built
+                                            * into the cartridge.
+                                            * If this value has not been set, use the existing method of counting the
+                                            * RETRO_ENVIRONMENT_SET_CONTROLLER_INFO table size.
                                             */
 
 /* VFS functionality */
