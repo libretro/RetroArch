@@ -89,7 +89,8 @@ void cheat_manager_apply_cheats(void)
       }
    }
 
-   if ( cheat_manager_state.size > 0 ) {
+   if ( cheat_manager_state.size > 0 )
+   {
       runloop_msg_queue_push(msg_hash_to_str(MSG_APPLYING_CHEAT), 1, 180, true);
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_APPLYING_CHEAT));
    }
