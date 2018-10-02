@@ -2172,7 +2172,7 @@ MSG_HASH(MSG_DETECTED_VIEWPORT_OF,
 MSG_HASH(MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
       "有効なコンテンツパッチが見つかりませんでした")
 MSG_HASH(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
-      "Disconnect device from a valid port.")
+      "デバイスを有効なポートから切断してください")
 MSG_HASH(MSG_DISK_CLOSED,
       "ディスクを挿入しました")
 MSG_HASH(MSG_DISK_EJECTED,
@@ -2820,7 +2820,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-      "OK/キャンセルボタンを入れ替えます。無効はマルをOKとする日本式配置、有効はバツをOKとする西洋式配置です。"
+      "OK/キャンセルボタンの扱いを入れ替えます。無効はマルをOKとする日本式配置、有効はバツをOKとする西洋式配置です。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
