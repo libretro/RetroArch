@@ -1,4 +1,4 @@
-/* CRT SwitchRes Core 
+/* CRT SwitchRes Core
  * Copyright (C) 2018 Alphanu / Ben Templeman.
  *
  * RetroArch - A frontend for libretro.
@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
@@ -40,11 +40,9 @@ static float fly_aspect           = 0.0f;
 static float ra_core_hz           = 0.0f;
 
 static void crt_check_first_run(void)
-{		
+{
    if (!first_run)
       return;
-
-   
 
    first_run   = false;
 }
@@ -57,28 +55,27 @@ static void switch_crt_hz(void)
    if (ra_core_hz < 100)
    {
       if (ra_core_hz < 53)
-         ra_set_core_hz = 50;	
+         ra_set_core_hz = 50;
       if (ra_core_hz >= 53  &&  ra_core_hz < 57)
-         ra_set_core_hz = 55;	
+         ra_set_core_hz = 55;
       if (ra_core_hz >= 57)
-         ra_set_core_hz = 60;	
+         ra_set_core_hz = 60;
    }
 
    if (ra_core_hz > 100)
    {
       if (ra_core_hz < 106)
-         ra_set_core_hz = 120;	
+         ra_set_core_hz = 120;
       if (ra_core_hz >= 106  &&  ra_core_hz < 114)
-         ra_set_core_hz = 110;	
+         ra_set_core_hz = 110;
       if (ra_core_hz >= 114)
-         ra_set_core_hz = 120;	
+         ra_set_core_hz = 120;
    }
-	
+
    video_monitor_set_refresh_rate(ra_set_core_hz);
-   
+
    ra_tmp_core_hz = ra_core_hz;
 }
-
 
 void crt_aspect_ratio_switch(unsigned width, unsigned height)
 {
@@ -100,55 +97,55 @@ static void switch_res_crt(unsigned width, unsigned height)
 /* Create correct aspect to fit video if resolution does not exist */
 static void crt_screen_setup_aspect(unsigned width, unsigned height)
 {
-   
+
    switch_crt_hz();
-   /* get original resolution of core */	
+   /* get original resolution of core */
    if (height == 4)
    {
-      /* detect menu only */	
+      /* detect menu only */
       if (width < 1920)
          width = 320;
-      
+
       height = 240;
 
       crt_aspect_ratio_switch(width, height);
    }
 
    if (height < 200 && height != 144)
-   {				
+   {
       crt_aspect_ratio_switch(width, height);
       height = 200;
-   }	
+   }
 
    if (height > 200)
       crt_aspect_ratio_switch(width, height);
 
    if (height == 144 && ra_set_core_hz == 50)
-   {				
+   {
       height = 288;
       crt_aspect_ratio_switch(width, height);
    }
 
    if (height > 200 && height < 224)
-   {				
+   {
       crt_aspect_ratio_switch(width, height);
       height = 224;
    }
 
    if (height > 224 && height < 240)
-   {				
+   {
       crt_aspect_ratio_switch(width, height);
       height = 240;
    }
 
    if (height > 240 && height < 255)
-   {								
+   {
       crt_aspect_ratio_switch(width, height);
       height = 254;
    }
 
    if (height == 528 && ra_set_core_hz == 60)
-   {								
+   {
       crt_aspect_ratio_switch(width, height);
       height = 480;
    }
@@ -162,12 +159,11 @@ static void crt_screen_setup_aspect(unsigned width, unsigned height)
    switch_res_crt(width, height);
 }
 
-
 void crt_switch_res_core(unsigned width, unsigned height, float hz, unsigned crt_mode, int crt_switch_center_adjust)
 {
-   /* ra_core_hz float passed from within 
+   /* ra_core_hz float passed from within
     * void video_driver_monitor_adjust_system_rates(void) */
-   ra_core_width  = width;		
+   ra_core_width  = width;
    ra_core_height = height;
    ra_core_hz     = hz;
    crt_center_adjust = crt_switch_center_adjust;
@@ -175,7 +171,7 @@ void crt_switch_res_core(unsigned width, unsigned height, float hz, unsigned crt
    if (crt_mode == 2)
    {
       if (hz > 53)
-         ra_core_hz = hz*2;
+         ra_core_hz = hz * 2;
 
       if (hz <= 53)
          ra_core_hz = 120.0f;
@@ -185,11 +181,11 @@ void crt_switch_res_core(unsigned width, unsigned height, float hz, unsigned crt
 
    /* Detect resolution change and switch */
    if (
-         (ra_tmp_height != ra_core_height) || 
-         (ra_core_width != ra_tmp_width)
+      (ra_tmp_height != ra_core_height) ||
+      (ra_core_width != ra_tmp_width)
       )
       crt_screen_setup_aspect(width, height);
-   
+
    ra_tmp_height  = ra_core_height;
    ra_tmp_width   = ra_core_width;
 
@@ -206,5 +202,5 @@ void crt_video_restore(void)
    if (first_run)
       return;
 
-    first_run = true;
+   first_run = true;
 }
