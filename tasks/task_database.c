@@ -455,7 +455,7 @@ static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
 
    track_path[0] = '\0';
 
-   rv = gdi_find_track(name, false, track_path, PATH_MAX_LENGTH);
+   rv = gdi_find_track(name, true, track_path, PATH_MAX_LENGTH);
 
    if (rv < 0)
    {
