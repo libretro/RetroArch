@@ -3869,8 +3869,10 @@ int lan_room_count;
 
 void netplay_refresh_rooms_menu(file_list_t *list)
 {
-   char s[4115];
+   char s[8300];
    int i                                = 0;
+
+   s[0]                                 = '\0';
 
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
 
