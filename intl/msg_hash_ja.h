@@ -155,9 +155,9 @@ MSG_HASH(
       "メニューの外観に関係する設定を変更する。"
       )
 MSG_HASH(
-    　MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-    　"ビデオやオーディオ、入力遅延に関係する設定を変更します。"
-    　)
+      MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+      "ビデオやオーディオ、入力遅延に関係する設定を変更します。"
+      )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
       "CPUとGPUを強制に同期する。遅延が減る代わりに性能が低下する。"
