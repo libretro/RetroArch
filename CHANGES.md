@@ -1,4 +1,6 @@
 # 1.7.6 (future)
+- LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Japanese translation.
 - SCANNER: Fix GDI disc scanning.
 - SWITCH/LIBNX: Improve touch scaling calculation.
 - SWITCH: Proper button labels.
