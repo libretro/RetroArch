@@ -544,6 +544,7 @@ endif
 
 ifeq ($(HAVE_ALSA), 1)
    OBJ += audio/drivers/alsa.o
+   OBJ += midi/drivers/alsa_midi.o
 
 ifeq ($(HAVE_THREADS), 1)
    OBJ += audio/drivers/alsathread.o
