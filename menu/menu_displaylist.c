@@ -98,11 +98,12 @@ static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 
 static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 {
-   unsigned k              = 0;
    net_ifinfo_t      list;
+   unsigned count          = 0;
+   unsigned k              = 0;
 
    if (!net_ifinfo_new(&list))
-      return -1;
+      return 0;
 
    for (k = 0; k < list.size; k++)
    {
@@ -116,10 +117,12 @@ static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
       menu_entries_append_enum(info->list, tmp, "",
             MENU_ENUM_LABEL_NETWORK_INFO_ENTRY,
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      count++;
    }
 
    net_ifinfo_free(&list);
-   return 0;
+
+   return count;
 }
 #endif
 
@@ -1214,6 +1217,16 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT),
          _freetype_supp ?
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO));
+   menu_entries_append_enum(info->list, feat_str, "",
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT),
+         _stbfont_supp ?
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO));
    menu_entries_append_enum(info->list, feat_str, "",
@@ -2992,6 +3005,12 @@ static int menu_displaylist_parse_configurations_list(
          MENU_SETTING_ACTION, 0, 0);
 
    menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG),
+         msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG),
+         MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG),
          msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG),
          MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
@@ -4695,8 +4714,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_NETWORK_INFO:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #if defined(HAVE_NETWORKING) && !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU) && !defined(SWITCH)
-         menu_displaylist_parse_network_info(info);
+         count = menu_displaylist_parse_network_info(info);
 #endif
+
+         if (count == 0)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                  0, 0, 0);
+
          info->need_push    = true;
          info->need_refresh = true;
          break;
@@ -5258,6 +5285,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ONLY_UINT, false);
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION,
+                  PARSE_ONLY_UINT, false);
+            menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_CHEAT_REPEAT_COUNT,
+                  PARSE_ONLY_UINT, false);
+            menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+                  PARSE_ONLY_UINT, false);
+            menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_VALUE,
                   PARSE_ONLY_UINT, false);
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_CHEAT_RUMBLE_TYPE,
@@ -6652,6 +6688,27 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS, PARSE_ACTION, false);
 
+#ifdef HAVE_LIBNX
+         {
+            unsigned user;
+
+            for (user = 0; user < 8; user++)
+            {
+               char key_split_joycon[PATH_MAX_LENGTH];
+               unsigned val = user + 1;
+
+               key_split_joycon[0] = '\0';
+
+               snprintf(key_split_joycon, sizeof(key_split_joycon),
+                     "%s_%u",
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON), val);
+
+               menu_displaylist_parse_settings(menu, info,
+                     key_split_joycon, PARSE_ONLY_UINT, true);
+            }
+         }
+#endif
+
          {
             unsigned user;
             unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
@@ -6661,6 +6718,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user),
                      PARSE_ACTION, false);
             }
+
          }
 
          info->need_refresh = true;
@@ -7805,7 +7863,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      struct core_option *option      = NULL;
 
                      i--;
-                     
+
                      option                          = (struct core_option*)&coreopts->opts[i];
 
                      if (option)

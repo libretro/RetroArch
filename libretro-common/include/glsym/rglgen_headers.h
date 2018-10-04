@@ -66,10 +66,10 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 #else
-// We need to avoid including <GL/gl.h> on this platform
+/* We need to avoid including <GL/gl.h> on this platform */
 #include "switch/nx_gl.h"
 #include <GL/glext.h>
-#endif // SWITCH
+#endif /* SWITCH */
 #endif
 
 #ifndef GL_MAP_WRITE_BIT

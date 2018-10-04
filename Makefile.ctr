@@ -52,7 +52,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
 	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_XMB -DHAVE_MATERIALUI -DHAVE_LIBRETRODB -DHAVE_CC_RESAMPLER
 	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB
-	DEFINES += -DHAVE_NETWORKING -DHAVE_CHEEVOS -DHAVE_SOCKET_LEGACY -DHAVE_THREADS
+	DEFINES += -DHAVE_NETWORKING -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_SOCKET_LEGACY -DHAVE_THREADS
 	#-DHAVE_SSL -DMBEDTLS_SSL_DEBUG_ALL
 	#ssl is currently incompatible with griffin due to use of the "static" flag on repeating functions that will conflict when included in one file
 else
@@ -130,7 +130,13 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END := -Wl,--no-whole-archive
 endif
 
-CFLAGS += -I. -Ideps -Ideps/libz -Ideps/7zip -Ideps/stb -Ilibretro-common/include
+CFLAGS += -I. \
+			 -Ideps \
+			 -Ideps/libz \
+			 -Ideps/7zip \
+			 -Ideps/stb \
+			 -Ideps/rcheevos/include \
+			 -Ilibretro-common/include
 
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)

@@ -234,6 +234,7 @@
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps",
 					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/libz",
 					"$(SRCROOT)",
 				);
@@ -250,6 +251,7 @@
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps",
 					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/libz",
 					"$(SRCROOT)",
 				);
@@ -294,6 +296,7 @@
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_CHEEVOS",
+					"-DRC_DISABLE_LUA",
 					"-DHAVE_STB_FONT",
 					"-DHAVE_IOHIDMANAGER",
 					"-DHAVE_RGUI",
@@ -369,6 +372,7 @@
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_CHEEVOS",
+					"-DRC_DISABLE_LUA",
 					"-DHAVE_STB_FONT",
 					"-DHAVE_IOHIDMANAGER",
 					"-DHAVE_RGUI",

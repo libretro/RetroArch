@@ -1970,6 +1970,18 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Address bitmask when Memory Search Size < 8-bit.\n");
             break;
+        case MENU_ENUM_LABEL_CHEAT_REPEAT_COUNT:
+            snprintf(s, len,
+                     "The number of times the cheat will be applied.\nUse with the other two Iteration options to affect large areas of memory.");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_ADDRESS:
+            snprintf(s, len,
+                     "After each 'Number of Iterations' the Memory Address will be increased by this number times the 'Memory Search Size'.");
+            break;
+        case MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_VALUE:
+            snprintf(s, len,
+                     "After each 'Number of Iterations' the Value will be increased by this amount.");
+            break;
         case MENU_ENUM_LABEL_CHEAT_MATCH_IDX:
             snprintf(s, len,
                      "Select the match to view.");

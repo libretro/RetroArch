@@ -1,4 +1,4 @@
-﻿#if defined(_MSC_VER) && !defined(_XBOX)
+#if defined(_MSC_VER) && !defined(_XBOX)
 /* https://support.microsoft.com/en-us/kb/980263 */
 #pragma execution_character_set("utf-8")
 #endif
@@ -1597,6 +1597,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
       "FFmpeg対応")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
       "FreeType対応")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
+      "STB TrueType対応")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
       "フロントエンド識別名")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
@@ -3928,3 +3930,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
       "配信モード")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
       "配信タイトル")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+    "Split Joy-Con"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+    "Reset To Defaults"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+    "Reset the current configuration to default values."
+    )

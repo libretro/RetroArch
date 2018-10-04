@@ -66,6 +66,7 @@ default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_remove,
       MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE)
 default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_volume,
       MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME)
+default_sublabel_macro(action_bind_sublabel_reset_to_default_config,             MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG)
 default_sublabel_macro(action_bind_sublabel_quick_menu_override_options,             MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_quick_menu_start_streaming,             MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING)
 default_sublabel_macro(action_bind_sublabel_quick_menu_start_recording,             MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING)
@@ -232,6 +233,9 @@ default_sublabel_macro(action_bind_sublabel_cheat_search_eq,               MENU_
 default_sublabel_macro(action_bind_sublabel_cheat_search_neq,              MENU_ENUM_SUBLABEL_CHEAT_SEARCH_NEQ)
 default_sublabel_macro(action_bind_sublabel_cheat_search_eqplus,           MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS)
 default_sublabel_macro(action_bind_sublabel_cheat_search_eqminus,          MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS)
+default_sublabel_macro(action_bind_sublabel_cheat_repeat_count,            MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT)
+default_sublabel_macro(action_bind_sublabel_cheat_repeat_add_to_address,   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS)
+default_sublabel_macro(action_bind_sublabel_cheat_repeat_add_to_value,     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE)
 default_sublabel_macro(action_bind_sublabel_cheat_add_matches,             MENU_ENUM_SUBLABEL_CHEAT_ADD_MATCHES)
 default_sublabel_macro(action_bind_sublabel_cheat_view_matches,            MENU_ENUM_SUBLABEL_CHEAT_VIEW_MATCHES)
 default_sublabel_macro(action_bind_sublabel_cheat_create_option,           MENU_ENUM_SUBLABEL_CHEAT_CREATE_OPTION)
@@ -1135,6 +1139,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SHADER_OPTIONS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_options);
             break;
+         case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_reset_to_default_config);
+            break;
          case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_current_config_override_game);
             break;
@@ -1470,6 +1477,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_search_eqminus);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_REPEAT_COUNT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_repeat_count);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_ADDRESS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_repeat_add_to_address);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_VALUE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_repeat_add_to_value);
             break;
          case MENU_ENUM_LABEL_CHEAT_ADD_MATCHES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_add_matches);

@@ -59,12 +59,12 @@ typedef struct
 } dispserv_win32_t;
 
 /*
-NOTE: When an application displays a window, its taskbar button is created
-by the system. When the button is in place, the taskbar sends a
-TaskbarButtonCreated message to the window. Its value is computed by
-calling RegisterWindowMessage(L("TaskbarButtonCreated")). That message must
-be received by your application before it calls any ITaskbarList3 method.
-*/
+   NOTE: When an application displays a window, its taskbar button is created
+   by the system. When the button is in place, the taskbar sends a
+   TaskbarButtonCreated message to the window. Its value is computed by
+   calling RegisterWindowMessage(L("TaskbarButtonCreated")). That message must
+   be received by your application before it calls any ITaskbarList3 method.
+ */
 
 static unsigned win32_orig_width          = 0;
 static unsigned win32_orig_height         = 0;
@@ -105,10 +105,10 @@ static void* win32_display_server_init(void)
 static void win32_display_server_destroy(void *data)
 {
    dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
-   
-   if (win32_orig_width > 0 && win32_orig_height > 0 )
+
+   if (win32_orig_width > 0 && win32_orig_height > 0)
       video_display_server_switch_resolution(win32_orig_width, win32_orig_height,
-         win32_orig_refresh , (float)win32_orig_refresh, crt_center );
+            win32_orig_refresh, (float)win32_orig_refresh, crt_center );
 
 #ifdef HAS_TASKBAR_EXT
    if (g_taskbarList && win32_taskbar_is_created())
@@ -124,7 +124,7 @@ static void win32_display_server_destroy(void *data)
 
 static bool win32_display_server_set_window_opacity(void *data, unsigned opacity)
 {
-   HWND              hwnd = win32_get_window();
+   HWND hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
    if (serv)
@@ -132,11 +132,11 @@ static bool win32_display_server_set_window_opacity(void *data, unsigned opacity
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Set window transparency on Windows 2000 and above */
-   if(opacity < 100)
+   if (opacity < 100)
    {
       SetWindowLongPtr(hwnd,
-           GWL_EXSTYLE,
-           GetWindowLongPtr(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+            GWL_EXSTYLE,
+            GetWindowLongPtr(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
       return SetLayeredWindowAttributes(hwnd, 0, (255 * opacity) / 100, LWA_ALPHA);
    }
 
@@ -151,7 +151,7 @@ static bool win32_display_server_set_window_opacity(void *data, unsigned opacity
 
 static bool win32_display_server_set_window_progress(void *data, int progress, bool finished)
 {
-   HWND              hwnd = win32_get_window();
+   HWND hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
    if (serv)
@@ -164,23 +164,23 @@ static bool win32_display_server_set_window_progress(void *data, int progress, b
    if (progress == -1)
    {
       if (ITaskbarList3_SetProgressState(
-               g_taskbarList, hwnd, TBPF_INDETERMINATE) != S_OK)
+            g_taskbarList, hwnd, TBPF_INDETERMINATE) != S_OK)
          return false;
    }
    else if (finished)
    {
       if (ITaskbarList3_SetProgressState(
-               g_taskbarList, hwnd, TBPF_NOPROGRESS) != S_OK)
+            g_taskbarList, hwnd, TBPF_NOPROGRESS) != S_OK)
          return false;
    }
    else if (progress >= 0)
    {
       if (ITaskbarList3_SetProgressState(
-               g_taskbarList, hwnd, TBPF_NORMAL) != S_OK)
+            g_taskbarList, hwnd, TBPF_NORMAL) != S_OK)
          return false;
 
       if (ITaskbarList3_SetProgressValue(
-               g_taskbarList, hwnd, progress, 100) != S_OK)
+            g_taskbarList, hwnd, progress, 100) != S_OK)
          return false;
    }
 #endif
@@ -195,7 +195,7 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
    if (serv)
       serv->decorations = on;
 
-   /* menu_setting performs a reinit instead to properly 
+   /* menu_setting performs a reinit instead to properly
     * apply decoration changes */
 
    return true;
@@ -216,73 +216,72 @@ static bool win32_display_server_set_resolution(void *data,
 
    if (!serv)
       return false;
-   
+
    EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &curDevmode);
-  
+
    if (win32_orig_width == 0)
-	   win32_orig_width          = GetSystemMetrics(SM_CXSCREEN);
-      win32_orig_refresh        = curDevmode.dmDisplayFrequency;
+      win32_orig_width          = GetSystemMetrics(SM_CXSCREEN);
+   win32_orig_refresh        = curDevmode.dmDisplayFrequency;
    if (win32_orig_height == 0)
-	   win32_orig_height         = GetSystemMetrics(SM_CYSCREEN);
+      win32_orig_height         = GetSystemMetrics(SM_CYSCREEN);
 
    /* Used to stop super resolution bug */
    if (width == curDevmode.dmPelsWidth)
-      width  = 0;							
-   if (width == 0) 
+      width  = 0;
+   if (width == 0)
       width = curDevmode.dmPelsWidth;
-   if (height == 0) 
+   if (height == 0)
       height = curDevmode.dmPelsHeight;
-   if (depth == 0) 
+   if (depth == 0)
       depth = curDevmode.dmBitsPerPel;
-   if (freq == 0) 
+   if (freq == 0)
       freq = curDevmode.dmDisplayFrequency;
 
-   for (iModeNum = 0; ; iModeNum++) 
+   for (iModeNum = 0;; iModeNum++)
    {
-      if (!EnumDisplaySettings(NULL, iModeNum, &devmode)) 
+      if (!EnumDisplaySettings(NULL, iModeNum, &devmode))
          break;
 
-      if (devmode.dmPelsWidth != width) 
+      if (devmode.dmPelsWidth != width)
          continue;
 
-      if (devmode.dmPelsHeight != height) 
+      if (devmode.dmPelsHeight != height)
          continue;
 
-      if (devmode.dmBitsPerPel != depth) 
+      if (devmode.dmBitsPerPel != depth)
          continue;
 
-      if (devmode.dmDisplayFrequency != freq) 
+      if (devmode.dmDisplayFrequency != freq)
          continue;
 
-      devmode.dmFields |= 
-         DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
-      res               = 
-         win32_change_display_settings(NULL, &devmode, CDS_TEST);
+      devmode.dmFields |=
+            DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
+      res               =
+            win32_change_display_settings(NULL, &devmode, CDS_TEST);
 
-      switch (res) 
+      switch (res)
       {
+      case DISP_CHANGE_SUCCESSFUL:
+         res = win32_change_display_settings(NULL, &devmode, flags);
+         switch (res)
+         {
          case DISP_CHANGE_SUCCESSFUL:
-            res = win32_change_display_settings(NULL, &devmode, flags);
-            switch (res) 
-            {
-               case DISP_CHANGE_SUCCESSFUL:
-                  return true;
-               case DISP_CHANGE_NOTUPDATED:
-                  return true;
-               default:
-                  break;
-            }
-            break;
-         case DISP_CHANGE_RESTART:
-            break;
+            return true;
+         case DISP_CHANGE_NOTUPDATED:
+            return true;
          default:
             break;
+         }
+         break;
+      case DISP_CHANGE_RESTART:
+         break;
+      default:
+         break;
       }
    }
 
    return true;
 }
-
 
 const video_display_server_t dispserv_win32 = {
    win32_display_server_init,
@@ -294,4 +293,3 @@ const video_display_server_t dispserv_win32 = {
    NULL, /* get_output_options */
    "win32"
 };
-

@@ -70,17 +70,19 @@ static void *switch_ctx_init(video_frame_info_t *video_info, void *video_driver)
 
     nx_ctx_ptr = ctx_nx;
 
-    //setenv("MESA_NO_ERROR", "1", 1);
+#if 0
+    setenv("MESA_NO_ERROR", "1", 1);
 
-    // Uncomment below to enable Mesa logging:
-    //setenv("EGL_LOG_LEVEL", "debug", 1);
-    //setenv("MESA_VERBOSE", "all", 1);
-    //setenv("NOUVEAU_MESA_DEBUG", "1", 1);
+    /* Uncomment below to enable Mesa logging: */
+    setenv("EGL_LOG_LEVEL", "debug", 1);
+    setenv("MESA_VERBOSE", "all", 1);
+    setenv("NOUVEAU_MESA_DEBUG", "1", 1);
 
-    // Uncomment below to enable shader debugging in Nouveau:
-    //setenv("NV50_PROG_OPTIMIZE", "0", 1);
-    //setenv("NV50_PROG_DEBUG", "1", 1);
-    //setenv("NV50_PROG_CHIPSET", "0x120", 1);
+    /* Uncomment below to enable shader debugging in Nouveau: */
+    setenv("NV50_PROG_OPTIMIZE", "0", 1);
+    setenv("NV50_PROG_DEBUG", "1", 1);
+    setenv("NV50_PROG_CHIPSET", "0x120", 1);
+#endif
 
 #ifdef HAVE_EGL
     if (!egl_init_context(&ctx_nx->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
@@ -121,7 +123,7 @@ static bool switch_ctx_set_video_mode(void *data,
                                       unsigned width, unsigned height,
                                       bool fullscreen)
 {
-    // Create an EGL rendering context
+    /* Create an EGL rendering context */
     static const EGLint contextAttributeList[] =
         {
             EGL_CONTEXT_CLIENT_VERSION, 2,
@@ -253,6 +255,21 @@ static float switch_ctx_get_refresh_rate(void *data)
     return ctx_nx->refresh_rate;
 }
 
+bool switch_ctx_get_metrics(void *data,
+   enum display_metric_types type, float *value)
+{
+   switch (type)
+   {
+      case DISPLAY_METRIC_DPI:
+         *value = 236.87; /* FIXME: Don't hardcode this value */
+         return true;
+      default:
+         break;
+   }
+
+   return false;
+}
+
 const gfx_ctx_driver_t switch_ctx = {
     switch_ctx_init,
     switch_ctx_destroy,
@@ -265,7 +282,7 @@ const gfx_ctx_driver_t switch_ctx = {
     NULL, /* get_video_output_size */
     NULL, /* get_video_output_prev */
     NULL, /* get_video_output_next */
-    NULL, /* get_metrics */
+    switch_ctx_get_metrics,
     NULL,
     NULL, /* update_title */
     switch_ctx_check_window,

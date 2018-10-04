@@ -36,6 +36,8 @@ HAVE_STATIC_AUDIO_FILTERS = 1
 HAVE_MENU = 1
 HAVE_RUNAHEAD = 1
 HAVE_NETWORKING = 1
+HAVE_STB_FONT = 1
+HAVE_CHEEVOS = 1
 
 # RetroArch libnx useful flags
 HAVE_THREADS = 1
@@ -100,19 +102,23 @@ EXEFS_SRC := exefs_src
 #ROMFS := switch/romfs
 
 APP_TITLE := RetroArch
-APP_VERSION := 1.0.0
+APP_VERSION := 1.7.5
 APP_AUTHOR := libretro Team
-NO_ICON := 1
+APP_ICON := pkg/libnx/retroarch.jpg
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -mcpu=cortex-a57+crc+fp+simd
 
-CFLAGS	:=	-g -Wall -O3 -ffast-math -ffunction-sections \
-			$(ARCH) $(DEFINES) -Ideps -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h #$(shell $(DEVKITPRO)/portlibs/switch/bin/freetype-config --cflags)
+CFLAGS := -g -Wall -O3 -ffast-math -ffunction-sections \
+          $(ARCH) $(DEFINES) -Ideps -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h #$(shell $(PORTLIBS)/bin/freetype-config --cflags)
 
-CFLAGS	+=	$(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1
+CFLAGS += $(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1 -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DHAVE_STB_FONT #-DHAVE_FREETYPE
+
+ifeq ($(strip $(HAVE_STATIC_DUMMY)),1)
+  CFLAGS	+=	-DHAVE_STATIC_DUMMY=1
+endif
 
 # The following line works around an issue in newlib that produces a compilation
 # error in glm. It will be removed as soon as this issue is resolved.
@@ -169,7 +175,12 @@ else
 endif
 #---------------------------------------------------------------------------------
 
-export OFILES 	:=	$(OBJ) libretro_libnx.a
+export OFILES 	:=	$(OBJ)
+
+ifeq ($(strip $(HAVE_STATIC_DUMMY)),)
+  OFILES += libretro_libnx.a
+endif
+
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \

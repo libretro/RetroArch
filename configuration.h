@@ -415,6 +415,7 @@ typedef struct settings
 
       unsigned input_overlay_show_physical_inputs_port;
 
+      unsigned input_split_joycon[MAX_USERS];
       unsigned input_joypad_map[MAX_USERS];
       unsigned input_device[MAX_USERS];
       unsigned input_mouse_index[MAX_USERS];
@@ -502,7 +503,7 @@ typedef struct settings
       char path_overlay[PATH_MAX_LENGTH];
       char path_record_config[PATH_MAX_LENGTH];
       char path_stream_config[PATH_MAX_LENGTH];
-      char path_stream_url[PATH_MAX_LENGTH];
+      char path_stream_url[8192];
       char path_menu_wallpaper[PATH_MAX_LENGTH];
       char path_audio_dsp_plugin[PATH_MAX_LENGTH];
       char path_softfilter_plugin[PATH_MAX_LENGTH];
@@ -719,6 +720,8 @@ bool config_replace(bool config_save_on_exit, char *path);
 bool config_init(void);
 
 bool config_overlay_enable_default(void);
+
+void config_set_defaults(void);
 
 void config_free(void);
 

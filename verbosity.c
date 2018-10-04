@@ -63,6 +63,11 @@ static void* log_file_buf        = NULL;
 static bool main_verbosity       = false;
 static bool log_file_initialized = false;
 
+#ifdef NXLINK
+static Mutex nxlink_mtx;
+bool nxlink_connected = false;
+#endif
+
 void verbosity_enable(void)
 {
    main_verbosity = true;
@@ -100,6 +105,11 @@ void retro_main_log_file_init(const char *path)
 {
    if (log_file_initialized)
       return;
+
+#ifdef NXLINK
+   if (path == NULL && nxlink_connected)
+       mutexInit(&nxlink_mtx);
+#endif
 
    log_file_fp          = stderr;
    if (path == NULL)
@@ -199,6 +209,10 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 
       ui_companion_driver_log_msg(buffer);
 #else
+#if defined(NXLINK) && !defined(HAVE_FILE_LOGGER)
+          if (nxlink_connected)
+             mutexLock(&nxlink_mtx);
+#endif
       if (fp)
       {
          fprintf(fp, "%s ",
@@ -206,6 +220,11 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          vfprintf(fp, fmt, ap);
          fflush(fp);
       }
+#if defined(NXLINK) && !defined(HAVE_FILE_LOGGER)
+      if (nxlink_connected)
+         mutexUnlock(&nxlink_mtx);
+#endif
+
 #endif
    }
 #endif

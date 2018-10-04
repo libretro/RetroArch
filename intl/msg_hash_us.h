@@ -2622,6 +2622,10 @@ MSG_HASH(
     "FreeType support"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
+    "STB TrueType support"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
     "Frontend identifier"
     )
@@ -4916,6 +4920,18 @@ MSG_HASH(
     "Auto-apply cheats when game loads."
 )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
+    "The number of times the cheat will be applied.  Use with the other two Iteration options to affect large areas of memory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+    "After each 'Number of Iterations' the Memory Address will be increased by this number times the 'Memory Search Size'."
+)
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+    "After each 'Number of Iterations' the Value will be increased by this amount."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
     "When rewinding a defined number of frames, you can rewind several frames at a time, increasing the rewind speed."
     )
@@ -6823,6 +6839,18 @@ MSG_HASH(
     "Rumble Secondary Duration (ms)"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
+    "Number of Iterations"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
+    "Value Increase Each Iteration"
+)
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
+    "Address Increase Each Iteration"
+)
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
     "Add New Cheat After This One"
     )
@@ -7589,4 +7617,16 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
     "Title of Stream"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+    "Split Joy-Con"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+    "Reset To Defaults"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+    "Reset the current configuration to default values."
     )

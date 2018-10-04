@@ -41,7 +41,11 @@
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
+#ifdef HAVE_NEW_CHEEVOS
+#include "cheevos/fixup.h"
+#else
 #include "cheevos/var.h"
+#endif
 #endif
 
 #ifdef HAVE_DISCORD
@@ -273,28 +277,19 @@ static bool command_version(const char* arg)
 #define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
 {
-   cheevos_var_t var;
+#if defined(HAVE_NEW_CHEEVOS)
    unsigned i;
    char  *reply            = NULL;
    const uint8_t * data    = NULL;
    char *reply_at          = NULL;
    unsigned int nbytes     = 0;
    unsigned int alloc_size = 0;
-   int          addr       = -1;
+   unsigned int addr    = -1;
 
    if (sscanf(arg, "%x %d", &addr, &nbytes) != 2)
       return true;
 
-   alloc_size = 40 + nbytes * 3; /* We alloc more than needed, saving 20 bytes is not really relevant */
-   reply      = (char*) malloc(alloc_size);
-   reply[0]   = '\0';
-   reply_at   = reply + sprintf(reply, SMY_CMD_STR " %x", addr);
-
-   var.value  = addr;
-
-   cheevos_var_patch_addr(&var, cheevos_get_console());
-
-   data       = cheevos_var_get_memory(&var);
+   data = cheevos_patch_address(addr, cheevos_get_console());
 
    if (data)
    {
@@ -309,6 +304,38 @@ static bool command_read_ram(const char *arg)
       command_reply(reply, reply_at+strlen(" -1\n") - reply);
    }
    free(reply);
+#else
+      cheevos_var_t var;
+   unsigned i;
+   char reply[256]      = {0};
+   const uint8_t * data = NULL;
+   char *reply_at       = NULL;
+
+   reply[0]             = '\0';
+
+   strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
+   reply_at = reply + strlen("READ_CORE_RAM ");
+   strlcpy(reply_at, arg, sizeof(reply)-strlen(reply));
+
+   var.value = strtoul(reply_at, (char**)&reply_at, 16);
+   cheevos_var_patch_addr(&var, cheevos_get_console());
+   data = cheevos_var_get_memory(&var);
+
+   if (data)
+   {
+      unsigned nbytes = strtol(reply_at, NULL, 10);
+
+      for (i=0;i<nbytes;i++)
+         sprintf(reply_at+3*i, " %.2X", data[i]);
+      reply_at[3*nbytes] = '\n';
+      command_reply(reply, reply_at+3*nbytes+1 - reply);
+   }
+   else
+   {
+      strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
+      command_reply(reply, reply_at+strlen(" -1\n") - reply);
+   }
+#endif
 
    return true;
 }
@@ -316,14 +343,19 @@ static bool command_read_ram(const char *arg)
 
 static bool command_write_ram(const char *arg)
 {
-   cheevos_var_t var;
    unsigned nbytes   = 0;
+#if defined(HAVE_NEW_CHEEVOS)
+   unsigned int addr = strtoul(arg, (char**)&arg, 16);
+   uint8_t *data     = (uint8_t *)cheevos_patch_address(addr, cheevos_get_console());
+#else
+   cheevos_var_t var;
    uint8_t *data     = NULL;
 
    var.value = strtoul(arg, (char**)&arg, 16);
    cheevos_var_patch_addr(&var, cheevos_get_console());
 
    data = cheevos_var_get_memory(&var);
+#endif
 
    if (data)
    {
@@ -1638,8 +1670,8 @@ static bool command_event_main_state(unsigned cmd)
 {
    retro_ctx_size_info_t info;
    char msg[128];
-   char *state_path           = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   size_t state_path_size     = PATH_MAX_LENGTH * sizeof(char);
+   size_t state_path_size     = 8192 * sizeof(char);
+   char *state_path           = (char*)malloc(state_path_size);
    global_t *global           = global_get_ptr();
    bool ret                   = false;
    bool push_msg              = true;
@@ -2453,6 +2485,9 @@ TODO: Add a setting for these tweaks */
 #ifndef HAVE_DYNAMIC
          command_event(CMD_EVENT_QUIT, NULL);
 #endif
+         break;
+      case CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG:
+         config_set_defaults();
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
          command_event_save_current_config(OVERRIDE_NONE);

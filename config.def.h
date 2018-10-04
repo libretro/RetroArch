@@ -48,7 +48,7 @@
 #define DEFAULT_ASPECT_RATIO -1.0f
 #endif
 
-#ifdef RARCH_MOBILE
+#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX)
 static const bool pointer_enable = true;
 #else
 static const bool pointer_enable = false;
@@ -787,6 +787,8 @@ static char buildbot_server_url[] = "";
 #endif
 #elif defined(WIIU)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/";
+#elif defined(HAVE_LIBNX)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/nintendo/switch/libnx/latest/";
 #elif defined(__CELLOS_LV2__) && defined(DEX_BUILD)
 static char buildbot_server_url[] = "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/dex-ps3/";
 #elif defined(__CELLOS_LV2__) && defined(CEX_BUILD)

@@ -1444,6 +1444,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
       "Supporto FFmpeg ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
       "Supporto FreeType ")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
+      "Supporto STB TrueType ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
       "Identificatore frontend")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
@@ -3487,27 +3489,27 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
-    "Recording toggle"
+    "Attiva/Disattiva registrazione"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
-    "Streaming toggle"
+    "Attiva/disattiva streaming"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
-    "Record Quality"
+    "Qualità di registrazione"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
-    "Stream Quality"
+    "Qualità stream"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_STREAMING_URL,
-    "Streaming URL"
+    "URL dello Streaming"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
-    "UDP Stream Port"
+    "Port UDP Stream"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
@@ -3518,10 +3520,22 @@ MSG_HASH(
     "YouTube"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
-      "Twitch Stream Key")
+      "Chiave per lo Stream su Twitch")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
-      "YouTube Stream Key")
+      "Chiave per lo Stream su YouTube")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
-      "Streaming Mode")
+      "Modalità streaming")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
-      "Title of Stream")
+      "Titolo dello Stream")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+    "Splitta i Joy-Con"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+    "Ripristina impostazioni predefinite"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+    "Reimposta la configurazione corrente ai valori predefiniti."
+    )

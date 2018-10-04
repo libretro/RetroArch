@@ -94,8 +94,6 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
       {
          if (swa->blocking)
          {
-            RARCH_LOG("No buffer, blocking...\n");
-
             while(swa->current_buffer == NULL)
             {
                uint32_t handle_idx = 0;

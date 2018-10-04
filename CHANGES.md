@@ -1,12 +1,17 @@
-# 1.7.5 (future)
+# 1.7.6 (future)
+
+# 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
+- CONFIG: Add 'Reset To Defaults' setting in Configurations. Thi will reset your config file to defaults.
 - CHEATS: Add support for Rumble when increase or decrease by the rumble value.
-- CHEEVOS: Support headerless NES hashing.
+- CHEATS: Add cheat variables to allow for updating large portions of memory.
 - CHEEVOS: Prevent loading states before achievements are fully loaded.
 - CRT: New porches and interlaced bug fix.
 - CRT: New functionality, ability to switch between 15KHz and 31KHz, etc.
 - COMMON: Support for "OEM-102" key (usually '\' on Euro keyboards).
 - DISCORD: Add 'Ask To Join' Feature.
+- EMSCRIPTEN: Add stb_font support.
+- INPUT: Add new menu toggle combos 'L3 + R' and 'L + R' (useful for Switch).
 - IOS: Use safe area to account for notch for iPhone X and adjust main view.
 - LOCALIZATION: Update Portuguese / Brazilian translation.
 - LOCALIZATION: Update Japanese translation.
@@ -23,6 +28,11 @@
 - OPENGL/GLX: Implement Adaptive VSync - GLX_EXT_swap_control_tear.
 - OPENGL/WGL: Implement Adaptive VSync - WGL_EXT_swap_control_tear.
 - RUNAHEAD: Fix performance degradation that could happen over time (after approx. 30 mins). Fixed input IDs outside of range 0-35 causing slow performance in runahead.
+- SWITCH: Add stb_font support.
+- SWITCH: Add Retro Achievements support.
+- SWITCH: Add networking support.
+- SWITCH: Add touchscreen support.
+- SWITCH: Add OpenGL support.
 - SWITCH: Merging of RetroNX Nintendo Switch port, based on libnx SDK.
 - VULKAN: Fix race condition in threaded mailbox emulation.
 - VULKAN: Maintenance fixes.

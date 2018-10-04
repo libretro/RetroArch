@@ -20,7 +20,9 @@
       "xlocbuf": "c",
       "xmemory0": "c",
       "ios": "c",
-      "list": "c"
+      "list": "c",
+      "input_driver.h": "c",
+      "video_driver.h": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

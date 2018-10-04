@@ -1552,6 +1552,9 @@ void MainWindow::selectBrowserDir(QString path)
 
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
 
+   /* block this signal because setData() called in addPlaylistHashToTable() would trigger an infinite loop */
+   disconnect(m_tableWidget, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(onCurrentTableItemDataChanged(QTableWidgetItem*)));
+
    m_tableWidget->clear();
    m_tableWidget->setColumnCount(0);
    m_tableWidget->setRowCount(0);
@@ -1600,6 +1603,8 @@ void MainWindow::selectBrowserDir(QString path)
    m_tableWidget->selectRow(0);
 
    onSearchEnterPressed();
+
+   connect(m_tableWidget, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(onCurrentTableItemDataChanged(QTableWidgetItem*)));
 }
 
 QTabWidget* MainWindow::browserAndPlaylistTabWidget()

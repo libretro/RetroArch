@@ -132,6 +132,23 @@ struct item_cheat
    unsigned int rumble_secondary_strength ; /* 0-65535 */
    unsigned int rumble_secondary_duration ; /* in milliseconds */
    retro_time_t rumble_secondary_end_time ; /* clock value for when rumbling should stop */
+
+   /*
+    * The repeat_ variables allow for a single cheat code to affect multiple memory addresses.
+    * repeat_count - the number of times the cheat code should be applied
+    * repeat_add_to_value - every iteration of repeat_count will have this amount added to item_cheat.value
+    * repeat_add_to_address - every iteration of repeat_count will have this amount added to item_cheat.address
+    *
+    * Note that repeat_add_to_address represents the number of "memory_search_size" blocks to add to
+    * item_cheat.address.  If memory_seach_size is 16-bits and repeat_add_to_address is 2, then item_cheat.address
+    * will be increased by 4 bytes 2*(16-bits) for every iteration.
+    *
+    * This is a cheating structure used for codes like unlocking all levels, giving yourself 1 of every item,etc.
+    */
+   unsigned int repeat_count ;
+   unsigned int repeat_add_to_value ;
+   unsigned int repeat_add_to_address ;
+
 };
 
 struct cheat_manager

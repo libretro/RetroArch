@@ -2489,6 +2489,18 @@ static bool input_driver_toggle_button_combo(
          if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
          break;
+      case INPUT_TOGGLE_L3_R:
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
+            return false;
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+            return false;
+         break;
+      case INPUT_TOGGLE_L_R:
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
+            return false;
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+            return false;
+         break;
       default:
       case INPUT_TOGGLE_NONE:
          return false;

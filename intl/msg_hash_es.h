@@ -2622,6 +2622,10 @@ MSG_HASH(
     "Soporte de FreeType"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
+    "Soporte de STB TrueType"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
     "Identificador del frontend"
     )
@@ -7589,4 +7593,16 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
     "Título del Stream"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+    "Split Joy-Con"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+    "Reset To Defaults"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+    "Reset the current configuration to default values."
     )

@@ -880,7 +880,7 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
 {
    char  path[1024];
-   ssize_t length   = 0;
+   int64_t length   = 0;
    char     *buf    = NULL;
    const char *base = proc_acpi_sysfs_ac_adapter_path;
 

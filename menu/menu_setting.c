@@ -860,24 +860,14 @@ static int setting_action_left_analog_dpad_mode(rarch_setting_t *setting, bool w
    return 0;
 }
 
-static int setting_action_left_libretro_device_type(
-      rarch_setting_t *setting, bool wraparound)
+static unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsigned port)
 {
-   retro_ctx_controller_info_t pad;
-   unsigned current_device, current_idx, i, devices[128],
-   types = 0, port = 0;
+   unsigned types                           = 0;
    const struct retro_controller_info *desc = NULL;
-   rarch_system_info_t *system = NULL;
+   rarch_system_info_t              *system = runloop_get_system_info();
 
-   if (!setting)
-      return -1;
-
-   port = setting->index_offset;
-
-   devices[types++] = RETRO_DEVICE_NONE;
-   devices[types++] = RETRO_DEVICE_JOYPAD;
-
-   system           = runloop_get_system_info();
+   devices[types++]                         = RETRO_DEVICE_NONE;
+   devices[types++]                         = RETRO_DEVICE_JOYPAD;
 
    if (system)
    {
@@ -892,16 +882,32 @@ static int setting_action_left_libretro_device_type(
 
    if (desc)
    {
+      unsigned i;
       for (i = 0; i < desc->num_types; i++)
       {
          unsigned id = desc->types[i].id;
-         if (types < ARRAY_SIZE(devices) &&
+         if (types < devices_size &&
                id != RETRO_DEVICE_NONE &&
                id != RETRO_DEVICE_JOYPAD)
             devices[types++] = id;
       }
    }
 
+   return types;
+}
+
+static int setting_action_left_libretro_device_type(
+      rarch_setting_t *setting, bool wraparound)
+{
+   retro_ctx_controller_info_t pad;
+   unsigned current_device, current_idx, i, devices[128],
+   types = 0, port = 0;
+
+   if (!setting)
+      return -1;
+
+   port           = setting->index_offset;
+   types          = libretro_device_get_size(devices, ARRAY_SIZE(devices), port);
    current_device = input_config_get_device(port);
    current_idx    = 0;
    for (i = 0; i < types; i++)
@@ -1117,7 +1123,7 @@ static int setting_string_action_left_driver(rarch_setting_t *setting,
 static int setting_string_action_left_netplay_mitm_server(
       rarch_setting_t *setting, bool wraparound)
 {
-   int i;
+   unsigned i;
    int offset               = 0;
    bool               found = false;
    unsigned        list_len = ARRAY_SIZE(netplay_mitm_server_list);
@@ -1696,6 +1702,12 @@ static void setting_get_string_representation_toggle_gamepad_combo(
          break;
       case INPUT_TOGGLE_START_SELECT:
          strlcpy(s, "Start + Select", len);
+         break;
+      case INPUT_TOGGLE_L3_R:
+         strlcpy(s, "L3 + R", len);
+         break;
+      case INPUT_TOGGLE_L_R:
+         strlcpy(s, "L + R", len);
          break;
    }
 }
@@ -2285,51 +2297,18 @@ static int setting_action_start_analog_dpad_mode(rarch_setting_t *setting)
 static int setting_action_start_libretro_device_type(rarch_setting_t *setting)
 {
    retro_ctx_controller_info_t pad;
-   unsigned index_offset, current_device;
-   unsigned devices[128], types = 0, port = 0;
-   const struct retro_controller_info *desc = NULL;
-   rarch_system_info_t *system = runloop_get_system_info();
+   unsigned port = 0;
 
    if (!setting || setting_generic_action_start_default(setting) != 0)
       return -1;
 
-   index_offset     = setting->index_offset;
-   port             = index_offset;
+   port             = setting->index_offset;
 
-   devices[types++] = RETRO_DEVICE_NONE;
-   devices[types++] = RETRO_DEVICE_JOYPAD;
+   input_config_set_device(port, RETRO_DEVICE_JOYPAD);
 
-   if (system)
-   {
-      /* Only push RETRO_DEVICE_ANALOG as default if we use an
-       * older core which doesn't use SET_CONTROLLER_INFO. */
-      if (!system->ports.size)
-         devices[types++] = RETRO_DEVICE_ANALOG;
+   pad.port         = port;
+   pad.device       = RETRO_DEVICE_JOYPAD;
 
-      if (port < system->ports.size)
-         desc = &system->ports.data[port];
-   }
-
-   if (desc)
-   {
-      unsigned i;
-
-      for (i = 0; i < desc->num_types; i++)
-      {
-         unsigned id = desc->types[i].id;
-         if (types < ARRAY_SIZE(devices) &&
-               id != RETRO_DEVICE_NONE &&
-               id != RETRO_DEVICE_JOYPAD)
-            devices[types++] = id;
-      }
-   }
-
-   current_device = RETRO_DEVICE_JOYPAD;
-
-   input_config_set_device(port, current_device);
-
-   pad.port   = port;
-   pad.device = current_device;
    core_set_controller_port_device(&pad);
 
    return 0;
@@ -2372,40 +2351,12 @@ static int setting_action_right_libretro_device_type(
    retro_ctx_controller_info_t pad;
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
-   const struct retro_controller_info *desc = NULL;
-   rarch_system_info_t *system = runloop_get_system_info();
 
    if (!setting)
       return -1;
 
-   port = setting->index_offset;
-
-   devices[types++] = RETRO_DEVICE_NONE;
-   devices[types++] = RETRO_DEVICE_JOYPAD;
-
-   if (system)
-   {
-      /* Only push RETRO_DEVICE_ANALOG as default if we use an
-       * older core which doesn't use SET_CONTROLLER_INFO. */
-      if (!system->ports.size)
-         devices[types++] = RETRO_DEVICE_ANALOG;
-
-      if (port < system->ports.size)
-         desc = &system->ports.data[port];
-   }
-
-   if (desc)
-   {
-      for (i = 0; i < desc->num_types; i++)
-      {
-         unsigned id = desc->types[i].id;
-         if (types < ARRAY_SIZE(devices) &&
-               id != RETRO_DEVICE_NONE &&
-               id != RETRO_DEVICE_JOYPAD)
-            devices[types++] = id;
-      }
-   }
-
+   port           = setting->index_offset;
+   types          = libretro_device_get_size(devices, ARRAY_SIZE(devices), port);
    current_device = input_config_get_device(port);
    current_idx    = 0;
    for (i = 0; i < types; i++)
@@ -2494,6 +2445,21 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
+
+#ifdef HAVE_LIBNX
+static void get_string_representation_split_joycon(rarch_setting_t *setting, char *s,
+      size_t len)
+{
+   settings_t      *settings = config_get_ptr();
+   unsigned index_offset     = setting->index_offset;
+   unsigned map              = settings->uints.input_split_joycon[index_offset];
+
+   if (map == 0)
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
+}
+#endif
 
 static void get_string_representation_bind_device(rarch_setting_t *setting, char *s,
       size_t len)
@@ -2942,7 +2908,9 @@ static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
    if (!setting)
       return;
 
-   if (settings && settings->bools.cheevos_hardcore_mode_enable && cheevos_state_loaded_flag)
+   if (settings && settings->bools.cheevos_hardcore_mode_enable
+         && cheevos_state_loaded_flag
+         )
    {
       cheevos_hardcore_paused = true;
       runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true);
@@ -3069,6 +3037,8 @@ static bool setting_append_list_input_player_options(
       static char key_analog[MAX_USERS][64];
       static char key_bind_all[MAX_USERS][64];
       static char key_bind_all_save_autoconfig[MAX_USERS][64];
+      static char split_joycon[MAX_USERS][64];
+      static char split_joycon_lbl[MAX_USERS][64];
       static char key_bind_defaults[MAX_USERS][64];
       static char mouse_index[MAX_USERS][64];
 
@@ -3092,6 +3062,10 @@ static bool setting_append_list_input_player_options(
       snprintf(key_analog[user], sizeof(key_analog[user]),
                msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE),
                user + 1);
+      snprintf(split_joycon[user], sizeof(split_joycon[user]),
+            "%s_%u",
+               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON),
+               user + 1);
       fill_pathname_join_delim(key_bind_all[user], tmp_string, "bind_all", '_',
             sizeof(key_bind_all[user]));
       fill_pathname_join_delim(key_bind_all_save_autoconfig[user],
@@ -3102,6 +3076,9 @@ static bool setting_append_list_input_player_options(
             sizeof(key_bind_defaults[user]));
       fill_pathname_join_delim(mouse_index[user], tmp_string, "mouse_index", '_',
             sizeof(mouse_index[user]));
+
+      snprintf(split_joycon_lbl[user], sizeof(label[user]),
+               "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON), user + 1);
 
       snprintf(label[user], sizeof(label[user]),
                "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
@@ -3170,6 +3147,31 @@ static bool setting_append_list_input_player_options(
       menu_settings_list_current_add_range(list, list_info, 0, 2, 1.0, true, true);
       menu_settings_list_current_add_enum_idx(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE + user));
+
+#ifdef HAVE_LIBNX
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_split_joycon[user],
+            split_joycon[user],
+            split_joycon_lbl[user],
+            user,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
+#if 0
+      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_bind_device;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_bind_device;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_bind_device;
+      (*list)[list_info->index - 1].action_select = &setting_action_right_bind_device;
+#endif
+      (*list)[list_info->index - 1].get_string_representation = &get_string_representation_split_joycon;
+      menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0, true, true);
+#endif
 
       CONFIG_ACTION_ALT(
             list, list_info,
@@ -3546,6 +3548,16 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
+               MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
@@ -4639,6 +4651,21 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+
+            config_uint_cbs(cheat_manager_state.working_cheat.repeat_count, CHEAT_REPEAT_COUNT,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  0,&setting_get_string_representation_hex_and_uint,1,2048,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+
+            config_uint_cbs(cheat_manager_state.working_cheat.repeat_add_to_address, CHEAT_REPEAT_ADD_TO_ADDRESS,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  0,&setting_get_string_representation_hex_and_uint,1,2048,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+
+            config_uint_cbs(cheat_manager_state.working_cheat.repeat_add_to_value, CHEAT_REPEAT_ADD_TO_VALUE,
+                  setting_uint_action_left_default,setting_uint_action_right_default,
+                  0,&setting_get_string_representation_hex_and_uint,0,0xFFFF,1) ;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_type, CHEAT_RUMBLE_TYPE,
                   setting_uint_action_left_default,setting_uint_action_right_default,
@@ -6260,7 +6287,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_toggle_gamepad_combo;
-            menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TOGGLE_LAST-1), 1, true, true);
 
             CONFIG_BOOL(
                   list, list_info,

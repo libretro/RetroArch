@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2015-2016 - Andre Leiradella
+ *  Copyright (C) 2015-2018 - Andre Leiradella
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,8 +13,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_CHEEVOS_H
-#define __RARCH_CHEEVOS_H
+#ifndef __RARCH_CHEEVOS_OLD_H
+#define __RARCH_CHEEVOS_OLD_H
+
+#ifdef HAVE_NEW_CHEEVOS
+#include "../cheevos-new/cheevos.h"
+#else
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -158,8 +162,9 @@ extern bool cheevos_hardcore_paused;
 extern bool cheevos_state_loaded_flag;
 extern int cheats_are_enabled;
 extern int cheats_were_enabled;
-;
 
 RETRO_END_DECLS
+
+#endif
 
 #endif /* __RARCH_CHEEVOS_H */

@@ -40,7 +40,6 @@ mkdir -p ../pkg/vita/vpk
 elif [ $PLATFORM = "libnx" ] ; then
 platform=libnx
 EXT=a
-mkdir -p ../pkg/${platform}/build/romfs
 
 # CTR/3DS
 elif [ $PLATFORM = "ctr" ] ; then
@@ -160,8 +159,18 @@ fi
 
 COUNTER=0
 
+if [ $PLATFORM = "libnx" ]; then
+   echo Buildbot: building static core for ${platform}
+   mkdir -p ../pkg/${platform}/switch
+   make -C ../ -f Makefile.${platform} HAVE_STATIC_DUMMY=1 -j3 || exit 1
+   mv -f ../retroarch_switch.nro ../pkg/${platform}/switch/retroarch_switch.nro
+   make -C ../ -f Makefile.${platform} clean || exit 1
+fi
+
 #for f in *_${platform}.${EXT} ; do
 for f in `ls -v *_${platform}.${EXT}`; do
+
+   echo Buildbot: building ${name} for ${platform}
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
    async=0
    pthread=0
@@ -259,8 +268,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mv -f ../retroarch_3ds.3dsx ../pkg/${platform}/build/3dsx/${name}_libretro.3dsx
       mv -f ../retroarch_3ds.3ds ../pkg/${platform}/build/rom/${name}_libretro.3ds
    elif [ $PLATFORM = "libnx" ] ; then
-      mkdir -p ../pkg/${platform}/build/libnx/
-      mv -f ../retroarch_switch.nro ../pkg/${platform}/build/libnx/${name}.nro
+      mkdir -p ../pkg/${platform}/retroarch/cores/
+      mv -f ../retroarch_switch.nro ../pkg/${platform}/retroarch/cores/${name}_libretro_${platform}.nro
    elif [ $PLATFORM = "unix" ] ; then
       mv -f ../retroarch ../pkg/${platform}/${name}_libretro.elf
    elif [ $PLATFORM = "ngc" ] ; then

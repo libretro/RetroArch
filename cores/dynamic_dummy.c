@@ -25,6 +25,34 @@
 
 static uint16_t *dummy_frame_buf;
 
+#if defined(HAVE_LIBNX) && defined(HAVE_STATIC_DUMMY)
+void retro_init(void) { libretro_dummy_retro_init(); }
+void retro_deinit(void) { libretro_dummy_retro_deinit(); }
+unsigned retro_api_version(void) { return libretro_dummy_retro_api_version(); }
+void retro_set_controller_port_device(unsigned port, unsigned device) { libretro_dummy_retro_set_controller_port_device(port, device); }
+void retro_get_system_info(struct retro_system_info *info) { libretro_dummy_retro_get_system_info(info); }
+void retro_get_system_av_info(struct retro_system_av_info *info) { retro_get_system_av_info(info); }
+void retro_set_environment(retro_environment_t cb) { libretro_dummy_retro_set_environment(cb); }
+void retro_set_audio_sample(retro_audio_sample_t cb) { libretro_dummy_retro_set_audio_sample(cb); }
+void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { libretro_dummy_retro_set_audio_sample_batch(cb); }
+void retro_set_input_poll(retro_input_poll_t cb) { libretro_dummy_retro_set_input_poll(cb); }
+void retro_set_input_state(retro_input_state_t cb) { libretro_dummy_retro_set_input_state(cb); }
+void retro_set_video_refresh(retro_video_refresh_t cb) { libretro_dummy_retro_set_video_refresh(cb); }
+void retro_reset(void) { libretro_dummy_retro_reset(); }
+void retro_run(void) { libretro_dummy_retro_run(); }
+bool retro_load_game(const struct retro_game_info *info) { return libretro_dummy_retro_load_game(info); }
+void retro_unload_game(void) { libretro_dummy_retro_unload_game(); }
+unsigned retro_get_region(void) { return libretro_dummy_retro_get_region(); }
+bool retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num) { return libretro_dummy_retro_load_game_special(type, info, num); }
+size_t retro_serialize_size(void) { return libretro_dummy_retro_serialize_size(); }
+bool retro_serialize(void *data, size_t size) { return libretro_dummy_retro_serialize(data, size); }
+bool retro_unserialize(const void *data, size_t size) { return libretro_dummy_retro_unserialize(data, size); }
+void *retro_get_memory_data(unsigned id) { return libretro_dummy_retro_get_memory_data(id); }
+size_t retro_get_memory_size(unsigned id) { return libretro_dummy_retro_get_memory_size(id); }
+void retro_cheat_reset(void) { libretro_dummy_retro_cheat_reset(); }
+void retro_cheat_set(unsigned idx, bool enabled, const char *code) { libretro_dummy_retro_cheat_set(idx, enabled, code); }
+#endif
+
 void libretro_dummy_retro_init(void)
 {
    unsigned i;

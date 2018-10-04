@@ -201,11 +201,12 @@ VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
 
 static void vulkan_emulated_mailbox_loop(void *userdata)
 {
-   VkResult res;
    VkFence fence;
    VkFenceCreateInfo info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
-   struct vulkan_emulated_mailbox *mailbox =
-      (struct vulkan_emulated_mailbox *)userdata;
+   struct vulkan_emulated_mailbox *mailbox = (struct vulkan_emulated_mailbox*)userdata;
+
+   if (!mailbox)
+      return;
 
    vkCreateFence(mailbox->device, &info, NULL, &fence);
 
@@ -619,7 +620,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
       type = VULKAN_TEXTURE_STAGING;
       vkDestroyImage(device, tex.image, NULL);
-      tex.image = NULL;
+      tex.image          = NULL;
       info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
 
       buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -1545,10 +1546,10 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
       const char **exts, unsigned num_exts,
       const char **optional_exts, unsigned num_optional_exts)
 {
-   bool ret = true;
-   VkExtensionProperties *properties = NULL;
    uint32_t property_count;
    unsigned i;
+   bool ret                          = true;
+   VkExtensionProperties *properties = NULL;
 
    if (vkEnumerateDeviceExtensionProperties(gpu, NULL, &property_count, NULL) != VK_SUCCESS)
       return false;

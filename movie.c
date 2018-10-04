@@ -357,7 +357,7 @@ bool bsv_movie_init(void)
    }
    else if (bsv_movie_state.movie_start_recording)
    {
-      char msg[256];
+      char msg[8192];
       snprintf(msg, sizeof(msg),
             "%s \"%s\".",
             msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
@@ -531,7 +531,7 @@ static bool runloop_check_movie_record(void)
 
 static bool runloop_check_movie_init(void)
 {
-   char msg[128], path[PATH_MAX_LENGTH];
+   char msg[8192], path[8192];
    settings_t *settings       = config_get_ptr();
 
    msg[0] = path[0]           = '\0';
