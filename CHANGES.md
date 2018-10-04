@@ -1,4 +1,5 @@
 # 1.7.6 (future)
+- SWITCH/LIBNX: Improve touch scaling calculation.
 - SWITCH: Proper button labels.
 
 # 1.7.5
