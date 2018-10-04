@@ -1,4 +1,5 @@
 # 1.7.6 (future)
+- SWITCH: Proper button labels.
 
 # 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
