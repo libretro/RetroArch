@@ -1086,8 +1086,8 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
                || (string_is_equal(entry.label, "loadstate"))
                || (string_is_equal(entry.label, "savestate"))))
       {
-         size_t path_size         = 8024 * sizeof(char);
-         char             *path   = (char*)malloc(8204 * sizeof(char));
+         size_t path_size         = 8204 * sizeof(char);
+         char             *path   = (char*)malloc(path_size);
          global_t         *global = global_get_ptr();
 
          path[0] = '\0';
