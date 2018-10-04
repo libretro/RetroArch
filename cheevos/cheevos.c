@@ -3062,10 +3062,8 @@ found:
        * the file is headerless. */
       char* header = (char*)(coro->data);
 
-      /* Assume that valid (including unlicensed) NES titles do not 
-       * exceed 32Mb, in order to avoid excessive requests
-       * with large non-NES files. */
-      if (chunks == 0 || chunks > 250 ||
+      /* Restrict size to the maximum known licensed cart size of 8MiB */
+      if (chunks == 0 || chunks > 64 ||
         (header[0] == 'N' && header[1] == 'E'
         && header[2] == 'S' && header[3] == 0x1a))
       {
