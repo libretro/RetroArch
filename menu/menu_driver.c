@@ -358,9 +358,9 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
          strftime(datetime->s, datetime->len,
                "%Y-%m-%d %H:%M", localtime(&time_));
          break;
-      case 2: /* Date */
+      case 2: /* MM-DD-YYYY HH:MM  */
          strftime(datetime->s, datetime->len,
-               "%y-%m-%d", localtime(&time_));
+               "%m-%d-%Y %H:%M", localtime(&time_));
          break;
       case 3: /* Time */
          strftime(datetime->s, datetime->len,
@@ -384,7 +384,7 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
             "%r", localtime(&time_));
 #else
          strftime(datetime->s, datetime->len,
-            "%I:%M %p", localtime(&time_));
+            "%I:%M:%S %p", localtime(&time_));
 #endif
    }
 }
