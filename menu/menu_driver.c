@@ -24,6 +24,7 @@
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <encodings/utf.h>
 
 #ifdef WIIU
 #include <wiiu/os/energy.h>
@@ -383,8 +384,20 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
          strftime(datetime->s, datetime->len,
             "%r", localtime(&time_));
 #else
-         strftime(datetime->s, datetime->len,
-            "%I:%M:%S %p", localtime(&time_));
+         {
+            char *local;
+
+            strftime(datetime->s, datetime->len,
+
+               "%I:%M:%S %p", localtime(&time_));
+            local = local_to_utf8_string_alloc(datetime->s);
+
+            if (local)
+            {
+               strlcpy(datetime->s, local, datetime->len);
+               free(local);
+            }
+         }
 #endif
    }
 }
