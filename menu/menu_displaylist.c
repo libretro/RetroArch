@@ -291,7 +291,6 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       core_info_ctx_firmware_t firmware_info;
       bool update_missing_firmware   = false;
       bool set_missing_firmware      = false;
-      settings_t *settings           = config_get_ptr();
 
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->paths.directory_system;
