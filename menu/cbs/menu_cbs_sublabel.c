@@ -528,7 +528,8 @@ static int action_bind_sublabel_remap_kbd_sublabel(
       input_config_get_device_display_name(user_idx) ?
       input_config_get_device_display_name(user_idx) :
       (input_config_get_device_name(user_idx) ?
-      input_config_get_device_name(user_idx) : "N/A"));
+      input_config_get_device_name(user_idx) : 
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
    return 0;
 }
 
@@ -548,7 +549,9 @@ static int action_bind_sublabel_audio_mixer_stream(
    switch (stream->state)
    {
       case AUDIO_STREAM_STATE_NONE:
-         strlcpy(msg, "N/A", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               sizeof(msg));
          break;
       case AUDIO_STREAM_STATE_STOPPED:
          strlcpy(msg, "Stopped", sizeof(msg));
@@ -564,7 +567,8 @@ static int action_bind_sublabel_audio_mixer_stream(
          break;
    }
 
-   snprintf(s, len, "State : %s | Volume: %.2f dB", msg,
+   snprintf(s, len, "State : %s | %s: %.2f dB", msg,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME),
          stream->volume);
    return 0;
 }
@@ -582,7 +586,8 @@ static int action_bind_sublabel_remap_sublabel(
       input_config_get_device_display_name(offset) ?
       input_config_get_device_display_name(offset) :
       (input_config_get_device_name(offset) ?
-      input_config_get_device_name(offset) : "N/A"));
+      input_config_get_device_name(offset) : 
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
    return 0;
 }
 
@@ -618,6 +623,7 @@ static int action_bind_sublabel_netplay_room(
    const char *gamename   = NULL;
    const char *core_ver   = NULL;
    const char *frontend   = NULL;
+   const char *na         = NULL;
 
    /* This offset may cause issues if any entries are added to this menu */
    unsigned offset        = i - 3;
@@ -631,13 +637,14 @@ static int action_bind_sublabel_netplay_room(
    core_ver   = netplay_room_list[offset].coreversion;
    gamecrc    = netplay_room_list[offset].gamecrc;
    frontend   = netplay_room_list[offset].frontend;
+   na         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
    snprintf(s, len,
 	   "RetroArch: %s (%s)\nCore: %s (%s)\nGame: %s (%08x)",
-      string_is_empty(ra_version) ? "n/a" : ra_version,
-      string_is_empty(frontend) ? "n/a" : frontend,
+      string_is_empty(ra_version)    ? na : ra_version,
+      string_is_empty(frontend)      ? na : frontend,
       corename, core_ver,
-      !string_is_equal(gamename, "N/A") ? gamename : "n/a",
+      !string_is_equal(gamename, na) ? gamename : na,
       gamecrc);
 #if 0
    strlcpy(s, corename, len);
