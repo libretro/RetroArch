@@ -2133,10 +2133,17 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
     "TGDB Rating"
     )
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REBOOT,
+    "Reiniciar (RCM)"
+    )
+#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REBOOT,
     "Reiniciar"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
     "Carpeta de configuración de grabación"

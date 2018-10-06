@@ -1,3 +1,29 @@
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
+    "GPU Overclock"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
+    "Overclock or underclock the Switch GPU"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
+    "Screen brightness"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
+    "Increase or decrease the Switch screen brightness"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+    "CPU Overclock"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+    "Overclock the Switch CPU"
+    )
+#endif
 MSG_HASH(
     MSG_COMPILER,
     "Compiler"
@@ -2133,10 +2159,17 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
     "TGDB Rating"
     )
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REBOOT,
+    "Reboot into RCM"
+    )
+#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REBOOT,
     "Reboot"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
     "Recording Config"

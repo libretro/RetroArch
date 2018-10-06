@@ -478,6 +478,12 @@ default_sublabel_macro(action_bind_sublabel_show_wimp,                          
 #endif
 default_sublabel_macro(action_bind_sublabel_discord_allow,                         MENU_ENUM_SUBLABEL_DISCORD_ALLOW)
 
+#ifdef HAVE_LAKKA_SWITCH
+default_sublabel_macro(action_bind_sublabel_switch_gpu_profile,             MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE)
+default_sublabel_macro(action_bind_sublabel_switch_cpu_profile,             MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE)
+default_sublabel_macro(action_bind_sublabel_switch_backlight_control,       MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL)
+#endif
+
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -1999,6 +2005,17 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_QT
          case MENU_ENUM_LABEL_SHOW_WIMP:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_show_wimp);
+            break;
+#endif
+#ifdef HAVE_LAKKA_SWITCH
+         case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_switch_cpu_profile);
+            break;
+         case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_switch_gpu_profile);
+            break;
+         case MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_switch_backlight_control);
             break;
 #endif
          case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:
