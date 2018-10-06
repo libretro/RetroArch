@@ -220,6 +220,20 @@ GLenum rglGetError(void)
  *
  * Core in:
  * OpenGL    : 3.2
+ * OpenGLES  : N/A
+ */
+
+void rglProvokingVertex(	GLenum provokeMode)
+{
+#if defined(HAVE_OPENGL)
+   glProvokingVertex(provokeMode);
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 3.2
  * OpenGLES  : 3.0
  */
 void rglGetInteger64v(	GLenum pname, int64_t *data)
