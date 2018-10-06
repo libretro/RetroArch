@@ -1,4 +1,5 @@
 # 1.7.6 (future)
+- MIDI: Add a Linux ALSA driver for MIDI.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - SCANNER: Fix GDI disc scanning.
