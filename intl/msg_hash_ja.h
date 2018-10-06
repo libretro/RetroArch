@@ -3224,7 +3224,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
       "シェーダーの設定の変更を直ちに反映します。シェーダーのパス数やフィルタリング、FBOスケールなどを変更したときに使用します。")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
-      "シェーダーパイプラインのパス数を増加または減少させます。各パイプラインに別々のシェーダーをバインドし。フィルタリングとスケールを設定することができます。"
+      "シェーダーパイプラインのパス数を増加または減少させます。各パイプラインに別々のシェーダーをバインドし、フィルタリングとスケールを設定することができます。"
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
       "中継サーバーを使用")
