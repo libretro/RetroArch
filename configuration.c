@@ -2340,6 +2340,24 @@ error:
    return NULL;
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_RGUI)
+static bool check_menu_driver_compatibility(void)
+{
+   settings_t *settings = config_get_ptr();
+   char *video_driver   = settings->arrays.video_driver;
+   char *menu_driver    = settings->arrays.menu_driver;
+
+   if (string_is_equal  (menu_driver, "rgui") ||
+         string_is_equal(menu_driver, "null"))
+      return true;
+
+   if (menu_display_driver_exists(video_driver))
+      return true;
+
+   return false;
+}
+#endif
+
 static void read_keybinds_keyboard(config_file_t *conf, unsigned user,
       unsigned idx, struct retro_keybind *bind)
 {
@@ -3044,6 +3062,11 @@ static bool config_load_file(const char *path, bool set_defaults,
          break;
       }
    }
+
+#if defined(HAVE_MENU) && defined(HAVE_RGUI)
+   if (!check_menu_driver_compatibility())
+      strlcpy(settings->arrays.menu_driver, "rgui", sizeof(settings->arrays.menu_driver));
+#endif
 
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
    recording_driver_update_streaming_url();

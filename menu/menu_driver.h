@@ -824,6 +824,8 @@ void menu_display_reset_textures_list(
 int menu_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height);
 
+bool menu_display_driver_exists(const char *s);
+
 void menu_driver_destroy(void);
 
 extern uintptr_t menu_display_white_texture;

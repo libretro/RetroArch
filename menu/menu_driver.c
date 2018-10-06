@@ -634,6 +634,18 @@ float menu_display_get_dpi(void)
    return dpi;
 }
 
+bool menu_display_driver_exists(const char *s)
+{
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(menu_display_ctx_drivers); i++)
+   {
+      if (string_is_equal(s, menu_display_ctx_drivers[i]->ident))
+         return true;
+   }
+
+   return false;
+}
+
 bool menu_display_init_first_driver(bool video_is_threaded)
 {
    unsigned i;
