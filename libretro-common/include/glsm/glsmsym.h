@@ -33,6 +33,7 @@ RETRO_BEGIN_DECLS
 #define glTexCoord2f                rglTexCoord2f
 
 /* more forward-compatible GL subset symbols */
+#define glProvokingVertex           rglProvokingVertex
 #define glGetInteger64v             rglGetInteger64v
 #define glGenSamplers               rglGenSamplers
 #define glBindSampler               rglBindSampler
@@ -469,6 +470,7 @@ void rglGetInteger64v(	GLenum pname,
 void rglUniform2iv(	GLint location,
  	GLsizei count,
  	const GLint *value);
+void rglProvokingVertex(	GLenum provokeMode);
 
 RETRO_END_DECLS
 
