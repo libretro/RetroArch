@@ -80,7 +80,6 @@ bool menu_shader_manager_init(void)
 {
    bool is_preset              = false;
    config_file_t *conf         = NULL;
-   settings_t *settings        = config_get_ptr();
    char *new_path              = NULL;
    const char *path_shader     = retroarch_get_shader_preset();
    enum rarch_shader_type type = RARCH_SHADER_NONE;
@@ -112,6 +111,7 @@ bool menu_shader_manager_init(void)
       else
       {
          char preset_path[PATH_MAX_LENGTH];
+         settings_t *settings        = config_get_ptr();
          const char *shader_dir            =
             *settings->paths.directory_video_shader ?
             settings->paths.directory_video_shader :
