@@ -140,12 +140,14 @@ struct command
 };
 
 #if defined(HAVE_COMMAND)
-#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
 static enum cmd_source_t lastcmd_source;
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
 static int lastcmd_net_fd;
 static struct sockaddr_storage lastcmd_net_source;
 static socklen_t lastcmd_net_source_len;
+#endif
 
+#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
 static void command_reply(const char * data, size_t len)
 {
    switch (lastcmd_source)
