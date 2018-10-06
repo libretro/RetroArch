@@ -2800,10 +2800,8 @@ static bool glsm_state_ctx_destroy(void *data)
    return true;
 }
 
-static bool glsm_state_ctx_init(void *data)
+static bool glsm_state_ctx_init(glsm_ctx_params_t *params)
 {
-   glsm_ctx_params_t *params = (glsm_ctx_params_t*)data;
-
    if (!params || !params->environ_cb)
       return false;
 
@@ -2818,14 +2816,15 @@ static bool glsm_state_ctx_init(void *data)
    hw_render.context_type       = RETRO_HW_CONTEXT_OPENGLES2;
 #endif
 #else
-#ifdef CORE
-   hw_render.context_type       = RETRO_HW_CONTEXT_OPENGL_CORE;
-   hw_render.version_major      = 3;
-   hw_render.version_minor      = 3;
-#else
    hw_render.context_type       = RETRO_HW_CONTEXT_OPENGL;
+   if (params->context_type != RETRO_HW_CONTEXT_NONE)
+      hw_render.context_type    = params->context_type;
+   if (params->major != 0)
+      hw_render.version_major   = params->major;
+   if (params->minor != 0)
+      hw_render.version_minor   = params->minor;
 #endif
-#endif
+
    hw_render.context_reset      = params->context_reset;
    hw_render.context_destroy    = params->context_destroy;
    hw_render.stencil            = params->stencil;
@@ -2873,7 +2872,7 @@ bool glsm_ctl(enum glsm_state_ctl state, void *data)
          glsm_state_ctx_destroy(data);
          break;
       case GLSM_CTL_STATE_CONTEXT_INIT:
-         return glsm_state_ctx_init(data);
+         return glsm_state_ctx_init((glsm_ctx_params_t*)data);
       case GLSM_CTL_STATE_SETUP:
          glsm_state_setup();
          break;

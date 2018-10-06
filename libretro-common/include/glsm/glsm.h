@@ -146,6 +146,7 @@ typedef struct glsm_ctx_params
    bool stencil;
    unsigned major;
    unsigned minor;
+   enum retro_hw_context_type context_type;
 } glsm_ctx_params_t;
 
 GLuint glsm_get_current_framebuffer(void);
