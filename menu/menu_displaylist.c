@@ -47,6 +47,10 @@
 #include "../network/netplay/netplay_discovery.h"
 #endif
 
+#ifdef HAVE_LAKKA_SWITCH
+#include "../../lakka.h"
+#endif
+
 #if defined(__linux__) || (defined(BSD) && !defined(__MACH__))
 #include "../frontend/drivers/platform_unix.h"
 #endif
@@ -4274,6 +4278,124 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
    switch (type)
    {
+#ifdef HAVE_LAKKA_SWITCH
+      case DISPLAYLIST_SWITCH_CPU_PROFILE:
+      {
+         runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true);
+      
+         char current_profile[PATH_MAX_LENGTH];
+         
+         FILE* profile = popen("cpu-profile get", "r");          
+         fgets(current_profile, PATH_MAX_LENGTH, profile);  
+         pclose(profile);
+         
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         
+         char text[PATH_MAX_LENGTH];
+         
+         snprintf(text, sizeof(text), "Current profile : %s", current_profile);
+         
+         menu_entries_append_enum(info->list,
+            text,
+            "",
+            0,
+            MENU_INFO_MESSAGE, 0, 0);
+         
+         const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
+                  
+         
+         for (int i = 0; i < profiles_count; i++)
+         {
+            char* profile = SWITCH_CPU_PROFILES[i];
+            char* speed = SWITCH_CPU_SPEEDS[i];
+               
+            char title[PATH_MAX_LENGTH] = {0};
+               
+            snprintf(title, sizeof(title), "%s (%s)", profile, speed);
+               
+         menu_entries_append_enum(info->list, 
+            title,
+            "",
+            0, MENU_SET_SWITCH_CPU_PROFILE, 0, i);
+            
+         }         
+            
+         info->need_push    = true;
+         info->need_refresh = true;
+         info->need_clear   = true;
+      
+         break;
+      }
+      case DISPLAYLIST_SWITCH_GPU_PROFILE:
+      {
+         runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true);
+
+         char current_profile[PATH_MAX_LENGTH];
+         
+         FILE* profile = popen("gpu-profile get", "r");          
+         fgets(current_profile, PATH_MAX_LENGTH, profile);  
+         pclose(profile);
+         
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         
+         char text[PATH_MAX_LENGTH];
+         
+         snprintf(text, sizeof(text), "Current profile : %s", current_profile);
+         
+         menu_entries_append_enum(info->list,
+            text,
+            "",
+            0,
+            MENU_INFO_MESSAGE, 0, 0);
+         
+         const size_t profiles_count = sizeof(SWITCH_GPU_PROFILES)/sizeof(SWITCH_GPU_PROFILES[1]);
+                     
+         for (int i = 0; i < profiles_count; i++)
+         {
+            char* profile = SWITCH_GPU_PROFILES[i];
+            char* speed = SWITCH_GPU_SPEEDS[i];
+            
+            char title[PATH_MAX_LENGTH] = {0};
+              
+            snprintf(title, sizeof(title), "%s (%s)", profile, speed);
+               
+         menu_entries_append_enum(info->list, 
+             title,
+            "",
+             0, MENU_SET_SWITCH_GPU_PROFILE, 0, i); 
+         }         
+               
+         info->need_push    = true;
+         info->need_refresh = true;
+         info->need_clear   = true;
+         
+         break;
+      }
+      case DISPLAYLIST_SWITCH_BACKLIGHT_CONTROL:
+      {
+        menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+        
+        const size_t brightness_count = sizeof(SWITCH_BRIGHTNESS)/sizeof(SWITCH_BRIGHTNESS[1]);
+        
+        for (int i = 0; i < brightness_count; i++)
+        {
+        	char title[PATH_MAX_LENGTH] = {0};
+        	
+        	snprintf(title, sizeof(title), "Set to %d%%", SWITCH_BRIGHTNESS[i]);
+        	
+        	menu_entries_append_enum(info->list, 
+            title,
+            "",
+            0, MENU_SET_SWITCH_BRIGHTNESS, 0, i);
+         }
+      
+         info->need_push    = true;
+         info->need_refresh = true;
+         info->need_clear   = true;
+         
+         break;
+      }
+#endif
       case DISPLAYLIST_MUSIC_LIST:
          {
             char combined_path[PATH_MAX_LENGTH];
@@ -7245,6 +7367,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_QUIT_RETROARCH,
                      PARSE_ACTION, false);
+#ifdef HAVE_LAKKA_SWITCH
+            menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
+               PARSE_ACTION, false);
+
+            menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,
+               PARSE_ACTION, false);
+#endif
             if (settings->bools.menu_show_reboot)
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_REBOOT,

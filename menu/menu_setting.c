@@ -3641,6 +3641,31 @@ static bool setting_append_list(
 #endif
 
 #if defined(HAVE_LAKKA)
+#ifdef HAVE_LAKKA_SWITCH
+        CONFIG_ACTION(
+              list, list_info,
+              MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
+              MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+              &group_info,
+              &subgroup_info,
+              parent_group);
+
+        CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
+               MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+        CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,
+               MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_REBOOT,

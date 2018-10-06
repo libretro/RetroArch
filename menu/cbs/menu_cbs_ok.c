@@ -2503,6 +2503,64 @@ static int action_ok_deferred_list_stub(const char *path,
    return 0;
 }
 
+#ifdef HAVE_LAKKA_SWITCH
+
+static int action_ok_set_switch_cpu_profile(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char* profile_name = SWITCH_CPU_PROFILES[entry_idx];
+
+   char command[PATH_MAX_LENGTH] = {0};
+
+   snprintf(command, sizeof(command), "cpu-profile set %s", profile_name);
+
+   system(command);
+        
+   snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
+        
+   runloop_msg_queue_push(command, 1, 90, true);
+
+	return menu_cbs_exit();
+}
+
+static int action_ok_set_switch_gpu_profile(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char* profile_name = SWITCH_GPU_PROFILES[entry_idx];
+
+   char command[PATH_MAX_LENGTH] = {0};
+
+   snprintf(command, sizeof(command), "gpu-profile set %s", profile_name);
+
+   system(command);
+        
+   snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
+        
+   runloop_msg_queue_push(command, 1, 90, true);
+
+	return menu_cbs_exit();
+}
+
+static int action_ok_set_switch_backlight(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   int brightness = SWITCH_BRIGHTNESS[entry_idx];
+
+   char command[PATH_MAX_LENGTH] = {0};
+
+   snprintf(command, sizeof(command), "echo %d > /sys/class/backlight/backlight/brightness", brightness);
+
+   system(command);
+       
+   snprintf(command, sizeof(command), "Brightness set to %d%%", brightness);
+        
+   runloop_msg_queue_push(command, 1, 90, true);
+
+   return 0;
+}
+
+#endif
+
 static int action_ok_load_core_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4961,6 +5019,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_HELP_LIST:
          case MENU_ENUM_LABEL_INFORMATION_LIST:
          case MENU_ENUM_LABEL_CONTENT_SETTINGS:
+#ifdef HAVE_LAKKA_SWITCH
+         case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
+         case MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL:
+         case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
+#endif
             BIND_ACTION_OK(cbs, action_ok_push_default);
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
@@ -5384,6 +5447,17 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                BIND_ACTION_OK(cbs, action_ok_playlist_entry);
             }
             break;
+#ifdef HAVE_LAKKA_SWITCH
+         case MENU_SET_SWITCH_GPU_PROFILE:
+            BIND_ACTION_OK(cbs, action_ok_set_switch_gpu_profile);
+            break;
+         case MENU_SET_SWITCH_BRIGHTNESS:
+            BIND_ACTION_OK(cbs, action_ok_set_switch_backlight);
+            break;
+         case MENU_SET_SWITCH_CPU_PROFILE:
+            BIND_ACTION_OK(cbs, action_ok_set_switch_cpu_profile);
+            break;
+#endif
          case FILE_TYPE_RPL_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_rpl_entry);
             break;

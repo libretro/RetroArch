@@ -1,3 +1,11 @@
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
+      "switch_gpu_profile")
+MSG_HASH(MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,
+      "switch_backlight_control")
+MSG_HASH(MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
+      "switch_cpu_profile")
+#endif
 MSG_HASH(MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_USERNAME,
       "accounts_cheevos_username")
 MSG_HASH(MENU_ENUM_LABEL_ACCOUNTS_LIST,

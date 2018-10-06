@@ -187,6 +187,12 @@ generic_deferred_push(deferred_push_core_content_dirs_subdir_list,  DISPLAYLIST_
 generic_deferred_push(deferred_push_lakka_list,                     DISPLAYLIST_LAKKA)
 #endif
 
+#ifdef HAVE_LAKKA_SWITCH
+generic_deferred_push(deferred_push_switch_gpu_profile,             DISPLAYLIST_SWITCH_GPU_PROFILE)
+generic_deferred_push(deferred_push_switch_backlight_control,       DISPLAYLIST_SWITCH_BACKLIGHT_CONTROL)
+generic_deferred_push(deferred_push_switch_cpu_profile,             DISPLAYLIST_SWITCH_CPU_PROFILE)
+#endif
+
 static int deferred_push_cursor_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
@@ -875,6 +881,23 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
    }
+#ifdef HAVE_LAKKA_SWITCH
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_SWITCH_GPU_PROFILE)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_switch_gpu_profile);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_switch_backlight_control);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_SWITCH_CPU_PROFILE)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_switch_cpu_profile);
+   }
+#endif
    else if (strstr(label,
             msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION)))
    {
