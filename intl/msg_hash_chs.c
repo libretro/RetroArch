@@ -67,11 +67,11 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_SHADER_NEXT:
             snprintf(s, len,
-                  "应用文件夹中的下一个渲染器特效。");
+                  "应用文件夹中的后一个渲染器特效。");
             break;
          case RARCH_SHADER_PREV:
             snprintf(s, len,
-                  "应用文件夹中的上一个渲染器特效。");
+                  "应用文件夹中的前一个渲染器特效。");
             break;
          case RARCH_CHEAT_INDEX_PLUS:
          case RARCH_CHEAT_INDEX_MINUS:
@@ -173,7 +173,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "即时存档栏位 \n"
                   "\n"
-                  "当栏位选择为0时，即时存档将以*.state命名（或其他 \n"
+                  "当选择0号栏位时，即时存档将以*.state命名（或其他 \n"
                   "在命令行中定义的名称）。 \n"
                   "\n"
                   "当栏位不为0时，路径将会设为<path><d>，其中<d> \n"
@@ -187,7 +187,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "按住按钮来回溯 \n"
                   " \n"
-                  "必须先启用回溯功能。");
+                  "必须先启用回溯倒带功能。");
             break;
          case RARCH_BSV_RECORD_TOGGLE:
             snprintf(s, len,
@@ -271,7 +271,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "创建一份截图. \n"
                " \n"
                "截图文件将会存放在 \n"
-               "截图目录之中.");
+               "截图文件夹之中.");
          break;
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
          snprintf(s, len, "添加到收藏夹.");
@@ -301,43 +301,42 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY:
          snprintf(s, len,
                "选择本项以扫描当前 \n"
-               "目录中的游戏。");
+               "文件夹中的游戏。");
          break;
       case MENU_ENUM_LABEL_USE_THIS_DIRECTORY:
          snprintf(s, len,
-               "选择本目录作为指定目录.");
+               "选择本文件夹作为指定文件夹。");
          break;
       case MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY:
          snprintf(s, len,
-               "游戏数据库目录。 \n"
+               "游戏数据库文件夹。 \n"
                " \n"
-               "到游戏数据库目录的 \n"
-               "路径。");
+               "到游戏数据库文件夹的路径。");
          break;
       case MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY:
          snprintf(s, len,
-               "缩略图目录。 \n"
+               "缩略图文件夹。 \n"
                " \n"
                "用以存放缩略图。");
          break;
       case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
          snprintf(s, len,
-               "模拟器核心信息目录。 \n"
+               "模拟器核心信息文件夹。 \n"
                " \n"
                "用于搜索libretro核心信息 \n"
-               "的目录。");
+               "的文件夹。");
          break;
       case MENU_ENUM_LABEL_PLAYLIST_DIRECTORY:
          snprintf(s, len,
-               "运行列表目录. \n"
+               "运行列表文件夹. \n"
                " \n"
                "保存所有播放列表到 \n"
-               "此目录。");
+               "此文件夹。");
          break;
       case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
          snprintf(s, len,
                "某些libretro核心可能会 \n"
-               "支持关机特性. \n"
+               "支持关机特性。 \n"
                " \n"
                "If this option is left disabled, \n"
                "selecting the shutdown procedure \n"
@@ -351,17 +350,14 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
          snprintf(s, len,
-               "Some cores might need \n"
-               "firmware or bios files. \n"
+               "某些核心可能需要固件或 BIOS 文件。 \n"
                " \n"
-               "If this option is disabled, \n"
-               "it will try to load even if such \n"
-               "firmware is missing. \n"
-               "down. \n");
+               "如果禁用此选项，即使没有固件或 BIOS"
+               "也会尝试强行加载。 \n");
          break;
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
          snprintf(s, len,
-               "回到上级目录。");
+               "回到上级文件夹。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET:
          snprintf(s, len,
@@ -389,7 +385,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_FONT:
          snprintf(s, len,
-               "TrueType字体文件。");
+               "TrueType 字体文件。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE:
          snprintf(s, len,
@@ -431,13 +427,13 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
          snprintf(s, len,
-               "目录 \n"
+               "文件夹 \n"
                " \n"
                "选择并打开该文件夹。");
          break;
       case MENU_ENUM_LABEL_CACHE_DIRECTORY:
          snprintf(s, len,
-               "缓存目录 \n"
+               "缓存文件夹 \n"
                " \n"
                "被 RetroArch 解压的游戏内容会临时存放到这个文 \n"
                "件夹。");
@@ -449,9 +445,9 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
          snprintf(s, len,
-               "文件浏览器目录 \n"
+               "文件浏览器文件夹 \n"
                " \n"
-               "设置文件浏览器的初始目录。");
+               "设置文件浏览器的初始文件夹。");
          break;
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          snprintf(s, len,
@@ -461,8 +457,8 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "正常 - 输入轮询过程将在被请求时执行。 \n"
                "稍晚 - 输入轮询过程将在每一帧的首次请求时执行。 \n"
                " \n"
-               "依据设置的不同，设置为“稍早”或“稍晚”可以获得较低 \n"
-               "的延迟。 \n"
+               "依据设置的不同，设置为「稍早」或「稍晚」可以获得 \n"
+               "较低的延迟。 \n"
                "当在进行在线游戏时，不管设置的值如何，都只会启用 \n"
                "正常模式进行输入轮询过程。"
                );
@@ -506,8 +502,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
          snprintf(s, len,
-               "Show the input descriptors set by the core \n"
-               "instead of the default ones.");
+               "显示由核心设置的设备硬件信息，而非默认。");
          break;
       case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
          snprintf(s, len,
@@ -714,30 +709,28 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "加载游戏内容 \n"
                "通过浏览来加载游戏内容。 \n"
                " \n"
-               "你需要同时提供一个“核心”和游戏内容文 \n"
-               "件才能启动并加载游戏内容。 \n"
+               "你需要同时提供一个「核心」和游戏内容 \n"
+               "文件才能启动并加载游戏内容。 \n"
                " \n"
-               "设置“文件浏览器目录”可以指定以哪个位 \n"
-               "置为文件浏览器的默认目录以方便加载。 \n"
+               "设置「文件浏览器文件夹」可以指定以哪个 \n"
+               "位置为文件浏览器的默认文件夹以方便加载。 \n"
                "若没有设置，默认以根目录为基准。 \n"
                " \n"
                "文件浏览器会以上次加载的核心所支持的 \n"
-               "扩展名进行过滤，并使用该核心来加载游 \n"
-               "戏内容。"
+               "扩展名进行过滤，并使用该核心来加载 \n"
+               "游戏内容。"
                );
          break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          snprintf(s, len,
-               "从历史记录中加载内容. \n"
+               "从历史记录中加载游戏内容。 \n"
                " \n"
-               "As content is loaded, content and libretro \n"
-               "core combinations are saved to history. \n"
+               "每当你加载一个游戏时，它和所使用的核心 \n"
+               "将被保存到历史记录中。 \n"
                " \n"
-               "The history is saved to a file in the same \n"
-               "directory as the RetroArch config file. If \n"
-               "no config file was loaded in startup, history \n"
-               "will not be saved or loaded, and will not exist \n"
-               "in the main menu."
+               "历史记录文件和 RetroArch 设置文件在同一个 \n"
+               "文件夹中。如果 RetroArch 启动时没有找到 \n"
+               "历史记录文件，主菜单中将不会显示历史记录。"
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_DRIVER:
@@ -861,7 +854,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
                "HLSL"
 #endif
-               " 预设目录. \n"
+               " 预设文件夹. \n"
                "The menu shader menu is updated accordingly. \n"
                " \n"
                "If the CGP uses scaling methods which are not \n"
@@ -989,7 +982,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
          snprintf(s, len,
-               "设置日志输出级别 \n"
+               "设置Libretro核心的日志输出级别 \n"
                "(GET_LOG_INTERFACE). \n"
                "\n"
                "If a log level issued by a libretro \n"
@@ -1010,36 +1003,35 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "即时存档栏位\n"
                "\n"
-               "With slot set to 0, save state name is *.state \n"
-               "(or whatever defined on commandline).\n"
-               "When slot is != 0, path will be (path)(d), \n"
-               "where (d) is slot number.");
+               "当选择0号栏位时，即时存档将以*.state命名（或其他 \n"
+               "在命令行中定义的名称）。 \n"
+               "\n"
+               "当栏位不为0时，路径将会设为<path><d>，其中<d> \n"
+               "是栏位的编号。");
          break;
       case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
          snprintf(s, len,
-               "应用渲染器更改. \n"
+               "应用渲染器更改。 \n"
                " \n"
                "当你修改渲染器设置后，执行此选项 \n"
                "以应用更改。 \n"
                " \n"
-               "Changing shader settings is a somewhat \n"
-               "expensive operation so it has to be \n"
-               "done explicitly. \n"
+               "渲染器可能非常耗费资源， \n"
+               "因此必须单独进行设置。 \n"
                " \n"
-               "When you apply shaders, the menu shader \n"
-               "settings are saved to a temporary file (either \n"
-               "menu.cgp or menu.glslp) and loaded. The file \n"
-               "persists after RetroArch exits. The file is \n"
-               "saved to Shader Directory."
+               "应用渲染器更改后，渲染器设置将被 \n"
+               "保存到 Shader 文件夹下的文件中 \n"
+               "（扩展名为 .cgp 或 .glslp）。 \n"
+               "即使退出 RetroArch，该文件也会被保留。"
                );
          break;
       case MENU_ENUM_LABEL_MENU_TOGGLE:
          snprintf(s, len,
-               "切换菜单.");
+               "切换菜单。");
          break;
       case MENU_ENUM_LABEL_GRAB_MOUSE_TOGGLE:
          snprintf(s, len,
-               "切换鼠标抓取.\n"
+               "切换鼠标抓取。\n"
                " \n"
                "When mouse is grabbed, RetroArch hides the \n"
                "mouse, and keeps the mouse pointer inside \n"
@@ -1048,10 +1040,9 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_DISK_NEXT:
          snprintf(s, len,
-               "Cycles through disk images. Use after \n"
-               "ejecting. \n"
+               "切换下一张光盘。弹出光盘后才能使用。 \n"
                " \n"
-               " Complete by toggling eject again.");
+               "再次切换光盘弹出状态完成换盘。");
          break;
       case MENU_ENUM_LABEL_VIDEO_FILTER:
 #ifdef HAVE_FILTERS_BUILTIN
@@ -1084,20 +1075,19 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
 #ifdef HAVE_RSOUND
                " \n"
-               "RSound wants an IP address to an RSound \n"
-               "server."
+               "RSound 需要 RSound 服务器的 IP 地址。 \n"
 #endif
                );
          break;
       case MENU_ENUM_LABEL_DISK_EJECT_TOGGLE:
          snprintf(s, len,
-               "Toggles eject for disks.\n"
+               "切换光盘弹出状态。\n"
                " \n"
-               "Used for multiple-disk content.");
+               "用于多光盘游戏。");
          break;
       case MENU_ENUM_LABEL_ENABLE_HOTKEY:
          snprintf(s, len,
-               "启用其他热键.\n"
+               "启用其他热键。\n"
                " \n"
                " If this hotkey is bound to either keyboard, \n"
                "joybutton or joyaxis, all other hotkeys will \n"
@@ -1111,21 +1101,20 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_REWIND_ENABLE:
          snprintf(s, len,
-               "启用回溯倒带功能.\n"
+               "启用回溯倒带功能。\n"
                " \n"
                "这可能会严重影响性能, \n"
-               "所以缺省设置为关闭.");
+               "所以默认设置为关闭。");
          break;
       case MENU_ENUM_LABEL_LIBRETRO_DIR_PATH:
          snprintf(s, len,
-               "核心目录. \n"
+               "核心文件夹。 \n"
                " \n"
-               "A directory for where to search for \n"
-               "libretro core implementations.");
+               "放置 Libretro 核心的文件夹。");
          break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          snprintf(s, len,
-               "自动匹配刷新率.\n"
+               "自动匹配刷新率。\n"
                " \n"
                "The accurate refresh rate of our monitor (Hz).\n"
                "This is used to calculate audio input rate with \n"
@@ -1154,34 +1143,27 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_SCALE:
          snprintf(s, len,
-               "全屏分辨率.\n"
+               "全屏分辨率。\n"
                " \n"
-               "Resolution of 0 uses the \n"
-               "resolution of the environment.\n");
+               "如果设置为 0，则使用设备默认分辨率。\n");
          break;
       case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
          snprintf(s, len,
-               "快进比率."
+               "快进速度。\n"
                " \n"
-               "The maximum rate at which content will\n"
-               "be run when using fast forward.\n"
+               "开启快进模式时的最大运行速度倍数。\n"
                " \n"
-               " (E.g. 5.0 for 60 fps content => 300 fps \n"
-               "cap).\n"
+               "例如 60fps 的游戏开启 5 倍速 就是 300 fps。\n"
                " \n"
-               "RetroArch will go to sleep to ensure that \n"
-               "the maximum rate will not be exceeded.\n"
-               "Do not rely on this cap to be perfectly \n"
-               "accurate.");
+               "RetroArch 会尽可能保证快进时不超过该速度，\n"
+               "但不会特别精确。");
          break;
       case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
          snprintf(s, len,
-               "指定输出显示器.\n"
+               "指定输出显示器。\n"
                " \n"
-               "0 (default) means no particular monitor \n"
-               "is preferred, 1 and up (1 being first \n"
-               "monitor), suggests RetroArch to use that \n"
-               "particular monitor.");
+               "（默认 0）表示不指定显示器，\n"
+               "1 表示使用 1 号显示器，以此类推。");
          break;
       case MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN:
          snprintf(s, len,
@@ -1193,8 +1175,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
          snprintf(s, len,
-               "Only scales video in integer \n"
-               "steps.\n"
+               "只放大整数倍。 \n"
                " \n"
                "The base size depends on system-reported \n"
                "geometry and aspect ratio.\n"
@@ -1204,9 +1185,9 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_VOLUME:
          snprintf(s, len,
-               "Audio volume, expressed in dB.\n"
+               "音量（分贝）。\n"
                " \n"
-               " 0 dB is normal volume. No gain will be applied.\n"
+               "0 表示正常音量。\n"
                "Gain can be controlled in runtime with Input\n"
                "Volume Up / Input Volume Down.");
          break;
@@ -1268,7 +1249,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SYSTEM_DIRECTORY:
          snprintf(s, len,
-               "系统目录。 \n"
+               "系统文件夹。 \n"
                " \n"
                "Sets the 'system' directory.\n"
                "Cores can query for this\n"
@@ -1372,7 +1353,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY:
          snprintf(s, len,
-               "截图目录 \n"
+               "截图文件夹 \n"
                " \n"
                "用于保存截图的文件夹。"
                );
@@ -1386,7 +1367,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
          snprintf(s, len,
-               "游戏存档目录。 \n"
+               "游戏存档文件夹。 \n"
                " \n"
                "所有游戏存档都保存在此文件夹。 \n"
                "常见的游戏存档格式有 \n"
@@ -1396,7 +1377,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SAVESTATE_DIRECTORY:
          snprintf(s, len,
-               "即时存档目录. \n"
+               "即时存档文件夹. \n"
                " \n"
                "所有即时存档 (.state 文件) 都 \n"
                "保存在此文件夹。 \n"
@@ -1413,7 +1394,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
          snprintf(s, len,
-               "动态壁纸目录 \n"
+               "动态壁纸文件夹 \n"
                " \n"
                "保存用于主界面的、依据游戏内容变化的动态壁纸。");
          break;
@@ -1489,7 +1470,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
          snprintf(s, len,
-               "联网时延迟的帧数。The amount of delay frames to use for netplay. \n"
+               "联网时延迟的帧数。 \n"
                " \n"
                "提升数值将改善游戏表现， \n"
                "但延迟也会增加。");
@@ -1530,36 +1511,35 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
          snprintf(s, len,
-               "Shows current date and/or time inside menu.");
+               "在菜单中显示当前日期和时间。");
          break;
       case MENU_ENUM_LABEL_CORE_ENABLE:
          snprintf(s, len,
-               "Shows current core inside menu.");
+               "在菜单中显示当前运行的核心名称。");
          break;
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
          snprintf(s, len,
-               "Enables Netplay in host (server) mode.");
+               "启用联机游戏（服务器模式）。");
          break;
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
          snprintf(s, len,
-               "Enables Netplay in client mode.");
+               "启用联机游戏（客户端模式）。");
          break;
       case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
          snprintf(s, len,
-               "Disconnects an active Netplay connection.");
+               "断开当前正在联机的游戏。");
          break;
       case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
          snprintf(s, len,
-               "Setting related to Netplay.");
+               "联机游戏设置。");
          break;
       case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
          snprintf(s, len,
-               "Search for and connect to netplay hosts on the local network.");
+               "在局域网中搜索并加入联机游戏服务器。");
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
          snprintf(s, len,
-               "Dynamically load a new wallpaper \n"
-               "depending on context.");
+               "在不同的环境下加载不同的壁纸。");
          break;
       case MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL:
          snprintf(s, len,
@@ -1586,14 +1566,11 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
          snprintf(s, len,
-               "Maximum amount of users supported by \n"
-               "RetroArch.");
+               "RetroArch 支持的最大用户数量。");
          break;
       case MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          snprintf(s, len,
-               "After downloading, automatically extract \n"
-               "archives that the downloads are contained \n"
-               "inside.");
+               "下载后自动解压。");
          break;
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          snprintf(s, len,
@@ -1602,26 +1579,24 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_NETPLAY_NICKNAME:
          snprintf(s, len,
-               "The username of the person running RetroArch. \n"
-               "This will be used for playing online games.");
+               "你的 RetroArch 用户名，用于联机游戏。");
          break;
       case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
          snprintf(s, len,
-               "The port of the host IP address. \n"
-               "Can be either a TCP or UDP port.");
+               "服务器的端口。 \n"
+               "TCP 或 UDP 端口均可。");
          break;
       case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
          snprintf(s, len,
-               "Enable or disable spectator mode for \n"
-               "the user during netplay.");
+               "启用或禁用网络对战的观战模式。");
          break;
       case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
          snprintf(s, len,
-               "The address of the host to connect to.");
+               "服务器的地址。");
          break;
       case MENU_ENUM_LABEL_STDIN_CMD_ENABLE:
          snprintf(s, len,
-               "Enable stdin command interface.");
+               "启用标准命令行输入。");
          break;
       case MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT:
          snprintf(s, len,
@@ -1633,33 +1608,30 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
          snprintf(s, len,
-               "Gamepad button combination to toggle menu. \n"
+               "切换菜单的按键。 \n"
                " \n"
-               "0 - None \n"
-               "1 - Press L + R + Y + D-Pad Down \n"
-               "simultaneously. \n"
-               "2 - Press L3 + R3 simultaneously. \n"
-               "3 - Press Start + Select simultaneously.");
+               "0 - 无 \n"
+               "1 - 同时按下 L + R + Y + D-Pad \n"
+               "2 - 同时按下 L3 + R3 \n"
+               "3 - 同时按下 Start + Select ");
          break;
       case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
-         snprintf(s, len, "Allow any RetroPad to control the menu.");
+         snprintf(s, len, "允许任何玩家打开菜单。");
          break;
       case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
          snprintf(s, len,
-               "Enable input auto-detection.\n"
+               "启用自动配置按键。\n"
                " \n"
-               "Will attempt to auto-configure \n"
-               "joypads, Plug-and-Play style.");
+               "RetroArch 将尝试自动配置手柄按键， \n"
+               "和即插即用模式。");
          break;
       case MENU_ENUM_LABEL_CAMERA_ALLOW:
          snprintf(s, len,
-               "Allow or disallow camera access by \n"
-               "cores.");
+               "允许或禁止核心调用摄像头。");
          break;
       case MENU_ENUM_LABEL_LOCATION_ALLOW:
          snprintf(s, len,
-               "Allow or disallow location services \n"
-               "access by cores.");
+               "允许或禁止核心调用定位系统（GPS）。");
          break;
       case MENU_ENUM_LABEL_TURBO:
          snprintf(s, len,
@@ -1675,21 +1647,21 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_OSK_ENABLE:
          snprintf(s, len,
-               "Enable/disable on-screen keyboard.");
+               "启用或禁用屏幕软键盘。");
          break;
       case MENU_ENUM_LABEL_AUDIO_MUTE:
          snprintf(s, len,
-               "Mute/unmute audio.");
+               "静音或恢复声音。");
          break;
       case MENU_ENUM_LABEL_REWIND:
          snprintf(s, len,
-               "Hold button down to rewind.\n"
+               "按住按钮来回溯 \n"
                " \n"
-               "Rewind must be enabled.");
+               "必须先启用回溯倒带功能。");
          break;
       case MENU_ENUM_LABEL_EXIT_EMULATOR:
          snprintf(s, len,
-               "Key to exit RetroArch cleanly."
+               "正常退出 RetroArch。"
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
                "\nKilling it in any hard way (SIGKILL, \n"
                "etc) will terminate without saving\n"
@@ -1709,31 +1681,31 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,
-               "Increment cheat index.\n");
+               "下一个金手指。");
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_MINUS:
          snprintf(s, len,
-               "Decrement cheat index.\n");
+               "前一个金手指。");
          break;
       case MENU_ENUM_LABEL_SHADER_PREV:
          snprintf(s, len,
-               "Applies previous shader in directory.");
+               "应用文件夹中的前一个渲染器特效。");
          break;
       case MENU_ENUM_LABEL_SHADER_NEXT:
          snprintf(s, len,
-               "Applies next shader in directory.");
+               "应用文件夹中的后一个渲染器特效。");
          break;
       case MENU_ENUM_LABEL_RESET:
          snprintf(s, len,
-               "重启游戏。\n");
+               "重启游戏。");
          break;
       case MENU_ENUM_LABEL_PAUSE_TOGGLE:
          snprintf(s, len,
-               "Toggle between paused and non-paused state.");
+               "在暂停和非暂停状态间切换。");
          break;
       case MENU_ENUM_LABEL_CHEAT_TOGGLE:
          snprintf(s, len,
-               "切换金手指启用状态。\n");
+               "切换金手指启用状态。");
          break;
       case MENU_ENUM_LABEL_HOLD_FAST_FORWARD:
          snprintf(s, len,
@@ -1770,27 +1742,27 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
          snprintf(s, len,
-               "RetroArch本身并不能做什么事情。 \n"
+               "RetroArch 本身并不能做什么事情。 \n"
                " \n"
                "如果想在上面干点什么，你需要向它加载一个程序。 \n"
                "\n"
-               "我们把这样的程序叫做“Libretro 核心”， \n"
-               "简称“核心”。 \n"
+               "我们把这样的程序叫做「Libretro 核心」， \n"
+               "简称「核心」。 \n"
                " \n"
-               "你可以从“加载核心”菜单中选择一个核心。 \n"
+               "你可以从「加载核心」菜单中选择一个核心。 \n"
                " \n"
 #ifdef HAVE_NETWORKING
                "你可以通过以下几种方法来获取核心: \n"
                "一、通过访问菜单项「%s」 \n"
                " -> 「%s」来下载；\n"
-               "二、手动将其移入核心目录中，访问目录设置 \n"
-               "找到你的“%s”。",
+               "二、手动将其移入核心文件夹中，访问文件夹设置 \n"
+               "找到你的「%s」。",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #else
-               "你可以通过手动将核心移入目录中来添加它们， \n"
-               "访问目录设置找到你的“%s”。",
+               "你可以通过手动将核心移入文件夹中来添加它们， \n"
+               "访问文件夹设置找到你的「%s」。",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #endif
                );
