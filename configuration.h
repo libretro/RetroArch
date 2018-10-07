@@ -393,6 +393,7 @@ typedef struct settings
       unsigned video_record_scale_factor;
       unsigned video_stream_scale_factor;
 
+      unsigned menu_timedate_style;
       unsigned menu_thumbnails;
       unsigned menu_left_thumbnails;
       unsigned menu_dpi_override_value;

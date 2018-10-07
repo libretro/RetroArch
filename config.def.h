@@ -705,6 +705,8 @@ static const unsigned menu_thumbnails_default = 3;
 
 static const unsigned menu_left_thumbnails_default = 0;
 
+static const unsigned menu_timedate_style = 5;
+
 static const bool xmb_vertical_thumbnails = false;
 
 #ifdef IOS

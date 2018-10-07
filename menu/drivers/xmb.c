@@ -3636,7 +3636,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
       datetime.s         = timedate;
       datetime.len       = sizeof(timedate);
-      datetime.time_mode = 4;
+      datetime.time_mode = settings->uints.menu_timedate_style;
 
       menu_display_timedate(&datetime);
 
