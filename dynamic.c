@@ -1837,6 +1837,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 #ifdef HAVE_NETWORKING
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_REPLAYING, NULL))
             result &= ~(1|2);
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+            result |= 4;
 #endif
          if (data != NULL)
          {
