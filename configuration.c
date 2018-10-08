@@ -2352,8 +2352,17 @@ static bool check_menu_driver_compatibility(void)
          string_is_equal(menu_driver, "null"))
       return true;
 
-   if (menu_display_driver_exists(video_driver))
-      return true;
+   /* TODO/FIXME - maintenance hazard */
+   if (string_is_equal(video_driver, "d3d9")   ||
+         string_is_equal(video_driver, "d3d10")  ||
+         string_is_equal(video_driver, "d3d11")  ||
+         string_is_equal(video_driver, "d3d12")  ||
+         string_is_equal(video_driver, "gl")     ||
+         string_is_equal(video_driver, "gx2")    ||
+         string_is_equal(video_driver, "vulkan") ||
+         string_is_equal(video_driver, "metal")  ||
+         string_is_equal(video_driver, "vita"))
+      return true;   
 
    return false;
 }
