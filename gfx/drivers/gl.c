@@ -1780,26 +1780,32 @@ static void *gl_init(const video_info_t *video,
 
    hwr = video_driver_get_hw_context();
 
-   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
+   if (hwr)
    {
-      gfx_ctx_flags_t flags;
+      hwr->version_major = gl->version_major;
+      hwr->version_minor = gl->version_minor;
 
-      gl_query_core_context_set(true);
-      gl->core_context_in_use = true;
-
-      /**
-       * Ensure that the rest of the frontend knows we have a core context
-       */
-      flags.flags = 0;
-      BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-
-      video_context_driver_set_flags(&flags);
-
-      RARCH_LOG("[GL]: Using Core GL context, setting up VAO...\n");
-      if (!gl_check_capability(GL_CAPS_VAO))
+      if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
       {
-         RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
-         goto error;
+         gfx_ctx_flags_t flags;
+
+         gl_query_core_context_set(true);
+         gl->core_context_in_use = true;
+
+         /**
+          * Ensure that the rest of the frontend knows we have a core context
+          */
+         flags.flags = 0;
+         BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+
+         video_context_driver_set_flags(&flags);
+
+         RARCH_LOG("[GL]: Using Core GL context, setting up VAO...\n");
+         if (!gl_check_capability(GL_CAPS_VAO))
+         {
+            RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
+            goto error;
+         }
       }
    }
 
@@ -1813,7 +1819,7 @@ static void *gl_init(const video_info_t *video,
    if (gl->renderchain_driver->restore_default_state)
       gl->renderchain_driver->restore_default_state(gl, gl->renderchain_data);
 
-   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
+   if (hwr && hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
       if (gl->renderchain_driver->new_vao)
          gl->renderchain_driver->new_vao(gl, gl->renderchain_data);
 
@@ -1823,7 +1829,7 @@ static void *gl_init(const video_info_t *video,
    gl->hw_render_use    = false;
    gl->has_fbo          = gl_check_capability(GL_CAPS_FBO);
 
-   if (gl->has_fbo && hwr->context_type != RETRO_HW_CONTEXT_NONE)
+   if (gl->has_fbo && hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
       gl->hw_render_use = true;
 
    if (!resolve_extensions(gl, ctx_driver->ident, video))
@@ -1855,7 +1861,7 @@ static void *gl_init(const video_info_t *video,
 
    RARCH_LOG("[GL]: Using resolution %ux%u\n", temp_width, temp_height);
 
-   gl->vertex_ptr        = hwr->bottom_left_origin
+   gl->vertex_ptr        = (hwr && hwr->bottom_left_origin)
       ? vertexes : vertexes_flipped;
 
    /* Better pipelining with GPU due to synchronous glSubTexImage.
