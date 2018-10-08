@@ -268,7 +268,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "使用此命令来撤销。");
          break;
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
-         snprintf(s, len, "创建一份截图. \n"
+         snprintf(s, len, "创建一份截图。\n"
                " \n"
                "截图文件将会存放在 \n"
                "截图文件夹之中.");
@@ -369,7 +369,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_REMAP:
          snprintf(s, len,
-               "控制重映射文件。");
+               "控制自定义键位文件。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CHEAT:
          snprintf(s, len,
@@ -1175,17 +1175,16 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
          snprintf(s, len,
-               "只放大整数倍。 \n"
-               " \n"
-               "The base size depends on system-reported \n"
-               "geometry and aspect ratio.\n"
-               " \n"
-               "If Force Aspect is not set, X/Y will be \n"
-               "integer scaled independently.");
+               "只放大整数倍。\n"
+               "\n"
+               "基础分辨率与游戏、宽高比有关。\n"
+               "\n"
+               "如果「保持宽高比」选项未开启，\n"
+               "不保证宽高放大倍数相同。");
          break;
       case MENU_ENUM_LABEL_AUDIO_VOLUME:
          snprintf(s, len,
-               "音量（分贝）。\n"
+               "音量增益（分贝）。\n"
                " \n"
                "0 表示正常音量。\n"
                "Gain can be controlled in runtime with Input\n"
@@ -1455,7 +1454,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_PAUSE_LIBRETRO:
          snprintf(s, len,
                "如果关闭此选项，打开菜单时 \n"
-               "游戏就不会暂停。");
+               "游戏仍会后台运行。");
          break;
       case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
          snprintf(s, len,
@@ -1527,7 +1526,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
          snprintf(s, len,
-               "断开当前正在联机的游戏。");
+               "断开当前网络连接。");
          break;
       case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
          snprintf(s, len,
