@@ -1,5 +1,6 @@
 # 1.7.6 (future)
-- MIDI: Add a Linux ALSA driver for MIDI. 
+- DATE: Add Date / Time style options.
+- MIDI: Add a Linux ALSA driver for MIDI.
 - LOCALIZATION: Update German translation.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Simplified Chinese translation.
