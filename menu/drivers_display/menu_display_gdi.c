@@ -109,7 +109,7 @@ menu_display_ctx_driver_t menu_display_ctx_gdi = {
    menu_display_gdi_get_default_tex_coords,
    menu_display_gdi_font_init_first,
    MENU_VIDEO_DRIVER_GDI,
-   "menu_display_gdi",
+   "gdi",
    false,
    NULL,
    NULL

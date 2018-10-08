@@ -102,7 +102,7 @@ menu_display_ctx_driver_t menu_display_ctx_sixel = {
    menu_display_sixel_get_default_tex_coords,
    menu_display_sixel_font_init_first,
    MENU_VIDEO_DRIVER_SIXEL,
-   "menu_display_sixel",
+   "sixel",
    false,
    NULL,
    NULL
