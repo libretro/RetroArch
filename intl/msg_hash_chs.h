@@ -612,8 +612,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
       "驱动")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
-/* FIXME? Translate 'Load Dummy on Core Shutdown' */
-      "核心关闭时加载虚拟程序")
+      "核心关闭时不彻底关机")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
       "加载前检查固件完整性")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
@@ -725,7 +724,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "启用自动配置")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
-      "输入轴阈值")
+      "摇杆灵敏度")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
       "互换确定键和取消键")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -2338,11 +2337,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-      "Allows any user to control the menu. If disabled, only User 1 can control the menu."
+      "允许任何用户打开菜单。如果禁用，则只有用户1能打开菜单。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-      "Audio volume (in dB). 0 dB is normal volume, no gain applied."
+      "音量增益（单位：分贝）。0 为正常音量。"
       )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
@@ -2350,7 +2349,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-   "How far an axis must be tilted to result in a button press."
+   "必须把摇杆推到多大幅度才算按下按键。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
@@ -2374,15 +2373,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
-   "Allow cores to set rotation. When disabled, rotation requests are ignored. Useful for setups where one manually rotates the screen."
+   "允许核心自行设置屏幕旋转角度，若关闭，旋转请求将被忽略。需要旋转显示器的用户请设置此选项。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
-   "Some cores might have a shutdown feature. If enabled, it will prevent the core from shutting RetroArch down. Instead, it loads a dummy core."
+   "某些核心关闭时可能会直接关闭 RetroArch。启用此选项可以避免这种情况发生。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
-   "Check if all the required firmware is present before attempting to load content."
+   "在加载游戏之前，先检查固件或 BIOS 的完整性。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
@@ -2410,7 +2409,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
-   "not configured, using fallback"
+   "用户未设置，使用备用设置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
@@ -2442,15 +2441,15 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
       "数据库 - 过滤器 : Franchise")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
-      "数据库 - 过滤器 : ESRB Rating")
+      "数据库 - 过滤器 : ESRB 分级")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
-      "数据库 - 过滤器 : ELSPA Rating")
+      "数据库 - 过滤器 : ELSPA 分级")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
-      "数据库 - 过滤器 : PEGI Rating")
+      "数据库 - 过滤器 : PEGI 分级")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
-      "数据库 - 过滤器 : CERO Rating")
+      "数据库 - 过滤器 : CERO 分级")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
-      "数据库 - 过滤器 : BBFC Rating")
+      "数据库 - 过滤器 : BBFC 分级")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
       "数据库 - 过滤器 : 最大用户数")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
@@ -2516,25 +2515,25 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH,
       "Bokeh")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-      "Refresh Room List")
+      "刷新房间列表")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
-      "Nickname: %s")
+      "昵称：%s")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
-      "Nickname (lan): %s")
+      "昵称（局域网）：%s")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
       "Compatible content found")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-      "Cuts off a few pixels around the edges of the image customarily left blank by developers which sometimes also contain garbage pixels.")
+      "不显示图像周围可能存在的黑边。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-      "Adds a slight blur to the image to take the edge off of the hard pixel edges. This option has very little impact on performance.")
+      "轻微模糊像素点边缘以减少像素颗粒感。对运行速度影响很小。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-      "Apply a CPU-powered video filter. NOTE: Might come at a high performance cost. Some video filters might only work for cores that use 32bit or 16bit color.")
+      "加载一个由 CPU 控制的视频过滤器。注意：这可能显著降低游戏运行速度。某些视频过滤器仅对32位色（或16位色）核心生效。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
-      "Input the username of your Retro Achievements account.")
+      "输入您的 Retro 成就账号的用户名。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-      "Input the password of your Retro Achievements account.")
+      "输入您的 Retro 成就账号的密码。")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-      "Input your user name here. This will be used for netplay sessions, among other things.")
+      "在这里输入您的昵称，用于联网和一些其他服务。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
       "Capture the image after filters (but not shaders) are applied. Your video will look as fancy as what you see on your screen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
@@ -2544,36 +2543,36 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
       "Show network interface(s) and associated IP addresses.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-      "Show information specific to the device.")
+      "显示此设备的信息。")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-      "Quit the program.")
+      "退出程序。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-      "Set the custom width size for the display window. Leaving it at 0 will attempt to scale the window as large as possible.")
+      "设置视窗的宽度，0 表示尽可能地放大。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-      "Set the custom height size for the display window. Leaving it at 0 will attempt to scale the window as large as possible.")
+      "设置视窗的高度，0 表示尽可能地放大。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-      "Set the custom width size for the non-windowed fullscreen mode. Leaving it at 0 will use the desktop resolution.")
+      "设置全屏模式的分辨率宽度，0 表示使用桌面分辨率。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-      "Set the custom height size for the non-windowed fullscreen mode. Leaving it at 0 will use the desktop resolution")
+      "设置全屏模式的分辨率高度，0 表示使用桌面分辨率。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
-      "Specify custom X axis position for onscreen text.")
+      "设置屏显文字的 X 坐标。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
-      "Specify custom Y axis position for onscreen text.")
+      "设置屏显文字的 Y 坐标。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-      "Specify the font size in points.")
+      "设置字体大小（单位：像素）。")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-      "Hide the overlay while inside the menu, and show it again when exiting the menu.")
+      "在菜单中隐藏图层，退出菜单后重新显示。")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
-      "Scanned content will appear here."
+      "扫描到的游戏内容将在此处显示。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-      "Only scales video in integer steps. The base size depends on system-reported geometry and aspect ratio. If 'Force Aspect' is not set, X/Y will be integer scaled independently."
+      "只放大整数倍显示。基础分辨率与游戏、宽高比有关。如果「保持宽高比」选项未开启，不保证宽高放大倍数相同。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-      "Screenshots output of GPU shaded material if available."
+      "使用 GPU 输出来进行截图（如果可能的话）。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
@@ -2585,39 +2584,38 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-      "Start in fullscreen. Can be changed at runtime."
+      "以全屏模式开始。运行时可以切换到窗口模式。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-      "If fullscreen, prefer using a windowed fullscreen mode."
+      "使用无边框全屏模式来替代普通的全屏模式。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
-      "Records output of GPU shaded material if available."
+      "使用 GPU 输出来进行录像（如果可能的话）。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-      "When making a savestate, save state index is automatically increased before it is saved. When loading content, the index will be set to the highest existing index."
-      )
+      "每次储存即时存档时，都在新的栏位储存，以避免覆盖原有的即时存档。每次运行游戏时，都会定位到最新的即时存档栏位。")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-      "Block Save RAM from being overwritten when loading save states. Might potentially lead to buggy games."
+      "读取即时存档时不覆盖游戏存档。可能会导致某些游戏产生 BUG。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-      "The maximum rate at which content will be run when using fast forward (e.g., 5.0x for 60 fps content = 300 fps cap). If set to 0.0x, fastforward ratio is unlimited (no FPS cap)."
+      "快进时最多以几倍速运行。设置为 0 代表不限速。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
-      "When in slow motion, content will slow down by the factor specified/set."
+      "减速时最少以几分之一速度运行。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-      "Enable rewinding. This will take a performance hit when playing."
+      "启用回溯倒带功能。对游戏运行速度有一定影响。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
-      "When rewinding a defined number of frames, you can rewind several frames at a time, increasing the rewind speed."
+      "每次回溯时回退的帧数。数值越高，回溯越快。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
@@ -2629,19 +2627,19 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-      "Automatically makes a savestate at the end of RetroArch's runtime. RetroArch will automatically load this savestate if 'Auto Load State' is enabled."
+      "在 RetroArch 关闭时自动保存即时存档。如果开启了「自动加载即时存档」功能，下次开始游戏时会加载该存档。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-      "Automatically load the auto save state on startup."
+      "开始游戏时，自动加载最新的即时存档。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-      "Show thumbnails of save states inside the menu."
+      "在菜单中显示即时存档缩略图。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-      "Autosaves the non-volatile Save RAM at a regular interval. This is disabled by default unless set otherwise. The interval is measured in seconds. A value of 0 disables autosave."
+      "每隔一段时间（单位：秒）自动保存游戏存档，此选项默认关闭（0 表示关闭）。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
@@ -2649,31 +2647,31 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-      "Enable input auto-detection. Will attempt to autoconfigure joypads, Plug-and-Play style."
+      "启用自动配置按键。RetroArch 将尝试自动配置手柄按键和即插即用模式。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-      "Swap buttons for OK/Cancel. Disabled is the Japanese button orientation, enabled is the western orientation."
+      "交换确认键和取消键的键位，默认（关闭）为日版键位，开启则为美版键位。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-      "If disabled, the content will keep running in the background when RetroArch's menu is toggled."
+      "如果关闭此选项，打开菜单时游戏仍会后台运行。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-      "Video driver to use."
+      "使用的视频驱动。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-      "Audio driver to use."
+      "使用的音频驱动。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-      "Input driver to use. Depending on the video driver, it might force a different input driver."
+      "使用的输入驱动。不同的视频驱动可能需要使用不同的输入驱动。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-      "Joypad driver to use."
+      "使用的手柄驱动。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -2681,39 +2679,39 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-      "Camera driver to use."
+      "使用的摄像头驱动。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-      "Location driver to use."
+      "使用的定位（GPS）驱动。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_DRIVER,
-      "Menu driver to use."
+      "使用的菜单驱动。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-      "Record driver to use."
+      "使用的录像驱动。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-      "MIDI driver to use."
+      "使用的 MIDI 驱动。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-      "WiFi driver to use."
+      "使用的 WiFi 驱动。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-      "Filter files being shown in filebrowser by supported extensions."
+      "在文件管理器中，只显示当前核心支持的游戏（根据扩展名）。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-      "Select an image to set as menu wallpaper."
+      "选择一张图片来将它设为菜单壁纸。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
-      "Dynamically load a new wallpaper depending on context."
+      "根据核心或游戏的不同，使用不同的壁纸。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
@@ -2725,23 +2723,23 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-      "Audio output sample rate."
+      "音频输出的采样率。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-      "Opacity of all UI elements of the overlay."
+      "图层的 UI 透明度。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-      "Scale of all UI elements of the overlay."
+      "图层的 UI 缩放倍数。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-      "Enable the overlay."
+      "开启此图层。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-      "Select an overlay from the file browser."
+      "从文件管理器中选择图层。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
@@ -2789,27 +2787,27 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
-      "Enable stdin command interface."
+      "启用标准命令行输入。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-      "Enable mouse controls inside the menu."
+      "允许在菜单中使用鼠标输入。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-      "Enable touch controls inside the menu."
+      "允许在菜单中使用触摸屏输入。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_THUMBNAILS,
-      "Type of thumbnail to display."
+      "缩略图的显示类型。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
-      "Shows current date and/or time inside the menu."
+      "在菜单中显示当前的日期和时间。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
-      "Shows current battery level inside the menu."
+      "在菜单中显示电量。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
@@ -2817,12 +2815,12 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-      "Enables netplay in host (server) mode."
+      "启用联机游戏（服务器模式）。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-      "Enables netplay in client mode.")
+      "启用联机游戏（客户端模式）。")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-      "Disconnects an active Netplay connection.")
+      "断开当前网络连接。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
       "Scans a directory for compatible files and add them to the collection.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
@@ -2831,17 +2829,17 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
-      "Sort save files in folders named after the core used."
+      "在游戏存档的文件名前面加上核心名称来进行排序。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-      "Sort save states in folders named after the core used."
+      "在即时存档的文件名前面加上核心名称来进行排序。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
       "URL to core updater directory on the Libretro buildbot.")
 MSG_HASH(MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
       "URL to assets updater directory on the Libretro buildbot.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-      "After downloading, automatically extract files contained in the downloaded archives."
+      "下载后自动解压。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
       "Scan for new rooms.")
@@ -2850,9 +2848,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "View more information about the content.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
-      "Start the content.")
+      "开始游戏。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-      "Adjusts filebrowser settings.")
+      "调整文件管理器设置。")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
       "Enable customized controls by default at startup."
@@ -2898,7 +2896,7 @@ MSG_HASH(
       "Manages currently configured accounts."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-      "Manages rewind settings.")
+      "调整游戏回溯功能设置。")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
       "重新开始游戏。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -2908,23 +2906,23 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "保存一个独立配置文件，该配置对此游戏生效。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
-      "Set up cheat codes.")
+      "设置金手指。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
-      "Set up shaders to visually augment the image.")
+      "设置图像渲染器。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
       "更改当前游戏的键位设置。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_OPTIONS,
       "更改当前游戏的核心选项设置。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
-      "Show advanced settings for power users (hidden by default).")
+      "为高级用户显示更多设置项（默认关闭）。")
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
       "Perform tasks on a separate thread.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "Allow the user to remove entries from collections.")
+      "允许用户从收藏夹中删除游戏。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
-      "Sets the System directory. Cores can query for this directory to load BIOSes, system-specific configs, etc.")
+      "设置系统文件夹。固件和 BIOS 存放在这里。")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-      "Sets start directory for the filebrowser.")
+      "设置文件管理器的起始文件夹。")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CONTENT_DIR,
       "Usually set by developers who bundle libretro/RetroArch apps to point to assets."
@@ -3237,29 +3235,29 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "Show/hide the 'Add to Favorites' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
-      "Show Options")
+      "显示「核心选项」")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
-      "Show/hide the 'Options' option.")
+      "显示或隐藏「核心选项」选项。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
-      "Show Controls")
+      "显示「键位设置」")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
-      "Show/hide the 'Controls' option.")
+      "显示或隐藏「键位设置」选项。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-      "Show Cheats")
+      "显示「金手指」")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
-      "Show/hide the 'Cheats' option.")
+      "显示或隐藏「金手指」选项。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-      "显示渲染器")
+      "显示「渲染器」")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
       "显示或隐藏「渲染器」选项。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-      "显示保存核心独立配置")
+      "显示「保存核心独立配置」")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-      "显示或隐藏「核心独立配置」选项。")
+      "显示或隐藏「保存核心独立配置」选项。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-      "显示保存游戏独立配置")
+      "显示「保存游戏独立配置」")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-      "显示或隐藏「游戏独立配置」选项。")
+      "显示或隐藏「保存游戏独立配置」选项。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
       "Show Information")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
@@ -3515,13 +3513,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
       "Title of Stream")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
-    "Split Joy-Con"
+    "拆下 Joy-Con"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-    "Reset To Defaults"
+    "恢复默认设置"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-    "Reset the current configuration to default values."
+    "将当前配置文件的所有设置恢复为默认。"
     )
