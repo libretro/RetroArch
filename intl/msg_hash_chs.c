@@ -369,7 +369,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_REMAP:
          snprintf(s, len,
-               "控制重映射文件。");
+               "控制自定义键位文件。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CHEAT:
          snprintf(s, len,
