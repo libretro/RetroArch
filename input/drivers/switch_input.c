@@ -159,7 +159,13 @@ static uint64_t switch_input_get_capabilities(void *data)
 {
    (void) data;
 
-   return (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
+   uint64_t caps =  (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
+
+#ifdef HAVE_LIBNX
+   caps |= (1 << RETRO_DEVICE_POINTER);
+#endif
+
+   return caps;
 }
 
 static const input_device_driver_t *switch_input_get_joypad_driver(void *data)
