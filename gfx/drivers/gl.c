@@ -1787,13 +1787,28 @@ static void *gl_init(const video_info_t *video,
 
    hwr = video_driver_get_hw_context();
 
-   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
+   if (hwr)
+   {
+      hwr->version_major = gl->version_major;
+      hwr->version_minor = gl->version_minor;
+      hwr->context_type = RETRO_HW_CONTEXT_OPENGL;
+   }
+
+#ifdef GL_CONTEXT_PROFILE_MASK
+   /* Check if we have a core context */
+   GLint glflags = 0;
+   glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &glflags);
+   while (glGetError() != GL_NO_ERROR);
+
+   if (glflags & GL_CONTEXT_CORE_PROFILE_BIT)
    {
       gfx_ctx_flags_t flags;
 
       gl_query_core_context_set(true);
       gl->core_context_in_use = true;
 
+      if (hwr)
+          hwr->context_type = RETRO_HW_CONTEXT_OPENGL_CORE;
       /**
        * Ensure that the rest of the frontend knows we have a core context
        */
@@ -1809,6 +1824,7 @@ static void *gl_init(const video_info_t *video,
          goto error;
       }
    }
+#endif
 
    if (!renderchain_gl_init_first(&gl->renderchain_driver,
       &gl->renderchain_data))
@@ -1820,7 +1836,7 @@ static void *gl_init(const video_info_t *video,
    if (gl->renderchain_driver->restore_default_state)
       gl->renderchain_driver->restore_default_state(gl, gl->renderchain_data);
 
-   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
+   if (hwr && hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
       if (gl->renderchain_driver->new_vao)
          gl->renderchain_driver->new_vao(gl, gl->renderchain_data);
 
@@ -1830,7 +1846,7 @@ static void *gl_init(const video_info_t *video,
    gl->hw_render_use    = false;
    gl->has_fbo          = gl_check_capability(GL_CAPS_FBO);
 
-   if (gl->has_fbo && hwr->context_type != RETRO_HW_CONTEXT_NONE)
+   if (gl->has_fbo && hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
       gl->hw_render_use = true;
 
    if (!resolve_extensions(gl, ctx_driver->ident, video))
@@ -1862,7 +1878,7 @@ static void *gl_init(const video_info_t *video,
 
    RARCH_LOG("[GL]: Using resolution %ux%u\n", temp_width, temp_height);
 
-   gl->vertex_ptr        = hwr->bottom_left_origin
+   gl->vertex_ptr        = (hwr && hwr->bottom_left_origin)
       ? vertexes : vertexes_flipped;
 
    /* Better pipelining with GPU due to synchronous glSubTexImage.
