@@ -953,7 +953,7 @@ static bool gl_frame(void *data, const void *frame,
       return false;
 
 #ifdef HAVE_LIBNX
-   // Should be called once per frame
+   /* Should be called once per frame */
    if(!appletMainLoop())
     return false;
 #endif
