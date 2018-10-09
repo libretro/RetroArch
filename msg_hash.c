@@ -82,6 +82,9 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_ARABIC:
          ret = menu_hash_get_help_ar_enum(msg, s, len);
          break;
+      case RETRO_LANGUAGE_GREEK:
+         ret = menu_hash_get_help_el_enum(msg, s, len);
+         break;
       default:
          break;
    }
@@ -150,6 +153,9 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          break;
       case RETRO_LANGUAGE_ARABIC:
          ret = msg_hash_to_str_ar(msg);
+         break;
+      case RETRO_LANGUAGE_GREEK:
+         ret = msg_hash_to_str_el(msg);
          break;
       default:
          break;
