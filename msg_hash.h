@@ -1838,7 +1838,6 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_LANG_POLISH,
    MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
    MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   MENU_ENUM_LABEL_VALUE_LANG_GREEK,
 
    MENU_ENUM_LABEL_VALUE_NONE,
    MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
@@ -2443,9 +2442,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_ar(enum msg_hash_enums msg);
 int menu_hash_get_help_ar_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_el(enum msg_hash_enums msg);
-int menu_hash_get_help_el_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);
 
