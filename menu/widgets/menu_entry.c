@@ -364,7 +364,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
       if (cbs->action_sublabel)
       {
-         char tmp[255];
+         char tmp[512];
          tmp[0] = '\0';
 
          cbs->action_sublabel(list,
