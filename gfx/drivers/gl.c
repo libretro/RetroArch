@@ -1794,9 +1794,11 @@ static void *gl_init(const video_info_t *video,
       hwr->context_type = RETRO_HW_CONTEXT_OPENGL;
    }
 
+#ifdef GL_CONTEXT_PROFILE_MASK
    /* Check if we have a core context */
    GLint glflags = 0;
    glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &glflags);
+   while (glGetError() != GL_NO_ERROR);
 
    if (glflags & GL_CONTEXT_CORE_PROFILE_BIT)
    {
@@ -1822,6 +1824,7 @@ static void *gl_init(const video_info_t *video,
          goto error;
       }
    }
+#endif
 
    if (!renderchain_gl_init_first(&gl->renderchain_driver,
       &gl->renderchain_data))
