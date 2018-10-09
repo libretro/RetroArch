@@ -5319,7 +5319,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-    "Enables netplay in client mode."
+    "Enter netplay server address and connect in client mode."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,

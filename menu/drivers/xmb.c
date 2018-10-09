@@ -105,13 +105,8 @@ enum
 #ifdef HAVE_NETWORKING
    XMB_TEXTURE_NETPLAY,
    XMB_TEXTURE_ROOM,
-   XMB_TEXTURE_IROOM,
-   XMB_TEXTURE_LANROOM,
-#if 0
-   /* stub these out until we have the icons */
    XMB_TEXTURE_ROOM_LAN,
-   XMB_TEXTURE_ROOM_MITM,
-#endif
+   XMB_TEXTURE_ROOM_RELAY,
 #endif
 #ifdef HAVE_IMAGEVIEWER
    XMB_TEXTURE_IMAGES,
@@ -2426,9 +2421,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
                      return xmb->textures.list[XMB_TEXTURE_ROOM];
                   case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
-                     return xmb->textures.list[XMB_TEXTURE_IROOM];
-                  case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
-                     return xmb->textures.list[XMB_TEXTURE_LANROOM];
+                     return xmb->textures.list[XMB_TEXTURE_RELOAD];
 #endif
                   default:
                      break;
@@ -2519,10 +2512,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_RESUME];
       case MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS:
          return xmb->textures.list[XMB_TEXTURE_RUN];
-      case MENU_SETTING_ACTION:
-         if (xmb->depth == 3)
-            return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
-         return xmb->textures.list[XMB_TEXTURE_SETTING];
+
       case MENU_SETTING_GROUP:
 #ifdef HAVE_LAKKA_SWITCH
       case MENU_SET_SWITCH_BRIGHTNESS:
@@ -2535,14 +2525,16 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 #ifdef HAVE_NETWORKING
       case MENU_ROOM:
          return xmb->textures.list[XMB_TEXTURE_ROOM];
-#if 0
-         /* stub these out until we have the icons */
       case MENU_ROOM_LAN:
          return xmb->textures.list[XMB_TEXTURE_ROOM_LAN];
-      case MENU_ROOM_MITM:
-         return xmb->textures.list[XMB_TEXTURE_ROOM_MITM];
+      case MENU_ROOM_RELAY:
+         return xmb->textures.list[XMB_TEXTURE_ROOM_RELAY];
 #endif
-#endif
+      case MENU_SETTING_ACTION:
+         if (xmb->depth <= 3)
+            return xmb->textures.list[XMB_TEXTURE_SETTING];
+      default:
+         return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
    }
 
 #ifdef HAVE_CHEEVOS
@@ -4547,18 +4539,11 @@ static const char *xmb_texture_path(unsigned id)
       case XMB_TEXTURE_NETPLAY:
          return "netplay.png";
       case XMB_TEXTURE_ROOM:
-         return "room.png";
-      case XMB_TEXTURE_LANROOM:
-         return "netplay - LAN Room.png";
-      case XMB_TEXTURE_IROOM:
-         return "netplay - iRoom.png";
-#if 0
-         /* stub these out until we have the icons */
+         return "menu_room.png";
       case XMB_TEXTURE_ROOM_LAN:
-         return "room_lan.png";
-      case XMB_TEXTURE_ROOM_MITM:
-         return "room_mitm.png";
-#endif
+         return "menu_room_lan.png";
+      case XMB_TEXTURE_ROOM_RELAY:
+         return "menu_room_relay.png";
 #endif
       case XMB_TEXTURE_KEY:
          return "key.png";
