@@ -35,7 +35,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
-    "No arguments supplied and no menu builtin, displaying help..."
+    "Δεν παρασχέθηκε διαφωνία και δεν υπάρχει ενσωματωμένο μενού, εμφάνιση βοήθειας..."
     )
 MSG_HASH(
     MSG_SETTING_DISK_IN_TRAY,
