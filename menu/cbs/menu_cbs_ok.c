@@ -3929,6 +3929,7 @@ void netplay_refresh_rooms_menu(file_list_t *list)
 {
    char s[8300];
    int i                                = 0;
+   int room_type                        = 0;
 
    s[0]                                 = '\0';
 
@@ -4008,14 +4009,16 @@ void netplay_refresh_rooms_menu(file_list_t *list)
          snprintf(s, sizeof(s), "%s: %s%s",
             netplay_room_list[i].lan ? "Local" :
             (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ?
-            "Internet (relay)" : "Internet (direct)"),
+            "Internet (Relay)" : "Internet"),
             netplay_room_list[i].nickname, country);
+
+         room_type = netplay_room_list[i].lan ? MENU_ROOM_LAN : (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ? MENU_ROOM_RELAY : MENU_ROOM);
 
          menu_entries_append_enum(list,
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
                MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-               MENU_SETTINGS_NETPLAY_ROOMS_START + i, 0, 0);
+               room_type, 0, 0);
       }
 
       netplay_rooms_free();
