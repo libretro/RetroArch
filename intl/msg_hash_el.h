@@ -1,171 +1,145 @@
-#ifdef HAVE_LAKKA_SWITCH
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
-    "GPU Overclock"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
-    "Overclock or underclock the Switch GPU"
-    )
- MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-    "Screen brightness"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
-    "Increase or decrease the Switch screen brightness"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
-    "CPU Overclock"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-    "Overclock the Switch CPU"
-    )
-#endif
-MSG_HASH(
+﻿MSG_HASH(
     MSG_COMPILER,
-    "Compiler"
+    "Μεταγλωττιστής"
     )
 MSG_HASH(
     MSG_UNKNOWN_COMPILER,
-    "Unknown compiler"
+    "Άγνωστος Μεταγλωττιστής"
     )
 MSG_HASH(
     MSG_NATIVE,
     "Native")
 MSG_HASH(
     MSG_DEVICE_DISCONNECTED_FROM_PORT,
-    "Device disconnected from port"
+    "Η συσκευή αποσυνδέθηκε από την θύρα"
     )
 MSG_HASH(
     MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-    "Unknown netplay command received"
+    "Λήφθηκε άγνωστη εντολή netplay"
     )
 MSG_HASH(
     MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
-    "File already exists. Saving to backup buffer"
+    "Το αρχείο υπάρχει ήδη. Αποθήκευση σε εφεδρική ενδιάμεση μνήμη."
     )
 MSG_HASH(
     MSG_GOT_CONNECTION_FROM,
-    "Got connection from: \"%s\""
+    "Λήφθηκε σύνδεση από: \"%s\""
     )
 MSG_HASH(
     MSG_GOT_CONNECTION_FROM_NAME,
-    "Got connection from: \"%s (%s)\""
+    "Λήφθηκε σύνδεση από: \"%s (%s)\""
     )
 MSG_HASH(
     MSG_PUBLIC_ADDRESS,
-    "Public address"
+    "Δημόσια διεύθυνση"
     )
 MSG_HASH(
     MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
-    "No arguments supplied and no menu builtin, displaying help..."
+    "Δεν παρασχέθηκε διαφωνία και δεν υπάρχει ενσωματωμένο μενού, εμφάνιση βοήθειας..."
     )
 MSG_HASH(
     MSG_SETTING_DISK_IN_TRAY,
-    "Setting disk in tray"
+    "Τοποθέτηση δίσκου στην μονάδα δίσκου"
     )
 MSG_HASH(
     MSG_WAITING_FOR_CLIENT,
-    "Waiting for client ..."
+    "Αναμονή για πελάτη ..."
     )
 MSG_HASH(
     MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
-    "You have left the game"
+    "Αποσυνδεθήκατε από το παιχνίδι"
     )
 MSG_HASH(
     MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
-    "You have joined as player %u"
+    "Έχετε συνδεθεί ως παίκτης %u"
     )
 MSG_HASH(
     MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
-    "You have joined with input devices %.*s"
+    "Έχετε συνδεθεί με συσκευές εισόδου %.*s"
     )
 MSG_HASH(
     MSG_NETPLAY_PLAYER_S_LEFT,
-    "Player %.*s has left the game"
+    "Ο παίκτης %.*s αποσυνδέθηκε από το παιχνίδι"
     )
 MSG_HASH(
     MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
-    "%.*s has joined as player %u"
+    "%.*s συνδέθηκε ως παίκτης %u"
     )
 MSG_HASH(
     MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
-    "%.*s has joined with input devices %.*s"
+    "%.*s συνδέθηκε με συσκευές εισόδου %.*s"
     )
 MSG_HASH(
     MSG_NETPLAY_NOT_RETROARCH,
-    "A netplay connection attempt failed because the peer is not running RetroArch, or is running an old version of RetroArch."
+    "Η προσπάθεια σύνδεσης netplay απέτυχε επειδή ο συμπέκτης δεν χρησιμοποιεί το RetroArch ή χρησιμοποιεί πιο παλιά έκδοση."
     )
 MSG_HASH(
     MSG_NETPLAY_OUT_OF_DATE,
-    "The netplay peer is running an old version of RetroArch. Cannot connect."
+    "Ο συμπαίκτης χρησιμοποιεί πιο παλιά έκδοση RetroArch. Αδύνατη η σύνδεση."
     )
 MSG_HASH(
     MSG_NETPLAY_DIFFERENT_VERSIONS,
-    "WARNING: A netplay peer is running a different version of RetroArch. If problems occur, use the same version."
+    "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: Ο συμπαίκτης netplay χρησιμοποιεί διαφορετική έκδοση του RetroArch. Εάν προκύψουν προβλήματα χρησιμοποιήστε την ίδια έκδοση."
     )
 MSG_HASH(
     MSG_NETPLAY_DIFFERENT_CORES,
-    "A netplay peer is running a different core. Cannot connect."
+    "Ο συμπαίκτης netplay χρησιμοποιεί διαφορειτκό πυρήνα. Αδύνατη η σύνδεση."
     )
 MSG_HASH(
     MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
-    "WARNING: A netplay peer is running a different version of the core. If problems occur, use the same version."
+    "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: Ο συμπαίκτης netplay χρησιμοποιεί διαφορετική έκδοση του πυρήνα. Εάν προκύψουν προβλήματα χρησιμοποιήστε την ίδια έκδοση."
     )
 MSG_HASH(
     MSG_NETPLAY_ENDIAN_DEPENDENT,
-    "This core does not support inter-architecture netplay between these systems"
+    "Αυτός ο πυρήνας δεν υποστηρίζει σύνδεση διαφορετικών πλατφόρμων για netplay ανάμεσα σε αυτά τα συστήματα"
     )
 MSG_HASH(
     MSG_NETPLAY_PLATFORM_DEPENDENT,
-    "This core does not support inter-architecture netplay"
+    "Αυτός ο πυρήνας δεν υποστηρίζει σύνδεση διαφορετικών πλατφόρμων για netplay"
     )
 MSG_HASH(
     MSG_NETPLAY_ENTER_PASSWORD,
-    "Enter netplay server password:"
+    "Εισάγετε κωδικό διακομιστή netplay:"
     )
 MSG_HASH(
     MSG_NETPLAY_INCORRECT_PASSWORD,
-    "Incorrect password"
+    "Λάθος κωδικός"
     )
 MSG_HASH(
     MSG_NETPLAY_SERVER_NAMED_HANGUP,
-    "\"%s\" has disconnected"
+    "\"%s\" αποσυνδέθηκε"
     )
 MSG_HASH(
     MSG_NETPLAY_SERVER_HANGUP,
-    "A netplay client has disconnected"
+    "Ένας πελάτης netplay έχει αποσυνδεθεί"
     )
 MSG_HASH(
     MSG_NETPLAY_CLIENT_HANGUP,
-    "Netplay disconnected"
+    "Αποσύνδεση netplay"
     )
 MSG_HASH(
     MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
-    "You do not have permission to play"
+    "Δεν έχετε άδεια για να παίξετε"
     )
 MSG_HASH(
     MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
-    "There are no free player slots"
+    "Δεν υπάρχουν κενές θέσεις παικτών"
     )
 MSG_HASH(
     MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
-    "The input devices requested are not available"
+    "Οι συσκευές εισόδου που ζητήθηκαν δεν είναι διαθέσιμες"
     )
 MSG_HASH(
     MSG_NETPLAY_CANNOT_PLAY,
-    "Cannot switch to play mode"
+    "Δεν μπορεί να γίνει αλλαγή σε κατάσταση παιχνιδιού"
     )
 MSG_HASH(
     MSG_NETPLAY_PEER_PAUSED,
-    "Netplay peer \"%s\" paused"
+    "Ο συμπαίκτης netplay \"%s\" έκανε παύση"
     )
 MSG_HASH(
     MSG_NETPLAY_CHANGED_NICK,
-    "Your nickname changed to \"%s\""
+    "Το ψευδώνυμο σας άλλαξε σε \"%s\""
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
@@ -173,63 +147,63 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SETTINGS,
-    "Adjusts menu screen appearance settings."
+    "Προσαρμόζει τις εμφανισιακές ρυθμίσεις της οθόνης του μενού."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-    "Hard-synchronize the CPU and GPU. Reduces latency at the cost of performance."
+    "Σκληρός συγχρονισμός επεξεργαστή και κάρτας γραφικών. Μειώνει την καθυστέρηση με τίμημα την επίδοση."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-    "Improves performance at the cost of latency and more video stuttering. Use only if you cannot obtain full speed otherwise."
+    "Βελτιώνει την επίδοση με τίμημα την καθυστέρηση και περισσότερα κολλήματα στο βίντεο. Χρησιμοποιείστε μόνο εάν δεν μπορείτε να αποκτήσετε πλήρη ταχύτητα με άλλον τρόπο."
     )
 MSG_HASH(
     MSG_AUDIO_VOLUME,
-    "Audio volume"
+    "Ένταση ήχου"
     )
 MSG_HASH(
     MSG_AUTODETECT,
-    "Autodetect"
+    "Αυτόματη ανίχνευση"
     )
 MSG_HASH(
     MSG_AUTOLOADING_SAVESTATE_FROM,
-    "Auto-loading savestate from"
+    "Αυτόματη φόρτωση κατάστασης αποθήκευσης από"
     )
 MSG_HASH(
     MSG_CAPABILITIES,
-    "Capabilities"
+    "Ικανότητες"
     )
 MSG_HASH(
     MSG_CONNECTING_TO_NETPLAY_HOST,
-    "Connecting to netplay host"
+    "Σύνδεση με εξυπηρετητή netplay"
     )
 MSG_HASH(
     MSG_CONNECTING_TO_PORT,
-    "Connecting to port"
+    "Σύνδεση στην θύρα"
     )
 MSG_HASH(
     MSG_CONNECTION_SLOT,
-    "Connection slot"
+    "Θέση σύνδεσης"
     )
 MSG_HASH(
     MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-    "Sorry, unimplemented: cores that don't demand content cannot participate in netplay."
+    "Συγγνώμη, μη εφαρμοσμένο: πυρήνες που δεν απαιτούν περιεχόμενο δεν μπορούν να συμμετέχουν στο netplay."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
-    "Password"
+    "Κωδικός"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
-    "Accounts Cheevos"
+    "Επιτεύγματα Λογαριασμού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
-    "Username"
+    "Όνομα Χρήστη"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
-    "Accounts"
+    "Λογαριασμοί"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
@@ -241,291 +215,291 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
-    "Achievements"
+    "Επιτεύγματα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
-    "Pause Achievements Hardcore Mode"
+    "Παύση Σκληροπυρηνικής Λειτουργίας Επιτευγμάτων"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
-    "Resume Achievements Hardcore Mode"
+    "Συνέχιση Σκληροπυρηνικής Λειτουργίας Επιτευγμάτων"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
-    "Achievements (Hardcore)"
+    "Επιτεύγματα (Σκληροπυρηνικά)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-    "Scan Content"
+    "Σάρωση Περιεχομένου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-    "Configurations"
+    "Διαμορφώσεις"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ADD_TAB,
-    "Import content"
+    "Εισαγωγή περιεχομένου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-    "Netplay Rooms"
+    "Δωμάτια Netplay"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
-    "Ask"
+    "Ερώτηση"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-    "Assets"
+    "Εργαλεία"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-    "Block Frames"
+    "Φραγή Καρέ"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-    "Audio Device"
+    "Συσκευή Ήχου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-    "Audio Driver"
+    "Οδηγός Ήχου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-    "Audio DSP Plugin"
+    "Πρόσθετο Ήχου DSP"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-    "Audio Enable"
+    "Ενεργοποίηση Ήχου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
-    "Audio Filter"
+    "Φίλτρο Ήχου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
-    "Turbo/Deadzone"
+    "Turbo/Νεκρή Ζώνη"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-    "Audio Latency (ms)"
+    "Καθυστέρηση Ήχου (ms)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
-    "Audio Maximum Timing Skew"
+    "Μέγιστη Χρονική Διαστρέβλωση Ήχου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
-    "Audio Mute"
+    "Σίγαση Ήχου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-    "Audio Output Rate (Hz)"
+    "Συχνότητα Εξόδου Ήχου (Hz)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-    "Dynamic Audio Rate Control"
+    "Δυναμικός Έλεγχος Βαθμού Ήχου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-    "Audio Resampler Driver"
+    "Οδηγός Επαναδειγματολήπτη Ήχου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-    "Audio"
+    "Ήχος"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-    "Audio Sync"
+    "Συγχρονισμός Ήχου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-    "Audio Volume Level (dB)"
+    "Ένταση Ήχου (dB)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
-    "WASAPI Exclusive Mode"
+    "Αποκλειστική Λειτουργία WASAPI"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
-    "WASAPI Float Format"
+    "Ασταθής Μορφή WASAPI"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-    "WASAPI Shared Buffer Length"
+    "Μήκος Κοινόχρηστης Ενδιάμεσης Μνήμης WASAPI"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-    "SaveRAM Autosave Interval"
+    "Διάστημα Αυτόματης Αποθήκευσης SaveRAM"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-    "Load Override Files Automatically"
+    "Φόρτωση Αρχείων Παράκαμψης Αυτόματα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
-    "Load Remap Files Automatically"
+    "Φόρτωση Αρχείων Αναδιοργάνωσης Πλήτρκων Αυτόματα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-    "Load Shader Presets Automatically"
+    "Φόρτωση Προεπιλογών Σκιάσεων Αυτόματα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
-    "Back"
+    "Πίσω"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-    "Confirm"
+    "Επιβεβαίωση"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
-    "Info"
+    "Πληροφορίες"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-    "Quit"
+    "Έξοδος"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
-    "Scroll Down"
+    "Μετακίνηση Προς Τα Κάτω"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
-    "Scroll Up"
+    "Μετακίνηση Προς Τα Πάνω"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
-    "Start"
+    "Εκκίνηση"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
-    "Toggle Keyboard"
+    "Ενεργοποίηση/Απενεργοποίηση Πληκτρολογίου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-    "Toggle Menu"
+    "Ενεργοποίηση/Απενεργοποίηση Μενού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS,
-    "Basic menu controls"
+    "Βασικός χειρισμός μενού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM,
-    "Confirm/OK"
+    "Επιβεβαίωση/ΟΚ"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
-    "Info"
+    "Πληροφορίες"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
-    "Quit"
+    "Έξοδος"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
-    "Scroll Up"
+    "Μετακίνηση Προς Τα Πάνω"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
-    "Defaults"
+    "Προεπιλογές"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
-    "Toggle Keyboard"
+    "Ενεργοποίηση/Απενεργοποίηση Πληκτρολογίου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
-    "Toggle Menu"
+    "Ενεργοποίηση/Απενεργοποίηση Μενού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-    "Don't overwrite SaveRAM on loading savestate"
+    "Απενεργοποίηση αντικατάστασης SaveRAM κατά την φάση φόρτωσης κατάστασης αποθήκευσης"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
-    "Bluetooth Enable"
+    "Ενεργοποίηση Bluetooth"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-    "Buildbot Assets URL"
+    "Σύνδεσμος Εργαλείων του Buildbot"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
-    "Cache"
+    "Κρυφή Μνήμη"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
-    "Allow Camera"
+    "Επίτρεψη Κάμερας"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-    "Camera Driver"
+    "Οδηγός Κάμερας"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT,
-    "Cheat"
+    "Απάτη"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
-    "Apply Changes"
+    "Εφαρμογή Αλλαγών"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_START_SEARCH,
-    "Start Search For New Cheat Code"
+    "Έναρξη Αναζήτησης Για Νέους Κωδικούς Απάτης"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
-    "Continue Search"
+    "Συνέχιση Αναζήτησης"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
-    "Cheat File"
+    "Αρχείο Απάτης"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_FILE,
-    "Cheat File"
+    "Αρχείο Απάτης"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
-    "Load Cheat File (Replace)"
+    "Φόρτωση Αρχείου Απάτης (Αντικατάσταση)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
-    "Load Cheat File (Append)"
+    "Φόρτωση Αρχείου Απάτης (Προσάρτηση)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
-    "Save Cheat File As"
+    "Αποθήκευση Αρχείου Απάτης Ως"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
-    "Cheat Passes"
+    "Φορές Περάσματος Απάτης"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-    "Description"
+    "Περιγραφή"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-    "Hardcore Mode"
+    "Σκληροπυρηνική Λειτουργία"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
-    "Leaderboards"
+    "Κατατάξεις"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
-    "Achievement Badges"
+    "Εμβλήματα Επιτευγμάτων"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
-    "Locked Achievements:"
+    "Κλειδωμένα Επιτεύγματα:"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
-    "Locked"
+    "Κλειδωμένο"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
@@ -533,111 +507,111 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-    "Test Unofficial Achievements"
+    "Δοκιμή Ανεπίσημων Επιτευγμάτων"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
-    "Unlocked Achievements:"
+    "Ξεκλειδωμένα Επιτεύγματα:"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
-    "Unlocked"
+    "Ξεκλείδωτο"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE,
-    "Hardcore"
+    "Σκληροπυρηνικό"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-    "Verbose Mode"
+    "Βερμπαλιτσική Λειτουργία"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
-    "Automatic Screenshot"
+    "Αυτόματο Στιγμιότυπο Οθόνης"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
-    "Close Content"
+    "Κλείσιμο Περιεχομένου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONFIG,
-    "Config"
+    "Διαμόρφωση"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-    "Load Configuration"
+    "Φόρτωση Διαμορφώσεων"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-    "Configuration"
+    "Διαμόρφωση"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
-    "Save Configuration on Exit"
+    "Απόθηκευση Διαμόρφωσης Κατά την Έξοδο"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
-    "Collections"
+    "Συλλογές"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
-    "Database"
+    "Βάση Δεδομένων"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
-    "Content"
+    "Περιεχόμενο"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
-    "History List Size"
+    "Μέγεθος Λίστας Ιστορικού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
-    "Allow to remove entries"
+    "Επίτρεψη αφαίρεσης καταχωρήσεων"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-    "Quick Menu"
+    "Γρήγορο Μενού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-    "Downloads"
+    "Λήψεις"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-    "Downloads"
+    "Λήψεις"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
-    "Cheats"
+    "Απάτες"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
-    "Core Counters"
+    "Μετρητές Πυρήνων"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
-    "Show core name"
+    "Εμφάνιση ονόματος πυρήνα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-    "Core Information"
+    "Πληροφορίες πυρήνα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-    "Authors"
+    "Δημιουργοί"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-    "Categories"
+    "Κατηγορίες"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-    "Core label"
+    "Επιγραφή πυρήνα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
-    "Core name"
+    "Όνομα πυρήνα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
@@ -645,115 +619,115 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-    "License(s)"
+    "Άδεια(ες)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-    "Permissions"
+    "Άδειες"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-    "Supported extensions"
+    "Υποστηριζόμενες επεκτάσεις"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
-    "System manufacturer"
+    "Κατασκευαστής συστήματος"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
-    "System name"
+    "Όνομα συστήματος"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
-    "Controls"
+    "Χειρισμοί"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_LIST,
-    "Load Core"
+    "Φόρτωση Πυρήνα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-    "Options"
+    "Επιλογές"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-    "Core"
+    "Πυρήνας"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
-    "Start a Core Automatically"
+    "Αυτόματη Έναρξη Πυρήνα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-    "Automatically extract downloaded archive"
+    "Αυτόματη εξαγωγή ληφθέντος συμπιεσμένου αρχείου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-    "Buildbot Cores URL"
+    "Σύνδεσμος Buildbot Πυρήνων"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-    "Core Updater"
+    "Ενημέρωση Πυρήνων"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-    "Updater"
+    "Ενημερωτής"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-    "CPU Architecture:"
+    "Αρχιτεκτονική Επεξεργαστή:"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CPU_CORES,
-    "CPU Cores:"
+    "Πυρήνες Επεξεργαστή:"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-    "Cursor"
+    "Δρομέας"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
-    "Cursor Manager"
+    "Διαχειριστής Δρομέα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
-    "Custom Ratio"
+    "Πρωτιμώμενη Αναλογία"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
-    "Database Manager"
+    "Διαχειριστής Βάσης Δεδομένων"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
-    "Database Selection"
+    "Επιλογή Βάσης Δεδομένων"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
-    "Remove"
+    "Κατάργηση"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FAVORITES,
-    "Start directory"
+    "Ευρετήριο έναρξης"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
-    "<Content dir>"
+    "<Ευρετήριο περιεχομένων>"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-    "<Default>"
+    "<Προκαθορισμένο>"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
-    "<None>"
+    "<Κανένα>"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
-    "Directory not found."
+    "Το ευρετήριο δεν βρέθηκε."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-    "Directory"
+    "Ευρετήριο"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
@@ -2163,17 +2137,10 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
     "TGDB Rating"
     )
-#ifdef HAVE_LAKKA_SWITCH
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_REBOOT,
-    "Reboot into RCM"
-    )
-#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REBOOT,
     "Reboot"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
     "Recording Config"
@@ -2910,45 +2877,45 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
     "Show date / time"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
-       "Style of date / time"
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+    "Style of date / time"
     )
-    MSG_HASH(
-       MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
-       "Changes the style current date and/or time is shown inside the menu."
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+   "Changes the style current date and/or time is shown inside the menu."
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
-       "YYYY-MM-DD HH:MM:SS"
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
+   "YYYY-MM-DD HH:MM:SS"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM,
-       "YYYY-MM-DD HH:MM"
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM,
+   "YYYY-MM-DD HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY,
-       "MM-DD-YYYY HH:MM"
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY,
+   "MM-DD-YYYY HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
-       "HH:MM:SS"
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
+   "HH:MM:SS"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
-       "HH:MM"
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
+   "HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
-       "DD/MM HH:MM"
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
+   "DD/MM HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM,
-       "MM/DD HH:MM"
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM,
+   "MM/DD HH:MM"
     )
-    MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
-       "HH:MM:SS (AM/PM)"
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
+   "HH:MM:SS (AM/PM)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
