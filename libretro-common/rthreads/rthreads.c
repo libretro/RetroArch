@@ -165,8 +165,8 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 	return sthread_create_with_priority(thread_func, userdata, 0);
 }
 
-/* TODO/FIXME - this needs to be implemented for Switch */
-#if !defined(SWITCH) && !defined(USE_WIN32_THREADS)
+/* TODO/FIXME - this needs to be implemented for Switch/3DS */
+#if !defined(SWITCH) && !defined(USE_WIN32_THREADS) && !defined(_3DS)
 #define HAVE_THREAD_ATTR
 #endif
 
