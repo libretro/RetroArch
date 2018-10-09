@@ -1743,8 +1743,9 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "RetroArch 本身并不能做什么事情。 \n"
                " \n"
-               "如果想在上面干点什么，你需要向它加载一个程序。 \n"
-               "\n"
+               "如果想在上面干点什么，你需要向它加载 \n"
+               "一个程序。\n"
+               " \n"
                "我们把这样的程序叫做「Libretro 核心」， \n"
                "简称「核心」。 \n"
                " \n"
