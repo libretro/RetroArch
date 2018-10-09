@@ -296,7 +296,7 @@ static const video_driver_t *video_drivers[] = {
    &video_psp1,
 #endif
 #ifdef PS2
-//    &video_ps2, // TODO: FJTRUJY
+   &video_ps2,
 #endif
 #ifdef _3DS
    &video_ctr,

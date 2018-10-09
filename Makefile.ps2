@@ -36,11 +36,11 @@ RARCH_DEFINES = -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHAV
 RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
 
 LIBDIR =
-LDFLAGS =-L$(PS2SDK)/ports/lib -L$(PS2SDK)/ee/lib -L.
+LDFLAGS = -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L.
 #LIBS = $(WHOLE_START) -lretro_ps2 $(WHOLE_END) -lstdc++ -lm -lz -lgskit -ldmakit -lpng -laudsrv -lpad -lcdvd -lmad -lfileXio -lpatches
 LIBS = -Xlinker --start-group 
 LIBS += $(WHOLE_START) -lretro_ps2 $(WHOLE_END) 
-LIBS += -lfileXio -lm -lg -lz -ldebug -lfileXio -laudsrv -lpatches -lpoweroff
+LIBS += -lfileXio -lm -lg -lz -ldebug -lfileXio -laudsrv -lpatches -lpoweroff -ldma -lgskit -ldmakit
 
 #IRX modules
 # IRX modules - modules have to be in IRX_DIR
