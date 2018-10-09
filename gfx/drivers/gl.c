@@ -1791,7 +1791,6 @@ static void *gl_init(const video_info_t *video,
    {
       hwr->version_major = gl->version_major;
       hwr->version_minor = gl->version_minor;
-      hwr->context_type = RETRO_HW_CONTEXT_OPENGL;
    }
 
 #ifdef GL_CONTEXT_PROFILE_MASK
@@ -1807,8 +1806,6 @@ static void *gl_init(const video_info_t *video,
       gl_query_core_context_set(true);
       gl->core_context_in_use = true;
 
-      if (hwr)
-          hwr->context_type = RETRO_HW_CONTEXT_OPENGL_CORE;
       /**
        * Ensure that the rest of the frontend knows we have a core context
        */
@@ -1824,7 +1821,11 @@ static void *gl_init(const video_info_t *video,
          goto error;
       }
    }
+   else
 #endif
+      if (hwr && hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
+          hwr->context_type = RETRO_HW_CONTEXT_OPENGL;
+
 
    if (!renderchain_gl_init_first(&gl->renderchain_driver,
       &gl->renderchain_data))
