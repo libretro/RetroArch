@@ -318,8 +318,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             {
                snprintf(tmp, sizeof(tmp), "%s %s - %s, %s",
                      core_info->firmware[i].missing ?
-                     "[ ]" :
-                     "[*]",
+                     "[-]" :
+                     "[+]",
                      core_info->firmware[i].desc ?
                      core_info->firmware[i].desc :
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
