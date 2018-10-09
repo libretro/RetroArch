@@ -751,15 +751,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-    "Downloads"
+    "Λήψεις"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-    "Download Core..."
+    "Λήψη Πυρήνα..."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-    "Content Downloader"
+    "Λήψη Περιεχομένου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
@@ -771,63 +771,63 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-    "Driver"
+    "Οδηγός"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
-    "Load Dummy on Core Shutdown"
+    "Φόρτωση Dummy στο Κλείσιμο Πυρήνα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-    "Check for Missing Firmware Before Loading"
+    "Έλεγχος για απών Firmware Πριν την Φόρτωση"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
-    "Dynamic Background"
+    "Δυναμικό Φόντο"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
-    "Dynamic Backgrounds"
+    "Δυναμικά Φόντα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-    "Enable Achievements"
+    "Ενεργοποίηση Εμβλημάτων"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-    "Menu entry hover color"
+    "Χρώμα καταχώρησης μενού όταν το ποντίκι βρίσκεται από πάνω"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
-    "Menu entry normal color"
+    "Χρώμα καταχώρησης μενού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FALSE,
-    "False"
+    "Ψευδές"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
-    "Maximum Run Speed"
+    "Μέγιστη Ταχύτητα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-    "Favorites"
+    "Αγαπημένα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-    "Display Framerate"
+    "Προβολή Ρυθμού Καρέ"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
-    "Limit Maximum Run Speed"
+    "Περιορισμός Μέγιστης Ταχύτητας Αναπαραγωγής"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-    "Sync to Exact Content Framerate (G-Sync, FreeSync)"
+    "Συγχρονισμός με τον Ακριβή Ρυθμό Καρέ του Περιεχομένου (G-Sync, FreeSync)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-    "Frame Throttle"
+    "Περιορισμός Καρέ"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
@@ -835,23 +835,23 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
-    "Load Content-Specific Core Options Automatically"
+    "Φόρτωση Επιλογών Πυρήνα Βάση Συγκεκριμένου Περιεχομένου Αυτόματα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
-    "Create game-options file"
+    "Δημιουργία αρχείου επιλογών παιχνιδιού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
-    "Save Game-options file"
+    "Αποθήκευση αρχείου επιλογών παιχνιδιού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HELP,
-    "Help"
+    "Βοήθεια"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
-    "Audio/Video Troubleshooting"
+    "Αντιμετώπιση Προβλημάτων Ήχου/Βίντεο"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
