@@ -955,6 +955,8 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
          break;
 
       case RETRO_HW_CONTEXT_OPENGL_CORE:
+         /* TODO/FIXME - we should do a check here to see if
+          * the requested core GL version is supported */
          RARCH_LOG("Requesting core OpenGL context (%u.%u).\n",
                major, minor);
          break;
