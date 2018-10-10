@@ -7310,9 +7310,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                if (!string_is_empty(system->info.library_name) &&
                      !string_is_equal(system->info.library_name,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
-                  menu_displaylist_parse_settings_enum(menu, info,
-                        MENU_ENUM_LABEL_CONTENT_SETTINGS,
-                        PARSE_ACTION, false);
+                  if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+                     menu_displaylist_parse_settings_enum(menu, info,
+                           MENU_ENUM_LABEL_CONTENT_SETTINGS,
+                           PARSE_ACTION, false);
 
                if (system->load_no_content)
                   menu_displaylist_parse_settings_enum(menu, info,
