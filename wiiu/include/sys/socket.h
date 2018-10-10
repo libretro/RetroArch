@@ -44,8 +44,8 @@ struct sockaddr
 };
 
 /* Wii U only supports IPv4 so we make sockaddr_storage
-+   be sockaddr_in for compatibility.
-+ */
+   be sockaddr_in for compatibility.
+ */
 #define sockaddr_storage sockaddr_in
 
 struct linger
