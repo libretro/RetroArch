@@ -86,7 +86,7 @@ static void gdi_render_msg(
       void *data, const char *msg,
       const struct font_params *params)
 {
-   float x, y, scale, drop_mod, alpha, drop_alpha;
+   float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y, msg_strlen;
    unsigned i;
    unsigned newX, newY, newDropX, newDropY;
@@ -116,7 +116,6 @@ static void gdi_render_msg(
       red        = FONT_COLOR_GET_RED(params->color);
       green      = FONT_COLOR_GET_GREEN(params->color);
       blue       = FONT_COLOR_GET_BLUE(params->color);
-      alpha      = FONT_COLOR_GET_ALPHA(params->color);
    }
    else
    {
@@ -131,7 +130,6 @@ static void gdi_render_msg(
       red        = video_info->font_msg_color_r * 255.0f;
       green      = video_info->font_msg_color_g * 255.0f;
       blue       = video_info->font_msg_color_b * 255.0f;
-      alpha      = 255;
    }
 
    msg_strlen = strlen(msg);
