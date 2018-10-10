@@ -364,10 +364,11 @@ static void gl_set_viewport_wrapper(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
    video_frame_info_t video_info;
+   gl_t *gl = (gl_t*)data;
 
    video_driver_build_info(&video_info);
 
-   gl_set_viewport(data, &video_info,
+   gl_set_viewport(gl, &video_info,
          viewport_width, viewport_height, force_full, allow_rotate);
 }
 
