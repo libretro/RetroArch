@@ -77,8 +77,7 @@ enum cheat_rumble_type
    RUMBLE_TYPE_LT_VALUE,
    RUMBLE_TYPE_GT_VALUE,
    RUMBLE_TYPE_INCREASE_BY_VALUE,
-   RUMBLE_TYPE_DECREASE_BY_VALUE,
-   RUMBLE_TYPE_END_LIST
+   RUMBLE_TYPE_DECREASE_BY_VALUE
 };
 
 /* Some codes are ridiculously large - over 10000 bytes */
@@ -179,8 +178,6 @@ struct cheat_manager
    unsigned browse_address;
    char working_desc[CHEAT_DESC_SCRATCH_SIZE] ;
    char working_code[CHEAT_CODE_SCRATCH_SIZE] ;
-   unsigned int loading_cheat_size;
-   unsigned int loading_cheat_offset;
 };
 
 typedef struct cheat_manager cheat_manager_t;

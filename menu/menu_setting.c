@@ -4745,7 +4745,7 @@ static bool setting_append_list(
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_type, CHEAT_RUMBLE_TYPE,
                   setting_uint_action_left_default,setting_uint_action_right_default,
                   MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,&setting_get_string_representation_uint_as_enum,
-                  RUMBLE_TYPE_DISABLED,RUMBLE_TYPE_END_LIST-1,1) ;
+                  RUMBLE_TYPE_DISABLED,RUMBLE_TYPE_GT_VALUE,1) ;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             config_uint_cbs(cheat_manager_state.working_cheat.rumble_value, CHEAT_RUMBLE_VALUE,

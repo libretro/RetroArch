@@ -58,20 +58,12 @@ struct config_file
    struct config_entry_list *entries;
    struct config_entry_list *tail;
    unsigned include_depth;
-   bool guaranteed_no_duplicates;
 
    struct config_include_list *includes;
 };
 
 
 typedef struct config_file config_file_t;
-
-struct config_file_cb
-{
-   void (*config_file_new_entry_cb)(char*, char*);
-};
-
-typedef struct config_file_cb config_file_cb_t ;
 
 /* Config file format
  * - # are treated as comments. Rest of the line is ignored.
@@ -86,11 +78,6 @@ typedef struct config_file_cb config_file_cb_t ;
 /* Loads a config file. Returns NULL if file doesn't exist.
  * NULL path will create an empty config file. */
 config_file_t *config_file_new(const char *path);
-
-/* Loads a config file. Returns NULL if file doesn't exist.
- * NULL path will create an empty config file.
- * Includes cb callbacks to run custom code during config file processing.*/
-config_file_t *config_file_new_with_callback(const char *path, config_file_cb_t *cb);
 
 /* Load a config file from a string. */
 config_file_t *config_file_new_from_string(const char *from_string);
@@ -191,4 +178,3 @@ bool config_file_exists(const char *path);
 RETRO_END_DECLS
 
 #endif
-
