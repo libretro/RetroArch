@@ -2357,6 +2357,7 @@ static bool check_menu_driver_compatibility(void)
          string_is_equal(video_driver, "d3d10")  ||
          string_is_equal(video_driver, "d3d11")  ||
          string_is_equal(video_driver, "d3d12")  ||
+         string_is_equal(video_driver, "gdi")    ||
          string_is_equal(video_driver, "gl")     ||
          string_is_equal(video_driver, "gx2")    ||
          string_is_equal(video_driver, "vulkan") ||
