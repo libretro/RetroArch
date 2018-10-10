@@ -396,11 +396,12 @@ void cheat_manager_load_cb_second_pass(char *key, char *value)
 
 bool cheat_manager_load(const char *path, bool append)
 {
+   unsigned orig_size;
    unsigned cheats = 0, i;
-   config_file_cb_t cb ;
+   config_file_cb_t cb;
+   config_file_t *conf = NULL;
+
    cb.config_file_new_entry_cb = cheat_manager_load_cb_first_pass ;
-   config_file_t *conf    = NULL ;
-   unsigned orig_size ;
 
    cheat_manager_state.loading_cheat_size = 0 ;
 

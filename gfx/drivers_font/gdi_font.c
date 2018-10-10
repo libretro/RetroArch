@@ -87,7 +87,8 @@ static void gdi_render_msg(
       const struct font_params *params)
 {
    float x, y, scale, drop_mod, alpha, drop_alpha;
-   int i, drop_x, drop_y, msg_strlen;
+   int drop_x, drop_y, msg_strlen;
+   unsigned i;
    unsigned newX, newY, newDropX, newDropY;
    unsigned align;
    unsigned red, green, blue;
@@ -178,9 +179,7 @@ static void gdi_render_msg(
       if (msg_list)
       {
          for (i = 0; i < msg_list->size; i++)
-         {
             TextOut(font->gdi->memDC, newDropX, newDropY + (textSize.cy * i), msg_list->elems[i].data, utf8len(msg_list->elems[i].data));
-         }
       }
    }
 
@@ -189,9 +188,7 @@ static void gdi_render_msg(
    if (msg_list)
    {
       for (i = 0; i < msg_list->size; i++)
-      {
          TextOut(font->gdi->memDC, newX, newY + (textSize.cy * i), msg_list->elems[i].data, utf8len(msg_list->elems[i].data));
-      }
 
       string_list_free(msg_list);
    }
