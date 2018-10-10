@@ -1850,7 +1850,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
       "OSDメッセージのY位置")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
-      "モニタのインデックス")
+      "モニターの識別番号")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
       "事後フィルターの録画を有効")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
@@ -1898,9 +1898,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
       "非フリッカー")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-      "カスタムビューポートの縦幅")
+      "カスタムビューポートの高さ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-      "カスタムビューポートの横幅")
+      "カスタムビューポートの幅")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
       "カスタムビューポートのX位置")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1912,20 +1912,20 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
       "ウィンドウフルスクリーンモード")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-      "ウィンドウの横幅")
+      "ウィンドウの幅")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-      "ウィンドウの縦幅")
+      "ウィンドウの高さ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-      "フルスクリーンの横幅")
+      "フルスクリーンの幅")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-      "フルスクリーンの縦幅")
+      "フルスクリーンの高さ")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-      "非ウィンドウフルスクリーンモードの横幅サイズを指定します。0を指定すると、デスクトップ解像度を使用します。"
+      "フルスクリーンモード時の幅を指定します。0を指定\nすると、デスクトップ解像度が反映されます。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-      "非ウィンドウフルスクリーンモードの縦幅サイズを指定します。0を指定すると、デスクトップ解像度を使用します。"
+      "フルスクリーンモード時の高さを指定します。0を指定\nすると、デスクトップ解像度が反映されます。"
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
       "Wi-Fiのドライバ")
@@ -2056,7 +2056,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
       "コンテンツをスキャンしてデータベースに登録する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-      "オーディオ出力の設定を変更する。")
+      "オーディオ出力の設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
       "Bluetoothを有効する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
@@ -2096,9 +2096,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
 MSG_HASH(MENU_ENUM_SUBLABEL_SSH_ENABLE,
       "SSHでのアクセスを有効する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-      "システムのスクリーンセーバーをアクティブになることを予防する。")
+      "システムのスクリーンセーバーの起動を防止します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-      "コアのビューポートサイズを基準にしたウィンドウサイズを指定します。横幅と縦幅が一定の固定ウィンドウサイズを指定することもできます(下の項目)。")
+      "コアが出力するビューポートサイズを基準に\nウィンドウをスケールします。下の項目では、一定の\n幅と高さが適用される固定ウィンドウサイズを\n設定できます。")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_LANGUAGE,
       "インタフェースの言語を変更する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
@@ -2110,13 +2110,13 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
       "指定するバッファーモードをビデオドライバに伝える。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-      "希望する画面を選択する。")
+      "フルスクリーン画面を表示するモニターの識別番号を\n選択します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
       "画面の正確な推定のリフレッシュレート")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
       "ディスプレイドライバーによって提供されたリフレッシュレート")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-      "ビデオ出力の設定を変更する。")
+      "ビデオ出力の設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
       "無線ネットワークを検索して接続する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
@@ -2522,7 +2522,7 @@ MSG_HASH(MSG_VIRTUAL_DISK_TRAY,
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
       "ミリ秒でのオーディオ遅延。ドライバ対応による。")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-      "オーディオを消音する。")
+      "オーディオを消音します。")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
       "Helps smooth out imperfections in timing when synchronizing audio and video at the same time. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
@@ -2587,7 +2587,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-   "オーディオ出力を有効にする。"
+   "オーディオ出力を有効にします。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
@@ -2723,11 +2723,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
       "対応するコンテンツが見つかりました")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-      "開発者によって慣例的に空白にされていたイメージの端にあるいくつかのピクセルを切り取ります。 不正確なピクセルを含むこともあります。")
+      "コンテンツの開発者によって慣例的に空白にされていた\nイメージの端にあるいくつかのピクセルを\n切り取ります。不正確なピクセルを含むことも\nあります。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-      "画像にわずかなぼかしを加えて、ピクセルのエッジを柔らかくします。このオプションは、パフォーマンスにはほとんど影響しません。")
+      "イメージにわずかなぼかしを加えて、ピクセルの輪郭の\n硬さを和らげます。このオプションは\nパフォーマンスにはほとんど影響しません。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-      "CPUベースのビデオフィルターを適用します。備考: パフォーマンスを多く消費するかもしれません。一部のビデオフィルターは、32bitまたは16bitカラーを使用するコアでのみ動作する可能性があります。")
+      "CPUベースのビデオフィルターを適用します。\n一部のビデオフィルターは、コアによっては動作しない\n可能性があります。また、パフォーマンスに大きく\n影響します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
       "RetroAchievementsアカウントのユーザー名")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
@@ -2737,34 +2737,44 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
       "Capture the image after filters (but not shaders) are applied. Your video will look as fancy as what you see on your screen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
-      "使用するコアを選択する。")
+      "使用するコアを選択します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-      "起動するコンテンツを選択する。")
+      "起動するコンテンツを選択します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
       "ネットワークインタフェースとIPアドレスを表示する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
       "デバイス特定の仕様")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
       "アプリを終了する。")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+      "アスペクト比が「コンフィグ」に設定されている場合に\n使用されるアスペクト比の浮動小数点値（幅/高さ）\nです。")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+      "アスペクト比が「カスタム」に設定されている場合に\n使用されるカスタムビューポートの高さです。")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+      "アスペクト比が「カスタム」に設定されている場合に\n使用されるカスタムビューポートの幅です。")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+      "ビューポートのX軸位置を定義するために使用される\nカスタムビューポートのオフセット値です。\n「整数スケール」が有効になっている場合は無視され、\nビューポートは自動的に中央寄せされます。")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+      "ビューポートのY軸位置を定義するために使用される\nカスタムビューポートのオフセット値です。\n「整数スケール」が有効になっている場合は無視され、\nビューポートは自動的に中央寄せされます。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-      "ディスプレイのカスタムビデオ横幅を指定します。0を指定すると可能な限りウィンドウをスケールします。")
+      "ウィンドウの幅を指定します。0を指定すると\n可能な限りウィンドウをスケールします。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-      "ディスプレイのカスタムビデオ縦幅を指定します。0を指定すると可能な限りウィンドウをスケールします。")
+      "ウィンドウの高さを指定します。0を指定すると\n可能な限りウィンドウをスケールします。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
-      "OSDのカスタムX軸を指定する。")
+      "OSDのカスタムX軸位置を指定します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
-      "OSDのカスタムY軸を指定する。")
+      "OSDのカスタムY軸位置を指定します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
       "ポイントでのフォントサイズ")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "メニュー表示中はオーバーレイを隠し、メニューを閉じたときに再表示する。")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
-      "スキャンされたコンテンツがここに表示されます。"
+      "スキャンしたコンテンツを表示します。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-      "ビデオのスケールを整数に限定します。基礎サイズはシステムによって報告されたジオメトリとアスペクト比に依存します。「強制アスペクト比」が指定されていない場合、横幅と縦幅はそれぞれ独立して整数でスケールされます。"
+      "ビデオのスケールを整数に限定します。基礎サイズは\nシステムが提供するジオメトリとアスペクト比に依存\nします。「強制アスペクト比」が指定されていない\n場合、幅と高さはそれぞれ整数でスケールされます。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -2776,15 +2786,15 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-      "sRGB FBOの対応を強制的に無効にします。sRGB FBOの対応が有効になっている一部のWindows用Intel Open GLドライバはビデオ問題を有します。この機能を有効にすることで問題を回避できます。"
+      "sRGB FBOの対応を強制的に無効にすることで、一部の\nWindows用Intel OpenGLドライバで発生するビデオの\n問題を回避します。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-      "フルスクリーンで起動する。実行時にも切り替えできる。"
+      "フルスクリーンで起動します。実行時にも切り替え\n可能です。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-      "フルスクリーンであればウィンドウフルスクリーンモードを使用する。"
+      "ウィンドウフルスクリーンモードを使用します。有効に\nなっている場合、幅と高さはデスクトップ解像度で\n固定されます。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
@@ -2912,7 +2922,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-      "オーディオドライバーが使用する標準オーディオデバイスをオーバーライドする。\nこの設定はドライバーに依存する。"
+      "オーディオドライバーが使用する\n標準オーディオデバイスをオーバーライドします。\nこの設定はドライバーに依存します。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -3264,7 +3274,7 @@ MSG_HASH(
       "オーディオミキサーを消音"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-      "ミキサーオーディオを消音/消音解除にする。")
+      "ミキサーオーディオを消音します。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
       "オンラインアップデーターを表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
@@ -3484,7 +3494,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
       "オーディオリサンプラーの音質")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-      "オーディオ品質よりもパフォーマンス/遅延を優先する場合は低い設定を、パフォーマンス/遅延よりもオーディオ品質を優先する場合は高い設定を選択します。")
+      "オーディオ品質よりもパフォーマンス/遅延を優先する\n場合は低い設定を、パフォーマンス/遅延よりも\nオーディオ品質を優先する場合は高い設定を選択\nします。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
       "シェーダーファイルの変更を監視")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
@@ -3522,11 +3532,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
       "メニューのオーディオを有効")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-      "メニューの音を有効または無効にする。")
+      "メニューのオーディオ出力を有効にします。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
       "ミキサー設定")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-      "オーディオミキサー設定を表示/編集する。")
+      "オーディオミキサーの設定を表示/編集します。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_INFO,
       "詳細")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
@@ -3678,27 +3688,27 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
       "グローバル設定をオーバーライドするための設定です。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
-      "オーディオストリームの再生を開始します。再生が終わると、現在のオーディオストリームはメモリから取り除かれます。")
+      "オーディオストリームの再生を開始します。再生が\n終わると、現在のオーディオストリームはメモリから\n取り除かれます。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
-      "オーディオストリームの再生を開始します。再生が終わると、トラックは最初から繰り返して再生されます。")
+      "オーディオストリームの再生を開始します。再生が\n終わると、トラックは最初から繰り返して再生\nされます。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
-      "オーディオストリームの再生を開始します。再生が終わると、順番に次のオーディオストリームに\n移り、それを繰り返します。アルバム再生モードとして便利です。")
+      "オーディオストリームの再生を開始します。再生が\n終わると、順番に次のオーディオストリームに移り、\nそれを繰り返します。アルバム再生モードとして\n便利です。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
-      "オーディオストリームの再生を停止します。メモリからは取り除かれず、「再生」を選択することで再び再生を開始できます。")
+      "オーディオストリームの再生を停止します。\nメモリからは取り除かれず、「再生」を選択する\nことで再び再生を開始できます。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
-      "オーディオストリームの再生を停止してメモリから完全に取り除きます。")
+      "オーディオストリームの再生を停止してメモリから\n完全に取り除きます。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
       "オーディオストリームの音量を調整します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-      "このオーディオトラックを使用可能なオーディオストリームスロットに追加します。空きスロットが存在しない場合は無視されます。")
+      "このオーディオトラックを使用可能な\nオーディオストリームスロットに追加します。\n空きスロットが存在しない場合は無視されます。")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-      "このオーディオトラックを使用可能なオーディオストリームスロットに追加して再生します。空きスロットが存在しない場合は無視されます。")
+      "このオーディオトラックを使用可能な\nオーディオストリームスロットに追加して再生します。\n空きスロットが存在しない場合は無視されます。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
       "再生")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
-      "再生(ループ)")
+      "再生（ループ）")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
-      "再生(順番に)")
+      "再生（順番に）")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
       "一時停止")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
@@ -3877,7 +3887,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-    "Output native, low-resolution signals for use with CRT displays."
+    "CRTディスプレイで利用するためのネイティブな\n低解像度信号を出力します。"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
@@ -3889,7 +3899,7 @@ MSG_HASH(
     )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-      "設定ファイルで指定されたカスタムリフレッシュレートを使用します。")
+      "設定ファイルで定義されたカスタムリフレッシュレートを使用します。")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
       "カスタムリフレッシュレートを使用")
@@ -3905,7 +3915,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
-    "録画を開始する。"
+    "録画を開始します。"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
@@ -3913,7 +3923,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
-    "録画を停止する。"
+    "録画を停止します。"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
@@ -3921,7 +3931,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
-    "ストリーミングを開始する。"
+    "ストリーミングを開始します。"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
@@ -3929,7 +3939,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
-    "ストリーミングを停止する。"
+    "ストリーミングを停止します。"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
