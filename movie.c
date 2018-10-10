@@ -531,7 +531,7 @@ static bool runloop_check_movie_record(void)
 
 static bool runloop_check_movie_init(void)
 {
-   char msg[8192], path[8192];
+   char msg[16384], path[8192];
    settings_t *settings       = config_get_ptr();
 
    msg[0] = path[0]           = '\0';

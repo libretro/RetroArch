@@ -275,7 +275,7 @@ menu_display_ctx_driver_t menu_display_ctx_gl = {
    menu_display_gl_get_default_tex_coords,
    menu_display_gl_font_init_first,
    MENU_VIDEO_DRIVER_OPENGL,
-   "menu_display_gl",
+   "gl",
    false,
    menu_display_gl_scissor_begin,
    menu_display_gl_scissor_end

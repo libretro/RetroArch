@@ -300,6 +300,7 @@ enum record_driver_enum
 enum midi_driver_enum
 {
    MIDI_WINMM               = RECORD_NULL + 1,
+   MIDI_ALSA,
    MIDI_NULL
 };
 
@@ -411,6 +412,8 @@ static enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_NULL;
 
 #ifdef HAVE_WINMM
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_WINMM;
+#elif defined HAVE_ALSA
+static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
 #else
 static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
 #endif
@@ -1049,6 +1052,8 @@ const char *config_get_default_midi(void)
    {
       case MIDI_WINMM:
          return "winmm";
+      case MIDI_ALSA:
+         return "alsa";
       case MIDI_NULL:
          break;
    }
@@ -1569,6 +1574,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 #ifdef HAVE_MENU
    SETTING_UINT("dpi_override_value",           &settings->uints.menu_dpi_override_value, true, menu_dpi_override_value, false);
    SETTING_UINT("menu_thumbnails",              &settings->uints.menu_thumbnails, true, menu_thumbnails_default, false);
+   SETTING_UINT("menu_timedate_style", &settings->uints.menu_timedate_style, true, menu_timedate_style, false);
 #ifdef HAVE_XMB
    SETTING_UINT("menu_left_thumbnails",         &settings->uints.menu_left_thumbnails, true, menu_left_thumbnails_default, false);
    SETTING_UINT("xmb_alpha_factor",             &settings->uints.menu_xmb_alpha_factor, true, xmb_alpha_factor, false);
@@ -2335,6 +2341,33 @@ error:
    return NULL;
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_RGUI)
+static bool check_menu_driver_compatibility(void)
+{
+   settings_t *settings = config_get_ptr();
+   char *video_driver   = settings->arrays.video_driver;
+   char *menu_driver    = settings->arrays.menu_driver;
+
+   if (string_is_equal  (menu_driver, "rgui") ||
+         string_is_equal(menu_driver, "null"))
+      return true;
+
+   /* TODO/FIXME - maintenance hazard */
+   if (string_is_equal(video_driver, "d3d9")   ||
+         string_is_equal(video_driver, "d3d10")  ||
+         string_is_equal(video_driver, "d3d11")  ||
+         string_is_equal(video_driver, "d3d12")  ||
+         string_is_equal(video_driver, "gl")     ||
+         string_is_equal(video_driver, "gx2")    ||
+         string_is_equal(video_driver, "vulkan") ||
+         string_is_equal(video_driver, "metal")  ||
+         string_is_equal(video_driver, "vita"))
+      return true;   
+
+   return false;
+}
+#endif
+
 static void read_keybinds_keyboard(config_file_t *conf, unsigned user,
       unsigned idx, struct retro_keybind *bind)
 {
@@ -3039,6 +3072,11 @@ static bool config_load_file(const char *path, bool set_defaults,
          break;
       }
    }
+
+#if defined(HAVE_MENU) && defined(HAVE_RGUI)
+   if (!check_menu_driver_compatibility())
+      strlcpy(settings->arrays.menu_driver, "rgui", sizeof(settings->arrays.menu_driver));
+#endif
 
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
    recording_driver_update_streaming_url();

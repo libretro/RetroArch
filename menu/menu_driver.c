@@ -17,13 +17,14 @@
 
 #include <string.h>
 #include <time.h>
-
+#include <locale.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <encodings/utf.h>
 
 #ifdef WIIU
 #include <wiiu/os/energy.h>
@@ -346,28 +347,58 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
 
    time(&time_);
 
+   setlocale(LC_TIME, "");
+
    switch (datetime->time_mode)
    {
       case 0: /* Date and time */
          strftime(datetime->s, datetime->len,
                "%Y-%m-%d %H:%M:%S", localtime(&time_));
          break;
-      case 1: /* Date */
+      case 1: /* YY-MM-DD HH:MM */
          strftime(datetime->s, datetime->len,
-               "%Y-%m-%d", localtime(&time_));
+               "%Y-%m-%d %H:%M", localtime(&time_));
          break;
-      case 2: /* Time */
+      case 2: /* MM-DD-YYYY HH:MM  */
+         strftime(datetime->s, datetime->len,
+               "%m-%d-%Y %H:%M", localtime(&time_));
+         break;
+      case 3: /* Time */
          strftime(datetime->s, datetime->len,
                "%H:%M:%S", localtime(&time_));
          break;
-      case 3: /* Time (hours-minutes) */
+      case 4: /* Time (hours-minutes) */
          strftime(datetime->s, datetime->len,
                "%H:%M", localtime(&time_));
          break;
-      case 4: /* Date and time, without year and seconds */
+      case 5: /* Date and time, without year and seconds */
          strftime(datetime->s, datetime->len,
                "%d/%m %H:%M", localtime(&time_));
          break;
+      case 6:
+         strftime(datetime->s, datetime->len,
+               "%m/%d %H:%M", localtime(&time_));
+         break;
+      case 7: /* Time (hours-minutes), in 12 hour AM-PM designation */
+#if defined(__linux__) && !defined(ANDROID)
+         strftime(datetime->s, datetime->len,
+            "%r", localtime(&time_));
+#else
+         {
+            char *local;
+
+            strftime(datetime->s, datetime->len,
+
+               "%I:%M:%S %p", localtime(&time_));
+            local = local_to_utf8_string_alloc(datetime->s);
+
+            if (local)
+            {
+               strlcpy(datetime->s, local, datetime->len);
+               free(local);
+            }
+         }
+#endif
    }
 }
 
@@ -632,6 +663,18 @@ float menu_display_get_dpi(void)
       return settings->uints.menu_dpi_override_value;
 
    return dpi;
+}
+
+bool menu_display_driver_exists(const char *s)
+{
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(menu_display_ctx_drivers); i++)
+   {
+      if (string_is_equal(s, menu_display_ctx_drivers[i]->ident))
+         return true;
+   }
+
+   return false;
 }
 
 bool menu_display_init_first_driver(bool video_is_threaded)

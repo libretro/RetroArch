@@ -117,12 +117,14 @@ struct cmd_map
    unsigned id;
 };
 
+#ifdef HAVE_COMMAND
 struct cmd_action_map
 {
    const char *str;
    bool (*action)(const char *arg);
    const char *arg_desc;
 };
+#endif
 
 struct command
 {
@@ -137,9 +139,50 @@ struct command
 #endif
 };
 
-static bool command_version(const char *arg);
+#if defined(HAVE_COMMAND)
+static enum cmd_source_t lastcmd_source;
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
+static int lastcmd_net_fd;
+static struct sockaddr_storage lastcmd_net_source;
+static socklen_t lastcmd_net_source_len;
+#endif
 
-#if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
+#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
+static void command_reply(const char * data, size_t len)
+{
+   switch (lastcmd_source)
+   {
+      case CMD_STDIN:
+#ifdef HAVE_STDIN_CMD
+         fwrite(data, 1,len, stdout);
+#endif
+         break;
+      case CMD_NETWORK:
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+         sendto(lastcmd_net_fd, data, len, 0,
+               (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
+#endif
+         break;
+      case CMD_NONE:
+      default:
+         break;
+   }
+}
+
+#endif
+static bool command_version(const char* arg)
+{
+   char reply[256] = {0};
+
+   sprintf(reply, "%s\n", PACKAGE_VERSION);
+#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
+   command_reply(reply, strlen(reply));
+#endif
+
+   return true;
+}
+
+#if defined(HAVE_CHEEVOS)
 static bool command_read_ram(const char *arg);
 static bool command_write_ram(const char *arg);
 #endif
@@ -147,7 +190,7 @@ static bool command_write_ram(const char *arg);
 static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",      command_set_shader,  "<shader path>" },
    { "VERSION",         command_version,     "No argument"},
-#if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
+#if defined(HAVE_CHEEVOS)
    { "READ_CORE_RAM",   command_read_ram,    "<address> <number of bytes>" },
    { "WRITE_CORE_RAM",  command_write_ram,   "<address> <byte1> <byte2> ..." },
 #endif
@@ -198,41 +241,9 @@ static const struct cmd_map map[] = {
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
 };
-
-static enum cmd_source_t lastcmd_source;
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-static int lastcmd_net_fd;
-static struct sockaddr_storage lastcmd_net_source;
-static socklen_t lastcmd_net_source_len;
 #endif
 
-#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
-static bool command_reply(const char * data, size_t len)
-{
-   switch (lastcmd_source)
-   {
-      case CMD_NONE:
-         break;
-      case CMD_STDIN:
-#ifdef HAVE_STDIN_CMD
-         fwrite(data, 1,len, stdout);
-         return true;
-#else
-         break;
-#endif
-      case CMD_NETWORK:
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-         sendto(lastcmd_net_fd, data, len, 0,
-               (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
-         return true;
-#else
-         break;
-#endif
-   }
 
-   return false;
-}
-#endif
 
 bool command_set_shader(const char *arg)
 {
@@ -261,17 +272,6 @@ bool command_set_shader(const char *arg)
 #endif
 }
 
-static bool command_version(const char* arg)
-{
-   char reply[256] = {0};
-
-   sprintf(reply, "%s\n", PACKAGE_VERSION);
-#if defined(HAVE_CHEEVOS) && (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING))
-   command_reply(reply, strlen(reply));
-#endif
-
-   return true;
-}
 
 #if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
 #define SMY_CMD_STR "READ_CORE_RAM"
@@ -646,7 +646,7 @@ bool command_network_new(
 
    return true;
 
-#if (defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)) || defined(HAVE_STDIN_CMD)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND) || defined(HAVE_STDIN_CMD)
 error:
    command_free(handle);
    return false;
@@ -1670,7 +1670,7 @@ static bool command_event_main_state(unsigned cmd)
 {
    retro_ctx_size_info_t info;
    char msg[128];
-   size_t state_path_size     = 8192 * sizeof(char);
+   size_t state_path_size     = 16384 * sizeof(char);
    char *state_path           = (char*)malloc(state_path_size);
    global_t *global           = global_get_ptr();
    bool ret                   = false;

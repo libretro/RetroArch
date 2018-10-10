@@ -27,8 +27,12 @@
 
 extern midi_driver_t midi_null;
 extern midi_driver_t midi_winmm;
+extern midi_driver_t midi_alsa;
 
 static midi_driver_t *midi_drivers[] = {
+#ifdef HAVE_ALSA
+   &midi_alsa,
+#endif
 #ifdef HAVE_WINMM
    &midi_winmm,
 #endif

@@ -554,30 +554,30 @@ DECL_AXIS(r_y_minus, +3)
 #endif
 
 #define SWITCH_DEFAULT_BINDS \
-DECL_BTN(a, 0) \
-DECL_BTN(b, 1) \
-DECL_BTN(x, 2) \
-DECL_BTN(y, 3) \
-DECL_BTN(start, 10) \
-DECL_BTN(select, 11) \
-DECL_BTN(up, 13) \
-DECL_BTN(down, 15) \
-DECL_BTN(left, 12) \
-DECL_BTN(right, 14) \
-DECL_BTN(l, 6) \
-DECL_BTN(r, 7) \
-DECL_BTN(l2, 8) \
-DECL_BTN(r2, 9) \
-DECL_BTN(l3, 4) \
-DECL_BTN(r3, 5) \
-DECL_AXIS(l_x_plus,  +0) \
-DECL_AXIS(l_x_minus, -0) \
-DECL_AXIS(l_y_plus,  +1) \
-DECL_AXIS(l_y_minus, -1) \
-DECL_AXIS(r_x_plus,  +2) \
-DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  +3) \
-DECL_AXIS(r_y_minus, -3)
+DECL_BTN_EX(a, 0, "A") \
+DECL_BTN_EX(b, 1, "B") \
+DECL_BTN_EX(x, 2, "X") \
+DECL_BTN_EX(y, 3, "Y") \
+DECL_BTN_EX(start, 10, "Plus") \
+DECL_BTN_EX(select, 11, "Minus") \
+DECL_BTN_EX(up, 13, "D-Pad up") \
+DECL_BTN_EX(down, 15, "D-Pad down") \
+DECL_BTN_EX(left, 12, "D-Pad left") \
+DECL_BTN_EX(right, 14, "D-Pad right") \
+DECL_BTN_EX(l, 6, "L") \
+DECL_BTN_EX(r, 7, "R") \
+DECL_BTN_EX(l2, 8, "ZL") \
+DECL_BTN_EX(r2, 9, "ZR") \
+DECL_BTN_EX(l3, 4, "L3") \
+DECL_BTN_EX(r3, 5, "R3") \
+DECL_AXIS_EX(l_x_plus,  +0, "L-Stick right") \
+DECL_AXIS_EX(l_x_minus, -0, "L-Stick left") \
+DECL_AXIS_EX(l_y_plus,  +1, "L-Stick down") \
+DECL_AXIS_EX(l_y_minus, -1, "L-Stick up") \
+DECL_AXIS_EX(r_x_plus,  +2, "R-Stick right") \
+DECL_AXIS_EX(r_x_minus, -2, "R-Stick left") \
+DECL_AXIS_EX(r_y_plus,  +3, "R-Stick down") \
+DECL_AXIS_EX(r_y_minus, -3, "R-Stick up")
 
 #define EMSCRIPTEN_DEFAULT_BINDS \
 DECL_BTN(a, 1) \

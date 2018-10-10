@@ -953,7 +953,7 @@ static bool gl_frame(void *data, const void *frame,
       return false;
 
 #ifdef HAVE_LIBNX
-   // Should be called once per frame
+   /* Should be called once per frame */
    if(!appletMainLoop())
     return false;
 #endif
@@ -1506,31 +1506,38 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
    unsigned major                       = hwr->version_major;
    unsigned minor                       = hwr->version_minor;
+   enum retro_hw_context_type ctx_type  = hwr->context_type;
+   bool hw_context_in_use               = ctx_type != RETRO_HW_CONTEXT_NONE;
 
 #ifdef HAVE_OPENGLES
    api                                  = GFX_CTX_OPENGL_ES_API;
    api_name                             = "OpenGL ES 2.0";
 
-   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3)
+   switch (ctx_type)
    {
-      major                             = 3;
-      minor                             = 0;
-      api_name                          = "OpenGL ES 3.0";
+      case RETRO_HW_CONTEXT_OPENGLES3:
+         major                             = 3;
+         minor                             = 0;
+         api_name                          = "OpenGL ES 3.0";
+         break;
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         api_name                          = "OpenGL ES 3.1+";
+         break;
+      case RETRO_HW_CONTEXT_NONE:
+      default:
+         break;
    }
-   else if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
-      api_name                          = "OpenGL ES 3.1+";
 #else
-   api                                  = GFX_CTX_OPENGL_API;
-   api_name                             = "OpenGL";
+   api                                     = GFX_CTX_OPENGL_API;
+   api_name                                = "OpenGL";
 #endif
 
    (void)api_name;
 
    gl_shared_context_use = settings->bools.video_shared_context
-      && hwr->context_type != RETRO_HW_CONTEXT_NONE;
+      && hw_context_in_use;
 
-   if (     (libretro_get_shared_context())
-         && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
+   if (libretro_get_shared_context() && hw_context_in_use)
       gl_shared_context_use = true;
 
    return video_context_driver_init_first(gl,

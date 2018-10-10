@@ -1,4 +1,4 @@
-/* CRT SwitchRes Core 
+/* CRT SwitchRes Core
  * Copyright (C) 2018 Alphanu / Ben Templeman.
  *
  * RetroArch - A frontend for libretro.
@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 #ifndef __VIDEO_CRT_SWITCH_H__
 #define __VIDEO_CRT_SWITCH_H__

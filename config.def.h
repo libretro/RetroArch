@@ -181,7 +181,11 @@ static unsigned swap_interval = 1;
 /* Threaded video. Will possibly increase performance significantly
  * at the cost of worse synchronization and latency.
  */
+#if defined(HAVE_LIBNX)
+static const bool video_threaded = true;
+#else
 static const bool video_threaded = false;
+#endif
 
 #if defined(HAVE_THREADS)
 #if defined(GEKKO) || defined(PSP)
@@ -288,7 +292,11 @@ static bool menu_show_configurations     = true;
 static bool menu_show_help               = true;
 static bool menu_show_quit_retroarch     = true;
 static bool menu_show_reboot             = true;
+#ifdef HAVE_LAKKA_SWITCH
+static bool menu_show_shutdown           = false;
+#else
 static bool menu_show_shutdown           = true;
+#endif
 #if defined(HAVE_LAKKA) || defined(VITA) || defined(_3DS)
 static bool menu_show_core_updater       = false;
 #else
@@ -696,6 +704,8 @@ static const unsigned input_bind_hold = 2;
 static const unsigned menu_thumbnails_default = 3;
 
 static const unsigned menu_left_thumbnails_default = 0;
+
+static const unsigned menu_timedate_style = 5;
 
 static const bool xmb_vertical_thumbnails = false;
 

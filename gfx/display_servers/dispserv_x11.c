@@ -50,28 +50,29 @@ static void* x11_display_server_init(void)
 
 static void x11_display_server_destroy(void *data)
 {
- dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
    int i          = 0;
-   if (crt_en == true)
-   {
-      sprintf(output,"xrandr -s %dx%d", orig_width, orig_height);
-      system(output);
-    
-      for (i =0; i < 3; i++)
-      {
-         sprintf(output,"xrandr --delmode %s%d %s", "VGA",i ,old_mode);
-         system(output);  
-         sprintf(output,"xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
-         system(output);  
 
-         sprintf(output,"xrandr --delmode %s%d %s", "DVI",i ,old_mode);
-         system(output);  
-         sprintf(output,"xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
-         system(output);  
-      }     
-   
-      sprintf(output,"xrandr --rmmode %s", old_mode);
-	  system(output);
+   if (crt_en)
+   {
+      sprintf(output, "xrandr -s %dx%d", orig_width, orig_height);
+      system(output);
+
+      for (i = 0; i < 3; i++)
+      {
+         sprintf(output, "xrandr --delmode %s%d %s", "VGA", i, old_mode);
+         system(output);
+         sprintf(output, "xrandr --delmode %s-%d %s", "VGA", i, old_mode);
+         system(output);
+
+         sprintf(output, "xrandr --delmode %s%d %s", "DVI", i, old_mode);
+         system(output);
+         sprintf(output, "xrandr --delmode %s-%d %s", "DVI", i, old_mode);
+         system(output);
+      }
+
+      sprintf(output, "xrandr --rmmode %s", old_mode);
+      system(output);
    }
 
    if (dispserv)
@@ -90,7 +91,7 @@ static bool x11_display_server_set_window_opacity(void *data, unsigned opacity)
 
    if (opacity == (unsigned)-1)
       XDeleteProperty(g_x11_dpy, g_x11_win, net_wm_opacity);
-  else
+   else
       XChangeProperty(g_x11_dpy, g_x11_win, net_wm_opacity, cardinal, 32, PropModeReplace, (const unsigned char*)&opacity, 1);
 
    return true;
@@ -126,62 +127,62 @@ static bool x11_display_server_set_resolution(void *data,
    float pixel_clock  = 0;
 
    crt_en = true;
-      
-   /* set core refresh from hz */
-   video_monitor_set_refresh_rate(hz);	  
-   
-  /* following code is the mode line genorator */
 
-   hsp = width*1.140;
-   hfp = width*1.055;
+   /* set core refresh from hz */
+   video_monitor_set_refresh_rate(hz);
+
+   /* following code is the mode line genorator */
+
+   hsp = width * 1.140;
+   hfp = width * 1.055;
 
    pwidth = width;
 
-   if (height < 400 && width > 400 )
-      pwidth = width/2;
-   
+   if (height < 400 && width > 400)
+      pwidth = width / 2;
 
-   roundw = roundf((float)pwidth/(float)height * 100)/100;
+   roundw = roundf((float)pwidth / (float)height * 100) / 100;
 
-    if (height > width ) {
-       roundw = roundf((float)height/(float)width * 100)/100;
+   if (height > width)
+   {
+      roundw = roundf((float)height / (float)width * 100) / 100;
    }
 
    if (roundw > 1.35)
       roundw = 1.25;
 
-    if (roundw < 1.20)
+   if (roundw < 1.20)
       roundw = 1.34;
 
-   hbp = width*roundw-8;
+   hbp = width * roundw - 8;
    hmax = hbp;
-   
+
    if (height < 241)
-   { 
+   {
       vmax = 261;
    }
    if (height < 241 && hz > 56 && hz < 58)
-   { 
+   {
       vmax = 280;
    }
-    if (height < 241 && hz < 55)
-   { 
+   if (height < 241 && hz < 55)
+   {
       vmax = 313;
    }
    if (height > 250 && height < 260 && hz > 54)
-   { 
+   {
       vmax = 296;
    }
    if (height > 250 && height < 260 && hz > 52 && hz < 54)
-   { 
+   {
       vmax = 285;
    }
    if (height > 250 && height < 260 && hz < 52)
-   { 
+   {
       vmax = 313;
    }
    if (height > 260 && height < 300)
-   { 
+   {
       vmax = 318;
    }
 
@@ -202,33 +203,32 @@ static bool x11_display_server_set_resolution(void *data,
    {
       vmax = 624;
    }
-     if (height > 300)
+   if (height > 300)
    {
-        pdefault = pdefault*2;
+      pdefault = pdefault * 2;
    }
 
-
-   vfp = height+((vmax-height)/2)-pdefault;
+   vfp = height + ((vmax - height) / 2) - pdefault;
 
    if (height < 300)
    {
-     vsp = vfp+3; /* needs to me 3 for progressive */
-   } 
+      vsp = vfp + 3; /* needs to me 3 for progressive */
+   }
    if (height > 300)
    {
-    vsp = vfp+6; /* needs to me 6 for interlaced */
+      vsp = vfp + 6; /* needs to me 6 for interlaced */
    }
-   
+
    vbp = vmax;
 
    if (height < 300)
    {
-	   pixel_clock = (hmax*vmax*hz)/1000000;
+      pixel_clock = (hmax * vmax * hz) / 1000000;
    }
-	
+
    if (height > 300)
    {
-	   pixel_clock = ((hmax*vmax*hz)/1000000)/2;
+      pixel_clock = ((hmax * vmax * hz) / 1000000) / 2;
    }
    /* above code is the modeline genorator */
 
@@ -237,60 +237,63 @@ static bool x11_display_server_set_resolution(void *data,
    {
       snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%dx%d_%0.2f\" %lf %d %d %d %d %d %d %d %d -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
       system(xrandr);
-
    }
    /* create interlaced newmode from modline variables */
    if (height > 300)
-   {    
+   {
       snprintf(xrandr, sizeof(xrandr), "xrandr --newmode \"%dx%d_%0.2f\" %lf %d %d %d %d %d %d %d %d interlace -hsync -vsync", width, height, hz, pixel_clock, width, hfp, hsp, hbp, height, vfp, vsp, vbp);
       system(xrandr);
-
    }
-      /* variable for new mode */
-      snprintf(new_mode, sizeof(new_mode), "%dx%d_%0.2f", width, height, hz); 
 
-      /* need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to add and delete modes */
-      for (i =0; i < 3; i++)
-      {
-         snprintf(output, sizeof(output), "xrandr --addmode %s%d %s", "DVI",i ,new_mode);
-         system(output); 
-         snprintf(output, sizeof(output), "xrandr --delmode %s%d %s", "DVI",i ,old_mode);
-         system(output); 
-      }
-      for (i =0; i < 3; i++)
-      {
-         snprintf(output, sizeof(output), "xrandr --addmode %s-%d %s", "DVI",i ,new_mode);
-         system(output); 
-         snprintf(output, sizeof(output), "xrandr --delmode %s-%d %s", "DVI",i ,old_mode);
-         system(output);
-      }
-      for (i =0; i < 3; i++)
-      {
-         snprintf(output, sizeof(output), "xrandr --addmode %s%d %s", "VGA",i ,new_mode);
-         system(output);  
-         snprintf(output, sizeof(output), "xrandr --delmode %s%d %s", "VGA",i ,old_mode);
-         system(output); 
-      }
-      for (i =0; i < 3; i++)
-      {
-         snprintf(output, sizeof(output), "xrandr --addmode %s-%d %s", "VGA",i ,new_mode);
-         system(output); 
-         snprintf(output, sizeof(output), "xrandr --delmode %s-%d %s", "VGA",i ,old_mode);
-         system(output); 
-      }
-		 
-      snprintf(output, sizeof(output), "xrandr -s %s", new_mode);
+   /* variable for new mode */
+   snprintf(new_mode, sizeof(new_mode), "%dx%d_%0.2f", width, height, hz);
+
+   /* need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to add and delete modes */
+   for (i = 0; i < 3; i++)
+   {
+      snprintf(output, sizeof(output), "xrandr --addmode %s%d %s", "DVI", i, new_mode);
       system(output);
-	  /* remove old mode */
-      snprintf(output, sizeof(output), "xrandr --rmmode %s", old_mode);
-	  system(output);
-	  system("xdotool windowactivate $(xdotool search --class RetroArch)");	/* needs xdotool installed. needed to recaputure window. */
-       /* variable for old mode */
-	  snprintf(old_mode, sizeof(old_mode), "%s", new_mode);
-      system("xdotool windowactivate $(xdotool search --class RetroArch)");	/* needs xdotool installed. needed to recaputure window. */
-                                                                   /* Second run needed as some times it runs to fast to capture first time */
+      snprintf(output, sizeof(output), "xrandr --delmode %s%d %s", "DVI", i, old_mode);
+      system(output);
+   }
+   for (i = 0; i < 3; i++)
+   {
+      snprintf(output, sizeof(output), "xrandr --addmode %s-%d %s", "DVI", i, new_mode);
+      system(output);
+      snprintf(output, sizeof(output), "xrandr --delmode %s-%d %s", "DVI", i, old_mode);
+      system(output);
+   }
+   for (i = 0; i < 3; i++)
+   {
+      snprintf(output, sizeof(output), "xrandr --addmode %s%d %s", "VGA", i, new_mode);
+      system(output);
+      snprintf(output, sizeof(output), "xrandr --delmode %s%d %s", "VGA", i, old_mode);
+      system(output);
+   }
+   for (i = 0; i < 3; i++)
+   {
+      snprintf(output, sizeof(output), "xrandr --addmode %s-%d %s", "VGA", i, new_mode);
+      system(output);
+      snprintf(output, sizeof(output), "xrandr --delmode %s-%d %s", "VGA", i, old_mode);
+      system(output);
+   }
 
- return true;
+   snprintf(output, sizeof(output), "xrandr -s %s", new_mode);
+   system(output);
+
+   /* remove old mode */
+   snprintf(output, sizeof(output), "xrandr --rmmode %s", old_mode);
+   system(output);
+
+   system("xdotool windowactivate $(xdotool search --class RetroArch)");   /* needs xdotool installed. needed to recapture window. */
+
+   /* variable for old mode */
+   snprintf(old_mode, sizeof(old_mode), "%s", new_mode);
+
+   system("xdotool windowactivate $(xdotool search --class RetroArch)");      /* needs xdotool installed. needed to recapture window. */
+   /* Second run needed as some times it runs to fast to capture first time */
+
+   return true;
 }
 
 const char *x11_display_server_get_output_options(void)
@@ -309,4 +312,3 @@ const video_display_server_t dispserv_x11 = {
    x11_display_server_get_output_options,
    "x11"
 };
-

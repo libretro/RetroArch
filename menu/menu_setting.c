@@ -505,6 +505,56 @@ static void setting_get_string_representation_uint_menu_left_thumbnails(
    }
 }
 
+static void setting_get_string_representation_uint_menu_timedate_style(
+   rarch_setting_t *setting,
+   char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+   case 0:
+      strlcpy(s, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS), len);
+      break;
+   case 1:
+      strlcpy(s, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM), len);
+      break;
+   case 2:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY), len);
+      break;
+   case 3:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS), len);
+      break;
+   case 4:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM), len);
+      break;
+   case 5:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM), len);
+      break;
+   case 6:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM), len);
+      break;
+   case 7:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM), len);
+      break;
+   }
+}
+
 static void setting_get_string_representation_uint_xmb_icon_theme(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -3641,6 +3691,31 @@ static bool setting_append_list(
 #endif
 
 #if defined(HAVE_LAKKA)
+#ifdef HAVE_LAKKA_SWITCH
+        CONFIG_ACTION(
+              list, list_info,
+              MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
+              MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+              &group_info,
+              &subgroup_info,
+              parent_group);
+
+        CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
+               MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+        CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,
+               MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_REBOOT,
@@ -8291,6 +8366,21 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_ADVANCED);
+
+         CONFIG_UINT(list, list_info,
+            &settings->uints.menu_timedate_style,
+            MENU_ENUM_LABEL_TIMEDATE_STYLE,
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+            menu_timedate_style,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_menu_timedate_style;
+         menu_settings_list_current_add_range(list, list_info, 0, 7, 1, true, true);
 
          CONFIG_BOOL(
                list, list_info,

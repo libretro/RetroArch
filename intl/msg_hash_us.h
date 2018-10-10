@@ -1,3 +1,29 @@
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
+    "GPU Overclock"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
+    "Overclock or underclock the Switch GPU"
+    )
+ MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
+    "Screen brightness"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
+    "Increase or decrease the Switch screen brightness"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+    "CPU Overclock"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+    "Overclock the Switch CPU"
+    )
+#endif
 MSG_HASH(
     MSG_COMPILER,
     "Compiler"
@@ -2133,10 +2159,17 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
     "TGDB Rating"
     )
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REBOOT,
+    "Reboot into RCM"
+    )
+#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REBOOT,
     "Reboot"
     )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
     "Recording Config"
@@ -2872,6 +2905,46 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
     "Show date / time"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+       "Style of date / time"
+    )
+    MSG_HASH(
+       MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+       "Changes the style current date and/or time is shown inside the menu."
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
+       "YYYY-MM-DD HH:MM:SS"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM,
+       "YYYY-MM-DD HH:MM"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY,
+       "MM-DD-YYYY HH:MM"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
+       "HH:MM:SS"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
+       "HH:MM"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
+       "DD/MM HH:MM"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM,
+       "MM/DD HH:MM"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
+       "HH:MM:SS (AM/PM)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
@@ -5246,7 +5319,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-    "Enables netplay in client mode."
+    "Enter netplay server address and connect in client mode."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,

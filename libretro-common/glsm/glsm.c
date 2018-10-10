@@ -200,6 +200,7 @@ struct gl_cached_state
    int cap_translate[SGL_CAP_MAX];
 };
 
+static GLuint default_framebuffer;
 static GLint glsm_max_textures;
 struct retro_hw_render_callback hw_render;
 static struct gl_cached_state gl_state;
@@ -214,6 +215,20 @@ static struct gl_cached_state gl_state;
 GLenum rglGetError(void)
 {
    return glGetError();
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 3.2
+ * OpenGLES  : N/A
+ */
+
+void rglProvokingVertex(	GLenum provokeMode)
+{
+#if defined(HAVE_OPENGL)
+   glProvokingVertex(provokeMode);
+#endif
 }
 
 /*
@@ -2080,6 +2095,18 @@ void rglTexStorage2D(GLenum target, GLsizei levels, GLenum internalFormat,
    glTexStorage2D(target, levels, internalFormat, width, height);
 #endif
 }
+/*
+ *
+ * Core in:
+ * OpenGL    : 3.2
+ * OpenGLES  : 3.2
+ */
+void rglDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, GLvoid *indices, GLint basevertex)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3_2)
+   glDrawRangeElementsBaseVertex(mode, start, end, count, type, indices, basevertex);
+#endif
+}
 
 /*
  *
@@ -2571,7 +2598,8 @@ static void glsm_state_setup(void)
 
    gl_state.bind_textures.ids           = (GLuint*)calloc(glsm_max_textures, sizeof(GLuint));
 
-   gl_state.framebuf                    = hw_render.get_current_framebuffer();
+   default_framebuffer                  = glsm_get_current_framebuffer();
+   gl_state.framebuf                    = default_framebuffer;
    gl_state.cullface.mode               = GL_BACK;
    gl_state.frontface.mode              = GL_CCW; 
 
@@ -2629,7 +2657,7 @@ static void glsm_state_bind(void)
       }
    }
 
-   glBindFramebuffer(RARCH_GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
+   glBindFramebuffer(RARCH_GL_FRAMEBUFFER, default_framebuffer);
 
    if (gl_state.blendfunc.used)
       glBlendFunc(
@@ -2786,10 +2814,8 @@ static bool glsm_state_ctx_destroy(void *data)
    return true;
 }
 
-static bool glsm_state_ctx_init(void *data)
+static bool glsm_state_ctx_init(glsm_ctx_params_t *params)
 {
-   glsm_ctx_params_t *params = (glsm_ctx_params_t*)data;
-
    if (!params || !params->environ_cb)
       return false;
 
@@ -2804,14 +2830,15 @@ static bool glsm_state_ctx_init(void *data)
    hw_render.context_type       = RETRO_HW_CONTEXT_OPENGLES2;
 #endif
 #else
-#ifdef CORE
-   hw_render.context_type       = RETRO_HW_CONTEXT_OPENGL_CORE;
-   hw_render.version_major      = 3;
-   hw_render.version_minor      = 3;
-#else
    hw_render.context_type       = RETRO_HW_CONTEXT_OPENGL;
+   if (params->context_type != RETRO_HW_CONTEXT_NONE)
+      hw_render.context_type    = params->context_type;
+   if (params->major != 0)
+      hw_render.version_major   = params->major;
+   if (params->minor != 0)
+      hw_render.version_minor   = params->minor;
 #endif
-#endif
+
    hw_render.context_reset      = params->context_reset;
    hw_render.context_destroy    = params->context_destroy;
    hw_render.stencil            = params->stencil;
@@ -2859,7 +2886,7 @@ bool glsm_ctl(enum glsm_state_ctl state, void *data)
          glsm_state_ctx_destroy(data);
          break;
       case GLSM_CTL_STATE_CONTEXT_INIT:
-         return glsm_state_ctx_init(data);
+         return glsm_state_ctx_init((glsm_ctx_params_t*)data);
       case GLSM_CTL_STATE_SETUP:
          glsm_state_setup();
          break;

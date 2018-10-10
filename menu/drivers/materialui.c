@@ -1558,11 +1558,11 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    {
       int ticker_limit, value_len;
       char title_buf_msg_tmp[255];
-      char title_buf_msg[255];
+      char title_buf_msg[640];
 
       title_buf_msg_tmp[0] = title_buf_msg[0] = '\0';
 
-      snprintf(title_buf_msg, sizeof(title_buf), "%s (%s)",
+      snprintf(title_buf_msg, sizeof(title_buf_msg), "%s (%s)",
             title_buf, title_msg);
       value_len       = (int)utf8len(title_buf);
       ticker_limit    = (int)((usable_width / mui->glyph_width) - (value_len + 2));
