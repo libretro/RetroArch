@@ -70,7 +70,9 @@ static void menu_display_gdi_draw(menu_display_ctx_draw_t *draw,
 
    if (gdi->memDC)
    {
+#if _WIN32_WINNT >= 0x0410 /* Win98 */
       BLENDFUNCTION blend = {0};
+#endif
 
       if (!gdi->texDC)
          gdi->texDC = CreateCompatibleDC(gdi->winDC);
@@ -90,17 +92,20 @@ static void menu_display_gdi_draw(menu_display_ctx_draw_t *draw,
 
       gdi->bmp_old = SelectObject(gdi->memDC, gdi->bmp);
 
+#if _WIN32_WINNT >= 0x0410 /* Win98 */
       blend.BlendOp = AC_SRC_OVER;
       blend.BlendFlags = 0;
       blend.SourceConstantAlpha = 255;/*clamp_8bit(draw->coords->color[3] * 255.0f);*/
       blend.AlphaFormat = AC_SRC_ALPHA;
 
+      /* AlphaBlend() is only available since Win98 */
       AlphaBlend(gdi->memDC, draw->x, video_info->height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, blend);
-
       /*TransparentBlt(gdi->memDC, draw->x, video_info->height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, 0);*/
+#else
+      /* Just draw without the blending */
+      StretchBlt(gdi->memDC, draw->x, video_info->height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, SRCCOPY);
 
-      /* To draw without blending: */
-      /*StretchBlt(gdi->memDC, draw->x, video_info->height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, SRCCOPY);*/
+#endif
 
       SelectObject(gdi->memDC, gdi->bmp_old);
       SelectObject(gdi->texDC, texture->bmp_old);
