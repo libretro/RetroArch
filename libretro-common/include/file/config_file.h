@@ -57,7 +57,6 @@ struct config_file
    char *path;
    struct config_entry_list *entries;
    struct config_entry_list *tail;
-   struct config_entry_list *last;
    unsigned include_depth;
    bool guaranteed_no_duplicates;
 
