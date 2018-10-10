@@ -531,12 +531,14 @@ static int action_bind_sublabel_remap_kbd_sublabel(
 {
    unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
 
-   snprintf(s, len, "User #%d: %s", user_idx + 1,
-      input_config_get_device_display_name(user_idx) ?
-      input_config_get_device_display_name(user_idx) :
-      (input_config_get_device_name(user_idx) ?
-      input_config_get_device_name(user_idx) : 
-      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+   snprintf(s, len, "%s #%d: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
+         user_idx + 1,
+         input_config_get_device_display_name(user_idx) ?
+         input_config_get_device_display_name(user_idx) :
+         (input_config_get_device_name(user_idx) ?
+          input_config_get_device_name(user_idx) : 
+          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
    return 0;
 }
 
@@ -589,12 +591,14 @@ static int action_bind_sublabel_remap_sublabel(
    unsigned offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN)
       / (RARCH_FIRST_CUSTOM_BIND + 8);
 
-   snprintf(s, len, "User #%d: %s", offset + 1,
-      input_config_get_device_display_name(offset) ?
-      input_config_get_device_display_name(offset) :
-      (input_config_get_device_name(offset) ?
-      input_config_get_device_name(offset) : 
-      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+   snprintf(s, len, "%s #%d: %s", 
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
+         offset + 1,
+         input_config_get_device_display_name(offset) ?
+         input_config_get_device_display_name(offset) :
+         (input_config_get_device_name(offset) ?
+          input_config_get_device_name(offset) : 
+          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
    return 0;
 }
 
