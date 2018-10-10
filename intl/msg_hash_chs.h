@@ -188,7 +188,7 @@ MSG_HASH(
       "Cheevos 账户设置" /*FIXME:"Accounts Cheevos"*/    /*Should be fixed now, not sure though*/
       )
 MSG_HASH(
-       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
+      MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
        "用户名"
        )
 MSG_HASH(
@@ -1417,7 +1417,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
       "即时存档文件夹")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-      "Savestate Thumbnails")
+      "存档缩略图")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
       "保存当前配置")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -1657,7 +1657,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
       "缩略图更新程序")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
-      "Boxarts")
+      "艺术封面")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
       "截屏")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
@@ -1703,7 +1703,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
       "UI Companion Start On Boot")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-      "Menubar")
+      "菜单栏")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
       "无法读取压缩的文件。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
@@ -2065,11 +2065,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
       "学习更多关于其是如何工作的。")
 MSG_HASH(MSG_APPENDED_DISK,
-      "Appended disk")
+      "外置磁盘")
 MSG_HASH(MSG_APPLICATION_DIR,
       "应用程序文件夹")
 MSG_HASH(MSG_APPLYING_SHADER,
-      "Applying shader")
+      "应用着色器")
 MSG_HASH(MSG_AUDIO_MUTED,
       "静音。")
 MSG_HASH(MSG_AUDIO_UNMUTED,
@@ -2095,7 +2095,7 @@ MSG_HASH(MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
 MSG_HASH(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
       "与已知的magic numbers比较...")
 MSG_HASH(MSG_COMPILED_AGAINST_API,
-      "Compiled against API")
+      "API反编译")
 MSG_HASH(MSG_CONFIG_DIRECTORY_NOT_SET,
       "未设置配置文件夹，无法保存新的配置。")
 MSG_HASH(MSG_CONNECTED_TO,
@@ -2109,9 +2109,9 @@ MSG_HASH(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
 MSG_HASH(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
       "已创建核心选项文件。")
 MSG_HASH(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
-      "Could not find any next driver")
+      "找不到任何下一个驱动程序。")
 MSG_HASH(MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
-      "Could not find compatible system.")
+      "找不到兼容的系统。")
 MSG_HASH(MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
       "无法找到有效的数据轨")
 MSG_HASH(MSG_COULD_NOT_OPEN_DATA_TRACK,
@@ -2123,7 +2123,7 @@ MSG_HASH(MSG_COULD_NOT_READ_MOVIE_HEADER,
 MSG_HASH(MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
       "无法读取视频状态.")
 MSG_HASH(MSG_CRC32_CHECKSUM_MISMATCH,
-      "CRC32 checksum mismatch between content file and saved content checksum in replay file header; replay highly likely to desync on playback.")
+      "文件的头内容与保存的内容的头内容CRC32校验不一致。极有可能在重放时出错。")
 MSG_HASH(MSG_CUSTOM_TIMING_GIVEN,
       "Custom timing given")
 MSG_HASH(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
@@ -2133,9 +2133,9 @@ MSG_HASH(MSG_DECOMPRESSION_FAILED,
 MSG_HASH(MSG_DETECTED_VIEWPORT_OF,
       "Detected viewport of")
 MSG_HASH(MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
-      "Did not find a valid content patch.")
+      "没有找到有效的内容补丁。")
 MSG_HASH(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
-      "Disconnect device from a valid port.")
+      "从有效端口断开设备。")
 MSG_HASH(MSG_DISK_CLOSED,
       "已关闭")
 MSG_HASH(MSG_DISK_EJECTED,
@@ -2165,17 +2165,17 @@ MSG_HASH(MSG_EXTRACTING,
 MSG_HASH(MSG_EXTRACTING_FILE,
       "解压文件")
 MSG_HASH(MSG_FAILED_SAVING_CONFIG_TO,
-      "无法保存配置到")
+      "保存配置失败")
 MSG_HASH(MSG_FAILED_TO,
-      "Failed to")
+      "失败")
 MSG_HASH(MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
-      "Failed to accept incoming spectator.")
+      "同意旁观失败。")
 MSG_HASH(MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
-      "Failed to allocate memory for patched content...")
+      "为补丁内容分配内存失败...")
 MSG_HASH(MSG_FAILED_TO_APPLY_SHADER,
-      "Failed to apply shader.")
+      "应用着色器失败")
 MSG_HASH(MSG_FAILED_TO_BIND_SOCKET,
-      "Failed to bind socket.")
+      "端口绑定失败。")
 MSG_HASH(MSG_FAILED_TO_CREATE_THE_DIRECTORY,
       "创建文件夹失败。")
 MSG_HASH(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
@@ -2197,47 +2197,47 @@ MSG_HASH(MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
 MSG_HASH(MSG_FAILED_TO_PATCH,
       "补丁应用失败")
 MSG_HASH(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
-      "Failed to receive header from client.")
+      "接收客户端报文失败。")
 MSG_HASH(MSG_FAILED_TO_RECEIVE_NICKNAME,
-      "Failed to receive nickname.")
+      "接收昵称失败。")
 MSG_HASH(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
-      "Failed to receive nickname from host.")
+      "从主机接收昵称失败。")
 MSG_HASH(MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
-      "Failed to receive nickname size from host.")
+      "从主机接收昵称大小失败。")
 MSG_HASH(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
-      "Failed to receive SRAM data from host.")
+      "从主机接收SRAM数据失败。")
 MSG_HASH(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-      "Failed to remove disk from tray.")
+      "从托盘中删除磁盘失败。")
 MSG_HASH(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
       "移除临时文件失败")
 MSG_HASH(MSG_FAILED_TO_SAVE_SRAM,
-      "Failed to save SRAM")
+      "保存SRAM失败")
 MSG_HASH(MSG_FAILED_TO_SAVE_STATE_TO,
-      "Failed to save state to")
+      "无法保存状态到")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME,
-      "发送昵称失败.")
+      "发送昵称失败。")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_SIZE,
-      "发送昵称尺寸失败.")
+      "发送昵称尺寸失败。")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
-      "发送昵称至客户端失败.")
+      "发送昵称至客户端失败。")
 MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
-      "发送昵称至宿主端失败.")
+      "发送昵称至宿主端失败。")
 MSG_HASH(MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
-      "发送SRAM数据至客户端失败.")
+      "发送SRAM数据至客户端失败。")
 MSG_HASH(MSG_FAILED_TO_START_AUDIO_DRIVER,
       "音频驱动启动失败，将在无音频模式下继续启动。")
 MSG_HASH(MSG_FAILED_TO_START_MOVIE_RECORD,
-      "启动视频录制失败.")
+      "启动视频录制失败。")
 MSG_HASH(MSG_FAILED_TO_START_RECORDING,
-      "Failed to start recording.")
+      "开始录制失败。")
 MSG_HASH(MSG_FAILED_TO_TAKE_SCREENSHOT,
-      "Failed to take screenshot.")
+      "截屏失败。")
 MSG_HASH(MSG_FAILED_TO_UNDO_LOAD_STATE,
-      "Failed to undo load state.")
+      "撤消即时读档失败。")
 MSG_HASH(MSG_FAILED_TO_UNDO_SAVE_STATE,
-      "Failed to undo save state.")
+      "撤消即时存档失败。")
 MSG_HASH(MSG_FAILED_TO_UNMUTE_AUDIO,
-      "Failed to unmute audio.")
+      "取消音频失败。")
 MSG_HASH(MSG_FATAL_ERROR_RECEIVED_IN,
       "Fatal error received in")
 MSG_HASH(MSG_FILE_NOT_FOUND,
@@ -2273,17 +2273,17 @@ MSG_HASH(MSG_INPUT_CHEAT,
 MSG_HASH(MSG_INPUT_CHEAT_FILENAME,
       "Input Cheat Filename")
 MSG_HASH(MSG_INPUT_PRESET_FILENAME,
-      "Input Preset Filename")
+      "输入预置文件名")
 MSG_HASH(MSG_INPUT_RENAME_ENTRY,
-      "Rename Title")
+      "重命名标题")
 MSG_HASH(MSG_INTERFACE,
       "接口")
 MSG_HASH(MSG_INTERNAL_STORAGE,
       "内部存储")
 MSG_HASH(MSG_REMOVABLE_STORAGE,
-      "Removable Storage")
+      "移动存储")
 MSG_HASH(MSG_INVALID_NICKNAME_SIZE,
-      "Invalid nickname size.")
+      "无效的昵称长度。")
 MSG_HASH(MSG_IN_BYTES,
       "(字节)")
 MSG_HASH(MSG_IN_GIGABYTES,
@@ -2363,15 +2363,15 @@ MSG_HASH(MSG_RESTORED_OLD_SAVE_STATE,
 MSG_HASH(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
       "重置渲染器预设到")
 MSG_HASH(MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
-      "Reverting savefile directory to")
+      "恢复保存的文件到目录")
 MSG_HASH(MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-      "Reverting savestate directory to")
+      "恢复存档文件到目录")
 MSG_HASH(MSG_REWINDING,
       "正在回溯。")
 MSG_HASH(MSG_REWIND_INIT,
-      "Initializing rewind buffer with size")
+      "初始化回溯缓冲区大小")
 MSG_HASH(MSG_REWIND_INIT_FAILED,
-      "初始化回放缓存失败. 回放功能关闭.")
+      "初始化回放缓存失败。 回放功能关闭。")
 MSG_HASH(MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
       "Implementation uses threaded audio. Cannot use rewind.")
 MSG_HASH(MSG_REWIND_REACHED_END,
@@ -2409,13 +2409,13 @@ MSG_HASH(MSG_FAST_FORWARD,
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
       "慢动作回溯。")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
-      "SRAM will not be saved.")
+      "SRAM不会被保存。")
 MSG_HASH(MSG_STARTING_MOVIE_PLAYBACK,
       "视频回放.")
 MSG_HASH(MSG_STARTING_MOVIE_RECORD_TO,
-      "Starting movie record to")
+      "启动视频录制到")
 MSG_HASH(MSG_STATE_SIZE,
-      "State size")
+      "状态大小")
 MSG_HASH(MSG_STATE_SLOT,
       "即时存档栏位")
 MSG_HASH(MSG_TAKING_SCREENSHOT,
@@ -2437,7 +2437,7 @@ MSG_HASH(MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
 MSG_HASH(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
       "使用libretro虚拟核心。跳过录制。")
 MSG_HASH(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
-      "Connect device from a valid port.")
+      "从有效端口连接设备。")
 MSG_HASH(MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
       "从端口断开设备")
 MSG_HASH(MSG_VALUE_REBOOTING,
@@ -2447,16 +2447,16 @@ MSG_HASH(MSG_VALUE_SHUTTING_DOWN,
 MSG_HASH(MSG_VERSION_OF_LIBRETRO_API,
       "libretro API版本")
 MSG_HASH(MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
-      "Viewport size calculation failed! Will continue using raw data. This will probably not work right ...")
+      "可视区域尺寸计算失败！将继续使用原始数据，这很可能不会正常工作。")
 MSG_HASH(MSG_VIRTUAL_DISK_TRAY,
-      "virtual disk tray.")
+      "虚拟磁盘托盘。")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
       "毫秒级音频延时。 如果音频驱动程序不支持将无法使用。")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
       "禁音/取消禁音。")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-      "Helps smooth out imperfections in timing when synchronizing audio and video at the same time. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
+      MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA，
+	  "有助于同时消除音频和视频同步时的不完美。请注意，如果禁用，将无法正常音频和视频同步。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
@@ -2464,7 +2464,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
-      "Allow or disallow location services access by cores."
+      "启用或禁用基于核心的位置服务访问。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
@@ -2638,7 +2638,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
       "联机游戏将在内容加载后开始。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
-      "无法找到合适的核心或内容文件，手动加载。")
+      "无法找到合适的核心或内容文件，请手动加载。")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
       "浏览URL"
@@ -2675,7 +2675,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
       "在这里输入您的昵称，用于联网和一些其他服务。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-      "Capture the image after filters (but not shaders) are applied. Your video will look as fancy as what you see on your screen.")
+      "去除滤镜后（而不是着色器）捕获图像。视频与屏幕上显示的一样。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
       "选择使用的模拟器核心。")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
@@ -3005,18 +3005,18 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
       "在即时存档的文件名前面加上核心名称来进行排序。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
-      "URL to core updater directory on the Libretro buildbot.")
+      "Libretro buildbot 核心更新目录的URL。")
 MSG_HASH(MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
-      "URL to assets updater directory on the Libretro buildbot.")
+      "Libretro buildbot 资源更新目录的URL.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
       "下载后自动解压。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-      "Scan for new rooms.")
+      "扫描新房间。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
       "删除此条目。")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
-      "View more information about the content.")
+      "查看该内容的更多相关信息。")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
       "将此游戏加入你的收藏夹。")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
@@ -3027,16 +3027,16 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
       "调整文件管理器设置。")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
-      "Enable customized controls by default at startup."
+      "启用程序启动时默认启用自定义控件。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
-      "Enable customized configuration by default at startup."
+      "启用启动时默认启用自定义配置。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
-      "Enable customized core options by default at startup.")
+      "启用启动时默认启用自定义核心选项")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ENABLE,
-      "Shows current core name inside menu.")
+      "启用内部菜单中显示当前核心名称。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
       "查看游戏信息数据库。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
@@ -3115,11 +3115,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
       "Cycle the current disk. If the disk is inserted, it will eject the disk. If the disk has not been inserted, it will be inserted. ")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
-      "Change the disk index.")
+      "更改磁盘索引。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
-      "Disk image management.")
+      "管理磁盘映像。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-      "Select a disk image to insert.")
+      "选择要插入的磁盘映像。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Makes sure the framerate is capped while inside the menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,
@@ -3191,9 +3191,9 @@ MSG_HASH(
       "当菜单界面试图查找可加载的资源时，默认情况下查找此位置。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
-      "Save all save files to this directory. If not set, will try to save inside the content file's working directory.")
+      "将所有保存文件保存到该目录。如果没有设置，将尝试保存内容文件的工作目录内。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-      "Save all save states to this directory. If not set, will try to save inside the content file's working directory.")
+      "将所有存档保存到该目录。如果没有设置，将尝试保存内容文件的工作目录内。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
       "Directory to dump screenshots to.")
 MSG_HASH(MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
@@ -3204,7 +3204,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
-      "Directory where audio DSP filter files are kept."
+      "保存音频DSP插件文件的目录。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
@@ -3564,11 +3564,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
       "Remove")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
-      "Volume")
+      "音量")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
       "Current core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
-      "Clear")
+      "清除")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
       "In-Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
@@ -3580,9 +3580,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
       "Paused")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-      "Enable Discord")
+      "开启Discord")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-      "Enable or disable Discord support. Will not work with the browser version, only native desktop client.")
+      "启用或禁用Discord支持。仅支持本地桌面客户端。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
       "输入")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIDI_INPUT,
