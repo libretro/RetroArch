@@ -1575,6 +1575,16 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("dpi_override_value",           &settings->uints.menu_dpi_override_value, true, menu_dpi_override_value, false);
    SETTING_UINT("menu_thumbnails",              &settings->uints.menu_thumbnails, true, menu_thumbnails_default, false);
    SETTING_UINT("menu_timedate_style", &settings->uints.menu_timedate_style, true, menu_timedate_style, false);
+#ifdef HAVE_LIBNX
+   SETTING_UINT("split_joycon_p1", &settings->uints.input_split_joycon[0], true, 0, false);
+   SETTING_UINT("split_joycon_p2", &settings->uints.input_split_joycon[1], true, 0, false);
+   SETTING_UINT("split_joycon_p3", &settings->uints.input_split_joycon[2], true, 0, false);
+   SETTING_UINT("split_joycon_p4", &settings->uints.input_split_joycon[3], true, 0, false);
+   SETTING_UINT("split_joycon_p5", &settings->uints.input_split_joycon[4], true, 0, false);
+   SETTING_UINT("split_joycon_p6", &settings->uints.input_split_joycon[5], true, 0, false);
+   SETTING_UINT("split_joycon_p7", &settings->uints.input_split_joycon[6], true, 0, false);
+   SETTING_UINT("split_joycon_p8", &settings->uints.input_split_joycon[7], true, 0, false);
+#endif
 #ifdef HAVE_XMB
    SETTING_UINT("menu_left_thumbnails",         &settings->uints.menu_left_thumbnails, true, menu_left_thumbnails_default, false);
    SETTING_UINT("xmb_alpha_factor",             &settings->uints.menu_xmb_alpha_factor, true, xmb_alpha_factor, false);
