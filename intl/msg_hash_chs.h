@@ -930,7 +930,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
       "连发开关")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
-      "Turbo区间")
+      "连发按键频率")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
       "输入用户 %u 的绑定")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -1061,8 +1061,14 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NEAREST,
       "最近")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY,
       "在线游戏")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
+      "允许从属模式客户端")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
       "在线游戏检查帧数")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+      "输入延迟帧")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+      "输入延迟帧范围")    
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
       "在线游戏延迟帧数")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
@@ -1086,17 +1092,53 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
       "服务器密码")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
-      "Publicly Announce Netplay")
+      "启用公共的在线游戏网络")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-      "Disallow Non-Slave-Mode Clients")
+      "不允许非从属模式客户端")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
-      "Request Device %u")
+      "请求设备 %u")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
       "在线游戏设置")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
+    "模拟输入分配")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
+    "最大")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
+    "平均"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
+    "数字输入分配"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
+    "共用"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR,
+    "Grapple"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
+    "Vote"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+    "无"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE,
+    "不设置"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
+    "在线游戏旁观者模式"
+    )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
       "联机无状态模式")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
-      "服务器围观的密码")
+      "服务器观战的密码")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
       "启用在线游戏旁观者")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
@@ -1166,7 +1208,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
       "屏幕图层")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
-      "调整边框和控制按钮")
+      "调整边框和屏幕图层按键显示")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
       "屏幕提示")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
@@ -1415,13 +1457,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
       "渲染器效果")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON,
-      "Ribbon")
+      "彩条效果")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
-      "Ribbon (简化)")
+      "简易彩条效果")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
-      "Simple Snow")
+      "简易雪花效果")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW,
-      "Snow")
+      "雪花效果")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
       "显示高级设置")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
@@ -1431,7 +1473,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHUTDOWN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
       "慢动作倍率")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-      "提前运行以减少等待时间")
+      "提前运行以降低延迟")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
       "提前运行的帧数")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
@@ -2714,7 +2756,7 @@ MSG_HASH(
       )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-    "提前运行核心逻辑一帧或多帧，用于减少加载时的等待时间。"
+    "提前运行核心逻辑一帧或多帧，以降低按键延迟。"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
@@ -2863,47 +2905,47 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
-      "The address of the host to connect to."
+      "要连接到在线游戏网络服务器的地址。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
-      "The port of the host IP address. Can be either a TCP or UDP port."
+      "服务器IP地址端口。可以是TCP或UDP端口。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
-      "The password for connecting to the netplay host. Used only in host mode."
+      "连接到在线游戏网络的密码。仅在主机模式下生效。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-      "Whether to announce netplay games publicly. If unset, clients must manually connect rather than using the public lobby."
+      "是否使用公共的在线游戏网络。 如果未设置，客户端必须手动连接而不使用公共的在线游戏网络。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-      "The password for connecting to the netplay host with only spectator privileges. Used only in host mode."
+      "连接到在线游戏网络的密码，仅有观战权限。仅在主机模式下使用。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-      "Whether to start netplay in spectator mode."
+      "是否启动在线游戏旁观者模式。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-      "Whether to allow connections in slave mode. Slave-mode clients require very little processing power on either side, but will suffer significantly from network latency."
+      "是否允许从属模式网络连接。从属模式客户端占用网络带宽小，但网络延迟的比较大。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-      "Whether to disallow connections not in slave mode. Not recommended except for very fast networks with very weak machines."
+      "是否禁止从属模式网络连接的客户端连接。不推荐，除非使用非常快的网络和高性能的主机。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-      "Whether to run netplay in a mode not requiring save states. If set to true, a very fast network is required, but no rewinding is performed, so there will be no netplay jitter."
+      "是否在不保存存档的模式下运行在线游戏。如果开启，则需要非常快的网络，但不能使用回溯功能，因此不会有网络播放抖动。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-      "The frequency in frames with which netplay will verify that the host and client are in sync."
+      "在线游戏中主机和客户端的帧频率将保持同步。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-      "When hosting, attempt to listen for connections from the public Internet, using UPnP or similar technologies to escape LANs."
+      "当作战时，侦听来自公共互联网的连接，使用UPnP或类似的技术来规避私有网络问题。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
@@ -3021,11 +3063,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
       "如果你不慎覆盖了即时存档，使用此命令来撤销。")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
-      "Retro Achievements service. For more information, visit http://retroachievements.org"
+      "Retro 成就服务。更多内容请访问 http://retroachievements.org"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
-      "Manages currently configured accounts."
+      "管理当前用户的配置。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
       "调整游戏回溯功能设置。")
@@ -3067,9 +3109,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
       "Sets start directory for menu configuration browser.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-      "The number of frames of input latency for netplay to use to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of noticeable input lag.")
+      "提高按键延迟以隐藏网络的延迟。用按键延迟换取在线游戏时降低CPU负载并减少顿卡。")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-      "The range of frames of input latency that may be used to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of unpredictable input lag.")
+      "设置按键延迟范围以隐藏网络的延迟。用延迟范围内的按键延迟换取在线游戏时降低CPU负载并减少顿卡。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
       "Cycle the current disk. If the disk is inserted, it will eject the disk. If the disk has not been inserted, it will be inserted. ")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
@@ -3123,7 +3165,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
       "Set the custom scaling size here. NOTE: You have to enable 'DPI Override' for this scaling size to take effect.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
-      "Save all downloaded files to this directory.")
+      "设置下载文件夹。下载的文件存放在这里。")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
       "Save all remapped controls to this directory.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
@@ -3146,7 +3188,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
-      "This location is queried by default when menu interfaces try to look for loadable assets, etc."
+      "当菜单界面试图查找可加载的资源时，默认情况下查找此位置。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
       "Save all save files to this directory. If not set, will try to save inside the content file's working directory.")
@@ -3223,9 +3265,13 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
       "用于定义视口的Y轴位置的自定义视口偏移量。如果启用“窗口比例选项”，则设置无效。图像将显示在中心。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-      "Use Relay Server")
+      "启用代理服务器")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-      "Forward netplay connections through a man-in-the-middle server. Useful if the host is behind a firewall or has NAT/UPnP problems.")
+      "通过代理服务器进行网络连接。如果主机位于防火墙之后或具有NAT／UPnP问题时，建议开启。")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
+      "代理服务器位置")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
+      "选择一个代理服务器。服务器位置比较接近的一般网络延迟更低。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
       "Add to mixer")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -3238,7 +3284,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
       "Filter by current core")
 MSG_HASH(
       MSG_AUDIO_MIXER_VOLUME,
-      "Global audio mixer volume"
+      "全局音效混合器音量"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
