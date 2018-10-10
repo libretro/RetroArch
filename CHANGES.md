@@ -8,6 +8,7 @@
 - SCANNER: Fix GDI disc scanning.
 - SWITCH/LIBNX: Improve touch scaling calculation.
 - SWITCH: Proper button labels.
+- WIIU: Initial netplay peer-to-peer support.
 
 # 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
