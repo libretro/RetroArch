@@ -287,7 +287,7 @@ menu_display_ctx_driver_t menu_display_ctx_d3d11 = {
    menu_display_d3d11_get_default_tex_coords,
    menu_display_d3d11_font_init_first,
    MENU_VIDEO_DRIVER_DIRECT3D11,
-   "menu_display_d3d11",
+   "d3d11",
    true,
    NULL,
    NULL

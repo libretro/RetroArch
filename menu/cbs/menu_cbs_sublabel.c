@@ -296,6 +296,7 @@ default_sublabel_macro(action_bind_sublabel_pointer_enable,                MENU_
 default_sublabel_macro(action_bind_sublabel_thumbnails,                    MENU_ENUM_SUBLABEL_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_left_thumbnails,               MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_timedate_enable,               MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
+default_sublabel_macro(action_bind_sublabel_timedate_style,                MENU_ENUM_SUBLABEL_TIMEDATE_STYLE)
 default_sublabel_macro(action_bind_sublabel_battery_level_enable,          MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE)
 default_sublabel_macro(action_bind_sublabel_navigation_wraparound,         MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND)
 default_sublabel_macro(action_bind_sublabel_audio_resampler_quality,       MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY)
@@ -530,12 +531,14 @@ static int action_bind_sublabel_remap_kbd_sublabel(
 {
    unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
 
-   snprintf(s, len, "User #%d: %s", user_idx + 1,
-      input_config_get_device_display_name(user_idx) ?
-      input_config_get_device_display_name(user_idx) :
-      (input_config_get_device_name(user_idx) ?
-      input_config_get_device_name(user_idx) : 
-      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+   snprintf(s, len, "%s #%d: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
+         user_idx + 1,
+         input_config_get_device_display_name(user_idx) ?
+         input_config_get_device_display_name(user_idx) :
+         (input_config_get_device_name(user_idx) ?
+          input_config_get_device_name(user_idx) : 
+          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
    return 0;
 }
 
@@ -588,12 +591,14 @@ static int action_bind_sublabel_remap_sublabel(
    unsigned offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN)
       / (RARCH_FIRST_CUSTOM_BIND + 8);
 
-   snprintf(s, len, "User #%d: %s", offset + 1,
-      input_config_get_device_display_name(offset) ?
-      input_config_get_device_display_name(offset) :
-      (input_config_get_device_name(offset) ?
-      input_config_get_device_name(offset) : 
-      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+   snprintf(s, len, "%s #%d: %s", 
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
+         offset + 1,
+         input_config_get_device_display_name(offset) ?
+         input_config_get_device_display_name(offset) :
+         (input_config_get_device_name(offset) ?
+          input_config_get_device_name(offset) : 
+          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
    return 0;
 }
 
@@ -1289,6 +1294,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_timedate_enable);
+            break;
+         case MENU_ENUM_LABEL_TIMEDATE_STYLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_timedate_style);
             break;
          case MENU_ENUM_LABEL_THUMBNAILS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails);

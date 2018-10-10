@@ -142,7 +142,7 @@
 		053FC25521433F1700D98D46 /* QtConcurrent.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtConcurrent.framework; path = /usr/local/opt/qt/lib/QtConcurrent.framework; sourceTree = "<group>"; };
 		053FC25621433F1800D98D46 /* QtNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtNetwork.framework; path = /usr/local/opt/qt/lib/QtNetwork.framework; sourceTree = "<group>"; };
 		053FC25721433F1800D98D46 /* QtWidgets.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtWidgets.framework; path = /usr/local/opt/qt/lib/QtWidgets.framework; sourceTree = "<group>"; };
-		05422E592140C8DB00F09961 /* RetroArchQT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchQT.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		05422E592140C8DB00F09961 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		05422E5B2140CE3500F09961 /* VulkanConfig.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = VulkanConfig.xcconfig; sourceTree = "<group>"; };
 		05422E5C2140CFC500F09961 /* Metal.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Metal.xcconfig; sourceTree = "<group>"; };
 		0548E2B220F976E10094A083 /* driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = driver.c; path = ../../driver.c; sourceTree = "<group>"; };
@@ -1426,7 +1426,7 @@
 			isa = PBXGroup;
 			children = (
 				8D1107320486CEB800E47090 /* RetroArch.app */,
-				05422E592140C8DB00F09961 /* RetroArchQT.app */,
+				05422E592140C8DB00F09961 /* RetroArch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1502,9 +1502,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		05422E3C2140C8DB00F09961 /* RetroArchQT */ = {
+		05422E3C2140C8DB00F09961 /* RetroArchQt */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 05422E562140C8DB00F09961 /* Build configuration list for PBXNativeTarget "RetroArchQT" */;
+			buildConfigurationList = 05422E562140C8DB00F09961 /* Build configuration list for PBXNativeTarget "RetroArchQt" */;
 			buildPhases = (
 				053FC2782143764B00D98D46 /* ShellScript */,
 				05422E3D2140C8DB00F09961 /* Resources */,
@@ -1518,10 +1518,10 @@
 			);
 			dependencies = (
 			);
-			name = RetroArchQT;
+			name = RetroArchQt;
 			productInstallPath = "$(HOME)/Applications";
 			productName = RetroArch;
-			productReference = 05422E592140C8DB00F09961 /* RetroArchQT.app */;
+			productReference = 05422E592140C8DB00F09961 /* RetroArch.app */;
 			productType = "com.apple.product-type.application";
 		};
 		8D1107260486CEB800E47090 /* RetroArch */ = {
@@ -1563,7 +1563,7 @@
 			projectRoot = "";
 			targets = (
 				8D1107260486CEB800E47090 /* RetroArch */,
-				05422E3C2140C8DB00F09961 /* RetroArchQT */,
+				05422E3C2140C8DB00F09961 /* RetroArchQt */,
 			);
 		};
 /* End PBXProject section */
@@ -1690,7 +1690,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = RetroArch;
 			};
 			name = Debug;
 		};
@@ -1711,7 +1711,7 @@
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = RetroArch;
 			};
 			name = Release;
 		};
@@ -1986,7 +1986,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		05422E562140C8DB00F09961 /* Build configuration list for PBXNativeTarget "RetroArchQT" */ = {
+		05422E562140C8DB00F09961 /* Build configuration list for PBXNativeTarget "RetroArchQt" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				05422E572140C8DB00F09961 /* Debug */,

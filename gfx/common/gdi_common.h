@@ -27,6 +27,7 @@ typedef struct gdi
 #endif
    HDC winDC;
    HDC memDC;
+   HDC texDC;
    HBITMAP bmp;
    HBITMAP bmp_old;
    unsigned video_width;
@@ -34,5 +35,18 @@ typedef struct gdi
    unsigned screen_width;
    unsigned screen_height;
 } gdi_t;
+
+typedef struct gdi_texture
+{
+   int width;
+   int height;
+   int active_width;
+   int active_height;
+
+   enum texture_filter_type type;
+   void* data;
+   HBITMAP bmp;
+   HBITMAP bmp_old;
+} gdi_texture_t;
 
 #endif

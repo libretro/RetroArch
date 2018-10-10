@@ -837,18 +837,18 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
                /* draw menu contents behind a gradient background */
                if (gdi && gdi->memDC)
                {
-                  RECT rect;
+                  /*RECT rect;
                   HBRUSH brush = CreateSolidBrush(RGB(1,81,127));
 
-                  GetClientRect(hwnd, &rect);
+                  GetClientRect(hwnd, &rect);*/
 
                   StretchBlt(gdi->winDC,
                         0, 0,
                         gdi->screen_width, gdi->screen_height,
                         gdi->memDC, 0, 0, gdi->video_width, gdi->video_height, SRCCOPY);
 
-                  FillRect(gdi->memDC, &rect, brush);
-                  DeleteObject(brush);
+                  /*FillRect(gdi->memDC, &rect, brush);
+                  DeleteObject(brush);*/
                }
            }
            else

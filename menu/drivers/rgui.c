@@ -596,7 +596,7 @@ static void rgui_render(void *data, bool is_idle)
 
       datetime.s         = timedate;
       datetime.len       = sizeof(timedate);
-      datetime.time_mode = 3;
+      datetime.time_mode = 4;
 
       menu_display_timedate(&datetime);
 

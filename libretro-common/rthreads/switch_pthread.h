@@ -28,30 +28,29 @@
 #include <switch.h>
 #include <errno.h>
 
-#include "../include/retro_inline.h"
-#include "../../verbosity.h"
+#include <retro_inline.h>
 
-#define THREADVARS_MAGIC 0x21545624 // !TV$
+#define THREADVARS_MAGIC 0x21545624 /* !TV$ */
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
 void pthread_exit(void *retval);
 
-// This structure is exactly 0x20 bytes, if more is needed modify getThreadVars() below
+/* This structure is exactly 0x20 bytes, if more is needed modify getThreadVars() below */
 typedef struct
 {
-   // Magic value used to check if the struct is initialized
+   /* Magic value used to check if the struct is initialized */
    u32 magic;
 
-   // Thread handle, for mutexes
+   /* Thread handle, for mutexes */
    Handle handle;
 
-   // Pointer to the current thread (if exists)
+   /* Pointer to the current thread (if exists) */
    Thread *thread_ptr;
 
-   // Pointer to this thread's newlib state
+   /* Pointer to this thread's newlib state */
    struct _reent *reent;
 
-   // Pointer to this thread's thread-local segment
-   void *tls_tp; // !! Offset needs to be TLS+0x1F8 for __aarch64_read_tp !!
+   /* Pointer to this thread's thread-local segment */
+   void *tls_tp; /* !! Offset needs to be TLS+0x1F8 for __aarch64_read_tp !! */
 } ThreadVars;
 
 static INLINE ThreadVars *getThreadVars(void)
@@ -77,9 +76,9 @@ static INLINE int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutex
    return 0;
 }
 
-INLINE int pthread_mutex_destroy(pthread_mutex_t *mutex)
+static INLINE int pthread_mutex_destroy(pthread_mutex_t *mutex)
 {
-   // Nothing
+   /* Nothing */
    *mutex = 0;
 
    return 0;
@@ -101,7 +100,7 @@ static INLINE int pthread_mutex_unlock(pthread_mutex_t *mutex)
 INLINE int pthread_detach(pthread_t thread)
 {
    (void)thread;
-   // Nothing for now
+   /* Nothing for now */
    return 0;
 }
 
@@ -154,7 +153,7 @@ static INLINE int pthread_cond_broadcast(pthread_cond_t *cond)
 
 INLINE int pthread_cond_destroy(pthread_cond_t *cond)
 {
-   // Nothing
+   /* Nothing */
    return 0;
 }
 

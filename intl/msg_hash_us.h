@@ -2906,6 +2906,46 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
     "Show date / time"
     )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+       "Style of date / time"
+    )
+    MSG_HASH(
+       MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+       "Changes the style current date and/or time is shown inside the menu."
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS,
+       "YYYY-MM-DD HH:MM:SS"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM,
+       "YYYY-MM-DD HH:MM"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY,
+       "MM-DD-YYYY HH:MM"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
+       "HH:MM:SS"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
+       "HH:MM"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM,
+       "DD/MM HH:MM"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM,
+       "MM/DD HH:MM"
+    )
+    MSG_HASH(
+       MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_AM_PM,
+       "HH:MM:SS (AM/PM)"
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
     "Menu title color"
@@ -5279,7 +5319,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-    "Enables netplay in client mode."
+    "Enter netplay server address and connect in client mode."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,

@@ -1289,7 +1289,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    if (!string_is_empty(info->path))
    {
       size_t lpl_basename_size = PATH_MAX_LENGTH * sizeof(char);
-      char *lpl_basename       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char *lpl_basename       = (char*)malloc(lpl_basename_size);
       lpl_basename[0] = '\0';
 
       fill_pathname_base_noext(lpl_basename, info->path, lpl_basename_size);
@@ -1302,9 +1302,9 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
    for (i = 0; i < list_size; i++)
    {
-      char *path_copy                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      char *fill_buf                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       size_t path_size                = PATH_MAX_LENGTH * sizeof(char);
+      char *path_copy                 = (char*)malloc(path_size);
+      char *fill_buf                  = (char*)malloc(path_size);
       const char *core_name           = NULL;
       const char *path                = NULL;
       const char *label               = NULL;
@@ -1337,9 +1337,10 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
       if (path)
       {
-         char *path_short = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+         size_t path_size = PATH_MAX_LENGTH * sizeof(char);
+         char *path_short = (char*)malloc(path_size);
 
-         path_short[0] = '\0';
+         path_short[0]    = '\0';
 
          fill_short_pathname_representation(path_short, path,
                path_size);
@@ -1352,10 +1353,9 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
             if (!string_is_equal(core_name,
                      file_path_str(FILE_PATH_DETECT)))
             {
-               char *tmp       = (char*)
-                  malloc(PATH_MAX_LENGTH * sizeof(char));
+               char *tmp       = (char*)malloc(path_size);
 
-               tmp[0] = '\0';
+               tmp[0]          = '\0';
 
                snprintf(tmp, path_size, " (%s)", core_name);
                strlcat(fill_buf, tmp, path_size);
@@ -1486,12 +1486,13 @@ static int create_string_list_rdb_entry_string(
    char *output_label               = NULL;
    int str_len                      = 0;
    struct string_list *str_list     = string_list_new();
+   size_t path_size                 = PATH_MAX_LENGTH * sizeof(char);
 
    if (!str_list)
       return -1;
 
    attr.i                           = 0;
-   tmp                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   tmp                              = (char*)malloc(path_size);
    tmp[0]                           = '\0';
 
    str_len += strlen(label) + 1;
@@ -1515,8 +1516,7 @@ static int create_string_list_rdb_entry_string(
    string_list_join_concat(output_label, str_len, str_list, "|");
 
    fill_pathname_join_concat_noext(tmp, desc, ": ",
-         actual_string,
-         PATH_MAX_LENGTH * sizeof(char));
+         actual_string, path_size);
    menu_entries_append_enum(list, tmp, output_label,
          enum_idx,
          0, 0, 0);
@@ -1547,8 +1547,8 @@ static int create_string_list_rdb_entry_int(
       goto error;
 
    attr.i                           = 0;
-   tmp                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   str                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   tmp                              = (char*)malloc(path_size);
+   str                              = (char*)malloc(path_size);
    tmp[0] = str[0] = '\0';
 
    str_len += strlen(label) + 1;
@@ -1654,10 +1654,12 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
 
       if (!string_is_empty(db_info_entry->name))
-         strlcpy(thumbnail_content, db_info_entry->name, sizeof(thumbnail_content));
+         strlcpy(thumbnail_content, db_info_entry->name,
+               sizeof(thumbnail_content));
 
       if (!string_is_empty(thumbnail_content))
-         menu_driver_set_thumbnail_content(thumbnail_content, sizeof(thumbnail_content));
+         menu_driver_set_thumbnail_content(thumbnail_content,
+               sizeof(thumbnail_content));
 
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
@@ -3744,19 +3746,16 @@ static unsigned menu_displaylist_parse_cores(
 
          if (type == FILE_TYPE_CORE)
          {
-            char *core_path    = (char*)
-               malloc(PATH_MAX_LENGTH * sizeof(char));
-            char *display_name = (char*)
-               malloc(PATH_MAX_LENGTH * sizeof(char));
+            size_t path_size   = PATH_MAX_LENGTH * sizeof(char);
+            char *core_path    = (char*)malloc(path_size);
+            char *display_name = (char*)malloc(path_size);
             core_path[0]       =
             display_name[0]    = '\0';
 
-            fill_pathname_join(core_path, dir, path,
-                  PATH_MAX_LENGTH * sizeof(char));
+            fill_pathname_join(core_path, dir, path, path_size);
 
             if (core_info_list_get_display_name(list,
-                     core_path, display_name,
-                     PATH_MAX_LENGTH * sizeof(char)))
+                     core_path, display_name, path_size))
                file_list_set_alt_at_offset(info->list, i, display_name);
 
             free(core_path);
@@ -4280,19 +4279,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_LAKKA_SWITCH
       case DISPLAYLIST_SWITCH_CPU_PROFILE:
       {
-         runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true);
-      
+         unsigned i;
+         char text[PATH_MAX_LENGTH];
          char current_profile[PATH_MAX_LENGTH];
+         FILE *profile = NULL;
+         const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
+
+         runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true);
          
-         FILE* profile = popen("cpu-profile get", "r");          
+         profile = popen("cpu-profile get", "r");          
          fgets(current_profile, PATH_MAX_LENGTH, profile);  
          pclose(profile);
          
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          
-         char text[PATH_MAX_LENGTH];
-         
-         snprintf(text, sizeof(text), "Current profile : %s", current_profile);
+         snprintf(text, sizeof(text),
+               "Current profile : %s", current_profile);
          
          menu_entries_append_enum(info->list,
             text,
@@ -4300,24 +4302,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             0,
             MENU_INFO_MESSAGE, 0, 0);
          
-         const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
-                  
-         
-         for (int i = 0; i < profiles_count; i++)
+         for (i = 0; i < profiles_count; i++)
          {
-            char* profile = SWITCH_CPU_PROFILES[i];
-            char* speed = SWITCH_CPU_SPEEDS[i];
-               
+            char* profile               = SWITCH_CPU_PROFILES[i];
+            char* speed                 = SWITCH_CPU_SPEEDS[i];
+
             char title[PATH_MAX_LENGTH] = {0};
-               
+
             snprintf(title, sizeof(title), "%s (%s)", profile, speed);
-               
-         menu_entries_append_enum(info->list, 
-            title,
-            "",
-            0, MENU_SET_SWITCH_CPU_PROFILE, 0, i);
-            
-         }         
+
+            menu_entries_append_enum(info->list, 
+                  title,
+                  "",
+                  0, MENU_SET_SWITCH_CPU_PROFILE, 0, i);
+
+         } 
             
          info->need_push    = true;
          info->need_refresh = true;
@@ -4327,17 +4326,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       }
       case DISPLAYLIST_SWITCH_GPU_PROFILE:
       {
+         unsigned i;
+         char text[PATH_MAX_LENGTH];
+         char current_profile[PATH_MAX_LENGTH];
+         FILE *profile = NULL;
+         const size_t profiles_count = sizeof(SWITCH_GPU_PROFILES)/sizeof(SWITCH_GPU_PROFILES[1]);
+
          runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true);
 
-         char current_profile[PATH_MAX_LENGTH];
-         
-         FILE* profile = popen("gpu-profile get", "r");          
+         profile = popen("gpu-profile get", "r");          
          fgets(current_profile, PATH_MAX_LENGTH, profile);  
          pclose(profile);
          
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         
-         char text[PATH_MAX_LENGTH];
          
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
          
@@ -4347,22 +4348,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             0,
             MENU_INFO_MESSAGE, 0, 0);
          
-         const size_t profiles_count = sizeof(SWITCH_GPU_PROFILES)/sizeof(SWITCH_GPU_PROFILES[1]);
                      
-         for (int i = 0; i < profiles_count; i++)
+         for (i = 0; i < profiles_count; i++)
          {
-            char* profile = SWITCH_GPU_PROFILES[i];
-            char* speed = SWITCH_GPU_SPEEDS[i];
-            
+            char* profile               = SWITCH_GPU_PROFILES[i];
+            char* speed                 = SWITCH_GPU_SPEEDS[i];
             char title[PATH_MAX_LENGTH] = {0};
-              
+
             snprintf(title, sizeof(title), "%s (%s)", profile, speed);
-               
-         menu_entries_append_enum(info->list, 
-             title,
-            "",
-             0, MENU_SET_SWITCH_GPU_PROFILE, 0, i); 
-         }         
+
+            menu_entries_append_enum(info->list, 
+                  title,
+                  "",
+                  0, MENU_SET_SWITCH_GPU_PROFILE, 0, i); 
+         }        
                
          info->need_push    = true;
          info->need_refresh = true;
@@ -4372,26 +4371,27 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       }
       case DISPLAYLIST_SWITCH_BACKLIGHT_CONTROL:
       {
-        menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-        
-        const size_t brightness_count = sizeof(SWITCH_BRIGHTNESS)/sizeof(SWITCH_BRIGHTNESS[1]);
-        
-        for (int i = 0; i < brightness_count; i++)
-        {
-        	char title[PATH_MAX_LENGTH] = {0};
-        	
-        	snprintf(title, sizeof(title), "Set to %d%%", SWITCH_BRIGHTNESS[i]);
-        	
-        	menu_entries_append_enum(info->list, 
-            title,
-            "",
-            0, MENU_SET_SWITCH_BRIGHTNESS, 0, i);
+         unsigned i;
+         const size_t brightness_count = sizeof(SWITCH_BRIGHTNESS)/sizeof(SWITCH_BRIGHTNESS[1]);
+
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         for (i = 0; i < brightness_count; i++)
+         {
+            char title[PATH_MAX_LENGTH] = {0};
+
+            snprintf(title, sizeof(title), "Set to %d%%", SWITCH_BRIGHTNESS[i]);
+
+            menu_entries_append_enum(info->list, 
+                  title,
+                  "",
+                  0, MENU_SET_SWITCH_BRIGHTNESS, 0, i);
          }
-      
+
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
-         
+
          break;
       }
 #endif
@@ -5779,6 +5779,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_TIMEDATE_ENABLE,
                PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_TIMEDATE_STYLE,
+               PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE,
                PARSE_ONLY_BOOL, false);
@@ -7307,9 +7310,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                if (!string_is_empty(system->info.library_name) &&
                      !string_is_equal(system->info.library_name,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
-                  menu_displaylist_parse_settings_enum(menu, info,
-                        MENU_ENUM_LABEL_CONTENT_SETTINGS,
-                        PARSE_ACTION, false);
+                  if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+                     menu_displaylist_parse_settings_enum(menu, info,
+                           MENU_ENUM_LABEL_CONTENT_SETTINGS,
+                           PARSE_ACTION, false);
 
                if (system->load_no_content)
                   menu_displaylist_parse_settings_enum(menu, info,
