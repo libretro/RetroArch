@@ -16,6 +16,7 @@
  */
 
 #include <retro_miscellaneous.h>
+#include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -191,6 +192,9 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    gdi_t *gdi                = (gdi_t*)data;
    HWND hwnd                 = win32_get_window();
    BITMAPINFO *info;
+
+   /* FIXME */
+   video_info->xmb_shadows_enable = false;
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -414,9 +418,16 @@ static void gdi_gfx_free(void *data)
    if (!gdi)
       return;
 
+   if (gdi->bmp)
+      DeleteObject(gdi->bmp);
+
+   if (gdi->texDC)
+   {
+      DeleteDC(gdi->texDC);
+      gdi->texDC = 0;
+   }
    if (gdi->memDC)
    {
-      DeleteObject(gdi->bmp);
       DeleteDC(gdi->memDC);
       gdi->memDC = 0;
    }
@@ -532,12 +543,61 @@ static void gdi_set_video_mode(void *data, unsigned width, unsigned height,
    video_context_driver_set_video_mode(&mode);
 }
 
+static uintptr_t gdi_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+   struct texture_image *image = (struct texture_image*)data;
+   int size = image->width * image->height * sizeof(uint32_t);
+   gdi_texture_t *texture = NULL;
+   void *tmpdata = NULL;
+
+   if (!image || image->width > 2048 || image->height > 2048)
+      return 0;
+
+   texture = calloc(1, sizeof(*texture));
+   texture->width = image->width;
+   texture->height = image->height;
+   texture->active_width = image->width;
+   texture->active_height = image->height;
+   texture->data = calloc(1, texture->width * texture->height * sizeof(uint32_t));
+   texture->type = filter_type;
+
+   if (!texture->data)
+   {
+      free(texture);
+      return 0;
+   }
+
+   memcpy(texture->data, image->pixels, texture->width * texture->height * sizeof(uint32_t));
+
+   return (uintptr_t)texture;
+}
+
+static void gdi_unload_texture(void *data, uintptr_t handle)
+{
+   struct gdi_texture *texture = (struct gdi_texture*)handle;
+
+   if (!texture)
+      return;
+
+   if (texture->data)
+      free(texture->data);
+
+   if (texture->bmp)
+   {
+      DeleteObject(texture->bmp);
+      texture->bmp = NULL;
+   }
+
+   free(texture);
+}
+
 static const video_poke_interface_t gdi_poke_interface = {
    NULL, /* get_flags */
    NULL,                      /* set_coords */
    NULL,                      /* set_mvp */
-   NULL,
-   NULL,
+   gdi_load_texture,
+   gdi_unload_texture,
    gdi_set_video_mode,
    win32_get_refresh_rate,
    NULL,
