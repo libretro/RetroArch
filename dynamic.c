@@ -1373,8 +1373,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             return false;
 
 #if defined(HAVE_OPENGL)
-         if (!gl_set_core_context(cb->context_type))
-            return false;
+         if (!gl_set_core_context(cb->context_type)) { }
 #endif
 
          cb->get_current_framebuffer = video_driver_get_current_framebuffer;
