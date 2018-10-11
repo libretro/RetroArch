@@ -45,7 +45,7 @@ RETRO_BEGIN_DECLS
 #endif
 
 #ifndef MAX_CHEAT_COUNTERS
-#define MAX_CHEAT_COUNTERS 100
+#define MAX_CHEAT_COUNTERS 6000
 #endif
 
 #define MENU_SETTINGS_CORE_INFO_NONE             0xffff
