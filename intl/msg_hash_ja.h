@@ -3010,24 +3010,24 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-      "ネットプレイをホスト(サーバー)モードで有効にします。"
+      "ネットプレイをホスト (サーバー) モードで有効に\nします。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
       "ネットプレイをクライアントモードで有効にします。")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "アクティブなネットプレイ接続を切断する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "対応ファイルをフォルダからスキャンしてコレクションに追加します。")
+      "フォルダ内のすべての対応ファイルをスキャンして\nコレクションに追加します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "対応ファイルをスキャンしてコレクションに追加します。")
+      "対応ファイルをスキャンしてコレクションに追加\nします。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
-      "使用したコアの名前に基づいてセーブファイルをフォルダごとに分類します。"
+      "使用したコアの名前に基づいてセーブファイルを\nフォルダごとに分類します。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-      "使用したコアの名前に基づいてステートセーブをフォルダごとに分類します。"
+      "使用したコアの名前に基づいてステートセーブを\nフォルダごとに分類します。"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
       "URL to core updater directory on the Libretro buildbot.")
@@ -3296,7 +3296,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_DELETE,
       "コアをハードディスクから削除する。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
-      "エントリーの名前を変更する")
+      "エントリーの名前を変更")
 MSG_HASH(MENU_ENUM_SUBLABEL_RENAME_ENTRY,
       "このエントリーのタイトルを変更します。")
 MSG_HASH(MENU_ENUM_LABEL_RENAME_ENTRY,
@@ -3308,19 +3308,19 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
       "お気に入り")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-      "「お気に入りに追加」したコンテンツがここに表示されます。")
+      "お気に入りに追加したコンテンツを表示します。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
       "音楽")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-      "再生した音楽がここに表示されます。")
+      "再生した音楽を表示します。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
       "画像")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-      "表示した画像がここに表示されます。")
+      "表示した画像を表示します。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
       "ビデオ")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-      "再生したビデオがここに表示されます。")
+      "再生したビデオ表示します。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
       "メニューのアイコン")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
