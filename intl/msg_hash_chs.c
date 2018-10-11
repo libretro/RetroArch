@@ -593,8 +593,8 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
          snprintf(s, len,
-               "你可以使用下述的方式通过游戏控制器或者键盘来对\n"
-               "菜单进行控制：\n"
+               "你可以使用下述的方式通过游戏控制\n"
+               "器或者键盘来对菜单进行控制：\n"
                " \n"
                );
          break;
@@ -608,23 +608,19 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             /* Work around C89 limitations */
             char u[501];
             const char * t =
-                  "RetroArch relies on an unique form of\n"
-                  "audio/video synchronization where it needs to be\n"
-                  "calibrated against the refresh rate of your\n"
-                  "display for best performance results.\n"
+                  "RetroArch 依赖于一种独特的音频/视频同步形式，\n"
+                  "需要根据显示器的刷新率对其进行校准，以获得最佳\n"
+                  "性能。\n"
                   " \n"
-                  "If you experience any audio crackling or video\n"
-                  "tearing, usually it means that you need to\n"
-                  "calibrate the settings. Some choices below:\n"
+                  "如果你的音频出现任何噼啪声或图像撕裂，通常意味\n"
+                  "着你需要调整设置。下面是调整方法：\n"
                   " \n";
             snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
-                  "a) Go to '%s' -> '%s', and enable\n"
-                  "'Threaded Video'. Refresh rate will not matter\n"
-                  "in this mode, framerate will be higher,\n"
-                  "but video might be less smooth.\n"
-                  "b) Go to '%s' -> '%s', and look at\n"
-                  "'%s'. Let it run for\n"
-                  "2048 frames, then press 'OK'.",
+                  "a) 在「%s」 ->「%s」中开启\n"
+                  "「多线程渲染」。在这种模式下，刷新率不会发生变\n"
+                  "化、帧率会提高，但是画面可能不那么流畅。\n"
+                  "b) 在「%s」 -> 「%s」, 查看\n"
+                  "「%s」。令其运行 2048 帧后，按 OK 键。",
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
@@ -1755,8 +1751,9 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "你可以通过以下几种方法来获取核心: \n"
                "一、通过访问菜单项「%s」 \n"
                " -> 「%s」来下载；\n"
-               "二、手动将其移入核心文件夹中，访问文件夹设置 \n"
-               "找到你的「%s」。",
+               " \n"
+               "二、手动将其移入核心文件夹中，访问文件\n"
+               "夹设置找到你的「%s」。",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
@@ -1769,16 +1766,14 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
          snprintf(s, len,
-               "You can change the virtual gamepad overlay\n"
-               "by going to '%s' -> '%s'."
+               "你可以通过「%s」->「%s」更改虚拟按键。\n"
                " \n"
-               "From there you can change the overlay,\n"
-               "change the size and opacity of the buttons, etc.\n"
+               "从那里你可以改变虚拟按键的样式、大小和不透\n"
+               "明度。\n"
                " \n"
-               "NOTE: By default, virtual gamepad overlays are\n"
-               "hidden when in the menu.\n"
-               "If you'd like to change this behavior,\n"
-               "you can set '%s' to false.",
+               "注意：默认情况下，在菜单中虚拟按键是隐藏的。\n"
+               "如果您想在菜单中显示，可以将「%s」\n"
+               "设置为 OFF 。",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
