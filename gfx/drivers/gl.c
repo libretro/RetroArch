@@ -364,11 +364,10 @@ static void gl_set_viewport_wrapper(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
    video_frame_info_t video_info;
-   gl_t *gl = (gl_t*)data;
 
    video_driver_build_info(&video_info);
 
-   gl_set_viewport(gl, &video_info,
+   gl_set_viewport(data, &video_info,
          viewport_width, viewport_height, force_full, allow_rotate);
 }
 
@@ -954,7 +953,7 @@ static bool gl_frame(void *data, const void *frame,
       return false;
 
 #ifdef HAVE_LIBNX
-   /* Should be called once per frame */
+   // Should be called once per frame
    if(!appletMainLoop())
     return false;
 #endif
@@ -1507,38 +1506,31 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
    unsigned major                       = hwr->version_major;
    unsigned minor                       = hwr->version_minor;
-   enum retro_hw_context_type ctx_type  = hwr->context_type;
-   bool hw_context_in_use               = ctx_type != RETRO_HW_CONTEXT_NONE;
 
 #ifdef HAVE_OPENGLES
    api                                  = GFX_CTX_OPENGL_ES_API;
    api_name                             = "OpenGL ES 2.0";
 
-   switch (ctx_type)
+   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3)
    {
-      case RETRO_HW_CONTEXT_OPENGLES3:
-         major                             = 3;
-         minor                             = 0;
-         api_name                          = "OpenGL ES 3.0";
-         break;
-      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-         api_name                          = "OpenGL ES 3.1+";
-         break;
-      case RETRO_HW_CONTEXT_NONE:
-      default:
-         break;
+      major                             = 3;
+      minor                             = 0;
+      api_name                          = "OpenGL ES 3.0";
    }
+   else if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
+      api_name                          = "OpenGL ES 3.1+";
 #else
-   api                                     = GFX_CTX_OPENGL_API;
-   api_name                                = "OpenGL";
+   api                                  = GFX_CTX_OPENGL_API;
+   api_name                             = "OpenGL";
 #endif
 
    (void)api_name;
 
    gl_shared_context_use = settings->bools.video_shared_context
-      && hw_context_in_use;
+      && hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
-   if (libretro_get_shared_context() && hw_context_in_use)
+   if (     (libretro_get_shared_context())
+         && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
       gl_shared_context_use = true;
 
    return video_context_driver_init_first(gl,
@@ -1788,30 +1780,28 @@ static void *gl_init(const video_info_t *video,
 
    hwr = video_driver_get_hw_context();
 
-#ifdef GL_CONTEXT_PROFILE_MASK
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
    {
-      /* Check if we have a core context */
-      GLint gl_flags = 0;
-      glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &gl_flags);
+      gfx_ctx_flags_t flags;
 
-      if (gl_flags & GL_CONTEXT_CORE_PROFILE_BIT)
+      gl_query_core_context_set(true);
+      gl->core_context_in_use = true;
+
+      /**
+       * Ensure that the rest of the frontend knows we have a core context
+       */
+      flags.flags = 0;
+      BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+
+      video_context_driver_set_flags(&flags);
+
+      RARCH_LOG("[GL]: Using Core GL context, setting up VAO...\n");
+      if (!gl_check_capability(GL_CAPS_VAO))
       {
-         RARCH_LOG("[GL]: Using Core GL context, setting up VAO...\n");
-         if (!gl_check_capability(GL_CAPS_VAO))
-         {
-            RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
-            goto error;
-         }
-
-         if (gl_set_core_context(hwr->context_type))
-         {
-            gl_query_core_context_set(true);
-            gl->core_context_in_use = true;
-         }
+         RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
+         goto error;
       }
    }
-#endif
 
    if (!renderchain_gl_init_first(&gl->renderchain_driver,
       &gl->renderchain_data))
