@@ -1782,18 +1782,10 @@ static void *gl_init(const video_info_t *video,
 
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
    {
-      gfx_ctx_flags_t flags;
-
       gl_query_core_context_set(true);
       gl->core_context_in_use = true;
 
-      /**
-       * Ensure that the rest of the frontend knows we have a core context
-       */
-      flags.flags = 0;
-      BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-
-      video_context_driver_set_flags(&flags);
+      gl_set_core_context(hwr->context_type);
 
       RARCH_LOG("[GL]: Using Core GL context, setting up VAO...\n");
       if (!gl_check_capability(GL_CAPS_VAO))
