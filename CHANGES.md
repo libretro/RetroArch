@@ -1,6 +1,7 @@
 # 1.7.6 (future)
 - DATE: Add Date / Time style options.
 - MIDI: Add a Linux ALSA driver for MIDI.
+- LOCALIZATION: Add Greek translation.
 - LOCALIZATION: Update German translation.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Simplified Chinese translation.
@@ -8,7 +9,7 @@
 - SCANNER: Fix GDI disc scanning.
 - SWITCH/LIBNX: Improve touch scaling calculation.
 - SWITCH: Proper button labels.
-- WIIU: Initial netplay peer-to-peer support.
+- WIIU: Initial netplay peer-to-peer support. Network information working.
 
 # 1.7.5
 - CAMERA: Fix Video4Linux2 driver that broke years ago.
