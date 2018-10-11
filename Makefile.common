@@ -308,7 +308,8 @@ OBJ += intl/msg_hash_de.o \
        intl/msg_hash_vn.o \
        intl/msg_hash_chs.o \
        intl/msg_hash_cht.o \
-       intl/msg_hash_ar.o
+       intl/msg_hash_ar.o \
+       intl/msg_hash_el.o
 
 endif
 
@@ -1513,7 +1514,7 @@ ifeq ($(HAVE_CHD), 1)
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_huffman.o \
               $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
-	
+
    ifeq ($(HAVE_FLAC), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
 				 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
@@ -1619,7 +1620,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    # Retro Achievements
    ifeq ($(HAVE_CHEEVOS), 1)
       DEFINES += -DHAVE_CHEEVOS
-		
+
 		OBJ += cheevos/cheevos.o \
 				 cheevos/badges.o \
 				 cheevos/var.o \

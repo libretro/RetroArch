@@ -271,6 +271,7 @@ enum retro_language
    RETRO_LANGUAGE_POLISH              = 14,
    RETRO_LANGUAGE_VIETNAMESE          = 15,
    RETRO_LANGUAGE_ARABIC              = 16,
+   RETRO_LANGUAGE_GREEK               = 17,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */
@@ -872,12 +873,12 @@ enum retro_mod
                                             * types already defined in the libretro API.
                                             *
                                             * The core must pass an array of const struct retro_controller_info which
-                                            * is terminated with a blanked out struct. Each element of the 
+                                            * is terminated with a blanked out struct. Each element of the
                                             * retro_controller_info struct corresponds to the ascending port index
                                             * that is passed to retro_set_controller_port_device() when that function
                                             * is called to indicate to the core that the frontend has changed the
                                             * active device subclass. SEE ALSO: retro_set_controller_port_device()
-                                            * 
+                                            *
                                             * The ascending input port indexes provided by the core in the struct
                                             * are generally presented by frontends as ascending User # or Player #,
                                             * such as Player 1, Player 2, Player 3, etc. Which device subclasses are
@@ -889,7 +890,7 @@ enum retro_mod
                                             * User or Player, beginning with the generic Libretro device that the
                                             * subclasses are derived from. The second inner element of each entry is the
                                             * total number of subclasses that are listed in the retro_controller_description.
-                                            * 
+                                            *
                                             * NOTE: Even if special device types are set in the libretro core,
                                             * libretro should only poll input based on the base input device types.
                                             */
