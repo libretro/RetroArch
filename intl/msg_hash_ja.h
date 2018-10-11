@@ -152,11 +152,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
-      "メニューの外観に関係する設定を変更する。"
+      "メニューの外観に関係する設定を変更します。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-      "ビデオやオーディオ、入力の遅延に関係する設定を変更します。"
+      "ビデオやオーディオ、入力の遅延に関係する設定を\n変更します。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
@@ -244,7 +244,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-      "設定ファイル"
+      "システム設定"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -1786,7 +1786,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_USER,
       "ユーザー")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-      "ユーザーインタフェース")
+      "ユーザーインターフェース")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
       "言語")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
@@ -2026,35 +2026,35 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
       "ステートセーブやチート、巻き戻し、早送り、一時停止、スローモーションをすべてのゲームで無効する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-      "システムのドライバを変更する。")
+      "システムのドライバを変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-      "実績に関係する設定を変更する。")
+      "実績に関係する設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-      "コアの設定を変更する。")
+      "コアの設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-      "録画の設定を変更する。")
+      "録画の設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-      "OSDオーバーレイ、キーボードオーバーレイ、OSDメッセージの設定を変更する。")
+      "OSDオーバーレイやキーボードオーバーレイ、\nOSDメッセージの設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-      "巻き戻しや早送り、スローモーションの設定を変更する。")
+      "巻き戻しや早送り、スローモーションの設定を\n変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-      "保存に関係する設定を変更する。")
+      "保存に関係する設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-      "ログの設定を変更する。")
+      "ログの設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-      "ユーザーインタフェースの設定を変更する。")
+      "ユーザーインターフェースの設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
-      "アカウントやユーザー名、言語を変更する。")
+      "アカウントやユーザー名、ユーザーインターフェースの\n言語を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
-      "プライバシー設定を変更する。")
+      "プライバシーの設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-      "このシステムの初期ディレクトリーを変更する。")
+      "システムの動作に関係するファイルが格納される\n初期ディレクトリを変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-      "プレイリストの設定を変更する。")
+      "プレイリストの設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-      "ネットワークの設定を変更する。")
+      "ネットワークの設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-      "コンテンツをスキャンしてデータベースに登録する。")
+      "コンテンツをスキャンしてデータベースに登録します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
       "オーディオ出力の設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
@@ -2062,21 +2062,21 @@ MSG_HASH(MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
       "終了時に設定を自動的に保存する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-      "コンフィグファイルのデフォルト設定を変更する。")
+      "システム設定ファイルのデフォルト設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-      "コンフィグファイルを管理と作成する。")
+      "システム設定ファイルの作成と管理を行います。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CPU_CORES,
       "CPUのコア数")
 MSG_HASH(MENU_ENUM_SUBLABEL_FPS_SHOW,
       "画面に現在のフレームレートを表示する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-      "ホットキー設定を変更する。")
+      "ホットキーの設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
       "同時押しでメニューに切り替え")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-      "ゲームパッド、キーボード、マウスの設定を変更する。")
+      "ゲームパッドやキーボード、マウスの設定を変更\nします。")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-      "このユーザーの入力設定を変更する。")
+      "このユーザーの入力設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
       "端末にログすることを有効と無効。")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
@@ -2084,9 +2084,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
       "ローカルネットワーク上のネットプレイホストをスキャンして接続する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-      "コア、ネットワーク、システムの詳細を表示する。\nデータベースとカーソルのマネジャーを表示する。")
+      "コアやネットワーク、システムの詳細および、\nデータベース、カーソルのマネージャーを\n表示します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-      "RetroArchにアドオン、コンポーネント、コンテンツをダウンロードする。")
+      "RetroArchにアドオンやコンポーネント、コンテンツを\nダウンロードします。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
       "フォルダのネットワーク共有を有効する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
@@ -2100,7 +2100,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
       "コアが出力するビューポートサイズを基準に\nウィンドウをスケールします。下の項目では、一定の\n幅と高さが適用される固定ウィンドウサイズを\n設定できます。")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_LANGUAGE,
-      "インタフェースの言語を変更する。")
+      "ユーザーインターフェースの言語を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
       "フレームの間に黒フレームを挿入する。60Hzコンテンツを120Hz画面でやることを役に立つ。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
@@ -2120,7 +2120,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
       "無線ネットワークを検索して接続する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
-      "RetroArchの使い方について学ぶ。")
+      "RetroArchの基本的な使い方についてのヘルプを表示\nします。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
       "チートの変更点を今すぐに適用する。")
 MSG_HASH(MSG_ADDED_TO_FAVORITES,
@@ -2745,7 +2745,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
       "デバイス特定の仕様")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-      "アプリを終了する。")
+      "RetroArchを終了します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
       "アスペクト比が「コンフィグ」に設定されている場合に\n使用されるアスペクト比の浮動小数点値（幅/高さ）\nです。")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -3126,7 +3126,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
       "サムネイルファイルの保存フォルダ"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-      "設定ファイルブラウザーの初期ディレクトリを指定する。")
+      "システム設定ファイルブラウザの初期ディレクトリを指定します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
       "The number of frames of input latency for netplay to use to hide network latency. This reduces jitter and makes netplay less CPU-intensive, at the expense of noticeable input lag.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -3356,9 +3356,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
       "「情報」オプションを表示/非表示にする。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-      "「設定ファイル」を表示")
+      "「システム設定」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-      "「設定ファイル」オプションを表示/非表示にする。")
+      "「システム設定」オプションを表示/非表示にする。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
       "「ヘルプ」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
