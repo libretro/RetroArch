@@ -31,6 +31,7 @@
 #include "../../driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 
 #include "wiiu/wiiu_dbg.h"
 
@@ -971,10 +972,10 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    if (settings->bools.video_shader_enable)
    {
-      const char* ext = path_get_extension(settings->paths.path_shader);
+      const char* ext = path_get_extension(retroarch_get_shader_preset());
 
       if (ext && string_is_equal(ext, "slangp"))
-         d3d12_gfx_set_shader(d3d12, RARCH_SHADER_SLANG, settings->paths.path_shader);
+         d3d12_gfx_set_shader(d3d12, RARCH_SHADER_SLANG, retroarch_get_shader_preset());
    }
 
    return d3d12;
