@@ -177,7 +177,7 @@ MSG_HASH(
       "对不起，未实现：核心未请求内容，无法加入联机游戏。"
       )
 MSG_HASH(
-MSG_FAILED_TO_SET_DISK,
+      MSG_FAILED_TO_SET_DISK,
       "设置磁盘失败")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
@@ -4564,10 +4564,6 @@ MSG_HASH(
 MSG_HASH(
     MSG_DEVICE_CONFIGURED_IN_PORT,
     "Configured in port:"
-    )
-MSG_HASH(
-    MSG_FAILED_TO_SET_DISK,
-    "Failed to set disk"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
