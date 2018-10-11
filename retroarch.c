@@ -2060,8 +2060,7 @@ char* retroarch_get_shader_preset(void)
       return runtime_shader_preset;
    else if (!string_is_empty(settings->paths.path_shader))
       return settings->paths.path_shader;
-   else
-      return NULL;
+   return NULL;
 }
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data)
