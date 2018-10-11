@@ -137,8 +137,6 @@ endif
    	WANT_IOSUHAX = 1
 
    	include Makefile.common
-   	BLACKLIST := $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
-   	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
    	OBJ += gfx/drivers/gx2_gfx.o
    	OBJ += gfx/drivers_font/wiiu_font.o

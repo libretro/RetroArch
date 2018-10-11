@@ -530,6 +530,9 @@ static void wiiu_log_init(int port)
 {
    wiiu_log_lock = 0;
 
+   if(wiiu_log_socket >= 0)
+      return;
+
    if(broadcast_init(port) < 0)
       return;
 
