@@ -322,15 +322,14 @@ void cheat_manager_load_cb_second_pass(char *key, char *value)
    char cheat_num_str[20];
    unsigned cheat_num;
    unsigned cheat_idx;
-   int idx = 0;
-   int key_length;
+   int idx           = 5;
+   size_t key_length = 0;
    errno = 0;
 
    if (strncmp(key, "cheat", 5) != 0)
       return;
 
-   idx = 5;
-   key_length = strlen(key);
+   key_length = strlen((const char*)key);
 
    while (idx < key_length &&  key[idx] >= '0' && key[idx] <= '9' && idx < 24)
    {
