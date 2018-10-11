@@ -25,6 +25,7 @@
 #include "../../driver.h"
 #include "../../verbosity.h"
 #include "../configuration.h"
+#include "../../retroarch.h"
 #include "../video_driver.h"
 #include "../font_driver.h"
 #include "../common/win32_common.h"
@@ -954,10 +955,10 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    if (settings->bools.video_shader_enable)
    {
-      const char* ext = path_get_extension(settings->paths.path_shader);
+      const char* ext = path_get_extension(retroarch_get_shader_preset());
 
       if (ext && !strncmp(ext, "slang", 5))
-         d3d11_gfx_set_shader(d3d11, RARCH_SHADER_SLANG, settings->paths.path_shader);
+         d3d11_gfx_set_shader(d3d11, RARCH_SHADER_SLANG, retroarch_get_shader_preset());
    }
 
    if (video_driver_get_hw_context()->context_type == RETRO_HW_CONTEXT_DIRECT3D &&
