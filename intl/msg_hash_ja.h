@@ -244,7 +244,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-      "システム設定"
+      "全般設定ファイル"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -2062,9 +2062,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
       "終了時に設定を自動的に保存する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-      "システム設定ファイルのデフォルト設定を変更します。")
+      "全般設定ファイルのデフォルト設定を変更します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-      "システム設定ファイルの作成と管理を行います。")
+      "全般設定ファイルの作成と管理を行います。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CPU_CORES,
       "CPUのコア数")
 MSG_HASH(MENU_ENUM_SUBLABEL_FPS_SHOW,
@@ -3126,7 +3126,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
       "サムネイルファイルの保存フォルダ"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-      "システム設定ファイルブラウザの初期ディレクトリを指定します。")
+      "全般設定ファイルブラウザの初期ディレクトリを指定します。")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
       "The number of frames of input latency for netplay to use to hide network latency. This reduces jitter and makes netplay less CPU-intensive, at the expense of noticeable input lag.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -3356,9 +3356,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
       "「情報」オプションを表示/非表示にする。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-      "「システム設定」を表示")
+      "「全般設定ファイル」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-      "「システム設定」オプションを表示/非表示にする。")
+      "「全般設定ファイル」オプションを表示/非表示にする。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
       "「ヘルプ」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
@@ -3686,7 +3686,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
       "オーバーライド")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
-      "グローバル設定をオーバーライドするための設定です。")
+      "全般設定をオーバーライドするための設定です。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
       "オーディオストリームの再生を開始します。再生が\n終わると、現在のオーディオストリームはメモリから\n取り除かれます。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
