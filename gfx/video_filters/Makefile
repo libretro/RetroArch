@@ -4,7 +4,7 @@ use_neon    := 0
 release	    := release
 DYLIB	    := so
 PREFIX      := /usr
-INSTALLDIR  := $(PREFIX)/lib/retroarch/filters/video
+INSTALLDIR  := $(PREFIX)/share/libretro/filters/video
 
 ifeq ($(platform),)
 platform = unix
