@@ -70,7 +70,7 @@ else
 endif
 
 include Makefile.common
-BLACKLIST := $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
+BLACKLIST :=
 
 OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
