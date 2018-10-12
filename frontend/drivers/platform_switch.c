@@ -191,6 +191,7 @@ static void frontend_switch_deinit(void *data)
    (void)data;
 
 #ifdef HAVE_LIBNX
+   nifmExit();
 #if defined(SWITCH) && defined(NXLINK)
    socketExit();
 #endif
@@ -607,6 +608,7 @@ static void frontend_switch_init(void *data)
    (void)data;
 
 #ifdef HAVE_LIBNX
+   nifmInitialize();
 #ifndef HAVE_OPENGL
    /* Init Resolution before initDefault */
    gfxInitResolution(1280, 720);
