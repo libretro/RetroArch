@@ -134,7 +134,7 @@ void deinit_netplay_discovery(void)
 /* Todo: implement net_ifinfo and ntohs for consoles */
 bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, void *data)
 {
-#if defined(WIIU) || !defined(RARCH_CONSOLE)
+#ifdef HAVE_NETPLAYDISCOVERY
    char port_str[6];
    int ret;
    unsigned k = 0;
@@ -238,7 +238,7 @@ error:
 bool netplay_lan_ad_server(netplay_t *netplay)
 {
 /* Todo: implement net_ifinfo and ntohs for consoles */
-#if defined(WIIU) || !defined(RARCH_CONSOLE)
+#ifdef HAVE_NETPLAYDISCOVERY
    fd_set fds;
    int ret;
    struct timeval tmp_tv = {0};

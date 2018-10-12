@@ -98,6 +98,10 @@ endif
 CFLAGS += -I$(LIBRETRO_COMM_DIR)/include -I$(DEPS_DIR)
 
 # Switches
+#
+ifeq ($(HAVE_NETPLAYDISCOVERY), 1)
+   CFLAGS += -DHAVE_NETPLAYDISCOVERY
+endif
 
 ifeq ($(HAVE_NETLOGGER), 1)
 	CFLAGS += -DHAVE_LOGGER
