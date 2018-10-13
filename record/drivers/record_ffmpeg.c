@@ -944,6 +944,7 @@ static void *ffmpeg_new(const struct record_params *params)
 
    if (params->preset == RECORD_CONFIG_TYPE_RECORDING_CUSTOM || params->preset == RECORD_CONFIG_TYPE_STREAMING_CUSTOM)
    {
+      RARCH_LOG("config: %s %s\n", &handle->config, params->config);
       if (!ffmpeg_init_config(&handle->config, params->config))
          goto error;
    }

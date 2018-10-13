@@ -1341,6 +1341,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_LABEL_RECORD_CONFIG:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_record_configfile);
                break;
+            case MENU_LABEL_STREAM_CONFIG:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_stream_configfile);
+               break;
             case MENU_LABEL_NETPLAY:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_netplay);
                break;

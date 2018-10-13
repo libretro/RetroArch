@@ -2254,6 +2254,7 @@ enum msg_hash_enums
 /* Record settings */
 
 #define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U
+#define MENU_LABEL_STREAM_CONFIG                                               0x79774b86U
 
 /* Cheat options */
 
