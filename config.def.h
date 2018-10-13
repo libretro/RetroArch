@@ -811,4 +811,6 @@ static char buildbot_server_url[] = "";
 
 static char buildbot_assets_server_url[] = "http://buildbot.libretro.com/assets/";
 
+static char default_discord_app_id[] = "475456035851599874";
+
 #endif
