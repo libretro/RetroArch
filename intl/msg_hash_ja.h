@@ -1921,11 +1921,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
       "フルスクリーンの高さ")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-      "フルスクリーンモード時の幅を指定します。0を指定\nすると、デスクトップ解像度が反映されます。"
+      "フルスクリーンモード時の幅を指定します。0を指定\nすると、デスクトップ解像度が適用されます。\nウィンドウフルスクリーンモードを使用している場合、\n幅はデスクトップ解像度で固定されます。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-      "フルスクリーンモード時の高さを指定します。0を指定\nすると、デスクトップ解像度が反映されます。"
+      "フルスクリーンモード時の高さを指定します。0を指定\nすると、デスクトップ解像度が適用されます。\nウィンドウフルスクリーンモードを使用している場合、\n高さはデスクトップ解像度で固定されます。"
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
       "Wi-Fiのドライバ")
@@ -2794,7 +2794,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-      "ウィンドウフルスクリーンモードを使用します。有効に\nなっている場合、幅と高さはデスクトップ解像度で\n固定されます。"
+      "ウィンドウフルスクリーンモードを使用します。"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
