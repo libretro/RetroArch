@@ -3061,7 +3061,10 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
       const gfx_ctx_driver_t *ctx = video_context_driver_init(data, gfx_ctx_drivers[i], ident,
             api, major, minor, hw_render_ctx, &ctx_data);
       if (ctx)
+      {
          video_context_data = ctx_data;
+         return ctx;
+      }
    }
 
    for (i = 0; gfx_ctx_drivers[i]; i++)
