@@ -159,10 +159,12 @@ struct cheat_manager
    unsigned size;
    unsigned buf_size;
    unsigned total_memory_size ;
-   unsigned actual_memory_size ;
    uint8_t *curr_memory_buf ;
    uint8_t *prev_memory_buf ;
    uint8_t *matches ;
+   uint8_t **memory_buf_list ;
+   unsigned *memory_size_list ;
+   unsigned num_memory_buffers ;
    struct item_cheat working_cheat;
    unsigned match_idx ;
    unsigned match_action ;

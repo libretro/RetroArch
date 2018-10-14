@@ -1290,14 +1290,17 @@ struct retro_hw_render_context_negotiation_interface
  * dependence */
 #define RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT (1 << 6)
 
-#define RETRO_MEMDESC_CONST     (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
-#define RETRO_MEMDESC_BIGENDIAN (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
-#define RETRO_MEMDESC_ALIGN_2   (1 << 16)  /* All memory access in this area is aligned to their own size, or 2, whichever is smaller. */
-#define RETRO_MEMDESC_ALIGN_4   (2 << 16)
-#define RETRO_MEMDESC_ALIGN_8   (3 << 16)
-#define RETRO_MEMDESC_MINSIZE_2 (1 << 24)  /* All memory in this region is accessed at least 2 bytes at the time. */
-#define RETRO_MEMDESC_MINSIZE_4 (2 << 24)
-#define RETRO_MEMDESC_MINSIZE_8 (3 << 24)
+#define RETRO_MEMDESC_CONST      (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
+#define RETRO_MEMDESC_BIGENDIAN  (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
+#define RETRO_MEMDESC_SYSTEM_RAM (1 << 2)   /* The memory area is system RAM.  This is main RAM of the gaming system. */
+#define RETRO_MEMDESC_SAVE_RAM   (1 << 3)   /* The memory area is save RAM. This RAM is usually found on a game cartridge, backed up by a battery. */
+#define RETRO_MEMDESC_VIDEO_RAM  (1 << 4)   /* The memory area is video RAM (VRAM) */
+#define RETRO_MEMDESC_ALIGN_2    (1 << 16)  /* All memory access in this area is aligned to their own size, or 2, whichever is smaller. */
+#define RETRO_MEMDESC_ALIGN_4    (2 << 16)
+#define RETRO_MEMDESC_ALIGN_8    (3 << 16)
+#define RETRO_MEMDESC_MINSIZE_2  (1 << 24)  /* All memory in this region is accessed at least 2 bytes at the time. */
+#define RETRO_MEMDESC_MINSIZE_4  (2 << 24)
+#define RETRO_MEMDESC_MINSIZE_8  (3 << 24)
 struct retro_memory_descriptor
 {
    uint64_t flags;

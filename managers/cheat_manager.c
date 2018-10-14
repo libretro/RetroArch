@@ -544,14 +544,22 @@ void cheat_manager_free(void)
    if ( cheat_manager_state.matches )
       free(cheat_manager_state.matches);
 
+   if ( cheat_manager_state.memory_buf_list )
+      free(cheat_manager_state.memory_buf_list);
+
+   if ( cheat_manager_state.memory_size_list )
+      free(cheat_manager_state.memory_size_list);
+
    cheat_manager_state.cheats                    = NULL;
    cheat_manager_state.size                      = 0;
    cheat_manager_state.buf_size                  = 0;
    cheat_manager_state.prev_memory_buf           = NULL;
    cheat_manager_state.curr_memory_buf           = NULL;
+   cheat_manager_state.memory_buf_list           = NULL;
+   cheat_manager_state.memory_size_list          = NULL;
    cheat_manager_state.matches                   = NULL;
+   cheat_manager_state.num_memory_buffers        = 0;
    cheat_manager_state.total_memory_size         = 0;
-   cheat_manager_state.actual_memory_size        = 0;
    cheat_manager_state.memory_initialized        = false;
    cheat_manager_state.memory_search_initialized = false;
 
@@ -713,34 +721,105 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
    retro_ctx_memory_info_t meminfo;
    bool refresh                  = false;
    bool is_search_initialization = (setting != NULL);
+   rarch_system_info_t *system  = runloop_get_system_info();
+   int i ;
+   unsigned offset = 0;
 
-   meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
-   if (!core_get_memory(&meminfo))
+   cheat_manager_state.num_memory_buffers = 0 ;
+   cheat_manager_state.total_memory_size = 0 ;
+   cheat_manager_state.curr_memory_buf = NULL ;
+   if (cheat_manager_state.memory_buf_list != NULL)
    {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true);
-      return 0;
+      free(cheat_manager_state.memory_buf_list) ;
+      cheat_manager_state.memory_buf_list = NULL ;
+   }
+   if (cheat_manager_state.memory_size_list != NULL)
+   {
+      free(cheat_manager_state.memory_size_list) ;
+      cheat_manager_state.memory_size_list = NULL ;
    }
 
-   if ( meminfo.size == 0 )
-      return 0;
+   if (system && system->mmaps.num_descriptors > 0)
+   {
+      for (i = 0; i < system->mmaps.num_descriptors; i++)
+      {
+         if ((system->mmaps.descriptors[i].core.flags & RETRO_MEMDESC_SYSTEM_RAM) != 0 &&
+               system->mmaps.descriptors[i].core.ptr != NULL &&
+               system->mmaps.descriptors[i].core.len > 0)
+         {
+            cheat_manager_state.num_memory_buffers++ ;
 
-   cheat_manager_state.actual_memory_size = (unsigned)meminfo.size;
-   cheat_manager_state.curr_memory_buf    = meminfo.data;
-   cheat_manager_state.total_memory_size  = (unsigned)meminfo.size;
+            if (cheat_manager_state.memory_buf_list == NULL)
+               cheat_manager_state.memory_buf_list = calloc(1, sizeof(uint8_t *));
+            else
+               cheat_manager_state.memory_buf_list = realloc(cheat_manager_state.memory_buf_list, sizeof(uint8_t *)*cheat_manager_state.num_memory_buffers);
+
+            if (cheat_manager_state.memory_size_list == NULL)
+               cheat_manager_state.memory_size_list = calloc(1, sizeof(unsigned));
+            else
+               cheat_manager_state.memory_size_list = realloc(cheat_manager_state.memory_size_list, sizeof(unsigned)*cheat_manager_state.num_memory_buffers);
+
+            cheat_manager_state.memory_buf_list[cheat_manager_state.num_memory_buffers-1] = system->mmaps.descriptors[i].core.ptr ;
+            cheat_manager_state.memory_size_list[cheat_manager_state.num_memory_buffers-1] = system->mmaps.descriptors[i].core.len ;
+            cheat_manager_state.total_memory_size += system->mmaps.descriptors[i].core.len ;
+
+            if (cheat_manager_state.curr_memory_buf == NULL)
+               cheat_manager_state.curr_memory_buf = system->mmaps.descriptors[i].core.ptr;
+         }
+      }
+   }
+
+   if (cheat_manager_state.num_memory_buffers == 0)
+   {
+      meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
+      if (!core_get_memory(&meminfo))
+      {
+         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true);
+         return 0;
+      }
+
+      if (meminfo.size == 0)
+         return 0;
+
+      cheat_manager_state.memory_buf_list = calloc(1, sizeof(uint8_t *));
+      cheat_manager_state.memory_size_list = calloc(1, sizeof(unsigned));
+      cheat_manager_state.num_memory_buffers = 1 ;
+      cheat_manager_state.memory_buf_list[0] = meminfo.data ;
+      cheat_manager_state.memory_size_list[0] = (unsigned)meminfo.size ;
+      cheat_manager_state.total_memory_size  = (unsigned)meminfo.size;
+      cheat_manager_state.curr_memory_buf    = meminfo.data;
+
+   }
+
    cheat_manager_state.num_matches        = (cheat_manager_state.total_memory_size*8)/((int)pow(2,cheat_manager_state.search_bit_size));
+
    /* Ensure we're aligned on 4-byte boundary */
 #if 0
    if (meminfo.size % 4 > 0)
       cheat_manager_state.total_memory_size = cheat_manager_state.total_memory_size + (4 - (meminfo.size%4));
 #endif
+
    if (is_search_initialization)
    {
+      if (cheat_manager_state.prev_memory_buf != NULL)
+      {
+         free(cheat_manager_state.prev_memory_buf);
+         cheat_manager_state.prev_memory_buf  = NULL ;
+      }
+
       cheat_manager_state.prev_memory_buf = (uint8_t*) calloc(cheat_manager_state.total_memory_size, sizeof(uint8_t));
       if (!cheat_manager_state.prev_memory_buf)
       {
          runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true);
          return 0;
       }
+
+      if (cheat_manager_state.matches != NULL)
+      {
+         free(cheat_manager_state.matches);
+         cheat_manager_state.matches  = NULL ;
+      }
+
       cheat_manager_state.matches = (uint8_t*) calloc(cheat_manager_state.total_memory_size, sizeof(uint8_t));
       if (!cheat_manager_state.matches)
       {
@@ -751,7 +830,15 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
       }
 
       memset(cheat_manager_state.matches, 0xFF, cheat_manager_state.total_memory_size);
-      memcpy(cheat_manager_state.prev_memory_buf, cheat_manager_state.curr_memory_buf, cheat_manager_state.actual_memory_size);
+
+      offset = 0 ;
+
+      for ( i = 0 ; i < cheat_manager_state.num_memory_buffers ; i++)
+      {
+         memcpy(cheat_manager_state.prev_memory_buf+offset, cheat_manager_state.memory_buf_list[i], cheat_manager_state.memory_size_list[i]);
+         offset += cheat_manager_state.memory_size_list[i] ;
+      }
+
       cheat_manager_state.memory_search_initialized = true;
    }
 
@@ -769,6 +856,25 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
 #endif
 
    return 0;
+}
+
+static unsigned translate_address(unsigned address, unsigned char **curr)
+{
+   unsigned offset = 0 ;
+   unsigned i = 0 ;
+
+   for (i = 0 ; i < cheat_manager_state.num_memory_buffers ; i++ )
+   {
+      if ( (address >= offset) && (address < offset+cheat_manager_state.memory_size_list[i]) )
+      {
+         *curr = cheat_manager_state.memory_buf_list[i] ;
+         break ;
+      }
+      else
+         offset += cheat_manager_state.memory_size_list[i] ;
+   }
+
+   return offset ;
 }
 
 static void cheat_manager_setup_search_meta(unsigned int bitsize, unsigned int *bytes_per_item, unsigned int *mask, unsigned int *bits)
@@ -868,9 +974,11 @@ int cheat_manager_search(enum cheat_search_type search_type)
    unsigned int mask           = 0;
    unsigned int bytes_per_item = 1;
    unsigned int bits           = 8;
+   unsigned int offset         = 0;
+   unsigned int i              = 0;
    bool refresh                = false;
 
-   if (!cheat_manager_state.curr_memory_buf)
+   if (cheat_manager_state.num_memory_buffers == 0)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_NOT_INITIALIZED), 1, 180, true);
       return 0;
@@ -884,13 +992,15 @@ int cheat_manager_search(enum cheat_search_type search_type)
    {
       unsigned byte_part;
 
+      offset = translate_address(idx, &curr) ;
+
       switch (bytes_per_item)
       {
          case 2 :
          {
             curr_val = cheat_manager_state.big_endian ?
-                  (*(curr+idx)*256) + *(curr+idx+1) :
-                  *(curr+idx) + (*(curr+idx+1)*256);
+                  (*(curr+idx-offset)*256) + *(curr+idx+1-offset) :
+                  *(curr+idx-offset) + (*(curr+idx+1-offset)*256);
             prev_val = cheat_manager_state.big_endian ?
                   (*(prev+idx)*256) + *(prev+idx+1) :
                   *(prev+idx) + (*(prev+idx+1)*256);
@@ -899,8 +1009,8 @@ int cheat_manager_search(enum cheat_search_type search_type)
          case 4 :
          {
             curr_val = cheat_manager_state.big_endian ?
-                  (*(curr+idx)*256*256*256) + (*(curr+idx+1)*256*256) + (*(curr+idx+2)*256) + *(curr+idx+3) :
-                  *(curr+idx) + (*(curr+idx+1)*256) + (*(curr+idx+2)*256*256) + (*(curr+idx+3)*256*256*256);
+                  (*(curr+idx-offset)*256*256*256) + (*(curr+idx+1-offset)*256*256) + (*(curr+idx+2-offset)*256) + *(curr+idx+3-offset) :
+                  *(curr+idx-offset) + (*(curr+idx+1-offset)*256) + (*(curr+idx+2-offset)*256*256) + (*(curr+idx+3-offset)*256*256*256);
             prev_val = cheat_manager_state.big_endian ?
                   (*(prev+idx)*256*256*256) + (*(prev+idx+1)*256*256) + (*(prev+idx+2)*256) + *(prev+idx+3) :
                   *(prev+idx) + (*(prev+idx+1)*256) + (*(prev+idx+2)*256*256) + (*(prev+idx+3)*256*256*256);
@@ -909,7 +1019,7 @@ int cheat_manager_search(enum cheat_search_type search_type)
          case 1 :
          default :
          {
-            curr_val = *(curr+idx);
+            curr_val = *(curr-offset+idx);
             prev_val = *(prev+idx);
             break;
          }
@@ -973,7 +1083,13 @@ int cheat_manager_search(enum cheat_search_type search_type)
       }
    }
 
-   memcpy(cheat_manager_state.prev_memory_buf, cheat_manager_state.curr_memory_buf, cheat_manager_state.actual_memory_size);
+   offset = 0 ;
+
+   for ( i = 0 ; i < cheat_manager_state.num_memory_buffers ; i++)
+   {
+      memcpy(cheat_manager_state.prev_memory_buf+offset, cheat_manager_state.memory_buf_list[i], cheat_manager_state.memory_size_list[i]);
+      offset += cheat_manager_state.memory_size_list[i] ;
+   }
 
    snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_SEARCH_FOUND_MATCHES), cheat_manager_state.num_matches);
    msg[sizeof(msg) - 1] = 0;
@@ -1015,7 +1131,9 @@ int cheat_manager_add_matches(const char *path,
    unsigned int bits           = 8;
    unsigned int curr_val       = 0;
    unsigned int num_added      = 0;
-   unsigned char         *curr = cheat_manager_state.curr_memory_buf;
+   unsigned int offset         = 0;
+   unsigned int i              = 0;
+   unsigned char *curr         = cheat_manager_state.curr_memory_buf;
 
    if ( cheat_manager_state.num_matches + cheat_manager_state.size > 100 )
    {
@@ -1026,21 +1144,23 @@ int cheat_manager_add_matches(const char *path,
 
    for (idx = 0; idx < cheat_manager_state.total_memory_size; idx = idx + bytes_per_item)
    {
+      offset = translate_address(idx, &curr) ;
+
       switch ( bytes_per_item )
       {
          case 2 :
             curr_val = cheat_manager_state.big_endian ?
-                  (*(curr+idx)*256) + *(curr+idx+1) :
-                  *(curr+idx) + (*(curr+idx+1)*256);
+                  (*(curr+idx-offset)*256) + *(curr+idx+1-offset) :
+                  *(curr+idx-offset) + (*(curr+idx+1-offset)*256);
             break;
          case 4 :
             curr_val = cheat_manager_state.big_endian ?
-                  (*(curr+idx)*256*256*256) + (*(curr+idx+1)*256*256) + (*(curr+idx+2)*256) + *(curr+idx+3) :
-                  *(curr+idx) + (*(curr+idx+1)*256) + (*(curr+idx+2)*256*256) + (*(curr+idx+3)*256*256*256);
+                  (*(curr+idx-offset)*256*256*256) + (*(curr+idx+1-offset)*256*256) + (*(curr+idx+2-offset)*256) + *(curr+idx+3-offset) :
+                  *(curr+idx-offset) + (*(curr+idx+1-offset)*256) + (*(curr+idx+2-offset)*256*256) + (*(curr+idx+3-offset)*256*256*256);
             break;
          case 1 :
          default :
-            curr_val = *(curr+idx);
+            curr_val = *(curr-offset+idx);
             break;
       }
       for (byte_part = 0; byte_part < 8/bits; byte_part++)
@@ -1178,6 +1298,7 @@ void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_valu
 void cheat_manager_apply_retro_cheats(void)
 {
    unsigned i;
+   unsigned int offset;
    unsigned int mask           = 0;
    unsigned int bytes_per_item = 1;
    unsigned int bits           = 8;
@@ -1216,26 +1337,28 @@ void cheat_manager_apply_retro_cheats(void)
       curr = cheat_manager_state.curr_memory_buf;
       idx  = cheat_manager_state.cheats[i].address;
 
+      offset = translate_address(idx, &curr) ;
+
       switch (bytes_per_item)
       {
          case 2 :
          {
             curr_val = cheat_manager_state.big_endian ?
-                  (*(curr+idx)*256) + *(curr+idx+1) :
-                  *(curr+idx) + (*(curr+idx+1)*256);
+                  (*(curr+idx-offset)*256) + *(curr+idx+1-offset) :
+                  *(curr+idx-offset) + (*(curr+idx+1-offset)*256);
             break;
          }
          case 4 :
          {
             curr_val = cheat_manager_state.big_endian ?
-                  (*(curr+idx)*256*256*256) + (*(curr+idx+1)*256*256) + (*(curr+idx+2)*256) + *(curr+idx+3) :
-                  *(curr+idx) + (*(curr+idx+1)*256) + (*(curr+idx+2)*256*256) + (*(curr+idx+3)*256*256*256);
+                  (*(curr+idx-offset)*256*256*256) + (*(curr+idx+1-offset)*256*256) + (*(curr+idx+2-offset)*256) + *(curr+idx+3-offset) :
+                  *(curr+idx-offset) + (*(curr+idx+1-offset)*256) + (*(curr+idx+2-offset)*256*256) + (*(curr+idx+3-offset)*256*256*256);
             break;
          }
          case 1 :
          default :
          {
-            curr_val = *(curr+idx);
+            curr_val = *(curr+idx-offset);
             break;
          }
       }
@@ -1283,30 +1406,30 @@ void cheat_manager_apply_retro_cheats(void)
                case 2 :
                   if  (cheat_manager_state.cheats[i].big_endian)
                   {
-                     *(curr+idx)   = (value_to_set >> 8) & 0xFF;
-                     *(curr+idx+1) =  value_to_set & 0xFF;
+                     *(curr+idx-offset)   = (value_to_set >> 8) & 0xFF;
+                     *(curr+idx+1-offset) =  value_to_set & 0xFF;
                   }
                   else
                   {
-                     *(curr+idx)   =  value_to_set & 0xFF;
-                     *(curr+idx+1) = (value_to_set >> 8) & 0xFF;
+                     *(curr+idx-offset)   =  value_to_set & 0xFF;
+                     *(curr+idx+1-offset) = (value_to_set >> 8) & 0xFF;
 
                   }
                   break;
                case 4 :
                   if  (cheat_manager_state.cheats[i].big_endian)
                   {
-                     *(curr+idx)   = (value_to_set >> 24) & 0xFF;
-                     *(curr+idx+1) = (value_to_set >> 16) & 0xFF;
-                     *(curr+idx+2) = (value_to_set >> 8) & 0xFF;
-                     *(curr+idx+3) =  value_to_set & 0xFF;
+                     *(curr+idx-offset)   = (value_to_set >> 24) & 0xFF;
+                     *(curr+idx+1-offset) = (value_to_set >> 16) & 0xFF;
+                     *(curr+idx+2-offset) = (value_to_set >> 8) & 0xFF;
+                     *(curr+idx+3-offset) =  value_to_set & 0xFF;
                   }
                   else
                   {
-                     *(curr+idx)   =  value_to_set & 0xFF;
-                     *(curr+idx+1) = (value_to_set >> 8) & 0xFF;
-                     *(curr+idx+2) = (value_to_set >> 16) & 0xFF;
-                     *(curr+idx+3) = (value_to_set >> 24) & 0xFF;
+                     *(curr+idx-offset)   =  value_to_set & 0xFF;
+                     *(curr+idx+1-offset) = (value_to_set >> 8) & 0xFF;
+                     *(curr+idx+2-offset) = (value_to_set >> 16) & 0xFF;
+                     *(curr+idx+3-offset) = (value_to_set >> 24) & 0xFF;
 
                   }
                   break;
@@ -1314,7 +1437,7 @@ void cheat_manager_apply_retro_cheats(void)
                   if (bits < 8)
                   {
                      unsigned bitpos;
-                     unsigned char val = *(curr+idx);
+                     unsigned char val = *(curr+idx-offset);
 
                      for (bitpos = 0; bitpos < 8; bitpos++)
                      {
@@ -1327,13 +1450,13 @@ void cheat_manager_apply_retro_cheats(void)
                            val = val | (((value_to_set>>bitpos)&0x01)<<bitpos);
                         }
                      }
-                     *(curr+idx) = val;
+                     *(curr+idx-offset) = val;
                   }
                   else
-                     *(curr+idx)   =  value_to_set & 0xFF;
+                     *(curr+idx-offset)   =  value_to_set & 0xFF;
                   break;
                default :
-                  *(curr+idx)   =  value_to_set & 0xFF;
+                  *(curr+idx-offset)   =  value_to_set & 0xFF;
                   break;
             }
             value_to_set += cheat_manager_state.cheats[i].repeat_add_to_value;
@@ -1358,6 +1481,8 @@ void cheat_manager_apply_retro_cheats(void)
             }
 
             idx = idx%cheat_manager_state.total_memory_size;
+
+            offset = translate_address(idx, &curr) ;
          }
       }
    }
@@ -1373,6 +1498,8 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
    unsigned int bits           = 8;
    unsigned int curr_val       = 0;
    unsigned int prev_val       = 0;
+   unsigned int offset         = 0;
+   unsigned int i              = 0;
    unsigned char *curr         = cheat_manager_state.curr_memory_buf;
    unsigned char *prev         = cheat_manager_state.prev_memory_buf;
    unsigned int curr_match_idx = 0;
@@ -1380,7 +1507,7 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
    if (target_match_idx > cheat_manager_state.num_matches-1)
       return;
 
-   if (!curr)
+   if (cheat_manager_state.num_memory_buffers == 0)
       return;
 
    cheat_manager_setup_search_meta(cheat_manager_state.search_bit_size, &bytes_per_item, &mask, &bits);
@@ -1392,12 +1519,14 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
 
    for (idx = start_idx; idx < cheat_manager_state.total_memory_size; idx = idx + bytes_per_item)
    {
+      offset = translate_address(idx, &curr) ;
+
       switch (bytes_per_item )
       {
          case 2 :
             curr_val = cheat_manager_state.big_endian ?
-                  (*(curr+idx)*256) + *(curr+idx+1) :
-                  *(curr+idx) + (*(curr+idx+1)*256);
+                  (*(curr+idx-offset)*256) + *(curr+idx+1-offset) :
+                  *(curr+idx-offset) + (*(curr+idx+1-offset)*256);
             if (prev != NULL)
                prev_val = cheat_manager_state.big_endian ?
                      (*(prev+idx)*256) + *(prev+idx+1) :
@@ -1405,8 +1534,8 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
             break;
          case 4 :
             curr_val = cheat_manager_state.big_endian ?
-                  (*(curr+idx)*256*256*256) + (*(curr+idx+1)*256*256) + (*(curr+idx+2)*256) + *(curr+idx+3) :
-                  *(curr+idx) + (*(curr+idx+1)*256) + (*(curr+idx+2)*256*256) + (*(curr+idx+3)*256*256*256);
+                  (*(curr+idx-offset)*256*256*256) + (*(curr+idx+1-offset)*256*256) + (*(curr+idx+2-offset)*256) + *(curr+idx+3-offset) :
+                  *(curr+idx-offset) + (*(curr+idx+1-offset)*256) + (*(curr+idx+2-offset)*256*256) + (*(curr+idx+3-offset)*256*256*256);
             if (prev != NULL)
                prev_val = cheat_manager_state.big_endian ?
                      (*(prev+idx)*256*256*256) + (*(prev+idx+1)*256*256) + (*(prev+idx+2)*256) + *(prev+idx+3) :
@@ -1414,7 +1543,7 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
             break;
          case 1 :
          default :
-            curr_val = *(curr+idx);
+            curr_val = *(curr+idx-offset);
             if (prev != NULL)
                prev_val = *(prev+idx);
             break;

@@ -4985,7 +4985,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, cheat_manager_state.actual_memory_size>0?cheat_manager_state.actual_memory_size-1:0, 1, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0, cheat_manager_state.total_memory_size>0?cheat_manager_state.total_memory_size-1:0, 1, true, true);
          (*list)[list_info->index - 1].action_left = &setting_uint_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_browse_address;
