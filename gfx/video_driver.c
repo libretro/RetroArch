@@ -3009,74 +3009,30 @@ static const gfx_ctx_driver_t *video_context_driver_init(
       const gfx_ctx_driver_t *ctx,
       const char *ident,
       enum gfx_ctx_api api, unsigned major,
-      unsigned minor, bool hw_render_ctx)
+      unsigned minor, bool hw_render_ctx,
+      void **ctx_data)
 {
-   if (ctx->bind_api(data, api, major, minor))
+   video_frame_info_t video_info;
+
+   if (!ctx->bind_api(data, api, major, minor))
    {
-      video_frame_info_t video_info;
-      void       *ctx_data = NULL;
+      RARCH_WARN("Failed to bind API (#%u, version %u.%u)"
+            " on context driver \"%s\".\n",
+            (unsigned)api, major, minor, ctx->ident);
 
-      video_driver_build_info(&video_info);
-
-      ctx_data = ctx->init(&video_info, data);
-
-      if (!ctx_data)
-         return NULL;
-
-      if (ctx->bind_hw_render)
-         ctx->bind_hw_render(ctx_data,
-               video_info.shared_context && hw_render_ctx);
-
-      video_context_data = ctx_data;
-
-      return ctx;
+      return NULL;
    }
 
-#ifndef _WIN32
-   RARCH_WARN("Failed to bind API (#%u, version %u.%u)"
-         " on context driver \"%s\".\n",
-         (unsigned)api, major, minor, ctx->ident);
-#endif
+   video_driver_build_info(&video_info);
 
-   return NULL;
-}
+   if (!(*ctx_data = ctx->init(&video_info, data)))
+      return NULL;
 
-/**
- * video_context_driver_find_driver:
- * @data                    : Input data.
- * @ident                   : Identifier of graphics context driver to find.
- * @api                     : API of higher-level graphics API.
- * @major                   : Major version number of higher-level graphics API.
- * @minor                   : Minor version number of higher-level graphics API.
- * @hw_render_ctx           : Request a graphics context driver capable of
- *                            hardware rendering?
- *
- * Finds graphics context driver and initializes.
- *
- * Returns: graphics context driver if found, otherwise NULL.
- **/
-static const gfx_ctx_driver_t *video_context_driver_find_driver(void *data,
-      const char *ident,
-      enum gfx_ctx_api api, unsigned major,
-      unsigned minor, bool hw_render_ctx)
-{
-   int i = find_video_context_driver_index(ident);
+   if (ctx->bind_hw_render)
+      ctx->bind_hw_render(*ctx_data,
+            video_info.shared_context && hw_render_ctx);
 
-   if (i >= 0)
-      return video_context_driver_init(data, gfx_ctx_drivers[i], ident,
-            api, major, minor, hw_render_ctx);
-
-   for (i = 0; gfx_ctx_drivers[i]; i++)
-   {
-      const gfx_ctx_driver_t *ctx =
-         video_context_driver_init(data, gfx_ctx_drivers[i], ident,
-            api, major, minor, hw_render_ctx);
-
-      if (ctx)
-         return ctx;
-   }
-
-   return NULL;
+   return ctx;
 }
 
 /**
@@ -3097,8 +3053,31 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx)
 {
-   return video_context_driver_find_driver(data, ident, api,
-         major, minor, hw_render_ctx);
+   void       *ctx_data = NULL;
+   int                i = find_video_context_driver_index(ident);
+
+   if (i >= 0)
+   {
+      const gfx_ctx_driver_t *ctx = video_context_driver_init(data, gfx_ctx_drivers[i], ident,
+            api, major, minor, hw_render_ctx, &ctx_data);
+      if (ctx)
+         video_context_data = ctx_data;
+   }
+
+   for (i = 0; gfx_ctx_drivers[i]; i++)
+   {
+      const gfx_ctx_driver_t *ctx =
+         video_context_driver_init(data, gfx_ctx_drivers[i], ident,
+            api, major, minor, hw_render_ctx, &ctx_data);
+
+      if (ctx)
+      {
+         video_context_data = ctx_data;
+         return ctx;
+      }
+   }
+
+   return NULL;
 }
 
 bool video_context_driver_check_window(gfx_ctx_size_t *size_data)
