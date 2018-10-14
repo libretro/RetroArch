@@ -5367,7 +5367,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY);
          if ( setting )
-            setting->max = cheat_manager_state.actual_memory_size>0?cheat_manager_state.actual_memory_size-1:0 ;
+            setting->max = cheat_manager_state.total_memory_size>0?cheat_manager_state.total_memory_size-1:0 ;
 
 
          menu_displaylist_parse_settings_enum(menu, info,
@@ -5571,7 +5571,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             setting->max = cheat_manager_state.num_matches-1;
          setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY);
          if (setting)
-            setting->max = cheat_manager_state.actual_memory_size>0?cheat_manager_state.actual_memory_size-1:0 ;
+            setting->max = cheat_manager_state.total_memory_size>0?cheat_manager_state.total_memory_size-1:0 ;
 
          info->need_refresh = true;
          info->need_push    = true;
