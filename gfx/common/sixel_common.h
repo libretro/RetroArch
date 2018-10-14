@@ -29,6 +29,7 @@ typedef struct sixel
    unsigned video_height;
    unsigned screen_width;
    unsigned screen_height;
+   void *ctx_data;
 } sixel_t;
 
 #endif

@@ -188,9 +188,10 @@ static void scroll_on_demand(int pixelheight)
 static void *sixel_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
+   gfx_ctx_input_t inp;
+   void *ctx_data                       = NULL;
    settings_t *settings                 = config_get_ptr();
    sixel_t *sixel                       = (sixel_t*)calloc(1, sizeof(*sixel));
-   gfx_ctx_input_t inp;
    const gfx_ctx_driver_t *ctx_driver   = NULL;
    const char *scale_str                = NULL;
 
@@ -218,10 +219,13 @@ static void *sixel_gfx_init(const video_info_t *video,
 
    ctx_driver = video_context_driver_init_first(sixel,
          settings->arrays.video_context_driver,
-         GFX_CTX_SIXEL_API, 1, 0, false);
+         GFX_CTX_SIXEL_API, 1, 0, false, &ctx_data);
 
    if (!ctx_driver)
       goto error;
+
+   if (ctx_data)
+      sixel->ctx_data = ctx_data;
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 

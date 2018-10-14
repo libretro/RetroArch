@@ -82,6 +82,7 @@ static void *gdi_gfx_init(const video_info_t *video,
    unsigned full_x, full_y;
    gfx_ctx_input_t inp;
    gfx_ctx_mode_t mode;
+   void *ctx_data                       = NULL;
    const gfx_ctx_driver_t *ctx_driver   = NULL;
    unsigned win_width = 0, win_height   = 0;
    unsigned temp_width = 0, temp_height = 0;
@@ -106,9 +107,12 @@ static void *gdi_gfx_init(const video_info_t *video,
 
    ctx_driver = video_context_driver_init_first(gdi,
          settings->arrays.video_context_driver,
-         GFX_CTX_GDI_API, 1, 0, false);
+         GFX_CTX_GDI_API, 1, 0, false, &ctx_data);
    if (!ctx_driver)
       goto error;
+
+   if (ctx_data)
+      gdi->ctx_data = ctx_data;
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 

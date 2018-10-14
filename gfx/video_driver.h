@@ -1140,8 +1140,10 @@ void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
  *
  * Returns: graphics context driver if found, otherwise NULL.
  **/
-const gfx_ctx_driver_t *video_context_driver_init_first(void *data, const char *ident,
-      enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx);
+const gfx_ctx_driver_t *video_context_driver_init_first(
+      void *data, const char *ident,
+      enum gfx_ctx_api api, unsigned major, unsigned minor,
+      bool hw_render_ctx, void **ctx_data);
 
 bool video_context_driver_check_window(gfx_ctx_size_t *size_data);
 

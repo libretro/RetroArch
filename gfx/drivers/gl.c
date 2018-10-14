@@ -1501,6 +1501,8 @@ static bool gl_init_pbo_readback(gl_t *gl)
 static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 {
    enum gfx_ctx_api api;
+   const gfx_ctx_driver_t *gfx_ctx      = NULL;
+   void                      *ctx_data  = NULL;
    const char                 *api_name = NULL;
    settings_t                 *settings = config_get_ptr();
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
@@ -1533,9 +1535,14 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
          && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
       gl_shared_context_use = true;
 
-   return video_context_driver_init_first(gl,
+   gfx_ctx = video_context_driver_init_first(gl,
          settings->arrays.video_context_driver,
-         api, major, minor, gl_shared_context_use);
+         api, major, minor, gl_shared_context_use, &ctx_data);
+
+   if (ctx_data)
+      gl->ctx_data = ctx_data;
+
+   return gfx_ctx;
 }
 
 #ifdef GL_DEBUG

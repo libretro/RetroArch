@@ -3051,18 +3051,17 @@ static const gfx_ctx_driver_t *video_context_driver_init(
  **/
 const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
-      unsigned minor, bool hw_render_ctx)
+      unsigned minor, bool hw_render_ctx, void **ctx_data)
 {
-   void       *ctx_data = NULL;
    int                i = find_video_context_driver_index(ident);
 
    if (i >= 0)
    {
       const gfx_ctx_driver_t *ctx = video_context_driver_init(data, gfx_ctx_drivers[i], ident,
-            api, major, minor, hw_render_ctx, &ctx_data);
+            api, major, minor, hw_render_ctx, ctx_data);
       if (ctx)
       {
-         video_context_data = ctx_data;
+         video_context_data = *ctx_data;
          return ctx;
       }
    }
@@ -3071,11 +3070,11 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
    {
       const gfx_ctx_driver_t *ctx =
          video_context_driver_init(data, gfx_ctx_drivers[i], ident,
-            api, major, minor, hw_render_ctx, &ctx_data);
+            api, major, minor, hw_render_ctx, ctx_data);
 
       if (ctx)
       {
-         video_context_data = ctx_data;
+         video_context_data = *ctx_data;
          return ctx;
       }
    }
