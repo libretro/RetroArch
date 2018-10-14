@@ -114,6 +114,7 @@ static void *gdi_gfx_init(const video_info_t *video,
    if (ctx_data)
       gdi->ctx_data = ctx_data;
 
+   gdi->ctx_driver = ctx_driver;
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
    RARCH_LOG("[GDI]: Found GDI context: %s\n", ctx_driver->ident);

@@ -1733,6 +1733,7 @@ static void *gl_init(const video_info_t *video,
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
+   gl->ctx_driver                       = ctx_driver;
    gl->video_info                       = *video;
 
    RARCH_LOG("[GL]: Found GL context: %s\n", ctx_driver->ident);

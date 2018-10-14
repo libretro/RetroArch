@@ -71,6 +71,8 @@ typedef struct
    VGuint mGlyphIndices[1024];
    VGPaint mPaintFg;
    VGPaint mPaintBg;
+   void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
 } vg_t;
 
 static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
@@ -115,6 +117,7 @@ static void *vg_init(const video_info_t *video,
    if (ctx_data)
       vg->ctx_data = ctx_data;
 
+   vg->ctx_driver = ctx;
    video_context_driver_set((void*)ctx);
 
    video_context_driver_get_video_size(&mode);

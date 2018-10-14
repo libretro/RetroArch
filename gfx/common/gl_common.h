@@ -318,6 +318,7 @@ struct gl
    const gl_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
    void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
 };
 
 static INLINE void gl_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,

@@ -333,6 +333,7 @@ typedef struct vk
    vulkan_context_t *context;
    video_info_t video;
    void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
 
    VkFormat tex_fmt;
    math_matrix_4x4 mvp, mvp_no_rot;

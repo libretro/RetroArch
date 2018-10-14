@@ -227,6 +227,7 @@ static void *sixel_gfx_init(const video_info_t *video,
    if (ctx_data)
       sixel->ctx_data = ctx_data;
 
+   sixel->ctx_driver = ctx_driver;
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
    RARCH_LOG("[SIXEL]: Found SIXEL context: %s\n", ctx_driver->ident);
