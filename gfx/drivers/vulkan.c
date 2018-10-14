@@ -1286,30 +1286,25 @@ static void vulkan_set_nonblock_state(void *data, bool state)
 
 static bool vulkan_alive(void *data)
 {
-   gfx_ctx_size_t size_data;
    unsigned temp_width  = 0;
    unsigned temp_height = 0;
    bool ret             = false;
    bool quit            = false;
    bool resize          = false;
    vk_t *vk             = (vk_t*)data;
+   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
 
    video_driver_get_size(&temp_width, &temp_height);
 
-   size_data.quit       = &quit;
-   size_data.resize     = &resize;
-   size_data.width      = &temp_width;
-   size_data.height     = &temp_height;
+   vk->ctx_driver->check_window(vk->ctx_data,
+            &quit, &resize, &temp_width, &temp_height, is_shutdown);
 
-   if (video_context_driver_check_window(&size_data))
-   {
-      if (quit)
-         vk->quitting      = true;
-      else if (resize)
-         vk->should_resize = true;
+   if (quit)
+      vk->quitting      = true;
+   else if (resize)
+      vk->should_resize = true;
 
-      ret = !vk->quitting;
-   }
+   ret = !vk->quitting;
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);

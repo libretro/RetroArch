@@ -441,18 +441,14 @@ static bool vg_frame(void *data, const void *frame,
 
 static bool vg_alive(void *data)
 {
-   gfx_ctx_size_t size_data;
    bool quit            = false;
    unsigned temp_width  = 0;
    unsigned temp_height = 0;
    vg_t            *vg  = (vg_t*)data;
+   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
 
-   size_data.quit       = &quit;
-   size_data.resize     = &vg->should_resize;
-   size_data.width      = &temp_width;
-   size_data.height     = &temp_height;
-
-   video_context_driver_check_window(&size_data);
+   vg->ctx_driver->check_window(vg->ctx_data,
+            &quit, &resize, &temp_width, &temp_height, is_shutdown);
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
