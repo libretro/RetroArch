@@ -460,12 +460,6 @@ static bool set_resize_null(void *a, unsigned b, unsigned c)
    return false;
 }
 
-void video_driver_set_resize(unsigned width, unsigned height)
-{
-   if (current_video_context.set_resize)
-      current_video_context.set_resize(video_context_data, width, height);
-}
-
 /**
  * video_driver_find_handle:
  * @idx                : index of driver to get handle to.

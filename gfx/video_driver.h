@@ -1126,8 +1126,6 @@ void video_driver_set_threaded(bool val);
 void video_driver_get_status(uint64_t *frame_count, bool * is_alive,
       bool *is_focused);
 
-void video_driver_set_resize(unsigned width, unsigned height);
-
 /**
  * video_context_driver_init_first:
  * @data                    : Input data.
