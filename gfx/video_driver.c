@@ -3273,15 +3273,6 @@ bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info)
    return true;
 }
 
-bool video_context_driver_get_context_data(void *data)
-{
-   if (!current_video_context.get_context_data)
-      return false;
-   *(void**)data = current_video_context.get_context_data(
-         video_context_data);
-   return true;
-}
-
 bool video_context_driver_show_mouse(bool *bool_data)
 {
    if (!current_video_context.show_mouse)
@@ -3384,15 +3375,13 @@ enum gfx_ctx_api video_context_driver_get_api(void)
 
 bool video_driver_has_windowed(void)
 {
-#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-   return false;
-#else
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
    if (video_driver_data && current_video->has_windowed)
       return current_video->has_windowed(video_driver_data);
    else if (video_context_data && current_video_context.has_windowed)
       return current_video_context.has_windowed(video_context_data);
-   return false;
 #endif
+   return false;
 }
 
 bool video_driver_cached_frame_has_valid_framebuffer(void)

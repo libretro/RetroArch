@@ -1136,24 +1136,23 @@ static void *vulkan_init(const video_info_t *video,
    vk_t *vk                           = (vk_t*)calloc(1, sizeof(*vk));
    if (!vk)
       return NULL;
-
-   vk->video = *video;
-
-   ctx_driver = vulkan_get_context(vk);
+   ctx_driver                         = vulkan_get_context(vk);
    if (!ctx_driver)
    {
       RARCH_ERR("[Vulkan]: Failed to get Vulkan context.\n");
       goto error;
    }
 
-   vk->ctx_driver = ctx_driver;
+   vk->video                          = *video;
+   vk->ctx_driver                     = ctx_driver;
+
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
    video_context_driver_get_video_size(&mode);
-   full_x = mode.width;
-   full_y = mode.height;
-   mode.width  = 0;
-   mode.height = 0;
+   full_x                             = mode.width;
+   full_y                             = mode.height;
+   mode.width                         = 0;
+   mode.height                        = 0;
 
    RARCH_LOG("[Vulkan]: Detecting screen resolution %ux%u.\n", full_x, full_y);
    interval = video->vsync ? video->swap_interval : 0;
@@ -1188,7 +1187,7 @@ static void *vulkan_init(const video_info_t *video,
 
    RARCH_LOG("[Vulkan]: Using resolution %ux%u\n", temp_width, temp_height);
 
-   video_context_driver_get_context_data(&vk->context);
+   *(void**)&vk->context = vk->ctx_driver->get_context_data(vk->ctx_data);
 
    vk->vsync             = video->vsync;
    vk->fullscreen        = video->fullscreen;
