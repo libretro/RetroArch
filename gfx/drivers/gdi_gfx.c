@@ -30,6 +30,7 @@
 
 #include "../../driver.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/gdi_common.h"
@@ -360,23 +361,21 @@ static void gdi_gfx_set_nonblock_state(void *data, bool toggle)
 
 static bool gdi_gfx_alive(void *data)
 {
-   gfx_ctx_size_t size_data;
    unsigned temp_width  = 0;
    unsigned temp_height = 0;
    bool quit            = false;
    bool resize          = false;
    bool ret             = false;
+   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
+   gdi_t *gdi           = (gdi_t*)data;
 
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
-   size_data.quit       = &quit;
-   size_data.resize     = &resize;
-   size_data.width      = &temp_width;
-   size_data.height     = &temp_height;
+   gdi->ctx_driver->check_window(gdi->ctx_data,
+            &quit, &resize, &temp_width, &temp_height, is_shutdown);
 
-   if (video_context_driver_check_window(&size_data))
-      ret = !quit;
+   ret = !quit;
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
@@ -406,7 +405,7 @@ static bool gdi_gfx_has_windowed(void *data)
 static void gdi_gfx_free(void *data)
 {
    gdi_t *gdi = (gdi_t*)data;
-   HWND hwnd = win32_get_window();
+   HWND hwnd  = win32_get_window();
 
    if (gdi_menu_frame)
    {

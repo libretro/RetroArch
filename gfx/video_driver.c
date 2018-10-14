@@ -3082,24 +3082,6 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
    return NULL;
 }
 
-bool video_context_driver_check_window(gfx_ctx_size_t *size_data)
-{
-   if (     video_context_data
-         && current_video_context.check_window)
-   {
-      bool is_shutdown = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
-      current_video_context.check_window(video_context_data,
-            size_data->quit,
-            size_data->resize,
-            size_data->width,
-            size_data->height,
-            is_shutdown);
-      return true;
-   }
-
-   return false;
-}
-
 bool video_context_driver_init_image_buffer(const video_info_t *data)
 {
    if (

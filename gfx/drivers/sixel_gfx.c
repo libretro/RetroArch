@@ -439,16 +439,14 @@ static bool sixel_gfx_alive(void *data)
    unsigned temp_height = 0;
    bool quit            = false;
    bool resize          = false;
+   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
+   sixel_t *sixel       = (sixel_t*)data;
 
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
-   size_data.quit       = &quit;
-   size_data.resize     = &resize;
-   size_data.width      = &temp_width;
-   size_data.height     = &temp_height;
-
-   video_context_driver_check_window(&size_data);
+   sixel->ctx_driver->check_window(sixel->ctx_data,
+            &quit, &resize, &temp_width, &temp_height, is_shutdown);
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
