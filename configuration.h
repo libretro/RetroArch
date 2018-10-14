@@ -134,6 +134,7 @@ typedef struct settings
       bool menu_show_start_screen;
       bool menu_pause_libretro;
       bool menu_timedate_enable;
+      bool menu_timedate_while_running;
       bool menu_battery_level_enable;
       bool menu_core_enable;
       bool menu_dynamic_wallpaper_enable;

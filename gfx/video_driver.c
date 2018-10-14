@@ -2464,7 +2464,7 @@ void video_driver_frame(const void *data, unsigned width,
          if (video_info.fps_show)
          {
             snprintf(video_info.fps_text, sizeof(video_info.fps_text),
-                  "||  FPS: %6.1f ", last_fps);
+                  "|| FPS: %6.1f ", last_fps);
             if (video_info.framecount_show)
             {
                snprintf(frames_text,
@@ -2566,6 +2566,14 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
    }
 
+   if (video_info.timedate_while_running)
+   {
+      time_t time_;
+      time(&time_);
+      strftime(video_info.timedate_text, sizeof(video_info.timedate_text),
+         "%H:%M:%S", localtime(&time_));
+   }
+
    if (video_info.statistics_show)
    {
       audio_statistics_t audio_stats         = {0.0f};
@@ -2634,6 +2642,11 @@ void video_driver_frame(const void *data, unsigned width,
    /* Display the FPS, with a higher priority. */
    if (video_info.fps_show)
       runloop_msg_queue_push(video_info.fps_text, 2, 1, true);
+
+
+   /* Display the FPS, with a lower priority. */
+   if (video_info.timedate_while_running)
+      runloop_msg_queue_push(video_info.timedate_text, 1, 1, false);
 
    /* trigger set resolution*/
    if (video_info.crt_switch_resolution)
@@ -2779,6 +2792,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->custom_vp_full_height = custom_vp->full_height;
 
    video_info->fps_text[0]           = '\0';
+   video_info->timedate_text[0] = '\0';
 
    video_info->width                 = video_driver_width;
    video_info->height                = video_driver_height;
@@ -2797,6 +2811,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->xmb_theme              = settings->uints.menu_xmb_theme;
    video_info->xmb_color_theme        = settings->uints.menu_xmb_color_theme;
    video_info->timedate_enable        = settings->bools.menu_timedate_enable;
+   video_info->timedate_while_running = settings->bools.menu_timedate_while_running;
    video_info->battery_level_enable   = settings->bools.menu_battery_level_enable;
    video_info->xmb_shadows_enable     = settings->bools.menu_xmb_shadows_enable;
    video_info->xmb_alpha_factor       = settings->uints.menu_xmb_alpha_factor;

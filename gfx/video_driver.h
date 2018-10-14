@@ -421,6 +421,7 @@ typedef struct video_frame_info
    bool xmb_shadows_enable;
    bool battery_level_enable;
    bool timedate_enable;
+   bool timedate_while_running;
    bool runloop_is_slowmotion;
    bool runloop_is_idle;
    bool runloop_is_paused;
@@ -462,6 +463,7 @@ typedef struct video_frame_info
    float xmb_alpha_factor;
 
    char fps_text[128];
+   char timedate_text[128];
    char stat_text[512];
    char chat_text[256];
 
