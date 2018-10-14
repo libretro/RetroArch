@@ -118,10 +118,11 @@ static const GLfloat white_color[] = {
 
 static bool gl_shared_context_use = false;
 
-void context_bind_hw_render(bool enable)
+void context_bind_hw_render(void *data, bool enable)
 {
+   gl_t *gl = (gl_t*)data;
    if (gl_shared_context_use)
-      video_context_driver_bind_hw_render(&enable);
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, enable);
 }
 
 
@@ -678,7 +679,7 @@ static void gl_set_texture_frame(void *data,
    if (!gl)
       return;
 
-   context_bind_hw_render(false);
+   context_bind_hw_render(gl, false);
 
    menu_filter = settings->bools.menu_linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
 
@@ -695,7 +696,7 @@ static void gl_set_texture_frame(void *data,
    gl->menu_texture_alpha = alpha;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-   context_bind_hw_render(true);
+   context_bind_hw_render(gl, true);
 }
 
 static void gl_set_texture_enable(void *data, bool state, bool full_screen)
@@ -958,7 +959,7 @@ static bool gl_frame(void *data, const void *frame,
     return false;
 #endif
 
-   context_bind_hw_render(false);
+   context_bind_hw_render(gl, false);
 
    if (gl->core_context_in_use && gl->renderchain_driver->bind_vao)
       gl->renderchain_driver->bind_vao(gl, gl->renderchain_data);
@@ -1226,7 +1227,7 @@ static bool gl_frame(void *data, const void *frame,
       gl->renderchain_driver->unbind_vao(gl,
             gl->renderchain_data);
 
-   context_bind_hw_render(true);
+   context_bind_hw_render(gl, true);
 
    return true;
 }
@@ -1266,7 +1267,7 @@ static void gl_free(void *data)
    if (!gl)
       return;
 
-   context_bind_hw_render(false);
+   context_bind_hw_render(gl, false);
 
    if (gl->have_sync)
    {
@@ -1332,13 +1333,13 @@ static void gl_set_nonblock_state(void *data, bool state)
 
    RARCH_LOG("[GL]: VSync => %s\n", state ? "off" : "on");
 
-   context_bind_hw_render(false);
+   context_bind_hw_render(gl, false);
 
    if (!state)
       interval = settings->uints.video_swap_interval;
 
    video_context_driver_swap_interval(&interval);
-   context_bind_hw_render(true);
+   context_bind_hw_render(gl, true);
 }
 
 static bool resolve_extensions(gl_t *gl, const char *context_ident, const video_info_t *video)
@@ -1870,9 +1871,9 @@ static void *gl_init(const video_info_t *video,
        * create textures. */
       gl->textures = 1;
 #ifdef GL_DEBUG
-      context_bind_hw_render(true);
+      context_bind_hw_render(gl, true);
       gl_begin_debug(gl);
-      context_bind_hw_render(false);
+      context_bind_hw_render(gl, false);
 #endif
    }
 
@@ -2008,7 +2009,7 @@ static void *gl_init(const video_info_t *video,
       goto error;
    }
 
-   context_bind_hw_render(true);
+   context_bind_hw_render(gl, true);
    return gl;
 
 error:
@@ -2065,7 +2066,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    wrap_info.idx                     = 0;
    wrap_info.type                    = RARCH_WRAP_BORDER;
 
-   context_bind_hw_render(false);
+   context_bind_hw_render(gl, false);
 
    shader_filter.index               = 1;
    shader_filter.smooth              = &smooth;
@@ -2102,7 +2103,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   context_bind_hw_render(true);
+   context_bind_hw_render(gl, true);
 }
 
 static bool gl_set_shader(void *data,
@@ -2117,7 +2118,7 @@ static bool gl_set_shader(void *data,
    if (!gl)
       return false;
 
-   context_bind_hw_render(false);
+   context_bind_hw_render(gl, false);
 
    if (type == RARCH_SHADER_NONE)
       return false;
@@ -2200,13 +2201,13 @@ static bool gl_set_shader(void *data,
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl_set_shader_viewports(gl);
-   context_bind_hw_render(true);
+   context_bind_hw_render(gl, true);
 #endif
 
    return true;
 
 error:
-   context_bind_hw_render(true);
+   context_bind_hw_render(gl, true);
    return false;
 }
 
@@ -2304,7 +2305,7 @@ static bool gl_overlay_load(void *data,
    if (!gl)
       return false;
 
-   context_bind_hw_render(false);
+   context_bind_hw_render(gl, false);
 
    gl_free_overlay(gl);
    gl->overlay_tex = (GLuint*)
@@ -2312,7 +2313,7 @@ static bool gl_overlay_load(void *data,
 
    if (!gl->overlay_tex)
    {
-      context_bind_hw_render(true);
+      context_bind_hw_render(gl, true);
       return false;
    }
 
@@ -2350,7 +2351,7 @@ static bool gl_overlay_load(void *data,
          gl->overlay_color_coord[16 * i + j] = 1.0f;
    }
 
-   context_bind_hw_render(true);
+   context_bind_hw_render(gl, true);
    return true;
 }
 

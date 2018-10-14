@@ -164,7 +164,7 @@ static void gl2_renderchain_bind_backbuffer(void *data,
 #endif
 }
 
-void context_bind_hw_render(bool enable);
+void context_bind_hw_render(void *data, bool enable);
 
 void gl_load_texture_data(
       uint32_t id_data,
@@ -532,7 +532,7 @@ static void gl2_renderchain_deinit_hw_render(
    if (!gl)
       return;
 
-   context_bind_hw_render(true);
+   context_bind_hw_render(gl, true);
 
    if (gl->hw_render_fbo_init)
       gl2_delete_fb(gl->textures, gl->hw_render_fbo);
@@ -540,7 +540,7 @@ static void gl2_renderchain_deinit_hw_render(
       gl2_delete_rb(gl->textures, chain->hw_render_depth);
    gl->hw_render_fbo_init = false;
 
-   context_bind_hw_render(false);
+   context_bind_hw_render(gl, false);
 }
 
 static void gl2_renderchain_free(gl_t *gl, void *chain_data)
@@ -956,7 +956,7 @@ static bool gl2_renderchain_init_hw_render(
 
    /* We can only share texture objects through contexts.
     * FBOs are "abstract" objects and are not shared. */
-   context_bind_hw_render(true);
+   context_bind_hw_render(gl, true);
 
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
@@ -1037,7 +1037,7 @@ static bool gl2_renderchain_init_hw_render(
    gl2_renderchain_bind_backbuffer(gl, chain_data);
    gl->hw_render_fbo_init = true;
 
-   context_bind_hw_render(false);
+   context_bind_hw_render(gl, false);
    return true;
 }
 
@@ -1076,7 +1076,7 @@ static bool gl2_renderchain_read_viewport(
    if (!gl)
       return false;
 
-   context_bind_hw_render(false);
+   context_bind_hw_render(gl, false);
 
    num_pixels = gl->vp.width * gl->vp.height;
 
@@ -1160,11 +1160,11 @@ static bool gl2_renderchain_read_viewport(
       gl->readback_buffer_screenshot = NULL;
    }
 
-   context_bind_hw_render(true);
+   context_bind_hw_render(gl, true);
    return true;
 
 error:
-   context_bind_hw_render(true);
+   context_bind_hw_render(gl, true);
 
    return false;
 }

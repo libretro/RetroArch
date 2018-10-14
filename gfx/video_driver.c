@@ -3119,14 +3119,6 @@ bool video_context_driver_get_video_output_next(void)
    return true;
 }
 
-bool video_context_driver_bind_hw_render(bool *enable)
-{
-   if (!current_video_context.bind_hw_render)
-      return false;
-   current_video_context.bind_hw_render(video_context_data, *enable);
-   return true;
-}
-
 void video_context_driver_make_current(bool release)
 {
    if (current_video_context.make_current)
