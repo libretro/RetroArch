@@ -69,7 +69,7 @@ typedef struct
 
 static uint16_t *rgui_framebuf_data      = NULL;
 
-#if defined(GEKKO)|| defined(PSP) || defined(PS2)
+#if defined(GEKKO)|| defined(PSP)
 #define HOVER_COLOR(settings)    ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
 #define NORMAL_COLOR(settings)   0x7FFF
 #define TITLE_COLOR(settings)    HOVER_COLOR(settings)
