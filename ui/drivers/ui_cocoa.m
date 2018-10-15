@@ -418,16 +418,29 @@ static char** waiting_argv;
     {
        int ret;
        unsigned sleep_ms = 0;
+#ifdef HAVE_QT
+       const ui_application_t *application = ui_application_qt.process_events();
+#else
        const ui_application_t *application = ui_companion_driver_get_application_ptr();
+#endif
        if (application)
           application->process_events();
+
        ret = runloop_iterate(&sleep_ms);
+
        if (ret == 1 && sleep_ms > 0)
           retro_sleep(sleep_ms);
+
        task_queue_check();
+
        while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
        if (ret == -1)
+       {
+#ifdef HAVE_QT
+          ui_application_qt.quit();
+#endif
           break;
+       }
     }while(1);
 
     main_exit(NULL);
