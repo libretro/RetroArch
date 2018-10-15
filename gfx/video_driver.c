@@ -2824,6 +2824,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->input_driver_nonblock_state = input_driver_is_nonblock_state();
 
    video_info->context_data           = video_context_data;
+   video_info->shader_driver          = current_shader;
    video_info->shader_data            = current_shader_data;
 
    video_info->cb_update_window_title = current_video_context.update_window_title;
@@ -2831,7 +2832,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->cb_get_metrics         = current_video_context.get_metrics;
    video_info->cb_set_resize          = current_video_context.set_resize;
 
-   video_info->cb_shader_use          = video_driver_cb_shader_use;
    video_info->cb_set_mvp             = video_driver_cb_shader_set_mvp;
 
    video_info->userdata               = video_driver_get_ptr(false);

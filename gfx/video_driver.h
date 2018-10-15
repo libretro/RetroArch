@@ -493,13 +493,13 @@ typedef struct video_frame_info
       float *value);
    bool (*cb_set_resize)(void*, unsigned, unsigned);
 
-   void (*cb_shader_use)(void *data, void *shader_data, unsigned index, bool set_active);
    bool (*cb_set_mvp)(void *data, void *shader_data,
          const void *mat_data);
 
    void *context_data;
    void *shader_data;
    void *userdata;
+   const shader_backend_t *shader_driver;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*, void*);

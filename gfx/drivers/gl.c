@@ -214,8 +214,9 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
       glViewport(0, 0, width, height);
 
    /* Ensure that we reset the attrib array. */
-   video_info->cb_shader_use(gl,
-         video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   if (video_info->shader_driver && video_info->shader_driver->use)
+      video_info->shader_driver->use(gl,
+            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
@@ -584,19 +585,17 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 static INLINE void gl_set_shader_viewports(gl_t *gl)
 {
    unsigned i, width, height;
-   video_shader_ctx_info_t shader_info;
    video_frame_info_t video_info;
 
    video_driver_build_info(&video_info);
    video_driver_get_size(&width, &height);
 
-   shader_info.data       = gl;
-   shader_info.set_active = true;
-
    for (i = 0; i < 2; i++)
    {
-      shader_info.idx        = i;
-      video_shader_driver_use(&shader_info);
+      if (video_info.shader_driver && video_info.shader_driver->use)
+         video_info.shader_driver->use(gl,
+               video_info.shader_data, i, true);
+
       gl_set_viewport(gl, &video_info,
             width, height, false, true);
    }
@@ -781,8 +780,9 @@ static void gl_render_osd_background(
    video_driver_set_viewport(video_info->width,
          video_info->height, true, false);
 
-   video_info->cb_shader_use(gl,
-         video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   if (video_info->shader_driver && video_info->shader_driver->use)
+      video_info->shader_driver->use(gl,
+            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    video_driver_set_coords(&coords_data);
 
@@ -881,8 +881,9 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   video_info->cb_shader_use(gl,
-         video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   if (video_info->shader_driver && video_info->shader_driver->use)
+      video_info->shader_driver->use(gl,
+            video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertices    = 4;
 
@@ -967,7 +968,9 @@ static bool gl_frame(void *data, const void *frame,
    if (gl->core_context_in_use && gl->renderchain_driver->bind_vao)
       gl->renderchain_driver->bind_vao(gl, gl->renderchain_data);
 
-   video_info->cb_shader_use(gl, video_info->shader_data, 1, true);
+   if (video_info->shader_driver && video_info->shader_driver->use)
+      video_info->shader_driver->use(gl,
+            video_info->shader_data, 1, true);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -1168,7 +1171,9 @@ static bool gl_frame(void *data, const void *frame,
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      video_info->cb_shader_use(gl, video_info->shader_data, 0, true);
+      if (video_info->shader_driver && video_info->shader_driver->use)
+         video_info->shader_driver->use(gl,
+               video_info->shader_data, 0, true);
 
       glBindTexture(GL_TEXTURE_2D, 0);
       if (gl->renderchain_driver->disable_client_arrays)
