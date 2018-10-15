@@ -419,7 +419,7 @@ static char** waiting_argv;
        int ret;
        unsigned sleep_ms = 0;
 #ifdef HAVE_QT
-       const ui_application_t *application = ui_application_qt.process_events();
+       const ui_application_t *application = &ui_application_qt;
 #else
        const ui_application_t *application = ui_companion_driver_get_application_ptr();
 #endif
