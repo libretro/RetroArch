@@ -35,9 +35,6 @@ typedef struct ps2_video
 {
    GSGLOBAL *gsGlobal;
    GSTEXTURE *backgroundTexture;
-
-   int counter;
-
 } ps2_video_t;
 
 // PRIVATE METHODS
@@ -88,7 +85,6 @@ static void deinitTexturePTR(void *texture_ptr) {
 static void deinitTexture(GSTEXTURE *texture) {
    deinitTexturePTR(texture->Mem);
    deinitTexturePTR(texture->Clut);
-//    deinitTexturePTR(texture->Vram);
 }
 
 
@@ -100,7 +96,6 @@ static void *ps2_gfx_init(const video_info_t *video,
    (void)video;
 
    ps2_video_t *ps2 = (ps2_video_t*)calloc(1, sizeof(ps2_video_t));
-   ps2->counter = 0;
 
    initGSGlobal(ps2);
    initBackgroundTexture(ps2);
@@ -165,6 +160,7 @@ static void ps2_gfx_free(void *data)
    ps2_video_t *ps2 = (ps2_video_t*)data;
 
    deinitTexture(ps2->backgroundTexture);
+   gsKit_vram_clear(ps2->gsGlobal);
    gsKit_deinit_global(ps2->gsGlobal);
 
    free(data);
@@ -222,9 +218,6 @@ static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
 {
    ps2_video_t *ps2 = (ps2_video_t*)data;
 
-   (void) rgb32;
-   (void) alpha;
-
 #ifdef DEBUG
    /* ps2->backgroundTexture.Mem buffer size is (640 * 448)*2 Bytes */
    retro_assert((width*height) < (480 * 448));
@@ -242,11 +235,7 @@ static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
       ps2->backgroundTexture->Mem = memalign(128, gskitTextureSize(ps2->backgroundTexture));
    }
 
-
    memcpy(ps2->backgroundTexture->Mem, frame, width * height * (rgb32 ? 4 : 2));      
-   
-   printf("Counter %i\n", ps2->counter);
-   ps2->counter++;
    
    gsKit_vram_clear(ps2->gsGlobal);
    ps2->backgroundTexture->Vram=gsKit_vram_alloc(ps2->gsGlobal, textureSize(ps2->backgroundTexture) , GSKIT_ALLOC_USERBUFFER);
@@ -257,9 +246,6 @@ static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
 
    // Upload texture
    gsKit_texture_upload(ps2->gsGlobal, ps2->backgroundTexture);
-
-   printf("Texure 2 VRAM Range = 0x%X - 0x%X\n",ps2->backgroundTexture->Vram, ps2->backgroundTexture->Vram +gsKit_texture_size(ps2->backgroundTexture->Width, ps2->backgroundTexture->Height, ps2->backgroundTexture->PSM) - 1);
-
    gsKit_prim_sprite_texture( ps2->gsGlobal, ps2->backgroundTexture,
                               0.0f,
                               0.0f,  // Y1
