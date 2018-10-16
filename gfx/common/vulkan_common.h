@@ -501,6 +501,7 @@ static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
          return 4;
 
       case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
+      case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
       case VK_FORMAT_R5G6B5_UNORM_PACK16:
          return 2;
 

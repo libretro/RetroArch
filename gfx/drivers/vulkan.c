@@ -1779,6 +1779,30 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_filter_chain_build_offscreen_passes(
          (vulkan_filter_chain_t*)vk->filter_chain,
          vk->cmd, &vk->vk_vp);
+
+#if defined(HAVE_MENU)
+   /* Upload menu texture. */
+   if (vk->menu.enable)
+   {
+       if (vk->menu.textures[vk->menu.last_index].image != VK_NULL_HANDLE ||
+           vk->menu.textures[vk->menu.last_index].buffer != VK_NULL_HANDLE)
+       {
+           struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
+           struct vk_texture *texture = &vk->menu.textures[vk->menu.last_index];
+
+           if (optimal->memory != VK_NULL_HANDLE)
+           {
+               if (vk->menu.dirty[vk->menu.last_index])
+               {
+                   vulkan_copy_staging_to_dynamic(vk, vk->cmd,
+                           optimal, texture);
+                   vk->menu.dirty[vk->menu.last_index] = false;
+               }
+           }
+       }
+   }
+#endif
+
    /* Render to backbuffer. */
    if (chain->backbuffer.image != VK_NULL_HANDLE && vk->context->has_acquired_swapchain)
    {
@@ -1813,7 +1837,8 @@ static bool vulkan_frame(void *data, const void *frame,
       {
          menu_driver_frame(video_info);
 
-         if (vk->menu.textures[vk->menu.last_index].image != VK_NULL_HANDLE)
+         if (vk->menu.textures[vk->menu.last_index].image != VK_NULL_HANDLE ||
+             vk->menu.textures[vk->menu.last_index].buffer != VK_NULL_HANDLE)
          {
             struct vk_draw_quad quad;
             struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
@@ -1823,16 +1848,7 @@ static bool vulkan_frame(void *data, const void *frame,
             quad.texture = &vk->menu.textures[vk->menu.last_index];
 
             if (optimal->memory != VK_NULL_HANDLE)
-            {
-               if (vk->menu.dirty[vk->menu.last_index])
-               {
-                  vulkan_copy_staging_to_dynamic(vk, vk->cmd,
-                        optimal,
-                        quad.texture);
-                  vk->menu.dirty[vk->menu.last_index] = false;
-               }
                quad.texture = optimal;
-            }
 
             quad.sampler = optimal->mipmap ?
                vk->samplers.mipmap_linear : vk->samplers.linear;
@@ -2197,9 +2213,6 @@ static void vulkan_set_texture_frame(void *data,
    for (y = 0; y < height; y++, dst += texture->stride, src += stride)
       memcpy(dst, src, stride);
 
-   vulkan_sync_texture_to_gpu(vk, texture);
-   vkUnmapMemory(vk->context->device, texture->memory);
-
    vk->menu.alpha      = alpha;
    vk->menu.last_index = index;
 
@@ -2212,7 +2225,10 @@ static void vulkan_set_texture_frame(void *data,
             NULL, rgb32 ? NULL : &br_swizzle,
             VULKAN_TEXTURE_DYNAMIC);
    }
+   else
+       vulkan_sync_texture_to_gpu(vk, texture);
 
+   vkUnmapMemory(vk->context->device, texture->memory);
    vk->menu.dirty[index] = true;
 }
 
