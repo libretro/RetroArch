@@ -199,8 +199,9 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    HWND hwnd                 = win32_get_window();
    BITMAPINFO *info;
 
-   /* FIXME */
+   /* FIXME: Force these settings off as they interfere with the rendering */
    video_info->xmb_shadows_enable = false;
+   video_info->menu_shader_pipeline = 0;
 
    if (!frame || !frame_width || !frame_height)
       return true;
