@@ -2362,7 +2362,8 @@ static bool check_menu_driver_compatibility(void)
    char *menu_driver    = settings->arrays.menu_driver;
 
    if (string_is_equal  (menu_driver, "rgui") ||
-         string_is_equal(menu_driver, "null"))
+         string_is_equal(menu_driver, "null") ||
+         string_is_equal(video_driver, "null"))
       return true;
 
    /* TODO/FIXME - maintenance hazard */
