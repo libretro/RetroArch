@@ -192,10 +192,11 @@ void discord_update(enum discord_presence presence)
             room->gamename, room->gamecrc, room->corename);
          RARCH_LOG("%s\n", join_secret);
          discord_presence.joinSecret = strdup(join_secret);
-         discord_presence.spectateSecret = "SPECSPECSPEC";
-         discord_presence.partyId = party_id;
+         /* discord_presence.spectateSecret = "SPECSPECSPEC"; */
+         discord_presence.partyId = strdup(party_id);
          discord_presence.partyMax = 0;
          discord_presence.partySize = 0;
+         RARCH_LOG("[Discord] joining: \n Secret: %s\n Party: %s\n", discord_presence.joinSecret, discord_presence.partyId);
          break;
       case DISCORD_PRESENCE_NETPLAY_HOSTING_STOPPED:
       case DISCORD_PRESENCE_NETPLAY_CLIENT:
