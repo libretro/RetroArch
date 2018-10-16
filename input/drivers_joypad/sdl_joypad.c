@@ -39,7 +39,11 @@ typedef struct _sdl_joypad
    unsigned num_hats;
 #ifdef HAVE_SDL2
    unsigned num_balls;
+   
 #endif
+/* Deal with analog triggers that report -32767 to 32767 */
+bool neg_trigger[SDL_CONTROLLER_AXIS_MAX];
+/* END Deal with analog triggers that report -32767 to 32767 */
 } sdl_joypad_t;
 
 #ifdef HAVE_SDL2
@@ -88,6 +92,7 @@ static uint8_t sdl_pad_get_hat(sdl_joypad_t *pad, unsigned hat)
 
 static int16_t sdl_pad_get_axis(sdl_joypad_t *pad, unsigned axis)
 {
+
 #ifdef HAVE_SDL2
    /* TODO: see if a rarch <-> sdl translation is needed. */
    if (pad->controller)
@@ -98,6 +103,7 @@ static int16_t sdl_pad_get_axis(sdl_joypad_t *pad, unsigned axis)
 
 static void sdl_pad_connect(unsigned id)
 {
+   int i;
    sdl_joypad_t *pad          = (sdl_joypad_t*)&sdl_pads[id];
    bool success               = false;
    int32_t product            = 0;
@@ -175,7 +181,15 @@ static void sdl_pad_connect(unsigned id)
       pad->num_buttons = SDL_CONTROLLER_BUTTON_MAX;
       pad->num_hats    = 0;
       pad->num_balls   = 0;
-
+      /* Deal with analog triggers that report -32767 to 32767 */
+      for (i = 0; i < pad->num_axes; i++)
+      {
+        if (sdl_pad_get_axis(pad, AXIS_NEG_GET(i)) < -1300)
+        {
+          pad->neg_trigger[i] = true;
+        }
+      }
+      /* END Deal with analog triggers that report -32767 to 32767 */
       RARCH_LOG("[SDL]: Device #%u supports game controller api.\n", id);
    }
    else
@@ -184,7 +198,15 @@ static void sdl_pad_connect(unsigned id)
       pad->num_buttons = SDL_JoystickNumButtons(pad->joypad);
       pad->num_hats    = SDL_JoystickNumHats(pad->joypad);
       pad->num_balls   = SDL_JoystickNumBalls(pad->joypad);
-
+      /* Deal with analog triggers that report -32767 to 32767 */
+      for (i = 0; i < SDL_JoystickNumAxes(pad->joypad); i++)
+      {
+        if ((sdl_pad_get_axis(pad, AXIS_NEG_GET(i)) < -1300) || (sdl_pad_get_axis(pad, AXIS_POS_GET(i)) < -1300))
+        {
+          pad->neg_trigger[i] = true;
+        }
+      }
+      /* END Deal with analog triggers that report -32767 to 32767 */
       RARCH_LOG("[SDL]: Device #%u has: %u axes, %u buttons, %u hats and %u trackballs.\n",
                 id, pad->num_axes, pad->num_buttons, pad->num_hats, pad->num_balls);
    }
@@ -215,7 +237,15 @@ static void sdl_pad_connect(unsigned id)
    pad->num_axes    = SDL_JoystickNumAxes(pad->joypad);
    pad->num_buttons = SDL_JoystickNumButtons(pad->joypad);
    pad->num_hats    = SDL_JoystickNumHats(pad->joypad);
-
+   /* Deal with analog triggers that report -32767 to 32767 */
+   for (i = 0; i < pad->num_axes; i++)
+   {
+     if (SDL_JoystickGetAxis(pad, AXIS_NEG_GET(i)) < -1300)
+     {
+       pad->neg_trigger[i] = true;
+     }
+   }
+   /* END Deal with analog triggers that report -32767 to 32767 */
    RARCH_LOG("[SDL]: Device #%u has: %u axes, %u buttons, %u hats.\n",
              id, pad->num_axes, pad->num_buttons, pad->num_hats);
 #endif
@@ -362,7 +392,23 @@ static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
    if (AXIS_NEG_GET(joyaxis) < pad->num_axes)
    {
       val = sdl_pad_get_axis(pad, AXIS_NEG_GET(joyaxis));
-
+      /* Deal with analog triggers that report -32767 to 32767 */
+      #if HAVE_SDL2
+        if (((strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_NEG_GET(joyaxis)), "rightx") == 0) ||
+        (strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_NEG_GET(joyaxis)), "righttrigger") == 0)) &&
+        (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
+        {
+          val = (val + 0x7fff) / 2;
+        }
+      #else
+        if (((AXIS_NEG_GET(joyaxis) == 2) || (AXIS_NEG_GET(joyaxis) == 5)) &&
+        (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
+        {
+          val = (val + 0x7fff) / 2;
+        }
+      #endif
+      /* END Deal with analog triggers that report -32767 to 32767 */
+      
       if (val > 0)
          val = 0;
       else if (val < -0x7fff) /* -0x8000 can cause trouble if we later abs() it. */
@@ -371,7 +417,23 @@ static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
    else if (AXIS_POS_GET(joyaxis) < pad->num_axes)
    {
       val = sdl_pad_get_axis(pad, AXIS_POS_GET(joyaxis));
-
+      /* Deal with analog triggers that report -32767 to 32767 */
+      #if HAVE_SDL2
+        if (((strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_POS_GET(joyaxis)), "rightx") == 0) ||
+        (strcmp(SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)AXIS_POS_GET(joyaxis)), "righttrigger") == 0)) &&
+        (pad->neg_trigger[AXIS_POS_GET(joyaxis)]))
+        {
+          val = (val + 0x7fff) / 2;
+        }
+      #else
+        if (((AXIS_POS_GET(joyaxis) == 2) || (AXIS_POS_GET(joyaxis) == 5)) &&
+          (pad->neg_trigger[AXIS_POS_GET(joyaxis)]))
+        {
+          val = (val + 0x7fff) / 2;
+        }
+      #endif
+      /* END Deal with analog triggers that report -32767 to 32767 */
+      
       if (val < 0)
          val = 0;
    }
