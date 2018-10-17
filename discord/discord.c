@@ -66,12 +66,47 @@ static char cdn_url[] = "https://cdn.discordapp.com/avatars";
 
 DiscordRichPresence discord_presence;
 
+static bool discord_download_avatar(const char* user_id, const char* avatar_id)
+{
+   static char url[PATH_MAX_LENGTH];
+   static char url_encoded[PATH_MAX_LENGTH];
+   static char fullpath[PATH_MAX_LENGTH];
+
+   static char buf[PATH_MAX_LENGTH];
+
+   file_transfer_t *transf = NULL;
+
+   fill_pathname_application_special(buf,
+            sizeof(buf),
+            APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
+   fill_pathname_join(fullpath, buf, avatar_id, sizeof(fullpath));
+
+   if(filestream_exists(fullpath))
+      return true;
+   else
+   {
+      snprintf(url, sizeof(url), "%s/%s/%s.png", cdn_url, user_id, avatar_id);
+      net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
+      snprintf(buf, sizeof(buf), "%s.png", avatar_id);
+
+      transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
+      transf->enum_idx = MENU_ENUM_LABEL_CB_DISCORD_AVATAR;
+      strlcpy(transf->path, buf, sizeof(transf->path));
+
+      RARCH_LOG("[Discord] downloading avatar from: %s\n", url_encoded);
+      task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
+
+      return false;
+   }
+}
+
 static void handle_discord_ready(const DiscordUser* connectedUser)
 {
    RARCH_LOG("[Discord] connected to user: %s#%s - avatar id: %s\n",
       connectedUser->username,
       connectedUser->discriminator,
       connectedUser->userId);
+   discord_download_avatar(connectedUser->userId, connectedUser->avatar);
 }
 
 static void handle_discord_disconnected(int errcode, const char* message)
@@ -118,40 +153,6 @@ static void handle_discord_join_response(void *ignore, const char *line)
    menu_input_dialog_end();
    rarch_menu_running_finished();
 #endif
-}
-
-static bool discord_download_avatar(const char* user_id, const char* avatar_id)
-{
-   static char url[PATH_MAX_LENGTH];
-   static char url_encoded[PATH_MAX_LENGTH];
-   static char fullpath[PATH_MAX_LENGTH];
-
-   static char buf[PATH_MAX_LENGTH];
-
-   file_transfer_t *transf = NULL;
-
-   fill_pathname_application_special(buf,
-            sizeof(buf),
-            APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
-   fill_pathname_join(fullpath, buf, avatar_id, sizeof(fullpath));
-
-   if(filestream_exists(fullpath))
-      return true;
-   else
-   {
-      snprintf(url, sizeof(url), "%s/%s/%s.png", cdn_url, user_id, avatar_id);
-      net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
-      snprintf(buf, sizeof(buf), "%s.png", avatar_id);
-
-      transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
-      transf->enum_idx = MENU_ENUM_LABEL_CB_DISCORD_AVATAR;
-      strlcpy(transf->path, buf, sizeof(transf->path));
-
-      RARCH_LOG("[Discord] downloading avatar from: %s\n", url_encoded);
-      task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
-
-      return false;
-   }
 }
 
 static void handle_discord_join_request(const DiscordUser* request)
