@@ -35,6 +35,8 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
+#include "version.h"
+
 enum
 {
    P_HEADER_TOP = 0,
@@ -374,6 +376,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    bool error            = false;
    int fd                = -1;
    struct http_t *state  = NULL;
+   char user_agent[256];
 
    if (!conn)
       goto error;
@@ -455,7 +458,8 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       free(len_str);
    }
 
-   net_http_send_str(&conn->sock_state, &error, "User-Agent: libretro\r\n");
+   snprintf(user_agent, sizeof(user_agent), "User-Agent: RetroArch (www.retroarch.com, %s)\r\n", PACKAGE_VERSION);
+   net_http_send_str(&conn->sock_state, &error, "User-Agent: RetroArch (www.retroarch.com, 1.7.5)\r\n");
    net_http_send_str(&conn->sock_state, &error, "Connection: close\r\n");
    net_http_send_str(&conn->sock_state, &error, "\r\n");
 
