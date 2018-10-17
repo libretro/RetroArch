@@ -338,6 +338,31 @@ void fill_pathname_application_special(char *s,
          }
 #endif
          break;
+      case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS:
+      {
+        char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+        char *s2 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+        settings_t *settings     = config_get_ptr();
+
+        s1[0] = s2[0] = '\0';
+
+        fill_pathname_join(s1,
+              settings->paths.directory_thumbnails,
+              "discord",
+              len);
+        fill_pathname_join(s2,
+              s1, "avatars",
+              PATH_MAX_LENGTH * sizeof(char)
+              );
+        fill_pathname_slash(s2,
+              PATH_MAX_LENGTH * sizeof(char)
+              );
+        strlcpy(s, s2, len);
+        free(s1);
+        free(s2);
+      }
+      break;
+
       case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES:
       {
         char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
