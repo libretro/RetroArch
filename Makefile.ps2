@@ -1,5 +1,5 @@
 BUILD_PRX          = 0
-DEBUG              = 0
+DEBUG              = 1
 HAVE_KERNEL_PRX    = 0
 HAVE_LOGGER        = 0
 HAVE_FILE_LOGGER   = 0
@@ -15,7 +15,8 @@ IRX_DIR = $(PS2SDK)/iop/irx
 TARGET = retroarchps2.elf
 
 ifeq ($(DEBUG), 1)
-   OPTIMIZE_LV	:= -O0 -g
+   OPTIMIZE_LV	:= -O2 -g
+	RARCH_DEFINES += -DDEBUG
 else
    OPTIMIZE_LV	:= -O2
 endif
@@ -32,7 +33,7 @@ GPVAL = -G0
 CFLAGS = $(OPTIMIZE_LV)  -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
-RARCH_DEFINES = -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DWANT_ZLIB
+RARCH_DEFINES += -DPS2 -DUSE_IOP_CTYPE_MACRO -D_MIPS_ARCH_R5900 -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DWANT_ZLIB
 RARCH_DEFINES += -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_RGUI -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER
 
 LIBDIR =
@@ -40,7 +41,7 @@ LDFLAGS = -L$(PS2SDK)/ports/lib -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ee/lib -L.
 #LIBS = $(WHOLE_START) -lretro_ps2 $(WHOLE_END) -lstdc++ -lm -lz -lgskit -ldmakit -lpng -laudsrv -lpad -lcdvd -lmad -lfileXio -lpatches
 LIBS = -Xlinker --start-group 
 LIBS += $(WHOLE_START) -lretro_ps2 $(WHOLE_END) 
-LIBS += -lfileXio -lm -lg -lz -ldebug -lfileXio -laudsrv -lpatches -lpoweroff -ldma -lgskit -ldmakit
+LIBS += -lfileXio -lm -lg -lz -ldebug -lfileXio -laudsrv -lpatches -lpoweroff -ldma -lgskit -ldmakit -lpad
 
 #IRX modules
 # IRX modules - modules have to be in IRX_DIR

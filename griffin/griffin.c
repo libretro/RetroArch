@@ -571,7 +571,7 @@ INPUT
 #include "../input/drivers_joypad/psp_joypad.c"
 #elif defined(PS2)
 #include "../input/drivers/ps2_input.c"
-// #include "../input/drivers_joypad/ps2_joypad.c"
+#include "../input/drivers_joypad/ps2_joypad.c"
 #elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
 #include "../input/drivers/cocoa_input.c"
 #elif defined(_3DS)

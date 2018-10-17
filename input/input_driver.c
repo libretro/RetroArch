@@ -165,7 +165,7 @@ static input_device_driver_t *joypad_drivers[] = {
    &psp_joypad,
 #endif
 #if defined(PS2)
-//    &ps2_joypad, // TODO: FJTRUJY
+   &ps2_joypad,
 #endif
 #ifdef _3DS
    &ctr_joypad,
