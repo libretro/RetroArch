@@ -671,11 +671,9 @@ retro_proc_address_t video_driver_get_proc_address(const char *sym)
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path)
 {
-   bool ret = false;
    if (current_video->set_shader)
-      ret = current_video->set_shader(video_driver_data, type, path);
-
-   return ret;
+      return current_video->set_shader(video_driver_data, type, path);
+   return false;
 }
 
 static void video_driver_filter_free(void)
