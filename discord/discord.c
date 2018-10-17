@@ -39,8 +39,12 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/widgets/menu_input_dialog.h"
+#include "../../menu/menu_cbs.h"
 #endif
 
+#include <net/net_http.h>
+#include "../network/net_http_special.h"
+#include "../tasks/tasks_internal.h"
 
 static int FrustrationLevel       = 0;
 
@@ -54,6 +58,8 @@ static unsigned discord_status    = 0;
 struct netplay_room *room;
 
 static char user_id[128];
+
+static char cdn_url[] = "https://cdn.discordapp.com/avatars";
 
 DiscordRichPresence discord_presence;
 
@@ -113,12 +119,28 @@ static void handle_discord_join_response(void *ignore, const char *line)
 
 static void handle_discord_join_request(const DiscordUser* request)
 {
-   RARCH_LOG("[Discord] join request from %s#%s - %s\n",
+   static char url[PATH_MAX_LENGTH];
+   static char url_encoded[PATH_MAX_LENGTH];
+
+   RARCH_LOG("[Discord] join request from %s#%s - %s %s\n",
       request->username,
       request->discriminator,
-      request->userId);
+      request->userId,
+      request->avatar);
 
    strlcpy(user_id, request->userId, sizeof(user_id));
+
+   snprintf(url, sizeof(url), "%s/%s/%s.png", cdn_url,request->userId, request->avatar);
+   net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
+
+   RARCH_LOG("[Discord] downloading avatar from: %s\n", url_encoded);
+
+   file_transfer_t *transf = NULL;
+   transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
+   transf->enum_idx = MENU_ENUM_LABEL_CB_DISCORD_AVATAR;
+   strlcpy(transf->path, request->avatar, sizeof(transf->path));
+
+   task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
 
 #ifdef HAVE_MENU
       char buf[PATH_MAX_LENGTH];
