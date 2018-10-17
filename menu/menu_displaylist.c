@@ -4845,6 +4845,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_NETWORK_INFO:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #if defined(HAVE_NETWORKING) && !defined(HAVE_SOCKET_LEGACY) && (!defined(SWITCH) || defined(SWITCH) && defined(HAVE_LIBNX))
+         network_init();
          count = menu_displaylist_parse_network_info(info);
 #endif
 
