@@ -320,7 +320,7 @@ void cheat_manager_load_cb_second_pass(char *key, char *value)
    char cheat_num_str[20];
    unsigned cheat_num;
    unsigned cheat_idx;
-   int idx           = 5;
+   unsigned idx      = 5;
    size_t key_length = 0;
    errno = 0;
 
@@ -715,7 +715,7 @@ bool cheat_manager_alloc_if_empty(void)
 
 int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
 {
-   int i;
+   unsigned i;
    retro_ctx_memory_info_t meminfo;
    bool refresh                           = false;
    bool is_search_initialization          = (setting != NULL);

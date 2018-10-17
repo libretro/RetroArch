@@ -163,6 +163,10 @@ static void get_entry(char *entry, int len, const char *path) {
  */
 static void task_netplay_crc_scan_handler(retro_task_t *task)
 {
+   size_t i, j;
+   char entry[PATH_MAX_LENGTH];
+   char *filename_match        = NULL;
+   bool have_crc               = false;
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)task->state;
 
    begin_task(task, "Looking for compatible content...");
@@ -195,16 +199,20 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       return;
    }
 
-   bool have_crc = !string_is_equal(state->content_crc, "00000000|crc");
+   have_crc = !string_is_equal(state->content_crc, "00000000|crc");
 
    /* if content is already loaded and the lobby gave us a CRC, check the loaded content first */
-   if(have_crc && content_get_crc() > 0) {
+   if(have_crc && content_get_crc() > 0)
+   {
       char current[PATH_MAX_LENGTH];
+
       RARCH_LOG("[lobby] testing CRC matching for: %s\n", state->content_crc);
 
       snprintf(current, sizeof(current), "%X|crc", content_get_crc());
       RARCH_LOG("[lobby] current content crc: %s\n", current);
-      if (string_is_equal(current, state->content_crc)) {
+
+      if (string_is_equal(current, state->content_crc))
+	  {
          RARCH_LOG("[lobby] CRC match %s with currently loaded content\n", current);
          strlcpy(state->content_path, "N/A", sizeof(state->content_path));
          state->found = true;
@@ -217,15 +225,11 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
    }
 
    /* now let's do the search */
-   size_t i, j;
-   char *filename_match = NULL;
-   char entry[PATH_MAX_LENGTH];
-
-
-   for(i = 0; i < state->lpl_list->size; i++) {
-      playlist_t *playlist = NULL;
+   for(i = 0; i < state->lpl_list->size; i++)
+   {
+      playlist_t *playlist   = NULL;
       unsigned playlist_size = 0;
-      const char *lpl_path = state->lpl_list->elems[i].data;
+      const char *lpl_path   = state->lpl_list->elems[i].data;
 
       /* skip files without .lpl file extension */
       if (!strstr(lpl_path, file_path_str(FILE_PATH_LPL_EXTENSION)))
@@ -235,12 +239,15 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       playlist      = playlist_init(lpl_path, 99999);
       playlist_size = playlist_get_size(playlist);
 
-      for(j = 0; j < playlist_size; j++) {
+      for(j = 0; j < playlist_size; j++)
+	  {
          const char *playlist_crc32    = NULL;
          const char *playlist_path     = NULL;
 
          playlist_get_index(playlist, j, &playlist_path, NULL, NULL, NULL, NULL, &playlist_crc32);
-         if(have_crc && string_is_equal(playlist_crc32, state->content_crc)) {
+
+         if(have_crc && string_is_equal(playlist_crc32, state->content_crc))
+		 {
             RARCH_LOG("[lobby] CRC match %s\n", playlist_crc32);
             strlcpy(state->content_path, playlist_path, sizeof(state->content_path));
             state->found = true;
@@ -264,10 +271,12 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          if(string_is_empty(filename_match) &&
             !string_is_empty(entry) &&
             string_is_equal(entry, state->content_path) &&
-            strstr(state->core_extensions, path_get_extension(playlist_path))) {
-            if(have_crc) {
+            strstr(state->core_extensions, path_get_extension(playlist_path)))
+		 {
+            if(have_crc)
                filename_match = strdup(playlist_path);
-            } else {
+            else
+			{
                RARCH_LOG("[lobby] filename match %s\n", playlist_path);
 
                strlcpy(state->content_path, playlist_path, sizeof(state->content_path));
@@ -284,7 +293,9 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
       free(playlist);
    }
-   if(filename_match != NULL) {
+
+   if(filename_match != NULL)
+   {
       RARCH_LOG("[lobby] CRC match failed; falling back to filename match %s\n", filename_match);
 
       strlcpy(state->content_path, filename_match, sizeof(state->content_path));
