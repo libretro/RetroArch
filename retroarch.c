@@ -637,6 +637,16 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    bool explicit_menu    = false;
    global_t  *global     = global_get_ptr();
 
+   /* Nasty hack to copy the args into a global so discord can register the same arguments for launch */
+   char buf[4096];
+   for (unsigned i = 0; i < argc; i++)
+   {
+      snprintf(buf, sizeof(buf), "%s %s", _argv, argv[i]);
+      strlcpy(_argv, buf, sizeof(_argv));
+   }
+   _argc = argc;
+   string_trim_whitespace_left(_argv);
+
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
       { "libretro",           1, NULL, 'L' },
