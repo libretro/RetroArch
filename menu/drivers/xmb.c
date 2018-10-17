@@ -5309,13 +5309,13 @@ static int xmb_list_push(void *data, void *userdata,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 
             if (system->load_no_content)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 
 #ifndef HAVE_DYNAMIC
@@ -5325,7 +5325,7 @@ static int xmb_list_push(void *data, void *userdata,
                if (settings->bools.menu_show_load_core)
                {
                   entry.enum_idx   = MENU_ENUM_LABEL_CORE_LIST;
-                  menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+                  menu_displaylist_setting(&entry);
                }
             }
 
@@ -5334,7 +5334,7 @@ static int xmb_list_push(void *data, void *userdata,
                const struct retro_subsystem_info* subsystem = NULL;
 
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
 
                subsystem           = system->subsystem.data;
 
@@ -5390,85 +5390,85 @@ static int xmb_list_push(void *data, void *userdata,
             }
 
             entry.enum_idx      = MENU_ENUM_LABEL_ADD_CONTENT_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            menu_displaylist_setting(&entry);
 #ifdef HAVE_QT
             if (settings->bools.desktop_menu_enable)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_SHOW_WIMP;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 #endif
 #if defined(HAVE_NETWORKING)
             if (settings->bools.menu_show_online_updater && !settings->bools.kiosk_mode_enable)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 #endif
             if (!settings->bools.menu_content_show_settings && !string_is_empty(settings->paths.menu_content_show_settings_password))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 
             if (settings->bools.kiosk_mode_enable && !string_is_empty(settings->paths.kiosk_mode_password))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 
             if (settings->bools.menu_show_information)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 
 #ifdef HAVE_LAKKA_SWITCH
             entry.enum_idx      = MENU_ENUM_LABEL_SWITCH_CPU_PROFILE;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            menu_displaylist_setting(&entry);
 
             entry.enum_idx      = MENU_ENUM_LABEL_SWITCH_GPU_PROFILE;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            menu_displaylist_setting(&entry);
 
             entry.enum_idx      = MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            menu_displaylist_setting(&entry);
 #endif
 
 #ifndef HAVE_DYNAMIC
             entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            menu_displaylist_setting(&entry);
 #endif
 
             if (settings->bools.menu_show_configurations && !settings->bools.kiosk_mode_enable)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 
             if (settings->bools.menu_show_help)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 
 #if !defined(IOS)
             if (settings->bools.menu_show_quit_retroarch)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 #endif
 
             if (settings->bools.menu_show_reboot)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_REBOOT;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 
             if (settings->bools.menu_show_shutdown)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               menu_displaylist_setting(&entry);
             }
 
             info->need_push    = true;

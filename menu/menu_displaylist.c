@@ -4254,7 +4254,18 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info)
    info->setting                  = NULL;
 }
 
-bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
+bool menu_displaylist_setting(menu_displaylist_ctx_parse_entry_t *entry)
+{
+   if (menu_displaylist_parse_settings_enum(entry->data,
+            entry->info,
+            entry->enum_idx,
+            entry->parse_type,
+            entry->add_empty_entry) == -1)
+      return false;
+   return true;
+}
+
+bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info)
 {
    size_t i;
    menu_ctx_displaylist_t disp_list;
@@ -4263,7 +4274,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    bool use_filebrowser          = false;
    unsigned count                = 0;
    int ret                       = 0;
-   menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return false;
@@ -7389,19 +7399,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      MENU_ENUM_LABEL_SHUTDOWN,
                      PARSE_ACTION, false);
             info->need_push    = true;
-         }
-         break;
-      case DISPLAYLIST_SETTING_ENUM:
-         {
-            menu_displaylist_ctx_parse_entry_t *entry  =
-               (menu_displaylist_ctx_parse_entry_t*)data;
-
-            if (menu_displaylist_parse_settings_enum(entry->data,
-                     entry->info,
-                     entry->enum_idx,
-                     entry->parse_type,
-                     entry->add_empty_entry) == -1)
-               return false;
          }
          break;
       case DISPLAYLIST_HELP:

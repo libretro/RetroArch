@@ -60,7 +60,6 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_HELP_SCREEN_LIST,
    DISPLAYLIST_MAIN_MENU,
    DISPLAYLIST_GENERIC,
-   DISPLAYLIST_SETTING_ENUM,
    DISPLAYLIST_SETTINGS_ALL,
    DISPLAYLIST_HORIZONTAL,
    DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS,
@@ -245,7 +244,9 @@ void menu_displaylist_info_free(menu_displaylist_info_t *info);
 
 void menu_displaylist_info_init(menu_displaylist_info_t *info);
 
-bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
+bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info);
+
+bool menu_displaylist_setting(menu_displaylist_ctx_parse_entry_t *entry);
 
 #ifdef HAVE_NETWORKING
 void netplay_refresh_rooms_menu(file_list_t *list);
