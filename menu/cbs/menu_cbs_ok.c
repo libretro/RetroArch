@@ -3300,7 +3300,6 @@ void cb_generic_download(void *task_data,
             PATH_MAX_LENGTH * sizeof(char),
             APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
          dir_path = buf;
-         RARCH_LOG("Path: %s\n", dir_path);
          break;
       }
       default:
