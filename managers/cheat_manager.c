@@ -1115,7 +1115,6 @@ int cheat_manager_add_matches(const char *path,
    unsigned int curr_val       = 0;
    unsigned int num_added      = 0;
    unsigned int offset         = 0;
-   unsigned int i              = 0;
    unsigned char *curr         = cheat_manager_state.curr_memory_buf;
 
    if (cheat_manager_state.num_matches + cheat_manager_state.size > 100)
@@ -1472,7 +1471,6 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
    unsigned int curr_val       = 0;
    unsigned int prev_val       = 0;
    unsigned int offset         = 0;
-   unsigned int i              = 0;
    unsigned char *curr         = cheat_manager_state.curr_memory_buf;
    unsigned char *prev         = cheat_manager_state.prev_memory_buf;
    unsigned int curr_match_idx = 0;
