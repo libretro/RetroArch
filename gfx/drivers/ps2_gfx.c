@@ -91,7 +91,7 @@ static void deinitTexture(GSTEXTURE *texture) {
 static void *ps2_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   *input = NULL;
+   void *ps2input = NULL;
    *input_data = NULL;
    (void)video;
 
@@ -99,6 +99,14 @@ static void *ps2_gfx_init(const video_info_t *video,
 
    initGSGlobal(ps2);
    initBackgroundTexture(ps2);
+
+   if (input && input_data)
+   {
+      settings_t *settings = config_get_ptr();
+      ps2input = input_ps2.init(settings->arrays.input_joypad_driver);
+      *input = ps2input ? &input_ps2 : NULL;
+      *input_data  = ps2input;
+   }
 
    return ps2;
 }

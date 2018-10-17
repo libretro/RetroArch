@@ -27,16 +27,7 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 
-#ifdef HAVE_KERNEL_PRX
-#include "../../bootstrap/ps2/kernel_functions.h"
-#endif
-
-#include "../../defines/ps2_defines.h"
-
 #include "../input_driver.h"
-
-/* TODO/FIXME - 
- * fix game focus toggle */
 
 typedef struct ps2_input
 {

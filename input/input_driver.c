@@ -87,7 +87,7 @@ static const input_driver_t *input_drivers[] = {
    &input_psp,
 #endif
 #if defined(PS2)
-//    &input_ps2, TODO: FJTRUJY
+   &input_ps2,
 #endif
 #if defined(_3DS)
    &input_ctr,

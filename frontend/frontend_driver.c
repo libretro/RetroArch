@@ -57,7 +57,7 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
    &frontend_ctx_psp,
 #endif
 #if defined(PS2)
-   &frontend_ctx_ps2, //TODO: FJTRUJY
+   &frontend_ctx_ps2,
 #endif
 #if defined(_3DS)
    &frontend_ctx_ctr,
