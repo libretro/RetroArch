@@ -45,6 +45,9 @@
 #include <net/net_http.h>
 #include "../network/net_http_special.h"
 #include "../tasks/tasks_internal.h"
+#include <streams/file_stream.h>
+#include <file/file_path.h>
+#include "../file_path_special.h"
 
 static int FrustrationLevel       = 0;
 
@@ -117,10 +120,45 @@ static void handle_discord_join_response(void *ignore, const char *line)
 #endif
 }
 
+static bool discord_download_avatar(const char* user_id, const char* avatar_id)
+{
+   static char url[PATH_MAX_LENGTH];
+   static char url_encoded[PATH_MAX_LENGTH];
+   static char fullpath[PATH_MAX_LENGTH];
+
+   static char buf[PATH_MAX_LENGTH];
+
+   file_transfer_t *transf = NULL;
+
+   fill_pathname_application_special(buf,
+            sizeof(buf),
+            APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
+   fill_pathname_join(fullpath, buf, avatar_id, sizeof(fullpath));
+
+   if(filestream_exists(fullpath))
+      return true;
+   else
+   {
+      snprintf(url, sizeof(url), "%s/%s/%s.png", cdn_url, user_id, avatar_id);
+      net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
+      snprintf(buf, sizeof(buf), "%s.png", avatar_id);
+
+      transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
+      transf->enum_idx = MENU_ENUM_LABEL_CB_DISCORD_AVATAR;
+      strlcpy(transf->path, buf, sizeof(transf->path));
+
+      RARCH_LOG("[Discord] downloading avatar from: %s\n", url_encoded);
+      task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
+
+      return false;
+   }
+}
+
 static void handle_discord_join_request(const DiscordUser* request)
 {
    static char url[PATH_MAX_LENGTH];
    static char url_encoded[PATH_MAX_LENGTH];
+   static char filename[PATH_MAX_LENGTH];
 
    RARCH_LOG("[Discord] join request from %s#%s - %s %s\n",
       request->username,
@@ -128,19 +166,7 @@ static void handle_discord_join_request(const DiscordUser* request)
       request->userId,
       request->avatar);
 
-   strlcpy(user_id, request->userId, sizeof(user_id));
-
-   snprintf(url, sizeof(url), "%s/%s/%s.png", cdn_url,request->userId, request->avatar);
-   net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
-
-   RARCH_LOG("[Discord] downloading avatar from: %s\n", url_encoded);
-
-   file_transfer_t *transf = NULL;
-   transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
-   transf->enum_idx = MENU_ENUM_LABEL_CB_DISCORD_AVATAR;
-   strlcpy(transf->path, request->avatar, sizeof(transf->path));
-
-   task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
+   discord_download_avatar(request->userId, request->avatar);
 
 #ifdef HAVE_MENU
       char buf[PATH_MAX_LENGTH];
