@@ -128,6 +128,10 @@ MSG_HASH(
     "Enter netplay server password:"
     )
 MSG_HASH(
+    MSG_DISCORD_CONNECTION_REQUEST,
+    "Do you want to allow connection from user:"
+    )
+MSG_HASH(
     MSG_NETPLAY_INCORRECT_PASSWORD,
     "Incorrect password"
     )

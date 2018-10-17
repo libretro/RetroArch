@@ -37,6 +37,11 @@
 #include "../cheevos/cheevos.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "../../menu/widgets/menu_input_dialog.h"
+#endif
+
+
 static int FrustrationLevel       = 0;
 
 static int64_t start_time         = 0;
@@ -47,6 +52,8 @@ static bool discord_ready         = false;
 static unsigned discord_status    = 0;
 
 struct netplay_room *room;
+
+static char user_id[128];
 
 DiscordRichPresence discord_presence;
 
@@ -93,14 +100,42 @@ static void handle_discord_spectate(const char* secret)
    RARCH_LOG("[Discord] spectate (%s)\n", secret);
 }
 
+static void handle_discord_join_response(void *ignore, const char *line)
+{
+   if (strstr(line, "yes"))
+      Discord_Respond(user_id, DISCORD_REPLY_YES);
+
+#ifdef HAVE_MENU
+   menu_input_dialog_end();
+   rarch_menu_running_finished();
+#endif
+}
+
 static void handle_discord_join_request(const DiscordUser* request)
 {
-   int response = -1;
-   char yn[4];
    RARCH_LOG("[Discord] join request from %s#%s - %s\n",
       request->username,
       request->discriminator,
       request->userId);
+
+   strlcpy(user_id, request->userId, sizeof(user_id));
+
+#ifdef HAVE_MENU
+      char buf[PATH_MAX_LENGTH];
+      menu_input_ctx_line_t line;
+      rarch_menu_running();
+
+      memset(&line, 0, sizeof(line));
+      snprintf(buf, sizeof(buf), "%s %s?", msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
+      line.label         = buf;
+      line.label_setting = "no_setting";
+      line.cb            = handle_discord_join_response;
+
+      /* To-Do: bespoke dialog, should show while in-game and have a hotkey to accept */
+      /* To-Do: show avatar of the user connecting */
+      if (!menu_input_dialog_start(&line))
+         return;
+#endif
 }
 
 void discord_update(enum discord_presence presence)
@@ -230,8 +265,8 @@ void discord_init(void)
    Discord_Initialize(settings->arrays.discord_app_id, &handlers, 0, NULL);
 
    char command[PATH_MAX_LENGTH];
-
    strlcpy(command, _argv, sizeof(command));
+
    RARCH_LOG("[Discord] registering startup command: %s\n", command);
    Discord_Register(settings->arrays.discord_app_id, command);
    discord_ready         = true;
