@@ -305,6 +305,9 @@ typedef struct global
 #endif
 } global_t;
 
+unsigned _argc;
+char _argv[4096];
+
 bool rarch_ctl(enum rarch_ctl_state state, void *data);
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
