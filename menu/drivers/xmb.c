@@ -2934,7 +2934,6 @@ static void xmb_draw_items(
 static void xmb_render(void *data, bool is_idle)
 {
    size_t i;
-   float delta_time;
    menu_animation_ctx_delta_t delta;
    settings_t   *settings   = config_get_ptr();
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
@@ -2945,9 +2944,7 @@ static void xmb_render(void *data, bool is_idle)
    if (!xmb)
       return;
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
-
-   delta.current = delta_time;
+   delta.current = menu_animation_get_delta_time();
 
    if (menu_animation_get_ideal_delta_time(&delta))
       menu_animation_update(delta.ideal);

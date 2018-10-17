@@ -163,7 +163,6 @@ void menu_event_kb_set(bool down, enum retro_key key)
 unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
 {
    menu_animation_ctx_delta_t delta;
-   float delta_time;
    /* Used for key repeat */
    static float delay_timer                = 0.0f;
    static float delay_count                = 0.0f;
@@ -236,9 +235,7 @@ unsigned menu_event(input_bits_t *p_input, input_bits_t *p_trigger_input)
       menu_driver_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
             &new_scroll_accel);
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
-
-   delta.current = delta_time;
+   delta.current = menu_animation_get_delta_time();
 
    if (menu_animation_get_ideal_delta_time(&delta))
       delay_count += delta.ideal;
@@ -793,15 +790,13 @@ static int menu_input_pointer_post_iterate(
          if (abs(pointer_x - start_x) > (dpi / 10)
                || abs(pointer_y - start_y) > (dpi / 10))
          {
-            float s, delta_time;
+            float s;
 
             menu_input_ctl(MENU_INPUT_CTL_SET_POINTER_DRAGGED, NULL);
             menu_input->pointer.dx            = pointer_x - pointer_old_x;
             menu_input->pointer.dy            = pointer_y - pointer_old_y;
             pointer_old_x                     = pointer_x;
             pointer_old_y                     = pointer_y;
-
-            menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
             s = menu_input->pointer.dy;
             menu_input->pointer.accel = (accel0 + accel1 + s) / 3;

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2014-2017 - Jean-André Santoni
- *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2014-2018 - Jean-André Santoni
+ *  Copyright (C) 2011-2018 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -669,6 +669,11 @@ void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject)
    }
 }
 
+float menu_animation_get_delta_time(void)
+{
+   return delta_time;
+}
+
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 {
    switch (state)
@@ -696,14 +701,6 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
          break;
       case MENU_ANIMATION_CTL_SET_ACTIVE:
          animation_is_active       = true;
-         break;
-      case MENU_ANIMATION_CTL_DELTA_TIME:
-         {
-            float *ptr = (float*)data;
-            if (!ptr)
-               return false;
-            *ptr = delta_time;
-         }
          break;
       case MENU_ANIMATION_CTL_NONE:
       default:

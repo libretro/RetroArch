@@ -33,8 +33,7 @@ enum menu_animation_ctl_state
    MENU_ANIMATION_CTL_NONE = 0,
    MENU_ANIMATION_CTL_DEINIT,
    MENU_ANIMATION_CTL_CLEAR_ACTIVE,
-   MENU_ANIMATION_CTL_SET_ACTIVE,
-   MENU_ANIMATION_CTL_DELTA_TIME
+   MENU_ANIMATION_CTL_SET_ACTIVE
 };
 
 enum menu_animation_easing_type
@@ -133,6 +132,8 @@ bool menu_animation_kill_by_tag(menu_animation_ctx_tag *tag);
 void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject);
 
 bool menu_animation_push(menu_animation_ctx_entry_t *entry);
+
+float menu_animation_get_delta_time(void);
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
 
