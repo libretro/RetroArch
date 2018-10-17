@@ -2752,7 +2752,7 @@ static void materialui_list_clear(file_list_t *list)
       subject.count = 2;
       subject.data  = subjects;
 
-      menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_SUBJECT, &subject);
+      menu_animation_kill_by_subject(&subject);
 
       file_list_free_userdata(list, i);
    }

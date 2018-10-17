@@ -1177,7 +1177,7 @@ static void stripes_selection_pointer_changed(
 
    tag       = (uintptr_t)selection_buf;
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
+   menu_animation_kill_by_tag(&tag);
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &num);
 
    for (i = 0; i < end; i++)
@@ -3830,7 +3830,7 @@ static void stripes_list_clear(file_list_t *list)
 {
    menu_animation_ctx_tag tag = (uintptr_t)list;
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
+   menu_animation_kill_by_tag(&tag);
 
    stripes_free_list_nodes(list, false);
 }
@@ -3846,7 +3846,7 @@ static void stripes_list_deep_copy(const file_list_t *src, file_list_t *dst,
    size_t i, j = 0;
    menu_animation_ctx_tag tag = (uintptr_t)dst;
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
+   menu_animation_kill_by_tag(&tag);
 
    /* use true here because file_list_copy() doesn't free actiondata */
    stripes_free_list_nodes(dst, true);
