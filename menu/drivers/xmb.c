@@ -60,10 +60,15 @@
 #include "../../retroarch.h"
 
 #include "../../tasks/tasks_internal.h"
-
-#include "../../cheevos/badges.h"
-#include "../../discord/discord.h"
 #include "../../content.h"
+
+#ifdef HAVE_CHEEVOS
+#include "../../cheevos/badges.h"
+#endif
+
+#ifdef HAVE_DISCORD
+#include "../../discord/discord.h"
+#endif
 
 #define XMB_RIBBON_ROWS 64
 #define XMB_RIBBON_COLS 64
@@ -181,7 +186,9 @@ enum
    XMB_TEXTURE_OVERRIDE,
    XMB_TEXTURE_NOTIFICATIONS,
    XMB_TEXTURE_STREAM,
+#ifdef HAVE_DISCORD
    XMB_TEXTURE_AVATAR,
+#endif
    XMB_TEXTURE_LAST
 };
 
@@ -3175,15 +3182,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    unsigned xmb_system_tab                 = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
    bool hide_thumbnails                    = false;
 
+#ifdef HAVE_DISCORD
    static bool discord_ready;
+   char *icon_path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
    if (discord_ready != discord_is_ready())
    {
-      char *icon_path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       icon_path[0]       = '\0';
       discord_ready = discord_is_ready();
       xmb_context_reset(data, false);
    }
+#endif
 
    if (!xmb)
       return;
@@ -4705,6 +4714,7 @@ static const char *xmb_texture_path(unsigned id)
       case XMB_TEXTURE_STREAM:
          icon_name = "menu_stream.png";
          break;
+#ifdef HAVE_DISCORD
       case XMB_TEXTURE_AVATAR:
       {
          char avatar[128];
@@ -4724,6 +4734,7 @@ static const char *xmb_texture_path(unsigned id)
       strlcat(icon_fullpath, icon_name, PATH_MAX_LENGTH * sizeof(char));
    }
    else
+#endif
    {
       fill_pathname_application_special(icon_path,
       PATH_MAX_LENGTH * sizeof(char),
@@ -4760,18 +4771,20 @@ static void xmb_context_reset_textures(
             PATH_MAX_LENGTH * sizeof(char),
             APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
       }
+#ifdef HAVE_DISCORD
       else
       {
          fill_pathname_application_special(icon_path,
             PATH_MAX_LENGTH * sizeof(char),
             discord_is_ready()? APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS : APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
       }
+#endif
       menu_display_reset_textures_list(xmb_texture_path(i), icon_path, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
    }
 
    menu_display_allocate_white_texture();
 
-   xmb->main_menu_node.icon     = xmb->textures.list[XMB_TEXTURE_AVATAR];
+   xmb->main_menu_node.icon     = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
    xmb->main_menu_node.alpha    = xmb->categories_active_alpha;
    xmb->main_menu_node.zoom     = xmb->categories_active_zoom;
 
