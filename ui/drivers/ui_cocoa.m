@@ -466,7 +466,7 @@ static char** waiting_argv;
    if (rarch_ctl(RARCH_CTL_IS_INITED, NULL))
       reply = NSTerminateCancel;
 
-   ui_companion_event_command(CMD_EVENT_QUIT);
+   command_event(CMD_EVENT_QUIT, NULL);
 
    return reply;
 }
