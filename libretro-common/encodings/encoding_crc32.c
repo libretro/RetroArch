@@ -91,17 +91,50 @@ uint32_t encoding_crc32(uint32_t crc, const uint8_t *buf, size_t len)
    return crc ^ 0xffffffff;
 }
 
+#define CRC32_BUFFER_SIZE 1048576
+#define CRC32_MAX_MB 64
+
+/**
+ * Calculate a CRC32 from the first part of the given file.
+ * "first part" being the first (CRC32_BUFFER_SIZE * CRC32_MAX_MB)
+ * bytes.
+ * TODO: maybe make these numbers configurable? 
+ *
+ * Returns: the crc32, or 0 if there was an error.
+ */
 uint32_t file_crc32(uint32_t crc, const char *path) {
    if(path == NULL)
      return 0;
 
-   void *file_bytes = NULL;
-   int64_t file_len = 0;
+   RFILE *file = NULL;
+   unsigned char *buf = NULL;
+   int i, nread;
 
-   if(filestream_read_file(path, &file_bytes, &file_len)) {
-     crc = encoding_crc32(crc, (uint8_t *)file_bytes, file_len);
-     free(file_bytes);
-     return crc;
+   file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0);
+   if(file == NULL)
+      goto error;
+
+   buf = (char *)malloc(CRC32_BUFFER_SIZE);
+   if(buf == NULL)
+     goto error;
+
+   for(i = 0; i < CRC32_MAX_MB; i++) {
+      nread = filestream_read(file, buf, CRC32_BUFFER_SIZE);
+      if(nread < 0)
+        goto error;
+
+      crc = encoding_crc32(crc, buf, nread);
+      if(filestream_eof(file))
+         break;
    }
-   return 0;
+   free(buf);
+   filestream_close(file);
+   return crc;
+
+   error:
+      if(buf)
+         free(buf);
+      if(file)
+         filestream_close(file);
+      return 0;
 }
