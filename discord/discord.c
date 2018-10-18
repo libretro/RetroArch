@@ -146,13 +146,17 @@ static void handle_discord_spectate(const char* secret)
 
 static void handle_discord_join_response(void *ignore, const char *line)
 {
+   /* To-Do: needs in-game widgets
    if (strstr(line, "yes"))
       Discord_Respond(user_id, DISCORD_REPLY_YES);
+
+
 
 #ifdef HAVE_MENU
    menu_input_dialog_end();
    rarch_menu_running_finished();
 #endif
+*/
 }
 
 static void handle_discord_join_request(const DiscordUser* request)
@@ -180,10 +184,12 @@ static void handle_discord_join_request(const DiscordUser* request)
       line.label_setting = "no_setting";
       line.cb            = handle_discord_join_response;
 
-      /* To-Do: bespoke dialog, should show while in-game and have a hotkey to accept */
-      /* To-Do: show avatar of the user connecting */
+      /* To-Do: needs in-game widgets
+         To-Do: bespoke dialog, should show while in-game and have a hotkey to accept
+         To-Do: show avatar of the user connecting
       if (!menu_input_dialog_start(&line))
          return;
+      */
 #endif
 }
 
