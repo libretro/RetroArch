@@ -107,7 +107,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
-      "Accounts List Endpoint"
+      "Accounts Lijst Eindpunt"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
@@ -180,7 +180,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
-      "Audio Mute"
+      "Geluid uitzetten"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
@@ -220,7 +220,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-      "Load Shader Presets Automatically"
+      "Laad Shader Presets Automatisch"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
@@ -2951,7 +2951,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
 MSG_HASH(MSG_PREPARING_FOR_CONTENT_SCAN,
       "Preparing for content scan...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-      "Delete core")
+      "Verwijder core")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_DELETE,
       "Remove this core from disk.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
@@ -2963,15 +2963,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
       "Modify the opacity of the framebuffer.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-      "Favorites")
+      "Favorieten")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
       "Content which you have added to 'Favorites' will appear here.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-      "Music")
+      "Muziek")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_MUSIC,
       "Music which has been previously played will appear here.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-      "Image")
+      "Afbeeldingen")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_IMAGES,
       "Images which have been previously viewed will appear here.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
@@ -2987,11 +2987,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Set Password For Enabling Settings Tab")
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
-      "Enter Password")
+      "Voer wachtwoord in")
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
-      "Password correct.")
+      "Wachtwoord is correct.")
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
-      "Password incorrect.")
+      "Wachtwoord is incorrect.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
       "Enables the Settings tab. A restart is required for the tab to appear.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -3178,7 +3178,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
       "Volume")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
-      "Current core")
+      "Huidige core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
       "Clear")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
@@ -3193,7 +3193,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
       "Paused")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-      "Enable Discord"
+      "Discord Inschakelen"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
@@ -3229,7 +3229,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-    "X-Axis Centering"
+    "X-As Centering"
     )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -3245,19 +3245,19 @@ MSG_HASH(
       "Output Display ID")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
-    "Start Recording"
+    "Start Opname"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
-    "Starts recording."
+    "Start met opnemen."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
-    "Stop Recording"
+    "Stop Opname"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
-    "Stops recording."
+    "Stop met opnemen."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
@@ -3306,16 +3306,16 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
       "Streaming Mode")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
-      "Title of Stream")
+      "Titel van Stream")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
     "Split Joy-Con"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-    "Reset To Defaults"
+    "Fabrieksinstellingen resetten"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-    "Reset the current configuration to default values."
+    "Reset de instellingen aar fabrieksinstellingen."
     )
