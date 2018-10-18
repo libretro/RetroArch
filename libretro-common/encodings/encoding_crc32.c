@@ -98,7 +98,6 @@ uint32_t encoding_crc32(uint32_t crc, const uint8_t *buf, size_t len)
  * Calculate a CRC32 from the first part of the given file.
  * "first part" being the first (CRC32_BUFFER_SIZE * CRC32_MAX_MB)
  * bytes.
- * TODO: maybe make these numbers configurable? 
  *
  * Returns: the crc32, or 0 if there was an error.
  */
