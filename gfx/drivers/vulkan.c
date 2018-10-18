@@ -2619,6 +2619,7 @@ static bool vulkan_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
    unsigned i, j;
+   bool old_enabled;
    const struct texture_image *images =
       (const struct texture_image*)image_data;
    vk_t *vk                           = (vk_t*)data;
@@ -2636,6 +2637,7 @@ static bool vulkan_overlay_load(void *data,
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
+   old_enabled = vk->overlay.enable;
    vulkan_overlay_free(vk);
 
    vk->overlay.images = (struct vk_texture*)
@@ -2663,6 +2665,7 @@ static bool vulkan_overlay_load(void *data,
          vk->overlay.vertex[4 * i + j].color = white;
    }
 
+   vk->overlay.enable = old_enabled;
    return true;
 
 error:
