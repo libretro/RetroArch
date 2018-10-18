@@ -55,4 +55,8 @@ void discord_update(enum discord_presence presence);
 
 void discord_run_callbacks();
 
+void discord_get_own_avatar_id(char* output);
+
+bool discord_is_ready();
+
 #endif /* __RARCH_DISCORD_H */

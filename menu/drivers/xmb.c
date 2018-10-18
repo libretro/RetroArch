@@ -62,6 +62,7 @@
 #include "../../tasks/tasks_internal.h"
 
 #include "../../cheevos/badges.h"
+#include "../../discord/discord.h"
 #include "../../content.h"
 
 #define XMB_RIBBON_ROWS 64
@@ -180,6 +181,7 @@ enum
    XMB_TEXTURE_OVERRIDE,
    XMB_TEXTURE_NOTIFICATIONS,
    XMB_TEXTURE_STREAM,
+   XMB_TEXTURE_AVATAR,
    XMB_TEXTURE_LAST
 };
 
@@ -417,6 +419,8 @@ float gradient_morning_blue[16] = {
    1.0, 1.0, 1.0, 1.00,
    170/255.0, 200/255.0, 252/255.0, 1.00,
 };
+
+static void xmb_context_reset(void *data, bool is_threaded);
 
 static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
       unsigned height, size_t list_size, unsigned current,
@@ -2005,31 +2009,31 @@ static void xmb_context_reset_horizontal_list(
          struct texture_image ti;
          char *sysname             = (char*)
             malloc(PATH_MAX_LENGTH * sizeof(char));
-         char *iconpath            = (char*)
+         char *icon_path            = (char*)
             malloc(PATH_MAX_LENGTH * sizeof(char));
          char *texturepath         = (char*)
             malloc(PATH_MAX_LENGTH * sizeof(char));
          char *content_texturepath = (char*)
             malloc(PATH_MAX_LENGTH * sizeof(char));
 
-         iconpath[0]    = sysname[0] =
+         icon_path[0]    = sysname[0] =
             texturepath[0] = content_texturepath[0] = '\0';
 
          fill_pathname_base_noext(sysname, path,
                PATH_MAX_LENGTH * sizeof(char));
 
-         fill_pathname_application_special(iconpath,
+         fill_pathname_application_special(icon_path,
                PATH_MAX_LENGTH * sizeof(char),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
-         fill_pathname_join_concat(texturepath, iconpath, sysname,
+         fill_pathname_join_concat(texturepath, icon_path, sysname,
                file_path_str(FILE_PATH_PNG_EXTENSION),
                PATH_MAX_LENGTH * sizeof(char));
 
          /* If the playlist icon doesn't exist return default */
 
          if (!filestream_exists(texturepath))
-               fill_pathname_join_concat(texturepath, iconpath, "default",
+               fill_pathname_join_concat(texturepath, icon_path, "default",
                file_path_str(FILE_PATH_PNG_EXTENSION),
                PATH_MAX_LENGTH * sizeof(char));
 
@@ -2053,15 +2057,15 @@ static void xmb_context_reset_horizontal_list(
          fill_pathname_join_delim(sysname, sysname,
                file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
                PATH_MAX_LENGTH * sizeof(char));
-         strlcat(content_texturepath, iconpath, PATH_MAX_LENGTH * sizeof(char));
+         strlcat(content_texturepath, icon_path, PATH_MAX_LENGTH * sizeof(char));
          strlcat(content_texturepath, sysname, PATH_MAX_LENGTH * sizeof(char));
 
          /* If the content icon doesn't exist return default-content */
 
          if (!filestream_exists(content_texturepath))
          {
-            strlcat(iconpath, "default", PATH_MAX_LENGTH * sizeof(char));
-            fill_pathname_join_delim(content_texturepath, iconpath,
+            strlcat(icon_path, "default", PATH_MAX_LENGTH * sizeof(char));
+            fill_pathname_join_delim(content_texturepath, icon_path,
                   file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
                   PATH_MAX_LENGTH * sizeof(char));
          }
@@ -2079,7 +2083,7 @@ static void xmb_context_reset_horizontal_list(
          }
 
          free(sysname);
-         free(iconpath);
+         free(icon_path);
          free(texturepath);
          free(content_texturepath);
       }
@@ -3170,6 +3174,16 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    settings_t *settings                    = config_get_ptr();
    unsigned xmb_system_tab                 = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
    bool hide_thumbnails                    = false;
+
+   static bool discord_ready;
+
+   if (discord_ready != discord_is_ready())
+   {
+      char *icon_path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      icon_path[0]       = '\0';
+      discord_ready = discord_is_ready();
+      xmb_context_reset(data, false);
+   }
 
    if (!xmb)
       return;
@@ -4432,274 +4446,292 @@ static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type
 
 static const char *xmb_texture_path(unsigned id)
 {
-   char *iconpath = (char*)   malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *icon_path = (char*)   malloc(PATH_MAX_LENGTH * sizeof(char));
    char *icon_name = (char*)   malloc(PATH_MAX_LENGTH * sizeof(char));
    char *icon_fullpath = (char*)   malloc(PATH_MAX_LENGTH * sizeof(char));
 
-   iconpath[0] = icon_name[0] = icon_fullpath[0] = '\0';
+   icon_path[0] = icon_name[0] = icon_fullpath[0] = '\0';
 
    switch (id)
    {
       case XMB_TEXTURE_MAIN_MENU:
 #if defined(HAVE_LAKKA)
          icon_name = "lakka.png";
-			break;
+         break;
 #else
          icon_name = "retroarch.png";
-			break;
+         break;
 #endif
       case XMB_TEXTURE_SETTINGS:
          icon_name = "settings.png";
-			break;
+         break;
       case XMB_TEXTURE_HISTORY:
          icon_name = "history.png";
-			break;
+         break;
       case XMB_TEXTURE_FAVORITES:
          icon_name = "favorites.png";
-			break;
+         break;
       case XMB_TEXTURE_ADD_FAVORITE:
          icon_name = "add-favorite.png";
-			break;
+         break;
       case XMB_TEXTURE_MUSICS:
          icon_name = "musics.png";
-			break;
+         break;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case XMB_TEXTURE_MOVIES:
          icon_name = "movies.png";
-			break;
+         break;
 #endif
 #ifdef HAVE_IMAGEVIEWER
       case XMB_TEXTURE_IMAGES:
          icon_name = "images.png";
-			break;
+         break;
 #endif
       case XMB_TEXTURE_SETTING:
          icon_name = "setting.png";
-			break;
+         break;
       case XMB_TEXTURE_SUBSETTING:
          icon_name = "subsetting.png";
-			break;
+         break;
       case XMB_TEXTURE_ARROW:
          icon_name = "arrow.png";
-			break;
+         break;
       case XMB_TEXTURE_RUN:
          icon_name = "run.png";
-			break;
+         break;
       case XMB_TEXTURE_CLOSE:
          icon_name = "close.png";
-			break;
+         break;
       case XMB_TEXTURE_RESUME:
          icon_name = "resume.png";
-			break;
+         break;
       case XMB_TEXTURE_CLOCK:
          icon_name = "clock.png";
-			break;
+         break;
       case XMB_TEXTURE_BATTERY_FULL:
          icon_name = "battery-full.png";
-			break;
+         break;
       case XMB_TEXTURE_BATTERY_CHARGING:
          icon_name = "battery-charging.png";
-			break;
+         break;
       case XMB_TEXTURE_POINTER:
          icon_name = "pointer.png";
-			break;
+         break;
       case XMB_TEXTURE_SAVESTATE:
          icon_name = "savestate.png";
-			break;
+         break;
       case XMB_TEXTURE_LOADSTATE:
          icon_name = "loadstate.png";
-			break;
+         break;
       case XMB_TEXTURE_UNDO:
          icon_name = "undo.png";
-			break;
+         break;
       case XMB_TEXTURE_CORE_INFO:
          icon_name = "core-infos.png";
-			break;
+         break;
       case XMB_TEXTURE_WIFI:
          icon_name = "wifi.png";
-			break;
+         break;
       case XMB_TEXTURE_CORE_OPTIONS:
          icon_name = "core-options.png";
-			break;
+         break;
       case XMB_TEXTURE_INPUT_REMAPPING_OPTIONS:
          icon_name = "core-input-remapping-options.png";
-			break;
+         break;
       case XMB_TEXTURE_CHEAT_OPTIONS:
          icon_name = "core-cheat-options.png";
-			break;
+         break;
       case XMB_TEXTURE_DISK_OPTIONS:
          icon_name = "core-disk-options.png";
-			break;
+         break;
       case XMB_TEXTURE_SHADER_OPTIONS:
          icon_name = "core-shader-options.png";
-			break;
+         break;
       case XMB_TEXTURE_ACHIEVEMENT_LIST:
          icon_name = "achievement-list.png";
-			break;
+         break;
       case XMB_TEXTURE_SCREENSHOT:
          icon_name = "screenshot.png";
-			break;
+         break;
       case XMB_TEXTURE_RELOAD:
          icon_name = "reload.png";
-			break;
+         break;
       case XMB_TEXTURE_RENAME:
          icon_name = "rename.png";
-			break;
+         break;
       case XMB_TEXTURE_FILE:
          icon_name = "file.png";
-			break;
+         break;
       case XMB_TEXTURE_FOLDER:
          icon_name = "folder.png";
-			break;
+         break;
       case XMB_TEXTURE_ZIP:
          icon_name = "zip.png";
-			break;
+         break;
       case XMB_TEXTURE_MUSIC:
          icon_name = "music.png";
-			break;
+         break;
       case XMB_TEXTURE_FAVORITE:
          icon_name = "favorites-content.png";
-			break;
+         break;
       case XMB_TEXTURE_IMAGE:
          icon_name = "image.png";
-			break;
+         break;
       case XMB_TEXTURE_MOVIE:
          icon_name = "movie.png";
-			break;
+         break;
       case XMB_TEXTURE_CORE:
          icon_name = "core.png";
-			break;
+         break;
       case XMB_TEXTURE_RDB:
          icon_name = "database.png";
-			break;
+         break;
       case XMB_TEXTURE_CURSOR:
          icon_name = "cursor.png";
-			break;
+         break;
       case XMB_TEXTURE_SWITCH_ON:
          icon_name = "on.png";
-			break;
+         break;
       case XMB_TEXTURE_SWITCH_OFF:
          icon_name = "off.png";
-			break;
+         break;
       case XMB_TEXTURE_ADD:
          icon_name = "add.png";
-			break;
+         break;
 #ifdef HAVE_NETWORKING
       case XMB_TEXTURE_NETPLAY:
          icon_name = "netplay.png";
-			break;
+         break;
       case XMB_TEXTURE_ROOM:
          icon_name = "menu_room.png";
-			break;
+         break;
       case XMB_TEXTURE_ROOM_LAN:
          icon_name = "menu_room_lan.png";
-			break;
+         break;
       case XMB_TEXTURE_ROOM_RELAY:
          icon_name = "menu_room_relay.png";
-			break;
+         break;
 #endif
       case XMB_TEXTURE_KEY:
          icon_name = "key.png";
-			break;
+         break;
       case XMB_TEXTURE_KEY_HOVER:
          icon_name = "key-hover.png";
-			break;
+         break;
       case XMB_TEXTURE_DIALOG_SLICE:
          icon_name = "dialog-slice.png";
-			break;
+         break;
       case XMB_TEXTURE_ACHIEVEMENTS:
          icon_name = "menu_achievements.png";
-			break;
+         break;
       case XMB_TEXTURE_AUDIO:
          icon_name = "menu_audio.png";
-			break;
+         break;
       case XMB_TEXTURE_DRIVERS:
          icon_name = "menu_drivers.png";
-			break;
+         break;
       case XMB_TEXTURE_EXIT:
          icon_name = "menu_exit.png";
-			break;
+         break;
       case XMB_TEXTURE_FRAMESKIP:
          icon_name = "menu_frameskip.png";
-			break;
+         break;
       case XMB_TEXTURE_HELP:
          icon_name = "menu_help.png";
-			break;
+         break;
       case XMB_TEXTURE_INFO:
          icon_name = "menu_info.png";
-			break;
+         break;
       case XMB_TEXTURE_INPUT:
          icon_name = "Libretro - Pad.png";
-			break;
+         break;
       case XMB_TEXTURE_LATENCY:
          icon_name = "menu_latency.png";
-			break;
+         break;
       case XMB_TEXTURE_NETWORK:
          icon_name = "menu_network.png";
-			break;
+         break;
       case XMB_TEXTURE_POWER:
          icon_name = "menu_power.png";
-			break;
+         break;
       case XMB_TEXTURE_RECORD:
          icon_name = "menu_record.png";
-			break;
+         break;
       case XMB_TEXTURE_SAVING:
          icon_name = "menu_saving.png";
-			break;
+         break;
       case XMB_TEXTURE_UPDATER:
          icon_name = "menu_updater.png";
-			break;
+         break;
       case XMB_TEXTURE_VIDEO:
          icon_name = "menu_video.png";
-			break;
+         break;
       case XMB_TEXTURE_MIXER:
          icon_name = "menu_mixer.png";
-			break;
+         break;
       case XMB_TEXTURE_LOG:
          icon_name = "menu_log.png";
-			break;
+         break;
       case XMB_TEXTURE_OSD:
          icon_name = "menu_osd.png";
-			break;
+         break;
       case XMB_TEXTURE_UI:
          icon_name = "menu_ui.png";
-			break;
+         break;
       case XMB_TEXTURE_USER:
          icon_name = "menu_user.png";
-			break;
+         break;
       case XMB_TEXTURE_PRIVACY:
          icon_name = "menu_privacy.png";
-			break;
+         break;
       case XMB_TEXTURE_PLAYLIST:
          icon_name = "menu_playlist.png";
-			break;
+         break;
       case XMB_TEXTURE_QUICKMENU:
          icon_name = "menu_quickmenu.png";
-			break;
+         break;
       case XMB_TEXTURE_REWIND:
          icon_name = "menu_rewind.png";
-			break;
+         break;
       case XMB_TEXTURE_OVERLAY:
          icon_name = "menu_overlay.png";
-			break;
+         break;
       case XMB_TEXTURE_OVERRIDE:
          icon_name = "menu_override.png";
-			break;
+         break;
       case XMB_TEXTURE_NOTIFICATIONS:
          icon_name = "menu_notifications.png";
-			break;
+         break;
       case XMB_TEXTURE_STREAM:
          icon_name = "menu_stream.png";
-			break;
+         break;
+      case XMB_TEXTURE_AVATAR:
+      {
+         char avatar[128];
+         discord_get_own_avatar_id(avatar);
+         icon_name = avatar;
+         break;
+      }
    }
 
-   fill_pathname_application_special(iconpath,
-   PATH_MAX_LENGTH * sizeof(char),
-   APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
+   if (id != XMB_TEXTURE_AVATAR)
+   {
+      fill_pathname_application_special(icon_path,
+      PATH_MAX_LENGTH * sizeof(char),
+      APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
-   icon_fullpath = iconpath;
-   strlcat(icon_fullpath, icon_name, PATH_MAX_LENGTH * sizeof(char));
+      icon_fullpath = icon_path;
+      strlcat(icon_fullpath, icon_name, PATH_MAX_LENGTH * sizeof(char));
+   }
+   else
+   {
+      fill_pathname_application_special(icon_path,
+      PATH_MAX_LENGTH * sizeof(char),
+      APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
 
+      icon_fullpath = icon_path;
+      strlcat(icon_fullpath, icon_name, PATH_MAX_LENGTH * sizeof(char));
+   }
    if (!filestream_exists(icon_fullpath))
    {
       /* If the icon doesn't exist at least try to return the subsetting icon*/
@@ -4714,16 +4746,32 @@ static const char *xmb_texture_path(unsigned id)
 }
 
 static void xmb_context_reset_textures(
-      xmb_handle_t *xmb, const char *iconpath)
+      xmb_handle_t *xmb)
 {
    unsigned i;
+   char *icon_path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   icon_path[0]       = '\0';
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
-      menu_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+   {
+      if (i != XMB_TEXTURE_AVATAR)
+      {
+         fill_pathname_application_special(icon_path,
+            PATH_MAX_LENGTH * sizeof(char),
+            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
+      }
+      else
+      {
+         fill_pathname_application_special(icon_path,
+            PATH_MAX_LENGTH * sizeof(char),
+            discord_is_ready()? APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS : APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
+      }
+      menu_display_reset_textures_list(xmb_texture_path(i), icon_path, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+   }
 
    menu_display_allocate_white_texture();
 
-   xmb->main_menu_node.icon     = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
+   xmb->main_menu_node.icon     = xmb->textures.list[XMB_TEXTURE_AVATAR];
    xmb->main_menu_node.alpha    = xmb->categories_active_alpha;
    xmb->main_menu_node.zoom     = xmb->categories_active_zoom;
 
@@ -4766,7 +4814,7 @@ static void xmb_context_reset_textures(
 #endif
 }
 
-static void xmb_context_reset_background(const char *iconpath)
+static void xmb_context_reset_background(const char *icon_path)
 {
    char *path                  = NULL;
    settings_t *settings        = config_get_ptr();
@@ -4774,12 +4822,12 @@ static void xmb_context_reset_background(const char *iconpath)
 
    if (!string_is_empty(path_menu_wp))
       path = strdup(path_menu_wp);
-   else if (!string_is_empty(iconpath))
+   else if (!string_is_empty(icon_path))
    {
       path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       path[0] = '\0';
 
-      fill_pathname_join(path, iconpath, "bg.png",
+      fill_pathname_join(path, icon_path, "bg.png",
             PATH_MAX_LENGTH * sizeof(char));
    }
 
@@ -4798,8 +4846,8 @@ static void xmb_context_reset(void *data, bool is_threaded)
    if (xmb)
    {
       char bg_file_path[PATH_MAX_LENGTH] = {0};
-      char *iconpath    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      iconpath[0]       = '\0';
+      char *icon_path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      icon_path[0]       = '\0';
 
       fill_pathname_application_special(bg_file_path,
             sizeof(bg_file_path), APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
@@ -4811,7 +4859,7 @@ static void xmb_context_reset(void *data, bool is_threaded)
          xmb->bg_file_path = strdup(bg_file_path);
       }
 
-      fill_pathname_application_special(iconpath,
+      fill_pathname_application_special(icon_path,
             PATH_MAX_LENGTH * sizeof(char),
             APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
@@ -4822,8 +4870,8 @@ static void xmb_context_reset(void *data, bool is_threaded)
       xmb->font2 = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
             xmb->font2_size,
             is_threaded);
-      xmb_context_reset_textures(xmb, iconpath);
-      xmb_context_reset_background(iconpath);
+      xmb_context_reset_textures(xmb);
+      xmb_context_reset_background(icon_path);
       xmb_context_reset_horizontal_list(xmb);
 
       if (!string_is_equal(xmb_thumbnails_ident('R'),
@@ -4840,7 +4888,7 @@ static void xmb_context_reset(void *data, bool is_threaded)
       }
       xmb_update_savestate_thumbnail_image(xmb);
 
-      free(iconpath);
+      free(icon_path);
    }
 }
 

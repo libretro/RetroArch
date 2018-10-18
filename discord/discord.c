@@ -60,28 +60,43 @@ static unsigned discord_status    = 0;
 
 struct netplay_room *room;
 
-static char user_id[128];
+static char join_user_id[128];
+static char join_avatar_id[128];
+
+static char own_user_id[128];
+static char own_avatar_id[128];
 
 static char cdn_url[] = "https://cdn.discordapp.com/avatars";
 
 DiscordRichPresence discord_presence;
 
+
+void discord_get_own_avatar_id(char* output)
+{
+   char buf[PATH_MAX_LENGTH];
+   snprintf(buf, sizeof(buf), "%s.png", own_avatar_id);
+   strlcpy(output, buf, sizeof(buf));
+}
+
 static bool discord_download_avatar(const char* user_id, const char* avatar_id)
 {
    static char url[PATH_MAX_LENGTH];
    static char url_encoded[PATH_MAX_LENGTH];
-   static char fullpath[PATH_MAX_LENGTH];
+   static char full_path[PATH_MAX_LENGTH];
 
    static char buf[PATH_MAX_LENGTH];
+   static char path[PATH_MAX_LENGTH];
 
    file_transfer_t *transf = NULL;
 
    fill_pathname_application_special(buf,
             sizeof(buf),
             APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
-   fill_pathname_join(fullpath, buf, avatar_id, sizeof(fullpath));
+   fill_pathname_join(path, buf, avatar_id, sizeof(path));
+   snprintf(full_path, sizeof(full_path), "%s.png", path);
 
-   if(filestream_exists(fullpath))
+   RARCH_LOG("[Discord] looking for avatar at %s\n", full_path);
+   if(filestream_exists(full_path))
       return true;
    else
    {
@@ -93,20 +108,24 @@ static bool discord_download_avatar(const char* user_id, const char* avatar_id)
       transf->enum_idx = MENU_ENUM_LABEL_CB_DISCORD_AVATAR;
       strlcpy(transf->path, buf, sizeof(transf->path));
 
-      RARCH_LOG("[Discord] downloading avatar from: %s\n", url_encoded);
+      RARCH_LOG("[Discord] downloading avatar from: %s to %s\n", url_encoded, buf);
       task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
 
       return false;
    }
 }
 
-static void handle_discord_ready(const DiscordUser* connectedUser)
+static void handle_discord_ready(const DiscordUser* connected_user)
 {
    RARCH_LOG("[Discord] connected to user: %s#%s - avatar id: %s\n",
-      connectedUser->username,
-      connectedUser->discriminator,
-      connectedUser->userId);
-   discord_download_avatar(connectedUser->userId, connectedUser->avatar);
+      connected_user->username,
+      connected_user->discriminator,
+      connected_user->userId);
+   discord_download_avatar(connected_user->userId, connected_user->avatar);
+   strlcpy(own_user_id, connected_user->userId, sizeof(own_user_id));
+   strlcpy(own_avatar_id, connected_user->avatar, sizeof(own_avatar_id));
+
+   discord_ready         = true;
 }
 
 static void handle_discord_disconnected(int errcode, const char* message)
@@ -147,7 +166,7 @@ static void handle_discord_spectate(const char* secret)
 static void handle_discord_join_response(void *ignore, const char *line)
 {
    if (strstr(line, "yes"))
-      Discord_Respond(user_id, DISCORD_REPLY_YES);
+      Discord_Respond(join_user_id, DISCORD_REPLY_YES);
 
 #ifdef HAVE_MENU
    menu_input_dialog_end();
@@ -318,7 +337,6 @@ void discord_init(void)
 
    RARCH_LOG("[Discord] registering startup command: %s\n", command);
    Discord_Register(settings->arrays.discord_app_id, command);
-   discord_ready         = true;
 }
 
 void discord_shutdown(void)
@@ -332,4 +350,9 @@ void discord_shutdown(void)
 void discord_run_callbacks()
 {
    Discord_RunCallbacks();
+}
+
+bool discord_is_ready()
+{
+   return discord_ready;
 }
