@@ -26,6 +26,7 @@
 #include <sifrpc.h>
 #include <iopcontrol.h>
 #include <libpwroff.h>
+#include <SDL/SDL.h>
 
 
 enum BootDeviceIDs{
@@ -329,6 +330,8 @@ static void frontend_ps2_init(void *data)
 
    fileXioInit();
    audsrv_init();
+
+   SDL_Init(SDL_INIT_TIMER);
 }
 
 static void frontend_ps2_deinit(void *data)
