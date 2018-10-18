@@ -30,7 +30,7 @@
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
 #include <formats/image.h>
-
+#include <time.h>
 #include "../audio/audio_driver.h"
 #include "../menu/menu_shader.h"
 
