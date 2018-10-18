@@ -23,6 +23,8 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <encodings/crc32.h>
+#include <streams/file_stream.h>
+#include <stdlib.h>
 
 static const uint32_t crc32_table[256] = {
   0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
@@ -87,4 +89,19 @@ uint32_t encoding_crc32(uint32_t crc, const uint8_t *buf, size_t len)
       crc = crc32_table[(crc ^ (*buf++)) & 0xff] ^ (crc >> 8);
 
    return crc ^ 0xffffffff;
+}
+
+uint32_t file_crc32(uint32_t crc, const char *path) {
+   if(path == NULL)
+     return 0;
+
+   void *file_bytes = NULL;
+   int64_t file_len = 0;
+
+   if(filestream_read_file(path, &file_bytes, &file_len)) {
+     crc = encoding_crc32(crc, (uint8_t *)file_bytes, file_len);
+     free(file_bytes);
+     return crc;
+   }
+   return 0;
 }
