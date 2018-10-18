@@ -121,11 +121,18 @@ static void app_terminate(void)
 
 - (void)sendEvent:(NSEvent *)event
 {
-   NSEventType event_type;
-   cocoa_input_data_t *apple = NULL;
    [super sendEvent:event];
+   
+   RetroArch_OSX *delegate = (RetroArch_OSX *)self.delegate;
+   if (event.window != delegate.window) {
+      // TODO(sgc): this is just a hack for the 1.7.5 release to
+      // ignore RA processing events that are not for the RA window.
+      // Ideally, we'de delegate `sendEvent` to the window listener
+      return;
+   }
 
-   event_type = event.type;
+   cocoa_input_data_t *apple = NULL;
+   NSEventType event_type = event.type;
 
    switch (event_type)
    {
