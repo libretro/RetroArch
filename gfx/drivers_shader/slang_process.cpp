@@ -7,6 +7,7 @@
 #include <compat/strl.h>
 #include <string>
 #include <stdint.h>
+#include <algorithm>
 
 #include "glslang_util.h"
 #include "slang_preprocess.h"
