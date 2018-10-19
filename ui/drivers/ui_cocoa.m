@@ -89,10 +89,10 @@ static void app_terminate(void)
    [[NSApplication sharedApplication] terminate:nil];
 }
 
-@interface RApplication : NSApplication
+@interface RAWindow : NSWindow
 @end
 
-@implementation RApplication
+@implementation RAWindow
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED < 101200
 #define NSEventTypeKeyDown             NSKeyDown
@@ -119,18 +119,9 @@ static void app_terminate(void)
 #define NSEventModifierFlagNumericPad  NSNumericPadKeyMask
 #endif
 
-- (void)sendEvent:(NSEvent *)event
-{
+- (void)sendEvent:(NSEvent *)event {
    [super sendEvent:event];
    
-   RetroArch_OSX *delegate = (RetroArch_OSX *)self.delegate;
-   if (event.window != delegate.window) {
-      // TODO(sgc): this is just a hack for the 1.7.5 release to
-      // ignore RA processing events that are not for the RA window.
-      // Ideally, we'de delegate `sendEvent` to the window listener
-      return;
-   }
-
    cocoa_input_data_t *apple = NULL;
    NSEventType event_type = event.type;
 
