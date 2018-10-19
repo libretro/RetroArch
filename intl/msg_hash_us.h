@@ -3504,27 +3504,30 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-    "Enable or disable achievements. For more information, visit http://retroachievements.org"
+    "Enable or disable achievements.\n"
+    "For more information, visit http://retroachievements.org"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-    "Enable or disable unofficial achievements and/or beta features for testing purposes."
+    "Use unofficial achievements and/or beta features for testing purposes."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-    "Enable or disable savestates, cheats, rewind, pause, and slow-motion for all games."
+    "Double the amount of points earned.\n"
+    "Disables savestates, cheats, rewind, pause, and slow-motion for all games."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-    "Enable or disable in-game leaderboards. Has no effect if Hardcore Mode is disabled."
+    "Game specific leaderboards.\n"
+    "Has no effect if Hardcore Mode is disabled."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
-    "Enable or disable badge display in the Achievement List."
+    "Display badges in the Achievement List."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-    "Enable or disable OSD verbosity for achievements."
+    "Show more information in the notifications."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
