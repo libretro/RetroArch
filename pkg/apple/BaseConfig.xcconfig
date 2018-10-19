@@ -12,3 +12,4 @@ DEPS_DIR = $(SRCBASE)/deps
 HEADER_SEARCH_PATHS = $(inherited) $(SRCBASE) $(SRCBASE)/gfx/include $(SRCBASE)/libretro-common/include $(DEPS_DIR)/libFLAC/include $(DEPS_DIR)/7zip $(DEPS_DIR)/stb $(DEPS_DIR) $(DEPS_DIR)/SPIRV-Cross $(DEPS_DIR)/glslang $(DEPS_DIR)/glslang/glslang/glslang/Public $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent $(DEPS_DIR)/glslang/glslang/SPIRV $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix
 CLANG_CXX_LANGUAGE_STANDARD=c++11
 CLANG_ENABLE_OBJC_ARC=YES
+INFOPLIST_FILE = $(SRCROOT)/OSX/Info_Metal.plist
