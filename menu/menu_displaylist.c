@@ -6948,8 +6948,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,   PARSE_ACTION, false);
+#ifdef ANDROID
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,   PARSE_ACTION, false);
+#endif
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,  PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
