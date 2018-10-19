@@ -2376,7 +2376,7 @@ static bool check_menu_driver_compatibility(void)
          string_is_equal(video_driver, "gx2")    ||
          string_is_equal(video_driver, "vulkan") ||
          string_is_equal(video_driver, "metal")  ||
-         string_is_equal(video_driver, "vita"))
+         string_is_equal(video_driver, "vita2d"))
       return true;   
 
    return false;
