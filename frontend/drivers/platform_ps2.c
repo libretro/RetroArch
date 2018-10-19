@@ -463,6 +463,11 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_append_enum(list,
+         "host:/",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 
    return 0;
@@ -487,7 +492,7 @@ frontend_ctx_driver_t frontend_ctx_ps2 = {
    NULL,                         /* load_content */
    frontend_ps2_get_architecture,                         /* get_architecture */
    NULL,                         /* get_powerstate */
-   NULL,                         /* parse_drive_list */
+   frontend_ps2_parse_drive_list,                         /* parse_drive_list */
    NULL,                         /* get_mem_total */
    NULL,                         /* get_mem_free */
    NULL,                         /* install_signal_handler */
