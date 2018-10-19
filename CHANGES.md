@@ -10,6 +10,7 @@
 - SWITCH/LIBNX: Improve touch scaling calculation.
 - SWITCH: Proper button labels.
 - VULKAN: Fix RGUI crashing at startup.
+- VULKANL Fix secondary screens in overlays not working.
 - WINDOWS/WSA: Network Information info is blank until first network operation.
 - WIIU: Initial netplay peer-to-peer support. Network information working.
 
