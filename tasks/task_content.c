@@ -603,9 +603,6 @@ static bool content_file_load(
       }
       else
       {
-         RARCH_LOG("%s\n",
-               msg_hash_to_str(
-                  MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
 
 #ifdef HAVE_COMPRESSION
          if (     !content_ctx->block_extract
@@ -619,6 +616,9 @@ static bool content_file_load(
             goto error;
 #endif
       }
+      RARCH_LOG("%s\n", msg_hash_to_str(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
+      content_rom_crc = file_crc32(0, path);
+      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)content_rom_crc);
    }
 
    load_info.content = content;

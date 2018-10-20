@@ -482,7 +482,8 @@ int filestream_close(RFILE *stream)
  *
  * Read the contents of a file into @buf.
  *
- * Returns: number of items read, -1 on error.
+ * Returns: 1 on success, 0 on failure
+ * In the error case, the dereferenced buf is set to NULL and the len is set to -1.
  */
 int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 {
