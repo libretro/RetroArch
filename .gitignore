@@ -163,3 +163,7 @@ retroarch_switch.lst
 retroarch_switch.nacp
 retroarch_switch.nro
 retroarch_switch.nso
+/pkg/msvc/x64/Debug QT
+/pkg/msvc/msvc-2017/x64/Debug QT
+/pkg/msvc/msvc-2017/MetaObjects
+/.vs
