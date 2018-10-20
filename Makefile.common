@@ -28,16 +28,16 @@ ifeq ($(HAVE_LIBRETRODB),)
 endif
 
 ifeq ($(HAVE_VIDEO_PROCESSOR), 1)
-	DEFINES += -DHAVE_VIDEO_PROCESSOR
+    DEFINES += -DHAVE_VIDEO_PROCESSOR
 endif
 
 ifeq ($(HAVE_MENU), 1)
-	DEFINES += -DHAVE_MENU
-	HAVE_MENU_COMMON = 1
+    DEFINES += -DHAVE_MENU
+    HAVE_MENU_COMMON = 1
 endif
 
 ifeq ($(HAVE_SOCKET_LEGACY), 1)
-	DEFINES += -DHAVE_SOCKET_LEGACY
+    DEFINES += -DHAVE_SOCKET_LEGACY
 endif
 
 ifeq ($(HAVE_HID), 1)
@@ -49,7 +49,7 @@ ifeq ($(HAVE_LIBRETRODB), 1)
 endif
 
 ifeq ($(HAVE_VITA2D), 1)
-	DEFINES += -DHAVE_VITA2D
+    DEFINES += -DHAVE_VITA2D
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
@@ -100,16 +100,16 @@ ifeq ($(HAVE_NETPLAYDISCOVERY), 1)
 endif
 
 ifeq ($(HAVE_NETLOGGER), 1)
-	CFLAGS += -DHAVE_LOGGER
-	DEFINES += -DHAVE_LOGGER
-	OBJ += network/net_logger.o
+    CFLAGS += -DHAVE_LOGGER
+    DEFINES += -DHAVE_LOGGER
+    OBJ += network/net_logger.o
 endif
 
 # System
 
 ifneq ($(findstring BSD,$(OS)),)
    BSD_LOCAL_INC += -I/usr/local/include
-	HAVE_UNIX = 1
+    HAVE_UNIX = 1
 endif
 
 ifneq ($(findstring Darwin,$(OS)),)
@@ -121,7 +121,7 @@ endif
 
 ifneq ($(findstring Haiku,$(OS)),)
    LIBS += -lroot -lnetwork
-	HAVE_UNIX = 1
+    HAVE_UNIX = 1
 else
    LIBS += -lm
 endif
@@ -131,15 +131,15 @@ ifneq ($(findstring Linux,$(OS)),)
    OBJ += input/drivers/linuxraw_input.o \
           input/common/linux_common.o \
           input/drivers_joypad/linuxraw_joypad.o
-	HAVE_UNIX = 1
+    HAVE_UNIX = 1
 endif
 
 ifeq ($(HAVE_UNIX), 1)
-	OBJ += frontend/drivers/platform_unix.o
+    OBJ += frontend/drivers/platform_unix.o
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
-	OBJ += frontend/drivers/platform_ctr.o
+    OBJ += frontend/drivers/platform_ctr.o
 endif
 
 # Git
@@ -165,8 +165,8 @@ OBJ += frontend/frontend.o \
        ui/drivers/null/ui_null_application.o \
        core_impl.o \
        retroarch.o \
-		 dirs.o \
-		 paths.o \
+         dirs.o \
+         paths.o \
        command.o \
        msg_hash.o \
        intl/msg_hash_us.o \
@@ -191,7 +191,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
-		 setting_list.o \
+         setting_list.o \
        list_special.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o \
@@ -206,13 +206,13 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
        input/common/input_common.o \
        input/input_driver.o \
-		 input/input_mapper.o \
+         input/input_mapper.o \
        led/led_driver.o \
        led/drivers/led_null.o \
        gfx/video_coord_array.o \
        gfx/video_display_server.o \
        gfx/video_driver.o \
-	   gfx/video_crt_switch.o \
+       gfx/video_crt_switch.o \
        camera/camera_driver.o \
        wifi/wifi_driver.o \
        location/location_driver.o \
@@ -222,11 +222,11 @@ OBJ += frontend/frontend.o \
        dynamic.o \
        cores/dynamic_dummy.o \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o \
-		 managers/core_manager.o \
+         managers/core_manager.o \
        managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        tasks/task_autodetect.o \
-		 input/input_autodetect_builtin.o \
+         input/input_autodetect_builtin.o \
        input/input_keymaps.o \
        input/input_remapping.o \
        $(LIBRETRO_COMM_DIR)/queues/fifo_queue.o \
@@ -252,7 +252,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/null_resampler.o \
-		 $(LIBRETRO_COMM_DIR)/utils/md5.o \
+         $(LIBRETRO_COMM_DIR)/utils/md5.o \
        location/drivers/nulllocation.o \
        camera/drivers/nullcamera.o \
        wifi/drivers/nullwifi.o \
@@ -309,7 +309,7 @@ OBJ += intl/msg_hash_de.o \
        intl/msg_hash_chs.o \
        intl/msg_hash_cht.o \
        intl/msg_hash_ar.o \
-       intl/msg_hash_el.o						 
+       intl/msg_hash_el.o                         
 
 endif
 
@@ -360,14 +360,14 @@ OBJ += ui/drivers/ui_qt.o \
        ui/drivers/qt/playlistthumbnaildownload.o
 
 MOC_HEADERS += ui/drivers/ui_qt.h \
-							 ui/drivers/qt/ui_qt_load_core_window.h \
-							 ui/drivers/qt/flowlayout.h \
-							 ui/drivers/qt/shaderparamsdialog.h \
-							 ui/drivers/qt/coreoptionsdialog.h \
-							 ui/drivers/qt/filedropwidget.h \
-							 ui/drivers/qt/coreinfodialog.h \
-							 ui/drivers/qt/playlistentrydialog.h \
-							 ui/drivers/qt/viewoptionsdialog.h
+                             ui/drivers/qt/ui_qt_load_core_window.h \
+                             ui/drivers/qt/flowlayout.h \
+                             ui/drivers/qt/shaderparamsdialog.h \
+                             ui/drivers/qt/coreoptionsdialog.h \
+                             ui/drivers/qt/filedropwidget.h \
+                             ui/drivers/qt/coreinfodialog.h \
+                             ui/drivers/qt/playlistentrydialog.h \
+                             ui/drivers/qt/viewoptionsdialog.h
 
 DEFINES += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) $(QT5CONCURRENT_CFLAGS) $(QT5NETWORK_CFLAGS) -DHAVE_MAIN
 #DEFINES += $(QT5WEBENGINE_CFLAGS)
@@ -412,77 +412,77 @@ endif
 INCLUDE_DIRS += -Ideps/mbedtls
 
 OBJS_TLS_CRYPTO = deps/mbedtls/aes.o \
-						deps/mbedtls/aesni.o \
-						deps/mbedtls/arc4.o \
+                        deps/mbedtls/aesni.o \
+                        deps/mbedtls/arc4.o \
                   deps/mbedtls/asn1parse.o \
-						deps/mbedtls/asn1write.o \
-						deps/mbedtls/base64.o \
+                        deps/mbedtls/asn1write.o \
+                        deps/mbedtls/base64.o \
                   deps/mbedtls/bignum.o \
-						deps/mbedtls/blowfish.o \
-						deps/mbedtls/camellia.o \
+                        deps/mbedtls/blowfish.o \
+                        deps/mbedtls/camellia.o \
                   deps/mbedtls/ccm.o \
-						deps/mbedtls/cipher.o \
-						deps/mbedtls/cipher_wrap.o \
+                        deps/mbedtls/cipher.o \
+                        deps/mbedtls/cipher_wrap.o \
                   deps/mbedtls/cmac.o \
-						deps/mbedtls/ctr_drbg.o \
-						deps/mbedtls/des.o \
+                        deps/mbedtls/ctr_drbg.o \
+                        deps/mbedtls/des.o \
                   deps/mbedtls/dhm.o \
-						deps/mbedtls/ecdh.o \
-						deps/mbedtls/ecdsa.o \
+                        deps/mbedtls/ecdh.o \
+                        deps/mbedtls/ecdsa.o \
                   deps/mbedtls/ecjpake.o \
-						deps/mbedtls/ecp.o \
+                        deps/mbedtls/ecp.o \
                   deps/mbedtls/ecp_curves.o \
-						deps/mbedtls/entropy.o \
-						deps/mbedtls/entropy_poll.o \
+                        deps/mbedtls/entropy.o \
+                        deps/mbedtls/entropy_poll.o \
                   deps/mbedtls/error.o \
-						deps/mbedtls/gcm.o \
-						deps/mbedtls/havege.o \
+                        deps/mbedtls/gcm.o \
+                        deps/mbedtls/havege.o \
                   deps/mbedtls/hmac_drbg.o \
-						deps/mbedtls/md.o \
-						deps/mbedtls/md2.o \
+                        deps/mbedtls/md.o \
+                        deps/mbedtls/md2.o \
                   deps/mbedtls/md4.o \
-						deps/mbedtls/md5.o \
-						deps/mbedtls/md_wrap.o \
+                        deps/mbedtls/md5.o \
+                        deps/mbedtls/md_wrap.o \
                   deps/mbedtls/memory_buffer_alloc.o \
-						deps/mbedtls/oid.o \
+                        deps/mbedtls/oid.o \
                   deps/mbedtls/padlock.o \
-						deps/mbedtls/pem.o \
-						deps/mbedtls/pk.o \
+                        deps/mbedtls/pem.o \
+                        deps/mbedtls/pk.o \
                   deps/mbedtls/pk_wrap.o \
-						deps/mbedtls/pkcs12.o \
-						deps/mbedtls/pkcs5.o \
+                        deps/mbedtls/pkcs12.o \
+                        deps/mbedtls/pkcs5.o \
                   deps/mbedtls/pkparse.o \
-						deps/mbedtls/pkwrite.o \
-						deps/mbedtls/platform.o \
+                        deps/mbedtls/pkwrite.o \
+                        deps/mbedtls/platform.o \
                   deps/mbedtls/ripemd160.o \
-						deps/mbedtls/rsa.o \
-						deps/mbedtls/sha1.o \
+                        deps/mbedtls/rsa.o \
+                        deps/mbedtls/sha1.o \
                   deps/mbedtls/sha256.o \
-						deps/mbedtls/sha512.o \
-						deps/mbedtls/threading.o \
+                        deps/mbedtls/sha512.o \
+                        deps/mbedtls/threading.o \
                   deps/mbedtls/timing.o \
-						deps/mbedtls/version.o \
+                        deps/mbedtls/version.o \
                   deps/mbedtls/version_features.o \
-						deps/mbedtls/xtea.o
+                        deps/mbedtls/xtea.o
 
 OBJS_TLS_X509 = deps/mbedtls/certs.o \
-					 deps/mbedtls/pkcs11.o \
-					 deps/mbedtls/x509.o \
+                     deps/mbedtls/pkcs11.o \
+                     deps/mbedtls/x509.o \
                 deps/mbedtls/x509_create.o \
-					 deps/mbedtls/x509_crl.o \
-					 deps/mbedtls/x509_crt.o \
+                     deps/mbedtls/x509_crl.o \
+                     deps/mbedtls/x509_crt.o \
                 deps/mbedtls/x509_csr.o \
-					 deps/mbedtls/x509write_crt.o \
-					 deps/mbedtls/x509write_csr.o
+                     deps/mbedtls/x509write_crt.o \
+                     deps/mbedtls/x509write_csr.o
 
 OBJS_TLS = deps/mbedtls/debug.o \
-			  deps/mbedtls/net_sockets.o \
+              deps/mbedtls/net_sockets.o \
            deps/mbedtls/ssl_cache.o \
-			  deps/mbedtls/ssl_ciphersuites.o \
+              deps/mbedtls/ssl_ciphersuites.o \
            deps/mbedtls/ssl_cli.o \
-			  deps/mbedtls/ssl_cookie.o \
+              deps/mbedtls/ssl_cookie.o \
            deps/mbedtls/ssl_srv.o \
-			  deps/mbedtls/ssl_ticket.o \
+              deps/mbedtls/ssl_ticket.o \
            deps/mbedtls/ssl_tls.o
 
 OBJ += $(OBJS_TLS_CRYPTO) $(OBJS_TLS_X509) $(OBJS_TLS)
@@ -526,11 +526,11 @@ ifeq ($(HAVE_CORETEXT), 1)
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
-	OBJ += gfx/drivers_font/ctr_font.o
+    OBJ += gfx/drivers_font/ctr_font.o
 endif
 
 ifeq ($(HAVE_LIBNX), 1)
-	OBJ += gfx/drivers_font/switch_font.o
+    OBJ += gfx/drivers_font/switch_font.o
 endif
 
 ifeq ($(HAVE_OSS), 1)
@@ -540,8 +540,8 @@ else ifeq ($(HAVE_OSS_BSD), 1)
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
-	OBJ += audio/drivers/ctr_csnd_audio.o \
-			 audio/drivers/ctr_dsp_audio.o
+    OBJ += audio/drivers/ctr_csnd_audio.o \
+             audio/drivers/ctr_dsp_audio.o
 endif
 
 ifeq ($(HAVE_ALSA), 1)
@@ -556,8 +556,8 @@ endif
 endif
 
 ifeq ($(HAVE_TINYALSA), 1)
-	OBJ += audio/drivers/tinyalsa.o
-	DEFINES += -DHAVE_TINYALSA
+    OBJ += audio/drivers/tinyalsa.o
+    DEFINES += -DHAVE_TINYALSA
 endif
 
 ifeq ($(HAVE_ROAR), 1)
@@ -604,7 +604,7 @@ endif
 ifeq ($(HAVE_DSOUND), 1)
    OBJ += audio/drivers/dsound.o
    DEFINES += -DHAVE_DSOUND
-	HAVE_DX_COMMON  = 1
+    HAVE_DX_COMMON  = 1
    LIBS += -ldsound
 endif
 
@@ -632,13 +632,13 @@ ifeq ($(HAVE_NEON),1)
    OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_neon.o \
           audio/drivers_resampler/cc_resampler_neon.o \
           memory/neon/memcpy-neon.o
-	DEFINES += -DHAVE_NEON
+    DEFINES += -DHAVE_NEON
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
-		 $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o \
-		 $(LIBRETRO_COMM_DIR)/audio/audio_mix.o \
-		 $(LIBRETRO_COMM_DIR)/formats/wav/rwav.o
+         $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o \
+         $(LIBRETRO_COMM_DIR)/audio/audio_mix.o \
+         $(LIBRETRO_COMM_DIR)/formats/wav/rwav.o
 
 ifeq ($(HAVE_NEON),1)
    OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float_neon.o \
@@ -746,12 +746,12 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_setting.o \
           menu/menu_networking.o \
           menu/menu_shader.o \
-			 menu/widgets/menu_filebrowser.o \
-			 menu/widgets/menu_dialog.o \
-			 menu/widgets/menu_input_dialog.o \
-			 menu/widgets/menu_input_bind_dialog.o \
+             menu/widgets/menu_filebrowser.o \
+             menu/widgets/menu_dialog.o \
+             menu/widgets/menu_input_dialog.o \
+             menu/widgets/menu_input_bind_dialog.o \
           menu/widgets/menu_entry.o \
-			 menu/widgets/menu_osk.o \
+             menu/widgets/menu_osk.o \
           menu/menu_cbs.o \
           menu/cbs/menu_cbs_ok.o \
           menu/cbs/menu_cbs_cancel.o \
@@ -780,9 +780,9 @@ endif
 ifeq ($(HAVE_OVERLAY), 1)
    DEFINES += -DHAVE_OVERLAY
    OBJ += \
-	  tasks/task_overlay.o \
-	  input/input_overlay.o \
-	  led/drivers/led_overlay.o
+      tasks/task_overlay.o \
+      input/input_overlay.o \
+      led/drivers/led_overlay.o
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)
@@ -812,34 +812,34 @@ ifeq ($(HAVE_THREAD_STORAGE), 1)
 endif
 
 ifeq ($(HAVE_VITA2D), 1)
-	OBJ += $(DEPS_DIR)/libvita2d/source/vita2d.o \
-			 $(DEPS_DIR)/libvita2d/source/vita2d_texture.o \
-			 $(DEPS_DIR)/libvita2d/source/vita2d_draw.o \
-			 $(DEPS_DIR)/libvita2d/source/utils.o
+    OBJ += $(DEPS_DIR)/libvita2d/source/vita2d.o \
+             $(DEPS_DIR)/libvita2d/source/vita2d_texture.o \
+             $(DEPS_DIR)/libvita2d/source/vita2d_draw.o \
+             $(DEPS_DIR)/libvita2d/source/utils.o
 
-	OBJ += $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
-			 $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
+    OBJ += $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
+             $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
+             $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
+             $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
+             $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
+             $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
+             $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
 
 ifeq ($(HAVE_MENU),1)
-	OBJ += menu/drivers_display/menu_display_vita2d.o
+    OBJ += menu/drivers_display/menu_display_vita2d.o
 endif
 
-	OBJ += gfx/drivers/vita2d_gfx.o \
-			 gfx/drivers_font/vita2d_font.o
+    OBJ += gfx/drivers/vita2d_gfx.o \
+             gfx/drivers_font/vita2d_font.o
 
-	CFLAGS  += -I$(DEPS_DIR)/libvita2d/include
+    CFLAGS  += -I$(DEPS_DIR)/libvita2d/include
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
-	OBJ += gfx/drivers/ctr_gfx.o \
-			 menu/drivers_display/menu_display_ctr.o \
-			 input/drivers/ctr_input.o \
-			 input/drivers_joypad/ctr_joypad.o
+    OBJ += gfx/drivers/ctr_gfx.o \
+             menu/drivers_display/menu_display_ctr.o \
+             input/drivers/ctr_input.o \
+             input/drivers_joypad/ctr_joypad.o
 endif
 
 ifeq ($(TARGET), retroarch_switch)
@@ -855,16 +855,16 @@ ifeq ($(TARGET), retroarch_switch)
     else
      OBJ += gfx/drivers/switch_gfx.o
     endif
-	 OBJ += audio/drivers/switch_audio.o \
-			  audio/drivers/switch_thread_audio.o \
-			  input/drivers/switch_input.o \
-			  input/drivers_joypad/switch_joypad.o \
-			  frontend/drivers/platform_switch.o
+     OBJ += audio/drivers/switch_audio.o \
+              audio/drivers/switch_thread_audio.o \
+              input/drivers/switch_input.o \
+              input/drivers_joypad/switch_joypad.o \
+              frontend/drivers/platform_switch.o
 endif
 
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
-		  input/drivers/wayland_input.o
+          input/drivers/wayland_input.o
  ifeq ($(HAVE_EGL), 1)
    LIBS += $(EGL_LIBS)
  endif
@@ -875,7 +875,7 @@ endif
 #Input
 
 ifeq ($(HAVE_DINPUT), 1)
-	HAVE_DX_COMMON  = 1
+    HAVE_DX_COMMON  = 1
    LIBS += -ldinput8 -lole32
    DEFINES += -DHAVE_DINPUT
    OBJ += input/drivers/dinput.o \
@@ -922,9 +922,9 @@ ifeq ($(HAVE_XKBCOMMON), 1)
 endif
 
 ifeq ($(HAVE_DBUS), 1)
-	LIBS += $(DBUS_LIBS)
-	CFLAGS += $(DBUS_CFLAGS)
-	OBJ += gfx/common/dbus_common.o
+    LIBS += $(DBUS_LIBS)
+    CFLAGS += $(DBUS_CFLAGS)
+    OBJ += gfx/common/dbus_common.o
 endif
 
 ifeq ($(HAVE_UDEV), 1)
@@ -1037,8 +1037,8 @@ endif
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
-			 gfx/drivers_renderchain/gl2_renderchain.o \
-			 $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
+             gfx/drivers_renderchain/gl2_renderchain.o \
+             $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
           gfx/common/gl_common.o \
           gfx/drivers_font/gl_raster_font.o \
           $(LIBRETRO_COMM_DIR)/glsym/rglgen.o
@@ -1090,23 +1090,23 @@ endif
 endif
 
 ifeq ($(HAVE_METAL), 1)
-	DEFINES += -DHAVE_METAL
-	OBJ += gfx/common/metal/Context.o \
-			 gfx/common/metal/Filter.o \
-			 gfx/common/metal/RendererCommon.o \
-			 gfx/common/metal/View.o \
-			 gfx/common/metal/TexturedView.o \
-			 gfx/common/metal/MenuDisplay.o \
-			 gfx/common/metal_common.o \
-			 gfx/drivers/metal.o \
-			 menu/drivers_display/menu_display_metal.o \
-			 gfx/drivers_font/metal_raster_font.o
+    DEFINES += -DHAVE_METAL
+    OBJ += gfx/common/metal/Context.o \
+             gfx/common/metal/Filter.o \
+             gfx/common/metal/RendererCommon.o \
+             gfx/common/metal/View.o \
+             gfx/common/metal/TexturedView.o \
+             gfx/common/metal/MenuDisplay.o \
+             gfx/common/metal_common.o \
+             gfx/drivers/metal.o \
+             menu/drivers_display/menu_display_metal.o \
+             gfx/drivers_font/metal_raster_font.o
 endif
 
 ifeq ($(HAVE_MPV), 1)
    OBJ += cores/libretro-mpv/mpv-libretro.o
    DEFINES += -I$(DEPS_DIR) -DHAVE_MPV
-	LIBS += -lmpv
+    LIBS += -lmpv
 endif
 
    ifeq ($(HAVE_OPENGLES), 1)
@@ -1127,7 +1127,7 @@ endif
          OBJ += gfx/drivers_context/cgl_ctx.o
       else ifneq ($(findstring Win32,$(OS)),)
          GL_LIBS := -lopengl32 -lgdi32 -lcomdlg32
-	 WANT_WGL=1
+     WANT_WGL=1
       endif
       LIBS += $(GL_LIBS)
    endif
@@ -1255,8 +1255,8 @@ ifeq ($(HAVE_CG), 1)
 endif
 
 ifeq ($(HAVE_D3D9), 1)
-	HAVE_D3D_COMMON = 1
-	HAVE_D3DX = 1
+    HAVE_D3D_COMMON = 1
+    HAVE_D3DX = 1
    DEFINES += -DHAVE_D3D9
 ifeq ($(HAVE_D3DX), 1)
    DEFINES += -DHAVE_D3DX
@@ -1267,7 +1267,7 @@ ifeq ($(HAVE_D3DX), 1)
    LIBS += -ld3dx9
 endif
 endif
-	HAVE_DX_COMMON  = 1
+    HAVE_DX_COMMON  = 1
    OBJ  += gfx/drivers_font/d3d_w32_font.o
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
@@ -1281,17 +1281,17 @@ endif
 
 ifeq ($(HAVE_D3D10), 1)
    OBJ += gfx/drivers/d3d10.o \
-			 gfx/common/d3d10_common.o \
-			 gfx/drivers_font/d3d10_font.o \
-			 menu/drivers_display/menu_display_d3d10.o
+             gfx/common/d3d10_common.o \
+             gfx/drivers_font/d3d10_font.o \
+             menu/drivers_display/menu_display_d3d10.o
    DEFINES += -DHAVE_D3D10
 endif
 
 ifeq ($(HAVE_D3D11), 1)
    OBJ += gfx/drivers/d3d11.o \
-			 gfx/common/d3d11_common.o \
-			 gfx/drivers_font/d3d11_font.o \
-			 menu/drivers_display/menu_display_d3d11.o
+             gfx/common/d3d11_common.o \
+             gfx/drivers_font/d3d11_font.o \
+             menu/drivers_display/menu_display_d3d11.o
    DEFINES += -DHAVE_D3D11
    HAVE_SLANG       = 1
    HAVE_GLSLANG     = 1
@@ -1300,9 +1300,9 @@ endif
 
 ifeq ($(HAVE_D3D12), 1)
    OBJ += gfx/drivers/d3d12.o \
-			 gfx/common/d3d12_common.o \
-			 gfx/drivers_font/d3d12_font.o \
-			 menu/drivers_display/menu_display_d3d12.o
+             gfx/common/d3d12_common.o \
+             gfx/drivers_font/d3d12_font.o \
+             menu/drivers_display/menu_display_d3d12.o
    DEFINES += -DHAVE_D3D12
    HAVE_SLANG       = 1
    HAVE_GLSLANG     = 1
@@ -1312,12 +1312,12 @@ endif
 ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
    INCLUDE_DIRS += -isystemgfx/include/dxsdk
    OBJ += gfx/common/d3dcompiler_common.o \
-			 gfx/common/dxgi_common.o
+             gfx/common/dxgi_common.o
    CFLAGS += -Wno-unknown-pragmas
 endif
 
 ifeq ($(HAVE_D3D8), 1)
-	HAVE_D3D_COMMON = 1
+    HAVE_D3D_COMMON = 1
    HAVE_DX_COMMON  = 1
    DEFINES += -DHAVE_D3D8
 ifneq ($(HAVE_DYLIB), 1)
@@ -1329,32 +1329,32 @@ endif
 endif
 
 ifeq ($(HAVE_DX_COMMON), 1)
-	LIBS += -ldxguid
+    LIBS += -ldxguid
 endif
 
 ifeq ($(HAVE_D3D8), 1)
-	DEFINES += -DHAVE_D3D8
-	OBJ += gfx/drivers/d3d8.o
-	OBJ += gfx/common/d3d8_common.o
+    DEFINES += -DHAVE_D3D8
+    OBJ += gfx/drivers/d3d8.o
+    OBJ += gfx/common/d3d8_common.o
 
 ifeq ($(HAVE_MENU_COMMON), 1)
-	OBJ += menu/drivers_display/menu_display_d3d8.o
+    OBJ += menu/drivers_display/menu_display_d3d8.o
 endif
 endif
 
 ifeq ($(HAVE_D3D9), 1)
-	DEFINES += -DHAVE_D3D9
-	OBJ += gfx/drivers/d3d9.o
-	OBJ += gfx/common/d3d9_common.o
+    DEFINES += -DHAVE_D3D9
+    OBJ += gfx/drivers/d3d9.o
+    OBJ += gfx/common/d3d9_common.o
 
 ifeq ($(HAVE_MENU_COMMON), 1)
-	OBJ += menu/drivers_display/menu_display_d3d9.o
+    OBJ += menu/drivers_display/menu_display_d3d9.o
 endif
 endif
 
 ifeq ($(HAVE_D3D_COMMON), 1)
-	DEFINES += -DHAVE_D3D
-	OBJ     += gfx/common/d3d_common.o
+    DEFINES += -DHAVE_D3D
+    OBJ     += gfx/common/d3d_common.o
 endif
 
 ifeq ($(HAVE_SLANG),1)
@@ -1402,7 +1402,7 @@ endif
 endif
 
 ifeq ($(HAVE_SPIRV_CROSS), 1)
-	DEFINES += -DHAVE_SPIRV_CROSS
+    DEFINES += -DHAVE_SPIRV_CROSS
    INCLUDE_DIRS += -I$(DEPS_DIR)/SPIRV-Cross
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.o
@@ -1412,7 +1412,7 @@ ifeq ($(HAVE_SPIRV_CROSS), 1)
 endif
 
 ifeq ($(WANT_WGL), 1)
-	OBJ += gfx/drivers_context/wgl_ctx.o
+    OBJ += gfx/drivers_context/wgl_ctx.o
    LIBS += -lcomctl32
 endif
 
@@ -1446,9 +1446,9 @@ ifeq ($(HAVE_7ZIP),1)
            $(DEPS_DIR)/7zip/Bcj2.o \
            $(DEPS_DIR)/7zip/7zCrc.o \
            $(DEPS_DIR)/7zip/Lzma2Dec.o \
-			  $(DEPS_DIR)/7zip/7zBuf.o
+              $(DEPS_DIR)/7zip/7zBuf.o
    OBJ +=  $(LIBRETRO_COMM_DIR)/file/archive_file_7z.o \
-			  $(7ZOBJ)
+              $(7ZOBJ)
 endif
 
 ifeq ($(HAVE_IBXM), 1)
@@ -1458,8 +1458,8 @@ endif
 
 ifeq ($(HAVE_BUILTINFLAC),1)
    HAVE_FLAC = 1
-	DEFINES += -DHAVE_DR_FLAC -I$(DEPS_DIR)
-	CFLAGS  += -DHAVE_DR_FLAC
+    DEFINES += -DHAVE_DR_FLAC -I$(DEPS_DIR)
+    CFLAGS  += -DHAVE_DR_FLAC
    CFLAGS  += -DHAVE_FLAC -I$(DEPS_DIR)/libFLAC/include
    DEFINES += -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
               -DFLAC_PACKAGE_VERSION="\"retroarch\""
@@ -1519,16 +1519,16 @@ endif
 
 ifeq ($(HAVE_CHD), 1)
    CFLAGS  += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
-	DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
+    DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
    OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
               $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_huffman.o \
               $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
-	
+    
    ifeq ($(HAVE_FLAC), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
-				 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
+                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
    endif
 
    ifeq ($(HAVE_7ZIP), 1)
@@ -1575,7 +1575,7 @@ endif
 ifeq ($(HAVE_V4L2),1)
    OBJ += camera/drivers/video4linux2.o
 ifeq ($(HAVE_VIDEO_PROCESSOR),1)
-	OBJ += cores/libretro-video-processor/video_processor_v4l2.o
+    OBJ += cores/libretro-video-processor/video_processor_v4l2.o
 endif
    DEFINES += -DHAVE_V4L2
    LIBS += $(V4L2_LIBS)
@@ -1590,13 +1590,13 @@ ifeq ($(HAVE_NETWORKING), 1)
           $(LIBRETRO_COMM_DIR)/net/net_http.o \
           $(LIBRETRO_COMM_DIR)/net/net_http_parse.o \
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
-			 $(LIBRETRO_COMM_DIR)/net/net_natt.o \
-			 network/net_http_special.o \
-			 tasks/task_http.o \
-			 tasks/task_netplay_lan_scan.o \
-			 tasks/task_netplay_nat_traversal.o \
-			 tasks/task_wifi.o \
-			 tasks/task_netplay_find_content.o
+             $(LIBRETRO_COMM_DIR)/net/net_natt.o \
+             network/net_http_special.o \
+             tasks/task_http.o \
+             tasks/task_netplay_lan_scan.o \
+             tasks/task_netplay_nat_traversal.o \
+             tasks/task_wifi.o \
+             tasks/task_netplay_find_content.o
 
    ifeq ($(HAVE_SSL), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl.o
@@ -1616,26 +1616,26 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    # Netplay
-	DEFINES += -DHAVE_NETWORK_CMD
-	OBJ += network/netplay/netplay_delta.o \
-			network/netplay/netplay_frontend.o \
-			network/netplay/netplay_handshake.o \
-			network/netplay/netplay_init.o \
-			network/netplay/netplay_io.o \
-			network/netplay/netplay_keyboard.o \
-			network/netplay/netplay_sync.o \
-			network/netplay/netplay_discovery.o \
-			network/netplay/netplay_buf.o \
-			network/netplay/netplay_room_parse.o
+    DEFINES += -DHAVE_NETWORK_CMD
+    OBJ += network/netplay/netplay_delta.o \
+            network/netplay/netplay_frontend.o \
+            network/netplay/netplay_handshake.o \
+            network/netplay/netplay_init.o \
+            network/netplay/netplay_io.o \
+            network/netplay/netplay_keyboard.o \
+            network/netplay/netplay_sync.o \
+            network/netplay/netplay_discovery.o \
+            network/netplay/netplay_buf.o \
+            network/netplay/netplay_room_parse.o
 
    # Retro Achievements
    ifeq ($(HAVE_CHEEVOS), 1)
       DEFINES += -DHAVE_CHEEVOS
-		
-		OBJ += cheevos/cheevos.o \
-				 cheevos/badges.o \
-				 cheevos/var.o \
-				 cheevos/cond.o
+        
+        OBJ += cheevos/cheevos.o \
+                 cheevos/badges.o \
+                 cheevos/var.o \
+                 cheevos/cond.o
 
 
    ifeq ($(HAVE_LUA), 1)
@@ -1679,30 +1679,29 @@ ifeq ($(HAVE_NETWORKING), 1)
       DEFINES += -DRC_DISABLE_LUA
    endif
 
-	endif
+    endif
 
    ifeq ($(HAVE_DISCORD), 1)
       NEED_CXX_LINKER = 1
       DEFINES += -DHAVE_DISCORD
       DEFINES += -Ideps/discord-rpc/include/ -Ideps/discord-rpc/thirdparty/rapidjson-1.1.0/include/
       OBJ     += deps/discord-rpc/src/discord_rpc.o \
-					  deps/discord-rpc/src/rpc_connection.o \
-					  deps/discord-rpc/src/serialization.o \
-					  discord/discord.o
-ifneq ($(findstring Win32,$(OS)),)
-      OBJ  += deps/discord-rpc/src/discord_register_win.o \
-				  deps/discord-rpc/src/connection_win.o
-      LIBS += -lpsapi -ladvapi32
-endif
-ifneq ($(findstring Linux,$(OS)),)
-		OBJ  += deps/discord-rpc/src/discord_register_linux.o \
-				  deps/discord-rpc/src/connection_unix.o
-endif
-ifneq ($(findstring Darwin,$(OS)),)
-		OBJ  += deps/discord-rpc/src/discord_register_osx.o \
-				  deps/discord-rpc/src/connection_unix.o
-endif
-
+                  deps/discord-rpc/src/rpc_connection.o \
+                  deps/discord-rpc/src/serialization.o \
+                  discord/discord.o
+      ifneq ($(findstring Win32,$(OS)),)
+            OBJ  += deps/discord-rpc/src/discord_register_win.o \
+                  deps/discord-rpc/src/connection_win.o
+            LIBS += -lpsapi -ladvapi32
+      endif
+      ifneq ($(findstring Linux,$(OS)),)
+            OBJ  += deps/discord-rpc/src/discord_register_linux.o \
+                     deps/discord-rpc/src/connection_unix.o
+      endif
+      ifneq ($(findstring Darwin,$(OS)),)
+            OBJ  += deps/discord-rpc/src/discord_register_osx.o \
+                     deps/discord-rpc/src/connection_unix.o
+      endif
    endif
 
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
@@ -1776,20 +1775,20 @@ endif
 ifeq ($(HAVE_COCOA),1)
    DEFINES += -DHAVE_MAIN
    OBJ += input/drivers/cocoa_input.o \
-			 input/drivers_keyboard/keyboard_event_apple.o \
-			 ui/drivers/ui_cocoa.o \
-			 ui/drivers/cocoa/ui_cocoa_window.o \
-			 ui/drivers/cocoa/ui_cocoa_browser_window.o \
-			 ui/drivers/cocoa/ui_cocoa_msg_window.o \
-			 ui/drivers/cocoa/ui_cocoa_application.o \
-			 ui/drivers/cocoa/cocoa_common.o \
-			 gfx/drivers_context/cocoa_gl_ctx.o
+             input/drivers_keyboard/keyboard_event_apple.o \
+             ui/drivers/ui_cocoa.o \
+             ui/drivers/cocoa/ui_cocoa_window.o \
+             ui/drivers/cocoa/ui_cocoa_browser_window.o \
+             ui/drivers/cocoa/ui_cocoa_msg_window.o \
+             ui/drivers/cocoa/ui_cocoa_application.o \
+             ui/drivers/cocoa/cocoa_common.o \
+             gfx/drivers_context/cocoa_gl_ctx.o
 endif
 
 ifneq ($(findstring DOS,$(OS)),)
    OBJ += gfx/drivers/vga_gfx.o gfx/drivers_font/vga_font.o \
           input/drivers/dos_input.o input/drivers_joypad/dos_joypad.o \
- 				  frontend/drivers/platform_dos.o input/drivers_keyboard/keyboard_event_dos.o
+                   frontend/drivers/platform_dos.o input/drivers_keyboard/keyboard_event_dos.o
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_vga.o
@@ -1798,49 +1797,49 @@ endif
 
 ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
 OBJ += gfx/video_filters/2xsai.o \
-		 gfx/video_filters/super2xsai.o \
-		 gfx/video_filters/supereagle.o \
-		 gfx/video_filters/2xbr.o \
-		 gfx/video_filters/darken.o \
-		 gfx/video_filters/epx.o \
-		 gfx/video_filters/scale2x.o \
-		 gfx/video_filters/blargg_ntsc_snes.o \
-		 gfx/video_filters/lq2x.o \
-		 gfx/video_filters/phosphor2x.o
+         gfx/video_filters/super2xsai.o \
+         gfx/video_filters/supereagle.o \
+         gfx/video_filters/2xbr.o \
+         gfx/video_filters/darken.o \
+         gfx/video_filters/epx.o \
+         gfx/video_filters/scale2x.o \
+         gfx/video_filters/blargg_ntsc_snes.o \
+         gfx/video_filters/lq2x.o \
+         gfx/video_filters/phosphor2x.o
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)
 DEFINES += -I$(DEPS_DIR)/libiosuhax
 CFLAGS  += -I$(DEPS_DIR)/libiosuhax
 OBJ += $(DEPS_DIR)/libiosuhax/iosuhax.o \
-		 $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
-		 $(DEPS_DIR)/libiosuhax/iosuhax_disc_interface.o
+         $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
+         $(DEPS_DIR)/libiosuhax/iosuhax_disc_interface.o
 endif
 
 ifeq ($(WANT_LIBFAT), 1)
 DEFINES += -I$(DEPS_DIR)/libfat/include
 CFLAGS  += -I$(DEPS_DIR)/libfat/include
 OBJ += $(DEPS_DIR)/libfat/cache.o \
-		 $(DEPS_DIR)/libfat/directory.o \
-		 $(DEPS_DIR)/libfat/disc.o \
-		 $(DEPS_DIR)/libfat/fatdir.o \
-		 $(DEPS_DIR)/libfat/fatfile.o \
-		 $(DEPS_DIR)/libfat/file_allocation_table.o \
-		 $(DEPS_DIR)/libfat/filetime.o \
-		 $(DEPS_DIR)/libfat/libfat.o \
-		 $(DEPS_DIR)/libfat/lock.o \
-		 $(DEPS_DIR)/libfat/partition.o
+         $(DEPS_DIR)/libfat/directory.o \
+         $(DEPS_DIR)/libfat/disc.o \
+         $(DEPS_DIR)/libfat/fatdir.o \
+         $(DEPS_DIR)/libfat/fatfile.o \
+         $(DEPS_DIR)/libfat/file_allocation_table.o \
+         $(DEPS_DIR)/libfat/filetime.o \
+         $(DEPS_DIR)/libfat/libfat.o \
+         $(DEPS_DIR)/libfat/lock.o \
+         $(DEPS_DIR)/libfat/partition.o
 endif
 
 ifeq ($(HAVE_STATIC_AUDIO_FILTERS), 1)
 OBJ += libretro-common/audio/dsp_filters/echo.o \
-		 libretro-common/audio/dsp_filters/eq.o \
-		 libretro-common/audio/dsp_filters/chorus.o \
-		 libretro-common/audio/dsp_filters/iir.o \
-		 libretro-common/audio/dsp_filters/panning.o \
-		 libretro-common/audio/dsp_filters/phaser.o \
-		 libretro-common/audio/dsp_filters/reverb.o \
-		 libretro-common/audio/dsp_filters/wahwah.o
+         libretro-common/audio/dsp_filters/eq.o \
+         libretro-common/audio/dsp_filters/chorus.o \
+         libretro-common/audio/dsp_filters/iir.o \
+         libretro-common/audio/dsp_filters/panning.o \
+         libretro-common/audio/dsp_filters/phaser.o \
+         libretro-common/audio/dsp_filters/reverb.o \
+         libretro-common/audio/dsp_filters/wahwah.o
 endif
 
 ifeq ($(HAVE_RPILED), 1)
