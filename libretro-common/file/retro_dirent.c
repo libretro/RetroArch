@@ -199,7 +199,10 @@ int retro_readdir(struct RDIR *rdir)
 #elif defined(VITA) || defined(PSP)
    return (sceIoDread(rdir->directory, &rdir->entry) > 0);
 #elif defined(PS2)
-   return (fileXioDread(rdir->directory, &rdir->entry) > 0);
+   iox_dirent_t record;
+   int ret = fileXioDread(rdir->directory, &record);
+   rdir->entry = record;
+   return ( ret > 0);
 #elif defined(__CELLOS_LV2__)
    uint64_t nread;
    rdir->error = cellFsReaddir(rdir->directory, &rdir->entry, &nread);
@@ -263,7 +266,7 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
 #endif
 #elif defined(PS2)
    const iox_dirent_t *entry = (const iox_dirent_t*)&rdir->entry;
-   return (entry->stat.attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
+   return FIO_S_ISDIR(entry->stat.mode);
 #elif defined(__CELLOS_LV2__)
    CellFsDirent *entry = (CellFsDirent*)&rdir->entry;
    return (entry->d_type == CELL_FS_TYPE_DIRECTORY);
