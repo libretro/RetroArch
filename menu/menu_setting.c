@@ -632,6 +632,7 @@ static void setting_get_string_representation_uint_xmb_layout(
    }
 }
 
+#ifdef HAVE_MATERIALUI
 static void setting_get_string_representation_uint_materialui_menu_color_theme(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -680,6 +681,7 @@ static void setting_get_string_representation_uint_materialui_menu_color_theme(
          break;
    }
 }
+#endif
 
 static void setting_get_string_representation_uint_xmb_menu_color_theme(
       rarch_setting_t *setting,
@@ -765,6 +767,7 @@ static void setting_get_string_representation_uint_xmb_menu_color_theme(
    }
 }
 
+#ifdef HAVE_SHADERPIPELINE
 static void setting_get_string_representation_uint_xmb_shader_pipeline(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -809,6 +812,7 @@ static void setting_get_string_representation_uint_xmb_shader_pipeline(
          break;
    }
 }
+#endif
 
 static void setting_get_string_representation_uint_video_monitor_index(rarch_setting_t *setting,
       char *s, size_t len)
