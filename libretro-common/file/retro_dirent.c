@@ -256,15 +256,14 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
    return entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 #elif defined(PSP) || defined(VITA)
    const SceIoDirent *entry = (const SceIoDirent*)&rdir->entry;
-#elif defined(PS2)
-   const iox_dirent_t *entry = (const iox_dirent_t*)&rdir->entry;
 #if defined(PSP)
    return (entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
 #elif defined(VITA)
    return SCE_S_ISDIR(entry->d_stat.st_mode);
-#elif defined(PS2)
-   return (entry->stat.attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
 #endif
+#elif defined(PS2)
+   const iox_dirent_t *entry = (const iox_dirent_t*)&rdir->entry;
+   return (entry->stat.attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
 #elif defined(__CELLOS_LV2__)
    CellFsDirent *entry = (CellFsDirent*)&rdir->entry;
    return (entry->d_type == CELL_FS_TYPE_DIRECTORY);
