@@ -3705,11 +3705,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
-    "Record Quality"
+    "Jakość rekordu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
-    "Stream Quality"
+    "Jakość strumienia"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_STREAMING_URL,
@@ -3717,7 +3717,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
-    "UDP Stream Port"
+    "Port Strumienia UDP"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
@@ -3728,22 +3728,22 @@ MSG_HASH(
     "YouTube"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
-      "Twitch Stream Key")
+      "Klucz strumienia Twitch")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
-      "YouTube Stream Key")
+      "Klucz strumienia YouTube")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
-      "Streaming Mode")
+      "Tryb przesyłania strumieniowego")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
-      "Title of Stream")
+      "Tytuł strumienia")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
-    "Split Joy-Con"
+    "Podziel Joy-Con"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-    "Reset To Defaults"
+    "Przywróć domyślne"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-    "Reset the current configuration to default values."
+    "Zresetuj bieżącą konfigurację do wartości domyślnych."
     )
