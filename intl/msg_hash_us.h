@@ -3504,7 +3504,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-    "Enable or disable achievements.\n"
+    "Compete to earn custom-made achievements in classic games.\n"
     "For more information, visit http://retroachievements.org"
     )
 MSG_HASH(
@@ -3603,7 +3603,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
-    "Enable or disable bluetooth."
+    "Determines the state of Bluetooth."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
@@ -3647,7 +3647,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
-    "Enable or disable logging to the terminal."
+    "Log events to the terminal."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY,
@@ -3667,7 +3667,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
-    "Enable or disable network sharing of your folders."
+    "Share network folders through the SMB protocol."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
@@ -3679,7 +3679,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SSH_ENABLE,
-    "Enable or disable remote command line access."
+    "Use SSH to access the command line remotely."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
@@ -4624,7 +4624,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-    "Enable or disable audio output."
+    "Determines if audio is outputted."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
@@ -4744,11 +4744,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
-    "Enable or disable composition."
+    "Window managers use composition to apply visual effects, detect unresponsive windows, amongst other things."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
-    "Enable or disable recent playlist for games, images, music, and videos."
+    "Maintain a playlist of recently used games, images, music, and videos."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
@@ -4989,7 +4989,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-    "Enable or disable rewind support.\n"
+    "Made a mistake? Rewind and try again.\n"
     "Beware that this causes a performance hit when playing."
     )
 MSG_HASH(
@@ -5123,7 +5123,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
-    "Enable or disable performance counters for RetroArch (and cores)."
+    "Performance counters for RetroArch (and cores).\n"
+    "The counter data can help determine system bottlenecks and fine-tune system and application performance"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
@@ -5235,7 +5236,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-    "Enable or disable the overlay."
+    "Overlays are used for borders and on-screen controls"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
@@ -5291,11 +5292,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-    "Enable or disable mouse controls inside the menu."
+    "Allows the menu to be controlled with the mouse."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-    "Enable or disable touch controls inside the menu."
+    "Allows the menu to be controlled with screen touches."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -5981,7 +5982,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-    "Enable/disable the menu icons shown at the lefthand side of the menu entries."
+    "Show icons at the left of the menu entries."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -6385,11 +6386,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-    "Menu Sound"
+    "Mixer"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-    "Enable or disable menu sound."
+    "Play simultaneous audio streams even in the menu."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
@@ -6789,7 +6790,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-    "Enable or disable Discord Rich Presence support.\n"
+    "Allows the discord app to show more data about the content played.\n"
     "NOTE: It will not work with the browser version, only with the native desktop client."
     )
 MSG_HASH(
