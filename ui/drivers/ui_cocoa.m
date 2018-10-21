@@ -88,11 +88,17 @@ static void app_terminate(void)
 {
    [[NSApplication sharedApplication] terminate:nil];
 }
-
+#ifdef HAVE_METAL
 @interface RAWindow : NSWindow
 @end
 
 @implementation RAWindow
+#else
+@interface RApplication : NSApplication
+@end
+
+@implementation RApplication
+#endif
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED < 101200
 #define NSEventTypeKeyDown             NSKeyDown
