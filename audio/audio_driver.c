@@ -796,6 +796,9 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
  **/
 void audio_driver_sample_rewind(int16_t left, int16_t right)
 {
+   if (audio_driver_rewind_ptr == 0)
+      return;
+
    audio_driver_rewind_buf[--audio_driver_rewind_ptr] = right;
    audio_driver_rewind_buf[--audio_driver_rewind_ptr] = left;
 }
@@ -819,7 +822,10 @@ size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames)
    size_t samples   = frames << 1;
 
    for (i = 0; i < samples; i++)
-      audio_driver_rewind_buf[--audio_driver_rewind_ptr] = data[i];
+   {
+      if (audio_driver_rewind_ptr > 0)
+         audio_driver_rewind_buf[--audio_driver_rewind_ptr] = data[i];
+   }
 
    return frames;
 }
@@ -905,11 +911,13 @@ void audio_driver_setup_rewind(void)
 
    for (i = 0; i < audio_driver_data_ptr; i += 2)
    {
-      audio_driver_rewind_buf[--audio_driver_rewind_ptr] =
-         audio_driver_output_samples_conv_buf[i + 1];
+      if (audio_driver_rewind_ptr > 0)
+         audio_driver_rewind_buf[--audio_driver_rewind_ptr] =
+            audio_driver_output_samples_conv_buf[i + 1];
 
-      audio_driver_rewind_buf[--audio_driver_rewind_ptr] =
-         audio_driver_output_samples_conv_buf[i + 0];
+      if (audio_driver_rewind_ptr > 0)
+         audio_driver_rewind_buf[--audio_driver_rewind_ptr] =
+            audio_driver_output_samples_conv_buf[i + 0];
    }
 
    audio_driver_data_ptr = 0;
