@@ -6327,6 +6327,14 @@ MSG_HASH(
     "Show onscreen technical statistics."
     )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_SHOW,
+   "Display Time on screen"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEDATE_SHOW,
+   "Show onscreen time display."
+)
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
     "Enable border filler"
     )

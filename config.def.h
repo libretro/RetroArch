@@ -534,6 +534,9 @@ static const int wasapi_sh_buffer_length = -16; /* auto */
 /* Enables displaying the current frames per second. */
 static const bool fps_show = false;
 
+/* Enables displaying time in game */
+static const bool timedate_show = false;
+
 /* Show frame count on FPS display */
 static const bool framecount_show = true;
 

@@ -2566,7 +2566,7 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
    }
 
-   if (video_info.timedate_while_running)
+   if (video_info.timedate_show)
    {
       time_t time_;
       time(&time_);
@@ -2645,7 +2645,7 @@ void video_driver_frame(const void *data, unsigned width,
 
 
    /* Display the FPS, with a lower priority. */
-   if (video_info.timedate_while_running)
+   if (video_info.timedate_show)
       runloop_msg_queue_push(video_info.timedate_text, 1, 1, false);
 
    /* trigger set resolution*/
@@ -2765,6 +2765,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;
    video_info->fps_show              = settings->bools.video_fps_show;
    video_info->statistics_show       = settings->bools.video_statistics_show;
+   video_info->timedate_show         = settings->bools.video_timedate_show;
    video_info->framecount_show       = settings->bools.video_framecount_show;
    video_info->scale_integer         = settings->bools.video_scale_integer;
    video_info->aspect_ratio_idx      = settings->uints.video_aspect_ratio_idx;
@@ -2811,7 +2812,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->xmb_theme              = settings->uints.menu_xmb_theme;
    video_info->xmb_color_theme        = settings->uints.menu_xmb_color_theme;
    video_info->timedate_enable        = settings->bools.menu_timedate_enable;
-   video_info->timedate_while_running = settings->bools.menu_timedate_while_running;
    video_info->battery_level_enable   = settings->bools.menu_battery_level_enable;
    video_info->xmb_shadows_enable     = settings->bools.menu_xmb_shadows_enable;
    video_info->xmb_alpha_factor       = settings->uints.menu_xmb_alpha_factor;

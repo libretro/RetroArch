@@ -102,6 +102,7 @@ typedef struct settings
       bool video_force_srgb_disable;
       bool video_fps_show;
       bool video_statistics_show;
+      bool video_timedate_show;
       bool video_framecount_show;
       bool video_msg_bgcolor_enable;
 
@@ -134,7 +135,6 @@ typedef struct settings
       bool menu_show_start_screen;
       bool menu_pause_libretro;
       bool menu_timedate_enable;
-      bool menu_timedate_while_running;
       bool menu_battery_level_enable;
       bool menu_core_enable;
       bool menu_dynamic_wallpaper_enable;

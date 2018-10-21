@@ -409,6 +409,7 @@ typedef struct video_frame_info
    bool black_frame_insertion;
    bool hard_sync;
    bool fps_show;
+   bool timedate_show;
    bool statistics_show;
    bool framecount_show;
    bool scale_integer;
@@ -421,7 +422,6 @@ typedef struct video_frame_info
    bool xmb_shadows_enable;
    bool battery_level_enable;
    bool timedate_enable;
-   bool timedate_while_running;
    bool runloop_is_slowmotion;
    bool runloop_is_idle;
    bool runloop_is_paused;
