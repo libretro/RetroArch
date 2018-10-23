@@ -7,8 +7,9 @@ ifeq ($(HAVE_STACK_USAGE), 1)
 CFLAGS += -fstack-usage
 endif
 
-ifeq ($(HAVE_HAKCHI), 1)
-CFLAGS += -DHAVE_HAKCHI
+ifeq ($(HAVE_CLASSIC), 1)
+  LDFLAGS += -static-libgcc -static-libstdc++
+  CFLAGS += -DHAVE_CLASSIC
 endif
 
 ifeq ($(HAVE_GL_CONTEXT),)

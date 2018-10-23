@@ -3,7 +3,6 @@
 # ensure the SDL2 link isn't broken...
 
 # Classic Readme Variables ############
-
 CLASSIC_MODS_VER := Official_Retroarch_v1_7_5b_CMO
 CLASSIC_MODS_NAME := RetroArch v1.7.5b (Official CM Optimised)
 MOD_CREATOR := Libretro + ClassicMods
@@ -20,6 +19,10 @@ CC_V = arm-linux-gnueabihf-gcc-8
 CXX_V = arm-linux-gnueabihf-g++-8
 AS_V = arm-linux-gnueabihf-as
 CC_AS_V = arm-linux-gnueabihf-gcc-8
+
+# Libretro Defines ####################
+HAVE_CLASSIC = 1 
+
 
 all: $(TARGET)
 
@@ -52,6 +55,13 @@ retroarch:
 	cd /tmp/$(HAKCHI_DIR)/; tar -czvf "$(CLASSIC_MODS_VER).hmod" *
 	mv /tmp/$(HAKCHI_DIR)/$(CLASSIC_MODS_VER).hmod .
 	@echo "** BUILT CLASSIC_MODS HAKCHI - $(CLASSIC_MODS_VER) HMOD PACKAGE **"
+
+	#COMMODORE 64 MINI BUILD (WIP)
+
+	@echo "*********************************************************************"
+	@echo "*** Classic ARM7 Cortex A7 build and packages built successfully! ***"
+	@echo "****************** Winner, Winner, Chicken Dinner! ******************"
+	@echo "*********************************************************************"
 clean:
 	rm -rf obj-unix
 	rm -f *.d
