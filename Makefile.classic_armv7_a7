@@ -3,9 +3,9 @@
 # ensure the SDL2 link isn't broken...
 
 # Classic Readme Variables ############
-CLASSIC_MODS_VER := Official_Retroarch_v1_7_5b_CMO
-CLASSIC_MODS_NAME := RetroArch v1.7.5b (Official CM Optimised)
-MOD_CREATOR := Libretro + ClassicMods
+CLASSIC_MODS_VER := Official_Retroarch_v1_7_5b_MMCO
+CLASSIC_MODS_NAME := RetroArch v1.7.5b (Official MMC Optimised)
+MOD_CREATOR := Libretro + ModMyClassic
 MOD_CATEGORY := RetroArch
 GIT_COMMIT := $(shell echo "`git rev-parse --short HEAD``git diff-index --quiet HEAD -- || echo '-dirty'`")
 
