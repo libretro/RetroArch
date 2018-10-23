@@ -1,0 +1,74 @@
+# Make sure you have patchelf installed (sudo apt-get install patchelf) to patch the binary for Hakchi.
+# Might not be needed for your build but it's a useful tool and for safety it should be run anyway to 
+# ensure the SDL2 link isn't broken...
+
+# Classic Readme Variables ############
+
+CLASSIC_MODS_VER := CLASSIC_MODS_Retroarch_Neo_v1_7_5b
+CLASSIC_MODS_NAME := CLASSIC_MODS RetroArch 'Neo' v1.7.5b
+MOD_CREATOR := TheOtherGuys
+MOD_CATEGORY := RetroArch
+GIT_COMMIT := $(shell echo "`git rev-parse --short HEAD``git diff-index --quiet HEAD -- || echo '-dirty'`")
+
+# Platform dependant Variables ########
+HAKCHI_DIR := RA_Platform-Hakchi
+HAKCHI_GIT := https://github.com/Classicmods/RA_Platform-Hakchi
+
+# General Shared Variables ############
+TARGET := retroarch
+CC_V = arm-linux-gnueabihf-gcc-8
+CXX_V = arm-linux-gnueabihf-g++-8
+AS_V = arm-linux-gnueabihf-as
+CC_AS_V = arm-linux-gnueabihf-gcc-8
+
+all: $(TARGET)
+
+retroarch:
+	#Build the RetroArch Binary for cross platform classics (ARMv7 Cortex A7)
+	patchelf --version #Check if you have patchelf installed... (sudo apt-get install patchelf)
+	./configure --host=arm-linux-gnueabihf --enable-mali_fbdev --disable-freetype --enable-opengles --enable-udev --enable-alsa --enable-neon --enable-floathard
+	make CC=$(CC_V) CXX=$(CXX_V) AS=$(AS_V) CC_AS=$(CC_AS_V) LDFLAGS_SDL=-lSDL2 -j #Cook it
+	patchelf --replace-needed libSDL2-2.0.so.0 libSDL2.so retroarch #libSDL2-2.0.so.0 sym link doesn't exist on native build. Just patch the binary...
+
+	#HAKCHI BUILD (NESC, SNESC)
+	@echo "** BUILDING CLASSIC_MODS HAKCHI - $(CLASSIC_MODS_VER) HMOD PACKAGE **"
+	rm -fr /tmp/$(HAKCHI_DIR)
+	cd /tmp/; git clone $(HAKCHI_GIT)
+	cp retroarch /tmp/$(HAKCHI_DIR)/bin/retroarch
+	echo $$(echo "Built by: " $$USER @ $$(date) \\\\\\ Git Commit: $(GIT_COMMIT)) > /tmp/$(HAKCHI_DIR)/etc/libretro/retroarch_version
+	cp /tmp/$(HAKCHI_DIR)/readme.md /tmp/$(HAKCHI_DIR)/readme_COPY.md
+	printf "%s\n" \
+	"---" \
+	"Name: $(CLASSIC_MODS_NAME)" \
+	"Creator: $(MOD_CREATOR)" \
+	"Category: $(MOD_CATEGORY)" \
+	"Version: $(CLASSIC_MODS_VER)" \
+	"Built on: $(shell date)" \
+	"Git commit: $(GIT_COMMIT)" \
+	"---" > /tmp/$(HAKCHI_DIR)/readme.md
+	cat /tmp/$(HAKCHI_DIR)/readme_COPY.md >> /tmp/$(HAKCHI_DIR)/readme.md
+	rm /tmp/$(HAKCHI_DIR)/readme_COPY.md
+	@echo "** BUILDING CLASSIC_MODS $(CLASSIC_MODS_VER) HMOD PACKAGE **"
+	cd /tmp/$(HAKCHI_DIR)/; tar -czvf "$(CLASSIC_MODS_VER).hmod" *
+	mv /tmp/$(HAKCHI_DIR)/$(CLASSIC_MODS_VER).hmod .
+	@echo "** BUILT CLASSIC_MODS $(CLASSIC_MODS_VER) HMOD PACKAGE **"
+clean:
+	rm -rf obj-unix
+	rm -f *.d
+	rm -f *.o
+	rm -f audio/*.o
+	rm -f conf/*.o
+	rm -f gfx/*.o
+	rm -f gfx/drivers_font/*.o
+	rm -f gfx/drivers_font_renderer/*.o
+	rm -f gfx/drivers_context/*.o
+	rm -f gfx/py_state/*.o
+	rm -f compat/*.o
+	rm -f record/*.o
+	rm -f input/*.o
+	rm -f tools/*.o
+	rm -f $(BINDIR)/retroarch
+	rm -f $(BINDIR)/retroarch-joyconfig
+	rm -f $(PNDDIR)/readme.html
+	rm -f retroarch
+	rm -f $(CLASSIC_MODS_VER).hmod
