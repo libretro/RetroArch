@@ -55,6 +55,7 @@ retroarch:
 	cd /tmp/$(HAKCHI_DIR)/; tar -czvf "$(CLASSIC_MODS_VER).hmod" *
 	mv /tmp/$(HAKCHI_DIR)/$(CLASSIC_MODS_VER).hmod .
 	@echo "** BUILT CLASSIC_MODS HAKCHI - $(CLASSIC_MODS_VER) HMOD PACKAGE **"
+	rm -fr /tmp/$(HAKCHI_DIR) #clean up tmp
 
 	#COMMODORE 64 MINI BUILD (WIP)
 
