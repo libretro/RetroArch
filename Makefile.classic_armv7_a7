@@ -4,9 +4,9 @@
 
 # Classic Readme Variables ############
 
-CLASSIC_MODS_VER := CLASSIC_MODS_Retroarch_Neo_v1_7_5b
-CLASSIC_MODS_NAME := CLASSIC_MODS RetroArch 'Neo' v1.7.5b
-MOD_CREATOR := TheOtherGuys
+CLASSIC_MODS_VER := Official_Retroarch_v1_7_5b_CMO
+CLASSIC_MODS_NAME := RetroArch v1.7.5b (Official CM Optimised)
+MOD_CREATOR := Libretro + ClassicMods
 MOD_CATEGORY := RetroArch
 GIT_COMMIT := $(shell echo "`git rev-parse --short HEAD``git diff-index --quiet HEAD -- || echo '-dirty'`")
 
@@ -48,10 +48,10 @@ retroarch:
 	"---" > /tmp/$(HAKCHI_DIR)/readme.md
 	cat /tmp/$(HAKCHI_DIR)/readme_COPY.md >> /tmp/$(HAKCHI_DIR)/readme.md
 	rm /tmp/$(HAKCHI_DIR)/readme_COPY.md
-	@echo "** BUILDING CLASSIC_MODS $(CLASSIC_MODS_VER) HMOD PACKAGE **"
+	@echo "** COMPRESSING $(CLASSIC_MODS_VER) HMOD PACKAGE **"
 	cd /tmp/$(HAKCHI_DIR)/; tar -czvf "$(CLASSIC_MODS_VER).hmod" *
 	mv /tmp/$(HAKCHI_DIR)/$(CLASSIC_MODS_VER).hmod .
-	@echo "** BUILT CLASSIC_MODS $(CLASSIC_MODS_VER) HMOD PACKAGE **"
+	@echo "** BUILT CLASSIC_MODS HAKCHI - $(CLASSIC_MODS_VER) HMOD PACKAGE **"
 clean:
 	rm -rf obj-unix
 	rm -f *.d
