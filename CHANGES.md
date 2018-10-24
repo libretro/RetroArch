@@ -6,6 +6,7 @@
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Simplified Chinese translation.
 - LOCALIZATION: Update Japanese translation.
+- MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
 - SCANNER: Fix GDI disc scanning.
 - SWITCH/LIBNX: Improve touch scaling calculation.
 - SWITCH: Proper button labels.
