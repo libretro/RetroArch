@@ -21,7 +21,14 @@
 #include "../verbosity.h"
 
 static const video_display_server_t *current_display_server = NULL;
-static void *current_display_server_data = NULL;
+static void                    *current_display_server_data = NULL;
+
+const char *video_display_server_get_ident(void)
+{
+   if (!current_display_server)
+      return "null";
+   return current_display_server->ident;
+}
 
 void* video_display_server_init(void)
 {

@@ -6,6 +6,7 @@
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Simplified Chinese translation.
 - LOCALIZATION: Update Japanese translation.
+- MENU: Only show CRT SwitchRes if video display server is implemented (Windows/Linux for now)
 - MENU: User Interface -> Appearance -> 'Menu Font Green/Blue Color' settings now work properly.
 - SCANNER: Fix GDI disc scanning.
 - SWITCH/LIBNX: Improve touch scaling calculation.

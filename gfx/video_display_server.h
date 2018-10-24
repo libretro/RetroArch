@@ -52,6 +52,8 @@ bool video_display_server_switch_resolution(
 
 const char *video_display_server_get_output_options(void);
 
+const char *video_display_server_get_ident(void);
+
 extern const video_display_server_t dispserv_win32;
 extern const video_display_server_t dispserv_x11;
 extern const video_display_server_t dispserv_null;
