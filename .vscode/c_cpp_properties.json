@@ -29,7 +29,8 @@
             "includePath": [
                 "/usr/include",
                 "/usr/local/include",
-                "${workspaceRoot}"
+                "${workspaceRoot}",
+                "${workspaceFolder}/libretro-common/include"
             ],
             "defines": [],
             "intelliSenseMode": "clang-x64",

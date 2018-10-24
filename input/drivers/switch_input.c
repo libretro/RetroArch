@@ -11,12 +11,14 @@
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
+
+#define MULTITOUCH_LIMIT 4 /* supports up to this many fingers at once */
+#define TOUCH_AXIS_MAX 0x7fff /* abstraction of pointer coords */
 #endif
 
 #include "../input_driver.h"
 
 #define MAX_PADS 10
-#define TOUCH_AXIS_MAX 0x7fff /* abstraction of pointer coords */
 
 /* TODO/FIXME - 
  * fix game focus toggle */
@@ -27,16 +29,15 @@ typedef struct switch_input
    bool blocked;
 
 #ifdef HAVE_LIBNX
-   uint32_t touch_x;
-   uint32_t touch_y;
-
    uint32_t touch_scale_x;
    uint32_t touch_scale_y;
 
    uint32_t touch_half_resolution_x;
    uint32_t touch_half_resolution_y;
 
-   bool touch_state;
+   bool touch_state[MULTITOUCH_LIMIT];
+   uint32_t touch_x[MULTITOUCH_LIMIT];
+   uint32_t touch_y[MULTITOUCH_LIMIT];
 #endif
 } switch_input_t;
 
@@ -50,15 +51,18 @@ static void switch_input_poll(void *data)
 #ifdef HAVE_LIBNX
    uint32_t touch_count = hidTouchCount();
 
-   sw->touch_state = touch_count > 0;
-
-   if (sw->touch_state)
+   for (int i = 0; i < MULTITOUCH_LIMIT; i++)
    {
-      touchPosition touch_position;
-      hidTouchRead(&touch_position, 0);
+      sw->touch_state[i] = touch_count > i;
 
-      sw->touch_x = touch_position.px;
-      sw->touch_y = touch_position.py;
+      if (sw->touch_state[i])
+      {
+         touchPosition touch_position;
+         hidTouchRead(&touch_position, i);
+
+         sw->touch_x[i] = touch_position.px;
+         sw->touch_y[i] = touch_position.py;
+      }
    }
 #endif
 }
@@ -76,17 +80,17 @@ void calc_touch_scaling(switch_input_t *sw, uint32_t x, uint32_t y, uint32_t axi
 static int16_t switch_pointer_device_state(switch_input_t *sw, 
       unsigned id, unsigned idx)
 {
-   if (idx != 0)
+   if (idx >= MULTITOUCH_LIMIT)
       return 0;
 
    switch (id)
    {
       case RETRO_DEVICE_ID_POINTER_PRESSED:
-         return sw->touch_state;
+         return sw->touch_state[idx];
       case RETRO_DEVICE_ID_POINTER_X:
-         return ((sw->touch_x - sw->touch_half_resolution_x) * sw->touch_scale_x);
+         return ((sw->touch_x[idx] - sw->touch_half_resolution_x) * sw->touch_scale_x);
       case RETRO_DEVICE_ID_POINTER_Y:
-         return ((sw->touch_y - sw->touch_half_resolution_y) * sw->touch_scale_y);
+         return ((sw->touch_y[idx] - sw->touch_half_resolution_y) * sw->touch_scale_y);
    }
 
    return 0;
