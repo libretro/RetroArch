@@ -1,10 +1,15 @@
-# Make sure you have patchelf installed (sudo apt-get install patchelf) to patch the binary for Hakchi.
-# Might not be needed for your build but it's a useful tool and for safety it should be run anyway to 
-# ensure the SDL2 link isn't broken...
+# Building Prerequisites ##############
+# arm-linux-gnueabihf-gcc-8
+# arm-linux-gnueabihf-g++-8
+# arm-linux-gnueabihf-as
+# arm-linux-gnueabihf-strip
+# patchelf
+# bc
 
 # Classic Readme Variables ############
-CLASSIC_MODS_VER := Official_Retroarch_v1_7_5b_MMCO
-CLASSIC_MODS_NAME := RetroArch v1.7.5b (Official MMC Optimised)
+CLASSIC_MODS_VER := Official_Retroarch_v1_7_5c_COptimised
+CLASSIC_MODS_NAME := RetroArch v1.7.5c (Official Classic Optimised)
+CLASSIC_VERSION := 1.7.5c (Classic Optimised)
 MOD_CREATOR := Libretro + ModMyClassic
 MOD_CATEGORY := RetroArch
 GIT_COMMIT := $(shell echo "`git rev-parse --short HEAD``git diff-index --quiet HEAD -- || echo '-dirty'`")
@@ -28,10 +33,15 @@ CC_AS_V = arm-linux-gnueabihf-gcc-8
 all: $(TARGET)
 
 retroarch:
+	#Backup vanilla version files + ammend version
+	cp version.all version_BACKUP.all && cp version.dtd version_BACKUP.dtd
+	sed -i -e 's/RARCH_VERSION="[^"]*"/RARCH_VERSION="'$(CLASSIC_VERSION)'"/g' version.all
+	sed -i -e 's/ENTITY version "[^"]*"/ENTITY version "'$(CLASSIC_VERSION)'"/g' version.dtd
 	#Build the RetroArch Binary for cross platform classics (ARMv7 Cortex A7)
 	patchelf --version #Check if you have patchelf installed... (sudo apt-get install patchelf)
 	./configure --host=arm-linux-gnueabihf --enable-mali_fbdev --disable-freetype --enable-opengles --enable-udev --enable-alsa --enable-neon --enable-floathard
 	make CC=$(CC_V) CXX=$(CXX_V) AS=$(AS_V) CC_AS=$(CC_AS_V) LDFLAGS_SDL=-lSDL2 HAVE_CLASSIC=1 HAVE_C_A7A7=1 HAVE_HAKCHI=1 -j #Cook it
+	arm-linux-gnueabihf-strip -v retroarch
 	patchelf --replace-needed libSDL2-2.0.so.0 libSDL2.so retroarch #libSDL2-2.0.so.0 sym link doesn't exist on native build. Just patch the binary...
 
 	#HAKCHI BUILD (NESC, SNESC)
@@ -59,7 +69,10 @@ retroarch:
 	rm -fr /tmp/$(HAKCHI_DIR) #clean up tmp
 
 	#COMMODORE 64 MINI BUILD (WIP)
-
+	
+	#Clean down dirty files
+	rm -f version.all version.dtd
+	mv version_BACKUP.all version.all && mv version_BACKUP.dtd version.dtd
 	@echo "*********************************************************************"
 	@echo "*** Classic ARM7 Cortex A7 build and packages built successfully! ***"
 	@echo "****************** Winner, Winner, Chicken Dinner! ******************"
