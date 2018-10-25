@@ -9,7 +9,7 @@
 # Classic Readme Variables ############
 CLASSIC_MODS_VER := Official_Retroarch_v1_7_5c_COptimised
 CLASSIC_MODS_NAME := RetroArch v1.7.5c (Official Classic Optimised)
-CLASSIC_VERSION := 1.7.5c (Classic Optimised)
+CLASSIC_VERSION := 1.7.5c \(Classic+\)
 MOD_CREATOR := Libretro + ModMyClassic
 MOD_CATEGORY := RetroArch
 GIT_COMMIT := $(shell echo "`git rev-parse --short HEAD``git diff-index --quiet HEAD -- || echo '-dirty'`")
@@ -35,11 +35,12 @@ all: $(TARGET)
 retroarch:
 	#Backup vanilla version files + ammend version
 	cp version.all version_BACKUP.all && cp version.dtd version_BACKUP.dtd
-	sed -i -e 's/RARCH_VERSION="[^"]*"/RARCH_VERSION="'$(CLASSIC_VERSION)'"/g' version.all
-	sed -i -e 's/ENTITY version "[^"]*"/ENTITY version "'$(CLASSIC_VERSION)'"/g' version.dtd
+	sed -i -e 's/RARCH_VERSION="[^"]*"/RARCH_VERSION="$(CLASSIC_VERSION)"/g' version.all
+	sed -i -e 's/PACKAGE_VERSION "[^"]*"/PACKAGE_VERSION "$(CLASSIC_VERSION)"/g' version.all
+	sed -i -e 's/ENTITY version "[^"]*"/ENTITY version "$(CLASSIC_VERSION)"/g' version.dtd
 	#Build the RetroArch Binary for cross platform classics (ARMv7 Cortex A7)
 	patchelf --version #Check if you have patchelf installed... (sudo apt-get install patchelf)
-	./configure --host=arm-linux-gnueabihf --enable-mali_fbdev --disable-freetype --enable-opengles --enable-udev --enable-alsa --enable-neon --enable-floathard
+	./configure --host=arm-linux-gnueabihf --enable-mali_fbdev --disable-freetype --enable-opengles --enable-udev --enable-alsa --enable-neon --enable-floathard --disable-discord
 	make CC=$(CC_V) CXX=$(CXX_V) AS=$(AS_V) CC_AS=$(CC_AS_V) LDFLAGS_SDL=-lSDL2 HAVE_CLASSIC=1 HAVE_C_A7A7=1 HAVE_HAKCHI=1 -j #Cook it
 	arm-linux-gnueabihf-strip -v retroarch
 	patchelf --replace-needed libSDL2-2.0.so.0 libSDL2.so retroarch #libSDL2-2.0.so.0 sym link doesn't exist on native build. Just patch the binary...
@@ -97,3 +98,6 @@ clean:
 	rm -f $(PNDDIR)/readme.html
 	rm -f retroarch
 	rm -f $(CLASSIC_MODS_VER).hmod
+	rm -f version.all version.dtd
+	mv version_BACKUP.all version.all && mv version_BACKUP.dtd version.dtd
+	rm -f *_BACKUP*
