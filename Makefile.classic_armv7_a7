@@ -1,3 +1,8 @@
+# This build was put together and is maintained by ModMyClassic.com for Libretro.
+# The purpose is to have Libretro have a proper official build platform for classic consoles.
+# If you need any help in building for the classics or have any questions then please visit
+# https://modmyclassic.com/comp and we will help in any way possible! 
+
 # Building Prerequisites ##############
 # arm-linux-gnueabihf-gcc-8
 # arm-linux-gnueabihf-g++-8
@@ -46,6 +51,7 @@ retroarch:
 	patchelf --replace-needed libSDL2-2.0.so.0 libSDL2.so retroarch #libSDL2-2.0.so.0 sym link doesn't exist on native build. Just patch the binary...
 
 	#HAKCHI BUILD (NESC, SNESC)
+	#FYI this build was originally known as RetroArch 'Neo' for Hakchi.
 	@echo "** BUILDING CLASSIC_MODS HAKCHI - $(CLASSIC_MODS_VER) HMOD PACKAGE **"
 	rm -fr /tmp/$(HAKCHI_DIR)
 	cd /tmp/; git clone $(HAKCHI_GIT)
@@ -99,5 +105,6 @@ clean:
 	rm -f retroarch
 	rm -f $(CLASSIC_MODS_VER).hmod
 	rm -f version.all version.dtd
-	mv version_BACKUP.all version.all && mv version_BACKUP.dtd version.dtd
+    mv -f version_BACKUP.all version.all || echo "Backup Doesn't Exist - Ignoring..."
+    mv -f version_BACKUP.dtd version.dtd || echo "Backup Doesn't Exist - Ignoring..."
 	rm -f *_BACKUP*
