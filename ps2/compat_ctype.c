@@ -6,31 +6,35 @@
 
 #define ULLONG_MAX UINT64_C(0xffffffffffffffff)
 
-char * strtok_r(char *str, const char *delim, char **nextp)
+char *strtok_r(char *str, const char *delim, char **saveptr)
 {
-    char *ret;
+   char *first = NULL;
+   if (!saveptr || !delim)
+      return NULL;
 
-    if (str == NULL) {
-        str = *nextp;
-    }
+   if (str)
+      *saveptr = str;
 
-    str += strspn(str, delim);
+   do
+   {
+      char *ptr = NULL;
+      first = *saveptr;
+      while (*first && strchr(delim, *first))
+         *first++ = '\0';
 
-    if (*str == '\0') {
-        return NULL;
-    }
+      if (*first == '\0')
+         return NULL;
 
-    ret = str;
+      ptr = first + 1;
 
-    str += strcspn(str, delim);
+      while (*ptr && !strchr(delim, *ptr))
+         ptr++;
 
-    if (*str) {
-        *str++ = '\0';
-    }
+      *saveptr = ptr + (*ptr ? 1 : 0);
+      *ptr     = '\0';
+   } while (strlen(first) == 0);
 
-    *nextp = str;
-
-    return ret;
+   return first;
 }
 
 unsigned long long strtoull(const char * __restrict nptr, char ** __restrict endptr, int base)

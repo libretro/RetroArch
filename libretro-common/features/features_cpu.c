@@ -803,8 +803,6 @@ uint64_t cpu_features_get(void)
    cpu |= RETRO_SIMD_PS;
 #endif
 
-printf("CPU is %i\n", cpu);
-
    if (cpu & RETRO_SIMD_MMX)    strlcat(buf, " MMX", sizeof(buf));
    if (cpu & RETRO_SIMD_MMXEXT) strlcat(buf, " MMXEXT", sizeof(buf));
    if (cpu & RETRO_SIMD_SSE)    strlcat(buf, " SSE", sizeof(buf));
