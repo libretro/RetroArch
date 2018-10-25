@@ -21,8 +21,9 @@ AS_V = arm-linux-gnueabihf-as
 CC_AS_V = arm-linux-gnueabihf-gcc-8
 
 # Libretro Defines ####################
-HAVE_CLASSIC = 1 
-
+#HAVE_CLASSIC = Classic Hook, disable some features
+#HAVE_C_A7A7 = Classic Armv7 Cortex A7 optimisation override
+#HAVE_HAKCHI = Hakchi Hook, change default configurations etc (TODO)
 
 all: $(TARGET)
 
@@ -30,7 +31,7 @@ retroarch:
 	#Build the RetroArch Binary for cross platform classics (ARMv7 Cortex A7)
 	patchelf --version #Check if you have patchelf installed... (sudo apt-get install patchelf)
 	./configure --host=arm-linux-gnueabihf --enable-mali_fbdev --disable-freetype --enable-opengles --enable-udev --enable-alsa --enable-neon --enable-floathard
-	make CC=$(CC_V) CXX=$(CXX_V) AS=$(AS_V) CC_AS=$(CC_AS_V) LDFLAGS_SDL=-lSDL2 -j #Cook it
+	make CC=$(CC_V) CXX=$(CXX_V) AS=$(AS_V) CC_AS=$(CC_AS_V) LDFLAGS_SDL=-lSDL2 HAVE_CLASSIC=1 HAVE_C_A7A7=1 HAVE_HAKCHI=1 -j #Cook it
 	patchelf --replace-needed libSDL2-2.0.so.0 libSDL2.so retroarch #libSDL2-2.0.so.0 sym link doesn't exist on native build. Just patch the binary...
 
 	#HAKCHI BUILD (NESC, SNESC)
