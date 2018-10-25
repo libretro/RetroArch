@@ -7,10 +7,6 @@ ifeq ($(HAVE_STACK_USAGE), 1)
 CFLAGS += -fstack-usage
 endif
 
-ifeq ($(HAVE_HAKCHI), 1)
-CFLAGS += -DHAVE_HAKCHI
-endif
-
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT=0
 
@@ -1839,3 +1835,39 @@ endif
 ifeq ($(HAVE_RPILED), 1)
    OBJ += led/drivers/led_rpi.o
 endif
+
+##################################
+### Classic Platform specifics ###
+###############WIP################
+# Help at https://modmyclassic.com/comp
+
+ifeq ($(HAVE_CLASSIC), 1)
+  CFLAGS += -DHAVE_CLASSIC
+endif
+
+ifeq ($(HAVE_C_A7A7), 1)
+  C_A7A7_OPT = -Ofast \
+	-fno-lto \
+	-fdata-sections -ffunction-sections -Wl,--gc-sections \
+	-fno-stack-protector -fno-ident -fomit-frame-pointer \
+	-falign-functions=1 -falign-jumps=1 -falign-loops=1 \
+	-fno-unwind-tables -fno-asynchronous-unwind-tables -fno-unroll-loops \
+	-fmerge-all-constants -fno-math-errno \
+  -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+  CFLAGS += $(C_A7A7_OPT)
+  CXXFLAGS += $(C_A7A7_OPT)
+	ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
+		CFLAGS += -march=armv7-a
+	else
+		CFLAGS += -march=armv7ve
+		# If gcc is 5.0 or later
+		ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
+			LDFLAGS += -static-libgcc -static-libstdc++
+		endif
+  endif
+endif
+
+ifeq ($(HAVE_HAKCHI), 1)
+  CFLAGS += -DHAVE_HAKCHI
+endif
+##################################
