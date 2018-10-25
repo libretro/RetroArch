@@ -948,7 +948,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i, char pos)
    }
    else if (filebrowser_get_type() != FILEBROWSER_NONE)
    {
-      xmb->thumbnail              = 0;
+      video_driver_texture_unload(&xmb->thumbnail);
       goto end;
    }
 
@@ -976,7 +976,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i, char pos)
                      sizeof(new_path));
          }
          else
-            xmb->left_thumbnail              = 0;
+            video_driver_texture_unload(&xmb->left_thumbnail);
          goto end;
       }
    }
@@ -1129,7 +1129,7 @@ static void xmb_update_thumbnail_image(void *data)
          task_push_image_load(xmb->thumbnail_file_path,
                menu_display_handle_thumbnail_upload, NULL);
       else
-         xmb->thumbnail = 0;
+         video_driver_texture_unload(&xmb->thumbnail);
 
       free(xmb->thumbnail_file_path);
       xmb->thumbnail_file_path = NULL;
@@ -1141,7 +1141,7 @@ static void xmb_update_thumbnail_image(void *data)
          task_push_image_load(xmb->left_thumbnail_file_path,
                menu_display_handle_left_thumbnail_upload, NULL);
       else
-         xmb->left_thumbnail = 0;
+         video_driver_texture_unload(&xmb->left_thumbnail);
 
       free(xmb->left_thumbnail_file_path);
       xmb->left_thumbnail_file_path = NULL;
@@ -1190,7 +1190,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
       task_push_image_load(xmb->savestate_thumbnail_file_path,
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
-      xmb->savestate_thumbnail = 0;
+      video_driver_texture_unload(&xmb->savestate_thumbnail);
 }
 
 static unsigned xmb_get_system_tab(xmb_handle_t *xmb, unsigned i)

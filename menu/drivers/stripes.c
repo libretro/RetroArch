@@ -897,7 +897,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
    }
    else if (filebrowser_get_type() != FILEBROWSER_NONE)
    {
-      stripes->thumbnail              = 0;
+      video_driver_texture_unload(&stripes->thumbnail);
       goto end;
    }
 
@@ -921,7 +921,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
          }
          else
          {
-            stripes->left_thumbnail              = 0;
+            video_driver_texture_unload(&stripes->left_thumbnail);
             goto end;
          }
       }
@@ -1075,7 +1075,7 @@ static void stripes_update_thumbnail_image(void *data)
             task_push_image_load(stripes->thumbnail_file_path,
                   menu_display_handle_thumbnail_upload, NULL);
          else
-            stripes->thumbnail = 0;
+            video_driver_texture_unload(&stripes->thumbnail);
 
          free(stripes->thumbnail_file_path);
          stripes->thumbnail_file_path = NULL;
@@ -1087,7 +1087,7 @@ static void stripes_update_thumbnail_image(void *data)
             task_push_image_load(stripes->left_thumbnail_file_path,
                   menu_display_handle_left_thumbnail_upload, NULL);
          else
-            stripes->left_thumbnail = 0;
+            video_driver_texture_unload(&stripes->left_thumbnail);
 
          free(stripes->left_thumbnail_file_path);
          stripes->left_thumbnail_file_path = NULL;
@@ -1136,7 +1136,7 @@ static void stripes_update_savestate_thumbnail_image(void *data)
       task_push_image_load(stripes->savestate_thumbnail_file_path,
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
-      stripes->savestate_thumbnail = 0;
+      video_driver_texture_unload(&stripes->savestate_thumbnail);
 }
 
 static unsigned stripes_get_system_tab(stripes_handle_t *stripes, unsigned i)
