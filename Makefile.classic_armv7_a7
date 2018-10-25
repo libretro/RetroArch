@@ -1,5 +1,5 @@
 # This build was put together and is maintained by ModMyClassic.com for Libretro.
-# The purpose is to have Libretro have a proper official build platform for classic consoles.
+# The purpose is to give Libretro a proper "official" build platform for classic consoles.
 # If you need any help in building for the classics or have any questions then please visit
 # https://modmyclassic.com/comp and we will help in any way possible! 
 
@@ -105,6 +105,6 @@ clean:
 	rm -f retroarch
 	rm -f $(CLASSIC_MODS_VER).hmod
 	rm -f version.all version.dtd
-    mv -f version_BACKUP.all version.all || echo "Backup Doesn't Exist - Ignoring..."
-    mv -f version_BACKUP.dtd version.dtd || echo "Backup Doesn't Exist - Ignoring..."
+	mv -f version_BACKUP.all version.all || echo "Backup Doesn't Exist - Ignoring..."
+	mv -f version_BACKUP.dtd version.dtd || echo "Backup Doesn't Exist - Ignoring..."
 	rm -f *_BACKUP*
