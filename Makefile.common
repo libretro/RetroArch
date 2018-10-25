@@ -1864,6 +1864,7 @@ ifeq ($(HAVE_C_A7A7), 1)
 		ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
 			LDFLAGS += -static-libgcc -static-libstdc++
 		endif
+  endif
 endif
 
 ifeq ($(HAVE_HAKCHI), 1)
