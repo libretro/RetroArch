@@ -288,6 +288,7 @@ enum menu_driver_enum
    MENU_XMB,
    MENU_STRIPES,
    MENU_NUKLEAR,
+   MENU_OZONE,
    MENU_NULL
 };
 
@@ -534,6 +535,8 @@ static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XUI;
 #elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
+#elif defined(HAVE_OZONE) && defined(HAVE_LIBNX)
+static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_OZONE;
 #elif defined(HAVE_XMB) && !defined(_XBOX)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XMB;
 #elif defined(HAVE_RGUI)
@@ -1028,6 +1031,8 @@ const char *config_get_default_menu(void)
          return "rgui";
       case MENU_XUI:
          return "xui";
+      case MENU_OZONE:
+         return "ozone";
       case MENU_MATERIALUI:
          return "glui";
       case MENU_XMB:

@@ -40,6 +40,7 @@ struct tween
    uintptr_t   tag;
    easing_cb   easing;
    tween_cb    cb;
+   void        *userdata;
 };
 
 struct menu_animation
@@ -326,6 +327,7 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    t.subject            = entry->subject;
    t.tag                = entry->tag;
    t.cb                 = entry->cb;
+   t.userdata           = entry->userdata;
    t.easing             = NULL;
 
    switch (entry->easing_enum)
@@ -519,7 +521,7 @@ bool menu_animation_update(float delta_time)
          anim.need_defrag = true;
 
          if (tween->cb)
-            tween->cb();
+            tween->cb(tween->userdata);
       }
 
       if (tween->running_since < tween->duration)

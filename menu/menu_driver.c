@@ -78,6 +78,9 @@ typedef struct menu_ctx_load_image
 
 /* Menu drivers */
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
+#if defined(HAVE_OZONE)
+   &menu_ctx_ozone,
+#endif
 #if defined(HAVE_XUI)
    &menu_ctx_xui,
 #endif
@@ -445,7 +448,6 @@ font_data_t *menu_display_font(
       bool is_threaded)
 {
    char fontpath[PATH_MAX_LENGTH];
-   font_data_t *font_data = NULL;
 
    if (!menu_disp)
       return NULL;
@@ -454,6 +456,16 @@ font_data_t *menu_display_font(
 
    fill_pathname_application_special(
          fontpath, sizeof(fontpath), type);
+
+   return menu_display_font_file(fontpath, font_size, is_threaded);
+}
+
+font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_threaded)
+{
+   if (!menu_disp)
+      return NULL;
+
+   font_data_t *font_data = NULL;
 
    if (!menu_disp->font_init_first((void**)&font_data,
             video_driver_get_ptr(false),
@@ -2625,4 +2637,12 @@ size_t menu_navigation_get_selection(void)
 void menu_navigation_set_selection(size_t val)
 {
    menu_driver_selection_ptr = val;
+}
+
+void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
+{
+   rgba[0] = rgba[4] = rgba[8]  = rgba[12] = ((hex >> 16) & 0xFF) * (1.0f / 255.0f); /* r */
+   rgba[1] = rgba[5] = rgba[9]  = rgba[13] = ((hex >> 8 ) & 0xFF) * (1.0f / 255.0f); /* g */
+   rgba[2] = rgba[6] = rgba[10] = rgba[14] = ((hex >> 0 ) & 0xFF) * (1.0f / 255.0f); /* b */
+   rgba[3] = rgba[7] = rgba[11] = rgba[15] = alpha;
 }

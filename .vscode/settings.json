@@ -22,7 +22,11 @@
       "ios": "c",
       "list": "c",
       "input_driver.h": "c",
-      "video_driver.h": "c"
+      "video_driver.h": "c",
+      "menu_driver.h": "c",
+      "file_path.h": "c",
+      "unordered_map": "c",
+      "unordered_set": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }

@@ -518,7 +518,8 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
       HAVE_XMB=no
       HAVE_STRIPES=no
       HAVE_ZARCH=no
-      die : 'Notice: RGUI not available, MaterialUI, XMB and ZARCH will also be disabled.'
+      HAVE_OZONE=no
+      die : 'Notice: RGUI not available, MaterialUI, XMB, Ozone and ZARCH will also be disabled.'
    elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
       if [ "$OS" = 'Win32' ]; then
          HAVE_SHADERPIPELINE=no
@@ -531,7 +532,8 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
          HAVE_XMB=no
          HAVE_STRIPES=no
          HAVE_ZARCH=no
-         die : 'Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled.'
+         HAVE_OZONE=no
+         die : 'Notice: Hardware rendering context not available, XMB, MaterialUI, Ozone and ZARCH will also be disabled.'
       fi
    fi
 fi
