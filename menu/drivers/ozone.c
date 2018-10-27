@@ -1992,13 +1992,48 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
       ozone_draw_icon(video_info, 69, 30, ozone->theme_textures[OZONE_THEME_TEXTURE_SWITCH], 59, video_info->height - 52, video_info->width,video_info->height, 0, 1, NULL);
 
    /* Buttons */
-   menu_display_blend_begin(video_info);
-   ozone_draw_icon(video_info, 25, 25, ozone->theme_textures[OZONE_THEME_TEXTURE_BUTTON_B], video_info->width - 251, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
-   ozone_draw_icon(video_info, 25, 25, ozone->theme_textures[OZONE_THEME_TEXTURE_BUTTON_A], video_info->width - 133, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
-   menu_display_blend_end(video_info);
 
-   ozone_draw_text(video_info, ozone, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK), video_info->width - 215, video_info->height - 49 + FONT_SIZE_FOOTER, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba);
-   ozone_draw_text(video_info, ozone, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK), video_info->width - 96, video_info->height - 49 + FONT_SIZE_FOOTER, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba);
+   {
+      unsigned back_width  = 215;
+      unsigned back_height = 49;
+      unsigned ok_width    = 96;
+      unsigned ok_height   = 49;
+      bool do_swap         = video_info->input_menu_swap_ok_cancel_buttons;
+
+      if (do_swap)
+      {
+         back_width  = 96;
+         back_height = 49;
+         ok_width    = 215;
+         ok_height   = 49;
+      }
+
+      menu_display_blend_begin(video_info);
+
+      if (do_swap)
+      {
+         ozone_draw_icon(video_info, 25, 25, ozone->theme_textures[OZONE_THEME_TEXTURE_BUTTON_B], video_info->width - 133, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
+         ozone_draw_icon(video_info, 25, 25, ozone->theme_textures[OZONE_THEME_TEXTURE_BUTTON_A], video_info->width - 251, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
+      }
+      else
+      {
+         ozone_draw_icon(video_info, 25, 25, ozone->theme_textures[OZONE_THEME_TEXTURE_BUTTON_B], video_info->width - 251, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
+         ozone_draw_icon(video_info, 25, 25, ozone->theme_textures[OZONE_THEME_TEXTURE_BUTTON_A], video_info->width - 133, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
+      }
+
+      menu_display_blend_end(video_info);
+
+      ozone_draw_text(video_info, ozone,
+            do_swap ? 
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK) :
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK),
+            video_info->width - back_width, video_info->height - back_height + FONT_SIZE_FOOTER, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba);
+      ozone_draw_text(video_info, ozone,
+            do_swap ? 
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK) :
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK),
+            video_info->width - ok_width, video_info->height - ok_height + FONT_SIZE_FOOTER, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba);
+   }
 
    menu_display_blend_end(video_info);
 }
