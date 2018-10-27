@@ -1725,3 +1725,5 @@ MSG_HASH(MENU_ENUM_LABEL_STREAMING_TITLE,
       "streaming_title")
 MSG_HASH(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
       "reset_to_default_config")
+MSG_HASH(MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+      "menu_use_preferred_system_color_theme")

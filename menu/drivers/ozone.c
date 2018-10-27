@@ -1135,17 +1135,14 @@ static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
 
 static void *ozone_init(void **userdata, bool video_is_threaded) 
 {
-#ifdef HAVE_LIBNX
-   Result rc;
-   ColorSetId theme;
-#endif
+   bool fallback_color_theme           = false;
    unsigned width, height, color_theme = 0;
    ozone_handle_t *ozone               = NULL;
    settings_t *settings                = config_get_ptr();
    menu_handle_t *menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
-      goto error;
+      return false;
 
    if (!menu_display_init_first_driver(video_is_threaded))
       goto error;
@@ -1196,18 +1193,26 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    menu_display_allocate_white_texture();
 
    /* Theme */
-   /* TODO Add theme override in settings */
-#ifdef HAVE_LIBNX
-   rc = setsysInitialize();
-   if (R_SUCCEEDED(rc)) 
+   if (settings->bools.menu_use_preferred_system_color_theme)
    {
-      color_theme = (theme == ColorSetId_Dark) ? 1 : 0;
-      setsysGetColorSetId(&theme);
-      ozone_set_color_theme(ozone, color_theme);
-      setsysExit();
+#ifdef HAVE_LIBNX
+      if (R_SUCCEEDED(setsysInitialize())) 
+      {
+         ColorSetId theme;
+         setsysGetColorSetId(&theme);
+         color_theme = (theme == ColorSetId_Dark) ? 1 : 0;
+         ozone_set_color_theme(ozone, color_theme);
+         settings->bools.menu_preferred_system_color_theme_set = true;
+         setsysExit();
+      }
+      else
+         fallback_color_theme = true;
+#endif
    }
    else
-#endif
+      fallback_color_theme = true;
+
+   if (fallback_color_theme)
    {
       color_theme = settings->uints.menu_ozone_color_theme;
       ozone_set_color_theme(ozone, color_theme);

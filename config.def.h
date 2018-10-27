@@ -266,6 +266,12 @@ static const float default_input_overlay_opacity = 0.7f;
 
 static bool default_block_config_read    = true;
 
+#ifdef HAVE_LIBNX
+static bool menu_use_preferred_system_color_theme = true;
+#else
+static bool menu_use_preferred_system_color_theme = false;
+#endif
+
 static bool quick_menu_show_take_screenshot             = true;
 static bool quick_menu_show_save_load_state             = true;
 static bool quick_menu_show_undo_save_load_state        = true;

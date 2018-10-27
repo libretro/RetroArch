@@ -776,8 +776,12 @@ static void setting_get_string_representation_uint_ozone_menu_color_theme(
       rarch_setting_t *setting,
       char *s, size_t len)
 {
+   settings_t      *settings = config_get_ptr();
    if (!setting)
       return;
+
+   if (settings->bools.menu_preferred_system_color_theme_set)
+         strlcpy(s, "System default", len);
 
    switch (*setting->value.target.unsigned_integer)
    {
@@ -7916,6 +7920,24 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, XMB_THEME_LAST-1, 1, true, true);
        }
 #endif
+         if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_use_preferred_system_color_theme,
+                  MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+                  MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+                  menu_show_load_core,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+         }
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_show_load_core,
