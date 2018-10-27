@@ -1997,8 +1997,8 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
    ozone_draw_icon(video_info, 25, 25, ozone->theme_textures[OZONE_THEME_TEXTURE_BUTTON_A], video_info->width - 133, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
    menu_display_blend_end(video_info);
 
-   ozone_draw_text(video_info, ozone, "Back", video_info->width - 215, video_info->height - 49 + FONT_SIZE_FOOTER, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba);
-   ozone_draw_text(video_info, ozone, "OK", video_info->width - 96, video_info->height - 49 + FONT_SIZE_FOOTER, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba);
+   ozone_draw_text(video_info, ozone, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK), video_info->width - 215, video_info->height - 49 + FONT_SIZE_FOOTER, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba);
+   ozone_draw_text(video_info, ozone, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK), video_info->width - 96, video_info->height - 49 + FONT_SIZE_FOOTER, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba);
 
    menu_display_blend_end(video_info);
 }
