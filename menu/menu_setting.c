@@ -7927,7 +7927,7 @@ static bool setting_append_list(
                   &settings->bools.menu_use_preferred_system_color_theme,
                   MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
                   MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-                  menu_show_load_core,
+                  menu_use_preferred_system_color_theme,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
