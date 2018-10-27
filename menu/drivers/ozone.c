@@ -422,8 +422,9 @@ ozone_theme_t ozone_theme_dark = {
    "dark"
 };
 
-static unsigned last_color_theme          = 0;
-static ozone_theme_t *ozone_default_theme = &ozone_theme_light;
+static unsigned last_color_theme                   = 0;
+static bool last_use_preferred_system_color_theme  = false;
+static ozone_theme_t *ozone_default_theme          = &ozone_theme_light;
 
 typedef struct ozone_handle
 {
@@ -1106,6 +1107,40 @@ static void ozone_draw_text(
          1.0);
 }
 
+static void ozone_set_theme_path(ozone_handle_t *ozone)
+{
+   fill_pathname_join(
+      ozone->theme_path,
+      ozone->png_path,
+      ozone->theme->name,
+      sizeof(ozone->theme_path)
+   );
+}
+
+static void ozone_unload_theme_textures(ozone_handle_t *ozone)
+{
+   int i;
+   
+   for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
+      video_driver_texture_unload(&ozone->theme_textures[i]);
+}
+
+static void ozone_reset_theme_textures(ozone_handle_t *ozone)
+{
+   int i;
+
+   ozone_set_theme_path(ozone);
+
+   for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
+   {
+      char filename[PATH_MAX_LENGTH];
+      strlcpy(filename, OZONE_THEME_TEXTURES_FILES[i], sizeof(filename));
+      strlcat(filename, ".png", sizeof(filename));
+
+      menu_display_reset_textures_list(filename, ozone->theme_path, &ozone->theme_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+   }
+}
+
 static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
 {
    ozone_theme_t *theme = ozone_default_theme;
@@ -1129,6 +1164,9 @@ static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
    memcpy(ozone->theme_dynamic.selection, ozone->theme->selection, sizeof(ozone->theme_dynamic.selection));
    memcpy(ozone->theme_dynamic.entries_border, ozone->theme->entries_border, sizeof(ozone->theme_dynamic.entries_border));
    memcpy(ozone->theme_dynamic.entries_icon, ozone->theme->entries_icon, sizeof(ozone->theme_dynamic.entries_icon));
+
+   ozone_unload_theme_textures(ozone);
+   ozone_reset_theme_textures(ozone);
 
    last_color_theme = color_theme;
 }
@@ -1202,6 +1240,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
          setsysGetColorSetId(&theme);
          color_theme = (theme == ColorSetId_Dark) ? 1 : 0;
          ozone_set_color_theme(ozone, color_theme);
+         settings->uints.menu_ozone_color_theme = color_theme;
          settings->bools.menu_preferred_system_color_theme_set = true;
          setsysExit();
       }
@@ -1253,13 +1292,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
       sizeof(ozone->tab_path)
    );
 
-   /* Theme path */
-   fill_pathname_join(
-      ozone->theme_path,
-      ozone->png_path,
-      ozone->theme->name,
-      sizeof(ozone->theme_path)
-   );
+   last_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
 
    return menu;
 
@@ -1361,14 +1394,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
       }
 
       /* Theme textures */
-      for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
-      {
-         char filename[PATH_MAX_LENGTH];
-         strlcpy(filename, OZONE_THEME_TEXTURES_FILES[i], sizeof(filename));
-         strlcat(filename, ".png", sizeof(filename));
-
-         menu_display_reset_textures_list(filename, ozone->theme_path, &ozone->theme_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR);
-      }
+      ozone_reset_theme_textures(ozone);
 
       /* Icons textures init */
       for (i = 0; i < OZONE_ENTRIES_ICONS_TEXTURE_LAST; i++)
@@ -1407,8 +1433,7 @@ static void ozone_context_destroy(void *data)
       return;
 
    /* Theme */
-   for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
-      video_driver_texture_unload(&ozone->theme_textures[i]);
+   ozone_unload_theme_textures(ozone);
 
    /* Icons */
    for (i = 0; i < OZONE_ENTRIES_ICONS_TEXTURE_LAST; i++)
@@ -2414,6 +2439,23 @@ static void ozone_navigation_alphabet(void *data, size_t *unused)
    ozone_selection_changed(ozone, true);
 }
 
+static unsigned ozone_get_system_theme()
+{
+   unsigned ret = 0;
+#ifdef HAVE_LIBNX
+   if (R_SUCCEEDED(setsysInitialize())) 
+   {
+      ColorSetId theme;
+      setsysGetColorSetId(&theme);
+      ret = (theme == ColorSetId_Dark) ? 1 : 0;
+      setsysExit();
+   }
+
+   return ret;
+#endif
+   return 0;
+}
+
 static void ozone_frame(void *data, video_frame_info_t *video_info)
 {
    menu_display_ctx_clearcolor_t clearcolor;
@@ -2424,14 +2466,25 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    if (!ozone)
       return;
 
-   if (color_theme != last_color_theme)
-      ozone_set_color_theme(ozone, color_theme);
+   /* Change theme on the fly */
+   if (color_theme != last_color_theme || last_use_preferred_system_color_theme != settings->bools.menu_use_preferred_system_color_theme)
+   {
+      if (!settings->bools.menu_use_preferred_system_color_theme)
+         ozone_set_color_theme(ozone, color_theme);
+      else
+      {
+         video_info->ozone_color_theme = ozone_get_system_theme();
+         ozone_set_color_theme(ozone, video_info->ozone_color_theme);
+      }
+
+      last_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
+   }
 
    ozone->frame_count++;
 
    menu_display_set_viewport(video_info->width, video_info->height);
 
-   /* Clear first layer of text */
+   /* Clear text */
    font_driver_bind_block(ozone->fonts.footer,  &ozone->raster_blocks.footer);
    font_driver_bind_block(ozone->fonts.title,  &ozone->raster_blocks.title);
    font_driver_bind_block(ozone->fonts.time,  &ozone->raster_blocks.time);
@@ -2447,7 +2500,6 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone->raster_blocks.sidebar.carr.coords.vertices = 0;
 
    /* Background */
-   
    clearcolor.r = ozone->theme->background_r;
    clearcolor.g = ozone->theme->background_g;
    clearcolor.b = ozone->theme->background_b;
