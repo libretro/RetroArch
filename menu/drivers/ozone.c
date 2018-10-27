@@ -2687,7 +2687,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
 
          new_selection = (ozone->categories_selection_ptr + 1);
 
-         if (new_selection > ozone->system_tab_end) /* TODO Check against actual tabs count and not just system tabs */
+         if (new_selection >= OZONE_SYSTEM_TAB_LAST) /* TODO Check against actual tabs count and not just system tabs */
             new_selection = 0;
 
          if (ozone->categories_selection_ptr != new_selection)
@@ -2726,7 +2726,7 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
          new_selection = ozone->categories_selection_ptr - 1;
          
          if (new_selection < 0)
-            new_selection = ozone->system_tab_end; /* TODO Set this to actual tabs count and not just system tabs */
+            new_selection = OZONE_SYSTEM_TAB_LAST-1; /* TODO Set this to actual tabs count and not just system tabs */
 
          if (ozone->categories_selection_ptr != new_selection)
          {
