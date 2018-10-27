@@ -79,7 +79,7 @@ enum OZONE_THEME_TEXTURES {
 static char* OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
    "button_a",
    "button_b",
-   "switch",
+   "switch"
 };
 
 enum OZONE_TAB_TEXTURES {
@@ -1321,8 +1321,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
       {
          char filename[PATH_MAX_LENGTH];
-         strcpy(filename, OZONE_TEXTURES_FILES[i]);
-         strcat(filename, ".png");
+         strlcpy(filename, OZONE_TEXTURES_FILES[i], sizeof(filename));
+         strlcat(filename, ".png", sizeof(filename));
 
          menu_display_reset_textures_list(filename, ozone->png_path, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR);
       }
@@ -1331,8 +1331,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
       for (i = 0; i < OZONE_TAB_TEXTURE_LAST; i++)
       {
          char filename[PATH_MAX_LENGTH];
-         strcpy(filename, OZONE_TAB_TEXTURES_FILES[i]);
-         strcat(filename, ".png");
+         strlcpy(filename, OZONE_TAB_TEXTURES_FILES[i], sizeof(filename));
+         strlcat(filename, ".png", sizeof(filename));
 
          menu_display_reset_textures_list(filename, ozone->tab_path, &ozone->tab_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR);
       }
@@ -1341,8 +1341,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
       for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
       {
          char filename[PATH_MAX_LENGTH];
-         strcpy(filename, OZONE_THEME_TEXTURES_FILES[i]);
-         strcat(filename, ".png");
+         strlcpy(filename, OZONE_THEME_TEXTURES_FILES[i], sizeof(filename));
+         strlcat(filename, ".png", sizeof(filename));
 
          menu_display_reset_textures_list(filename, ozone->theme_path, &ozone->theme_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR);
       }
