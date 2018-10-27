@@ -2143,7 +2143,9 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone, video_frame_info_t *vi
    }
    else
    {
-      ozone_draw_text(video_info, ozone, (switch_is_on ? "On" : "Off"), x, y, TEXT_ALIGN_RIGHT, video_info->width, video_info->height, ozone->fonts.entries_label, ((switch_is_on ? ozone->theme->text_selected_rgba : ozone->theme->text_sublabel_rgba) & 0xFFFFFF00) | alpha_uint32);
+      ozone_draw_text(video_info, ozone, (switch_is_on ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)),
+               x, y, TEXT_ALIGN_RIGHT, video_info->width, video_info->height, ozone->fonts.entries_label,
+               ((switch_is_on ? ozone->theme->text_selected_rgba : ozone->theme->text_sublabel_rgba) & 0xFFFFFF00) | alpha_uint32);
    }
 }
 
