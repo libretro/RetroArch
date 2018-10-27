@@ -1184,27 +1184,27 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
-    "Cheat index -"
+    "Κατάλογος απάτης -"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
-    "Cheat index +"
+    "Κατάλογος απάτης +"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
-    "Cheat toggle"
+    "Απάτες"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
-    "Disk eject toggle"
+    "Εξαγωγή δίσκου"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
-    "Disk next"
+    "Επόμενος δίσκος"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
-    "Disk prev"
+    "Προηγούμενος δίσκος"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -1212,11 +1212,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
-    "Fast forward hold"
+    "Παύση γρήγορης κίνησης"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
-    "Fast forward toggle"
+    "Γρήγορη κίνηση"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -1228,19 +1228,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
-    "Grab mouse toggle"
+    "Κλείδωμα ποντικιού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
-    "Game focus toggle"
+    "Εστίαση παιχνιδιού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
-    "Desktop menu toggle"
+    "Μενού επιφάνειας"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-    "Load state"
+    "Φόρτωση κατάστασης"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
@@ -1256,7 +1256,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-    "Netplay toggle play/spectate mode"
+    "Εναλλαγή κατάστασης παιχνιδιού/θεατή Netplay"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
@@ -1264,7 +1264,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
-    "Overlay next"
+    "Επόμενο επικάλλυμα"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -1276,7 +1276,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
-    "Reset game"
+    "Επαναφορά παιχνιδιού"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
@@ -1292,7 +1292,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-    "Save state"
+    "Αποθήκευση κατάστασης"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
@@ -1316,11 +1316,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-    "Savestate slot -"
+    "Θέση κατάστασης αποθήκευσης -"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-    "Savestate slot +"
+    "Θέση κατάστασης αποθήκευσης +"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
@@ -4404,7 +4404,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FAST_FORWARD,
-    "Fast forward."
+    "Γρήγορη κίνηση."
     )
 MSG_HASH(
     MSG_SLOW_MOTION_REWIND,
@@ -4520,7 +4520,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-    "Influence how input polling is done inside RetroArch. Setting it to 'Early' or 'Late' can result in less latency, depending on your configuration."
+    "Επιρροή του πως γίνεται η συγκέντρωση εισόδου μέσα στο RetroArch. Ο ορισμός σε 'Νωρίς' ή 'Αργά' μπορεί να έχει ως αποτέλεσμα μικρότερη καθυστέρηση με τις ρυθμίσεις σας."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
