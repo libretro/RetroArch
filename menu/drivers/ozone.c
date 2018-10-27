@@ -2040,7 +2040,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
 
 /* TODO Reduce sidebar width ? */
 
-static void ozone_draw_cursor(ozone_handle_t *ozone, video_frame_info_t *video_info, unsigned x_offset, unsigned entry_width, size_t y, float alpha)
+static void ozone_draw_cursor(ozone_handle_t *ozone, video_frame_info_t *video_info, int x_offset, unsigned entry_width, size_t y, float alpha)
 {
    ozone_color_alpha(ozone->theme_dynamic.selection_border, alpha);
    ozone_color_alpha(ozone->theme_dynamic.selection, alpha);
@@ -2193,7 +2193,7 @@ static void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_
    size_t i, y, entries_end;
    float sidebar_offset, bottom_boundary, invert, alpha_anim;
    unsigned video_info_height, entry_width;
-   unsigned x_offset      = 0;
+   int x_offset      = 0;
    size_t selection_y     = 0;
    size_t old_selection_y = 0;
 
@@ -2222,7 +2222,7 @@ static void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_
          x_offset = invert * (alpha_anim * 120);  /* right */
    }
 
-   x_offset     += (unsigned) sidebar_offset;
+   x_offset     += (int) sidebar_offset;
    alpha_uint32  = (uint32_t)(alpha*255.0f);
 
    /* Borders layer */
