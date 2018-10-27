@@ -375,6 +375,8 @@ typedef struct ozone_theme
    float *sidebar_top_gradient;
    float *sidebar_bottom_gradient;
 
+   menu_texture_item textures[OZONE_THEME_TEXTURE_LAST];
+
    const char *name;
 } ozone_theme_t;
 
@@ -396,6 +398,8 @@ ozone_theme_t ozone_theme_light = {
    ozone_sidebar_background_light,
    ozone_sidebar_gradient_top_light,
    ozone_sidebar_gradient_bottom_light,
+
+   {0},
 
    "light"
 };
@@ -419,9 +423,17 @@ ozone_theme_t ozone_theme_dark = {
    ozone_sidebar_gradient_top_dark,
    ozone_sidebar_gradient_bottom_dark,
 
+   {0},
+
    "dark"
 };
 
+ozone_theme_t *ozone_themes[] = {
+   &ozone_theme_light,
+   &ozone_theme_dark
+};
+
+static unsigned ozone_themes_count                 = sizeof(ozone_themes) / sizeof(ozone_themes[0]);
 static unsigned last_color_theme                   = 0;
 static bool last_use_preferred_system_color_theme  = false;
 static ozone_theme_t *ozone_default_theme          = &ozone_theme_light;
@@ -451,7 +463,6 @@ typedef struct ozone_handle
    } raster_blocks;
 
    menu_texture_item textures[OZONE_THEME_TEXTURE_LAST];
-   menu_texture_item theme_textures[OZONE_THEME_TEXTURE_LAST];
    menu_texture_item icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LAST];
    menu_texture_item tab_textures[OZONE_TAB_TEXTURE_LAST];
 
@@ -461,7 +472,6 @@ typedef struct ozone_handle
    char png_path[PATH_MAX_LENGTH];
    char icons_path[PATH_MAX_LENGTH];
    char tab_path[PATH_MAX_LENGTH];
-   char theme_path[PATH_MAX_LENGTH];
 
    uint8_t system_tab_end;
    uint8_t tabs[OZONE_SYSTEM_TAB_LAST];
@@ -1107,38 +1117,46 @@ static void ozone_draw_text(
          1.0);
 }
 
-static void ozone_set_theme_path(ozone_handle_t *ozone)
-{
-   fill_pathname_join(
-      ozone->theme_path,
-      ozone->png_path,
-      ozone->theme->name,
-      sizeof(ozone->theme_path)
-   );
-}
-
 static void ozone_unload_theme_textures(ozone_handle_t *ozone)
 {
    int i;
+   int j;
 
-   for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
-      video_driver_texture_unload(&ozone->theme_textures[i]);
+   for (j = 0; j < ozone_themes_count; j++)
+   {
+      ozone_theme_t *theme = ozone_themes[j];
+      for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
+            video_driver_texture_unload(&theme->textures[i]);
+   }
 }
 
 static void ozone_reset_theme_textures(ozone_handle_t *ozone)
 {
    int i;
+   int j;
+   char theme_path[255];
 
-   ozone_set_theme_path(ozone);
-
-   for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
+   for (j = 0; j < ozone_themes_count; j++)
    {
-      char filename[PATH_MAX_LENGTH];
-      strlcpy(filename, OZONE_THEME_TEXTURES_FILES[i], sizeof(filename));
-      strlcat(filename, ".png", sizeof(filename));
+      ozone_theme_t *theme = ozone_themes[j];
 
-      menu_display_reset_textures_list(filename, ozone->theme_path, &ozone->theme_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+      fill_pathname_join(
+         theme_path,
+         ozone->png_path,
+         theme->name,
+         sizeof(theme_path)
+      );
+
+      for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
+      {
+         char filename[PATH_MAX_LENGTH];
+         strlcpy(filename, OZONE_THEME_TEXTURES_FILES[i], sizeof(filename));
+         strlcat(filename, ".png", sizeof(filename));
+
+         menu_display_reset_textures_list(filename, theme_path, &theme->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+      }
    }
+
 }
 
 static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
@@ -1164,9 +1182,6 @@ static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
    memcpy(ozone->theme_dynamic.selection, ozone->theme->selection, sizeof(ozone->theme_dynamic.selection));
    memcpy(ozone->theme_dynamic.entries_border, ozone->theme->entries_border, sizeof(ozone->theme_dynamic.entries_border));
    memcpy(ozone->theme_dynamic.entries_icon, ozone->theme->entries_icon, sizeof(ozone->theme_dynamic.entries_icon));
-
-   ozone_unload_theme_textures(ozone);
-   ozone_reset_theme_textures(ozone);
 
    last_color_theme = color_theme;
 }
@@ -2037,7 +2052,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
    if (settings->bools.menu_core_enable && menu_entries_get_core_title(core_title, sizeof(core_title)) == 0)
       ozone_draw_text(video_info, ozone, core_title, 59, video_info->height - 49 + FONT_SIZE_FOOTER, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.footer, ozone->theme->text_rgba);
    else
-      ozone_draw_icon(video_info, 69, 30, ozone->theme_textures[OZONE_THEME_TEXTURE_SWITCH], 59, video_info->height - 52, video_info->width,video_info->height, 0, 1, NULL);
+      ozone_draw_icon(video_info, 69, 30, ozone->theme->textures[OZONE_THEME_TEXTURE_SWITCH], 59, video_info->height - 52, video_info->width,video_info->height, 0, 1, NULL);
 
    /* Buttons */
 
@@ -2060,13 +2075,13 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
 
       if (do_swap)
       {
-         ozone_draw_icon(video_info, 25, 25, ozone->theme_textures[OZONE_THEME_TEXTURE_BUTTON_B], video_info->width - 133, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
-         ozone_draw_icon(video_info, 25, 25, ozone->theme_textures[OZONE_THEME_TEXTURE_BUTTON_A], video_info->width - 251, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
+         ozone_draw_icon(video_info, 25, 25, ozone->theme->textures[OZONE_THEME_TEXTURE_BUTTON_B], video_info->width - 133, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
+         ozone_draw_icon(video_info, 25, 25, ozone->theme->textures[OZONE_THEME_TEXTURE_BUTTON_A], video_info->width - 251, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
       }
       else
       {
-         ozone_draw_icon(video_info, 25, 25, ozone->theme_textures[OZONE_THEME_TEXTURE_BUTTON_B], video_info->width - 251, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
-         ozone_draw_icon(video_info, 25, 25, ozone->theme_textures[OZONE_THEME_TEXTURE_BUTTON_A], video_info->width - 133, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
+         ozone_draw_icon(video_info, 25, 25, ozone->theme->textures[OZONE_THEME_TEXTURE_BUTTON_B], video_info->width - 251, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
+         ozone_draw_icon(video_info, 25, 25, ozone->theme->textures[OZONE_THEME_TEXTURE_BUTTON_A], video_info->width - 133, video_info->height - 49, video_info->width,video_info->height, 0, 1, NULL);
       }
 
       menu_display_blend_end(video_info);
