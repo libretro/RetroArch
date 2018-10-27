@@ -2786,6 +2786,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->menu_footer_opacity    = settings->floats.menu_footer_opacity;
    video_info->menu_header_opacity    = settings->floats.menu_header_opacity;
    video_info->materialui_color_theme = settings->uints.menu_materialui_color_theme;
+   video_info->ozone_color_theme      = settings->uints.menu_ozone_color_theme;
    video_info->menu_shader_pipeline   = settings->uints.menu_xmb_shader_pipeline;
    video_info->xmb_theme              = settings->uints.menu_xmb_theme;
    video_info->xmb_color_theme        = settings->uints.menu_xmb_color_theme;

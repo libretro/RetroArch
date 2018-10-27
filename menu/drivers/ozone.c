@@ -422,6 +422,7 @@ ozone_theme_t ozone_theme_dark = {
    "dark"
 };
 
+static unsigned last_color_theme          = 0;
 static ozone_theme_t *ozone_default_theme = &ozone_theme_light;
 
 typedef struct ozone_handle
@@ -1105,26 +1106,43 @@ static void ozone_draw_text(
          1.0);
 }
 
-static void ozone_set_theme(ozone_handle_t *ozone, ozone_theme_t *theme)
+static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
 {
+   ozone_theme_t *theme = ozone_default_theme;
+
+   if (!ozone)
+      return;
+
+   switch (color_theme)
+   {
+      case 1:
+         theme = &ozone_theme_dark;
+         break;
+      case 0:
+      default:
+         break;
+   }
+
    ozone->theme = theme;
 
    memcpy(ozone->theme_dynamic.selection_border, ozone->theme->selection_border, sizeof(ozone->theme_dynamic.selection_border));
    memcpy(ozone->theme_dynamic.selection, ozone->theme->selection, sizeof(ozone->theme_dynamic.selection));
    memcpy(ozone->theme_dynamic.entries_border, ozone->theme->entries_border, sizeof(ozone->theme_dynamic.entries_border));
    memcpy(ozone->theme_dynamic.entries_icon, ozone->theme->entries_icon, sizeof(ozone->theme_dynamic.entries_icon));
+
+   last_color_theme = color_theme;
 }
 
 static void *ozone_init(void **userdata, bool video_is_threaded) 
 {
-   unsigned width, height;
 #ifdef HAVE_LIBNX
    Result rc;
    ColorSetId theme;
 #endif
-   ozone_handle_t *ozone = NULL;
-   settings_t *settings  = config_get_ptr();
-   menu_handle_t *menu   = (menu_handle_t*)calloc(1, sizeof(*menu));
+   unsigned width, height, color_theme = 0;
+   ozone_handle_t *ozone               = NULL;
+   settings_t *settings                = config_get_ptr();
+   menu_handle_t *menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
       goto error;
@@ -1183,19 +1201,19 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    rc = setsysInitialize();
    if (R_SUCCEEDED(rc)) 
    {
+      color_theme = (theme == ColorSetId_Dark) ? 1 : 0;
       setsysGetColorSetId(&theme);
-      ozone_set_theme(ozone, theme == ColorSetId_Dark ? &ozone_theme_dark : &ozone_theme_light);
+      ozone_set_color_theme(ozone, color_theme);
       setsysExit();
    }
    else
-   {
-      ozone_set_theme(ozone, ozone_default_theme);
-   }
-#else
-   ozone_set_theme(ozone, ozone_default_theme);
 #endif
+   {
+      color_theme = settings->uints.menu_ozone_color_theme;
+      ozone_set_color_theme(ozone, color_theme);
+   }
    
-   ozone->need_compute = false;
+   ozone->need_compute        = false;
    ozone->animations.scroll_y = 0.0f;
 
    /* Assets path */
@@ -2396,9 +2414,13 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    menu_display_ctx_clearcolor_t clearcolor;
    ozone_handle_t* ozone = (ozone_handle_t*) data;
    settings_t  *settings = config_get_ptr();
+   unsigned color_theme  = video_info->ozone_color_theme;
 
    if (!ozone)
       return;
+
+   if (color_theme != last_color_theme)
+      ozone_set_color_theme(ozone, color_theme);
 
    ozone->frame_count++;
 

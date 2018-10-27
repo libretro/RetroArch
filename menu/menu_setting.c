@@ -683,6 +683,7 @@ static void setting_get_string_representation_uint_materialui_menu_color_theme(
 }
 #endif
 
+#ifdef HAVE_XMB
 static void setting_get_string_representation_uint_xmb_menu_color_theme(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -766,6 +767,34 @@ static void setting_get_string_representation_uint_xmb_menu_color_theme(
          break;
    }
 }
+#endif
+
+
+
+#ifdef HAVE_OZONE
+static void setting_get_string_representation_uint_ozone_menu_color_theme(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 1:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK), len);
+         break;
+      case 0:
+      default:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE), len);
+         break;
+   }
+}
+#endif
 
 #ifdef HAVE_SHADERPIPELINE
 static void setting_get_string_representation_uint_xmb_shader_pipeline(
@@ -8284,6 +8313,27 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
+         }
+#endif
+
+#ifdef HAVE_OZONE
+         if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+         {
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_ozone_color_theme,
+                  MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME,
+                  MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_ozone_menu_color_theme;
+            menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, true);
          }
 #endif
 
