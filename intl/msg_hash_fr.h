@@ -3505,4 +3505,4 @@ MSG_HASH(
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
       "Use preferred system color theme")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-      "Use your operating system's default color theme (if one is set).")
+      "Use your operating system's color theme (if any) - overrides theme settings.")
