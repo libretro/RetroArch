@@ -462,10 +462,9 @@ font_data_t *menu_display_font(
 
 font_data_t *menu_display_font_file(char* fontpath, float font_size, bool is_threaded)
 {
+   font_data_t *font_data = NULL;
    if (!menu_disp)
       return NULL;
-
-   font_data_t *font_data = NULL;
 
    if (!menu_disp->font_init_first((void**)&font_data,
             video_driver_get_ptr(false),
