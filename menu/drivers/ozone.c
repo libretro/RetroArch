@@ -1120,7 +1120,7 @@ static void ozone_set_theme_path(ozone_handle_t *ozone)
 static void ozone_unload_theme_textures(ozone_handle_t *ozone)
 {
    int i;
-   
+
    for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
       video_driver_texture_unload(&ozone->theme_textures[i]);
 }
@@ -2241,7 +2241,7 @@ static void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_
    size_t i, y, entries_end;
    float sidebar_offset, bottom_boundary, invert, alpha_anim;
    unsigned video_info_height, entry_width;
-   int x_offset      = 0;
+   int x_offset           = 22;
    size_t selection_y     = 0;
    size_t old_selection_y = 0;
 
@@ -2265,9 +2265,9 @@ static void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_
    if (alpha != 1.0f)
    {    
       if (old_list)
-         x_offset = invert * -(alpha_anim * 120); /* left */
+         x_offset += invert * -(alpha_anim * 120); /* left */
       else
-         x_offset = invert * (alpha_anim * 120);  /* right */
+         x_offset += invert * (alpha_anim * 120);  /* right */
    }
 
    x_offset     += (int) sidebar_offset;
