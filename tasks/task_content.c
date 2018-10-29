@@ -386,9 +386,10 @@ static bool load_content_from_compressed_archive(
 {
    union string_list_elem_attr attributes;
    int64_t new_path_len              = 0;
-   size_t path_size                  = PATH_MAX_LENGTH * sizeof(char);
-   char *new_basedir                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *new_path                    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   size_t new_basedir_size           = PATH_MAX_LENGTH * sizeof(char);
+   size_t new_path_size              = PATH_MAX_LENGTH * sizeof(char);
+   char *new_basedir                 = (char*)malloc(new_basedir_size);
+   char *new_path                    = (char*)malloc(new_path_size);
    bool ret                          = false;
 
    new_path[0]                       = '\0';
@@ -399,8 +400,7 @@ static bool load_content_from_compressed_archive(
          " Now extracting to temporary directory.\n");
 
    if (!string_is_empty(content_ctx->directory_cache))
-      strlcpy(new_basedir, content_ctx->directory_cache,
-            path_size);
+      strlcpy(new_basedir, content_ctx->directory_cache, new_basedir_size);
 
    if (string_is_empty(new_basedir) || !path_is_directory(new_basedir))
    {
@@ -408,15 +408,14 @@ static bool load_content_from_compressed_archive(
             "cache directory was not set or found. "
             "Setting cache directory to directory "
             "derived by basename...\n");
-      fill_pathname_basedir(new_basedir, path,
-            path_size);
+      fill_pathname_basedir(new_basedir, path, new_basedir_size);
    }
 
    new_path[0]    = '\0';
    new_basedir[0] = '\0';
 
    fill_pathname_join(new_path, new_basedir,
-         path_basename(path), path_size);
+         path_basename(path), new_path_size);
 
    ret = file_archive_compressed_read(path,
          NULL, new_path, &new_path_len);
@@ -479,27 +478,28 @@ static bool content_file_init_extract(
          continue;
 
       {
-         char *temp_content    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-         const char *valid_ext = special ?
+         size_t temp_content_size = PATH_MAX_LENGTH * sizeof(char);
+         size_t new_path_size     = PATH_MAX_LENGTH * sizeof(char);
+         char *temp_content       = (char*)malloc(temp_content_size);
+         const char *valid_ext    = special ?
             special->roms[i].valid_extensions :
             content_ctx->valid_extensions;
 
-         new_path        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+         new_path        = (char*)malloc(new_path_size);
 
          temp_content[0] = new_path[0] = '\0';
 
          if (!string_is_empty(path))
-            strlcpy(temp_content, path,
-                  PATH_MAX_LENGTH * sizeof(char));
+            strlcpy(temp_content, path, temp_content_size);
 
          if (!valid_ext || !file_archive_extract_file(
                   temp_content,
-                  PATH_MAX_LENGTH * sizeof(char),
+                  temp_content_size,
                   valid_ext,
                   !string_is_empty(content_ctx->directory_cache) ?
                   content_ctx->directory_cache : NULL,
                   new_path,
-                  PATH_MAX_LENGTH * sizeof(char)
+                  new_path_size
                   ))
          {
             size_t path_size = 1024 * sizeof(char);
@@ -896,7 +896,8 @@ static bool task_load_content(content_ctx_info_t *content_info,
    /* Push entry to top of history playlist */
    if (is_inited || contentless)
    {
-      char *tmp                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      size_t tmp_size                = PATH_MAX_LENGTH * sizeof(char);
+      char *tmp                      = (char*)malloc(tmp_size);
       rarch_system_info_t *sys_info  = runloop_get_system_info();
       const char *path_content       = path_get(RARCH_PATH_CONTENT);
       struct retro_system_info *info = sys_info ? &sys_info->info : NULL;
@@ -904,15 +905,14 @@ static bool task_load_content(content_ctx_info_t *content_info,
       tmp[0] = '\0';
 
       if (!string_is_empty(path_content))
-         strlcpy(tmp, path_content, PATH_MAX_LENGTH * sizeof(char));
+         strlcpy(tmp, path_content, tmp_size);
 
       if (!launched_from_menu)
       {
          /* Path can be relative here.
           * Ensure we're pushing absolute path. */
          if (!string_is_empty(tmp))
-            path_resolve_realpath(tmp,
-                  PATH_MAX_LENGTH * sizeof(char));
+            path_resolve_realpath(tmp, tmp_size);
       }
 
 #ifdef HAVE_MENU
@@ -1024,7 +1024,7 @@ static bool firmware_update_status(
    bool set_missing_firmware  = false;
    core_info_t *core_info     = NULL;
    size_t s_size              = PATH_MAX_LENGTH * sizeof(char);
-   char *s                    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *s                    = (char*)malloc(s_size);
 
    core_info_get_current_core(&core_info);
 
@@ -1802,10 +1802,10 @@ void content_set_subsystem(unsigned idx)
 /* Add a rom to the subsystem rom buffer */
 void content_add_subsystem(const char* path)
 {
-   pending_subsystem_roms[pending_subsystem_rom_id] = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   size_t pending_size                              = PATH_MAX_LENGTH * sizeof(char);
+   pending_subsystem_roms[pending_subsystem_rom_id] = (char*)malloc(pending_size);
 
-   strlcpy(pending_subsystem_roms[pending_subsystem_rom_id], path,
-      PATH_MAX_LENGTH * sizeof(char));
+   strlcpy(pending_subsystem_roms[pending_subsystem_rom_id], path, pending_size);
    RARCH_LOG("[subsystem] subsystem id: %d subsystem ident: %s rom id: %d, rom path: %s\n",
       pending_subsystem_id, pending_subsystem_ident, pending_subsystem_rom_id,
       pending_subsystem_roms[pending_subsystem_rom_id]);
