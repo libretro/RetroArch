@@ -452,12 +452,14 @@ error:
    return false;
 }
 
+/* Try to extract all content we're going to load if appropriate. */
+
 static bool content_file_init_extract(
       struct string_list *content,
       content_information_ctx_t *content_ctx,
       const struct retro_subsystem_info *special,
-      union string_list_elem_attr *attr,
-      char **error_string
+      char **error_string,
+      union string_list_elem_attr *attr
       )
 {
    unsigned i;
@@ -725,16 +727,16 @@ error:
    return NULL;
 }
 
-static bool content_file_init_set_attribs(
+static void content_file_init_set_attribs(
       struct string_list *content,
       const struct retro_subsystem_info *special,
       content_information_ctx_t *content_ctx,
-      char **error_string)
+      char **error_string,
+      union string_list_elem_attr *attr)
 {
-   union string_list_elem_attr attr;
    struct string_list *subsystem    = path_get_subsystem_list();
 
-   attr.i                           = 0;
+   attr->i                          = 0;
 
    if (!path_is_empty(RARCH_PATH_SUBSYSTEM) && special)
    {
@@ -742,11 +744,11 @@ static bool content_file_init_set_attribs(
 
       for (i = 0; i < subsystem->size; i++)
       {
-         attr.i            = special->roms[i].block_extract;
-         attr.i           |= special->roms[i].need_fullpath << 1;
-         attr.i           |= special->roms[i].required      << 2;
+         attr->i            = special->roms[i].block_extract;
+         attr->i           |= special->roms[i].need_fullpath << 1;
+         attr->i           |= special->roms[i].required      << 2;
 
-         string_list_append(content, subsystem->elems[i].data, attr);
+         string_list_append(content, subsystem->elems[i].data, *attr);
       }
    }
    else
@@ -756,26 +758,20 @@ static bool content_file_init_set_attribs(
 
       content_get_status(&contentless, &is_inited);
 
-      attr.i               = content_ctx->block_extract;
-      attr.i              |= content_ctx->need_fullpath << 1;
-      attr.i              |= (!contentless)  << 2;
+      attr->i               = content_ctx->block_extract;
+      attr->i              |= content_ctx->need_fullpath << 1;
+      attr->i              |= (!contentless)  << 2;
 
       if (path_is_empty(RARCH_PATH_CONTENT)
             && contentless
             && content_ctx->set_supports_no_game_enable)
-         string_list_append(content, "", attr);
+         string_list_append(content, "", *attr);
       else
       {
          if (!path_is_empty(RARCH_PATH_CONTENT))
-            string_list_append(content, path_get(RARCH_PATH_CONTENT), attr);
+            string_list_append(content, path_get(RARCH_PATH_CONTENT), *attr);
       }
    }
-
-#ifdef HAVE_COMPRESSION
-   /* Try to extract all content we're going to load if appropriate. */
-   content_file_init_extract(content, content_ctx, special, &attr, error_string);
-#endif
-   return true;
 }
 
 /**
@@ -791,6 +787,7 @@ static bool content_file_init(
       struct string_list *content,
       char **error_string)
 {
+   union string_list_elem_attr attr;
    struct retro_game_info               *info = NULL;
    bool ret                                   =
       path_is_empty(RARCH_PATH_SUBSYSTEM)
@@ -799,9 +796,14 @@ static bool content_file_init(
       path_is_empty(RARCH_PATH_SUBSYSTEM)
       ? NULL : content_file_init_subsystem(content_ctx->subsystem.data,
             content_ctx->subsystem.size, error_string, &ret);
-   if (  !ret ||
-         !content_file_init_set_attribs(content, special, content_ctx, error_string))
+
+   if (!ret)
       return false;
+
+   content_file_init_set_attribs(content, special, content_ctx, error_string, &attr);
+#ifdef HAVE_COMPRESSION
+   content_file_init_extract(content, content_ctx, special, error_string, &attr);
+#endif
 
    if (content->size > 0)
       info                   = (struct retro_game_info*)
@@ -821,7 +823,7 @@ static bool content_file_init(
 
       free(info);
    }
-   else if (special == NULL)
+   else if (!special)
    {
       *error_string = strdup(msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
       ret = false;
@@ -885,11 +887,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
    bool is_inited   = false;
 
    if (!content_load(content_info))
-   {
       return false;
-   }
-
-
 
    content_get_status(&contentless, &is_inited);
 
