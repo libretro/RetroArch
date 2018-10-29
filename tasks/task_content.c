@@ -423,9 +423,10 @@ static bool load_content_from_compressed_archive(
 
    if (!ret || new_path_len < 0)
    {
-      char *str = (char*)malloc(1024 * sizeof(char));
+      size_t path_size = 1024 * sizeof(char);
+      char *str        = (char*)malloc(path_size);
       snprintf(str,
-            1024 * sizeof(char),
+            path_size,
             "%s \"%s\".\n",
             msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
             path);
@@ -501,9 +502,10 @@ static bool content_file_init_extract(
                   PATH_MAX_LENGTH * sizeof(char)
                   ))
          {
-            char *str = (char*)malloc(1024 * sizeof(char));
+            size_t path_size = 1024 * sizeof(char);
+            char *str        = (char*)malloc(path_size);
 
-            snprintf(str, 1024 * sizeof(char),
+            snprintf(str, path_size,
                   "%s: %s.\n",
                   msg_hash_to_str(
                      MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
@@ -554,7 +556,7 @@ static bool content_file_load(
    unsigned i;
    retro_ctx_load_content_info_t load_info;
    size_t msg_size = 1024 * sizeof(char);
-   char *msg       = (char*)malloc(1024 * sizeof(char));
+   char *msg       = (char*)malloc(msg_size);
 
    msg[0]          = '\0';
 
@@ -664,7 +666,7 @@ retro_subsystem_info *content_file_init_subsystem(
       bool *ret)
 {
    size_t path_size                           = 1024 * sizeof(char);
-   char *msg                                  = (char*)malloc(1024 * sizeof(char));
+   char *msg                                  = (char*)malloc(path_size);
    struct string_list *subsystem              = path_get_subsystem_list();
    const struct retro_subsystem_info *special = libretro_find_subsystem_info(
             subsystem_data, subsystem_size,
