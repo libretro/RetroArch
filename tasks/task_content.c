@@ -658,7 +658,8 @@ error:
 
 static const struct
 retro_subsystem_info *content_file_init_subsystem(
-      content_information_ctx_t *content_ctx,
+      const struct retro_subsystem_info *subsystem_data,
+      size_t subsystem_size,
       char **error_string,
       bool *ret)
 {
@@ -666,7 +667,7 @@ retro_subsystem_info *content_file_init_subsystem(
    char *msg                                  = (char*)malloc(1024 * sizeof(char));
    struct string_list *subsystem              = path_get_subsystem_list();
    const struct retro_subsystem_info *special = libretro_find_subsystem_info(
-            content_ctx->subsystem.data, content_ctx->subsystem.size,
+            subsystem_data, subsystem_size,
             path_get(RARCH_PATH_SUBSYSTEM));
 
    msg[0] = '\0';
@@ -794,7 +795,8 @@ static bool content_file_init(
       ? true : false;
    const struct retro_subsystem_info *special =
       path_is_empty(RARCH_PATH_SUBSYSTEM)
-      ? NULL : content_file_init_subsystem(content_ctx, error_string, &ret);
+      ? NULL : content_file_init_subsystem(content_ctx->subsystem.data,
+            content_ctx->subsystem.size, error_string, &ret);
    if (  !ret ||
          !content_file_init_set_attribs(content, special, content_ctx, error_string))
       return false;
