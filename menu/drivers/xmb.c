@@ -2531,9 +2531,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_ROOM_RELAY];
 #endif
       case MENU_SETTING_ACTION:
-         if (xmb->depth <= 3)
+         if (xmb->depth == 3)
             return xmb->textures.list[XMB_TEXTURE_SETTING];
-      default:
          return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
    }
 
