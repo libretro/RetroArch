@@ -1204,8 +1204,8 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
-   core_path                              = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   config_directory                       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   core_path                              = (char*)malloc(str_size);
+   config_directory                       = (char*)malloc(str_size);
    config_directory[0] = core_path[0]     = '\0';
 
    fill_pathname_application_special(config_directory,
@@ -1479,8 +1479,8 @@ void rarch_menu_running_finished(void)
  **/
 static bool rarch_game_specific_options(char **output)
 {
-   char *game_path       = (char*)malloc(8192 * sizeof(char));
    size_t game_path_size = 8192 * sizeof(char);
+   char *game_path       = (char*)malloc(game_path_size);
 
    game_path[0] ='\0';
 
