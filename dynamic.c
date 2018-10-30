@@ -214,33 +214,31 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
 
          if (system)
          {
-            struct retro_subsystem_info *subsystem = subsystem_pre;
-            subsystem = (struct retro_subsystem_info*)
+            subsystem_data = (struct retro_subsystem_info*)
                calloc(i, sizeof(struct retro_subsystem_info*));
             unsigned size;
 
-            if (!subsystem)
+            if (!subsystem_data)
                return false;
 
             size = i;
-
-            subsystem_pre_roms = (struct retro_subsystem_rom_info**)
+            subsystem_data_roms = (struct retro_subsystem_rom_info**)
                   calloc(size, sizeof(struct retro_subsystem_rom_info**));
 
             for (i = 0; i < size; i++)
             {
-               subsystem[i].desc = strdup(info[i].desc);
-               subsystem[i].ident = strdup(info[i].ident);
-               subsystem[i].id = info[i].id;
-               subsystem[i].num_roms = info[i].num_roms;
+               subsystem_data[i].desc = strdup(info[i].desc);
+               subsystem_data[i].ident = strdup(info[i].ident);
+               subsystem_data[i].id = info[i].id;
+               subsystem_data[i].num_roms = info[i].num_roms;
 
-               subsystem_pre_roms[i] = (struct retro_subsystem_rom_info*)
-                  calloc(subsystem[i].num_roms, sizeof(struct retro_subsystem_rom_info*));
+               subsystem_data_roms[i] = (struct retro_subsystem_rom_info*)
+                  calloc(subsystem_data[i].num_roms, sizeof(struct retro_subsystem_rom_info*));
 
                static struct retro_subsystem_rom_info *subsystem_roms;
-               subsystem_roms = subsystem_pre_roms[i];
+               subsystem_roms = subsystem_data_roms[i];
 
-               for (j = 0; j < subsystem[i].num_roms; j++)
+               for (j = 0; j < subsystem_data[i].num_roms; j++)
                {
                   subsystem_roms[j].desc = strdup(info[i].roms[j].desc);
                   subsystem_roms[j].valid_extensions = strdup(info[i].roms[j].valid_extensions);
@@ -248,27 +246,26 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
                   subsystem_roms[j].block_extract = info[i].roms[j].block_extract;
                   subsystem_roms[j].need_fullpath = info[i].roms[j].need_fullpath;
                }
-               subsystem[i].roms = subsystem_roms;
+               subsystem_data[i].roms = subsystem_roms;
             }
 
             RARCH_LOG("Copy:.\n*****************\n");
 
-            for (i = 0; subsystem[i].ident; i++)
+            for (i = 0; i < size; i++)
             {
                RARCH_LOG("Subsystem ID: %d\n", i);
-               RARCH_LOG("Special game type: %s\n", subsystem[i].desc);
-               RARCH_LOG("  Ident: %s\n", subsystem[i].ident);
-               RARCH_LOG("  ID: %u\n", subsystem[i].id);
+               RARCH_LOG("Special game type: %s\n", subsystem_data[i].desc);
+               RARCH_LOG("  Ident: %s\n", subsystem_data[i].ident);
+               RARCH_LOG("  ID: %u\n", subsystem_data[i].id);
                RARCH_LOG("  Content:\n");
-               for (j = 0; j < subsystem[i].num_roms; j++)
+               for (j = 0; j < subsystem_data[i].num_roms; j++)
                {
                   RARCH_LOG("    %s (%s)\n",
-                        subsystem[i].roms[j].desc, subsystem[i].roms[j].required ?
+                        subsystem_data[i].roms[j].desc, subsystem_data[i].roms[j].required ?
                         "required" : "optional");
                }
             }
-            system->subsystem.data = subsystem_pre;
-            system->subsystem.size = size;
+            subsystem_size = size;
          }
 
          break;

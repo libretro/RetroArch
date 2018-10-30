@@ -2580,7 +2580,7 @@ static int menu_displaylist_parse_load_content_settings(
 #if 0
       const struct retro_subsystem_info* subsystem = system ? system->subsystem.data : NULL;
 
-      if (subsystem)
+      if (subsystem_data)
       {
          unsigned p;
 

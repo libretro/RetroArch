@@ -39,6 +39,7 @@
 #include "../../core.h"
 #include "../../content.h"
 #include "../../verbosity.h"
+#include "../../dynamic.h"
 
 static enum filebrowser_enums filebrowser_types = FILEBROWSER_NONE;
 
@@ -86,7 +87,7 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
       {
          const struct retro_subsystem_info *subsystem = system->subsystem.data + content_get_subsystem();
 
-         if (subsystem)
+         if (subsystem_data)
             str_list  = file_archive_get_file_list(path, subsystem->roms[content_get_subsystem_rom_id()].valid_extensions);
       }
    }
@@ -97,7 +98,7 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
          const struct retro_subsystem_info *subsystem = 
             system->subsystem.data + content_get_subsystem();
 
-         if (subsystem && content_get_subsystem_rom_id() < subsystem->num_roms)
+         if (subsystem_data && content_get_subsystem_rom_id() < subsystem->num_roms)
             str_list = dir_list_new(path,
                   (filter_ext && info) ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
                   true, settings->bools.show_hidden_files, true, false);
