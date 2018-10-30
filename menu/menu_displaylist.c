@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2014-2017 - Jean-André Santoni
- *  Copyright (C) 2015-2017 - Andrés Suárez
+ *  Copyright (C) 2014-2017 - Jean-AndrÃ© Santoni
+ *  Copyright (C) 2015-2017 - AndrÃ©s SuÃ¡rez
  *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -2584,25 +2584,6 @@ static int menu_displaylist_parse_load_content_settings(
 #endif
       rarch_system_info_t *system    = runloop_get_system_info();
 
-#if 0
-      const struct retro_subsystem_info* subsystem = system ? system->subsystem.data : NULL;
-
-      if (subsystem)
-      {
-         unsigned p;
-
-         for (p = 0; p < system->subsystem.size; p++, subsystem++)
-         {
-            char s[PATH_MAX_LENGTH];
-            snprintf(s, sizeof(s), "%s (%s)", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST), subsystem->desc);
-            menu_entries_append_enum(info->list,
-                  s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL),
-                  MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL,
-                  MENU_SETTING_ACTION, 0, 0);
-         }
-      }
-#endif
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT),
             msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT),
@@ -2633,7 +2614,7 @@ static int menu_displaylist_parse_load_content_settings(
 
       if (settings->bools.quick_menu_show_save_load_state
 #ifdef HAVE_CHEEVOS
-          && !cheevos_hardcore_active
+         && !cheevos_hardcore_active
 #endif
          )
       {

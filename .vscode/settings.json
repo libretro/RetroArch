@@ -41,6 +41,8 @@
       "ozone_texture.h": "c",
       "string_list.h": "c",
       "core_info.h": "c"
+      "thread": "c",
+      "xlocale": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }
