@@ -374,14 +374,6 @@ bool libretro_get_system_info(const char *path,
 
    memcpy(info, &dummy_info, sizeof(*info));
 
-   if (!string_is_empty(dummy_info.library_name))
-      info->library_name    = strdup(dummy_info.library_name);
-   if (!string_is_empty(dummy_info.library_version))
-      info->library_version    = strdup(dummy_info.library_version);
-
-   if (dummy_info.valid_extensions)
-      info->valid_extensions = strdup(dummy_info.valid_extensions);
-
 #ifdef HAVE_DYNAMIC
    dylib_close(lib);
 #endif
@@ -709,10 +701,6 @@ static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current
  **/
 bool init_libretro_sym(enum rarch_core_type type, struct retro_core_t *current_core)
 {
-   /* Guarantee that we can do "dirty" casting.
-    * Every OS that this program supports should pass this. */
-   retro_assert(sizeof(void*) == sizeof(void (*)(void)));
-
    if (!load_symbols(type, current_core))
       return false;
 
@@ -1381,8 +1369,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          /* Old ABI. Don't copy garbage. */
          if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL)
+         {
             memcpy(hwr,
                   cb, offsetof(struct retro_hw_render_callback, stencil));
+            memset(hwr + offsetof(struct retro_hw_render_callback, stencil),
+                  0, sizeof(*cb) - offsetof(struct retro_hw_render_callback, stencil));
+            
+         }
          else
             memcpy(hwr, cb, sizeof(*cb));
          break;
@@ -1581,9 +1574,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             struct retro_subsystem_info *info_ptr = NULL;
             free(system->subsystem.data);
             system->subsystem.data = NULL;
+            system->subsystem.size = 0;
 
             info_ptr = (struct retro_subsystem_info*)
-               calloc(i, sizeof(*info_ptr));
+               malloc(i * sizeof(*info_ptr));
 
             if (!info_ptr)
                return false;
@@ -1619,6 +1613,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
             free(system->ports.data);
             system->ports.data = NULL;
+            system->ports.size = 0;
 
             info_ptr = (struct retro_controller_info*)calloc(i, sizeof(*info_ptr));
             if (!info_ptr)
@@ -1643,6 +1638,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
             RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
             free((void*)system->mmaps.descriptors);
+            system->mmaps.descriptors     = 0;
             system->mmaps.num_descriptors = 0;
             descriptors = (rarch_memory_descriptor_t*)
                calloc(mmaps->num_descriptors,
