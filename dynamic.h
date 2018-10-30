@@ -146,6 +146,9 @@ bool init_libretro_sym_custom(enum rarch_core_type type, struct retro_core_t *cu
  **/
 void uninit_libretro_sym(struct retro_core_t *core);
 
+struct retro_subsystem_info *subsystem_pre;
+struct retro_subsystem_rom_info **subsystem_pre_roms;
+
 RETRO_END_DECLS
 
 #endif
