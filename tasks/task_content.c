@@ -896,9 +896,8 @@ static bool task_load_content(content_ctx_info_t *content_info,
    {
       size_t tmp_size                = PATH_MAX_LENGTH * sizeof(char);
       char *tmp                      = (char*)malloc(tmp_size);
-      rarch_system_info_t *sys_info  = runloop_get_system_info();
       const char *path_content       = path_get(RARCH_PATH_CONTENT);
-      struct retro_system_info *info = sys_info ? &sys_info->info : NULL;
+      struct retro_system_info *info = runloop_get_libretro_system_info();
 
       tmp[0] = '\0';
 

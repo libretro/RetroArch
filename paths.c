@@ -67,6 +67,7 @@ void path_set_redirect(void)
    const char *old_savefile_dir                = dir_get(RARCH_DIR_SAVEFILE);
    const char *old_savestate_dir               = dir_get(RARCH_DIR_SAVESTATE);
    rarch_system_info_t      *info              = runloop_get_system_info();
+   struct retro_system_info *system            = runloop_get_libretro_system_info();
    settings_t *settings                        = config_get_ptr();
 
    new_savefile_dir[0] = new_savestate_dir[0]  = '\0';
@@ -76,10 +77,10 @@ void path_set_redirect(void)
    strlcpy(new_savefile_dir,  old_savefile_dir,  path_size);
    strlcpy(new_savestate_dir, old_savestate_dir, path_size);
 
-   if (info && !string_is_empty(info->info.library_name))
+   if (system && !string_is_empty(system->library_name))
    {
 #ifdef HAVE_MENU
-      if (!string_is_equal(info->info.library_name,
+      if (!string_is_equal(system->library_name,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
 #endif
          check_library_name = true;
@@ -94,7 +95,7 @@ void path_set_redirect(void)
          fill_pathname_join(
                new_savefile_dir,
                old_savefile_dir,
-               info->info.library_name,
+               system->library_name,
                path_size);
 
          /* If path doesn't exist, try to create it,
@@ -121,7 +122,7 @@ void path_set_redirect(void)
          fill_pathname_join(
                new_savestate_dir,
                old_savestate_dir,
-               info->info.library_name,
+               system->library_name,
                path_size);
 
          /* If path doesn't exist, try to create it.
@@ -173,7 +174,7 @@ void path_set_redirect(void)
       {
          fill_pathname_dir(global->name.savefile,
                !string_is_empty(path_main_basename) ? path_main_basename :
-                  info ? info->info.library_name : NULL,
+                  system ? system->library_name : NULL,
                file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
          RARCH_LOG("%s \"%s\".\n",
@@ -185,7 +186,7 @@ void path_set_redirect(void)
       {
          fill_pathname_dir(global->name.savestate,
                !string_is_empty(path_main_basename) ? path_main_basename :
-                  info ? info->info.library_name : NULL,
+                  system ? system->library_name : NULL,
                file_path_str(FILE_PATH_STATE_EXTENSION),
                sizeof(global->name.savestate));
          RARCH_LOG("%s \"%s\".\n",

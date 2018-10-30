@@ -3593,3 +3593,9 @@ rarch_system_info_t *runloop_get_system_info(void)
 {
    return &runloop_system;
 }
+
+struct retro_system_info *runloop_get_libretro_system_info(void)
+{
+   struct retro_system_info *system = &runloop_system.info;
+   return system;
+}
