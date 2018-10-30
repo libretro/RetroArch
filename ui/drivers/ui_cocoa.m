@@ -505,7 +505,7 @@ static char** waiting_argv;
       {
          ui_msg_window_state msg_window_state;
          msg_window_state.text  = strdup("Cannot open multiple files");
-         msg_window_state.title = strdup("RetroArch");
+         msg_window_state.title = strdup(msg_hash_to_str(MSG_PROGRAM));
          msg_window->information(&msg_window_state);
 
          free(msg_window_state.text);
@@ -577,8 +577,8 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
         settings_t *settings        = config_get_ptr();
 
         browser_state.filters       = strdup("dylib");
-        browser_state.filters_title = strdup("Core");
-        browser_state.title         = strdup("Load Core");
+        browser_state.filters_title = strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS));
+        browser_state.title         = strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST));
         browser_state.startdir      = strdup(settings->paths.directory_libretro);
 
         bool result = browser->open(&browser_state);
@@ -604,7 +604,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
         if (!startdir.length)
             startdir           = BOXSTRING("/");
 
-        browser_state.title = strdup("Load Content");
+        browser_state.title    = strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST));
         browser_state.startdir = strdup([startdir UTF8String]);
 
         bool result = browser->open(&browser_state);
