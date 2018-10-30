@@ -318,6 +318,10 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 }
 #endif
 
+static char current_library_name[1024];
+static char current_library_version[1024];
+static char current_valid_extensions[1024];
+
 /**
  * libretro_get_system_info:
  * @path                         : Path to libretro library.
@@ -373,6 +377,24 @@ bool libretro_get_system_info(const char *path,
 #endif
 
    memcpy(info, &dummy_info, sizeof(*info));
+
+   current_library_name[0] = '\0';
+   current_library_version[0] = '\0';
+   current_valid_extensions[0] = '\0';
+
+   if (!string_is_empty(dummy_info.library_name))
+      strlcpy(current_library_name, 
+            dummy_info.library_name, sizeof(current_library_name));
+   if (!string_is_empty(dummy_info.library_version))
+      strlcpy(current_library_version, 
+            dummy_info.library_version, sizeof(current_library_version));
+   if (dummy_info.valid_extensions)
+      strlcpy(current_valid_extensions, 
+            dummy_info.valid_extensions, sizeof(current_valid_extensions));
+
+   info->library_name     = current_library_name;
+   info->library_version  = current_library_name;
+   info->valid_extensions = current_valid_extensions;
 
 #ifdef HAVE_DYNAMIC
    dylib_close(lib);
