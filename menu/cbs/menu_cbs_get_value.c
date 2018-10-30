@@ -1091,11 +1091,6 @@ static void menu_action_setting_disp_set_label_core_option_create(
       const char *path,
       char *s2, size_t len2)
 {
-   rarch_system_info_t *system = runloop_get_system_info();
-
-   if (!system)
-      return;
-
    *s = '\0';
    *w = 19;
 

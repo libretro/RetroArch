@@ -416,9 +416,9 @@ int menu_entries_get_core_name(char *s, size_t len)
  * (shown at the top of the UI). */
 int menu_entries_get_core_title(char *s, size_t len)
 {
-   const char *core_name               = NULL;
-   const char *core_version            = NULL;
    struct retro_system_info    *system = runloop_get_libretro_system_info();
+   const char *core_name               = system ? system->library_name    : NULL;
+   const char *core_version            = system ? system->library_version : NULL;
 #if _MSC_VER == 1200
    const char *extra_version = " msvc6";
 #elif _MSC_VER == 1300
@@ -443,19 +443,8 @@ int menu_entries_get_core_title(char *s, size_t len)
    const char *extra_version = "";
 #endif
 
-   if (system)
-   {
-      core_name    = system->library_name;
-      core_version = system->library_version;
-   }
-
-   if (string_is_empty(core_name) && system)
-      core_name = system->library_name;
    if (string_is_empty(core_name))
       core_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
-
-   if (!core_version && system)
-      core_version = system->library_version;
    if (!core_version)
       core_version = "";
 

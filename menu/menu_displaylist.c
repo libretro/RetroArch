@@ -2936,14 +2936,14 @@ static int menu_displaylist_parse_horizontal_content_actions(
 static int menu_displaylist_parse_information_list(
       menu_displaylist_info_t *info)
 {
-   core_info_t *core_info         = NULL;
-   rarch_system_info_t *system    = runloop_get_system_info();
+   core_info_t   *core_info         = NULL;
+   struct retro_system_info *system = runloop_get_libretro_system_info();
 
    core_info_get_current_core(&core_info);
 
    if (  system &&
-         (!string_is_empty(system->info.library_name) &&
-          !string_is_equal(system->info.library_name,
+         (!string_is_empty(system->library_name) &&
+          !string_is_equal(system->library_name,
              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
          )
          && core_info && core_info->config_data
@@ -3293,8 +3293,9 @@ static int menu_displaylist_parse_options_remappings(
       menu_handle_t *menu,
       menu_displaylist_info_t *info)
 {
+   unsigned device;
    unsigned p, retro_id;
-   rarch_system_info_t *system = NULL;
+   settings_t        *settings = config_get_ptr();
    unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
    for (p = 0; p < max_users; p++)
@@ -3364,76 +3365,69 @@ static int menu_displaylist_parse_options_remappings(
             MENU_SETTING_ACTION, 0, 0);
    }
 
-   system    = runloop_get_system_info();
-
-   if (system)
+   for (p = 0; p < max_users; p++)
    {
-      settings_t *settings = config_get_ptr();
-      unsigned device;
-      for (p = 0; p < max_users; p++)
+      device = settings->uints.input_libretro_device[p];
+      device &= RETRO_DEVICE_MASK;
+
+      if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
       {
-         device = settings->uints.input_libretro_device[p];
-         device &= RETRO_DEVICE_MASK;
-
-         if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
+         for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 8; retro_id++)
          {
-            for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 8; retro_id++)
-            {
-               char desc_label[64];
-               char descriptor[255];
-               const struct retro_keybind *auto_bind = NULL;
-               const struct retro_keybind *keybind   = NULL;
+            char desc_label[64];
+            char descriptor[255];
+            const struct retro_keybind *auto_bind = NULL;
+            const struct retro_keybind *keybind   = NULL;
 
-               keybind   = &input_config_binds[p][retro_id];
-               auto_bind = (const struct retro_keybind*)
-                  input_config_get_bind_auto(p, retro_id);
+            keybind   = &input_config_binds[p][retro_id];
+            auto_bind = (const struct retro_keybind*)
+               input_config_get_bind_auto(p, retro_id);
 
-               input_config_get_bind_string(descriptor,
+            input_config_get_bind_string(descriptor,
                   keybind, auto_bind, sizeof(descriptor));
 
-               if(!strstr(descriptor, "Auto"))
-               {
-                  const struct retro_keybind *keyptr =
-                     &input_config_binds[p][retro_id];
+            if(!strstr(descriptor, "Auto"))
+            {
+               const struct retro_keybind *keyptr =
+                  &input_config_binds[p][retro_id];
 
-                  snprintf(desc_label, sizeof(desc_label), "%s %s", msg_hash_to_str(keyptr->enum_idx), descriptor);
-                  strlcpy(descriptor, desc_label, sizeof(descriptor));
-               }
-
-               menu_entries_append_enum(info->list, descriptor, "",
-                     MSG_UNKNOWN,
-                     MENU_SETTINGS_INPUT_DESC_BEGIN +
-                     (p * (RARCH_FIRST_CUSTOM_BIND + 8)) +  retro_id, 0, 0);
+               snprintf(desc_label, sizeof(desc_label), "%s %s", msg_hash_to_str(keyptr->enum_idx), descriptor);
+               strlcpy(descriptor, desc_label, sizeof(descriptor));
             }
+
+            menu_entries_append_enum(info->list, descriptor, "",
+                  MSG_UNKNOWN,
+                  MENU_SETTINGS_INPUT_DESC_BEGIN +
+                  (p * (RARCH_FIRST_CUSTOM_BIND + 8)) +  retro_id, 0, 0);
          }
-         else if (device == RETRO_DEVICE_KEYBOARD)
+      }
+      else if (device == RETRO_DEVICE_KEYBOARD)
+      {
+         for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
          {
-            for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
-            {
-               char descriptor[255];
-               const struct retro_keybind *auto_bind = NULL;
-               const struct retro_keybind *keybind   = NULL;
+            char descriptor[255];
+            const struct retro_keybind *auto_bind = NULL;
+            const struct retro_keybind *keybind   = NULL;
 
-               keybind   = &input_config_binds[p][retro_id];
-               auto_bind = (const struct retro_keybind*)
-                  input_config_get_bind_auto(p, retro_id);
+            keybind   = &input_config_binds[p][retro_id];
+            auto_bind = (const struct retro_keybind*)
+               input_config_get_bind_auto(p, retro_id);
 
-               input_config_get_bind_string(descriptor,
+            input_config_get_bind_string(descriptor,
                   keybind, auto_bind, sizeof(descriptor));
 
-               if(!strstr(descriptor, "Auto"))
-               {
-                  const struct retro_keybind *keyptr =
-                     &input_config_binds[p][retro_id];
+            if(!strstr(descriptor, "Auto"))
+            {
+               const struct retro_keybind *keyptr =
+                  &input_config_binds[p][retro_id];
 
-                  strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
-               }
-
-               menu_entries_append_enum(info->list, descriptor, "",
-                     MSG_UNKNOWN,
-                     MENU_SETTINGS_INPUT_DESC_KBD_BEGIN +
-                     (p * RARCH_FIRST_CUSTOM_BIND) + retro_id, 0, 0);
+               strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
             }
+
+            menu_entries_append_enum(info->list, descriptor, "",
+                  MSG_UNKNOWN,
+                  MENU_SETTINGS_INPUT_DESC_KBD_BEGIN +
+                  (p * RARCH_FIRST_CUSTOM_BIND) + retro_id, 0, 0);
          }
       }
    }
@@ -4893,8 +4887,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 
             if (cores_names_size == 0)
             {
-               rarch_system_info_t *system_info = runloop_get_system_info();
-               struct retro_system_info *system = &system_info->info;
+               struct retro_system_info *system = runloop_get_libretro_system_info();
                const char *core_name            = system ? system->library_name : NULL;
 
                if (!path_is_empty(RARCH_PATH_CORE))
@@ -5008,12 +5001,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                         0);
 
                   {
-                     const char *core_name            = NULL;
-                     rarch_system_info_t *system_info = runloop_get_system_info();
-                     struct retro_system_info *system = &system_info->info;
-
-                     if (system)
-                        core_name = system->library_name;
+                     struct retro_system_info *system = runloop_get_libretro_system_info();
+                     const char *core_name            = system ? system->library_name : NULL;
 
                      if (!string_is_empty(core_name))
                         file_list_set_alt_at_offset(info->list, 0,
@@ -7325,19 +7314,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
             settings_t      *settings      = config_get_ptr();
-            rarch_system_info_t *system    = runloop_get_system_info();
+            rarch_system_info_t *sys_info  = runloop_get_system_info();
 
-            if (system)
+            if (sys_info)
             {
-               if (!string_is_empty(system->info.library_name) &&
-                     !string_is_equal(system->info.library_name,
+               struct retro_system_info *system = runloop_get_libretro_system_info();
+
+               if (!string_is_empty(system->library_name) &&
+                     !string_is_equal(system->library_name,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
                   if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                      menu_displaylist_parse_settings_enum(menu, info,
                            MENU_ENUM_LABEL_CONTENT_SETTINGS,
                            PARSE_ACTION, false);
 
-               if (system->load_no_content)
+               if (sys_info->load_no_content)
                   menu_displaylist_parse_settings_enum(menu, info,
                         MENU_ENUM_LABEL_START_CORE, PARSE_ACTION, false);
             }

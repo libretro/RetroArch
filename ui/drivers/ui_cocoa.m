@@ -480,13 +480,9 @@ static char** waiting_argv;
 {
    if (filenames.count == 1 && [filenames objectAtIndex:0])
    {
-      rarch_system_info_t *info        = runloop_get_system_info();
-      struct retro_system_info *system = &info->info;
+      struct retro_system_info *system = runloop_get_libretro_system_info();
       NSString *__core                 = [filenames objectAtIndex:0];
-      const char *core_name            = NULL;
-
-      if (system)
-         core_name = system->library_name;
+      const char *core_name            = system ? system->library_name : NULL;
 
       if (core_name)
       {
@@ -556,12 +552,8 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
     if (!result)
         return;
 
-    rarch_system_info_t *info        = runloop_get_system_info();
-    struct retro_system_info *system = &info->info;
-    const char            *core_name = NULL;
-
-    if (system)
-        core_name = system->library_name;
+    struct retro_system_info *system = runloop_get_libretro_system_info();
+    const char            *core_name = system ? system->library_name : NULL;
 
     path_set(RARCH_PATH_CONTENT, state->result);
 

@@ -1526,6 +1526,8 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
 
    if (sys_info)
    {
+      struct retro_system_info *system        = runloop_get_libretro_system_info();
+
       content_ctx.history_list_enable         = settings->bools.history_list_enable;
       content_ctx.set_supports_no_game_enable = settings->bools.set_supports_no_game_enable;
 
@@ -1533,11 +1535,11 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
          content_ctx.directory_system         = strdup(settings->paths.directory_system);
       if (!string_is_empty(settings->paths.directory_cache))
          content_ctx.directory_cache          = strdup(settings->paths.directory_cache);
-      if (!string_is_empty(sys_info->info.valid_extensions))
-         content_ctx.valid_extensions         = strdup(sys_info->info.valid_extensions);
+      if (!string_is_empty(system->valid_extensions))
+         content_ctx.valid_extensions         = strdup(system->valid_extensions);
 
-      content_ctx.block_extract               = sys_info->info.block_extract;
-      content_ctx.need_fullpath               = sys_info->info.need_fullpath;
+      content_ctx.block_extract               = system->block_extract;
+      content_ctx.need_fullpath               = system->need_fullpath;
 
       content_ctx.subsystem.data              = sys_info->subsystem.data;
       content_ctx.subsystem.size              = sys_info->subsystem.size;
@@ -1918,6 +1920,8 @@ bool content_init(void)
 
    if (sys_info)
    {
+      struct retro_system_info *system        = runloop_get_libretro_system_info();
+
       content_ctx.history_list_enable         = settings->bools.history_list_enable;
       content_ctx.set_supports_no_game_enable = settings->bools.set_supports_no_game_enable;
 
@@ -1925,11 +1929,11 @@ bool content_init(void)
          content_ctx.directory_system         = strdup(settings->paths.directory_system);
       if (!string_is_empty(settings->paths.directory_cache))
          content_ctx.directory_cache          = strdup(settings->paths.directory_cache);
-      if (!string_is_empty(sys_info->info.valid_extensions))
-         content_ctx.valid_extensions         = strdup(sys_info->info.valid_extensions);
+      if (!string_is_empty(system->valid_extensions))
+         content_ctx.valid_extensions         = strdup(system->valid_extensions);
 
-      content_ctx.block_extract               = sys_info->info.block_extract;
-      content_ctx.need_fullpath               = sys_info->info.need_fullpath;
+      content_ctx.block_extract               = system->block_extract;
+      content_ctx.need_fullpath               = system->need_fullpath;
 
       content_ctx.subsystem.data              = sys_info->subsystem.data;
       content_ctx.subsystem.size              = sys_info->subsystem.size;

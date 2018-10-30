@@ -2211,14 +2211,11 @@ static int generic_action_ok_shader_preset_save(const char *path,
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
-   settings_t *settings            = config_get_ptr();
-   const char *core_name           = NULL;
-   rarch_system_info_t *info       = runloop_get_system_info();
+   settings_t *settings             = config_get_ptr();
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   const char *core_name            = system ? system->library_name : NULL;
 
    directory[0] = file[0] = tmp[0] = '\0';
-
-   if (info)
-      core_name           = info->info.library_name;
 
    if (!string_is_empty(core_name))
    {
@@ -2296,14 +2293,11 @@ static int generic_action_ok_remap_file_operation(const char *path,
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    char content_dir[PATH_MAX_LENGTH];
-   settings_t *settings            = config_get_ptr();
-   const char *core_name           = NULL;
-   rarch_system_info_t *info       = runloop_get_system_info();
+   settings_t *settings             = config_get_ptr();
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   const char *core_name            = system ? system->library_name : NULL;
 
    directory[0] = file[0]          = '\0';
-
-   if (info)
-      core_name           = info->info.library_name;
 
    if (!string_is_empty(core_name))
       fill_pathname_join(

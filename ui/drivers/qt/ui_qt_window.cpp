@@ -1,6 +1,6 @@
 /* RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2018 - Brad Parker
+ *  Copyright (C) 2018      - Brad Parker
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -1297,7 +1297,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
    {
       QHash<QString, QString> hash;
 
-      hash["key"] = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME)) + ":";
+      hash["key"]   = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME)) + ":";
       hash["value"] = core_info->systemname;
 
       infoList.append(hash);
@@ -1307,7 +1307,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
    {
       QHash<QString, QString> hash;
 
-      hash["key"] = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER)) + ":";
+      hash["key"]   = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER)) + ":";
       hash["value"] = core_info->system_manufacturer;
 
       infoList.append(hash);
@@ -2778,10 +2778,10 @@ void MainWindow::onStopClicked()
 
 void MainWindow::setCurrentCoreLabel()
 {
-   rarch_system_info_t *system = runloop_get_system_info();
-   bool update = false;
-   QString libraryName = system->info.library_name;
-   const char *no_core_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
+   bool update                      = false;
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   QString libraryName              = system->library_name;
+   const char *no_core_str          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
 
    if (m_statusLabel->text().isEmpty() || (m_currentCore != no_core_str && libraryName.isEmpty()))
    {
@@ -2793,8 +2793,8 @@ void MainWindow::setCurrentCoreLabel()
    {
       if (m_currentCore != libraryName && !libraryName.isEmpty())
       {
-         m_currentCore = system->info.library_name;
-         m_currentCoreVersion = (string_is_empty(system->info.library_version) ? "" : system->info.library_version);
+         m_currentCore        = system->library_name;
+         m_currentCoreVersion = (string_is_empty(system->library_version) ? "" : system->library_version);
          update = true;
       }
    }

@@ -2445,17 +2445,12 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
       {
-         global_t *global               = global_get_ptr();
-         rarch_system_info_t *sys_info  = runloop_get_system_info();
-         const char *core_name          = NULL;
-         const char *core_path          = NULL;
-         const char *label              = NULL;
-
-         if (sys_info)
-         {
-            core_name = sys_info->info.library_name;
-            core_path = path_get(RARCH_PATH_CORE);
-         }
+         /* TODO/FIXME - does path_get(RARCH_PATH_CORE) depend on the system info struct? Investigate */
+         global_t *global                 = global_get_ptr();
+         struct retro_system_info *system = runloop_get_libretro_system_info();
+         const char *label                = NULL;
+         const char *core_path            = system ? path_get(RARCH_PATH_CORE) : NULL;
+         const char *core_name            = system ? system->library_name : NULL;
 
          if (!string_is_empty(global->name.label))
             label = global->name.label;

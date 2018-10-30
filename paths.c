@@ -66,7 +66,6 @@ void path_set_redirect(void)
    global_t                *global             = global_get_ptr();
    const char *old_savefile_dir                = dir_get(RARCH_DIR_SAVEFILE);
    const char *old_savestate_dir               = dir_get(RARCH_DIR_SAVESTATE);
-   rarch_system_info_t      *info              = runloop_get_system_info();
    struct retro_system_info *system            = runloop_get_libretro_system_info();
    settings_t *settings                        = config_get_ptr();
 
