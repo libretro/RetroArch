@@ -34,14 +34,14 @@
 typedef struct ps2_video
 {
    GSGLOBAL *gsGlobal;
-   GSTEXTURE *backgroundTexture;
+   GSTEXTURE *menuTexture;
+   GSTEXTURE *coreTexture;
+   bool menuVisible;
 } ps2_video_t;
 
 // PRIVATE METHODS
 static void initGSGlobal(ps2_video_t *ps2) {
-	u64 TexCol = GS_SETREG_RGBAQ(0x80,0x80,0x80,0xFF,0x00);
-
-      ps2->gsGlobal = gsKit_init_global()
+	ps2->gsGlobal = gsKit_init_global()
 
 	ps2->gsGlobal->PSM = GS_PSM_CT16;
 	// ps2->gsGlobal->PSMZ = GS_PSMZ_16S;
@@ -71,8 +71,8 @@ static size_t gskitTextureSize(GSTEXTURE *texture) {
    return gsKit_texture_size_ee(texture->Width, texture->Height, texture->PSM);
 }
 
-static void initBackgroundTexture(ps2_video_t *ps2) {
-   ps2->backgroundTexture = malloc(sizeof *ps2->backgroundTexture);
+static void initTexture(GSTEXTURE *texture) {
+   texture = malloc(sizeof *texture);
 }
 
 static void deinitTexturePTR(void *texture_ptr) {
@@ -97,8 +97,12 @@ static void *ps2_gfx_init(const video_info_t *video,
 
    ps2_video_t *ps2 = (ps2_video_t*)calloc(1, sizeof(ps2_video_t));
 
+   if (!ps2)
+      return NULL;
+
    initGSGlobal(ps2);
-   initBackgroundTexture(ps2);
+   ps2->menuTexture = malloc(sizeof *ps2->menuTexture);
+   ps2->coreTexture = malloc(sizeof *ps2->coreTexture);
 
    if (input && input_data)
    {
@@ -125,6 +129,85 @@ static bool ps2_gfx_frame(void *data, const void *frame,
 
    if (!width || !height)
       return false;
+
+
+   gsKit_vram_clear(ps2->gsGlobal);
+
+   if (frame)
+   {
+      int PSM = GS_PSM_CT16;
+      if (  !ps2->coreTexture->Mem || 
+            ps2->coreTexture->Width != width || 
+            ps2->coreTexture->Height != height ||
+            ps2->coreTexture->PSM != PSM ) {
+         ps2->coreTexture->Width = width;
+         ps2->coreTexture->Height = height;
+         ps2->coreTexture->PSM = PSM;
+         ps2->coreTexture->Filter = GS_FILTER_NEAREST;
+         free(ps2->coreTexture->Mem);
+         ps2->coreTexture->Mem = memalign(128, gskitTextureSize(ps2->coreTexture));
+      }
+
+      memcpy(ps2->coreTexture->Mem, frame, width * height * 2);
+   }
+
+   if (frame)
+   {
+      ps2->coreTexture->Vram=gsKit_vram_alloc(ps2->gsGlobal, textureSize(ps2->coreTexture) , GSKIT_ALLOC_USERBUFFER);
+      if(ps2->coreTexture->Vram == GSKIT_ALLOC_ERROR)
+      {
+         printf("VRAM Allocation Failed. Will not upload texture.\n");
+      }
+   }
+
+   if (ps2->menuVisible)
+   {
+      ps2->menuTexture->Vram=gsKit_vram_alloc(ps2->gsGlobal, textureSize(ps2->menuTexture) , GSKIT_ALLOC_USERBUFFER);
+      if(ps2->menuTexture->Vram == GSKIT_ALLOC_ERROR)
+      {
+        printf("VRAM Allocation Failed. Will not upload texture.\n");
+      }
+   }
+
+   if (frame)
+   {
+      gsKit_texture_upload(ps2->gsGlobal, ps2->coreTexture); 
+   }
+
+   if (ps2->menuVisible)
+   {
+      gsKit_texture_upload(ps2->gsGlobal, ps2->menuTexture);
+   }
+
+   if (frame)
+   {
+      gsKit_prim_sprite_texture( ps2->gsGlobal, ps2->coreTexture,
+                              0.0f,
+                              0.0f,  // Y1
+					0.0f,  // U1
+					0.0f,  // V1
+					ps2->gsGlobal->Width, // X2
+					ps2->gsGlobal->Height, // Y2
+					ps2->coreTexture->Width, // U2
+					ps2->coreTexture->Height, // V2
+					2,
+					GS_WHITE);
+   }
+
+   if (ps2->menuVisible)
+   {
+      gsKit_prim_sprite_texture( ps2->gsGlobal, ps2->menuTexture,
+                              0.0f,
+                              0.0f,  // Y1
+					0.0f,  // U1
+					0.0f,  // V1
+					ps2->gsGlobal->Width, // X2
+					ps2->gsGlobal->Height, // Y2
+					ps2->menuTexture->Width, // U2
+					ps2->menuTexture->Height, // V2
+					2,
+					GS_WHITE);
+   }
 
    gsKit_sync_flip(ps2->gsGlobal);
    gsKit_queue_exec(ps2->gsGlobal);
@@ -167,7 +250,10 @@ static void ps2_gfx_free(void *data)
 {
    ps2_video_t *ps2 = (ps2_video_t*)data;
 
-   deinitTexture(ps2->backgroundTexture);
+   gsKit_clear(ps2->gsGlobal, GS_WHITE);
+
+   deinitTexture(ps2->menuTexture);
+   deinitTexture(ps2->coreTexture);
    gsKit_vram_clear(ps2->gsGlobal);
    gsKit_deinit_global(ps2->gsGlobal);
 
@@ -227,52 +313,32 @@ static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
    ps2_video_t *ps2 = (ps2_video_t*)data;
 
 #ifdef DEBUG
-   /* ps2->backgroundTexture.Mem buffer size is (640 * 448)*2 Bytes */
-   retro_assert((width*height) < (480 * 448));
+   /* ps2->menuTexture.Mem buffer size is (640 * 448)*2 Bytes */
+//    retro_assert((width*height) < (480 * 448));
 #endif
    int PSM = rgb32 ? GS_PSM_CT32 : GS_PSM_CT16;
    printf("ps2_set_texture_frame, width:%i, height:%i, rgb32:%i, alpha:%f\n", width, height, rgb32, alpha);
-   if (     !ps2->backgroundTexture->Mem || 
-            ps2->backgroundTexture->Width != width || 
-            ps2->backgroundTexture->Height != height ||
-            ps2->backgroundTexture->PSM != PSM ) {
-      ps2->backgroundTexture->Width = width;
-      ps2->backgroundTexture->Height = height;
-      ps2->backgroundTexture->PSM = PSM;
-      ps2->backgroundTexture->Filter = GS_FILTER_NEAREST;
-      ps2->backgroundTexture->Mem = memalign(128, gskitTextureSize(ps2->backgroundTexture));
+   if (     !ps2->menuTexture->Mem || 
+            ps2->menuTexture->Width != width || 
+            ps2->menuTexture->Height != height ||
+            ps2->menuTexture->PSM != PSM ) {
+      ps2->menuTexture->Width = width;
+      ps2->menuTexture->Height = height;
+      ps2->menuTexture->PSM = PSM;
+      ps2->menuTexture->Filter = GS_FILTER_NEAREST;
+      free(ps2->menuTexture->Mem);
+      ps2->menuTexture->Mem = memalign(128, gskitTextureSize(ps2->menuTexture));
    }
 
-   memcpy(ps2->backgroundTexture->Mem, frame, width * height * (rgb32 ? 4 : 2));      
-   
-   gsKit_vram_clear(ps2->gsGlobal);
-   ps2->backgroundTexture->Vram=gsKit_vram_alloc(ps2->gsGlobal, textureSize(ps2->backgroundTexture) , GSKIT_ALLOC_USERBUFFER);
-   if(ps2->backgroundTexture->Vram == GSKIT_ALLOC_ERROR)
-   {
-      printf("VRAM Allocation Failed. Will not upload texture.\n");
-   }
-
-   // Upload texture
-   gsKit_texture_upload(ps2->gsGlobal, ps2->backgroundTexture);
-   gsKit_prim_sprite_texture( ps2->gsGlobal, ps2->backgroundTexture,
-                              0.0f,
-                              0.0f,  // Y1
-					0.0f,  // U1
-					0.0f,  // V1
-					ps2->gsGlobal->Width, // X2
-					ps2->gsGlobal->Height, // Y2
-					ps2->backgroundTexture->Width, // U2
-					ps2->backgroundTexture->Height, // V2
-					2,
-					GS_WHITE);
-
+   memcpy(ps2->menuTexture->Mem, frame, width * height * (rgb32 ? 4 : 2));      
 }
 
-static void ps2_set_texture_enable(void *data, bool state, bool full_screen)
+static void ps2_set_texture_enable(void *data, bool enable, bool full_screen)
 {
    (void) full_screen;
 
    ps2_video_t *ps2 = (ps2_video_t*)data;
+   ps2->menuVisible = enable;
 }
 
 static const video_poke_interface_t ps2_poke_interface = {
