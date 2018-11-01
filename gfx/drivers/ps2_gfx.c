@@ -32,7 +32,7 @@ typedef struct ps2_video
    GSTEXTURE *coreTexture;
    
    bool menuVisible;
-   bool full_screen;
+   bool fullscreen;
 
    bool rgb32;
    int menu_filter;
@@ -135,7 +135,7 @@ static void vram_alloc(GSGLOBAL *gsGlobal, GSTEXTURE *texture) {
    }
 }
 
-static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, bool full_screen) {
+static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, bool fullscreen) {
    gsKit_prim_sprite_texture( gsGlobal, texture,
                               0.0f,
                               0.0f,  // Y1
@@ -164,6 +164,7 @@ static void *ps2_gfx_init(const video_info_t *video,
 
    init_ps2_video(ps2);
    ps2->rgb32 = video->rgb32;
+   ps2->fullscreen = video->fullscreen;
    ps2->core_filter = video->smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
 
    if (input && input_data)
@@ -202,13 +203,13 @@ static bool ps2_gfx_frame(void *data, const void *frame,
       transfer_texture(ps2->coreTexture, frame, width, height, ps2->rgb32, ps2->core_filter, 1);
       vram_alloc(ps2->gsGlobal, ps2->coreTexture);
       gsKit_texture_upload(ps2->gsGlobal, ps2->coreTexture); 
-      prim_texture(ps2->gsGlobal, ps2->coreTexture, 1, 1);
+      prim_texture(ps2->gsGlobal, ps2->coreTexture, 1, ps2->fullscreen);
    }
 
    if (ps2->menuVisible) {
       vram_alloc(ps2->gsGlobal, ps2->menuTexture);
       gsKit_texture_upload(ps2->gsGlobal, ps2->menuTexture);
-      prim_texture(ps2->gsGlobal, ps2->menuTexture, 1, 1);
+      prim_texture(ps2->gsGlobal, ps2->menuTexture, 2, ps2->fullscreen);
    }
 
    gsKit_sync_flip(ps2->gsGlobal);
@@ -320,13 +321,11 @@ static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
    transfer_texture(ps2->menuTexture, frame, width, height, rgb32, ps2->menu_filter, 0);
 }
 
-static void ps2_set_texture_enable(void *data, bool enable, bool full_screen)
+static void ps2_set_texture_enable(void *data, bool enable, bool fullscreen)
 {
-   (void) full_screen;
-
    ps2_video_t *ps2 = (ps2_video_t*)data;
    ps2->menuVisible = enable;
-   ps2->full_screen = full_screen;
+   ps2->fullscreen = fullscreen;
 }
 
 static const video_poke_interface_t ps2_poke_interface = {
