@@ -1,6 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2018 - Francisco Javier Trujillo Mata
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -24,19 +23,17 @@
 #include <gsKit.h>
 #include <gsInline.h>
 
-#define GS_SCREEN_WIDTH 640;
-#define GS_SCREEN_HEIGHT 448;
-
-#define GS_BLACK GS_SETREG_RGBAQ(0x00,0x00,0x00,0x00,0x00) // turn black GS Screen
 #define GS_WHITE GS_SETREG_RGBAQ(0xFF,0xFF,0xFF,0x00,0x00) // turn white GS Screen
-#define GS_TEXCOL GS_SETREG_RGBAQ(0x80,0x80,0x80,0x80,0x00)
 
 typedef struct ps2_video
 {
    GSGLOBAL *gsGlobal;
    GSTEXTURE *menuTexture;
    GSTEXTURE *coreTexture;
+   
    bool menuVisible;
+   bool full_screen;
+
    bool rgb32;
 } ps2_video_t;
 
@@ -111,6 +108,36 @@ static void ConvertColors16(u16 *buffer, u32 dimensions)
     }
 }
 
+static void transfer_texture(GSTEXTURE *texture, const void *frame, 
+      int width, int height, bool rgb32, bool color_correction) {
+   
+   int PSM = rgb32 ? GS_PSM_CT32 : GS_PSM_CT16;
+   size_t size = gsKit_texture_size_ee(width, height, PSM);
+   if (  !texture->Mem || 
+      texture->Width != width || 
+      texture->Height != height ||
+      texture->PSM != PSM ) {
+      texture->Width = width;
+      texture->Height = height;
+      texture->PSM = PSM;
+      texture->Filter = GS_FILTER_NEAREST;
+      free(texture->Mem);
+      texture->Mem = memalign(128, size);
+}
+
+if (color_correction) {
+   int pixels = width * height;
+   int *buffer = (int *)frame;
+   if (rgb32) {
+      ConvertColors32(buffer, pixels);
+   } else {
+      ConvertColors16(buffer, pixels);
+   }
+}
+
+   memcpy(texture->Mem, frame, size);
+}
+
 
 static void *ps2_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
@@ -159,28 +186,8 @@ static bool ps2_gfx_frame(void *data, const void *frame,
 
    gsKit_vram_clear(ps2->gsGlobal);
 
-   if (frame)
-   {
-      int PSM = ps2->rgb32 ? GS_PSM_CT32 : GS_PSM_CT16;
-      if (  !ps2->coreTexture->Mem || 
-            ps2->coreTexture->Width != width || 
-            ps2->coreTexture->Height != height ||
-            ps2->coreTexture->PSM != PSM ) {
-         ps2->coreTexture->Width = width;
-         ps2->coreTexture->Height = height;
-         ps2->coreTexture->PSM = PSM;
-         ps2->coreTexture->Filter = GS_FILTER_NEAREST;
-         free(ps2->coreTexture->Mem);
-         ps2->coreTexture->Mem = memalign(128, gskitTextureSize(ps2->coreTexture));
-      }
-
-      if (ps2->rgb32) {
-         ConvertColors32(frame, width * height);
-         memcpy(ps2->coreTexture->Mem, frame, width * height * 4);
-      } else {
-         ConvertColors16(frame, width * height);
-         memcpy(ps2->coreTexture->Mem, frame, width * height * 2);
-      }
+   if (frame) {
+      transfer_texture(ps2->coreTexture, frame, width, height, ps2->rgb32, 1);
    }
 
    if (frame)
@@ -344,25 +351,7 @@ static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
 {
    ps2_video_t *ps2 = (ps2_video_t*)data;
 
-#ifdef DEBUG
-   /* ps2->menuTexture.Mem buffer size is (640 * 448)*2 Bytes */
-//    retro_assert((width*height) < (480 * 448));
-#endif
-   int PSM = rgb32 ? GS_PSM_CT32 : GS_PSM_CT16;
-   printf("ps2_set_texture_frame, width:%i, height:%i, rgb32:%i, alpha:%f\n", width, height, rgb32, alpha);
-   if (     !ps2->menuTexture->Mem || 
-            ps2->menuTexture->Width != width || 
-            ps2->menuTexture->Height != height ||
-            ps2->menuTexture->PSM != PSM ) {
-      ps2->menuTexture->Width = width;
-      ps2->menuTexture->Height = height;
-      ps2->menuTexture->PSM = PSM;
-      ps2->menuTexture->Filter = GS_FILTER_NEAREST;
-      free(ps2->menuTexture->Mem);
-      ps2->menuTexture->Mem = memalign(128, gskitTextureSize(ps2->menuTexture));
-   }
-
-   memcpy(ps2->menuTexture->Mem, frame, width * height * (rgb32 ? 4 : 2));      
+   transfer_texture(ps2->menuTexture, frame, width, height, rgb32, 0);
 }
 
 static void ps2_set_texture_enable(void *data, bool enable, bool full_screen)
@@ -371,6 +360,7 @@ static void ps2_set_texture_enable(void *data, bool enable, bool full_screen)
 
    ps2_video_t *ps2 = (ps2_video_t*)data;
    ps2->menuVisible = enable;
+   ps2->full_screen = full_screen;
 }
 
 static const video_poke_interface_t ps2_poke_interface = {
