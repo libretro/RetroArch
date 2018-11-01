@@ -87,6 +87,17 @@ static void deinitTexture(GSTEXTURE *texture) {
    deinitTexturePTR(texture->Clut);
 }
 
+static void ConvertColors32(u32 *buffer, u32 dimensions)
+{
+    u32 i;
+    u32 x32;
+    for (i = 0; i < dimensions; i++) {
+
+        x32 = buffer[i];
+        buffer[i] = ((x32 >> 16) & 0xFF) | ((x32 << 16) & 0xFF0000) | (x32 & 0xFF00FF00);
+    }
+}
+
 
 static void *ps2_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
@@ -135,7 +146,7 @@ static bool ps2_gfx_frame(void *data, const void *frame,
 
    if (frame)
    {
-      int PSM = GS_PSM_CT16;
+      int PSM = GS_PSM_CT32;
       if (  !ps2->coreTexture->Mem || 
             ps2->coreTexture->Width != width || 
             ps2->coreTexture->Height != height ||
@@ -148,7 +159,8 @@ static bool ps2_gfx_frame(void *data, const void *frame,
          ps2->coreTexture->Mem = memalign(128, gskitTextureSize(ps2->coreTexture));
       }
 
-      memcpy(ps2->coreTexture->Mem, frame, width * height * 2);
+      ConvertColors32(frame, width * height);
+      memcpy(ps2->coreTexture->Mem, frame, width * height * 4);
    }
 
    if (frame)
