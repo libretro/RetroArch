@@ -35,6 +35,8 @@ typedef struct ps2_video
    bool full_screen;
 
    bool rgb32;
+   int menu_filter;
+   int core_filter;
 } ps2_video_t;
 
 // PRIVATE METHODS
@@ -95,7 +97,7 @@ static void color_correction16(uint16_t *buffer, uint32_t dimensions)
 }
 
 static void transfer_texture(GSTEXTURE *texture, const void *frame, 
-      int width, int height, bool rgb32, bool color_correction) {
+      int width, int height, bool rgb32, int filter, bool color_correction) {
    
    int PSM = rgb32 ? GS_PSM_CT32 : GS_PSM_CT16;
    size_t size = gsKit_texture_size_ee(width, height, PSM);
@@ -106,7 +108,7 @@ static void transfer_texture(GSTEXTURE *texture, const void *frame,
       texture->Width = width;
       texture->Height = height;
       texture->PSM = PSM;
-      texture->Filter = GS_FILTER_NEAREST;
+      texture->Filter = filter;
       free(texture->Mem);
       texture->Mem = memalign(128, size);
 }
@@ -162,6 +164,7 @@ static void *ps2_gfx_init(const video_info_t *video,
 
    init_ps2_video(ps2);
    ps2->rgb32 = video->rgb32;
+   ps2->core_filter = video->smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
 
    if (input && input_data)
    {
@@ -196,7 +199,7 @@ static bool ps2_gfx_frame(void *data, const void *frame,
    gsKit_vram_clear(ps2->gsGlobal);
 
    if (frame) {
-      transfer_texture(ps2->coreTexture, frame, width, height, ps2->rgb32, 1);
+      transfer_texture(ps2->coreTexture, frame, width, height, ps2->rgb32, ps2->core_filter, 1);
       vram_alloc(ps2->gsGlobal, ps2->coreTexture);
       gsKit_texture_upload(ps2->gsGlobal, ps2->coreTexture); 
       prim_texture(ps2->gsGlobal, ps2->coreTexture, 1, 1);
@@ -295,6 +298,8 @@ static bool ps2_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 static void ps2_set_filtering(void *data, unsigned index, bool smooth)
 {
    ps2_video_t *ps2 = (ps2_video_t*)data;
+
+   ps2->menu_filter = smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
 }
 
 static void ps2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -312,7 +317,7 @@ static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
 {
    ps2_video_t *ps2 = (ps2_video_t*)data;
 
-   transfer_texture(ps2->menuTexture, frame, width, height, rgb32, 0);
+   transfer_texture(ps2->menuTexture, frame, width, height, rgb32, ps2->menu_filter, 0);
 }
 
 static void ps2_set_texture_enable(void *data, bool enable, bool full_screen)
