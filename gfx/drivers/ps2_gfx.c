@@ -37,6 +37,7 @@ typedef struct ps2_video
    GSTEXTURE *menuTexture;
    GSTEXTURE *coreTexture;
    bool menuVisible;
+   bool rgb32;
 } ps2_video_t;
 
 // PRIVATE METHODS
@@ -99,6 +100,18 @@ static void ConvertColors32(u32 *buffer, u32 dimensions)
 }
 
 
+static void ConvertColors16(u16 *buffer, u32 dimensions)
+{
+    u32 i;
+    u16 x16;
+    for (i = 0; i < dimensions; i++) {
+
+        x16 = buffer[i];
+        buffer[i] = (x16 & 0x8000) | ((x16 << 10) & 0x7C00) | (x16 & 0x3E0) | ((x16 >> 10) & 0x1F);
+    }
+}
+
+
 static void *ps2_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
@@ -114,6 +127,8 @@ static void *ps2_gfx_init(const video_info_t *video,
    initGSGlobal(ps2);
    ps2->menuTexture = malloc(sizeof *ps2->menuTexture);
    ps2->coreTexture = malloc(sizeof *ps2->coreTexture);
+
+   ps2->rgb32 = video->rgb32;
 
    if (input && input_data)
    {
@@ -146,7 +161,7 @@ static bool ps2_gfx_frame(void *data, const void *frame,
 
    if (frame)
    {
-      int PSM = GS_PSM_CT32;
+      int PSM = ps2->rgb32 ? GS_PSM_CT32 : GS_PSM_CT16;
       if (  !ps2->coreTexture->Mem || 
             ps2->coreTexture->Width != width || 
             ps2->coreTexture->Height != height ||
@@ -159,8 +174,13 @@ static bool ps2_gfx_frame(void *data, const void *frame,
          ps2->coreTexture->Mem = memalign(128, gskitTextureSize(ps2->coreTexture));
       }
 
-      ConvertColors32(frame, width * height);
-      memcpy(ps2->coreTexture->Mem, frame, width * height * 4);
+      if (ps2->rgb32) {
+         ConvertColors32(frame, width * height);
+         memcpy(ps2->coreTexture->Mem, frame, width * height * 4);
+      } else {
+         ConvertColors16(frame, width * height);
+         memcpy(ps2->coreTexture->Mem, frame, width * height * 2);
+      }
    }
 
    if (frame)
