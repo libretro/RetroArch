@@ -630,6 +630,9 @@ static void frontend_switch_init(void *data)
 
    gfxConfigureTransform(0);
 #endif /* HAVE_OPENGL */
+
+   appletInitializeGamePlayRecording();
+
 #ifdef NXLINK
    socketInitializeDefault();
    nxlink_connected = nxlinkStdio() != -1;
