@@ -24,6 +24,7 @@
 #include <gsInline.h>
 
 #define GS_WHITE GS_SETREG_RGBAQ(0xFF,0xFF,0xFF,0x00,0x00) // turn white GS Screen
+#define GS_BLACK GS_SETREG_RGBAQ(0x00,0x00,0x00,0x00,0x00) // turn white GS Screen
 
 typedef struct ps2_video
 {
@@ -35,6 +36,7 @@ typedef struct ps2_video
    bool fullscreen;
 
    bool rgb32;
+   bool force_aspect;
    int menu_filter;
    int core_filter;
 } ps2_video_t;
@@ -58,7 +60,7 @@ static GSGLOBAL *init_GSGlobal(void) {
 	gsKit_init_screen(gsGlobal);
       gsKit_mode_switch(gsGlobal, GS_ONESHOT);
 
-	gsKit_clear(gsGlobal, GS_WHITE);
+	gsKit_clear(gsGlobal, GS_BLACK);
 
       return gsGlobal;
 }
@@ -135,14 +137,41 @@ static void vram_alloc(GSGLOBAL *gsGlobal, GSTEXTURE *texture) {
    }
 }
 
-static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, bool fullscreen) {
+static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, bool force_aspect) {
+      float x1, y1, x2, y2;
+      if (force_aspect) {
+         float delta = 1.0f;
+         float texture_aspect_ratio = texture->Width / texture->Height;
+         float gsGlobal_aspect_ratio = gsGlobal->Width / gsGlobal->Height;
+         if (texture_aspect_ratio < gsGlobal_aspect_ratio) {
+            //height
+            delta = gsGlobal->Height / texture->Height;
+         } else {
+            //width
+            delta = gsGlobal->Width / texture->Width;
+         }
+         float newWidth = texture->Width * delta;
+         float newHeight = texture->Height * delta;
+         
+         x1 = (gsGlobal->Width - newWidth) / 2.0f;
+         y1 = (gsGlobal->Height - newHeight) / 2.0f;
+         x2 = newWidth + x1;
+         y2 = newHeight + y1;
+
+      } else {
+         x1 = 0.0f;
+         y1 = 0.0f;
+         x2 = gsGlobal->Width;
+         y2 = gsGlobal->Height;
+      }
+
    gsKit_prim_sprite_texture( gsGlobal, texture,
-                              0.0f,
-                              0.0f,  // Y1
+                              x1, //X1
+                              y1,  // Y1
                               0.0f,  // U1
                               0.0f,  // V1
-                              gsGlobal->Width, // X2
-                              gsGlobal->Height, // Y2
+                              x2, // X2
+                              y2, // Y2
                               texture->Width, // U2
                               texture->Height, // V2
                               zPosition,
@@ -166,6 +195,7 @@ static void *ps2_gfx_init(const video_info_t *video,
    ps2->rgb32 = video->rgb32;
    ps2->fullscreen = video->fullscreen;
    ps2->core_filter = video->smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
+   ps2->force_aspect = video->force_aspect;
 
    if (input && input_data)
    {
@@ -203,7 +233,7 @@ static bool ps2_gfx_frame(void *data, const void *frame,
       transfer_texture(ps2->coreTexture, frame, width, height, ps2->rgb32, ps2->core_filter, 1);
       vram_alloc(ps2->gsGlobal, ps2->coreTexture);
       gsKit_texture_upload(ps2->gsGlobal, ps2->coreTexture); 
-      prim_texture(ps2->gsGlobal, ps2->coreTexture, 1, ps2->fullscreen);
+      prim_texture(ps2->gsGlobal, ps2->coreTexture, 1, ps2->force_aspect);
    }
 
    if (ps2->menuVisible) {
@@ -253,7 +283,7 @@ static void ps2_gfx_free(void *data)
 {
    ps2_video_t *ps2 = (ps2_video_t*)data;
 
-   gsKit_clear(ps2->gsGlobal, GS_WHITE);
+   gsKit_clear(ps2->gsGlobal, GS_BLACK);
    gsKit_vram_clear(ps2->gsGlobal);
 
    deinitTexture(ps2->menuTexture);
