@@ -860,6 +860,7 @@ FILTERS
 #include "../gfx/video_filters/blargg_ntsc_snes.c"
 #include "../gfx/video_filters/lq2x.c"
 #include "../gfx/video_filters/phosphor2x.c"
+#include "../gfx/video_filters/normal2x.c"
 
 #include "../libretro-common/audio/dsp_filters/echo.c"
 #include "../libretro-common/audio/dsp_filters/eq.c"
