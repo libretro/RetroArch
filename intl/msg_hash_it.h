@@ -3566,3 +3566,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
       "Usa la colorazione preferita di sistema")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
       "Utilizza la colorazione dei temi del sistema operativo (se presente) - impostazioni del tema di override.")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWEST,
+      "Lowest")
+MSG_HASH(MSG_RESAMPLER_QUALITY_LOWER,
+      "Lower")
+MSG_HASH(MSG_RESAMPLER_QUALITY_NORMAL,
+      "Normal")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHER,
+      "Higher")
+MSG_HASH(MSG_RESAMPLER_QUALITY_HIGHEST,
+      "Highest")

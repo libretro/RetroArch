@@ -1656,23 +1656,23 @@ static void setting_get_string_representation_uint_audio_resampler_quality(
                len);
          break;
       case RESAMPLER_QUALITY_LOWEST:
-         strlcpy(s, "Lowest",
+         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_LOWEST),
                len);
          break;
       case RESAMPLER_QUALITY_LOWER:
-         strlcpy(s, "Lower",
+         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_LOWER),
                len);
          break;
       case RESAMPLER_QUALITY_HIGHER:
-         strlcpy(s, "Higher",
+         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_HIGHER),
                len);
          break;
       case RESAMPLER_QUALITY_HIGHEST:
-         strlcpy(s, "Highest",
+         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_HIGHEST),
                len);
          break;
       case RESAMPLER_QUALITY_NORMAL:
-         strlcpy(s, "Normal",
+         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_NORMAL),
                len);
          break;
    }
