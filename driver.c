@@ -18,8 +18,6 @@
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 
-#include <audio/audio_resampler.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -28,9 +26,7 @@
 #include "menu/menu_driver.h"
 #endif
 
-#include "command.h"
 #include "dynamic.h"
-#include "msg_hash.h"
 
 #include "audio/audio_driver.h"
 #include "camera/camera_driver.h"
@@ -40,7 +36,6 @@
 #include "led/led_driver.h"
 #include "midi/midi_driver.h"
 #include "configuration.h"
-#include "core.h"
 #include "core_info.h"
 #include "driver.h"
 #include "retroarch.h"
