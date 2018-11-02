@@ -1,4 +1,5 @@
 # 1.7.6 (future)
+- CPU FILTERS: Add Normal2x filter.
 - DATE: Add Date / Time style options.
 - MIDI: Add a Linux ALSA driver for MIDI.
 - LOCALIZATION: Add Greek translation.
