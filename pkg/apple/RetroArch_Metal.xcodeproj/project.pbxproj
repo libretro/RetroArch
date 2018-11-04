@@ -548,10 +548,20 @@
 		84DD5EB71A89F1C7007336C1 /* retroarch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = retroarch.icns; path = ../../media/retroarch.icns; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A902040DE66D42F9EE47BFE3 /* MenuDisplay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MenuDisplay.h; sourceTree = "<group>"; };
+		A90205DCA5102DF8D80D3F68 /* ui_cocoa_metal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ui_cocoa_metal.h; sourceTree = "<group>"; };
 		A90205FD4D5979BD8B7E4DD6 /* Info_Metal.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.info; name = Info_Metal.plist; path = OSX/Info_Metal.plist; sourceTree = "<group>"; };
 		A902065A41AEBECE594908C7 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = OSX/en.lproj/MainMenu_Metal.xib; sourceTree = "<group>"; };
 		A902070F2C43F222FD56A95A /* MenuDisplay.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MenuDisplay.m; sourceTree = "<group>"; };
 		A90207489289602F593626D5 /* QTConfig.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = QTConfig.xcconfig; sourceTree = "<group>"; };
+		A90208A05A895029CEC32C14 /* ui_cocoa_msg_window_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_msg_window_metal.m; sourceTree = "<group>"; };
+		A9020AF14B9A73364C6CDDA5 /* cocoa_common_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoa_common_metal.m; sourceTree = "<group>"; };
+		A9020BD6594399DDAB0E2563 /* ui_cocoatouch_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ui_cocoatouch_metal.m; sourceTree = "<group>"; };
+		A9020C55D864F0E0C6E7DFF9 /* ui_cocoa_window_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_window_metal.m; sourceTree = "<group>"; };
+		A9020E880B5DBFD909921A8F /* cocoa_common_metal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_common_metal.h; sourceTree = "<group>"; };
+		A9020EE4BE2C6A15024A32E0 /* ui_cocoa_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_metal.m; sourceTree = "<group>"; };
+		A9020F2EEF870903107B0EA7 /* ui_cocoa_application_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_application_metal.m; sourceTree = "<group>"; };
+		A9020F48BA562B13D4789292 /* ui_cocoa_browser_window_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_browser_window_metal.m; sourceTree = "<group>"; };
+		A9020FA64527ED74C836B41D /* cocoa_gl_ctx_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoa_gl_ctx_metal.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -932,6 +942,9 @@
 				05366511213F8BE5007E7EA0 /* qt */,
 				05A8C5CE20DB72F000FF7857 /* ui_cocoa.h */,
 				05A8C5BA20DB72F000FF7857 /* ui_cocoa.m */,
+				A90205DCA5102DF8D80D3F68 /* ui_cocoa_metal.h */,
+				A9020EE4BE2C6A15024A32E0 /* ui_cocoa_metal.m */,
+				A9020BD6594399DDAB0E2563 /* ui_cocoatouch_metal.m */,
 				05A8C5CF20DB72F000FF7857 /* ui_cocoatouch.m */,
 				05A8C5B920DB72F000FF7857 /* ui_null.c */,
 				05A8C5D020DB72F000FF7857 /* ui_qt.cpp */,
@@ -946,12 +959,18 @@
 		05A8C5BB20DB72F000FF7857 /* cocoa */ = {
 			isa = PBXGroup;
 			children = (
+				A9020E880B5DBFD909921A8F /* cocoa_common_metal.h */,
+				A9020AF14B9A73364C6CDDA5 /* cocoa_common_metal.m */,
 				05A8C5C220DB72F000FF7857 /* cocoa_common.h */,
 				05A8C5BD20DB72F000FF7857 /* cocoa_common.m */,
 				05A8C5BE20DB72F000FF7857 /* cocoatouch_menu.m */,
+				A9020F2EEF870903107B0EA7 /* ui_cocoa_application_metal.m */,
 				05A8C5C120DB72F000FF7857 /* ui_cocoa_application.m */,
+				A9020F48BA562B13D4789292 /* ui_cocoa_browser_window_metal.m */,
 				05A8C5BF20DB72F000FF7857 /* ui_cocoa_browser_window.m */,
+				A90208A05A895029CEC32C14 /* ui_cocoa_msg_window_metal.m */,
 				05A8C5BC20DB72F000FF7857 /* ui_cocoa_msg_window.m */,
+				A9020C55D864F0E0C6E7DFF9 /* ui_cocoa_window_metal.m */,
 				05A8C5C020DB72F000FF7857 /* ui_cocoa_window.m */,
 			);
 			path = cocoa;
@@ -996,6 +1015,7 @@
 			children = (
 				05A8C5E720DB72F000FF7857 /* cocoa_gl_ctx.m */,
 				05A8C5DD20DB72F000FF7857 /* macos_ctx.m */,
+				A9020FA64527ED74C836B41D /* cocoa_gl_ctx_metal.m */,
 			);
 			path = drivers_context;
 			sourceTree = "<group>";
@@ -1790,67 +1810,6 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = (
-					"$(inherited)",
-					"-DHAVE_RUNAHEAD",
-					"-DHAVE_GRIFFIN",
-					"-DHAVE_FLAC",
-					"-DHAVE_DR_FLAC",
-					"-DHAVE_DR_MP3",
-					"-DHAVE_LROUND",
-					"-DFLAC__HAS_OGG=0",
-					"-DHAVE_CHD",
-					"-DHAVE_STB_VORBIS",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_BUILTINMINIUPNPC",
-					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_LANGEXTRA",
-					"-DRC_DISABLE_LUA",
-					"-DHAVE_CHEEVOS",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_IOHIDMANAGER",
-					"-DHAVE_CORETEXT",
-					"-DHAVE_RGUI",
-					"-DHAVE_MENU",
-					"-DOSX",
-					"-DHAVE_OPENGL",
-					"-DHAVE_CC_RESAMPLER",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOA",
-					"-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_NETWORKING",
-					"-DHAVE_NETPLAYDISCOVERY",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_THREADS",
-					"-DHAVE_DYLIB",
-					"-DHAVE_7ZIP",
-					"-DHAVE_MATERIALUI",
-					"-DHAVE_HID",
-					"-DHAVE_XMB",
-					"-DHAVE_SEGA",
-					"-DHAVE_SHADERPIPELINE",
-					"-DHAVE_MMAP",
-					"-DHAVE_LIBRETRODB",
-					"-DHAVE_GETOPT_LONG",
-					"-DHAVE_METAL",
-					"-DHAVE_SLANG",
-					"-DHAVE_GLSLANG",
-					"-DHAVE_SPIRV_CROSS",
-					"-DWANT_GLSLANG",
-					"-DENABLE_HLSL",
-					"-DGLSLANG_OSINCLUDE_UNIX",
-					"-DMETAL_DEBUG",
-				);
 				PREBINDING = NO;
 				SDKROOT = macosx;
 			};
@@ -1905,67 +1864,6 @@
 					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
-				OTHER_CFLAGS = (
-					"$(inherited)",
-					"-DHAVE_RUNAHEAD",
-					"-DHAVE_GRIFFIN",
-					"-DHAVE_FLAC",
-					"-DHAVE_DR_FLAC",
-					"-DHAVE_DR_MP3",
-					"-DHAVE_LROUND",
-					"-DFLAC__HAS_OGG=0",
-					"-DHAVE_CHD",
-					"-DHAVE_STB_VORBIS",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_BUILTINMINIUPNPC",
-					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_LANGEXTRA",
-					"-DRC_DISABLE_LUA",
-					"-DHAVE_CHEEVOS",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_IOHIDMANAGER",
-					"-DHAVE_CORETEXT",
-					"-DHAVE_RGUI",
-					"-DHAVE_MENU",
-					"-DOSX",
-					"-DHAVE_OPENGL",
-					"-DHAVE_CC_RESAMPLER",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOA",
-					"-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_NETWORKING",
-					"-DHAVE_NETPLAYDISCOVERY",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_THREADS",
-					"-DHAVE_DYLIB",
-					"-DHAVE_7ZIP",
-					"-DHAVE_MATERIALUI",
-					"-DHAVE_HID",
-					"-DHAVE_XMB",
-					"-DHAVE_SEGA",
-					"-DHAVE_SHADERPIPELINE",
-					"-DHAVE_MMAP",
-					"-DHAVE_LIBRETRODB",
-					"-DHAVE_GETOPT_LONG",
-					"-DHAVE_METAL",
-					"-DHAVE_SLANG",
-					"-DHAVE_GLSLANG",
-					"-DHAVE_SPIRV_CROSS",
-					"-DWANT_GLSLANG",
-					"-DENABLE_HLSL",
-					"-DGLSLANG_OSINCLUDE_UNIX",
-					"-DMETAL_DEBUG",
-				);
 				PREBINDING = NO;
 				SDKROOT = macosx;
 			};

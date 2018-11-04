@@ -27,9 +27,14 @@
 #include "../frontend/drivers/platform_darwin.m"
 #endif
 
+#if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA)
-#include "../gfx/drivers_context/macos_ctx.m"
+#include "../gfx/drivers_context/cocoa_gl_ctx.m"
 #include "../ui/drivers/cocoa/cocoa_common.m"
+#else
+#include "../gfx/drivers_context/cocoa_gl_ctx_metal.m"
+#include "../ui/drivers/cocoa/cocoa_common_metal.m"
+#endif
 
 #if defined(HAVE_COCOATOUCH)
 
@@ -45,6 +50,12 @@
 #include "../ui/drivers/cocoa/ui_cocoa_window.m"
 #include "../ui/drivers/cocoa/ui_cocoa_msg_window.m"
 #include "../ui/drivers/cocoa/ui_cocoa_application.m"
+#elif defined(HAVE_COCOA_METAL)
+#include "../ui/drivers/ui_cocoa_metal.m"
+#include "../ui/drivers/cocoa/ui_cocoa_browser_window_metal.m"
+#include "../ui/drivers/cocoa/ui_cocoa_window_metal.m"
+#include "../ui/drivers/cocoa/ui_cocoa_msg_window_metal.m"
+#include "../ui/drivers/cocoa/ui_cocoa_application_metal.m"
 #endif
 
 #endif

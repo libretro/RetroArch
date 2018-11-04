@@ -308,7 +308,7 @@ static const bool _python_supp = true;
 static const bool _python_supp = false;
 #endif
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
 static const bool _cocoa_supp = true;
 #else
 static const bool _cocoa_supp = false;

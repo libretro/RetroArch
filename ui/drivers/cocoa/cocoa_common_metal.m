@@ -16,9 +16,9 @@
 
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
-#include "cocoa_common.h"
-#ifdef HAVE_COCOA
-#include "../ui_cocoa.h"
+#include "cocoa_common_metal.h"
+#ifdef HAVE_COCOA_METAL
+#include "../ui_cocoa_metal.h"
 #endif
 
 #include <retro_assert.h>
@@ -43,12 +43,32 @@
 #include "../../../location/location_driver.h"
 #include "../../../camera/camera_driver.h"
 
+#ifdef HAVE_METAL
+@implementation MetalView
+
+- (void)keyDown:(NSEvent*)theEvent
+{
+}
+
+/* Stop the annoying sound when pressing a key. */
+- (BOOL)acceptsFirstResponder
+{
+   return YES;
+}
+
+- (BOOL)isFlipped
+{
+   return YES;
+}
+@end
+#endif
+
 static CocoaView* g_instance;
 
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
 void *nsview_get_ptr(void)
 {
-    return g_instance;
+    return (BRIDGE void *)g_instance;
 }
 #endif
 
@@ -58,13 +78,14 @@ void *glkitview_init(void);
 
 @implementation CocoaView
 
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
 #include "../../../input/drivers/cocoa_input.h"
 
 - (void)scrollWheel:(NSEvent *)theEvent {
     cocoa_input_data_t *apple = (cocoa_input_data_t*)input_driver_get_data();
     (void)apple;
 }
+
 #endif
 
 + (CocoaView*)get
@@ -79,11 +100,8 @@ void *glkitview_init(void);
 {
    self = [super init];
    
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-   ui_window_cocoa_t cocoa_view;
-   cocoa_view.data = (CocoaView*)self;
-   
    [self registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
 #elif defined(HAVE_COCOATOUCH)
    self.view = (__bridge GLKView*)glkitview_init();
@@ -94,11 +112,14 @@ void *glkitview_init(void);
    return self;
 }
 
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA_METAL)
+- (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window {
+   return YES;
+}
+
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];
-
    cocoagl_gfx_ctx_update();
 }
 
@@ -170,7 +191,7 @@ void *glkitview_init(void);
 {
    float width = 0.0f, height = 0.0f, tenpctw, tenpcth;
    RAScreen *screen  = (__bridge RAScreen*)get_chosen_screen();
-   UIInterfaceOrientation orientation = self.interfaceOrientation;
+   UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
    CGRect screenSize = [screen bounds];
    SEL selector = NSSelectorFromString(BOXSTRING("coordinateSpace"));
     
@@ -191,7 +212,39 @@ void *glkitview_init(void);
    
    g_pause_indicator_view.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
    [g_pause_indicator_view viewWithTag:1].frame = CGRectMake(0, 0, tenpctw * 2.0f, tenpcth);
+    
+    [self adjustViewFrameForSafeArea];
 }
+
+-(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
+    [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
+    if (@available(iOS 11, *)) {
+        [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
+            [self adjustViewFrameForSafeArea];
+        } completion:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
+        }];
+    }
+}
+
+-(void)adjustViewFrameForSafeArea {
+    // This is for adjusting the view frame to account for the notch in iPhone X phones
+    if (@available(iOS 11, *)) {
+        RAScreen *screen  = (__bridge RAScreen*)get_chosen_screen();
+        CGRect screenSize = [screen bounds];
+        UIEdgeInsets inset = [[UIApplication sharedApplication] delegate].window.safeAreaInsets;
+        UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+        CGRect newFrame = screenSize;
+        if ( orientation == UIInterfaceOrientationPortrait ) {
+            newFrame = CGRectMake(screenSize.origin.x, screenSize.origin.y + inset.top, screenSize.size.width, screenSize.size.height - inset.top);
+        } else if ( orientation == UIInterfaceOrientationLandscapeLeft ) {
+            newFrame = CGRectMake(screenSize.origin.x, screenSize.origin.y, screenSize.size.width - inset.right, screenSize.size.height);
+        } else if ( orientation == UIInterfaceOrientationLandscapeRight ) {
+            newFrame = CGRectMake(screenSize.origin.x + inset.left, screenSize.origin.y, screenSize.size.width - inset.left, screenSize.size.height);
+        }
+        self.view.frame = newFrame;
+    }
+}
+
 
 #define ALMOST_INVISIBLE (.021f)
 

@@ -25,7 +25,7 @@
 #include <string/stdstring.h>
 #include <retro_timers.h>
 
-#include "cocoa/cocoa_common.h"
+#include "cocoa/cocoa_common_metal.h"
 #include "../ui_companion_driver.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
@@ -41,7 +41,7 @@
 #endif
 
 static char msg_old[PATH_MAX_LENGTH];
-static id apple_platform;
+id<ApplePlatform> apple_platform;
 static CFRunLoopObserverRef iterate_observer;
 
 /* forward declaration */
@@ -79,7 +79,6 @@ static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd)
 {
     (void)data;
-    command_event(cmd, NULL);
 }
 
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
@@ -240,7 +239,7 @@ enum
 // This is for iOS versions < 9.0
 - (id)_keyCommandForEvent:(UIEvent*)event
 {
-   /* This gets called twice with the same timestamp
+   /* This gets called twice with the same timestamp 
     * for each keypress, that's fine for polling
     * but is bad for business with events. */
    static double last_time_stamp;
@@ -249,7 +248,7 @@ enum
       return [super _keyCommandForEvent:event];
    last_time_stamp = event.timestamp;
    
-   /* If the _hidEvent is null, [event _keyCode] will crash.
+   /* If the _hidEvent is null, [event _keyCode] will crash. 
     * (This happens with the on screen keyboard). */
    if (event._hidEvent)
    {
@@ -300,13 +299,13 @@ enum
       handle_touch_event(event.allTouches.allObjects);
 
    get_ios_version(&major, &minor);
-   
+    
 #if __IPHONE_OS_VERSION_MAX_ALLOWED < 70000
    if ((major < 7) && [event respondsToSelector:@selector(_gsEvent)])
    {
       /* Keyboard event hack for iOS versions prior to iOS 7.
        *
-       * Derived from:
+       * Derived from: 
        * http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
        */
       const uint8_t *eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
@@ -380,7 +379,7 @@ enum
   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
                                              true, 0, rarch_draw_observer, 0);
   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
-  
+    
 #ifdef HAVE_MFI
     extern bool apple_gamecontroller_joypad_init(void *data);
     apple_gamecontroller_joypad_init(NULL);
@@ -431,7 +430,7 @@ enum
 {
    NSString *filename = (NSString*)url.path.lastPathComponent;
    NSError     *error = nil;
-   
+    
    [[NSFileManager defaultManager] moveItemAtPath:[url path] toPath:[self.documentsDirectory stringByAppendingPathComponent:filename] error:&error];
    
    if (error)
@@ -498,11 +497,11 @@ enum
    if (string_is_equal(apple_frontend_settings.orientations, "landscape"))
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskLandscape;
    else if (string_is_equal(apple_frontend_settings.orientations, "portrait"))
-      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait
+      apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait 
          | UIInterfaceOrientationMaskPortraitUpsideDown;
 }
 
-- (void)mainMenuRefresh
+- (void)mainMenuRefresh 
 {
   [self.mainmenu reloadData];
 }
@@ -526,7 +525,7 @@ enum
         self.menu_count--;
 
         [self popViewControllerAnimated:YES];
-        self.mainmenu = self.mainmenu.last_menu;
+        self.mainmenu = self.mainmenu.last_menu;      
      }
   }
 }
@@ -594,7 +593,7 @@ static void ui_companion_cocoatouch_notify_content_loaded(void *data)
       [ap showGameView];
 }
 
-static void ui_companion_cocoatouch_toggle(void *data)
+static void ui_companion_cocoatouch_toggle(void *data, bool force)
 {
    RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
 
@@ -609,7 +608,7 @@ static int ui_companion_cocoatouch_iterate(void *data, unsigned action)
    RetroArch_iOS *ap  = (RetroArch_iOS*)apple_platform;
 
    (void)data;
-   
+    
    if (ap)
       [ap showPauseMenu:ap];
 
@@ -663,7 +662,7 @@ static void ui_companion_cocoatouch_notify_list_pushed(void *data,
      printf( "notify_list_pushed: old size should not be larger\n" );
 
    old_size = new_size;
-   
+      
    if (ap)
      [ap mainMenuPushPop: pushp];
 }
@@ -687,8 +686,9 @@ static void ui_companion_cocoatouch_render_messagebox(const char *msg)
    }
 }
 
-static void ui_companion_cocoatouch_msg_queue_push(const char *msg,
-   unsigned priority, unsigned duration, bool flush)
+static void ui_companion_cocoatouch_msg_queue_push(void *data,
+      const char *msg,
+      unsigned priority, unsigned duration, bool flush)
 {
    RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
 
@@ -709,8 +709,8 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_notify_refresh,
    ui_companion_cocoatouch_msg_queue_push,
    ui_companion_cocoatouch_render_messagebox,
-   NULL,
-   NULL,
+   NULL, /* get_main_window */
+   NULL, /* log_msg */
    &ui_browser_window_null,
    &ui_msg_window_null,
    &ui_window_null,
