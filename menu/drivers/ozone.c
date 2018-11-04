@@ -1210,6 +1210,8 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    *userdata = ozone;
    ozone->selection_buf_old = (file_list_t*)calloc(1, sizeof(file_list_t));
    ozone->want_horizontal_animation = false;
+   ozone->draw_sidebar = true;
+   ozone->sidebar_offset = 0;
 
    ozone->system_tab_end                = 0;
    ozone->tabs[ozone->system_tab_end]     = OZONE_SYSTEM_TAB_MAIN;
@@ -1422,8 +1424,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone->fade_direction = false;
       ozone->cursor_in_sidebar = false;
       ozone->cursor_in_sidebar_old = false;
-      ozone->draw_sidebar = true;
-      ozone->sidebar_offset = 0;
       ozone->draw_old_list = false;
 
       /* Animations */
