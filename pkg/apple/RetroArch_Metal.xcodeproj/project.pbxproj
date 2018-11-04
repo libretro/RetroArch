@@ -291,7 +291,6 @@
 		05A8C5D220DB72F000FF7857 /* ui_companion_driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ui_companion_driver.h; sourceTree = "<group>"; };
 		05A8C5D320DB72F000FF7857 /* ui_companion_driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ui_companion_driver.c; sourceTree = "<group>"; };
 		05A8C5D520DB72F000FF7857 /* video_display_server.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_display_server.c; sourceTree = "<group>"; };
-		05A8C5DD20DB72F000FF7857 /* macos_ctx.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = macos_ctx.m; sourceTree = "<group>"; };
 		05A8C5E720DB72F000FF7857 /* cocoa_gl_ctx.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = cocoa_gl_ctx.m; sourceTree = "<group>"; };
 		05A8C5F020DB72F000FF7857 /* gl.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl.c; sourceTree = "<group>"; };
 		05A8C5F720DB72F000FF7857 /* metal.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = metal.m; sourceTree = "<group>"; };
@@ -1014,7 +1013,6 @@
 			isa = PBXGroup;
 			children = (
 				05A8C5E720DB72F000FF7857 /* cocoa_gl_ctx.m */,
-				05A8C5DD20DB72F000FF7857 /* macos_ctx.m */,
 				A9020FA64527ED74C836B41D /* cocoa_gl_ctx_metal.m */,
 			);
 			path = drivers_context;
