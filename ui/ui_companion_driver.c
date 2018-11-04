@@ -30,7 +30,7 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX)
    &ui_companion_win32,
 #endif
-#ifdef HAVE_COCOA
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
    &ui_companion_cocoa,
 #endif
 #ifdef HAVE_COCOATOUCH
