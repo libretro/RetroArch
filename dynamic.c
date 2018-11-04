@@ -390,7 +390,7 @@ bool libretro_get_system_info(const char *path,
             dummy_info.valid_extensions, sizeof(current_valid_extensions));
 
    info->library_name     = current_library_name;
-   info->library_version  = current_library_name;
+   info->library_version  = current_library_version;
    info->valid_extensions = current_valid_extensions;
 
 #ifdef HAVE_DYNAMIC
