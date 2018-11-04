@@ -180,6 +180,7 @@ enum
    XMB_TEXTURE_OVERRIDE,
    XMB_TEXTURE_NOTIFICATIONS,
    XMB_TEXTURE_STREAM,
+   XMB_TEXTURE_SHUTDOWN,
    XMB_TEXTURE_LAST
 };
 
@@ -2396,6 +2397,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                      return xmb->textures.list[XMB_TEXTURE_ACHIEVEMENTS];
                   case MENU_ENUM_LABEL_NETWORK_INFORMATION:
                   case MENU_ENUM_LABEL_NETWORK_SETTINGS:
+                  case MENU_ENUM_LABEL_WIFI_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_NETWORK];
                   case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
                      return xmb->textures.list[XMB_TEXTURE_PLAYLIST];
@@ -2423,6 +2425,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
                      return xmb->textures.list[XMB_TEXTURE_RELOAD];
 #endif
+                  case MENU_ENUM_LABEL_REBOOT:
+                     return xmb->textures.list[XMB_TEXTURE_RELOAD];
+                  case MENU_ENUM_LABEL_SHUTDOWN:
+                     return xmb->textures.list[XMB_TEXTURE_SHUTDOWN];
                   default:
                      break;
                   }
@@ -4690,6 +4696,8 @@ static const char *xmb_texture_path(unsigned id)
       case XMB_TEXTURE_STREAM:
          icon_name = "menu_stream.png";
 			break;
+      case XMB_TEXTURE_SHUTDOWN:
+         icon_name = "menu_shutdown.png";
    }
 
    fill_pathname_application_special(iconpath,
