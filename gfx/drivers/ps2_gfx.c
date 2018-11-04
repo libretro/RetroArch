@@ -23,7 +23,7 @@
 #include <gsKit.h>
 #include <gsInline.h>
 
-#define GS_WHITE GS_SETREG_RGBAQ(0xFF,0xFF,0xFF,0x00,0x00) // turn white GS Screen
+#define GS_TEXT GS_SETREG_RGBAQ(0x80,0x80,0x80,0x80,0x00) // turn white GS Screen
 #define GS_BLACK GS_SETREG_RGBAQ(0x00,0x00,0x00,0x00,0x00) // turn white GS Screen
 
 typedef struct ps2_video
@@ -45,11 +45,11 @@ typedef struct ps2_video
 static GSGLOBAL *init_GSGlobal(void) {
 	GSGLOBAL *gsGlobal = gsKit_init_global()
 
-	gsGlobal->PSM = GS_PSM_CT16;
-	// gsGlobal->PSMZ = GS_PSMZ_16S;
-	gsGlobal->DoubleBuffering = GS_SETTING_OFF;
+      gsGlobal->PSM = GS_PSM_CT24;
+	gsGlobal->PSMZ = GS_PSMZ_16S;
+	gsGlobal->DoubleBuffering = GS_SETTING_ON;
 	gsGlobal->ZBuffering = GS_SETTING_OFF;
-      gsGlobal->PrimAlphaEnable = GS_SETTING_ON;    /* Enable alpha blending for primitives. */
+      gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
 
 	dmaKit_init(D_CTRL_RELE_OFF,D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
 		    D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
@@ -107,11 +107,11 @@ static void transfer_texture(GSTEXTURE *texture, const void *frame,
       texture->Width != width || 
       texture->Height != height ||
       texture->PSM != PSM ) {
+      deinitTexture(texture);
       texture->Width = width;
       texture->Height = height;
       texture->PSM = PSM;
       texture->Filter = filter;
-      free(texture->Mem);
       texture->Mem = memalign(128, size);
 }
 
@@ -175,7 +175,7 @@ static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, 
                               texture->Width, // U2
                               texture->Height, // V2
                               zPosition,
-                              GS_WHITE);
+                              GS_TEXT);
 }
 
 
