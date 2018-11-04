@@ -4319,13 +4319,23 @@ static int action_ok_push_dropdown_setting_float_item(const char *path,
 static int action_ok_push_dropdown_setting_uint_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   unsigned value;
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
 
    if (!setting)
       return -1;
 
-   *setting->value.target.unsigned_integer = (unsigned)(idx + setting->offset_by);
+   value = (unsigned)(idx + setting->offset_by);
+
+   if (!string_is_empty(path))
+   {
+      unsigned path_value = atoi(path);
+      if (path_value != value)
+         value = path_value;
+   }
+
+   *setting->value.target.unsigned_integer = value;
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
