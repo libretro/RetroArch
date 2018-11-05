@@ -4740,6 +4740,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          info->need_push       = true;
          break;
       case DISPLAYLIST_FAVORITES:
+         info->count           = 0;
+
          {
             settings_t      *settings     = config_get_ptr();
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -4747,6 +4749,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                   "favorites",
                   settings->paths.path_content_favorites,
                   &ret);
+         }
+
+         if (info->count == 0)
+         {
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_FAVORITES_AVAILABLE),
+                  MENU_ENUM_LABEL_NO_FAVORITES_AVAILABLE,
+                  MENU_INFO_MESSAGE, 0, 0);
+            info->need_push_no_playlist_entries = false;
+            ret = 0;
          }
 
          ret                   = 0;
