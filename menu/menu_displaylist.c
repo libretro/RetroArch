@@ -8012,6 +8012,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                      unsigned size                   = (unsigned)tmp_str_list->size;
                      unsigned i                      = atoi(tmp_str_list->elems[size-1].data);
                      struct core_option *option      = NULL;
+                     bool checked_found              = false;
+                     unsigned checked                = 0;
+                     const char *val                 = core_option_manager_get_val(coreopts, i-1);
 
                      i--;
 
@@ -8033,9 +8036,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
                                     MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM, k, 0);
+
+                              if (!checked_found && string_is_equal(str, val))
+                              {
+                                 checked = k;
+                                 checked_found = true;
+                              }
+
                               count++;
                            }
                         }
+
+                        if (checked_found)
+                           menu_entries_set_checked(info->list, checked, true);
                      }
                   }
                }
@@ -8057,7 +8070,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                            if (tmp_str_list && tmp_str_list->size > 0)
                            {
                               unsigned i;
-                              unsigned size = (unsigned)tmp_str_list->size;
+                              unsigned size        = (unsigned)tmp_str_list->size;
+                              bool checked_found   = false;
+                              unsigned checked     = 0;
 
                               for (i = 0; i < size; i++)
                               {
@@ -8068,7 +8083,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM, i, 0);
+
+                                 if (!checked_found && string_is_equal(tmp_str_list->elems[i].data, setting->value.target.string))
+                                 {
+                                    checked = i;
+                                    checked_found = true;
+                                 }
                               }
+
+                              if (checked_found)
+                                 menu_entries_set_checked(info->list, checked, true);
                            }
                         }
                         break;
@@ -8080,6 +8104,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                            float step             = setting->step;
                            double min             = setting->enforce_minrange ? setting->min : 0.00;
                            double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                           bool checked_found     = false;
+                           unsigned checked       = 0;
 
                            if (setting->get_string_representation)
                            {
@@ -8098,6 +8124,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, val, 0);
+
+                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 {
+                                    checked = i;
+                                    checked_found = true;
+                                 }
                               }
 
                               *setting->value.target.integer = orig_value;
@@ -8117,8 +8149,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, val, 0);
+
+                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 {
+                                    checked = i;
+                                    checked_found = true;
+                                 }
                               }
                            }
+
+                           if (checked_found)
+                              menu_entries_set_checked(info->list, checked, true);
                         }
                         break;
                      case ST_FLOAT:
@@ -8129,6 +8170,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                            float step             = setting->step;
                            double min             = setting->enforce_minrange ? setting->min : 0.00;
                            double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                           bool checked_found     = false;
+                           unsigned checked       = 0;
 
                            if (setting->get_string_representation)
                            {
@@ -8146,6 +8189,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, 0, 0);
+
+                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 {
+                                    checked = i;
+                                    checked_found = true;
+                                 }
                               }
 
                               *setting->value.target.fraction = orig_value;
@@ -8164,8 +8213,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, 0, 0);
+
+                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 {
+                                    checked = i;
+                                    checked_found = true;
+                                 }
                               }
                            }
+
+                           if (checked_found)
+                              menu_entries_set_checked(info->list, checked, true);
                         }
                         break;
                      case ST_UINT:
@@ -8176,6 +8234,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                            float step             = setting->step;
                            double min             = setting->enforce_minrange ? setting->min : 0.00;
                            double max             = setting->enforce_maxrange ? setting->max : 999.00;
+                           bool checked_found     = false;
+                           unsigned checked       = 0;
 
                            if (setting->get_string_representation)
                            {
@@ -8194,6 +8254,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, val, 0);
+
+                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 {
+                                    checked = i;
+                                    checked_found = true;
+                                 }
                               }
 
                               *setting->value.target.unsigned_integer = orig_value;
@@ -8213,8 +8279,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
                                        setting_type, val, 0);
+
+                                 if (!checked_found && string_is_equal(val_s, setting->value.target.string))
+                                 {
+                                    checked = i;
+                                    checked_found = true;
+                                 }
                               }
                            }
+
+                           if (checked_found)
+                              menu_entries_set_checked(info->list, checked, true);
                         }
                         break;
                      default:
