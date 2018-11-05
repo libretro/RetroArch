@@ -4784,6 +4784,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          }
          break;
       case DISPLAYLIST_VIDEO_HISTORY:
+         info->count           = 0;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
          {
             settings_t      *settings     = config_get_ptr();
@@ -4800,13 +4801,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          }
 #endif
 
-         if (count == 0)
+         if (info->count == 0)
          {
             menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE),
-                  MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_VIDEOS_AVAILABLE),
+                  MENU_ENUM_LABEL_NO_VIDEOS_AVAILABLE,
                   MENU_INFO_MESSAGE, 0, 0);
+            info->need_push_no_playlist_entries = false;
+            ret = 0;
          }
 
          if (ret == 0)
@@ -7815,6 +7818,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          }
          break;
       case DISPLAYLIST_IMAGES_HISTORY:
+         info->count           = 0;
 #ifdef HAVE_IMAGEVIEWER
          {
             settings_t *settings      = config_get_ptr();
@@ -7828,13 +7832,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
             }
          }
 #endif
-         if (count == 0)
+         if (info->count == 0)
          {
             menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE),
-                  MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_IMAGES_AVAILABLE),
+                  MENU_ENUM_LABEL_NO_IMAGES_AVAILABLE,
                   MENU_INFO_MESSAGE, 0, 0);
+            info->need_push_no_playlist_entries = false;
+            ret = 0;
          }
 
          ret                   = 0;
