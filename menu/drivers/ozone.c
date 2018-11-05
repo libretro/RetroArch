@@ -539,7 +539,6 @@ typedef struct ozone_handle
 
    file_list_t *selection_buf_old;
 
-   unsigned action;
    bool draw_old_list;
    float scroll_old;
 
@@ -2814,10 +2813,12 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
    }
 
    ozone->need_compute = true;
-   ozone->fade_direction = ozone->action == MENU_ACTION_CANCEL;
-   
-   ozone->depth = (int)ozone_list_get_size(ozone, MENU_LIST_PLAIN);
-   
+
+   int new_depth = (int)ozone_list_get_size(ozone, MENU_LIST_PLAIN);
+
+   ozone->fade_direction = new_depth <= ozone->depth;
+   ozone->depth = new_depth;
+
    if (ozone->categories_selection_ptr == ozone->categories_active_idx_old)
    {
       ozone_list_open(ozone);
@@ -3044,8 +3045,6 @@ static int ozone_menu_iterate(menu_handle_t *menu, void *userdata, enum menu_act
       default:
          break;
    }
-
-   ozone->action = new_action;
 
    return generic_menu_iterate(menu, userdata, new_action);
 }
