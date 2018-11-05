@@ -395,7 +395,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(__QNX__)
    &gfx_ctx_qnx,
 #endif
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
    &gfx_ctx_cocoagl,
 #endif
 #if defined(__APPLE__) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
