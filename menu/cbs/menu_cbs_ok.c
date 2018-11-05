@@ -4328,12 +4328,14 @@ static int action_ok_push_dropdown_setting_uint_item(const char *path,
 
    value = (unsigned)(idx + setting->offset_by);
 
+#if 0
    if (!string_is_empty(path))
    {
       unsigned path_value = atoi(path);
       if (path_value != value)
          value = path_value;
    }
+#endif
 
    *setting->value.target.unsigned_integer = value;
    return action_cancel_pop_default(NULL, NULL, 0, 0);
