@@ -25,20 +25,10 @@
 
 #include "../../ui_companion_driver.h"
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED < 101200
-#define NSAlertStyleCritical        NSCriticalAlertStyle
-#define NSAlertStyleWarning         NSWarningAlertStyle
-#define NSAlertStyleInformational   NSInformationalAlertStyle
-#endif
-
 static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_state *state, enum ui_msg_window_type type)
 {
-   NSInteger response;
-#if __has_feature(objc_arc)
+   NSModalResponse response;
    NSAlert *alert = [NSAlert new];
-#else
-   NSAlert* alert = [[NSAlert new] autorelease];
-#endif
    
    if (!string_is_empty(state->title))
       [alert setMessageText:BOXSTRING(state->title)];
@@ -80,19 +70,11 @@ static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_stat
          break;
    }
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
    [alert beginSheetModalForWindow:(BRIDGE NSWindow *)ui_companion_driver_get_main_window()
                  completionHandler:^(NSModalResponse returnCode) {
                     [[NSApplication sharedApplication] stopModalWithCode:returnCode];
                  }];
    response = [alert runModal];
-#else
-   [alert beginSheetModalForWindow:(BRIDGE NSWindow *)ui_companion_driver_get_main_window()
-                     modalDelegate:apple_platform
-                    didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
-                       contextInfo:nil];
-   response = [[NSApplication sharedApplication] runModalForWindow:[alert window]];
-#endif
    
    switch (state->buttons)
    {

@@ -43,7 +43,6 @@
 #include "../../../location/location_driver.h"
 #include "../../../camera/camera_driver.h"
 
-#ifdef HAVE_METAL
 @implementation MetalView
 
 - (void)keyDown:(NSEvent*)theEvent
@@ -61,7 +60,6 @@
    return YES;
 }
 @end
-#endif
 
 static CocoaView* g_instance;
 
@@ -102,7 +100,7 @@ void *glkitview_init(void);
    
 #if defined(HAVE_COCOA_METAL)
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-   [self registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
+   [self registerForDraggedTypes:@[NSColorPboardType, NSFilenamesPboardType]];
 #elif defined(HAVE_COCOATOUCH)
    self.view = (__bridge GLKView*)glkitview_init();
    

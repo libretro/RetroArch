@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __COCOA_COMMON_H
-#define __COCOA_COMMON_H
+#ifndef __COCOA_COMMON_METAL_H
+#define __COCOA_COMMON_METAL_H
 
 #include <Foundation/Foundation.h>
 
