@@ -1377,6 +1377,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       else
          menu_entries_append_enum(info->list, label,
                path, MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i);
+      info->count++;
 
       free(path_copy);
       free(fill_buf);
@@ -4052,18 +4053,14 @@ static void menu_displaylist_parse_playlist_generic(
       int *ret)
 {
    playlist_t *playlist = NULL;
-   char *path_playlist  = NULL;
 
    menu_displaylist_set_new_playlist(menu, playlist_path);
 
    playlist             = playlist_get_cached();
-   path_playlist        = strdup(playlist_name);
 
    if (playlist)
       *ret              = menu_displaylist_parse_playlist(info,
-            playlist, path_playlist, true);
-
-   free(path_playlist);
+            playlist, playlist_name, true);
 }
 
 #ifdef HAVE_NETWORKING
@@ -4762,19 +4759,23 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
       case DISPLAYLIST_MUSIC_HISTORY:
          {
             settings_t      *settings     = config_get_ptr();
+            info->count                   = 0;
+
             if (settings->bools.history_list_enable)
                menu_displaylist_parse_playlist_generic(menu, info,
                      "music_history",
                      settings->paths.path_content_music_history,
                      &ret);
-            else
+
+            if (info->count == 0)
             {
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE),
-                     MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE,
+                        MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_MUSIC_AVAILABLE),
+                     MENU_ENUM_LABEL_NO_MUSIC_AVAILABLE,
                      MENU_INFO_MESSAGE, 0, 0);
+               info->need_push_no_playlist_entries = false;
                ret = 0;
             }
          }
