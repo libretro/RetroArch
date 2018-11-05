@@ -271,6 +271,20 @@ static int setting_action_ok_video_refresh_rate_polled(rarch_setting_t *setting,
    return 0;
 }
 
+static int setting_action_ok_uint_special(rarch_setting_t *setting, bool wraparound)
+{
+   char enum_idx[16];
+   if (!setting)
+      return -1;
+
+   snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+
+   generic_action_ok_displaylist_push(
+         enum_idx, /* we will pass the enumeration index of the string as a path */
+         NULL, NULL, 0, 0, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL);
+   return 0;
+}
 
 static int setting_action_ok_uint(rarch_setting_t *setting, bool wraparound)
 {
@@ -6168,7 +6182,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
          menu_settings_list_current_add_range(list, list_info, 1000, 192000, 100.0, true, true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 

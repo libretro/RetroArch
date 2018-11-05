@@ -148,6 +148,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
    {
       case ACTION_OK_DL_DROPDOWN_BOX_LIST:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
@@ -310,6 +312,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_USER_BINDS_LIST:
@@ -4260,6 +4271,89 @@ int action_ok_push_filebrowser_list_file_select(const char *path,
          entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
 
+/* TODO/FIXME */
+static int action_ok_push_dropdown_setting_core_options_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   core_option_manager_t *coreopts = NULL;
+   int core_option_idx             = (int)atoi(label);
+
+   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+
+   if (!coreopts)
+      return -1;
+
+   core_option_manager_set_val(coreopts, core_option_idx, idx);
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+/* TODO/FIXME */
+static int action_ok_push_dropdown_setting_string_options_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   strlcpy(setting->value.target.string, path,
+         setting->size);
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+/* TODO/FIXME */
+static int action_ok_push_dropdown_setting_int_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   *setting->value.target.integer = (int32_t)(idx + setting->offset_by);
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+/* TODO/FIXME */
+static int action_ok_push_dropdown_setting_float_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+   float val                    = (float)atof(path);
+
+   if (!setting)
+      return -1;
+
+   *setting->value.target.fraction = (float)val;
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_setting_uint_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned value;
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   value = (unsigned)(idx + setting->offset_by);
+
+   if (!string_is_empty(path))
+   {
+      unsigned path_value = atoi(path);
+      if (path_value != value)
+         value = path_value;
+   }
+
+   *setting->value.target.unsigned_integer = value;
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_dropdown_setting_core_options_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5442,6 +5536,21 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_core_options_item_special);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_string_options_item_special);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_int_item_special);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_float_item_special);
+            break;
+         case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item_special);
             break;
          case MENU_SETTING_DROPDOWN_ITEM:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item);
