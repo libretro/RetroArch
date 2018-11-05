@@ -567,7 +567,7 @@ INPUT
 #elif defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
 #include "../input/drivers_joypad/psp_joypad.c"
-#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
+#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
 #include "../input/drivers/cocoa_input.c"
 #elif defined(_3DS)
 #include "../input/drivers/ctr_input.c"
